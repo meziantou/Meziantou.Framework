@@ -5,34 +5,42 @@ using Meziantou.Framework.WebPlatform.Dom;
 namespace Meziantou.Framework.WebPlatform.Css.TypedOm;
 
 /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#enumdef-cssmathoperator</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#enumdef-cssmathoperator"/>
 [IdlInterface("CSSMathOperator", "https://drafts.css-houdini.org/css-typed-om-1/#enumdef-cssmathoperator")]
 public enum CssMathOperator
 {
     /// <summary>The operator of a sum (<c>calc(a + b)</c>).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathoperator-sum"/>
     [IdlMember("sum", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathoperator-sum")]
     Sum,
 
     /// <summary>The operator of a product (<c>calc(a * b)</c>).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathoperator-product"/>
     [IdlMember("product", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathoperator-product")]
     Product,
 
     /// <summary>The operator of a negation.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathoperator-negate"/>
     [IdlMember("negate", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathoperator-negate")]
     Negate,
 
     /// <summary>The operator of an inversion (<c>calc(1 / a)</c>).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathoperator-invert"/>
     [IdlMember("invert", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathoperator-invert")]
     Invert,
 
     /// <summary>The operator of a <c>min()</c> expression.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathoperator-min"/>
     [IdlMember("min", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathoperator-min")]
     Min,
 
     /// <summary>The operator of a <c>max()</c> expression.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathoperator-max"/>
     [IdlMember("max", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathoperator-max")]
     Max,
 
     /// <summary>The operator of a <c>clamp()</c> expression.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathoperator-clamp"/>
     [IdlMember("clamp", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathoperator-clamp")]
     Clamp,
 }
@@ -41,6 +49,7 @@ public enum CssMathOperator
 /// A math expression (https://drafts.css-houdini.org/css-typed-om-1/#cssmathvalue): a tree of math values whose leaves are
 /// <see cref="CssUnitValue"/> objects, e.g. calc(1em + 5px) is a <see cref="CssMathSum"/> of 1em and 5px.
 /// </summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssmathvalue"/>
 [IdlInterface("CSSMathValue", "https://drafts.css-houdini.org/css-typed-om-1/#cssmathvalue")]
 public abstract class CssMathValue : CssNumericValue
 {
@@ -51,6 +60,7 @@ public abstract class CssMathValue : CssNumericValue
     }
 
     /// <summary>Gets the operator of the math expression.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathvalue-operator"/>
     [IdlMember("operator", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathvalue-operator")]
     public CssMathOperator Operator { get; }
 
@@ -206,10 +216,12 @@ public abstract class CssMathValue : CssNumericValue
 }
 
 /// <summary>A sum of values (https://drafts.css-houdini.org/css-typed-om-1/#cssmathsum), e.g. calc(1em + 5px).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssmathsum"/>
 [IdlInterface("CSSMathSum", "https://drafts.css-houdini.org/css-typed-om-1/#cssmathsum")]
 public sealed class CssMathSum : CssMathValue
 {
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathsum-cssmathsum</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathsum-cssmathsum"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathsum-cssmathsum")]
     public CssMathSum(params ReadOnlySpan<CssNumberish> args)
         : this(RectifyArguments(args))
@@ -223,6 +235,7 @@ public sealed class CssMathSum : CssMathValue
     }
 
     /// <summary>Gets the terms of the sum.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathsum-values"/>
     [IdlMember("values", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathsum-values")]
     public CssNumericArray Values { get; }
 
@@ -230,10 +243,12 @@ public sealed class CssMathSum : CssMathValue
 }
 
 /// <summary>A product of values (https://drafts.css-houdini.org/css-typed-om-1/#cssmathproduct), e.g. calc(2 * 1em).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssmathproduct"/>
 [IdlInterface("CSSMathProduct", "https://drafts.css-houdini.org/css-typed-om-1/#cssmathproduct")]
 public sealed class CssMathProduct : CssMathValue
 {
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathproduct-cssmathproduct</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathproduct-cssmathproduct"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathproduct-cssmathproduct")]
     public CssMathProduct(params ReadOnlySpan<CssNumberish> args)
         : this(RectifyArguments(args))
@@ -247,6 +262,7 @@ public sealed class CssMathProduct : CssMathValue
     }
 
     /// <summary>Gets the factors of the product.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathproduct-values"/>
     [IdlMember("values", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathproduct-values")]
     public CssNumericArray Values { get; }
 
@@ -254,10 +270,12 @@ public sealed class CssMathProduct : CssMathValue
 }
 
 /// <summary>The negation of a value (https://drafts.css-houdini.org/css-typed-om-1/#cssmathnegate), e.g. the right operand of a subtraction.</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssmathnegate"/>
 [IdlInterface("CSSMathNegate", "https://drafts.css-houdini.org/css-typed-om-1/#cssmathnegate")]
 public sealed class CssMathNegate : CssMathValue
 {
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathnegate-cssmathnegate</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathnegate-cssmathnegate"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathnegate-cssmathnegate")]
     public CssMathNegate(CssNumberish arg)
         : this(arg.Rectify())
@@ -271,15 +289,18 @@ public sealed class CssMathNegate : CssMathValue
     }
 
     /// <summary>Gets the negated value.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathnegate-value"/>
     [IdlMember("value", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathnegate-value")]
     public CssNumericValue Value { get; }
 }
 
 /// <summary>The inverse of a value (https://drafts.css-houdini.org/css-typed-om-1/#cssmathinvert), e.g. the right operand of a division.</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssmathinvert"/>
 [IdlInterface("CSSMathInvert", "https://drafts.css-houdini.org/css-typed-om-1/#cssmathinvert")]
 public sealed class CssMathInvert : CssMathValue
 {
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathinvert-cssmathinvert</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathinvert-cssmathinvert"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathinvert-cssmathinvert")]
     public CssMathInvert(CssNumberish arg)
         : this(arg.Rectify())
@@ -293,15 +314,18 @@ public sealed class CssMathInvert : CssMathValue
     }
 
     /// <summary>Gets the inverted value.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathinvert-value"/>
     [IdlMember("value", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathinvert-value")]
     public CssNumericValue Value { get; }
 }
 
 /// <summary>The min() function (https://drafts.css-houdini.org/css-typed-om-1/#cssmathmin).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssmathmin"/>
 [IdlInterface("CSSMathMin", "https://drafts.css-houdini.org/css-typed-om-1/#cssmathmin")]
 public sealed class CssMathMin : CssMathValue
 {
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathmin-cssmathmin</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathmin-cssmathmin"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathmin-cssmathmin")]
     public CssMathMin(params ReadOnlySpan<CssNumberish> args)
         : this(RectifyArguments(args))
@@ -315,6 +339,7 @@ public sealed class CssMathMin : CssMathValue
     }
 
     /// <summary>Gets the arguments of the <c>min()</c> expression.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathmin-values"/>
     [IdlMember("values", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathmin-values")]
     public CssNumericArray Values { get; }
 
@@ -322,10 +347,12 @@ public sealed class CssMathMin : CssMathValue
 }
 
 /// <summary>The max() function (https://drafts.css-houdini.org/css-typed-om-1/#cssmathmax).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssmathmax"/>
 [IdlInterface("CSSMathMax", "https://drafts.css-houdini.org/css-typed-om-1/#cssmathmax")]
 public sealed class CssMathMax : CssMathValue
 {
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathmax-cssmathmax</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathmax-cssmathmax"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathmax-cssmathmax")]
     public CssMathMax(params ReadOnlySpan<CssNumberish> args)
         : this(RectifyArguments(args))
@@ -339,6 +366,7 @@ public sealed class CssMathMax : CssMathValue
     }
 
     /// <summary>Gets the arguments of the <c>max()</c> expression.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathmax-values"/>
     [IdlMember("values", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathmax-values")]
     public CssNumericArray Values { get; }
 
@@ -346,10 +374,12 @@ public sealed class CssMathMax : CssMathValue
 }
 
 /// <summary>The clamp() function (https://drafts.css-houdini.org/css-typed-om-1/#cssmathclamp).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssmathclamp"/>
 [IdlInterface("CSSMathClamp", "https://drafts.css-houdini.org/css-typed-om-1/#cssmathclamp")]
 public sealed class CssMathClamp : CssMathValue
 {
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathclamp-cssmathclamp</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathclamp-cssmathclamp"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathclamp-cssmathclamp")]
     public CssMathClamp(CssNumberish lower, CssNumberish value, CssNumberish upper)
         : this(lower.Rectify(), value.Rectify(), upper.Rectify())
@@ -365,19 +395,23 @@ public sealed class CssMathClamp : CssMathValue
     }
 
     /// <summary>Gets the lower bound (the minimum) of the <c>clamp()</c> expression.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathclamp-lower"/>
     [IdlMember("lower", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathclamp-lower")]
     public CssNumericValue Lower { get; }
 
     /// <summary>Gets the preferred value of the <c>clamp()</c> expression.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathclamp-value"/>
     [IdlMember("value", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathclamp-value")]
     public CssNumericValue Value { get; }
 
     /// <summary>Gets the upper bound (the maximum) of the <c>clamp()</c> expression.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathclamp-upper"/>
     [IdlMember("upper", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmathclamp-upper")]
     public CssNumericValue Upper { get; }
 }
 
 /// <summary>The read-only list of the values of a math value (https://drafts.css-houdini.org/css-typed-om-1/#cssnumericarray).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssnumericarray"/>
 [IdlInterface("CSSNumericArray", "https://drafts.css-houdini.org/css-typed-om-1/#cssnumericarray")]
 public sealed class CssNumericArray : IReadOnlyList<CssNumericValue>
 {
@@ -389,10 +423,12 @@ public sealed class CssNumericArray : IReadOnlyList<CssNumericValue>
     }
 
     /// <summary>Gets the number of values in the list.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericarray-length"/>
     [IdlMember("length", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericarray-length")]
     public uint Length => (uint)_values.Length;
 
     /// <summary>Gets the value at the given index.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssnumericarray-indexed-property-getter"/>
     [IdlMember("getter", "https://drafts.css-houdini.org/css-typed-om-1/#cssnumericarray-indexed-property-getter")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public CssNumericValue this[uint index] => _values[index];

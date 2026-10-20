@@ -17,6 +17,7 @@ public partial class Window
     /// declarations are empty when the element is not connected, not in the flat tree, or in a document without browsing
     /// context.
     /// </remarks>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-window-getcomputedstyle"/>
     [IdlMember("getComputedStyle", "https://drafts.csswg.org/cssom/#dom-window-getcomputedstyle")]
     public CssStyleProperties GetComputedStyle(Element elt, string? pseudoElt = null)
     {

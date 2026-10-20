@@ -4,6 +4,7 @@ using Meziantou.Framework.WebPlatform.Dom;
 namespace Meziantou.Framework.WebPlatform.Animations;
 
 /// <summary>A source of time values for animations (https://drafts.csswg.org/web-animations-1/#timelines).</summary>
+/// <seealso href="https://drafts.csswg.org/web-animations-1/#animationtimeline"/>
 [IdlInterface("AnimationTimeline", "https://drafts.csswg.org/web-animations-1/#animationtimeline")]
 public abstract class AnimationTimeline : IRealmBoundPlatformObject
 {
@@ -62,6 +63,7 @@ public abstract class AnimationTimeline : IRealmBoundPlatformObject
     /// Gets the current time of the timeline, in milliseconds (https://drafts.csswg.org/web-animations-1/#dom-animationtimeline-currenttime),
     /// or null when the timeline is inactive.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-2/#dom-animationtimeline-currenttime"/>
     [IdlMember("currentTime", "https://drafts.csswg.org/web-animations-2/#dom-animationtimeline-currenttime")]
     public CssNumberish? CurrentTime => CurrentTimeValue is { } time ? ToCssNumberish(time) : (CssNumberish?)null;
 
@@ -69,10 +71,12 @@ public abstract class AnimationTimeline : IRealmBoundPlatformObject
     /// Gets the duration of the timeline (https://drafts.csswg.org/web-animations-2/#dom-animationtimeline-duration): 100% for a
     /// progress-based timeline, null for a document timeline.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-2/#dom-animationtimeline-duration"/>
     [IdlMember("duration", "https://drafts.csswg.org/web-animations-2/#dom-animationtimeline-duration")]
     public CssNumberish? Duration => IsProgressBased ? new CssUnitValue(100, "percent") : (CssNumberish?)null;
 
     /// <summary>Creates an animation of the effect on the timeline and plays it (https://drafts.csswg.org/web-animations-2/#dom-animationtimeline-play).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-2/#dom-animationtimeline-play"/>
     [IdlMember("play", "https://drafts.csswg.org/web-animations-2/#dom-animationtimeline-play")]
     public Animation Play(AnimationEffect? effect = null)
     {
@@ -86,10 +90,12 @@ public abstract class AnimationTimeline : IRealmBoundPlatformObject
 }
 
 /// <summary>The options of a document timeline (https://drafts.csswg.org/web-animations-1/#dictdef-documenttimelineoptions).</summary>
+/// <seealso href="https://drafts.csswg.org/web-animations-1/#dictdef-documenttimelineoptions"/>
 [IdlInterface("DocumentTimelineOptions", "https://drafts.csswg.org/web-animations-1/#dictdef-documenttimelineoptions")]
 public sealed class DocumentTimelineOptions
 {
     /// <summary>Gets the zero time of the timeline, in milliseconds relative to the time origin of the document.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-documenttimelineoptions-origintime"/>
     [IdlMember("originTime", "https://drafts.csswg.org/web-animations-1/#dom-documenttimelineoptions-origintime")]
     public double OriginTime { get; init; }
 }
@@ -101,6 +107,7 @@ public sealed class DocumentTimelineOptions
 /// <remarks>
 /// The timeline is inactive (its current time is null) when its document is not fully active or has no browsing context.
 /// </remarks>
+/// <seealso href="https://drafts.csswg.org/web-animations-1/#documenttimeline"/>
 [IdlInterface("DocumentTimeline", "https://drafts.csswg.org/web-animations-1/#documenttimeline")]
 public sealed class DocumentTimeline : AnimationTimeline
 {
@@ -108,6 +115,7 @@ public sealed class DocumentTimeline : AnimationTimeline
     private readonly double _originTime;
 
     /// <summary>Creates a timeline of the document of the current global object whose zero time is <see cref="DocumentTimelineOptions.OriginTime"/>.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-documenttimeline-documenttimeline"/>
     [IdlMember("constructor", "https://drafts.csswg.org/web-animations-1/#dom-documenttimeline-documenttimeline")]
     public DocumentTimeline(DocumentTimelineOptions? options = null)
         : this(Document.CurrentGlobalDocument, options?.OriginTime ?? 0)

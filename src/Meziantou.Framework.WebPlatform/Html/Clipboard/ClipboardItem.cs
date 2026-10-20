@@ -6,32 +6,39 @@ using Meziantou.Framework.WebPlatform.Infra;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://w3c.github.io/clipboard-apis/#enumdef-presentationstyle</summary>
+/// <seealso href="https://w3c.github.io/clipboard-apis/#enumdef-presentationstyle"/>
 [IdlInterface("PresentationStyle", "https://w3c.github.io/clipboard-apis/#enumdef-presentationstyle")]
 public enum PresentationStyle
 {
     /// <summary>The presentation style is not specified.</summary>
+    /// <seealso href="https://w3c.github.io/clipboard-apis/#dom-presentationstyle-unspecified"/>
     [IdlMember("unspecified", "https://w3c.github.io/clipboard-apis/#dom-presentationstyle-unspecified")]
     Unspecified,
 
     /// <summary>The item is meant to be inserted inline in the document when it is pasted.</summary>
+    /// <seealso href="https://w3c.github.io/clipboard-apis/#dom-presentationstyle-inline"/>
     [IdlMember("inline", "https://w3c.github.io/clipboard-apis/#dom-presentationstyle-inline")]
     Inline,
 
     /// <summary>The item is meant to be inserted as an attachment when it is pasted.</summary>
+    /// <seealso href="https://w3c.github.io/clipboard-apis/#dom-presentationstyle-attachment"/>
     [IdlMember("attachment", "https://w3c.github.io/clipboard-apis/#dom-presentationstyle-attachment")]
     Attachment,
 }
 
 /// <summary>https://w3c.github.io/clipboard-apis/#dictdef-clipboarditemoptions</summary>
+/// <seealso href="https://w3c.github.io/clipboard-apis/#dictdef-clipboarditemoptions"/>
 [IdlInterface("ClipboardItemOptions", "https://w3c.github.io/clipboard-apis/#dictdef-clipboarditemoptions")]
 public sealed class ClipboardItemOptions
 {
     /// <summary>Gets the presentation style of the clipboard item.</summary>
+    /// <seealso href="https://w3c.github.io/clipboard-apis/#dom-clipboarditemoptions-presentationstyle"/>
     [IdlMember("presentationStyle", "https://w3c.github.io/clipboard-apis/#dom-clipboarditemoptions-presentationstyle")]
     public PresentationStyle PresentationStyle { get; init; } = PresentationStyle.Unspecified;
 }
 
 /// <summary>The data of a representation of a <see cref="ClipboardItem"/>: a string or a <see cref="Blob"/> (the result of a <c>ClipboardItemData</c> promise).</summary>
+/// <seealso href="https://w3c.github.io/clipboard-apis/#typedefdef-clipboarditemdata"/>
 [IdlInterface("(DOMString or Blob)", "https://w3c.github.io/clipboard-apis/#typedefdef-clipboarditemdata")]
 public readonly struct StringOrBlob : IUnionValue, IEquatable<StringOrBlob>
 {
@@ -95,6 +102,7 @@ public readonly struct StringOrBlob : IUnionValue, IEquatable<StringOrBlob>
 /// in different MIME types. An item created by <c>navigator.clipboard.read()</c> reads its data from the system clipboard
 /// when <see cref="GetType(string)"/> is called, and fails when the clipboard changed since.
 /// </summary>
+/// <seealso href="https://w3c.github.io/clipboard-apis/#clipboarditem"/>
 [IdlInterface("ClipboardItem", "https://w3c.github.io/clipboard-apis/#clipboarditem")]
 public sealed class ClipboardItem
 {
@@ -105,6 +113,7 @@ public sealed class ClipboardItem
 
     /// <summary>https://w3c.github.io/clipboard-apis/#dom-clipboarditem-clipboarditem</summary>
     /// <exception cref="TypeErrorException"><paramref name="items"/> is empty, a type is not a valid MIME type, or two types are the same MIME type.</exception>
+    /// <seealso href="https://w3c.github.io/clipboard-apis/#dom-clipboarditem-clipboarditem"/>
     [IdlMember("constructor", "https://w3c.github.io/clipboard-apis/#dom-clipboarditem-clipboarditem")]
     public ClipboardItem(IEnumerable<KeyValuePair<string, Task<StringOrBlob>>> items, ClipboardItemOptions? options = null)
     {
@@ -176,10 +185,12 @@ public sealed class ClipboardItem
     }
 
     /// <summary>https://w3c.github.io/clipboard-apis/#dom-clipboarditem-presentationstyle</summary>
+    /// <seealso href="https://w3c.github.io/clipboard-apis/#dom-clipboarditem-presentationstyle"/>
     [IdlMember("presentationStyle", "https://w3c.github.io/clipboard-apis/#dom-clipboarditem-presentationstyle")]
     public PresentationStyle PresentationStyle { get; }
 
     /// <summary>Gets the MIME types of the representations (https://w3c.github.io/clipboard-apis/#dom-clipboarditem-types); the web custom formats have the <c>web </c> prefix.</summary>
+    /// <seealso href="https://w3c.github.io/clipboard-apis/#dom-clipboarditem-types"/>
     [IdlMember("types", "https://w3c.github.io/clipboard-apis/#dom-clipboarditem-types")]
     public IReadOnlyList<string> Types { get; }
 
@@ -189,6 +200,7 @@ public sealed class ClipboardItem
     /// <c>InvalidStateError</c> when the item was read from the system clipboard and the clipboard changed since.
     /// </summary>
     /// <exception cref="TypeErrorException"><paramref name="type"/> is not a valid MIME type.</exception>
+    /// <seealso href="https://w3c.github.io/clipboard-apis/#dom-clipboarditem-gettype"/>
     [IdlMember("getType", "https://w3c.github.io/clipboard-apis/#dom-clipboarditem-gettype")]
     public Task<Blob> GetType(string type)
     {
@@ -292,6 +304,7 @@ public sealed class ClipboardItem
     }
 
     /// <summary>Whether the type is a mandatory or an optional data type (https://w3c.github.io/clipboard-apis/#dom-clipboarditem-supports).</summary>
+    /// <seealso href="https://w3c.github.io/clipboard-apis/#dom-clipboarditem-supports"/>
     [IdlMember("supports", "https://w3c.github.io/clipboard-apis/#dom-clipboarditem-supports")]
     public static bool Supports(string type)
     {

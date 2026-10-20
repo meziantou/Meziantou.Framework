@@ -1,14 +1,17 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://webidl.spec.whatwg.org/#dictdef-quotaexceedederroroptions</summary>
+/// <seealso href="https://webidl.spec.whatwg.org/#dictdef-quotaexceedederroroptions"/>
 [IdlInterface("QuotaExceededErrorOptions", "https://webidl.spec.whatwg.org/#dictdef-quotaexceedederroroptions")]
 public sealed class QuotaExceededErrorOptions
 {
     /// <summary>Gets the quota that was exceeded, when known.</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-quotaexceedederroroptions-quota"/>
     [IdlMember("quota", "https://webidl.spec.whatwg.org/#dom-quotaexceedederroroptions-quota")]
     public double? Quota { get; init; }
 
     /// <summary>Gets the amount that was requested, when known.</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-quotaexceedederroroptions-requested"/>
     [IdlMember("requested", "https://webidl.spec.whatwg.org/#dom-quotaexceedederroroptions-requested")]
     public double? Requested { get; init; }
 }
@@ -17,10 +20,12 @@ public sealed class QuotaExceededErrorOptions
 /// The exception thrown when a quota is exceeded (https://webidl.spec.whatwg.org/#quotaexceedederror): a
 /// <see cref="DomException"/> named <c>QuotaExceededError</c>, with the quota and the requested amount when they are known.
 /// </summary>
+/// <seealso href="https://webidl.spec.whatwg.org/#quotaexceedederror"/>
 [IdlInterface("QuotaExceededError", "https://webidl.spec.whatwg.org/#quotaexceedederror")]
 public sealed class QuotaExceededError : DomException, Scripting.IStructuredSerializable
 {
     /// <summary>https://webidl.spec.whatwg.org/#dom-quotaexceedederror-quotaexceedederror</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-quotaexceedederror-quotaexceedederror"/>
     [IdlMember("constructor", "https://webidl.spec.whatwg.org/#dom-quotaexceedederror-quotaexceedederror")]
     public QuotaExceededError()
         : this("", quota: null, requested: null)
@@ -28,6 +33,7 @@ public sealed class QuotaExceededError : DomException, Scripting.IStructuredSeri
     }
 
     /// <summary>https://webidl.spec.whatwg.org/#dom-quotaexceedederror-quotaexceedederror</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-quotaexceedederror-quotaexceedederror"/>
     [IdlMember("constructor", "https://webidl.spec.whatwg.org/#dom-quotaexceedederror-quotaexceedederror")]
     public QuotaExceededError(string? message)
         : this(message ?? "", quota: null, requested: null)
@@ -35,6 +41,7 @@ public sealed class QuotaExceededError : DomException, Scripting.IStructuredSeri
     }
 
     /// <summary>https://webidl.spec.whatwg.org/#dom-quotaexceedederror-quotaexceedederror</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-quotaexceedederror-quotaexceedederror"/>
     [IdlMember("constructor", "https://webidl.spec.whatwg.org/#dom-quotaexceedederror-quotaexceedederror")]
     public QuotaExceededError(string message, QuotaExceededErrorOptions? options)
         : this(message, options?.Quota, options?.Requested)
@@ -70,10 +77,12 @@ public sealed class QuotaExceededError : DomException, Scripting.IStructuredSeri
     object Scripting.IStructuredSerializable.CloneForStructuredSerialization() => new QuotaExceededError(Message, Quota, Requested);
 
     /// <summary>Gets the quota, or null when it is unknown.</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-quotaexceedederror-quota"/>
     [IdlMember("quota", "https://webidl.spec.whatwg.org/#dom-quotaexceedederror-quota")]
     public double? Quota { get; }
 
     /// <summary>Gets the requested amount, or null when it is unknown.</summary>
+    /// <seealso href="https://webidl.spec.whatwg.org/#dom-quotaexceedederror-requested"/>
     [IdlMember("requested", "https://webidl.spec.whatwg.org/#dom-quotaexceedederror-requested")]
     public double? Requested { get; }
 }

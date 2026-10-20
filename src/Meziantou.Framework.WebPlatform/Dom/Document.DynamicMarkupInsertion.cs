@@ -60,6 +60,7 @@ public partial class Document
     /// (its nodes, event listeners and URL) with an empty document, whose content is given by <see cref="Write"/>. It has no
     /// effect in a script run by the parser.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-document-open"/>
     [IdlMember("open", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-document-open")]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "The arguments are ignored (https://github.com/whatwg/webidl/issues/581)")]
     public Document Open(string? unused1 = null, string? unused2 = null) => OpenSteps();
@@ -69,6 +70,7 @@ public partial class Document
     /// steps, as <see cref="Window.Open(string, string, string)"/>. As in the browsers, the target (e.g. <c>_self</c>) is
     /// chosen from the navigable of this document, not from the one of the entry document.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-document-open-window"/>
     [IdlMember("open", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-document-open-window")]
     public Window? Open(string url, string name, string features)
     {
@@ -82,6 +84,7 @@ public partial class Document
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-document-close: closes the input stream opened by <see cref="Open(string?, string?)"/>.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-document-close"/>
     [IdlMember("close", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-document-close")]
     public void Close()
     {
@@ -102,10 +105,12 @@ public partial class Document
     /// stream of the parser (after the script being executed by the parser), or replaces the document (as
     /// <see cref="Open(string?, string?)"/>) when the document is not being parsed.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-document-write"/>
     [IdlMember("write", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-document-write")]
     public void Write(params ReadOnlySpan<TrustedHtmlOrString> text) => WriteSteps(text, lineFeed: false, "Document write");
 
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-document-writeln: <see cref="Write"/> followed by a line feed.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-document-writeln"/>
     [IdlMember("writeln", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-document-writeln")]
     public void Writeln(params ReadOnlySpan<TrustedHtmlOrString> text) => WriteSteps(text, lineFeed: true, "Document writeln");
 

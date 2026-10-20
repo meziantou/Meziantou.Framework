@@ -13,6 +13,7 @@ public partial class Document : ISupportedPropertyNames
     /// <see cref="Window"/> of its content navigable for an iframe element), an <see cref="HtmlCollection"/> of the elements
     /// when there are several, and null when there is none.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-document-nameditem"/>
     [IdlMember("getter", "https://html.spec.whatwg.org/multipage/dom.html#dom-document-nameditem")]
     public object? this[string name]
     {

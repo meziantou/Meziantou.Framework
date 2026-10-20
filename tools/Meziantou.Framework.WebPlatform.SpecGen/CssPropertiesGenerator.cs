@@ -192,6 +192,11 @@ internal static partial class CssPropertiesGenerator
 
                 first = false;
                 writer.Summary($"Gets or sets the value of the <c>{CodeWriter.XmlText(property)}</c> property (an empty string removes the declaration).");
+                foreach (var (_, anchor) in idlNames)
+                {
+                    writer.SeeAlso($"https://drafts.csswg.org/cssom/#dom-cssstyleproperties-{anchor}");
+                }
+
                 foreach (var (idlName, anchor) in idlNames)
                 {
                     writer.Line($"[IdlMember({CodeWriter.Literal(idlName)}, \"https://drafts.csswg.org/cssom/#dom-cssstyleproperties-{anchor}\")]");

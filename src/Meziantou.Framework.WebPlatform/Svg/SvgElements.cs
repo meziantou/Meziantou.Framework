@@ -7,6 +7,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 public partial class SvgElement
 {
     /// <summary>https://svgwg.org/svg2-draft/types.html#__svg__SVGElement__ownerSVGElement: the nearest ancestor svg element.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGElement__ownerSVGElement"/>
     [IdlMember("ownerSVGElement", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGElement__ownerSVGElement")]
     public SvgSvgElement? OwnerSvgElement
     {
@@ -24,6 +25,7 @@ public partial class SvgElement
     }
 
     /// <summary>https://svgwg.org/svg2-draft/types.html#__svg__SVGElement__viewportElement: the element that establishes the viewport (the nearest ancestor svg element).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGElement__viewportElement"/>
     [IdlMember("viewportElement", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGElement__viewportElement")]
     public SvgElement? ViewportElement => OwnerSvgElement;
 }
@@ -35,6 +37,7 @@ public partial class SvgGraphicsElement
     /// element in its user space (see <see cref="SvgBoundingBox"/>): the shapes and their stroke, the glyph cells of the texts,
     /// the children of the containers; the markers and the clipping are ignored.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGraphicsElement__getBBox"/>
     [IdlMember("getBBox", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGraphicsElement__getBBox")]
     public DomRect GetBBox(SvgBoundingBoxOptions? options = null) => SvgBoundingBox.Compute(this, options?.Fill ?? true, options?.Stroke ?? false);
 
@@ -43,6 +46,7 @@ public partial class SvgGraphicsElement
     /// element to the coordinate system of its nearest viewport element (see <see cref="SvgUserSpace.GetCtm"/>). As in the
     /// browsers, an element that is not rendered gets the transforms of its attributes and styles.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGraphicsElement__getCTM"/>
     [IdlMember("getCTM", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGraphicsElement__getCTM")]
     public DomMatrix? GetCtm() => SvgUserSpace.GetCtm(this).ToDomMatrix();
 
@@ -51,31 +55,37 @@ public partial class SvgGraphicsElement
     /// the element to the coordinates of the viewport (the layout of the outermost svg element, see
     /// <see cref="SvgUserSpace.GetScreenCtm"/>). As in the browsers, an element that has no layout gets its <c>getCTM()</c>.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGraphicsElement__getScreenCTM"/>
     [IdlMember("getScreenCTM", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGraphicsElement__getScreenCTM")]
     public DomMatrix? GetScreenCtm() => (SvgUserSpace.GetScreenCtm(this) ?? SvgUserSpace.GetCtm(this)).ToDomMatrix();
 }
 
 /// <summary>https://svgwg.org/svg2-draft/types.html#DictionarySVGBoundingBoxOptions</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#DictionarySVGBoundingBoxOptions"/>
 [IdlInterface("SVGBoundingBoxOptions", "https://w3c.github.io/svgwg/svg2-draft/types.html#DictionarySVGBoundingBoxOptions")]
 public sealed class SvgBoundingBoxOptions
 {
     /// <summary>
     /// Gets a value indicating whether the fill is included in the bounding box (<c>true</c> by default).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGBoundingBoxOptions__fill"/>
     [IdlMember("fill", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGBoundingBoxOptions__fill")]
     public bool Fill { get; init; } = true;
 
     /// <summary>Gets a value indicating whether the stroke is included in the bounding box.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGBoundingBoxOptions__stroke"/>
     [IdlMember("stroke", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGBoundingBoxOptions__stroke")]
     public bool Stroke { get; init; }
 
     /// <summary>Gets a value indicating whether the markers are included in the bounding box.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGBoundingBoxOptions__markers"/>
     [IdlMember("markers", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGBoundingBoxOptions__markers")]
     public bool Markers { get; init; }
 
     /// <summary>
     /// Gets a value indicating whether the clipping applied to the element is included in the bounding box.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGBoundingBoxOptions__clipped"/>
     [IdlMember("clipped", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGBoundingBoxOptions__clipped")]
     public bool Clipped { get; init; }
 }
@@ -87,6 +97,7 @@ public partial class SvgGeometryElement
     /// the element) is inside the fill of its geometry, with its <c>fill-rule</c> (the points of the boundary are inside). The
     /// fill paint, <c>visibility</c> and <c>pointer-events</c> have no effect.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGeometryElement__isPointInFill"/>
     [IdlMember("isPointInFill", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGeometryElement__isPointInFill")]
     public bool IsPointInFill(DomPointInit? point = null)
     {
@@ -100,6 +111,7 @@ public partial class SvgGeometryElement
     /// dashes; <c>vector-effect: non-scaling-stroke</c> applies the stroke width in the coordinates of the viewport). The stroke
     /// paint, <c>visibility</c> and <c>pointer-events</c> have no effect.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGeometryElement__isPointInStroke"/>
     [IdlMember("isPointInStroke", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGeometryElement__isPointInStroke")]
     public bool IsPointInStroke(DomPointInit? point = null)
     {
@@ -126,6 +138,7 @@ public partial class SvgGeometryElement
     /// https://svgwg.org/svg2-draft/types.html#__svg__SVGGeometryElement__getTotalLength: the length of the path of the element
     /// (the equivalent path of a basic shape, https://svgwg.org/svg2-draft/shapes.html); pathLength does not change it.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGeometryElement__getTotalLength"/>
     [IdlMember("getTotalLength", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGeometryElement__getTotalLength")]
     public float GetTotalLength() => ComputeTotalLength();
 
@@ -133,6 +146,7 @@ public partial class SvgGeometryElement
     /// https://svgwg.org/svg2-draft/types.html#__svg__SVGGeometryElement__getPointAtLength: the point at a distance along the
     /// path of the element, clamped to [0, total length]. Throws an <c>InvalidStateError</c> when the path is empty.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGeometryElement__getPointAtLength"/>
     [IdlMember("getPointAtLength", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGeometryElement__getPointAtLength")]
     public DomPoint GetPointAtLength(float distance) => ComputePointAtLength(distance);
 
@@ -232,6 +246,7 @@ public partial class SvgPathElement
     /// error. When <see cref="SvgPathDataSettings.Normalize"/> is true, the segments are converted to the absolute M, L, C and Z
     /// commands (the arcs are approximated by cubic Béziers).
     /// </summary>
+    /// <seealso href="https://svgwg.org/specs/paths/#InterfaceSVGPathData"/>
     [IdlMember("getPathData", "https://svgwg.org/specs/paths/#InterfaceSVGPathData")]
     public IReadOnlyList<SvgPathSegment> GetPathData(SvgPathDataSettings? settings = null)
     {
@@ -255,6 +270,7 @@ public partial class SvgPathElement
     /// first invalid segment (unknown type, wrong number of values, non-finite value, or a first segment that is not a moveto).
     /// The attribute is removed when there is no valid segment.
     /// </summary>
+    /// <seealso href="https://svgwg.org/specs/paths/#InterfaceSVGPathData"/>
     [IdlMember("setPathData", "https://svgwg.org/specs/paths/#InterfaceSVGPathData")]
     public void SetPathData(IEnumerable<SvgPathSegment> pathData)
     {
@@ -273,6 +289,7 @@ public partial class SvgPathElement
     /// https://svgwg.org/specs/paths/#InterfaceSVGPathElement: the segment of the path data at the distance along the path
     /// (clamped to [0, total length]), or null if the path is empty.
     /// </summary>
+    /// <seealso href="https://svgwg.org/specs/paths/#InterfaceSVGPathElement"/>
     [IdlMember("getPathSegmentAtLength", "https://svgwg.org/specs/paths/#InterfaceSVGPathElement")]
     public SvgPathSegment? GetPathSegmentAtLength(float distance)
     {
@@ -332,6 +349,7 @@ public partial class SvgSvgElement
     }
 
     /// <summary>https://svgwg.org/svg2-draft/struct.html#__svg__SVGSVGElement__currentScale</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__currentScale"/>
     [IdlMember("currentScale", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__currentScale")]
     public float CurrentScale
     {
@@ -346,6 +364,7 @@ public partial class SvgSvgElement
     }
 
     /// <summary>https://svgwg.org/svg2-draft/struct.html#__svg__SVGSVGElement__currentTranslate</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__currentTranslate"/>
     [IdlMember("currentTranslate", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__currentTranslate")]
     public DomPoint CurrentTranslate => _currentTranslate ??= new SvgCurrentTranslate(this);
 
@@ -357,6 +376,7 @@ public partial class SvgSvgElement
     /// of the element (or of <paramref name="referenceElement"/>) whose rendered bounding box, in the user space of this element,
     /// intersects the rectangle, in document order (as in the browsers, the bounding boxes are tested and the clipping is ignored).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__getIntersectionList"/>
     [IdlMember("getIntersectionList", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__getIntersectionList")]
     public NodeList GetIntersectionList(DomRectReadOnly rect, SvgElement? referenceElement)
     {
@@ -368,6 +388,7 @@ public partial class SvgSvgElement
     /// https://svgwg.org/svg2-draft/struct.html#__svg__SVGSVGElement__getEnclosureList: the graphics elements whose rendered
     /// bounding box is entirely inside the rectangle (see <see cref="GetIntersectionList"/>).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__getEnclosureList"/>
     [IdlMember("getEnclosureList", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__getEnclosureList")]
     public NodeList GetEnclosureList(DomRectReadOnly rect, SvgElement? referenceElement)
     {
@@ -376,6 +397,7 @@ public partial class SvgSvgElement
     }
 
     /// <summary>https://svgwg.org/svg2-draft/struct.html#__svg__SVGSVGElement__checkIntersection: whether the rendered bounding box of the element intersects the rectangle.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__checkIntersection"/>
     [IdlMember("checkIntersection", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__checkIntersection")]
     public bool CheckIntersection(SvgElement element, DomRectReadOnly rect)
     {
@@ -385,6 +407,7 @@ public partial class SvgSvgElement
     }
 
     /// <summary>https://svgwg.org/svg2-draft/struct.html#__svg__SVGSVGElement__checkEnclosure: whether the rendered bounding box of the element is inside the rectangle.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__checkEnclosure"/>
     [IdlMember("checkEnclosure", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__checkEnclosure")]
     public bool CheckEnclosure(SvgElement element, DomRectReadOnly rect)
     {
@@ -394,38 +417,47 @@ public partial class SvgSvgElement
     }
 
     /// <summary>https://svgwg.org/svg2-draft/struct.html#__svg__SVGSVGElement__deselectAll: clears the selection of the document.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__deselectAll"/>
     [IdlMember("deselectAll", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__deselectAll")]
     public void DeselectAll() => NodeDocument.GetSelection()?.RemoveAllRanges();
 
     /// <summary>Creates a number with the value 0.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGNumber"/>
     [IdlMember("createSVGNumber", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGNumber")]
     public SvgNumber CreateSvgNumber() => new();
 
     /// <summary>Creates a length with the value 0.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGLength"/>
     [IdlMember("createSVGLength", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGLength")]
     public SvgLength CreateSvgLength() => new();
 
     /// <summary>Creates an angle with the value 0.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGAngle"/>
     [IdlMember("createSVGAngle", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGAngle")]
     public SvgAngle CreateSvgAngle() => new();
 
     /// <summary>Creates a point at the origin (0, 0).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGPoint"/>
     [IdlMember("createSVGPoint", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGPoint")]
     public DomPoint CreateSvgPoint() => new();
 
     /// <summary>Creates an identity matrix.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGMatrix"/>
     [IdlMember("createSVGMatrix", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGMatrix")]
     public DomMatrix CreateSvgMatrix() => new();
 
     /// <summary>Creates a rectangle whose position and size are all zero.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGRect"/>
     [IdlMember("createSVGRect", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGRect")]
     public DomRect CreateSvgRect() => new();
 
     /// <summary>Creates a transform of type <c>SVG_TRANSFORM_MATRIX</c> with the identity matrix.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGTransform"/>
     [IdlMember("createSVGTransform", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGTransform")]
     public SvgTransform CreateSvgTransform() => new();
 
     /// <summary>Creates a transform of type <c>SVG_TRANSFORM_MATRIX</c> from the given matrix.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGTransformFromMatrix"/>
     [IdlMember("createSVGTransformFromMatrix", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGTransformFromMatrix")]
     public SvgTransform CreateSvgTransformFromMatrix(DomMatrix2DInit? matrix = null)
     {
@@ -435,6 +467,7 @@ public partial class SvgSvgElement
     }
 
     /// <summary>https://svgwg.org/svg2-draft/struct.html#__svg__SVGSVGElement__getElementById: the first descendant element with the id.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__getElementById"/>
     [IdlMember("getElementById", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__getElementById")]
     public Element? GetElementById(string elementId)
     {
@@ -449,6 +482,7 @@ public partial class SvgSvgElement
     }
 
     /// <summary>Suspends the redrawing of the element; as nothing is rendered, it only returns a handle.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__suspendRedraw"/>
     [IdlMember("suspendRedraw", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__suspendRedraw")]
     public uint SuspendRedraw(uint maxWaitMilliseconds)
     {
@@ -459,16 +493,19 @@ public partial class SvgSvgElement
     /// <summary>
     /// Cancels a suspension returned by <c>suspendRedraw()</c>; it has no effect because nothing is rendered.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__unsuspendRedraw"/>
     [IdlMember("unsuspendRedraw", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__unsuspendRedraw")]
     public void UnsuspendRedraw(uint suspendHandleId) => _ = suspendHandleId;
 
     /// <summary>Cancels all the suspensions of redrawing; it has no effect because nothing is rendered.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__unsuspendRedrawAll"/>
     [IdlMember("unsuspendRedrawAll", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__unsuspendRedrawAll")]
     public void UnsuspendRedrawAll()
     {
     }
 
     /// <summary>Forces a redraw of the element; it has no effect because nothing is rendered.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__forceRedraw"/>
     [IdlMember("forceRedraw", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__forceRedraw")]
     public void ForceRedraw()
     {
@@ -508,6 +545,7 @@ public partial class SvgSvgElement
 public partial class SvgMarkerElement
 {
     /// <summary>https://svgwg.org/svg2-draft/painting.html#__svg__SVGMarkerElement__orient</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__orient"/>
     [IdlMember("orient", "https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__orient")]
     public string Orient
     {
@@ -516,10 +554,12 @@ public partial class SvgMarkerElement
     }
 
     /// <summary>Sets the <c>orient</c> attribute to <c>auto</c>.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__setOrientToAuto"/>
     [IdlMember("setOrientToAuto", "https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__setOrientToAuto")]
     public void SetOrientToAuto() => SetAttributeValue("orient", "auto");
 
     /// <summary>Sets the <c>orient</c> attribute to the given angle.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__setOrientToAngle"/>
     [IdlMember("setOrientToAngle", "https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__setOrientToAngle")]
     public void SetOrientToAngle(SvgAngle angle)
     {
@@ -533,6 +573,7 @@ public partial class SvgFEDropShadowElement
     /// <summary>
     /// Sets the <c>stdDeviation</c> attribute to the given horizontal and vertical standard deviations.
     /// </summary>
+    /// <seealso href="https://drafts.fxtf.org/filter-effects-1/#dom-svgfedropshadowelement-setstddeviation"/>
     [IdlMember("setStdDeviation", "https://drafts.fxtf.org/filter-effects-1/#dom-svgfedropshadowelement-setstddeviation")]
     public void SetStdDeviation(float stdDeviationX, float stdDeviationY) => SetAttributeValue("stdDeviation", SvgParsing.FormatNumber(stdDeviationX) + " " + SvgParsing.FormatNumber(stdDeviationY));
 }
@@ -542,6 +583,7 @@ public partial class SvgFEGaussianBlurElement
     /// <summary>
     /// Sets the <c>stdDeviation</c> attribute to the given horizontal and vertical standard deviations.
     /// </summary>
+    /// <seealso href="https://drafts.fxtf.org/filter-effects-1/#dom-svgfegaussianblurelement-setstddeviation"/>
     [IdlMember("setStdDeviation", "https://drafts.fxtf.org/filter-effects-1/#dom-svgfegaussianblurelement-setstddeviation")]
     public void SetStdDeviation(float stdDeviationX, float stdDeviationY) => SetAttributeValue("stdDeviation", SvgParsing.FormatNumber(stdDeviationX) + " " + SvgParsing.FormatNumber(stdDeviationY));
 }
@@ -609,6 +651,7 @@ public partial class SvgImageElement
     }
 
     /// <summary>https://svgwg.org/svg2-draft/embedded.html#__svg__SVGImageElement__crossOrigin</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/embedded.html#__svg__SVGImageElement__crossOrigin"/>
     [IdlMember("crossOrigin", "https://w3c.github.io/svgwg/svg2-draft/embedded.html#__svg__SVGImageElement__crossOrigin")]
     public string? CrossOrigin
     {
@@ -1112,6 +1155,7 @@ internal sealed class SvgResourceDocumentCache
 public partial class SvgScriptElement
 {
     /// <summary>https://svgwg.org/svg2-draft/interact.html#__svg__SVGScriptElement__crossOrigin</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/interact.html#__svg__SVGScriptElement__crossOrigin"/>
     [IdlMember("crossOrigin", "https://w3c.github.io/svgwg/svg2-draft/interact.html#__svg__SVGScriptElement__crossOrigin")]
     public string? CrossOrigin
     {
@@ -1317,6 +1361,7 @@ public partial class SvgScriptElement
 public partial class SvgStyleElement
 {
     /// <summary>https://svgwg.org/svg2-draft/styling.html#__svg__SVGStyleElement__disabled: the disabled flag of the associated style sheet.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/styling.html#__svg__SVGStyleElement__disabled"/>
     [IdlMember("disabled", "https://w3c.github.io/svgwg/svg2-draft/styling.html#__svg__SVGStyleElement__disabled")]
     public bool Disabled
     {
@@ -1341,6 +1386,7 @@ public partial class SvgSvgElement
     private Svg.Animations.SmilTimeContainer GetTimeContainer() => NodeDocument.Smil.GetContainer(SvgUserSpace.GetOutermostSvgElement(this) ?? this);
 
     /// <summary>Pauses the animations of the document fragment: its timeline stops.</summary>
+    /// <seealso href="https://svgwg.org/specs/animations/#__svg__SVGSVGElement__pauseAnimations"/>
     [IdlMember("pauseAnimations", "https://svgwg.org/specs/animations/#__svg__SVGSVGElement__pauseAnimations")]
     public void PauseAnimations()
     {
@@ -1350,6 +1396,7 @@ public partial class SvgSvgElement
     }
 
     /// <summary>Resumes the animations of the document fragment.</summary>
+    /// <seealso href="https://svgwg.org/specs/animations/#__svg__SVGSVGElement__unpauseAnimations"/>
     [IdlMember("unpauseAnimations", "https://svgwg.org/specs/animations/#__svg__SVGSVGElement__unpauseAnimations")]
     public void UnpauseAnimations()
     {
@@ -1358,10 +1405,12 @@ public partial class SvgSvgElement
     }
 
     /// <summary>Returns whether the animations are paused.</summary>
+    /// <seealso href="https://svgwg.org/specs/animations/#__svg__SVGSVGElement__animationsPaused"/>
     [IdlMember("animationsPaused", "https://svgwg.org/specs/animations/#__svg__SVGSVGElement__animationsPaused")]
     public bool AnimationsPaused() => (SvgUserSpace.GetOutermostSvgElement(this) ?? this).TimeContainer is { IsPaused: true };
 
     /// <summary>Returns the current time, in seconds, of the timeline of the document fragment.</summary>
+    /// <seealso href="https://svgwg.org/specs/animations/#__svg__SVGSVGElement__getCurrentTime"/>
     [IdlMember("getCurrentTime", "https://svgwg.org/specs/animations/#__svg__SVGSVGElement__getCurrentTime")]
     public float GetCurrentTime() => (float)GetTimeContainer().Elapsed.Seconds;
 
@@ -1369,6 +1418,7 @@ public partial class SvgSvgElement
     /// Sets the current time, in seconds, of the timeline of the document fragment: the animations are sampled at once. Before
     /// the timeline begins (the load event of the document), the time is the time it begins at.
     /// </summary>
+    /// <seealso href="https://svgwg.org/specs/animations/#__svg__SVGSVGElement__setCurrentTime"/>
     [IdlMember("setCurrentTime", "https://svgwg.org/specs/animations/#__svg__SVGSVGElement__setCurrentTime")]
     public void SetCurrentTime(float seconds)
     {
@@ -1390,10 +1440,12 @@ public partial class SvgTextContentElement
     /// characters of the element (UTF-16 code units after the white space processing, see <see cref="SvgTextLayout"/>); 0 when
     /// the element is not rendered.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getNumberOfChars"/>
     [IdlMember("getNumberOfChars", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getNumberOfChars")]
     public int GetNumberOfChars() => GetCharacters().Length;
 
     /// <summary>https://svgwg.org/svg2-draft/text.html#__svg__SVGTextContentElement__getComputedTextLength: the sum of the advances of the characters (after textLength and lengthAdjust).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getComputedTextLength"/>
     [IdlMember("getComputedTextLength", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getComputedTextLength")]
     public float GetComputedTextLength()
     {
@@ -1411,6 +1463,7 @@ public partial class SvgTextContentElement
     /// characters from <paramref name="charnum"/> (at most <paramref name="nchars"/>). Throws an <c>IndexSizeError</c> when
     /// <paramref name="charnum"/> is not the index of a character.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getSubStringLength"/>
     [IdlMember("getSubStringLength", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getSubStringLength")]
     public float GetSubStringLength(uint charnum, uint nchars)
     {
@@ -1430,6 +1483,7 @@ public partial class SvgTextContentElement
     /// https://svgwg.org/svg2-draft/text.html#__svg__SVGTextContentElement__getStartPositionOfChar: the position of the
     /// character on its baseline (the alignment point, not moved by dominant-baseline), in the user space of the text element.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getStartPositionOfChar"/>
     [IdlMember("getStartPositionOfChar", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getStartPositionOfChar")]
     public DomPoint GetStartPositionOfChar(uint charnum)
     {
@@ -1440,6 +1494,7 @@ public partial class SvgTextContentElement
     }
 
     /// <summary>https://svgwg.org/svg2-draft/text.html#__svg__SVGTextContentElement__getEndPositionOfChar: the position of the character moved by its advance along its progression.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getEndPositionOfChar"/>
     [IdlMember("getEndPositionOfChar", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getEndPositionOfChar")]
     public DomPoint GetEndPositionOfChar(uint charnum)
     {
@@ -1450,6 +1505,7 @@ public partial class SvgTextContentElement
     }
 
     /// <summary>https://svgwg.org/svg2-draft/text.html#__svg__SVGTextContentElement__getExtentOfChar: the bounding box of the glyph cell of the character.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getExtentOfChar"/>
     [IdlMember("getExtentOfChar", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getExtentOfChar")]
     public DomRect GetExtentOfChar(uint charnum)
     {
@@ -1467,6 +1523,7 @@ public partial class SvgTextContentElement
     /// https://svgwg.org/svg2-draft/text.html#__svg__SVGTextContentElement__getRotationOfChar: the rotation of the character in
     /// degrees: its rotate attribute, the tangent of its text path, and the rotation of a sideways glyph of vertical text.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getRotationOfChar"/>
     [IdlMember("getRotationOfChar", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getRotationOfChar")]
     public float GetRotationOfChar(uint charnum)
     {
@@ -1479,6 +1536,7 @@ public partial class SvgTextContentElement
     /// https://svgwg.org/svg2-draft/text.html#__svg__SVGTextContentElement__getCharNumAtPosition: the index of the character
     /// whose glyph cell contains the point (in the user space of the text element; the last one when they overlap), or -1.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getCharNumAtPosition"/>
     [IdlMember("getCharNumAtPosition", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getCharNumAtPosition")]
     public int GetCharNumAtPosition(DomPointInit? point = null)
     {
@@ -1495,6 +1553,7 @@ public partial class SvgTextContentElement
     }
 
     /// <summary>https://svgwg.org/svg2-draft/text.html#__svg__SVGTextContentElement__selectSubString (deprecated): selects the characters (the range of their DOM positions) in the selection of the document.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__selectSubString"/>
     [IdlMember("selectSubString", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__selectSubString")]
     public void SelectSubString(uint charnum, uint nchars)
     {

@@ -1,10 +1,12 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://dom.spec.whatwg.org/#interface-documentfragment</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#documentfragment"/>
 [IdlInterface("DocumentFragment", "https://dom.spec.whatwg.org/#documentfragment")]
 public partial class DocumentFragment : Node
 {
     /// <summary>Creates an empty document fragment owned by the current global document.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-documentfragment-documentfragment"/>
     [IdlMember("constructor", "https://dom.spec.whatwg.org/#dom-documentfragment-documentfragment")]
     public DocumentFragment()
         : this(Document.CurrentGlobalDocument)

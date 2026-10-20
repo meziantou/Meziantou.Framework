@@ -8,6 +8,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// A URL pattern (https://urlpattern.spec.whatwg.org/#urlpattern): matches URLs, or the components of URLs, against patterns
 /// using the syntax of path-to-regexp (e.g. <c>/books/:id(\\d+)</c>, <c>https://*.example.com/*</c>).
 /// </summary>
+/// <seealso href="https://urlpattern.spec.whatwg.org/#urlpattern"/>
 [IdlInterface("URLPattern", "https://urlpattern.spec.whatwg.org/#urlpattern")]
 public sealed class UrlPattern
 {
@@ -24,6 +25,7 @@ public sealed class UrlPattern
 
     /// <summary>Creates a pattern from a pattern string, relative to a base URL, or from a <see cref="UrlPatternInit"/> (then <paramref name="baseUrl"/> must not be given).</summary>
     /// <exception cref="TypeErrorException">The pattern is not valid.</exception>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpattern-urlpattern"/>
     [IdlMember("constructor", "https://urlpattern.spec.whatwg.org/#dom-urlpattern-urlpattern")]
     public UrlPattern(UrlPatternInput input, string baseUrl, UrlPatternOptions? options = null)
         : this(input, baseUrl ?? throw new ArgumentNullException(nameof(baseUrl)), options, hasBaseUrl: true)
@@ -32,6 +34,7 @@ public sealed class UrlPattern
 
     /// <summary>Creates a pattern from a pattern string (an absolute URL pattern) or from a <see cref="UrlPatternInit"/> (the missing components match anything).</summary>
     /// <exception cref="TypeErrorException">The pattern is not valid.</exception>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpattern-urlpattern-input-options"/>
     [IdlMember("constructor", "https://urlpattern.spec.whatwg.org/#dom-urlpattern-urlpattern-input-options")]
     public UrlPattern(UrlPatternInput input = default, UrlPatternOptions? options = null)
         : this(input, baseUrl: null, options, hasBaseUrl: false)
@@ -104,44 +107,54 @@ public sealed class UrlPattern
     }
 
     /// <summary>The normalized protocol pattern string.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpattern-protocol"/>
     [IdlMember("protocol", "https://urlpattern.spec.whatwg.org/#dom-urlpattern-protocol")]
     public string Protocol => _protocol.PatternString;
 
     /// <summary>The normalized username pattern string.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpattern-username"/>
     [IdlMember("username", "https://urlpattern.spec.whatwg.org/#dom-urlpattern-username")]
     public string Username => _username.PatternString;
 
     /// <summary>The normalized password pattern string.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpattern-password"/>
     [IdlMember("password", "https://urlpattern.spec.whatwg.org/#dom-urlpattern-password")]
     public string Password => _password.PatternString;
 
     /// <summary>The normalized hostname pattern string.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpattern-hostname"/>
     [IdlMember("hostname", "https://urlpattern.spec.whatwg.org/#dom-urlpattern-hostname")]
     public string Hostname => _hostname.PatternString;
 
     /// <summary>The normalized port pattern string.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpattern-port"/>
     [IdlMember("port", "https://urlpattern.spec.whatwg.org/#dom-urlpattern-port")]
     public string Port => _port.PatternString;
 
     /// <summary>The normalized pathname pattern string.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpattern-pathname"/>
     [IdlMember("pathname", "https://urlpattern.spec.whatwg.org/#dom-urlpattern-pathname")]
     public string Pathname => _pathname.PatternString;
 
     /// <summary>The normalized search pattern string.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpattern-search"/>
     [IdlMember("search", "https://urlpattern.spec.whatwg.org/#dom-urlpattern-search")]
     public string Search => _search.PatternString;
 
     /// <summary>The normalized hash pattern string.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpattern-hash"/>
     [IdlMember("hash", "https://urlpattern.spec.whatwg.org/#dom-urlpattern-hash")]
     public string Hash => _hash.PatternString;
 
     /// <summary>Whether a component of the pattern uses a custom regular expression (e.g. <c>:id(\\d+)</c>).</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpattern-hasregexpgroups"/>
     [IdlMember("hasRegExpGroups", "https://urlpattern.spec.whatwg.org/#dom-urlpattern-hasregexpgroups")]
     public bool HasRegExpGroups => _protocol.HasRegExpGroups || _username.HasRegExpGroups || _password.HasRegExpGroups || _hostname.HasRegExpGroups
         || _port.HasRegExpGroups || _pathname.HasRegExpGroups || _search.HasRegExpGroups || _hash.HasRegExpGroups;
 
     /// <summary>Returns whether the pattern matches a URL (resolved against <paramref name="baseUrl"/>) or the components of a <see cref="UrlPatternInit"/>.</summary>
     /// <exception cref="TypeErrorException"><paramref name="baseUrl"/> is given with a <see cref="UrlPatternInit"/>.</exception>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpattern-test"/>
     [IdlMember("test", "https://urlpattern.spec.whatwg.org/#dom-urlpattern-test")]
     public bool Test(UrlPatternInput input = default, string? baseUrl = null) => Match(input, baseUrl) is not null;
 
@@ -155,6 +168,7 @@ public sealed class UrlPattern
 
     /// <summary>Matches a URL (resolved against <paramref name="baseUrl"/>) or the components of a <see cref="UrlPatternInit"/>, and returns the matched groups, or null if the pattern does not match.</summary>
     /// <exception cref="TypeErrorException"><paramref name="baseUrl"/> is given with a <see cref="UrlPatternInit"/>.</exception>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpattern-exec"/>
     [IdlMember("exec", "https://urlpattern.spec.whatwg.org/#dom-urlpattern-exec")]
     public UrlPatternResult? Exec(UrlPatternInput input = default, string? baseUrl = null) => Match(input, baseUrl);
 
@@ -301,109 +315,134 @@ public readonly struct UrlPatternInput : IUnionValue, IEquatable<UrlPatternInput
 }
 
 /// <summary>The components of a URL pattern or of a URL (https://urlpattern.spec.whatwg.org/#dictdef-urlpatterninit). A null member is not present.</summary>
+/// <seealso href="https://urlpattern.spec.whatwg.org/#dictdef-urlpatterninit"/>
 [IdlInterface("URLPatternInit", "https://urlpattern.spec.whatwg.org/#dictdef-urlpatterninit")]
 public sealed class UrlPatternInit
 {
     internal static UrlPatternInit Empty { get; } = new();
 
     /// <summary>Gets the <c>protocol</c> pattern or value, or null when it is not present.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-protocol"/>
     [IdlMember("protocol", "https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-protocol")]
     public string? Protocol { get; init; }
 
     /// <summary>Gets the <c>username</c> pattern or value, or null when it is not present.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-username"/>
     [IdlMember("username", "https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-username")]
     public string? Username { get; init; }
 
     /// <summary>Gets the <c>password</c> pattern or value, or null when it is not present.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-password"/>
     [IdlMember("password", "https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-password")]
     public string? Password { get; init; }
 
     /// <summary>Gets the <c>hostname</c> pattern or value, or null when it is not present.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-hostname"/>
     [IdlMember("hostname", "https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-hostname")]
     public string? Hostname { get; init; }
 
     /// <summary>Gets the <c>port</c> pattern or value, or null when it is not present.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-port"/>
     [IdlMember("port", "https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-port")]
     public string? Port { get; init; }
 
     /// <summary>Gets the <c>pathname</c> pattern or value, or null when it is not present.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-pathname"/>
     [IdlMember("pathname", "https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-pathname")]
     public string? Pathname { get; init; }
 
     /// <summary>Gets the <c>search</c> pattern or value, or null when it is not present.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-search"/>
     [IdlMember("search", "https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-search")]
     public string? Search { get; init; }
 
     /// <summary>Gets the <c>hash</c> pattern or value, or null when it is not present.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-hash"/>
     [IdlMember("hash", "https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-hash")]
     public string? Hash { get; init; }
 
     /// <summary>
     /// Gets the base URL against which the relative components are resolved, or null when it is not present.
     /// </summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-baseurl"/>
     [IdlMember("baseURL", "https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-baseurl")]
     public string? BaseUrl { get; init; }
 }
 
 /// <summary>https://urlpattern.spec.whatwg.org/#dictdef-urlpatternoptions</summary>
+/// <seealso href="https://urlpattern.spec.whatwg.org/#dictdef-urlpatternoptions"/>
 [IdlInterface("URLPatternOptions", "https://urlpattern.spec.whatwg.org/#dictdef-urlpatternoptions")]
 public sealed class UrlPatternOptions
 {
     /// <summary>Whether the pathname, search and hash are matched case-insensitively.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpatternoptions-ignorecase"/>
     [IdlMember("ignoreCase", "https://urlpattern.spec.whatwg.org/#dom-urlpatternoptions-ignorecase")]
     public bool IgnoreCase { get; init; }
 }
 
 /// <summary>The result of <see cref="UrlPattern.Exec(UrlPatternInput, string?)"/> (https://urlpattern.spec.whatwg.org/#dictdef-urlpatternresult).</summary>
+/// <seealso href="https://urlpattern.spec.whatwg.org/#dictdef-urlpatternresult"/>
 [IdlInterface("URLPatternResult", "https://urlpattern.spec.whatwg.org/#dictdef-urlpatternresult")]
 public sealed class UrlPatternResult
 {
     /// <summary>The inputs of the match: the URL or <see cref="UrlPatternInit"/>, followed by the base URL if any.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-inputs"/>
     [IdlMember("inputs", "https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-inputs")]
     public required IReadOnlyList<UrlPatternInput> Inputs { get; init; }
 
     /// <summary>Gets the match of the <c>protocol</c> component.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-protocol"/>
     [IdlMember("protocol", "https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-protocol")]
     public required UrlPatternComponentResult Protocol { get; init; }
 
     /// <summary>Gets the match of the <c>username</c> component.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-username"/>
     [IdlMember("username", "https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-username")]
     public required UrlPatternComponentResult Username { get; init; }
 
     /// <summary>Gets the match of the <c>password</c> component.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-password"/>
     [IdlMember("password", "https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-password")]
     public required UrlPatternComponentResult Password { get; init; }
 
     /// <summary>Gets the match of the <c>hostname</c> component.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-hostname"/>
     [IdlMember("hostname", "https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-hostname")]
     public required UrlPatternComponentResult Hostname { get; init; }
 
     /// <summary>Gets the match of the <c>port</c> component.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-port"/>
     [IdlMember("port", "https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-port")]
     public required UrlPatternComponentResult Port { get; init; }
 
     /// <summary>Gets the match of the <c>pathname</c> component.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-pathname"/>
     [IdlMember("pathname", "https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-pathname")]
     public required UrlPatternComponentResult Pathname { get; init; }
 
     /// <summary>Gets the match of the <c>search</c> component.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-search"/>
     [IdlMember("search", "https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-search")]
     public required UrlPatternComponentResult Search { get; init; }
 
     /// <summary>Gets the match of the <c>hash</c> component.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-hash"/>
     [IdlMember("hash", "https://urlpattern.spec.whatwg.org/#dom-urlpatternresult-hash")]
     public required UrlPatternComponentResult Hash { get; init; }
 }
 
 /// <summary>The match of a component (https://urlpattern.spec.whatwg.org/#dictdef-urlpatterncomponentresult).</summary>
+/// <seealso href="https://urlpattern.spec.whatwg.org/#dictdef-urlpatterncomponentresult"/>
 [IdlInterface("URLPatternComponentResult", "https://urlpattern.spec.whatwg.org/#dictdef-urlpatterncomponentresult")]
 public sealed class UrlPatternComponentResult
 {
     /// <summary>The value of the component that was matched.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpatterncomponentresult-input"/>
     [IdlMember("input", "https://urlpattern.spec.whatwg.org/#dom-urlpatterncomponentresult-input")]
     public required string Input { get; init; }
 
     /// <summary>The values of the groups by name (the unnamed groups are named "0", "1", ...). The value of an optional group that did not match is null.</summary>
+    /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpatterncomponentresult-groups"/>
     [IdlMember("groups", "https://urlpattern.spec.whatwg.org/#dom-urlpatterncomponentresult-groups")]
     public required IReadOnlyDictionary<string, string?> Groups { get; init; }
 }

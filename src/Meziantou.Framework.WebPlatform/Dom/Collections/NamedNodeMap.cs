@@ -4,6 +4,7 @@ using Meziantou.Framework.WebPlatform.Infra;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://dom.spec.whatwg.org/#interface-namednodemap</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#namednodemap"/>
 [IdlInterface("NamedNodeMap", "https://dom.spec.whatwg.org/#namednodemap")]
 public sealed class NamedNodeMap : IReadOnlyList<Attr>
 {
@@ -15,6 +16,7 @@ public sealed class NamedNodeMap : IReadOnlyList<Attr>
     }
 
     /// <summary>Gets the number of attributes in the map.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-namednodemap-length"/>
     [IdlMember("length", "https://dom.spec.whatwg.org/#dom-namednodemap-length")]
     public uint Length => (uint)_element.AttributeCount;
 
@@ -23,10 +25,12 @@ public sealed class NamedNodeMap : IReadOnlyList<Attr>
     public int Count => _element.AttributeCount;
 
     /// <summary>Returns the attribute at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-namednodemap-item"/>
     [IdlMember("item", "https://dom.spec.whatwg.org/#dom-namednodemap-item")]
     public Attr? Item(uint index) => index < (uint)_element.AttributeCount ? _element.GetAttributeNodeAt((int)index) : null;
 
     /// <summary>Gets the attribute at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-namednodemap-item"/>
     [IdlMember("item", "https://dom.spec.whatwg.org/#dom-namednodemap-item")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public Attr? this[uint index] => Item(index);
@@ -37,27 +41,33 @@ public sealed class NamedNodeMap : IReadOnlyList<Attr>
     public Attr this[int index] => Item((uint)index) ?? throw new ArgumentOutOfRangeException(nameof(index));
 
     /// <summary>Gets the attribute with the given qualified name, or null when there is none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-namednodemap-getnameditem"/>
     [IdlMember("getNamedItem", "https://dom.spec.whatwg.org/#dom-namednodemap-getnameditem")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public Attr? this[string qualifiedName] => GetNamedItem(qualifiedName);
 
     /// <summary>Returns the attribute with the given qualified name, or null when there is none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-namednodemap-getnameditem"/>
     [IdlMember("getNamedItem", "https://dom.spec.whatwg.org/#dom-namednodemap-getnameditem")]
     public Attr? GetNamedItem(string qualifiedName) => _element.GetAttributeNode(qualifiedName);
 
     /// <summary>Returns the attribute with the given namespace and local name, or null when there is none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-namednodemap-getnameditemns"/>
     [IdlMember("getNamedItemNS", "https://dom.spec.whatwg.org/#dom-namednodemap-getnameditemns")]
     public Attr? GetNamedItemNS(string? @namespace, string localName) => _element.GetAttributeNodeNS(@namespace, localName);
 
     /// <summary>Adds the attribute to the element and returns the attribute it replaced, or null.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-namednodemap-setnameditem"/>
     [IdlMember("setNamedItem", "https://dom.spec.whatwg.org/#dom-namednodemap-setnameditem")]
     public Attr? SetNamedItem(Attr attr) => _element.SetAttributeNodeCore(attr);
 
     /// <summary>Adds the attribute to the element and returns the attribute it replaced, or null.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-namednodemap-setnameditemns"/>
     [IdlMember("setNamedItemNS", "https://dom.spec.whatwg.org/#dom-namednodemap-setnameditemns")]
     public Attr? SetNamedItemNS(Attr attr) => _element.SetAttributeNodeCore(attr);
 
     /// <summary>https://dom.spec.whatwg.org/#dom-namednodemap-removenameditem</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-namednodemap-removenameditem"/>
     [IdlMember("removeNamedItem", "https://dom.spec.whatwg.org/#dom-namednodemap-removenameditem")]
     public Attr RemoveNamedItem(string qualifiedName)
     {
@@ -70,6 +80,7 @@ public sealed class NamedNodeMap : IReadOnlyList<Attr>
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-namednodemap-removenameditemns</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-namednodemap-removenameditemns"/>
     [IdlMember("removeNamedItemNS", "https://dom.spec.whatwg.org/#dom-namednodemap-removenameditemns")]
     public Attr RemoveNamedItemNS(string? @namespace, string localName)
     {

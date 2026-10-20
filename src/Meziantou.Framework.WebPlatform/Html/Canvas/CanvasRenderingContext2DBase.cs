@@ -23,6 +23,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// canvas (its points are transformed when they are added), a <see cref="Path2D"/> in the coordinates where it is drawn.
 /// </para>
 /// </remarks>
+/// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#canvasstate"/>
 [IdlInterface("CanvasState", "https://html.spec.whatwg.org/multipage/canvas.html#canvasstate")]
 public abstract partial class CanvasRenderingContext2DBase
 {
@@ -56,6 +57,7 @@ public abstract partial class CanvasRenderingContext2DBase
     // ----------------------------------------------------------------------------------------------------------------
 
     /// <summary>Returns the settings of the context (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-getcontextattributes).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-getcontextattributes"/>
     [IdlMember("getContextAttributes", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-getcontextattributes")]
     public CanvasRenderingContext2DSettings GetContextAttributes() => new()
     {
@@ -67,10 +69,12 @@ public abstract partial class CanvasRenderingContext2DBase
     };
 
     /// <summary>Pushes a copy of the drawing state on the stack (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-save).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-save"/>
     [IdlMember("save", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-save")]
     public void Save() => _stack.Add(_state.Clone());
 
     /// <summary>Pops the drawing state from the stack (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-restore); does nothing when the stack is empty.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-restore"/>
     [IdlMember("restore", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-restore")]
     public void Restore()
     {
@@ -85,6 +89,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// Resets the context to its default state (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-reset): the
     /// bitmap is cleared, the drawing state and its stack, and the current default path are reset.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-reset"/>
     [IdlMember("reset", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-reset")]
     public void Reset()
     {
@@ -95,6 +100,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Whether the context is lost (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-iscontextlost): never.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-iscontextlost"/>
     [IdlMember("isContextLost", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-iscontextlost")]
     public bool IsContextLost() => false;
 
@@ -111,6 +117,7 @@ public abstract partial class CanvasRenderingContext2DBase
     // ----------------------------------------------------------------------------------------------------------------
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-scale</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-scale"/>
     [IdlMember("scale", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-scale")]
     public void Scale(double x, double y)
     {
@@ -121,6 +128,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-rotate: a clockwise rotation by an angle in radians.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-rotate"/>
     [IdlMember("rotate", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-rotate")]
     public void Rotate(double angle)
     {
@@ -132,6 +140,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-translate</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-translate"/>
     [IdlMember("translate", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-translate")]
     public void Translate(double x, double y)
     {
@@ -142,6 +151,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-transform</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-transform"/>
     [IdlMember("transform", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-transform")]
     public void Transform(double a, double b, double c, double d, double e, double f)
     {
@@ -152,6 +162,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Returns a copy of the current transformation matrix (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-gettransform).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-gettransform"/>
     [IdlMember("getTransform", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-gettransform")]
     public DomMatrix GetTransform()
     {
@@ -160,6 +171,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-settransform</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-settransform"/>
     [IdlMember("setTransform", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-settransform")]
     public void SetTransform(double a, double b, double c, double d, double e, double f)
     {
@@ -171,6 +183,7 @@ public abstract partial class CanvasRenderingContext2DBase
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-settransform-matrix</summary>
     /// <exception cref="TypeErrorException">The members of the dictionary are inconsistent.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-settransform-matrix"/>
     [IdlMember("setTransform", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-settransform-matrix")]
     public void SetTransform(DomMatrix2DInit? transform = null)
     {
@@ -181,6 +194,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-resettransform</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-resettransform"/>
     [IdlMember("resetTransform", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-resettransform")]
     public void ResetTransform() => _state.Transform = DisplayMatrix.Identity;
 
@@ -210,6 +224,7 @@ public abstract partial class CanvasRenderingContext2DBase
     // ----------------------------------------------------------------------------------------------------------------
 
     /// <summary>Gets or sets the alpha applied to the drawing operations (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-globalalpha): the values outside of [0, 1] are ignored.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-globalalpha"/>
     [IdlMember("globalAlpha", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-globalalpha")]
     public double GlobalAlpha
     {
@@ -227,6 +242,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// Gets or sets the compositing operator or the blend mode of the drawing operations (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-globalcompositeoperation):
     /// a value of <c>&lt;blend-mode&gt;</c> or of the Porter-Duff operators of Compositing and Blending; the other values are ignored.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-globalcompositeoperation"/>
     [IdlMember("globalCompositeOperation", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-globalcompositeoperation")]
     public string GlobalCompositeOperation
     {
@@ -243,6 +259,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Gets or sets whether the images are smoothed when they are scaled (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-imagesmoothingenabled).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-imagesmoothingenabled"/>
     [IdlMember("imageSmoothingEnabled", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-imagesmoothingenabled")]
     public bool ImageSmoothingEnabled
     {
@@ -251,6 +268,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Gets or sets the quality of the image smoothing (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-imagesmoothingquality).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-imagesmoothingquality"/>
     [IdlMember("imageSmoothingQuality", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-imagesmoothingquality")]
     public ImageSmoothingQuality ImageSmoothingQuality
     {
@@ -305,6 +323,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// CSS color (serialized when it is read), a <see cref="CanvasGradient"/> or a <see cref="CanvasPattern"/>. The strings that
     /// are not colors are ignored.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-strokestyle"/>
     [IdlMember("strokeStyle", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-strokestyle")]
     [AllowNull]
     public object StrokeStyle
@@ -324,6 +343,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// color (serialized when it is read), a <see cref="CanvasGradient"/> or a <see cref="CanvasPattern"/>. The strings that are
     /// not colors are ignored.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-fillstyle"/>
     [IdlMember("fillStyle", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-fillstyle")]
     [AllowNull]
     public object FillStyle
@@ -340,6 +360,7 @@ public abstract partial class CanvasRenderingContext2DBase
 
     /// <summary>Creates a linear gradient from (x0, y0) to (x1, y1) (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-createlineargradient).</summary>
     /// <exception cref="TypeErrorException">An argument is not finite.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-createlineargradient"/>
     [IdlMember("createLinearGradient", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-createlineargradient")]
     public CanvasGradient CreateLinearGradient(double x0, double y0, double x1, double y1)
     {
@@ -350,6 +371,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// <summary>Creates a radial gradient between two circles (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-createradialgradient).</summary>
     /// <exception cref="TypeErrorException">An argument is not finite.</exception>
     /// <exception cref="DomException">An <c>IndexSizeError</c> when a radius is negative.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-createradialgradient"/>
     [IdlMember("createRadialGradient", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-createradialgradient")]
     public CanvasGradient CreateRadialGradient(double x0, double y0, double r0, double x1, double y1, double r1)
     {
@@ -362,6 +384,7 @@ public abstract partial class CanvasRenderingContext2DBase
 
     /// <summary>Creates a conic gradient around (x, y) (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-createconicgradient).</summary>
     /// <exception cref="TypeErrorException">An argument is not finite.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-createconicgradient"/>
     [IdlMember("createConicGradient", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-createconicgradient")]
     public CanvasGradient CreateConicGradient(double startAngle, double x, double y)
     {
@@ -406,6 +429,7 @@ public abstract partial class CanvasRenderingContext2DBase
     // ----------------------------------------------------------------------------------------------------------------
 
     /// <summary>Gets or sets the horizontal offset of the shadows (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-shadowoffsetx).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-shadowoffsetx"/>
     [IdlMember("shadowOffsetX", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-shadowoffsetx")]
     public double ShadowOffsetX
     {
@@ -420,6 +444,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Gets or sets the vertical offset of the shadows (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-shadowoffsety).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-shadowoffsety"/>
     [IdlMember("shadowOffsetY", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-shadowoffsety")]
     public double ShadowOffsetY
     {
@@ -434,6 +459,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Gets or sets the blur of the shadows (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-shadowblur): the negative values are ignored.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-shadowblur"/>
     [IdlMember("shadowBlur", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-shadowblur")]
     public double ShadowBlur
     {
@@ -448,6 +474,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Gets or sets the color of the shadows (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-shadowcolor): the strings that are not colors are ignored.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-shadowcolor"/>
     [IdlMember("shadowColor", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-shadowcolor")]
     public string ShadowColor
     {
@@ -471,6 +498,7 @@ public abstract partial class CanvasRenderingContext2DBase
     // ----------------------------------------------------------------------------------------------------------------
 
     /// <summary>Gets or sets the width of the lines (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-linewidth): zero, negative and non-finite values are ignored.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-linewidth"/>
     [IdlMember("lineWidth", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-linewidth")]
     public double LineWidth
     {
@@ -485,6 +513,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Gets or sets the shape of the ends of the lines (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-linecap).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-linecap"/>
     [IdlMember("lineCap", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-linecap")]
     public CanvasLineCap LineCap
     {
@@ -493,6 +522,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Gets or sets the shape of the corners of the lines (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-linejoin).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-linejoin"/>
     [IdlMember("lineJoin", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-linejoin")]
     public CanvasLineJoin LineJoin
     {
@@ -501,6 +531,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Gets or sets the miter limit ratio (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-miterlimit): zero, negative and non-finite values are ignored.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-miterlimit"/>
     [IdlMember("miterLimit", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-miterlimit")]
     public double MiterLimit
     {
@@ -518,6 +549,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// Sets the dash list of the lines (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-setlinedash): a list
     /// with a negative or non-finite value is ignored, a list with an odd number of values is repeated.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-setlinedash"/>
     [IdlMember("setLineDash", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-setlinedash")]
     public void SetLineDash(IReadOnlyList<double> segments)
     {
@@ -532,10 +564,12 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Returns a copy of the dash list (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-getlinedash).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-getlinedash"/>
     [IdlMember("getLineDash", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-getlinedash")]
     public IReadOnlyList<double> GetLineDash() => [.. _state.LineDash];
 
     /// <summary>Gets or sets the phase of the dash list (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-linedashoffset): non-finite values are ignored.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-linedashoffset"/>
     [IdlMember("lineDashOffset", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-linedashoffset")]
     public double LineDashOffset
     {
@@ -570,6 +604,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// Clears a rectangle to transparent black (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-clearrect): the
     /// clip region and the current transformation matrix apply, the shadows, the global alpha, the compositing and the filters do not.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-clearrect"/>
     [IdlMember("clearRect", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-clearrect")]
     public void ClearRect(double x, double y, double w, double h)
     {
@@ -586,6 +621,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Fills a rectangle with the fill style (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-fillrect).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-fillrect"/>
     [IdlMember("fillRect", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-fillrect")]
     public void FillRect(double x, double y, double w, double h)
     {
@@ -600,6 +636,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Strokes the outline of a rectangle with the stroke style and the line styles (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-strokerect).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-strokerect"/>
     [IdlMember("strokeRect", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-strokerect")]
     public void StrokeRect(double x, double y, double w, double h)
     {
@@ -651,31 +688,38 @@ public abstract partial class CanvasRenderingContext2DBase
     // ----------------------------------------------------------------------------------------------------------------
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-closepath</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-closepath"/>
     [IdlMember("closePath", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-closepath")]
     public void ClosePath() => _path.ClosePath();
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-moveto</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-moveto"/>
     [IdlMember("moveTo", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-moveto")]
     public void MoveTo(double x, double y) => _path.MoveTo(x, y, _state.Transform);
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-lineto</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-lineto"/>
     [IdlMember("lineTo", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-lineto")]
     public void LineTo(double x, double y) => _path.LineTo(x, y, _state.Transform);
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-quadraticcurveto</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-quadraticcurveto"/>
     [IdlMember("quadraticCurveTo", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-quadraticcurveto")]
     public void QuadraticCurveTo(double cpx, double cpy, double x, double y) => _path.QuadraticCurveTo(cpx, cpy, x, y, _state.Transform);
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-beziercurveto</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-beziercurveto"/>
     [IdlMember("bezierCurveTo", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-beziercurveto")]
     public void BezierCurveTo(double cp1x, double cp1y, double cp2x, double cp2y, double x, double y) => _path.BezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y, _state.Transform);
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-arcto</summary>
     /// <exception cref="DomException">An <c>IndexSizeError</c> when the radius is negative.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-arcto"/>
     [IdlMember("arcTo", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-arcto")]
     public void ArcTo(double x1, double y1, double x2, double y2, double radius) => _path.ArcTo(x1, y1, x2, y2, radius, _state.Transform, Invert(_state.Transform));
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-rect</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-rect"/>
     [IdlMember("rect", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-rect")]
     public void Rect(double x, double y, double w, double h) => _path.Rect(x, y, w, h, _state.Transform);
 
@@ -686,6 +730,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// <param name="h">The height of the rectangle.</param>
     /// <param name="radii">A radius (a number or a <see cref="DomPointInit"/>), or a list of 1 to 4 radii.</param>
     /// <exception cref="RangeErrorException">The number of radii is not between 1 and 4, or a radius is negative.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-roundrect"/>
     [IdlMember("roundRect", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-roundrect")]
     public void RoundRect(double x, double y, double w, double h, object? radii = null)
     {
@@ -700,11 +745,13 @@ public abstract partial class CanvasRenderingContext2DBase
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-arc</summary>
     /// <exception cref="DomException">An <c>IndexSizeError</c> when the radius is negative.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-arc"/>
     [IdlMember("arc", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-arc")]
     public void Arc(double x, double y, double radius, double startAngle, double endAngle, bool counterclockwise = false) => _path.Arc(x, y, radius, startAngle, endAngle, counterclockwise, _state.Transform);
 
     /// <summary>https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-ellipse</summary>
     /// <exception cref="DomException">An <c>IndexSizeError</c> when a radius is negative.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-ellipse"/>
     [IdlMember("ellipse", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-ellipse")]
     public void Ellipse(double x, double y, double radiusX, double radiusY, double rotation, double startAngle, double endAngle, bool counterclockwise = false)
         => _path.Ellipse(x, y, radiusX, radiusY, rotation, startAngle, endAngle, counterclockwise, _state.Transform);
@@ -714,14 +761,17 @@ public abstract partial class CanvasRenderingContext2DBase
     // ----------------------------------------------------------------------------------------------------------------
 
     /// <summary>Empties the current default path (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-beginpath).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-beginpath"/>
     [IdlMember("beginPath", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-beginpath")]
     public void BeginPath() => _path.Clear();
 
     /// <summary>Fills the current default path with the fill style (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-fill).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-fill"/>
     [IdlMember("fill", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-fill")]
     public void Fill(CanvasFillRule fillRule = CanvasFillRule.NonZero) => FillPath(_path, isDefaultPath: true, fillRule);
 
     /// <summary>Fills a path with the fill style (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-fill).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-fill"/>
     [IdlMember("fill", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-fill")]
     public void Fill(Path2D path, CanvasFillRule fillRule = CanvasFillRule.NonZero)
     {
@@ -730,10 +780,12 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Strokes the current default path with the stroke style and the line styles (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-stroke).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-stroke"/>
     [IdlMember("stroke", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-stroke")]
     public void Stroke() => StrokePath(_path, isDefaultPath: true);
 
     /// <summary>Strokes a path with the stroke style and the line styles (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-stroke).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-stroke"/>
     [IdlMember("stroke", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-stroke")]
     public void Stroke(Path2D path)
     {
@@ -742,10 +794,12 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Intersects the clip region with the current default path (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-clip).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-clip"/>
     [IdlMember("clip", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-clip")]
     public void Clip(CanvasFillRule fillRule = CanvasFillRule.NonZero) => ClipPath(_path, isDefaultPath: true, fillRule);
 
     /// <summary>Intersects the clip region with a path (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-clip).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-clip"/>
     [IdlMember("clip", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-clip")]
     public void Clip(Path2D path, CanvasFillRule fillRule = CanvasFillRule.NonZero)
     {
@@ -757,10 +811,12 @@ public abstract partial class CanvasRenderingContext2DBase
     /// Returns whether a point (in the coordinates of the canvas, not transformed) is inside the current default path
     /// (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-ispointinpath); the points of the path are inside.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-ispointinpath"/>
     [IdlMember("isPointInPath", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-ispointinpath")]
     public bool IsPointInPath(double x, double y, CanvasFillRule fillRule = CanvasFillRule.NonZero) => IsPointInPath(_path, isDefaultPath: true, x, y, fillRule);
 
     /// <summary>Returns whether a point (in the coordinates of the canvas, not transformed) is inside a path transformed by the current transformation matrix.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-ispointinpath"/>
     [IdlMember("isPointInPath", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-ispointinpath")]
     public bool IsPointInPath(Path2D path, double x, double y, CanvasFillRule fillRule = CanvasFillRule.NonZero)
     {
@@ -772,10 +828,12 @@ public abstract partial class CanvasRenderingContext2DBase
     /// Returns whether a point (in the coordinates of the canvas, not transformed) is inside the stroke of the current default path
     /// with the line styles (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-ispointinstroke).
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-ispointinstroke"/>
     [IdlMember("isPointInStroke", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-ispointinstroke")]
     public bool IsPointInStroke(double x, double y) => IsPointInStroke(_path, isDefaultPath: true, x, y);
 
     /// <summary>Returns whether a point (in the coordinates of the canvas, not transformed) is inside the stroke of a path with the line styles.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-ispointinstroke"/>
     [IdlMember("isPointInStroke", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-ispointinstroke")]
     public bool IsPointInStroke(Path2D path, double x, double y)
     {
@@ -865,6 +923,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// Draws a focus ring around the current default path when the element is focused and is a descendant of the canvas
     /// (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-drawfocusifneeded).
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-drawfocusifneeded"/>
     [IdlMember("drawFocusIfNeeded", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-drawfocusifneeded")]
     public void DrawFocusIfNeeded(Element element)
     {
@@ -876,6 +935,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// Draws a focus ring around a path when the element is focused and is a descendant of the canvas
     /// (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-drawfocusifneeded).
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-drawfocusifneeded"/>
     [IdlMember("drawFocusIfNeeded", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-drawfocusifneeded")]
     public void DrawFocusIfNeeded(Path2D path, Element element)
     {

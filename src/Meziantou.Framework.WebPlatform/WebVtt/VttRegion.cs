@@ -1,14 +1,17 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>The scroll setting of a WebVTT region (https://w3c.github.io/webvtt/#enumdef-scrollsetting).</summary>
+/// <seealso href="https://w3c.github.io/webvtt/#enumdef-scrollsetting"/>
 [IdlInterface("ScrollSetting", "https://w3c.github.io/webvtt/#enumdef-scrollsetting")]
 public enum ScrollSetting
 {
     /// <summary>The cues of the region are not scrolled: a new cue is added below the previous ones.</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#webvtt-region-scroll-none"/>
     [IdlMember("", "https://w3c.github.io/webvtt/#webvtt-region-scroll-none")]
     None,
 
     /// <summary>The cues of the region are added at the bottom of the region and push the previous ones up.</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-scrollsetting-up"/>
     [IdlMember("up", "https://w3c.github.io/webvtt/#dom-scrollsetting-up")]
     Up,
 }
@@ -17,6 +20,7 @@ public enum ScrollSetting
 /// A WebVTT region (https://w3c.github.io/webvtt/#the-vttregion-interface): a part of the video viewport in which the cues
 /// of the region are rendered.
 /// </summary>
+/// <seealso href="https://w3c.github.io/webvtt/#the-vttregion-interface"/>
 [IdlInterface("VTTRegion", "https://w3c.github.io/webvtt/#the-vttregion-interface")]
 public sealed class VttRegion
 {
@@ -27,12 +31,14 @@ public sealed class VttRegion
     private double _viewportAnchorY = 100;
 
     /// <summary>Creates a region (https://w3c.github.io/webvtt/#dom-vttregion-vttregion).</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-vttregion-vttregion"/>
     [IdlMember("constructor", "https://w3c.github.io/webvtt/#dom-vttregion-vttregion")]
     public VttRegion()
     {
     }
 
     /// <summary>Gets or sets the identifier of the region (https://w3c.github.io/webvtt/#dom-vttregion-id).</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-vttregion-id"/>
     [IdlMember("id", "https://w3c.github.io/webvtt/#dom-vttregion-id")]
     public string Id
     {
@@ -46,6 +52,7 @@ public sealed class VttRegion
 
     /// <summary>Gets or sets the width of the region, a percentage of the width of the video (https://w3c.github.io/webvtt/#dom-vttregion-width).</summary>
     /// <exception cref="DomException">An <c>IndexSizeError</c> when the value is negative or greater than 100.</exception>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-vttregion-width"/>
     [IdlMember("width", "https://w3c.github.io/webvtt/#dom-vttregion-width")]
     public double Width
     {
@@ -54,11 +61,13 @@ public sealed class VttRegion
     }
 
     /// <summary>Gets or sets the height of the region, a number of lines (https://w3c.github.io/webvtt/#dom-vttregion-lines).</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-vttregion-lines"/>
     [IdlMember("lines", "https://w3c.github.io/webvtt/#dom-vttregion-lines")]
     public uint Lines { get; set; } = 3;
 
     /// <summary>Gets or sets the horizontal offset of the anchor of the region, a percentage of its width (https://w3c.github.io/webvtt/#dom-vttregion-regionanchorx).</summary>
     /// <exception cref="DomException">An <c>IndexSizeError</c> when the value is negative or greater than 100.</exception>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-vttregion-regionanchorx"/>
     [IdlMember("regionAnchorX", "https://w3c.github.io/webvtt/#dom-vttregion-regionanchorx")]
     public double RegionAnchorX
     {
@@ -68,6 +77,7 @@ public sealed class VttRegion
 
     /// <summary>Gets or sets the vertical offset of the anchor of the region, a percentage of its height (https://w3c.github.io/webvtt/#dom-vttregion-regionanchory).</summary>
     /// <exception cref="DomException">An <c>IndexSizeError</c> when the value is negative or greater than 100.</exception>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-vttregion-regionanchory"/>
     [IdlMember("regionAnchorY", "https://w3c.github.io/webvtt/#dom-vttregion-regionanchory")]
     public double RegionAnchorY
     {
@@ -77,6 +87,7 @@ public sealed class VttRegion
 
     /// <summary>Gets or sets the horizontal offset of the anchor of the region in the video viewport, a percentage of the width of the video (https://w3c.github.io/webvtt/#dom-vttregion-viewportanchorx).</summary>
     /// <exception cref="DomException">An <c>IndexSizeError</c> when the value is negative or greater than 100.</exception>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-vttregion-viewportanchorx"/>
     [IdlMember("viewportAnchorX", "https://w3c.github.io/webvtt/#dom-vttregion-viewportanchorx")]
     public double ViewportAnchorX
     {
@@ -86,6 +97,7 @@ public sealed class VttRegion
 
     /// <summary>Gets or sets the vertical offset of the anchor of the region in the video viewport, a percentage of the height of the video (https://w3c.github.io/webvtt/#dom-vttregion-viewportanchory).</summary>
     /// <exception cref="DomException">An <c>IndexSizeError</c> when the value is negative or greater than 100.</exception>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-vttregion-viewportanchory"/>
     [IdlMember("viewportAnchorY", "https://w3c.github.io/webvtt/#dom-vttregion-viewportanchory")]
     public double ViewportAnchorY
     {
@@ -94,6 +106,7 @@ public sealed class VttRegion
     }
 
     /// <summary>Gets or sets the scroll setting of the region (https://w3c.github.io/webvtt/#dom-vttregion-scroll).</summary>
+    /// <seealso href="https://w3c.github.io/webvtt/#dom-vttregion-scroll"/>
     [IdlMember("scroll", "https://w3c.github.io/webvtt/#dom-vttregion-scroll")]
     public ScrollSetting Scroll { get; set; }
 

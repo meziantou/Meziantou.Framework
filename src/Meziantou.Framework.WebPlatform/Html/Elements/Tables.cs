@@ -24,6 +24,7 @@ public partial class HtmlTableElement
         where T : Element => (T)ElementFactory.CreateElement(NodeDocument, localName, Namespaces.Html, prefix: null, isValue: null, synchronousCustomElements: false);
 
     /// <summary>https://html.spec.whatwg.org/multipage/tables.html#dom-table-caption</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-table-caption"/>
     [IdlMember("caption", "https://html.spec.whatwg.org/multipage/tables.html#dom-table-caption")]
     public HtmlTableCaptionElement? Caption
     {
@@ -41,6 +42,7 @@ public partial class HtmlTableElement
     /// <summary>
     /// Returns the <c>caption</c> element of the table, creating and inserting it when there is none.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-table-createcaption"/>
     [IdlMember("createCaption", "https://html.spec.whatwg.org/multipage/tables.html#dom-table-createcaption")]
     public HtmlTableCaptionElement CreateCaption()
     {
@@ -53,10 +55,12 @@ public partial class HtmlTableElement
     }
 
     /// <summary>Removes the first <c>caption</c> child of the table, if any.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-table-deletecaption"/>
     [IdlMember("deleteCaption", "https://html.spec.whatwg.org/multipage/tables.html#dom-table-deletecaption")]
     public void DeleteCaption() => FirstChildOfType(TagId.Caption)?.RemoveFromParent();
 
     /// <summary>https://html.spec.whatwg.org/multipage/tables.html#dom-table-thead</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-table-thead"/>
     [IdlMember("tHead", "https://html.spec.whatwg.org/multipage/tables.html#dom-table-thead")]
     public HtmlTableSectionElement? THead
     {
@@ -87,6 +91,7 @@ public partial class HtmlTableElement
     }
 
     /// <summary>Returns the <c>thead</c> element of the table, creating and inserting it when there is none.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-table-createthead"/>
     [IdlMember("createTHead", "https://html.spec.whatwg.org/multipage/tables.html#dom-table-createthead")]
     public HtmlTableSectionElement CreateTHead()
     {
@@ -99,10 +104,12 @@ public partial class HtmlTableElement
     }
 
     /// <summary>Removes the first <c>thead</c> child of the table, if any.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-table-deletethead"/>
     [IdlMember("deleteTHead", "https://html.spec.whatwg.org/multipage/tables.html#dom-table-deletethead")]
     public void DeleteTHead() => FirstChildOfType(TagId.Thead)?.RemoveFromParent();
 
     /// <summary>https://html.spec.whatwg.org/multipage/tables.html#dom-table-tfoot</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-table-tfoot"/>
     [IdlMember("tFoot", "https://html.spec.whatwg.org/multipage/tables.html#dom-table-tfoot")]
     public HtmlTableSectionElement? TFoot
     {
@@ -121,6 +128,7 @@ public partial class HtmlTableElement
     }
 
     /// <summary>Returns the <c>tfoot</c> element of the table, creating and inserting it when there is none.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-table-createtfoot"/>
     [IdlMember("createTFoot", "https://html.spec.whatwg.org/multipage/tables.html#dom-table-createtfoot")]
     public HtmlTableSectionElement CreateTFoot()
     {
@@ -133,14 +141,17 @@ public partial class HtmlTableElement
     }
 
     /// <summary>Removes the first <c>tfoot</c> child of the table, if any.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-table-deletetfoot"/>
     [IdlMember("deleteTFoot", "https://html.spec.whatwg.org/multipage/tables.html#dom-table-deletetfoot")]
     public void DeleteTFoot() => FirstChildOfType(TagId.Tfoot)?.RemoveFromParent();
 
     /// <summary>Gets the live collection of the <c>tbody</c> children of the table.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-table-tbodies"/>
     [IdlMember("tBodies", "https://html.spec.whatwg.org/multipage/tables.html#dom-table-tbodies")]
     public HtmlCollection TBodies => _tBodies ??= new HtmlCollection(this, static e => e.IsHtml(TagId.Tbody), childrenOnly: true, structural: true);
 
     /// <summary>https://html.spec.whatwg.org/multipage/tables.html#dom-table-createtbody</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-table-createtbody"/>
     [IdlMember("createTBody", "https://html.spec.whatwg.org/multipage/tables.html#dom-table-createtbody")]
     public HtmlTableSectionElement CreateTBody()
     {
@@ -162,6 +173,7 @@ public partial class HtmlTableElement
     /// https://html.spec.whatwg.org/multipage/tables.html#dom-table-rows: the rows of the thead elements, then the rows
     /// that are children of the table or of its tbody elements, then the rows of the tfoot elements.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-table-rows"/>
     [IdlMember("rows", "https://html.spec.whatwg.org/multipage/tables.html#dom-table-rows")]
     public HtmlCollection Rows => _rows ??= new HtmlCollection(this, PopulateRows);
 
@@ -206,6 +218,7 @@ public partial class HtmlTableElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/tables.html#dom-table-insertrow</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-table-insertrow"/>
     [IdlMember("insertRow", "https://html.spec.whatwg.org/multipage/tables.html#dom-table-insertrow")]
     public HtmlTableRowElement InsertRow(int index = -1)
     {
@@ -251,6 +264,7 @@ public partial class HtmlTableElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/tables.html#dom-table-deleterow</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-table-deleterow"/>
     [IdlMember("deleteRow", "https://html.spec.whatwg.org/multipage/tables.html#dom-table-deleterow")]
     public void DeleteRow(int index)
     {
@@ -279,10 +293,12 @@ public partial class HtmlTableSectionElement
     private HtmlCollection? _rows;
 
     /// <summary>Gets the live collection of the <c>tr</c> children of the section.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-tbody-rows"/>
     [IdlMember("rows", "https://html.spec.whatwg.org/multipage/tables.html#dom-tbody-rows")]
     public HtmlCollection Rows => _rows ??= new HtmlCollection(this, static e => e.IsHtml(TagId.Tr), childrenOnly: true, structural: true);
 
     /// <summary>https://html.spec.whatwg.org/multipage/tables.html#dom-tbody-insertrow</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-tbody-insertrow"/>
     [IdlMember("insertRow", "https://html.spec.whatwg.org/multipage/tables.html#dom-tbody-insertrow")]
     public HtmlTableRowElement InsertRow(int index = -1)
     {
@@ -296,6 +312,7 @@ public partial class HtmlTableSectionElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/tables.html#dom-tbody-deleterow</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-tbody-deleterow"/>
     [IdlMember("deleteRow", "https://html.spec.whatwg.org/multipage/tables.html#dom-tbody-deleterow")]
     public void DeleteRow(int index)
     {
@@ -322,6 +339,7 @@ public partial class HtmlTableRowElement
     private HtmlCollection? _cells;
 
     /// <summary>https://html.spec.whatwg.org/multipage/tables.html#dom-tr-rowindex</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-tr-rowindex"/>
     [IdlMember("rowIndex", "https://html.spec.whatwg.org/multipage/tables.html#dom-tr-rowindex")]
     public int RowIndex
     {
@@ -339,6 +357,7 @@ public partial class HtmlTableRowElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/tables.html#dom-tr-sectionrowindex</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-tr-sectionrowindex"/>
     [IdlMember("sectionRowIndex", "https://html.spec.whatwg.org/multipage/tables.html#dom-tr-sectionrowindex")]
     public int SectionRowIndex => ParentNode switch
     {
@@ -359,10 +378,12 @@ public partial class HtmlTableRowElement
     }
 
     /// <summary>Gets the live collection of the <c>td</c> and <c>th</c> children of the row.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-tr-cells"/>
     [IdlMember("cells", "https://html.spec.whatwg.org/multipage/tables.html#dom-tr-cells")]
     public HtmlCollection Cells => _cells ??= new HtmlCollection(this, static e => e.IsHtml(TagId.Td) || e.IsHtml(TagId.Th), childrenOnly: true, structural: true);
 
     /// <summary>https://html.spec.whatwg.org/multipage/tables.html#dom-tr-insertcell</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-tr-insertcell"/>
     [IdlMember("insertCell", "https://html.spec.whatwg.org/multipage/tables.html#dom-tr-insertcell")]
     public HtmlTableCellElement InsertCell(int index = -1)
     {
@@ -376,6 +397,7 @@ public partial class HtmlTableRowElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/tables.html#dom-tr-deletecell</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-tr-deletecell"/>
     [IdlMember("deleteCell", "https://html.spec.whatwg.org/multipage/tables.html#dom-tr-deletecell")]
     public void DeleteCell(int index)
     {
@@ -400,6 +422,7 @@ public partial class HtmlTableRowElement
 public partial class HtmlTableCellElement
 {
     /// <summary>https://html.spec.whatwg.org/multipage/tables.html#dom-tdth-cellindex</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/tables.html#dom-tdth-cellindex"/>
     [IdlMember("cellIndex", "https://html.spec.whatwg.org/multipage/tables.html#dom-tdth-cellindex")]
     public int CellIndex => ParentNode is HtmlTableRowElement row ? HtmlTableRowElement.IndexOf(row.Cells, this) : -1;
 }

@@ -1,6 +1,7 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://dom.spec.whatwg.org/#interface-attr</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#attr"/>
 [IdlInterface("Attr", "https://dom.spec.whatwg.org/#attr")]
 public sealed partial class Attr : Node
 {
@@ -23,22 +24,27 @@ public sealed partial class Attr : Node
     public override string NodeName => Name;
 
     /// <summary>Gets the namespace of the attribute, or null when it has none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-attr-namespaceuri"/>
     [IdlMember("namespaceURI", "https://dom.spec.whatwg.org/#dom-attr-namespaceuri")]
     public string? NamespaceUri { get; }
 
     /// <summary>Gets the namespace prefix of the attribute, or null when it has none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-attr-prefix"/>
     [IdlMember("prefix", "https://dom.spec.whatwg.org/#dom-attr-prefix")]
     public string? Prefix { get; }
 
     /// <summary>Gets the local name of the attribute.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-attr-localname"/>
     [IdlMember("localName", "https://dom.spec.whatwg.org/#dom-attr-localname")]
     public string LocalName { get; }
 
     /// <summary>The qualified name (https://dom.spec.whatwg.org/#concept-attribute-qualified-name).</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-attr-name"/>
     [IdlMember("name", "https://dom.spec.whatwg.org/#dom-attr-name")]
     public string Name => Prefix is null ? LocalName : Prefix + ":" + LocalName;
 
     /// <summary>Gets or sets the value of the attribute.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-attr-value"/>
     [IdlMember("value", "https://dom.spec.whatwg.org/#dom-attr-value")]
     public string Value
     {
@@ -61,10 +67,12 @@ public sealed partial class Attr : Node
     }
 
     /// <summary>Gets the element that owns the attribute, or null when the attribute is detached.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-attr-ownerelement"/>
     [IdlMember("ownerElement", "https://dom.spec.whatwg.org/#dom-attr-ownerelement")]
     public Element? OwnerElement { get; internal set; }
 
     /// <summary>Always true (https://dom.spec.whatwg.org/#dom-attr-specified).</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-attr-specified"/>
     [IdlMember("specified", "https://dom.spec.whatwg.org/#dom-attr-specified")]
     public bool Specified => true;
 

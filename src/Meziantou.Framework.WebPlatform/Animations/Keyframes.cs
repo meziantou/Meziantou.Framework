@@ -10,10 +10,12 @@ namespace Meziantou.Framework.WebPlatform.Animations;
 /// A keyframe (https://drafts.csswg.org/web-animations-1/#dictdef-basekeyframe): its offset, easing function, composite
 /// operation and property values.
 /// </summary>
+/// <seealso href="https://drafts.csswg.org/web-animations-1/#dictdef-basekeyframe"/>
 [IdlInterface("BaseKeyframe", "https://drafts.csswg.org/web-animations-1/#dictdef-basekeyframe")]
 public class Keyframe
 {
     /// <summary>Gets the offset of the keyframe, in [0, 1], or null to space the keyframes evenly.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-basekeyframe-offset"/>
     [IdlMember("offset", "https://drafts.csswg.org/web-animations-1/#dom-basekeyframe-offset")]
     public double? Offset { get; init; }
 
@@ -24,10 +26,12 @@ public class Keyframe
     internal TimelineRangeBoundary? RangeOffset { get; init; }
 
     /// <summary>Gets the easing function applied from this keyframe to the next one.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-basekeyframe-easing"/>
     [IdlMember("easing", "https://drafts.csswg.org/web-animations-1/#dom-basekeyframe-easing")]
     public string Easing { get; init; } = "linear";
 
     /// <summary>Gets the composite operation of the values of the keyframe.</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-basekeyframe-composite"/>
     [IdlMember("composite", "https://drafts.csswg.org/web-animations-1/#dom-basekeyframe-composite")]
     public CompositeOperationOrAuto Composite { get; init; } = CompositeOperationOrAuto.Auto;
 
@@ -37,6 +41,7 @@ public class Keyframe
 }
 
 /// <summary>A keyframe returned by <see cref="KeyframeEffect.GetKeyframes"/> (https://drafts.csswg.org/web-animations-1/#dictdef-basecomputedkeyframe).</summary>
+/// <seealso href="https://drafts.csswg.org/web-animations-1/#dictdef-basecomputedkeyframe"/>
 [IdlInterface("BaseComputedKeyframe", "https://drafts.csswg.org/web-animations-1/#dictdef-basecomputedkeyframe")]
 public sealed class ComputedKeyframe : Keyframe
 {
@@ -44,6 +49,7 @@ public sealed class ComputedKeyframe : Keyframe
     /// Gets the offset of the keyframe, computed when it is not specified. It is NaN (null in the script API) for a keyframe with a
     /// timeline offset that cannot be resolved (e.g. the timeline is not a view timeline or is inactive).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-basecomputedkeyframe-computedoffset"/>
     [IdlMember("computedOffset", "https://drafts.csswg.org/web-animations-1/#dom-basecomputedkeyframe-computedoffset")]
     public double ComputedOffset { get; init; }
 

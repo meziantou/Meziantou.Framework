@@ -17,6 +17,7 @@ namespace Meziantou.Framework.WebPlatform.Css.Om;
 /// (<c>::view-transition</c> &gt; <c>::view-transition-group()</c> &gt; <c>::view-transition-image-pair()</c> &gt;
 /// <c>::view-transition-old()</c> and <c>::view-transition-new()</c>).
 /// </remarks>
+/// <seealso href="https://drafts.csswg.org/css-pseudo-4/#CSSPseudoElement-interface"/>
 [IdlInterface("CSSPseudoElement", "https://drafts.csswg.org/css-pseudo-4/#CSSPseudoElement-interface")]
 public sealed class CssPseudoElement : IRealmBoundPlatformObject
 {
@@ -50,6 +51,7 @@ public sealed class CssPseudoElement : IRealmBoundPlatformObject
     Window? IRealmBoundPlatformObject.RealmWindow => OriginatingElement.NodeDocument.DefaultView;
 
     /// <summary>Gets the type of the pseudo-element: its name with the colons and without its argument (e.g. <c>::scroll-button</c>).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-pseudo-4/#dom-csspseudoelement-type"/>
     [IdlMember("type", "https://drafts.csswg.org/css-pseudo-4/#dom-csspseudoelement-type")]
     public string Type
     {
@@ -61,14 +63,17 @@ public sealed class CssPseudoElement : IRealmBoundPlatformObject
     }
 
     /// <summary>Gets the ultimate originating element of the pseudo-element.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-pseudo-4/#dom-csspseudoelement-element"/>
     [IdlMember("element", "https://drafts.csswg.org/css-pseudo-4/#dom-csspseudoelement-element")]
     public Element Element => OriginatingElement;
 
     /// <summary>Gets the originating element of the pseudo-element, or its originating pseudo-element for a sub-pseudo-element.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-pseudo-4/#dom-csspseudoelement-parent"/>
     [IdlMember("parent", "https://drafts.csswg.org/css-pseudo-4/#dom-csspseudoelement-parent")]
     public ElementOrCssPseudoElement Parent => ParentPseudoElement is { } parent ? parent : OriginatingElement;
 
     /// <summary>Gets the normalized selector of the pseudo-element, with its argument (e.g. <c>::scroll-button(inline-end)</c>).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-pseudo-4/#dom-csspseudoelement-selectortext"/>
     [IdlMember("selectorText", "https://drafts.csswg.org/css-pseudo-4/#dom-csspseudoelement-selectortext")]
     public string SelectorText => "::" + Name;
 
@@ -77,6 +82,7 @@ public sealed class CssPseudoElement : IRealmBoundPlatformObject
     /// exist (https://drafts.csswg.org/css-pseudo-4/#dom-csspseudoelement-pseudo): the <c>::marker</c> of a <c>::before</c> or
     /// <c>::after</c>, or the child of a view transition pseudo-element of the same name.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-pseudo-4/#dom-csspseudoelement-pseudo"/>
     [IdlMember("pseudo", "https://drafts.csswg.org/css-pseudo-4/#dom-csspseudoelement-pseudo")]
     public CssPseudoElement? Pseudo(string type)
     {
@@ -91,18 +97,22 @@ public sealed class CssPseudoElement : IRealmBoundPlatformObject
     /// Returns the quads of the boxes of the pseudo-element (https://drafts.csswg.org/cssom-view/#dom-geometryutils-getboxquads):
     /// one per box fragment, empty when the pseudo-element does not generate a box.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-geometryutils-getboxquads"/>
     [IdlMember("getBoxQuads", "https://drafts.csswg.org/cssom-view/#dom-geometryutils-getboxquads")]
     public IReadOnlyList<DomQuad> GetBoxQuads(BoxQuadOptions? options = null) => GeometryUtils.GetBoxQuads(this, options);
 
     /// <summary>Converts a quad from the coordinates of a node to the coordinates of the pseudo-element (https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertquadfromnode).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertquadfromnode"/>
     [IdlMember("convertQuadFromNode", "https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertquadfromnode")]
     public DomQuad ConvertQuadFromNode(DomQuadInit quad, GeometryNode from, ConvertCoordinateOptions? options = null) => GeometryUtils.ConvertQuadFromNode(this, quad, from, options);
 
     /// <summary>Converts a rectangle from the coordinates of a node to the coordinates of the pseudo-element (https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertrectfromnode).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertrectfromnode"/>
     [IdlMember("convertRectFromNode", "https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertrectfromnode")]
     public DomQuad ConvertRectFromNode(DomRectReadOnly rect, GeometryNode from, ConvertCoordinateOptions? options = null) => GeometryUtils.ConvertRectFromNode(this, rect, from, options);
 
     /// <summary>Converts a point from the coordinates of a node to the coordinates of the pseudo-element (https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertpointfromnode).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertpointfromnode"/>
     [IdlMember("convertPointFromNode", "https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertpointfromnode")]
     public DomPoint ConvertPointFromNode(DomPointInit point, GeometryNode from, ConvertCoordinateOptions? options = null) => GeometryUtils.ConvertPointFromNode(this, point, from, options);
 
@@ -219,6 +229,7 @@ public sealed class CssPseudoElement : IRealmBoundPlatformObject
 }
 
 /// <summary>The <c>(Element or CSSPseudoElement)</c> union: the originating element or pseudo-element of a pseudo-element.</summary>
+/// <seealso href="https://drafts.csswg.org/css-pseudo-4/#dom-csspseudoelement-parent"/>
 [IdlInterface("(Element or CSSPseudoElement)", "https://drafts.csswg.org/css-pseudo-4/#dom-csspseudoelement-parent")]
 public readonly struct ElementOrCssPseudoElement : IUnionValue, IEquatable<ElementOrCssPseudoElement>
 {

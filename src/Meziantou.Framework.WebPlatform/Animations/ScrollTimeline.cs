@@ -4,31 +4,38 @@ using Meziantou.Framework.WebPlatform.Dom;
 namespace Meziantou.Framework.WebPlatform.Animations;
 
 /// <summary>The axis of a scroll-driven timeline (https://drafts.csswg.org/scroll-animations-1/#enumdef-scrollaxis).</summary>
+/// <seealso href="https://drafts.csswg.org/scroll-animations-1/#enumdef-scrollaxis"/>
 [IdlInterface("ScrollAxis", "https://drafts.csswg.org/scroll-animations-1/#enumdef-scrollaxis")]
 public enum ScrollAxis
 {
     /// <summary>The block axis of the scroll container.</summary>
+    /// <seealso href="https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-block"/>
     [IdlMember("block", "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-block")]
     Block,
 
     /// <summary>The inline axis of the scroll container.</summary>
+    /// <seealso href="https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-inline"/>
     [IdlMember("inline", "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-inline")]
     Inline,
 
     /// <summary>The horizontal axis.</summary>
+    /// <seealso href="https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-x"/>
     [IdlMember("x", "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-x")]
     X,
 
     /// <summary>The vertical axis.</summary>
+    /// <seealso href="https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-y"/>
     [IdlMember("y", "https://drafts.csswg.org/scroll-animations-1/#valdef-scroll-y")]
     Y,
 }
 
 /// <summary>The options of a scroll timeline (https://drafts.csswg.org/scroll-animations-1/#dictdef-scrolltimelineoptions).</summary>
+/// <seealso href="https://drafts.csswg.org/scroll-animations-1/#dictdef-scrolltimelineoptions"/>
 [IdlInterface("ScrollTimelineOptions", "https://drafts.csswg.org/scroll-animations-1/#dictdef-scrolltimelineoptions")]
 public sealed class ScrollTimelineOptions
 {
     /// <summary>Gets the scroll container whose scroll position drives the timeline; the scrolling element of the document when not set.</summary>
+    /// <seealso href="https://drafts.csswg.org/scroll-animations-1/#dom-scrolltimelineoptions-source"/>
     [IdlMember("source", "https://drafts.csswg.org/scroll-animations-1/#dom-scrolltimelineoptions-source")]
     public Element? Source
     {
@@ -44,6 +51,7 @@ public sealed class ScrollTimelineOptions
     internal bool HasSource { get; private init; }
 
     /// <summary>Gets the axis of the timeline.</summary>
+    /// <seealso href="https://drafts.csswg.org/scroll-animations-1/#dom-scrolltimelineoptions-axis"/>
     [IdlMember("axis", "https://drafts.csswg.org/scroll-animations-1/#dom-scrolltimelineoptions-axis")]
     public ScrollAxis Axis { get; init; }
 }
@@ -74,6 +82,7 @@ internal enum ScrollTimelineScroller
 /// its current time is the one of the last rendering update, so it does not change while a script scrolls. A timeline created
 /// by the script API is sampled when it is created, with the current layout.
 /// </remarks>
+/// <seealso href="https://drafts.csswg.org/scroll-animations-1/#scrolltimeline"/>
 [IdlInterface("ScrollTimeline", "https://drafts.csswg.org/scroll-animations-1/#scrolltimeline")]
 public class ScrollTimeline : AnimationTimeline
 {
@@ -89,6 +98,7 @@ public class ScrollTimeline : AnimationTimeline
     /// the <c>source</c> of the options, or the scrolling element of the document of the current global object. The timeline
     /// belongs to the document of its source (the document of the current global object without source).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/scroll-animations-1/#dom-scrolltimeline-scrolltimeline"/>
     [IdlMember("constructor", "https://drafts.csswg.org/scroll-animations-1/#dom-scrolltimeline-scrolltimeline")]
     public ScrollTimeline(ScrollTimelineOptions? options = null)
         : this(options is { HasSource: true, Source: { } source } ? source.NodeDocument : Document.CurrentGlobalDocument, options is { HasSource: true } ? options.Source : Document.CurrentGlobalDocument.ScrollingElement, options?.Axis ?? ScrollAxis.Block, ScrollTimelineScroller.Source)
@@ -123,10 +133,12 @@ public class ScrollTimeline : AnimationTimeline
     /// Gets the scroll container whose scroll position drives the timeline (https://drafts.csswg.org/scroll-animations-1/#dom-scrolltimeline-source).
     /// The source of a <c>scroll(nearest)</c> timeline is looked up from the current layout.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/scroll-animations-1/#dom-scrolltimeline-source"/>
     [IdlMember("source", "https://drafts.csswg.org/scroll-animations-1/#dom-scrolltimeline-source")]
     public virtual Element? Source => ResolveSource();
 
     /// <summary>Gets the axis of the timeline (https://drafts.csswg.org/scroll-animations-1/#dom-scrolltimeline-axis).</summary>
+    /// <seealso href="https://drafts.csswg.org/scroll-animations-1/#dom-scrolltimeline-axis"/>
     [IdlMember("axis", "https://drafts.csswg.org/scroll-animations-1/#dom-scrolltimeline-axis")]
     public ScrollAxis Axis { get; internal set; }
 

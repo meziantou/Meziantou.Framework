@@ -4,6 +4,7 @@ using Meziantou.Framework.WebPlatform.Html;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>The <c>(HTMLCollection or Element)</c> union returned by the named getters of <see cref="HtmlAllCollection"/>.</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#htmlallcollection"/>
 [IdlInterface("(HTMLCollection or Element)", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#htmlallcollection")]
 public readonly struct HtmlCollectionOrElement : IUnionValue, IEquatable<HtmlCollectionOrElement>
 {
@@ -62,6 +63,7 @@ public readonly struct HtmlCollectionOrElement : IUnionValue, IEquatable<HtmlCol
 /// https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#the-htmlallcollection-interface. The
 /// <c>[[IsHTMLDDA]]</c> and <c>[[Call]]</c> behaviors only exist in JavaScript.
 /// </summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#htmlallcollection"/>
 [IdlInterface("HTMLAllCollection", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#htmlallcollection")]
 public sealed class HtmlAllCollection : IReadOnlyList<Element>
 {
@@ -76,6 +78,7 @@ public sealed class HtmlAllCollection : IReadOnlyList<Element>
     private Document Document { get; }
 
     /// <summary>Gets the number of elements in the collection.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmlallcollection-length"/>
     [IdlMember("length", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmlallcollection-length")]
     public uint Length => _elements.Length;
 
@@ -84,6 +87,7 @@ public sealed class HtmlAllCollection : IReadOnlyList<Element>
     public int Count => _elements.Count;
 
     /// <summary>https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmlallcollection-item</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmlallcollection-item"/>
     [IdlMember("getter", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmlallcollection-item")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public Element? this[uint index] => _elements.Item(index);
@@ -97,11 +101,13 @@ public sealed class HtmlAllCollection : IReadOnlyList<Element>
     /// Gets the element or the collection of elements with the given <c>id</c> or <c>name</c>, or null when there is
     /// none.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmlallcollection-nameditem"/>
     [IdlMember("namedItem", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmlallcollection-nameditem")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public HtmlCollectionOrElement? this[string name] => NamedItem(name);
 
     /// <summary>https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmlallcollection-nameditem</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmlallcollection-nameditem"/>
     [IdlMember("namedItem", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmlallcollection-nameditem")]
     public HtmlCollectionOrElement? NamedItem(string name)
     {
@@ -133,6 +139,7 @@ public sealed class HtmlAllCollection : IReadOnlyList<Element>
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmlallcollection-item</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmlallcollection-item"/>
     [IdlMember("item", "https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#dom-htmlallcollection-item")]
     public HtmlCollectionOrElement? Item(string? nameOrIndex = null)
     {

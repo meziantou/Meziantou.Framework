@@ -14,6 +14,7 @@ public sealed partial class ProcessingInstruction
     private bool _isBlockingScripts;
 
     /// <summary>https://drafts.csswg.org/cssom/#dom-linkstyle-sheet</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-linkstyle-sheet"/>
     [IdlMember("sheet", "https://drafts.csswg.org/cssom/#dom-linkstyle-sheet")]
     public CssStyleSheet? Sheet => _sheet;
 

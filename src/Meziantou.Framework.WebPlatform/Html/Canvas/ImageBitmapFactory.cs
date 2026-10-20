@@ -15,6 +15,7 @@ public partial class GlobalScope
     /// <param name="image">The image source.</param>
     /// <param name="options">The orientation, the scaling and the color options.</param>
     /// <returns>A task that completes with the bitmap (in a task of the event loop), or fails with an <c>InvalidStateError</c> when the source cannot be used or decoded.</returns>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-createimagebitmap"/>
     [IdlMember("createImageBitmap", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-createimagebitmap")]
     public Task<ImageBitmap> CreateImageBitmap(object? image, ImageBitmapOptions? options = null) => ImageBitmapFactory.Create(this, image, sourceRect: null, options);
 
@@ -23,6 +24,7 @@ public partial class GlobalScope
     /// see <see cref="CreateImageBitmap(object?, ImageBitmapOptions?)"/>. The parts of the rectangle outside of the image are
     /// transparent black; a negative width or height extends the rectangle to the left or to the top.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-createimagebitmap"/>
     [IdlMember("createImageBitmap", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-createimagebitmap")]
     public Task<ImageBitmap> CreateImageBitmap(object? image, int sx, int sy, int sw, int sh, ImageBitmapOptions? options = null) => ImageBitmapFactory.Create(this, image, (sx, sy, sw, sh), options);
 }

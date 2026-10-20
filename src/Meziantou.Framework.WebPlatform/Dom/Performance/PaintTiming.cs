@@ -19,6 +19,7 @@ internal sealed record PaintTimingInfo(double RenderingUpdateEndTime)
 /// The first paint or the first contentful paint of a document (https://w3c.github.io/paint-timing/#sec-PerformancePaintTiming),
 /// reported to the <c>paint</c> performance observers of its window and available from its performance timeline.
 /// </summary>
+/// <seealso href="https://w3c.github.io/paint-timing/#performancepainttiming"/>
 [IdlInterface("PerformancePaintTiming", "https://w3c.github.io/paint-timing/#performancepainttiming")]
 public sealed class PerformancePaintTiming : PerformanceEntry
 {
@@ -37,10 +38,12 @@ public sealed class PerformancePaintTiming : PerformanceEntry
     }
 
     /// <summary>Gets the time of the end of the rendering update that painted (https://w3c.github.io/paint-timing/#dom-painttimingmixin-painttime).</summary>
+    /// <seealso href="https://w3c.github.io/paint-timing/#dom-painttimingmixin-painttime"/>
     [IdlMember("paintTime", "https://w3c.github.io/paint-timing/#dom-painttimingmixin-painttime")]
     public double PaintTime => _paintTimingInfo.RenderingUpdateEndTime;
 
     /// <summary>Gets the time the frame was presented to the user: null, the presentation time is not supported.</summary>
+    /// <seealso href="https://w3c.github.io/paint-timing/#dom-painttimingmixin-presentationtime"/>
     [IdlMember("presentationTime", "https://w3c.github.io/paint-timing/#dom-painttimingmixin-presentationtime")]
     public double? PresentationTime => _paintTimingInfo.PresentationTime;
 }
@@ -49,6 +52,7 @@ public sealed class PerformancePaintTiming : PerformanceEntry
 /// A largest contentful paint candidate of a document (https://w3c.github.io/largest-contentful-paint/#sec-largest-contentful-paint-interface):
 /// the largest image or text painted so far, reported to the <c>largest-contentful-paint</c> performance observers of its window.
 /// </summary>
+/// <seealso href="https://w3c.github.io/largest-contentful-paint/#largestcontentfulpaint"/>
 [IdlInterface("LargestContentfulPaint", "https://w3c.github.io/largest-contentful-paint/#largestcontentfulpaint")]
 public sealed class LargestContentfulPaint : PerformanceEntry
 {
@@ -73,34 +77,42 @@ public sealed class LargestContentfulPaint : PerformanceEntry
     }
 
     /// <summary>Gets the time the image finished loading, or 0 for a text.</summary>
+    /// <seealso href="https://w3c.github.io/largest-contentful-paint/#dom-largestcontentfulpaint-loadtime"/>
     [IdlMember("loadTime", "https://w3c.github.io/largest-contentful-paint/#dom-largestcontentfulpaint-loadtime")]
     public double LoadTime { get; }
 
     /// <summary>Gets the time the content was painted (the default paint timestamp of the rendering update).</summary>
+    /// <seealso href="https://w3c.github.io/largest-contentful-paint/#dom-largestcontentfulpaint-rendertime"/>
     [IdlMember("renderTime", "https://w3c.github.io/largest-contentful-paint/#dom-largestcontentfulpaint-rendertime")]
     public double RenderTime => _paintTimingInfo.DefaultPaintTimestamp;
 
     /// <summary>Gets the effective visual size of the content, in CSS pixels squared.</summary>
+    /// <seealso href="https://w3c.github.io/largest-contentful-paint/#dom-largestcontentfulpaint-size"/>
     [IdlMember("size", "https://w3c.github.io/largest-contentful-paint/#dom-largestcontentfulpaint-size")]
     public uint Size { get; }
 
     /// <summary>Gets the id of the element when the entry was created.</summary>
+    /// <seealso href="https://w3c.github.io/largest-contentful-paint/#dom-largestcontentfulpaint-id"/>
     [IdlMember("id", "https://w3c.github.io/largest-contentful-paint/#dom-largestcontentfulpaint-id")]
     public new string Id { get; }
 
     /// <summary>Gets the URL of the image, or the empty string for a text.</summary>
+    /// <seealso href="https://w3c.github.io/largest-contentful-paint/#dom-largestcontentfulpaint-url"/>
     [IdlMember("url", "https://w3c.github.io/largest-contentful-paint/#dom-largestcontentfulpaint-url")]
     public string Url { get; }
 
     /// <summary>Gets the element, or null when it is no longer exposed for paint timing (it was removed from its document).</summary>
+    /// <seealso href="https://w3c.github.io/largest-contentful-paint/#dom-largestcontentfulpaint-element"/>
     [IdlMember("element", "https://w3c.github.io/largest-contentful-paint/#dom-largestcontentfulpaint-element")]
     public Element? Element => PaintTimingHelpers.IsExposedForPaintTiming(_element, document: null) ? _element : null;
 
     /// <summary>Gets the time of the end of the rendering update that painted the content.</summary>
+    /// <seealso href="https://w3c.github.io/paint-timing/#dom-painttimingmixin-painttime"/>
     [IdlMember("paintTime", "https://w3c.github.io/paint-timing/#dom-painttimingmixin-painttime")]
     public double PaintTime => _paintTimingInfo.RenderingUpdateEndTime;
 
     /// <summary>Gets the time the frame was presented to the user: null, the presentation time is not supported.</summary>
+    /// <seealso href="https://w3c.github.io/paint-timing/#dom-painttimingmixin-presentationtime"/>
     [IdlMember("presentationTime", "https://w3c.github.io/paint-timing/#dom-painttimingmixin-presentationtime")]
     public double? PresentationTime => _paintTimingInfo.PresentationTime;
 }
@@ -109,6 +121,7 @@ public sealed class LargestContentfulPaint : PerformanceEntry
 /// The paint of an image or of a text of an element with an <c>elementtiming</c> attribute (https://w3c.github.io/element-timing/#sec-performance-element-timing),
 /// reported to the <c>element</c> performance observers of its window.
 /// </summary>
+/// <seealso href="https://w3c.github.io/element-timing/#performanceelementtiming"/>
 [IdlInterface("PerformanceElementTiming", "https://w3c.github.io/element-timing/#performanceelementtiming")]
 public sealed class PerformanceElementTiming : PerformanceEntry
 {
@@ -140,46 +153,57 @@ public sealed class PerformanceElementTiming : PerformanceEntry
     }
 
     /// <summary>Gets the time the content was painted (the default paint timestamp of the rendering update).</summary>
+    /// <seealso href="https://w3c.github.io/element-timing/#dom-performanceelementtiming-rendertime"/>
     [IdlMember("renderTime", "https://w3c.github.io/element-timing/#dom-performanceelementtiming-rendertime")]
     public double RenderTime => _paintTimingInfo.DefaultPaintTimestamp;
 
     /// <summary>Gets the time the image finished loading, or 0 for a text.</summary>
+    /// <seealso href="https://w3c.github.io/element-timing/#dom-performanceelementtiming-loadtime"/>
     [IdlMember("loadTime", "https://w3c.github.io/element-timing/#dom-performanceelementtiming-loadtime")]
     public double LoadTime { get; }
 
     /// <summary>Gets the visible part of the content in the viewport, in CSS pixels.</summary>
+    /// <seealso href="https://w3c.github.io/element-timing/#dom-performanceelementtiming-intersectionrect"/>
     [IdlMember("intersectionRect", "https://w3c.github.io/element-timing/#dom-performanceelementtiming-intersectionrect")]
     public DomRectReadOnly IntersectionRect { get; }
 
     /// <summary>Gets the value of the <c>elementtiming</c> attribute of the element.</summary>
+    /// <seealso href="https://w3c.github.io/element-timing/#dom-performanceelementtiming-identifier"/>
     [IdlMember("identifier", "https://w3c.github.io/element-timing/#dom-performanceelementtiming-identifier")]
     public string Identifier { get; }
 
     /// <summary>Gets the natural width of the image, or 0 for a text.</summary>
+    /// <seealso href="https://w3c.github.io/element-timing/#dom-performanceelementtiming-naturalwidth"/>
     [IdlMember("naturalWidth", "https://w3c.github.io/element-timing/#dom-performanceelementtiming-naturalwidth")]
     public uint NaturalWidth { get; }
 
     /// <summary>Gets the natural height of the image, or 0 for a text.</summary>
+    /// <seealso href="https://w3c.github.io/element-timing/#dom-performanceelementtiming-naturalheight"/>
     [IdlMember("naturalHeight", "https://w3c.github.io/element-timing/#dom-performanceelementtiming-naturalheight")]
     public uint NaturalHeight { get; }
 
     /// <summary>Gets the id of the element when the entry was created.</summary>
+    /// <seealso href="https://w3c.github.io/element-timing/#dom-performanceelementtiming-id"/>
     [IdlMember("id", "https://w3c.github.io/element-timing/#dom-performanceelementtiming-id")]
     public new string Id { get; }
 
     /// <summary>Gets the element, or null when it is no longer exposed for paint timing (it was removed from its document).</summary>
+    /// <seealso href="https://w3c.github.io/element-timing/#dom-performanceelementtiming-element"/>
     [IdlMember("element", "https://w3c.github.io/element-timing/#dom-performanceelementtiming-element")]
     public Element? Element => PaintTimingHelpers.IsExposedForPaintTiming(_element, document: null) ? _element : null;
 
     /// <summary>Gets the URL of the image (the first 100 characters of a data: URL), or the empty string for a text.</summary>
+    /// <seealso href="https://w3c.github.io/element-timing/#dom-performanceelementtiming-url"/>
     [IdlMember("url", "https://w3c.github.io/element-timing/#dom-performanceelementtiming-url")]
     public string Url => _requestUrl is not { } url ? "" : url.StartsWith("data:", StringComparison.OrdinalIgnoreCase) && url.Length > MaxDataUrlLength ? url[..MaxDataUrlLength] : url;
 
     /// <summary>Gets the time of the end of the rendering update that painted the content.</summary>
+    /// <seealso href="https://w3c.github.io/paint-timing/#dom-painttimingmixin-painttime"/>
     [IdlMember("paintTime", "https://w3c.github.io/paint-timing/#dom-painttimingmixin-painttime")]
     public double PaintTime => _paintTimingInfo.RenderingUpdateEndTime;
 
     /// <summary>Gets the time the frame was presented to the user: null, the presentation time is not supported.</summary>
+    /// <seealso href="https://w3c.github.io/paint-timing/#dom-painttimingmixin-presentationtime"/>
     [IdlMember("presentationTime", "https://w3c.github.io/paint-timing/#dom-painttimingmixin-presentationtime")]
     public double? PresentationTime => _paintTimingInfo.PresentationTime;
 }

@@ -7,6 +7,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// directions of its repetition behavior, created by <c>createPattern()</c>. The image is a snapshot of the source when the
 /// pattern is created (later changes of a canvas source are not reflected).
 /// </summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#canvaspattern"/>
 [IdlInterface("CanvasPattern", "https://html.spec.whatwg.org/multipage/canvas.html#canvaspattern")]
 public sealed class CanvasPattern
 {
@@ -39,6 +40,7 @@ public sealed class CanvasPattern
     /// a matrix with a non-finite component is ignored.
     /// </summary>
     /// <exception cref="TypeErrorException">The members of the dictionary are inconsistent.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-canvaspattern-settransform"/>
     [IdlMember("setTransform", "https://html.spec.whatwg.org/multipage/canvas.html#dom-canvaspattern-settransform")]
     public void SetTransform(DomMatrix2DInit? transform = null)
     {

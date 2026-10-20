@@ -9,14 +9,17 @@ using Meziantou.Framework.WebPlatform.Infra;
 namespace Meziantou.Framework.WebPlatform.Animations;
 
 /// <summary>The options of a view timeline (https://drafts.csswg.org/scroll-animations-1/#dictdef-viewtimelineoptions).</summary>
+/// <seealso href="https://drafts.csswg.org/scroll-animations-1/#dictdef-viewtimelineoptions"/>
 [IdlInterface("ViewTimelineOptions", "https://drafts.csswg.org/scroll-animations-1/#dictdef-viewtimelineoptions")]
 public sealed class ViewTimelineOptions
 {
     /// <summary>Gets the element whose visibility in the scrollport of its nearest ancestor scroll container drives the timeline.</summary>
+    /// <seealso href="https://drafts.csswg.org/scroll-animations-1/#dom-viewtimelineoptions-subject"/>
     [IdlMember("subject", "https://drafts.csswg.org/scroll-animations-1/#dom-viewtimelineoptions-subject")]
     public Element Subject { get; init; } = null!;
 
     /// <summary>Gets the axis of the timeline.</summary>
+    /// <seealso href="https://drafts.csswg.org/scroll-animations-1/#dom-viewtimelineoptions-axis"/>
     [IdlMember("axis", "https://drafts.csswg.org/scroll-animations-1/#dom-viewtimelineoptions-axis")]
     public ScrollAxis Axis { get; init; }
 
@@ -24,6 +27,7 @@ public sealed class ViewTimelineOptions
     /// Gets the insets of the view progress visibility range: a string parsed as a <c>view-timeline-inset</c> value (e.g.
     /// "auto", "10px 20%"), or a sequence of one or two <see cref="CssNumericValue"/> or <see cref="CssKeywordValue"/> ("auto").
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/scroll-animations-1/#dom-viewtimelineoptions-inset"/>
     [IdlMember("inset", "https://drafts.csswg.org/scroll-animations-1/#dom-viewtimelineoptions-inset")]
     public object? Inset { get; init; } = "auto";
 }
@@ -33,11 +37,13 @@ public sealed class ViewTimelineOptions
 /// progress of the visibility of a subject in the scrollport of its nearest ancestor scroll container, as a percentage (0%
 /// when it starts entering the scrollport, 100% when it has left it).
 /// </summary>
+/// <seealso href="https://drafts.csswg.org/scroll-animations-1/#viewtimeline"/>
 [IdlInterface("ViewTimeline", "https://drafts.csswg.org/scroll-animations-1/#viewtimeline")]
 public sealed class ViewTimeline : ScrollTimeline
 {
     /// <summary>Creates a view timeline of a subject (https://drafts.csswg.org/scroll-animations-1/#dom-viewtimeline-viewtimeline): the timeline belongs to the document of the subject.</summary>
     /// <exception cref="TypeErrorException">The inset is invalid.</exception>
+    /// <seealso href="https://drafts.csswg.org/scroll-animations-1/#dom-viewtimeline-viewtimeline"/>
     [IdlMember("constructor", "https://drafts.csswg.org/scroll-animations-1/#dom-viewtimeline-viewtimeline")]
     public ViewTimeline(ViewTimelineOptions options)
         : this((options ?? throw new ArgumentNullException(nameof(options))).Subject?.NodeDocument ?? throw new TypeErrorException("The subject of a view timeline is required."), options.Subject, options.Axis, ParseInset(options.Inset))
@@ -56,6 +62,7 @@ public sealed class ViewTimeline : ScrollTimeline
     internal static ViewTimeline Create(Element subject, string? pseudoElement, ScrollAxis axis, (LengthPercentage? Start, LengthPercentage? End) inset) => new(subject.NodeDocument, subject, axis, inset, pseudoElement);
 
     /// <summary>Gets the subject of the timeline (https://drafts.csswg.org/scroll-animations-1/#dom-viewtimeline-subject).</summary>
+    /// <seealso href="https://drafts.csswg.org/scroll-animations-1/#dom-viewtimeline-subject"/>
     [IdlMember("subject", "https://drafts.csswg.org/scroll-animations-1/#dom-viewtimeline-subject")]
     public Element Subject { get; }
 
@@ -72,6 +79,7 @@ public sealed class ViewTimeline : ScrollTimeline
     /// Gets the scroll offset of the 0% position of the timeline, in px from the scroll origin
     /// (https://drafts.csswg.org/scroll-animations-1/#dom-viewtimeline-startoffset): 0px when the timeline is inactive.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/scroll-animations-1/#dom-viewtimeline-startoffset"/>
     [IdlMember("startOffset", "https://drafts.csswg.org/scroll-animations-1/#dom-viewtimeline-startoffset")]
     public CssNumericValue StartOffset => new CssUnitValue(Snapshot.IsActive ? Snapshot.StartOffset : 0, "px");
 
@@ -79,6 +87,7 @@ public sealed class ViewTimeline : ScrollTimeline
     /// Gets the scroll offset of the 100% position of the timeline, in px from the scroll origin
     /// (https://drafts.csswg.org/scroll-animations-1/#dom-viewtimeline-endoffset): 0px when the timeline is inactive.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/scroll-animations-1/#dom-viewtimeline-endoffset"/>
     [IdlMember("endOffset", "https://drafts.csswg.org/scroll-animations-1/#dom-viewtimeline-endoffset")]
     public CssNumericValue EndOffset => new CssUnitValue(Snapshot.IsActive ? Snapshot.EndOffset : 0, "px");
 

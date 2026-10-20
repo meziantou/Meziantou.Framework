@@ -3,6 +3,7 @@ using Meziantou.Framework.WebPlatform.Scripting;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>An object store handle (https://w3c.github.io/IndexedDB/#idbobjectstore).</summary>
+/// <seealso href="https://w3c.github.io/IndexedDB/#idbobjectstore"/>
 [IdlInterface("IDBObjectStore", "https://w3c.github.io/IndexedDB/#idbobjectstore")]
 public sealed class IdbObjectStore
 {
@@ -22,6 +23,7 @@ public sealed class IdbObjectStore
     private IIndexedDBValueOperations Operations => TransactionObject.Operations;
 
     /// <summary>Gets or sets the name of the object store (it can only be changed in an upgrade transaction).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbobjectstore-name"/>
     [IdlMember("name", "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-name")]
     public string Name
     {
@@ -52,30 +54,37 @@ public sealed class IdbObjectStore
     }
 
     /// <summary>Gets the key path of the object store: a string, an array of strings (the same array each time), or null.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbobjectstore-keypath"/>
     [IdlMember("keyPath", "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-keypath")]
     public object? KeyPath => _keyPathValue ??= KeyPathToValue(Operations, Store.KeyPath);
 
     /// <summary>Gets the sorted names of the indexes of the object store.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbobjectstore-indexnames"/>
     [IdlMember("indexNames", "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-indexnames")]
     public DomStringList IndexNames => IdbDatabase.CreateSortedNameList(Store.Indexes.Select(index => index.Name));
 
     /// <summary>Gets the transaction of the handle.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbobjectstore-transaction"/>
     [IdlMember("transaction", "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-transaction")]
     public IdbTransaction Transaction => TransactionObject;
 
     /// <summary>Gets whether the object store has a key generator.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbobjectstore-autoincrement"/>
     [IdlMember("autoIncrement", "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-autoincrement")]
     public bool AutoIncrement => Store.AutoIncrement;
 
     /// <summary>Adds or replaces a record (https://w3c.github.io/IndexedDB/#dom-idbobjectstore-put).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbobjectstore-put"/>
     [IdlMember("put", "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-put")]
     public IdbRequest Put(object? value, object? key = null) => AddOrPut(value, key, keyGiven: key is not null, noOverwrite: false);
 
     /// <summary>Adds a record, which fails when a record with the same key exists (https://w3c.github.io/IndexedDB/#dom-idbobjectstore-add).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbobjectstore-add"/>
     [IdlMember("add", "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-add")]
     public IdbRequest Add(object? value, object? key = null) => AddOrPut(value, key, keyGiven: key is not null, noOverwrite: true);
 
     /// <summary>Deletes the records with a key or in a key range (https://w3c.github.io/IndexedDB/#dom-idbobjectstore-delete).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbobjectstore-delete"/>
     [IdlMember("delete", "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-delete")]
     public IdbRequest Delete(object? query)
     {
@@ -90,6 +99,7 @@ public sealed class IdbObjectStore
     }
 
     /// <summary>Deletes all the records (https://w3c.github.io/IndexedDB/#dom-idbobjectstore-clear).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbobjectstore-clear"/>
     [IdlMember("clear", "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-clear")]
     public IdbRequest Clear()
     {
@@ -103,6 +113,7 @@ public sealed class IdbObjectStore
     }
 
     /// <summary>Retrieves the value of the first record with a key or in a key range (https://w3c.github.io/IndexedDB/#dom-idbobjectstore-get).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbobjectstore-get"/>
     [IdlMember("get", "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-get")]
     public IdbRequest Get(object? query)
     {
@@ -114,6 +125,7 @@ public sealed class IdbObjectStore
     }
 
     /// <summary>Retrieves the key of the first record with a key or in a key range (https://w3c.github.io/IndexedDB/#dom-idbobjectstore-getkey).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbobjectstore-getkey"/>
     [IdlMember("getKey", "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-getkey")]
     public IdbRequest GetKey(object? query)
     {
@@ -125,18 +137,22 @@ public sealed class IdbObjectStore
     }
 
     /// <summary>Retrieves the values of the records (https://w3c.github.io/IndexedDB/#dom-idbobjectstore-getall).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbobjectstore-getall"/>
     [IdlMember("getAll", "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-getall")]
     public IdbRequest GetAll(object? queryOrOptions = null, uint? count = null) => RetrieveMultiple("value", queryOrOptions, count);
 
     /// <summary>Retrieves the keys of the records (https://w3c.github.io/IndexedDB/#dom-idbobjectstore-getallkeys).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbobjectstore-getallkeys"/>
     [IdlMember("getAllKeys", "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-getallkeys")]
     public IdbRequest GetAllKeys(object? queryOrOptions = null, uint? count = null) => RetrieveMultiple("key", queryOrOptions, count);
 
     /// <summary>Retrieves the keys and the values of the records (https://w3c.github.io/IndexedDB/#dom-idbobjectstore-getallrecords).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbobjectstore-getallrecords"/>
     [IdlMember("getAllRecords", "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-getallrecords")]
     public IdbRequest GetAllRecords(IdbGetAllOptions? options = null) => RetrieveMultiple("record", options ?? new IdbGetAllOptions(), count: null);
 
     /// <summary>Counts the records with a key or in a key range (https://w3c.github.io/IndexedDB/#dom-idbobjectstore-count).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbobjectstore-count"/>
     [IdlMember("count", "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-count")]
     public IdbRequest Count(object? query = null)
     {
@@ -147,14 +163,17 @@ public sealed class IdbObjectStore
     }
 
     /// <summary>Opens a cursor over the records (https://w3c.github.io/IndexedDB/#dom-idbobjectstore-opencursor).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbobjectstore-opencursor"/>
     [IdlMember("openCursor", "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-opencursor")]
     public IdbRequest OpenCursor(object? query = null, IdbCursorDirection direction = IdbCursorDirection.Next) => OpenCursorCore(query, direction, keyOnly: false);
 
     /// <summary>Opens a cursor over the keys of the records (https://w3c.github.io/IndexedDB/#dom-idbobjectstore-openkeycursor).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbobjectstore-openkeycursor"/>
     [IdlMember("openKeyCursor", "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-openkeycursor")]
     public IdbRequest OpenKeyCursor(object? query = null, IdbCursorDirection direction = IdbCursorDirection.Next) => OpenCursorCore(query, direction, keyOnly: true);
 
     /// <summary>Returns the handle of an index (the same handle for the same name) (https://w3c.github.io/IndexedDB/#dom-idbobjectstore-index).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbobjectstore-index"/>
     [IdlMember("index", "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-index")]
     public IdbIndex Index(string name)
     {
@@ -170,6 +189,7 @@ public sealed class IdbObjectStore
     }
 
     /// <summary>Creates an index in an upgrade transaction (https://w3c.github.io/IndexedDB/#dom-idbobjectstore-createindex).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbobjectstore-createindex"/>
     [IdlMember("createIndex", "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-createindex")]
     public IdbIndex CreateIndex(string name, object? keyPath, IdbIndexParameters? options = null)
     {
@@ -243,6 +263,7 @@ public sealed class IdbObjectStore
     }
 
     /// <summary>Deletes an index in an upgrade transaction (https://w3c.github.io/IndexedDB/#dom-idbobjectstore-deleteindex).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbobjectstore-deleteindex"/>
     [IdlMember("deleteIndex", "https://w3c.github.io/IndexedDB/#dom-idbobjectstore-deleteindex")]
     public void DeleteIndex(string name)
     {

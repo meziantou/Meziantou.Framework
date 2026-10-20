@@ -41,6 +41,7 @@ internal sealed class CssDeclarationEntry(CssLonghandValue value, bool important
 internal readonly record struct CssSerializedDeclaration(string Name, string Value, bool Important);
 
 /// <summary>https://drafts.csswg.org/cssom/#the-cssstyledeclaration-interface</summary>
+/// <seealso href="https://drafts.csswg.org/cssom/#cssstyledeclaration"/>
 [IdlInterface("CSSStyleDeclaration", "https://drafts.csswg.org/cssom/#cssstyledeclaration")]
 public partial class CssStyleDeclaration : IReadOnlyList<string>
 {
@@ -109,6 +110,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
     /// <summary>
     /// Gets or sets the serialization of the declaration block. Setting the value replaces all the declarations.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-csstext"/>
     [IdlMember("cssText", "https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-csstext")]
     public string CssText
     {
@@ -125,6 +127,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
     }
 
     /// <summary>Gets the number of declarations in the block.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-length"/>
     [IdlMember("length", "https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-length")]
     public uint Length => (uint)Count;
 
@@ -135,6 +138,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
     /// <summary>
     /// Returns the name of the property at the given index, or an empty string when the index is out of range.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-item"/>
     [IdlMember("item", "https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-item")]
     public string Item(uint index)
     {
@@ -148,6 +152,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
     /// <summary>
     /// Gets the name of the property at the given index, or an empty string when the index is out of range.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-item"/>
     [IdlMember("getter", "https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-item")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public string this[uint index] => Item(index);
@@ -158,6 +163,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
     public string this[int index] => Computed is { } computed ? computed.GetName(index) : Declarations[index].Name;
 
     /// <summary>Gets the rule that contains the declaration block, or null when the block is not in a rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-parentrule"/>
     [IdlMember("parentRule", "https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-parentrule")]
     public CssRule? ParentRule => _parentRule;
 
@@ -185,6 +191,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
     }
 
     /// <summary>Returns the value of the given property, or an empty string when the property is not set.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-getpropertyvalue"/>
     [IdlMember("getPropertyValue", "https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-getpropertyvalue")]
     public string GetPropertyValue(string property)
     {
@@ -249,6 +256,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
     /// <summary>
     /// Returns the priority of the given property (<c>important</c>), or an empty string when it has no priority.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-getpropertypriority"/>
     [IdlMember("getPropertyPriority", "https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-getpropertypriority")]
     public string GetPropertyPriority(string property)
     {
@@ -273,6 +281,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
     }
 
     /// <summary>Sets the value and the priority of the given property. An empty value removes the property.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-setproperty"/>
     [IdlMember("setProperty", "https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-setproperty")]
     public void SetProperty(string property, string? value, string? priority = "")
     {
@@ -862,6 +871,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
     /// <summary>
     /// Removes the given property and returns its previous value, or an empty string when it was not set.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-removeproperty"/>
     [IdlMember("removeProperty", "https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-removeproperty")]
     public string RemoveProperty(string property)
     {
@@ -1229,6 +1239,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
 }
 
 /// <summary>https://drafts.csswg.org/cssom/#cssstyleproperties</summary>
+/// <seealso href="https://drafts.csswg.org/cssom/#cssstyleproperties"/>
 [IdlInterface("CSSStyleProperties", "https://drafts.csswg.org/cssom/#cssstyleproperties")]
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1708:Identifiers should differ by more than case", Justification = "Some CSS properties only differ by a dash (stroke-dash-corner and stroke-dashcorner)")]
 public sealed partial class CssStyleProperties : CssStyleDeclaration
@@ -1246,6 +1257,7 @@ public sealed partial class CssStyleProperties : CssStyleDeclaration
     /// <summary>
     /// Gets or sets the <c>float</c> property (<c>cssFloat</c> because <c>float</c> is a reserved word in JavaScript).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-cssfloat"/>
     [IdlMember("cssFloat", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-cssfloat")]
     public string CssFloat
     {
@@ -1255,6 +1267,9 @@ public sealed partial class CssStyleProperties : CssStyleDeclaration
 
     // The properties that webref lists without grammar (see CssPropertyRegistry.SupplementalProperties)
     /// <summary>Gets or sets the <c>-webkit-box-orient</c> property of the declaration block.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitBoxOrient", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitBoxOrient", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-box-orient", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -1265,6 +1280,9 @@ public sealed partial class CssStyleProperties : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>-webkit-box-align</c> property of the declaration block.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitBoxAlign", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitBoxAlign", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-box-align", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -1275,6 +1293,9 @@ public sealed partial class CssStyleProperties : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>-webkit-box-direction</c> property of the declaration block.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitBoxDirection", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitBoxDirection", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-box-direction", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -1285,6 +1306,9 @@ public sealed partial class CssStyleProperties : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>-webkit-box-flex</c> property of the declaration block.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitBoxFlex", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitBoxFlex", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-box-flex", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -1295,6 +1319,9 @@ public sealed partial class CssStyleProperties : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>-webkit-box-ordinal-group</c> property of the declaration block.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitBoxOrdinalGroup", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitBoxOrdinalGroup", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-box-ordinal-group", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -1305,6 +1332,9 @@ public sealed partial class CssStyleProperties : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>-webkit-box-pack</c> property of the declaration block.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("WebkitBoxPack", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitBoxPack", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-box-pack", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
@@ -1315,6 +1345,8 @@ public sealed partial class CssStyleProperties : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>grid-lanes-direction</c> property of the declaration block.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("gridLanesDirection", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("grid-lanes-direction", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string GridLanesDirection
@@ -1324,6 +1356,8 @@ public sealed partial class CssStyleProperties : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>grid-lanes</c> shorthand of the declaration block.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("gridLanes", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("grid-lanes", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string GridLanes
@@ -1333,6 +1367,8 @@ public sealed partial class CssStyleProperties : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>grid-lanes-pack</c> property of the declaration block.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("gridLanesPack", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("grid-lanes-pack", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
     public string GridLanesPack
@@ -1343,6 +1379,7 @@ public sealed partial class CssStyleProperties : CssStyleDeclaration
 }
 
 /// <summary>https://drafts.csswg.org/css-fonts-5/#cssfontfacedescriptors</summary>
+/// <seealso href="https://drafts.csswg.org/css-fonts-5/#cssfontfacedescriptors"/>
 [IdlInterface("CSSFontFaceDescriptors", "https://drafts.csswg.org/css-fonts-5/#cssfontfacedescriptors")]
 public sealed class CssFontFaceDescriptors : CssStyleDeclaration
 {
@@ -1352,6 +1389,7 @@ public sealed class CssFontFaceDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>src</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-src"/>
     [IdlMember("src", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-src")]
     public string Src
     {
@@ -1360,6 +1398,8 @@ public sealed class CssFontFaceDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>font-family</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontfamily"/>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-family"/>
     [IdlMember("fontFamily", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontfamily")]
     [IdlMember("font-family", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-family")]
     public string FontFamily
@@ -1369,6 +1409,8 @@ public sealed class CssFontFaceDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>font-style</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontstyle"/>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-style"/>
     [IdlMember("fontStyle", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontstyle")]
     [IdlMember("font-style", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-style")]
     public string FontStyle
@@ -1378,6 +1420,8 @@ public sealed class CssFontFaceDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>font-weight</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontweight"/>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-weight"/>
     [IdlMember("fontWeight", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontweight")]
     [IdlMember("font-weight", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-weight")]
     public string FontWeight
@@ -1387,6 +1431,8 @@ public sealed class CssFontFaceDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>font-stretch</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontstretch"/>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-stretch"/>
     [IdlMember("fontStretch", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontstretch")]
     [IdlMember("font-stretch", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-stretch")]
     public string FontStretch
@@ -1396,6 +1442,8 @@ public sealed class CssFontFaceDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>font-width</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontwidth"/>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-width"/>
     [IdlMember("fontWidth", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontwidth")]
     [IdlMember("font-width", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-width")]
     public string FontWidth
@@ -1405,6 +1453,8 @@ public sealed class CssFontFaceDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>font-size</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontsize"/>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-size"/>
     [IdlMember("fontSize", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontsize")]
     [IdlMember("font-size", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-size")]
     public string FontSize
@@ -1414,6 +1464,8 @@ public sealed class CssFontFaceDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>size-adjust</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-sizeadjust"/>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-size-adjust"/>
     [IdlMember("sizeAdjust", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-sizeadjust")]
     [IdlMember("size-adjust", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-size-adjust")]
     public string SizeAdjust
@@ -1423,6 +1475,8 @@ public sealed class CssFontFaceDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>unicode-range</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-unicoderange"/>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-unicode-range"/>
     [IdlMember("unicodeRange", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-unicoderange")]
     [IdlMember("unicode-range", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-unicode-range")]
     public string UnicodeRange
@@ -1432,6 +1486,8 @@ public sealed class CssFontFaceDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>font-feature-settings</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontfeaturesettings"/>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-feature-settings"/>
     [IdlMember("fontFeatureSettings", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontfeaturesettings")]
     [IdlMember("font-feature-settings", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-feature-settings")]
     public string FontFeatureSettings
@@ -1441,6 +1497,8 @@ public sealed class CssFontFaceDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>font-variation-settings</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontvariationsettings"/>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-variation-settings"/>
     [IdlMember("fontVariationSettings", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontvariationsettings")]
     [IdlMember("font-variation-settings", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-variation-settings")]
     public string FontVariationSettings
@@ -1450,6 +1508,8 @@ public sealed class CssFontFaceDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>font-named-instance</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontnamedinstance"/>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-named-instance"/>
     [IdlMember("fontNamedInstance", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontnamedinstance")]
     [IdlMember("font-named-instance", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-named-instance")]
     public string FontNamedInstance
@@ -1459,6 +1519,8 @@ public sealed class CssFontFaceDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>font-display</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontdisplay"/>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-display"/>
     [IdlMember("fontDisplay", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontdisplay")]
     [IdlMember("font-display", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-display")]
     public string FontDisplay
@@ -1468,6 +1530,8 @@ public sealed class CssFontFaceDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>font-language-override</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontlanguageoverride"/>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-language-override"/>
     [IdlMember("fontLanguageOverride", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-fontlanguageoverride")]
     [IdlMember("font-language-override", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-font-language-override")]
     public string FontLanguageOverride
@@ -1477,6 +1541,8 @@ public sealed class CssFontFaceDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>ascent-override</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-ascentoverride"/>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-ascent-override"/>
     [IdlMember("ascentOverride", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-ascentoverride")]
     [IdlMember("ascent-override", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-ascent-override")]
     public string AscentOverride
@@ -1486,6 +1552,8 @@ public sealed class CssFontFaceDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>descent-override</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-descentoverride"/>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-descent-override"/>
     [IdlMember("descentOverride", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-descentoverride")]
     [IdlMember("descent-override", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-descent-override")]
     public string DescentOverride
@@ -1495,6 +1563,8 @@ public sealed class CssFontFaceDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>line-gap-override</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-linegapoverride"/>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-line-gap-override"/>
     [IdlMember("lineGapOverride", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-linegapoverride")]
     [IdlMember("line-gap-override", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-line-gap-override")]
     public string LineGapOverride
@@ -1504,6 +1574,8 @@ public sealed class CssFontFaceDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>superscript-position-override</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-superscriptpositionoverride"/>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-superscript-position-override"/>
     [IdlMember("superscriptPositionOverride", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-superscriptpositionoverride")]
     [IdlMember("superscript-position-override", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-superscript-position-override")]
     public string SuperscriptPositionOverride
@@ -1513,6 +1585,8 @@ public sealed class CssFontFaceDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>subscript-position-override</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-subscriptpositionoverride"/>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-subscript-position-override"/>
     [IdlMember("subscriptPositionOverride", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-subscriptpositionoverride")]
     [IdlMember("subscript-position-override", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-subscript-position-override")]
     public string SubscriptPositionOverride
@@ -1522,6 +1596,8 @@ public sealed class CssFontFaceDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>superscript-size-override</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-superscriptsizeoverride"/>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-superscript-size-override"/>
     [IdlMember("superscriptSizeOverride", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-superscriptsizeoverride")]
     [IdlMember("superscript-size-override", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-superscript-size-override")]
     public string SuperscriptSizeOverride
@@ -1531,6 +1607,8 @@ public sealed class CssFontFaceDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>subscript-size-override</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-subscriptsizeoverride"/>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-subscript-size-override"/>
     [IdlMember("subscriptSizeOverride", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-subscriptsizeoverride")]
     [IdlMember("subscript-size-override", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacedescriptors-subscript-size-override")]
     public string SubscriptSizeOverride
@@ -1541,6 +1619,7 @@ public sealed class CssFontFaceDescriptors : CssStyleDeclaration
 }
 
 /// <summary>https://drafts.csswg.org/cssom/#csspagedescriptors</summary>
+/// <seealso href="https://drafts.csswg.org/cssom/#csspagedescriptors"/>
 [IdlInterface("CSSPageDescriptors", "https://drafts.csswg.org/cssom/#csspagedescriptors")]
 public sealed class CssPageDescriptors : CssStyleDeclaration
 {
@@ -1550,6 +1629,7 @@ public sealed class CssPageDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>margin</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-csspagedescriptors-margin"/>
     [IdlMember("margin", "https://drafts.csswg.org/cssom/#dom-csspagedescriptors-margin")]
     public string Margin
     {
@@ -1558,6 +1638,8 @@ public sealed class CssPageDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>margin-top</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-csspagedescriptors-margintop"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-csspagedescriptors-margin-top"/>
     [IdlMember("marginTop", "https://drafts.csswg.org/cssom/#dom-csspagedescriptors-margintop")]
     [IdlMember("margin-top", "https://drafts.csswg.org/cssom/#dom-csspagedescriptors-margin-top")]
     public string MarginTop
@@ -1567,6 +1649,8 @@ public sealed class CssPageDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>margin-right</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-csspagedescriptors-marginright"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-csspagedescriptors-margin-right"/>
     [IdlMember("marginRight", "https://drafts.csswg.org/cssom/#dom-csspagedescriptors-marginright")]
     [IdlMember("margin-right", "https://drafts.csswg.org/cssom/#dom-csspagedescriptors-margin-right")]
     public string MarginRight
@@ -1576,6 +1660,8 @@ public sealed class CssPageDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>margin-bottom</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-csspagedescriptors-marginbottom"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-csspagedescriptors-margin-bottom"/>
     [IdlMember("marginBottom", "https://drafts.csswg.org/cssom/#dom-csspagedescriptors-marginbottom")]
     [IdlMember("margin-bottom", "https://drafts.csswg.org/cssom/#dom-csspagedescriptors-margin-bottom")]
     public string MarginBottom
@@ -1585,6 +1671,8 @@ public sealed class CssPageDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>margin-left</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-csspagedescriptors-marginleft"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-csspagedescriptors-margin-left"/>
     [IdlMember("marginLeft", "https://drafts.csswg.org/cssom/#dom-csspagedescriptors-marginleft")]
     [IdlMember("margin-left", "https://drafts.csswg.org/cssom/#dom-csspagedescriptors-margin-left")]
     public string MarginLeft
@@ -1594,6 +1682,7 @@ public sealed class CssPageDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>size</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-csspagedescriptors-size"/>
     [IdlMember("size", "https://drafts.csswg.org/cssom/#dom-csspagedescriptors-size")]
     public string Size
     {
@@ -1602,6 +1691,8 @@ public sealed class CssPageDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>page-orientation</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-csspagedescriptors-pageorientation"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-csspagedescriptors-page-orientation"/>
     [IdlMember("pageOrientation", "https://drafts.csswg.org/cssom/#dom-csspagedescriptors-pageorientation")]
     [IdlMember("page-orientation", "https://drafts.csswg.org/cssom/#dom-csspagedescriptors-page-orientation")]
     public string PageOrientation
@@ -1611,6 +1702,7 @@ public sealed class CssPageDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>marks</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-csspagedescriptors-marks"/>
     [IdlMember("marks", "https://drafts.csswg.org/cssom/#dom-csspagedescriptors-marks")]
     public string Marks
     {
@@ -1619,6 +1711,7 @@ public sealed class CssPageDescriptors : CssStyleDeclaration
     }
 
     /// <summary>Gets or sets the <c>bleed</c> descriptor of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-csspagedescriptors-bleed"/>
     [IdlMember("bleed", "https://drafts.csswg.org/cssom/#dom-csspagedescriptors-bleed")]
     public string Bleed
     {

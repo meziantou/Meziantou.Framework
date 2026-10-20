@@ -5,78 +5,96 @@ using System.Runtime.CompilerServices;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://dom.spec.whatwg.org/#interface-node</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#node"/>
 [IdlInterface("Node", "https://dom.spec.whatwg.org/#node")]
 public abstract partial class Node : EventTarget
 {
     /// <summary>The node type of an element.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-element_node"/>
     [IdlMember("ELEMENT_NODE", "https://dom.spec.whatwg.org/#dom-node-element_node")]
     public const ushort ElementNode = 1;
 
     /// <summary>The node type of an attribute.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-attribute_node"/>
     [IdlMember("ATTRIBUTE_NODE", "https://dom.spec.whatwg.org/#dom-node-attribute_node")]
     public const ushort AttributeNode = 2;
 
     /// <summary>The node type of a text node.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-text_node"/>
     [IdlMember("TEXT_NODE", "https://dom.spec.whatwg.org/#dom-node-text_node")]
     public const ushort TextNode = 3;
 
     /// <summary>The node type of a CDATA section.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-cdata_section_node"/>
     [IdlMember("CDATA_SECTION_NODE", "https://dom.spec.whatwg.org/#dom-node-cdata_section_node")]
     public const ushort CDataSectionNode = 4;
 
     /// <summary>The legacy node type of an entity reference (never created).</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-entity_reference_node"/>
     [IdlMember("ENTITY_REFERENCE_NODE", "https://dom.spec.whatwg.org/#dom-node-entity_reference_node")]
     public const ushort EntityReferenceNode = 5;
 
     /// <summary>The legacy node type of an entity (never created).</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-entity_node"/>
     [IdlMember("ENTITY_NODE", "https://dom.spec.whatwg.org/#dom-node-entity_node")]
     public const ushort EntityNode = 6;
 
     /// <summary>The node type of a processing instruction.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-processing_instruction_node"/>
     [IdlMember("PROCESSING_INSTRUCTION_NODE", "https://dom.spec.whatwg.org/#dom-node-processing_instruction_node")]
     public const ushort ProcessingInstructionNode = 7;
 
     /// <summary>The node type of a comment.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-comment_node"/>
     [IdlMember("COMMENT_NODE", "https://dom.spec.whatwg.org/#dom-node-comment_node")]
     public const ushort CommentNode = 8;
 
     /// <summary>The node type of a document.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-document_node"/>
     [IdlMember("DOCUMENT_NODE", "https://dom.spec.whatwg.org/#dom-node-document_node")]
     public const ushort DocumentNode = 9;
 
     /// <summary>The node type of a document type.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-document_type_node"/>
     [IdlMember("DOCUMENT_TYPE_NODE", "https://dom.spec.whatwg.org/#dom-node-document_type_node")]
     public const ushort DocumentTypeNode = 10;
 
     /// <summary>The node type of a document fragment.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-document_fragment_node"/>
     [IdlMember("DOCUMENT_FRAGMENT_NODE", "https://dom.spec.whatwg.org/#dom-node-document_fragment_node")]
     public const ushort DocumentFragmentNode = 11;
 
     /// <summary>The legacy node type of a notation (never created).</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-notation_node"/>
     [IdlMember("NOTATION_NODE", "https://dom.spec.whatwg.org/#dom-node-notation_node")]
     public const ushort NotationNode = 12;
 
     /// <summary>The bit set by <c>compareDocumentPosition()</c> when the nodes are not in the same tree.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-document_position_disconnected"/>
     [IdlMember("DOCUMENT_POSITION_DISCONNECTED", "https://dom.spec.whatwg.org/#dom-node-document_position_disconnected")]
     public const ushort DocumentPositionDisconnected = 0x01;
 
     /// <summary>The bit set by <c>compareDocumentPosition()</c> when the other node precedes the node.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-document_position_preceding"/>
     [IdlMember("DOCUMENT_POSITION_PRECEDING", "https://dom.spec.whatwg.org/#dom-node-document_position_preceding")]
     public const ushort DocumentPositionPreceding = 0x02;
 
     /// <summary>The bit set by <c>compareDocumentPosition()</c> when the other node follows the node.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-document_position_following"/>
     [IdlMember("DOCUMENT_POSITION_FOLLOWING", "https://dom.spec.whatwg.org/#dom-node-document_position_following")]
     public const ushort DocumentPositionFollowing = 0x04;
 
     /// <summary>
     /// The bit set by <c>compareDocumentPosition()</c> when the other node is an ancestor of the node.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-document_position_contains"/>
     [IdlMember("DOCUMENT_POSITION_CONTAINS", "https://dom.spec.whatwg.org/#dom-node-document_position_contains")]
     public const ushort DocumentPositionContains = 0x08;
 
     /// <summary>
     /// The bit set by <c>compareDocumentPosition()</c> when the other node is a descendant of the node.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-document_position_contained_by"/>
     [IdlMember("DOCUMENT_POSITION_CONTAINED_BY", "https://dom.spec.whatwg.org/#dom-node-document_position_contained_by")]
     public const ushort DocumentPositionContainedBy = 0x10;
 
@@ -84,6 +102,7 @@ public abstract partial class Node : EventTarget
     /// The bit set by <c>compareDocumentPosition()</c> when the order of the disconnected nodes is implementation-
     /// specific.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-document_position_implementation_specific"/>
     [IdlMember("DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC", "https://dom.spec.whatwg.org/#dom-node-document_position_implementation_specific")]
     public const ushort DocumentPositionImplementationSpecific = 0x20;
 
@@ -120,6 +139,7 @@ public abstract partial class Node : EventTarget
     internal int ChildrenVersion => _childrenVersion;
 
     /// <summary>Gets the type of the node, one of the node type constants.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-nodetype"/>
     [IdlMember("nodeType", "https://dom.spec.whatwg.org/#dom-node-nodetype")]
     public abstract ushort NodeType { get; }
 
@@ -139,14 +159,17 @@ public abstract partial class Node : EventTarget
     internal void KeepCreationRealm(Window window) => CreationRealms.TryAdd(this, window);
 
     /// <summary>Gets the name of the node, which depends on its type.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-nodename"/>
     [IdlMember("nodeName", "https://dom.spec.whatwg.org/#dom-node-nodename")]
     public abstract string NodeName { get; }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-node-baseuri</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-baseuri"/>
     [IdlMember("baseURI", "https://dom.spec.whatwg.org/#dom-node-baseuri")]
     public string BaseUri => NodeDocument.DocumentBaseUrl.Serialize();
 
     /// <summary>Gets a value indicating whether the shadow-including root of the node is a document.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-isconnected"/>
     [IdlMember("isConnected", "https://dom.spec.whatwg.org/#dom-node-isconnected")]
     public bool IsConnected => _isConnected || this is Document;
 
@@ -174,28 +197,34 @@ public abstract partial class Node : EventTarget
     }
 
     /// <summary>Gets the document that owns the node, or null when the node is a document.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-ownerdocument"/>
     [IdlMember("ownerDocument", "https://dom.spec.whatwg.org/#dom-node-ownerdocument")]
     public Document? OwnerDocument => this is Document ? null : NodeDocument;
 
     /// <summary>
     /// Returns the root of the tree that contains the node, or its shadow-including root when <c>composed</c> is set.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-getrootnode"/>
     [IdlMember("getRootNode", "https://dom.spec.whatwg.org/#dom-node-getrootnode")]
     public Node GetRootNode(GetRootNodeOptions? options = null) => options?.Composed == true ? GetShadowIncludingRoot() : GetRoot();
 
     /// <summary>Gets the parent of the node, or null.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-parentnode"/>
     [IdlMember("parentNode", "https://dom.spec.whatwg.org/#dom-node-parentnode")]
     public Node? ParentNode => _parent;
 
     /// <summary>Gets the parent of the node when it is an element; otherwise null.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-parentelement"/>
     [IdlMember("parentElement", "https://dom.spec.whatwg.org/#dom-node-parentelement")]
     public Element? ParentElement => _parent as Element;
 
     /// <summary>Returns whether the node has at least one child.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-haschildnodes"/>
     [IdlMember("hasChildNodes", "https://dom.spec.whatwg.org/#dom-node-haschildnodes")]
     public bool HasChildNodes() => _firstChild is not null;
 
     /// <summary>Gets the live list of the children of the node.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-childnodes"/>
     [IdlMember("childNodes", "https://dom.spec.whatwg.org/#dom-node-childnodes")]
     public NodeList ChildNodes => RareData.ChildNodes ??= new ChildNodeList(this);
 
@@ -215,18 +244,22 @@ public abstract partial class Node : EventTarget
     }
 
     /// <summary>Gets the first child of the node, or null.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-firstchild"/>
     [IdlMember("firstChild", "https://dom.spec.whatwg.org/#dom-node-firstchild")]
     public Node? FirstChild => _firstChild;
 
     /// <summary>Gets the last child of the node, or null.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-lastchild"/>
     [IdlMember("lastChild", "https://dom.spec.whatwg.org/#dom-node-lastchild")]
     public Node? LastChild => _lastChild;
 
     /// <summary>Gets the previous sibling of the node, or null.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-previoussibling"/>
     [IdlMember("previousSibling", "https://dom.spec.whatwg.org/#dom-node-previoussibling")]
     public Node? PreviousSibling => _previousSibling;
 
     /// <summary>Gets the next sibling of the node, or null.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-nextsibling"/>
     [IdlMember("nextSibling", "https://dom.spec.whatwg.org/#dom-node-nextsibling")]
     public Node? NextSibling => _nextSibling;
 
@@ -234,6 +267,7 @@ public abstract partial class Node : EventTarget
     /// Gets or sets the value of the node: the data of the character data nodes and attributes, null for the other
     /// nodes.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-nodevalue"/>
     [IdlMember("nodeValue", "https://dom.spec.whatwg.org/#dom-node-nodevalue")]
     public virtual string? NodeValue
     {
@@ -245,6 +279,7 @@ public abstract partial class Node : EventTarget
     }
 
     /// <summary>Gets or sets the text content of the node and its descendants.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-textcontent"/>
     [IdlMember("textContent", "https://dom.spec.whatwg.org/#dom-node-textcontent")]
     public virtual string? TextContent
     {
@@ -302,6 +337,7 @@ public abstract partial class Node : EventTarget
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-node-normalize</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-normalize"/>
     [IdlMember("normalize", "https://dom.spec.whatwg.org/#dom-node-normalize")]
     public void Normalize()
     {
@@ -369,6 +405,7 @@ public abstract partial class Node : EventTarget
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-node-clonenode</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-clonenode"/>
     [IdlMember("cloneNode", "https://dom.spec.whatwg.org/#dom-node-clonenode")]
     public Node CloneNode(bool subtree = false)
     {
@@ -446,6 +483,7 @@ public abstract partial class Node : EventTarget
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-node-isequalnode</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-isequalnode"/>
     [IdlMember("isEqualNode", "https://dom.spec.whatwg.org/#dom-node-isequalnode")]
     public bool IsEqualNode(Node? otherNode)
     {
@@ -479,10 +517,12 @@ public abstract partial class Node : EventTarget
     private protected abstract bool IsEqualNodeCore(Node otherNode);
 
     /// <summary>Returns whether the given node is this node.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-issamenode"/>
     [IdlMember("isSameNode", "https://dom.spec.whatwg.org/#dom-node-issamenode")]
     public bool IsSameNode(Node? otherNode) => ReferenceEquals(this, otherNode);
 
     /// <summary>https://dom.spec.whatwg.org/#dom-node-comparedocumentposition</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-comparedocumentposition"/>
     [IdlMember("compareDocumentPosition", "https://dom.spec.whatwg.org/#dom-node-comparedocumentposition")]
     public ushort CompareDocumentPosition(Node other)
     {
@@ -534,10 +574,12 @@ public abstract partial class Node : EventTarget
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-node-contains</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-contains"/>
     [IdlMember("contains", "https://dom.spec.whatwg.org/#dom-node-contains")]
     public bool Contains(Node? other) => other is not null && IsInclusiveAncestorOf(other);
 
     /// <summary>https://dom.spec.whatwg.org/#dom-node-lookupprefix</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-lookupprefix"/>
     [IdlMember("lookupPrefix", "https://dom.spec.whatwg.org/#dom-node-lookupprefix")]
     public string? LookupPrefix(string? @namespace)
     {
@@ -555,6 +597,7 @@ public abstract partial class Node : EventTarget
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-node-lookupnamespaceuri</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-lookupnamespaceuri"/>
     [IdlMember("lookupNamespaceURI", "https://dom.spec.whatwg.org/#dom-node-lookupnamespaceuri")]
     public string? LookupNamespaceUri(string? prefix)
     {
@@ -567,6 +610,7 @@ public abstract partial class Node : EventTarget
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-node-isdefaultnamespace</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-isdefaultnamespace"/>
     [IdlMember("isDefaultNamespace", "https://dom.spec.whatwg.org/#dom-node-isdefaultnamespace")]
     public bool IsDefaultNamespace(string? @namespace)
     {
@@ -599,6 +643,7 @@ public abstract partial class Node : EventTarget
     /// <summary>
     /// Inserts the node before the given child (or after the last child when it is null) and returns it.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-insertbefore"/>
     [IdlMember("insertBefore", "https://dom.spec.whatwg.org/#dom-node-insertbefore")]
     public Node InsertBefore(Node node, Node? child)
     {
@@ -607,6 +652,7 @@ public abstract partial class Node : EventTarget
     }
 
     /// <summary>Inserts the node after the last child and returns it.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-appendchild"/>
     [IdlMember("appendChild", "https://dom.spec.whatwg.org/#dom-node-appendchild")]
     public Node AppendChild(Node node)
     {
@@ -615,6 +661,7 @@ public abstract partial class Node : EventTarget
     }
 
     /// <summary>Replaces the child with the node and returns the replaced child.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-replacechild"/>
     [IdlMember("replaceChild", "https://dom.spec.whatwg.org/#dom-node-replacechild")]
     public Node ReplaceChild(Node node, Node child)
     {
@@ -624,6 +671,7 @@ public abstract partial class Node : EventTarget
     }
 
     /// <summary>Removes the child and returns it.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-node-removechild"/>
     [IdlMember("removeChild", "https://dom.spec.whatwg.org/#dom-node-removechild")]
     public Node RemoveChild(Node child)
     {
@@ -909,10 +957,12 @@ public abstract partial class Node : EventTarget
 }
 
 /// <summary>The options of <c>getRootNode()</c>.</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#dictdef-getrootnodeoptions"/>
 [IdlInterface("GetRootNodeOptions", "https://dom.spec.whatwg.org/#dictdef-getrootnodeoptions")]
 public sealed class GetRootNodeOptions
 {
     /// <summary>Gets a value indicating whether the shadow-including root is returned instead of the root.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-getrootnodeoptions-composed"/>
     [IdlMember("composed", "https://dom.spec.whatwg.org/#dom-getrootnodeoptions-composed")]
     public bool Composed { get; init; }
 }

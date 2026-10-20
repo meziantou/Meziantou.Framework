@@ -14,6 +14,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// window of the browsing context. A window is reused when an initial <c>about:blank</c> document is replaced by a
 /// same-origin document, as specified.
 /// </remarks>
+/// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#window"/>
 [IdlInterface("Window", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#window")]
 public sealed partial class Window : GlobalScope
 {
@@ -51,6 +52,7 @@ public sealed partial class Window : GlobalScope
     internal override void QueueGlobalTask(Action task) => Document.QueueGlobalTask(task);
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#concept-document-window</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-document-2"/>
     [IdlMember("document", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-document-2")]
     public Document Document { get; internal set; }
 
@@ -87,12 +89,16 @@ public sealed partial class Window : GlobalScope
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window"/>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-self"/>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-frames"/>
     [IdlMember("window", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window")]
     [IdlMember("self", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-self")]
     [IdlMember("frames", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-frames")]
     public Window Self => this;
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-name</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-name")]
     public string Name
     {
@@ -108,14 +114,18 @@ public sealed partial class Window : GlobalScope
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/custom-elements.html#dom-window-customelements</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-window-customelements"/>
     [IdlMember("customElements", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-window-customelements")]
     public CustomElementRegistry CustomElements => Document.CustomElementRegistryStorage!;
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location"/>
     [IdlMember("location", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location")]
     public Location Location => _location ??= new Location(this);
 
     /// <summary>https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator"/>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-clientinformation"/>
     [IdlMember("navigator", "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator")]
     [IdlMember("clientInformation", "https://html.spec.whatwg.org/multipage/system-state.html#dom-clientinformation")]
     public Navigator Navigator => _navigator ??= new Navigator(this);
@@ -124,14 +134,17 @@ public sealed partial class Window : GlobalScope
     internal Navigator? NavigatorOrNull => _navigator;
 
     /// <summary>Gets the Cookie Store API of the window (https://cookiestore.spec.whatwg.org/#dom-window-cookiestore).</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-window-cookiestore"/>
     [IdlMember("cookieStore", "https://cookiestore.spec.whatwg.org/#dom-window-cookiestore")]
     public CookieStore CookieStore => field ??= new CookieStore(this);
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history: the history object of the associated document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history"/>
     [IdlMember("history", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history")]
     public History History => Document.HistoryObject ??= new History(this);
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation"/>
     [IdlMember("navigation", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation")]
     public Navigation Navigation => _navigation ??= new Navigation(this);
 
@@ -139,30 +152,37 @@ public sealed partial class Window : GlobalScope
     internal Navigation? NavigationIfCreated => _navigation;
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-locationbar: the location bar <see cref="BarProp"/> object of the window.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-locationbar"/>
     [IdlMember("locationbar", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-locationbar")]
     public BarProp LocationBar => field ??= new BarProp(this);
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-menubar: the menu bar <see cref="BarProp"/> object of the window.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-menubar"/>
     [IdlMember("menubar", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-menubar")]
     public BarProp MenuBar => field ??= new BarProp(this);
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-personalbar: the personal bar <see cref="BarProp"/> object of the window.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-personalbar"/>
     [IdlMember("personalbar", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-personalbar")]
     public BarProp PersonalBar => field ??= new BarProp(this);
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-scrollbars: the scrollbar <see cref="BarProp"/> object of the window.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-scrollbars"/>
     [IdlMember("scrollbars", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-scrollbars")]
     public BarProp ScrollBars => field ??= new BarProp(this);
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-statusbar: the status bar <see cref="BarProp"/> object of the window.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-statusbar"/>
     [IdlMember("statusbar", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-statusbar")]
     public BarProp StatusBar => field ??= new BarProp(this);
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-toolbar: the toolbar <see cref="BarProp"/> object of the window.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-toolbar"/>
     [IdlMember("toolbar", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-toolbar")]
     public BarProp ToolBar => field ??= new BarProp(this);
 
     /// <summary>The status bar text: the last value it was set to (https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-status).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-status"/>
     [IdlMember("status", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-status")]
     public string Status
     {
@@ -175,10 +195,12 @@ public sealed partial class Window : GlobalScope
     } = "";
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-closed</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-closed"/>
     [IdlMember("closed", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-closed")]
     public bool Closed => BrowsingContext is not { } browsingContext || browsingContext.IsClosing;
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-close</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-close"/>
     [IdlMember("close", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-close")]
     public void Close()
     {
@@ -195,6 +217,7 @@ public sealed partial class Window : GlobalScope
     /// https://html.spec.whatwg.org/multipage/interaction.html#dom-window-focus: runs the focusing steps for the navigable of the
     /// window (its active document). As in the browsers, the document keeps its focused element (see <see cref="FocusModel.FocusNavigable"/>).
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-window-focus"/>
     [IdlMember("focus", "https://html.spec.whatwg.org/multipage/interaction.html#dom-window-focus")]
     public void Focus()
     {
@@ -205,16 +228,19 @@ public sealed partial class Window : GlobalScope
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/interaction.html#dom-window-blur: does nothing.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-window-blur"/>
     [IdlMember("blur", "https://html.spec.whatwg.org/multipage/interaction.html#dom-window-blur")]
     public void Blur()
     {
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-stop: aborts the ongoing navigation.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-stop"/>
     [IdlMember("stop", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-stop")]
     public void Stop() => BrowsingContext?.StopLoading();
 
     /// <summary>The number of document-tree child navigables (https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-length).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-length"/>
     [IdlMember("length", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-length")]
     public uint Length => BrowsingContext is null ? 0 : (uint)Document.GetDocumentTreeChildNavigables().Count;
 
@@ -237,6 +263,7 @@ public sealed partial class Window : GlobalScope
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-top</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-top"/>
     [IdlMember("top", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-top")]
     public Window? Top => BrowsingContext?.Top.Window;
 
@@ -245,6 +272,7 @@ public sealed partial class Window : GlobalScope
     /// an auxiliary browsing context, or null (also once the opener is discarded, e.g. closed). Setting it to null disowns
     /// the opener.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-opener"/>
     [IdlMember("opener", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-opener")]
     public object? Opener
     {
@@ -273,6 +301,7 @@ public sealed partial class Window : GlobalScope
     /// </param>
     /// <returns>The window of the target navigable, or null (<c>noopener</c>, <c>noreferrer</c>, or no navigable).</returns>
     /// <exception cref="DomException">A <c>SyntaxError</c> when the URL cannot be parsed.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-open"/>
     [IdlMember("open", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-open")]
     public Window? Open(string url = "", string target = "_blank", string features = "") => Open(url, target, features, sourceNavigable: null);
 
@@ -381,6 +410,7 @@ public sealed partial class Window : GlobalScope
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-parent</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-parent"/>
     [IdlMember("parent", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-parent")]
     public Window? Parent
     {
@@ -394,6 +424,7 @@ public sealed partial class Window : GlobalScope
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-frameelement</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-frameelement"/>
     [IdlMember("frameElement", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-frameelement")]
     public Element? FrameElement
     {
@@ -408,6 +439,7 @@ public sealed partial class Window : GlobalScope
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-originagentcluster: whether the agent cluster of the window is origin-keyed.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-originagentcluster"/>
     [IdlMember("originAgentCluster", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-originagentcluster")]
     public bool OriginAgentCluster => AgentCluster?.IsOriginKeyed ?? false;
 
@@ -415,16 +447,19 @@ public sealed partial class Window : GlobalScope
     internal AgentCluster? AgentCluster { get; init; }
 
     /// <summary>https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-alert: simple dialogs cannot be shown, so it does nothing.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-alert"/>
     [IdlMember("alert", "https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-alert")]
     public void Alert()
     {
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-alert: simple dialogs cannot be shown, so it does nothing.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-alert"/>
     [IdlMember("alert", "https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-alert")]
     public void Alert(string message) => ArgumentNullException.ThrowIfNull(message);
 
     /// <summary>https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-confirm: simple dialogs cannot be shown, so it returns false.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-confirm"/>
     [IdlMember("confirm", "https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-confirm")]
     public bool Confirm(string message = "")
     {
@@ -433,6 +468,7 @@ public sealed partial class Window : GlobalScope
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-prompt: simple dialogs cannot be shown, so it returns null.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-prompt"/>
     [IdlMember("prompt", "https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-prompt")]
     public string? Prompt(string message = "", string @default = "")
     {
@@ -442,24 +478,28 @@ public sealed partial class Window : GlobalScope
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-print: there is no rendering, so it does nothing.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-print"/>
     [IdlMember("print", "https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-print")]
     public void Print()
     {
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/obsolete.html#dom-window-captureevents: does nothing.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-window-captureevents"/>
     [IdlMember("captureEvents", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-window-captureevents")]
     public void CaptureEvents()
     {
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/obsolete.html#dom-window-releaseevents: does nothing.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-window-releaseevents"/>
     [IdlMember("releaseEvents", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-window-releaseevents")]
     public void ReleaseEvents()
     {
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/obsolete.html#dom-external: the obsolete <see cref="Dom.External"/> object.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-external"/>
     [IdlMember("external", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-external")]
     public External External => field ??= new External();
 
@@ -467,6 +507,7 @@ public sealed partial class Window : GlobalScope
     /// https://dom.spec.whatwg.org/#dom-window-event: the event being dispatched to a listener whose callback's global object
     /// is this window.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-window-event"/>
     [IdlMember("event", "https://dom.spec.whatwg.org/#dom-window-event")]
     public Event? Event => CurrentEvent;
 
@@ -478,10 +519,12 @@ public sealed partial class Window : GlobalScope
     // ----------------------------------------------------------------------------------------------------------------
 
     /// <summary>https://html.spec.whatwg.org/multipage/webappapis.html#dom-origin</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#dom-origin"/>
     [IdlMember("origin", "https://html.spec.whatwg.org/multipage/webappapis.html#dom-origin")]
     public override string Origin => Document.SerializeOrigin();
 
     /// <summary>https://html.spec.whatwg.org/multipage/webappapis.html#dom-issecurecontext</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#dom-issecurecontext"/>
     [IdlMember("isSecureContext", "https://html.spec.whatwg.org/multipage/webappapis.html#dom-issecurecontext")]
     public override bool IsSecureContext
     {
@@ -499,6 +542,7 @@ public sealed partial class Window : GlobalScope
     }
 
     /// <summary>https://wicg.github.io/anonymous-iframe/#dom-window-credentialless: whether the document is loaded in a credentialless iframe.</summary>
+    /// <seealso href="https://wicg.github.io/anonymous-iframe/#dom-window-credentialless"/>
     [IdlMember("credentialless", "https://wicg.github.io/anonymous-iframe/#dom-window-credentialless")]
     public bool Credentialless => Document.IsCredentialless;
 
@@ -508,6 +552,7 @@ public sealed partial class Window : GlobalScope
     /// policy compatible with cross-origin isolation), and the document may use the "cross-origin-isolated" feature
     /// (https://html.spec.whatwg.org/multipage/webappapis.html#concept-settings-object-cross-origin-isolated-capability).
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#dom-crossoriginisolated"/>
     [IdlMember("crossOriginIsolated", "https://html.spec.whatwg.org/multipage/webappapis.html#dom-crossoriginisolated")]
     public override bool CrossOriginIsolated => BrowsingContext is { } browsingContext
         && browsingContext.Group.CrossOriginIsolationMode == CrossOriginIsolationMode.Concrete

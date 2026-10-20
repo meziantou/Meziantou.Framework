@@ -6,81 +6,100 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// <summary>https://w3c.github.io/IntersectionObserver/#callbackdef-intersectionobservercallback</summary>
 /// <param name="entries">The entries of the targets whose intersection with the root changed.</param>
 /// <param name="observer">The observer.</param>
+/// <seealso href="https://w3c.github.io/IntersectionObserver/#callbackdef-intersectionobservercallback"/>
 [IdlInterface("IntersectionObserverCallback", "https://w3c.github.io/IntersectionObserver/#callbackdef-intersectionobservercallback")]
 public delegate void IntersectionObserverCallback(IReadOnlyList<IntersectionObserverEntry> entries, IntersectionObserver observer);
 
 /// <summary>The options of an <see cref="IntersectionObserver"/> (https://w3c.github.io/IntersectionObserver/#dictdef-intersectionobserverinit).</summary>
+/// <seealso href="https://w3c.github.io/IntersectionObserver/#dictdef-intersectionobserverinit"/>
 [IdlInterface("IntersectionObserverInit", "https://w3c.github.io/IntersectionObserver/#dictdef-intersectionobserverinit")]
 public sealed class IntersectionObserverInit
 {
     /// <summary>Gets or sets the intersection root: an <see cref="Element"/> or a <see cref="Document"/>, or null for the implicit root (the viewport of the top-level browsing context).</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverinit-root"/>
     [IdlMember("root", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverinit-root")]
     public Node? Root { get; set; }
 
     /// <summary>Gets or sets the offsets applied to the root intersection rectangle: 1 to 4 absolute lengths or percentages, as the CSS <c>margin</c> property.</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverinit-rootmargin"/>
     [IdlMember("rootMargin", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverinit-rootmargin")]
     public string RootMargin { get; set; } = "0px";
 
     /// <summary>Gets or sets the offsets applied to the scrollports between the target and the root: 1 to 4 absolute lengths or percentages.</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverinit-scrollmargin"/>
     [IdlMember("scrollMargin", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverinit-scrollmargin")]
     public string ScrollMargin { get; set; } = "0px";
 
     /// <summary>Gets or sets the thresholds: a <see cref="double"/> or a sequence of <see cref="double"/> values between 0 and 1 (0 by default).</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverinit-threshold"/>
     [IdlMember("threshold", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverinit-threshold")]
     public object? Threshold { get; set; } = 0d;
 
     /// <summary>Gets or sets the minimum delay in milliseconds between the notifications of a target.</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverinit-delay"/>
     [IdlMember("delay", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverinit-delay")]
     public int Delay { get; set; }
 
     /// <summary>Gets or sets whether the observer tracks the visibility of the targets (Intersection Observer V2).</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverinit-trackvisibility"/>
     [IdlMember("trackVisibility", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverinit-trackvisibility")]
     public bool TrackVisibility { get; set; }
 }
 
 /// <summary>The values of an <see cref="IntersectionObserverEntry"/> (https://w3c.github.io/IntersectionObserver/#dictdef-intersectionobserverentryinit).</summary>
+/// <seealso href="https://w3c.github.io/IntersectionObserver/#dictdef-intersectionobserverentryinit"/>
 [IdlInterface("IntersectionObserverEntryInit", "https://w3c.github.io/IntersectionObserver/#dictdef-intersectionobserverentryinit")]
 public sealed class IntersectionObserverEntryInit
 {
     /// <summary>Gets or sets the time of the observation.</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentryinit-time"/>
     [IdlMember("time", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentryinit-time")]
     public required double Time { get; init; }
 
     /// <summary>Gets or sets the root intersection rectangle, or null.</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentryinit-rootbounds"/>
     [IdlMember("rootBounds", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentryinit-rootbounds")]
     public required DomRectInit? RootBounds { get; init; }
 
     /// <summary>Gets or sets the bounding box of the target.</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentryinit-boundingclientrect"/>
     [IdlMember("boundingClientRect", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentryinit-boundingclientrect")]
     public required DomRectInit BoundingClientRect { get; init; }
 
     /// <summary>Gets or sets the intersection of the target with the root.</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentryinit-intersectionrect"/>
     [IdlMember("intersectionRect", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentryinit-intersectionrect")]
     public required DomRectInit IntersectionRect { get; init; }
 
     /// <summary>Gets or sets whether the target intersects the root.</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentryinit-isintersecting"/>
     [IdlMember("isIntersecting", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentryinit-isintersecting")]
     public required bool IsIntersecting { get; init; }
 
     /// <summary>Gets or sets whether the target is visible.</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentryinit-isvisible"/>
     [IdlMember("isVisible", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentryinit-isvisible")]
     public required bool IsVisible { get; init; }
 
     /// <summary>Gets or sets the ratio of the intersection area to the area of the bounding box of the target.</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentryinit-intersectionratio"/>
     [IdlMember("intersectionRatio", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentryinit-intersectionratio")]
     public required double IntersectionRatio { get; init; }
 
     /// <summary>Gets or sets the target.</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentryinit-target"/>
     [IdlMember("target", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentryinit-target")]
     public required Element Target { get; init; }
 }
 
 /// <summary>A change of the intersection of a target with the root of an observer (https://w3c.github.io/IntersectionObserver/#intersection-observer-entry).</summary>
+/// <seealso href="https://w3c.github.io/IntersectionObserver/#intersectionobserverentry"/>
 [IdlInterface("IntersectionObserverEntry", "https://w3c.github.io/IntersectionObserver/#intersectionobserverentry")]
 public sealed class IntersectionObserverEntry
 {
     /// <summary>Creates an entry from its values.</summary>
     /// <param name="intersectionObserverEntryInit">The values of the entry.</param>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-intersectionobserverentry"/>
     [IdlMember("constructor", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-intersectionobserverentry")]
     public IntersectionObserverEntry(IntersectionObserverEntryInit intersectionObserverEntryInit)
     {
@@ -108,34 +127,42 @@ public sealed class IntersectionObserverEntry
     }
 
     /// <summary>Gets the time at which the intersection was recorded, relative to the time origin of the global object of the observer.</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-time"/>
     [IdlMember("time", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-time")]
     public double Time { get; }
 
     /// <summary>Gets the root intersection rectangle for a same-origin-domain target, else null.</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-rootbounds"/>
     [IdlMember("rootBounds", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-rootbounds")]
     public DomRectReadOnly? RootBounds { get; }
 
     /// <summary>Gets the bounding box of the target (see <see cref="Element.GetBoundingClientRect"/>).</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-boundingclientrect"/>
     [IdlMember("boundingClientRect", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-boundingclientrect")]
     public DomRectReadOnly BoundingClientRect { get; }
 
     /// <summary>Gets the part of the bounding box of the target that intersects the root intersection rectangle, after the clipping by its ancestors.</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-intersectionrect"/>
     [IdlMember("intersectionRect", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-intersectionrect")]
     public DomRectReadOnly IntersectionRect { get; }
 
     /// <summary>Gets whether the target intersects the root (the edge-adjacent and zero-area intersections included).</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-isintersecting"/>
     [IdlMember("isIntersecting", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-isintersecting")]
     public bool IsIntersecting { get; }
 
     /// <summary>Gets whether the target is visible (only computed when the observer tracks the visibility).</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-isvisible"/>
     [IdlMember("isVisible", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-isvisible")]
     public bool IsVisible { get; }
 
     /// <summary>Gets the ratio of the intersection area to the area of the bounding box of the target.</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-intersectionratio"/>
     [IdlMember("intersectionRatio", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-intersectionratio")]
     public double IntersectionRatio { get; }
 
     /// <summary>Gets the observed element.</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-target"/>
     [IdlMember("target", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserverentry-target")]
     public Element Target { get; }
 }
@@ -147,6 +174,7 @@ public sealed class IntersectionObserverEntry
 /// https://html.spec.whatwg.org/multipage/webappapis.html#update-the-rendering), and the entries are delivered by a task, so
 /// only the elements of the documents of a <see cref="BrowsingContext"/> intersect.
 /// </summary>
+/// <seealso href="https://w3c.github.io/IntersectionObserver/#intersectionobserver"/>
 [IdlInterface("IntersectionObserver", "https://w3c.github.io/IntersectionObserver/#intersectionobserver")]
 public sealed class IntersectionObserver
 {
@@ -168,6 +196,7 @@ public sealed class IntersectionObserver
     /// <param name="options">The options.</param>
     /// <exception cref="DomException">A margin cannot be parsed (<c>SyntaxError</c>).</exception>
     /// <exception cref="RangeErrorException">A threshold is not between 0 and 1.</exception>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-intersectionobserver"/>
     [IdlMember("constructor", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-intersectionobserver")]
     public IntersectionObserver(IntersectionObserverCallback callback, IntersectionObserverInit? options = null)
     {
@@ -208,26 +237,32 @@ public sealed class IntersectionObserver
     internal long Sequence { get; }
 
     /// <summary>Gets the intersection root: an <see cref="Element"/> or a <see cref="Document"/>, or null for the implicit root.</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-root"/>
     [IdlMember("root", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-root")]
     public Node? Root { get; }
 
     /// <summary>Gets the root margin, serialized as four space-separated lengths (pixels) or percentages.</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-rootmargin"/>
     [IdlMember("rootMargin", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-rootmargin")]
     public string RootMargin => _rootMargin.ToString();
 
     /// <summary>Gets the scroll margin, serialized as four space-separated lengths (pixels) or percentages.</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-scrollmargin"/>
     [IdlMember("scrollMargin", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-scrollmargin")]
     public string ScrollMargin => _scrollMargin.ToString();
 
     /// <summary>Gets the thresholds, in increasing order.</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-thresholds"/>
     [IdlMember("thresholds", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-thresholds")]
     public IReadOnlyList<double> Thresholds => _thresholds;
 
     /// <summary>Gets the minimum delay in milliseconds between the notifications of a target (at least 100 when the visibility is tracked).</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-delay"/>
     [IdlMember("delay", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-delay")]
     public int Delay { get; }
 
     /// <summary>Gets whether the observer tracks the visibility of the targets.</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-trackvisibility"/>
     [IdlMember("trackVisibility", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-trackvisibility")]
     public bool TrackVisibility { get; }
 
@@ -236,6 +271,7 @@ public sealed class IntersectionObserver
 
     /// <summary>Starts observing an element (https://w3c.github.io/IntersectionObserver/#observe-target-element).</summary>
     /// <param name="target">The element to observe.</param>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-observe"/>
     [IdlMember("observe", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-observe")]
     public void Observe(Element target)
     {
@@ -250,6 +286,7 @@ public sealed class IntersectionObserver
 
     /// <summary>Stops observing an element (https://w3c.github.io/IntersectionObserver/#unobserve-target-element).</summary>
     /// <param name="target">The observed element.</param>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-unobserve"/>
     [IdlMember("unobserve", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-unobserve")]
     public void Unobserve(Element target)
     {
@@ -269,6 +306,7 @@ public sealed class IntersectionObserver
     /// Stops observing all the elements (https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-disconnect). As in
     /// the browsers, the entries that are queued are not delivered (WPT intersection-observer/disconnect.html).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-disconnect"/>
     [IdlMember("disconnect", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-disconnect")]
     public void Disconnect()
     {
@@ -281,6 +319,7 @@ public sealed class IntersectionObserver
     }
 
     /// <summary>Returns the queued entries and clears them (https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-takerecords).</summary>
+    /// <seealso href="https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-takerecords"/>
     [IdlMember("takeRecords", "https://w3c.github.io/IntersectionObserver/#dom-intersectionobserver-takerecords")]
     public IReadOnlyList<IntersectionObserverEntry> TakeRecords()
     {

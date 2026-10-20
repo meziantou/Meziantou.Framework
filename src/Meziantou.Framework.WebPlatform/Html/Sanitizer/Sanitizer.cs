@@ -3,11 +3,13 @@ using Meziantou.Framework.WebPlatform.Html;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#sanitizer</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#sanitizer"/>
 [IdlInterface("Sanitizer", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#sanitizer")]
 public sealed class Sanitizer
 {
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-sanitizer</summary>
     /// <param name="configuration">The configuration, or null for the built-in safe default configuration ("default").</param>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-sanitizer"/>
     [IdlMember("constructor", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-sanitizer")]
     public Sanitizer(SanitizerConfigOrSanitizerPresets? configuration = null)
     {
@@ -66,30 +68,35 @@ public sealed class Sanitizer
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-get</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-get"/>
     [IdlMember("get", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-get")]
     public SanitizerConfig Get() => Configuration.ToSanitizerConfig();
 
     /// <summary>
     /// Adds an element to the allow list of the configuration; returns whether the configuration changed.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-allowelement"/>
     [IdlMember("allowElement", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-allowelement")]
     public bool AllowElement(SanitizerElementWithAttributes element) => Configuration.AllowElement(SanitizerConfiguration.CanonicalizeElementWithAttributes(element));
 
     /// <summary>
     /// Adds an element to the remove list of the configuration; returns whether the configuration changed.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-removeelement"/>
     [IdlMember("removeElement", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-removeelement")]
     public bool RemoveElement(SanitizerElement element) => Configuration.RemoveElement(SanitizerConfiguration.CanonicalizeElement(element));
 
     /// <summary>
     /// Adds an element to the list of elements replaced with their children; returns whether the configuration changed.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-replaceelementwithchildren"/>
     [IdlMember("replaceElementWithChildren", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-replaceelementwithchildren")]
     public bool ReplaceElementWithChildren(SanitizerElement element) => Configuration.ReplaceElementWithChildren(SanitizerConfiguration.CanonicalizeElement(element));
 
     /// <summary>
     /// Adds a processing instruction to the allow list of the configuration; returns whether the configuration changed.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-allowprocessinginstruction"/>
     [IdlMember("allowProcessingInstruction", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-allowprocessinginstruction")]
     public bool AllowProcessingInstruction(SanitizerPI pi) => Configuration.AllowProcessingInstruction(SanitizerConfiguration.CanonicalizeProcessingInstruction(pi));
 
@@ -97,36 +104,43 @@ public sealed class Sanitizer
     /// Adds a processing instruction to the remove list of the configuration; returns whether the configuration
     /// changed.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-removeprocessinginstruction"/>
     [IdlMember("removeProcessingInstruction", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-removeprocessinginstruction")]
     public bool RemoveProcessingInstruction(SanitizerPI pi) => Configuration.RemoveProcessingInstruction(SanitizerConfiguration.CanonicalizeProcessingInstruction(pi));
 
     /// <summary>
     /// Adds an attribute to the allow list of the configuration; returns whether the configuration changed.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-allowattribute"/>
     [IdlMember("allowAttribute", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-allowattribute")]
     public bool AllowAttribute(SanitizerAttribute attribute) => Configuration.AllowAttribute(SanitizerConfiguration.CanonicalizeAttribute(attribute));
 
     /// <summary>
     /// Adds an attribute to the remove list of the configuration; returns whether the configuration changed.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-removeattribute"/>
     [IdlMember("removeAttribute", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-removeattribute")]
     public bool RemoveAttribute(SanitizerAttribute attribute) => Configuration.RemoveAttribute(SanitizerConfiguration.CanonicalizeAttribute(attribute));
 
     /// <summary>Sets whether comments are allowed; returns whether the configuration changed.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-setcomments"/>
     [IdlMember("setComments", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-setcomments")]
     public bool SetComments(bool allow) => Configuration.SetComments(allow);
 
     /// <summary>
     /// Sets whether custom <c>data-*</c> attributes are allowed; returns whether the configuration changed.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-setdataattributes"/>
     [IdlMember("setDataAttributes", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-setdataattributes")]
     public bool SetDataAttributes(bool allow) => Configuration.SetDataAttributes(allow);
 
     /// <summary>Sets whether <c>javascript:</c> URLs are allowed; returns whether the configuration changed.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-setjavascripturls"/>
     [IdlMember("setJavascriptURLs", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-setjavascripturls")]
     public bool SetJavaScriptUrls(bool allow) => Configuration.SetJavaScriptUrls(allow);
 
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-removeunsafe</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-removeunsafe"/>
     [IdlMember("removeUnsafe", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizer-removeunsafe")]
     public bool RemoveUnsafe() => Configuration.RemoveUnsafe();
 }

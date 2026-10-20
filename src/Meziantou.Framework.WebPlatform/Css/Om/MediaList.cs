@@ -8,6 +8,7 @@ using Meziantou.Framework.WebPlatform.Infra;
 namespace Meziantou.Framework.WebPlatform.Css.Om;
 
 /// <summary>https://drafts.csswg.org/cssom/#the-medialist-interface</summary>
+/// <seealso href="https://drafts.csswg.org/cssom/#medialist"/>
 [IdlInterface("MediaList", "https://drafts.csswg.org/cssom/#medialist")]
 public sealed class MediaList : IReadOnlyList<string>
 {
@@ -49,6 +50,7 @@ public sealed class MediaList : IReadOnlyList<string>
     };
 
     /// <summary>https://drafts.csswg.org/cssom/#dom-medialist-mediatext</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-medialist-mediatext"/>
     [IdlMember("mediaText", "https://drafts.csswg.org/cssom/#dom-medialist-mediatext")]
     public string MediaText
     {
@@ -67,6 +69,7 @@ public sealed class MediaList : IReadOnlyList<string>
     }
 
     /// <summary>Gets the number of media queries in the list.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-medialist-length"/>
     [IdlMember("length", "https://drafts.csswg.org/cssom/#dom-medialist-length")]
     public uint Length => (uint)_queries.Count;
 
@@ -75,10 +78,12 @@ public sealed class MediaList : IReadOnlyList<string>
     public int Count => _queries.Count;
 
     /// <summary>Returns the media query at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-medialist-item"/>
     [IdlMember("item", "https://drafts.csswg.org/cssom/#dom-medialist-item")]
     public string? Item(uint index) => index < (uint)_queries.Count ? _queries[(int)index] : null;
 
     /// <summary>Gets the media query at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-medialist-item"/>
     [IdlMember("getter", "https://drafts.csswg.org/cssom/#dom-medialist-item")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public string? this[uint index] => Item(index);
@@ -89,6 +94,7 @@ public sealed class MediaList : IReadOnlyList<string>
     public string this[int index] => _queries[index];
 
     /// <summary>https://drafts.csswg.org/cssom/#dom-medialist-appendmedium</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-medialist-appendmedium"/>
     [IdlMember("appendMedium", "https://drafts.csswg.org/cssom/#dom-medialist-appendmedium")]
     public void AppendMedium(string medium)
     {
@@ -106,6 +112,7 @@ public sealed class MediaList : IReadOnlyList<string>
     }
 
     /// <summary>https://drafts.csswg.org/cssom/#dom-medialist-deletemedium</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-medialist-deletemedium"/>
     [IdlMember("deleteMedium", "https://drafts.csswg.org/cssom/#dom-medialist-deletemedium")]
     public void DeleteMedium(string medium)
     {
@@ -119,6 +126,7 @@ public sealed class MediaList : IReadOnlyList<string>
     }
 
     /// <summary>Returns the serialized media query list.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-medialist-mediatext"/>
     [IdlMember("stringifier", "https://drafts.csswg.org/cssom/#dom-medialist-mediatext")]
     public override string ToString() => MediaText;
 

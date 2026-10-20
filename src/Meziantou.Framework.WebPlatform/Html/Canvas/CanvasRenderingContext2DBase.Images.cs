@@ -23,6 +23,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// <param name="dx">The x coordinate of the destination.</param>
     /// <param name="dy">The y coordinate of the destination.</param>
     /// <exception cref="DomException">An <c>InvalidStateError</c> when the image is broken, or a canvas or a bitmap without pixels.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-drawimage"/>
     [IdlMember("drawImage", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-drawimage")]
     public void DrawImage(object? image, double dx, double dy)
     {
@@ -40,6 +41,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// <param name="dw">The width of the destination.</param>
     /// <param name="dh">The height of the destination.</param>
     /// <exception cref="DomException">An <c>InvalidStateError</c> when the image is broken, or a canvas or a bitmap without pixels.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-drawimage"/>
     [IdlMember("drawImage", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-drawimage")]
     public void DrawImage(object? image, double dx, double dy, double dw, double dh)
     {
@@ -61,6 +63,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// <param name="dw">The width of the destination.</param>
     /// <param name="dh">The height of the destination.</param>
     /// <exception cref="DomException">An <c>InvalidStateError</c> when the image is broken, or a canvas or a bitmap without pixels.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-drawimage"/>
     [IdlMember("drawImage", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-drawimage")]
     public void DrawImage(object? image, double sx, double sy, double sw, double sh, double dx, double dy, double dw, double dh)
     {
@@ -307,6 +310,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// <param name="image">An <c>img</c>, <c>svg:image</c>, <c>video</c> or <c>canvas</c> element, an <see cref="ImageBitmap"/>, an <see cref="OffscreenCanvas"/> or a <see cref="Css.TypedOm.CssImageValue"/> (the image of a URL fetched for the styles of the document).</param>
     /// <param name="repetition"><c>repeat</c> (or the empty string), <c>repeat-x</c>, <c>repeat-y</c> or <c>no-repeat</c>.</param>
     /// <exception cref="DomException">An <c>InvalidStateError</c> when the image is broken, or a canvas or a bitmap without pixels; a <c>SyntaxError</c> when the repetition is invalid.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-createpattern"/>
     [IdlMember("createPattern", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-createpattern")]
     public CanvasPattern? CreatePattern(object? image, string repetition)
     {
@@ -345,6 +349,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// <param name="sh">The height (its absolute value is used).</param>
     /// <param name="settings">The color space (the color space of the canvas by default) and the format of the pixels.</param>
     /// <exception cref="DomException">An <c>IndexSizeError</c> when the width or the height is zero.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-createimagedata"/>
     [IdlMember("createImageData", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-createimagedata")]
     public ImageData CreateImageData(int sw, int sh, ImageDataSettings? settings = null)
     {
@@ -355,6 +360,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Creates a transparent black image data of the size and color space of another one (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-createimagedata-imagedata).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-createimagedata-imagedata"/>
     [IdlMember("createImageData", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-createimagedata-imagedata")]
     public ImageData CreateImageData(ImageData imageData)
     {
@@ -367,6 +373,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// not premultiplied, in the requested color space; the pixels outside of the bitmap are transparent black.
     /// </summary>
     /// <exception cref="DomException">An <c>IndexSizeError</c> when the width or the height is zero, a <c>SecurityError</c> when the canvas is not origin-clean.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-getimagedata"/>
     [IdlMember("getImageData", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-getimagedata")]
     public ImageData GetImageData(int sx, int sy, int sw, int sh, ImageDataSettings? settings = null)
     {
@@ -409,6 +416,7 @@ public abstract partial class CanvasRenderingContext2DBase
 
     /// <summary>Replaces the pixels of the bitmap with the pixels of an image data (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-putimagedata).</summary>
     /// <exception cref="DomException">An <c>InvalidStateError</c> when the buffer of the image data is detached.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-putimagedata"/>
     [IdlMember("putImageData", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-putimagedata")]
     public void PutImageData(ImageData imageData, int dx, int dy)
     {
@@ -421,6 +429,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// the pixels are not composited, and the current transformation matrix, the clip region, the global alpha and the shadows do not apply.
     /// </summary>
     /// <exception cref="DomException">An <c>InvalidStateError</c> when the buffer of the image data is detached.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-putimagedata"/>
     [IdlMember("putImageData", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-putimagedata")]
     public void PutImageData(ImageData imageData, int dx, int dy, int dirtyX, int dirtyY, int dirtyWidth, int dirtyHeight)
     {

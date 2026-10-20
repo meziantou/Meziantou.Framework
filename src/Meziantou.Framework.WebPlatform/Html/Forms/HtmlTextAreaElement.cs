@@ -20,10 +20,12 @@ public partial class HtmlTextAreaElement : IEditableTextControl
     private static string NormalizeNewlines(string value) => value.Contains('\r', StringComparison.Ordinal) ? value.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n') : value;
 
     /// <summary>Gets the type of the control, always <c>textarea</c>.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-type"/>
     [IdlMember("type", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-type")]
     public string Type => "textarea";
 
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-defaultvalue</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-defaultvalue"/>
     [IdlMember("defaultValue", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-defaultvalue")]
     public string DefaultValue
     {
@@ -32,6 +34,7 @@ public partial class HtmlTextAreaElement : IEditableTextControl
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-value</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-value"/>
     [IdlMember("value", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-value")]
     public string Value
     {
@@ -51,6 +54,7 @@ public partial class HtmlTextAreaElement : IEditableTextControl
     }
 
     /// <summary>Gets the length of the value of the control, in UTF-16 code units.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-textlength"/>
     [IdlMember("textLength", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-textlength")]
     public uint TextLength => (uint)ApiValue.Length;
 
@@ -139,10 +143,12 @@ public partial class HtmlTextAreaElement : IEditableTextControl
     private TextSelection Selection => new(this);
 
     /// <summary>Selects all the text of the control.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-select"/>
     [IdlMember("select", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-select")]
     public void Select() => Selection.SetRange(0, ApiValue.Length, "none");
 
     /// <summary>Gets or sets the index of the start of the text selection.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-selectionstart"/>
     [IdlMember("selectionStart", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-selectionstart")]
     public uint SelectionStart
     {
@@ -151,6 +157,7 @@ public partial class HtmlTextAreaElement : IEditableTextControl
     }
 
     /// <summary>Gets or sets the index of the end of the text selection.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-selectionend"/>
     [IdlMember("selectionEnd", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-selectionend")]
     public uint SelectionEnd
     {
@@ -161,6 +168,7 @@ public partial class HtmlTextAreaElement : IEditableTextControl
     /// <summary>
     /// Gets or sets the direction of the text selection (<c>forward</c>, <c>backward</c> or <c>none</c>).
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-selectiondirection"/>
     [IdlMember("selectionDirection", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-selectiondirection")]
     public string SelectionDirection
     {
@@ -169,6 +177,7 @@ public partial class HtmlTextAreaElement : IEditableTextControl
     }
 
     /// <summary>Replaces the selected text with the given text.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-setrangetext"/>
     [IdlMember("setRangeText", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-setrangetext")]
     public void SetRangeText(string replacement) => TextControlSelection.SetRangeText(Selection, replacement, null, null, "preserve");
 
@@ -176,10 +185,12 @@ public partial class HtmlTextAreaElement : IEditableTextControl
     /// Replaces the text between the start and end indexes with the given text and updates the selection according to
     /// the selection mode.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-setrangetext"/>
     [IdlMember("setRangeText", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-setrangetext")]
     public void SetRangeText(string replacement, uint start, uint end, string selectionMode = "preserve") => TextControlSelection.SetRangeText(Selection, replacement, start, end, selectionMode);
 
     /// <summary>Selects the text between the start and end indexes, with the given direction.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-setselectionrange"/>
     [IdlMember("setSelectionRange", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-textarea/input-setselectionrange")]
     public void SetSelectionRange(uint start, uint end, string? direction = null) => TextControlSelection.SetSelectionRange(Selection, start, end, direction);
 

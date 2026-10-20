@@ -1,58 +1,71 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#sanitizerpresets</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#sanitizerpresets"/>
 [IdlInterface("SanitizerPresets", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#sanitizerpresets")]
 public enum SanitizerPresets
 {
     /// <summary>The built-in safe default configuration.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerpresets-default"/>
     [IdlMember("default", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerpresets-default")]
     Default,
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-sanitizerelementnamespace</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-sanitizerelementnamespace"/>
 [IdlInterface("SanitizerElementNamespace", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-sanitizerelementnamespace")]
 public class SanitizerElementNamespace
 {
     /// <summary>Gets the local name of the element.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerelementnamespace-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerelementnamespace-name")]
     public required string Name { get; init; }
 
     /// <summary>Gets the namespace of the element, the HTML namespace by default.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerelementnamespace-namespace"/>
     [IdlMember("namespace", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerelementnamespace-namespace")]
     public string? Namespace { get; init; } = Namespaces.Html;
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-sanitizerelementnamespacewithattributes</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-sanitizerelementnamespacewithattributes"/>
 [IdlInterface("SanitizerElementNamespaceWithAttributes", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-sanitizerelementnamespacewithattributes")]
 public sealed class SanitizerElementNamespaceWithAttributes : SanitizerElementNamespace
 {
     /// <summary>Gets the attributes to allow on the element.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerelementnamespacewithattributes-attributes"/>
     [IdlMember("attributes", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerelementnamespacewithattributes-attributes")]
     public IReadOnlyList<SanitizerAttribute>? Attributes { get; init; }
 
     /// <summary>Gets the attributes to remove from the element.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerelementnamespacewithattributes-removeattributes"/>
     [IdlMember("removeAttributes", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerelementnamespacewithattributes-removeattributes")]
     public IReadOnlyList<SanitizerAttribute>? RemoveAttributes { get; init; }
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-sanitizerattributenamespace</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-sanitizerattributenamespace"/>
 [IdlInterface("SanitizerAttributeNamespace", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-sanitizerattributenamespace")]
 public sealed class SanitizerAttributeNamespace
 {
     /// <summary>Gets the local name of the attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerattributenamespace-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerattributenamespace-name")]
     public required string Name { get; init; }
 
     /// <summary>Gets the namespace of the attribute, or null when the attribute has no namespace.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerattributenamespace-namespace"/>
     [IdlMember("namespace", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerattributenamespace-namespace")]
     public string? Namespace { get; init; }
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-sanitizerprocessinginstruction</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-sanitizerprocessinginstruction"/>
 [IdlInterface("SanitizerProcessingInstruction", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-sanitizerprocessinginstruction")]
 public sealed class SanitizerProcessingInstruction
 {
     /// <summary>Gets the target of the processing instruction.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerprocessinginstruction-target"/>
     [IdlMember("target", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerprocessinginstruction-target")]
     public required string Target { get; init; }
 }
@@ -61,55 +74,68 @@ public sealed class SanitizerProcessingInstruction
 /// https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-sanitizerconfig. A member that is null
 /// does not exist.
 /// </summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-sanitizerconfig"/>
 [IdlInterface("SanitizerConfig", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-sanitizerconfig")]
 public sealed class SanitizerConfig
 {
     /// <summary>Gets the elements to allow, with their allowed or removed attributes.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerconfig-elements"/>
     [IdlMember("elements", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerconfig-elements")]
     public IReadOnlyList<SanitizerElementWithAttributes>? Elements { get; init; }
 
     /// <summary>Gets the elements to remove with their content.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerconfig-removeelements"/>
     [IdlMember("removeElements", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerconfig-removeelements")]
     public IReadOnlyList<SanitizerElement>? RemoveElements { get; init; }
 
     /// <summary>Gets the elements to replace with their children.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerconfig-replacewithchildrenelements"/>
     [IdlMember("replaceWithChildrenElements", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerconfig-replacewithchildrenelements")]
     public IReadOnlyList<SanitizerElement>? ReplaceWithChildrenElements { get; init; }
 
     /// <summary>Gets the processing instructions to allow.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerconfig-processinginstructions"/>
     [IdlMember("processingInstructions", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerconfig-processinginstructions")]
     public IReadOnlyList<SanitizerPI>? ProcessingInstructions { get; init; }
 
     /// <summary>Gets the processing instructions to remove.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerconfig-removeprocessinginstructions"/>
     [IdlMember("removeProcessingInstructions", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerconfig-removeprocessinginstructions")]
     public IReadOnlyList<SanitizerPI>? RemoveProcessingInstructions { get; init; }
 
     /// <summary>Gets the attributes to allow.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerconfig-attributes"/>
     [IdlMember("attributes", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerconfig-attributes")]
     public IReadOnlyList<SanitizerAttribute>? Attributes { get; init; }
 
     /// <summary>Gets the attributes to remove.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerconfig-removeattributes"/>
     [IdlMember("removeAttributes", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerconfig-removeattributes")]
     public IReadOnlyList<SanitizerAttribute>? RemoveAttributes { get; init; }
 
     /// <summary>Gets a value indicating whether comments are allowed.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerconfig-comments"/>
     [IdlMember("comments", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerconfig-comments")]
     public bool? Comments { get; init; }
 
     /// <summary>Gets a value indicating whether custom <c>data-*</c> attributes are allowed.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerconfig-dataattributes"/>
     [IdlMember("dataAttributes", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerconfig-dataattributes")]
     public bool? DataAttributes { get; init; }
 
     /// <summary>Gets a value indicating whether <c>javascript:</c> URLs are allowed.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerconfig-javascripturls"/>
     [IdlMember("javascriptURLs", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sanitizerconfig-javascripturls")]
     public bool? JavaScriptUrls { get; init; }
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-sethtmloptions</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-sethtmloptions"/>
 [IdlInterface("SetHTMLOptions", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dictdef-sethtmloptions")]
 public sealed class SetHtmlOptions
 {
     /// <summary>Gets the sanitizer, configuration or preset to use; the default preset when not specified.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sethtmloptions-sanitizer"/>
     [IdlMember("sanitizer", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sethtmloptions-sanitizer")]
     public SanitizerOrSanitizerConfigOrSanitizerPresets Sanitizer { get; init; } = SanitizerPresets.Default;
 }

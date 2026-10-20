@@ -9,6 +9,7 @@ using Meziantou.Framework.WebPlatform.Html;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://w3c.github.io/mathml-core/#dom-mathmlanchorelement</summary>
+/// <seealso href="https://w3c.github.io/mathml-core/#dom-mathmlanchorelement"/>
 [IdlInterface("MathMLAnchorElement", "https://w3c.github.io/mathml-core/#dom-mathmlanchorelement")]
 public sealed partial class MathMLAnchorElement : MathMLElement
 {
@@ -22,6 +23,7 @@ public sealed partial class MathMLAnchorElement : MathMLElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>href</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/mathml-core/#dom-mathmlanchorelement-href"/>
     [IdlMember("href", "https://w3c.github.io/mathml-core/#dom-mathmlanchorelement-href")]
     public string Href
     {
@@ -32,6 +34,7 @@ public sealed partial class MathMLAnchorElement : MathMLElement
     private partial string ComputeHref();
 
     /// <summary>Gets or sets the value of the <c>target</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/mathml-core/#dom-mathmlanchorelement-target"/>
     [IdlMember("target", "https://w3c.github.io/mathml-core/#dom-mathmlanchorelement-target")]
     public string Target
     {
@@ -40,6 +43,7 @@ public sealed partial class MathMLAnchorElement : MathMLElement
     }
 
     /// <summary>Gets or sets the value of the <c>hreflang</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-a-hreflang"/>
     [IdlMember("hreflang", "https://html.spec.whatwg.org/multipage/links.html#dom-a-hreflang")]
     public string Hreflang
     {
@@ -48,6 +52,7 @@ public sealed partial class MathMLAnchorElement : MathMLElement
     }
 
     /// <summary>Gets or sets the value of the <c>type</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-a-type"/>
     [IdlMember("type", "https://html.spec.whatwg.org/multipage/links.html#dom-a-type")]
     public string Type
     {
@@ -57,10 +62,12 @@ public sealed partial class MathMLAnchorElement : MathMLElement
 }
 
 /// <summary>https://w3c.github.io/mathml-core/#dom-mathmlelement</summary>
+/// <seealso href="https://w3c.github.io/mathml-core/#dom-mathmlelement"/>
 [IdlInterface("MathMLElement", "https://w3c.github.io/mathml-core/#dom-mathmlelement")]
 public partial class MathMLElement
 {
     /// <summary>Gets or sets the event handler of the <c>abort</c> event (the <c>onabort</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onabort"/>
     [IdlMember("onabort", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onabort")]
     public Action<Event>? OnAbort
     {
@@ -69,6 +76,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>auxclick</c> event (the <c>onauxclick</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onauxclick"/>
     [IdlMember("onauxclick", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onauxclick")]
     public Action<Event>? OnAuxClick
     {
@@ -77,6 +85,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>beforeinput</c> event (the <c>onbeforeinput</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onbeforeinput"/>
     [IdlMember("onbeforeinput", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onbeforeinput")]
     public Action<Event>? OnBeforeInput
     {
@@ -85,6 +94,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>beforematch</c> event (the <c>onbeforematch</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onbeforematch"/>
     [IdlMember("onbeforematch", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onbeforematch")]
     public Action<Event>? OnBeforeMatch
     {
@@ -93,6 +103,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>beforetoggle</c> event (the <c>onbeforetoggle</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onbeforetoggle"/>
     [IdlMember("onbeforetoggle", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onbeforetoggle")]
     public Action<Event>? OnBeforeToggle
     {
@@ -101,6 +112,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>blur</c> event (the <c>onblur</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onblur"/>
     [IdlMember("onblur", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onblur")]
     public Action<Event>? OnBlur
     {
@@ -109,6 +121,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>cancel</c> event (the <c>oncancel</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncancel"/>
     [IdlMember("oncancel", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncancel")]
     public Action<Event>? OnCancel
     {
@@ -117,6 +130,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>canplay</c> event (the <c>oncanplay</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncanplay"/>
     [IdlMember("oncanplay", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncanplay")]
     public Action<Event>? OnCanPlay
     {
@@ -125,6 +139,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>canplaythrough</c> event (the <c>oncanplaythrough</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncanplaythrough"/>
     [IdlMember("oncanplaythrough", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncanplaythrough")]
     public Action<Event>? OnCanPlayThrough
     {
@@ -133,6 +148,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>change</c> event (the <c>onchange</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onchange"/>
     [IdlMember("onchange", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onchange")]
     public Action<Event>? OnChange
     {
@@ -141,6 +157,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>click</c> event (the <c>onclick</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onclick"/>
     [IdlMember("onclick", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onclick")]
     public Action<Event>? OnClick
     {
@@ -149,6 +166,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>close</c> event (the <c>onclose</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onclose"/>
     [IdlMember("onclose", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onclose")]
     public Action<Event>? OnClose
     {
@@ -157,6 +175,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>command</c> event (the <c>oncommand</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncommand"/>
     [IdlMember("oncommand", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncommand")]
     public Action<Event>? OnCommand
     {
@@ -165,6 +184,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>contextlost</c> event (the <c>oncontextlost</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncontextlost"/>
     [IdlMember("oncontextlost", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncontextlost")]
     public Action<Event>? OnContextlost
     {
@@ -173,6 +193,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>contextmenu</c> event (the <c>oncontextmenu</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncontextmenu"/>
     [IdlMember("oncontextmenu", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncontextmenu")]
     public Action<Event>? OnContextMenu
     {
@@ -181,6 +202,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>contextrestored</c> event (the <c>oncontextrestored</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncontextrestored"/>
     [IdlMember("oncontextrestored", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncontextrestored")]
     public Action<Event>? OnContextRestored
     {
@@ -189,6 +211,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>copy</c> event (the <c>oncopy</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncopy"/>
     [IdlMember("oncopy", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncopy")]
     public Action<Event>? OnCopy
     {
@@ -197,6 +220,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>cuechange</c> event (the <c>oncuechange</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncuechange"/>
     [IdlMember("oncuechange", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncuechange")]
     public Action<Event>? OnCueChange
     {
@@ -205,6 +229,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>cut</c> event (the <c>oncut</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncut"/>
     [IdlMember("oncut", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncut")]
     public Action<Event>? OnCut
     {
@@ -213,6 +238,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>dblclick</c> event (the <c>ondblclick</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondblclick"/>
     [IdlMember("ondblclick", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondblclick")]
     public Action<Event>? OnDblClick
     {
@@ -221,6 +247,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>drag</c> event (the <c>ondrag</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondrag"/>
     [IdlMember("ondrag", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondrag")]
     public Action<Event>? OnDrag
     {
@@ -229,6 +256,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>dragend</c> event (the <c>ondragend</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragend"/>
     [IdlMember("ondragend", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragend")]
     public Action<Event>? OnDragEnd
     {
@@ -237,6 +265,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>dragenter</c> event (the <c>ondragenter</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragenter"/>
     [IdlMember("ondragenter", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragenter")]
     public Action<Event>? OnDragEnter
     {
@@ -245,6 +274,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>dragleave</c> event (the <c>ondragleave</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragleave"/>
     [IdlMember("ondragleave", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragleave")]
     public Action<Event>? OnDragLeave
     {
@@ -253,6 +283,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>dragover</c> event (the <c>ondragover</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragover"/>
     [IdlMember("ondragover", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragover")]
     public Action<Event>? OnDragOver
     {
@@ -261,6 +292,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>dragstart</c> event (the <c>ondragstart</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragstart"/>
     [IdlMember("ondragstart", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragstart")]
     public Action<Event>? OnDragStart
     {
@@ -269,6 +301,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>drop</c> event (the <c>ondrop</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondrop"/>
     [IdlMember("ondrop", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondrop")]
     public Action<Event>? OnDrop
     {
@@ -277,6 +310,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>durationchange</c> event (the <c>ondurationchange</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondurationchange"/>
     [IdlMember("ondurationchange", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondurationchange")]
     public Action<Event>? OnDurationChange
     {
@@ -285,6 +319,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>emptied</c> event (the <c>onemptied</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onemptied"/>
     [IdlMember("onemptied", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onemptied")]
     public Action<Event>? OnEmptied
     {
@@ -293,6 +328,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>ended</c> event (the <c>onended</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onended"/>
     [IdlMember("onended", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onended")]
     public Action<Event>? OnEnded
     {
@@ -301,6 +337,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>error</c> event (the <c>onerror</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onerror"/>
     [IdlMember("onerror", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onerror")]
     public Action<Event>? OnError
     {
@@ -309,6 +346,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>focus</c> event (the <c>onfocus</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onfocus"/>
     [IdlMember("onfocus", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onfocus")]
     public Action<Event>? OnFocus
     {
@@ -317,6 +355,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>formdata</c> event (the <c>onformdata</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onformdata"/>
     [IdlMember("onformdata", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onformdata")]
     public Action<Event>? OnFormData
     {
@@ -325,6 +364,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>input</c> event (the <c>oninput</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oninput"/>
     [IdlMember("oninput", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oninput")]
     public Action<Event>? OnInput
     {
@@ -333,6 +373,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>invalid</c> event (the <c>oninvalid</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oninvalid"/>
     [IdlMember("oninvalid", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oninvalid")]
     public Action<Event>? OnInvalid
     {
@@ -341,6 +382,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>keydown</c> event (the <c>onkeydown</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onkeydown"/>
     [IdlMember("onkeydown", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onkeydown")]
     public Action<Event>? OnKeyDown
     {
@@ -349,6 +391,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>keypress</c> event (the <c>onkeypress</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onkeypress"/>
     [IdlMember("onkeypress", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onkeypress")]
     public Action<Event>? OnKeyPress
     {
@@ -357,6 +400,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>keyup</c> event (the <c>onkeyup</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onkeyup"/>
     [IdlMember("onkeyup", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onkeyup")]
     public Action<Event>? OnKeyUp
     {
@@ -365,6 +409,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>load</c> event (the <c>onload</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onload"/>
     [IdlMember("onload", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onload")]
     public Action<Event>? OnLoad
     {
@@ -373,6 +418,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>loadeddata</c> event (the <c>onloadeddata</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onloadeddata"/>
     [IdlMember("onloadeddata", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onloadeddata")]
     public Action<Event>? OnLoadedData
     {
@@ -381,6 +427,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>loadedmetadata</c> event (the <c>onloadedmetadata</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onloadedmetadata"/>
     [IdlMember("onloadedmetadata", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onloadedmetadata")]
     public Action<Event>? OnLoadedMetadata
     {
@@ -389,6 +436,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>loadstart</c> event (the <c>onloadstart</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onloadstart"/>
     [IdlMember("onloadstart", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onloadstart")]
     public Action<Event>? OnLoadStart
     {
@@ -397,6 +445,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>mousedown</c> event (the <c>onmousedown</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmousedown"/>
     [IdlMember("onmousedown", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmousedown")]
     public Action<Event>? OnMouseDown
     {
@@ -405,6 +454,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>mouseenter</c> event (the <c>onmouseenter</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseenter"/>
     [IdlMember("onmouseenter", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseenter")]
     public Action<Event>? OnMouseEnter
     {
@@ -413,6 +463,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>mouseleave</c> event (the <c>onmouseleave</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseleave"/>
     [IdlMember("onmouseleave", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseleave")]
     public Action<Event>? OnMouseLeave
     {
@@ -421,6 +472,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>mousemove</c> event (the <c>onmousemove</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmousemove"/>
     [IdlMember("onmousemove", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmousemove")]
     public Action<Event>? OnMouseMove
     {
@@ -429,6 +481,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>mouseout</c> event (the <c>onmouseout</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseout"/>
     [IdlMember("onmouseout", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseout")]
     public Action<Event>? OnMouseOut
     {
@@ -437,6 +490,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>mouseover</c> event (the <c>onmouseover</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseover"/>
     [IdlMember("onmouseover", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseover")]
     public Action<Event>? OnMouseOver
     {
@@ -445,6 +499,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>mouseup</c> event (the <c>onmouseup</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseup"/>
     [IdlMember("onmouseup", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseup")]
     public Action<Event>? OnMouseUp
     {
@@ -453,6 +508,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>paste</c> event (the <c>onpaste</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onpaste"/>
     [IdlMember("onpaste", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onpaste")]
     public Action<Event>? OnPaste
     {
@@ -461,6 +517,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pause</c> event (the <c>onpause</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onpause"/>
     [IdlMember("onpause", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onpause")]
     public Action<Event>? OnPause
     {
@@ -469,6 +526,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>play</c> event (the <c>onplay</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onplay"/>
     [IdlMember("onplay", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onplay")]
     public Action<Event>? OnPlay
     {
@@ -477,6 +535,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>playing</c> event (the <c>onplaying</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onplaying"/>
     [IdlMember("onplaying", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onplaying")]
     public Action<Event>? OnPlaying
     {
@@ -485,6 +544,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>progress</c> event (the <c>onprogress</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onprogress"/>
     [IdlMember("onprogress", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onprogress")]
     public Action<Event>? OnProgress
     {
@@ -493,6 +553,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>ratechange</c> event (the <c>onratechange</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onratechange"/>
     [IdlMember("onratechange", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onratechange")]
     public Action<Event>? OnRateChange
     {
@@ -501,6 +562,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>reset</c> event (the <c>onreset</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onreset"/>
     [IdlMember("onreset", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onreset")]
     public Action<Event>? OnReset
     {
@@ -509,6 +571,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>resize</c> event (the <c>onresize</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onresize"/>
     [IdlMember("onresize", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onresize")]
     public Action<Event>? OnResize
     {
@@ -517,6 +580,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>scroll</c> event (the <c>onscroll</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onscroll"/>
     [IdlMember("onscroll", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onscroll")]
     public Action<Event>? OnScroll
     {
@@ -525,6 +589,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>scrollend</c> event (the <c>onscrollend</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onscrollend"/>
     [IdlMember("onscrollend", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onscrollend")]
     public Action<Event>? OnScrollEnd
     {
@@ -533,6 +598,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>securitypolicyviolation</c> event (the <c>onsecuritypolicyviolation</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onsecuritypolicyviolation"/>
     [IdlMember("onsecuritypolicyviolation", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onsecuritypolicyviolation")]
     public Action<Event>? OnSecurityPolicyViolation
     {
@@ -541,6 +607,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>seeked</c> event (the <c>onseeked</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onseeked"/>
     [IdlMember("onseeked", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onseeked")]
     public Action<Event>? OnSeeked
     {
@@ -549,6 +616,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>seeking</c> event (the <c>onseeking</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onseeking"/>
     [IdlMember("onseeking", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onseeking")]
     public Action<Event>? OnSeeking
     {
@@ -557,6 +625,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>select</c> event (the <c>onselect</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onselect"/>
     [IdlMember("onselect", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onselect")]
     public Action<Event>? OnSelect
     {
@@ -565,6 +634,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>slotchange</c> event (the <c>onslotchange</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onslotchange"/>
     [IdlMember("onslotchange", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onslotchange")]
     public Action<Event>? OnSlotChange
     {
@@ -573,6 +643,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>stalled</c> event (the <c>onstalled</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onstalled"/>
     [IdlMember("onstalled", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onstalled")]
     public Action<Event>? OnStalled
     {
@@ -581,6 +652,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>submit</c> event (the <c>onsubmit</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onsubmit"/>
     [IdlMember("onsubmit", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onsubmit")]
     public Action<Event>? OnSubmit
     {
@@ -589,6 +661,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>suspend</c> event (the <c>onsuspend</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onsuspend"/>
     [IdlMember("onsuspend", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onsuspend")]
     public Action<Event>? OnSuspend
     {
@@ -597,6 +670,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>timeupdate</c> event (the <c>ontimeupdate</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ontimeupdate"/>
     [IdlMember("ontimeupdate", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ontimeupdate")]
     public Action<Event>? OnTimeUpdate
     {
@@ -605,6 +679,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>toggle</c> event (the <c>ontoggle</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ontoggle"/>
     [IdlMember("ontoggle", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ontoggle")]
     public Action<Event>? OnToggle
     {
@@ -613,6 +688,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>volumechange</c> event (the <c>onvolumechange</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onvolumechange"/>
     [IdlMember("onvolumechange", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onvolumechange")]
     public Action<Event>? OnVolumeChange
     {
@@ -621,6 +697,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>waiting</c> event (the <c>onwaiting</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwaiting"/>
     [IdlMember("onwaiting", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwaiting")]
     public Action<Event>? OnWaiting
     {
@@ -629,6 +706,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>webkitanimationend</c> event (the <c>onwebkitanimationend</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwebkitanimationend"/>
     [IdlMember("onwebkitanimationend", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwebkitanimationend")]
     public Action<Event>? OnWebkitAnimationEnd
     {
@@ -637,6 +715,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>webkitanimationiteration</c> event (the <c>onwebkitanimationiteration</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwebkitanimationiteration"/>
     [IdlMember("onwebkitanimationiteration", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwebkitanimationiteration")]
     public Action<Event>? OnWebkitAnimationIteration
     {
@@ -645,6 +724,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>webkitanimationstart</c> event (the <c>onwebkitanimationstart</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwebkitanimationstart"/>
     [IdlMember("onwebkitanimationstart", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwebkitanimationstart")]
     public Action<Event>? OnWebkitAnimationStart
     {
@@ -653,6 +733,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>webkittransitionend</c> event (the <c>onwebkittransitionend</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwebkittransitionend"/>
     [IdlMember("onwebkittransitionend", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwebkittransitionend")]
     public Action<Event>? OnWebkitTransitionEnd
     {
@@ -661,6 +742,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>wheel</c> event (the <c>onwheel</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwheel"/>
     [IdlMember("onwheel", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwheel")]
     public Action<Event>? OnWheel
     {
@@ -669,6 +751,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>animationstart</c> event (the <c>onanimationstart</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationstart"/>
     [IdlMember("onanimationstart", "https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationstart")]
     public Action<Event>? OnAnimationStart
     {
@@ -677,6 +760,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>animationiteration</c> event (the <c>onanimationiteration</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationiteration"/>
     [IdlMember("onanimationiteration", "https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationiteration")]
     public Action<Event>? OnAnimationIteration
     {
@@ -685,6 +769,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>animationend</c> event (the <c>onanimationend</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationend"/>
     [IdlMember("onanimationend", "https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationend")]
     public Action<Event>? OnAnimationEnd
     {
@@ -693,6 +778,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>animationcancel</c> event (the <c>onanimationcancel</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationcancel"/>
     [IdlMember("onanimationcancel", "https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationcancel")]
     public Action<Event>? OnAnimationCancel
     {
@@ -701,6 +787,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>scrollsnapchange</c> event (the <c>onscrollsnapchange</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-scroll-snap-2/#dom-globaleventhandlers-onscrollsnapchange"/>
     [IdlMember("onscrollsnapchange", "https://drafts.csswg.org/css-scroll-snap-2/#dom-globaleventhandlers-onscrollsnapchange")]
     public Action<Event>? OnScrollSnapChange
     {
@@ -709,6 +796,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>scrollsnapchanging</c> event (the <c>onscrollsnapchanging</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-scroll-snap-2/#dom-globaleventhandlers-onscrollsnapchanging"/>
     [IdlMember("onscrollsnapchanging", "https://drafts.csswg.org/css-scroll-snap-2/#dom-globaleventhandlers-onscrollsnapchanging")]
     public Action<Event>? OnScrollSnapChanging
     {
@@ -717,6 +805,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>transitionrun</c> event (the <c>ontransitionrun</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitionrun"/>
     [IdlMember("ontransitionrun", "https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitionrun")]
     public Action<Event>? OnTransitionRun
     {
@@ -725,6 +814,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>transitionstart</c> event (the <c>ontransitionstart</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitionstart"/>
     [IdlMember("ontransitionstart", "https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitionstart")]
     public Action<Event>? OnTransitionStart
     {
@@ -733,6 +823,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>transitionend</c> event (the <c>ontransitionend</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitionend"/>
     [IdlMember("ontransitionend", "https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitionend")]
     public Action<Event>? OnTransitionEnd
     {
@@ -741,6 +832,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>transitioncancel</c> event (the <c>ontransitioncancel</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitioncancel"/>
     [IdlMember("ontransitioncancel", "https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitioncancel")]
     public Action<Event>? OnTransitionCancel
     {
@@ -749,6 +841,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointerover</c> event (the <c>onpointerover</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerover"/>
     [IdlMember("onpointerover", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerover")]
     public Action<Event>? OnPointerOver
     {
@@ -757,6 +850,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointerenter</c> event (the <c>onpointerenter</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerenter"/>
     [IdlMember("onpointerenter", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerenter")]
     public Action<Event>? OnPointerEnter
     {
@@ -765,6 +859,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointerdown</c> event (the <c>onpointerdown</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerdown"/>
     [IdlMember("onpointerdown", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerdown")]
     public Action<Event>? OnPointerDown
     {
@@ -773,6 +868,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointermove</c> event (the <c>onpointermove</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointermove"/>
     [IdlMember("onpointermove", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointermove")]
     public Action<Event>? OnPointerMove
     {
@@ -781,6 +877,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointerrawupdate</c> event (the <c>onpointerrawupdate</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerrawupdate"/>
     [IdlMember("onpointerrawupdate", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerrawupdate")]
     public Action<Event>? OnPointerRawUpdate
     {
@@ -789,6 +886,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointerup</c> event (the <c>onpointerup</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerup"/>
     [IdlMember("onpointerup", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerup")]
     public Action<Event>? OnPointerUp
     {
@@ -797,6 +895,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointercancel</c> event (the <c>onpointercancel</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointercancel"/>
     [IdlMember("onpointercancel", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointercancel")]
     public Action<Event>? OnPointerCancel
     {
@@ -805,6 +904,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointerout</c> event (the <c>onpointerout</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerout"/>
     [IdlMember("onpointerout", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerout")]
     public Action<Event>? OnPointerOut
     {
@@ -813,6 +913,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointerleave</c> event (the <c>onpointerleave</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerleave"/>
     [IdlMember("onpointerleave", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerleave")]
     public Action<Event>? OnPointerLeave
     {
@@ -821,6 +922,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>gotpointercapture</c> event (the <c>ongotpointercapture</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-ongotpointercapture"/>
     [IdlMember("ongotpointercapture", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-ongotpointercapture")]
     public Action<Event>? OnGotPointerCapture
     {
@@ -829,6 +931,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>lostpointercapture</c> event (the <c>onlostpointercapture</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onlostpointercapture"/>
     [IdlMember("onlostpointercapture", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onlostpointercapture")]
     public Action<Event>? OnLostPointerCapture
     {
@@ -837,6 +940,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>selectstart</c> event (the <c>onselectstart</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-globaleventhandlers-onselectstart"/>
     [IdlMember("onselectstart", "https://w3c.github.io/selection-api/#dom-globaleventhandlers-onselectstart")]
     public Action<Event>? OnSelectStart
     {
@@ -845,6 +949,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>selectionchange</c> event (the <c>onselectionchange</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-globaleventhandlers-onselectionchange"/>
     [IdlMember("onselectionchange", "https://w3c.github.io/selection-api/#dom-globaleventhandlers-onselectionchange")]
     public Action<Event>? OnSelectionChange
     {
@@ -853,6 +958,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>autofocus</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-fe-autofocus"/>
     [IdlMember("autofocus", "https://html.spec.whatwg.org/multipage/dom.html#dom-fe-autofocus")]
     public bool Autofocus
     {
@@ -861,6 +967,7 @@ public partial class MathMLElement
     }
 
     /// <summary>Gets or sets the value of the <c>tabindex</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-tabindex"/>
     [IdlMember("tabIndex", "https://html.spec.whatwg.org/multipage/interaction.html#dom-tabindex")]
     public int TabIndex
     {
@@ -871,6 +978,7 @@ public partial class MathMLElement
     private partial int ComputeTabIndex();
 
     /// <summary>Gets or sets the event handler of the <c>contentvisibilityautostatechange</c> event (the <c>oncontentvisibilityautostatechange</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-contain-2/#content-visibility-auto-state-change"/>
     [IdlMember("oncontentvisibilityautostatechange", "https://drafts.csswg.org/css-contain-2/#content-visibility-auto-state-change")]
     [Experimental(ExperimentalApis.ContentVisibilityAutoStateChangeEventHandler, UrlFormat = ExperimentalApis.UrlFormat)]
     public Action<Event>? OnContentVisibilityAutoStateChange

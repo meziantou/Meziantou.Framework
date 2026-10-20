@@ -9,6 +9,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 public sealed partial class ElementInternals
 {
     /// <summary>Gets or sets the default value of the <c>role</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-role"/>
     [IdlMember("role", "https://w3c.github.io/aria/#dom-ariamixin-role")]
     public string? Role
     {
@@ -17,6 +18,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaActiveDescendantElement</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariaactivedescendantelement"/>
     [IdlMember("ariaActiveDescendantElement", "https://w3c.github.io/aria/#dom-ariamixin-ariaactivedescendantelement")]
     public Element? AriaActiveDescendantElement
     {
@@ -25,6 +27,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaAtomic</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariaatomic"/>
     [IdlMember("ariaAtomic", "https://w3c.github.io/aria/#dom-ariamixin-ariaatomic")]
     public string? AriaAtomic
     {
@@ -33,6 +36,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaAutoComplete</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariaautocomplete"/>
     [IdlMember("ariaAutoComplete", "https://w3c.github.io/aria/#dom-ariamixin-ariaautocomplete")]
     public string? AriaAutoComplete
     {
@@ -41,6 +45,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaBrailleLabel</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariabraillelabel"/>
     [IdlMember("ariaBrailleLabel", "https://w3c.github.io/aria/#dom-ariamixin-ariabraillelabel")]
     public string? AriaBrailleLabel
     {
@@ -49,6 +54,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaBrailleRoleDescription</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariabrailleroledescription"/>
     [IdlMember("ariaBrailleRoleDescription", "https://w3c.github.io/aria/#dom-ariamixin-ariabrailleroledescription")]
     public string? AriaBrailleRoleDescription
     {
@@ -57,6 +63,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaBusy</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariabusy"/>
     [IdlMember("ariaBusy", "https://w3c.github.io/aria/#dom-ariamixin-ariabusy")]
     public string? AriaBusy
     {
@@ -65,6 +72,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaChecked</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariachecked"/>
     [IdlMember("ariaChecked", "https://w3c.github.io/aria/#dom-ariamixin-ariachecked")]
     public string? AriaChecked
     {
@@ -73,6 +81,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaColCount</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariacolcount"/>
     [IdlMember("ariaColCount", "https://w3c.github.io/aria/#dom-ariamixin-ariacolcount")]
     public string? AriaColCount
     {
@@ -81,6 +90,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaColIndex</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariacolindex"/>
     [IdlMember("ariaColIndex", "https://w3c.github.io/aria/#dom-ariamixin-ariacolindex")]
     public string? AriaColIndex
     {
@@ -89,6 +99,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaColIndexText</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariacolindextext"/>
     [IdlMember("ariaColIndexText", "https://w3c.github.io/aria/#dom-ariamixin-ariacolindextext")]
     public string? AriaColIndexText
     {
@@ -97,6 +108,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaColSpan</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariacolspan"/>
     [IdlMember("ariaColSpan", "https://w3c.github.io/aria/#dom-ariamixin-ariacolspan")]
     public string? AriaColSpan
     {
@@ -105,6 +117,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaControlsElements</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariacontrolselements"/>
     [IdlMember("ariaControlsElements", "https://w3c.github.io/aria/#dom-ariamixin-ariacontrolselements")]
     public IReadOnlyList<Element>? AriaControlsElements
     {
@@ -113,6 +126,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaCurrent</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariacurrent"/>
     [IdlMember("ariaCurrent", "https://w3c.github.io/aria/#dom-ariamixin-ariacurrent")]
     public string? AriaCurrent
     {
@@ -121,6 +135,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaDescribedByElements</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariadescribedbyelements"/>
     [IdlMember("ariaDescribedByElements", "https://w3c.github.io/aria/#dom-ariamixin-ariadescribedbyelements")]
     public IReadOnlyList<Element>? AriaDescribedByElements
     {
@@ -129,6 +144,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaDescription</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariadescription"/>
     [IdlMember("ariaDescription", "https://w3c.github.io/aria/#dom-ariamixin-ariadescription")]
     public string? AriaDescription
     {
@@ -137,6 +153,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaDetailsElements</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariadetailselements"/>
     [IdlMember("ariaDetailsElements", "https://w3c.github.io/aria/#dom-ariamixin-ariadetailselements")]
     public IReadOnlyList<Element>? AriaDetailsElements
     {
@@ -145,6 +162,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaDisabled</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariadisabled"/>
     [IdlMember("ariaDisabled", "https://w3c.github.io/aria/#dom-ariamixin-ariadisabled")]
     public string? AriaDisabled
     {
@@ -153,6 +171,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaErrorMessageElements</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariaerrormessageelements"/>
     [IdlMember("ariaErrorMessageElements", "https://w3c.github.io/aria/#dom-ariamixin-ariaerrormessageelements")]
     public IReadOnlyList<Element>? AriaErrorMessageElements
     {
@@ -161,6 +180,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaExpanded</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariaexpanded"/>
     [IdlMember("ariaExpanded", "https://w3c.github.io/aria/#dom-ariamixin-ariaexpanded")]
     public string? AriaExpanded
     {
@@ -169,6 +189,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaFlowToElements</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariaflowtoelements"/>
     [IdlMember("ariaFlowToElements", "https://w3c.github.io/aria/#dom-ariamixin-ariaflowtoelements")]
     public IReadOnlyList<Element>? AriaFlowToElements
     {
@@ -177,6 +198,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaHasPopup</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariahaspopup"/>
     [IdlMember("ariaHasPopup", "https://w3c.github.io/aria/#dom-ariamixin-ariahaspopup")]
     public string? AriaHasPopup
     {
@@ -185,6 +207,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaHidden</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariahidden"/>
     [IdlMember("ariaHidden", "https://w3c.github.io/aria/#dom-ariamixin-ariahidden")]
     public string? AriaHidden
     {
@@ -193,6 +216,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaInvalid</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariainvalid"/>
     [IdlMember("ariaInvalid", "https://w3c.github.io/aria/#dom-ariamixin-ariainvalid")]
     public string? AriaInvalid
     {
@@ -201,6 +225,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaKeyShortcuts</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariakeyshortcuts"/>
     [IdlMember("ariaKeyShortcuts", "https://w3c.github.io/aria/#dom-ariamixin-ariakeyshortcuts")]
     public string? AriaKeyShortcuts
     {
@@ -209,6 +234,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaLabel</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-arialabel"/>
     [IdlMember("ariaLabel", "https://w3c.github.io/aria/#dom-ariamixin-arialabel")]
     public string? AriaLabel
     {
@@ -217,6 +243,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaLabelledByElements</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-arialabelledbyelements"/>
     [IdlMember("ariaLabelledByElements", "https://w3c.github.io/aria/#dom-ariamixin-arialabelledbyelements")]
     public IReadOnlyList<Element>? AriaLabelledByElements
     {
@@ -225,6 +252,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaLevel</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-arialevel"/>
     [IdlMember("ariaLevel", "https://w3c.github.io/aria/#dom-ariamixin-arialevel")]
     public string? AriaLevel
     {
@@ -233,6 +261,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaLive</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-arialive"/>
     [IdlMember("ariaLive", "https://w3c.github.io/aria/#dom-ariamixin-arialive")]
     public string? AriaLive
     {
@@ -241,6 +270,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaModal</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariamodal"/>
     [IdlMember("ariaModal", "https://w3c.github.io/aria/#dom-ariamixin-ariamodal")]
     public string? AriaModal
     {
@@ -249,6 +279,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaMultiLine</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariamultiline"/>
     [IdlMember("ariaMultiLine", "https://w3c.github.io/aria/#dom-ariamixin-ariamultiline")]
     public string? AriaMultiLine
     {
@@ -257,6 +288,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaMultiSelectable</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariamultiselectable"/>
     [IdlMember("ariaMultiSelectable", "https://w3c.github.io/aria/#dom-ariamixin-ariamultiselectable")]
     public string? AriaMultiSelectable
     {
@@ -265,6 +297,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaOrientation</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariaorientation"/>
     [IdlMember("ariaOrientation", "https://w3c.github.io/aria/#dom-ariamixin-ariaorientation")]
     public string? AriaOrientation
     {
@@ -273,6 +306,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaOwnsElements</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariaownselements"/>
     [IdlMember("ariaOwnsElements", "https://w3c.github.io/aria/#dom-ariamixin-ariaownselements")]
     public IReadOnlyList<Element>? AriaOwnsElements
     {
@@ -281,6 +315,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaPlaceholder</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariaplaceholder"/>
     [IdlMember("ariaPlaceholder", "https://w3c.github.io/aria/#dom-ariamixin-ariaplaceholder")]
     public string? AriaPlaceholder
     {
@@ -289,6 +324,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaPosInSet</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariaposinset"/>
     [IdlMember("ariaPosInSet", "https://w3c.github.io/aria/#dom-ariamixin-ariaposinset")]
     public string? AriaPosInSet
     {
@@ -297,6 +333,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaPressed</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariapressed"/>
     [IdlMember("ariaPressed", "https://w3c.github.io/aria/#dom-ariamixin-ariapressed")]
     public string? AriaPressed
     {
@@ -305,6 +342,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaReadOnly</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariareadonly"/>
     [IdlMember("ariaReadOnly", "https://w3c.github.io/aria/#dom-ariamixin-ariareadonly")]
     public string? AriaReadOnly
     {
@@ -313,6 +351,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaRelevant</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariarelevant"/>
     [IdlMember("ariaRelevant", "https://w3c.github.io/aria/#dom-ariamixin-ariarelevant")]
     public string? AriaRelevant
     {
@@ -321,6 +360,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaRequired</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariarequired"/>
     [IdlMember("ariaRequired", "https://w3c.github.io/aria/#dom-ariamixin-ariarequired")]
     public string? AriaRequired
     {
@@ -329,6 +369,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaRoleDescription</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariaroledescription"/>
     [IdlMember("ariaRoleDescription", "https://w3c.github.io/aria/#dom-ariamixin-ariaroledescription")]
     public string? AriaRoleDescription
     {
@@ -337,6 +378,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaRowCount</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariarowcount"/>
     [IdlMember("ariaRowCount", "https://w3c.github.io/aria/#dom-ariamixin-ariarowcount")]
     public string? AriaRowCount
     {
@@ -345,6 +387,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaRowIndex</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariarowindex"/>
     [IdlMember("ariaRowIndex", "https://w3c.github.io/aria/#dom-ariamixin-ariarowindex")]
     public string? AriaRowIndex
     {
@@ -353,6 +396,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaRowIndexText</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariarowindextext"/>
     [IdlMember("ariaRowIndexText", "https://w3c.github.io/aria/#dom-ariamixin-ariarowindextext")]
     public string? AriaRowIndexText
     {
@@ -361,6 +405,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaRowSpan</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariarowspan"/>
     [IdlMember("ariaRowSpan", "https://w3c.github.io/aria/#dom-ariamixin-ariarowspan")]
     public string? AriaRowSpan
     {
@@ -369,6 +414,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaSelected</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariaselected"/>
     [IdlMember("ariaSelected", "https://w3c.github.io/aria/#dom-ariamixin-ariaselected")]
     public string? AriaSelected
     {
@@ -377,6 +423,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaSetSize</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariasetsize"/>
     [IdlMember("ariaSetSize", "https://w3c.github.io/aria/#dom-ariamixin-ariasetsize")]
     public string? AriaSetSize
     {
@@ -385,6 +432,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaSort</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariasort"/>
     [IdlMember("ariaSort", "https://w3c.github.io/aria/#dom-ariamixin-ariasort")]
     public string? AriaSort
     {
@@ -393,6 +441,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaValueMax</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariavaluemax"/>
     [IdlMember("ariaValueMax", "https://w3c.github.io/aria/#dom-ariamixin-ariavaluemax")]
     public string? AriaValueMax
     {
@@ -401,6 +450,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaValueMin</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariavaluemin"/>
     [IdlMember("ariaValueMin", "https://w3c.github.io/aria/#dom-ariamixin-ariavaluemin")]
     public string? AriaValueMin
     {
@@ -409,6 +459,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaValueNow</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariavaluenow"/>
     [IdlMember("ariaValueNow", "https://w3c.github.io/aria/#dom-ariamixin-ariavaluenow")]
     public string? AriaValueNow
     {
@@ -417,6 +468,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>Gets or sets the default value of the <c>ariaValueText</c> ARIA property of the custom element (used when the element has no corresponding ARIA attribute).</summary>
+    /// <seealso href="https://w3c.github.io/aria/#dom-ariamixin-ariavaluetext"/>
     [IdlMember("ariaValueText", "https://w3c.github.io/aria/#dom-ariamixin-ariavaluetext")]
     public string? AriaValueText
     {

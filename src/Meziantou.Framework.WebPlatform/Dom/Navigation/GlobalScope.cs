@@ -11,6 +11,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// and the parts of its environment settings object the library needs (its event loop, its script engine, the report of
 /// the exceptions and of the unhandled promise rejections).
 /// </summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#windoworworkerglobalscope"/>
 [IdlInterface("WindowOrWorkerGlobalScope", "https://html.spec.whatwg.org/multipage/webappapis.html#windoworworkerglobalscope")]
 public abstract partial class GlobalScope : EventTarget
 {
@@ -124,6 +125,7 @@ public abstract partial class GlobalScope : EventTarget
     internal abstract void QueueGlobalTask(Action task);
 
     /// <summary>https://w3c.github.io/hr-time/#the-performance-attribute</summary>
+    /// <seealso href="https://w3c.github.io/hr-time/#dom-windoworworkerglobalscope-performance"/>
     [IdlMember("performance", "https://w3c.github.io/hr-time/#dom-windoworworkerglobalscope-performance")]
     public Performance Performance => _performance ??= new Performance(this);
 
@@ -166,6 +168,7 @@ public abstract partial class GlobalScope : EventTarget
     /// Gets the entry point of IndexedDB (https://w3c.github.io/IndexedDB/#dom-windoworworkerglobalscope-indexeddb): the
     /// databases of the origin, stored by <see cref="BrowsingContextOptions.IndexedDB"/>.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-windoworworkerglobalscope-indexeddb"/>
     [IdlMember("indexedDB", "https://w3c.github.io/IndexedDB/#dom-windoworworkerglobalscope-indexeddb")]
     public IdbFactory IndexedDB => IndexedDBFactory ??= new IdbFactory(this);
 
@@ -173,14 +176,17 @@ public abstract partial class GlobalScope : EventTarget
     internal IdbFactory? IndexedDBFactory { get; private set; }
 
     /// <summary>https://html.spec.whatwg.org/multipage/webappapis.html#dom-origin</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#dom-origin"/>
     [IdlMember("origin", "https://html.spec.whatwg.org/multipage/webappapis.html#dom-origin")]
     public abstract string Origin { get; }
 
     /// <summary>https://html.spec.whatwg.org/multipage/webappapis.html#dom-issecurecontext</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#dom-issecurecontext"/>
     [IdlMember("isSecureContext", "https://html.spec.whatwg.org/multipage/webappapis.html#dom-issecurecontext")]
     public abstract bool IsSecureContext { get; }
 
     /// <summary>https://html.spec.whatwg.org/multipage/webappapis.html#dom-crossoriginisolated</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#dom-crossoriginisolated"/>
     [IdlMember("crossOriginIsolated", "https://html.spec.whatwg.org/multipage/webappapis.html#dom-crossoriginisolated")]
     public abstract bool CrossOriginIsolated { get; }
 
@@ -200,6 +206,7 @@ public abstract partial class GlobalScope : EventTarget
     internal abstract bool IsAgentClusterCrossOriginIsolated { get; }
 
     /// <summary>https://html.spec.whatwg.org/multipage/webappapis.html#dom-btoa</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#dom-btoa"/>
     [IdlMember("btoa", "https://html.spec.whatwg.org/multipage/webappapis.html#dom-btoa")]
     public string Btoa(string data)
     {
@@ -217,6 +224,7 @@ public abstract partial class GlobalScope : EventTarget
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/webappapis.html#dom-atob</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#dom-atob"/>
     [IdlMember("atob", "https://html.spec.whatwg.org/multipage/webappapis.html#dom-atob")]
     public string Atob(string data)
     {
@@ -303,6 +311,7 @@ public abstract partial class GlobalScope : EventTarget
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-queuemicrotask</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-queuemicrotask"/>
     [IdlMember("queueMicrotask", "https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-queuemicrotask")]
     public void QueueMicrotask(Action callback)
     {
@@ -395,6 +404,7 @@ public abstract partial class GlobalScope : EventTarget
     /// Gets the scheduler of the global object (https://wicg.github.io/scheduling-apis/#dom-windoworworkerglobalscope-scheduler),
     /// which posts prioritized tasks to its event loop.
     /// </summary>
+    /// <seealso href="https://wicg.github.io/scheduling-apis/#dom-windoworworkerglobalscope-scheduler"/>
     [IdlMember("scheduler", "https://wicg.github.io/scheduling-apis/#dom-windoworworkerglobalscope-scheduler")]
     public Scheduler Scheduler => _scheduler ??= new Scheduler(this);
 
@@ -408,6 +418,7 @@ public abstract partial class GlobalScope : EventTarget
     /// <param name="options">The options: the objects to transfer.</param>
     /// <returns>The clone of the value.</returns>
     /// <exception cref="DomException">A <c>DataCloneError</c> when the value cannot be cloned, or when an object of the transfer list cannot be transferred.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/structured-data.html#dom-structuredclone"/>
     [IdlMember("structuredClone", "https://html.spec.whatwg.org/multipage/structured-data.html#dom-structuredclone")]
     public object? StructuredClone(object? value, StructuredSerializeOptions? options = null)
     {
@@ -426,6 +437,7 @@ public abstract partial class GlobalScope : EventTarget
     /// script and not caught (an <see cref="ErrorEvent"/> is fired at the global object).
     /// </summary>
     /// <param name="e">The exception: a value of the script engine, or a .NET exception.</param>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#dom-reporterror"/>
     [IdlMember("reportError", "https://html.spec.whatwg.org/multipage/webappapis.html#dom-reporterror")]
     public void ReportError(object? e)
     {

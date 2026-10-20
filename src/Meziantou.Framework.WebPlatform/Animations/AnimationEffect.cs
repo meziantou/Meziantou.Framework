@@ -17,6 +17,7 @@ internal enum AnimationEffectPhase
 /// An animation effect: its timing properties and the timing model that calculates its progress from the current time of its
 /// animation (https://drafts.csswg.org/web-animations-1/#animation-effects).
 /// </summary>
+/// <seealso href="https://drafts.csswg.org/web-animations-1/#animationeffect"/>
 [IdlInterface("AnimationEffect", "https://drafts.csswg.org/web-animations-1/#animationeffect")]
 public abstract class AnimationEffect : IRealmBoundPlatformObject
 {
@@ -54,6 +55,7 @@ public abstract class AnimationEffect : IRealmBoundPlatformObject
     private protected virtual Window? GetRealmWindow() => Animation?.Timeline?.Document?.RelevantWindow;
 
     /// <summary>Returns the specified timing properties of the effect (https://drafts.csswg.org/web-animations-1/#dom-animationeffect-gettiming).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animationeffect-gettiming"/>
     [IdlMember("getTiming", "https://drafts.csswg.org/web-animations-1/#dom-animationeffect-gettiming")]
     public EffectTiming GetTiming()
     {
@@ -72,6 +74,7 @@ public abstract class AnimationEffect : IRealmBoundPlatformObject
     }
 
     /// <summary>Returns the calculated timing properties of the effect (https://drafts.csswg.org/web-animations-1/#dom-animationeffect-getcomputedtiming).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animationeffect-getcomputedtiming"/>
     [IdlMember("getComputedTiming", "https://drafts.csswg.org/web-animations-1/#dom-animationeffect-getcomputedtiming")]
     public ComputedEffectTiming GetComputedTiming()
     {
@@ -114,6 +117,7 @@ public abstract class AnimationEffect : IRealmBoundPlatformObject
     /// the members of <paramref name="timing"/> that are set replace the current values.
     /// </summary>
     /// <exception cref="TypeErrorException">A value is invalid (e.g. a negative duration or an invalid easing function).</exception>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-animationeffect-updatetiming"/>
     [IdlMember("updateTiming", "https://drafts.csswg.org/web-animations-1/#dom-animationeffect-updatetiming")]
     public void UpdateTiming(OptionalEffectTiming? timing = null)
     {

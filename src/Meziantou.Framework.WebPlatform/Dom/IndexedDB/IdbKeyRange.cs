@@ -1,6 +1,7 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>A key range (https://w3c.github.io/IndexedDB/#idbkeyrange).</summary>
+/// <seealso href="https://w3c.github.io/IndexedDB/#idbkeyrange"/>
 [IdlInterface("IDBKeyRange", "https://w3c.github.io/IndexedDB/#idbkeyrange")]
 public sealed class IdbKeyRange
 {
@@ -20,22 +21,27 @@ public sealed class IdbKeyRange
     internal IdbKey? UpperKey { get; }
 
     /// <summary>Gets the lower bound (a new value each time), or null (undefined) when the range has no lower bound.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbkeyrange-lower"/>
     [IdlMember("lower", "https://w3c.github.io/IndexedDB/#dom-idbkeyrange-lower")]
     public object? Lower => LowerKey is null ? null : _operations.ConvertToValue(LowerKey);
 
     /// <summary>Gets the upper bound (a new value each time), or null (undefined) when the range has no upper bound.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbkeyrange-upper"/>
     [IdlMember("upper", "https://w3c.github.io/IndexedDB/#dom-idbkeyrange-upper")]
     public object? Upper => UpperKey is null ? null : _operations.ConvertToValue(UpperKey);
 
     /// <summary>Gets whether the lower bound is excluded.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbkeyrange-loweropen"/>
     [IdlMember("lowerOpen", "https://w3c.github.io/IndexedDB/#dom-idbkeyrange-loweropen")]
     public bool LowerOpen { get; }
 
     /// <summary>Gets whether the upper bound is excluded.</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbkeyrange-upperopen"/>
     [IdlMember("upperOpen", "https://w3c.github.io/IndexedDB/#dom-idbkeyrange-upperopen")]
     public bool UpperOpen { get; }
 
     /// <summary>Creates a range containing only a key (https://w3c.github.io/IndexedDB/#dom-idbkeyrange-only).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbkeyrange-only"/>
     [IdlMember("only", "https://w3c.github.io/IndexedDB/#dom-idbkeyrange-only")]
     public static IdbKeyRange Only(object? value)
     {
@@ -45,6 +51,7 @@ public sealed class IdbKeyRange
     }
 
     /// <summary>Creates a range with a lower bound (https://w3c.github.io/IndexedDB/#dom-idbkeyrange-lowerbound).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbkeyrange-lowerbound"/>
     [IdlMember("lowerBound", "https://w3c.github.io/IndexedDB/#dom-idbkeyrange-lowerbound")]
     public static IdbKeyRange LowerBound(object? lower, bool open = false)
     {
@@ -54,6 +61,7 @@ public sealed class IdbKeyRange
     }
 
     /// <summary>Creates a range with an upper bound (https://w3c.github.io/IndexedDB/#dom-idbkeyrange-upperbound).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbkeyrange-upperbound"/>
     [IdlMember("upperBound", "https://w3c.github.io/IndexedDB/#dom-idbkeyrange-upperbound")]
     public static IdbKeyRange UpperBound(object? upper, bool open = false)
     {
@@ -63,6 +71,7 @@ public sealed class IdbKeyRange
     }
 
     /// <summary>Creates a range with a lower and an upper bound (https://w3c.github.io/IndexedDB/#dom-idbkeyrange-bound).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbkeyrange-bound"/>
     [IdlMember("bound", "https://w3c.github.io/IndexedDB/#dom-idbkeyrange-bound")]
     public static IdbKeyRange Bound(object? lower, object? upper, bool lowerOpen = false, bool upperOpen = false)
     {
@@ -76,6 +85,7 @@ public sealed class IdbKeyRange
     }
 
     /// <summary>Returns whether a key is in the range (https://w3c.github.io/IndexedDB/#dom-idbkeyrange-includes).</summary>
+    /// <seealso href="https://w3c.github.io/IndexedDB/#dom-idbkeyrange-includes"/>
     [IdlMember("includes", "https://w3c.github.io/IndexedDB/#dom-idbkeyrange-includes")]
     public bool Includes(object? key)
     {

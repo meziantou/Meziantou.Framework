@@ -9,6 +9,7 @@ public partial class Element
     /// The part names of the element (the part attribute, https://drafts.csswg.org/css-shadow-1/#part-attr): an element of a
     /// shadow tree with a part name can be styled from outside the tree with ::part().
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-shadow-1/#dom-element-part"/>
     [IdlMember("part", "https://drafts.csswg.org/css-shadow-1/#dom-element-part")]
     public DomTokenList Part => Html.Reflection.GetTokenList(this, "part");
 

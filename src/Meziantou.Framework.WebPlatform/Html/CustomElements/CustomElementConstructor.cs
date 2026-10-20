@@ -15,6 +15,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// class (<c>observedAttributes</c>, <c>disabledFeatures</c>, <c>formAssociated</c>) are properties of the constructor,
 /// read once by <c>Define</c>.
 /// </remarks>
+/// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#customelementconstructor"/>
 [IdlInterface("CustomElementConstructor", "https://html.spec.whatwg.org/multipage/custom-elements.html#customelementconstructor")]
 public class CustomElementConstructor
 {
@@ -231,10 +232,12 @@ public abstract class CustomElement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/custom-elements.html#elementdefinitionoptions</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#elementdefinitionoptions"/>
 [IdlInterface("ElementDefinitionOptions", "https://html.spec.whatwg.org/multipage/custom-elements.html#elementdefinitionoptions")]
 public sealed class ElementDefinitionOptions
 {
     /// <summary>Gets the local name of the element a customized built-in element extends.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-elementdefinitionoptions-extends"/>
     [IdlMember("extends", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-elementdefinitionoptions-extends")]
     public string? Extends { get; init; }
 }

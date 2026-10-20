@@ -4,22 +4,27 @@ using Meziantou.Framework.WebPlatform.Urls;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationtype</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationtype"/>
 [IdlInterface("NavigationType", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationtype")]
 public enum NavigationType
 {
     /// <summary>A navigation that adds a new entry to the session history.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationtype-push"/>
     [IdlMember("push", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationtype-push")]
     Push,
 
     /// <summary>A navigation that replaces the current entry of the session history.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationtype-replace"/>
     [IdlMember("replace", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationtype-replace")]
     Replace,
 
     /// <summary>A reload of the current entry.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationtype-reload"/>
     [IdlMember("reload", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationtype-reload")]
     Reload,
 
     /// <summary>A traversal of the session history to an existing entry.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationtype-traverse"/>
     [IdlMember("traverse", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationtype-traverse")]
     Traverse,
 }
@@ -33,28 +38,34 @@ internal enum UserNavigationInvolvement
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationupdatecurrententryoptions</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationupdatecurrententryoptions"/>
 [IdlInterface("NavigationUpdateCurrentEntryOptions", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationupdatecurrententryoptions")]
 public sealed class NavigationUpdateCurrentEntryOptions
 {
     /// <summary>The state: a value of the script engine, or null for undefined.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationupdatecurrententryoptions-state"/>
     [IdlMember("state", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationupdatecurrententryoptions-state")]
     public required object? State { get; init; }
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationoptions</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationoptions"/>
 [IdlInterface("NavigationOptions", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationoptions")]
 public class NavigationOptions
 {
     /// <summary>The info given to the navigate event: a value of the script engine, or null for undefined.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationoptions-info"/>
     [IdlMember("info", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationoptions-info")]
     public object? Info { get; init; }
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationnavigateoptions</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationnavigateoptions"/>
 [IdlInterface("NavigationNavigateOptions", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationnavigateoptions")]
 public sealed class NavigationNavigateOptions : NavigationOptions
 {
     /// <summary>The state of the new entry: a value of the script engine.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationnavigateoptions-state"/>
     [IdlMember("state", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationnavigateoptions-state")]
     public object? State
     {
@@ -70,15 +81,18 @@ public sealed class NavigationNavigateOptions : NavigationOptions
     internal bool HasState { get; private init; }
 
     /// <summary>Gets whether the navigation pushes a new entry or replaces the current one.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationnavigateoptions-history"/>
     [IdlMember("history", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationnavigateoptions-history")]
     public NavigationHistoryBehavior History { get; init; }
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationreloadoptions</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationreloadoptions"/>
 [IdlInterface("NavigationReloadOptions", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationreloadoptions")]
 public sealed class NavigationReloadOptions : NavigationOptions
 {
     /// <summary>The new state of the current entry: a value of the script engine.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationreloadoptions-state"/>
     [IdlMember("state", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationreloadoptions-state")]
     public object? State
     {
@@ -95,16 +109,19 @@ public sealed class NavigationReloadOptions : NavigationOptions
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationresult</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationresult"/>
 [IdlInterface("NavigationResult", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationresult")]
 public sealed class NavigationResult
 {
     /// <summary>Gets the task that completes with the new current entry when the navigation is committed.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationresult-committed"/>
     [IdlMember("committed", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationresult-committed")]
     public required Task<NavigationHistoryEntry> Committed { get; init; }
 
     /// <summary>
     /// Gets the task that completes with the entry of the navigation when it has finished successfully.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationresult-finished"/>
     [IdlMember("finished", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationresult-finished")]
     public required Task<NavigationHistoryEntry> Finished { get; init; }
 }
@@ -141,6 +158,7 @@ internal sealed class NavigationApiMethodTracker(Navigation navigation, string? 
 /// The states are serialized by the script engine of the window. The promises of the results and of the transitions are
 /// settled by the tasks of the event loop. The exceptions that reject them are created in the realm of the window.
 /// </remarks>
+/// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigation"/>
 [IdlInterface("Navigation", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigation")]
 public sealed class Navigation : EventTarget
 {
@@ -198,14 +216,17 @@ public sealed class Navigation : EventTarget
     internal int GetEntryIndex(SessionHistoryEntry sessionHistoryEntry) => _entryList.FindIndex(entry => ReferenceEquals(entry.SessionHistoryEntry, sessionHistoryEntry));
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-entries</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-entries"/>
     [IdlMember("entries", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-entries")]
     public IReadOnlyList<NavigationHistoryEntry> Entries() => HasEntriesAndEventsDisabled ? [] : [.. _entryList];
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-currententry</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-currententry"/>
     [IdlMember("currentEntry", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-currententry")]
     public NavigationHistoryEntry? CurrentEntry => CurrentEntryInternal;
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-updatecurrententry</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-updatecurrententry"/>
     [IdlMember("updateCurrentEntry", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-updatecurrententry")]
     public void UpdateCurrentEntry(NavigationUpdateCurrentEntryOptions options)
     {
@@ -217,22 +238,27 @@ public sealed class Navigation : EventTarget
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-transition</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-transition"/>
     [IdlMember("transition", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-transition")]
     public NavigationTransition? Transition { get; private set; }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-activation</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-activation"/>
     [IdlMember("activation", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-activation")]
     public NavigationActivation? Activation { get; private set; }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-cangoback</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-cangoback"/>
     [IdlMember("canGoBack", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-cangoback")]
     public bool CanGoBack => !HasEntriesAndEventsDisabled && _currentEntryIndex > 0;
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-cangoforward</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-cangoforward"/>
     [IdlMember("canGoForward", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-cangoforward")]
     public bool CanGoForward => !HasEntriesAndEventsDisabled && _currentEntryIndex >= 0 && _currentEntryIndex < _entryList.Count - 1;
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-navigate</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-navigate"/>
     [IdlMember("navigate", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-navigate")]
     public NavigationResult Navigate(string url, NavigationNavigateOptions? options = null)
     {
@@ -273,6 +299,7 @@ public sealed class Navigation : EventTarget
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-reload</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-reload"/>
     [IdlMember("reload", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-reload")]
     public NavigationResult Reload(NavigationReloadOptions? options = null)
     {
@@ -309,6 +336,7 @@ public sealed class Navigation : EventTarget
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-traverseto</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-traverseto"/>
     [IdlMember("traverseTo", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-traverseto")]
     public NavigationResult TraverseTo(string key, NavigationOptions? options = null)
     {
@@ -320,6 +348,7 @@ public sealed class Navigation : EventTarget
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-back</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-back"/>
     [IdlMember("back", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-back")]
     public NavigationResult Back(NavigationOptions? options = null)
     {
@@ -330,6 +359,7 @@ public sealed class Navigation : EventTarget
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-forward</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-forward"/>
     [IdlMember("forward", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-forward")]
     public NavigationResult Forward(NavigationOptions? options = null)
     {
@@ -340,6 +370,7 @@ public sealed class Navigation : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>navigate</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#handler-navigation-onnavigate"/>
     [IdlMember("onnavigate", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#handler-navigation-onnavigate")]
     public Action<Event>? OnNavigate
     {
@@ -348,6 +379,7 @@ public sealed class Navigation : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>navigatesuccess</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#handler-navigation-onnavigatesuccess"/>
     [IdlMember("onnavigatesuccess", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#handler-navigation-onnavigatesuccess")]
     public Action<Event>? OnNavigateSuccess
     {
@@ -356,6 +388,7 @@ public sealed class Navigation : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>navigateerror</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#handler-navigation-onnavigateerror"/>
     [IdlMember("onnavigateerror", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#handler-navigation-onnavigateerror")]
     public Action<Event>? OnNavigateError
     {
@@ -364,6 +397,7 @@ public sealed class Navigation : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>currententrychange</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#handler-navigation-oncurrententrychange"/>
     [IdlMember("oncurrententrychange", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#handler-navigation-oncurrententrychange")]
     public Action<Event>? OnCurrentEntryChange
     {
@@ -1081,6 +1115,7 @@ public sealed class Navigation : EventTarget
 internal sealed record NavigationApiStateValue(object? Value);
 
 /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#the-navigationhistoryentry-interface</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationhistoryentry"/>
 [IdlInterface("NavigationHistoryEntry", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationhistoryentry")]
 public sealed class NavigationHistoryEntry : EventTarget
 {
@@ -1099,6 +1134,7 @@ public sealed class NavigationHistoryEntry : EventTarget
     private bool IsDocumentFullyActive => _navigation.Window.Document.IsFullyActive;
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationhistoryentry-url</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationhistoryentry-url"/>
     [IdlMember("url", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationhistoryentry-url")]
     public string? Url
     {
@@ -1121,26 +1157,32 @@ public sealed class NavigationHistoryEntry : EventTarget
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationhistoryentry-key</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationhistoryentry-key"/>
     [IdlMember("key", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationhistoryentry-key")]
     public string Key => IsDocumentFullyActive ? SessionHistoryEntry.NavigationApiKey : "";
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationhistoryentry-id</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationhistoryentry-id"/>
     [IdlMember("id", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationhistoryentry-id")]
     public string Id => IsDocumentFullyActive ? SessionHistoryEntry.NavigationApiId : "";
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationhistoryentry-index</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationhistoryentry-index"/>
     [IdlMember("index", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationhistoryentry-index")]
     public long Index => IsDocumentFullyActive ? _navigation.GetEntryIndex(SessionHistoryEntry) : -1;
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationhistoryentry-samedocument</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationhistoryentry-samedocument"/>
     [IdlMember("sameDocument", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationhistoryentry-samedocument")]
     public bool SameDocument => IsDocumentFullyActive && ReferenceEquals(SessionHistoryEntry.Document, _navigation.Window.Document);
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationhistoryentry-getstate: a new deserialization of the state (null for undefined).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationhistoryentry-getstate"/>
     [IdlMember("getState", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationhistoryentry-getstate")]
     public object? GetState() => IsDocumentFullyActive ? _navigation.DeserializeState(SessionHistoryEntry.NavigationApiState) : null;
 
     /// <summary>Gets or sets the event handler of the <c>dispose</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#handler-navigationhistoryentry-ondispose"/>
     [IdlMember("ondispose", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#handler-navigationhistoryentry-ondispose")]
     public Action<Event>? OnDispose
     {
@@ -1150,6 +1192,7 @@ public sealed class NavigationHistoryEntry : EventTarget
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#the-navigationtransition-interface</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationtransition"/>
 [IdlInterface("NavigationTransition", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationtransition")]
 public sealed class NavigationTransition
 {
@@ -1165,22 +1208,27 @@ public sealed class NavigationTransition
     }
 
     /// <summary>Gets the type of the ongoing navigation.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationtransition-navigationtype"/>
     [IdlMember("navigationType", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationtransition-navigationtype")]
     public NavigationType NavigationType { get; }
 
     /// <summary>Gets the entry that was current when the navigation started.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationtransition-from"/>
     [IdlMember("from", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationtransition-from")]
     public NavigationHistoryEntry From { get; }
 
     /// <summary>Gets the destination of the navigation.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationtransition-to"/>
     [IdlMember("to", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationtransition-to")]
     public NavigationDestination To { get; }
 
     /// <summary>Gets the task that completes when the navigation is committed (the current entry is updated).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationtransition-committed"/>
     [IdlMember("committed", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationtransition-committed")]
     public Task Committed => CommittedPromise.Task;
 
     /// <summary>Gets the task that completes when the navigation has finished.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationtransition-finished"/>
     [IdlMember("finished", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationtransition-finished")]
     public Task Finished => FinishedPromise.Task;
 
@@ -1190,6 +1238,7 @@ public sealed class NavigationTransition
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#the-navigationactivation-interface</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationactivation"/>
 [IdlInterface("NavigationActivation", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationactivation")]
 public sealed class NavigationActivation
 {
@@ -1198,19 +1247,23 @@ public sealed class NavigationActivation
     }
 
     /// <summary>Gets the entry that was current in the previous document, or null.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationactivation-from"/>
     [IdlMember("from", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationactivation-from")]
     public NavigationHistoryEntry? From { get; internal set; }
 
     /// <summary>Gets the current entry of the activated document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationactivation-entry"/>
     [IdlMember("entry", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationactivation-entry")]
     public NavigationHistoryEntry? Entry { get; internal set; }
 
     /// <summary>Gets the type of the navigation that activated the document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationactivation-navigationtype"/>
     [IdlMember("navigationType", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationactivation-navigationtype")]
     public NavigationType NavigationType { get; internal set; }
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#the-navigationdestination-interface</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationdestination"/>
 [IdlInterface("NavigationDestination", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationdestination")]
 public sealed class NavigationDestination
 {
@@ -1233,31 +1286,38 @@ public sealed class NavigationDestination
     internal bool IsSameDocument { get; init; }
 
     /// <summary>Gets the serialized URL the navigation goes to.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationdestination-url"/>
     [IdlMember("url", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationdestination-url")]
     public string Url => UrlRecord.Serialize();
 
     /// <summary>Gets the key of the destination entry of a traversal; otherwise an empty string.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationdestination-key"/>
     [IdlMember("key", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationdestination-key")]
     public string Key => Entry?.Key ?? "";
 
     /// <summary>Gets the ID of the destination entry of a traversal; otherwise an empty string.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationdestination-id"/>
     [IdlMember("id", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationdestination-id")]
     public string Id => Entry?.Id ?? "";
 
     /// <summary>Gets the index of the destination entry of a traversal; otherwise -1.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationdestination-index"/>
     [IdlMember("index", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationdestination-index")]
     public long Index => Entry?.Index ?? -1;
 
     /// <summary>Gets a value indicating whether the navigation stays in the current document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationdestination-samedocument"/>
     [IdlMember("sameDocument", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationdestination-samedocument")]
     public bool SameDocument => IsSameDocument;
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationdestination-getstate</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationdestination-getstate"/>
     [IdlMember("getState", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationdestination-getstate")]
     public object? GetState() => _navigation.DeserializeState(State);
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#the-navigationprecommitcontroller-interface</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationprecommitcontroller"/>
 [IdlInterface("NavigationPrecommitController", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationprecommitcontroller")]
 public sealed class NavigationPrecommitController
 {
@@ -1269,6 +1329,7 @@ public sealed class NavigationPrecommitController
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationprecommitcontroller-redirect</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationprecommitcontroller-redirect"/>
     [IdlMember("redirect", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationprecommitcontroller-redirect")]
     public void Redirect(string url, NavigationNavigateOptions? options = null)
     {
@@ -1311,6 +1372,7 @@ public sealed class NavigationPrecommitController
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationprecommitcontroller-addhandler</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationprecommitcontroller-addhandler"/>
     [IdlMember("addHandler", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationprecommitcontroller-addhandler")]
     public void AddHandler(NavigationInterceptHandler handler)
     {

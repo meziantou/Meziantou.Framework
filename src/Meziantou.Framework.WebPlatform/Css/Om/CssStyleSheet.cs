@@ -6,6 +6,7 @@ using Meziantou.Framework.WebPlatform.Dom;
 namespace Meziantou.Framework.WebPlatform.Css.Om;
 
 /// <summary>https://drafts.csswg.org/cssom/#the-stylesheet-interface</summary>
+/// <seealso href="https://drafts.csswg.org/cssom/#stylesheet"/>
 [IdlInterface("StyleSheet", "https://drafts.csswg.org/cssom/#stylesheet")]
 public abstract class StyleSheet
 {
@@ -16,18 +17,22 @@ public abstract class StyleSheet
     }
 
     /// <summary>Gets the media type of the style sheet, always <c>text/css</c>.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-stylesheet-type"/>
     [IdlMember("type", "https://drafts.csswg.org/cssom/#dom-stylesheet-type")]
     public string Type => "text/css";
 
     /// <summary>https://drafts.csswg.org/cssom/#dom-stylesheet-href: the location of the style sheet (null for embedded and constructed style sheets).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-stylesheet-href"/>
     [IdlMember("href", "https://drafts.csswg.org/cssom/#dom-stylesheet-href")]
     public string? Href { get; private protected init; }
 
     /// <summary>https://drafts.csswg.org/cssom/#dom-stylesheet-ownernode: the element or processing instruction that created the style sheet.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-stylesheet-ownernode"/>
     [IdlMember("ownerNode", "https://drafts.csswg.org/cssom/#dom-stylesheet-ownernode")]
     public Node? OwnerNode { get; internal set; }
 
     /// <summary>https://drafts.csswg.org/cssom/#dom-stylesheet-parentstylesheet: the style sheet that imports this style sheet with an @import rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-stylesheet-parentstylesheet"/>
     [IdlMember("parentStyleSheet", "https://drafts.csswg.org/cssom/#dom-stylesheet-parentstylesheet")]
     public CssStyleSheet? ParentStyleSheet { get; internal set; }
 
@@ -51,14 +56,17 @@ public abstract class StyleSheet
     }
 
     /// <summary>https://drafts.csswg.org/cssom/#dom-stylesheet-title: the title of a link element is a reference to its attribute.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-stylesheet-title"/>
     [IdlMember("title", "https://drafts.csswg.org/cssom/#dom-stylesheet-title")]
     public string? Title { get; internal set; }
 
     /// <summary>Gets the media queries associated with the style sheet.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-stylesheet-media"/>
     [IdlMember("media", "https://drafts.csswg.org/cssom/#dom-stylesheet-media")]
     public MediaList Media { get; }
 
     /// <summary>https://drafts.csswg.org/cssom/#dom-stylesheet-disabled</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-stylesheet-disabled"/>
     [IdlMember("disabled", "https://drafts.csswg.org/cssom/#dom-stylesheet-disabled")]
     public bool Disabled
     {
@@ -72,18 +80,22 @@ public abstract class StyleSheet
 }
 
 /// <summary>https://drafts.csswg.org/cssom/#dictdef-cssstylesheetinit</summary>
+/// <seealso href="https://drafts.csswg.org/cssom/#dictdef-cssstylesheetinit"/>
 [IdlInterface("CSSStyleSheetInit", "https://drafts.csswg.org/cssom/#dictdef-cssstylesheetinit")]
 public sealed class CssStyleSheetInit
 {
     /// <summary>Gets the base URL used to resolve the relative URLs of the style sheet.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstylesheetinit-baseurl"/>
     [IdlMember("baseURL", "https://drafts.csswg.org/cssom/#dom-cssstylesheetinit-baseurl")]
     public string? BaseUrl { get; init; }
 
     /// <summary>Gets the media queries associated with the style sheet, as a <c>MediaList</c> or a string.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstylesheetinit-media"/>
     [IdlMember("media", "https://drafts.csswg.org/cssom/#dom-cssstylesheetinit-media")]
     public MediaListOrString Media { get; init; } = "";
 
     /// <summary>Gets a value indicating whether the style sheet is created disabled.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstylesheetinit-disabled"/>
     [IdlMember("disabled", "https://drafts.csswg.org/cssom/#dom-cssstylesheetinit-disabled")]
     public bool Disabled { get; init; }
 }
@@ -143,6 +155,7 @@ public readonly struct MediaListOrString : IUnionValue, IEquatable<MediaListOrSt
 }
 
 /// <summary>https://drafts.csswg.org/cssom/#the-cssstylesheet-interface</summary>
+/// <seealso href="https://drafts.csswg.org/cssom/#cssstylesheet"/>
 [IdlInterface("CSSStyleSheet", "https://drafts.csswg.org/cssom/#cssstylesheet")]
 public sealed partial class CssStyleSheet : StyleSheet
 {
@@ -150,6 +163,7 @@ public sealed partial class CssStyleSheet : StyleSheet
     private CssRuleList? _ruleList;
 
     /// <summary>Creates a constructed style sheet (https://drafts.csswg.org/cssom/#dom-cssstylesheet-cssstylesheet).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstylesheet-cssstylesheet"/>
     [IdlMember("constructor", "https://drafts.csswg.org/cssom/#dom-cssstylesheet-cssstylesheet")]
     public CssStyleSheet(CssStyleSheetInit? options = null)
         : this(Document.CurrentGlobalDocument, options)
@@ -328,10 +342,12 @@ public sealed partial class CssStyleSheet : StyleSheet
     }
 
     /// <summary>https://drafts.csswg.org/cssom/#dom-cssstylesheet-ownerrule: the @import rule that imports this style sheet.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstylesheet-ownerrule"/>
     [IdlMember("ownerRule", "https://drafts.csswg.org/cssom/#dom-cssstylesheet-ownerrule")]
     public CssRule? OwnerRule { get; }
 
     /// <summary>Gets the list of the CSS rules of the style sheet.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstylesheet-cssrules"/>
     [IdlMember("cssRules", "https://drafts.csswg.org/cssom/#dom-cssstylesheet-cssrules")]
     public CssRuleList CssRules
     {
@@ -343,12 +359,14 @@ public sealed partial class CssStyleSheet : StyleSheet
     }
 
     /// <summary>Gets the list of the CSS rules of the style sheet (legacy alias of <c>cssRules</c>).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstylesheet-rules"/>
     [IdlMember("rules", "https://drafts.csswg.org/cssom/#dom-cssstylesheet-rules")]
     public CssRuleList Rules => CssRules;
 
     /// <summary>
     /// Inserts a rule, parsed from the given text, at the given index of the style sheet and returns its index.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstylesheet-insertrule"/>
     [IdlMember("insertRule", "https://drafts.csswg.org/cssom/#dom-cssstylesheet-insertrule")]
     public uint InsertRule(string rule, uint index = 0)
     {
@@ -367,6 +385,7 @@ public sealed partial class CssStyleSheet : StyleSheet
     }
 
     /// <summary>Removes the rule at the given index from the style sheet.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstylesheet-deleterule"/>
     [IdlMember("deleteRule", "https://drafts.csswg.org/cssom/#dom-cssstylesheet-deleterule")]
     public void DeleteRule(uint index)
     {
@@ -378,6 +397,7 @@ public sealed partial class CssStyleSheet : StyleSheet
     }
 
     /// <summary>https://drafts.csswg.org/cssom/#dom-cssstylesheet-replace: the style sheet is parsed synchronously.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstylesheet-replace"/>
     [IdlMember("replace", "https://drafts.csswg.org/cssom/#dom-cssstylesheet-replace")]
     public Task<CssStyleSheet> Replace(string text)
     {
@@ -393,6 +413,7 @@ public sealed partial class CssStyleSheet : StyleSheet
     /// <summary>
     /// Synchronously replaces the rules of a constructed style sheet with the rules parsed from the given text.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstylesheet-replacesync"/>
     [IdlMember("replaceSync", "https://drafts.csswg.org/cssom/#dom-cssstylesheet-replacesync")]
     public void ReplaceSync(string text)
     {
@@ -405,6 +426,7 @@ public sealed partial class CssStyleSheet : StyleSheet
     }
 
     /// <summary>https://drafts.csswg.org/cssom/#dom-cssstylesheet-addrule</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstylesheet-addrule"/>
     [IdlMember("addRule", "https://drafts.csswg.org/cssom/#dom-cssstylesheet-addrule")]
     public int AddRule(string selector = "undefined", string style = "undefined", uint? index = null)
     {
@@ -423,6 +445,7 @@ public sealed partial class CssStyleSheet : StyleSheet
     /// <summary>
     /// Removes the rule at the given index from the style sheet (legacy alias of <c>deleteRule()</c>).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstylesheet-removerule"/>
     [IdlMember("removeRule", "https://drafts.csswg.org/cssom/#dom-cssstylesheet-removerule")]
     public void RemoveRule(uint index = 0) => DeleteRule(index);
 
@@ -434,6 +457,7 @@ public sealed partial class CssStyleSheet : StyleSheet
 }
 
 /// <summary>https://drafts.csswg.org/cssom/#the-stylesheetlist-interface</summary>
+/// <seealso href="https://drafts.csswg.org/cssom/#stylesheetlist"/>
 [IdlInterface("StyleSheetList", "https://drafts.csswg.org/cssom/#stylesheetlist")]
 public sealed class StyleSheetList : IReadOnlyList<CssStyleSheet>
 {
@@ -493,6 +517,7 @@ public sealed class StyleSheetList : IReadOnlyList<CssStyleSheet>
     }
 
     /// <summary>Returns the style sheet at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-stylesheetlist-item"/>
     [IdlMember("item", "https://drafts.csswg.org/cssom/#dom-stylesheetlist-item")]
     public CssStyleSheet? Item(uint index)
     {
@@ -501,6 +526,7 @@ public sealed class StyleSheetList : IReadOnlyList<CssStyleSheet>
     }
 
     /// <summary>Gets the style sheet at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-stylesheetlist-item"/>
     [IdlMember("getter", "https://drafts.csswg.org/cssom/#dom-stylesheetlist-item")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public CssStyleSheet? this[uint index] => Item(index);
@@ -511,6 +537,7 @@ public sealed class StyleSheetList : IReadOnlyList<CssStyleSheet>
     public CssStyleSheet this[int index] => Sheets[index];
 
     /// <summary>Gets the number of style sheets in the list.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-stylesheetlist-length"/>
     [IdlMember("length", "https://drafts.csswg.org/cssom/#dom-stylesheetlist-length")]
     public uint Length => (uint)Sheets.Count;
 
@@ -526,6 +553,7 @@ public sealed class StyleSheetList : IReadOnlyList<CssStyleSheet>
 }
 
 /// <summary>https://drafts.csswg.org/cssom/#namespacedef-css</summary>
+/// <seealso href="https://drafts.csswg.org/cssom/#namespacedef-css"/>
 [IdlInterface("CSS", "https://drafts.csswg.org/cssom/#namespacedef-css")]
 public static partial class Css
 {
@@ -533,6 +561,7 @@ public static partial class Css
     /// The highlight registry of the associated document of the current global object
     /// (https://drafts.csswg.org/css-highlight-api-1/#dom-css-highlights): see <see cref="Document.Highlights"/>.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-highlight-api-1/#dom-css-highlights"/>
     [IdlMember("highlights", "https://drafts.csswg.org/css-highlight-api-1/#dom-css-highlights")]
     public static HighlightRegistry Highlights => Document.CurrentGlobalDocument.Highlights;
 
@@ -540,6 +569,7 @@ public static partial class Css
     /// The paint worklet of the associated document of the current global object
     /// (https://drafts.css-houdini.org/css-paint-api-1/#dom-css-paintworklet): see <see cref="Document.PaintWorklet"/>.
     /// </summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-paint-api-1/#dom-css-paintworklet"/>
     [IdlMember("paintWorklet", "https://drafts.css-houdini.org/css-paint-api-1/#dom-css-paintworklet")]
     public static Worklet PaintWorklet => Document.CurrentGlobalDocument.PaintWorklet;
 
@@ -547,6 +577,7 @@ public static partial class Css
     /// The layout worklet of the associated document of the current global object
     /// (https://drafts.css-houdini.org/css-layout-api-1/#dom-css-layoutworklet): see <see cref="Document.LayoutWorklet"/>.
     /// </summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-layout-api-1/#dom-css-layoutworklet"/>
     [IdlMember("layoutWorklet", "https://drafts.css-houdini.org/css-layout-api-1/#dom-css-layoutworklet")]
     public static Worklet LayoutWorklet => Document.CurrentGlobalDocument.LayoutWorklet;
 
@@ -554,10 +585,12 @@ public static partial class Css
     /// The animation worklet of the associated document of the current global object
     /// (https://drafts.css-houdini.org/css-animation-worklet-1/#dom-css-animationworklet): see <see cref="Document.AnimationWorklet"/>.
     /// </summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-animation-worklet-1/#dom-css-animationworklet"/>
     [IdlMember("animationWorklet", "https://drafts.css-houdini.org/css-animation-worklet-1/#dom-css-animationworklet")]
     public static Worklet AnimationWorklet => Document.CurrentGlobalDocument.AnimationWorklet;
 
     /// <summary>https://drafts.csswg.org/cssom/#dom-css-escape</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-css-escape"/>
     [IdlMember("escape", "https://drafts.csswg.org/cssom/#dom-css-escape")]
     public static string Escape(string ident)
     {
@@ -566,6 +599,7 @@ public static partial class Css
     }
 
     /// <summary>https://drafts.csswg.org/css-conditional-3/#dom-css-supports</summary>
+    /// <seealso href="https://drafts.csswg.org/css-conditional-3/#dom-css-supports"/>
     [IdlMember("supports", "https://drafts.csswg.org/css-conditional-3/#dom-css-supports")]
     public static bool Supports(string property, string value)
     {
@@ -581,6 +615,7 @@ public static partial class Css
     }
 
     /// <summary>https://drafts.csswg.org/css-conditional-3/#dom-css-supports-conditiontext</summary>
+    /// <seealso href="https://drafts.csswg.org/css-conditional-3/#dom-css-supports-conditiontext"/>
     [IdlMember("supports", "https://drafts.csswg.org/css-conditional-3/#dom-css-supports-conditiontext")]
     public static bool Supports(string conditionText)
     {

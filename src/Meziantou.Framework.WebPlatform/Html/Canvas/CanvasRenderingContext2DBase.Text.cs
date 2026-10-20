@@ -49,6 +49,7 @@ internal sealed class CanvasFont(string serialization, ComputedStyle style)
 /// The measurements of a text (https://html.spec.whatwg.org/multipage/canvas.html#textmetrics), returned by <c>measureText()</c>:
 /// the distances are in CSS px, relative to the alignment point and to the baseline of the text attributes of the context.
 /// </summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#textmetrics"/>
 [IdlInterface("TextMetrics", "https://html.spec.whatwg.org/multipage/canvas.html#textmetrics")]
 public sealed class TextMetrics
 {
@@ -57,50 +58,62 @@ public sealed class TextMetrics
     }
 
     /// <summary>Gets the advance width of the text.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-textmetrics-width"/>
     [IdlMember("width", "https://html.spec.whatwg.org/multipage/canvas.html#dom-textmetrics-width")]
     public double Width { get; internal init; }
 
     /// <summary>Gets the distance from the alignment point to the left of the bounding box of the glyphs (positive to the left).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-textmetrics-actualboundingboxleft"/>
     [IdlMember("actualBoundingBoxLeft", "https://html.spec.whatwg.org/multipage/canvas.html#dom-textmetrics-actualboundingboxleft")]
     public double ActualBoundingBoxLeft { get; internal init; }
 
     /// <summary>Gets the distance from the alignment point to the right of the bounding box of the glyphs (positive to the right).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-textmetrics-actualboundingboxright"/>
     [IdlMember("actualBoundingBoxRight", "https://html.spec.whatwg.org/multipage/canvas.html#dom-textmetrics-actualboundingboxright")]
     public double ActualBoundingBoxRight { get; internal init; }
 
     /// <summary>Gets the distance from the baseline to the ascent of the first available font (positive upwards).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-textmetrics-fontboundingboxascent"/>
     [IdlMember("fontBoundingBoxAscent", "https://html.spec.whatwg.org/multipage/canvas.html#dom-textmetrics-fontboundingboxascent")]
     public double FontBoundingBoxAscent { get; internal init; }
 
     /// <summary>Gets the distance from the baseline to the descent of the first available font (positive downwards).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-textmetrics-fontboundingboxdescent"/>
     [IdlMember("fontBoundingBoxDescent", "https://html.spec.whatwg.org/multipage/canvas.html#dom-textmetrics-fontboundingboxdescent")]
     public double FontBoundingBoxDescent { get; internal init; }
 
     /// <summary>Gets the distance from the baseline to the top of the bounding box of the glyphs (positive upwards).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-textmetrics-actualboundingboxascent"/>
     [IdlMember("actualBoundingBoxAscent", "https://html.spec.whatwg.org/multipage/canvas.html#dom-textmetrics-actualboundingboxascent")]
     public double ActualBoundingBoxAscent { get; internal init; }
 
     /// <summary>Gets the distance from the baseline to the bottom of the bounding box of the glyphs (positive downwards).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-textmetrics-actualboundingboxdescent"/>
     [IdlMember("actualBoundingBoxDescent", "https://html.spec.whatwg.org/multipage/canvas.html#dom-textmetrics-actualboundingboxdescent")]
     public double ActualBoundingBoxDescent { get; internal init; }
 
     /// <summary>Gets the distance from the baseline to the top of the em square (positive when the baseline is below it).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-textmetrics-emheightascent"/>
     [IdlMember("emHeightAscent", "https://html.spec.whatwg.org/multipage/canvas.html#dom-textmetrics-emheightascent")]
     public double EmHeightAscent { get; internal init; }
 
     /// <summary>Gets the distance from the baseline to the bottom of the em square (positive when the baseline is above it).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-textmetrics-emheightdescent"/>
     [IdlMember("emHeightDescent", "https://html.spec.whatwg.org/multipage/canvas.html#dom-textmetrics-emheightdescent")]
     public double EmHeightDescent { get; internal init; }
 
     /// <summary>Gets the distance from the baseline to the hanging baseline (positive when the baseline is below it).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-textmetrics-hangingbaseline"/>
     [IdlMember("hangingBaseline", "https://html.spec.whatwg.org/multipage/canvas.html#dom-textmetrics-hangingbaseline")]
     public double HangingBaseline { get; internal init; }
 
     /// <summary>Gets the distance from the baseline to the alphabetic baseline (positive when the baseline is below it).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-textmetrics-alphabeticbaseline"/>
     [IdlMember("alphabeticBaseline", "https://html.spec.whatwg.org/multipage/canvas.html#dom-textmetrics-alphabeticbaseline")]
     public double AlphabeticBaseline { get; internal init; }
 
     /// <summary>Gets the distance from the baseline to the ideographic-under baseline (positive when the baseline is below it).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-textmetrics-ideographicbaseline"/>
     [IdlMember("ideographicBaseline", "https://html.spec.whatwg.org/multipage/canvas.html#dom-textmetrics-ideographicbaseline")]
     public double IdeographicBaseline { get; internal init; }
 }
@@ -128,6 +141,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// serialized with its size in px and without line height. The values that cannot be parsed are ignored. Setting the font
     /// resets <see cref="FontStretch"/> and <see cref="FontVariantCaps"/> to the values of the shorthand (as in the browsers, <see cref="FontKerning"/> is kept).
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-font"/>
     [IdlMember("font", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-font")]
     public string Font
     {
@@ -145,6 +159,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Gets or sets the alignment of the texts (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-textalign).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-textalign"/>
     [IdlMember("textAlign", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-textalign")]
     public CanvasTextAlign TextAlign
     {
@@ -153,6 +168,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Gets or sets the baseline of the texts (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-textbaseline).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-textbaseline"/>
     [IdlMember("textBaseline", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-textbaseline")]
     public CanvasTextBaseline TextBaseline
     {
@@ -161,6 +177,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Gets or sets the direction of the texts (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-direction).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-direction"/>
     [IdlMember("direction", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-direction")]
     public CanvasDirection Direction
     {
@@ -169,6 +186,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Gets or sets the language of the texts (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-lang): a BCP 47 language tag, or <c>inherit</c>.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-lang"/>
     [IdlMember("lang", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-lang")]
     public string Lang
     {
@@ -184,6 +202,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// Gets or sets the spacing between the letters (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-letterspacing):
     /// a CSS length (the font-relative lengths are resolved against the current font when the text is drawn); other values are ignored.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-letterspacing"/>
     [IdlMember("letterSpacing", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-letterspacing")]
     public string LetterSpacing
     {
@@ -202,6 +221,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// Gets or sets the spacing between the words (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-wordspacing):
     /// a CSS length (the font-relative lengths are resolved against the current font when the text is drawn); other values are ignored.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-wordspacing"/>
     [IdlMember("wordSpacing", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-wordspacing")]
     public string WordSpacing
     {
@@ -217,6 +237,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Gets or sets the kerning of the texts (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-fontkerning).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-fontkerning"/>
     [IdlMember("fontKerning", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-fontkerning")]
     public CanvasFontKerning FontKerning
     {
@@ -225,6 +246,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Gets or sets the width of the font (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-fontstretch).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-fontstretch"/>
     [IdlMember("fontStretch", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-fontstretch")]
     public CanvasFontStretch FontStretch
     {
@@ -233,6 +255,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Gets or sets the capitals of the texts (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-fontvariantcaps): the OpenType features of the capitals (the small capitals are not synthesized).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-fontvariantcaps"/>
     [IdlMember("fontVariantCaps", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-fontvariantcaps")]
     public CanvasFontVariantCaps FontVariantCaps
     {
@@ -241,6 +264,7 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Gets or sets the rendering hint of the texts (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-textrendering): <c>optimizeSpeed</c> disables the kerning, as <c>text-rendering</c>.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-textrendering"/>
     [IdlMember("textRendering", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-textrendering")]
     public CanvasTextRendering TextRendering
     {
@@ -257,6 +281,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// <param name="x">The x coordinate of the alignment point.</param>
     /// <param name="y">The y coordinate of the baseline.</param>
     /// <param name="maxWidth">The maximum width: a wider text is compressed horizontally; nothing is drawn when it is not positive.</param>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-filltext"/>
     [IdlMember("fillText", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-filltext")]
     public void FillText(string text, double x, double y, double? maxWidth = null) => DrawText(text, x, y, maxWidth, stroke: false);
 
@@ -265,10 +290,12 @@ public abstract partial class CanvasRenderingContext2DBase
     /// <param name="x">The x coordinate of the alignment point.</param>
     /// <param name="y">The y coordinate of the baseline.</param>
     /// <param name="maxWidth">The maximum width: a wider text is compressed horizontally; nothing is drawn when it is not positive.</param>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-stroketext"/>
     [IdlMember("strokeText", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-stroketext")]
     public void StrokeText(string text, double x, double y, double? maxWidth = null) => DrawText(text, x, y, maxWidth, stroke: true);
 
     /// <summary>Measures a text with the current font and text styles (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-measuretext).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-measuretext"/>
     [IdlMember("measureText", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-measuretext")]
     public TextMetrics MeasureText(string text)
     {
@@ -819,6 +846,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// <c>none</c> or a list of CSS filter functions (the lengths are resolved against the current font); the other values are
     /// ignored. The references to SVG filter elements are not supported (the drawing is not filtered).
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-filter"/>
     [IdlMember("filter", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-filter")]
     public string Filter
     {

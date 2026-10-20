@@ -5,18 +5,22 @@ using Meziantou.Framework.WebPlatform.Dom;
 namespace Meziantou.Framework.WebPlatform.Css.Om;
 
 /// <summary>The type of a <see cref="Highlight"/> (https://drafts.csswg.org/css-highlight-api-1/#enumdef-highlighttype).</summary>
+/// <seealso href="https://drafts.csswg.org/css-highlight-api-1/#enumdef-highlighttype"/>
 [IdlInterface("HighlightType", "https://drafts.csswg.org/css-highlight-api-1/#enumdef-highlighttype")]
 public enum HighlightType
 {
     /// <summary>A custom highlight.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-highlight-api-1/#dom-highlighttype-highlight"/>
     [IdlMember("highlight", "https://drafts.csswg.org/css-highlight-api-1/#dom-highlighttype-highlight")]
     Highlight,
 
     /// <summary>A highlight for a spelling error.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-highlight-api-1/#dom-highlighttype-spelling-error"/>
     [IdlMember("spelling-error", "https://drafts.csswg.org/css-highlight-api-1/#dom-highlighttype-spelling-error")]
     SpellingError,
 
     /// <summary>A highlight for a grammar error.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-highlight-api-1/#dom-highlighttype-grammar-error"/>
     [IdlMember("grammar-error", "https://drafts.csswg.org/css-highlight-api-1/#dom-highlighttype-grammar-error")]
     GrammarError,
 }
@@ -27,6 +31,7 @@ public enum HighlightType
 /// It is a <c>setlike&lt;AbstractRange&gt;</c>: the ranges are enumerated in insertion order, and, as for a JavaScript
 /// <c>Set</c>, an enumeration sees the changes made while it is in progress.
 /// </summary>
+/// <seealso href="https://drafts.csswg.org/css-highlight-api-1/#highlight"/>
 [IdlInterface("Highlight", "https://drafts.csswg.org/css-highlight-api-1/#highlight")]
 public sealed class Highlight : IReadOnlyCollection<AbstractRange>
 {
@@ -35,6 +40,7 @@ public sealed class Highlight : IReadOnlyCollection<AbstractRange>
     private readonly Dictionary<AbstractRange, int> _indexes = new(ReferenceEqualityComparer.Instance);
 
     /// <summary>Creates a highlight that contains the ranges (https://drafts.csswg.org/css-highlight-api-1/#dom-highlight-highlight).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-highlight-api-1/#dom-highlight-highlight"/>
     [IdlMember("constructor", "https://drafts.csswg.org/css-highlight-api-1/#dom-highlight-highlight")]
     public Highlight(params ReadOnlySpan<AbstractRange> initialRanges)
     {
@@ -48,10 +54,12 @@ public sealed class Highlight : IReadOnlyCollection<AbstractRange>
     /// The priority of the highlight (https://drafts.csswg.org/css-highlight-api-1/#dom-highlight-priority): the highlights
     /// with a higher priority are painted over the other ones.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-highlight-api-1/#dom-highlight-priority"/>
     [IdlMember("priority", "https://drafts.csswg.org/css-highlight-api-1/#dom-highlight-priority")]
     public int Priority { get; set; }
 
     /// <summary>The semantic of the highlight, for the assistive technologies (https://drafts.csswg.org/css-highlight-api-1/#dom-highlight-type).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-highlight-api-1/#dom-highlight-type"/>
     [IdlMember("type", "https://drafts.csswg.org/css-highlight-api-1/#dom-highlight-type")]
     public HighlightType Type { get; set; } = HighlightType.Highlight;
 
@@ -152,6 +160,7 @@ public sealed class Highlight : IReadOnlyCollection<AbstractRange>
 /// whether a highlight is registered under the name or not). <c>highlightsFromPoint()</c> hit tests the client rectangles of
 /// the ranges (see <see cref="HighlightsFromPoint"/>).
 /// </remarks>
+/// <seealso href="https://drafts.csswg.org/css-highlight-api-1/#highlightregistry"/>
 [IdlInterface("HighlightRegistry", "https://drafts.csswg.org/css-highlight-api-1/#highlightregistry")]
 public sealed class HighlightRegistry : IReadOnlyCollection<KeyValuePair<string, Highlight>>
 {
@@ -273,6 +282,7 @@ public sealed class HighlightRegistry : IReadOnlyCollection<KeyValuePair<string,
     /// or when the topmost box at the point is in a shadow tree that is not in <paramref name="options"/>; the ranges of another
     /// tree than the node at the point (e.g. a range of the light tree around a shadow host) do not highlight it.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-highlight-api-1/#dom-highlightregistry-highlightsfrompoint"/>
     [IdlMember("highlightsFromPoint", "https://drafts.csswg.org/css-highlight-api-1/#dom-highlightregistry-highlightsfrompoint")]
     public IReadOnlyList<HighlightHitResult> HighlightsFromPoint(float x, float y, HighlightsFromPointOptions? options = null)
     {
@@ -355,23 +365,28 @@ public sealed class HighlightRegistry : IReadOnlyCollection<KeyValuePair<string,
 }
 
 /// <summary>A highlight hit at a point and its ranges that contain the point (https://drafts.csswg.org/css-highlight-api-1/#dictdef-highlighthitresult).</summary>
+/// <seealso href="https://drafts.csswg.org/css-highlight-api-1/#dictdef-highlighthitresult"/>
 [IdlInterface("HighlightHitResult", "https://drafts.csswg.org/css-highlight-api-1/#dictdef-highlighthitresult")]
 public sealed class HighlightHitResult
 {
     /// <summary>Gets the highlight.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-highlight-api-1/#dom-highlighthitresult-highlight"/>
     [IdlMember("highlight", "https://drafts.csswg.org/css-highlight-api-1/#dom-highlighthitresult-highlight")]
     public Highlight? Highlight { get; init; }
 
     /// <summary>Gets the ranges of the highlight that contain the point.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-highlight-api-1/#dom-highlighthitresult-ranges"/>
     [IdlMember("ranges", "https://drafts.csswg.org/css-highlight-api-1/#dom-highlighthitresult-ranges")]
     public IReadOnlyList<AbstractRange> Ranges { get; init; } = [];
 }
 
 /// <summary>The options of <see cref="HighlightRegistry.HighlightsFromPoint"/> (https://drafts.csswg.org/css-highlight-api-1/#dictdef-highlightsfrompointoptions).</summary>
+/// <seealso href="https://drafts.csswg.org/css-highlight-api-1/#dictdef-highlightsfrompointoptions"/>
 [IdlInterface("HighlightsFromPointOptions", "https://drafts.csswg.org/css-highlight-api-1/#dictdef-highlightsfrompointoptions")]
 public sealed class HighlightsFromPointOptions
 {
     /// <summary>Gets the shadow roots whose highlights may be returned.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-highlight-api-1/#dom-highlightsfrompointoptions-shadowroots"/>
     [IdlMember("shadowRoots", "https://drafts.csswg.org/css-highlight-api-1/#dom-highlightsfrompointoptions-shadowroots")]
     public IReadOnlyList<ShadowRoot> ShadowRoots { get; init; } = [];
 }

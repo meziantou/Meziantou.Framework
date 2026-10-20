@@ -14,102 +14,125 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 // follow the specification.
 
 /// <summary>https://drafts.csswg.org/cssom-view/#enumdef-scrollbehavior</summary>
+/// <seealso href="https://drafts.csswg.org/cssom-view/#enumdef-scrollbehavior"/>
 [IdlInterface("ScrollBehavior", "https://drafts.csswg.org/cssom-view/#enumdef-scrollbehavior")]
 public enum ScrollBehavior
 {
     /// <summary>The scroll behavior is determined by the <c>scroll-behavior</c> CSS property.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-scrollbehavior-auto"/>
     [IdlMember("auto", "https://drafts.csswg.org/cssom-view/#dom-scrollbehavior-auto")]
     Auto,
 
     /// <summary>The scroll happens in a single jump.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-scrollbehavior-instant"/>
     [IdlMember("instant", "https://drafts.csswg.org/cssom-view/#dom-scrollbehavior-instant")]
     Instant,
 
     /// <summary>The scroll is animated smoothly.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-scrollbehavior-smooth"/>
     [IdlMember("smooth", "https://drafts.csswg.org/cssom-view/#dom-scrollbehavior-smooth")]
     Smooth,
 }
 
 /// <summary>https://drafts.csswg.org/cssom-view/#enumdef-scrolllogicalposition</summary>
+/// <seealso href="https://drafts.csswg.org/cssom-view/#enumdef-scrolllogicalposition"/>
 [IdlInterface("ScrollLogicalPosition", "https://drafts.csswg.org/cssom-view/#enumdef-scrolllogicalposition")]
 public enum ScrollLogicalPosition
 {
     /// <summary>Aligns the start edge of the element with the start edge of the scrolling box.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-scrolllogicalposition-start"/>
     [IdlMember("start", "https://drafts.csswg.org/cssom-view/#dom-scrolllogicalposition-start")]
     Start,
 
     /// <summary>Aligns the center of the element with the center of the scrolling box.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-scrolllogicalposition-center"/>
     [IdlMember("center", "https://drafts.csswg.org/cssom-view/#dom-scrolllogicalposition-center")]
     Center,
 
     /// <summary>Aligns the end edge of the element with the end edge of the scrolling box.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-scrolllogicalposition-end"/>
     [IdlMember("end", "https://drafts.csswg.org/cssom-view/#dom-scrolllogicalposition-end")]
     End,
 
     /// <summary>
     /// Scrolls the minimum amount needed to make the element visible, aligning it with the nearest edge.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-scrolllogicalposition-nearest"/>
     [IdlMember("nearest", "https://drafts.csswg.org/cssom-view/#dom-scrolllogicalposition-nearest")]
     Nearest,
 }
 
 /// <summary>https://drafts.csswg.org/cssom-view/#enumdef-scrollintoviewcontainer</summary>
+/// <seealso href="https://drafts.csswg.org/cssom-view/#enumdef-scrollintoviewcontainer"/>
 [IdlInterface("ScrollIntoViewContainer", "https://drafts.csswg.org/cssom-view/#enumdef-scrollintoviewcontainer")]
 public enum ScrollIntoViewContainer
 {
     /// <summary>Scrolls all the scrolling boxes that are ancestors of the element.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-scrollintoviewcontainer-all"/>
     [IdlMember("all", "https://drafts.csswg.org/cssom-view/#dom-scrollintoviewcontainer-all")]
     All,
 
     /// <summary>Scrolls only the nearest scrolling box that is an ancestor of the element.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-scrollintoviewcontainer-nearest"/>
     [IdlMember("nearest", "https://drafts.csswg.org/cssom-view/#dom-scrollintoviewcontainer-nearest")]
     Nearest,
 }
 
 /// <summary>https://drafts.csswg.org/cssom-view/#dictdef-scrolloptions</summary>
+/// <seealso href="https://drafts.csswg.org/cssom-view/#dictdef-scrolloptions"/>
 [IdlInterface("ScrollOptions", "https://drafts.csswg.org/cssom-view/#dictdef-scrolloptions")]
 public class ScrollOptions
 {
     /// <summary>Gets the scroll behavior of the scroll operation.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-scrolloptions-behavior"/>
     [IdlMember("behavior", "https://drafts.csswg.org/cssom-view/#dom-scrolloptions-behavior")]
     public ScrollBehavior Behavior { get; init; }
 }
 
 /// <summary>https://drafts.csswg.org/cssom-view/#dictdef-scrolltooptions</summary>
+/// <seealso href="https://drafts.csswg.org/cssom-view/#dictdef-scrolltooptions"/>
 [IdlInterface("ScrollToOptions", "https://drafts.csswg.org/cssom-view/#dictdef-scrolltooptions")]
 public sealed class ScrollToOptions : ScrollOptions
 {
     /// <summary>Gets the horizontal scroll position to scroll to, or null to keep the current position.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-scrolltooptions-left"/>
     [IdlMember("left", "https://drafts.csswg.org/cssom-view/#dom-scrolltooptions-left")]
     public double? Left { get; init; }
 
     /// <summary>Gets the vertical scroll position to scroll to, or null to keep the current position.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-scrolltooptions-top"/>
     [IdlMember("top", "https://drafts.csswg.org/cssom-view/#dom-scrolltooptions-top")]
     public double? Top { get; init; }
 }
 
 /// <summary>https://drafts.csswg.org/cssom-view/#dictdef-scrollintoviewoptions</summary>
+/// <seealso href="https://drafts.csswg.org/cssom-view/#dictdef-scrollintoviewoptions"/>
 [IdlInterface("ScrollIntoViewOptions", "https://drafts.csswg.org/cssom-view/#dictdef-scrollintoviewoptions")]
 public sealed class ScrollIntoViewOptions : ScrollOptions
 {
     /// <summary>Gets the alignment of the element in the block axis of the scrolling box.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-scrollintoviewoptions-block"/>
     [IdlMember("block", "https://drafts.csswg.org/cssom-view/#dom-scrollintoviewoptions-block")]
     public ScrollLogicalPosition Block { get; init; } = ScrollLogicalPosition.Start;
 
     /// <summary>Gets the alignment of the element in the inline axis of the scrolling box.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-scrollintoviewoptions-inline"/>
     [IdlMember("inline", "https://drafts.csswg.org/cssom-view/#dom-scrollintoviewoptions-inline")]
     public ScrollLogicalPosition Inline { get; init; } = ScrollLogicalPosition.Nearest;
 
     /// <summary>Gets which scrolling boxes are scrolled to reveal the element.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-scrollintoviewoptions-container"/>
     [IdlMember("container", "https://drafts.csswg.org/cssom-view/#dom-scrollintoviewoptions-container")]
     public ScrollIntoViewContainer Container { get; init; } = ScrollIntoViewContainer.All;
 }
 
 /// <summary>https://drafts.csswg.org/cssom-view/#dictdef-checkvisibilityoptions</summary>
+/// <seealso href="https://drafts.csswg.org/cssom-view/#dictdef-checkvisibilityoptions"/>
 [IdlInterface("CheckVisibilityOptions", "https://drafts.csswg.org/cssom-view/#dictdef-checkvisibilityoptions")]
 public sealed class CheckVisibilityOptions
 {
     /// <summary>Gets a value indicating whether an element with an opacity of 0 is considered not visible.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-checkvisibilityoptions-checkopacity"/>
     [IdlMember("checkOpacity", "https://drafts.csswg.org/cssom-view/#dom-checkvisibilityoptions-checkopacity")]
     public bool CheckOpacity { get; init; }
 
@@ -117,12 +140,14 @@ public sealed class CheckVisibilityOptions
     /// Gets a value indicating whether an element with a <c>visibility</c> of <c>hidden</c> or <c>collapse</c> is
     /// considered not visible.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-checkvisibilityoptions-checkvisibilitycss"/>
     [IdlMember("checkVisibilityCSS", "https://drafts.csswg.org/cssom-view/#dom-checkvisibilityoptions-checkvisibilitycss")]
     public bool CheckVisibilityCss { get; init; }
 
     /// <summary>
     /// Gets a value indicating whether an element skipped by <c>content-visibility: auto</c> is considered not visible.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-checkvisibilityoptions-contentvisibilityauto"/>
     [IdlMember("contentVisibilityAuto", "https://drafts.csswg.org/cssom-view/#dom-checkvisibilityoptions-contentvisibilityauto")]
     public bool ContentVisibilityAuto { get; init; }
 
@@ -130,6 +155,7 @@ public sealed class CheckVisibilityOptions
     /// Gets a value indicating whether an element with an opacity of 0 is considered not visible (alias of
     /// <c>checkOpacity</c>).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-checkvisibilityoptions-opacityproperty"/>
     [IdlMember("opacityProperty", "https://drafts.csswg.org/cssom-view/#dom-checkvisibilityoptions-opacityproperty")]
     public bool OpacityProperty { get; init; }
 
@@ -137,6 +163,7 @@ public sealed class CheckVisibilityOptions
     /// Gets a value indicating whether an element with a <c>visibility</c> of <c>hidden</c> or <c>collapse</c> is
     /// considered not visible (alias of <c>checkVisibilityCSS</c>).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-checkvisibilityoptions-visibilityproperty"/>
     [IdlMember("visibilityProperty", "https://drafts.csswg.org/cssom-view/#dom-checkvisibilityoptions-visibilityproperty")]
     public bool VisibilityProperty { get; init; }
 }
@@ -308,6 +335,7 @@ public partial class Element
     /// rendered, no flat tree ancestor has <c>content-visibility: hidden</c> and, depending on the options, it is not
     /// transparent (<c>opacity: 0</c>) or invisible (<c>visibility</c>).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-element-checkvisibility"/>
     [IdlMember("checkVisibility", "https://drafts.csswg.org/cssom-view/#dom-element-checkvisibility")]
     public bool CheckVisibility(CheckVisibilityOptions? options = null)
     {
@@ -342,6 +370,7 @@ public partial class Element
     }
 
     /// <summary>Scrolls the element into view (https://drafts.csswg.org/cssom-view/#dom-element-scrollintoview), aligning its top with the top of its scrolling boxes.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-element-scrollintoview"/>
     [IdlMember("scrollIntoView", "https://drafts.csswg.org/cssom-view/#dom-element-scrollintoview")]
     public Task ScrollIntoView() => ScrollIntoView(alignToTop: true);
 
@@ -350,6 +379,7 @@ public partial class Element
     /// aligned with the block-start edge of its scrolling boxes when <paramref name="alignToTop"/> is true, its block-end edge
     /// with their block-end edge otherwise.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-element-scrollintoview"/>
     [IdlMember("scrollIntoView", "https://drafts.csswg.org/cssom-view/#dom-element-scrollintoview")]
     public Task ScrollIntoView(bool alignToTop) => ScrollIntoViewCore(ScrollBehavior.Auto, alignToTop ? ScrollLogicalPosition.Start : ScrollLogicalPosition.End, ScrollLogicalPosition.Nearest, container: null);
 
@@ -359,6 +389,7 @@ public partial class Element
     /// given by the options, with its <c>scroll-margin</c> and their <c>scroll-padding</c>. The task completes when the scrolls
     /// are completed.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-element-scrollintoview"/>
     [IdlMember("scrollIntoView", "https://drafts.csswg.org/cssom-view/#dom-element-scrollintoview")]
     public Task ScrollIntoView(ScrollIntoViewOptions? options)
     {
@@ -386,6 +417,7 @@ public partial class Element
     /// viewport for the root element (and the body element in quirks mode), else its scrolling box. The task completes when the
     /// scroll is completed.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-element-scroll"/>
     [IdlMember("scroll", "https://drafts.csswg.org/cssom-view/#dom-element-scroll")]
     public Task Scroll(ScrollToOptions? options = null)
     {
@@ -396,6 +428,7 @@ public partial class Element
     }
 
     /// <summary>Scrolls the element to a scroll position (https://drafts.csswg.org/cssom-view/#dom-element-scroll): see <see cref="Scroll(ScrollToOptions?)"/>.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-element-scroll"/>
     [IdlMember("scroll", "https://drafts.csswg.org/cssom-view/#dom-element-scroll")]
     public Task Scroll(double x, double y) => ScrollCore(CssomViewScrolling.NormalizeNonFinite(x), CssomViewScrolling.NormalizeNonFinite(y), ScrollBehavior.Auto);
 
@@ -425,10 +458,12 @@ public partial class Element
     }
 
     /// <summary>Scrolls the element (https://drafts.csswg.org/cssom-view/#dom-element-scrollto): see <see cref="Scroll(ScrollToOptions?)"/>.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-element-scrollto"/>
     [IdlMember("scrollTo", "https://drafts.csswg.org/cssom-view/#dom-element-scrollto")]
     public Task ScrollTo(ScrollToOptions? options = null) => Scroll(options);
 
     /// <summary>Scrolls the element (https://drafts.csswg.org/cssom-view/#dom-element-scrollto): see <see cref="Scroll(ScrollToOptions?)"/>.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-element-scrollto"/>
     [IdlMember("scrollTo", "https://drafts.csswg.org/cssom-view/#dom-element-scrollto")]
     public Task ScrollTo(double x, double y) => Scroll(x, y);
 
@@ -437,6 +472,7 @@ public partial class Element
     /// <see cref="ScrollLeft"/> and <see cref="ScrollTop"/>. A scroll snap container snaps in the direction of the scroll (a
     /// relative scroll, https://drafts.csswg.org/css-scroll-snap-1/#relative-scroll).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-element-scrollby"/>
     [IdlMember("scrollBy", "https://drafts.csswg.org/cssom-view/#dom-element-scrollby")]
     public Task ScrollBy(ScrollToOptions? options = null)
     {
@@ -447,6 +483,7 @@ public partial class Element
     }
 
     /// <summary>Scrolls the element by an offset (https://drafts.csswg.org/cssom-view/#dom-element-scrollby): see <see cref="ScrollBy(ScrollToOptions?)"/>.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-element-scrollby"/>
     [IdlMember("scrollBy", "https://drafts.csswg.org/cssom-view/#dom-element-scrollby")]
     public Task ScrollBy(double x, double y) => ScrollBy(new ScrollToOptions { Left = x, Top = y });
 
@@ -455,6 +492,7 @@ public partial class Element
     /// position of the viewport for the root element (and the body element in quirks mode), the one of the scrolling box of the
     /// element, else 0. It is negative when the content overflows upwards (e.g. <c>flex-direction: column-reverse</c>).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-element-scrolltop"/>
     [IdlMember("scrollTop", "https://drafts.csswg.org/cssom-view/#dom-element-scrolltop")]
     public double ScrollTop
     {
@@ -466,6 +504,7 @@ public partial class Element
     /// Gets or sets the horizontal scroll position (https://drafts.csswg.org/cssom-view/#dom-element-scrollleft): see
     /// <see cref="ScrollTop"/>. It is negative when the content overflows leftwards (<c>direction: rtl</c>, <c>vertical-rl</c>).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-element-scrollleft"/>
     [IdlMember("scrollLeft", "https://drafts.csswg.org/cssom-view/#dom-element-scrollleft")]
     public double ScrollLeft
     {
@@ -519,10 +558,12 @@ public partial class Element
     /// the viewport for the root element (the body element in quirks mode), at least the width of the viewport without its
     /// scrollbar; else the width of the scrolling area of the box (its padding box and its scrollable overflow).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-element-scrollwidth"/>
     [IdlMember("scrollWidth", "https://drafts.csswg.org/cssom-view/#dom-element-scrollwidth")]
     public int ScrollWidth => GetScrollingAreaSize(horizontal: true);
 
     /// <summary>Gets the height of the scrolling area (https://drafts.csswg.org/cssom-view/#dom-element-scrollheight): see <see cref="ScrollWidth"/>.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-element-scrollheight"/>
     [IdlMember("scrollHeight", "https://drafts.csswg.org/cssom-view/#dom-element-scrollheight")]
     public int ScrollHeight => GetScrollingAreaSize(horizontal: false);
 
@@ -530,6 +571,7 @@ public partial class Element
     /// Gets the width of the top border and of a scrollbar between the top border and the top padding edge
     /// (https://drafts.csswg.org/cssom-view/#dom-element-clienttop), or 0 for an element without box or with an inline box.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-element-clienttop"/>
     [IdlMember("clientTop", "https://drafts.csswg.org/cssom-view/#dom-element-clienttop")]
     public int ClientTop => GetClientEdge(horizontal: false);
 
@@ -538,6 +580,7 @@ public partial class Element
     /// scrollbar of a right-to-left box, https://drafts.csswg.org/cssom-view/#dom-element-clientleft), or 0 for an element
     /// without box or with an inline box.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-element-clientleft"/>
     [IdlMember("clientLeft", "https://drafts.csswg.org/cssom-view/#dom-element-clientleft")]
     public int ClientLeft => GetClientEdge(horizontal: true);
 
@@ -546,14 +589,17 @@ public partial class Element
     /// the width of the viewport without its scrollbar for the root element (the body element in quirks mode), 0 for an element
     /// without box or with an inline box.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-element-clientwidth"/>
     [IdlMember("clientWidth", "https://drafts.csswg.org/cssom-view/#dom-element-clientwidth")]
     public int ClientWidth => GetClientSize(horizontal: true);
 
     /// <summary>Gets the height of the padding box without the scrollbar (https://drafts.csswg.org/cssom-view/#dom-element-clientheight): see <see cref="ClientWidth"/>.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-element-clientheight"/>
     [IdlMember("clientHeight", "https://drafts.csswg.org/cssom-view/#dom-element-clientheight")]
     public int ClientHeight => GetClientSize(horizontal: false);
 
     /// <summary>Gets the effective zoom of the element (https://drafts.csswg.org/cssom-view/#dom-element-currentcsszoom), or 1 when it is not being rendered.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-element-currentcsszoom"/>
     [IdlMember("currentCSSZoom", "https://drafts.csswg.org/cssom-view/#dom-element-currentcsszoom")]
     public double CurrentCssZoom => ComputedStyleDeclarations.IsBeingRendered(this) ? CssomViewHelpers.GetEffectiveZoom(this) : 1;
 
@@ -745,6 +791,7 @@ public partial class HtmlElement
     /// the containing blocks are approximated by the flat tree ancestors (the positioned ancestors for the absolutely
     /// positioned elements), as there is no layout.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-htmlelement-scrollparent"/>
     [IdlMember("scrollParent", "https://drafts.csswg.org/cssom-view/#dom-htmlelement-scrollparent")]
     public Element? ScrollParent
     {
@@ -780,6 +827,7 @@ public partial class HtmlElement
     /// Gets the element the offsets are relative to (https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetparent): the
     /// nearest positioned ancestor, the body element, or a table, td or th ancestor of a static element.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetparent"/>
     [IdlMember("offsetParent", "https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetparent")]
     public Element? OffsetParent
     {
@@ -850,10 +898,12 @@ public partial class HtmlElement
     /// the element, or from the top of the initial containing block when there is no offset parent, ignoring the transforms and
     /// the scroll positions, divided by the effective zoom of the element. 0 for the body element and an element without box.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsettop"/>
     [IdlMember("offsetTop", "https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsettop")]
     public int OffsetTop => GetOffsetPosition(horizontal: false);
 
     /// <summary>Gets the horizontal offset of the border box relative to the <see cref="OffsetParent"/> (https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetleft): see <see cref="OffsetTop"/>.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetleft"/>
     [IdlMember("offsetLeft", "https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetleft")]
     public int OffsetLeft => GetOffsetPosition(horizontal: true);
 
@@ -862,10 +912,12 @@ public partial class HtmlElement
     /// bounding box of the border boxes of the fragments of the principal box of the element (e.g. the lines of an inline box),
     /// ignoring the transforms, divided by the effective zoom of the element, or 0 when it has no box.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetwidth"/>
     [IdlMember("offsetWidth", "https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetwidth")]
     public int OffsetWidth => GetOffsetSize(horizontal: true);
 
     /// <summary>Gets the height of the border box (https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetheight): see <see cref="OffsetWidth"/>.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetheight"/>
     [IdlMember("offsetHeight", "https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetheight")]
     public int OffsetHeight => GetOffsetSize(horizontal: false);
 
@@ -958,10 +1010,12 @@ public sealed partial class HtmlImageElement
     /// of the left border edge of its first box relative to the initial containing block origin, ignoring the transforms, or 0
     /// when it does not generate a box.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-htmlimageelement-x"/>
     [IdlMember("x", "https://drafts.csswg.org/cssom-view/#dom-htmlimageelement-x")]
     public int X => GetLayoutPosition().X;
 
     /// <summary>Gets the vertical position of the image (https://drafts.csswg.org/cssom-view/#dom-htmlimageelement-y): the y-coordinate of the top border edge of its first box (see <see cref="X"/>).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-htmlimageelement-y"/>
     [IdlMember("y", "https://drafts.csswg.org/cssom-view/#dom-htmlimageelement-y")]
     public int Y => GetLayoutPosition().Y;
 }
@@ -974,6 +1028,7 @@ public partial class Document
     /// Gets the element that scrolls the viewport (https://drafts.csswg.org/cssom-view/#dom-document-scrollingelement): the
     /// root element, or in quirks mode the body element when it is not potentially scrollable.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-document-scrollingelement"/>
     [IdlMember("scrollingElement", "https://drafts.csswg.org/cssom-view/#dom-document-scrollingelement")]
     public Element? ScrollingElement
     {
@@ -998,28 +1053,33 @@ public partial class Document
 public partial class Window
 {
     /// <summary>Gets the visual viewport of the document (https://drafts.csswg.org/cssom-view/#dom-window-visualviewport), or null when the document is not fully active.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-visualviewport"/>
     [IdlMember("visualViewport", "https://drafts.csswg.org/cssom-view/#dom-window-visualviewport")]
     public VisualViewport? VisualViewport => Document.IsFullyActive ? Document.VisualViewport : null;
 
     /// <summary>Moves the window (https://drafts.csswg.org/cssom-view/#dom-window-moveto): there is no client window, nothing happens.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-moveto"/>
     [IdlMember("moveTo", "https://drafts.csswg.org/cssom-view/#dom-window-moveto")]
     public void MoveTo(int x, int y)
     {
     }
 
     /// <summary>Moves the window (https://drafts.csswg.org/cssom-view/#dom-window-moveby): there is no client window, nothing happens.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-moveby"/>
     [IdlMember("moveBy", "https://drafts.csswg.org/cssom-view/#dom-window-moveby")]
     public void MoveBy(int x, int y)
     {
     }
 
     /// <summary>Resizes the window (https://drafts.csswg.org/cssom-view/#dom-window-resizeto): there is no client window, nothing happens.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-resizeto"/>
     [IdlMember("resizeTo", "https://drafts.csswg.org/cssom-view/#dom-window-resizeto")]
     public void ResizeTo(int width, int height)
     {
     }
 
     /// <summary>Resizes the window (https://drafts.csswg.org/cssom-view/#dom-window-resizeby): there is no client window, nothing happens.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-resizeby"/>
     [IdlMember("resizeBy", "https://drafts.csswg.org/cssom-view/#dom-window-resizeby")]
     public void ResizeBy(int x, int y)
     {
@@ -1029,11 +1089,15 @@ public partial class Window
     /// Gets the horizontal scroll position of the viewport (https://drafts.csswg.org/cssom-view/#dom-window-scrollx): the x
     /// coordinate of the left of the viewport relative to the initial containing block, or 0 without viewport.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-scrollx"/>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-pagexoffset"/>
     [IdlMember("scrollX", "https://drafts.csswg.org/cssom-view/#dom-window-scrollx")]
     [IdlMember("pageXOffset", "https://drafts.csswg.org/cssom-view/#dom-window-pagexoffset")]
     public double ScrollX => GetViewportScrollState()?.Offset.X ?? 0;
 
     /// <summary>Gets the vertical scroll position of the viewport (https://drafts.csswg.org/cssom-view/#dom-window-scrolly): see <see cref="ScrollX"/>.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-scrolly"/>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-pageyoffset"/>
     [IdlMember("scrollY", "https://drafts.csswg.org/cssom-view/#dom-window-scrolly")]
     [IdlMember("pageYOffset", "https://drafts.csswg.org/cssom-view/#dom-window-pageyoffset")]
     public double ScrollY => GetViewportScrollState()?.Offset.Y ?? 0;
@@ -1043,6 +1107,7 @@ public partial class Window
     /// <see cref="ScrollToOptions.Left"/> and <see cref="ScrollToOptions.Top"/> (the current ones when they are absent), clamped
     /// to its scrolling area. The task completes when the scroll is completed.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-scroll"/>
     [IdlMember("scroll", "https://drafts.csswg.org/cssom-view/#dom-window-scroll")]
     public Task Scroll(ScrollToOptions? options = null)
     {
@@ -1053,18 +1118,22 @@ public partial class Window
     }
 
     /// <summary>Scrolls the viewport (https://drafts.csswg.org/cssom-view/#dom-window-scroll): see <see cref="Scroll(ScrollToOptions?)"/>.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-scroll"/>
     [IdlMember("scroll", "https://drafts.csswg.org/cssom-view/#dom-window-scroll")]
     public Task Scroll(double x, double y) => ScrollCore(CssomViewScrolling.NormalizeNonFinite(x), CssomViewScrolling.NormalizeNonFinite(y), ScrollBehavior.Auto);
 
     /// <summary>Scrolls the viewport (https://drafts.csswg.org/cssom-view/#dom-window-scrollto): see <see cref="Scroll(ScrollToOptions?)"/>.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-scrollto"/>
     [IdlMember("scrollTo", "https://drafts.csswg.org/cssom-view/#dom-window-scrollto")]
     public Task ScrollTo(ScrollToOptions? options = null) => Scroll(options);
 
     /// <summary>Scrolls the viewport (https://drafts.csswg.org/cssom-view/#dom-window-scrollto): see <see cref="Scroll(ScrollToOptions?)"/>.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-scrollto"/>
     [IdlMember("scrollTo", "https://drafts.csswg.org/cssom-view/#dom-window-scrollto")]
     public Task ScrollTo(double x, double y) => Scroll(x, y);
 
     /// <summary>Scrolls the viewport by an offset (https://drafts.csswg.org/cssom-view/#dom-window-scrollby): the offsets are added to <see cref="ScrollX"/> and <see cref="ScrollY"/>.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-scrollby"/>
     [IdlMember("scrollBy", "https://drafts.csswg.org/cssom-view/#dom-window-scrollby")]
     public Task ScrollBy(ScrollToOptions? options = null)
     {
@@ -1075,6 +1144,7 @@ public partial class Window
     }
 
     /// <summary>Scrolls the viewport by an offset (https://drafts.csswg.org/cssom-view/#dom-window-scrollby): see <see cref="ScrollBy(ScrollToOptions?)"/>.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-scrollby"/>
     [IdlMember("scrollBy", "https://drafts.csswg.org/cssom-view/#dom-window-scrollby")]
     public Task ScrollBy(double x, double y) => ScrollBy(new ScrollToOptions { Left = x, Top = y });
 
@@ -1113,11 +1183,15 @@ public partial class Window
     /// Gets the horizontal position of the client window on the screen (https://drafts.csswg.org/cssom-view/#dom-window-screenx):
     /// 0, or the position requested by the <c>left</c> feature of the <c>window.open()</c> that created the top-level browsing context.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-screenx"/>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-screenleft"/>
     [IdlMember("screenX", "https://drafts.csswg.org/cssom-view/#dom-window-screenx")]
     [IdlMember("screenLeft", "https://drafts.csswg.org/cssom-view/#dom-window-screenleft")]
     public int ScreenX => BrowsingContext?.Top.ClientWindowLeft ?? 0;
 
     /// <summary>Gets the vertical position of the client window on the screen (https://drafts.csswg.org/cssom-view/#dom-window-screeny): see <see cref="ScreenX"/>.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-screeny"/>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-screentop"/>
     [IdlMember("screenY", "https://drafts.csswg.org/cssom-view/#dom-window-screeny")]
     [IdlMember("screenTop", "https://drafts.csswg.org/cssom-view/#dom-window-screentop")]
     public int ScreenY => BrowsingContext?.Top.ClientWindowTop ?? 0;
@@ -1126,10 +1200,12 @@ public partial class Window
     /// Gets the width of the client window (https://drafts.csswg.org/cssom-view/#dom-window-outerwidth): the width of the
     /// viewport of the top-level browsing context (the client window has no decoration), or 0 without browsing context.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-outerwidth"/>
     [IdlMember("outerWidth", "https://drafts.csswg.org/cssom-view/#dom-window-outerwidth")]
     public int OuterWidth => BrowsingContext is { } browsingContext ? (int)StyleEngine.CreateEnvironment(browsingContext.Top.Document).Width : 0;
 
     /// <summary>Gets the height of the client window (https://drafts.csswg.org/cssom-view/#dom-window-outerheight): see <see cref="OuterWidth"/>.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-outerheight"/>
     [IdlMember("outerHeight", "https://drafts.csswg.org/cssom-view/#dom-window-outerheight")]
     public int OuterHeight => BrowsingContext is { } browsingContext ? (int)StyleEngine.CreateEnvironment(browsingContext.Top.Document).Height : 0;
 }
@@ -1142,6 +1218,7 @@ public partial class Window
 /// fires <c>scroll</c> nor <c>scrollend</c> events; it fires <c>resize</c> events when its size changes (the size of the
 /// viewport, or its classic scrollbars).
 /// </summary>
+/// <seealso href="https://drafts.csswg.org/cssom-view/#visualviewport"/>
 [IdlInterface("VisualViewport", "https://drafts.csswg.org/cssom-view/#visualviewport")]
 public sealed class VisualViewport : EventTarget, IRealmBoundPlatformObject
 {
@@ -1166,12 +1243,14 @@ public sealed class VisualViewport : EventTarget, IRealmBoundPlatformObject
     /// <summary>
     /// Gets the offset of the left edge of the visual viewport from the left edge of the layout viewport: 0, there is no pinch zoom.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-visualviewport-offsetleft"/>
     [IdlMember("offsetLeft", "https://drafts.csswg.org/cssom-view/#dom-visualviewport-offsetleft")]
     public double OffsetLeft => 0;
 
     /// <summary>
     /// Gets the offset of the top edge of the visual viewport from the top edge of the layout viewport: 0, there is no pinch zoom.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-visualviewport-offsettop"/>
     [IdlMember("offsetTop", "https://drafts.csswg.org/cssom-view/#dom-visualviewport-offsettop")]
     public double OffsetTop => 0;
 
@@ -1179,12 +1258,14 @@ public sealed class VisualViewport : EventTarget, IRealmBoundPlatformObject
     /// Gets the x coordinate of the left edge of the visual viewport relative to the initial containing block: the scroll
     /// position of the layout viewport plus <see cref="OffsetLeft"/> (<see cref="Window.ScrollX"/>), or 0 when the document is not fully active.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-visualviewport-pageleft"/>
     [IdlMember("pageLeft", "https://drafts.csswg.org/cssom-view/#dom-visualviewport-pageleft")]
     public double PageLeft => _document.IsFullyActive && _document.DefaultView is { } window ? window.ScrollX + OffsetLeft : 0;
 
     /// <summary>
     /// Gets the y coordinate of the top edge of the visual viewport relative to the initial containing block: see <see cref="PageLeft"/>.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-visualviewport-pagetop"/>
     [IdlMember("pageTop", "https://drafts.csswg.org/cssom-view/#dom-visualviewport-pagetop")]
     public double PageTop => _document.IsFullyActive && _document.DefaultView is { } window ? window.ScrollY + OffsetTop : 0;
 
@@ -1193,14 +1274,17 @@ public sealed class VisualViewport : EventTarget, IRealmBoundPlatformObject
     /// viewport without the rendered vertical classic scrollbar, divided by <see cref="Scale"/> (the layout is computed when it
     /// is out of date), or 0 when the document is not fully active.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-visualviewport-width"/>
     [IdlMember("width", "https://drafts.csswg.org/cssom-view/#dom-visualviewport-width")]
     public double Width => _document.IsFullyActive ? GetSize().Width / Scale : 0;
 
     /// <summary>Gets the height of the visual viewport (https://drafts.csswg.org/cssom-view/#dom-visualviewport-height): see <see cref="Width"/>.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-visualviewport-height"/>
     [IdlMember("height", "https://drafts.csswg.org/cssom-view/#dom-visualviewport-height")]
     public double Height => _document.IsFullyActive ? GetSize().Height / Scale : 0;
 
     /// <summary>Gets the pinch-zoom scale of the visual viewport: 1 (there is no pinch zoom), or 0 when the document is not fully active.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-visualviewport-scale"/>
     [IdlMember("scale", "https://drafts.csswg.org/cssom-view/#dom-visualviewport-scale")]
     public double Scale => _document.IsFullyActive ? 1 : 0;
 
@@ -1263,6 +1347,7 @@ public sealed class VisualViewport : EventTarget, IRealmBoundPlatformObject
     }
 
     /// <summary>Gets or sets the event handler of the <c>resize</c> event.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-visualviewport-onresize"/>
     [IdlMember("onresize", "https://drafts.csswg.org/cssom-view/#dom-visualviewport-onresize")]
     public Action<Event>? OnResize
     {
@@ -1271,6 +1356,7 @@ public sealed class VisualViewport : EventTarget, IRealmBoundPlatformObject
     }
 
     /// <summary>Gets or sets the event handler of the <c>scroll</c> event.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-visualviewport-onscroll"/>
     [IdlMember("onscroll", "https://drafts.csswg.org/cssom-view/#dom-visualviewport-onscroll")]
     public Action<Event>? OnScroll
     {
@@ -1279,6 +1365,7 @@ public sealed class VisualViewport : EventTarget, IRealmBoundPlatformObject
     }
 
     /// <summary>Gets or sets the event handler of the <c>scrollend</c> event.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-visualviewport-onscrollend"/>
     [IdlMember("onscrollend", "https://drafts.csswg.org/cssom-view/#dom-visualviewport-onscrollend")]
     public Action<Event>? OnScrollEnd
     {

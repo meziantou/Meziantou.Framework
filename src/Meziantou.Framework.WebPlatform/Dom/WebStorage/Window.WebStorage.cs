@@ -8,6 +8,7 @@ public sealed partial class Window
     /// context (<see cref="BrowsingContextOptions.LocalStorage"/>). Throws a <c>SecurityError</c> when the origin of the
     /// document is opaque, or when the <see cref="WebStoragePersistence"/> of the shed cannot load the items.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webstorage.html#dom-localstorage"/>
     [IdlMember("localStorage", "https://html.spec.whatwg.org/multipage/webstorage.html#dom-localstorage")]
     public Storage LocalStorage
     {
@@ -43,6 +44,7 @@ public sealed partial class Window
     /// (https://html.spec.whatwg.org/multipage/webstorage.html#dom-sessionstorage). Throws a <c>SecurityError</c> when the
     /// origin of the document is opaque.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webstorage.html#dom-sessionstorage"/>
     [IdlMember("sessionStorage", "https://html.spec.whatwg.org/multipage/webstorage.html#dom-sessionstorage")]
     public Storage SessionStorage
     {

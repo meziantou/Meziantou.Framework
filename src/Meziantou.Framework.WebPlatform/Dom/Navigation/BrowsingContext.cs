@@ -16,6 +16,7 @@ internal enum WindowType
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigationhistorybehavior</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationhistorybehavior"/>
 [IdlInterface("NavigationHistoryBehavior", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigationhistorybehavior")]
 public enum NavigationHistoryBehavior
 {
@@ -23,14 +24,17 @@ public enum NavigationHistoryBehavior
     /// Lets the user agent choose: a new entry is pushed, unless the navigation targets the current URL, in which case
     /// the current entry is replaced.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationhistorybehavior-auto"/>
     [IdlMember("auto", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationhistorybehavior-auto")]
     Auto,
 
     /// <summary>Adds a new entry to the session history.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationhistorybehavior-push"/>
     [IdlMember("push", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationhistorybehavior-push")]
     Push,
 
     /// <summary>Replaces the current entry of the session history.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationhistorybehavior-replace"/>
     [IdlMember("replace", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigationhistorybehavior-replace")]
     Replace,
 }

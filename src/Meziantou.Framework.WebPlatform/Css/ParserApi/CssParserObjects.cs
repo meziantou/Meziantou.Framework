@@ -84,6 +84,7 @@ public readonly struct CssParserToken : IUnionValue, IEquatable<CssParserToken>
 /// <summary>
 /// The options of the CSS Parser API (https://wicg.github.io/css-parser-api/#dictdef-cssparseroptions).
 /// </summary>
+/// <seealso href="https://wicg.github.io/css-parser-api/#dictdef-cssparseroptions"/>
 [IdlInterface("CSSParserOptions", "https://wicg.github.io/css-parser-api/#dictdef-cssparseroptions")]
 public sealed class CssParserOptions
 {
@@ -95,11 +96,13 @@ public sealed class CssParserOptions
     /// dropped (e.g. the declarations of a <c>"rule-list"</c>). The draft describes the option as a "dict of at-rule name =&gt;
     /// at-rule type" without defining the types: the bindings take a <c>record&lt;DOMString, DOMString&gt;</c>.
     /// </summary>
+    /// <seealso href="https://wicg.github.io/css-parser-api/#dom-cssparseroptions-atrules"/>
     [IdlMember("atRules", "https://wicg.github.io/css-parser-api/#dom-cssparseroptions-atrules")]
     public IEnumerable<KeyValuePair<string, string>>? AtRules { get; init; }
 }
 
 /// <summary>A rule or a declaration returned by the CSS Parser API (https://wicg.github.io/css-parser-api/#cssparserrule).</summary>
+/// <seealso href="https://wicg.github.io/css-parser-api/#cssparserrule"/>
 [IdlInterface("CSSParserRule", "https://wicg.github.io/css-parser-api/#cssparserrule")]
 public abstract class CssParserRule
 {
@@ -139,6 +142,7 @@ public abstract class CssParserRule
 /// An at-rule (https://wicg.github.io/css-parser-api/#cssparseratrule, https://drafts.csswg.org/css-syntax-3/#at-rule):
 /// its name, its prelude and its block, or no block for a statement (e.g. <c>@import url(a.css);</c>).
 /// </summary>
+/// <seealso href="https://wicg.github.io/css-parser-api/#cssparseratrule"/>
 [IdlInterface("CSSParserAtRule", "https://wicg.github.io/css-parser-api/#cssparseratrule")]
 public sealed class CssParserAtRule : CssParserRule
 {
@@ -146,6 +150,7 @@ public sealed class CssParserAtRule : CssParserRule
     /// <param name="name">The name, without <c>@</c>.</param>
     /// <param name="prelude">The component values between the name and the block.</param>
     /// <param name="body">The rules and declarations of the block, or null for a statement.</param>
+    /// <seealso href="https://wicg.github.io/css-parser-api/#dom-cssparseratrule-cssparseratrule"/>
     [IdlMember("constructor", "https://wicg.github.io/css-parser-api/#dom-cssparseratrule-cssparseratrule")]
     public CssParserAtRule(string name, IEnumerable<CssParserToken> prelude, IEnumerable<CssParserRule>? body = null)
     {
@@ -157,14 +162,17 @@ public sealed class CssParserAtRule : CssParserRule
     }
 
     /// <summary>Gets the name of the at-rule, without <c>@</c>.</summary>
+    /// <seealso href="https://wicg.github.io/css-parser-api/#dom-cssparseratrule-name"/>
     [IdlMember("name", "https://wicg.github.io/css-parser-api/#dom-cssparseratrule-name")]
     public string Name { get; }
 
     /// <summary>Gets the component values between the name and the block (or the semicolon), whitespace included.</summary>
+    /// <seealso href="https://wicg.github.io/css-parser-api/#dom-cssparseratrule-prelude"/>
     [IdlMember("prelude", "https://wicg.github.io/css-parser-api/#dom-cssparseratrule-prelude")]
     public IReadOnlyList<CssParserToken> Prelude { get; }
 
     /// <summary>Gets the rules and declarations of the block, or null when the at-rule has no block.</summary>
+    /// <seealso href="https://wicg.github.io/css-parser-api/#dom-cssparseratrule-body"/>
     [IdlMember("body", "https://wicg.github.io/css-parser-api/#dom-cssparseratrule-body")]
     public IReadOnlyList<CssParserRule>? Body { get; }
 
@@ -187,12 +195,14 @@ public sealed class CssParserAtRule : CssParserRule
 /// A qualified rule (https://wicg.github.io/css-parser-api/#cssparserqualifiedrule, https://drafts.csswg.org/css-syntax-3/#qualified-rule),
 /// e.g. a style rule: its prelude and the rules and declarations of its block.
 /// </summary>
+/// <seealso href="https://wicg.github.io/css-parser-api/#cssparserqualifiedrule"/>
 [IdlInterface("CSSParserQualifiedRule", "https://wicg.github.io/css-parser-api/#cssparserqualifiedrule")]
 public sealed class CssParserQualifiedRule : CssParserRule
 {
     /// <summary>Creates a qualified rule (https://wicg.github.io/css-parser-api/#dom-cssparserqualifiedrule-cssparserqualifiedrule).</summary>
     /// <param name="prelude">The component values before the block (e.g. the selectors).</param>
     /// <param name="body">The rules and declarations of the block (null is an empty block).</param>
+    /// <seealso href="https://wicg.github.io/css-parser-api/#dom-cssparserqualifiedrule-cssparserqualifiedrule"/>
     [IdlMember("constructor", "https://wicg.github.io/css-parser-api/#dom-cssparserqualifiedrule-cssparserqualifiedrule")]
     public CssParserQualifiedRule(IEnumerable<CssParserToken> prelude, IEnumerable<CssParserRule>? body = null)
     {
@@ -202,10 +212,12 @@ public sealed class CssParserQualifiedRule : CssParserRule
     }
 
     /// <summary>Gets the component values before the block, whitespace included.</summary>
+    /// <seealso href="https://wicg.github.io/css-parser-api/#dom-cssparserqualifiedrule-prelude"/>
     [IdlMember("prelude", "https://wicg.github.io/css-parser-api/#dom-cssparserqualifiedrule-prelude")]
     public IReadOnlyList<CssParserToken> Prelude { get; }
 
     /// <summary>Gets the rules and declarations of the block.</summary>
+    /// <seealso href="https://wicg.github.io/css-parser-api/#dom-cssparserqualifiedrule-body"/>
     [IdlMember("body", "https://wicg.github.io/css-parser-api/#dom-cssparserqualifiedrule-body")]
     public IReadOnlyList<CssParserRule> Body { get; }
 
@@ -220,6 +232,7 @@ public sealed class CssParserQualifiedRule : CssParserRule
 /// A declaration (https://wicg.github.io/css-parser-api/#cssparserdeclaration, https://drafts.csswg.org/css-syntax-3/#declaration):
 /// a name and a value, e.g. <c>color: red</c>.
 /// </summary>
+/// <seealso href="https://wicg.github.io/css-parser-api/#cssparserdeclaration"/>
 [IdlInterface("CSSParserDeclaration", "https://wicg.github.io/css-parser-api/#cssparserdeclaration")]
 public sealed class CssParserDeclaration : CssParserRule
 {
@@ -227,6 +240,7 @@ public sealed class CssParserDeclaration : CssParserRule
     /// <param name="name">The name of the declaration (e.g. a property name).</param>
     /// <param name="body">The component values of the value. The IDL of the draft declares a sequence of rules; as the
     /// <see cref="Body"/> attribute, it is a list of component values.</param>
+    /// <seealso href="https://wicg.github.io/css-parser-api/#dom-cssparserdeclaration-cssparserdeclaration"/>
     [IdlMember("constructor", "https://wicg.github.io/css-parser-api/#dom-cssparserdeclaration-cssparserdeclaration")]
     public CssParserDeclaration(string name, IEnumerable<CssParserToken>? body = null)
     {
@@ -236,6 +250,7 @@ public sealed class CssParserDeclaration : CssParserRule
     }
 
     /// <summary>Gets the name of the declaration.</summary>
+    /// <seealso href="https://wicg.github.io/css-parser-api/#dom-cssparserdeclaration-name"/>
     [IdlMember("name", "https://wicg.github.io/css-parser-api/#dom-cssparserdeclaration-name")]
     public string Name { get; }
 
@@ -243,6 +258,7 @@ public sealed class CssParserDeclaration : CssParserRule
     /// Gets the component values of the value, without the leading and trailing whitespace and without <c>!important</c>
     /// (https://drafts.csswg.org/css-syntax-3/#consume-declaration).
     /// </summary>
+    /// <seealso href="https://wicg.github.io/css-parser-api/#dom-cssparserdeclaration-body"/>
     [IdlMember("body", "https://wicg.github.io/css-parser-api/#dom-cssparserdeclaration-body")]
     public IReadOnlyList<CssParserToken> Body { get; }
 
@@ -270,6 +286,7 @@ public sealed class CssParserDeclaration : CssParserRule
 }
 
 /// <summary>A function or a simple block returned by the CSS Parser API (https://wicg.github.io/css-parser-api/#cssparservalue).</summary>
+/// <seealso href="https://wicg.github.io/css-parser-api/#cssparservalue"/>
 [IdlInterface("CSSParserValue", "https://wicg.github.io/css-parser-api/#cssparservalue")]
 public abstract class CssParserValue
 {
@@ -313,6 +330,7 @@ public abstract class CssParserValue
 /// A simple block (https://wicg.github.io/css-parser-api/#cssparserblock, https://drafts.csswg.org/css-syntax-3/#simple-block):
 /// <c>[...]</c>, <c>(...)</c> or <c>{...}</c>.
 /// </summary>
+/// <seealso href="https://wicg.github.io/css-parser-api/#cssparserblock"/>
 [IdlInterface("CSSParserBlock", "https://wicg.github.io/css-parser-api/#cssparserblock")]
 public sealed class CssParserBlock : CssParserValue
 {
@@ -320,6 +338,7 @@ public sealed class CssParserBlock : CssParserValue
     /// <param name="name">The brackets of the block: <c>"[]"</c>, <c>"()"</c> or <c>"{}"</c>.</param>
     /// <param name="body">The component values of the block.</param>
     /// <exception cref="TypeErrorException">The name is not <c>"[]"</c>, <c>"()"</c> or <c>"{}"</c>.</exception>
+    /// <seealso href="https://wicg.github.io/css-parser-api/#dom-cssparserblock-cssparserblock"/>
     [IdlMember("constructor", "https://wicg.github.io/css-parser-api/#dom-cssparserblock-cssparserblock")]
     public CssParserBlock(string name, IEnumerable<CssParserToken> body)
     {
@@ -333,10 +352,12 @@ public sealed class CssParserBlock : CssParserValue
     }
 
     /// <summary>Gets the brackets of the block: <c>"[]"</c>, <c>"()"</c> or <c>"{}"</c>.</summary>
+    /// <seealso href="https://wicg.github.io/css-parser-api/#dom-cssparserblock-name"/>
     [IdlMember("name", "https://wicg.github.io/css-parser-api/#dom-cssparserblock-name")]
     public string Name { get; }
 
     /// <summary>Gets the component values of the block.</summary>
+    /// <seealso href="https://wicg.github.io/css-parser-api/#dom-cssparserblock-body"/>
     [IdlMember("body", "https://wicg.github.io/css-parser-api/#dom-cssparserblock-body")]
     public IReadOnlyList<CssParserToken> Body { get; }
 
@@ -352,12 +373,14 @@ public sealed class CssParserBlock : CssParserValue
 /// A function (https://wicg.github.io/css-parser-api/#cssparserfunction, https://drafts.csswg.org/css-syntax-3/#function): its
 /// name and its arguments, the component values between the commas at the top level of the function.
 /// </summary>
+/// <seealso href="https://wicg.github.io/css-parser-api/#cssparserfunction"/>
 [IdlInterface("CSSParserFunction", "https://wicg.github.io/css-parser-api/#cssparserfunction")]
 public sealed class CssParserFunction : CssParserValue
 {
     /// <summary>Creates a function (https://wicg.github.io/css-parser-api/#dom-cssparserfunction-cssparserfunction).</summary>
     /// <param name="name">The name of the function, without the parenthesis.</param>
     /// <param name="args">The arguments: the component values between the commas.</param>
+    /// <seealso href="https://wicg.github.io/css-parser-api/#dom-cssparserfunction-cssparserfunction"/>
     [IdlMember("constructor", "https://wicg.github.io/css-parser-api/#dom-cssparserfunction-cssparserfunction")]
     public CssParserFunction(string name, IEnumerable<IEnumerable<CssParserToken>> args)
     {
@@ -368,6 +391,7 @@ public sealed class CssParserFunction : CssParserValue
     }
 
     /// <summary>Gets the name of the function, without the parenthesis.</summary>
+    /// <seealso href="https://wicg.github.io/css-parser-api/#dom-cssparserfunction-name"/>
     [IdlMember("name", "https://wicg.github.io/css-parser-api/#dom-cssparserfunction-name")]
     public string Name { get; }
 
@@ -375,6 +399,7 @@ public sealed class CssParserFunction : CssParserValue
     /// Gets the arguments: the component values between the commas at the top level of the function (n commas separate n + 1
     /// arguments; a function without component values has no argument).
     /// </summary>
+    /// <seealso href="https://wicg.github.io/css-parser-api/#dom-cssparserfunction-args"/>
     [IdlMember("args", "https://wicg.github.io/css-parser-api/#dom-cssparserfunction-args")]
     public IReadOnlyList<IReadOnlyList<CssParserToken>> Args { get; }
 

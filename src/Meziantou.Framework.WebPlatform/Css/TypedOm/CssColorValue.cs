@@ -141,6 +141,7 @@ internal enum CssColorChannelKind
 /// colors of the properties as color values (they are direct <see cref="CssStyleValue"/> objects, like in this library):
 /// the color values are created by their constructors and by <see cref="Parse(string)"/>.
 /// </summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#csscolorvalue"/>
 [IdlInterface("CSSColorValue", "https://drafts.css-houdini.org/css-typed-om-1/#csscolorvalue")]
 public abstract class CssColorValue : CssStyleValue
 {
@@ -153,6 +154,7 @@ public abstract class CssColorValue : CssStyleValue
     /// a named color is a <see cref="CssColorValue"/>, currentcolor and the system colors are <see cref="CssKeywordValue"/>
     /// objects, and the other colors (e.g. color-mix()) are direct <see cref="CssStyleValue"/> objects.
     /// </summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csscolorvalue-parse"/>
     [IdlMember("parse", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csscolorvalue-parse")]
     public static CssStyleValue Parse(string cssText)
     {
@@ -335,6 +337,7 @@ public abstract class CssColorValue : CssStyleValue
 }
 
 /// <summary>rgb() and rgba() (https://drafts.css-houdini.org/css-typed-om-1/#cssrgb).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssrgb"/>
 [IdlInterface("CSSRGB", "https://drafts.css-houdini.org/css-typed-om-1/#cssrgb")]
 public sealed class CssRgb : CssColorValue
 {
@@ -344,6 +347,7 @@ public sealed class CssRgb : CssColorValue
     private CssStyleValue _alpha;
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrgb-cssrgb</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrgb-cssrgb"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrgb-cssrgb")]
     public CssRgb(CssColorChannel r, CssColorChannel g, CssColorChannel b, CssColorChannel? alpha = null)
     {
@@ -359,6 +363,7 @@ public sealed class CssRgb : CssColorValue
     }
 
     /// <summary>Gets or sets the red channel of the <c>rgb()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrgb-r"/>
     [IdlMember("r", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrgb-r")]
     public CssColorChannel R
     {
@@ -367,6 +372,7 @@ public sealed class CssRgb : CssColorValue
     }
 
     /// <summary>Gets or sets the green channel of the <c>rgb()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrgb-g"/>
     [IdlMember("g", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrgb-g")]
     public CssColorChannel G
     {
@@ -375,6 +381,7 @@ public sealed class CssRgb : CssColorValue
     }
 
     /// <summary>Gets or sets the blue channel of the <c>rgb()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrgb-b"/>
     [IdlMember("b", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrgb-b")]
     public CssColorChannel B
     {
@@ -383,6 +390,7 @@ public sealed class CssRgb : CssColorValue
     }
 
     /// <summary>Gets or sets the alpha (opacity) channel of the <c>rgb()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrgb-alpha"/>
     [IdlMember("alpha", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrgb-alpha")]
     public CssColorChannel Alpha
     {
@@ -396,6 +404,7 @@ public sealed class CssRgb : CssColorValue
 }
 
 /// <summary>hsl() and hsla() (https://drafts.css-houdini.org/css-typed-om-1/#csshsl).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#csshsl"/>
 [IdlInterface("CSSHSL", "https://drafts.css-houdini.org/css-typed-om-1/#csshsl")]
 public sealed class CssHsl : CssColorValue
 {
@@ -405,6 +414,7 @@ public sealed class CssHsl : CssColorValue
     private CssStyleValue _alpha;
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-csshsl-csshsl</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csshsl-csshsl"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csshsl-csshsl")]
     public CssHsl(CssColorChannel h, CssColorChannel s, CssColorChannel l, CssColorChannel? alpha = null)
     {
@@ -420,6 +430,7 @@ public sealed class CssHsl : CssColorValue
     }
 
     /// <summary>Gets or sets the hue channel of the <c>hsl()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csshsl-h"/>
     [IdlMember("h", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csshsl-h")]
     public CssColorChannel H
     {
@@ -428,6 +439,7 @@ public sealed class CssHsl : CssColorValue
     }
 
     /// <summary>Gets or sets the saturation channel of the <c>hsl()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csshsl-s"/>
     [IdlMember("s", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csshsl-s")]
     public CssColorChannel S
     {
@@ -436,6 +448,7 @@ public sealed class CssHsl : CssColorValue
     }
 
     /// <summary>Gets or sets the lightness channel of the <c>hsl()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csshsl-l"/>
     [IdlMember("l", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csshsl-l")]
     public CssColorChannel L
     {
@@ -444,6 +457,7 @@ public sealed class CssHsl : CssColorValue
     }
 
     /// <summary>Gets or sets the alpha (opacity) channel of the <c>hsl()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csshsl-alpha"/>
     [IdlMember("alpha", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csshsl-alpha")]
     public CssColorChannel Alpha
     {
@@ -457,6 +471,7 @@ public sealed class CssHsl : CssColorValue
 }
 
 /// <summary>hwb() (https://drafts.css-houdini.org/css-typed-om-1/#csshwb).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#csshwb"/>
 [IdlInterface("CSSHWB", "https://drafts.css-houdini.org/css-typed-om-1/#csshwb")]
 public sealed class CssHwb : CssColorValue
 {
@@ -466,6 +481,7 @@ public sealed class CssHwb : CssColorValue
     private CssNumericValue _alpha;
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-csshwb-csshwb</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csshwb-csshwb"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csshwb-csshwb")]
     public CssHwb(CssNumericValue h, CssNumberish w, CssNumberish b, CssNumberish? alpha = null)
     {
@@ -476,6 +492,7 @@ public sealed class CssHwb : CssColorValue
     }
 
     /// <summary>Gets or sets the hue channel of the <c>hwb()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csshwb-h"/>
     [IdlMember("h", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csshwb-h")]
     public CssNumericValue H
     {
@@ -484,6 +501,7 @@ public sealed class CssHwb : CssColorValue
     }
 
     /// <summary>Gets or sets the whiteness channel of the <c>hwb()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csshwb-w"/>
     [IdlMember("w", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csshwb-w")]
     public CssNumberish W
     {
@@ -492,6 +510,7 @@ public sealed class CssHwb : CssColorValue
     }
 
     /// <summary>Gets or sets the blackness channel of the <c>hwb()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csshwb-b"/>
     [IdlMember("b", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csshwb-b")]
     public CssNumberish B
     {
@@ -500,6 +519,7 @@ public sealed class CssHwb : CssColorValue
     }
 
     /// <summary>Gets or sets the alpha (opacity) channel of the <c>hwb()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csshwb-alpha"/>
     [IdlMember("alpha", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csshwb-alpha")]
     public CssNumberish Alpha
     {
@@ -521,6 +541,7 @@ public sealed class CssHwb : CssColorValue
 }
 
 /// <summary>lab() (https://drafts.css-houdini.org/css-typed-om-1/#csslab).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#csslab"/>
 [IdlInterface("CSSLab", "https://drafts.css-houdini.org/css-typed-om-1/#csslab")]
 public sealed class CssLab : CssColorValue
 {
@@ -530,6 +551,7 @@ public sealed class CssLab : CssColorValue
     private CssStyleValue _alpha;
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-csslab-csslab</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csslab-csslab"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csslab-csslab")]
     public CssLab(CssColorChannel l, CssColorChannel a, CssColorChannel b, CssColorChannel? alpha = null)
     {
@@ -545,6 +567,7 @@ public sealed class CssLab : CssColorValue
     }
 
     /// <summary>Gets or sets the lightness channel of the <c>lab()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csslab-l"/>
     [IdlMember("l", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csslab-l")]
     public CssColorChannel L
     {
@@ -553,6 +576,7 @@ public sealed class CssLab : CssColorValue
     }
 
     /// <summary>Gets or sets the a axis channel of the <c>lab()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csslab-a"/>
     [IdlMember("a", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csslab-a")]
     public CssColorChannel A
     {
@@ -561,6 +585,7 @@ public sealed class CssLab : CssColorValue
     }
 
     /// <summary>Gets or sets the b axis channel of the <c>lab()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csslab-b"/>
     [IdlMember("b", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csslab-b")]
     public CssColorChannel B
     {
@@ -569,6 +594,7 @@ public sealed class CssLab : CssColorValue
     }
 
     /// <summary>Gets or sets the alpha (opacity) channel of the <c>lab()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csslab-alpha"/>
     [IdlMember("alpha", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csslab-alpha")]
     public CssColorChannel Alpha
     {
@@ -582,6 +608,7 @@ public sealed class CssLab : CssColorValue
 }
 
 /// <summary>lch() (https://drafts.css-houdini.org/css-typed-om-1/#csslch).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#csslch"/>
 [IdlInterface("CSSLCH", "https://drafts.css-houdini.org/css-typed-om-1/#csslch")]
 public sealed class CssLch : CssColorValue
 {
@@ -591,6 +618,7 @@ public sealed class CssLch : CssColorValue
     private CssStyleValue _alpha;
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-csslch-csslch</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csslch-csslch"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csslch-csslch")]
     public CssLch(CssColorChannel l, CssColorChannel c, CssColorChannel h, CssColorChannel? alpha = null)
     {
@@ -606,6 +634,7 @@ public sealed class CssLch : CssColorValue
     }
 
     /// <summary>Gets or sets the lightness channel of the <c>lch()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csslch-l"/>
     [IdlMember("l", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csslch-l")]
     public CssColorChannel L
     {
@@ -614,6 +643,7 @@ public sealed class CssLch : CssColorValue
     }
 
     /// <summary>Gets or sets the chroma channel of the <c>lch()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csslch-c"/>
     [IdlMember("c", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csslch-c")]
     public CssColorChannel C
     {
@@ -622,6 +652,7 @@ public sealed class CssLch : CssColorValue
     }
 
     /// <summary>Gets or sets the hue channel of the <c>lch()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csslch-h"/>
     [IdlMember("h", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csslch-h")]
     public CssColorChannel H
     {
@@ -630,6 +661,7 @@ public sealed class CssLch : CssColorValue
     }
 
     /// <summary>Gets or sets the alpha (opacity) channel of the <c>lch()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csslch-alpha"/>
     [IdlMember("alpha", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csslch-alpha")]
     public CssColorChannel Alpha
     {
@@ -643,6 +675,7 @@ public sealed class CssLch : CssColorValue
 }
 
 /// <summary>oklab() (https://drafts.css-houdini.org/css-typed-om-1/#cssoklab).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssoklab"/>
 [IdlInterface("CSSOKLab", "https://drafts.css-houdini.org/css-typed-om-1/#cssoklab")]
 public sealed class CssOkLab : CssColorValue
 {
@@ -652,6 +685,7 @@ public sealed class CssOkLab : CssColorValue
     private CssStyleValue _alpha;
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssoklab-cssoklab</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssoklab-cssoklab"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssoklab-cssoklab")]
     public CssOkLab(CssColorChannel l, CssColorChannel a, CssColorChannel b, CssColorChannel? alpha = null)
     {
@@ -667,6 +701,7 @@ public sealed class CssOkLab : CssColorValue
     }
 
     /// <summary>Gets or sets the lightness channel of the <c>oklab()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssoklab-l"/>
     [IdlMember("l", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssoklab-l")]
     public CssColorChannel L
     {
@@ -675,6 +710,7 @@ public sealed class CssOkLab : CssColorValue
     }
 
     /// <summary>Gets or sets the a axis channel of the <c>oklab()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssoklab-a"/>
     [IdlMember("a", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssoklab-a")]
     public CssColorChannel A
     {
@@ -683,6 +719,7 @@ public sealed class CssOkLab : CssColorValue
     }
 
     /// <summary>Gets or sets the b axis channel of the <c>oklab()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssoklab-b"/>
     [IdlMember("b", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssoklab-b")]
     public CssColorChannel B
     {
@@ -691,6 +728,7 @@ public sealed class CssOkLab : CssColorValue
     }
 
     /// <summary>Gets or sets the alpha (opacity) channel of the <c>oklab()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssoklab-alpha"/>
     [IdlMember("alpha", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssoklab-alpha")]
     public CssColorChannel Alpha
     {
@@ -704,6 +742,7 @@ public sealed class CssOkLab : CssColorValue
 }
 
 /// <summary>oklch() (https://drafts.css-houdini.org/css-typed-om-1/#cssoklch).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssoklch"/>
 [IdlInterface("CSSOKLCH", "https://drafts.css-houdini.org/css-typed-om-1/#cssoklch")]
 public sealed class CssOkLch : CssColorValue
 {
@@ -713,6 +752,7 @@ public sealed class CssOkLch : CssColorValue
     private CssStyleValue _alpha;
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssoklch-cssoklch</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssoklch-cssoklch"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssoklch-cssoklch")]
     public CssOkLch(CssColorChannel l, CssColorChannel c, CssColorChannel h, CssColorChannel? alpha = null)
     {
@@ -728,6 +768,7 @@ public sealed class CssOkLch : CssColorValue
     }
 
     /// <summary>Gets or sets the lightness channel of the <c>oklch()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssoklch-l"/>
     [IdlMember("l", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssoklch-l")]
     public CssColorChannel L
     {
@@ -736,6 +777,7 @@ public sealed class CssOkLch : CssColorValue
     }
 
     /// <summary>Gets or sets the chroma channel of the <c>oklch()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssoklch-c"/>
     [IdlMember("c", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssoklch-c")]
     public CssColorChannel C
     {
@@ -744,6 +786,7 @@ public sealed class CssOkLch : CssColorValue
     }
 
     /// <summary>Gets or sets the hue channel of the <c>oklch()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssoklch-h"/>
     [IdlMember("h", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssoklch-h")]
     public CssColorChannel H
     {
@@ -752,6 +795,7 @@ public sealed class CssOkLch : CssColorValue
     }
 
     /// <summary>Gets or sets the alpha (opacity) channel of the <c>oklch()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssoklch-alpha"/>
     [IdlMember("alpha", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssoklch-alpha")]
     public CssColorChannel Alpha
     {
@@ -765,6 +809,7 @@ public sealed class CssOkLch : CssColorValue
 }
 
 /// <summary>color() (https://drafts.css-houdini.org/css-typed-om-1/#csscolor).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#csscolor"/>
 [IdlInterface("CSSColor", "https://drafts.css-houdini.org/css-typed-om-1/#csscolor")]
 public sealed class CssColor : CssColorValue
 {
@@ -773,6 +818,7 @@ public sealed class CssColor : CssColorValue
     private CssNumericValue _alpha;
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-csscolor-csscolor</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csscolor-csscolor"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csscolor-csscolor")]
     public CssColor(CssKeywordish colorSpace, IEnumerable<CssColorChannel> channels, CssNumberish? alpha = null)
     {
@@ -784,6 +830,7 @@ public sealed class CssColor : CssColorValue
     /// <summary>
     /// Gets or sets the color space of the <c>color()</c> color (e.g. <c>srgb</c> or <c>display-p3</c>).
     /// </summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csscolor-colorspace"/>
     [IdlMember("colorSpace", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csscolor-colorspace")]
     public CssKeywordish ColorSpace
     {
@@ -792,6 +839,7 @@ public sealed class CssColor : CssColorValue
     }
 
     /// <summary>The channels (an observable array: setting an item rectifies it, https://drafts.css-houdini.org/css-typed-om-1/#dom-csscolor-channels).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csscolor-channels"/>
     [IdlMember("channels", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csscolor-channels")]
     public IReadOnlyList<CssColorChannel> Channels
     {
@@ -800,6 +848,7 @@ public sealed class CssColor : CssColorValue
     }
 
     /// <summary>Gets or sets the alpha (opacity) channel of the <c>color()</c> color.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csscolor-alpha"/>
     [IdlMember("alpha", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csscolor-alpha")]
     public CssNumberish Alpha
     {

@@ -13,12 +13,14 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// user agent under memory pressure): the data is only evicted when a source buffer is full, as for a
 /// <see cref="MediaSource"/>.
 /// </remarks>
+/// <seealso href="https://w3c.github.io/media-source/#managedmediasource-interface"/>
 [IdlInterface("ManagedMediaSource", "https://w3c.github.io/media-source/#managedmediasource-interface")]
 public sealed class ManagedMediaSource : MediaSource
 {
     private bool _streaming;
 
     /// <summary>Creates a managed media source (https://w3c.github.io/media-source/#dom-managedmediasource-constructor).</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-managedmediasource-constructor"/>
     [IdlMember("constructor", "https://w3c.github.io/media-source/#dom-managedmediasource-constructor")]
     public ManagedMediaSource()
     {
@@ -28,10 +30,12 @@ public sealed class ManagedMediaSource : MediaSource
     /// Gets a value indicating whether the application should fetch and append media data
     /// (https://w3c.github.io/media-source/#dom-managedmediasource-streaming).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-managedmediasource-streaming"/>
     [IdlMember("streaming", "https://w3c.github.io/media-source/#dom-managedmediasource-streaming")]
     public bool Streaming => _streaming;
 
     /// <summary>Gets or sets the event handler of the <c>startstreaming</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-managedmediasource-onstartstreaming"/>
     [IdlMember("onstartstreaming", "https://w3c.github.io/media-source/#dom-managedmediasource-onstartstreaming")]
     public Action<Event>? OnStartStreaming
     {
@@ -40,6 +44,7 @@ public sealed class ManagedMediaSource : MediaSource
     }
 
     /// <summary>Gets or sets the event handler of the <c>endstreaming</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-managedmediasource-onendstreaming"/>
     [IdlMember("onendstreaming", "https://w3c.github.io/media-source/#dom-managedmediasource-onendstreaming")]
     public Action<Event>? OnEndStreaming
     {
@@ -83,6 +88,7 @@ public sealed class ManagedMediaSource : MediaSource
 /// a <c>bufferedchange</c> event is fired when its buffered ranges change after <c>appendBuffer()</c>, <c>remove()</c> or
 /// <c>endOfStream()</c>.
 /// </summary>
+/// <seealso href="https://w3c.github.io/media-source/#managedsourcebuffer-interface"/>
 [IdlInterface("ManagedSourceBuffer", "https://w3c.github.io/media-source/#managedsourcebuffer-interface")]
 public sealed class ManagedSourceBuffer : SourceBuffer
 {
@@ -94,6 +100,7 @@ public sealed class ManagedSourceBuffer : SourceBuffer
     }
 
     /// <summary>Gets or sets the event handler of the <c>bufferedchange</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-managedsourcebuffer-onbufferedchange"/>
     [IdlMember("onbufferedchange", "https://w3c.github.io/media-source/#dom-managedsourcebuffer-onbufferedchange")]
     public Action<Event>? OnBufferedChange
     {
@@ -116,23 +123,28 @@ public sealed class ManagedSourceBuffer : SourceBuffer
 }
 
 /// <summary>https://w3c.github.io/media-source/#dom-bufferedchangeeventinit</summary>
+/// <seealso href="https://w3c.github.io/media-source/#dom-bufferedchangeeventinit"/>
 [IdlInterface("BufferedChangeEventInit", "https://w3c.github.io/media-source/#dom-bufferedchangeeventinit")]
 public sealed class BufferedChangeEventInit : EventInit
 {
     /// <summary>Gets the time ranges that were added.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-bufferedchangeeventinit-addedranges"/>
     [IdlMember("addedRanges", "https://w3c.github.io/media-source/#dom-bufferedchangeeventinit-addedranges")]
     public TimeRanges? AddedRanges { get; init; }
 
     /// <summary>Gets the time ranges that were removed.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-bufferedchangeeventinit-removedranges"/>
     [IdlMember("removedRanges", "https://w3c.github.io/media-source/#dom-bufferedchangeeventinit-removedranges")]
     public TimeRanges? RemovedRanges { get; init; }
 }
 
 /// <summary>The event fired when the buffered ranges of a <see cref="ManagedSourceBuffer"/> change (https://w3c.github.io/media-source/#bufferedchangeevent-interface).</summary>
+/// <seealso href="https://w3c.github.io/media-source/#bufferedchangeevent-interface"/>
 [IdlInterface("BufferedChangeEvent", "https://w3c.github.io/media-source/#bufferedchangeevent-interface")]
 public sealed class BufferedChangeEvent : Event
 {
     /// <summary>Creates a buffered change event with the given type and initialization dictionary.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-bufferedchangeevent-constructor"/>
     [IdlMember("constructor", "https://w3c.github.io/media-source/#dom-bufferedchangeevent-constructor")]
     public BufferedChangeEvent(string type, BufferedChangeEventInit? eventInitDict = null)
         : base(type, eventInitDict)
@@ -142,10 +154,12 @@ public sealed class BufferedChangeEvent : Event
     }
 
     /// <summary>Gets the time ranges added since the last <c>updatestart</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-bufferedchangeevent-addedranges"/>
     [IdlMember("addedRanges", "https://w3c.github.io/media-source/#dom-bufferedchangeevent-addedranges")]
     public TimeRanges AddedRanges { get; }
 
     /// <summary>Gets the time ranges removed since the last <c>updatestart</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/media-source/#dom-bufferedchangeevent-removedranges"/>
     [IdlMember("removedRanges", "https://w3c.github.io/media-source/#dom-bufferedchangeevent-removedranges")]
     public TimeRanges RemovedRanges { get; }
 }

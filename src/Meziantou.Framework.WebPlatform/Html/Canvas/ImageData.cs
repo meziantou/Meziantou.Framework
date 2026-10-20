@@ -4,48 +4,59 @@ using Meziantou.Framework.WebPlatform.Scripting;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>The color spaces of the canvases and of the image data (https://html.spec.whatwg.org/multipage/canvas.html#predefinedcolorspace).</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#predefinedcolorspace"/>
 [IdlInterface("PredefinedColorSpace", "https://html.spec.whatwg.org/multipage/canvas.html#predefinedcolorspace")]
 public enum PredefinedColorSpace
 {
     /// <summary>sRGB.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-predefinedcolorspace-srgb"/>
     [IdlMember("srgb", "https://html.spec.whatwg.org/multipage/canvas.html#dom-predefinedcolorspace-srgb")]
     Srgb,
 
     /// <summary>Linear-light sRGB.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-predefinedcolorspace-srgb-linear"/>
     [IdlMember("srgb-linear", "https://html.spec.whatwg.org/multipage/canvas.html#dom-predefinedcolorspace-srgb-linear")]
     SrgbLinear,
 
     /// <summary>Display P3.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-predefinedcolorspace-display-p3"/>
     [IdlMember("display-p3", "https://html.spec.whatwg.org/multipage/canvas.html#dom-predefinedcolorspace-display-p3")]
     DisplayP3,
 
     /// <summary>Linear-light Display P3.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-predefinedcolorspace-display-p3-linear"/>
     [IdlMember("display-p3-linear", "https://html.spec.whatwg.org/multipage/canvas.html#dom-predefinedcolorspace-display-p3-linear")]
     DisplayP3Linear,
 }
 
 /// <summary>The formats of the pixels of an <see cref="ImageData"/> (https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#imagedatapixelformat).</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#imagedatapixelformat"/>
 [IdlInterface("ImageDataPixelFormat", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#imagedatapixelformat")]
 public enum ImageDataPixelFormat
 {
     /// <summary>4 bytes per pixel (R, G, B, A), in a <c>Uint8ClampedArray</c>.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedatapixelformat-rgba-unorm8"/>
     [IdlMember("rgba-unorm8", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedatapixelformat-rgba-unorm8")]
     RgbaUnorm8,
 
     /// <summary>4 half-precision floats per pixel (R, G, B, A, from 0 to 1), in a <c>Float16Array</c>.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedatapixelformat-rgba-float16"/>
     [IdlMember("rgba-float16", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedatapixelformat-rgba-float16")]
     RgbaFloat16,
 }
 
 /// <summary>The options of an <see cref="ImageData"/> (https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#imagedatasettings).</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#imagedatasettings"/>
 [IdlInterface("ImageDataSettings", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#imagedatasettings")]
 public sealed class ImageDataSettings
 {
     /// <summary>Gets the color space of the pixels (sRGB when it is not set).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedatasettings-colorspace"/>
     [IdlMember("colorSpace", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedatasettings-colorspace")]
     public PredefinedColorSpace? ColorSpace { get; init; }
 
     /// <summary>Gets the format of the pixels.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedatasettings-pixelformat"/>
     [IdlMember("pixelFormat", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedatasettings-pixelformat")]
     public ImageDataPixelFormat PixelFormat { get; init; }
 }
@@ -58,6 +69,7 @@ public sealed class ImageDataSettings
 /// The pixels are shared with the scripts: an <see cref="ImageData"/> created from a <c>Uint8ClampedArray</c> views its bytes,
 /// and the array returned by the <c>data</c> attribute to the scripts is the one the .NET code reads and writes (<see cref="Data"/>).
 /// </remarks>
+/// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#imagedata"/>
 [IdlInterface("ImageData", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#imagedata")]
 public sealed class ImageData : IStructuredSerializable
 {
@@ -73,6 +85,7 @@ public sealed class ImageData : IStructuredSerializable
     /// <param name="sh">The height in pixels.</param>
     /// <param name="settings">The color space and the format of the pixels.</param>
     /// <exception cref="DomException">An <c>IndexSizeError</c> when the width or the height is 0 or the pixels are too large.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedata"/>
     [IdlMember("constructor", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedata")]
     public ImageData(uint sw, uint sh, ImageDataSettings? settings = null)
     {
@@ -106,6 +119,7 @@ public sealed class ImageData : IStructuredSerializable
     /// An <c>InvalidStateError</c> when the number of components is not a nonzero multiple of 4 or the format does not match the
     /// array, an <c>IndexSizeError</c> when the number of pixels is not a multiple of the width or does not match the height.
     /// </exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedata-with-data"/>
     [IdlMember("constructor", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedata-with-data")]
     public ImageData(object data, uint sw, uint? sh = null, ImageDataSettings? settings = null)
     {
@@ -152,18 +166,22 @@ public sealed class ImageData : IStructuredSerializable
     }
 
     /// <summary>Gets the width in pixels.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedata-width"/>
     [IdlMember("width", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedata-width")]
     public uint Width { get; }
 
     /// <summary>Gets the height in pixels.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedata-height"/>
     [IdlMember("height", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedata-height")]
     public uint Height { get; }
 
     /// <summary>Gets the format of the pixels.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedata-pixelformat"/>
     [IdlMember("pixelFormat", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedata-pixelformat")]
     public ImageDataPixelFormat PixelFormat { get; }
 
     /// <summary>Gets the color space of the pixels.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedata-colorspace"/>
     [IdlMember("colorSpace", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedata-colorspace")]
     public PredefinedColorSpace ColorSpace { get; }
 
@@ -176,6 +194,7 @@ public sealed class ImageData : IStructuredSerializable
     public Memory<byte> Data => _data.Bytes;
 
     /// <summary>Gets the array of the pixels for the scripts (https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedata-data): use <see cref="Data"/> in .NET code.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedata-data"/>
     [IdlMember("data", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedata-data")]
     [EditorBrowsable(EditorBrowsableState.Never)]
     public object DataArray => _data;

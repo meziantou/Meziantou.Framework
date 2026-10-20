@@ -16,6 +16,7 @@ public partial class Window
     /// runs the callback at the next frame. There is no rendering: the frames run at a fixed rate (60 frames per second)
     /// measured with <see cref="DomEventLoop.TimeProvider"/>.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-animationframeprovider-requestanimationframe"/>
     [IdlMember("requestAnimationFrame", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-animationframeprovider-requestanimationframe")]
     public uint RequestAnimationFrame(FrameRequestCallback callback)
     {
@@ -27,6 +28,7 @@ public partial class Window
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#animationframeprovider-cancelanimationframe</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#animationframeprovider-cancelanimationframe"/>
     [IdlMember("cancelAnimationFrame", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#animationframeprovider-cancelanimationframe")]
     public void CancelAnimationFrame(uint handle) => _animationFrameCallbacks.Remove(handle);
 

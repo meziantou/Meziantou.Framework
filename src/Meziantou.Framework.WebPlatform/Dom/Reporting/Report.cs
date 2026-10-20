@@ -6,18 +6,22 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// The application-exposed representation of a report (https://w3c.github.io/reporting/#dictdef-report), given to the
 /// callback of a <see cref="ReportingObserver"/>.
 /// </summary>
+/// <seealso href="https://w3c.github.io/reporting/#dictdef-report"/>
 [IdlInterface("Report", "https://w3c.github.io/reporting/#dictdef-report")]
 public sealed class Report
 {
     /// <summary>Gets the type of the report (e.g. <c>csp-violation</c>).</summary>
+    /// <seealso href="https://w3c.github.io/reporting/#dom-report-type"/>
     [IdlMember("type", "https://w3c.github.io/reporting/#dom-report-type")]
     public string Type { get; init; } = "";
 
     /// <summary>Gets the URL of the document or worker that generated the report, without its credentials and its fragment.</summary>
+    /// <seealso href="https://w3c.github.io/reporting/#dom-report-url"/>
     [IdlMember("url", "https://w3c.github.io/reporting/#dom-report-url")]
     public string Url { get; init; } = "";
 
     /// <summary>Gets the body of the report, whose members depend on its type, or null.</summary>
+    /// <seealso href="https://w3c.github.io/reporting/#dom-report-body"/>
     [IdlMember("body", "https://w3c.github.io/reporting/#dom-report-body")]
     public ReportBody? Body { get; init; }
 }
@@ -26,6 +30,7 @@ public sealed class Report
 /// The body of a report (https://w3c.github.io/reporting/#dictdef-reportbody): an abstract dictionary that each report
 /// type extends (e.g. <see cref="CspViolationReportBody"/>). The bindings convert a body by its runtime type.
 /// </summary>
+/// <seealso href="https://w3c.github.io/reporting/#dictdef-reportbody"/>
 [IdlInterface("ReportBody", "https://w3c.github.io/reporting/#dictdef-reportbody")]
 public abstract class ReportBody
 {
@@ -60,6 +65,7 @@ public abstract class ReportBody
 /// (https://w3c.github.io/reporting/#generate-test-report-command): a single string member. The specification names it
 /// <c>body_message</c>, the browsers and the tests <c>message</c>.
 /// </summary>
+/// <seealso href="https://w3c.github.io/reporting/#generate-test-report-command"/>
 [IdlInterface("TestReportBody", "https://w3c.github.io/reporting/#generate-test-report-command")]
 public sealed class TestReportBody : ReportBody
 {
@@ -69,6 +75,7 @@ public sealed class TestReportBody : ReportBody
     }
 
     /// <summary>Gets the message of the report.</summary>
+    /// <seealso href="https://w3c.github.io/reporting/#generate-test-report-command"/>
     [IdlMember("message", "https://w3c.github.io/reporting/#generate-test-report-command")]
     public string Message { get; }
 
@@ -81,6 +88,7 @@ public sealed class TestReportBody : ReportBody
 }
 
 /// <summary>The body of the reports of type <c>csp-violation</c> (https://w3c.github.io/webappsec-csp/#dictdef-cspviolationreportbody).</summary>
+/// <seealso href="https://w3c.github.io/webappsec-csp/#dictdef-cspviolationreportbody"/>
 [IdlInterface("CSPViolationReportBody", "https://w3c.github.io/webappsec-csp/#dictdef-cspviolationreportbody")]
 public sealed class CspViolationReportBody : ReportBody
 {
@@ -89,46 +97,57 @@ public sealed class CspViolationReportBody : ReportBody
     }
 
     /// <summary>Gets the URL of the document or worker whose policy is violated, without its credentials and its fragment.</summary>
+    /// <seealso href="https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-documenturl"/>
     [IdlMember("documentURL", "https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-documenturl")]
     public string DocumentUrl { get; init; } = "";
 
     /// <summary>Gets the referrer of the document whose policy is violated.</summary>
+    /// <seealso href="https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-referrer"/>
     [IdlMember("referrer", "https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-referrer")]
     public string? Referrer { get; init; }
 
     /// <summary>Gets the URL of the blocked resource, or a keyword (<c>inline</c>, <c>eval</c>...).</summary>
+    /// <seealso href="https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-blockedurl"/>
     [IdlMember("blockedURL", "https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-blockedurl")]
     public string? BlockedUrl { get; init; }
 
     /// <summary>Gets the name of the directive whose enforcement caused the violation.</summary>
+    /// <seealso href="https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-effectivedirective"/>
     [IdlMember("effectiveDirective", "https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-effectivedirective")]
     public string EffectiveDirective { get; init; } = "";
 
     /// <summary>Gets the serialization of the violated policy.</summary>
+    /// <seealso href="https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-originalpolicy"/>
     [IdlMember("originalPolicy", "https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-originalpolicy")]
     public string OriginalPolicy { get; init; } = "";
 
     /// <summary>Gets the URL of the script that caused the violation, or null.</summary>
+    /// <seealso href="https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-sourcefile"/>
     [IdlMember("sourceFile", "https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-sourcefile")]
     public string? SourceFile { get; init; }
 
     /// <summary>Gets the sample of the code or the value that caused the violation.</summary>
+    /// <seealso href="https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-sample"/>
     [IdlMember("sample", "https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-sample")]
     public string? Sample { get; init; }
 
     /// <summary>Gets the disposition of the violated policy.</summary>
+    /// <seealso href="https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-disposition"/>
     [IdlMember("disposition", "https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-disposition")]
     public SecurityPolicyViolationEventDisposition Disposition { get; init; }
 
     /// <summary>Gets the HTTP status code of the response of the document or worker whose policy is violated.</summary>
+    /// <seealso href="https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-statuscode"/>
     [IdlMember("statusCode", "https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-statuscode")]
     public ushort StatusCode { get; init; }
 
     /// <summary>Gets the line of the script that caused the violation, or null when there is no source file.</summary>
+    /// <seealso href="https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-linenumber"/>
     [IdlMember("lineNumber", "https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-linenumber")]
     public uint? LineNumber { get; init; }
 
     /// <summary>Gets the column of the script that caused the violation, or null when there is no source file.</summary>
+    /// <seealso href="https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-columnnumber"/>
     [IdlMember("columnNumber", "https://w3c.github.io/webappsec-csp/#dom-cspviolationreportbody-columnnumber")]
     public uint? ColumnNumber { get; init; }
 
@@ -179,6 +198,7 @@ public sealed class CspViolationReportBody : ReportBody
 /// (https://w3c.github.io/webappsec-permissions-policy/#reporting): a document used a feature that its permissions policy
 /// (or its report-only policy) disables, or the <c>allow</c> attribute of one of its iframes delegates such a feature.
 /// </summary>
+/// <seealso href="https://w3c.github.io/webappsec-permissions-policy/#permissionspolicyviolationreportbody"/>
 [IdlInterface("PermissionsPolicyViolationReportBody", "https://w3c.github.io/webappsec-permissions-policy/#permissionspolicyviolationreportbody")]
 public sealed class PermissionsPolicyViolationReportBody : ReportBody
 {
@@ -187,30 +207,37 @@ public sealed class PermissionsPolicyViolationReportBody : ReportBody
     }
 
     /// <summary>Gets the token of the policy-controlled feature whose policy is violated (e.g. <c>sync-xhr</c>).</summary>
+    /// <seealso href="https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicyviolationreportbody-featureid"/>
     [IdlMember("featureId", "https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicyviolationreportbody-featureid")]
     public string FeatureId { get; init; } = "";
 
     /// <summary>Gets the URL of the script that used the feature, or null.</summary>
+    /// <seealso href="https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicyviolationreportbody-sourcefile"/>
     [IdlMember("sourceFile", "https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicyviolationreportbody-sourcefile")]
     public string? SourceFile { get; init; }
 
     /// <summary>Gets the line of the script that used the feature, or null.</summary>
+    /// <seealso href="https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicyviolationreportbody-linenumber"/>
     [IdlMember("lineNumber", "https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicyviolationreportbody-linenumber")]
     public int? LineNumber { get; init; }
 
     /// <summary>Gets the column of the script that used the feature, or null.</summary>
+    /// <seealso href="https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicyviolationreportbody-columnnumber"/>
     [IdlMember("columnNumber", "https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicyviolationreportbody-columnnumber")]
     public int? ColumnNumber { get; init; }
 
     /// <summary>Gets <c>enforce</c> when the policy was enforced, or <c>report</c> for a violation of the report-only policy.</summary>
+    /// <seealso href="https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicyviolationreportbody-disposition"/>
     [IdlMember("disposition", "https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicyviolationreportbody-disposition")]
     public string Disposition { get; init; } = "";
 
     /// <summary>Gets the value of the <c>allow</c> attribute of the iframe of a potential violation, or null.</summary>
+    /// <seealso href="https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicyviolationreportbody-allowattribute"/>
     [IdlMember("allowAttribute", "https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicyviolationreportbody-allowattribute")]
     public string? AllowAttribute { get; init; }
 
     /// <summary>Gets the value of the <c>src</c> attribute of the iframe of a potential violation, or null.</summary>
+    /// <seealso href="https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicyviolationreportbody-srcattribute"/>
     [IdlMember("srcAttribute", "https://w3c.github.io/webappsec-permissions-policy/#dom-permissionspolicyviolationreportbody-srcattribute")]
     public string? SrcAttribute { get; init; }
 

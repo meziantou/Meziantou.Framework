@@ -13,6 +13,7 @@ public sealed partial class Window
     /// <param name="targetOrigin">The origin the document of the window must have: an absolute URL (only its origin is used), <c>*</c> (any origin) or <c>/</c> (the origin of the caller).</param>
     /// <param name="transfer">The objects to transfer (the <c>ArrayBuffer</c> objects of the script engine, and the message ports).</param>
     /// <exception cref="DomException">A <c>SyntaxError</c> when <paramref name="targetOrigin"/> is not a valid URL, or a <c>DataCloneError</c> when the message cannot be serialized.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#dom-window-postmessage"/>
     [IdlMember("postMessage", "https://html.spec.whatwg.org/multipage/web-messaging.html#dom-window-postmessage")]
     public void PostMessage(object? message, string targetOrigin, IReadOnlyList<object>? transfer = null)
     {
@@ -27,6 +28,7 @@ public sealed partial class Window
     /// <param name="message">The message: a value of the script engine, a .NET primitive value or a serializable platform object, or null for <c>undefined</c>.</param>
     /// <param name="options">The target origin (<c>/</c> by default) and the objects to transfer.</param>
     /// <exception cref="DomException">A <c>SyntaxError</c> when the target origin is not a valid URL, or a <c>DataCloneError</c> when the message cannot be serialized.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#dom-window-postmessage-options"/>
     [IdlMember("postMessage", "https://html.spec.whatwg.org/multipage/web-messaging.html#dom-window-postmessage-options")]
     public void PostMessage(object? message, WindowPostMessageOptions? options = null)
     {

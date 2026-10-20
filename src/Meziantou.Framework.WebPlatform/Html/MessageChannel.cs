@@ -6,10 +6,12 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// A channel of two entangled message ports (https://html.spec.whatwg.org/multipage/web-messaging.html#message-channels):
 /// a message posted to one port is delivered to the other one.
 /// </summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#message-channels"/>
 [IdlInterface("MessageChannel", "https://html.spec.whatwg.org/multipage/web-messaging.html#message-channels")]
 public sealed class MessageChannel
 {
     /// <summary>https://html.spec.whatwg.org/multipage/web-messaging.html#dom-messagechannel</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#dom-messagechannel"/>
     [IdlMember("constructor", "https://html.spec.whatwg.org/multipage/web-messaging.html#dom-messagechannel")]
     public MessageChannel()
     {
@@ -19,10 +21,12 @@ public sealed class MessageChannel
     }
 
     /// <summary>Gets the first port of the channel, entangled with <see cref="Port2"/>.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#dom-messagechannel-port1"/>
     [IdlMember("port1", "https://html.spec.whatwg.org/multipage/web-messaging.html#dom-messagechannel-port1")]
     public MessagePort Port1 { get; }
 
     /// <summary>Gets the second port of the channel, entangled with <see cref="Port1"/>.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#dom-messagechannel-port2"/>
     [IdlMember("port2", "https://html.spec.whatwg.org/multipage/web-messaging.html#dom-messagechannel-port2")]
     public MessagePort Port2 { get; }
 }
@@ -40,6 +44,7 @@ public sealed class MessageChannel
 /// primitive values and the serializable platform objects can be sent. A port can be transferred to another realm (the
 /// transfer list of <see cref="PostMessage(object?, StructuredSerializeOptions?)"/>, <see cref="Worker.PostMessage(object?, StructuredSerializeOptions?)"/>...).
 /// </remarks>
+/// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#message-ports"/>
 [IdlInterface("MessagePort", "https://html.spec.whatwg.org/multipage/web-messaging.html#message-ports")]
 public sealed class MessagePort : EventTarget, IStructuredTransferable
 {
@@ -114,6 +119,7 @@ public sealed class MessagePort : EventTarget, IStructuredTransferable
     /// </summary>
     /// <param name="message">The message: a value of the script engine, a .NET primitive value or a serializable platform object, or null for <c>undefined</c>.</param>
     /// <param name="transfer">The objects to transfer (the <c>ArrayBuffer</c> objects of the script engine, and the message ports).</param>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#dom-messageport-postmessage"/>
     [IdlMember("postMessage", "https://html.spec.whatwg.org/multipage/web-messaging.html#dom-messageport-postmessage")]
     public void PostMessage(object? message, IReadOnlyList<object> transfer)
     {
@@ -126,6 +132,7 @@ public sealed class MessagePort : EventTarget, IStructuredTransferable
     /// </summary>
     /// <param name="message">The message: a value of the script engine, a .NET primitive value or a serializable platform object, or null for <c>undefined</c>.</param>
     /// <param name="options">The objects to transfer.</param>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#dom-messageport-postmessage-options"/>
     [IdlMember("postMessage", "https://html.spec.whatwg.org/multipage/web-messaging.html#dom-messageport-postmessage-options")]
     public void PostMessage(object? message, StructuredSerializeOptions? options = null) => PostMessageCore(message, options?.Transfer ?? [], source: null);
 
@@ -237,6 +244,7 @@ public sealed class MessagePort : EventTarget, IStructuredTransferable
     }
 
     /// <summary>Enables the port message queue: the pending messages are delivered (https://html.spec.whatwg.org/multipage/web-messaging.html#dom-messageport-start).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#dom-messageport-start"/>
     [IdlMember("start", "https://html.spec.whatwg.org/multipage/web-messaging.html#dom-messageport-start")]
     public void Start()
     {
@@ -251,6 +259,7 @@ public sealed class MessagePort : EventTarget, IStructuredTransferable
     }
 
     /// <summary>Closes the port: it is disentangled, and a close event is fired at the other port (https://html.spec.whatwg.org/multipage/web-messaging.html#dom-messageport-close).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#dom-messageport-close"/>
     [IdlMember("close", "https://html.spec.whatwg.org/multipage/web-messaging.html#dom-messageport-close")]
     public void Close()
     {
@@ -301,6 +310,7 @@ public sealed class MessagePort : EventTarget, IStructuredTransferable
     }
 
     /// <summary>Gets or sets the handler of the message event; setting it enables the port message queue.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#handler-messageport-onmessage"/>
     [IdlMember("onmessage", "https://html.spec.whatwg.org/multipage/web-messaging.html#handler-messageport-onmessage")]
     public Action<Event>? OnMessage
     {
@@ -309,6 +319,7 @@ public sealed class MessagePort : EventTarget, IStructuredTransferable
     }
 
     /// <summary>Gets or sets the event handler of the <c>messageerror</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#handler-messageport-onmessageerror"/>
     [IdlMember("onmessageerror", "https://html.spec.whatwg.org/multipage/web-messaging.html#handler-messageport-onmessageerror")]
     public Action<Event>? OnMessageError
     {
@@ -317,6 +328,7 @@ public sealed class MessagePort : EventTarget, IStructuredTransferable
     }
 
     /// <summary>Gets or sets the event handler of the <c>close</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#handler-messageport-onclose"/>
     [IdlMember("onclose", "https://html.spec.whatwg.org/multipage/web-messaging.html#handler-messageport-onclose")]
     public Action<Event>? OnClose
     {

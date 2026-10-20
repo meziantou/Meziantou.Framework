@@ -1,5 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Threading;
+using System.Xml;
+using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
@@ -7,7 +11,8 @@ namespace Meziantou.Framework.WebPlatform.Analyzers;
 
 /// <summary>
 /// Ensures every public member of a type mapping a WebIDL definition is annotated with [IdlMember] or [NotInIdl],
-/// so the public surface can be traced back to the specifications.
+/// so the public surface can be traced back to the specifications, and that their XML documentation links to the specification
+/// (<c>&lt;seealso href="..."/&gt;</c>).
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class IdlAttributeAnalyzer : DiagnosticAnalyzer
@@ -46,8 +51,16 @@ public sealed class IdlAttributeAnalyzer : DiagnosticAnalyzer
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    internal static readonly DiagnosticDescriptor MissingSeeAlso = new(
+        id: "HTMLIDL005",
+        title: "Documentation must link to the specification",
+        messageFormat: "The XML documentation of '{0}' must contain <seealso href=\"{1}\"/>",
+        category: "Specification",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     /// <inheritdoc/>
-    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(MissingIdlMember, InvalidSpecUrl, IdlMemberOutsideIdlType, ConflictingAttributes);
+    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(MissingIdlMember, InvalidSpecUrl, IdlMemberOutsideIdlType, ConflictingAttributes, MissingSeeAlso);
 
     /// <inheritdoc/>
     public override void Initialize(AnalysisContext context)
@@ -71,11 +84,13 @@ public sealed class IdlAttributeAnalyzer : DiagnosticAnalyzer
 
     private static void AnalyzeType(SymbolAnalysisContext context, INamedTypeSymbol idlInterface)
     {
+        HashSet<string>? seeAlsoHrefs = null;
         foreach (var attribute in context.Symbol.GetAttributes())
         {
             if (SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, idlInterface))
             {
                 ValidateSpecUrl(context, attribute);
+                ValidateSeeAlso(context, attribute, ref seeAlsoHrefs);
             }
         }
     }
@@ -89,12 +104,14 @@ public sealed class IdlAttributeAnalyzer : DiagnosticAnalyzer
 
         var hasIdlMember = false;
         var hasNotInIdl = false;
+        HashSet<string>? seeAlsoHrefs = null;
         foreach (var attribute in member.GetAttributes())
         {
             if (SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, idlMember))
             {
                 hasIdlMember = true;
                 ValidateSpecUrl(context, attribute);
+                ValidateSeeAlso(context, attribute, ref seeAlsoHrefs);
             }
             else if (SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, notInIdl))
             {
@@ -177,9 +194,59 @@ public sealed class IdlAttributeAnalyzer : DiagnosticAnalyzer
             !string.Equals(uri.Scheme, "https", StringComparison.Ordinal) ||
             uri.Fragment.Length <= 1)
         {
-            var location = attribute.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken).GetLocation() ?? context.Symbol.Locations[0];
-            context.ReportDiagnostic(Diagnostic.Create(InvalidSpecUrl, location, url ?? "<null>"));
+            context.ReportDiagnostic(Diagnostic.Create(InvalidSpecUrl, GetLocation(context, attribute), url ?? "<null>"));
         }
+    }
+
+    private static void ValidateSeeAlso(SymbolAnalysisContext context, AttributeData attribute, ref HashSet<string>? seeAlsoHrefs)
+    {
+        if (attribute.ConstructorArguments.Length < 2 || attribute.ConstructorArguments[1].Value is not string url)
+            return;
+
+        // The documentation comments are not parsed when the documentation mode is None, so the links cannot be checked
+        if (attribute.ApplicationSyntaxReference?.SyntaxTree.Options.DocumentationMode is null or DocumentationMode.None)
+            return;
+
+        seeAlsoHrefs ??= GetSeeAlsoHrefs(context.Symbol, context.CancellationToken);
+        if (!seeAlsoHrefs.Contains(url))
+        {
+            context.ReportDiagnostic(Diagnostic.Create(MissingSeeAlso, GetLocation(context, attribute), context.Symbol.Name, url));
+        }
+    }
+
+    private static HashSet<string> GetSeeAlsoHrefs(ISymbol symbol, CancellationToken cancellationToken)
+    {
+        var result = new HashSet<string>(StringComparer.Ordinal);
+        var xml = symbol.GetDocumentationCommentXml(cancellationToken: cancellationToken);
+        if (string.IsNullOrEmpty(xml))
+            return result;
+
+        XElement root;
+        try
+        {
+            root = XElement.Parse(xml);
+        }
+        catch (XmlException)
+        {
+            // The compiler reports the malformed documentation comments
+            return result;
+        }
+
+        foreach (var seeAlso in root.Descendants("seealso"))
+        {
+            var href = (string?)seeAlso.Attribute("href");
+            if (href is not null)
+            {
+                result.Add(href);
+            }
+        }
+
+        return result;
+    }
+
+    private static Location GetLocation(SymbolAnalysisContext context, AttributeData attribute)
+    {
+        return attribute.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken).GetLocation() ?? context.Symbol.Locations[0];
     }
 
     private static void Report(SymbolAnalysisContext context, DiagnosticDescriptor descriptor, params object[] args)

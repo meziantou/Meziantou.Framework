@@ -5,6 +5,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// The browsers implement it as a dictionary: the segments returned by <see cref="SvgPathElement.GetPathData"/> are not bound
 /// to the element.
 /// </summary>
+/// <seealso href="https://svgwg.org/specs/paths/#InterfaceSVGPathSegment"/>
 [IdlInterface("SVGPathSegment", "https://svgwg.org/specs/paths/#InterfaceSVGPathSegment")]
 public sealed class SvgPathSegment
 {
@@ -23,10 +24,12 @@ public sealed class SvgPathSegment
     }
 
     /// <summary>The command letter of the segment (e.g. "M", "l", "Z").</summary>
+    /// <seealso href="https://svgwg.org/specs/paths/#InterfaceSVGPathSegment"/>
     [IdlMember("type", "https://svgwg.org/specs/paths/#InterfaceSVGPathSegment")]
     public string Type { get; set; } = "";
 
     /// <summary>The values of the command. The flags of an arc are 0 or 1.</summary>
+    /// <seealso href="https://svgwg.org/specs/paths/#InterfaceSVGPathSegment"/>
     [IdlMember("values", "https://svgwg.org/specs/paths/#InterfaceSVGPathSegment")]
     public IReadOnlyList<float> Values { get; set; } = [];
 
@@ -35,10 +38,12 @@ public sealed class SvgPathSegment
 }
 
 /// <summary>https://svgwg.org/specs/paths/#InterfaceSVGPathData</summary>
+/// <seealso href="https://svgwg.org/specs/paths/#InterfaceSVGPathData"/>
 [IdlInterface("SVGPathDataSettings", "https://svgwg.org/specs/paths/#InterfaceSVGPathData")]
 public sealed class SvgPathDataSettings
 {
     /// <summary>Whether the segments are converted to the absolute M, L, C and Z commands.</summary>
+    /// <seealso href="https://svgwg.org/specs/paths/#InterfaceSVGPathData"/>
     [IdlMember("normalize", "https://svgwg.org/specs/paths/#InterfaceSVGPathData")]
     public bool Normalize { get; init; }
 }

@@ -3,18 +3,22 @@ using Meziantou.Framework.WebPlatform.Infra;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>The readiness of a document (https://html.spec.whatwg.org/multipage/dom.html#current-document-readiness).</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#documentreadystate"/>
 [IdlInterface("DocumentReadyState", "https://html.spec.whatwg.org/multipage/dom.html#documentreadystate")]
 public enum DocumentReadyState
 {
     /// <summary>The document is still loading.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-documentreadystate-loading"/>
     [IdlMember("loading", "https://html.spec.whatwg.org/multipage/dom.html#dom-documentreadystate-loading")]
     Loading,
 
     /// <summary>The document has finished parsing but sub-resources are still loading.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-documentreadystate-interactive"/>
     [IdlMember("interactive", "https://html.spec.whatwg.org/multipage/dom.html#dom-documentreadystate-interactive")]
     Interactive,
 
     /// <summary>The document and all its sub-resources have finished loading.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-documentreadystate-complete"/>
     [IdlMember("complete", "https://html.spec.whatwg.org/multipage/dom.html#dom-documentreadystate-complete")]
     Complete,
 }
@@ -23,10 +27,12 @@ public enum DocumentReadyState
 public partial class Document
 {
     /// <summary>Documents parsed by this library are fully loaded, so the readiness is "complete" unless the host changes it.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-document-readystate"/>
     [IdlMember("readyState", "https://html.spec.whatwg.org/multipage/dom.html#dom-document-readystate")]
     public DocumentReadyState ReadyState { get; internal set; } = DocumentReadyState.Complete;
 
     /// <summary>Always null, as scripts are not executed, unless the host executes scripts.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-document-currentscript"/>
     [IdlMember("currentScript", "https://html.spec.whatwg.org/multipage/dom.html#dom-document-currentscript")]
     public Element? CurrentScript { get; internal set; }
 
@@ -34,10 +40,12 @@ public partial class Document
     /// The window of the browsing context (https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-document-defaultview).
     /// It is null unless the document was created in a <see cref="Dom.BrowsingContext"/>.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-document-defaultview"/>
     [IdlMember("defaultView", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-document-defaultview")]
     public Window? DefaultView => BrowsingContext?.Window;
 
     /// <summary>The location of the window, when the document is fully active (https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-document-location).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-document-location"/>
     [IdlMember("location", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-document-location")]
     public Location? Location => IsFullyActive ? RelevantWindow!.Location : null;
 
@@ -45,6 +53,7 @@ public partial class Document
     private Element? HtmlElement => DocumentElement is { } element && element.IsHtml(TagId.Html) ? element : null;
 
     /// <summary>https://html.spec.whatwg.org/multipage/dom.html#dom-document-head</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-document-head"/>
     [IdlMember("head", "https://html.spec.whatwg.org/multipage/dom.html#dom-document-head")]
     public HtmlElement? Head
     {
@@ -61,6 +70,7 @@ public partial class Document
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dom.html#dom-document-body</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-document-body"/>
     [IdlMember("body", "https://html.spec.whatwg.org/multipage/dom.html#dom-document-body")]
     public HtmlElement? Body
     {
@@ -121,6 +131,7 @@ public partial class Document
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dom.html#document.title</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-document-title"/>
     [IdlMember("title", "https://html.spec.whatwg.org/multipage/dom.html#dom-document-title")]
     public string Title
     {
@@ -179,6 +190,7 @@ public partial class Document
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dom.html#dom-document-getelementsbyname</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-document-getelementsbyname"/>
     [IdlMember("getElementsByName", "https://html.spec.whatwg.org/multipage/dom.html#dom-document-getelementsbyname")]
     public NodeList GetElementsByName(string elementName)
     {

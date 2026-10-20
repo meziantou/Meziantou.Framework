@@ -11,12 +11,14 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// The messages are serialized by the script engine of the global object (structured clone); without script engine, only
 /// the .NET primitive values and the serializable platform objects can be sent.
 /// </remarks>
+/// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#broadcastchannel"/>
 [IdlInterface("BroadcastChannel", "https://html.spec.whatwg.org/multipage/web-messaging.html#broadcastchannel")]
 public sealed class BroadcastChannel : EventTarget
 {
     private bool _closed;
 
     /// <summary>https://html.spec.whatwg.org/multipage/web-messaging.html#dom-broadcastchannel</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#dom-broadcastchannel"/>
     [IdlMember("constructor", "https://html.spec.whatwg.org/multipage/web-messaging.html#dom-broadcastchannel")]
     public BroadcastChannel(string name)
     {
@@ -32,6 +34,7 @@ public sealed class BroadcastChannel : EventTarget
     }
 
     /// <summary>Gets the channel name.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#dom-broadcastchannel-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/web-messaging.html#dom-broadcastchannel-name")]
     public string Name { get; }
 
@@ -40,6 +43,7 @@ public sealed class BroadcastChannel : EventTarget
     /// (https://html.spec.whatwg.org/multipage/web-messaging.html#dom-broadcastchannel-postmessage).
     /// </summary>
     /// <param name="message">The message: a value of the script engine, a .NET primitive value or a serializable platform object, or null for <c>undefined</c>.</param>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#dom-broadcastchannel-postmessage"/>
     [IdlMember("postMessage", "https://html.spec.whatwg.org/multipage/web-messaging.html#dom-broadcastchannel-postmessage")]
     public void PostMessage(object? message)
     {
@@ -106,6 +110,7 @@ public sealed class BroadcastChannel : EventTarget
     }
 
     /// <summary>Closes the channel: it no longer sends nor receives messages (https://html.spec.whatwg.org/multipage/web-messaging.html#dom-broadcastchannel-close).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#dom-broadcastchannel-close"/>
     [IdlMember("close", "https://html.spec.whatwg.org/multipage/web-messaging.html#dom-broadcastchannel-close")]
     public void Close()
     {
@@ -120,6 +125,7 @@ public sealed class BroadcastChannel : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>message</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#handler-broadcastchannel-onmessage"/>
     [IdlMember("onmessage", "https://html.spec.whatwg.org/multipage/web-messaging.html#handler-broadcastchannel-onmessage")]
     public Action<Event>? OnMessage
     {
@@ -128,6 +134,7 @@ public sealed class BroadcastChannel : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>messageerror</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#handler-broadcastchannel-onmessageerror"/>
     [IdlMember("onmessageerror", "https://html.spec.whatwg.org/multipage/web-messaging.html#handler-broadcastchannel-onmessageerror")]
     public Action<Event>? OnMessageError
     {

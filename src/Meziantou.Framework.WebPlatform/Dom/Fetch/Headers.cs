@@ -18,16 +18,19 @@ internal enum HeadersGuard
 /// byte, in the range U+0000 to U+00FF). The names are compared ASCII case-insensitively, and the iteration returns the
 /// lowercase names, sorted, with the values of the headers with the same name combined (except <c>Set-Cookie</c>).
 /// </summary>
+/// <seealso href="https://fetch.spec.whatwg.org/#headers-class"/>
 [IdlInterface("Headers", "https://fetch.spec.whatwg.org/#headers-class")]
 public sealed class Headers : IEnumerable<KeyValuePair<string, string>>
 {
     /// <summary>Creates an empty list.</summary>
+    /// <seealso href="https://fetch.spec.whatwg.org/#dom-headers"/>
     [IdlMember("constructor", "https://fetch.spec.whatwg.org/#dom-headers")]
     public Headers()
     {
     }
 
     /// <summary>Creates a list from pairs of a name and a value (<c>sequence&lt;sequence&lt;ByteString&gt;&gt;</c>).</summary>
+    /// <seealso href="https://fetch.spec.whatwg.org/#dom-headers"/>
     [IdlMember("constructor", "https://fetch.spec.whatwg.org/#dom-headers")]
     public Headers(IEnumerable<IReadOnlyList<string>> init)
     {
@@ -36,6 +39,7 @@ public sealed class Headers : IEnumerable<KeyValuePair<string, string>>
     }
 
     /// <summary>Creates a list from the entries of a record (<c>record&lt;ByteString, ByteString&gt;</c>).</summary>
+    /// <seealso href="https://fetch.spec.whatwg.org/#dom-headers"/>
     [IdlMember("constructor", "https://fetch.spec.whatwg.org/#dom-headers")]
     public Headers(IEnumerable<KeyValuePair<string, string>> init)
     {
@@ -77,6 +81,7 @@ public sealed class Headers : IEnumerable<KeyValuePair<string, string>>
     }
 
     /// <summary>Appends a header (https://fetch.spec.whatwg.org/#dom-headers-append).</summary>
+    /// <seealso href="https://fetch.spec.whatwg.org/#dom-headers-append"/>
     [IdlMember("append", "https://fetch.spec.whatwg.org/#dom-headers-append")]
     public void Append(string name, string value)
     {
@@ -108,6 +113,7 @@ public sealed class Headers : IEnumerable<KeyValuePair<string, string>>
     }
 
     /// <summary>Removes the headers with the name (https://fetch.spec.whatwg.org/#dom-headers-delete).</summary>
+    /// <seealso href="https://fetch.spec.whatwg.org/#dom-headers-delete"/>
     [IdlMember("delete", "https://fetch.spec.whatwg.org/#dom-headers-delete")]
     public void Delete(string name)
     {
@@ -129,6 +135,7 @@ public sealed class Headers : IEnumerable<KeyValuePair<string, string>>
     }
 
     /// <summary>Returns the values of the headers with the name, separated by <c>", "</c>, or null (https://fetch.spec.whatwg.org/#dom-headers-get).</summary>
+    /// <seealso href="https://fetch.spec.whatwg.org/#dom-headers-get"/>
     [IdlMember("get", "https://fetch.spec.whatwg.org/#dom-headers-get")]
     public string? Get(string name)
     {
@@ -140,6 +147,7 @@ public sealed class Headers : IEnumerable<KeyValuePair<string, string>>
     }
 
     /// <summary>Returns the values of the <c>Set-Cookie</c> headers (https://fetch.spec.whatwg.org/#dom-headers-getsetcookie).</summary>
+    /// <seealso href="https://fetch.spec.whatwg.org/#dom-headers-getsetcookie"/>
     [IdlMember("getSetCookie", "https://fetch.spec.whatwg.org/#dom-headers-getsetcookie")]
     public IReadOnlyList<string> GetSetCookie()
     {
@@ -156,6 +164,7 @@ public sealed class Headers : IEnumerable<KeyValuePair<string, string>>
     }
 
     /// <summary>Returns whether there is a header with the name (https://fetch.spec.whatwg.org/#dom-headers-has).</summary>
+    /// <seealso href="https://fetch.spec.whatwg.org/#dom-headers-has"/>
     [IdlMember("has", "https://fetch.spec.whatwg.org/#dom-headers-has")]
     public bool Has(string name)
     {
@@ -167,6 +176,7 @@ public sealed class Headers : IEnumerable<KeyValuePair<string, string>>
     }
 
     /// <summary>Replaces the headers with the name (https://fetch.spec.whatwg.org/#dom-headers-set).</summary>
+    /// <seealso href="https://fetch.spec.whatwg.org/#dom-headers-set"/>
     [IdlMember("set", "https://fetch.spec.whatwg.org/#dom-headers-set")]
     public void Set(string name, string value)
     {
@@ -187,6 +197,7 @@ public sealed class Headers : IEnumerable<KeyValuePair<string, string>>
     }
 
     /// <summary>Returns the headers sorted by name, with the values of the headers with the same name combined (https://fetch.spec.whatwg.org/#ref-for-dfn-iterable-1).</summary>
+    /// <seealso href="https://fetch.spec.whatwg.org/#headers-class"/>
     [IdlMember("iterable", "https://fetch.spec.whatwg.org/#headers-class")]
     public IEnumerator<KeyValuePair<string, string>> GetEnumerator() => FetchHeaders.SortAndCombine(List).GetEnumerator();
 

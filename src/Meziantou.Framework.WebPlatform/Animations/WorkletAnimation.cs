@@ -13,6 +13,7 @@ namespace Meziantou.Framework.WebPlatform.Animations;
 /// The animator instance exists while the animation is not idle. An effect has no local time (it is not in effect) until the
 /// animator sets it, and keeps the last one the animator set: a worklet animation that is finished still applies its effects.
 /// </remarks>
+/// <seealso href="https://drafts.css-houdini.org/css-animation-worklet-1/#workletanimation"/>
 [IdlInterface("WorkletAnimation", "https://drafts.css-houdini.org/css-animation-worklet-1/#workletanimation")]
 public sealed class WorkletAnimation : Animation
 {
@@ -26,6 +27,7 @@ public sealed class WorkletAnimation : Animation
     /// <param name="animatorName">The name of an animator registered in the animation worklet of the document.</param>
     /// <param name="effects">The effect, or null.</param>
     /// <exception cref="TypeErrorException">No animator of the name is registered, or its registration is invalid.</exception>
+    /// <seealso href="https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletanimation-workletanimation"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletanimation-workletanimation")]
     public WorkletAnimation(string animatorName, AnimationEffect? effects = null)
         : this(animatorName, effects is null ? [] : [effects], isGroup: false, Document.CurrentGlobalDocument.Timeline, options: null)
@@ -33,6 +35,7 @@ public sealed class WorkletAnimation : Animation
     }
 
     /// <summary>Creates a worklet animation of an effect on a timeline (null for no timeline).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletanimation-workletanimation"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletanimation-workletanimation")]
     public WorkletAnimation(string animatorName, AnimationEffect? effects, AnimationTimeline? timeline)
         : this(animatorName, effects is null ? [] : [effects], isGroup: false, timeline, options: null)
@@ -41,6 +44,7 @@ public sealed class WorkletAnimation : Animation
 
     /// <summary>Creates a worklet animation of an effect on a timeline, with the options given to the constructor of the animator (a value of the script engine, structured cloned).</summary>
     /// <exception cref="DomException">A <c>DataCloneError</c> when the options cannot be cloned.</exception>
+    /// <seealso href="https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletanimation-workletanimation"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletanimation-workletanimation")]
     public WorkletAnimation(string animatorName, AnimationEffect? effects, AnimationTimeline? timeline, object? options)
         : this(animatorName, effects is null ? [] : [effects], isGroup: false, timeline, options ?? UndefinedValue.Instance)
@@ -48,6 +52,7 @@ public sealed class WorkletAnimation : Animation
     }
 
     /// <summary>Creates a worklet animation of a group of effects, whose local times the animator sets individually, on the default timeline of the document of the current global object.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletanimation-workletanimation"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletanimation-workletanimation")]
     public WorkletAnimation(string animatorName, IReadOnlyList<AnimationEffect> effects)
         : this(animatorName, effects, isGroup: true, Document.CurrentGlobalDocument.Timeline, options: null)
@@ -55,6 +60,7 @@ public sealed class WorkletAnimation : Animation
     }
 
     /// <summary>Creates a worklet animation of a group of effects on a timeline (null for no timeline).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletanimation-workletanimation"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletanimation-workletanimation")]
     public WorkletAnimation(string animatorName, IReadOnlyList<AnimationEffect> effects, AnimationTimeline? timeline)
         : this(animatorName, effects, isGroup: true, timeline, options: null)
@@ -62,6 +68,7 @@ public sealed class WorkletAnimation : Animation
     }
 
     /// <summary>Creates a worklet animation of a group of effects on a timeline, with the options given to the constructor of the animator.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletanimation-workletanimation"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletanimation-workletanimation")]
     public WorkletAnimation(string animatorName, IReadOnlyList<AnimationEffect> effects, AnimationTimeline? timeline, object? options)
         : this(animatorName, effects, isGroup: true, timeline, options ?? UndefinedValue.Instance)
@@ -129,6 +136,7 @@ public sealed class WorkletAnimation : Animation
     internal bool IsAnimatorDropped { get; set; }
 
     /// <summary>Gets the name of the animator of the animation (https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletanimation-animatorname).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletanimation-animatorname"/>
     [IdlMember("animatorName", "https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletanimation-animatorname")]
     public string AnimatorName { get; }
 
@@ -181,6 +189,7 @@ public sealed class WorkletAnimation : Animation
 /// animation in the animation worklet. The <c>animate()</c> callback of the animator sets its local time, which is synced
 /// to the effect after the callback.
 /// </summary>
+/// <seealso href="https://drafts.css-houdini.org/css-animation-worklet-1/#workletanimationeffect"/>
 [IdlInterface("WorkletAnimationEffect", "https://drafts.css-houdini.org/css-animation-worklet-1/#workletanimationeffect")]
 public sealed class WorkletAnimationEffect
 {
@@ -198,6 +207,7 @@ public sealed class WorkletAnimationEffect
     internal AnimationEffect Effect { get; }
 
     /// <summary>Returns the specified timing properties of the corresponding effect (https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletanimationeffect-gettiming).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletanimationeffect-gettiming"/>
     [IdlMember("getTiming", "https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletanimationeffect-gettiming")]
     public EffectTiming GetTiming() => Effect.GetTiming();
 
@@ -205,6 +215,7 @@ public sealed class WorkletAnimationEffect
     /// Returns the calculated timing properties of the corresponding effect at the local time of this animator effect
     /// (https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletanimationeffect-getcomputedtiming).
     /// </summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletanimationeffect-getcomputedtiming"/>
     [IdlMember("getComputedTiming", "https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletanimationeffect-getcomputedtiming")]
     public ComputedEffectTiming GetComputedTiming() => Effect.GetComputedTiming(_localTime);
 
@@ -212,6 +223,7 @@ public sealed class WorkletAnimationEffect
     /// Gets or sets the local time of the effect, in milliseconds, or null when it is unresolved
     /// (https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletanimationeffect-localtime).
     /// </summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletanimationeffect-localtime"/>
     [IdlMember("localTime", "https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletanimationeffect-localtime")]
     public double? LocalTime
     {
@@ -234,6 +246,7 @@ public sealed class WorkletAnimationEffect
 /// The effect of a worklet animation created with several effects (https://drafts.css-houdini.org/css-animation-worklet-1/#worklet-group-effect):
 /// the animator sets the local times of the children individually.
 /// </summary>
+/// <seealso href="https://drafts.css-houdini.org/css-animation-worklet-1/#workletgroupeffect"/>
 [IdlInterface("WorkletGroupEffect", "https://drafts.css-houdini.org/css-animation-worklet-1/#workletgroupeffect")]
 public sealed class WorkletGroupEffect
 {
@@ -242,6 +255,7 @@ public sealed class WorkletGroupEffect
     internal WorkletGroupEffect(List<WorkletAnimationEffect> children) => _children = children;
 
     /// <summary>Returns the animator effects of the effects of the group (https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletgroupeffect-getchildren).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletgroupeffect-getchildren"/>
     [IdlMember("getChildren", "https://drafts.css-houdini.org/css-animation-worklet-1/#dom-workletgroupeffect-getchildren")]
     public IReadOnlyList<WorkletAnimationEffect> GetChildren() => [.. _children];
 }

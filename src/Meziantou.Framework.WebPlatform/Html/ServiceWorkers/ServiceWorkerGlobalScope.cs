@@ -8,6 +8,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// receives the lifecycle events (<c>install</c>, <c>activate</c>) and the functional events (<c>fetch</c>,
 /// <c>message</c>) of its service worker. It runs on the thread of the service worker (see <see cref="WorkerGlobalScope"/>).
 /// </summary>
+/// <seealso href="https://w3c.github.io/ServiceWorker/#serviceworkerglobalscope"/>
 [IdlInterface("ServiceWorkerGlobalScope", "https://w3c.github.io/ServiceWorker/#serviceworkerglobalscope")]
 public sealed class ServiceWorkerGlobalScope : WorkerGlobalScope
 {
@@ -26,14 +27,17 @@ public sealed class ServiceWorkerGlobalScope : WorkerGlobalScope
     internal override string InterfaceName => "ServiceWorkerGlobalScope";
 
     /// <summary>Gets the clients of the service worker (https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-clients).</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-clients"/>
     [IdlMember("clients", "https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-clients")]
     public Clients Clients => _clients ??= new Clients(this);
 
     /// <summary>Gets the registration of the service worker (https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-registration).</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-registration"/>
     [IdlMember("registration", "https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-registration")]
     public ServiceWorkerRegistration Registration => GetServiceWorkerRegistrationObject(ServiceWorkerRecord.Registration);
 
     /// <summary>Gets the service worker (https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-serviceworker).</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-serviceworker"/>
     [IdlMember("serviceWorker", "https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-serviceworker")]
     public ServiceWorker ServiceWorker => GetServiceWorkerObject(ServiceWorkerRecord);
 
@@ -41,6 +45,7 @@ public sealed class ServiceWorkerGlobalScope : WorkerGlobalScope
     /// Activates the service worker without waiting for the clients of the active worker to be unloaded
     /// (https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-skipwaiting).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-skipwaiting"/>
     [IdlMember("skipWaiting", "https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-skipwaiting")]
     public Task SkipWaiting()
     {
@@ -67,6 +72,7 @@ public sealed class ServiceWorkerGlobalScope : WorkerGlobalScope
     }
 
     /// <summary>Gets or sets the event handler of the <c>install</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-oninstall"/>
     [IdlMember("oninstall", "https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-oninstall")]
     public Action<Event>? OnInstall
     {
@@ -75,6 +81,7 @@ public sealed class ServiceWorkerGlobalScope : WorkerGlobalScope
     }
 
     /// <summary>Gets or sets the event handler of the <c>activate</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-onactivate"/>
     [IdlMember("onactivate", "https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-onactivate")]
     public Action<Event>? OnActivate
     {
@@ -83,6 +90,7 @@ public sealed class ServiceWorkerGlobalScope : WorkerGlobalScope
     }
 
     /// <summary>Gets or sets the event handler of the <c>fetch</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-onfetch"/>
     [IdlMember("onfetch", "https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-onfetch")]
     public Action<Event>? OnFetch
     {
@@ -91,6 +99,7 @@ public sealed class ServiceWorkerGlobalScope : WorkerGlobalScope
     }
 
     /// <summary>Gets or sets the event handler of the <c>message</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-onmessage"/>
     [IdlMember("onmessage", "https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-onmessage")]
     public Action<Event>? OnMessage
     {
@@ -99,6 +108,7 @@ public sealed class ServiceWorkerGlobalScope : WorkerGlobalScope
     }
 
     /// <summary>Gets or sets the event handler of the <c>messageerror</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-onmessageerror"/>
     [IdlMember("onmessageerror", "https://w3c.github.io/ServiceWorker/#dom-serviceworkerglobalscope-onmessageerror")]
     public Action<Event>? OnMessageError
     {

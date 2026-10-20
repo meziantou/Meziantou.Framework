@@ -7,6 +7,165 @@ namespace Meziantou.Framework.Templating.Tests;
 public class EmailTemplateTest
 {
     [Fact]
+    public void ReadmeExample_Basic()
+    {
+        #region HtmlEmailTemplate_Basic
+        using var template = new HtmlEmailTemplate();
+        template.Load("Hello {{# \"Meziantou\" }}!");
+
+        var result = template.Run(out var metadata);
+        Assert.Equal("Hello Meziantou!", result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Expression()
+    {
+        #region HtmlEmailTemplate_Expression
+        using var template = new HtmlEmailTemplate();
+        template.Arguments.Add(new TemplateArgument("userName", typeof(string)));
+        template.Load("Hello {{# userName }}!");
+
+        var result = template.Run(out _, new Dictionary<string, object?>(StringComparer.Ordinal) { ["userName"] = "John" });
+        Assert.Equal("Hello John!", result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_HtmlEncode()
+    {
+        #region HtmlEmailTemplate_HtmlEncode
+        using var template = new HtmlEmailTemplate();
+        template.Load("Hello {{#html \"<Meziantou>\" }}!");
+
+        var result = template.Run(out _);
+        Assert.Equal("Hello &lt;Meziantou&gt;!", result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_AttributeEncode()
+    {
+        #region HtmlEmailTemplate_AttributeEncode
+        using var template = new HtmlEmailTemplate();
+        template.Load("Hello <a href=\"{{#attr \"Sample&Sample\"}}\">Meziantou</a>!");
+
+        var result = template.Run(out _);
+        Assert.Equal("Hello <a href=\"Sample&amp;Sample\">Meziantou</a>!", result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_UrlEncode()
+    {
+        #region HtmlEmailTemplate_UrlEncode
+        using var template = new HtmlEmailTemplate();
+        template.Load("Hello <a href=\"http://www.localhost.com/{{#url \"Sample&Url\" }}\">Meziantou</a>!");
+
+        var result = template.Run(out _);
+        Assert.Equal("Hello <a href=\"http://www.localhost.com/Sample%26Url\">Meziantou</a>!", result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ContentIdentifier()
+    {
+        #region HtmlEmailTemplate_ContentIdentifier
+        using var template = new HtmlEmailTemplate();
+        template.Load("<img src=\"{{cid logo.png}}\" />");
+
+        var result = template.Run(out var metadata);
+        Assert.Equal("<img src=\"cid:logo.png\" />", result);
+        Assert.NotNull(metadata);
+        Assert.Equal("logo.png", Assert.Single(metadata.ContentIdentifiers));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_HtmlCodeBlock()
+    {
+        #region HtmlEmailTemplate_HtmlCodeBlock
+        using var template = new HtmlEmailTemplate();
+        template.Load("{{html for(int i = 0; i &lt; 3; i++) { }}{{#i}} {{ } }}");
+
+        var result = template.Run(out _);
+        Assert.Equal("0 1 2 ", result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Section()
+    {
+        #region HtmlEmailTemplate_Section
+        using var template = new HtmlEmailTemplate();
+        template.Load("Hello {{@begin_section title}}{{# \"Meziantou\" }}{{@end_section}}!");
+
+        var result = template.Run(out var metadata);
+        Assert.Equal("Hello Meziantou!", result);
+        Assert.NotNull(metadata);
+        Assert.Equal("Meziantou", metadata.Title);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Metadata()
+    {
+        #region HtmlEmailTemplate_Metadata
+        using var template = new HtmlEmailTemplate();
+        template.Arguments.Add(new TemplateArgument("userName", typeof(string)));
+        template.Load("""
+            {{@begin_section title}}Welcome Email{{@end_section}}
+            <html>
+              <body>
+                <img src="{{cid logo.png}}" />
+                <h1>Hello {{#html userName}}!</h1>
+              </body>
+            </html>
+            """);
+
+        var result = template.Run(out var metadata,
+            new Dictionary<string, object?>(StringComparer.Ordinal) { ["userName"] = "John" });
+
+        Assert.NotNull(metadata);
+        Assert.Equal("Welcome Email", metadata.Title);
+        Assert.Equal("logo.png", Assert.Single(metadata.ContentIdentifiers));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Parameters()
+    {
+        #region HtmlEmailTemplate_Parameters
+        using var template = new HtmlEmailTemplate();
+        template.Arguments.Add(new TemplateArgument("name", typeof(string)));
+        template.Arguments.Add(new TemplateArgument("age", typeof(int)));
+        template.Load("{{#html name}} is {{# age }}");
+
+        // Using a dictionary
+        var result1 = template.Run(out _,
+            new Dictionary<string, object?>(StringComparer.Ordinal) { ["name"] = "John", ["age"] = 30 });
+        Assert.Equal("John is 30", result1);
+
+        // Using positional parameters
+        var result2 = template.Run(out _, "John", 30);
+        Assert.Equal("John is 30", result2);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_TypedOutput()
+    {
+        #region HtmlEmailTemplate_TypedOutput
+        using var template = new HtmlEmailTemplate { OutputType = typeof(HtmlEmailOutput) };
+        template.Arguments.Add(new TemplateArgument("userName", typeof(string)));
+        template.Load("Hello {{#html userName}}!");
+
+        var result = template.Run(out _, "<John>");
+        Assert.Equal("Hello &lt;John&gt;!", result);
+        #endregion
+    }
+
+    [Fact]
     public void EmailTemplate_01()
     {
         // Arrange

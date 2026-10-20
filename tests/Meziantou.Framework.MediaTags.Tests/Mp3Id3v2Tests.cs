@@ -722,6 +722,22 @@ public sealed class Mp3Id3v2Tests
         Assert.Equal(tags.Duration, ReadMp3(written).Duration);
     }
 
+    [Fact]
+    public void ReadTags_StackedId3v2Tags_ComputesTheDurationFromTheAudioAfterThem()
+    {
+        // The second tag holds bytes that look like a 32 kbps frame header. A write removes both tags, so the audio
+        // starts after them when reading too.
+        var audio = CreateSyntheticMp3(100, includeId3v2Tag: false);
+        var expected = ReadMp3(audio).Duration;
+        Assert.NotNull(expected);
+        var secondTag = BuildId3Tag(4, 0, ("PRIV", 0, [0, 0xFF, 0xFB, 0x10, 0x00]))[..^4];
+        byte[] bytes = [.. "ID3"u8, 4, 0, 0, 0, 0, 0, 0, .. secondTag, .. audio];
+
+        var tags = ReadMp3(bytes);
+        Assert.Equal(expected, tags.Duration);
+        Assert.Equal(expected, ReadMp3(WriteMp3(bytes, tags)).Duration);
+    }
+
     private static MediaTagInfo ReadMp3(byte[] bytes)
     {
         using var stream = new MemoryStream(bytes);

@@ -349,6 +349,46 @@ public sealed class DrawingStrokeTests
     }
 
     [Fact]
+    public void AStrokeWiderThanTheCanvasCoversItWhateverTheTransformation()
+    {
+        // A pen much wider than the canvas through a translation, a mirror (which reverses the orientation of the
+        // pieces), a turn and a scaling: a translucent paint shows that the many pieces of such a stroke are painted once
+        var center = new PointD(2, 1.5);
+        AffineTransform[] transforms =
+        [
+            AffineTransform.CreateTranslation(2, 2),
+            AffineTransform.CreateScale(-1, 1, center),
+            AffineTransform.CreateRotation(30, center),
+            AffineTransform.CreateScale(100, 100, center),
+        ];
+        var paint = new SolidBrush(new Rgba32(255, 255, 255, 128));
+        var curve = new VectorPathBuilder().MoveTo(-300, 2).CubicBezierTo(100, -4000, 3, 5000, 400, 3).QuadraticBezierTo(2, 2, 3, 3).AddCircle(new PointD(2, 2), 50).Build();
+        (double Width, LineJoin Join, LineCap Cap)[] pens = [(1000, LineJoin.Miter, LineCap.Butt), (1000, LineJoin.Round, LineCap.Round), (100000, LineJoin.Bevel, LineCap.Square)];
+        foreach (var transform in transforms)
+        {
+            foreach (var (width, join, cap) in pens)
+            {
+                using var image = NewBlack(4, 3);
+                image.Frames[0].Draw(canvas => canvas.Transform(transform, inner => inner.Stroke(new Pen(paint, width) { LineJoin = join, LineCap = cap }, curve)), Ct);
+                AssertGray8(image, [[128, 128, 128, 128], [128, 128, 128, 128], [128, 128, 128, 128]]);
+            }
+        }
+
+        // A pen narrower than the canvas that the transformation makes 5 million pixels wide, with a dot every 10
+        // pixels of the canvas: the first dot that covers the canvas ends the stroke. Compared to the canvas before it
+        // is scaled, the pen is too narrow to be tested, and the 256,000 dots that reach the canvas take minutes.
+        using (var image = NewBlack(512, 512))
+        {
+            using var budget = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+            budget.CancelAfter(TimeSpan.FromSeconds(60));
+            var pen = new Pen(White, 500) { DashPattern = [0, 1.0 / 1024], LineCap = LineCap.Round };
+            var middle = new PointD(256, 256);
+            image.Frames[0].Draw(canvas => canvas.Transform(AffineTransform.CreateScale(10000, 10000, middle), inner => inner.StrokeLine(pen, new PointD(-44, 256), middle)), budget.Token);
+            Assert.All(DrawingTestSupport.ReadSamples(image.Frames[0]), sample => Assert.Equal(255, sample));
+        }
+    }
+
+    [Fact]
     public void ACircleIsStrokedSymmetrically()
     {
         using var image = NewBlack(16, 16);

@@ -19,7 +19,7 @@ public sealed class MarkOfTheWebTests
 
         // Remove the Mark of the Web from a file
         MarkOfTheWeb.RemoveFileZone(path);
-        Assert.Equal(UrlZone.LocalMachine, MarkOfTheWeb.GetFileZone(path));
+        Assert.Null(MarkOfTheWeb.GetFileZoneContent(path));
         #endregion
 
         File.Delete(path);

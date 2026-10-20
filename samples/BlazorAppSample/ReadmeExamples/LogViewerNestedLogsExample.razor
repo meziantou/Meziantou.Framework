@@ -1,0 +1,32 @@
+<LogViewer Entries="@logEntries" />
+
+@code {
+    private List<LogEntry> logEntries = new()
+    {
+        new LogEntry
+        {
+            Timestamp = DateTimeOffset.UtcNow,
+            Message = "Handling request",
+            LogLevel = LogLevel.Information,
+            Expanded = true,
+            Children = new List<LogEntry>
+            {
+                new LogEntry
+                {
+                    Timestamp = DateTimeOffset.UtcNow,
+                    Message = "Querying database",
+                    LogLevel = LogLevel.Debug,
+                    Children = new List<LogEntry>
+                    {
+                        new LogEntry
+                        {
+                            Timestamp = DateTimeOffset.UtcNow,
+                            Message = "Executing query",
+                            LogLevel = LogLevel.Trace,
+                        },
+                    },
+                },
+            },
+        },
+    };
+}

@@ -1,0 +1,12 @@
+@inject QueryStringService QueryStringService
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Search { get; set; }
+
+    protected override void OnInitialized()
+    {
+        QueryStringService.SetParametersFromQueryString(this);
+    }
+}

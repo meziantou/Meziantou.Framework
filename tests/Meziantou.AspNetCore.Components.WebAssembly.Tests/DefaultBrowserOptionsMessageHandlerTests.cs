@@ -7,6 +7,22 @@ public sealed class DefaultBrowserOptionsMessageHandlerTests
     private static readonly HttpRequestOptionsKey<IDictionary<string, object>> FetchRequestOptionsKey = new("WebAssemblyFetchOptions");
 
     [Fact]
+    public async Task ReadmeExample_RequestOptionsWin()
+    {
+        var request = await SendAsync(
+            handler => handler.DefaultBrowserRequestCache = BrowserRequestCache.NoCache,
+            request =>
+            {
+                #region DefaultBrowserOptionsMessageHandler_RequestOptionsWin
+                // This request keeps force-cache, whatever the handler is configured with
+                request.SetBrowserRequestCache(BrowserRequestCache.ForceCache);
+                #endregion
+            });
+
+        Assert.Equal("force-cache", GetFetchOptions(request)["cache"]);
+    }
+
+    [Fact]
     public async Task UnsetOptionsAreNotSentToTheBrowser()
     {
         var request = await SendAsync(_ => { });

@@ -8,6 +8,23 @@ namespace Meziantou.AspNetCore.Components.Tests;
 
 public class LogViewerComponentTests
 {
+    [Fact]
+    public async Task ReadmeExample_AnsiMessage()
+    {
+        #region LogEntry_AnsiMessage
+        var entry = new LogEntry
+        {
+            Timestamp = DateTimeOffset.UtcNow,
+            LogLevel = LogLevel.Information,
+            Message = "\u001b[1;33mwarning\u001b[0m \u001b[38;2;100;200;50mcustom color\u001b[0m",
+        };
+        #endregion
+
+        var html = await RenderViewerAsync(new { Entries = new[] { entry } });
+        Assert.DoesNotContain("\u001b", html);
+        Assert.Contains("custom color", html);
+    }
+
     private static async Task<string> RenderAsync<TComponent>(object parameters)
         where TComponent : IComponent
     {

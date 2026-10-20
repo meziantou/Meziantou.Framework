@@ -5,6 +5,25 @@ namespace Meziantou.Framework.Win32.Tests;
 public class PerceivedTests
 {
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void DocumentationExample()
+    {
+        #region Perceived_GetPerceivedType
+        // Get perceived type for a file
+        var perceived = Perceived.GetPerceivedType(".txt");
+        Assert.Equal(PerceivedType.Text, perceived.PerceivedType);
+        Assert.NotEqual(PerceivedTypeSource.Undefined, perceived.PerceivedTypeSource); // e.g. SoftCoded, NativeSupport
+
+        // Add custom perceived types
+        Perceived.AddPerceived(".myext", PerceivedType.Text);
+        Assert.Equal(PerceivedType.Text, Perceived.GetPerceivedType("file.myext").PerceivedType);
+
+        // Add default perceived types for common development file extensions
+        Perceived.AddDefaultPerceivedTypes();
+        Assert.Equal(PerceivedType.Text, Perceived.GetPerceivedType("Program.cs").PerceivedType);
+        #endregion
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void GetPerceivedType_txt()
     {
         var perceived = Perceived.GetPerceivedType(".txt");

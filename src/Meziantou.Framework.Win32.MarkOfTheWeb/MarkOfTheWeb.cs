@@ -11,17 +11,20 @@ namespace Meziantou.Framework.Win32;
 /// the origin zone information in an Alternate Data Stream (ADS) named "Zone.Identifier".
 /// </summary>
 /// <example>
-/// Add the Mark of the Web to a file:
-/// <code>
+/// Add, read, and remove the Mark of the Web of a file:
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Win32.MarkOfTheWeb.Tests/MarkOfTheWebTests.cs" ref:region="MarkOfTheWeb_SetGetRemove" ref:dedent="true">
+/// var path = Path.GetTempFileName();
+///
+/// // Add the Mark of the Web to a file
 /// MarkOfTheWeb.SetFileZone(path, UrlZone.Internet);
-/// </code>
-/// Get the zone of a file:
-/// <code>
+///
+/// // Get the zone of a file
 /// var zone = MarkOfTheWeb.GetFileZone(path);
-/// </code>
-/// Remove the Mark of the Web from a file:
-/// <code>
+/// Assert.Equal(UrlZone.Internet, zone);
+///
+/// // Remove the Mark of the Web from a file
 /// MarkOfTheWeb.RemoveFileZone(path);
+/// Assert.Equal(UrlZone.LocalMachine, MarkOfTheWeb.GetFileZone(path));
 /// </code>
 /// </example>
 [SupportedOSPlatform("windows")]

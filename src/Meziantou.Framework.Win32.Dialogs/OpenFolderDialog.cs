@@ -9,12 +9,12 @@ namespace Meziantou.Framework.Win32;
 
 /// <summary>Provides a modern Windows folder selection dialog using the IFileOpenDialog COM interface.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/Meziantou.Framework.Win32.DialogsSamples/OpenFolderDialogExamples.cs" ref:region="OpenFolderDialog_ShowDialog" ref:dedent="true">
 /// var dialog = new OpenFolderDialog
 /// {
 ///     Title = "Select a folder",
 ///     InitialDirectory = @"C:\Users",
-///     OkButtonLabel = "Select Folder"
+///     OkButtonLabel = "Select Folder",
 /// };
 ///
 /// if (dialog.ShowDialog() == DialogResult.OK)

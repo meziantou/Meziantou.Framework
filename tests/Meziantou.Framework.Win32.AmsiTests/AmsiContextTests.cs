@@ -39,6 +39,30 @@ public class AmsiContextTests
         Assert.False(session.IsMalware("0000", "EICAR"));
     }
 
+    [Fact, RunIf(TestOperatingSystems.Windows), SkipIf(ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
+    public void AmsiContextDocumentationExample()
+    {
+        #region AmsiContext_IsMalware
+        using var context = AmsiContext.Create("MyApplication");
+
+        // The EICAR test file is detected as malware by every antivirus
+        Assert.True(context.IsMalware(@"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*", "test.txt"));
+        #endregion
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows), SkipIf(ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
+    public void AmsiSessionDocumentationExample()
+    {
+        #region AmsiSession_IsMalware
+        using var context = AmsiContext.Create("MyApplication");
+
+        // The scans of a session are correlated, e.g. the fragments of a script
+        using var session = context.CreateSession();
+        Assert.False(session.IsMalware("Hello world", "file1.txt"));
+        Assert.True(session.IsMalware(@"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*", "file2.txt"));
+        #endregion
+    }
+
     [Fact, RunIf(TestOperatingSystems.Windows)]
     public void DisposingTheContextBeforeTheSessionIsSafe()
     {

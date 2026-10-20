@@ -37,6 +37,7 @@ on:
           - tds-server
           - toml
           - unicode
+          - uri
           - versioning
           - webplatform
           - yaml
@@ -101,6 +102,7 @@ env:
       { "project": "Meziantou.Framework.TdsServer.Fuzz",           "component": "tds-server",            "day": 4 },
       { "project": "Meziantou.Framework.Toml.Fuzz",                "component": "toml",                  "day": 4 },
       { "project": "Meziantou.Framework.Unicode.Fuzz",             "component": "unicode",               "day": 5 },
+      { "project": "Meziantou.Framework.Uri.Fuzz",                 "component": "uri",                   "day": 4 },
       { "project": "Meziantou.Framework.Versioning.Fuzz",          "component": "versioning",            "day": 4 },
       { "project": "Meziantou.Framework.WebPlatform.Fuzz",         "component": "webplatform",           "day": 5 },
       { "project": "Meziantou.Framework.Yaml.Fuzz",                "component": "yaml",                  "day": 6 }

@@ -26,6 +26,42 @@ public sealed class JintScriptEngineTests : IDisposable
         _engine.Dispose();
     }
 
+    [Fact]
+    public async Task ReadmeExample_ExecuteScripts()
+    {
+        #region WebPlatform_ExecuteScripts
+        using var engine = new JintScriptEngine(new JintScriptEngineOptions
+        {
+            Timeout = TimeSpan.FromSeconds(5), // per script or callback
+        });
+
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            ScriptEngine = engine,
+            DocumentLoader = DocumentLoader.Create(), // optional: external scripts, modules, fetch, XMLHttpRequest, WebSocket, EventSource...
+            UnhandledScriptError = (window, error) => Console.Error.WriteLine(error),
+            ConsoleMessage = (window, message) => Console.WriteLine(message.Text), // console.log(), console.count()...
+        });
+
+        var document = await context.NavigateAsync("https://example.com/", _ => """
+            <title>Example</title>
+            <ul id=list></ul>
+            <script>
+              setTimeout(() => document.getElementById('list').innerHTML = '<li>a<li>b', 100);
+            </script>
+            """);
+
+        // Run the tasks and the timers until there is nothing left
+        do { await context.EventLoop.RunUntilIdleAsync(); } while (await context.EventLoop.WaitForNextTimerAsync());
+
+        Assert.Equal("<li>a</li><li>b</li>", document.GetElementById("list")!.InnerHtml);
+
+        // Evaluate code in the realm of a window
+        var title = engine.Evaluate(context.Window, "document.title");
+        Assert.Equal("Example", title.ToString());
+        #endregion
+    }
+
     private Document Load(string html, DocumentLoader? loader = null)
     {
         var context = _contexts.Create(new BrowsingContextOptions

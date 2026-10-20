@@ -18,10 +18,11 @@ and `HTMLBRElement` → `HtmlBRElement`). `MathML` and `XPath` keep their casing
 
 ### Parse HTML, query the nodes and the styles
 
-```csharp
-using Meziantou.Framework.WebPlatform;
-using Meziantou.Framework.WebPlatform.Dom;
+`HtmlDocumentParser` is in the `Meziantou.Framework.WebPlatform` namespace, and the DOM types (`BrowsingContext`,
+`Document`, `HtmlAnchorElement`...) are in `Meziantou.Framework.WebPlatform.Dom`.
 
+<!-- ref:../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/BrowsingContextTests.cs;region=WebPlatform_ParseAndQuery;format=md-fenced-code-block;dedent=true -->
+```csharp
 var document = HtmlDocumentParser.ParseDocument("""
     <style>.important { color: red; font-weight: bold }</style>
     <ul>
@@ -34,19 +35,30 @@ var document = HtmlDocumentParser.ParseDocument("""
 var links = document.QuerySelectorAll<HtmlAnchorElement>("li > a");
 var external = links.Where(a => a.Href.StartsWith("https:", StringComparison.Ordinal)).Select(a => a.TextContent);
 var first = document.GetElementsByTagName("li")[0];
+Assert.Equal(["A"], external);
+Assert.Same(first, links[0].ParentElement);
 
 // XPath
 var result = document.Evaluate("//a[@class='important']", document, type: XPathResult.FirstOrderedNodeType);
 var important = (Element?)result.SingleNodeValue;
+Assert.Equal("A", important?.TextContent);
 
 // Inline style (style attribute)
-var color = links[1].Style.GetPropertyValue("color"); // blue
+var color = links[1].Style.GetPropertyValue("color");
+Assert.Equal("blue", color);
 ```
+<!-- endref -->
 
 The computed styles (cascade of the style sheets, inheritance, media queries) need a [browsing
 context](docs/browsing-context.md), which provides the window and the viewport:
 
+<!-- ref:../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/BrowsingContextTests.cs;region=WebPlatform_ComputedStyle;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var html = """
+    <style>.important { color: red; font-weight: bold }</style>
+    <p class="important">Hello</p>
+    """;
+
 using var context = new BrowsingContext(new BrowsingContextOptions
 {
     Viewport = new ViewportOptions { Width = 1280, Height = 720 }, // optional, 800x600 by default
@@ -54,18 +66,26 @@ using var context = new BrowsingContext(new BrowsingContextOptions
 
 var document = context.Navigate("https://example.com/", _ => html);
 var style = context.Window.GetComputedStyle(document.QuerySelector(".important")!);
-Console.WriteLine(style.Color);                           // rgb(255, 0, 0)
-Console.WriteLine(style.GetPropertyValue("font-weight")); // 700
+Assert.Equal("rgb(255, 0, 0)", style.Color);
+Assert.Equal("700", style.GetPropertyValue("font-weight"));
 ```
+<!-- endref -->
 
 See [docs/dom-helpers.md](docs/dom-helpers.md), [docs/selectors.md](docs/selectors.md),
 [docs/computed-style.md](docs/computed-style.md) and [docs/css-typed-om.md](docs/css-typed-om.md).
 
 ### Update the DOM
 
-```csharp
-using Meziantou.Framework.WebPlatform.Formatting;
+The formatters are in the `Meziantou.Framework.WebPlatform.Formatting` namespace.
 
+<!-- ref:../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/BrowsingContextTests.cs;region=WebPlatform_UpdateDom;format=md-fenced-code-block;dedent=true -->
+```csharp
+var document = HtmlDocumentParser.ParseDocument("""
+    <ul>
+      <li><a href="/a">A</a>
+      <li><a href="/b">B</a>
+    </ul>
+    """);
 var list = document.QuerySelector("ul")!;
 
 // Create elements
@@ -87,7 +107,29 @@ document.QuerySelector("a[href='/b']")?.Remove();
 var html = document.GetHtml();
 var indented = document.ToHtml(new HtmlPrettyFormatter());
 var minified = document.ToHtml(new HtmlMinifyFormatter());
+Assert.StartsWith("<html><head></head><body><ul>", html, StringComparison.Ordinal);
+Assert.Equal("""
+    <html>
+      <head></head>
+      <body>
+        <ul>
+          <li>
+            <a href="/a">A</a>
+          </li>
+          <li></li>
+          <li>
+            <a href="/c" class="important" data-id="3" style="text-decoration: underline;">C</a>
+          </li>
+          <li>
+            <a href="/d">D</a>
+          </li>
+        </ul>
+      </body>
+    </html>
+    """, indented);
+Assert.Equal("""<ul><li><a href=/a>A</a><li><li><a href=/c class=important data-id=3 style="text-decoration: underline;">C</a><li><a href=/d>D</a></ul>""", minified);
 ```
+<!-- endref -->
 
 `Element.SetHtml()` and `Document.ParseHtml()` insert untrusted markup with the HTML Sanitizer API. See
 [docs/html-formatting.md](docs/html-formatting.md) and [docs/css-formatting.md](docs/css-formatting.md) for the
@@ -99,6 +141,7 @@ Nothing is fetched unless a `DocumentLoader` is configured. With a loader, the b
 the navigations and the `iframe` elements, the style sheets (`<link rel=stylesheet>`, `@import`), the images and, when a
 script engine is configured, the scripts:
 
+<!-- ref:../../samples/Meziantou.Framework.WebPlatform.Samples/ReadmeExamples.cs;region=WebPlatform_AllowNetworkRequests;format=md-fenced-code-block;dedent=true -->
 ```csharp
 using var context = new BrowsingContext(new BrowsingContextOptions
 {
@@ -111,12 +154,14 @@ await context.EventLoop.RunUntilIdleAsync(); // runs the tasks until the documen
 
 var document = context.Document;
 ```
+<!-- endref -->
 
 `DocumentLoader.Create()` requests any URL. A custom loader can filter the requests (to prevent server-side request
 forgery with untrusted documents), serve them from a cache or from the disk:
 
+<!-- ref:../../samples/Meziantou.Framework.WebPlatform.Samples/ReadmeExamples.cs;region=WebPlatform_SameHostLoader;format=md-fenced-code-block;dedent=true -->
 ```csharp
-sealed class SameHostLoader(string host) : DocumentLoader
+internal sealed class SameHostLoader(string host) : DocumentLoader
 {
     private static readonly DocumentLoader Http = DocumentLoader.Create();
 
@@ -129,17 +174,18 @@ sealed class SameHostLoader(string host) : DocumentLoader
     }
 }
 ```
+<!-- endref -->
 
 See [docs/browsing-context.md](docs/browsing-context.md#the-document-loader).
 
 ### Execute scripts
 
 Scripts only run when a JavaScript engine is plugged into the browsing context. The
-`Meziantou.Framework.WebPlatform.Jint` package provides one, based on [Jint](https://github.com/sebastienros/jint):
+`Meziantou.Framework.WebPlatform.Jint` package provides one, based on [Jint](https://github.com/sebastienros/jint), in the
+`Meziantou.Framework.WebPlatform.Jint` namespace:
 
+<!-- ref:../../tests/Meziantou.Framework.WebPlatform.Tests/Jint/JintScriptEngineTests.cs;region=WebPlatform_ExecuteScripts;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.WebPlatform.Jint;
-
 using var engine = new JintScriptEngine(new JintScriptEngineOptions
 {
     Timeout = TimeSpan.FromSeconds(5), // per script or callback
@@ -154,6 +200,7 @@ using var context = new BrowsingContext(new BrowsingContextOptions
 });
 
 var document = await context.NavigateAsync("https://example.com/", _ => """
+    <title>Example</title>
     <ul id=list></ul>
     <script>
       setTimeout(() => document.getElementById('list').innerHTML = '<li>a<li>b', 100);
@@ -163,11 +210,13 @@ var document = await context.NavigateAsync("https://example.com/", _ => """
 // Run the tasks and the timers until there is nothing left
 do { await context.EventLoop.RunUntilIdleAsync(); } while (await context.EventLoop.WaitForNextTimerAsync());
 
-Console.WriteLine(document.GetElementById("list")!.InnerHtml); // <li>a</li><li>b</li>
+Assert.Equal("<li>a</li><li>b</li>", document.GetElementById("list")!.InnerHtml);
 
 // Evaluate code in the realm of a window
 var title = engine.Evaluate(context.Window, "document.title");
+Assert.Equal("Example", title.ToString());
 ```
+<!-- endref -->
 
 The scripts run in the process: read the threat model in [docs/scripting.md](docs/scripting.md#threat-model) before
 running untrusted documents.
@@ -177,11 +226,11 @@ running untrusted documents.
 The documents are painted by the library into a backend-agnostic display list; the
 `Meziantou.Framework.WebPlatform.Imaging` package draws them, and decodes and encodes the images, with
 [Meziantou.Framework.Imaging](https://www.nuget.org/packages/Meziantou.Framework.Imaging), a fully managed library (no
-native dependency: the same pixels on every platform):
+native dependency: the same pixels on every platform). `ImagingRenderingBackend` and the screenshot methods are in the
+`Meziantou.Framework.WebPlatform.Imaging` namespace:
 
+<!-- ref:../../samples/Meziantou.Framework.WebPlatform.Samples/ReadmeExamples.cs;region=WebPlatform_TakeScreenshots;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.WebPlatform.Imaging;
-
 using var context = new BrowsingContext(new BrowsingContextOptions
 {
     Viewport = new ViewportOptions { Width = 1280, Height = 720, DevicePixelRatio = 2 },
@@ -198,6 +247,7 @@ using var title = context.Document.QuerySelector("h1")!.TakeScreenshot();       
 // Print the document: the print media type, the @page rules, one image per page
 var pages = context.RenderPagesAsPng(new PrintOptions { PageWidth = 794, PageHeight = 1123 }); // A4 at 96 dpi
 ```
+<!-- endref -->
 
 See [docs/rendering.md](docs/rendering.md) for what is painted, and [Printing](docs/rendering.md#printing) for the pages.
 

@@ -1,10 +1,117 @@
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.Formatting;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Dom;
 
 public sealed class BrowsingContextTests
 {
+    [Fact]
+    public void ReadmeExample_ParseAndQuery()
+    {
+        #region WebPlatform_ParseAndQuery
+        var document = HtmlDocumentParser.ParseDocument("""
+            <style>.important { color: red; font-weight: bold }</style>
+            <ul>
+              <li><a href="https://example.com/a" class="important">A</a>
+              <li><a href="/b" style="color: blue">B</a>
+            </ul>
+            """);
+
+        // CSS selectors, with typed overloads and LINQ
+        var links = document.QuerySelectorAll<HtmlAnchorElement>("li > a");
+        var external = links.Where(a => a.Href.StartsWith("https:", StringComparison.Ordinal)).Select(a => a.TextContent);
+        var first = document.GetElementsByTagName("li")[0];
+        Assert.Equal(["A"], external);
+        Assert.Same(first, links[0].ParentElement);
+
+        // XPath
+        var result = document.Evaluate("//a[@class='important']", document, type: XPathResult.FirstOrderedNodeType);
+        var important = (Element?)result.SingleNodeValue;
+        Assert.Equal("A", important?.TextContent);
+
+        // Inline style (style attribute)
+        var color = links[1].Style.GetPropertyValue("color");
+        Assert.Equal("blue", color);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ComputedStyle()
+    {
+        #region WebPlatform_ComputedStyle
+        var html = """
+            <style>.important { color: red; font-weight: bold }</style>
+            <p class="important">Hello</p>
+            """;
+
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            Viewport = new ViewportOptions { Width = 1280, Height = 720 }, // optional, 800x600 by default
+        });
+
+        var document = context.Navigate("https://example.com/", _ => html);
+        var style = context.Window.GetComputedStyle(document.QuerySelector(".important")!);
+        Assert.Equal("rgb(255, 0, 0)", style.Color);
+        Assert.Equal("700", style.GetPropertyValue("font-weight"));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_UpdateDom()
+    {
+        #region WebPlatform_UpdateDom
+        var document = HtmlDocumentParser.ParseDocument("""
+            <ul>
+              <li><a href="/a">A</a>
+              <li><a href="/b">B</a>
+            </ul>
+            """);
+        var list = document.QuerySelector("ul")!;
+
+        // Create elements
+        var item = document.CreateElement<HtmlLIElement>();
+        var link = document.CreateElement<HtmlAnchorElement>();
+        link.Href = "/c";
+        link.TextContent = "C";
+        link.ClassList.Add("important");
+        link.SetAttribute("data-id", "3");
+        item.Append(link);
+        list.Append(item);
+
+        // Parse markup into an element, edit the styles, remove nodes
+        list.InsertAdjacentHtml("beforeend", "<li><a href=/d>D</a>");
+        link.Style.SetProperty("text-decoration", "underline");
+        document.QuerySelector("a[href='/b']")?.Remove();
+
+        // Serialize the document
+        var html = document.GetHtml();
+        var indented = document.ToHtml(new HtmlPrettyFormatter());
+        var minified = document.ToHtml(new HtmlMinifyFormatter());
+        Assert.StartsWith("<html><head></head><body><ul>", html, StringComparison.Ordinal);
+        Assert.Equal("""
+            <html>
+              <head></head>
+              <body>
+                <ul>
+                  <li>
+                    <a href="/a">A</a>
+                  </li>
+                  <li></li>
+                  <li>
+                    <a href="/c" class="important" data-id="3" style="text-decoration: underline;">C</a>
+                  </li>
+                  <li>
+                    <a href="/d">D</a>
+                  </li>
+                </ul>
+              </body>
+            </html>
+            """, indented);
+        Assert.Equal("""<ul><li><a href=/a>A</a><li><li><a href=/c class=important data-id=3 style="text-decoration: underline;">C</a><li><a href=/d>D</a></ul>""", minified);
+        #endregion
+    }
+
     private static Document Load(BrowsingContext context, string html, string url = "https://example.com/dir/page.html")
     {
         var document = context.Navigate(url, _ => html);

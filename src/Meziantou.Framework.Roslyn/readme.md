@@ -15,9 +15,11 @@ Install the package in an analyzer or source generator project that already refe
 
 Then import the helper namespace:
 
-````csharp
+<!-- ref:../../tests/Meziantou.Framework.Roslyn.Tests/RoslynHelperTests.cs;region=Roslyn_Using;format=md-fenced-code-block;dedent=true -->
+```csharp
 using Meziantou.Framework.Roslyn;
-````
+```
+<!-- endref -->
 
 ## Helpers
 
@@ -55,21 +57,60 @@ The package also defines Roslyn and C# feature constants before compilation base
 
 `IsOrInheritsFrom` and `IsOrImplements` include the type itself, so they don't depend on that distinction:
 
-````csharp
+<!-- ref:../../tests/Meziantou.Framework.Roslyn.Tests/RoslynHelperTests.cs;region=Roslyn_IsOrInheritsFrom;format=md-fenced-code-block;dedent=true -->
+```csharp
+var compilation = CSharpCompilation.Create(
+    "Sample",
+    [CSharpSyntaxTree.ParseText("public class Base { } public class Derived : Base { }")],
+    [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)]);
+var baseType = compilation.GetTypeByMetadataName("Base")!;
+var type = compilation.GetTypeByMetadataName("Derived")!;
+
 // true when the type is Base or derives from it
-if (type.IsOrInheritsFrom(baseType))
-{
-}
-````
+Assert.True(type.IsOrInheritsFrom(baseType));
+Assert.True(baseType.IsOrInheritsFrom(baseType));
+Assert.False(baseType.IsOrInheritsFrom(type));
+```
+<!-- endref -->
 
 Use `IsAssignableTo` and `IsAssignableFrom` when the target can be any type. They follow the C# conversions that keep the identity of the value: identity, implicit reference and boxing conversions. On top of base types, interfaces and type parameter constraints, they handle `object`, the variance of generic interfaces and delegates, array covariance, and boxing to `System.ValueType`, `System.Enum` and the interfaces of a value type:
 
-````csharp
+<!-- ref:../../tests/Meziantou.Framework.Roslyn.Tests/RoslynHelperTests.cs;region=Roslyn_IsAssignableTo;format=md-fenced-code-block;dedent=true -->
+```csharp
+var compilation = CSharpCompilation.Create(
+    "Sample",
+    [CSharpSyntaxTree.ParseText("""
+        using System.Collections.Generic;
+
+        public class Base { }
+        public class Derived : Base { }
+        public class Sample
+        {
+            public void M<T>(string[] a, List<string> b, IEnumerable<Derived> c, T d, IEnumerable<int> e, int f)
+                where T : IEnumerable<string>
+            {
+            }
+        }
+        """)],
+    [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)]);
+var objectType = compilation.GetSpecialType(SpecialType.System_Object);
+var enumerableOfObjectType = compilation.GetTypeByMetadataName("System.Collections.Generic.IEnumerable`1")!.Construct(objectType);
+var method = (IMethodSymbol)compilation.GetTypeByMetadataName("Sample")!.GetMembers("M").Single();
+var parameterTypes = method.Parameters.Select(parameter => parameter.Type).ToArray();
+
 // true for string[], List<string>, IEnumerable<Derived>, or T where T : IEnumerable<string>
-if (type.IsAssignableTo(enumerableOfObjectType))
-{
-}
-````
+Assert.True(parameterTypes[0].IsAssignableTo(enumerableOfObjectType));
+Assert.True(parameterTypes[1].IsAssignableTo(enumerableOfObjectType));
+Assert.True(parameterTypes[2].IsAssignableTo(enumerableOfObjectType));
+Assert.True(parameterTypes[3].IsAssignableTo(enumerableOfObjectType));
+
+// false for IEnumerable<int>, as boxing the elements creates new values
+Assert.False(parameterTypes[4].IsAssignableTo(enumerableOfObjectType));
+
+// false for int to long, as the conversion creates a new value
+Assert.False(parameterTypes[5].IsAssignableTo(compilation.GetSpecialType(SpecialType.System_Int64)));
+```
+<!-- endref -->
 
 Conversions that create a new value are not considered, so `int` is not assignable to `long` or `int?`, and `IEnumerable<int>` is not assignable to `IEnumerable<object>`. Use `Compilation.ClassifyCommonConversion` to take every conversion into account.
 
@@ -85,13 +126,28 @@ well-known file names (`.g.cs`, `.g.i.cs`, `.designer.cs`, `.generated.cs`, `Tem
 assembly, looking for `[System.CodeDom.Compiler.GeneratedCode]`. A symbol declared in more than one file, such as a
 partial type, is never generated code, and the walk stops there:
 
-````csharp
+<!-- ref:../../tests/Meziantou.Framework.Roslyn.Tests/RoslynHelperTests.cs;region=Roslyn_IsGeneratedCodeSymbol;format=md-fenced-code-block;dedent=true -->
+```csharp
+var compilation = CSharpCompilation.Create(
+    "Sample",
+    [CSharpSyntaxTree.ParseText("""
+        [System.CodeDom.Compiler.GeneratedCode("Tool", "1.0")]
+        public class Generated
+        {
+            public void Method() { }
+        }
+
+        public class Handwritten { }
+        """)],
+    [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)]);
+
 // Resolve the attribute once, then test the symbols
 var generatedCodeAttribute = compilation.GetTypeByMetadataName("System.CodeDom.Compiler.GeneratedCodeAttribute");
-if (symbol.IsGeneratedCodeSymbol(generatedCodeAttribute))
-{
-}
-````
+var symbol = compilation.GetTypeByMetadataName("Generated")!.GetMembers("Method").Single();
+Assert.True(symbol.IsGeneratedCodeSymbol(generatedCodeAttribute));
+Assert.False(compilation.GetTypeByMetadataName("Handwritten")!.IsGeneratedCodeSymbol(generatedCodeAttribute));
+```
+<!-- endref -->
 
 The analyzer driver considers a location as generated code when either check matches, for the symbol, syntax and
 operation actions alike, so `GeneratedCodeAnalysisFlags` skips more than the file check alone. The symbol check is
@@ -106,10 +162,12 @@ whose hint name has no well-known suffix, whose output has no `<auto-generated>`
 
 `DiagnosticReporter.CanReportDiagnostic` is a global filter evaluated before a diagnostic is reported. It defaults to `null`, so no filtering occurs. When it is set, every diagnostic reported through a `DiagnosticReporter` or through the `ReportDiagnostic` extension methods of the analysis contexts is evaluated, and returning `false` drops it:
 
-````csharp
+<!-- ref:../../tests/Meziantou.Framework.Roslyn.Tests/RoslynHelperTests.cs;region=Roslyn_CanReportDiagnostic;format=md-fenced-code-block;dedent=true -->
+```csharp
 DiagnosticReporter.CanReportDiagnostic = (diagnostic, options, cancellationToken)
     => diagnostic.Location.SourceTree?.IsGeneratedCode(options, cancellationToken) is not true;
-````
+```
+<!-- endref -->
 
 `DiagnosticReporter` converts implicitly from every analysis context that can report a diagnostic: `SyntaxNodeAnalysisContext`, `SymbolAnalysisContext`, `OperationAnalysisContext`, `OperationBlockAnalysisContext`, `CompilationAnalysisContext`, `SemanticModelAnalysisContext`, `SyntaxTreeAnalysisContext`, `CodeBlockAnalysisContext` and `AdditionalFileAnalysisContext`. The `ReportDiagnostic` extension methods are available on all of them.
 

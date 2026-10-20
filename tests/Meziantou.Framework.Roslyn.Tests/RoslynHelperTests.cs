@@ -9,7 +9,9 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.Text;
+#region Roslyn_Using
 using Meziantou.Framework.Roslyn;
+#endregion
 
 namespace Meziantou.Framework.Roslyn.Tests;
 
@@ -17,6 +19,116 @@ public sealed class RoslynHelperTests
 {
     private static readonly CSharpParseOptions DefaultParseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp12);
     private static readonly CSharpCompilationOptions DefaultCompilationOptions = new(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable);
+
+    [Fact]
+    public void ReadmeExample_IsOrInheritsFrom()
+    {
+        #region Roslyn_IsOrInheritsFrom
+        var compilation = CSharpCompilation.Create(
+            "Sample",
+            [CSharpSyntaxTree.ParseText("public class Base { } public class Derived : Base { }")],
+            [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)]);
+        var baseType = compilation.GetTypeByMetadataName("Base")!;
+        var type = compilation.GetTypeByMetadataName("Derived")!;
+
+        // true when the type is Base or derives from it
+        Assert.True(type.IsOrInheritsFrom(baseType));
+        Assert.True(baseType.IsOrInheritsFrom(baseType));
+        Assert.False(baseType.IsOrInheritsFrom(type));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_IsAssignableTo()
+    {
+        #region Roslyn_IsAssignableTo
+        var compilation = CSharpCompilation.Create(
+            "Sample",
+            [CSharpSyntaxTree.ParseText("""
+                using System.Collections.Generic;
+
+                public class Base { }
+                public class Derived : Base { }
+                public class Sample
+                {
+                    public void M<T>(string[] a, List<string> b, IEnumerable<Derived> c, T d, IEnumerable<int> e, int f)
+                        where T : IEnumerable<string>
+                    {
+                    }
+                }
+                """)],
+            [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)]);
+        var objectType = compilation.GetSpecialType(SpecialType.System_Object);
+        var enumerableOfObjectType = compilation.GetTypeByMetadataName("System.Collections.Generic.IEnumerable`1")!.Construct(objectType);
+        var method = (IMethodSymbol)compilation.GetTypeByMetadataName("Sample")!.GetMembers("M").Single();
+        var parameterTypes = method.Parameters.Select(parameter => parameter.Type).ToArray();
+
+        // true for string[], List<string>, IEnumerable<Derived>, or T where T : IEnumerable<string>
+        Assert.True(parameterTypes[0].IsAssignableTo(enumerableOfObjectType));
+        Assert.True(parameterTypes[1].IsAssignableTo(enumerableOfObjectType));
+        Assert.True(parameterTypes[2].IsAssignableTo(enumerableOfObjectType));
+        Assert.True(parameterTypes[3].IsAssignableTo(enumerableOfObjectType));
+
+        // false for IEnumerable<int>, as boxing the elements creates new values
+        Assert.False(parameterTypes[4].IsAssignableTo(enumerableOfObjectType));
+
+        // false for int to long, as the conversion creates a new value
+        Assert.False(parameterTypes[5].IsAssignableTo(compilation.GetSpecialType(SpecialType.System_Int64)));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_IsGeneratedCodeSymbol()
+    {
+        #region Roslyn_IsGeneratedCodeSymbol
+        var compilation = CSharpCompilation.Create(
+            "Sample",
+            [CSharpSyntaxTree.ParseText("""
+                [System.CodeDom.Compiler.GeneratedCode("Tool", "1.0")]
+                public class Generated
+                {
+                    public void Method() { }
+                }
+
+                public class Handwritten { }
+                """)],
+            [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)]);
+
+        // Resolve the attribute once, then test the symbols
+        var generatedCodeAttribute = compilation.GetTypeByMetadataName("System.CodeDom.Compiler.GeneratedCodeAttribute");
+        var symbol = compilation.GetTypeByMetadataName("Generated")!.GetMembers("Method").Single();
+        Assert.True(symbol.IsGeneratedCodeSymbol(generatedCodeAttribute));
+        Assert.False(compilation.GetTypeByMetadataName("Handwritten")!.IsGeneratedCodeSymbol(generatedCodeAttribute));
+        #endregion
+    }
+
+    [Fact]
+    public async Task ReadmeExample_CanReportDiagnostic()
+    {
+        var compilation = CreateCompilation("public class Sample;").AddSyntaxTrees(CSharpSyntaxTree.ParseText("public class GeneratedSample;", DefaultParseOptions, path: "GeneratedSample.g.cs"));
+        var descriptor = CreateDescriptor("MFTEST102");
+        var reported = new List<Diagnostic>();
+
+        using (var scope = await DiagnosticFilterScope.EnterAsync(TestContext.Current.CancellationToken))
+        {
+            #region Roslyn_CanReportDiagnostic
+            DiagnosticReporter.CanReportDiagnostic = (diagnostic, options, cancellationToken)
+                => diagnostic.Location.SourceTree?.IsGeneratedCode(options, cancellationToken) is not true;
+            #endregion
+
+            foreach (var symbol in new[] { GetRequiredType(compilation, "Sample"), GetRequiredType(compilation, "GeneratedSample") })
+            {
+                // A DiagnosticAnalyzer cannot be defined in this assembly (RS1041), so the context is created directly
+#pragma warning disable CS0618
+                var context = new SymbolAnalysisContext(symbol, compilation, new AnalyzerOptions([]), reported.Add, _ => true, cancellationToken: default);
+#pragma warning restore CS0618
+                context.ReportDiagnostic(descriptor, symbol);
+            }
+        }
+
+        var diagnostic = Assert.Single(reported);
+        Assert.Equal("Tests.cs", diagnostic.Location.SourceTree?.FilePath);
+    }
 
     [Fact]
     public void IsNet9OrGreater_ReturnsResultFromCoreAssemblyVersion()

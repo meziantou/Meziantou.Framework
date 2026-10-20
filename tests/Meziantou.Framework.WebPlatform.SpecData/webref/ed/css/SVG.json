@@ -143,7 +143,7 @@
     {
       "name": "path-length",
       "href": "https://w3c.github.io/svgwg/svg2-draft/paths.html#PathLengthCSSProperty",
-      "value": "none | <length> [0,∞]",
+      "value": "none | <length [0,∞]>",
       "initial": "none",
       "appliesTo": "‘path’, ‘circle’, ‘ellipse’, ‘line’, ‘polygon’, ‘polyline’, ‘rect’",
       "inherited": "no",

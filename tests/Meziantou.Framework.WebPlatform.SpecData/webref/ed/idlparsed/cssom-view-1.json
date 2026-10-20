@@ -117,6 +117,33 @@
         "partial": false,
         "href": "https://drafts.csswg.org/cssom-view-1/#dictdef-scrolltooptions"
       },
+      "ScrollResult": {
+        "fragment": "dictionary ScrollResult {\n    required boolean interrupted;\n};",
+        "type": "dictionary",
+        "name": "ScrollResult",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "interrupted",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://drafts.csswg.org/cssom-view-1/#dom-scrollresult-interrupted"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://drafts.csswg.org/cssom-view-1/#dictdef-scrollresult"
+      },
       "MediaQueryList": {
         "fragment": "[Exposed=Window]\ninterface MediaQueryList : EventTarget {\n  readonly attribute CSSOMString media;\n  readonly attribute boolean matches;\n  undefined addListener(EventListener? callback);\n  undefined removeListener(EventListener? callback);\n           attribute EventHandler onchange;\n};",
         "type": "interface",
@@ -1462,7 +1489,7 @@
     "idlExtendedNames": {
       "Window": [
         {
-          "fragment": "partial interface Window {\n    [NewObject] MediaQueryList matchMedia(CSSOMString query);\n    [SameObject, Replaceable] readonly attribute Screen screen;\n    [SameObject, Replaceable] readonly attribute VisualViewport? visualViewport;\n\n    // browsing context\n    undefined moveTo(long x, long y);\n    undefined moveBy(long x, long y);\n    undefined resizeTo(long width, long height);\n    undefined resizeBy(long x, long y);\n\n    // viewport\n    [Replaceable] readonly attribute long innerWidth;\n    [Replaceable] readonly attribute long innerHeight;\n\n    // viewport scrolling\n    [Replaceable] readonly attribute double scrollX;\n    [Replaceable] readonly attribute double pageXOffset;\n    [Replaceable] readonly attribute double scrollY;\n    [Replaceable] readonly attribute double pageYOffset;\n    Promise<undefined> scroll(optional ScrollToOptions options = {});\n    Promise<undefined> scroll(unrestricted double x, unrestricted double y);\n    Promise<undefined> scrollTo(optional ScrollToOptions options = {});\n    Promise<undefined> scrollTo(unrestricted double x, unrestricted double y);\n    Promise<undefined> scrollBy(optional ScrollToOptions options = {});\n    Promise<undefined> scrollBy(unrestricted double x, unrestricted double y);\n\n    // client\n    [Replaceable] readonly attribute long screenX;\n    [Replaceable] readonly attribute long screenLeft;\n    [Replaceable] readonly attribute long screenY;\n    [Replaceable] readonly attribute long screenTop;\n    [Replaceable] readonly attribute long outerWidth;\n    [Replaceable] readonly attribute long outerHeight;\n    [Replaceable] readonly attribute double devicePixelRatio;\n};",
+          "fragment": "partial interface Window {\n    [NewObject] MediaQueryList matchMedia(CSSOMString query);\n    [SameObject, Replaceable] readonly attribute Screen screen;\n    [SameObject, Replaceable] readonly attribute VisualViewport? visualViewport;\n\n    // browsing context\n    undefined moveTo(long x, long y);\n    undefined moveBy(long x, long y);\n    undefined resizeTo(long width, long height);\n    undefined resizeBy(long x, long y);\n\n    // viewport\n    [Replaceable] readonly attribute long innerWidth;\n    [Replaceable] readonly attribute long innerHeight;\n\n    // viewport scrolling\n    [Replaceable] readonly attribute double scrollX;\n    [Replaceable] readonly attribute double pageXOffset;\n    [Replaceable] readonly attribute double scrollY;\n    [Replaceable] readonly attribute double pageYOffset;\n    Promise<ScrollResult> scroll(optional ScrollToOptions options = {});\n    Promise<ScrollResult> scroll(unrestricted double x, unrestricted double y);\n    Promise<ScrollResult> scrollTo(optional ScrollToOptions options = {});\n    Promise<ScrollResult> scrollTo(unrestricted double x, unrestricted double y);\n    Promise<ScrollResult> scrollBy(optional ScrollToOptions options = {});\n    Promise<ScrollResult> scrollBy(unrestricted double x, unrestricted double y);\n\n    // client\n    [Replaceable] readonly attribute long screenX;\n    [Replaceable] readonly attribute long screenLeft;\n    [Replaceable] readonly attribute long screenY;\n    [Replaceable] readonly attribute long screenTop;\n    [Replaceable] readonly attribute long outerWidth;\n    [Replaceable] readonly attribute long outerHeight;\n    [Replaceable] readonly attribute double devicePixelRatio;\n};",
           "type": "interface",
           "name": "Window",
           "inheritance": null,
@@ -1915,7 +1942,7 @@
                     "generic": "",
                     "nullable": false,
                     "union": false,
-                    "idlType": "undefined"
+                    "idlType": "ScrollResult"
                   }
                 ]
               },
@@ -1959,7 +1986,7 @@
                     "generic": "",
                     "nullable": false,
                     "union": false,
-                    "idlType": "undefined"
+                    "idlType": "ScrollResult"
                   }
                 ]
               },
@@ -2017,7 +2044,7 @@
                     "generic": "",
                     "nullable": false,
                     "union": false,
-                    "idlType": "undefined"
+                    "idlType": "ScrollResult"
                   }
                 ]
               },
@@ -2061,7 +2088,7 @@
                     "generic": "",
                     "nullable": false,
                     "union": false,
-                    "idlType": "undefined"
+                    "idlType": "ScrollResult"
                   }
                 ]
               },
@@ -2119,7 +2146,7 @@
                     "generic": "",
                     "nullable": false,
                     "union": false,
-                    "idlType": "undefined"
+                    "idlType": "ScrollResult"
                   }
                 ]
               },
@@ -2163,7 +2190,7 @@
                     "generic": "",
                     "nullable": false,
                     "union": false,
-                    "idlType": "undefined"
+                    "idlType": "ScrollResult"
                   }
                 ]
               },
@@ -2582,7 +2609,7 @@
       ],
       "Element": [
         {
-          "fragment": "partial interface Element {\n  DOMRectList getClientRects();\n  [NewObject] DOMRect getBoundingClientRect();\n\n  boolean checkVisibility(optional CheckVisibilityOptions options = {});\n\n  Promise<undefined> scrollIntoView(optional (boolean or ScrollIntoViewOptions) arg = {});\n  Promise<undefined> scroll(optional ScrollToOptions options = {});\n  Promise<undefined> scroll(unrestricted double x, unrestricted double y);\n  Promise<undefined> scrollTo(optional ScrollToOptions options = {});\n  Promise<undefined> scrollTo(unrestricted double x, unrestricted double y);\n  Promise<undefined> scrollBy(optional ScrollToOptions options = {});\n  Promise<undefined> scrollBy(unrestricted double x, unrestricted double y);\n  attribute unrestricted double scrollTop;\n  attribute unrestricted double scrollLeft;\n  readonly attribute long scrollWidth;\n  readonly attribute long scrollHeight;\n  readonly attribute long clientTop;\n  readonly attribute long clientLeft;\n  readonly attribute long clientWidth;\n  readonly attribute long clientHeight;\n  readonly attribute double currentCSSZoom;\n};",
+          "fragment": "partial interface Element {\n  DOMRectList getClientRects();\n  [NewObject] DOMRect getBoundingClientRect();\n\n  boolean checkVisibility(optional CheckVisibilityOptions options = {});\n\n  Promise<ScrollResult> scrollIntoView(optional (boolean or ScrollIntoViewOptions) arg = {});\n  Promise<ScrollResult> scroll(optional ScrollToOptions options = {});\n  Promise<ScrollResult> scroll(unrestricted double x, unrestricted double y);\n  Promise<ScrollResult> scrollTo(optional ScrollToOptions options = {});\n  Promise<ScrollResult> scrollTo(unrestricted double x, unrestricted double y);\n  Promise<ScrollResult> scrollBy(optional ScrollToOptions options = {});\n  Promise<ScrollResult> scrollBy(unrestricted double x, unrestricted double y);\n  attribute unrestricted double scrollTop;\n  attribute unrestricted double scrollLeft;\n  readonly attribute long scrollWidth;\n  readonly attribute long scrollHeight;\n  readonly attribute long clientTop;\n  readonly attribute long clientLeft;\n  readonly attribute long clientWidth;\n  readonly attribute long clientHeight;\n  readonly attribute double currentCSSZoom;\n};",
           "type": "interface",
           "name": "Element",
           "inheritance": null,
@@ -2677,7 +2704,7 @@
                     "generic": "",
                     "nullable": false,
                     "union": false,
-                    "idlType": "undefined"
+                    "idlType": "ScrollResult"
                   }
                 ]
               },
@@ -2738,7 +2765,7 @@
                     "generic": "",
                     "nullable": false,
                     "union": false,
-                    "idlType": "undefined"
+                    "idlType": "ScrollResult"
                   }
                 ]
               },
@@ -2782,7 +2809,7 @@
                     "generic": "",
                     "nullable": false,
                     "union": false,
-                    "idlType": "undefined"
+                    "idlType": "ScrollResult"
                   }
                 ]
               },
@@ -2840,7 +2867,7 @@
                     "generic": "",
                     "nullable": false,
                     "union": false,
-                    "idlType": "undefined"
+                    "idlType": "ScrollResult"
                   }
                 ]
               },
@@ -2884,7 +2911,7 @@
                     "generic": "",
                     "nullable": false,
                     "union": false,
-                    "idlType": "undefined"
+                    "idlType": "ScrollResult"
                   }
                 ]
               },
@@ -2942,7 +2969,7 @@
                     "generic": "",
                     "nullable": false,
                     "union": false,
-                    "idlType": "undefined"
+                    "idlType": "ScrollResult"
                   }
                 ]
               },
@@ -2986,7 +3013,7 @@
                     "generic": "",
                     "nullable": false,
                     "union": false,
-                    "idlType": "undefined"
+                    "idlType": "ScrollResult"
                   }
                 ]
               },
@@ -3531,11 +3558,13 @@
       "ScrollToOptions": [
         "ScrollOptions"
       ],
+      "ScrollResult": [],
       "Window": [
         "MediaQueryList",
         "CSSOMString",
         "Screen",
         "VisualViewport",
+        "ScrollResult",
         "ScrollToOptions"
       ],
       "MediaQueryList": [
@@ -3577,6 +3606,7 @@
         "DOMRectList",
         "DOMRect",
         "CheckVisibilityOptions",
+        "ScrollResult",
         "ScrollIntoViewOptions",
         "ScrollToOptions",
         "GeometryUtils"

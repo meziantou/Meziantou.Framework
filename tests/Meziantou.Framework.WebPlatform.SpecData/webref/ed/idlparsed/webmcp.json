@@ -19,7 +19,7 @@
     },
     "idlNames": {
       "ModelContext": {
-        "fragment": "[Exposed=Window, SecureContext]\ninterface ModelContext : EventTarget {\n  Promise<undefined> registerTool(ModelContextTool tool, optional ModelContextRegisterToolOptions options = {});\n  Promise<sequence<RegisteredTool>> getTools(optional ModelContextGetToolOptions options = {});\n  Promise<DOMString> executeTool(RegisteredTool tool, optional any inputObject, optional ModelContextExecuteToolOptions options = {});\n\n  attribute EventHandler ontoolchange;\n  attribute EventHandler ontoolactivated;\n  attribute EventHandler ontoolcancel;\n};",
+        "fragment": "[Exposed=Window, SecureContext]\ninterface ModelContext : EventTarget {\n  Promise<undefined> registerTool(ModelContextTool tool, optional ModelContextRegisterToolOptions options = {});\n  Promise<sequence<RegisteredTool>> getTools(optional ModelContextGetToolOptions options = {});\n  Promise<DOMString> executeTool(RegisteredTool tool, optional object inputObject, optional ModelContextExecuteToolOptions options = {});\n\n  attribute EventHandler ontoolchange;\n  attribute EventHandler ontoolactivated;\n  attribute EventHandler ontoolcancel;\n};",
         "type": "interface",
         "name": "ModelContext",
         "inheritance": "EventTarget",
@@ -184,7 +184,7 @@
                   "generic": "",
                   "nullable": false,
                   "union": false,
-                  "idlType": "any"
+                  "idlType": "object"
                 },
                 "default": null,
                 "optional": true,

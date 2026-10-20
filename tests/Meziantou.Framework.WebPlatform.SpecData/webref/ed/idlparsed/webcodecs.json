@@ -1767,7 +1767,7 @@
         "href": "https://w3c.github.io/webcodecs/#dictdef-videoencodersupport"
       },
       "AudioDecoderConfig": {
-        "fragment": "dictionary AudioDecoderConfig {\n  required DOMString codec;\n  [EnforceRange] required unsigned long sampleRate;\n  [EnforceRange] required unsigned long numberOfChannels;\n  AllowSharedBufferSource description;\n};",
+        "fragment": "dictionary AudioDecoderConfig {\n  required DOMString codec;\n  required [EnforceRange] unsigned long sampleRate;\n  required [EnforceRange] unsigned long numberOfChannels;\n  AllowSharedBufferSource description;\n};",
         "type": "dictionary",
         "name": "AudioDecoderConfig",
         "inheritance": null,
@@ -1791,17 +1791,17 @@
           {
             "type": "field",
             "name": "sampleRate",
-            "extAttrs": [
-              {
-                "type": "extended-attribute",
-                "name": "EnforceRange",
-                "rhs": null,
-                "arguments": []
-              }
-            ],
+            "extAttrs": [],
             "idlType": {
               "type": "dictionary-type",
-              "extAttrs": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
               "generic": "",
               "nullable": false,
               "union": false,
@@ -1814,17 +1814,17 @@
           {
             "type": "field",
             "name": "numberOfChannels",
-            "extAttrs": [
-              {
-                "type": "extended-attribute",
-                "name": "EnforceRange",
-                "rhs": null,
-                "arguments": []
-              }
-            ],
+            "extAttrs": [],
             "idlType": {
               "type": "dictionary-type",
-              "extAttrs": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
               "generic": "",
               "nullable": false,
               "union": false,
@@ -2083,7 +2083,7 @@
         "href": "https://w3c.github.io/webcodecs/#dictdef-videodecoderconfig"
       },
       "AudioEncoderConfig": {
-        "fragment": "dictionary AudioEncoderConfig {\n  required DOMString codec;\n  [EnforceRange] required unsigned long sampleRate;\n  [EnforceRange] required unsigned long numberOfChannels;\n  [EnforceRange] unsigned long long bitrate;\n  BitrateMode bitrateMode = \"variable\";\n};",
+        "fragment": "dictionary AudioEncoderConfig {\n  required DOMString codec;\n  required [EnforceRange] unsigned long sampleRate;\n  required [EnforceRange] unsigned long numberOfChannels;\n  [EnforceRange] unsigned long long bitrate;\n  BitrateMode bitrateMode = \"variable\";\n};",
         "type": "dictionary",
         "name": "AudioEncoderConfig",
         "inheritance": null,
@@ -2107,17 +2107,17 @@
           {
             "type": "field",
             "name": "sampleRate",
-            "extAttrs": [
-              {
-                "type": "extended-attribute",
-                "name": "EnforceRange",
-                "rhs": null,
-                "arguments": []
-              }
-            ],
+            "extAttrs": [],
             "idlType": {
               "type": "dictionary-type",
-              "extAttrs": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
               "generic": "",
               "nullable": false,
               "union": false,
@@ -2130,17 +2130,17 @@
           {
             "type": "field",
             "name": "numberOfChannels",
-            "extAttrs": [
-              {
-                "type": "extended-attribute",
-                "name": "EnforceRange",
-                "rhs": null,
-                "arguments": []
-              }
-            ],
+            "extAttrs": [],
             "idlType": {
               "type": "dictionary-type",
-              "extAttrs": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
               "generic": "",
               "nullable": false,
               "union": false,
@@ -2198,7 +2198,7 @@
         "href": "https://w3c.github.io/webcodecs/#dictdef-audioencoderconfig"
       },
       "VideoEncoderConfig": {
-        "fragment": "dictionary VideoEncoderConfig {\n  required DOMString codec;\n  [EnforceRange] required unsigned long width;\n  [EnforceRange] required unsigned long height;\n  [EnforceRange] unsigned long displayWidth;\n  [EnforceRange] unsigned long displayHeight;\n  [EnforceRange] unsigned long long bitrate;\n  double framerate;\n  HardwareAcceleration hardwareAcceleration = \"no-preference\";\n  AlphaOption alpha = \"discard\";\n  DOMString scalabilityMode;\n  VideoEncoderBitrateMode bitrateMode = \"variable\";\n  LatencyMode latencyMode = \"quality\";\n  DOMString contentHint;\n};",
+        "fragment": "dictionary VideoEncoderConfig {\n  required DOMString codec;\n  required [EnforceRange] unsigned long width;\n  required [EnforceRange] unsigned long height;\n  [EnforceRange] unsigned long displayWidth;\n  [EnforceRange] unsigned long displayHeight;\n  [EnforceRange] unsigned long long bitrate;\n  double framerate;\n  HardwareAcceleration hardwareAcceleration = \"no-preference\";\n  AlphaOption alpha = \"discard\";\n  DOMString scalabilityMode;\n  VideoEncoderBitrateMode bitrateMode = \"variable\";\n  LatencyMode latencyMode = \"quality\";\n  DOMString contentHint;\n};",
         "type": "dictionary",
         "name": "VideoEncoderConfig",
         "inheritance": null,
@@ -2222,17 +2222,17 @@
           {
             "type": "field",
             "name": "width",
-            "extAttrs": [
-              {
-                "type": "extended-attribute",
-                "name": "EnforceRange",
-                "rhs": null,
-                "arguments": []
-              }
-            ],
+            "extAttrs": [],
             "idlType": {
               "type": "dictionary-type",
-              "extAttrs": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
               "generic": "",
               "nullable": false,
               "union": false,
@@ -2245,17 +2245,17 @@
           {
             "type": "field",
             "name": "height",
-            "extAttrs": [
-              {
-                "type": "extended-attribute",
-                "name": "EnforceRange",
-                "rhs": null,
-                "arguments": []
-              }
-            ],
+            "extAttrs": [],
             "idlType": {
               "type": "dictionary-type",
-              "extAttrs": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
               "generic": "",
               "nullable": false,
               "union": false,
@@ -2791,7 +2791,7 @@
         "href": "https://w3c.github.io/webcodecs/#encodedaudiochunk"
       },
       "EncodedAudioChunkInit": {
-        "fragment": "dictionary EncodedAudioChunkInit {\n  required EncodedAudioChunkType type;\n  [EnforceRange] required long long timestamp;    // microseconds\n  [EnforceRange] unsigned long long duration;     // microseconds\n  required AllowSharedBufferSource data;\n  sequence<ArrayBuffer> transfer = [];\n};",
+        "fragment": "dictionary EncodedAudioChunkInit {\n  required EncodedAudioChunkType type;\n  required [EnforceRange] long long timestamp;    // microseconds\n  [EnforceRange] unsigned long long duration;     // microseconds\n  required AllowSharedBufferSource data;\n  sequence<ArrayBuffer> transfer = [];\n};",
         "type": "dictionary",
         "name": "EncodedAudioChunkInit",
         "inheritance": null,
@@ -2815,17 +2815,17 @@
           {
             "type": "field",
             "name": "timestamp",
-            "extAttrs": [
-              {
-                "type": "extended-attribute",
-                "name": "EnforceRange",
-                "rhs": null,
-                "arguments": []
-              }
-            ],
+            "extAttrs": [],
             "idlType": {
               "type": "dictionary-type",
-              "extAttrs": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
               "generic": "",
               "nullable": false,
               "union": false,
@@ -3081,7 +3081,7 @@
         "href": "https://w3c.github.io/webcodecs/#encodedvideochunk"
       },
       "EncodedVideoChunkInit": {
-        "fragment": "dictionary EncodedVideoChunkInit {\n  required EncodedVideoChunkType type;\n  [EnforceRange] required long long timestamp;        // microseconds\n  [EnforceRange] unsigned long long duration;         // microseconds\n  required AllowSharedBufferSource data;\n  sequence<ArrayBuffer> transfer = [];\n};",
+        "fragment": "dictionary EncodedVideoChunkInit {\n  required EncodedVideoChunkType type;\n  required [EnforceRange] long long timestamp;        // microseconds\n  [EnforceRange] unsigned long long duration;         // microseconds\n  required AllowSharedBufferSource data;\n  sequence<ArrayBuffer> transfer = [];\n};",
         "type": "dictionary",
         "name": "EncodedVideoChunkInit",
         "inheritance": null,
@@ -3105,17 +3105,17 @@
           {
             "type": "field",
             "name": "timestamp",
-            "extAttrs": [
-              {
-                "type": "extended-attribute",
-                "name": "EnforceRange",
-                "rhs": null,
-                "arguments": []
-              }
-            ],
+            "extAttrs": [],
             "idlType": {
               "type": "dictionary-type",
-              "extAttrs": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
               "generic": "",
               "nullable": false,
               "union": false,
@@ -3490,7 +3490,7 @@
         "href": "https://w3c.github.io/webcodecs/#audiodata"
       },
       "AudioDataInit": {
-        "fragment": "dictionary AudioDataInit {\n  required AudioSampleFormat format;\n  required float sampleRate;\n  [EnforceRange] required unsigned long numberOfFrames;\n  [EnforceRange] required unsigned long numberOfChannels;\n  [EnforceRange] required long long timestamp;  // microseconds\n  required AllowSharedBufferSource data;\n  sequence<ArrayBuffer> transfer = [];\n};",
+        "fragment": "dictionary AudioDataInit {\n  required AudioSampleFormat format;\n  required float sampleRate;\n  required [EnforceRange] unsigned long numberOfFrames;\n  required [EnforceRange] unsigned long numberOfChannels;\n  required [EnforceRange] long long timestamp;  // microseconds\n  required AllowSharedBufferSource data;\n  sequence<ArrayBuffer> transfer = [];\n};",
         "type": "dictionary",
         "name": "AudioDataInit",
         "inheritance": null,
@@ -3530,17 +3530,17 @@
           {
             "type": "field",
             "name": "numberOfFrames",
-            "extAttrs": [
-              {
-                "type": "extended-attribute",
-                "name": "EnforceRange",
-                "rhs": null,
-                "arguments": []
-              }
-            ],
+            "extAttrs": [],
             "idlType": {
               "type": "dictionary-type",
-              "extAttrs": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
               "generic": "",
               "nullable": false,
               "union": false,
@@ -3553,17 +3553,17 @@
           {
             "type": "field",
             "name": "numberOfChannels",
-            "extAttrs": [
-              {
-                "type": "extended-attribute",
-                "name": "EnforceRange",
-                "rhs": null,
-                "arguments": []
-              }
-            ],
+            "extAttrs": [],
             "idlType": {
               "type": "dictionary-type",
-              "extAttrs": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
               "generic": "",
               "nullable": false,
               "union": false,
@@ -3576,17 +3576,17 @@
           {
             "type": "field",
             "name": "timestamp",
-            "extAttrs": [
-              {
-                "type": "extended-attribute",
-                "name": "EnforceRange",
-                "rhs": null,
-                "arguments": []
-              }
-            ],
+            "extAttrs": [],
             "idlType": {
               "type": "dictionary-type",
-              "extAttrs": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
               "generic": "",
               "nullable": false,
               "union": false,
@@ -3646,7 +3646,7 @@
         "href": "https://w3c.github.io/webcodecs/#dictdef-audiodatainit"
       },
       "AudioDataCopyToOptions": {
-        "fragment": "dictionary AudioDataCopyToOptions {\n  [EnforceRange] required unsigned long planeIndex;\n  [EnforceRange] unsigned long frameOffset = 0;\n  [EnforceRange] unsigned long frameCount;\n  AudioSampleFormat format;\n};",
+        "fragment": "dictionary AudioDataCopyToOptions {\n  required [EnforceRange] unsigned long planeIndex;\n  [EnforceRange] unsigned long frameOffset = 0;\n  [EnforceRange] unsigned long frameCount;\n  AudioSampleFormat format;\n};",
         "type": "dictionary",
         "name": "AudioDataCopyToOptions",
         "inheritance": null,
@@ -3654,17 +3654,17 @@
           {
             "type": "field",
             "name": "planeIndex",
-            "extAttrs": [
-              {
-                "type": "extended-attribute",
-                "name": "EnforceRange",
-                "rhs": null,
-                "arguments": []
-              }
-            ],
+            "extAttrs": [],
             "idlType": {
               "type": "dictionary-type",
-              "extAttrs": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
               "generic": "",
               "nullable": false,
               "union": false,
@@ -4834,7 +4834,7 @@
         "href": "https://w3c.github.io/webcodecs/#dictdef-videoframecopytooptions"
       },
       "PlaneLayout": {
-        "fragment": "dictionary PlaneLayout {\n  [EnforceRange] required unsigned long offset;\n  [EnforceRange] required unsigned long stride;\n};",
+        "fragment": "dictionary PlaneLayout {\n  required [EnforceRange] unsigned long offset;\n  required [EnforceRange] unsigned long stride;\n};",
         "type": "dictionary",
         "name": "PlaneLayout",
         "inheritance": null,
@@ -4842,17 +4842,17 @@
           {
             "type": "field",
             "name": "offset",
-            "extAttrs": [
-              {
-                "type": "extended-attribute",
-                "name": "EnforceRange",
-                "rhs": null,
-                "arguments": []
-              }
-            ],
+            "extAttrs": [],
             "idlType": {
               "type": "dictionary-type",
-              "extAttrs": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
               "generic": "",
               "nullable": false,
               "union": false,
@@ -4865,17 +4865,17 @@
           {
             "type": "field",
             "name": "stride",
-            "extAttrs": [
-              {
-                "type": "extended-attribute",
-                "name": "EnforceRange",
-                "rhs": null,
-                "arguments": []
-              }
-            ],
+            "extAttrs": [],
             "idlType": {
               "type": "dictionary-type",
-              "extAttrs": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
               "generic": "",
               "nullable": false,
               "union": false,

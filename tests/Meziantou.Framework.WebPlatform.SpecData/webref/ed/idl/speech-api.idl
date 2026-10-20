@@ -22,7 +22,7 @@ interface SpeechRecognition : EventTarget {
     undefined start(MediaStreamTrack audioTrack);
     undefined stop();
     undefined abort();
-    static Promise<AvailabilityStatus> available(SpeechRecognitionOptions options);
+    static Promise<SpeechRecognitionAvailabilityStatus> available(SpeechRecognitionOptions options);
     static Promise<boolean> install(SpeechRecognitionOptions options);
 
     // event methods
@@ -62,7 +62,7 @@ enum SpeechRecognitionErrorCode {
     "phrases-not-supported"
 };
 
-enum AvailabilityStatus {
+enum SpeechRecognitionAvailabilityStatus {
     "unavailable",
     "downloadable",
     "downloading",

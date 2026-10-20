@@ -30,7 +30,7 @@
     },
     "idlNames": {
       "SpeechRecognition": {
-        "fragment": "[SecureContext, Exposed=Window]\ninterface SpeechRecognition : EventTarget {\n    constructor();\n\n    // recognition parameters\n    attribute SpeechGrammarList grammars;\n    attribute DOMString lang;\n    attribute boolean continuous;\n    attribute boolean interimResults;\n    attribute boolean unspokenPunctuation;\n    attribute unsigned long maxAlternatives;\n    attribute boolean processLocally;\n    attribute ObservableArray<SpeechRecognitionPhrase> phrases;\n\n    // methods to drive the speech interaction\n    undefined start();\n    undefined start(MediaStreamTrack audioTrack);\n    undefined stop();\n    undefined abort();\n    static Promise<AvailabilityStatus> available(SpeechRecognitionOptions options);\n    static Promise<boolean> install(SpeechRecognitionOptions options);\n\n    // event methods\n    attribute EventHandler onaudiostart;\n    attribute EventHandler onsoundstart;\n    attribute EventHandler onspeechstart;\n    attribute EventHandler onspeechend;\n    attribute EventHandler onsoundend;\n    attribute EventHandler onaudioend;\n    attribute EventHandler onresult;\n    attribute EventHandler onnomatch;\n    attribute EventHandler onerror;\n    attribute EventHandler onstart;\n    attribute EventHandler onend;\n};",
+        "fragment": "[SecureContext, Exposed=Window]\ninterface SpeechRecognition : EventTarget {\n    constructor();\n\n    // recognition parameters\n    attribute SpeechGrammarList grammars;\n    attribute DOMString lang;\n    attribute boolean continuous;\n    attribute boolean interimResults;\n    attribute boolean unspokenPunctuation;\n    attribute unsigned long maxAlternatives;\n    attribute boolean processLocally;\n    attribute ObservableArray<SpeechRecognitionPhrase> phrases;\n\n    // methods to drive the speech interaction\n    undefined start();\n    undefined start(MediaStreamTrack audioTrack);\n    undefined stop();\n    undefined abort();\n    static Promise<SpeechRecognitionAvailabilityStatus> available(SpeechRecognitionOptions options);\n    static Promise<boolean> install(SpeechRecognitionOptions options);\n\n    // event methods\n    attribute EventHandler onaudiostart;\n    attribute EventHandler onsoundstart;\n    attribute EventHandler onspeechstart;\n    attribute EventHandler onspeechend;\n    attribute EventHandler onsoundend;\n    attribute EventHandler onaudioend;\n    attribute EventHandler onresult;\n    attribute EventHandler onnomatch;\n    attribute EventHandler onerror;\n    attribute EventHandler onstart;\n    attribute EventHandler onend;\n};",
         "type": "interface",
         "name": "SpeechRecognition",
         "inheritance": "EventTarget",
@@ -275,7 +275,7 @@
                   "generic": "",
                   "nullable": false,
                   "union": false,
-                  "idlType": "AvailabilityStatus"
+                  "idlType": "SpeechRecognitionAvailabilityStatus"
                 }
               ]
             },
@@ -687,34 +687,34 @@
         "extAttrs": [],
         "href": "https://webaudio.github.io/web-speech-api/#enumdef-speechrecognitionerrorcode"
       },
-      "AvailabilityStatus": {
-        "fragment": "enum AvailabilityStatus {\n    \"unavailable\",\n    \"downloadable\",\n    \"downloading\",\n    \"available\"\n};",
+      "SpeechRecognitionAvailabilityStatus": {
+        "fragment": "enum SpeechRecognitionAvailabilityStatus {\n    \"unavailable\",\n    \"downloadable\",\n    \"downloading\",\n    \"available\"\n};",
         "type": "enum",
-        "name": "AvailabilityStatus",
+        "name": "SpeechRecognitionAvailabilityStatus",
         "values": [
           {
             "type": "enum-value",
             "value": "unavailable",
-            "href": "https://webaudio.github.io/web-speech-api/#dom-availabilitystatus-unavailable"
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionavailabilitystatus-unavailable"
           },
           {
             "type": "enum-value",
             "value": "downloadable",
-            "href": "https://webaudio.github.io/web-speech-api/#dom-availabilitystatus-downloadable"
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionavailabilitystatus-downloadable"
           },
           {
             "type": "enum-value",
             "value": "downloading",
-            "href": "https://webaudio.github.io/web-speech-api/#dom-availabilitystatus-downloading"
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionavailabilitystatus-downloading"
           },
           {
             "type": "enum-value",
             "value": "available",
-            "href": "https://webaudio.github.io/web-speech-api/#dom-availabilitystatus-available"
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionavailabilitystatus-available"
           }
         ],
         "extAttrs": [],
-        "href": "https://webaudio.github.io/web-speech-api/#enumdef-availabilitystatus"
+        "href": "https://webaudio.github.io/web-speech-api/#enumdef-speechrecognitionavailabilitystatus"
       },
       "SpeechRecognitionErrorEvent": {
         "fragment": "[SecureContext, Exposed=Window]\ninterface SpeechRecognitionErrorEvent : Event {\n    constructor(DOMString type, SpeechRecognitionErrorEventInit eventInitDict);\n    readonly attribute SpeechRecognitionErrorCode error;\n    readonly attribute DOMString message;\n};",
@@ -2584,7 +2584,7 @@
         "SpeechGrammarList",
         "SpeechRecognitionPhrase",
         "MediaStreamTrack",
-        "AvailabilityStatus",
+        "SpeechRecognitionAvailabilityStatus",
         "SpeechRecognitionOptions",
         "EventHandler"
       ],

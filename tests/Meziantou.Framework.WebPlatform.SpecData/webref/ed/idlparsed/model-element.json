@@ -14,7 +14,7 @@
     },
     "idlNames": {
       "HTMLModelElement": {
-        "fragment": "[Exposed=Window]\ninterface HTMLModelElement : HTMLElement {\n\n  readonly attribute Promise<HTMLModelElement> ready;\n  readonly attribute DOMPointReadOnly boundingBoxCenter;\n  readonly attribute DOMPointReadOnly boundingBoxExtents;\n\n  attribute DOMMatrixReadOnly entityTransform;\n\n  attribute USVString environmentMap;\n  readonly attribute Promise<undefined> environmentMapReady;\n\n  [Reflect=stagemode] attribute DOMString stageMode;\n};",
+        "fragment": "[Exposed=Window]\ninterface HTMLModelElement : HTMLElement {\n  readonly attribute Promise<HTMLModelElement> ready;\n  readonly attribute DOMPointReadOnly boundingBoxCenter;\n  readonly attribute DOMPointReadOnly boundingBoxExtents;\n\n  attribute DOMMatrixReadOnly entityTransform;\n\n  attribute USVString environmentMap;\n  readonly attribute Promise<undefined> environmentMapReady;\n\n  [Reflect=stagemode] attribute DOMString stageMode;\n};",
         "type": "interface",
         "name": "HTMLModelElement",
         "inheritance": "HTMLElement",
@@ -172,7 +172,7 @@
           }
         ],
         "partial": false,
-        "href": "https://immersive-web.github.io/model-element/#dom-htmlmodelelement"
+        "href": "https://immersive-web.github.io/model-element/#htmlmodelelement"
       }
     },
     "idlExtendedNames": {},

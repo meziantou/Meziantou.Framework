@@ -15,7 +15,7 @@
     },
     "idlNames": {
       "PerformanceLongAnimationFrameTiming": {
-        "fragment": "[Exposed=Window]\ninterface PerformanceLongAnimationFrameTiming : PerformanceEntry {\n    /* Overloading PerformanceEntry */\n    readonly attribute DOMHighResTimeStamp startTime;\n    readonly attribute DOMHighResTimeStamp duration;\n    readonly attribute DOMString name;\n    readonly attribute DOMString entryType;\n\n    readonly attribute DOMHighResTimeStamp renderStart;\n    readonly attribute DOMHighResTimeStamp styleAndLayoutStart;\n    readonly attribute DOMHighResTimeStamp blockingDuration;\n    readonly attribute DOMHighResTimeStamp firstUIEventTimestamp;\n    [SameObject] readonly attribute FrozenArray<PerformanceScriptTiming> scripts;\n    [Default] object toJSON();\n};",
+        "fragment": "[Exposed=Window]\ninterface PerformanceLongAnimationFrameTiming : PerformanceEntry {\n    /* Overloading PerformanceEntry */\n    readonly attribute DOMHighResTimeStamp startTime;\n    readonly attribute DOMHighResTimeStamp duration;\n    readonly attribute DOMString name;\n    readonly attribute DOMString entryType;\n\n    readonly attribute DOMHighResTimeStamp renderStart;\n    readonly attribute DOMHighResTimeStamp styleAndLayoutStart;\n    readonly attribute DOMHighResTimeStamp styleDuration;\n    readonly attribute DOMHighResTimeStamp layoutDuration;\n    readonly attribute DOMHighResTimeStamp blockingDuration;\n    readonly attribute DOMHighResTimeStamp firstUIEventTimestamp;\n    [SameObject] readonly attribute FrozenArray<PerformanceScriptTiming> scripts;\n    [Default] object toJSON();\n};",
         "type": "interface",
         "name": "PerformanceLongAnimationFrameTiming",
         "inheritance": "PerformanceEntry",
@@ -115,6 +115,38 @@
             "special": "",
             "readonly": true,
             "href": "https://w3c.github.io/long-animation-frames/#dom-performancelonganimationframetiming-styleandlayoutstart"
+          },
+          {
+            "type": "attribute",
+            "name": "styleDuration",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/long-animation-frames/#dom-performancelonganimationframetiming-styleduration"
+          },
+          {
+            "type": "attribute",
+            "name": "layoutDuration",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/long-animation-frames/#dom-performancelonganimationframetiming-layoutduration"
           },
           {
             "type": "attribute",
@@ -292,7 +324,7 @@
         "href": "https://w3c.github.io/long-animation-frames/#enumdef-scriptwindowattribution"
       },
       "PerformanceScriptTiming": {
-        "fragment": "[Exposed=Window]\ninterface PerformanceScriptTiming : PerformanceEntry {\n    /* Overloading PerformanceEntry */\n    readonly attribute DOMHighResTimeStamp startTime;\n    readonly attribute DOMHighResTimeStamp duration;\n    readonly attribute DOMString name;\n    readonly attribute DOMString entryType;\n\n    readonly attribute ScriptInvokerType invokerType;\n    readonly attribute DOMString invoker;\n    readonly attribute DOMHighResTimeStamp executionStart;\n    readonly attribute DOMString sourceURL;\n    readonly attribute DOMString sourceFunctionName;\n    readonly attribute long long sourceCharPosition;\n    readonly attribute DOMHighResTimeStamp pauseDuration;\n    readonly attribute DOMHighResTimeStamp forcedStyleAndLayoutDuration;\n    readonly attribute Window? window;\n    readonly attribute ScriptWindowAttribution windowAttribution;\n    [Default] object toJSON();\n};",
+        "fragment": "[Exposed=Window]\ninterface PerformanceScriptTiming : PerformanceEntry {\n    /* Overloading PerformanceEntry */\n    readonly attribute DOMHighResTimeStamp startTime;\n    readonly attribute DOMHighResTimeStamp duration;\n    readonly attribute DOMString name;\n    readonly attribute DOMString entryType;\n\n    readonly attribute ScriptInvokerType invokerType;\n    readonly attribute DOMString invoker;\n    readonly attribute DOMHighResTimeStamp executionStart;\n    readonly attribute DOMString sourceURL;\n    readonly attribute DOMString sourceFunctionName;\n    readonly attribute long long sourceCharPosition;\n    readonly attribute long long sourceLine;\n    readonly attribute long long sourceColumn;\n    readonly attribute DOMHighResTimeStamp pauseDuration;\n    readonly attribute DOMHighResTimeStamp forcedStyleAndLayoutDuration;\n    readonly attribute DOMHighResTimeStamp forcedStyleDuration;\n    readonly attribute DOMHighResTimeStamp forcedLayoutDuration;\n    readonly attribute Window? window;\n    readonly attribute ScriptWindowAttribution windowAttribution;\n    [Default] object toJSON();\n};",
         "type": "interface",
         "name": "PerformanceScriptTiming",
         "inheritance": "PerformanceEntry",
@@ -459,6 +491,38 @@
           },
           {
             "type": "attribute",
+            "name": "sourceLine",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/long-animation-frames/#dom-performancescripttiming-sourceline"
+          },
+          {
+            "type": "attribute",
+            "name": "sourceColumn",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "long long"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/long-animation-frames/#dom-performancescripttiming-sourcecolumn"
+          },
+          {
+            "type": "attribute",
             "name": "pauseDuration",
             "idlType": {
               "type": "attribute-type",
@@ -488,6 +552,38 @@
             "special": "",
             "readonly": true,
             "href": "https://w3c.github.io/long-animation-frames/#dom-performancescripttiming-forcedstyleandlayoutduration"
+          },
+          {
+            "type": "attribute",
+            "name": "forcedStyleDuration",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/long-animation-frames/#dom-performancescripttiming-forcedstyleduration"
+          },
+          {
+            "type": "attribute",
+            "name": "forcedLayoutDuration",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/long-animation-frames/#dom-performancescripttiming-forcedlayoutduration"
           },
           {
             "type": "attribute",

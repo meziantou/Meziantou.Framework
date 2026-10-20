@@ -68,7 +68,7 @@
         "href": "https://wicg.github.io/install-element/#dom-webinstallresult"
       },
       "HTMLInstallElement": {
-        "fragment": "[Exposed=Window]\ninterface HTMLInstallElement : HTMLElement {\n  [HTMLConstructor] constructor();\n\n  [CEReactions] attribute USVString? manifest;\n  [CEReactions] attribute USVString? manifestId;\n  attribute EventHandler oninstallresult;\n};",
+        "fragment": "[Exposed=Window]\ninterface HTMLInstallElement : HTMLElement {\n  [HTMLConstructor] constructor();\n\n  [CEReactions, ReflectURL] attribute USVString manifest;\n  [CEReactions, ReflectURL] attribute USVString manifestId;\n};",
         "type": "interface",
         "name": "HTMLInstallElement",
         "inheritance": "HTMLElement",
@@ -93,7 +93,7 @@
               "type": "attribute-type",
               "extAttrs": [],
               "generic": "",
-              "nullable": true,
+              "nullable": false,
               "union": false,
               "idlType": "USVString"
             },
@@ -101,6 +101,12 @@
               {
                 "type": "extended-attribute",
                 "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "ReflectURL",
                 "rhs": null,
                 "arguments": []
               }
@@ -116,7 +122,7 @@
               "type": "attribute-type",
               "extAttrs": [],
               "generic": "",
-              "nullable": true,
+              "nullable": false,
               "union": false,
               "idlType": "USVString"
             },
@@ -126,27 +132,17 @@
                 "name": "CEReactions",
                 "rhs": null,
                 "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "ReflectURL",
+                "rhs": null,
+                "arguments": []
               }
             ],
             "special": "",
             "readonly": false,
             "href": "https://wicg.github.io/install-element/#dom-htmlinstallelement-manifestid"
-          },
-          {
-            "type": "attribute",
-            "name": "oninstallresult",
-            "idlType": {
-              "type": "attribute-type",
-              "extAttrs": [],
-              "generic": "",
-              "nullable": false,
-              "union": false,
-              "idlType": "EventHandler"
-            },
-            "extAttrs": [],
-            "special": "",
-            "readonly": false,
-            "href": "https://wicg.github.io/install-element/#dom-htmlinstallelement-oninstallresult"
           }
         ],
         "extAttrs": [
@@ -164,7 +160,7 @@
         "href": "https://wicg.github.io/install-element/#dom-htmlinstallelement"
       },
       "InstallResult": {
-        "fragment": "enum InstallResult {\n  \"success\",\n  \"aborted\",\n  \"invalid_data\"\n};",
+        "fragment": "enum InstallResult {\n  \"success\",\n  \"aborted\",\n  \"invalid-data\"\n};",
         "type": "enum",
         "name": "InstallResult",
         "values": [
@@ -180,8 +176,8 @@
           },
           {
             "type": "enum-value",
-            "value": "invalid_data",
-            "href": "https://wicg.github.io/install-element/#dom-installresult-invalid_data"
+            "value": "invalid-data",
+            "href": "https://wicg.github.io/install-element/#dom-installresult-invalid-data"
           }
         ],
         "extAttrs": [],
@@ -376,6 +372,34 @@
           "partial": true
         }
       ],
+      "GlobalEventHandlers": [
+        {
+          "fragment": "partial interface mixin GlobalEventHandlers {\n  attribute EventHandler oninstallresult;\n};",
+          "type": "interface mixin",
+          "name": "GlobalEventHandlers",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "oninstallresult",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "EventHandler"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://wicg.github.io/install-element/#dom-globaleventhandlers-oninstallresult"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
       "HTMLInstallElement": [
         {
           "fragment": "HTMLInstallElement includes ActivationBlockersMixin;",
@@ -402,8 +426,10 @@
       "WebInstallResult": [],
       "HTMLInstallElement": [
         "HTMLElement",
-        "EventHandler",
         "ActivationBlockersMixin"
+      ],
+      "GlobalEventHandlers": [
+        "EventHandler"
       ],
       "InstallResultEvent": [
         "Event",
@@ -418,6 +444,7 @@
     "externalDependencies": [
       "Navigator",
       "HTMLElement",
+      "GlobalEventHandlers",
       "EventHandler",
       "Event",
       "EventInit"

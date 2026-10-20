@@ -7,7 +7,7 @@
     {
       "name": "content",
       "href": "https://drafts.csswg.org/css-content-3/#propdef-content",
-      "value": "normal | none | [ <content-replacement> | <content-list> ] [/ [ <string> | <counter> | <attr()> ]+ ]?",
+      "value": "normal | none | [ <content-replacement> | <content-list> ] [/ <alt-text> ]?",
       "initial": "normal",
       "appliesTo": "all elements, tree-abiding pseudo-elements, and page margin boxes",
       "inherited": "no",
@@ -18,72 +18,38 @@
       "values": [
         {
           "name": "normal",
-          "prose": "For an element or page margin box, this computes to contents. For ::before and ::after, this computes to none. For ::marker, ::placeholder, and ::file-selector-button, this computes to itself (normal).",
+          "prose": "For a regular element or page-margin box, this computes to contents. For ::before and ::after, this computes to none. For ::marker, ::placeholder, and ::file-selector-button, this computes to itself (normal).",
           "href": "https://drafts.csswg.org/css-content-3/#valdef-content-normal",
           "type": "value",
           "value": "normal"
         },
         {
           "name": "none",
-          "prose": "On elements, this behaves as normal. On pseudo-elements it inhibits the creation of the pseudo-element as if it had display: none. In neither case does it prevent any pseudo-elements which have this element or pseudo-element as an originating element from being generated.",
+          "prose": "On regular elements, this behaves as normal. On pseudo-elements it inhibits the creation of the pseudo-element as if it had display: none. In neither case does it prevent any pseudo-elements which have this element or pseudo-element as an originating element from being generated.",
           "href": "https://drafts.csswg.org/css-content-3/#valdef-content-none",
           "type": "value",
           "value": "none"
         },
         {
           "name": "<content-replacement>",
-          "value": "<image>",
-          "href": "https://drafts.csswg.org/css-content-3/#typedef-content-content-replacement",
-          "type": "type"
+          "prose": "Makes the element or pseudo-element a replaced element, filled with the specified <image>. (In effect, it becomes equivalent to an HTML img element.) Its normal contents are suppressed and do not generate boxes, as if they were display: none. If the <image> represents an invalid image, the behavior is undefined. Possible ways of handling an invalid image include a) render it as an image with zero natural width and height, filled with transparent black, b) render a broken image icon, c) render the alt text, if any, or the contents, if not. [Issue #218] This value has historically been treated as <content-list> on ::before and ::after. There might be a Web-compat requirement on this, so these pseudo-elements might need an exception. It might be possible to limit this exception to cases without \"alt text\". [Issue #2889]",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-content-content-replacement",
+          "type": "value",
+          "value": "<content-replacement>"
         },
         {
           "name": "<content-list>",
-          "prose": "Replaces the element’s contents with one or more anonymous inline boxes corresponding to the specified values, in the order specified. Its normal contents are suppressed and do not generate boxes, as if they were display: none. Each value contributes an inline box to the element’s contents. For <image>, this is an inline anonymous replaced element; for the others, it’s an anonymous inline run of text. If an <image> represents an invalid image, the user agent must do one of the following: \"Skip\" the <image>, generating nothing for it. Display some indication that the image can’t be displayed in place of the <image>, such as a \"broken image\" icon. This specification intentionally does not define which behavior a user agent must use, but it must use one or the other consistently.",
-          "href": "https://drafts.csswg.org/css-content-3/#typedef-content-content-list",
-          "type": "type",
-          "value": "[ <string> | <image> | <attr()> | contents | <quote> | <leader()> | <target> | <string()> | <content()> | <counter> | <symbolic-counter-style> ]+",
-          "values": [
-            {
-              "name": "<string>",
-              "prose": "Represents an anonymous inline box filled with the specified text.",
-              "href": "https://drafts.csswg.org/css-content-3/#valdef-content-string",
-              "type": "value",
-              "value": "<string>"
-            },
-            {
-              "name": "attr()",
-              "href": "https://drafts.csswg.org/css-content-3/#valdef-content-attr",
-              "type": "value",
-              "value": "attr()"
-            },
-            {
-              "name": "<image>",
-              "prose": "Represents an anonymous inline replaced element filled with the specified <image>. If the <image> represents an invalid image, this value instead represents nothing. (No inline content is added to the element, as if this value were \"skipped\".)",
-              "href": "https://drafts.csswg.org/css-content-3/#valdef-content-list-image",
-              "type": "value",
-              "value": "<image>"
-            },
-            {
-              "name": "contents",
-              "prose": "The element’s descendants. Since this can only be used once per element (you can’t duplicate the children if, e.g., one is a plugin or form control), it is handled as follows:",
-              "href": "https://drafts.csswg.org/css-content-3/#valdef-content-contents",
-              "type": "value",
-              "value": "contents"
-            },
-            {
-              "name": "leader()",
-              "value": "leader( <leader-type> )",
-              "href": "https://drafts.csswg.org/css-content-3/#funcdef-content-leader",
-              "type": "function"
-            }
-          ]
+          "prose": "On regular elements, this value has no effect. On pseudo-elements and page-margin boxes, it replaces the box’s contents with the specified content. (Its normal contents are suppressed, as if they were display: none.) Each value specified contributes an inline-level box to the element’s contents, in the order specified. For <image>, this is an inline anonymous replaced element; for the others, it’s an anonymous inline run of text.",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-content-content-list",
+          "type": "value",
+          "value": "<content-list>"
         },
         {
-          "name": "/ [ <string> | <counter> | <attr()> ]+",
-          "prose": "Specifies the \"alt text\" for the element. See § 1.2 Alternative Text for Accessibility for details. If omitted, the element has no \"alt text\".",
-          "href": "https://drafts.csswg.org/css-content-3/#valdef-content---string--counter--attr",
+          "name": "<alt-text>",
+          "prose": "Specifies the “alternative content” for the element, which is supplied to the accessibility tree for rendering to speech, braille, etc. instead of the “visual content” provided before the slash. See § 1.2 Alternative Text for Accessibility for details. If omitted, the element has no “alternative content”; the main content is used for all media.",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-content-alt-text",
           "type": "value",
-          "value": "/ [ <string> | <counter> | <attr()> ]+"
+          "value": "<alt-text>"
         }
       ],
       "styleDeclaration": [
@@ -93,12 +59,12 @@
     {
       "name": "quotes",
       "href": "https://drafts.csswg.org/css-content-3/#propdef-quotes",
-      "value": "auto | none | match-parent | [ <string> <string> ]+",
+      "value": "auto | none | bikeshed-this | [ <string> <string> ]+",
       "initial": "auto",
       "appliesTo": "all elements",
       "inherited": "yes",
       "percentages": "n/a",
-      "computedValue": "the keyword none, the keyword auto or match-parent, or a list, each item a pair of string values",
+      "computedValue": "the keyword none, the keyword auto, a content language, or a list, each item a pair of string values",
       "canonicalOrder": "per grammar",
       "animationType": "discrete",
       "values": [
@@ -111,17 +77,17 @@
         },
         {
           "name": "auto",
-          "prose": "A typographically appropriate quotation mark system is automatically chosen by the UA based on the content language of the parent (or, if there is no parent, of the element itself).",
+          "prose": "A typographically appropriate quotation mark system is automatically chosen by the UA based on the content language of the parent (or, if there is no parent, of the element itself). Computes to itself (the keyword auto).",
           "href": "https://drafts.csswg.org/css-content-3/#valdef-quotes-auto",
           "type": "value",
           "value": "auto"
         },
         {
-          "name": "match-parent",
-          "prose": "Specifies the same quotation mark system as the parent. In general this is equivalent to inheriting the parent’s computed value, except that auto it resolves using the same content language that the parent used. Two possible approaches here, currently speccing the latter: a) this computes to the relevant string values, and inherits as such. b) this value effectively inherits as a keyword + a language code, meaning auto, but with this language.",
-          "href": "https://drafts.csswg.org/css-content-3/#valdef-quotes-match-parent",
+          "name": "bikeshed-this",
+          "prose": "If the inherited value is auto, computes to the content language of the parent, which behaves like auto as resolved by that content language. Otherwise, computes to the inherited value. A content language computed value serializes as bikeshed-this. This needs a name. Maybe match-parent? [Issue #5478]",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-quotes-bikeshed-this",
           "type": "value",
-          "value": "match-parent"
+          "value": "bikeshed-this"
         }
       ],
       "styleDeclaration": [
@@ -202,42 +168,7 @@
           "prose": "<content-list> is defined above, in the section on the string-set property. The value of <content-list> becomes the text content of the bookmark label.",
           "href": "https://drafts.csswg.org/css-content-3/#valdef-bookmark-label-content-list",
           "type": "value",
-          "value": "[ <string> | <image> | <attr()> | contents | <quote> | <leader()> | <target> | <string()> | <content()> | <counter> | <symbolic-counter-style> ]+",
-          "values": [
-            {
-              "name": "<string>",
-              "prose": "Represents an anonymous inline box filled with the specified text.",
-              "href": "https://drafts.csswg.org/css-content-3/#valdef-content-string",
-              "type": "value",
-              "value": "<string>"
-            },
-            {
-              "name": "attr()",
-              "href": "https://drafts.csswg.org/css-content-3/#valdef-content-attr",
-              "type": "value",
-              "value": "attr()"
-            },
-            {
-              "name": "<image>",
-              "prose": "Represents an anonymous inline replaced element filled with the specified <image>. If the <image> represents an invalid image, this value instead represents nothing. (No inline content is added to the element, as if this value were \"skipped\".)",
-              "href": "https://drafts.csswg.org/css-content-3/#valdef-content-list-image",
-              "type": "value",
-              "value": "<image>"
-            },
-            {
-              "name": "contents",
-              "prose": "The element’s descendants. Since this can only be used once per element (you can’t duplicate the children if, e.g., one is a plugin or form control), it is handled as follows:",
-              "href": "https://drafts.csswg.org/css-content-3/#valdef-content-contents",
-              "type": "value",
-              "value": "contents"
-            },
-            {
-              "name": "leader()",
-              "value": "leader( <leader-type> )",
-              "href": "https://drafts.csswg.org/css-content-3/#funcdef-content-leader",
-              "type": "function"
-            }
-          ]
+          "value": "<content-list>"
         }
       ],
       "styleDeclaration": [
@@ -281,6 +212,59 @@
   "atrules": [],
   "selectors": [],
   "values": [
+    {
+      "name": "<content-replacement>",
+      "href": "https://drafts.csswg.org/css-content-3/#typedef-content-replacement",
+      "type": "type",
+      "value": "<image>"
+    },
+    {
+      "name": "<content-list>",
+      "href": "https://drafts.csswg.org/css-content-3/#typedef-content-list",
+      "type": "type",
+      "value": "[ <string> | <image> | <attr()> | contents | <quote> | <leader()> | <target> | <string()> | <content()> | <counter> | <symbolic-counter-style> ]+",
+      "values": [
+        {
+          "name": "<string>",
+          "prose": "Represents an anonymous inline box filled with the specified text.",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-content-string",
+          "type": "value",
+          "value": "<string>"
+        },
+        {
+          "name": "attr()",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-content-attr",
+          "type": "value",
+          "value": "attr()"
+        },
+        {
+          "name": "<image>",
+          "prose": "Represents an anonymous inline replaced element filled with the specified <image>. If an <image> represents an invalid image, the user agent must (consistently) do one of the following: “Skip” the <image>, generating nothing for it. Display some indication that the image can’t be displayed in place of the <image>, such as a “broken image” icon.",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-content-image",
+          "type": "value",
+          "value": "<image>"
+        },
+        {
+          "name": "contents",
+          "prose": "The element’s descendants. Since this can only be used once per element (you can’t duplicate the children if, e.g., one is a plugin or form control), it is handled as follows:",
+          "href": "https://drafts.csswg.org/css-content-3/#valdef-content-contents",
+          "type": "value",
+          "value": "contents"
+        },
+        {
+          "name": "leader()",
+          "value": "leader( <leader-type> )",
+          "href": "https://drafts.csswg.org/css-content-3/#funcdef-content-leader",
+          "type": "function"
+        }
+      ]
+    },
+    {
+      "name": "<alt-text>",
+      "href": "https://drafts.csswg.org/css-content-3/#typedef-alt-text",
+      "type": "type",
+      "value": "[ <string> | <counter> | <attr()> ]+"
+    },
     {
       "name": "<quote>",
       "href": "https://drafts.csswg.org/css-content-3/#typedef-quote",
@@ -461,12 +445,6 @@
           "value": "marker"
         }
       ]
-    },
-    {
-      "name": "<symbolic-counter-style>",
-      "href": "https://drafts.csswg.org/css-content-3/#typedef-symbolic-counter-style",
-      "type": "type",
-      "value": "disc | circle | square | disclosure-open | disclosure-closed"
     }
   ]
 }

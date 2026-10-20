@@ -20,7 +20,7 @@
     },
     "idlNames": {
       "Notification": {
-        "fragment": "[Exposed=(Window,Worker)]\ninterface Notification : EventTarget {\n  constructor(DOMString title, optional NotificationOptions options = {});\n\n  static readonly attribute NotificationPermission permission;\n  [Exposed=Window] static Promise<NotificationPermission> requestPermission(optional NotificationPermissionCallback deprecatedCallback);\n\n  static readonly attribute unsigned long maxActions;\n\n  attribute EventHandler onclick;\n  attribute EventHandler onshow;\n  attribute EventHandler onerror;\n  attribute EventHandler onclose;\n\n  readonly attribute DOMString title;\n  readonly attribute NotificationDirection dir;\n  readonly attribute DOMString lang;\n  readonly attribute DOMString body;\n  readonly attribute USVString navigate;\n  readonly attribute DOMString tag;\n  readonly attribute USVString image;\n  readonly attribute USVString icon;\n  readonly attribute USVString badge;\n  [SameObject] readonly attribute FrozenArray<unsigned long> vibrate;\n  readonly attribute EpochTimeStamp timestamp;\n  readonly attribute boolean renotify;\n  readonly attribute boolean? silent;\n  readonly attribute boolean requireInteraction;\n  [SameObject] readonly attribute any data;\n  [SameObject] readonly attribute FrozenArray<NotificationAction> actions;\n\n  undefined close();\n};",
+        "fragment": "[Exposed=(Window,Worker)]\ninterface Notification : EventTarget {\n  constructor(DOMString title, optional NotificationOptions options = {});\n\n  static readonly attribute NotificationPermission permission;\n  [Exposed=Window] static Promise<NotificationPermission> requestPermission(optional NotificationPermissionCallback deprecatedCallback);\n\n  static readonly attribute unsigned long maxActions;\n\n  attribute EventHandler onclick;\n  attribute EventHandler onshow;\n  attribute EventHandler onerror;\n  attribute EventHandler onclose;\n\n  readonly attribute DOMString title;\n  readonly attribute NotificationDirection dir;\n  readonly attribute DOMString lang;\n  readonly attribute DOMString body;\n  readonly attribute USVString navigate;\n  readonly attribute DOMString tag;\n  readonly attribute USVString image;\n  readonly attribute USVString icon;\n  readonly attribute USVString badge;\n  readonly attribute EpochTimeStamp timestamp;\n  readonly attribute boolean renotify;\n  readonly attribute boolean? silent;\n  readonly attribute boolean requireInteraction;\n  [SameObject] readonly attribute any data;\n  [SameObject] readonly attribute FrozenArray<NotificationAction> actions;\n\n  undefined close();\n};",
         "type": "interface",
         "name": "Notification",
         "inheritance": "EventTarget",
@@ -360,38 +360,6 @@
           },
           {
             "type": "attribute",
-            "name": "vibrate",
-            "idlType": {
-              "type": "attribute-type",
-              "extAttrs": [],
-              "generic": "FrozenArray",
-              "nullable": false,
-              "union": false,
-              "idlType": [
-                {
-                  "type": "attribute-type",
-                  "extAttrs": [],
-                  "generic": "",
-                  "nullable": false,
-                  "union": false,
-                  "idlType": "unsigned long"
-                }
-              ]
-            },
-            "extAttrs": [
-              {
-                "type": "extended-attribute",
-                "name": "SameObject",
-                "rhs": null,
-                "arguments": []
-              }
-            ],
-            "special": "",
-            "readonly": true,
-            "href": "https://notifications.spec.whatwg.org/#dom-notification-vibrate"
-          },
-          {
-            "type": "attribute",
             "name": "timestamp",
             "idlType": {
               "type": "attribute-type",
@@ -548,7 +516,7 @@
         "href": "https://notifications.spec.whatwg.org/#notification"
       },
       "NotificationOptions": {
-        "fragment": "dictionary NotificationOptions {\n  NotificationDirection dir = \"auto\";\n  DOMString lang = \"\";\n  DOMString body = \"\";\n  USVString navigate;\n  DOMString tag = \"\";\n  USVString image;\n  USVString icon;\n  USVString badge;\n  VibratePattern vibrate;\n  EpochTimeStamp timestamp;\n  boolean renotify = false;\n  boolean? silent = null;\n  boolean requireInteraction = false;\n  any data = null;\n  sequence<NotificationAction> actions = [];\n};",
+        "fragment": "dictionary NotificationOptions {\n  NotificationDirection dir = \"auto\";\n  DOMString lang = \"\";\n  DOMString body = \"\";\n  USVString navigate;\n  DOMString tag = \"\";\n  USVString image;\n  USVString icon;\n  USVString badge;\n  EpochTimeStamp timestamp;\n  boolean renotify = false;\n  boolean? silent = null;\n  boolean requireInteraction = false;\n  any data = null;\n  sequence<NotificationAction> actions = [];\n};",
         "type": "dictionary",
         "name": "NotificationOptions",
         "inheritance": null,
@@ -692,22 +660,6 @@
             "default": null,
             "required": false,
             "href": "https://notifications.spec.whatwg.org/#dom-notificationoptions-badge"
-          },
-          {
-            "type": "field",
-            "name": "vibrate",
-            "extAttrs": [],
-            "idlType": {
-              "type": "dictionary-type",
-              "extAttrs": [],
-              "generic": "",
-              "nullable": false,
-              "union": false,
-              "idlType": "VibratePattern"
-            },
-            "default": null,
-            "required": false,
-            "href": "https://notifications.spec.whatwg.org/#dom-notificationoptions-vibrate"
           },
           {
             "type": "field",
@@ -1353,7 +1305,6 @@
       ],
       "NotificationOptions": [
         "NotificationDirection",
-        "VibratePattern",
         "EpochTimeStamp",
         "NotificationAction"
       ],
@@ -1381,7 +1332,6 @@
       "EventTarget",
       "EventHandler",
       "EpochTimeStamp",
-      "VibratePattern",
       "ServiceWorkerRegistration",
       "ExtendableEvent",
       "ExtendableEventInit",

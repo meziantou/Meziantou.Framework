@@ -276,7 +276,7 @@
         "href": "https://w3c.github.io/webtransport/#webtransportdatagramduplexstream"
       },
       "WebTransport": {
-        "fragment": "[Exposed=(Window,Worker), SecureContext]\ninterface WebTransport {\n  constructor(USVString url, optional WebTransportOptions options = {});\n\n  Promise<WebTransportConnectionStats> getStats();\n  [NewObject] Promise<Uint8Array> exportKeyingMaterial(\n      BufferSource label, BufferSource context, unsigned long outputLength);\n  readonly attribute Promise<undefined> ready;\n  readonly attribute WebTransportReliabilityMode reliability;\n  readonly attribute WebTransportCongestionControl congestionControl;\n  attribute [EnforceRange] unsigned short? anticipatedConcurrentIncomingUnidirectionalStreams;\n  attribute [EnforceRange] unsigned short? anticipatedConcurrentIncomingBidirectionalStreams;\n  [SameObject] readonly attribute Headers? responseHeaders;\n  readonly attribute DOMString protocol;\n\n  readonly attribute Promise<WebTransportCloseInfo> closed;\n  readonly attribute Promise<undefined> draining;\n  undefined close(optional WebTransportCloseInfo closeInfo = {});\n\n  readonly attribute WebTransportDatagramDuplexStream datagrams;\n\n  Promise<WebTransportBidirectionalStream> createBidirectionalStream(\n      optional WebTransportSendStreamOptions options = {});\n  /* a ReadableStream of WebTransportBidirectionalStream objects */\n  readonly attribute ReadableStream incomingBidirectionalStreams;\n\n  Promise<WebTransportSendStream> createUnidirectionalStream(\n      optional WebTransportSendStreamOptions options = {});\n  /* a ReadableStream of WebTransportReceiveStream objects */\n  readonly attribute ReadableStream incomingUnidirectionalStreams;\n  WebTransportSendGroup createSendGroup();\n\n  static readonly attribute boolean supportsReliableOnly;\n};",
+        "fragment": "[Exposed=(Window,Worker), SecureContext]\ninterface WebTransport {\n  constructor(USVString url, optional WebTransportOptions options = {});\n\n  Promise<WebTransportConnectionStats> getStats();\n  [NewObject] Promise<Uint8Array> exportKeyingMaterial(\n      BufferSource label, BufferSource context, unsigned long outputLength);\n  readonly attribute Promise<undefined> ready;\n  readonly attribute WebTransportReliabilityMode reliability;\n  readonly attribute WebTransportCongestionControl congestionControl;\n  attribute [EnforceRange] unsigned short? anticipatedConcurrentIncomingUnidirectionalStreams;\n  attribute [EnforceRange] unsigned short? anticipatedConcurrentIncomingBidirectionalStreams;\n  readonly attribute Headers? responseHeaders;\n  readonly attribute DOMString protocol;\n\n  readonly attribute Promise<WebTransportCloseInfo> closed;\n  readonly attribute Promise<undefined> draining;\n  undefined close(optional WebTransportCloseInfo closeInfo = {});\n\n  readonly attribute WebTransportDatagramDuplexStream datagrams;\n\n  Promise<WebTransportBidirectionalStream> createBidirectionalStream(\n      optional WebTransportSendStreamOptions options = {});\n  /* a ReadableStream of WebTransportBidirectionalStream objects */\n  readonly attribute ReadableStream incomingBidirectionalStreams;\n\n  Promise<WebTransportSendStream> createUnidirectionalStream(\n      optional WebTransportSendStreamOptions options = {});\n  /* a ReadableStream of WebTransportReceiveStream objects */\n  readonly attribute ReadableStream incomingUnidirectionalStreams;\n  WebTransportSendGroup createSendGroup();\n\n  static readonly attribute boolean supportsReliableOnly;\n};",
         "type": "interface",
         "name": "WebTransport",
         "inheritance": null,
@@ -542,14 +542,7 @@
               "union": false,
               "idlType": "Headers"
             },
-            "extAttrs": [
-              {
-                "type": "extended-attribute",
-                "name": "SameObject",
-                "rhs": null,
-                "arguments": []
-              }
-            ],
+            "extAttrs": [],
             "special": "",
             "readonly": true,
             "href": "https://w3c.github.io/webtransport/#dom-webtransport-responseheaders"

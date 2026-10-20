@@ -149,7 +149,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#svgelement"
       },
       "SVGBoundingBoxOptions": {
         "fragment": "dictionary SVGBoundingBoxOptions {\n  boolean fill = true;\n  boolean stroke = false;\n  boolean markers = false;\n  boolean clipped = false;\n};",
@@ -173,7 +173,8 @@
               "type": "boolean",
               "value": true
             },
-            "required": false
+            "required": false,
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#dom-svgboundingboxoptions-fill"
           },
           {
             "type": "field",
@@ -191,7 +192,8 @@
               "type": "boolean",
               "value": false
             },
-            "required": false
+            "required": false,
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#dom-svgboundingboxoptions-stroke"
           },
           {
             "type": "field",
@@ -209,7 +211,8 @@
               "type": "boolean",
               "value": false
             },
-            "required": false
+            "required": false,
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#dom-svgboundingboxoptions-markers"
           },
           {
             "type": "field",
@@ -227,12 +230,13 @@
               "type": "boolean",
               "value": false
             },
-            "required": false
+            "required": false,
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#dom-svgboundingboxoptions-clipped"
           }
         ],
         "extAttrs": [],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#SVGBoundingBoxOptions"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#dictdef-svgboundingboxoptions"
       },
       "SVGGraphicsElement": {
         "fragment": "[Exposed=Window]\ninterface SVGGraphicsElement : SVGElement {\n  [SameObject] readonly attribute SVGAnimatedTransformList transform;\n\n  SVGRect getBBox(optional SVGBoundingBoxOptions options = {});\n  SVGMatrix? getCTM();\n  SVGMatrix? getScreenCTM();\n};",
@@ -295,7 +299,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGraphicsElement__getBBox"
           },
           {
             "type": "operation",
@@ -310,7 +315,8 @@
             },
             "arguments": [],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGraphicsElement__getCTM"
           },
           {
             "type": "operation",
@@ -325,7 +331,8 @@
             },
             "arguments": [],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGraphicsElement__getScreenCTM"
           }
         ],
         "extAttrs": [
@@ -340,7 +347,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGGraphicsElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#svggraphicselement"
       },
       "SVGGeometryElement": {
         "fragment": "[Exposed=Window]\ninterface SVGGeometryElement : SVGGraphicsElement {\n  [SameObject] readonly attribute SVGAnimatedNumber pathLength;\n\n  boolean isPointInFill(optional DOMPointInit point = {});\n  boolean isPointInStroke(optional DOMPointInit point = {});\n  float getTotalLength();\n  SVGPoint getPointAtLength(float distance);\n};",
@@ -403,7 +410,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGeometryElement__isPointInFill"
           },
           {
             "type": "operation",
@@ -437,7 +445,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGeometryElement__isPointInStroke"
           },
           {
             "type": "operation",
@@ -452,7 +461,8 @@
             },
             "arguments": [],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGeometryElement__getTotalLength"
           },
           {
             "type": "operation",
@@ -484,7 +494,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGeometryElement__getPointAtLength"
           }
         ],
         "extAttrs": [
@@ -499,7 +510,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGGeometryElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#svggeometryelement"
       },
       "SVGNumber": {
         "fragment": "[Exposed=Window]\ninterface SVGNumber {\n  attribute float value;\n};",
@@ -536,7 +547,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGNumber"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#svgnumber"
       },
       "SVGLength": {
         "fragment": "[Exposed=Window]\ninterface SVGLength {\n\n  // Length Unit Types\n  const unsigned short SVG_LENGTHTYPE_UNKNOWN = 0;\n  const unsigned short SVG_LENGTHTYPE_NUMBER = 1;\n  const unsigned short SVG_LENGTHTYPE_PERCENTAGE = 2;\n  const unsigned short SVG_LENGTHTYPE_EMS = 3;\n  const unsigned short SVG_LENGTHTYPE_EXS = 4;\n  const unsigned short SVG_LENGTHTYPE_PX = 5;\n  const unsigned short SVG_LENGTHTYPE_CM = 6;\n  const unsigned short SVG_LENGTHTYPE_MM = 7;\n  const unsigned short SVG_LENGTHTYPE_IN = 8;\n  const unsigned short SVG_LENGTHTYPE_PT = 9;\n  const unsigned short SVG_LENGTHTYPE_PC = 10;\n\n  readonly attribute unsigned short unitType;\n           attribute float value;\n           attribute float valueInSpecifiedUnits;\n           attribute DOMString valueAsString;\n\n  undefined newValueSpecifiedUnits(unsigned short unitType, float valueInSpecifiedUnits);\n  undefined convertToSpecifiedUnits(unsigned short unitType);\n};",
@@ -852,7 +863,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__newValueSpecifiedUnits"
           },
           {
             "type": "operation",
@@ -884,7 +896,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGLength__convertToSpecifiedUnits"
           }
         ],
         "extAttrs": [
@@ -899,7 +912,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGLength"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#svglength"
       },
       "SVGAngle": {
         "fragment": "[Exposed=Window]\ninterface SVGAngle {\n\n  // Angle Unit Types\n  const unsigned short SVG_ANGLETYPE_UNKNOWN = 0;\n  const unsigned short SVG_ANGLETYPE_UNSPECIFIED = 1;\n  const unsigned short SVG_ANGLETYPE_DEG = 2;\n  const unsigned short SVG_ANGLETYPE_RAD = 3;\n  const unsigned short SVG_ANGLETYPE_GRAD = 4;\n\n  readonly attribute unsigned short unitType;\n           attribute float value;\n           attribute float valueInSpecifiedUnits;\n           attribute DOMString valueAsString;\n\n  undefined newValueSpecifiedUnits(unsigned short unitType, float valueInSpecifiedUnits);\n  undefined convertToSpecifiedUnits(unsigned short unitType);\n};",
@@ -1107,7 +1120,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAngle__newValueSpecifiedUnits"
           },
           {
             "type": "operation",
@@ -1139,7 +1153,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAngle__convertToSpecifiedUnits"
           }
         ],
         "extAttrs": [
@@ -1154,7 +1169,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAngle"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#svgangle"
       },
       "SVGNumberList": {
         "fragment": "[Exposed=Window]\ninterface SVGNumberList {\n\n  readonly attribute unsigned long length;\n  readonly attribute unsigned long numberOfItems;\n\n  undefined clear();\n  SVGNumber initialize(SVGNumber newItem);\n  getter SVGNumber getItem(unsigned long index);\n  SVGNumber insertItemBefore(SVGNumber newItem, unsigned long index);\n  SVGNumber replaceItem(SVGNumber newItem, unsigned long index);\n  SVGNumber removeItem(unsigned long index);\n  SVGNumber appendItem(SVGNumber newItem);\n  setter undefined (unsigned long index, SVGNumber newItem);\n};",
@@ -1207,7 +1222,8 @@
             },
             "arguments": [],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__clear"
           },
           {
             "type": "operation",
@@ -1239,7 +1255,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__initialize"
           },
           {
             "type": "operation",
@@ -1319,7 +1336,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__insertItemBefore"
           },
           {
             "type": "operation",
@@ -1367,7 +1385,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__replaceItem"
           },
           {
             "type": "operation",
@@ -1399,7 +1418,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__removeItem"
           },
           {
             "type": "operation",
@@ -1431,7 +1451,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__appendItem"
           },
           {
             "type": "operation",
@@ -1494,7 +1515,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGNumberList"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#svgnumberlist"
       },
       "SVGLengthList": {
         "fragment": "[Exposed=Window]\ninterface SVGLengthList {\n\n  readonly attribute unsigned long length;\n  readonly attribute unsigned long numberOfItems;\n\n  undefined clear();\n  SVGLength initialize(SVGLength newItem);\n  getter SVGLength getItem(unsigned long index);\n  SVGLength insertItemBefore(SVGLength newItem, unsigned long index);\n  SVGLength replaceItem(SVGLength newItem, unsigned long index);\n  SVGLength removeItem(unsigned long index);\n  SVGLength appendItem(SVGLength newItem);\n  setter undefined (unsigned long index, SVGLength newItem);\n};",
@@ -1547,7 +1568,8 @@
             },
             "arguments": [],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__clear"
           },
           {
             "type": "operation",
@@ -1579,7 +1601,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__initialize"
           },
           {
             "type": "operation",
@@ -1659,7 +1682,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__insertItemBefore"
           },
           {
             "type": "operation",
@@ -1707,7 +1731,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__replaceItem"
           },
           {
             "type": "operation",
@@ -1739,7 +1764,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__removeItem"
           },
           {
             "type": "operation",
@@ -1771,7 +1797,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__appendItem"
           },
           {
             "type": "operation",
@@ -1834,7 +1861,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGLengthList"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#svglengthlist"
       },
       "SVGStringList": {
         "fragment": "[Exposed=Window]\ninterface SVGStringList {\n\n  readonly attribute unsigned long length;\n  readonly attribute unsigned long numberOfItems;\n\n  undefined clear();\n  DOMString initialize(DOMString newItem);\n  getter DOMString getItem(unsigned long index);\n  DOMString insertItemBefore(DOMString newItem, unsigned long index);\n  DOMString replaceItem(DOMString newItem, unsigned long index);\n  DOMString removeItem(unsigned long index);\n  DOMString appendItem(DOMString newItem);\n  setter undefined (unsigned long index, DOMString newItem);\n};",
@@ -1887,7 +1914,8 @@
             },
             "arguments": [],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__clear"
           },
           {
             "type": "operation",
@@ -1919,7 +1947,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__initialize"
           },
           {
             "type": "operation",
@@ -1999,7 +2028,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__insertItemBefore"
           },
           {
             "type": "operation",
@@ -2047,7 +2077,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__replaceItem"
           },
           {
             "type": "operation",
@@ -2079,7 +2110,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__removeItem"
           },
           {
             "type": "operation",
@@ -2111,7 +2143,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__appendItem"
           },
           {
             "type": "operation",
@@ -2174,7 +2207,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGStringList"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#svgstringlist"
       },
       "SVGAnimatedBoolean": {
         "fragment": "[Exposed=Window]\ninterface SVGAnimatedBoolean {\n           attribute boolean baseVal;\n  readonly attribute boolean animVal;\n};",
@@ -2227,7 +2260,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedBoolean"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#svganimatedboolean"
       },
       "SVGAnimatedEnumeration": {
         "fragment": "[Exposed=Window]\ninterface SVGAnimatedEnumeration {\n           attribute unsigned short baseVal;\n  readonly attribute unsigned short animVal;\n};",
@@ -2280,7 +2313,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedEnumeration"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#svganimatedenumeration"
       },
       "SVGAnimatedInteger": {
         "fragment": "[Exposed=Window]\ninterface SVGAnimatedInteger {\n           attribute long baseVal;\n  readonly attribute long animVal;\n};",
@@ -2333,7 +2366,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedInteger"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#svganimatedinteger"
       },
       "SVGAnimatedNumber": {
         "fragment": "[Exposed=Window]\ninterface SVGAnimatedNumber {\n           attribute float baseVal;\n  readonly attribute float animVal;\n};",
@@ -2386,7 +2419,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedNumber"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#svganimatednumber"
       },
       "SVGAnimatedLength": {
         "fragment": "[Exposed=Window]\ninterface SVGAnimatedLength {\n  [SameObject] readonly attribute SVGLength baseVal;\n  [SameObject] readonly attribute SVGLength animVal;\n};",
@@ -2453,7 +2486,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedLength"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#svganimatedlength"
       },
       "SVGAnimatedAngle": {
         "fragment": "[Exposed=Window]\ninterface SVGAnimatedAngle {\n  [SameObject] readonly attribute SVGAngle baseVal;\n  [SameObject] readonly attribute SVGAngle animVal;\n};",
@@ -2520,7 +2553,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedAngle"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#svganimatedangle"
       },
       "SVGAnimatedString": {
         "fragment": "[Exposed=Window]\ninterface SVGAnimatedString {\n           attribute (DOMString or TrustedScriptURL) baseVal;\n  readonly attribute DOMString animVal;\n};",
@@ -2590,7 +2623,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedString"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#svganimatedstring"
       },
       "SVGAnimatedRect": {
         "fragment": "[Exposed=Window]\ninterface SVGAnimatedRect {\n  [SameObject] readonly attribute SVGRect baseVal;\n  [SameObject] readonly attribute SVGRect animVal;\n};",
@@ -2657,7 +2690,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedRect"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#svganimatedrect"
       },
       "SVGAnimatedNumberList": {
         "fragment": "[Exposed=Window]\ninterface SVGAnimatedNumberList {\n  [SameObject] readonly attribute SVGNumberList baseVal;\n  [SameObject] readonly attribute SVGNumberList animVal;\n};",
@@ -2724,7 +2757,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedNumberList"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#svganimatednumberlist"
       },
       "SVGAnimatedLengthList": {
         "fragment": "[Exposed=Window]\ninterface SVGAnimatedLengthList {\n  [SameObject] readonly attribute SVGLengthList baseVal;\n  [SameObject] readonly attribute SVGLengthList animVal;\n};",
@@ -2791,7 +2824,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedLengthList"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#svganimatedlengthlist"
       },
       "SVGUnitTypes": {
         "fragment": "[Exposed=Window]\ninterface SVGUnitTypes {\n  // Unit Types\n  const unsigned short SVG_UNIT_TYPE_UNKNOWN = 0;\n  const unsigned short SVG_UNIT_TYPE_USERSPACEONUSE = 1;\n  const unsigned short SVG_UNIT_TYPE_OBJECTBOUNDINGBOX = 2;\n};",
@@ -2866,7 +2899,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGUnitTypes"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#svgunittypes"
       },
       "SVGTests": {
         "fragment": "interface mixin SVGTests {\n  [SameObject] readonly attribute SVGStringList requiredExtensions;\n  [SameObject] readonly attribute SVGStringList systemLanguage;\n};",
@@ -3199,7 +3232,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__getIntersectionList"
           },
           {
             "type": "operation",
@@ -3247,7 +3281,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__getEnclosureList"
           },
           {
             "type": "operation",
@@ -3295,7 +3330,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__checkIntersection"
           },
           {
             "type": "operation",
@@ -3343,7 +3379,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__checkEnclosure"
           },
           {
             "type": "operation",
@@ -3358,7 +3395,8 @@
             },
             "arguments": [],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__deselectAll"
           },
           {
             "type": "operation",
@@ -3380,7 +3418,8 @@
                 "arguments": []
               }
             ],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGNumber"
           },
           {
             "type": "operation",
@@ -3402,7 +3441,8 @@
                 "arguments": []
               }
             ],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGLength"
           },
           {
             "type": "operation",
@@ -3424,7 +3464,8 @@
                 "arguments": []
               }
             ],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGAngle"
           },
           {
             "type": "operation",
@@ -3446,7 +3487,8 @@
                 "arguments": []
               }
             ],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGPoint"
           },
           {
             "type": "operation",
@@ -3468,7 +3510,8 @@
                 "arguments": []
               }
             ],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGMatrix"
           },
           {
             "type": "operation",
@@ -3490,7 +3533,8 @@
                 "arguments": []
               }
             ],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGRect"
           },
           {
             "type": "operation",
@@ -3512,7 +3556,8 @@
                 "arguments": []
               }
             ],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGTransform"
           },
           {
             "type": "operation",
@@ -3553,7 +3598,8 @@
                 "arguments": []
               }
             ],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGTransformFromMatrix"
           },
           {
             "type": "operation",
@@ -3585,7 +3631,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__getElementById"
           },
           {
             "type": "operation",
@@ -3617,7 +3664,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__suspendRedraw"
           },
           {
             "type": "operation",
@@ -3649,7 +3697,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__unsuspendRedraw"
           },
           {
             "type": "operation",
@@ -3664,7 +3713,8 @@
             },
             "arguments": [],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__unsuspendRedrawAll"
           },
           {
             "type": "operation",
@@ -3679,7 +3729,8 @@
             },
             "arguments": [],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__forceRedraw"
           }
         ],
         "extAttrs": [
@@ -3694,7 +3745,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGSVGElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#svgsvgelement"
       },
       "SVGGElement": {
         "fragment": "[Exposed=Window]\ninterface SVGGElement : SVGGraphicsElement {\n};",
@@ -3714,7 +3765,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGGElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#svggelement"
       },
       "SVGDefsElement": {
         "fragment": "[Exposed=Window]\ninterface SVGDefsElement : SVGGraphicsElement {\n};",
@@ -3734,7 +3785,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGDefsElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#svgdefselement"
       },
       "SVGDescElement": {
         "fragment": "[Exposed=Window]\ninterface SVGDescElement : SVGElement {\n};",
@@ -3754,7 +3805,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGDescElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#svgdescelement"
       },
       "SVGMetadataElement": {
         "fragment": "[Exposed=Window]\ninterface SVGMetadataElement : SVGElement {\n};",
@@ -3774,7 +3825,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGMetadataElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#svgmetadataelement"
       },
       "SVGTitleElement": {
         "fragment": "[Exposed=Window]\ninterface SVGTitleElement : SVGElement {\n};",
@@ -3794,7 +3845,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGTitleElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#svgtitleelement"
       },
       "SVGSymbolElement": {
         "fragment": "[Exposed=Window]\ninterface SVGSymbolElement : SVGGraphicsElement {\n};",
@@ -3814,7 +3865,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGSymbolElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#svgsymbolelement"
       },
       "SVGUseElement": {
         "fragment": "[Exposed=Window]\ninterface SVGUseElement : SVGGraphicsElement {\n  [SameObject] readonly attribute SVGAnimatedLength x;\n  [SameObject] readonly attribute SVGAnimatedLength y;\n  [SameObject] readonly attribute SVGAnimatedLength width;\n  [SameObject] readonly attribute SVGAnimatedLength height;\n};",
@@ -3927,7 +3978,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGUseElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#svguseelement"
       },
       "SVGUseElementShadowRoot": {
         "fragment": "[Exposed=Window]\ninterface SVGUseElementShadowRoot : ShadowRoot {\n};",
@@ -3947,7 +3998,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGUseElementShadowRoot"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#svguseelementshadowroot"
       },
       "ShadowAnimation": {
         "fragment": "[Exposed=Window]\ninterface ShadowAnimation : Animation {\n  constructor(Animation source, (Element or CSSPseudoElement) newTarget);\n  [SameObject] readonly attribute Animation sourceAnimation;\n};",
@@ -4008,7 +4059,8 @@
                 "variadic": false
               }
             ],
-            "extAttrs": []
+            "extAttrs": [],
+            "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#dom-shadowanimation-shadowanimation"
           },
           {
             "type": "attribute",
@@ -4046,7 +4098,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceShadowAnimation"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#shadowanimation"
       },
       "SVGSwitchElement": {
         "fragment": "[Exposed=Window]\ninterface SVGSwitchElement : SVGGraphicsElement {\n};",
@@ -4066,7 +4118,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGSwitchElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#svgswitchelement"
       },
       "GetSVGDocument": {
         "fragment": "interface mixin GetSVGDocument {\n  Document getSVGDocument();\n};",
@@ -4087,7 +4139,8 @@
             },
             "arguments": [],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__GetSVGDocument__getSVGDocument"
           }
         ],
         "extAttrs": [],
@@ -4120,7 +4173,8 @@
               }
             ],
             "special": "",
-            "readonly": false
+            "readonly": false,
+            "href": "https://w3c.github.io/svgwg/svg2-draft/styling.html#dom-svgstyleelement-type"
           },
           {
             "type": "attribute",
@@ -4142,7 +4196,8 @@
               }
             ],
             "special": "",
-            "readonly": false
+            "readonly": false,
+            "href": "https://w3c.github.io/svgwg/svg2-draft/styling.html#dom-svgstyleelement-media"
           },
           {
             "type": "attribute",
@@ -4164,7 +4219,8 @@
               }
             ],
             "special": "",
-            "readonly": false
+            "readonly": false,
+            "href": "https://w3c.github.io/svgwg/svg2-draft/styling.html#dom-svgstyleelement-title"
           },
           {
             "type": "attribute",
@@ -4179,7 +4235,8 @@
             },
             "extAttrs": [],
             "special": "",
-            "readonly": false
+            "readonly": false,
+            "href": "https://w3c.github.io/svgwg/svg2-draft/styling.html#dom-svgstyleelement-disabled"
           }
         ],
         "extAttrs": [
@@ -4194,7 +4251,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/styling.html#InterfaceSVGStyleElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/styling.html#svgstyleelement"
       },
       "SVGTransform": {
         "fragment": "[Exposed=Window]\ninterface SVGTransform {\n\n  // Transform Types\n  const unsigned short SVG_TRANSFORM_UNKNOWN = 0;\n  const unsigned short SVG_TRANSFORM_MATRIX = 1;\n  const unsigned short SVG_TRANSFORM_TRANSLATE = 2;\n  const unsigned short SVG_TRANSFORM_SCALE = 3;\n  const unsigned short SVG_TRANSFORM_ROTATE = 4;\n  const unsigned short SVG_TRANSFORM_SKEWX = 5;\n  const unsigned short SVG_TRANSFORM_SKEWY = 6;\n\n  readonly attribute unsigned short type;\n  [SameObject] readonly attribute SVGMatrix matrix;\n  readonly attribute float angle;\n\n  undefined setMatrix(optional DOMMatrix2DInit matrix = {});\n  undefined setTranslate(float tx, float ty);\n  undefined setScale(float sx, float sy);\n  undefined setRotate(float angle, float cx, float cy);\n  undefined setSkewX(float angle);\n  undefined setSkewY(float angle);\n};",
@@ -4415,7 +4472,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__setMatrix"
           },
           {
             "type": "operation",
@@ -4463,7 +4521,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__setTranslate"
           },
           {
             "type": "operation",
@@ -4511,7 +4570,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__setScale"
           },
           {
             "type": "operation",
@@ -4575,7 +4635,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__setRotate"
           },
           {
             "type": "operation",
@@ -4607,7 +4668,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__setSkewX"
           },
           {
             "type": "operation",
@@ -4639,7 +4701,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransform__setSkewY"
           }
         ],
         "extAttrs": [
@@ -4654,7 +4717,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/coords.html#InterfaceSVGTransform"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/coords.html#svgtransform"
       },
       "SVGTransformList": {
         "fragment": "[Exposed=Window]\ninterface SVGTransformList {\n\n  readonly attribute unsigned long length;\n  readonly attribute unsigned long numberOfItems;\n\n  undefined clear();\n  SVGTransform initialize(SVGTransform newItem);\n  getter SVGTransform getItem(unsigned long index);\n  SVGTransform insertItemBefore(SVGTransform newItem, unsigned long index);\n  SVGTransform replaceItem(SVGTransform newItem, unsigned long index);\n  SVGTransform removeItem(unsigned long index);\n  SVGTransform appendItem(SVGTransform newItem);\n  setter undefined (unsigned long index, SVGTransform newItem);\n\n  // Additional methods not common to other list interfaces.\n  SVGTransform createSVGTransformFromMatrix(optional DOMMatrix2DInit matrix = {});\n  SVGTransform? consolidate();\n};",
@@ -4707,7 +4770,8 @@
             },
             "arguments": [],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__clear"
           },
           {
             "type": "operation",
@@ -4739,7 +4803,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__initialize"
           },
           {
             "type": "operation",
@@ -4819,7 +4884,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__insertItemBefore"
           },
           {
             "type": "operation",
@@ -4867,7 +4933,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__replaceItem"
           },
           {
             "type": "operation",
@@ -4899,7 +4966,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__removeItem"
           },
           {
             "type": "operation",
@@ -4931,7 +4999,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__appendItem"
           },
           {
             "type": "operation",
@@ -5013,7 +5082,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransformList__createSVGTransformFromMatrix"
           },
           {
             "type": "operation",
@@ -5028,7 +5098,8 @@
             },
             "arguments": [],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGTransformList__consolidate"
           }
         ],
         "extAttrs": [
@@ -5043,7 +5114,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/coords.html#InterfaceSVGTransformList"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/coords.html#svgtransformlist"
       },
       "SVGAnimatedTransformList": {
         "fragment": "[Exposed=Window]\ninterface SVGAnimatedTransformList {\n  [SameObject] readonly attribute SVGTransformList baseVal;\n  [SameObject] readonly attribute SVGTransformList animVal;\n};",
@@ -5110,7 +5181,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/coords.html#InterfaceSVGAnimatedTransformList"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/coords.html#svganimatedtransformlist"
       },
       "SVGPreserveAspectRatio": {
         "fragment": "[Exposed=Window]\ninterface SVGPreserveAspectRatio {\n\n  // Alignment Types\n  const unsigned short SVG_PRESERVEASPECTRATIO_UNKNOWN = 0;\n  const unsigned short SVG_PRESERVEASPECTRATIO_NONE = 1;\n  const unsigned short SVG_PRESERVEASPECTRATIO_XMINYMIN = 2;\n  const unsigned short SVG_PRESERVEASPECTRATIO_XMIDYMIN = 3;\n  const unsigned short SVG_PRESERVEASPECTRATIO_XMAXYMIN = 4;\n  const unsigned short SVG_PRESERVEASPECTRATIO_XMINYMID = 5;\n  const unsigned short SVG_PRESERVEASPECTRATIO_XMIDYMID = 6;\n  const unsigned short SVG_PRESERVEASPECTRATIO_XMAXYMID = 7;\n  const unsigned short SVG_PRESERVEASPECTRATIO_XMINYMAX = 8;\n  const unsigned short SVG_PRESERVEASPECTRATIO_XMIDYMAX = 9;\n  const unsigned short SVG_PRESERVEASPECTRATIO_XMAXYMAX = 10;\n\n  // Meet-or-slice Types\n  const unsigned short SVG_MEETORSLICE_UNKNOWN = 0;\n  const unsigned short SVG_MEETORSLICE_MEET = 1;\n  const unsigned short SVG_MEETORSLICE_SLICE = 2;\n\n  attribute unsigned short align;\n  attribute unsigned short meetOrSlice;\n};",
@@ -5415,7 +5486,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/coords.html#InterfaceSVGPreserveAspectRatio"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/coords.html#svgpreserveaspectratio"
       },
       "SVGAnimatedPreserveAspectRatio": {
         "fragment": "[Exposed=Window]\ninterface SVGAnimatedPreserveAspectRatio {\n  [SameObject] readonly attribute SVGPreserveAspectRatio baseVal;\n  [SameObject] readonly attribute SVGPreserveAspectRatio animVal;\n};",
@@ -5482,7 +5553,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/coords.html#InterfaceSVGAnimatedPreserveAspectRatio"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/coords.html#svganimatedpreserveaspectratio"
       },
       "SVGRectElement": {
         "fragment": "[Exposed=Window]\ninterface SVGRectElement : SVGGeometryElement {\n  [SameObject] readonly attribute SVGAnimatedLength x;\n  [SameObject] readonly attribute SVGAnimatedLength y;\n  [SameObject] readonly attribute SVGAnimatedLength width;\n  [SameObject] readonly attribute SVGAnimatedLength height;\n  [SameObject] readonly attribute SVGAnimatedLength rx;\n  [SameObject] readonly attribute SVGAnimatedLength ry;\n};",
@@ -5641,7 +5712,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGRectElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/shapes.html#svgrectelement"
       },
       "SVGCircleElement": {
         "fragment": "[Exposed=Window]\ninterface SVGCircleElement : SVGGeometryElement {\n  [SameObject] readonly attribute SVGAnimatedLength cx;\n  [SameObject] readonly attribute SVGAnimatedLength cy;\n  [SameObject] readonly attribute SVGAnimatedLength r;\n};",
@@ -5731,7 +5802,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGCircleElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/shapes.html#svgcircleelement"
       },
       "SVGEllipseElement": {
         "fragment": "[Exposed=Window]\ninterface SVGEllipseElement : SVGGeometryElement {\n  [SameObject] readonly attribute SVGAnimatedLength cx;\n  [SameObject] readonly attribute SVGAnimatedLength cy;\n  [SameObject] readonly attribute SVGAnimatedLength rx;\n  [SameObject] readonly attribute SVGAnimatedLength ry;\n};",
@@ -5844,7 +5915,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGEllipseElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/shapes.html#svgellipseelement"
       },
       "SVGLineElement": {
         "fragment": "[Exposed=Window]\ninterface SVGLineElement : SVGGeometryElement {\n  [SameObject] readonly attribute SVGAnimatedLength x1;\n  [SameObject] readonly attribute SVGAnimatedLength y1;\n  [SameObject] readonly attribute SVGAnimatedLength x2;\n  [SameObject] readonly attribute SVGAnimatedLength y2;\n};",
@@ -5957,7 +6028,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGLineElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/shapes.html#svglineelement"
       },
       "SVGAnimatedPoints": {
         "fragment": "interface mixin SVGAnimatedPoints {\n  [SameObject] readonly attribute SVGPointList points;\n  [SameObject] readonly attribute SVGPointList animatedPoints;\n};",
@@ -6067,7 +6138,8 @@
             },
             "arguments": [],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__clear"
           },
           {
             "type": "operation",
@@ -6099,7 +6171,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__initialize"
           },
           {
             "type": "operation",
@@ -6179,7 +6252,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__insertItemBefore"
           },
           {
             "type": "operation",
@@ -6227,7 +6301,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__replaceItem"
           },
           {
             "type": "operation",
@@ -6259,7 +6334,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__removeItem"
           },
           {
             "type": "operation",
@@ -6291,7 +6367,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGNameList__appendItem"
           },
           {
             "type": "operation",
@@ -6354,7 +6431,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGPointList"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/shapes.html#svgpointlist"
       },
       "SVGPolylineElement": {
         "fragment": "[Exposed=Window]\ninterface SVGPolylineElement : SVGGeometryElement {\n};",
@@ -6374,7 +6451,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGPolylineElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/shapes.html#svgpolylineelement"
       },
       "SVGPolygonElement": {
         "fragment": "[Exposed=Window]\ninterface SVGPolygonElement : SVGGeometryElement {\n};",
@@ -6394,7 +6471,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGPolygonElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/shapes.html#svgpolygonelement"
       },
       "SVGTextContentElement": {
         "fragment": "[Exposed=Window]\ninterface SVGTextContentElement : SVGGraphicsElement {\n\n  // lengthAdjust Types\n  const unsigned short LENGTHADJUST_UNKNOWN = 0;\n  const unsigned short LENGTHADJUST_SPACING = 1;\n  const unsigned short LENGTHADJUST_SPACINGANDGLYPHS = 2;\n\n  [SameObject] readonly attribute SVGAnimatedLength textLength;\n  [SameObject] readonly attribute SVGAnimatedEnumeration lengthAdjust;\n\n  long getNumberOfChars();\n  float getComputedTextLength();\n  float getSubStringLength(unsigned long charnum, unsigned long nchars);\n  SVGPoint getStartPositionOfChar(unsigned long charnum);\n  SVGPoint getEndPositionOfChar(unsigned long charnum);\n  SVGRect getExtentOfChar(unsigned long charnum);\n  float getRotationOfChar(unsigned long charnum);\n  long getCharNumAtPosition(optional DOMPointInit point = {});\n  undefined selectSubString(unsigned long charnum, unsigned long nchars);\n};",
@@ -6515,7 +6592,8 @@
             },
             "arguments": [],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getNumberOfChars"
           },
           {
             "type": "operation",
@@ -6530,7 +6608,8 @@
             },
             "arguments": [],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getComputedTextLength"
           },
           {
             "type": "operation",
@@ -6578,7 +6657,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getSubStringLength"
           },
           {
             "type": "operation",
@@ -6610,7 +6690,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getStartPositionOfChar"
           },
           {
             "type": "operation",
@@ -6642,7 +6723,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getEndPositionOfChar"
           },
           {
             "type": "operation",
@@ -6674,7 +6756,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getExtentOfChar"
           },
           {
             "type": "operation",
@@ -6706,7 +6789,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getRotationOfChar"
           },
           {
             "type": "operation",
@@ -6740,7 +6824,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getCharNumAtPosition"
           },
           {
             "type": "operation",
@@ -6788,7 +6873,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__selectSubString"
           }
         ],
         "extAttrs": [
@@ -6803,7 +6889,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextContentElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#svgtextcontentelement"
       },
       "SVGTextPositioningElement": {
         "fragment": "[Exposed=Window]\ninterface SVGTextPositioningElement : SVGTextContentElement {\n  [SameObject] readonly attribute SVGAnimatedLengthList x;\n  [SameObject] readonly attribute SVGAnimatedLengthList y;\n  [SameObject] readonly attribute SVGAnimatedLengthList dx;\n  [SameObject] readonly attribute SVGAnimatedLengthList dy;\n  [SameObject] readonly attribute SVGAnimatedNumberList rotate;\n};",
@@ -6939,7 +7025,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextPositioningElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#svgtextpositioningelement"
       },
       "SVGTextElement": {
         "fragment": "[Exposed=Window]\ninterface SVGTextElement : SVGTextPositioningElement {\n};",
@@ -6959,7 +7045,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#svgtextelement"
       },
       "SVGTSpanElement": {
         "fragment": "[Exposed=Window]\ninterface SVGTSpanElement : SVGTextPositioningElement {\n};",
@@ -6979,10 +7065,10 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTSpanElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#svgtspanelement"
       },
       "SVGTextPathElement": {
-        "fragment": "[Exposed=Window]\ninterface SVGTextPathElement : SVGTextContentElement {\n\n  // textPath Method Types\n  const unsigned short TEXTPATH_METHODTYPE_UNKNOWN = 0;\n  const unsigned short TEXTPATH_METHODTYPE_ALIGN = 1;\n  const unsigned short TEXTPATH_METHODTYPE_STRETCH = 2;\n\n  // textPath Spacing Types\n  const unsigned short TEXTPATH_SPACINGTYPE_UNKNOWN = 0;\n  const unsigned short TEXTPATH_SPACINGTYPE_AUTO = 1;\n  const unsigned short TEXTPATH_SPACINGTYPE_EXACT = 2;\n\n  [SameObject] readonly attribute SVGAnimatedLength startOffset;\n  [SameObject] readonly attribute SVGAnimatedEnumeration method;\n  [SameObject] readonly attribute SVGAnimatedEnumeration spacing;\n};",
+        "fragment": "[Exposed=Window]\ninterface SVGTextPathElement : SVGTextContentElement {\n\n  // textPath Method Types\n  const unsigned short TEXTPATH_METHODTYPE_UNKNOWN = 0;\n  const unsigned short TEXTPATH_METHODTYPE_ALIGN = 1;\n  const unsigned short TEXTPATH_METHODTYPE_STRETCH = 2;\n\n  // textPath Spacing Types\n  const unsigned short TEXTPATH_SPACINGTYPE_UNKNOWN = 0;\n  const unsigned short TEXTPATH_SPACINGTYPE_AUTO = 1;\n  const unsigned short TEXTPATH_SPACINGTYPE_EXACT = 2;\n\n  // textPath Side Types\n  const unsigned short TEXTPATH_SIDETYPE_UNKNOWN = 0;\n  const unsigned short TEXTPATH_SIDETYPE_LEFT = 1;\n  const unsigned short TEXTPATH_SIDETYPE_RIGHT = 2;\n\n  [SameObject] readonly attribute SVGAnimatedLength startOffset;\n  [SameObject] readonly attribute SVGAnimatedEnumeration method;\n  [SameObject] readonly attribute SVGAnimatedEnumeration spacing;\n  [SameObject] readonly attribute SVGAnimatedEnumeration side;\n};",
         "type": "interface",
         "name": "SVGTextPathElement",
         "inheritance": "SVGTextContentElement",
@@ -7096,6 +7182,60 @@
             "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__TEXTPATH_SPACINGTYPE_EXACT"
           },
           {
+            "type": "const",
+            "name": "TEXTPATH_SIDETYPE_UNKNOWN",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0"
+            },
+            "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__TEXTPATH_SIDETYPE_UNKNOWN"
+          },
+          {
+            "type": "const",
+            "name": "TEXTPATH_SIDETYPE_LEFT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "1"
+            },
+            "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__TEXTPATH_SIDETYPE_LEFT"
+          },
+          {
+            "type": "const",
+            "name": "TEXTPATH_SIDETYPE_RIGHT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "unsigned short"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "2"
+            },
+            "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__TEXTPATH_SIDETYPE_RIGHT"
+          },
+          {
             "type": "attribute",
             "name": "startOffset",
             "idlType": {
@@ -7163,6 +7303,29 @@
             "special": "",
             "readonly": true,
             "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__spacing"
+          },
+          {
+            "type": "attribute",
+            "name": "side",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SVGAnimatedEnumeration"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "SameObject",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": true,
+            "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__side"
           }
         ],
         "extAttrs": [
@@ -7177,10 +7340,10 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextPathElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/text.html#svgtextpathelement"
       },
       "SVGImageElement": {
-        "fragment": "[Exposed=Window]\ninterface SVGImageElement : SVGGraphicsElement {\n  [SameObject] readonly attribute SVGAnimatedLength x;\n  [SameObject] readonly attribute SVGAnimatedLength y;\n  [SameObject] readonly attribute SVGAnimatedLength width;\n  [SameObject] readonly attribute SVGAnimatedLength height;\n  [SameObject] readonly attribute SVGAnimatedPreserveAspectRatio preserveAspectRatio;\n  attribute DOMString? crossOrigin;\n};",
+        "fragment": "[Exposed=Window]\ninterface SVGImageElement : SVGGraphicsElement {\n  [SameObject] readonly attribute SVGAnimatedLength x;\n  [SameObject] readonly attribute SVGAnimatedLength y;\n  [SameObject] readonly attribute SVGAnimatedLength width;\n  [SameObject] readonly attribute SVGAnimatedLength height;\n  [SameObject] readonly attribute SVGAnimatedPreserveAspectRatio preserveAspectRatio;\n  attribute DOMString? crossOrigin;\n  attribute DOMString referrerPolicy;\n};",
         "type": "interface",
         "name": "SVGImageElement",
         "inheritance": "SVGGraphicsElement",
@@ -7315,6 +7478,22 @@
             "special": "",
             "readonly": false,
             "href": "https://w3c.github.io/svgwg/svg2-draft/embedded.html#__svg__SVGImageElement__crossOrigin"
+          },
+          {
+            "type": "attribute",
+            "name": "referrerPolicy",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/svgwg/svg2-draft/embedded.html#__svg__SVGImageElement__referrerPolicy"
           }
         ],
         "extAttrs": [
@@ -7329,7 +7508,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/embedded.html#InterfaceSVGImageElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/embedded.html#svgimageelement"
       },
       "SVGForeignObjectElement": {
         "fragment": "[Exposed=Window]\ninterface SVGForeignObjectElement : SVGGraphicsElement {\n  [SameObject] readonly attribute SVGAnimatedLength x;\n  [SameObject] readonly attribute SVGAnimatedLength y;\n  [SameObject] readonly attribute SVGAnimatedLength width;\n  [SameObject] readonly attribute SVGAnimatedLength height;\n};",
@@ -7442,7 +7621,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/embedded.html#InterfaceSVGForeignObjectElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/embedded.html#svgforeignobjectelement"
       },
       "SVGMarkerElement": {
         "fragment": "[Exposed=Window]\ninterface SVGMarkerElement : SVGElement {\n\n  // Marker Unit Types\n  const unsigned short SVG_MARKERUNITS_UNKNOWN = 0;\n  const unsigned short SVG_MARKERUNITS_USERSPACEONUSE = 1;\n  const unsigned short SVG_MARKERUNITS_STROKEWIDTH = 2;\n\n  // Marker Orientation Types\n  const unsigned short SVG_MARKER_ORIENT_UNKNOWN = 0;\n  const unsigned short SVG_MARKER_ORIENT_AUTO = 1;\n  const unsigned short SVG_MARKER_ORIENT_ANGLE = 2;\n  const unsigned short SVG_MARKER_ORIENT_AUTO_START_REVERSE = 3;\n\n  [SameObject] readonly attribute SVGAnimatedLength refX;\n  [SameObject] readonly attribute SVGAnimatedLength refY;\n  [SameObject] readonly attribute SVGAnimatedEnumeration markerUnits;\n  [SameObject] readonly attribute SVGAnimatedLength markerWidth;\n  [SameObject] readonly attribute SVGAnimatedLength markerHeight;\n  [SameObject] readonly attribute SVGAnimatedEnumeration orientType;\n  [SameObject] readonly attribute SVGAnimatedAngle orientAngle;\n  attribute DOMString orient;\n\n  undefined setOrientToAuto();\n  undefined setOrientToAngle(SVGAngle angle);\n};",
@@ -7766,7 +7945,8 @@
             },
             "arguments": [],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__setOrientToAuto"
           },
           {
             "type": "operation",
@@ -7798,7 +7978,8 @@
               }
             ],
             "extAttrs": [],
-            "special": ""
+            "special": "",
+            "href": "https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__setOrientToAngle"
           }
         ],
         "extAttrs": [
@@ -7813,7 +7994,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/painting.html#InterfaceSVGMarkerElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/painting.html#svgmarkerelement"
       },
       "SVGGradientElement": {
         "fragment": "[Exposed=Window]\ninterface SVGGradientElement : SVGElement {\n\n  // Spread Method Types\n  const unsigned short SVG_SPREADMETHOD_UNKNOWN = 0;\n  const unsigned short SVG_SPREADMETHOD_PAD = 1;\n  const unsigned short SVG_SPREADMETHOD_REFLECT = 2;\n  const unsigned short SVG_SPREADMETHOD_REPEAT = 3;\n\n  [SameObject] readonly attribute SVGAnimatedEnumeration gradientUnits;\n  [SameObject] readonly attribute SVGAnimatedTransformList gradientTransform;\n  [SameObject] readonly attribute SVGAnimatedEnumeration spreadMethod;\n};",
@@ -7975,7 +8156,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGGradientElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/pservers.html#svggradientelement"
       },
       "SVGLinearGradientElement": {
         "fragment": "[Exposed=Window]\ninterface SVGLinearGradientElement : SVGGradientElement {\n  [SameObject] readonly attribute SVGAnimatedLength x1;\n  [SameObject] readonly attribute SVGAnimatedLength y1;\n  [SameObject] readonly attribute SVGAnimatedLength x2;\n  [SameObject] readonly attribute SVGAnimatedLength y2;\n};",
@@ -8088,7 +8269,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGLinearGradientElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/pservers.html#svglineargradientelement"
       },
       "SVGRadialGradientElement": {
         "fragment": "[Exposed=Window]\ninterface SVGRadialGradientElement : SVGGradientElement {\n  [SameObject] readonly attribute SVGAnimatedLength cx;\n  [SameObject] readonly attribute SVGAnimatedLength cy;\n  [SameObject] readonly attribute SVGAnimatedLength r;\n  [SameObject] readonly attribute SVGAnimatedLength fx;\n  [SameObject] readonly attribute SVGAnimatedLength fy;\n  [SameObject] readonly attribute SVGAnimatedLength fr;\n};",
@@ -8247,7 +8428,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGRadialGradientElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/pservers.html#svgradialgradientelement"
       },
       "SVGStopElement": {
         "fragment": "[Exposed=Window]\ninterface SVGStopElement : SVGElement {\n  [SameObject] readonly attribute SVGAnimatedNumber offset;\n};",
@@ -8291,7 +8472,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGStopElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/pservers.html#svgstopelement"
       },
       "SVGPatternElement": {
         "fragment": "[Exposed=Window]\ninterface SVGPatternElement : SVGElement {\n  [SameObject] readonly attribute SVGAnimatedEnumeration patternUnits;\n  [SameObject] readonly attribute SVGAnimatedEnumeration patternContentUnits;\n  [SameObject] readonly attribute SVGAnimatedTransformList patternTransform;\n  [SameObject] readonly attribute SVGAnimatedLength x;\n  [SameObject] readonly attribute SVGAnimatedLength y;\n  [SameObject] readonly attribute SVGAnimatedLength width;\n  [SameObject] readonly attribute SVGAnimatedLength height;\n};",
@@ -8473,10 +8654,10 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGPatternElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/pservers.html#svgpatternelement"
       },
       "SVGScriptElement": {
-        "fragment": "[Exposed=Window]\ninterface SVGScriptElement : SVGElement {\n  [Reflect] attribute DOMString type;\n  attribute DOMString? crossOrigin;\n};",
+        "fragment": "[Exposed=Window]\ninterface SVGScriptElement : SVGElement {\n  [Reflect] attribute DOMString type;\n  attribute DOMString? crossOrigin;\n  attribute DOMString referrerPolicy;\n};",
         "type": "interface",
         "name": "SVGScriptElement",
         "inheritance": "SVGElement",
@@ -8501,7 +8682,8 @@
               }
             ],
             "special": "",
-            "readonly": false
+            "readonly": false,
+            "href": "https://w3c.github.io/svgwg/svg2-draft/interact.html#dom-svgscriptelement-type"
           },
           {
             "type": "attribute",
@@ -8518,6 +8700,22 @@
             "special": "",
             "readonly": false,
             "href": "https://w3c.github.io/svgwg/svg2-draft/interact.html#__svg__SVGScriptElement__crossOrigin"
+          },
+          {
+            "type": "attribute",
+            "name": "referrerPolicy",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/svgwg/svg2-draft/interact.html#__svg__SVGScriptElement__referrerPolicy"
           }
         ],
         "extAttrs": [
@@ -8532,7 +8730,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/interact.html#InterfaceSVGScriptElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/interact.html#svgscriptelement"
       },
       "SVGAElement": {
         "fragment": "[Exposed=Window]\ninterface SVGAElement : SVGGraphicsElement {\n  [Reflect, SameObject] readonly attribute SVGAnimatedString target;\n  [Reflect] attribute DOMString download;\n  [Reflect] attribute USVString ping;\n  [Reflect] attribute DOMString rel;\n  [Reflect=\"rel\", SameObject, PutForwards=value] readonly attribute DOMTokenList relList;\n\n  attribute DOMString referrerPolicy;\n};",
@@ -8566,7 +8764,8 @@
               }
             ],
             "special": "",
-            "readonly": true
+            "readonly": true,
+            "href": "https://w3c.github.io/svgwg/svg2-draft/linking.html#dom-svgaelement-target"
           },
           {
             "type": "attribute",
@@ -8588,7 +8787,8 @@
               }
             ],
             "special": "",
-            "readonly": false
+            "readonly": false,
+            "href": "https://w3c.github.io/svgwg/svg2-draft/linking.html#dom-svgaelement-download"
           },
           {
             "type": "attribute",
@@ -8610,7 +8810,8 @@
               }
             ],
             "special": "",
-            "readonly": false
+            "readonly": false,
+            "href": "https://w3c.github.io/svgwg/svg2-draft/linking.html#dom-svgaelement-ping"
           },
           {
             "type": "attribute",
@@ -8632,7 +8833,8 @@
               }
             ],
             "special": "",
-            "readonly": false
+            "readonly": false,
+            "href": "https://w3c.github.io/svgwg/svg2-draft/linking.html#dom-svgaelement-rel"
           },
           {
             "type": "attribute",
@@ -8672,7 +8874,8 @@
               }
             ],
             "special": "",
-            "readonly": true
+            "readonly": true,
+            "href": "https://w3c.github.io/svgwg/svg2-draft/linking.html#dom-svgaelement-rellist"
           },
           {
             "type": "attribute",
@@ -8703,7 +8906,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/linking.html#svgaelement"
       },
       "SVGViewElement": {
         "fragment": "[Exposed=Window]\ninterface SVGViewElement : SVGElement {};",
@@ -8723,7 +8926,7 @@
           }
         ],
         "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGViewElement"
+        "href": "https://w3c.github.io/svgwg/svg2-draft/linking.html#svgviewelement"
       }
     },
     "idlExtendedNames": {
@@ -8772,7 +8975,8 @@
               },
               "extAttrs": [],
               "special": "",
-              "readonly": true
+              "readonly": true,
+              "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGDocument__rootElement"
             }
           ],
           "extAttrs": [],

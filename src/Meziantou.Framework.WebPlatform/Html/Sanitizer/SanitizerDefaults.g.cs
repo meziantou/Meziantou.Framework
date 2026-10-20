@@ -89,6 +89,7 @@ internal static partial class SanitizerDefaults
         ("tr", "http://www.w3.org/1999/xhtml", []),
         ("td", "http://www.w3.org/1999/xhtml", ["colspan", "headers", "rowspan"]),
         ("th", "http://www.w3.org/1999/xhtml", ["abbr", "colspan", "headers", "rowspan", "scope"]),
+        ("a", "http://www.w3.org/1998/Math/MathML", ["href", "hreflang", "type"]),
         ("math", "http://www.w3.org/1998/Math/MathML", []),
         ("merror", "http://www.w3.org/1998/Math/MathML", []),
         ("mfrac", "http://www.w3.org/1998/Math/MathML", []),

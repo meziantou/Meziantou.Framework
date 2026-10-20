@@ -1,7 +1,7 @@
 {
   "spec": {
     "title": "Container Timing API",
-    "url": "https://wicg.github.io/container-timing/"
+    "url": "https://w3c.github.io/container-timing/"
   },
   "idlparsed": {
     "jsNames": {
@@ -33,7 +33,7 @@
             "extAttrs": [],
             "special": "",
             "readonly": true,
-            "href": "https://wicg.github.io/container-timing/#dom-performancecontainertiming-identifier"
+            "href": "https://w3c.github.io/container-timing/#dom-performancecontainertiming-identifier"
           },
           {
             "type": "attribute",
@@ -49,7 +49,7 @@
             "extAttrs": [],
             "special": "",
             "readonly": true,
-            "href": "https://wicg.github.io/container-timing/#dom-performancecontainertiming-intersectionrect"
+            "href": "https://w3c.github.io/container-timing/#dom-performancecontainertiming-intersectionrect"
           },
           {
             "type": "attribute",
@@ -65,7 +65,7 @@
             "extAttrs": [],
             "special": "",
             "readonly": true,
-            "href": "https://wicg.github.io/container-timing/#dom-performancecontainertiming-size"
+            "href": "https://w3c.github.io/container-timing/#dom-performancecontainertiming-size"
           },
           {
             "type": "attribute",
@@ -81,7 +81,7 @@
             "extAttrs": [],
             "special": "",
             "readonly": true,
-            "href": "https://wicg.github.io/container-timing/#dom-performancecontainertiming-firstrendertime"
+            "href": "https://w3c.github.io/container-timing/#dom-performancecontainertiming-firstrendertime"
           },
           {
             "type": "attribute",
@@ -97,7 +97,7 @@
             "extAttrs": [],
             "special": "",
             "readonly": true,
-            "href": "https://wicg.github.io/container-timing/#dom-performancecontainertiming-lastpaintedelement"
+            "href": "https://w3c.github.io/container-timing/#dom-performancecontainertiming-lastpaintedelement"
           },
           {
             "type": "attribute",
@@ -113,7 +113,7 @@
             "extAttrs": [],
             "special": "",
             "readonly": true,
-            "href": "https://wicg.github.io/container-timing/#dom-performancecontainertiming-rootelement"
+            "href": "https://w3c.github.io/container-timing/#dom-performancecontainertiming-rootelement"
           },
           {
             "type": "operation",
@@ -136,7 +136,7 @@
               }
             ],
             "special": "",
-            "href": "https://wicg.github.io/container-timing/#dom-performancecontainertiming-tojson"
+            "href": "https://w3c.github.io/container-timing/#dom-performancecontainertiming-tojson"
           }
         ],
         "extAttrs": [
@@ -151,7 +151,7 @@
           }
         ],
         "partial": false,
-        "href": "https://wicg.github.io/container-timing/#performancecontainertiming"
+        "href": "https://w3c.github.io/container-timing/#performancecontainertiming"
       }
     },
     "idlExtendedNames": {
@@ -198,7 +198,7 @@
               ],
               "special": "",
               "readonly": false,
-              "href": "https://wicg.github.io/container-timing/#dom-htmlelement-containertiming"
+              "href": "https://w3c.github.io/container-timing/#dom-htmlelement-containertiming"
             },
             {
               "type": "attribute",
@@ -227,7 +227,7 @@
               ],
               "special": "",
               "readonly": false,
-              "href": "https://wicg.github.io/container-timing/#dom-htmlelement-containertimingignore"
+              "href": "https://w3c.github.io/container-timing/#dom-htmlelement-containertimingignore"
             }
           ],
           "extAttrs": [],

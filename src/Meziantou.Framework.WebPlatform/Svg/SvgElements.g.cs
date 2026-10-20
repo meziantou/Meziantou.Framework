@@ -9,9 +9,9 @@ using Meziantou.Framework.WebPlatform.Svg;
 
 namespace Meziantou.Framework.WebPlatform.Dom;
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement"/>
-[IdlInterface("SVGAElement", "https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/linking.html#svgaelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/linking.html#svgaelement"/>
+[IdlInterface("SVGAElement", "https://w3c.github.io/svgwg/svg2-draft/linking.html#svgaelement")]
 public sealed partial class SvgAElement : SvgGraphicsElement
 {
     internal SvgAElement(Document document, string localName, string? prefix)
@@ -24,13 +24,13 @@ public sealed partial class SvgAElement : SvgGraphicsElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>target</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
-    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement"/>
-    [IdlMember("target", "https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement")]
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/linking.html#dom-svgaelement-target"/>
+    [IdlMember("target", "https://w3c.github.io/svgwg/svg2-draft/linking.html#dom-svgaelement-target")]
     public SvgAnimatedString Target => SvgProperties.Get<SvgAnimatedString>(this, "target", "SVGAElement.target");
 
     /// <summary>Gets or sets the value of the <c>download</c> content attribute.</summary>
-    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement"/>
-    [IdlMember("download", "https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement")]
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/linking.html#dom-svgaelement-download"/>
+    [IdlMember("download", "https://w3c.github.io/svgwg/svg2-draft/linking.html#dom-svgaelement-download")]
     public string Download
     {
         get => Reflection.GetString(this, "download");
@@ -38,8 +38,8 @@ public sealed partial class SvgAElement : SvgGraphicsElement
     }
 
     /// <summary>Gets or sets the value of the <c>ping</c> content attribute.</summary>
-    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement"/>
-    [IdlMember("ping", "https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement")]
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/linking.html#dom-svgaelement-ping"/>
+    [IdlMember("ping", "https://w3c.github.io/svgwg/svg2-draft/linking.html#dom-svgaelement-ping")]
     public string Ping
     {
         get => Reflection.GetUsvString(this, "ping");
@@ -47,8 +47,8 @@ public sealed partial class SvgAElement : SvgGraphicsElement
     }
 
     /// <summary>Gets or sets the value of the <c>rel</c> content attribute.</summary>
-    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement"/>
-    [IdlMember("rel", "https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement")]
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/linking.html#dom-svgaelement-rel"/>
+    [IdlMember("rel", "https://w3c.github.io/svgwg/svg2-draft/linking.html#dom-svgaelement-rel")]
     public string Rel
     {
         get => Reflection.GetString(this, "rel");
@@ -56,8 +56,8 @@ public sealed partial class SvgAElement : SvgGraphicsElement
     }
 
     /// <summary>Gets the tokens of the <c>rel</c> content attribute.</summary>
-    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement"/>
-    [IdlMember("relList", "https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement")]
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/linking.html#dom-svgaelement-rellist"/>
+    [IdlMember("relList", "https://w3c.github.io/svgwg/svg2-draft/linking.html#dom-svgaelement-rellist")]
     public DomTokenList RelList
     {
         get => Reflection.GetTokenList(this, "rel");
@@ -192,9 +192,9 @@ public abstract partial class SvgAnimationElement : SvgElement
     public SvgStringList SystemLanguage => SvgProperties.Get<SvgStringList>(this, "systemLanguage", "SVGTests.systemLanguage");
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGCircleElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGCircleElement"/>
-[IdlInterface("SVGCircleElement", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGCircleElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/shapes.html#svgcircleelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#svgcircleelement"/>
+[IdlInterface("SVGCircleElement", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#svgcircleelement")]
 public sealed partial class SvgCircleElement : SvgGeometryElement
 {
     internal SvgCircleElement(Document document, string localName, string? prefix)
@@ -357,9 +357,9 @@ public abstract partial class SvgComponentTransferFunctionElement : SvgElement
     };
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGDefsElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGDefsElement"/>
-[IdlInterface("SVGDefsElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGDefsElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#svgdefselement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#svgdefselement"/>
+[IdlInterface("SVGDefsElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#svgdefselement")]
 public sealed partial class SvgDefsElement : SvgGraphicsElement
 {
     internal SvgDefsElement(Document document, string localName, string? prefix)
@@ -372,9 +372,9 @@ public sealed partial class SvgDefsElement : SvgGraphicsElement
     partial void OnCreated();
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGDescElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGDescElement"/>
-[IdlInterface("SVGDescElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGDescElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#svgdescelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#svgdescelement"/>
+[IdlInterface("SVGDescElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#svgdescelement")]
 public sealed partial class SvgDescElement : SvgElement
 {
     internal SvgDescElement(Document document, string localName, string? prefix)
@@ -387,9 +387,9 @@ public sealed partial class SvgDescElement : SvgElement
     partial void OnCreated();
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGElement"/>
-[IdlInterface("SVGElement", "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/types.html#svgelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#svgelement"/>
+[IdlInterface("SVGElement", "https://w3c.github.io/svgwg/svg2-draft/types.html#svgelement")]
 public partial class SvgElement
 {
     /// <summary>Gets the <c>className</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
@@ -1326,9 +1326,9 @@ public partial class SvgElement
     };
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGEllipseElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGEllipseElement"/>
-[IdlInterface("SVGEllipseElement", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGEllipseElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/shapes.html#svgellipseelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#svgellipseelement"/>
+[IdlInterface("SVGEllipseElement", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#svgellipseelement")]
 public sealed partial class SvgEllipseElement : SvgGeometryElement
 {
     internal SvgEllipseElement(Document document, string localName, string? prefix)
@@ -3178,9 +3178,9 @@ public sealed partial class SvgFilterElement : SvgElement
     };
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/embedded.html#InterfaceSVGForeignObjectElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/embedded.html#InterfaceSVGForeignObjectElement"/>
-[IdlInterface("SVGForeignObjectElement", "https://w3c.github.io/svgwg/svg2-draft/embedded.html#InterfaceSVGForeignObjectElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/embedded.html#svgforeignobjectelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/embedded.html#svgforeignobjectelement"/>
+[IdlInterface("SVGForeignObjectElement", "https://w3c.github.io/svgwg/svg2-draft/embedded.html#svgforeignobjectelement")]
 public sealed partial class SvgForeignObjectElement : SvgGraphicsElement
 {
     internal SvgForeignObjectElement(Document document, string localName, string? prefix)
@@ -3223,9 +3223,9 @@ public sealed partial class SvgForeignObjectElement : SvgGraphicsElement
     };
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGGElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGGElement"/>
-[IdlInterface("SVGGElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGGElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#svggelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#svggelement"/>
+[IdlInterface("SVGGElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#svggelement")]
 public sealed partial class SvgGElement : SvgGraphicsElement
 {
     internal SvgGElement(Document document, string localName, string? prefix)
@@ -3238,9 +3238,9 @@ public sealed partial class SvgGElement : SvgGraphicsElement
     partial void OnCreated();
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGGeometryElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGGeometryElement"/>
-[IdlInterface("SVGGeometryElement", "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGGeometryElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/types.html#svggeometryelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#svggeometryelement"/>
+[IdlInterface("SVGGeometryElement", "https://w3c.github.io/svgwg/svg2-draft/types.html#svggeometryelement")]
 public abstract partial class SvgGeometryElement : SvgGraphicsElement
 {
     private protected SvgGeometryElement(Document document, string localName, string? prefix)
@@ -3265,9 +3265,9 @@ public abstract partial class SvgGeometryElement : SvgGraphicsElement
     };
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGGradientElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGGradientElement"/>
-[IdlInterface("SVGGradientElement", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGGradientElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/pservers.html#svggradientelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#svggradientelement"/>
+[IdlInterface("SVGGradientElement", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#svggradientelement")]
 public abstract partial class SvgGradientElement : SvgElement
 {
     private protected SvgGradientElement(Document document, string localName, string? prefix)
@@ -3330,9 +3330,9 @@ public abstract partial class SvgGradientElement : SvgElement
     };
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGGraphicsElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGGraphicsElement"/>
-[IdlInterface("SVGGraphicsElement", "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGGraphicsElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/types.html#svggraphicselement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#svggraphicselement"/>
+[IdlInterface("SVGGraphicsElement", "https://w3c.github.io/svgwg/svg2-draft/types.html#svggraphicselement")]
 public abstract partial class SvgGraphicsElement : SvgElement
 {
     private protected SvgGraphicsElement(Document document, string localName, string? prefix)
@@ -3367,9 +3367,9 @@ public abstract partial class SvgGraphicsElement : SvgElement
     };
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/embedded.html#InterfaceSVGImageElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/embedded.html#InterfaceSVGImageElement"/>
-[IdlInterface("SVGImageElement", "https://w3c.github.io/svgwg/svg2-draft/embedded.html#InterfaceSVGImageElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/embedded.html#svgimageelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/embedded.html#svgimageelement"/>
+[IdlInterface("SVGImageElement", "https://w3c.github.io/svgwg/svg2-draft/embedded.html#svgimageelement")]
 public sealed partial class SvgImageElement : SvgGraphicsElement
 {
     internal SvgImageElement(Document document, string localName, string? prefix)
@@ -3424,9 +3424,9 @@ public sealed partial class SvgImageElement : SvgGraphicsElement
     };
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGLineElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGLineElement"/>
-[IdlInterface("SVGLineElement", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGLineElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/shapes.html#svglineelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#svglineelement"/>
+[IdlInterface("SVGLineElement", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#svglineelement")]
 public sealed partial class SvgLineElement : SvgGeometryElement
 {
     internal SvgLineElement(Document document, string localName, string? prefix)
@@ -3469,9 +3469,9 @@ public sealed partial class SvgLineElement : SvgGeometryElement
     };
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGLinearGradientElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGLinearGradientElement"/>
-[IdlInterface("SVGLinearGradientElement", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGLinearGradientElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/pservers.html#svglineargradientelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#svglineargradientelement"/>
+[IdlInterface("SVGLinearGradientElement", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#svglineargradientelement")]
 public sealed partial class SvgLinearGradientElement : SvgGradientElement
 {
     internal SvgLinearGradientElement(Document document, string localName, string? prefix)
@@ -3541,9 +3541,9 @@ public sealed partial class SvgMPathElement : SvgElement
     };
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/painting.html#InterfaceSVGMarkerElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/painting.html#InterfaceSVGMarkerElement"/>
-[IdlInterface("SVGMarkerElement", "https://w3c.github.io/svgwg/svg2-draft/painting.html#InterfaceSVGMarkerElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/painting.html#svgmarkerelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/painting.html#svgmarkerelement"/>
+[IdlInterface("SVGMarkerElement", "https://w3c.github.io/svgwg/svg2-draft/painting.html#svgmarkerelement")]
 public sealed partial class SvgMarkerElement : SvgElement
 {
     internal SvgMarkerElement(Document document, string localName, string? prefix)
@@ -3707,9 +3707,9 @@ public sealed partial class SvgMaskElement : SvgElement
     };
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGMetadataElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGMetadataElement"/>
-[IdlInterface("SVGMetadataElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGMetadataElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#svgmetadataelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#svgmetadataelement"/>
+[IdlInterface("SVGMetadataElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#svgmetadataelement")]
 public sealed partial class SvgMetadataElement : SvgElement
 {
     internal SvgMetadataElement(Document document, string localName, string? prefix)
@@ -3737,9 +3737,9 @@ public sealed partial class SvgPathElement : SvgGeometryElement
     partial void OnCreated();
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGPatternElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGPatternElement"/>
-[IdlInterface("SVGPatternElement", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGPatternElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/pservers.html#svgpatternelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#svgpatternelement"/>
+[IdlInterface("SVGPatternElement", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#svgpatternelement")]
 public sealed partial class SvgPatternElement : SvgElement
 {
     internal SvgPatternElement(Document document, string localName, string? prefix)
@@ -3818,9 +3818,9 @@ public sealed partial class SvgPatternElement : SvgElement
     };
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGPolygonElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGPolygonElement"/>
-[IdlInterface("SVGPolygonElement", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGPolygonElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/shapes.html#svgpolygonelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#svgpolygonelement"/>
+[IdlInterface("SVGPolygonElement", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#svgpolygonelement")]
 public sealed partial class SvgPolygonElement : SvgGeometryElement
 {
     internal SvgPolygonElement(Document document, string localName, string? prefix)
@@ -3850,9 +3850,9 @@ public sealed partial class SvgPolygonElement : SvgGeometryElement
     };
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGPolylineElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGPolylineElement"/>
-[IdlInterface("SVGPolylineElement", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGPolylineElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/shapes.html#svgpolylineelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#svgpolylineelement"/>
+[IdlInterface("SVGPolylineElement", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#svgpolylineelement")]
 public sealed partial class SvgPolylineElement : SvgGeometryElement
 {
     internal SvgPolylineElement(Document document, string localName, string? prefix)
@@ -3882,9 +3882,9 @@ public sealed partial class SvgPolylineElement : SvgGeometryElement
     };
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGRadialGradientElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGRadialGradientElement"/>
-[IdlInterface("SVGRadialGradientElement", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGRadialGradientElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/pservers.html#svgradialgradientelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#svgradialgradientelement"/>
+[IdlInterface("SVGRadialGradientElement", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#svgradialgradientelement")]
 public sealed partial class SvgRadialGradientElement : SvgGradientElement
 {
     internal SvgRadialGradientElement(Document document, string localName, string? prefix)
@@ -3939,9 +3939,9 @@ public sealed partial class SvgRadialGradientElement : SvgGradientElement
     };
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGRectElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGRectElement"/>
-[IdlInterface("SVGRectElement", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGRectElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/shapes.html#svgrectelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#svgrectelement"/>
+[IdlInterface("SVGRectElement", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#svgrectelement")]
 public sealed partial class SvgRectElement : SvgGeometryElement
 {
     internal SvgRectElement(Document document, string localName, string? prefix)
@@ -3996,9 +3996,9 @@ public sealed partial class SvgRectElement : SvgGeometryElement
     };
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGSVGElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGSVGElement"/>
-[IdlInterface("SVGSVGElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGSVGElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#svgsvgelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#svgsvgelement"/>
+[IdlInterface("SVGSVGElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#svgsvgelement")]
 public sealed partial class SvgSvgElement : SvgGraphicsElement
 {
     internal SvgSvgElement(Document document, string localName, string? prefix)
@@ -4215,9 +4215,9 @@ public sealed partial class SvgSvgElement : SvgGraphicsElement
     };
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/interact.html#InterfaceSVGScriptElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/interact.html#InterfaceSVGScriptElement"/>
-[IdlInterface("SVGScriptElement", "https://w3c.github.io/svgwg/svg2-draft/interact.html#InterfaceSVGScriptElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/interact.html#svgscriptelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/interact.html#svgscriptelement"/>
+[IdlInterface("SVGScriptElement", "https://w3c.github.io/svgwg/svg2-draft/interact.html#svgscriptelement")]
 public sealed partial class SvgScriptElement : SvgElement
 {
     internal SvgScriptElement(Document document, string localName, string? prefix)
@@ -4230,8 +4230,8 @@ public sealed partial class SvgScriptElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>type</c> content attribute.</summary>
-    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/interact.html#InterfaceSVGScriptElement"/>
-    [IdlMember("type", "https://w3c.github.io/svgwg/svg2-draft/interact.html#InterfaceSVGScriptElement")]
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/interact.html#dom-svgscriptelement-type"/>
+    [IdlMember("type", "https://w3c.github.io/svgwg/svg2-draft/interact.html#dom-svgscriptelement-type")]
     public string Type
     {
         get => Reflection.GetString(this, "type");
@@ -4266,9 +4266,9 @@ public sealed partial class SvgSetElement : SvgAnimationElement
     partial void OnCreated();
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGStopElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGStopElement"/>
-[IdlInterface("SVGStopElement", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGStopElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/pservers.html#svgstopelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#svgstopelement"/>
+[IdlInterface("SVGStopElement", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#svgstopelement")]
 public sealed partial class SvgStopElement : SvgElement
 {
     internal SvgStopElement(Document document, string localName, string? prefix)
@@ -4293,9 +4293,9 @@ public sealed partial class SvgStopElement : SvgElement
     };
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/styling.html#InterfaceSVGStyleElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/styling.html#InterfaceSVGStyleElement"/>
-[IdlInterface("SVGStyleElement", "https://w3c.github.io/svgwg/svg2-draft/styling.html#InterfaceSVGStyleElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/styling.html#svgstyleelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/styling.html#svgstyleelement"/>
+[IdlInterface("SVGStyleElement", "https://w3c.github.io/svgwg/svg2-draft/styling.html#svgstyleelement")]
 public sealed partial class SvgStyleElement : SvgElement
 {
     internal SvgStyleElement(Document document, string localName, string? prefix)
@@ -4308,8 +4308,8 @@ public sealed partial class SvgStyleElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>type</c> content attribute.</summary>
-    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/styling.html#InterfaceSVGStyleElement"/>
-    [IdlMember("type", "https://w3c.github.io/svgwg/svg2-draft/styling.html#InterfaceSVGStyleElement")]
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/styling.html#dom-svgstyleelement-type"/>
+    [IdlMember("type", "https://w3c.github.io/svgwg/svg2-draft/styling.html#dom-svgstyleelement-type")]
     public string Type
     {
         get => Reflection.GetString(this, "type");
@@ -4317,8 +4317,8 @@ public sealed partial class SvgStyleElement : SvgElement
     }
 
     /// <summary>Gets or sets the value of the <c>media</c> content attribute.</summary>
-    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/styling.html#InterfaceSVGStyleElement"/>
-    [IdlMember("media", "https://w3c.github.io/svgwg/svg2-draft/styling.html#InterfaceSVGStyleElement")]
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/styling.html#dom-svgstyleelement-media"/>
+    [IdlMember("media", "https://w3c.github.io/svgwg/svg2-draft/styling.html#dom-svgstyleelement-media")]
     public string Media
     {
         get => Reflection.GetString(this, "media");
@@ -4326,8 +4326,8 @@ public sealed partial class SvgStyleElement : SvgElement
     }
 
     /// <summary>Gets or sets the value of the <c>title</c> content attribute.</summary>
-    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/styling.html#InterfaceSVGStyleElement"/>
-    [IdlMember("title", "https://w3c.github.io/svgwg/svg2-draft/styling.html#InterfaceSVGStyleElement")]
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/styling.html#dom-svgstyleelement-title"/>
+    [IdlMember("title", "https://w3c.github.io/svgwg/svg2-draft/styling.html#dom-svgstyleelement-title")]
     public string Title
     {
         get => Reflection.GetString(this, "title");
@@ -4335,9 +4335,9 @@ public sealed partial class SvgStyleElement : SvgElement
     }
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGSwitchElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGSwitchElement"/>
-[IdlInterface("SVGSwitchElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGSwitchElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#svgswitchelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#svgswitchelement"/>
+[IdlInterface("SVGSwitchElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#svgswitchelement")]
 public sealed partial class SvgSwitchElement : SvgGraphicsElement
 {
     internal SvgSwitchElement(Document document, string localName, string? prefix)
@@ -4350,9 +4350,9 @@ public sealed partial class SvgSwitchElement : SvgGraphicsElement
     partial void OnCreated();
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGSymbolElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGSymbolElement"/>
-[IdlInterface("SVGSymbolElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGSymbolElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#svgsymbolelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#svgsymbolelement"/>
+[IdlInterface("SVGSymbolElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#svgsymbolelement")]
 public sealed partial class SvgSymbolElement : SvgGraphicsElement
 {
     internal SvgSymbolElement(Document document, string localName, string? prefix)
@@ -4383,9 +4383,9 @@ public sealed partial class SvgSymbolElement : SvgGraphicsElement
     };
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTSpanElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTSpanElement"/>
-[IdlInterface("SVGTSpanElement", "https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTSpanElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/text.html#svgtspanelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#svgtspanelement"/>
+[IdlInterface("SVGTSpanElement", "https://w3c.github.io/svgwg/svg2-draft/text.html#svgtspanelement")]
 public sealed partial class SvgTSpanElement : SvgTextPositioningElement
 {
     internal SvgTSpanElement(Document document, string localName, string? prefix)
@@ -4398,9 +4398,9 @@ public sealed partial class SvgTSpanElement : SvgTextPositioningElement
     partial void OnCreated();
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextContentElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextContentElement"/>
-[IdlInterface("SVGTextContentElement", "https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextContentElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/text.html#svgtextcontentelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#svgtextcontentelement"/>
+[IdlInterface("SVGTextContentElement", "https://w3c.github.io/svgwg/svg2-draft/text.html#svgtextcontentelement")]
 public abstract partial class SvgTextContentElement : SvgGraphicsElement
 {
     private protected SvgTextContentElement(Document document, string localName, string? prefix)
@@ -4446,9 +4446,9 @@ public abstract partial class SvgTextContentElement : SvgGraphicsElement
     };
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextElement"/>
-[IdlInterface("SVGTextElement", "https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/text.html#svgtextelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#svgtextelement"/>
+[IdlInterface("SVGTextElement", "https://w3c.github.io/svgwg/svg2-draft/text.html#svgtextelement")]
 public sealed partial class SvgTextElement : SvgTextPositioningElement
 {
     internal SvgTextElement(Document document, string localName, string? prefix)
@@ -4461,9 +4461,9 @@ public sealed partial class SvgTextElement : SvgTextPositioningElement
     partial void OnCreated();
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextPathElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextPathElement"/>
-[IdlInterface("SVGTextPathElement", "https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextPathElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/text.html#svgtextpathelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#svgtextpathelement"/>
+[IdlInterface("SVGTextPathElement", "https://w3c.github.io/svgwg/svg2-draft/text.html#svgtextpathelement")]
 public sealed partial class SvgTextPathElement : SvgTextContentElement
 {
     internal SvgTextPathElement(Document document, string localName, string? prefix)
@@ -4505,6 +4505,21 @@ public sealed partial class SvgTextPathElement : SvgTextContentElement
     [IdlMember("TEXTPATH_SPACINGTYPE_EXACT", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__TEXTPATH_SPACINGTYPE_EXACT")]
     public const ushort TextpathSpacingtypeExact = 2;
 
+    /// <summary>The <c>TEXTPATH_SIDETYPE_UNKNOWN</c> constant (0).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__TEXTPATH_SIDETYPE_UNKNOWN"/>
+    [IdlMember("TEXTPATH_SIDETYPE_UNKNOWN", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__TEXTPATH_SIDETYPE_UNKNOWN")]
+    public const ushort TextpathSidetypeUnknown = 0;
+
+    /// <summary>The <c>TEXTPATH_SIDETYPE_LEFT</c> constant (1).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__TEXTPATH_SIDETYPE_LEFT"/>
+    [IdlMember("TEXTPATH_SIDETYPE_LEFT", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__TEXTPATH_SIDETYPE_LEFT")]
+    public const ushort TextpathSidetypeLeft = 1;
+
+    /// <summary>The <c>TEXTPATH_SIDETYPE_RIGHT</c> constant (2).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__TEXTPATH_SIDETYPE_RIGHT"/>
+    [IdlMember("TEXTPATH_SIDETYPE_RIGHT", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__TEXTPATH_SIDETYPE_RIGHT")]
+    public const ushort TextpathSidetypeRight = 2;
+
     /// <summary>Gets the <c>startOffset</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
     /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__startOffset"/>
     [IdlMember("startOffset", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__startOffset")]
@@ -4520,6 +4535,11 @@ public sealed partial class SvgTextPathElement : SvgTextContentElement
     [IdlMember("spacing", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__spacing")]
     public SvgAnimatedEnumeration Spacing => SvgProperties.Get<SvgAnimatedEnumeration>(this, "spacing", "SVGTextPathElement.spacing");
 
+    /// <summary>Gets the <c>side</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__side"/>
+    [IdlMember("side", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__side")]
+    public SvgAnimatedEnumeration Side => SvgProperties.Get<SvgAnimatedEnumeration>(this, "side", "SVGTextPathElement.side");
+
     /// <summary>Gets the <c>href</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
     /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGURIReference__href"/>
     [IdlMember("href", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGURIReference__href")]
@@ -4530,15 +4550,16 @@ public sealed partial class SvgTextPathElement : SvgTextContentElement
     {
         "href" => ("SVGAnimatedString", "SVGURIReference.href"),
         "method" => ("SVGAnimatedEnumeration", "SVGTextPathElement.method"),
+        "side" => ("SVGAnimatedEnumeration", "SVGTextPathElement.side"),
         "spacing" => ("SVGAnimatedEnumeration", "SVGTextPathElement.spacing"),
         "startOffset" => ("SVGAnimatedLength", "SVGTextPathElement.startOffset"),
         _ => base.GetAnimatedAttribute(name),
     };
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextPositioningElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextPositioningElement"/>
-[IdlInterface("SVGTextPositioningElement", "https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextPositioningElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/text.html#svgtextpositioningelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#svgtextpositioningelement"/>
+[IdlInterface("SVGTextPositioningElement", "https://w3c.github.io/svgwg/svg2-draft/text.html#svgtextpositioningelement")]
 public abstract partial class SvgTextPositioningElement : SvgTextContentElement
 {
     private protected SvgTextPositioningElement(Document document, string localName, string? prefix)
@@ -4587,9 +4608,9 @@ public abstract partial class SvgTextPositioningElement : SvgTextContentElement
     };
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGTitleElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGTitleElement"/>
-[IdlInterface("SVGTitleElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGTitleElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#svgtitleelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#svgtitleelement"/>
+[IdlInterface("SVGTitleElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#svgtitleelement")]
 public sealed partial class SvgTitleElement : SvgElement
 {
     internal SvgTitleElement(Document document, string localName, string? prefix)
@@ -4602,9 +4623,9 @@ public sealed partial class SvgTitleElement : SvgElement
     partial void OnCreated();
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGUseElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGUseElement"/>
-[IdlInterface("SVGUseElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGUseElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#svguseelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#svguseelement"/>
+[IdlInterface("SVGUseElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#svguseelement")]
 public sealed partial class SvgUseElement : SvgGraphicsElement
 {
     internal SvgUseElement(Document document, string localName, string? prefix)
@@ -4653,9 +4674,9 @@ public sealed partial class SvgUseElement : SvgGraphicsElement
     };
 }
 
-/// <summary>https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGViewElement</summary>
-/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGViewElement"/>
-[IdlInterface("SVGViewElement", "https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGViewElement")]
+/// <summary>https://w3c.github.io/svgwg/svg2-draft/linking.html#svgviewelement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/linking.html#svgviewelement"/>
+[IdlInterface("SVGViewElement", "https://w3c.github.io/svgwg/svg2-draft/linking.html#svgviewelement")]
 public sealed partial class SvgViewElement : SvgElement
 {
     internal SvgViewElement(Document document, string localName, string? prefix)

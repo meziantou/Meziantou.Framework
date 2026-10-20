@@ -2939,6 +2939,17 @@ public sealed partial class CssStyleProperties
         set => SetProperty("filter", value ?? "");
     }
 
+    /// <summary>Gets or sets the value of the <c>fit-tolerance</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
+    [IdlMember("fitTolerance", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
+    [IdlMember("fit-tolerance", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
+    public string FitTolerance
+    {
+        get => GetPropertyValue("fit-tolerance");
+        set => SetProperty("fit-tolerance", value ?? "");
+    }
+
     /// <summary>Gets or sets the value of the <c>flex</c> property (an empty string removes the declaration).</summary>
     /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     [IdlMember("flex", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
@@ -3109,17 +3120,6 @@ public sealed partial class CssStyleProperties
     {
         get => GetPropertyValue("flow-into");
         set => SetProperty("flow-into", value ?? "");
-    }
-
-    /// <summary>Gets or sets the value of the <c>flow-tolerance</c> property (an empty string removes the declaration).</summary>
-    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
-    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
-    [IdlMember("flowTolerance", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
-    [IdlMember("flow-tolerance", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
-    public string FlowTolerance
-    {
-        get => GetPropertyValue("flow-tolerance");
-        set => SetProperty("flow-tolerance", value ?? "");
     }
 
     /// <summary>Gets or sets the value of the <c>font</c> property (an empty string removes the declaration).</summary>
@@ -7512,6 +7512,17 @@ public sealed partial class CssStyleProperties
     {
         get => GetPropertyValue("timeline-trigger-name");
         set => SetProperty("timeline-trigger-name", value ?? "");
+    }
+
+    /// <summary>Gets or sets the value of the <c>timeline-trigger-range</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
+    [IdlMember("timelineTriggerRange", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
+    [IdlMember("timeline-trigger-range", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
+    public string TimelineTriggerRange
+    {
+        get => GetPropertyValue("timeline-trigger-range");
+        set => SetProperty("timeline-trigger-range", value ?? "");
     }
 
     /// <summary>Gets or sets the value of the <c>timeline-trigger-source</c> property (an empty string removes the declaration).</summary>

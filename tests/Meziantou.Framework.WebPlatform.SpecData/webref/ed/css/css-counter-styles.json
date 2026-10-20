@@ -192,7 +192,7 @@
   "values": [
     {
       "name": "<counter-style-name>",
-      "prose": "<counter-style-name> is a <custom-ident> that is not an ASCII case-insensitive match for none. When used here, to define a counter style, it also cannot be any of the non-overridable counter-style names (in other uses that merely reference a counter style, such as the extend system, these are allowed). The <counter-style-name> is a tree-scoped name.",
+      "prose": "Counter styles are referenced by name, and represented syntactically by <counter-style-name>, which is a <custom-ident> specifying a tree-scoped name. The keyword none (including any ASCII case-insensitive permutation of it) is not a valid <counter-style-name>.",
       "href": "https://drafts.csswg.org/css-counter-styles-3/#typedef-counter-style-name",
       "type": "type",
       "values": [
@@ -609,6 +609,12 @@
           "value": "cjk-ideographic"
         }
       ]
+    },
+    {
+      "name": "<symbolic-glyph>",
+      "href": "https://drafts.csswg.org/css-counter-styles-3/#typedef-symbolic-glyph",
+      "type": "type",
+      "value": "disc | circle | square | disclosure-open | disclosure-closed"
     }
   ]
 }

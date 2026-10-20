@@ -17098,7 +17098,7 @@
         "href": "https://html.spec.whatwg.org/multipage/interactive-elements.html#htmldialogelement"
       },
       "HTMLScriptElement": {
-        "fragment": "[Exposed=Window]\ninterface HTMLScriptElement : HTMLElement {\n  [HTMLConstructor] constructor();\n\n  [CEReactions, Reflect] attribute DOMString type;\n  [CEReactions, ReflectURL] attribute USVString src;\n  [CEReactions, Reflect] attribute boolean noModule;\n  [CEReactions] attribute boolean async;\n  [CEReactions, Reflect] attribute boolean defer;\n  [SameObject, PutForwards=value, Reflect] readonly attribute DOMTokenList blocking;\n  [CEReactions] attribute DOMString? crossOrigin;\n  [CEReactions] attribute DOMString referrerPolicy;\n  [CEReactions, Reflect] attribute DOMString integrity;\n  [CEReactions] attribute DOMString fetchPriority;\n\n  [CEReactions] attribute DOMString text;\n\n  static boolean supports(DOMString type);\n\n  // also has obsolete members\n};",
+        "fragment": "[Exposed=Window]\ninterface HTMLScriptElement : HTMLElement {\n  [HTMLConstructor] constructor();\n\n  [CEReactions, Reflect] attribute DOMString type;\n  [CEReactions] attribute (TrustedScriptURL or USVString) src;\n  [CEReactions, Reflect] attribute boolean noModule;\n  [CEReactions] attribute boolean async;\n  [CEReactions, Reflect] attribute boolean defer;\n  [SameObject, PutForwards=value, Reflect] readonly attribute DOMTokenList blocking;\n  [CEReactions] attribute DOMString? crossOrigin;\n  [CEReactions] attribute DOMString referrerPolicy;\n  [CEReactions, Reflect] attribute DOMString integrity;\n  [CEReactions] attribute DOMString fetchPriority;\n\n  // innerText and textContent shadow HTMLElement's and Node's, to add Trusted Types checks\n  [CEReactions] attribute (TrustedScript or [LegacyNullToEmptyString] DOMString) innerText;\n  [CEReactions] attribute (TrustedScript or DOMString)? textContent;\n  [CEReactions] attribute (TrustedScript or DOMString) text;\n\n  static boolean supports(DOMString type);\n\n  // also has obsolete members\n};",
         "type": "interface",
         "name": "HTMLScriptElement",
         "inheritance": "HTMLElement",
@@ -17152,19 +17152,30 @@
               "extAttrs": [],
               "generic": "",
               "nullable": false,
-              "union": false,
-              "idlType": "USVString"
+              "union": true,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TrustedScriptURL"
+                },
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "USVString"
+                }
+              ]
             },
             "extAttrs": [
               {
                 "type": "extended-attribute",
                 "name": "CEReactions",
-                "rhs": null,
-                "arguments": []
-              },
-              {
-                "type": "extended-attribute",
-                "name": "ReflectURL",
                 "rhs": null,
                 "arguments": []
               }
@@ -17392,14 +17403,118 @@
           },
           {
             "type": "attribute",
+            "name": "innerText",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TrustedScript"
+                },
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [
+                    {
+                      "type": "extended-attribute",
+                      "name": "LegacyNullToEmptyString",
+                      "rhs": null,
+                      "arguments": []
+                    }
+                  ],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://html.spec.whatwg.org/multipage/scripting.html#dom-script-innertext"
+          },
+          {
+            "type": "attribute",
+            "name": "textContent",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": true,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TrustedScript"
+                },
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://html.spec.whatwg.org/multipage/scripting.html#dom-script-textcontent"
+          },
+          {
+            "type": "attribute",
             "name": "text",
             "idlType": {
               "type": "attribute-type",
               "extAttrs": [],
               "generic": "",
               "nullable": false,
-              "union": false,
-              "idlType": "DOMString"
+              "union": true,
+              "idlType": [
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "TrustedScript"
+                },
+                {
+                  "type": "attribute-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                }
+              ]
             },
             "extAttrs": [
               {
@@ -34420,7 +34535,7 @@
         "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#sethtmloptions"
       },
       "SetHTMLUnsafeOptions": {
-        "fragment": "dictionary SetHTMLUnsafeOptions {\n  (Sanitizer or SanitizerConfig or SanitizerPresets) sanitizer = {};\n  boolean runScripts = false;\n};",
+        "fragment": "dictionary SetHTMLUnsafeOptions {\n  (Sanitizer or SanitizerConfig or SanitizerPresets) sanitizer;\n  boolean runScripts = false;\n};",
         "type": "dictionary",
         "name": "SetHTMLUnsafeOptions",
         "inheritance": null,
@@ -34462,9 +34577,7 @@
                 }
               ]
             },
-            "default": {
-              "type": "dictionary"
-            },
+            "default": null,
             "required": false,
             "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-sethtmlunsafeoptions-sanitizer"
           },
@@ -34493,7 +34606,7 @@
         "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#sethtmlunsafeoptions"
       },
       "ParseHTMLUnsafeOptions": {
-        "fragment": "dictionary ParseHTMLUnsafeOptions {\n  (Sanitizer or SanitizerConfig or SanitizerPresets) sanitizer = {};\n};",
+        "fragment": "dictionary ParseHTMLUnsafeOptions {\n  (Sanitizer or SanitizerConfig or SanitizerPresets) sanitizer;\n};",
         "type": "dictionary",
         "name": "ParseHTMLUnsafeOptions",
         "inheritance": null,
@@ -34535,9 +34648,7 @@
                 }
               ]
             },
-            "default": {
-              "type": "dictionary"
-            },
+            "default": null,
             "required": false,
             "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-parsehtmlunsafeoptions-sanitizer"
           }
@@ -38409,7 +38520,7 @@
         "href": "https://html.spec.whatwg.org/multipage/web-messaging.html#messageeventtarget"
       },
       "MessagePort": {
-        "fragment": "[Exposed=(Window,Worker,AudioWorklet), Transferable]\ninterface MessagePort : EventTarget {\n  undefined postMessage(any message, sequence<object> transfer);\n  undefined postMessage(any message, optional StructuredSerializeOptions options = {});\n  undefined start();\n  undefined close();\n\n  // event handlers\n  attribute EventHandler onclose;\n};",
+        "fragment": "[Exposed=(Window,Worker,AudioWorklet), Transferable]\ninterface MessagePort : EventTarget {\n  undefined postMessage(any message, sequence<object> transfer);\n  undefined postMessage(any message, optional StructuredSerializeOptions options = {});\n  undefined start();\n  undefined close();\n};",
         "type": "interface",
         "name": "MessagePort",
         "inheritance": "EventTarget",
@@ -38554,22 +38665,6 @@
             "extAttrs": [],
             "special": "",
             "href": "https://html.spec.whatwg.org/multipage/web-messaging.html#dom-messageport-close"
-          },
-          {
-            "type": "attribute",
-            "name": "onclose",
-            "idlType": {
-              "type": "attribute-type",
-              "extAttrs": [],
-              "generic": "",
-              "nullable": false,
-              "union": false,
-              "idlType": "EventHandler"
-            },
-            "extAttrs": [],
-            "special": "",
-            "readonly": false,
-            "href": "https://html.spec.whatwg.org/multipage/web-messaging.html#handler-messageport-onclose"
           }
         ],
         "extAttrs": [
@@ -41951,7 +42046,7 @@
     "idlExtendedNames": {
       "Document": [
         {
-          "fragment": "[LegacyOverrideBuiltIns]\npartial interface Document {\n  static Document parseHTMLUnsafe((TrustedHTML or DOMString) html, optional ParseHTMLUnsafeOptions options = {});\n  static Document parseHTML(DOMString html, optional SetHTMLOptions options = {});\n\n  // resource metadata management\n  [PutForwards=href, LegacyUnforgeable] readonly attribute Location? location;\n  attribute USVString domain;\n  readonly attribute USVString referrer;\n  attribute USVString cookie;\n  readonly attribute DOMString lastModified;\n  readonly attribute DocumentReadyState readyState;\n\n  // DOM tree accessors\n  getter object (DOMString name);\n  [CEReactions] attribute DOMString title;\n  [CEReactions] attribute DOMString dir;\n  [CEReactions] attribute HTMLElement? body;\n  readonly attribute HTMLHeadElement? head;\n  [SameObject] readonly attribute HTMLCollection images;\n  [SameObject] readonly attribute HTMLCollection embeds;\n  [SameObject] readonly attribute HTMLCollection plugins;\n  [SameObject] readonly attribute HTMLCollection links;\n  [SameObject] readonly attribute HTMLCollection forms;\n  [SameObject] readonly attribute HTMLCollection scripts;\n  NodeList getElementsByName(DOMString elementName);\n  readonly attribute HTMLOrSVGScriptElement? currentScript; // classic scripts in a document tree only\n\n  // dynamic markup insertion\n  [CEReactions] Document open(optional DOMString unused1, optional DOMString unused2); // both arguments are ignored\n  WindowProxy? open(USVString url, DOMString name, DOMString features);\n  [CEReactions] undefined close();\n  [CEReactions] undefined write((TrustedHTML or DOMString)... text);\n  [CEReactions] undefined writeln((TrustedHTML or DOMString)... text);\n\n  // user interaction\n  readonly attribute WindowProxy? defaultView;\n  boolean hasFocus();\n  [CEReactions] attribute DOMString designMode;\n  [CEReactions] boolean execCommand(DOMString commandId, optional boolean showUI = false, optional DOMString value = \"\");\n  boolean queryCommandEnabled(DOMString commandId);\n  boolean queryCommandIndeterm(DOMString commandId);\n  boolean queryCommandState(DOMString commandId);\n  boolean queryCommandSupported(DOMString commandId);\n  DOMString queryCommandValue(DOMString commandId);\n  readonly attribute boolean hidden;\n  readonly attribute DocumentVisibilityState visibilityState;\n\n  // special event handler IDL attributes that only apply to Document objects\n  [LegacyLenientThis] attribute EventHandler onreadystatechange;\n  attribute EventHandler onvisibilitychange;\n\n  // also has obsolete members\n};",
+          "fragment": "[LegacyOverrideBuiltIns]\npartial interface Document {\n  static Document parseHTMLUnsafe((TrustedHTML or DOMString) html, optional (ParseHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  static Document parseHTML(DOMString html, optional SetHTMLOptions options = {});\n\n  // resource metadata management\n  [PutForwards=href, LegacyUnforgeable] readonly attribute Location? location;\n  attribute USVString domain;\n  readonly attribute USVString referrer;\n  attribute USVString cookie;\n  readonly attribute DOMString lastModified;\n  readonly attribute DocumentReadyState readyState;\n\n  // DOM tree accessors\n  getter object (DOMString name);\n  [CEReactions] attribute DOMString title;\n  [CEReactions] attribute DOMString dir;\n  [CEReactions] attribute HTMLElement? body;\n  readonly attribute HTMLHeadElement? head;\n  [SameObject] readonly attribute HTMLCollection images;\n  [SameObject] readonly attribute HTMLCollection embeds;\n  [SameObject] readonly attribute HTMLCollection plugins;\n  [SameObject] readonly attribute HTMLCollection links;\n  [SameObject] readonly attribute HTMLCollection forms;\n  [SameObject] readonly attribute HTMLCollection scripts;\n  NodeList getElementsByName(DOMString elementName);\n  readonly attribute HTMLOrSVGScriptElement? currentScript; // classic scripts in a document tree only\n\n  // dynamic markup insertion\n  [CEReactions] Document open(optional DOMString unused1, optional DOMString unused2); // both arguments are ignored\n  WindowProxy? open(USVString url, DOMString name, DOMString features);\n  [CEReactions] undefined close();\n  [CEReactions] undefined write((TrustedHTML or DOMString)... text);\n  [CEReactions] undefined writeln((TrustedHTML or DOMString)... text);\n\n  // user interaction\n  readonly attribute WindowProxy? defaultView;\n  boolean hasFocus();\n  [CEReactions] attribute DOMString designMode;\n  [CEReactions] boolean execCommand(DOMString commandId, optional boolean showUI = false, optional DOMString value = \"\");\n  boolean queryCommandEnabled(DOMString commandId);\n  boolean queryCommandIndeterm(DOMString commandId);\n  boolean queryCommandState(DOMString commandId);\n  boolean queryCommandSupported(DOMString commandId);\n  DOMString queryCommandValue(DOMString commandId);\n  readonly attribute boolean hidden;\n  readonly attribute DocumentVisibilityState visibilityState;\n\n  // special event handler IDL attributes that only apply to Document objects\n  [LegacyLenientThis] attribute EventHandler onreadystatechange;\n  attribute EventHandler onvisibilitychange;\n\n  // also has obsolete members\n};",
           "type": "interface",
           "name": "Document",
           "inheritance": null,
@@ -42010,8 +42105,25 @@
                     "extAttrs": [],
                     "generic": "",
                     "nullable": false,
-                    "union": false,
-                    "idlType": "ParseHTMLUnsafeOptions"
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "ParseHTMLUnsafeOptions"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTMLParserOptions"
+                      }
+                    ]
                   },
                   "default": {
                     "type": "dictionary"
@@ -44614,7 +44726,7 @@
       ],
       "Element": [
         {
-          "fragment": "partial interface Element {\n  [CEReactions] undefined setHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined setHTMLUnsafe((TrustedHTML or DOMString) html, optional SetHTMLUnsafeOptions options = {});\n  DOMString getHTML(optional GetHTMLOptions options = {});\n\n  [CEReactions] attribute (TrustedHTML or [LegacyNullToEmptyString] DOMString) innerHTML;\n  [CEReactions] attribute (TrustedHTML or [LegacyNullToEmptyString] DOMString) outerHTML;\n  [CEReactions] undefined insertAdjacentHTML(DOMString position, (TrustedHTML or DOMString) string);\n};",
+          "fragment": "partial interface Element {\n  [CEReactions] undefined setHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined appendHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined prependHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined setHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [CEReactions] undefined appendHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [CEReactions] undefined prependHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  DOMString getHTML(optional GetHTMLOptions options = {});\n\n  [CEReactions] attribute (TrustedHTML or [LegacyNullToEmptyString] DOMString) innerHTML;\n  [CEReactions] attribute (TrustedHTML or [LegacyNullToEmptyString] DOMString) outerHTML;\n  [CEReactions] undefined insertAdjacentHTML(DOMString position, (TrustedHTML or DOMString) string);\n};",
           "type": "interface",
           "name": "Element",
           "inheritance": null,
@@ -44679,6 +44791,122 @@
             },
             {
               "type": "operation",
+              "name": "appendHTML",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "html",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "SetHTMLOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-appendhtml"
+            },
+            {
+              "type": "operation",
+              "name": "prependHTML",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "html",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "SetHTMLOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-prependhtml"
+            },
+            {
+              "type": "operation",
               "name": "setHTMLUnsafe",
               "idlType": {
                 "type": "return-type",
@@ -44731,8 +44959,25 @@
                     "extAttrs": [],
                     "generic": "",
                     "nullable": false,
-                    "union": false,
-                    "idlType": "SetHTMLUnsafeOptions"
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "SetHTMLUnsafeOptions"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTMLParserOptions"
+                      }
+                    ]
                   },
                   "default": {
                     "type": "dictionary"
@@ -44751,6 +44996,190 @@
               ],
               "special": "",
               "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-sethtmlunsafe"
+            },
+            {
+              "type": "operation",
+              "name": "appendHTMLUnsafe",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "html",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTML"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "DOMString"
+                      }
+                    ]
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "SetHTMLUnsafeOptions"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTMLParserOptions"
+                      }
+                    ]
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-appendhtmlunsafe"
+            },
+            {
+              "type": "operation",
+              "name": "prependHTMLUnsafe",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "html",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTML"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "DOMString"
+                      }
+                    ]
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "SetHTMLUnsafeOptions"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTMLParserOptions"
+                      }
+                    ]
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-prependhtmlunsafe"
             },
             {
               "type": "operation",
@@ -44961,7 +45390,7 @@
       ],
       "ShadowRoot": [
         {
-          "fragment": "partial interface ShadowRoot {\n  [CEReactions] undefined setHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined setHTMLUnsafe((TrustedHTML or DOMString) html, optional SetHTMLUnsafeOptions options = {});\n  DOMString getHTML(optional GetHTMLOptions options = {});\n\n  [CEReactions] attribute (TrustedHTML or [LegacyNullToEmptyString] DOMString) innerHTML;\n};",
+          "fragment": "partial interface ShadowRoot {\n  [CEReactions] undefined setHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined appendHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined prependHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined setHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [CEReactions] undefined appendHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [CEReactions] undefined prependHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  DOMString getHTML(optional GetHTMLOptions options = {});\n\n  [CEReactions] attribute (TrustedHTML or [LegacyNullToEmptyString] DOMString) innerHTML;\n};",
           "type": "interface",
           "name": "ShadowRoot",
           "inheritance": null,
@@ -45026,6 +45455,122 @@
             },
             {
               "type": "operation",
+              "name": "appendHTML",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "html",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "SetHTMLOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-appendhtml"
+            },
+            {
+              "type": "operation",
+              "name": "prependHTML",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "html",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "SetHTMLOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-prependhtml"
+            },
+            {
+              "type": "operation",
               "name": "setHTMLUnsafe",
               "idlType": {
                 "type": "return-type",
@@ -45078,8 +45623,25 @@
                     "extAttrs": [],
                     "generic": "",
                     "nullable": false,
-                    "union": false,
-                    "idlType": "SetHTMLUnsafeOptions"
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "SetHTMLUnsafeOptions"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTMLParserOptions"
+                      }
+                    ]
                   },
                   "default": {
                     "type": "dictionary"
@@ -45098,6 +45660,190 @@
               ],
               "special": "",
               "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-sethtmlunsafe"
+            },
+            {
+              "type": "operation",
+              "name": "appendHTMLUnsafe",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "html",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTML"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "DOMString"
+                      }
+                    ]
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "SetHTMLUnsafeOptions"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTMLParserOptions"
+                      }
+                    ]
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-appendhtmlunsafe"
+            },
+            {
+              "type": "operation",
+              "name": "prependHTMLUnsafe",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "html",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTML"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "DOMString"
+                      }
+                    ]
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "SetHTMLUnsafeOptions"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTMLParserOptions"
+                      }
+                    ]
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-prependhtmlunsafe"
             },
             {
               "type": "operation",
@@ -45180,6 +45926,468 @@
               "special": "",
               "readonly": false,
               "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-innerhtml"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ],
+      "NonDocumentTypeChildNode": [
+        {
+          "fragment": "partial interface mixin NonDocumentTypeChildNode {\n  [CEReactions] undefined beforeHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined afterHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined replaceWithHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined beforeHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [CEReactions] undefined afterHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [CEReactions] undefined replaceWithHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n};",
+          "type": "interface mixin",
+          "name": "NonDocumentTypeChildNode",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "beforeHTML",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "html",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "SetHTMLOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-nondocumenttypechildnode-beforehtml"
+            },
+            {
+              "type": "operation",
+              "name": "afterHTML",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "html",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "SetHTMLOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-nondocumenttypechildnode-afterhtml"
+            },
+            {
+              "type": "operation",
+              "name": "replaceWithHTML",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "html",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "DOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "SetHTMLOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-nondocumenttypechildnode-replacewithhtml"
+            },
+            {
+              "type": "operation",
+              "name": "beforeHTMLUnsafe",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "html",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTML"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "DOMString"
+                      }
+                    ]
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "SetHTMLUnsafeOptions"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTMLParserOptions"
+                      }
+                    ]
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-nondocumenttypechildnode-beforehtmlunsafe"
+            },
+            {
+              "type": "operation",
+              "name": "afterHTMLUnsafe",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "html",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTML"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "DOMString"
+                      }
+                    ]
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "SetHTMLUnsafeOptions"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTMLParserOptions"
+                      }
+                    ]
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-nondocumenttypechildnode-afterhtmlunsafe"
+            },
+            {
+              "type": "operation",
+              "name": "replaceWithHTMLUnsafe",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "undefined"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "html",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTML"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "DOMString"
+                      }
+                    ]
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                },
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "SetHTMLUnsafeOptions"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTMLParserOptions"
+                      }
+                    ]
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-nondocumenttypechildnode-replacewithhtmlunsafe"
             }
           ],
           "extAttrs": [],
@@ -48390,6 +49598,7 @@
         "Document",
         "TrustedHTML",
         "ParseHTMLUnsafeOptions",
+        "TrustedHTMLParserOptions",
         "SetHTMLOptions",
         "Location",
         "DocumentReadyState",
@@ -48760,7 +49969,9 @@
       ],
       "HTMLScriptElement": [
         "HTMLElement",
-        "DOMTokenList"
+        "TrustedScriptURL",
+        "DOMTokenList",
+        "TrustedScript"
       ],
       "HTMLTemplateElement": [
         "HTMLElement",
@@ -49194,13 +50405,21 @@
         "SetHTMLOptions",
         "TrustedHTML",
         "SetHTMLUnsafeOptions",
+        "TrustedHTMLParserOptions",
         "GetHTMLOptions"
       ],
       "ShadowRoot": [
         "SetHTMLOptions",
         "TrustedHTML",
         "SetHTMLUnsafeOptions",
+        "TrustedHTMLParserOptions",
         "GetHTMLOptions"
+      ],
+      "NonDocumentTypeChildNode": [
+        "SetHTMLOptions",
+        "TrustedHTML",
+        "SetHTMLUnsafeOptions",
+        "TrustedHTMLParserOptions"
       ],
       "SetHTMLOptions": [
         "Sanitizer",
@@ -49326,7 +50545,6 @@
       "MessagePort": [
         "EventTarget",
         "StructuredSerializeOptions",
-        "EventHandler",
         "MessageEventTarget"
       ],
       "StructuredSerializeOptions": [],
@@ -49424,6 +50642,7 @@
       "SVGScriptElement",
       "Document",
       "TrustedHTML",
+      "TrustedHTMLParserOptions",
       "WindowProxy",
       "DocumentOrShadowRoot",
       "DOMTokenList",
@@ -49435,6 +50654,8 @@
       "EventInit",
       "FileList",
       "FormData",
+      "TrustedScriptURL",
+      "TrustedScript",
       "DocumentFragment",
       "Node",
       "Text",
@@ -49455,13 +50676,12 @@
       "MouseEventInit",
       "ViewTransition",
       "Function",
-      "TrustedScript",
       "VoidFunction",
+      "NonDocumentTypeChildNode",
       "Range",
       "Uint8ClampedArray",
       "Float16Array",
       "ServiceWorker",
-      "TrustedScriptURL",
       "RequestCredentials"
     ],
     "hasObsoleteIdl": false

@@ -573,8 +573,51 @@
         "partial": false,
         "href": "https://w3c.github.io/push-api/#dom-pushsubscription"
       },
+      "PushSubscriptionKeys": {
+        "fragment": "dictionary PushSubscriptionKeys {\n  USVString p256dh;\n  USVString auth;\n};",
+        "type": "dictionary",
+        "name": "PushSubscriptionKeys",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "p256dh",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/push-api/#dom-pushsubscriptionkeys-p256dh"
+          },
+          {
+            "type": "field",
+            "name": "auth",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/push-api/#dom-pushsubscriptionkeys-auth"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/push-api/#dom-pushsubscriptionkeys"
+      },
       "PushSubscriptionJSON": {
-        "fragment": "dictionary PushSubscriptionJSON {\n  USVString endpoint;\n  EpochTimeStamp? expirationTime = null;\n  record<DOMString, USVString> keys;\n};",
+        "fragment": "dictionary PushSubscriptionJSON {\n  USVString endpoint;\n  EpochTimeStamp? expirationTime = null;\n  PushSubscriptionKeys keys;\n};",
         "type": "dictionary",
         "name": "PushSubscriptionJSON",
         "inheritance": null,
@@ -620,27 +663,10 @@
             "idlType": {
               "type": "dictionary-type",
               "extAttrs": [],
-              "generic": "record",
+              "generic": "",
               "nullable": false,
               "union": false,
-              "idlType": [
-                {
-                  "type": "dictionary-type",
-                  "extAttrs": [],
-                  "generic": "",
-                  "nullable": false,
-                  "union": false,
-                  "idlType": "DOMString"
-                },
-                {
-                  "type": "dictionary-type",
-                  "extAttrs": [],
-                  "generic": "",
-                  "nullable": false,
-                  "union": false,
-                  "idlType": "USVString"
-                }
-              ]
+              "idlType": "PushSubscriptionKeys"
             },
             "default": null,
             "required": false,
@@ -1234,8 +1260,10 @@
         "PushEncryptionKeyName",
         "PushSubscriptionJSON"
       ],
+      "PushSubscriptionKeys": [],
       "PushSubscriptionJSON": [
-        "EpochTimeStamp"
+        "EpochTimeStamp",
+        "PushSubscriptionKeys"
       ],
       "PushMessageData": [
         "ArrayBuffer",

@@ -123,12 +123,6 @@
   ],
   "values": [
     {
-      "name": "<content-list>",
-      "href": "https://drafts.csswg.org/css-gcpm-3/#content-list",
-      "type": "type",
-      "value": "[ <string> | <counter()> | <counters()> | <content()> | <attr()> ]+"
-    },
-    {
       "name": "running()",
       "value": "running( <custom-ident> )",
       "href": "https://drafts.csswg.org/css-gcpm-3/#funcdef-running",

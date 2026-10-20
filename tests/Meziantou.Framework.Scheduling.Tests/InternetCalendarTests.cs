@@ -2062,6 +2062,25 @@ public sealed class InternetCalendarTests
         Assert.Equal("DTSTART;TZID=Customized Time Zone:20240715T090000", GetContentLine(CreateCalendarWithEvent(@event).ToIcs(), "DTSTART"));
     }
 
+    // Chile changes on the first Sunday after the first Saturday, which no TimeZoneInfo.TransitionTime expresses, and Outlook
+    // anchors the recurrences in 1601.
+    private static readonly string[] ChileTimeZone =
+    [
+        "TZID:Chile",
+        "BEGIN:STANDARD",
+        "DTSTART:16010101T000000",
+        "TZOFFSETFROM:-0300",
+        "TZOFFSETTO:-0400",
+        "RRULE:FREQ=YEARLY;BYMONTH=4;BYDAY=SU;BYMONTHDAY=2,3,4,5,6,7,8",
+        "END:STANDARD",
+        "BEGIN:DAYLIGHT",
+        "DTSTART:16010101T000000",
+        "TZOFFSETFROM:-0400",
+        "TZOFFSETTO:-0300",
+        "RRULE:FREQ=YEARLY;BYMONTH=9;BYDAY=SU;BYMONTHDAY=2,3,4,5,6,7,8",
+        "END:DAYLIGHT",
+    ];
+
     [Theory]
     [InlineData(1700, 4, 5)]
     [InlineData(2026, 5, 6)]
@@ -2070,26 +2089,7 @@ public sealed class InternetCalendarTests
     [InlineData(9000, 6, 7)]
     public void Parse_FollowsAnOpenEndedVTimeZoneRecurrenceWithoutTransitionTimeForAnyYear(int year, int aprilDay, int septemberDay)
     {
-        // Chile changes on the first Sunday after the first Saturday, which no TimeZoneInfo.TransitionTime expresses, and Outlook
-        // anchors the recurrences in 1601.
-        string[] timeZone =
-        [
-            "TZID:Chile",
-            "BEGIN:STANDARD",
-            "DTSTART:16010101T000000",
-            "TZOFFSETFROM:-0300",
-            "TZOFFSETTO:-0400",
-            "RRULE:FREQ=YEARLY;BYMONTH=4;BYDAY=SU;BYMONTHDAY=2,3,4,5,6,7,8",
-            "END:STANDARD",
-            "BEGIN:DAYLIGHT",
-            "DTSTART:16010101T000000",
-            "TZOFFSETFROM:-0400",
-            "TZOFFSETTO:-0300",
-            "RRULE:FREQ=YEARLY;BYMONTH=9;BYDAY=SU;BYMONTHDAY=2,3,4,5,6,7,8",
-            "END:DAYLIGHT",
-        ];
-
-        var @event = Assert.Single(InternetCalendar.Parse(CreateIcsWithTimeZone(timeZone, "DTSTART;TZID=Chile:20260715T120000")).Events);
+        var @event = Assert.Single(InternetCalendar.Parse(CreateIcsWithTimeZone(ChileTimeZone, "DTSTART;TZID=Chile:20260715T120000")).Events);
 
         Assert.NotNull(@event.TimeZone);
         foreach (var (utc, offset) in new[]
@@ -2105,6 +2105,25 @@ public sealed class InternetCalendarTests
         {
             Assert.Equal(TimeSpan.FromHours(offset), @event.TimeZone.GetUtcOffset(utc), $"{utc:O}");
         }
+    }
+
+    [Fact]
+    public void ToIcs_WritesAnOpenEndedVTimeZoneRecurrenceWithoutTransitionTimeAsOpenEnded()
+    {
+        var calendar = InternetCalendar.Parse(CreateIcsWithTimeZone(ChileTimeZone, "DTSTART;TZID=Chile:20260715T120000"));
+
+        // A recurrence ending in the last supported year would read back as a bounded one, which is only expanded for 2000 onsets
+        var ics = calendar.ToIcs();
+        Assert.Contains("\r\nRRULE:FREQ=YEARLY;BYMONTH=4;BYDAY=SU;BYMONTHDAY=2,3,4,5,6,7,8\r\n", ics);
+        Assert.Contains("\r\nRRULE:FREQ=YEARLY;BYMONTH=9;BYDAY=SU;BYMONTHDAY=2,3,4,5,6,7,8\r\n", ics);
+        Assert.DoesNotContain("UNTIL", ics);
+
+        var reparsed = InternetCalendar.Parse(ics);
+        Assert.Equal(ics, reparsed.ToIcs());
+        var timeZone = Assert.Single(reparsed.Events).TimeZone;
+        Assert.NotNull(timeZone);
+        Assert.Equal(TimeSpan.FromHours(-4), timeZone.GetUtcOffset(new DateTime(5000, 07, 15, 16, 00, 00, DateTimeKind.Utc)));
+        Assert.Equal(TimeSpan.FromHours(-3), timeZone.GetUtcOffset(new DateTime(5000, 12, 15, 16, 00, 00, DateTimeKind.Utc)));
     }
 
     [Fact]

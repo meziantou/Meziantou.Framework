@@ -278,9 +278,12 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   PQ, HLG, gamma) still call `MathF.Pow` per sample: no workload reaches them.
 - **JPEG XL encoder** (`JpegXlEncoderCodec`, `Internals/Codecs/JpegXl/Encoding`). The headers are written, then parsed
   back by the readers of the decoder: the geometry of a frame is never derived twice. The lossy encoder
-  (`JpegXlVarDctEncoder`) mirrors `JpegXlVarDctDecoder`: its forward transforms and its color matrix are measured on, or
-  inverted from, what the decoder computes (`JpegXlForwardTransform`, `JpegXlForwardColor`), and a coefficient is
-  written with the context derivation the decoder reads it with (`JpegXlCoefficientContexts`). The blocks of a VarDCT
+  (`JpegXlVarDctEncoder`) mirrors `JpegXlVarDctDecoder`: its forward DCT undoes the halving steps of the inverse DCT
+  of the decoder in the opposite order, and its LF matrices and its color matrix are measured on, or inverted from,
+  what the decoder computes (`JpegXlForwardTransform`, `JpegXlForwardColor`); a coefficient is written with the
+  context derivation the decoder reads it with (`JpegXlCoefficientContexts`). The forward DCT was a product by bases
+  measured on the decoder, O(N^2) per line: the halving one gives the same coefficients within 3e-8 and the same files
+  but for a few bytes, with 2.4 to 3.2 times fewer instructions for the 64x64 and 8x8 transforms. The blocks of a VarDCT
   frame do not predict each other, so the encoder does not reconstruct what it writes; its decisions use float32 in a
   fixed order. `JpegXlEntropyCodeBuilder` clusters the contexts of the streams that share a code. Every Modular
   sub-stream, of a lossless frame or of a lossy one (LF image, block fields, alpha channel), goes through

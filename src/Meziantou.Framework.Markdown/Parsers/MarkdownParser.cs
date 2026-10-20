@@ -29,11 +29,15 @@ public static class MarkdownParser
 
         pipeline ??= MarkdownConverter.DefaultPipeline;
 
+        var originalText = text;
         text = FixupZero(text);
 
         var document = new MarkdownDocument
         {
-            IsOpen = true
+            IsOpen = true,
+
+            // string.Replace returns the same instance when the text has no NUL character
+            TextWithNullCharacters = pipeline.TrackTrivia && !ReferenceEquals(text, originalText) ? originalText : null,
         };
 
         if (pipeline.PreciseSourceLocation)

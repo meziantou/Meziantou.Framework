@@ -5,6 +5,95 @@ namespace Meziantou.Framework.Scheduling.Tests;
 public partial class RecurrenceRuleTests
 {
     [Fact]
+    public void ReadmeExample_TryParse()
+    {
+        #region RecurrenceRule_TryParse
+        var rrule = "FREQ=WEEKLY;BYDAY=MO,WE;COUNT=10";
+        if (RecurrenceRule.TryParse(rrule, out var rule, out var error))
+        {
+            var dtStart = new DateTime(2024, 01, 01, 09, 00, 00); // The DTSTART of the event
+            var occurrences = rule.GetNextOccurrences(dtStart).ToArray();
+
+            Assert.HasCount(10, occurrences);
+            Assert.Equal(new DateTime(2024, 01, 01, 09, 00, 00), occurrences[0]); // Monday
+            Assert.Equal(new DateTime(2024, 01, 03, 09, 00, 00), occurrences[1]); // Wednesday
+            Assert.Equal(new DateTime(2024, 01, 31, 09, 00, 00), occurrences[9]);
+        }
+        else
+        {
+            Assert.Fail(error);
+        }
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Upcoming()
+    {
+        #region RecurrenceRule_Upcoming
+        var rule = RecurrenceRule.Parse("FREQ=WEEKLY;INTERVAL=2;COUNT=10");
+        var dtStart = new DateTime(2024, 01, 01, 09, 00, 00); // The DTSTART of the event
+        var now = new DateTime(2024, 03, 01); // DateTime.Now
+
+        var upcoming = rule.GetNextOccurrences(dtStart).SkipWhile(occurrence => occurrence < now).Take(5);
+        Assert.Equal(
+            [
+                new DateTime(2024, 03, 11, 09, 00, 00),
+                new DateTime(2024, 03, 25, 09, 00, 00),
+                new DateTime(2024, 04, 08, 09, 00, 00),
+                new DateTime(2024, 04, 22, 09, 00, 00),
+                new DateTime(2024, 05, 06, 09, 00, 00),
+            ],
+            upcoming);
+        #endregion
+    }
+
+#if !INVARIANT_GLOBALIZATION_MODE_ENABLED
+    // An IANA identifier does not resolve on Windows when globalization is invariant.
+    [Fact]
+    public void ReadmeExample_GetHumanText()
+    {
+        #region RecurrenceRule_GetHumanText
+        var culture = CultureInfo.GetCultureInfo("en-US");
+        Assert.Equal("every day", RecurrenceRule.Parse("FREQ=DAILY").GetHumanText(culture));
+        Assert.Equal("every 3 weeks on Tuesday until January 1, 2015", RecurrenceRule.Parse("FREQ=WEEKLY;INTERVAL=3;BYDAY=TU;UNTIL=20150101").GetHumanText(culture));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_TimeZone()
+    {
+        #region RecurrenceRule_TimeZone
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;BYHOUR=9");
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
+
+        var occurrences = rrule.GetNextOccurrences(new DateTime(2024, 03, 09), timeZone)
+            .Take(3)
+            .Select(occurrence => occurrence.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture));
+
+        Assert.Equal(
+            [
+                "2024-03-09 09:00:00 -05:00",
+                "2024-03-10 09:00:00 -04:00", // the offset changes, the wall clock does not
+                "2024-03-11 09:00:00 -04:00",
+            ],
+            occurrences);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_TimeZoneId()
+    {
+        #region RecurrenceRule_TimeZoneId
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;BYHOUR=9");
+        var startDate = new DateTime(2024, 03, 09);
+
+        var occurrences = rrule.GetNextOccurrences(startDate, "America/New_York");
+        Assert.Equal(new DateTimeOffset(2024, 03, 10, 09, 00, 00, TimeSpan.FromHours(-4)), occurrences.ElementAt(1));
+        #endregion
+    }
+#endif
+
+    [Fact]
     public void Monthly_TheLastDayOfTheMonth()
     {
         var rrule = RecurrenceRule.Parse("FREQ=MONTHLY;BYMONTHDAY=-1");

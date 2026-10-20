@@ -9,18 +9,25 @@ This package supports 2 schedule formats:
 
 Parse recurrence rules:
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.Scheduling.Tests/RecurrenceRuleTests.cs;region=RecurrenceRule_TryParse;format=md-fenced-code-block;dedent=true -->
+```csharp
 var rrule = "FREQ=WEEKLY;BYDAY=MO,WE;COUNT=10";
 if (RecurrenceRule.TryParse(rrule, out var rule, out var error))
 {
     var dtStart = new DateTime(2024, 01, 01, 09, 00, 00); // The DTSTART of the event
     var occurrences = rule.GetNextOccurrences(dtStart).ToArray();
+
+    Assert.HasCount(10, occurrences);
+    Assert.Equal(new DateTime(2024, 01, 01, 09, 00, 00), occurrences[0]); // Monday
+    Assert.Equal(new DateTime(2024, 01, 03, 09, 00, 00), occurrences[1]); // Wednesday
+    Assert.Equal(new DateTime(2024, 01, 31, 09, 00, 00), occurrences[9]);
 }
 else
 {
-    Console.WriteLine(error);
+    Assert.Fail(error);
 }
-````
+```
+<!-- endref -->
 
 The start date passed to `GetNextOccurrences` is the `DTSTART` of the recurrence, not the instant to search from:
 `COUNT` counts the occurrences from it, and `INTERVAL` and the periods (weeks, months, ...) are aligned on it. Passing
@@ -28,9 +35,24 @@ The start date passed to `GetNextOccurrences` is the `DTSTART` of the recurrence
 restart, on other dates, at every call. To get the occurrences of a series that are on or after a given date, enumerate from `DTSTART` and skip the
 earlier ones:
 
-````c#
-var upcoming = rule.GetNextOccurrences(dtStart).SkipWhile(occurrence => occurrence < DateTime.Now).Take(5);
-````
+<!-- ref:../../tests/Meziantou.Framework.Scheduling.Tests/RecurrenceRuleTests.cs;region=RecurrenceRule_Upcoming;format=md-fenced-code-block;dedent=true -->
+```csharp
+var rule = RecurrenceRule.Parse("FREQ=WEEKLY;INTERVAL=2;COUNT=10");
+var dtStart = new DateTime(2024, 01, 01, 09, 00, 00); // The DTSTART of the event
+var now = new DateTime(2024, 03, 01); // DateTime.Now
+
+var upcoming = rule.GetNextOccurrences(dtStart).SkipWhile(occurrence => occurrence < now).Take(5);
+Assert.Equal(
+    [
+        new DateTime(2024, 03, 11, 09, 00, 00),
+        new DateTime(2024, 03, 25, 09, 00, 00),
+        new DateTime(2024, 04, 08, 09, 00, 00),
+        new DateTime(2024, 04, 22, 09, 00, 00),
+        new DateTime(2024, 05, 06, 09, 00, 00),
+    ],
+    upcoming);
+```
+<!-- endref -->
 
 The parser follows RFC 5545 section 3.3.10 strictly: an unknown or misspelled rule part (`CONUT=3`, ` COUNT=3`) makes the
 rule invalid, as do the combinations the RFC forbids, such as `BYMONTHDAY` with `FREQ=WEEKLY` or `BYSETPOS` without
@@ -64,11 +86,13 @@ each day.
 
 Convert a recurrence rule to human-readable text:
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.Scheduling.Tests/RecurrenceRuleTests.cs;region=RecurrenceRule_GetHumanText;format=md-fenced-code-block;dedent=true -->
+```csharp
 var culture = CultureInfo.GetCultureInfo("en-US");
-RecurrenceRule.Parse("FREQ=DAILY").GetHumanText(culture); // every day
-RecurrenceRule.Parse("FREQ=WEEKLY;INTERVAL=3;BYDAY=TU;UNTIL=20150101").GetHumanText(culture); // every 3 weeks on Tuesday until January 1, 2015
-````
+Assert.Equal("every day", RecurrenceRule.Parse("FREQ=DAILY").GetHumanText(culture));
+Assert.Equal("every 3 weeks on Tuesday until January 1, 2015", RecurrenceRule.Parse("FREQ=WEEKLY;INTERVAL=3;BYDAY=TU;UNTIL=20150101").GetHumanText(culture));
+```
+<!-- endref -->
 
 Supported languages for human-readable text:
 
@@ -101,26 +125,37 @@ English always writes dates as month-day-year and times with a 24-hour clock, wh
 `GetNextOccurrences` also accepts a time zone. The occurrences keep their wall-clock time across a daylight
 saving transition, so each one carries the UTC offset in effect at that moment:
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.Scheduling.Tests/RecurrenceRuleTests.cs;region=RecurrenceRule_TimeZone;format=md-fenced-code-block;dedent=true -->
+```csharp
 var rrule = RecurrenceRule.Parse("FREQ=DAILY;BYHOUR=9");
 var timeZone = TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
 
-foreach (var occurrence in rrule.GetNextOccurrences(new DateTime(2024, 03, 09), timeZone).Take(3))
-{
-    Console.WriteLine(occurrence);
-}
+var occurrences = rrule.GetNextOccurrences(new DateTime(2024, 03, 09), timeZone)
+    .Take(3)
+    .Select(occurrence => occurrence.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture));
 
-// 2024-03-09 09:00:00 -05:00
-// 2024-03-10 09:00:00 -04:00   <- the offset changes, the wall clock does not
-// 2024-03-11 09:00:00 -04:00
-````
+Assert.Equal(
+    [
+        "2024-03-09 09:00:00 -05:00",
+        "2024-03-10 09:00:00 -04:00", // the offset changes, the wall clock does not
+        "2024-03-11 09:00:00 -04:00",
+    ],
+    occurrences);
+```
+<!-- endref -->
 
 The start date is read as a wall-clock time in that time zone, and a `DateTimeOffset` overload accepts an
 instant instead. A time zone identifier can be passed directly, which `TimeZones.Find` resolves:
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.Scheduling.Tests/RecurrenceRuleTests.cs;region=RecurrenceRule_TimeZoneId;format=md-fenced-code-block;dedent=true -->
+```csharp
+var rrule = RecurrenceRule.Parse("FREQ=DAILY;BYHOUR=9");
+var startDate = new DateTime(2024, 03, 09);
+
 var occurrences = rrule.GetNextOccurrences(startDate, "America/New_York");
-````
+Assert.Equal(new DateTimeOffset(2024, 03, 10, 09, 00, 00, TimeSpan.FromHours(-4)), occurrences.ElementAt(1));
+```
+<!-- endref -->
 
 A local time that a transition makes invalid or ambiguous is resolved as RFC 5545 section 3.3.5 requires:
 an ambiguous time keeps its first occurrence, and an invalid time is read with the UTC offset in effect
@@ -167,18 +202,31 @@ them by wall clock.
 `InternetCalendar.Parse` reads an iCalendar object from a string, a `ReadOnlySpan<char>`, a `TextReader` or
 a UTF-8 `Stream`, and `TryParse` reports why the content was rejected instead of throwing:
 
-````c#
-var calendar = InternetCalendar.Parse(File.ReadAllText("invite.ics"));
-foreach (var @event in calendar.Events)
-{
-    Console.WriteLine($"{@event.Start:g} {@event.Summary}");
-}
+<!-- ref:../../tests/Meziantou.Framework.Scheduling.Tests/InternetCalendarTests.cs;region=InternetCalendar_Parse;format=md-fenced-code-block;dedent=true -->
+```csharp
+var content = """
+    BEGIN:VCALENDAR
+    VERSION:2.0
+    PRODID:-//Example//Example//EN
+    BEGIN:VEVENT
+    UID:1@example.com
+    DTSTAMP:20240101T000000Z
+    DTSTART:20240102T080000Z
+    SUMMARY:Team meeting
+    END:VEVENT
+    END:VCALENDAR
+    """;
 
-if (!InternetCalendar.TryParse(content, out var parsed, out var error))
-{
-    Console.WriteLine(error);
-}
-````
+var calendar = InternetCalendar.Parse(content);
+var @event = Assert.Single(calendar.Events);
+Assert.Equal("Team meeting", @event.Summary);
+Assert.Equal(new DateTime(2024, 01, 02, 08, 00, 00, DateTimeKind.Utc), @event.Start);
+
+var invalidContent = "BEGIN:VCALENDAR";
+Assert.False(InternetCalendar.TryParse(invalidContent, out _, out var error));
+Assert.Equal("The VCALENDAR component is not terminated by END:VCALENDAR", error);
+```
+<!-- endref -->
 
 The parser unfolds content lines, decodes `TEXT` values and reads the three date-time forms of RFC 5545
 section 3.3.5: `20240102T080000Z` becomes a `Utc` value, `20240102T080000` a floating (`Unspecified`) one,
@@ -276,13 +324,16 @@ starting with a UTF-16 or UTF-32 byte order mark is decoded first.
   quoted-string; `^`, a line feed and, in a quoted-string, `"` are written with the RFC 6868 encoding, so
   `new("CN", "Jane \"JD\" Doe")` is written `CN="Jane ^'JD^' Doe"` and `new("CN", "a:b")` is written `CN="a:b"`:
 
-  ````c#
+  <!-- ref:../../tests/Meziantou.Framework.Scheduling.Tests/InternetCalendarTests.cs;region=InternetCalendar_AttendeeParameters;format=md-fenced-code-block;dedent=true -->
+  ```csharp
+  var @event = new Event();
   @event.Attendees.Add(new Attendee
   {
       Address = new InternetCalendarUserAddress("jane@example.com"),
       Parameters = { new("CN", "\"Doe, Jane\""), new("PARTSTAT", "ACCEPTED"), new("RSVP", "TRUE") },
   });
-  ````
+  ```
+  <!-- endref -->
 
 - The `UNTIL` of `Event.RecurrenceRule` is written with the value type of `DTSTART`, as RFC 5545 section 3.3.10
   requires, without modifying the rule: a `DATE` for an all-day event (the date of `UNTIL` in the frame of the
@@ -306,10 +357,13 @@ starting with a UTF-16 or UTF-32 byte order mark is decoded first.
   `InternetCalendarProperty` validates its name, parameters and value when it is created, so it cannot inject
   a line:
 
-  ````c#
+  <!-- ref:../../tests/Meziantou.Framework.Scheduling.Tests/InternetCalendarTests.cs;region=InternetCalendar_RawProperties;format=md-fenced-code-block;dedent=true -->
+  ```csharp
+  var @event = new Event();
   @event.RawProperties.Add(new InternetCalendarProperty("EXDATE", [new("TZID", "Europe/Paris")], "20240104T100000"));
   @event.RawProperties.Add(new InternetCalendarProperty("GEO", "37.386013;-122.082932"));
-  ````
+  ```
+  <!-- endref -->
 
 - A property of either collection named after one the writer emits itself — `BEGIN`, `END`, `VERSION` and
   `PRODID` for the calendar; `UID`, `STATUS`, `ORGANIZER`, `ATTENDEE`, `CREATED`, `LAST-MODIFIED`, `DTSTAMP`,
@@ -326,7 +380,8 @@ starting with a UTF-16 or UTF-32 byte order mark is decoded first.
 `InternetCalendar` writes events in the iCalendar format. Setting `Event.TimeZone` writes the start and end
 as `DTSTART;TZID=`/`DTEND;TZID=` and emits a matching `VTIMEZONE` component:
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.Scheduling.Tests/InternetCalendarTests.cs;region=InternetCalendar_WriteWithTimeZone;format=md-fenced-code-block;dedent=true -->
+```csharp
 var calendar = new InternetCalendar();
 calendar.Events.Add(new Event
 {
@@ -336,7 +391,10 @@ calendar.Events.Add(new Event
 });
 
 var ics = calendar.ToIcs();
-````
+Assert.Contains("BEGIN:VTIMEZONE\r\nTZID:America/New_York\r\n", ics);
+Assert.Contains("DTSTART;TZID=America/New_York:20240102T080000\r\n", ics);
+```
+<!-- endref -->
 
 ````text
 BEGIN:VTIMEZONE
@@ -366,10 +424,17 @@ effect for the events, expanded to an open-ended yearly recurrence.
 
 The library also provides `CronExpression` to parse and evaluate cron schedules.
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.Scheduling.Tests/CronExpressionTests.cs;region=CronExpression_Parse;format=md-fenced-code-block;dedent=true -->
+```csharp
 var cron = CronExpression.Parse("0 */15 * * * *");
-var occurrences = cron.GetNextOccurrences(DateTime.Now).Take(10).ToArray();
-````
+var startDate = new DateTime(2024, 01, 01, 10, 05, 00); // DateTime.Now
+var occurrences = cron.GetNextOccurrences(startDate).Take(10).ToArray();
+
+Assert.HasCount(10, occurrences);
+Assert.Equal(new DateTime(2024, 01, 01, 10, 15, 00), occurrences[0]);
+Assert.Equal(new DateTime(2024, 01, 01, 10, 30, 00), occurrences[1]);
+```
+<!-- endref -->
 
 ### Supported formats
 
@@ -447,11 +512,22 @@ Day-of-week field additionally supports:
 - `GetNextOccurrences(startDate)` and `GetNextOccurrence(startDate)` include `startDate` itself when it matches. To get the
   occurrence after a previous one, start one second after it:
 
-  ````c#
-  var next = cron.GetNextOccurrence(DateTime.UtcNow);
-  // cron.GetNextOccurrence(next.Value) would return next again
+  <!-- ref:../../tests/Meziantou.Framework.Scheduling.Tests/CronExpressionTests.cs;region=CronExpression_NextOccurrence;format=md-fenced-code-block;dedent=true -->
+  ```csharp
+  var cron = CronExpression.Parse("0 */15 * * * *");
+  var now = new DateTime(2024, 01, 01, 10, 05, 00, DateTimeKind.Utc); // DateTime.UtcNow
+
+  var next = cron.GetNextOccurrence(now);
+  Assert.NotNull(next);
+  Assert.Equal(new DateTime(2024, 01, 01, 10, 15, 00, DateTimeKind.Utc), next.Value);
+
+  // next matches the expression, so starting from it returns it again
+  Assert.Equal(next, cron.GetNextOccurrence(next.Value));
+
   var following = cron.GetNextOccurrence(next.Value.AddSeconds(1));
-  ````
+  Assert.Equal(new DateTime(2024, 01, 01, 10, 30, 00, DateTimeKind.Utc), following);
+  ```
+  <!-- endref -->
 
 - The `DateTime` overloads work on wall-clock values and ignore daylight saving time, even when the `Kind` of the start date is
   `Local`: an occurrence can fall in a skipped hour, or be returned once for an hour that is repeated. Use the overloads taking a

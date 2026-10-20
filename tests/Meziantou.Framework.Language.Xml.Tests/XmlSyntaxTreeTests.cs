@@ -203,6 +203,130 @@ public sealed class XmlSyntaxTreeTests
     }
 
     [Fact]
+    public void Formatter_SpaceAroundEquals_SurroundsTheEqualsSignOfEachAttribute()
+    {
+        var formatted = FormatText("<root a='1'><b c='2' d='3'/></root>", new XmlFormattingOptions { SpaceAroundEquals = true });
+
+        Assert.Equal("<root a = \"1\">\n  <b c = \"2\" d = \"3\" />\n</root>", formatted);
+    }
+
+    [Fact]
+    public void Formatter_SpaceAroundEquals_RemovesSpacesWhenFalse()
+    {
+        var formatted = FormatText("<root a = '1'><b c\t=\t'2'/></root>", new XmlFormattingOptions { SpaceAroundEquals = false });
+
+        Assert.Equal("<root a=\"1\">\n  <b c=\"2\" />\n</root>", formatted);
+    }
+
+    [Fact]
+    public void Formatter_SpaceBeforeSelfClosingSlash_IsOnByDefault()
+    {
+        Assert.True(XmlFormattingOptions.Default.SpaceBeforeSelfClosingSlash);
+        Assert.Equal("<root>\n  <a />\n  <b c=\"1\" />\n</root>", FormatText("<root><a/><b c='1'/></root>", XmlFormattingOptions.Default));
+    }
+
+    [Fact]
+    public void Formatter_SpaceBeforeSelfClosingSlash_False_WritesTheSlashRightAfterTheTag()
+    {
+        var formatted = FormatText("<root><a /><b c='1' /></root>", new XmlFormattingOptions { SpaceBeforeSelfClosingSlash = false });
+
+        Assert.Equal("<root>\n  <a/>\n  <b c=\"1\"/>\n</root>", formatted);
+    }
+
+    [Fact]
+    public void Formatter_AttributeWrapping_PutsEachAttributeOnItsOwnLine()
+    {
+        var formatted = FormatText("<root a='1' b='2'><c d='3'/><e f='4' g='5'/><h i='6' j='7'>text</h></root>", new XmlFormattingOptions { AttributeWrapping = true });
+
+        Assert.Equal(
+            """
+            <root
+              a="1"
+              b="2">
+              <c d="3" />
+              <e
+                f="4"
+                g="5" />
+              <h
+                i="6"
+                j="7">text</h>
+            </root>
+            """.ReplaceLineEndings("\n"),
+            formatted);
+    }
+
+    [Fact]
+    public void Formatter_AttributeWrapping_CombinesWithTheOtherOptions()
+    {
+        var options = new XmlFormattingOptions { AttributeWrapping = true, UseTabs = true, NewLine = "\r\n", SpaceAroundEquals = true, SpaceBeforeSelfClosingSlash = false };
+        var formatted = FormatText("<root><e f='4' g='5'/></root>", options);
+
+        Assert.Equal("<root>\r\n\t<e\r\n\t\tf = \"4\"\r\n\t\tg = \"5\"/>\r\n</root>", formatted);
+    }
+
+    [Fact]
+    public void Formatter_AttributeWrapping_LeavesTagsInMixedContentOnTheirLine()
+    {
+        var formatted = FormatText("<p>Hello <b x='1' y='2'>world</b></p>", new XmlFormattingOptions { AttributeWrapping = true });
+
+        Assert.Equal("<p>Hello <b x=\"1\" y=\"2\">world</b></p>", formatted);
+    }
+
+    [Fact]
+    public void Formatter_PreserveSingleLineElements_KeepsElementsWrittenOnOneLine()
+    {
+        const string Text = "<root>\n<a><b/><c/></a>\n<d>\n<e/></d>\n</root>";
+
+        Assert.Equal("<root>\n  <a><b /><c /></a>\n  <d>\n    <e />\n  </d>\n</root>", FormatText(Text, new XmlFormattingOptions { PreserveSingleLineElements = true }));
+        Assert.Equal("<root>\n  <a>\n    <b />\n    <c />\n  </a>\n  <d>\n    <e />\n  </d>\n</root>", FormatText(Text, new XmlFormattingOptions { PreserveSingleLineElements = false }));
+    }
+
+    [Fact]
+    public void Formatter_PreserveSingleLineElements_KeepsTheWhitespaceAndTheAttributesOfThePreservedElement()
+    {
+        const string Text = "<root>\n<a x='1' y='2'> <b/>  <c/> </a>\n</root>";
+
+        Assert.Equal("<root>\n  <a x=\"1\" y=\"2\"> <b />  <c /> </a>\n</root>", FormatText(Text, new XmlFormattingOptions { PreserveSingleLineElements = true, AttributeWrapping = true }));
+    }
+
+    [Fact]
+    public void Formatter_PreserveSingleLineElements_FindsElementsAfterSurrogatePairsAndCarriageReturns()
+    {
+        const string Text = "<root x='\U0001F600'>\r<a><b/></a>\r\n<c>\r<d/></c></root>";
+
+        Assert.Equal("<root x=\"\U0001F600\">\n  <a><b /></a>\n  <c>\n    <d />\n  </c>\n</root>", FormatText(Text, new XmlFormattingOptions { PreserveSingleLineElements = true }));
+    }
+
+    [Fact]
+    public void Formatter_ReindentsElementsThatAreAlreadyIndented()
+    {
+        const string Text = "<?xml version='1.0'?>\n<root>\n  <a>\n      <b/>\n  </a>\n  <!-- c -->\n</root>\n";
+
+        Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<root>\n    <a>\n        <b />\n    </a>\n    <!-- c -->\n</root>\n", FormatText(Text, new XmlFormattingOptions { IndentationSize = 4 }));
+    }
+
+    [Fact]
+    public void Formatter_KeepsTheFinalLineBreakWrittenWithNewLine()
+    {
+        var options = new XmlFormattingOptions { NewLine = "\r\n" };
+
+        Assert.Equal("<!--c-->\r\n<root>\r\n  <a />\r\n</root>\r\n", FormatText("\n<!--c-->\n\n<root><a/></root>\n\n", options));
+        Assert.Equal("<root />", FormatText("<root/>  ", options));
+    }
+
+    [Theory]
+    [InlineData("<p>Hello <b>a</b> <i><j/></i></p>", "<p>Hello <b>a</b> <i><j /></i></p>")]
+    [InlineData("<root><a>  </a></root>", "<root>\n  <a>  </a>\n</root>")]
+    [InlineData("<root><a xml:space='preserve'>\n<b/>\n</a></root>", "<root>\n  <a xml:space=\"preserve\">\n<b />\n</a>\n</root>")]
+    [InlineData("<root><a><![CDATA[x]]><b/></a></root>", "<root>\n  <a><![CDATA[x]]><b /></a>\n</root>")]
+    public void Formatter_KeepsWhitespaceThatCanBeSignificant(string text, string expected)
+    {
+        Assert.Equal(expected, FormatText(text, XmlFormattingOptions.Default));
+    }
+
+    private static string FormatText(string text, XmlFormattingOptions options) => Formatter.Format(XmlSyntaxTree.ParseText(text).GetRoot(), options).ToFullString();
+
+    [Fact]
     public void SourceText_ToStringReturnsTheText()
     {
         const string Text = "<root>\n  <a />\n</root>";

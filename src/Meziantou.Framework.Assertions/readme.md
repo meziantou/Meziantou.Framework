@@ -81,9 +81,11 @@ You can override the `Assert` type used in your tests with a global alias:
 
 or:
 
+<!-- ref:../../samples/Meziantou.Framework.Assertions.Samples/GlobalUsings.cs;format=md-fenced-code-block -->
 ```csharp
 global using Assert = Meziantou.Framework.Assertions.Assert;
 ```
+<!-- endref -->
 
 ## Failure messages
 
@@ -99,12 +101,17 @@ Failure messages show the values involved, and underline the item or character w
 
 `Assert.FormatterOptions` sets the options for the whole process. Tests usually run in parallel, so to change the options for a single test, use a scope instead. The options apply to the current asynchronous flow only, until the scope is disposed:
 
+<!-- ref:../../tests/Meziantou.Framework.Assertions.Tests/AssertionFormatterTests.cs;region=Assert_UseFormatterOptions;format=md-fenced-code-block;dedent=true -->
 ```csharp
+int[] expected = [1, 2, 3];
+int[] actual = [1, 2, 3];
+
 using (Assert.UseFormatterOptions(new FormatterOptions { MaxFormattedItems = 100 }))
 {
     Assert.Equal(expected, actual);
 }
 ```
+<!-- endref -->
 
 The stack trace of an `AssertionException` starts at the method that called the assertion, not inside the assertion library. The runtime cannot hide the frames of asynchronous methods, so the stack trace of an awaited assertion still contains them.
 

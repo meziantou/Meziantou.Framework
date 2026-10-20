@@ -670,7 +670,9 @@ internal sealed class PostgreSqlConnectionProcessor
                 Value = decodedValue ?? DBNull.Value,
                 TypeOid = typeOid,
                 FormatCode = parameter.FormatCode,
-                RawValue = parameter.RawValue,
+
+                // A null array converts to an empty ReadOnlyMemory, which would hide that the value is a SQL NULL.
+                RawValue = parameter.RawValue is { } rawValue ? rawValue : (ReadOnlyMemory<byte>?)null,
             };
         }
 

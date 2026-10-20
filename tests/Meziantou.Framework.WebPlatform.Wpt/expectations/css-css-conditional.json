@@ -947,6 +947,9 @@
   "css/css-conditional/container-queries/size-feature-evaluation.html": {
     "total": 56
   },
+  "css/css-conditional/container-queries/size-feature-fractional.html": {
+    "total": 32
+  },
   "css/css-conditional/container-queries/size-query-with-var.html": {
     "total": 11
   },

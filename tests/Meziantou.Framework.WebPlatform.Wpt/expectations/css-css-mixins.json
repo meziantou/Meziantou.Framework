@@ -5,6 +5,15 @@
   "css/css-mixins/function-parameter-scoping.html": {
     "total": 4
   },
+  "css/css-mixins/function-property-context.html": {
+    "total": 4,
+    "failures": {
+      "em in argument uses the property calling context": "FAIL",
+      "em in default uses the property calling context": "FAIL",
+      "em in local uses the property calling context": "FAIL",
+      "em in result uses the property calling context": "FAIL"
+    }
+  },
   "css/css-mixins/function-relative-units.html": {
     "total": 11
   },
@@ -74,7 +83,7 @@
     "total": 3
   },
   "css/css-mixins/functions/function-shadow.html": {
-    "total": 11
+    "total": 13
   },
   "css/css-mixins/functions/local-attr-substitution.html": {
     "total": 7
@@ -170,6 +179,12 @@
     "total": 4
   },
   "css/css-mixins/private/private-cssom-serialization.tentative.html": {
-    "total": 16
+    "total": 16,
+    "failures": {
+      "Repeated variable name": "FAIL"
+    }
+  },
+  "css/css-mixins/private/private-shared-stylesheet.tentative.html": {
+    "total": 1
   }
 }

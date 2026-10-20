@@ -1,4 +1,24 @@
 {
+  "html/document-isolation-policy/agent-cluster.tentative.https.html": {
+    "total": 19,
+    "failures": {
+      "A cross-document navigate event in a same-origin frame without a policy does not expose a link of a document with one as its sourceElement": "FAIL",
+      "A document with a policy cannot access a same-origin frame without one": "FAIL",
+      "A document with a policy is in an origin-keyed agent cluster": "FAIL",
+      "A document without a policy and a same-origin frame with one cannot access each other": "FAIL",
+      "A document without a policy and a same-origin popup with one cannot access each other": "FAIL",
+      "A document without a policy cannot run a javascript: URL in a same-origin frame with one": "FAIL",
+      "A fragment navigation during a reload of a same-origin frame with a policy does not move the reloaded document into another agent cluster": "FAIL",
+      "A frame with a policy that is cross origin with a cross-origin isolated top-level document is not in the agent cluster of same-origin documents without one": "FAIL",
+      "A navigate event in a same-origin frame without a policy does not expose a link of a document with one as its sourceElement": "FAIL",
+      "A popup with a policy keeps it when its response switches browsing context groups": "FAIL",
+      "Navigating the initial about:blank document of a popup to a same-origin document with a policy does not reuse its Window": "FAIL",
+      "Posting a WebAssembly.Module to a same-origin frame with a policy fails": "FAIL"
+    }
+  },
+  "html/document-isolation-policy/blob-document-inherits-policy.tentative.https.html": {
+    "total": 2
+  },
   "html/document-isolation-policy/credentialless-cache-storage-from-credentialless.https.tentative.window.js?dedicated_worker": {
     "total": 4
   },
@@ -93,14 +113,65 @@
   "html/document-isolation-policy/credentialless-websocket.https.tentative.window.js": {
     "total": 3
   },
+  "html/document-isolation-policy/cross-origin-isolated.tentative.https.html": {
+    "total": 12,
+    "failures": {
+      "A cross-origin frame with isolate-and-require-corp and allow=\"cross-origin-isolated\" in a document without a policy is cross-origin isolated and exposes SharedArrayBuffer": "FAIL",
+      "A data: URL document that a document with isolate-and-require-corp navigates a frame without a policy to is cross-origin isolated and exposes SharedArrayBuffer": "FAIL",
+      "A frame navigated to about:blank in a popup with isolate-and-require-corp is cross-origin isolated and exposes SharedArrayBuffer": "FAIL",
+      "A popup with isolate-and-require-corp is cross-origin isolated and exposes SharedArrayBuffer": "FAIL",
+      "A same-origin frame with isolate-and-require-corp in a document without a policy is cross-origin isolated and exposes SharedArrayBuffer": "FAIL",
+      "A srcdoc frame in a popup with isolate-and-require-corp is cross-origin isolated and exposes SharedArrayBuffer": "FAIL",
+      "An about:blank popup opened by a popup with isolate-and-require-corp is cross-origin isolated and exposes SharedArrayBuffer": "FAIL"
+    }
+  },
+  "html/document-isolation-policy/header-parsing.tentative.https.html": {
+    "harness": "TIMEOUT",
+    "total": 27,
+    "failures": {
+      "policy applied for [\" \\tisolate-and-require-corp\"]": "NOTRUN",
+      "policy applied for [\" isolate-and-require-corp \"]": "NOTRUN",
+      "policy applied for [\"\\tisolate-and-require-corp\\t\"]": "NOTRUN",
+      "policy applied for [\"isolate-and-require-corp\"]": "NOTRUN",
+      "policy applied for [\"isolate-and-require-corp; foo=bar\"]": "NOTRUN",
+      "policy applied for [\"isolate-and-require-corp; report-to=\\\"endpoint\\\"\"]": "NOTRUN",
+      "policy applied for [\"isolate-and-require-corp;isolate-and-require-corp\"]": "NOTRUN",
+      "policy applied for [\"isolate-and-require-corp\\t \"]": "NOTRUN",
+      "policy ignored for [\"\",\"isolate-and-require-corp\"]": "NOTRUN",
+      "policy ignored for [\"\"]": "NOTRUN",
+      "policy ignored for [\":aXNvbGF0ZS1hbmQtcmVxdWlyZS1jb3Jw:\"]": "NOTRUN",
+      "policy ignored for [\"ISOLATE-AND-REQUIRE-CORP\"]": "NOTRUN",
+      "policy ignored for [\"Isolate-and-require-corp\"]": "NOTRUN",
+      "policy ignored for [\"\\\"isolate-and-require-corp\\\"\"]": "NOTRUN",
+      "policy ignored for [\"\\fisolate-and-require-corp\\f\"]": "NOTRUN",
+      "policy ignored for [\"\\risolate-and-require-corp\\r\"]": "NOTRUN",
+      "policy ignored for [\"\\u000bisolate-and-require-corp\\u000b\"]": "NOTRUN",
+      "policy ignored for [\"isolate-and-require-corp isolate-and-require-corp\"]": "NOTRUN",
+      "policy ignored for [\"isolate-and-require-corp\",\"\"]": "NOTRUN",
+      "policy ignored for [\"isolate-and-require-corp\",\"isolate-and-require-corp\"]": "NOTRUN",
+      "policy ignored for [\"isolate-and-require-corp,isolate-and-require-corp\"]": "NOTRUN",
+      "policy ignored for [\"isolate-and-require-corp;\"]": "NOTRUN",
+      "policy ignored for [\"isolate-and-require-corp;\\tfoo=bar\"]": "NOTRUN",
+      "policy ignored for [\"jibberish\"]": "NOTRUN",
+      "policy ignored for [\"none\"]": "NOTRUN",
+      "policy ignored for []": "TIMEOUT",
+      "policy ignored for [{\"percentEncoded\":\"isolate-and-require%FFcorp\"}]": "NOTRUN"
+    }
+  },
   "html/document-isolation-policy/isolate-and-require-corp-load-from-cache-storage.tentative.https.html": {
     "total": 29
   },
   "html/document-isolation-policy/isolate-and-require-corp.tentative.https.html": {
     "total": 2
   },
-  "html/document-isolation-policy/no-secure-context.tentative.html": {
+  "html/document-isolation-policy/navigate-across-policies.tentative.https.html": {
+    "total": 4
+  },
+  "html/document-isolation-policy/no-secure-context-https-iframe.tentative.html": {
     "total": 1
+  },
+  "html/document-isolation-policy/no-secure-context.tentative.html": {
+    "total": 2
   },
   "html/document-isolation-policy/reporting-cache-storage-corp.tentative.https.html": {
     "harness": "TIMEOUT",
@@ -147,6 +218,14 @@
     "total": 1,
     "failures": {
       "COEP:unsafe-none ServiceWorker": "FAIL"
+    }
+  },
+  "html/document-isolation-policy/shared-array-buffer.tentative.https.html": {
+    "total": 3,
+    "failures": {
+      "A SharedArrayBuffer posted by a popup with isolate-and-require-corp to its same-origin frame with isolate-and-credentialless arrives and shares memory with it": "FAIL",
+      "A SharedArrayBuffer posted by a popup with isolate-and-require-corp to its same-origin frame with isolate-and-require-corp arrives and shares memory with it": "FAIL",
+      "A SharedArrayBuffer posted by a popup with isolate-and-require-corp to its same-origin frame without a policy fires messageerror at the frame": "FAIL"
     }
   },
   "html/document-isolation-policy/shared-workers.tentative.https.html": {

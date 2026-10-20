@@ -236,6 +236,9 @@
   "css/css-tables/dynamic-rowspan-change.html": {
     "total": 2
   },
+  "css/css-tables/dynamic-table-cell-block-size-vertical-rl.html": {
+    "reftest": "PASS"
+  },
   "css/css-tables/dynamic-table-cell-height.html": {
     "reftest": "PASS"
   },
@@ -600,6 +603,9 @@
     "total": 1
   },
   "css/css-tables/table-colspan-percent-auto.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/table-continuation-border-model-crash-print.html": {
     "reftest": "PASS"
   },
   "css/css-tables/table-has-box-sizing-border-box-001.html": {

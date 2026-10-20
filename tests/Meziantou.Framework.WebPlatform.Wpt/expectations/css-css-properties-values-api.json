@@ -63,7 +63,10 @@
     "total": 5
   },
   "css/css-properties-values-api/animation/custom-property-animation-list-type-mismatch.html": {
-    "total": 1
+    "total": 7,
+    "failures": {
+      "Additive <transform-function># animation with dynamic underlying list length and value update": "FAIL"
+    }
   },
   "css/css-properties-values-api/animation/custom-property-animation-non-inherited-used-by-standard-property.html": {
     "total": 1
@@ -108,7 +111,11 @@
     "total": 5
   },
   "css/css-properties-values-api/animation/custom-property-animation-transform-list-multiple-values.html": {
-    "total": 6
+    "total": 11,
+    "failures": {
+      "Additive <transform-list> animation stacked on top of a discrete var(--invalid, invalid) animation": "FAIL",
+      "Additive <transform-list> | none animation with dynamic underlying value update from none": "FAIL"
+    }
   },
   "css/css-properties-values-api/animation/custom-property-animation-transform-list-single-values.html": {
     "total": 5

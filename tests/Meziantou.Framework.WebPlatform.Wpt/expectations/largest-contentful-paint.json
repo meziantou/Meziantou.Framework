@@ -141,6 +141,9 @@
   "largest-contentful-paint/observe-mathml.html": {
     "total": 1
   },
+  "largest-contentful-paint/observe-pseudo-element.tentative.html": {
+    "total": 1
+  },
   "largest-contentful-paint/observe-random-namespace.html": {
     "total": 1
   },

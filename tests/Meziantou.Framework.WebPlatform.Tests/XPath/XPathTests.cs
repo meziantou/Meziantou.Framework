@@ -87,6 +87,33 @@ public sealed class XPathTests
     }
 
     [Fact]
+    public void Union_OfNodesOfDifferentTrees()
+    {
+        var document = HtmlDocumentParser.ParseDocument("<!DOCTYPE html><div id=target></div>");
+        var target = document.GetElementById("target")!;
+        var attribute = document.CreateAttribute("data-test");
+        attribute.Value = "hello";
+
+        var nodes = Snapshot(document, "(id('target') | .)", attribute);
+        Assert.Equal(2, nodes.Count);
+        Assert.Contains(target, nodes);
+        Assert.Contains(attribute, nodes);
+        Assert.Equal([attribute], Snapshot(document, "(. | .)", attribute));
+        Assert.Equal("hello", document.Evaluate("string((. | .))", attribute, type: XPathResult.StringType).StringValue);
+        foreach (var expression in (string[])["parent::*", "parent::node()", "ancestor::*", "ancestor-or-self::*", "following::*", "following::node()", "preceding::*", "/"])
+        {
+            Assert.Empty(Snapshot(document, expression, attribute));
+        }
+
+        Assert.Equal([attribute], Snapshot(document, "ancestor-or-self::node()", attribute));
+
+        var parent = document.CreateElement("div");
+        parent.SetAttribute("data-test", "val");
+        parent.Append(document.CreateElement("span"), document.CreateElement("p"));
+        Assert.Equal(5, Snapshot(document, "(id('target') | . | @* | ./*)", parent).Count);
+    }
+
+    [Fact]
     public void SyntaxError()
     {
         var document = HtmlDocumentParser.ParseDocument("<!DOCTYPE html>");

@@ -65,6 +65,13 @@
       "Iframe with policy denied can take focus back from child iframe that has focus": "FAIL"
     }
   },
+  "permissions-policy/experimental-features/focus-without-user-activation-label-click.tentative.html": {
+    "total": 2,
+    "failures": {
+      "click on a label checks the caller's focus permission": "FAIL",
+      "dispatchEvent on a label checks the caller's focus permission": "FAIL"
+    }
+  },
   "permissions-policy/experimental-features/focus-without-user-activation-setter-policy.html": {
     "total": 2,
     "failures": {
@@ -283,6 +290,9 @@
   "permissions-policy/permissions-policy-nested-header-policy-disallowed-for-all.https.sub.html": {
     "total": 6
   },
+  "permissions-policy/permissions-policy-nested-local-frame-delegation.https.sub.html": {
+    "total": 3
+  },
   "permissions-policy/permissions-policy-opaque-origin-history.https.html": {
     "total": 1
   },
@@ -331,6 +341,12 @@
     }
   },
   "permissions-policy/picture-in-picture-supported-by-permissions-policy.html": {
+    "total": 1
+  },
+  "permissions-policy/policy-extends-to-data-url-all.html": {
+    "total": 1
+  },
+  "permissions-policy/policy-extends-to-sandbox-all.html": {
     "total": 1
   },
   "permissions-policy/policy-extends-to-sandbox.html": {

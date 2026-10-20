@@ -26,6 +26,12 @@
   "css/printing/existing-transition-in-media-print.tentative.html": {
     "reftest": "FAIL"
   },
+  "css/printing/fixed-container-query-removal-crash-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/fixed-generated-content-whitespace-crash-print.html": {
+    "reftest": "PASS"
+  },
   "css/printing/fixed-pos-object-pdf-crash-print.html": {
     "reftest": "PASS"
   },
@@ -42,6 +48,9 @@
     "reftest": "PASS"
   },
   "css/printing/input-password-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/mask-and-opacity-offset-print.html": {
     "reftest": "PASS"
   },
   "css/printing/mask-image-print.html": {
@@ -65,6 +74,9 @@
   "css/printing/pseudo-animations-print.html": {
     "reftest": "PASS"
   },
+  "css/printing/repeated-generated-content-whitespace-crash-print.html": {
+    "reftest": "PASS"
+  },
   "css/printing/select-combobox-print.html": {
     "reftest": "PASS"
   },
@@ -77,10 +89,19 @@
   "css/printing/table-overflow-quirks-frameset-crash-print.html": {
     "reftest": "PASS"
   },
+  "css/printing/table-row-group-container-query-crash-print.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/table-row-group-float-crash-print.html": {
+    "reftest": "PASS"
+  },
   "css/printing/text-shadow-blur-print.html": {
     "reftest": "PASS"
   },
   "css/printing/transition-in-media-print.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/printing/translucent-content-offset-print.html": {
     "reftest": "PASS"
   },
   "css/printing/zero-size-001-print.tentative.html": {

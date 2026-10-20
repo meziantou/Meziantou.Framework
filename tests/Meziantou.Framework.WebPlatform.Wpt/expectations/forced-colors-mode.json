@@ -1,4 +1,10 @@
 {
+  "forced-colors-mode/accent-color-keyword-forced-colors.html": {
+    "total": 3,
+    "failures": {
+      "AccentColor mirrors accent-color when forced-color-adjust is none": "FAIL"
+    }
+  },
   "forced-colors-mode/backplate/forced-colors-mode-backplate-01.html": {
     "reftest": "PASS"
   },

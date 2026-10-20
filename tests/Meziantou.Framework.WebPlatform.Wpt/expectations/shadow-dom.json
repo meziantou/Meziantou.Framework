@@ -485,6 +485,9 @@
   "shadow-dom/focus-navigation/reading-flow/tentative/flex-flow.html": {
     "total": 3
   },
+  "shadow-dom/focus-navigation/reading-flow/tentative/flex-visual-fragmentation.html": {
+    "total": 3
+  },
   "shadow-dom/focus-navigation/reading-flow/tentative/flex-visual-order.html": {
     "total": 4
   },
@@ -493,6 +496,67 @@
   },
   "shadow-dom/focus-navigation/reading-flow/tentative/grid-columns.html": {
     "total": 1
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-lanes-column-reading-flow-001.html": {
+    "total": 3,
+    "failures": {
+      "`source-order` groups by `reading-order` and breaks ties by `source-order`": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-lanes-column-reading-flow-002.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-lanes-column-reading-flow-003.html": {
+    "total": 1,
+    "failures": {
+      "`grid-columns` follows CSS order right-to-left within columns in `vertical-rl`": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-lanes-column-reading-flow-004.html": {
+    "total": 1,
+    "failures": {
+      "CSS Grid Lanes: reading-flow reads down each stacking axis with auto-placement": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-lanes-column-reading-flow-006.html": {
+    "total": 1,
+    "failures": {
+      "Grid-order uses CSS order and source order for ties": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-lanes-column-reading-flow-007.html": {
+    "total": 2,
+    "failures": {
+      "Grid-columns reads left-to-right columns with track-reverse placement": "FAIL",
+      "Grid-columns reads top-to-bottom within columns with fill-reverse placement": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-lanes-column-reading-flow-008.html": {
+    "total": 2,
+    "failures": {
+      "Grid-columns follows visual column order after dense backfill": "FAIL",
+      "Grid-columns reads spanning items once in visual column order": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-lanes-row-reading-flow-001.html": {
+    "total": 2,
+    "failures": {
+      "Grid-rows reads left-to-right within rows with fill-reverse placement": "FAIL",
+      "Grid-rows reads top-to-bottom rows with track-reverse placement": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-lanes-row-reading-flow-002.html": {
+    "total": 2,
+    "failures": {
+      "Grid-rows follows visual row order after dense backfill": "FAIL",
+      "Grid-rows reads spanning items once in visual row order": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-lanes-row-reading-flow-003.html": {
+    "total": 1,
+    "failures": {
+      "Grid-rows reads each row completely before the next": "FAIL"
+    }
   },
   "shadow-dom/focus-navigation/reading-flow/tentative/grid-order-across-scopes.html": {
     "total": 1
@@ -894,6 +958,14 @@
       "Multiple labels targeting a custom element using shadowrootreferencetarget inside multiple layers of shadow roots works for computed name": "FAIL",
       "Setting .htmlFor property to target a custom element using shadowrootreferencetarget works for .labels": "FAIL",
       "Setting .htmlFor property to target a custom element using shadowrootreferencetarget works for computed name": "FAIL"
+    }
+  },
+  "shadow-dom/reference-target/tentative/label-lifetime.html": {
+    "total": 3,
+    "failures": {
+      ".labels across shadow roots keeps working across GC": "FAIL",
+      ".labels keeps working after an intermediate shadow host is removed and collected": "FAIL",
+      ".labels keeps working after its whole tree is removed from the document and only the list is referenced": "FAIL"
     }
   },
   "shadow-dom/reference-target/tentative/popovertarget.html": {

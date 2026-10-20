@@ -260,6 +260,9 @@
   "webvtt/rendering/cues-with-video/processing-model/align_end_wrapped.html": {
     "reftest": "PASS"
   },
+  "webvtt/rendering/cues-with-video/processing-model/align_left_right_with_and_without_snap_to_lines.html": {
+    "reftest": "PASS"
+  },
   "webvtt/rendering/cues-with-video/processing-model/align_start.html": {
     "reftest": "PASS"
   },
@@ -591,7 +594,7 @@
     "reftest": "PASS"
   },
   "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/bold_object/bold_white-space_pre-wrap_wrapped.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/bold_object/bold_white-space_pre_wrapped.html": {
     "reftest": "FAIL"

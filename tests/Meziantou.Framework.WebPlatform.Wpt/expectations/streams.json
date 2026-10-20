@@ -461,6 +461,14 @@
   "streams/readable-streams/templated.any.js#sharedworker": {
     "total": 91
   },
+  "streams/transferable/audioworklet.https.html": {
+    "total": 3,
+    "failures": {
+      "A ReadableStream can be transferred to an AudioWorkletProcessor": "FAIL",
+      "A TransformStream can be transferred to an AudioWorkletProcessor": "FAIL",
+      "A WritableStream can be transferred to an AudioWorkletProcessor": "FAIL"
+    }
+  },
   "streams/transferable/deserialize-error.window.js": {
     "harness": "ERROR",
     "total": 2,

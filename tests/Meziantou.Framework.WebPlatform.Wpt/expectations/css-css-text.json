@@ -2012,6 +2012,9 @@
   "css/css-text/line-breaking/line-breaking-replaced-006.html": {
     "reftest": "PASS"
   },
+  "css/css-text/line-breaking/line-breaking-text-001.html": {
+    "reftest": "FAIL"
+  },
   "css/css-text/line-breaking/segment-break-transformation-currency-001.html": {
     "reftest": "PASS"
   },
@@ -4567,6 +4570,9 @@
   "css/css-text/white-space/hanging-whitespace-004.html": {
     "reftest": "PASS"
   },
+  "css/css-text/white-space/hanging-whitespace-005.html": {
+    "reftest": "PASS"
+  },
   "css/css-text/white-space/line-edge-white-space-collapse-001.html": {
     "reftest": "PASS"
   },
@@ -4862,6 +4868,9 @@
     "reftest": "PASS"
   },
   "css/css-text/white-space/tab-stop-threshold-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/white-space/tab-stop-threshold-007.html": {
     "reftest": "PASS"
   },
   "css/css-text/white-space/tab-stop-with-float-001.html?class=ltr": {
@@ -5328,6 +5337,9 @@
   },
   "css/css-text/white-space/white-space-pre-wrap-justify-004.html": {
     "reftest": "FAIL"
+  },
+  "css/css-text/white-space/white-space-pre-wrap-justify-005.html": {
+    "reftest": "PASS"
   },
   "css/css-text/white-space/white-space-pre-wrap-trailing-spaces-001.html": {
     "reftest": "PASS"

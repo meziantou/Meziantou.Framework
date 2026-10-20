@@ -171,6 +171,9 @@
       "el-input-checkbox-switch": "FAIL"
     }
   },
+  "html-aam/summary.html": {
+    "total": 3
+  },
   "html-aam/table-roles.html": {
     "total": 7
   }

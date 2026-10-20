@@ -491,6 +491,9 @@
   "css/filter-effects/feImage-with-text-viewport-dependence.html": {
     "reftest": "PASS"
   },
+  "css/filter-effects/feTile-01.html": {
+    "reftest": "FAIL"
+  },
   "css/filter-effects/fecolormatrix-display-p3.html": {
     "reftest": "FAIL"
   },
@@ -517,6 +520,9 @@
   },
   "css/filter-effects/feconvolve-region-002.html": {
     "reftest": "PASS"
+  },
+  "css/filter-effects/fedisplacementmap-non-uniform-transform-001.html": {
+    "reftest": "FAIL"
   },
   "css/filter-effects/feflood-with-filter-reference.html": {
     "reftest": "PASS"

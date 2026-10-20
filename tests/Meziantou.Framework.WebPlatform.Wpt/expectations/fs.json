@@ -116,6 +116,13 @@
   "fs/FileSystemBaseHandle-postMessage-frames.https.window.js": {
     "total": 4
   },
+  "fs/FileSystemBaseHandle-postMessage-insecure-context.https.window.js": {
+    "total": 3,
+    "failures": {
+      "FileSystemDirectoryHandle cannot be posted to a non-secure context of the same origin": "FAIL",
+      "FileSystemFileHandle cannot be posted to a non-secure context of the same origin": "FAIL"
+    }
+  },
   "fs/FileSystemBaseHandle-postMessage-windows.https.window.js": {
     "total": 3
   },

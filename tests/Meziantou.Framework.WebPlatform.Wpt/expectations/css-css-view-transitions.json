@@ -254,6 +254,9 @@
   "css/css-view-transitions/iframe-and-main-frame-transition-with-name-on-iframe.html": {
     "reftest": "PASS"
   },
+  "css/css-view-transitions/iframe-cross-origin-svg-filter.tentative.sub.https.html": {
+    "reftest": "PASS"
+  },
   "css/css-view-transitions/iframe-new-has-scrollbar.html": {
     "reftest": "PASS"
   },
@@ -437,6 +440,9 @@
   "css/css-view-transitions/navigation/opt-in-removed-during-transition.html": {
     "total": 1
   },
+  "css/css-view-transitions/navigation/outbound-transition-ready-after-pagehide.html": {
+    "total": 1
+  },
   "css/css-view-transitions/navigation/pagereveal-ctor.html": {
     "total": 5
   },
@@ -462,6 +468,12 @@
     "total": 1
   },
   "css/css-view-transitions/navigation/pagereveal-with-view-transition.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/pageswap-after-media-change.html?initial": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/pageswap-after-media-change.html?resize": {
     "total": 1
   },
   "css/css-view-transitions/navigation/pageswap-ctor.html": {
@@ -1034,6 +1046,9 @@
   "css/css-view-transitions/ready_resolves_after_dom_before_raf.html": {
     "total": 1
   },
+  "css/css-view-transitions/render-pass-backing-logical-bounds.html": {
+    "reftest": "PASS"
+  },
   "css/css-view-transitions/reset-state-after-scrolled-view-transition.html": {
     "reftest": "PASS"
   },
@@ -1151,6 +1166,12 @@
   "css/css-view-transitions/scoped/ink-overflow-on-target.html": {
     "reftest": "PASS"
   },
+  "css/css-view-transitions/scoped/mask-image-capture.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/mask-image-overlay.html": {
+    "reftest": "PASS"
+  },
   "css/css-view-transitions/scoped/missing-view-transition-name.html": {
     "total": 1
   },
@@ -1187,8 +1208,14 @@
   "css/css-view-transitions/scoped/scope-containment-during-capture.html": {
     "total": 1
   },
+  "css/css-view-transitions/scoped/scope-containment-keeps-author-remembered-size.html": {
+    "total": 1
+  },
   "css/css-view-transitions/scoped/scope-containment-pseudo-border.html": {
     "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/scope-containment-remembered-size.html": {
+    "total": 3
   },
   "css/css-view-transitions/scoped/scope-containment-sibling-offset.html": {
     "total": 1

@@ -8,6 +8,34 @@
   "css/css-ui/accent-color-invalidation-currentcolor.html": {
     "reftest": "PASS"
   },
+  "css/css-ui/accent-color-keyword-animation.html": {
+    "total": 3,
+    "failures": {
+      "AccentColor mirrors accent-color while animating": "FAIL",
+      "Animated AccentColor updates when accent-color changes": "FAIL",
+      "Animated AccentColorText updates when accent-color changes": "FAIL"
+    }
+  },
+  "css/css-ui/accent-color-keyword-cyclic.html": {
+    "total": 4,
+    "failures": {
+      "AccentColor mirrors accent-color: currentcolor": "FAIL",
+      "Cyclic color: AccentColor with accent-color: currentcolor uses the parent color": "FAIL",
+      "accent-color: AccentColor resolves to the parent's accent-color": "FAIL",
+      "accent-color: currentcolor resolves against the element's own color": "FAIL"
+    }
+  },
+  "css/css-ui/accent-color-keyword-resolution.html": {
+    "total": 6,
+    "failures": {
+      "AccentColor resolves against the element's own accent-color": "FAIL",
+      "AccentColor resolves in a color function in a registered property": "FAIL",
+      "AccentColor resolves in a registered color custom property": "FAIL",
+      "AccentColor updates when accent-color changes": "FAIL",
+      "Canvas AccentColor mirrors inherited and updated accent-color": "FAIL",
+      "Canvas color functions resolve AccentColor against accent-color": "FAIL"
+    }
+  },
   "css/css-ui/accent-color-parent-currentcolor.html": {
     "reftest": "PASS"
   },
@@ -16,6 +44,13 @@
   },
   "css/css-ui/accent-color-radio-checked-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-ui/accent-color-text-keyword-resolution.html": {
+    "total": 3,
+    "failures": {
+      "AccentColorText contrasts against the element's own accent-color": "FAIL",
+      "AccentColorText is black for a light accent-color": "FAIL"
+    }
   },
   "css/css-ui/accent-color-visited.html": {
     "reftest": "PASS"
@@ -86,6 +121,9 @@
   },
   "css/css-ui/appearance-cssom-001.html?include=Invalid": {
     "total": 300
+  },
+  "css/css-ui/appearance-display-001.html": {
+    "total": 525
   },
   "css/css-ui/appearance-initial-value-001.html": {
     "total": 4
@@ -3040,10 +3078,7 @@
     "total": 9
   },
   "css/css-ui/parsing/outline-color-computed.html": {
-    "total": 3,
-    "failures": {
-      "auto computes to itself or to currentColor depending on the value of outline-style": "FAIL"
-    }
+    "total": 3
   },
   "css/css-ui/parsing/outline-color-invalid.html": {
     "total": 3

@@ -1760,7 +1760,10 @@ public sealed class VectorizedKernelTests
         // Output lengths that are not multiples of the pixels of an iteration leave tails; downscales give windows of
         // different lengths, padded with zero weights after them, or before them at the right edge; small sources give
         // padded windows longer than the source (whose samples after the last used column are read, and must be finite).
+        // Every term is added with a fused multiply-add: the sums must differ from those of separate multiplications and
+        // additions somewhere.
         var random = new Random(channels);
+        var fusedDiffers = 0;
         (int Source, int Output)[] sizes = [(1, 1), (2, 5), (7, 3), (37, 11), (37, 80), (101, 100), (300, 7), (64, 129), (3, 30), (9, 17), (50, 19), (1000, 9), (5, 23), (20, 15)];
         var group = Resampler.GetHorizontalWeightsGroup(channels);
         foreach (var filter in new[] { ResamplingFilter.Bilinear, ResamplingFilter.Bicubic, ResamplingFilter.Lanczos3 })
@@ -1783,6 +1786,25 @@ public sealed class VectorizedKernelTests
                 var actual = new double[(outputLength * channels) + 8];
                 actual.AsSpan(expected.Length).Fill(-1);
                 Resampler.ResampleHorizontalScalar(working, expected, weights, channels);
+                for (var dx = 0; dx < outputLength; dx++)
+                {
+                    var taps = weights.GetWeights(dx);
+                    var start = (weights.GetStart(dx) - weights.First) * channels;
+                    for (var c = 0; c < channels; c++)
+                    {
+                        var fused = 0d;
+                        var unfused = 0d;
+                        for (var k = 0; k < taps.Length; k++)
+                        {
+                            fused = Math.FusedMultiplyAdd(taps[k], working[start + (k * channels) + c], fused);
+                            unfused += taps[k] * working[start + (k * channels) + c];
+                        }
+
+                        Assert.Equal(BitConverter.DoubleToInt64Bits(fused), BitConverter.DoubleToInt64Bits(expected[(dx * channels) + c]));
+                        fusedDiffers += BitConverter.DoubleToInt64Bits(fused) == BitConverter.DoubleToInt64Bits(unfused) ? 0 : 1;
+                    }
+                }
+
                 Resampler.ResampleHorizontal(working, actual.AsSpan(0, expected.Length), padded, channels);
                 for (var i = 0; i < expected.Length; i++)
                 {
@@ -1801,6 +1823,8 @@ public sealed class VectorizedKernelTests
                 }
             }
         }
+
+        Assert.True(fusedDiffers > 100, $"{fusedDiffers} sums differ from separate multiplications and additions");
     }
 
     [Fact]
@@ -1808,8 +1832,10 @@ public sealed class VectorizedKernelTests
     public void ResamplerRowAdditionsMatchTheScalarLoopsBitForBit()
     {
         // Lengths that cover the 512-, 256- and 128-bit loops and every tail; samples of both signs, zeros of both signs (the
-        // first term 0 + w x turns -0 into +0), and weights that are zero or negative
+        // first term 0 + w x turns -0 into +0), and weights that are zero or negative. Every term after the first one is a
+        // fused multiply-add: the sums must differ from those of separate multiplications and additions somewhere
         var random = new Random(512);
+        var fusedDiffers = 0;
         for (var length = 0; length <= 100; length++)
         {
             for (var rows = 1; rows <= 4; rows++)
@@ -1839,13 +1865,16 @@ public sealed class VectorizedKernelTests
                     var expected = new double[length];
                     for (var i = 0; i < length; i++)
                     {
-                        var sum = (accumulate ? buffer[i] : 0d) + (weights[0] * buffer[offsets[0] + i]);
+                        var sum = Math.FusedMultiplyAdd(weights[0], buffer[offsets[0] + i], accumulate ? buffer[i] : 0d);
+                        var unfused = (accumulate ? buffer[i] : 0d) + (weights[0] * buffer[offsets[0] + i]);
                         for (var t = 1; t < rows; t++)
                         {
-                            sum += weights[t] * buffer[offsets[t] + i];
+                            sum = Math.FusedMultiplyAdd(weights[t], buffer[offsets[t] + i], sum);
+                            unfused += weights[t] * buffer[offsets[t] + i];
                         }
 
                         expected[i] = sum;
+                        fusedDiffers += BitConverter.DoubleToInt64Bits(sum) == BitConverter.DoubleToInt64Bits(unfused) ? 0 : 1;
                     }
 
                     var actual = buffer.ToArray();
@@ -1871,13 +1900,15 @@ public sealed class VectorizedKernelTests
 
                     for (var i = 0; i < length; i++)
                     {
-                        reference[i] = (t == 0 ? 0d : reference[i]) + (weights[t] * row[i]);
+                        reference[i] = t == 0 ? 0d + (weights[t] * row[i]) : Math.FusedMultiplyAdd(weights[t], row[i], reference[i]);
                     }
 
                     Assert.Equal(reference.Select(BitConverter.DoubleToInt64Bits), accumulator.Select(BitConverter.DoubleToInt64Bits));
                 }
             }
         }
+
+        Assert.True(fusedDiffers > 1000, $"{fusedDiffers} sums differ from separate multiplications and additions");
     }
 
     [Theory]

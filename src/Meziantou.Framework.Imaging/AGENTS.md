@@ -877,7 +877,10 @@ thin public types over its `FontFace`.
 
 - Remove unnecessary decodes, conversions and copies before micro-optimizing. Profile first and keep the evidence.
 - Scalar kernels are the numerical reference. A vectorized kernel keeps its scalar version (`...Scalar`) and needs a
-  test proving identical results (`VectorizedKernelTests`). No fused multiply-add in the DCTs.
+  test proving identical results (`VectorizedKernelTests`). No fused multiply-add in the DCTs. The resampler and the
+  convolver add every tap with a fused multiply-add in the scalar loops (`Math.FusedMultiplyAdd`) and the vector loops
+  alike, the vector loops only when the processor has the instruction (`Resampler.IsFmaAccelerated`): the software
+  fallback of `Vector128.FusedMultiplyAdd` is exact but computed one element at a time.
 - A kernel that only has an `AdvSimd` path runs its scalar reference on x64. The AV1 vector kernels use `Av1Simd` for
   what `Vector128` does not express: each operation has an `AdvSimd` and an SSE branch, so the x64 branch only runs on
   x64 (the Windows and Linux CI legs, or an x64 machine). The inverse transform kernels are written once over

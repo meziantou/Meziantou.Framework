@@ -13,8 +13,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// Rows are loaded into double-precision working samples (<see cref="WorkingSamples"/>), padded on both sides with the
 /// pixels the kernel reads outside the image, so that every weight of a kernel row adds one whole shifted row to the
 /// accumulator: <c>0 + w0 x0 + w1 x1 + ...</c>, kernel rows from top to bottom and weights from left to right, zero
-/// weights skipped. The row additions are those of the resampler (<see cref="Resampler.AddScaled"/>): vectorized when
-/// supported, without fused multiply-adds, so the result is bit-identical to the scalar loops.
+/// weights skipped. The row additions are those of the resampler (<see cref="Resampler.AddScaled"/>): every term after the
+/// first one added with a fused multiply-add, vectorized when supported, so the result is bit-identical to the scalar
+/// loops.
 /// </para>
 /// <para>
 /// The frame is rewritten in place, band by band. A band keeps the working rows it still needs in a ring before it
@@ -129,7 +130,7 @@ internal static class Convolver
 
         // The taps of a row are summed a block of samples at a time (Resampler.SetWeightedSum) when the kernel is small enough
         // for their list to be on the stack; otherwise, and for the scalar reference of the tests, a row is added per tap
-        var blocked = !Resampler.TestForceScalar && (Vector128.IsHardwareAccelerated || Vector256.IsHardwareAccelerated) && kernelWidth * kernelHeight <= MaxBlockedTaps;
+        var blocked = !Resampler.TestForceScalar && Resampler.IsFmaAccelerated && (Vector128.IsHardwareAccelerated || Vector256.IsHardwareAccelerated) && kernelWidth * kernelHeight <= MaxBlockedTaps;
         Span<int> tapOffsets = stackalloc int[blocked ? kernelWidth * kernelHeight : 0];
         Span<double> tapWeights = stackalloc double[blocked ? kernelWidth * kernelHeight : 0];
         Span<int> tapRows = stackalloc int[blocked ? kernelWidth * kernelHeight : 0];

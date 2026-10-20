@@ -618,8 +618,9 @@ precision.
   samples. Unspecified transfer characteristics are read as sRGB, linear ones are filtered as stored, and reserved
   ones are rejected. The name of the value is historical.
 
-A resize to the current size leaves the image unchanged. Results do not depend on the worker count or on SIMD support:
-the vectorized and parallel kernels are bit-identical to the scalar reference.
+A resize to the current size leaves the image unchanged. Sums are computed in double precision, every term added with a
+fused multiply-add (one rounding per term). Results do not depend on the worker count or on SIMD support: the vectorized
+and parallel kernels are bit-identical to the scalar reference.
 
 <!-- snippet: resize-animation -->
 ```csharp
@@ -648,12 +649,13 @@ divide them by their sum to keep the overall brightness. `ConvolutionOptions` th
 - `WorkingSpace`: `Encoded` (default) or `LinearSrgb`, with the same meaning and the same ICC profile rule as
   `ResizeWorkingSpace`.
 
-Sums are computed in double precision at the storage precision (16-bit images are filtered with 16-bit precision),
-rounded to nearest (ties up) and clamped to the sample range: negative sums become 0. The image is rewritten in place,
-with a scratch of a few rows per worker proportional to the matrix height, charged to the allocation limit; the pixel
-format, the size, the frames and the metadata are kept (the EXIF thumbnail, now stale, is removed). As for resizing,
-results do not depend on the worker count or on SIMD support. The cost grows with the number of non-zero weights: there
-is no dedicated fast path for separable matrices such as large blurs: use `GaussianBlur` for these.
+Sums are computed in double precision with fused multiply-adds, at the storage precision (16-bit images are filtered
+with 16-bit precision), rounded to nearest (ties up) and clamped to the sample range: negative sums become 0. The image
+is rewritten in place, with a scratch of a few rows per worker proportional to the matrix height, charged to the
+allocation limit; the pixel format, the size, the frames and the metadata are kept (the EXIF thumbnail, now stale, is
+removed). As for resizing, results do not depend on the worker count or on SIMD support. The cost grows with the number
+of non-zero weights: there is no dedicated fast path for separable matrices such as large blurs: use `GaussianBlur` for
+these.
 
 `GaussianBlur(sigma)` blurs an image or a frame with a bell curve of standard deviation `sigma` (the radius CSS
 gives to a blur is twice the deviation): two convolutions, by a row of `2 ceil(3 sigma) + 1` weights then by the same

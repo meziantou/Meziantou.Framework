@@ -25,8 +25,16 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// lanes of one 256-bit vector (two 128-bit vectors), and that of 1-sample pixels one sample of 4 (2) pixels, over windows
 /// padded with zero weights (<see cref="ResampleWeights.CreatePadded"/>, which leave the sums unchanged); the vertical pass
 /// adds whole rows, lane by lane (gathering sums the rows of a window by groups of at most 4, a block of samples at a time,
-/// <see cref="SetWeightedSum"/>): every sample is still <c>0 + w0 x0 + w1 x1 + ...</c> in the same order without fused
-/// multiply-adds, so the result is bit-identical to the scalar loops (<c>VectorizedKernelTests</c>).
+/// <see cref="SetWeightedSum"/>): every sample is still <c>0 + w0 x0 + w1 x1 + ...</c> in the same order, so the result is
+/// bit-identical to the scalar loops (<c>VectorizedKernelTests</c>).
+/// </para>
+/// <para>
+/// Every term after the first one is added with a fused multiply-add (<c>s = fma(w, x, s)</c>, one rounding per term
+/// instead of two), in the scalar loops (<see cref="Math.FusedMultiplyAdd"/>) as in the vector ones, so the results do not
+/// depend on the hardware. The first term, <c>0 + w0 x0</c>, is the rounded product either way. The vector loops run only
+/// when fused multiply-adds are instructions of the processor (<see cref="IsFmaAccelerated"/>): without them, the
+/// operation of <see cref="Vector128.FusedMultiplyAdd(Vector128{double}, Vector128{double}, Vector128{double})"/> is still
+/// exact but computed one element at a time, and the scalar loops are used instead.
 /// </para>
 /// </remarks>
 internal static class Resampler
@@ -36,6 +44,12 @@ internal static class Resampler
 
     private static readonly AsyncLocal<bool> TestForceScalarValue = new();
     private static readonly AsyncLocal<Action<int, bool>?> TestBandObserverValue = new();
+
+    /// <summary>
+    /// Gets a value indicating whether fused multiply-adds are instructions of the processor (FMA3 on x64, always on Arm64).
+    /// The vector loops need them; otherwise the scalar loops compute the same fused operations.
+    /// </summary>
+    internal static bool IsFmaAccelerated => Fma.IsSupported || AdvSimd.IsSupported;
 
     /// <summary>
     /// Gets or sets a value indicating whether the current asynchronous flow (including the workers of its parallel resizes)
@@ -178,7 +192,7 @@ internal static class Resampler
         // The taps are summed a block of samples at a time (SetWeightedSum) by groups that read at most MaxRowsPerPass ring
         // rows (the prefetching of the processor follows a limited number of streams), each group adding to the sums of the
         // previous ones; the scalar reference of the tests adds a row per tap
-        var blocked = !TestForceScalar && (Vector128.IsHardwareAccelerated || Vector256.IsHardwareAccelerated);
+        var blocked = !TestForceScalar && IsFmaAccelerated && (Vector128.IsHardwareAccelerated || Vector256.IsHardwareAccelerated);
         Span<int> offsets = stackalloc int[MaxRowsPerPass];
         for (var dy = start; dy < end; dy++)
         {
@@ -300,7 +314,7 @@ internal static class Resampler
     /// </summary>
     internal static int GetHorizontalWeightsGroup(int channels)
     {
-        if (TestForceScalar || !Vector128.IsHardwareAccelerated)
+        if (TestForceScalar || !Vector128.IsHardwareAccelerated || !IsFmaAccelerated)
             return 0;
 
         if (channels is not 1)
@@ -310,7 +324,8 @@ internal static class Resampler
     }
 
     /// <summary>
-    /// Resamples one row of working samples horizontally (<c>output[dx] = 0 + w0 x0 + w1 x1 + ...</c> per sample), with the
+    /// Resamples one row of working samples horizontally (<c>output[dx] = 0 + w0 x0 + w1 x1 + ...</c> per sample, every term
+    /// added with a fused multiply-add), with the
     /// vector loops when the weights are padded (<see cref="GetHorizontalWeightsGroup"/>). The working row holds the samples
     /// of <see cref="ResampleWeights.PaddedSourceLength"/> pixels from <see cref="ResampleWeights.First"/>, plus one sample
     /// for 3-sample pixels; the samples after <see cref="ResampleWeights.Last"/> are finite (zero).
@@ -371,10 +386,10 @@ internal static class Resampler
                     {
                         var w = weights[k];
                         var p = input.Slice(4 * k, 4);
-                        c0 += w * p[0];
-                        c1 += w * p[1];
-                        c2 += w * p[2];
-                        c3 += w * p[3];
+                        c0 = Math.FusedMultiplyAdd(w, p[0], c0);
+                        c1 = Math.FusedMultiplyAdd(w, p[1], c1);
+                        c2 = Math.FusedMultiplyAdd(w, p[2], c2);
+                        c3 = Math.FusedMultiplyAdd(w, p[3], c3);
                     }
 
                     o[0] = c0;
@@ -391,9 +406,9 @@ internal static class Resampler
                     {
                         var w = weights[k];
                         var p = input.Slice(3 * k, 3);
-                        c0 += w * p[0];
-                        c1 += w * p[1];
-                        c2 += w * p[2];
+                        c0 = Math.FusedMultiplyAdd(w, p[0], c0);
+                        c1 = Math.FusedMultiplyAdd(w, p[1], c1);
+                        c2 = Math.FusedMultiplyAdd(w, p[2], c2);
                     }
 
                     o[0] = c0;
@@ -408,7 +423,7 @@ internal static class Resampler
                     double c0 = 0;
                     for (var k = 0; k < weights.Length; k++)
                     {
-                        c0 += weights[k] * input[k];
+                        c0 = Math.FusedMultiplyAdd(weights[k], input[k], c0);
                     }
 
                     o[0] = c0;
@@ -454,10 +469,10 @@ internal static class Resampler
             var sum3 = Vector256<double>.Zero;
             for (var k = 0; k < taps; k++)
             {
-                sum0 += Vector256.Create(unsafe(Unsafe.Add(ref w0, k))) * unsafe(Vector256.LoadUnsafe(ref input0, (nuint)(4 * k)));
-                sum1 += Vector256.Create(unsafe(Unsafe.Add(ref w1, k))) * unsafe(Vector256.LoadUnsafe(ref input1, (nuint)(4 * k)));
-                sum2 += Vector256.Create(unsafe(Unsafe.Add(ref w2, k))) * unsafe(Vector256.LoadUnsafe(ref input2, (nuint)(4 * k)));
-                sum3 += Vector256.Create(unsafe(Unsafe.Add(ref w3, k))) * unsafe(Vector256.LoadUnsafe(ref input3, (nuint)(4 * k)));
+                sum0 = Vector256.FusedMultiplyAdd(Vector256.Create(unsafe(Unsafe.Add(ref w0, k))), unsafe(Vector256.LoadUnsafe(ref input0, (nuint)(4 * k))), sum0);
+                sum1 = Vector256.FusedMultiplyAdd(Vector256.Create(unsafe(Unsafe.Add(ref w1, k))), unsafe(Vector256.LoadUnsafe(ref input1, (nuint)(4 * k))), sum1);
+                sum2 = Vector256.FusedMultiplyAdd(Vector256.Create(unsafe(Unsafe.Add(ref w2, k))), unsafe(Vector256.LoadUnsafe(ref input2, (nuint)(4 * k))), sum2);
+                sum3 = Vector256.FusedMultiplyAdd(Vector256.Create(unsafe(Unsafe.Add(ref w3, k))), unsafe(Vector256.LoadUnsafe(ref input3, (nuint)(4 * k))), sum3);
             }
 
             unsafe { sum0.StoreUnsafe(ref outputStart, (nuint)(4 * dx)); }
@@ -473,7 +488,7 @@ internal static class Resampler
             var sum = Vector256<double>.Zero;
             for (var k = 0; k < taps; k++)
             {
-                sum += Vector256.Create(unsafe(Unsafe.Add(ref w, k))) * unsafe(Vector256.LoadUnsafe(ref input, (nuint)(4 * k)));
+                sum = Vector256.FusedMultiplyAdd(Vector256.Create(unsafe(Unsafe.Add(ref w, k))), unsafe(Vector256.LoadUnsafe(ref input, (nuint)(4 * k))), sum);
             }
 
             unsafe { sum.StoreUnsafe(ref outputStart, (nuint)(4 * dx)); }
@@ -513,14 +528,14 @@ internal static class Resampler
                 var weight1 = Vector128.Create(unsafe(Unsafe.Add(ref w1, k)));
                 var weight2 = Vector128.Create(unsafe(Unsafe.Add(ref w2, k)));
                 var weight3 = Vector128.Create(unsafe(Unsafe.Add(ref w3, k)));
-                low0 += weight0 * unsafe(Vector128.LoadUnsafe(ref input0, (nuint)(4 * k)));
-                high0 += weight0 * unsafe(Vector128.LoadUnsafe(ref input0, (nuint)((4 * k) + 2)));
-                low1 += weight1 * unsafe(Vector128.LoadUnsafe(ref input1, (nuint)(4 * k)));
-                high1 += weight1 * unsafe(Vector128.LoadUnsafe(ref input1, (nuint)((4 * k) + 2)));
-                low2 += weight2 * unsafe(Vector128.LoadUnsafe(ref input2, (nuint)(4 * k)));
-                high2 += weight2 * unsafe(Vector128.LoadUnsafe(ref input2, (nuint)((4 * k) + 2)));
-                low3 += weight3 * unsafe(Vector128.LoadUnsafe(ref input3, (nuint)(4 * k)));
-                high3 += weight3 * unsafe(Vector128.LoadUnsafe(ref input3, (nuint)((4 * k) + 2)));
+                low0 = Vector128.FusedMultiplyAdd(weight0, unsafe(Vector128.LoadUnsafe(ref input0, (nuint)(4 * k))), low0);
+                high0 = Vector128.FusedMultiplyAdd(weight0, unsafe(Vector128.LoadUnsafe(ref input0, (nuint)((4 * k) + 2))), high0);
+                low1 = Vector128.FusedMultiplyAdd(weight1, unsafe(Vector128.LoadUnsafe(ref input1, (nuint)(4 * k))), low1);
+                high1 = Vector128.FusedMultiplyAdd(weight1, unsafe(Vector128.LoadUnsafe(ref input1, (nuint)((4 * k) + 2))), high1);
+                low2 = Vector128.FusedMultiplyAdd(weight2, unsafe(Vector128.LoadUnsafe(ref input2, (nuint)(4 * k))), low2);
+                high2 = Vector128.FusedMultiplyAdd(weight2, unsafe(Vector128.LoadUnsafe(ref input2, (nuint)((4 * k) + 2))), high2);
+                low3 = Vector128.FusedMultiplyAdd(weight3, unsafe(Vector128.LoadUnsafe(ref input3, (nuint)(4 * k))), low3);
+                high3 = Vector128.FusedMultiplyAdd(weight3, unsafe(Vector128.LoadUnsafe(ref input3, (nuint)((4 * k) + 2))), high3);
             }
 
             unsafe { low0.StoreUnsafe(ref outputStart, (nuint)(4 * dx)); }
@@ -542,8 +557,8 @@ internal static class Resampler
             for (var k = 0; k < taps; k++)
             {
                 var weight = Vector128.Create(unsafe(Unsafe.Add(ref w, k)));
-                low += weight * unsafe(Vector128.LoadUnsafe(ref input, (nuint)(4 * k)));
-                high += weight * unsafe(Vector128.LoadUnsafe(ref input, (nuint)((4 * k) + 2)));
+                low = Vector128.FusedMultiplyAdd(weight, unsafe(Vector128.LoadUnsafe(ref input, (nuint)(4 * k))), low);
+                high = Vector128.FusedMultiplyAdd(weight, unsafe(Vector128.LoadUnsafe(ref input, (nuint)((4 * k) + 2))), high);
             }
 
             unsafe { low.StoreUnsafe(ref outputStart, (nuint)(4 * dx)); }
@@ -582,10 +597,10 @@ internal static class Resampler
             var sum3 = Vector256<double>.Zero;
             for (var k = 0; k < taps; k++)
             {
-                sum0 += Vector256.Create(unsafe(Unsafe.Add(ref w0, k))) * unsafe(Vector256.LoadUnsafe(ref input0, (nuint)(3 * k)));
-                sum1 += Vector256.Create(unsafe(Unsafe.Add(ref w1, k))) * unsafe(Vector256.LoadUnsafe(ref input1, (nuint)(3 * k)));
-                sum2 += Vector256.Create(unsafe(Unsafe.Add(ref w2, k))) * unsafe(Vector256.LoadUnsafe(ref input2, (nuint)(3 * k)));
-                sum3 += Vector256.Create(unsafe(Unsafe.Add(ref w3, k))) * unsafe(Vector256.LoadUnsafe(ref input3, (nuint)(3 * k)));
+                sum0 = Vector256.FusedMultiplyAdd(Vector256.Create(unsafe(Unsafe.Add(ref w0, k))), unsafe(Vector256.LoadUnsafe(ref input0, (nuint)(3 * k))), sum0);
+                sum1 = Vector256.FusedMultiplyAdd(Vector256.Create(unsafe(Unsafe.Add(ref w1, k))), unsafe(Vector256.LoadUnsafe(ref input1, (nuint)(3 * k))), sum1);
+                sum2 = Vector256.FusedMultiplyAdd(Vector256.Create(unsafe(Unsafe.Add(ref w2, k))), unsafe(Vector256.LoadUnsafe(ref input2, (nuint)(3 * k))), sum2);
+                sum3 = Vector256.FusedMultiplyAdd(Vector256.Create(unsafe(Unsafe.Add(ref w3, k))), unsafe(Vector256.LoadUnsafe(ref input3, (nuint)(3 * k))), sum3);
             }
 
             unsafe { sum0.StoreUnsafe(ref outputStart, (nuint)(3 * dx)); }
@@ -604,7 +619,7 @@ internal static class Resampler
             var sum = Vector256<double>.Zero;
             for (var k = 0; k < taps; k++)
             {
-                sum += Vector256.Create(unsafe(Unsafe.Add(ref w, k))) * unsafe(Vector256.LoadUnsafe(ref input, (nuint)(3 * k)));
+                sum = Vector256.FusedMultiplyAdd(Vector256.Create(unsafe(Unsafe.Add(ref w, k))), unsafe(Vector256.LoadUnsafe(ref input, (nuint)(3 * k))), sum);
             }
 
             var o = output.Slice(3 * dx, 3);
@@ -654,14 +669,14 @@ internal static class Resampler
                 var weight1 = Vector128.Create(unsafe(Unsafe.Add(ref w1, k)));
                 var weight2 = Vector128.Create(unsafe(Unsafe.Add(ref w2, k)));
                 var weight3 = Vector128.Create(unsafe(Unsafe.Add(ref w3, k)));
-                low0 += weight0 * unsafe(Vector128.LoadUnsafe(ref input0, (nuint)(3 * k)));
-                high0 += weight0 * unsafe(Vector128.LoadUnsafe(ref input0, (nuint)((3 * k) + 2)));
-                low1 += weight1 * unsafe(Vector128.LoadUnsafe(ref input1, (nuint)(3 * k)));
-                high1 += weight1 * unsafe(Vector128.LoadUnsafe(ref input1, (nuint)((3 * k) + 2)));
-                low2 += weight2 * unsafe(Vector128.LoadUnsafe(ref input2, (nuint)(3 * k)));
-                high2 += weight2 * unsafe(Vector128.LoadUnsafe(ref input2, (nuint)((3 * k) + 2)));
-                low3 += weight3 * unsafe(Vector128.LoadUnsafe(ref input3, (nuint)(3 * k)));
-                high3 += weight3 * unsafe(Vector128.LoadUnsafe(ref input3, (nuint)((3 * k) + 2)));
+                low0 = Vector128.FusedMultiplyAdd(weight0, unsafe(Vector128.LoadUnsafe(ref input0, (nuint)(3 * k))), low0);
+                high0 = Vector128.FusedMultiplyAdd(weight0, unsafe(Vector128.LoadUnsafe(ref input0, (nuint)((3 * k) + 2))), high0);
+                low1 = Vector128.FusedMultiplyAdd(weight1, unsafe(Vector128.LoadUnsafe(ref input1, (nuint)(3 * k))), low1);
+                high1 = Vector128.FusedMultiplyAdd(weight1, unsafe(Vector128.LoadUnsafe(ref input1, (nuint)((3 * k) + 2))), high1);
+                low2 = Vector128.FusedMultiplyAdd(weight2, unsafe(Vector128.LoadUnsafe(ref input2, (nuint)(3 * k))), low2);
+                high2 = Vector128.FusedMultiplyAdd(weight2, unsafe(Vector128.LoadUnsafe(ref input2, (nuint)((3 * k) + 2))), high2);
+                low3 = Vector128.FusedMultiplyAdd(weight3, unsafe(Vector128.LoadUnsafe(ref input3, (nuint)(3 * k))), low3);
+                high3 = Vector128.FusedMultiplyAdd(weight3, unsafe(Vector128.LoadUnsafe(ref input3, (nuint)((3 * k) + 2))), high3);
             }
 
             unsafe { low0.StoreUnsafe(ref outputStart, (nuint)(3 * dx)); }
@@ -683,8 +698,8 @@ internal static class Resampler
             for (var k = 0; k < taps; k++)
             {
                 var weight = Vector128.Create(unsafe(Unsafe.Add(ref w, k)));
-                low += weight * unsafe(Vector128.LoadUnsafe(ref input, (nuint)(3 * k)));
-                high += weight * unsafe(Vector128.LoadUnsafe(ref input, (nuint)((3 * k) + 2)));
+                low = Vector128.FusedMultiplyAdd(weight, unsafe(Vector128.LoadUnsafe(ref input, (nuint)(3 * k))), low);
+                high = Vector128.FusedMultiplyAdd(weight, unsafe(Vector128.LoadUnsafe(ref input, (nuint)((3 * k) + 2))), high);
             }
 
             var o = output.Slice(3 * dx, 3);
@@ -768,8 +783,8 @@ internal static class Resampler
     {
         var row0 = unsafe(Vector128.LoadUnsafe(ref input0, (nuint)k));
         var row1 = unsafe(Vector128.LoadUnsafe(ref input1, (nuint)k));
-        sum += unsafe(Vector128.LoadUnsafe(ref weights, (nuint)(2 * k))) * InterleaveLower(row0, row1);
-        sum += unsafe(Vector128.LoadUnsafe(ref weights, (nuint)((2 * k) + 2))) * InterleaveUpper(row0, row1);
+        sum = Vector128.FusedMultiplyAdd(unsafe(Vector128.LoadUnsafe(ref weights, (nuint)(2 * k))), InterleaveLower(row0, row1), sum);
+        sum = Vector128.FusedMultiplyAdd(unsafe(Vector128.LoadUnsafe(ref weights, (nuint)((2 * k) + 2))), InterleaveUpper(row0, row1), sum);
         return sum;
     }
 
@@ -869,12 +884,12 @@ internal static class Resampler
         // of the four pixels, and the same two taps later into k + 2 and k + 3
         var even = Vector256.Create(unsafe(Vector128.LoadUnsafe(ref input0, (nuint)k)), unsafe(Vector128.LoadUnsafe(ref input2, (nuint)k)));
         var odd = Vector256.Create(unsafe(Vector128.LoadUnsafe(ref input1, (nuint)k)), unsafe(Vector128.LoadUnsafe(ref input3, (nuint)k)));
-        sum += unsafe(Vector256.LoadUnsafe(ref weights, (nuint)(4 * k))) * Avx.UnpackLow(even, odd);
-        sum += unsafe(Vector256.LoadUnsafe(ref weights, (nuint)((4 * k) + 4))) * Avx.UnpackHigh(even, odd);
+        sum = Vector256.FusedMultiplyAdd(unsafe(Vector256.LoadUnsafe(ref weights, (nuint)(4 * k))), Avx.UnpackLow(even, odd), sum);
+        sum = Vector256.FusedMultiplyAdd(unsafe(Vector256.LoadUnsafe(ref weights, (nuint)((4 * k) + 4))), Avx.UnpackHigh(even, odd), sum);
         even = Vector256.Create(unsafe(Vector128.LoadUnsafe(ref input0, (nuint)(k + 2))), unsafe(Vector128.LoadUnsafe(ref input2, (nuint)(k + 2))));
         odd = Vector256.Create(unsafe(Vector128.LoadUnsafe(ref input1, (nuint)(k + 2))), unsafe(Vector128.LoadUnsafe(ref input3, (nuint)(k + 2))));
-        sum += unsafe(Vector256.LoadUnsafe(ref weights, (nuint)((4 * k) + 8))) * Avx.UnpackLow(even, odd);
-        sum += unsafe(Vector256.LoadUnsafe(ref weights, (nuint)((4 * k) + 12))) * Avx.UnpackHigh(even, odd);
+        sum = Vector256.FusedMultiplyAdd(unsafe(Vector256.LoadUnsafe(ref weights, (nuint)((4 * k) + 8))), Avx.UnpackLow(even, odd), sum);
+        sum = Vector256.FusedMultiplyAdd(unsafe(Vector256.LoadUnsafe(ref weights, (nuint)((4 * k) + 12))), Avx.UnpackHigh(even, odd), sum);
         return sum;
     }
 
@@ -932,7 +947,8 @@ internal static class Resampler
     /// the rows of <paramref name="buffer"/> at <paramref name="offsets"/> times their <paramref name="weights"/>, or adds that
     /// sum to them when <paramref name="accumulate"/> is set: the operations of <see cref="SetScaled"/> with the first row
     /// (<see cref="AddScaled"/> when accumulating) then of <see cref="AddScaled"/> with each next one, in that order for every
-    /// sample, but summed in registers for a block of samples instead of one pass over the accumulator per row.
+    /// sample, but summed in registers for a block of samples instead of one pass over the accumulator per row. The first
+    /// term is a fused multiply-add too (<c>fma(w0, x0, 0)</c> is the rounded product of <see cref="SetScaled"/>).
     /// </summary>
     [MethodImpl(MethodImplOptions.NoInlining)]
     internal static void SetWeightedSum(Span<double> buffer, int accumulatorOffset, int length, ReadOnlySpan<int> offsets, ReadOnlySpan<double> weights, bool accumulate)
@@ -946,7 +962,8 @@ internal static class Resampler
 
         var i = 0;
         ref var start = ref unsafe(MemoryMarshal.GetReference(buffer));
-        if (Vector512.IsHardwareAccelerated)
+        var vectorized = IsFmaAccelerated;
+        if (vectorized && Vector512.IsHardwareAccelerated)
         {
             // Blocks of 32 samples; the remaining ones go through the 256-bit loop below
             for (; i + 32 <= length; i += 32)
@@ -958,18 +975,18 @@ internal static class Resampler
                 var sum3 = accumulate ? unsafe(Vector512.LoadUnsafe(ref target, 24)) : Vector512<double>.Zero;
                 var w = Vector512.Create(weights[0]);
                 ref var row = ref unsafe(Unsafe.Add(ref start, offsets[0] + i));
-                sum0 += w * unsafe(Vector512.LoadUnsafe(ref row));
-                sum1 += w * unsafe(Vector512.LoadUnsafe(ref row, 8));
-                sum2 += w * unsafe(Vector512.LoadUnsafe(ref row, 16));
-                sum3 += w * unsafe(Vector512.LoadUnsafe(ref row, 24));
+                sum0 = Vector512.FusedMultiplyAdd(w, unsafe(Vector512.LoadUnsafe(ref row)), sum0);
+                sum1 = Vector512.FusedMultiplyAdd(w, unsafe(Vector512.LoadUnsafe(ref row, 8)), sum1);
+                sum2 = Vector512.FusedMultiplyAdd(w, unsafe(Vector512.LoadUnsafe(ref row, 16)), sum2);
+                sum3 = Vector512.FusedMultiplyAdd(w, unsafe(Vector512.LoadUnsafe(ref row, 24)), sum3);
                 for (var t = 1; t < offsets.Length; t++)
                 {
                     w = Vector512.Create(weights[t]);
                     row = ref unsafe(Unsafe.Add(ref start, offsets[t] + i));
-                    sum0 += w * unsafe(Vector512.LoadUnsafe(ref row));
-                    sum1 += w * unsafe(Vector512.LoadUnsafe(ref row, 8));
-                    sum2 += w * unsafe(Vector512.LoadUnsafe(ref row, 16));
-                    sum3 += w * unsafe(Vector512.LoadUnsafe(ref row, 24));
+                    sum0 = Vector512.FusedMultiplyAdd(w, unsafe(Vector512.LoadUnsafe(ref row)), sum0);
+                    sum1 = Vector512.FusedMultiplyAdd(w, unsafe(Vector512.LoadUnsafe(ref row, 8)), sum1);
+                    sum2 = Vector512.FusedMultiplyAdd(w, unsafe(Vector512.LoadUnsafe(ref row, 16)), sum2);
+                    sum3 = Vector512.FusedMultiplyAdd(w, unsafe(Vector512.LoadUnsafe(ref row, 24)), sum3);
                 }
 
                 unsafe { sum0.StoreUnsafe(ref target); }
@@ -979,7 +996,7 @@ internal static class Resampler
             }
         }
 
-        if (Vector256.IsHardwareAccelerated)
+        if (vectorized && Vector256.IsHardwareAccelerated)
         {
             for (; i + 16 <= length; i += 16)
             {
@@ -990,18 +1007,18 @@ internal static class Resampler
                 var sum3 = accumulate ? unsafe(Vector256.LoadUnsafe(ref target, 12)) : Vector256<double>.Zero;
                 var w = Vector256.Create(weights[0]);
                 ref var row = ref unsafe(Unsafe.Add(ref start, offsets[0] + i));
-                sum0 += w * unsafe(Vector256.LoadUnsafe(ref row));
-                sum1 += w * unsafe(Vector256.LoadUnsafe(ref row, 4));
-                sum2 += w * unsafe(Vector256.LoadUnsafe(ref row, 8));
-                sum3 += w * unsafe(Vector256.LoadUnsafe(ref row, 12));
+                sum0 = Vector256.FusedMultiplyAdd(w, unsafe(Vector256.LoadUnsafe(ref row)), sum0);
+                sum1 = Vector256.FusedMultiplyAdd(w, unsafe(Vector256.LoadUnsafe(ref row, 4)), sum1);
+                sum2 = Vector256.FusedMultiplyAdd(w, unsafe(Vector256.LoadUnsafe(ref row, 8)), sum2);
+                sum3 = Vector256.FusedMultiplyAdd(w, unsafe(Vector256.LoadUnsafe(ref row, 12)), sum3);
                 for (var t = 1; t < offsets.Length; t++)
                 {
                     w = Vector256.Create(weights[t]);
                     row = ref unsafe(Unsafe.Add(ref start, offsets[t] + i));
-                    sum0 += w * unsafe(Vector256.LoadUnsafe(ref row));
-                    sum1 += w * unsafe(Vector256.LoadUnsafe(ref row, 4));
-                    sum2 += w * unsafe(Vector256.LoadUnsafe(ref row, 8));
-                    sum3 += w * unsafe(Vector256.LoadUnsafe(ref row, 12));
+                    sum0 = Vector256.FusedMultiplyAdd(w, unsafe(Vector256.LoadUnsafe(ref row)), sum0);
+                    sum1 = Vector256.FusedMultiplyAdd(w, unsafe(Vector256.LoadUnsafe(ref row, 4)), sum1);
+                    sum2 = Vector256.FusedMultiplyAdd(w, unsafe(Vector256.LoadUnsafe(ref row, 8)), sum2);
+                    sum3 = Vector256.FusedMultiplyAdd(w, unsafe(Vector256.LoadUnsafe(ref row, 12)), sum3);
                 }
 
                 unsafe { sum0.StoreUnsafe(ref target); }
@@ -1010,7 +1027,7 @@ internal static class Resampler
                 unsafe { sum3.StoreUnsafe(ref target, 12); }
             }
         }
-        else if (Vector128.IsHardwareAccelerated)
+        else if (vectorized && Vector128.IsHardwareAccelerated)
         {
             for (; i + 8 <= length; i += 8)
             {
@@ -1021,18 +1038,18 @@ internal static class Resampler
                 var sum3 = accumulate ? unsafe(Vector128.LoadUnsafe(ref target, 6)) : Vector128<double>.Zero;
                 var w = Vector128.Create(weights[0]);
                 ref var row = ref unsafe(Unsafe.Add(ref start, offsets[0] + i));
-                sum0 += w * unsafe(Vector128.LoadUnsafe(ref row));
-                sum1 += w * unsafe(Vector128.LoadUnsafe(ref row, 2));
-                sum2 += w * unsafe(Vector128.LoadUnsafe(ref row, 4));
-                sum3 += w * unsafe(Vector128.LoadUnsafe(ref row, 6));
+                sum0 = Vector128.FusedMultiplyAdd(w, unsafe(Vector128.LoadUnsafe(ref row)), sum0);
+                sum1 = Vector128.FusedMultiplyAdd(w, unsafe(Vector128.LoadUnsafe(ref row, 2)), sum1);
+                sum2 = Vector128.FusedMultiplyAdd(w, unsafe(Vector128.LoadUnsafe(ref row, 4)), sum2);
+                sum3 = Vector128.FusedMultiplyAdd(w, unsafe(Vector128.LoadUnsafe(ref row, 6)), sum3);
                 for (var t = 1; t < offsets.Length; t++)
                 {
                     w = Vector128.Create(weights[t]);
                     row = ref unsafe(Unsafe.Add(ref start, offsets[t] + i));
-                    sum0 += w * unsafe(Vector128.LoadUnsafe(ref row));
-                    sum1 += w * unsafe(Vector128.LoadUnsafe(ref row, 2));
-                    sum2 += w * unsafe(Vector128.LoadUnsafe(ref row, 4));
-                    sum3 += w * unsafe(Vector128.LoadUnsafe(ref row, 6));
+                    sum0 = Vector128.FusedMultiplyAdd(w, unsafe(Vector128.LoadUnsafe(ref row)), sum0);
+                    sum1 = Vector128.FusedMultiplyAdd(w, unsafe(Vector128.LoadUnsafe(ref row, 2)), sum1);
+                    sum2 = Vector128.FusedMultiplyAdd(w, unsafe(Vector128.LoadUnsafe(ref row, 4)), sum2);
+                    sum3 = Vector128.FusedMultiplyAdd(w, unsafe(Vector128.LoadUnsafe(ref row, 6)), sum3);
                 }
 
                 unsafe { sum0.StoreUnsafe(ref target); }
@@ -1044,23 +1061,27 @@ internal static class Resampler
 
         for (; i < length; i++)
         {
-            var sum = (accumulate ? buffer[accumulatorOffset + i] : 0d) + (weights[0] * buffer[offsets[0] + i]);
+            var sum = Math.FusedMultiplyAdd(weights[0], buffer[offsets[0] + i], accumulate ? buffer[accumulatorOffset + i] : 0d);
             for (var t = 1; t < offsets.Length; t++)
             {
-                sum += weights[t] * buffer[offsets[t] + i];
+                sum = Math.FusedMultiplyAdd(weights[t], buffer[offsets[t] + i], sum);
             }
 
             buffer[accumulatorOffset + i] = sum;
         }
     }
 
-    /// <summary>Adds <c>weight * row</c> to the accumulator, sample by sample (vectorized when supported; the same operations).</summary>
+    /// <summary>
+    /// Adds <c>weight * row</c> to the accumulator, sample by sample, with a fused multiply-add (vectorized when supported;
+    /// the same operations).
+    /// </summary>
     [MethodImpl(MethodImplOptions.NoInlining)]
     internal static void AddScaled(Span<double> accumulator, ReadOnlySpan<double> row, double weight)
     {
         Debug.Assert(accumulator.Length == row.Length);
         var i = 0;
-        if (!TestForceScalar && Vector512.IsHardwareAccelerated)
+        var scalar = TestForceScalar || !IsFmaAccelerated;
+        if (!scalar && Vector512.IsHardwareAccelerated)
         {
             // The remaining samples go through the 256-bit loop below
             ref var accumulatorStart = ref unsafe(MemoryMarshal.GetReference(accumulator));
@@ -1068,11 +1089,11 @@ internal static class Resampler
             var w = Vector512.Create(weight);
             for (; i + 8 <= accumulator.Length; i += 8)
             {
-                unsafe { (Vector512.LoadUnsafe(ref accumulatorStart, (nuint)i) + (w * Vector512.LoadUnsafe(ref rowStart, (nuint)i))).StoreUnsafe(ref accumulatorStart, (nuint)i); }
+                unsafe { Vector512.FusedMultiplyAdd(w, Vector512.LoadUnsafe(ref rowStart, (nuint)i), Vector512.LoadUnsafe(ref accumulatorStart, (nuint)i)).StoreUnsafe(ref accumulatorStart, (nuint)i); }
             }
         }
 
-        if (TestForceScalar)
+        if (scalar)
         {
             // Scalar loop below
         }
@@ -1083,7 +1104,7 @@ internal static class Resampler
             var w = Vector256.Create(weight);
             for (; i + 4 <= accumulator.Length; i += 4)
             {
-                unsafe { (Vector256.LoadUnsafe(ref accumulatorStart, (nuint)i) + (w * Vector256.LoadUnsafe(ref rowStart, (nuint)i))).StoreUnsafe(ref accumulatorStart, (nuint)i); }
+                unsafe { Vector256.FusedMultiplyAdd(w, Vector256.LoadUnsafe(ref rowStart, (nuint)i), Vector256.LoadUnsafe(ref accumulatorStart, (nuint)i)).StoreUnsafe(ref accumulatorStart, (nuint)i); }
             }
         }
         else if (Vector128.IsHardwareAccelerated)
@@ -1093,13 +1114,13 @@ internal static class Resampler
             var w = Vector128.Create(weight);
             for (; i + 2 <= accumulator.Length; i += 2)
             {
-                unsafe { (Vector128.LoadUnsafe(ref accumulatorStart, (nuint)i) + (w * Vector128.LoadUnsafe(ref rowStart, (nuint)i))).StoreUnsafe(ref accumulatorStart, (nuint)i); }
+                unsafe { Vector128.FusedMultiplyAdd(w, Vector128.LoadUnsafe(ref rowStart, (nuint)i), Vector128.LoadUnsafe(ref accumulatorStart, (nuint)i)).StoreUnsafe(ref accumulatorStart, (nuint)i); }
             }
         }
 
         for (; i < accumulator.Length; i++)
         {
-            accumulator[i] += weight * row[i];
+            accumulator[i] = Math.FusedMultiplyAdd(weight, row[i], accumulator[i]);
         }
     }
 }

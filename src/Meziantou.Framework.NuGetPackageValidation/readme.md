@@ -8,11 +8,12 @@ This library provides a comprehensive set of validation rules to check NuGet pac
 
 ### Basic Validation
 
-```csharp
-using Meziantou.Framework.NuGetPackageValidation;
+The types are in the `Meziantou.Framework.NuGetPackageValidation` namespace. The package path is a `FullPath`, from the `Meziantou.Framework` namespace.
 
+<!-- ref:../../samples/Meziantou.Framework.NuGetPackageValidation.Samples/ReadmeExamples.cs;region=NuGetPackageValidator_BasicValidation;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Validate a package with default rules
-var result = await NuGetPackageValidator.ValidateAsync("MyPackage.1.0.0.nupkg");
+var result = await NuGetPackageValidator.ValidateAsync(FullPath.FromPath("MyPackage.1.0.0.nupkg"));
 
 if (result.IsValid)
 {
@@ -23,30 +24,40 @@ else
     foreach (var error in result.Errors)
     {
         Console.WriteLine($"{error.ErrorCode}: {error.Message}");
-        if (error.HelpText != null)
+        if (error.HelpText is not null)
         {
             Console.WriteLine($"  Help: {error.HelpText}");
         }
     }
 }
 ```
+<!-- endref -->
 
 ### Custom Rules
 
+<!-- ref:../../tests/Meziantou.Framework.NuGetPackageValidation.Tests/NuGetPackageValidatorTests.cs;region=NuGetPackageValidator_CustomRules;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var packagePath = FullPath.FromPath(AppContext.BaseDirectory) / "Packages" / "Release_Author.1.0.0.nupkg";
+
 // Validate with specific rules only
 var result = await NuGetPackageValidator.ValidateAsync(
-    "MyPackage.1.0.0.nupkg",
-    new[]
-    {
+    packagePath,
+    [
         NuGetPackageValidationRules.AuthorMustBeSet,
         NuGetPackageValidationRules.LicenseMustBeSet,
-        NuGetPackageValidationRules.IconMustBeSet
-    });
+        NuGetPackageValidationRules.IconMustBeSet,
+    ]);
+
+Assert.False(result.IsValid);
+Assert.Equal([21, 32], result.Errors.Select(error => error.ErrorCode).Order()); // LicenseNotSet, IconNotSet
 ```
+<!-- endref -->
 
 ### Custom Options
 
+Rules are excluded by their numeric [error code](#error-codes).
+
+<!-- ref:../../samples/Meziantou.Framework.NuGetPackageValidation.Samples/ReadmeExamples.cs;region=NuGetPackageValidator_CustomOptions;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var options = new NuGetPackageValidationOptions();
 
@@ -57,7 +68,7 @@ foreach (var rule in NuGetPackageValidationRules.Default)
 }
 
 // Exclude specific error codes
-options.ExcludedRuleIds.Add(ErrorCodes.IconNotSet);
+options.ExcludedRuleIds.Add(32); // IconNotSet
 
 // Configure symbol servers
 options.SymbolServers.Clear();
@@ -70,8 +81,9 @@ options.ConfigureRequest = request =>
     request.Headers.Add("X-Custom-Header", "value");
 };
 
-var result = await NuGetPackageValidator.ValidateAsync("MyPackage.1.0.0.nupkg", options);
+var result = await NuGetPackageValidator.ValidateAsync(FullPath.FromPath("MyPackage.1.0.0.nupkg"), options);
 ```
+<!-- endref -->
 
 ## Available Validation Rules
 

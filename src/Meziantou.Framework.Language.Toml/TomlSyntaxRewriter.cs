@@ -8,10 +8,10 @@ namespace Meziantou.Framework.Language.Toml;
 /// costs nothing and keeps every node.
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Toml.Tests/TomlSyntaxTreeTests.cs" ref:region="TomlSyntaxRewriter_DoubleIntegers" ref:dedent="true">
 /// private sealed class DoubleIntegers : TomlSyntaxRewriter
 /// {
-///     public override SyntaxNode? VisitTomlInteger(TomlIntegerSyntax node) => node.WithValue(node.Value * 2);
+///     public override SyntaxNode? VisitTomlInteger(TomlIntegerSyntax node) =&gt; node.WithValue(node.Value * 2);
 /// }
 /// </code>
 /// </example>

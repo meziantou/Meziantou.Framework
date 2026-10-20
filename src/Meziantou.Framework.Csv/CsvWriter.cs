@@ -2,19 +2,15 @@ namespace Meziantou.Framework.Csv;
 
 /// <summary>Writes CSV data to a text writer.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Csv.Tests/CsvWriterTests.cs" ref:region="CsvWriter_WriteRowAsync" ref:dedent="true">
 /// using var writer = new StringWriter();
-/// var csvWriter = new CsvWriter(writer);
-/// 
+/// var csvWriter = new CsvWriter(writer) { EndOfLine = "\n" };
+///
 /// await csvWriter.WriteRowAsync("Name", "Age");
 /// await csvWriter.WriteRowAsync("John", "30");
 /// await csvWriter.WriteRowAsync("Jane", "25");
-/// 
-/// Console.WriteLine(writer.ToString());
-/// // Output:
-/// // Name,Age
-/// // John,30
-/// // Jane,25
+///
+/// Assert.Equal("Name,Age\nJohn,30\nJane,25", writer.ToString());
 /// </code>
 /// </example>
 public class CsvWriter

@@ -4,16 +4,16 @@ namespace Meziantou.Framework.Csv;
 
 /// <summary>Represents a row in a CSV file with access to values by column index or name.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Csv.Tests/CsvRowTests.cs" ref:region="CsvRow_Indexers" ref:dedent="true">
 /// using var reader = new StringReader("Name,Age\nJohn,30");
 /// var csvReader = new CsvReader(reader) { HasHeaderRow = true };
 /// var row = await csvReader.ReadRowAsync();
-/// 
+///
 /// // Access by column name
-/// Console.WriteLine(row["Name"]); // John
-/// 
+/// Assert.Equal("John", row!["Name"]);
+///
 /// // Access by column index
-/// Console.WriteLine(row[1]); // 30
+/// Assert.Equal("30", row[1]);
 /// </code>
 /// </example>
 public class CsvRow : IReadOnlyDictionary<string, string?>

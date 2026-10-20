@@ -8,13 +8,15 @@ namespace Meziantou.Framework.HumanReadable;
 
 /// <summary>Provides options for controlling the behavior of <see cref="HumanReadableSerializer"/>.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.HumanReadableSerializer.Tests/SerializerTests.cs" ref:region="HumanReadableSerializerOptions_Serialize" ref:dedent="true">
 /// var options = new HumanReadableSerializerOptions
 /// {
 ///     IncludeFields = true,
 ///     DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingNull,
 /// };
+/// var obj = new { Name = "John Doe", Nickname = (string?)null };
 /// var output = HumanReadableSerializer.Serialize(obj, options);
+/// Assert.Equal("Name: John Doe", output);
 /// </code>
 /// </example>
 public sealed record HumanReadableSerializerOptions

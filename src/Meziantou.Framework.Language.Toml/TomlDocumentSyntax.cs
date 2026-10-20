@@ -87,12 +87,23 @@ public sealed class TomlDocumentSyntax : TomlSyntaxNode
     /// </para>
     /// </remarks>
     /// <example>
-    /// <code>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Toml.Tests/TomlSyntaxTreeTests.cs" ref:region="TomlDocumentSyntax_GetKeyValues" ref:dedent="true">
+    /// var document = TomlSyntaxTree.ParseText("""
+    ///     [dependencies]
+    ///     serde = "1.0"
+    ///     tokio = "1.2"
+    ///     """).GetRoot();
+    ///
+    /// var dependencies = new List&lt;string&gt;();
     /// foreach (var pair in document.GetKeyValues())
     /// {
     ///     if (pair.Names is ["dependencies", var name] &amp;&amp; pair.Value is TomlStringSyntax version)
-    ///         Console.WriteLine($"{name} {version.Value}");
+    ///     {
+    ///         dependencies.Add($"{name} {version.Value}");
+    ///     }
     /// }
+    ///
+    /// Assert.Equal(["serde 1.0", "tokio 1.2"], dependencies);
     /// </code>
     /// </example>
     public IEnumerable<TomlKeyValue> GetKeyValues()

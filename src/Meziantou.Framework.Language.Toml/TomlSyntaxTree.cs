@@ -22,9 +22,10 @@ namespace Meziantou.Framework.Language.Toml;
 /// </para>
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Toml.Tests/TomlSyntaxTreeTests.cs" ref:region="TomlSyntaxTree_ParseText" ref:dedent="true">
 /// var tree = TomlSyntaxTree.ParseText("[server]\nport = 8080\n");
 /// var port = (TomlIntegerSyntax)tree.GetRoot().Tables.Single().Properties.Single().Value;
+/// Assert.Equal(8080, port.Value);
 /// </code>
 /// </example>
 public sealed class TomlSyntaxTree : SyntaxTree

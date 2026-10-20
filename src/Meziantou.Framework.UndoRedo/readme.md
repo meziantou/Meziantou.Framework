@@ -6,31 +6,46 @@
 
 The simplest way to record an action is to provide the *execute* and *unexecute* delegates:
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.UndoRedo.Tests/UndoRedoManagerTests.cs;region=UndoRedoManager_RecordUndoRedo;format=md-fenced-code-block;dedent=true -->
+```csharp
 var manager = new UndoRedoManager();
 var list = new List<int>();
 
 await manager.RecordActionAsync(
     execute: () => list.Add(1),
     unexecute: () => list.RemoveAt(list.Count - 1));
+Assert.Equal([1], list);
 
-// list = [1]
-await manager.UndoAsync(); // list = []
-await manager.RedoAsync(); // list = [1]
-````
+await manager.UndoAsync();
+Assert.Empty(list);
+
+await manager.RedoAsync();
+Assert.Equal([1], list);
+```
+<!-- endref -->
 
 `CanUndo` and `CanRedo` indicate whether the corresponding operation would succeed right now: they are `false` while a transaction is open or an action is running, so they can be bound directly to a command's availability. `UndoRedoManager` implements `INotifyPropertyChanged` and raises it for `CanUndo`, `CanRedo`, `UndoableActions`, `RedoableActions` and `TransactionDepth`; the `HistoryChanged` event is raised whenever the buffers change.
 
 The `execute` and `unexecute` delegates can each be synchronous or asynchronous, and the two may be mixed. Build the action with `UndoRedoDelegateAction` and record it:
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.UndoRedo.Tests/UndoRedoManagerTests.cs;region=UndoRedoManager_DelegateAction;format=md-fenced-code-block;dedent=true -->
+```csharp
+var manager = new UndoRedoManager();
+var items = new List<string>();
+
 // Asynchronous execute, synchronous unexecute
 var action = new UndoRedoDelegateAction(
-    execute: ct => SaveAsync(ct),
-    unexecute: () => Restore());
+    execute: async cancellationToken =>
+    {
+        await Task.Delay(TimeSpan.FromMilliseconds(1), cancellationToken);
+        items.Add("item");
+    },
+    unexecute: () => items.Remove("item"));
 
 await manager.RecordActionAsync(action);
-````
+Assert.Equal(["item"], items);
+```
+<!-- endref -->
 
 Set `Description` on an action to label it in an undo history UI; it is exposed through `UndoableActions` and `RedoableActions`.
 
@@ -38,16 +53,19 @@ Set `Description` on an action to label it in an undo history UI; it is exposed 
 
 By default the history is unbounded. Pass a maximum depth to drop the oldest steps instead of growing for the lifetime of the process:
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.UndoRedo.Tests/UndoRedoManagerTests.cs;region=UndoRedoManager_MaxHistoryDepth;format=md-fenced-code-block;dedent=true -->
+```csharp
 var manager = new UndoRedoManager(maxHistoryDepth: 100);
-````
+```
+<!-- endref -->
 
 ## Custom action
 
 For reusable actions, derive from `UndoRedoActionBase`. The base class tracks whether the action is currently applied, and throws if it would be executed or reverted twice in a row.
 
-````c#
-sealed class AddItemAction(IList<int> list, int value) : UndoRedoActionBase
+<!-- ref:../../tests/Meziantou.Framework.UndoRedo.Tests/UndoRedoManagerTests.cs;region=UndoRedoActionBase_CustomAction;format=md-fenced-code-block;dedent=true -->
+```csharp
+internal sealed class AddItemAction(IList<int> list, int value) : UndoRedoActionBase
 {
     protected override ValueTask ExecuteCoreAsync(CancellationToken cancellationToken)
     {
@@ -61,9 +79,16 @@ sealed class AddItemAction(IList<int> list, int value) : UndoRedoActionBase
         return ValueTask.CompletedTask;
     }
 }
+```
+<!-- endref -->
 
+Record it like any other action:
+
+<!-- ref:../../tests/Meziantou.Framework.UndoRedo.Tests/UndoRedoManagerTests.cs;region=UndoRedoManager_RecordCustomAction;format=md-fenced-code-block;dedent=true -->
+```csharp
 await manager.RecordActionAsync(new AddItemAction(list, 42));
-````
+```
+<!-- endref -->
 
 An action instance can only be recorded once at a time: recording the same instance twice would add an undo step that reverts nothing, so it throws instead.
 
@@ -71,17 +96,25 @@ An action instance can only be recorded once at a time: recording the same insta
 
 A transaction groups several actions into a single undo step. **It must be committed to be kept** — disposing it without committing rolls it back, so leaving the scope because of an exception discards the work rather than applying it.
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.UndoRedo.Tests/UndoRedoManagerTests.cs;region=UndoRedoManager_Transaction;format=md-fenced-code-block;dedent=true -->
+```csharp
+var manager = new UndoRedoManager();
+var list = new List<int>();
+
 await using (var transaction = manager.CreateTransaction())
 {
-    await manager.RecordActionAsync(addFirst, removeFirst);
-    await manager.RecordActionAsync(addSecond, removeSecond);
+    await manager.RecordActionAsync(() => list.Add(1), () => list.Remove(1));
+    await manager.RecordActionAsync(() => list.Add(2), () => list.Remove(2));
     await transaction.CommitAsync();
 }
 
+Assert.Equal([1, 2], list);
+
 // A single UndoAsync reverts both actions
 await manager.UndoAsync();
-````
+Assert.Empty(list);
+```
+<!-- endref -->
 
 ### Execution mode
 

@@ -13,9 +13,10 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// <para>
 /// Each primitive computes with the colors of its <see cref="FilterPrimitive.ColorSpace"/> (<c>color-interpolation-filters</c>):
 /// by default, as in SVG, in linear light, the inputs decoded by the transfer function of sRGB and the result encoded
-/// again, which uses <see cref="Math.Pow(double, double)"/> (a value may differ by one unit in the last place between
-/// platforms). A primitive that only moves or copies pixels (<see cref="OffsetPrimitive"/>, <see cref="TilePrimitive"/>)
-/// or makes a color (<see cref="FloodPrimitive"/>) gives the same pixels in both, and converts nothing.
+/// again, evaluated without any function of the platform (within a few units in the last place of double precision of
+/// the exact function, so the same values on every platform). A primitive that only moves or copies pixels
+/// (<see cref="OffsetPrimitive"/>, <see cref="TilePrimitive"/>) or makes a color (<see cref="FloodPrimitive"/>) gives
+/// the same pixels in both, and converts nothing.
 /// </para>
 /// <para>
 /// The rectangles of the graph are in the coordinates of the drawing: a subregion is the set of pixels whose center is

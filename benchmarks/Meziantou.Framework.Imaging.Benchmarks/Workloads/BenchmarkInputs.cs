@@ -93,6 +93,12 @@ internal static class BenchmarkInputs
     /// <summary>Gets 1920x1080 RGBA 16-bit pixels with transparency (resize source).</summary>
     public static Rgba64[] ResizeRgba64Source => BenchmarkPixels.Rgba64(ResizeWidth, ResizeHeight, seed: 4, alpha: true);
 
+    /// <summary>Gets 1920x1080 opaque RGBA 8-bit pixels (resize source).</summary>
+    public static Rgba32[] ResizeRgba32OpaqueSource => BenchmarkPixels.Rgba32(ResizeWidth, ResizeHeight, seed: 4, alpha: false);
+
+    /// <summary>Gets 1920x1080 opaque RGBA 16-bit pixels (resize source).</summary>
+    public static Rgba64[] ResizeRgba64OpaqueSource => BenchmarkPixels.Rgba64(ResizeWidth, ResizeHeight, seed: 4, alpha: false);
+
     /// <summary>Gets a 64x64 RGBA 8-bit PNG (default <see cref="PngEncoder"/>: adaptive filters, optimal compression).</summary>
     public static byte[] SmallPng => SmallPngData.Value;
 

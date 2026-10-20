@@ -6,19 +6,41 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// share the canvas size and the pixel format.
 /// </summary>
 /// <remarks>
+/// <para>
 /// A worker needs the ring of the rows of its band (as many as the kernel has rows), the rows it reads above and below its
 /// band (the halos, loaded before any row is rewritten) and one accumulator row. All of it is rented up front, charged to
 /// the scope of the image, before any pixel changes.
+/// </para>
+/// <para>
+/// A separable plan (<see cref="RowWeights"/>, the Gaussian blur) has a kernel of one column: every row it loads is first
+/// filtered by the row weights, from one padded working row, so the ring and the halos hold horizontally filtered rows
+/// and the column of weights combines them. Nothing is rounded between the two directions.
+/// </para>
 /// </remarks>
 internal sealed class ConvolutionPlan : IDisposable
 {
     private readonly ConvolutionKernel _kernel;
+    private readonly double[]? _rowWeights;
     private ConvolutionScratch?[] _scratch = [];
 
-    public ConvolutionPlan(ConvolutionKernel kernel, ConvolutionEdgeMode edgeMode, bool preserveAlpha, bool linear, PixelFormat format, Size size, int maxDegreeOfParallelism = 1, byte transfer = CicpTransfer.Srgb)
+    /// <summary>Initializes a new instance of the <see cref="ConvolutionPlan"/> class.</summary>
+    /// <param name="kernel">The kernel; a single column when <paramref name="rowWeights"/> is set.</param>
+    /// <param name="edgeMode">The pixels read outside the image.</param>
+    /// <param name="preserveAlpha">Whether colors are filtered straight and alpha kept.</param>
+    /// <param name="linear">Whether samples are filtered in linear light.</param>
+    /// <param name="format">The pixel format.</param>
+    /// <param name="size">The size of the frames.</param>
+    /// <param name="maxDegreeOfParallelism">The largest number of workers.</param>
+    /// <param name="transfer">The transfer characteristics of linear-light filtering.</param>
+    /// <param name="rowWeights">The weights every row is filtered by before the kernel combines the rows (an odd number), or <see langword="null"/>.</param>
+    public ConvolutionPlan(ConvolutionKernel kernel, ConvolutionEdgeMode edgeMode, bool preserveAlpha, bool linear, PixelFormat format, Size size, int maxDegreeOfParallelism = 1, byte transfer = CicpTransfer.Srgb, double[]? rowWeights = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxDegreeOfParallelism);
+        if (rowWeights is not null && (kernel.Width != 1 || rowWeights.Length % 2 != 1))
+            throw new ArgumentException("A separable plan has a kernel of one column and an odd number of row weights.", nameof(rowWeights));
+
         _kernel = kernel;
+        _rowWeights = rowWeights;
         EdgeMode = edgeMode;
         IsLinear = linear;
         Transfer = linear ? transfer : (byte)0;
@@ -31,6 +53,15 @@ internal sealed class ConvolutionPlan : IDisposable
 
     /// <summary>Gets the weights, row by row.</summary>
     public ReadOnlySpan<double> Weights => _kernel.Values;
+
+    /// <summary>Gets a value indicating whether every row is filtered by <see cref="RowWeights"/> before the kernel combines the rows.</summary>
+    public bool IsSeparable => _rowWeights is not null;
+
+    /// <summary>Gets the weights every row is filtered by, from left to right (separable plans), or an empty span.</summary>
+    public ReadOnlySpan<double> RowWeights => _rowWeights;
+
+    /// <summary>Gets the column of the row weight applied to the pixel itself (separable plans).</summary>
+    public int RowCenterX => (_rowWeights?.Length ?? 0) / 2;
 
     public int KernelWidth => _kernel.Width;
 
@@ -78,10 +109,13 @@ internal sealed class ConvolutionPlan : IDisposable
         var before = scope.LiveBytes;
         var rowLength = (long)Size.Width * Channels;
         var paddedLength = ((long)Size.Width + KernelWidth - 1) * Channels;
+
+        // A separable plan loads each row padded for its row weights, then filters it into a ring or halo row
+        var inputLength = _rowWeights is null ? 0 : ((long)Size.Width + _rowWeights.Length - 1) * Channels;
         _scratch = new ConvolutionScratch?[Workers];
         for (var worker = 0; worker < Workers; worker++)
         {
-            _scratch[worker] = ConvolutionScratch.Create(scope, paddedLength, rowLength, KernelHeight, CenterY);
+            _scratch[worker] = ConvolutionScratch.Create(scope, paddedLength, rowLength, KernelHeight, CenterY, inputLength);
         }
 
         ScratchBytes = scope.LiveBytes - before;

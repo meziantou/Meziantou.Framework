@@ -1143,6 +1143,73 @@ public sealed class JpegXlDecoderTests
         nameof(JpegXlTestFiles.Oriented12Bit),
     ];
 
+    /// <summary>
+    /// The sRGB transfer function of the XYB output computes its power with polynomials: on every other float of the curved
+    /// segment up to 1, and on a stride of the floats above it, the power is within 3e-7 of the exact one (relative) and the
+    /// encoded sample within 4e-7 of the exact encoding, a negative sample is the opposite of the encoding of its opposite,
+    /// and the linear segment is exact.
+    /// </summary>
+    [Fact]
+    public void SrgbTransferFunctionIsWithinItsBoundOfTheExactPower()
+    {
+        const double MaxRelativePowerError = 3e-7;
+        const double MaxEncodingError = 4e-7;
+        var first = BitConverter.SingleToInt32Bits(0.0031308f) + 1;
+        var one = BitConverter.SingleToInt32Bits(1f);
+        var last = BitConverter.SingleToInt32Bits(float.MaxValue);
+        var worstPower = 0.0;
+        var worstEncoding = 0.0;
+        var samples = new float[4096];
+        var expected = new double[samples.Length];
+        var count = 0;
+        for (var bits = first; bits <= last; bits += bits < one ? 2 : 4099)
+        {
+            var value = BitConverter.Int32BitsToSingle(bits);
+            var power = Math.Pow(value, 1 / 2.4);
+            worstPower = Math.Max(worstPower, Math.Abs((JpegXlColorTransform.PowerFiveTwelfths(value) / power) - 1));
+            if (value <= 1)
+            {
+                samples[count] = (count & 1) == 0 ? value : -value;
+                expected[count] = (1.055 * power) - 0.055;
+                count++;
+                if (count == samples.Length)
+                {
+                    worstEncoding = Math.Max(worstEncoding, Encode(samples, expected, count));
+                    count = 0;
+                }
+            }
+        }
+
+        worstEncoding = Math.Max(worstEncoding, Encode(samples, expected, count));
+        Assert.True(worstPower <= MaxRelativePowerError, $"The relative error of the power is {worstPower:E3}.");
+        Assert.True(worstEncoding <= MaxEncodingError, $"The error of the encoding is {worstEncoding:E3}.");
+
+        float[] linear = [0f, -0f, 1e-40f, 1e-6f, -0.001f, 0.0031308f, -0.0031308f];
+        var encoded = linear.ToArray();
+        JpegXlColorTransform.LinearToSrgb(encoded);
+        Assert.Equal(Array.ConvertAll(linear, value => BitConverter.SingleToInt32Bits(MathF.CopySign(12.92f * MathF.Abs(value), value))), Array.ConvertAll(encoded, BitConverter.SingleToInt32Bits));
+
+        float[] special = [float.PositiveInfinity, float.NegativeInfinity, float.NaN];
+        JpegXlColorTransform.LinearToSrgb(special);
+        Assert.Equal(float.PositiveInfinity, special[0]);
+        Assert.Equal(float.NegativeInfinity, special[1]);
+        Assert.True(float.IsNaN(special[2]));
+
+        static double Encode(float[] samples, double[] expected, int count)
+        {
+            var encoded = samples.AsSpan(0, count).ToArray();
+            JpegXlColorTransform.LinearToSrgb(encoded);
+            var worst = 0.0;
+            for (var i = 0; i < count; i++)
+            {
+                worst = Math.Max(worst, Math.Abs(Math.Abs(encoded[i]) - expected[i]));
+                Assert.Equal(samples[i] < 0, float.IsNegative(encoded[i]));
+            }
+
+            return worst;
+        }
+    }
+
     private static Rgba64[] GetPixels(ImageFrame<Rgba64> frame)
     {
         var pixels = new Rgba64[frame.Width * frame.Height];

@@ -56,6 +56,21 @@ internal static partial class TextShaper
     }
 
     /// <summary>
+    /// Shapes a text run, using the cache of the font list, and returns the text of the cache entry in <paramref name="key"/> (null
+    /// when the text is not cached): a cache that keeps the text can share it instead of copying it again.
+    /// </summary>
+    public static ShapedText ShapeWithCachedText(ReadOnlySpan<char> text, FontFallbackList fonts, in TextShapingOptions options, out string? key)
+    {
+        var cache = fonts.ShapeCache;
+        if (cache.TryGetShapedText(text, options, out var result, out key))
+            return result;
+
+        result = ShapeUncached(text, fonts, options);
+        key = cache.AddShapedText(text, options, result);
+        return result;
+    }
+
+    /// <summary>
     /// Returns the advance of a text run along the inline axis in CSS px (the sum of the advances of its glyphs, with the
     /// kerning and the spacing), using the cache of the font list. It does not allocate the glyphs.
     /// </summary>

@@ -14,8 +14,10 @@ namespace Meziantou.Framework.Imaging.Tests.Conformance;
 /// </summary>
 /// <remarks>
 /// Tolerance: none beyond rounding. Each sample must be the correctly rounded exact value (ties upward); only when the exact
-/// value lies within <see cref="ReferenceFilterResult.TieWindow"/> (1e-6 sample units) of a rounding boundary is the other
+/// value lies within <see cref="ReferenceFilterResult.TieWindow"/> (1e-7 sample units) of a rounding boundary is the other
 /// neighbor accepted, because the double-precision accumulation of the library may then legitimately round either way.
+/// 8-bit sources without translucent pixels resized as stored go through the fixed-point path of the library, whose window
+/// is <see cref="ReferenceFilterResult.FixedPointTieWindow"/> (0.05 sample units).
 /// Alpha follows the same rule (it is filtered), and a zero output alpha requires transparent black. The number of such
 /// near ties is reported; dimensions, channel order, alpha handling and 16-bit low bits are never covered by a tolerance.
 /// </remarks>

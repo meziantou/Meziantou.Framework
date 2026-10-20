@@ -112,7 +112,26 @@ public static class ReferenceResampler
             }
         }
 
-        return new ReferenceResizeResult(options, width, height, layout, values);
+        // The library filters 8-bit samples as stored in fixed point when no pixel is translucent
+        var integer = layout.MaxSampleValue == byte.MaxValue && !options.Linear && options.Kernel != ReferenceKernel.Nearest && IsOpaque(source);
+        return new ReferenceResizeResult(options, width, height, layout, values) { AcceptedTieWindow = integer ? ReferenceFilterResult.FixedPointTieWindow : ReferenceFilterResult.TieWindow };
+    }
+
+    private static bool IsOpaque(RawPixelBuffer source)
+    {
+        if (!source.Layout.HasAlpha)
+            return true;
+
+        for (var y = 0; y < source.Height; y++)
+        {
+            for (var x = 0; x < source.Width; x++)
+            {
+                if (source.GetSample(x, y, source.Layout.AlphaChannel) != source.Layout.MaxSampleValue)
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>

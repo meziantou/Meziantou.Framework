@@ -101,13 +101,14 @@ internal static class BoxSizes
     /// <summary>Returns the size of the content box of a box in a physical axis (zoomed), or null when it is not known without layout.</summary>
     private static double? GetContentSize(ComputedStyle style, bool horizontal)
     {
-        ref var cache = ref style.Layout.GetContentSizeCache(horizontal);
-        if (!cache.Resolved)
+        var layout = style.Layout;
+        if (!layout.TryGetCachedContentSize(horizontal, out var size))
         {
-            cache = (true, ComputeContentSize(style, horizontal));
+            size = ComputeContentSize(style, horizontal);
+            layout.SetCachedContentSize(horizontal, size);
         }
 
-        return cache.Value;
+        return size;
     }
 
     private static double? ComputeContentSize(ComputedStyle style, bool horizontal)

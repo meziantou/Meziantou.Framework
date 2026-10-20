@@ -189,7 +189,10 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     library must output the reconstruction of the encoder) and `AvifEncoderInteropTests` (dav1d and libaom must output
     the same planes) are the tests to run after any change.
   - Every decision is made with integers (rates, distortions, the forward transforms): the output must not depend on
-    the platform. The forward transforms are measured on the inverse kernels of the decoder, not written out.
+    the platform. The forward transforms are the transposes of the inverse kernels of the decoder: their steps in the
+    reverse order, with the same integer rotations. `Av1ForwardTransformTests` bounds them against the exact product of
+    the bases that the inverse kernels give, and the encoder reconstructs its blocks with the inverse transform of the
+    decoder only.
   - The palettes of the block being coded live where the decoder has them (the scratch of the tile), and those of the
     blocks above and to the left are contexts: a candidate with a palette changes them, so they are in the context
     snapshots of a frame that has palettes, and the palettes of a block are in its record.
@@ -272,12 +275,18 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   to hide a file that is read in two ways. The integer path (`JpegXlDecoder.WriteFrame`) is only taken by frames that
   are shown as they are stored; everything else goes through `JpegXlFrameRenderer`, in floating point, where 1 is the
   largest integer sample. The render order is the one of libjxl: restoration filters, patches, splines, upsampling,
-  noise, color transform, blending.
+  noise, color transform, blending. The sRGB curve of the XYB output computes its power with two polynomials
+  (`JpegXlColorTransform.PowerFiveTwelfths`, 3e-7 relative, against 1.1e-7 for `MathF.Pow`), in the vector paths and
+  their scalar reference alike: it was 27 % of the instructions of a lossy decoding. The other transfer functions (BT.709,
+  PQ, HLG, gamma) still call `MathF.Pow` per sample: no workload reaches them.
 - **JPEG XL encoder** (`JpegXlEncoderCodec`, `Internals/Codecs/JpegXl/Encoding`). The headers are written, then parsed
   back by the readers of the decoder: the geometry of a frame is never derived twice. The lossy encoder
-  (`JpegXlVarDctEncoder`) mirrors `JpegXlVarDctDecoder`: its forward transforms and its color matrix are measured on, or
-  inverted from, what the decoder computes (`JpegXlForwardTransform`, `JpegXlForwardColor`), and a coefficient is
-  written with the context derivation the decoder reads it with (`JpegXlCoefficientContexts`). The blocks of a VarDCT
+  (`JpegXlVarDctEncoder`) mirrors `JpegXlVarDctDecoder`: its forward DCT undoes the halving steps of the inverse DCT
+  of the decoder in the opposite order, and its LF matrices and its color matrix are measured on, or inverted from,
+  what the decoder computes (`JpegXlForwardTransform`, `JpegXlForwardColor`); a coefficient is written with the
+  context derivation the decoder reads it with (`JpegXlCoefficientContexts`). The forward DCT was a product by bases
+  measured on the decoder, O(N^2) per line: the halving one gives the same coefficients within 3e-8 and the same files
+  but for a few bytes, with 2.4 to 3.2 times fewer instructions for the 64x64 and 8x8 transforms. The blocks of a VarDCT
   frame do not predict each other, so the encoder does not reconstruct what it writes; its decisions use float32 in a
   fixed order. `JpegXlEntropyCodeBuilder` clusters the contexts of the streams that share a code. Every Modular
   sub-stream, of a lossless frame or of a lossy one (LF image, block fields, alpha channel), goes through
@@ -651,6 +660,12 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   and the scales of the lengths; every neighborhood operation reads through `TryMap`. A backdrop layer has one frame per
   frame that is drawn on (`LayerLevel.Begin` with a frame count), each started with its own filtered backdrop, and is
   drawn frame by frame. `Filter(ColorMatrix)` and `BlurBackdrop` keep their own exact arithmetic: they are not filters.
+- The linear light of a filter graph (`FilterGraphContext.Convert` and `GetColor`) goes through
+  `DeterministicSrgbTransfer`, not `Math.Pow`: a polynomial of degree 5 per segment of the significand, from tables
+  built with roots found by Newton's method (`+ - * /` only). Rounded to a float, it gives the values of `SrgbTransfer`
+  on every float from 0 to 1 (measured on macOS Arm64); its bound against the decimal reference and a hash of its bits
+  are tested (`CicpColorSpaceTests`). Change it only with a sweep against an exact reference (integer roots of big
+  integers).
 - A filter that leaves transparent what is beyond its reach (`Filter.GetLocalSteps`: blurs with transparent edges,
   shadows, color matrices that add no alpha, before any reach) applies to what is within twice its reach of what is
   drawn on its layer (`GetLocalFilterArea`: the dirty rectangle, or the drawn bounds the session of a bounded layer
@@ -877,7 +892,13 @@ thin public types over its `FontFace`.
 
 - Remove unnecessary decodes, conversions and copies before micro-optimizing. Profile first and keep the evidence.
 - Scalar kernels are the numerical reference. A vectorized kernel keeps its scalar version (`...Scalar`) and needs a
-  test proving identical results (`VectorizedKernelTests`). No fused multiply-add in the DCTs.
+  test proving identical results (`VectorizedKernelTests`). No fused multiply-add in the DCTs. The resampler and the
+  convolver add every tap with a fused multiply-add in the scalar loops (`Math.FusedMultiplyAdd`) and the vector loops
+  alike, the vector loops only when the processor has the instruction (`Resampler.IsFmaAccelerated`): the software
+  fallback of `Vector128.FusedMultiplyAdd` is exact but computed one element at a time. 8-bit resizes without
+  translucent pixels in `Encoded` space take the integer path (`FixedPointResampler`): it is not correctly rounded (about
+  0.2% of the samples one unit off, within 0.02 of a boundary), so the reference comparisons accept either neighbor within
+  `ReferenceFilterResult.FixedPointTieWindow` for them; `Resampler.TestDisableFixedPoint` keeps the double path in a test.
 - A kernel that only has an `AdvSimd` path runs its scalar reference on x64. The AV1 vector kernels use `Av1Simd` for
   what `Vector128` does not express: each operation has an `AdvSimd` and an SSE branch, so the x64 branch only runs on
   x64 (the Windows and Linux CI legs, or an x64 machine). The inverse transform kernels are written once over

@@ -177,62 +177,51 @@ public sealed class FontFace
             _baseLength = baseLength;
         }
 
-        // OS/2: optional in old fonts. Its fields were added by versions; a field beyond the table is absent.
-        if (TryGetTable(FontTags.Os2, out var os2Memory) && os2Memory.Length >= 78)
+        // OS/2 (optional in old fonts), post and name: the names and the style are read as the system font index reads
+        // them, by FaceStyle. A field of OS/2 beyond the table is absent.
+        TryGetTable(FontTags.Os2, out var os2Memory);
+        TryGetTable(FontTags.Post, out var postMemory);
+        TryGetTable(FontTags.Name, out var nameMemory);
+        var style = FaceStyle.Read(macStyle, os2Memory.Span, postMemory.Span, nameMemory.Span);
+        HasOs2 = style.HasOs2;
+        Weight = style.Weight;
+        WidthClass = style.WidthClass;
+        Selection = style.Selection;
+        IsItalic = style.IsItalic;
+        HasPost = style.HasPost;
+        ItalicAngle = style.ItalicAngle;
+        IsMonospaced = style.IsMonospaced;
+        FamilyName = style.FamilyName;
+        SubfamilyName = style.SubfamilyName;
+        PostScriptName = style.PostScriptName;
+        if (style.HasOs2)
         {
             var os2 = os2Memory.Span;
-            HasOs2 = true;
             Os2Version = FontBinary.UInt16(os2, 0);
             AverageCharWidth = FontBinary.Int16(os2, 2);
-            Weight = FontBinary.UInt16(os2, 4);
-            WidthClass = FontBinary.UInt16(os2, 6);
             SubscriptYOffset = FontBinary.Int16(os2, 16);
             SuperscriptYOffset = FontBinary.Int16(os2, 24);
             StrikeoutSize = FontBinary.Int16(os2, 26);
             StrikeoutPosition = FontBinary.Int16(os2, 28);
-            var selection = FontBinary.UInt16(os2, 62);
-            Selection = selection;
-            IsItalic = (selection & 0x0001) != 0;
-            UseTypoMetrics = (selection & 0x0080) != 0;
+            UseTypoMetrics = (style.Selection & 0x0080) != 0;
             TypoAscender = FontBinary.Int16(os2, 68);
             TypoDescender = FontBinary.Int16(os2, 70);
             TypoLineGap = FontBinary.Int16(os2, 72);
             WinAscent = FontBinary.UInt16(os2, 74);
             WinDescent = FontBinary.UInt16(os2, 76);
-            if (FontBinary.UInt16(os2, 0) >= 2 && os2.Length >= 90)
+            if (Os2Version >= 2 && os2.Length >= 90)
             {
                 XHeight = FontBinary.Int16(os2, 86);
                 CapHeight = FontBinary.Int16(os2, 88);
             }
         }
-        else
-        {
-            Weight = (macStyle & 0x0001) != 0 ? 700 : 400;
-            IsItalic = (macStyle & 0x0002) != 0;
-        }
 
-        // post: the underline, and whether the font is monospaced.
-        if (TryGetTable(FontTags.Post, out var postMemory) && postMemory.Length >= 16)
+        // post: the underline.
+        if (style.HasPost)
         {
             var post = postMemory.Span;
-            HasPost = true;
-            ItalicAngle = FontBinary.Int32(post, 4) / 65536.0;
             UnderlinePosition = FontBinary.Int16(post, 8);
             UnderlineThickness = FontBinary.Int16(post, 10);
-            IsMonospaced = FontBinary.UInt32(post, 12) != 0;
-        }
-
-        if (TryGetTable(FontTags.Name, out var nameMemory) && nameMemory.Length >= 6)
-        {
-            var name = nameMemory.Span;
-            FamilyName = NameTable.Find(name, NameTable.TypographicFamilyName) ?? NameTable.Find(name, NameTable.FamilyName) ?? "";
-            SubfamilyName = NameTable.Find(name, NameTable.TypographicSubfamilyName) ?? NameTable.Find(name, NameTable.SubfamilyName) ?? "";
-            PostScriptName = NameTable.Find(name, NameTable.PostScriptName);
-        }
-        else
-        {
-            FamilyName = "";
-            SubfamilyName = "";
         }
 
         if (!TryGetTable(FontTags.Cmap, out var cmap) || cmap.Length < 4)

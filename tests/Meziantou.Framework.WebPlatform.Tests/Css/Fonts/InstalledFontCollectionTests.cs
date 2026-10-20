@@ -1,5 +1,7 @@
+using System.Buffers.Binary;
 using Meziantou.Framework.WebPlatform.Css.Fonts;
 using Meziantou.Framework.WebPlatform.Dom;
+using SystemFontCollection = Meziantou.Framework.Fonts.SystemFontCollection;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Css.Fonts;
 
@@ -32,9 +34,9 @@ public sealed class InstalledFontCollectionTests : IDisposable
         return fonts;
     }
 
-    private Document Load(string html, InstalledFontCollection? fonts)
+    private Document Load(string html, InstalledFontCollection? fonts, bool useSystemFonts = false)
     {
-        var context = _contexts.Create(new BrowsingContextOptions { InstalledFonts = fonts });
+        var context = _contexts.Create(new BrowsingContextOptions { InstalledFonts = fonts, UseSystemFonts = useSystemFonts });
         var document = context.Navigate("https://example.com/", _ => "<!DOCTYPE html><style>body { margin: 0; font-size: 20px }</style>" + html);
         _contexts.EventLoop.RunUntilIdle();
         return document;
@@ -58,9 +60,9 @@ public sealed class InstalledFontCollectionTests : IDisposable
         var fonts = CreateFonts();
 
         // The first face installed with a style is the first one of its family; the localized names name the family too
-        Assert.Equal("CSSTest FamilyName", fonts.GetFamilyFonts("csstest familyname")[0].Font.FullName);
+        Assert.Equal("CSSTest FamilyName", fonts.GetFamilyFonts("csstest familyname")[0].FullName);
         Assert.Equal(2, fonts.GetFamilyFonts(LocalizedFamilyName).Count);
-        Assert.Equal("CSSTest FamilyName", fonts.GetFamilyFonts(LocalizedFamilyName)[0].Font.FullName);
+        Assert.Equal("CSSTest FamilyName", fonts.GetFamilyFonts(LocalizedFamilyName)[0].FullName);
 
         // The typographic family name groups the faces of the weights (the family names are "CSSTest Weights Full W1"...)
         Assert.Equal(3, fonts.GetFamilyFonts("CSSTest Weights Full").Count);
@@ -140,5 +142,190 @@ public sealed class InstalledFontCollectionTests : IDisposable
         var document = Load("<style>@font-face { font-family: test; src: local('CSSTest Verify') }</style><span id=a style='font-family: test'>PASS</span><span id=b style='font-family: CSSTest Verify'>PASS</span><span id=c>PASS</span>", CreateFonts());
         Assert.Equal(GetWidth(document, "b"), GetWidth(document, "a"));
         Assert.NotEqual(GetWidth(document, "c"), GetWidth(document, "a"));
+    }
+
+    [Fact]
+    public void SystemFonts()
+    {
+        var regular = ReadResource("ShapingTest.ttf");
+        var face = FontFile.Load(regular)!.Faces[0];
+        using var directory = new TemporaryDirectory();
+        directory.Write("regular.ttf", regular);
+        directory.Write(Path.Combine("styles", "bold.ttf"), SetStyle(regular, weight: 700, selection: 0x0020));
+        directory.Write(Path.Combine("styles", "italic.ttf"), SetStyle(regular, weight: 400, selection: 0x0001));
+        var fonts = InstalledFontCollection.FromSystemFonts(SystemFontCollection.Create([directory.Path]));
+
+        Assert.Equal(3, fonts.GetFamilyFonts(face.FamilyName).Count);
+        var html = $"<span id=a style='font-family: {face.FamilyName}'>aaaa</span><span id=b style='font-family: {face.FamilyName}; font-weight: bold'>aaaa</span><span id=c style='font-family: {face.FamilyName}; font-style: italic'>aaaa</span><span id=d>aaaa</span>";
+        var document = Load(html, fonts);
+        Assert.Equal(40, GetWidth(document, "a"));
+        Assert.NotEqual(40, GetWidth(document, "d"));
+        Assert.Equal(400, document.GetStyleEngine().GetStyle(document.GetElementById("a")!).Fonts.PrimaryFont.Font.WeightClass);
+        Assert.Equal(700, document.GetStyleEngine().GetStyle(document.GetElementById("b")!).Fonts.PrimaryFont.Font.WeightClass);
+        Assert.True(document.GetStyleEngine().GetStyle(document.GetElementById("c")!).Fonts.PrimaryFont.Font.IsItalic);
+
+        // The capabilities of the matching come from the index; they are the ones of the loaded fonts
+        foreach (var font in fonts.Fonts)
+        {
+            Assert.Equal(FontSelectionCapabilities.FromFont(font.Font!), font.Capabilities);
+        }
+
+        // local() finds a face of the machine by its PostScript name
+        document = Load($"<style>@font-face {{ font-family: test; src: local('{face.PostScriptName}') }}</style><span id=a style='font-family: test'>aaaa</span>", fonts);
+        Assert.Equal(40, GetWidth(document, "a"));
+    }
+
+    [Fact]
+    public void SystemFonts_LocalFaceOfACollection()
+    {
+        // local() names the second face of a collection: the font face uses that face, not the first face of the file
+        var first = ReadResource("ShapingTest.ttf");
+        var second = ReadResource("ComplexShapingTest.ttf");
+        var secondFace = FontFile.Load(second)!.Faces[0];
+        using var directory = new TemporaryDirectory();
+        directory.Write("fonts.ttc", CreateCollection(first, second));
+        var fonts = InstalledFontCollection.FromSystemFonts(SystemFontCollection.Create([directory.Path]));
+
+        var document = Load($"<style>@font-face {{ font-family: test; src: local('{secondFace.PostScriptName}') }}</style><span id=a style='font-family: test'>a</span>", fonts);
+        var font = document.GetStyleEngine().GetStyle(document.GetElementById("a")!).Fonts.PrimaryFont.Font;
+        Assert.Equal(secondFace.FullName, font.FullName);
+        Assert.Equal(1, font.FaceIndex);
+        Assert.Equal(2, font.File.Faces.Count);
+    }
+
+    [Fact]
+    public void SystemFonts_FileRemovedAfterTheScan()
+    {
+        var regular = ReadResource("ShapingTest.ttf");
+        var face = FontFile.Load(regular)!.Faces[0];
+        using var directory = new TemporaryDirectory();
+        var path = directory.Write("regular.ttf", regular);
+        var fonts = InstalledFontCollection.FromSystemFonts(SystemFontCollection.Create([directory.Path]));
+
+        // The file is read when the face is used: a face whose file is gone is missing, and the next family is used
+        File.Delete(path);
+        var document = Load($"<span id=a style='font-family: {face.FamilyName}, Ahem'>aaaa</span>", fonts);
+        Assert.Equal(80, GetWidth(document, "a"));
+        Assert.Null(Assert.Single(fonts.GetFamilyFonts(face.FamilyName)).Font);
+    }
+
+    [Fact]
+    public void SystemFonts_CapabilitiesFromTheIndex()
+    {
+        // Fonts of all kinds (variable fonts, obliques, collections): the index gives the capabilities of the loaded fonts
+        var fonts = InstalledFontCollection.FromSystemFonts(SystemFontCollection.Create([Path.Combine(TestPaths.Root, "tests", "Meziantou.Framework.WebPlatform.Tests", "Css", "Fonts", "Resources")]));
+        Assert.True(fonts.Fonts.Count > 10);
+        foreach (var font in fonts.Fonts)
+        {
+            if (font.Font is { } loaded)
+            {
+                Assert.Equal(FontSelectionCapabilities.FromFont(loaded), font.Capabilities);
+                Assert.Equal(loaded.FullName, font.FullName);
+                Assert.Equal(loaded.PostScriptName, font.PostScriptName);
+            }
+        }
+    }
+
+    [Fact]
+    public void SystemFonts_Option()
+    {
+        Assert.Null(Load("", fonts: null).InstalledFonts);
+        Assert.Same(InstalledFontCollection.System, Load("", fonts: null, useSystemFonts: true).InstalledFonts);
+
+        // The fonts installed by the host replace the fonts of the machine
+        var fonts = CreateFonts();
+        Assert.Same(fonts, Load("", fonts, useSystemFonts: true).InstalledFonts);
+
+        // The fonts of the machine can be named, after the bundled fonts
+        var document = Load("<span id=a style='font-family: Arimo'>a</span>", fonts: null, useSystemFonts: true);
+        Assert.True(document.GetStyleEngine().GetStyle(document.GetElementById("a")!).Fonts.PrimaryFont.IsBundled);
+        foreach (var font in InstalledFontCollection.System.Fonts.Take(10))
+        {
+            if (font.Font is { } loaded)
+            {
+                Assert.Equal(FontSelectionCapabilities.FromFont(loaded), font.Capabilities);
+            }
+        }
+    }
+
+    private static byte[] ReadResource(string name) => File.ReadAllBytes(Path.Combine(TestPaths.Root, "tests", "Meziantou.Framework.WebPlatform.Tests", "Css", "Fonts", "Resources", name));
+
+    /// <summary>Creates a font collection (<c>ttcf</c>) of fonts: each font is copied after the header, its table offsets moved by its position.</summary>
+    private static byte[] CreateCollection(params byte[][] fonts)
+    {
+        var result = new List<byte>();
+        var header = new byte[12 + (4 * fonts.Length)];
+        "ttcf"u8.CopyTo(header);
+        BinaryPrimitives.WriteUInt32BigEndian(header.AsSpan(4), 0x00010000);
+        BinaryPrimitives.WriteUInt32BigEndian(header.AsSpan(8), (uint)fonts.Length);
+        result.AddRange(header);
+        var offsets = new List<int>();
+        foreach (var font in fonts)
+        {
+            while (result.Count % 4 != 0)
+            {
+                result.Add(0);
+            }
+
+            var start = result.Count;
+            offsets.Add(start);
+            var copy = (byte[])font.Clone();
+            var tableCount = BinaryPrimitives.ReadUInt16BigEndian(copy.AsSpan(4));
+            for (var i = 0; i < tableCount; i++)
+            {
+                var offset = copy.AsSpan(12 + (i * 16) + 8, 4);
+                BinaryPrimitives.WriteUInt32BigEndian(offset, BinaryPrimitives.ReadUInt32BigEndian(offset) + (uint)start);
+            }
+
+            result.AddRange(copy);
+        }
+
+        var bytes = result.ToArray();
+        for (var i = 0; i < offsets.Count; i++)
+        {
+            BinaryPrimitives.WriteUInt32BigEndian(bytes.AsSpan(12 + (4 * i)), (uint)offsets[i]);
+        }
+
+        return bytes;
+    }
+
+    /// <summary>Sets the weight class and the selection flags of the OS/2 table of a font.</summary>
+    private static byte[] SetStyle(byte[] font, int weight, int selection)
+    {
+        var result = (byte[])font.Clone();
+        var tableCount = BinaryPrimitives.ReadUInt16BigEndian(result.AsSpan(4));
+        for (var i = 0; i < tableCount; i++)
+        {
+            var record = result.AsSpan(12 + (i * 16), 16);
+            if (record[..4].SequenceEqual("OS/2"u8))
+            {
+                var os2 = result.AsSpan((int)BinaryPrimitives.ReadUInt32BigEndian(record[8..]));
+                BinaryPrimitives.WriteUInt16BigEndian(os2[4..], (ushort)weight);
+                BinaryPrimitives.WriteUInt16BigEndian(os2[62..], (ushort)selection);
+            }
+        }
+
+        return result;
+    }
+
+    private sealed class TemporaryDirectory : IDisposable
+    {
+        public TemporaryDirectory()
+        {
+            Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "installed-fonts-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(Path);
+        }
+
+        public string Path { get; }
+
+        public string Write(string relativePath, byte[] data)
+        {
+            var path = System.IO.Path.Combine(Path, relativePath);
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);
+            File.WriteAllBytes(path, data);
+            return path;
+        }
+
+        public void Dispose() => Directory.Delete(Path, recursive: true);
     }
 }

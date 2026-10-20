@@ -53,6 +53,17 @@ internal sealed class TextShapeCache
         return false;
     }
 
+    /// <summary>Returns a cached shaped text, and the text of the entry (<paramref name="key"/>): it can be kept instead of a copy of <paramref name="text"/>.</summary>
+    public bool TryGetShapedText(ReadOnlySpan<char> text, in TextShapingOptions options, [NotNullWhen(true)] out ShapedText? result, [NotNullWhen(true)] out string? key)
+    {
+        if (FindEntries(options) is { Shaped: { } shaped })
+            return shaped.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(text, out key, out result);
+
+        key = null;
+        result = null;
+        return false;
+    }
+
     public bool TryGetWidth(ReadOnlySpan<char> text, in TextShapingOptions options, out double width)
     {
         if (FindEntries(options) is { } entries)
@@ -71,13 +82,16 @@ internal sealed class TextShapeCache
         return false;
     }
 
-    public void AddShapedText(ReadOnlySpan<char> text, in TextShapingOptions options, ShapedText value)
+    /// <summary>Caches a shaped text, and returns the text of the entry, or null when the text is too long to be cached.</summary>
+    public string? AddShapedText(ReadOnlySpan<char> text, in TextShapingOptions options, ShapedText value)
     {
-        if (Reserve(text.Length))
-        {
-            var entries = GetEntries(options);
-            (entries.Shaped ??= new(StringComparer.Ordinal)).GetAlternateLookup<ReadOnlySpan<char>>()[text] = value;
-        }
+        if (!Reserve(text.Length))
+            return null;
+
+        var entries = GetEntries(options);
+        var key = text.ToString();
+        (entries.Shaped ??= new(StringComparer.Ordinal))[key] = value;
+        return key;
     }
 
     public void AddWidth(ReadOnlySpan<char> text, in TextShapingOptions options, double width)

@@ -20,19 +20,23 @@ public class InvalidationBenchmarks
     private Element _tableBody = null!;
     private HtmlElement[] _cards = [];
     private ManualTimeProvider _clock = null!;
-    private readonly AnimationBenchmarkScenario _animation = new();
+    private readonly AnimationBenchmarkScenario _animation = new(InvalidationDocumentKind.Animation);
+    private readonly AnimationBenchmarkScenario _transitions = new(InvalidationDocumentKind.Transitions);
+    private Element _transitionsCard = null!;
 
     [GlobalSetup]
     public void Setup()
     {
         _clock = new ManualTimeProvider();
         _context = new BrowsingContext(new BrowsingContextOptions { TimeProvider = _clock });
-        _document = _context.Navigate("https://example.com/", _ => InvalidationDocument.Create(animation: false));
+        _document = _context.Navigate("https://example.com/", _ => InvalidationDocument.Create(InvalidationDocumentKind.Static));
         _card = _document.GetElementById("card250")!;
         _tableBody = _document.QuerySelector("tbody")!;
         _cards = [.. _document.QuerySelectorAll(".card").Cast<HtmlElement>()];
         _ = _document.GetLayoutEngine().EnsureLayout();
         _ = _animation.RunFrame();
+        _ = _transitions.RunFrame();
+        _transitionsCard = _transitions.Document.GetElementById("card250")!;
     }
 
     [GlobalCleanup]
@@ -40,6 +44,7 @@ public class InvalidationBenchmarks
     {
         _context?.Dispose();
         _animation.Dispose();
+        _transitions.Dispose();
     }
 
     /// <summary>Toggles a class of one card, then updates the layout.</summary>
@@ -79,14 +84,39 @@ public class InvalidationBenchmarks
     /// <summary>Runs one animation frame of a document with one running CSS animation (the rendering steps update the styles and the layout).</summary>
     [Benchmark]
     public object? AnimationFrame() => _animation.RunFrame();
+
+    /// <summary>
+    /// Toggles a class of one card of a document whose style sheet declares transitions and styles every ::before and ::after
+    /// (as Bootstrap does), then runs one animation frame (the rendering steps update the CSS animations and transitions). The
+    /// class changes no transitioned property.
+    /// </summary>
+    [Benchmark]
+    public object? ClassChangeTransitionFrame()
+    {
+        _transitionsCard.ClassList.Toggle("selected");
+        return _transitions.RunFrame();
+    }
+
+    /// <summary>
+    /// Toggles a class of one card that changes its transitioned properties, then runs one animation frame: every toggle cancels
+    /// or reverses the running transitions of the card.
+    /// </summary>
+    [Benchmark]
+    public object? TransitionReversalFrame()
+    {
+        _transitionsCard.ClassList.Toggle("highlight");
+        return _transitions.RunFrame();
+    }
 }
 
-/// <summary>The document of <see cref="InvalidationBenchmarks"/> with a running CSS animation, advanced one frame at a time.</summary>
-internal sealed class AnimationBenchmarkScenario : IDisposable
+/// <summary>The document of <see cref="InvalidationBenchmarks"/> with a running CSS animation or transitions, advanced one frame at a time.</summary>
+internal sealed class AnimationBenchmarkScenario(InvalidationDocumentKind kind) : IDisposable
 {
     private BrowsingContext? _context;
     private ManualTimeProvider? _clock;
     private Document? _document;
+
+    public Document Document => _document ?? throw new InvalidOperationException("The scenario did not run a frame.");
 
     public object? RunFrame()
     {
@@ -94,7 +124,7 @@ internal sealed class AnimationBenchmarkScenario : IDisposable
         {
             _clock = new ManualTimeProvider();
             _context = new BrowsingContext(new BrowsingContextOptions { TimeProvider = _clock });
-            _document = _context.Navigate("https://example.com/", _ => InvalidationDocument.Create(animation: true));
+            _document = _context.Navigate("https://example.com/", _ => InvalidationDocument.Create(kind));
             _ = _document.GetLayoutEngine().EnsureLayout();
             _context.EventLoop.RunUntilIdle();
         }
@@ -121,9 +151,30 @@ internal sealed class ManualTimeProvider : TimeProvider
     public void Advance(TimeSpan delay) => _timestamp += delay.Ticks;
 }
 
+/// <summary>The variants of the document of <see cref="InvalidationBenchmarks"/>.</summary>
+internal enum InvalidationDocumentKind
+{
+    /// <summary>No animation nor transition.</summary>
+    Static,
+
+    /// <summary>One card has a running CSS animation.</summary>
+    Animation,
+
+    /// <summary>The cards have transitions, and a rule styles every element and its ::before and ::after pseudo-elements (as Bootstrap does).</summary>
+    Transitions,
+}
+
 /// <summary>The documents of <see cref="InvalidationBenchmarks"/>.</summary>
 internal static class InvalidationDocument
 {
+    private const string TransitionsStyleSheet = """
+        *, ::before, ::after { box-sizing: border-box }
+        .card { transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out }
+        .card.highlight { box-shadow: 0 0 0 4px #cc0 }
+        .card.selected { background: #def }
+        .card.selected h2 { text-decoration: underline }
+        """;
+
     private const string StyleSheet = """
         body { font: 14px/1.4 sans-serif; margin: 8px }
         h1 { font-size: 20px }
@@ -153,13 +204,14 @@ internal static class InvalidationDocument
         """;
 
     /// <summary>Creates the document: 500 cards of 9 elements and a table of 100 rows of 5 elements (5,000 elements in the body).</summary>
-    public static string Create(bool animation)
+    public static string Create(InvalidationDocumentKind kind)
     {
         var html = new StringBuilder(600_000);
-        html.Append("<!DOCTYPE html><html><head><title>Invalidation</title><style>").Append(StyleSheet).Append("</style></head><body><h1>Cards</h1><div class=grid>");
+        html.Append("<!DOCTYPE html><html><head><title>Invalidation</title><style>").Append(StyleSheet).Append(kind is InvalidationDocumentKind.Transitions ? TransitionsStyleSheet : "")
+            .Append("</style></head><body><h1>Cards</h1><div class=grid>");
         for (var i = 0; i < 500; i++)
         {
-            html.Append(animation && i == 250 ? "<div class=\"card animated\" id=card" : "<div class=card id=card").Append(i).Append('>')
+            html.Append(kind is InvalidationDocumentKind.Animation && i == 250 ? "<div class=\"card animated\" id=card" : "<div class=card id=card").Append(i).Append('>')
                 .Append("<h2>Card ").Append(i).Append("</h2>")
                 .Append("<p>Some text of the card ").Append(i).Append(" <span class=tag>alpha</span><span class=tag>beta</span></p>")
                 .Append("<ul class=list><li>First item<li>Second item<li>Third item</ul>")
@@ -205,6 +257,8 @@ internal static class InvalidationProfile
             "row" => benchmarks.AppendTableRow,
             "offset" => () => benchmarks.OffsetTopAfterEachWrite(),
             "frame" => benchmarks.AnimationFrame,
+            "transition-frame" => benchmarks.ClassChangeTransitionFrame,
+            "transition-reversal" => benchmarks.TransitionReversalFrame,
             _ => throw new ArgumentOutOfRangeException(nameof(scenario)),
         };
 

@@ -1,7 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
   <!--
     Replays the seeds and the committed regressions (fuzz/*.Fuzz/Regressions/<target>) of every SharpFuzz target, so
-    that every CI build checks them; the coverage-guided campaigns run weekly (.github/workflows/fuzz.yml).
+    that every CI build checks them; the coverage-guided campaigns run weekly (.github/workflows/fuzz-sharpfuzz.yml).
   -->
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>

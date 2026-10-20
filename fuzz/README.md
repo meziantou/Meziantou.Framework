@@ -7,10 +7,13 @@ The fuzz projects live apart from `tests/` because their campaigns run at a diff
 - `Meziantou.Framework.*.Fuzz`: coverage-guided fuzzing with [SharpFuzz](https://github.com/Metalnem/sharpfuzz) and
   [libFuzzer](https://llvm.org/docs/LibFuzzer.html) (through [libfuzzer-dotnet](https://github.com/Metalnem/libfuzzer-dotnet)).
 
-Both run in the weekly campaign of `.github/workflows/fuzz.yml`. `eng/run-fuzz.ps1` (SharpFuzz) and
-`eng/run-imaging-fuzz.ps1` (Imaging) write a `result.json` and a `failure.md` file for each target under
-`artifacts/fuzz/results`, and `eng/report-fuzz-failures.ps1` opens an issue for each failed target, labeled with the
-component of the project.
+Both run weekly, on x64 and on arm64. `.github/workflows/fuzz-sharpfuzz.yml` fuzzes the SharpFuzz projects: its
+`FUZZ_PROJECTS` table gives the component label of each project and the night of its campaign, and a manual run fuzzes
+one component or all of them. `.github/workflows/fuzz-imaging.yml` runs the Imaging fuzz tests. Two campaigns run each
+night at 3:00 (Toronto time): a new project gets a row on a night with the fewest, and an option of the `component`
+input (`Meziantou.Framework.Fuzzing.Tests` checks both). `eng/run-fuzz.ps1` (SharpFuzz) and `eng/run-imaging-fuzz.ps1`
+(Imaging) write a `result.json` and a `failure.md` file for each target under `artifacts/fuzz/results`, and
+`eng/report-fuzz-failures.ps1` opens an issue for each failed target, labeled with the component of the project.
 
 ## SharpFuzz projects
 
@@ -61,8 +64,17 @@ chmod +x libfuzzer-dotnet
 pwsh eng/run-fuzz.ps1 -Project fuzz/Meziantou.Framework.Yaml.Fuzz -DurationSeconds 60 -LibFuzzer ./libfuzzer-dotnet
 ```
 
-Use an x64 machine (or an `linux/amd64` container): on arm64, the trap that reports a failure to libFuzzer raises a
-signal libFuzzer does not handle, so it does not save the failing input.
+There is no arm64 release of libfuzzer-dotnet. On arm64, build it from source, with `abort()` instead of
+`__builtin_trap()`: the trap that reports a failure to libFuzzer raises a SIGTRAP there, which libFuzzer does not handle,
+so it would not save the failing input. The weekly workflows fuzz on both architectures, so that the hardware
+intrinsics paths of both (SSE/AVX and AdvSimd) run.
+
+```bash
+sudo apt-get install -y --no-install-recommends clang libclang-rt-dev
+curl -L -o libfuzzer-dotnet.cc https://raw.githubusercontent.com/Metalnem/libfuzzer-dotnet/bd39d4e88d715ab460a929943645be2a186cde52/libfuzzer-dotnet.cc
+sed -i 's/__builtin_trap();/abort();/' libfuzzer-dotnet.cc
+clang -O2 -fsanitize=fuzzer libfuzzer-dotnet.cc -o libfuzzer-dotnet
+```
 
 Each target gets `artifacts/fuzz/results/<target>`: the libFuzzer log, the failing input (`crash-*`, `timeout-*`),
 and `failure.md`, the body of the issue the weekly workflow opens. The corpus is kept in `artifacts/fuzz-corpus`.

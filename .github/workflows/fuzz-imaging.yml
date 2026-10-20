@@ -1,0 +1,105 @@
+# Weekly campaign of the Imaging fuzz tests (fuzz/Meziantou.Framework.Imaging.FuzzTests, see fuzz/README.md), split
+# across jobs, on x64 and on arm64 so that the hardware intrinsics paths of both (SSE/AVX and AdvSimd) are fuzzed. Pull
+# requests run them with a small fixed budget; eng/run-imaging-fuzz.ps1 runs them with a new base seed every week and a
+# time budget per campaign. It writes a result.json and a failure.md file per failed test, so the report job opens an
+# issue for every failing test (or comments on the open one with the same title) with the minimized input and the
+# commands that reproduce it. Two fuzz campaigns run each night at 3:00 (see FUZZ_PROJECTS in fuzz-sharpfuzz.yml).
+name: fuzz-imaging
+on:
+  workflow_dispatch:
+    inputs:
+      seed:
+        description: Base seed of the Imaging fuzz tests (any 64-bit unsigned integer; default is the run id)
+        type: string
+        required: false
+      duration_seconds:
+        description: Time budget of each Imaging fuzz test campaign, in seconds
+        type: number
+        default: 420
+        required: false
+  schedule:
+    - cron: '0 3 * * 6' # weekly, Saturday 3:00 in Toronto (follows daylight saving time)
+      timezone: America/Toronto
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  fuzz:
+    name: fuzz (${{ matrix.shard.id }}, ${{ matrix.platform.arch }})
+    runs-on: ${{ matrix.platform.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        # Both architectures fuzz the same cases (same base seed)
+        platform:
+          - { runner: ubuntu-26.04, arch: x64 }
+          - { runner: ubuntu-26.04-arm, arch: arm64 }
+        shard:
+          # The seed groups of MutationFuzzTests are split by position (MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_SHARD), so a new
+          # group is fuzzed without changing this file
+          - { id: mutation-0, shard: 0/4, filter: --filter-class Meziantou.Framework.Imaging.FuzzTests.MutationFuzzTests }
+          - { id: mutation-1, shard: 1/4, filter: --filter-class Meziantou.Framework.Imaging.FuzzTests.MutationFuzzTests }
+          - { id: mutation-2, shard: 2/4, filter: --filter-class Meziantou.Framework.Imaging.FuzzTests.MutationFuzzTests }
+          - { id: mutation-3, shard: 3/4, filter: --filter-class Meziantou.Framework.Imaging.FuzzTests.MutationFuzzTests }
+          # Fonts, ICC profiles, drawing and text layout, plus the regression and harness tests
+          - { id: other, shard: '', filter: --filter-not-class Meziantou.Framework.Imaging.FuzzTests.MutationFuzzTests }
+    env:
+      MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_SEED: ${{ inputs.seed || github.run_id }}
+      # The test host kills a test still running after 10 minutes (hang dump). 420 s leaves time to minimize the
+      # failures found at the end of the budget.
+      MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_DURATION_SECONDS: ${{ inputs.duration_seconds || 420 }}
+      # The duration is the only bound
+      MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_ITERATIONS: 2000000000
+      MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_SHARD: ${{ matrix.shard.shard }}
+      MEZIANTOU_FRAMEWORK_IMAGING_TEST_PREVIEWS: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Setup .NET
+        uses: $/.github/actions/setup-dotnet
+      - name: Fuzz
+        run: ./eng/run-imaging-fuzz.ps1 -Shard ${{ matrix.shard.id }} -Filter '${{ matrix.shard.filter }}'
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: fuzz-results-Meziantou.Framework.Imaging.FuzzTests-${{ matrix.shard.id }}-${{ matrix.platform.arch }}
+          if-no-files-found: warn
+          # Linked from the issues: the minimized inputs stay available until the failure is investigated
+          retention-days: 30
+          path: |
+            artifacts/fuzz/results/**
+            artifacts/fuzz/inputs/**
+            artifacts/fuzz/test-results/**/*.trx
+
+  report:
+    needs: [ fuzz ]
+    if: always() && github.repository == 'meziantou/Meziantou.Framework'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Download fuzz results
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          # A pattern: one artifact per shard and architecture, and a job that failed before uploading its results
+          # leaves none
+          pattern: fuzz-results-Meziantou.Framework.Imaging.FuzzTests*
+          path: fuzz-results
+      - name: Open or update issues
+        run: ./eng/report-fuzz-failures.ps1 -Project Meziantou.Framework.Imaging.FuzzTests -ResultsDirectory fuzz-results -Labels fuzzing, component:imaging
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FUZZ_JOB_RESULT: ${{ needs.fuzz.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

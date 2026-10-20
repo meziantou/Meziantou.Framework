@@ -3,6 +3,26 @@ namespace Meziantou.Framework.Tests;
 
 public class QRCodeTests
 {
+    [Fact]
+    public void ReadmeExample_Create()
+    {
+        #region QRCode_Create
+        // Standard QR code
+        var standardQr = QRCode.Create("HELLO WORLD", ErrorCorrectionLevel.H);
+
+        // Micro QR code (smaller, single finder pattern)
+        var microQr = QRCode.CreateMicroQR("12345", ErrorCorrectionLevel.L);
+
+        // Rectangular Micro QR code (narrow rectangular shape)
+        var rmqr = QRCode.CreateRMQR("https://www.meziantou.net", ErrorCorrectionLevel.M);
+
+        // Format info: type, width and height in modules
+        Assert.Equal((QRCodeType.Standard, 25, 25), (standardQr.Type, standardQr.Width, standardQr.Height));
+        Assert.Equal((QRCodeType.MicroQR, 11, 11), (microQr.Type, microQr.Width, microQr.Height));
+        Assert.Equal((QRCodeType.RMQR, 43, 13), (rmqr.Type, rmqr.Width, rmqr.Height));
+        #endregion
+    }
+
     // ───── Numeric mode ─────
 
     [Fact]

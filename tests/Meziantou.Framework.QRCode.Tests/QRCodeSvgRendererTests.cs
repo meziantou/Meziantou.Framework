@@ -6,6 +6,41 @@ namespace Meziantou.Framework.Tests;
 
 public class QRCodeSvgRendererTests
 {
+    [Fact]
+    public void ReadmeExample_ToSvg()
+    {
+        #region QRCode_ToSvg
+        var qrCode = QRCode.Create("HELLO WORLD", ErrorCorrectionLevel.H);
+        var microQr = QRCode.CreateMicroQR("12345", ErrorCorrectionLevel.L);
+        var barcode = Barcode.CreateCode128("SKU-123456");
+
+        var svg = qrCode.ToSvg();
+        Assert.StartsWith("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 330 330\">", svg);
+
+        var microSvg = microQr.ToSvg(new QRCodeSvgOptions { ModuleSize = 2, QuietZoneModules = 2 });
+        Assert.Contains("viewBox=\"0 0 30 30\"", microSvg);
+
+        var customSvg = qrCode.ToSvg(new QRCodeSvgOptions
+        {
+            ModuleSize = 10,
+            QuietZoneModules = 4,
+            DarkColor = Color.FromRgb(0x00, 0x00, 0x00),
+            LightColor = Color.FromRgb(0xff, 0xff, 0xff),
+            LogoImageHref = "https://example.com/logo.svg", // Also supports data URIs
+            LogoSizePercent = 20,
+        });
+        Assert.Contains("<image href=\"https://example.com/logo.svg\"", customSvg);
+
+        var barcodeSvg = barcode.ToSvg(new BarcodeSvgOptions
+        {
+            ModuleWidth = 2,
+            ModuleHeight = 80,
+            QuietZoneModules = 10,
+        });
+        Assert.Contains("viewBox=\"0 0 286 80\"", barcodeSvg);
+        #endregion
+    }
+
     private const string GreenPngDataUri = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR42mNg+M8AAAICAQBF9FLUAAAAAElFTkSuQmCC";
 
     [Fact]

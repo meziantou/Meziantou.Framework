@@ -6,6 +6,41 @@ namespace Meziantou.Framework.Tests;
 
 public class QRCodePngRendererTests
 {
+    [Fact]
+    public void ReadmeExample_ToPng()
+    {
+        #region QRCode_ToPng
+        var qrCode = QRCode.Create("HELLO WORLD", ErrorCorrectionLevel.H);
+        var microQr = QRCode.CreateMicroQR("12345", ErrorCorrectionLevel.L);
+        var barcode = Barcode.CreateCode39("ABC-123", includeChecksum: true);
+
+        // The content of a PNG file, to save with File.WriteAllBytes("qrcode.png", png)
+        var png = qrCode.ToPng();
+        Assert.Equal([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], png[..8]); // the PNG signature
+
+        // Any writable stream, such as File.Create("micro-qrcode.png")
+        using var stream = new MemoryStream();
+        microQr.WriteToPng(stream, new QRCodePngOptions
+        {
+            ModuleSize = 4,
+            QuietZoneModules = 2,
+            DarkColor = Color.FromRgb(0x1f, 0x29, 0x37),
+            LightColor = Color.FromRgb(0xf9, 0xfa, 0xfb),
+        });
+
+        var barcodePng = barcode.ToPng(new BarcodePngOptions
+        {
+            ModuleWidth = 2,
+            ModuleHeight = 80,
+            DarkColor = Color.FromRgb(0x0f, 0x76, 0x6e),
+            LightColor = Color.FromRgb(0xec, 0xfe, 0xff),
+        });
+        #endregion
+
+        Assert.NotEmpty(stream.ToArray());
+        Assert.NotEmpty(barcodePng);
+    }
+
     public static IEnumerable<object[]> ModuleSizes
     {
         get

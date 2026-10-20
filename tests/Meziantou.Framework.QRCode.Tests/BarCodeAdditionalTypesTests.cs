@@ -4,6 +4,31 @@ namespace Meziantou.Framework.Tests;
 
 public class BarCodeAdditionalTypesTests
 {
+    [Fact]
+    public void ReadmeExample_CreateBarcodes()
+    {
+        #region Barcode_Create
+        var code39 = Barcode.CreateCode39("ABC-123", includeChecksum: true);
+        var code93 = Barcode.CreateCode93("ABC123");
+        var code128 = Barcode.CreateCode128("SKU-123456");
+        var ean8 = Barcode.CreateEan8("5512345");
+        var ean13 = Barcode.CreateEan13("400638133393");
+        var upcA = Barcode.CreateUpcA("03600029145", extension: "12");
+        var codabar = Barcode.CreateCodabar("40156", startCharacter: 'A', stopCharacter: 'B');
+        var itf = Barcode.CreateItf("12345678");
+
+        // Type, width in modules and height (a linear barcode is one module high)
+        Assert.Equal((BarcodeType.Code39, 129, 1), (code39.Type, code39.Width, code39.Height));
+        Assert.Equal((BarcodeType.Code93, 91, 1), (code93.Type, code93.Width, code93.Height));
+        Assert.Equal((BarcodeType.Code128, 123, 1), (code128.Type, code128.Width, code128.Height));
+        Assert.Equal((BarcodeType.Ean8, 67, 1), (ean8.Type, ean8.Width, ean8.Height));
+        Assert.Equal((BarcodeType.Ean13, 95, 1), (ean13.Type, ean13.Width, ean13.Height));
+        Assert.Equal((BarcodeType.UpcA, 122, 1), (upcA.Type, upcA.Width, upcA.Height));
+        Assert.Equal((BarcodeType.Codabar, 71, 1), (codabar.Type, codabar.Width, codabar.Height));
+        Assert.Equal((BarcodeType.Itf, 81, 1), (itf.Type, itf.Width, itf.Height));
+        #endregion
+    }
+
     private const string Code93SmallData = "A1";
     private const string Code93LargeData = "ABC123xyz-.$/+%";
     private const string Ean8SmallData = "5512345";

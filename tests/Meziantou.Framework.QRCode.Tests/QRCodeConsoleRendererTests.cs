@@ -5,6 +5,43 @@ namespace Meziantou.Framework.Tests;
 public class QRCodeConsoleRendererTests
 {
     [Fact]
+    public void ReadmeExample_ToConsoleString()
+    {
+        #region QRCode_ToConsoleString
+        var qrCode = QRCode.Create("HELLO WORLD", ErrorCorrectionLevel.H);
+        var microQr = QRCode.CreateMicroQR("12345", ErrorCorrectionLevel.L);
+
+        qrCode.WriteToConsole();
+        var text = qrCode.ToConsoleString();
+
+        var microText = microQr.ToConsoleString(new QRCodeConsoleOptions
+        {
+            QuietZoneModules = 1,
+            ModuleWidth = 2,
+            ModuleHeight = 2, // 2x bigger output that can look more square on many terminals
+        });
+
+        Assert.Equal("""
+
+              ██████████████  ██  ██
+              ██          ██
+              ██  ██████  ██  ██████
+              ██  ██████  ██
+              ██  ██████  ██  ██████
+              ██          ██    ████
+              ██████████████  ██
+                              ██████
+              ████    ██████    ████
+                ██  ██      ████
+              ████████          ████
+
+            """, microText);
+        #endregion
+
+        Assert.NotEmpty(text);
+    }
+
+    [Fact]
     public void ToConsoleString_DefaultOptions()
     {
         var qr = QRCode.Create("TEST", ErrorCorrectionLevel.L);

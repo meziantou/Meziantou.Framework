@@ -5,6 +5,63 @@ namespace Meziantou.Framework.Tests;
 
 public sealed class ImageRendererTests
 {
+    [Fact]
+    public void ReadmeExample_QRCodeToImage()
+    {
+        #region QRCodeImaging_QRCodeToImage
+        var qrCode = QRCode.Create("https://www.meziantou.net", ErrorCorrectionLevel.M);
+
+        // Default options: 10 pixels per module, a 4-module quiet zone, black on white
+        using var image = qrCode.ToImage();
+        Assert.Equal((330, 330), (image.Width, image.Height));
+
+        // Save to a file (image.Save("qrcode.webp", new WebPEncoder())) or to a stream
+        using var webp = new MemoryStream();
+        image.Save(webp, new WebPEncoder());
+
+        // Custom options
+        using var customImage = qrCode.ToImage(new QRCodeImageOptions
+        {
+            ModuleSize = 4,
+            QuietZoneModules = 2,
+            DarkColor = new Rgba32(0x00, 0x33, 0x66),
+            LightColor = Colors.Transparent,
+        });
+        Assert.Equal((116, 116), (customImage.Width, customImage.Height));
+        Assert.Equal(Colors.Transparent, customImage.Frames[0][0, 0]);
+        Assert.Equal(new Rgba32(0x00, 0x33, 0x66), customImage.Frames[0][8, 8]);
+
+        // An indexed PNG stores the two colors in a palette, as ToPng does
+        using var png = new MemoryStream();
+        customImage.Save(png, new PngEncoder { PixelLayout = PngPixelLayout.Indexed });
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_BarcodeToImage()
+    {
+        #region QRCodeImaging_BarcodeToImage
+        var barcode = Barcode.CreateEan13("5901234123457");
+        using var image = barcode.ToImage(new BarcodeImageOptions { ModuleWidth = 3, ModuleHeight = 100 });
+        Assert.Equal((345, 100), (image.Width, image.Height));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_DrawOntoImage()
+    {
+        #region QRCodeImaging_DrawOntoImage
+        using var ticket = new Image<Rgba32>(400, 200, Colors.White); // or Image.Load<Rgba32>("ticket.png")
+        using var qrCodeImage = QRCode.Create("TICKET-0042").ToImage(new QRCodeImageOptions { ModuleSize = 4 });
+        ticket.Draw(canvas => canvas.DrawImage(qrCodeImage.Frames[0], new PointD(16, 16)));
+        Assert.Equal(Colors.Black, ticket.Frames[0][32, 32]); // the top-left finder pattern, after the 16-pixel quiet zone
+
+        // Save to a file (ticket.Save("ticket-with-qrcode.png")) or to a stream
+        using var png = new MemoryStream();
+        ticket.Save(png, new PngEncoder());
+        #endregion
+    }
+
     public static TheoryData<QRCodeType, int, int> QRCodeLayouts()
     {
         var data = new TheoryData<QRCodeType, int, int>();

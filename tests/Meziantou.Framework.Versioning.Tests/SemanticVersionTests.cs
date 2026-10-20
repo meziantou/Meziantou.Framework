@@ -343,4 +343,22 @@ public class SemanticVersionTests
         var version = new SemanticVersion(1, 2, 3);
         Assert.Equal(new SemanticVersion(2, 0, 0), version.NextMajorVersion());
     }
+
+    [Theory]
+    [InlineData("1.2.3-beta", "1.2.3", "1.3.0", "2.0.0")]
+    [InlineData("1.2.0-beta", "1.2.0", "1.2.0", "2.0.0")]
+    [InlineData("1.0.3-beta", "1.0.3", "1.1.0", "2.0.0")]
+    [InlineData("2.0.0-beta", "2.0.0", "2.0.0", "2.0.0")]
+    [InlineData("0.0.1-beta", "0.0.1", "0.1.0", "1.0.0")]
+    public void NextVersions_OfPrerelease_AreGreaterThanTheVersion(string version, string expectedPatch, string expectedMinor, string expectedMajor)
+    {
+        var semanticVersion = SemanticVersion.Parse(version);
+
+        Assert.Equal(SemanticVersion.Parse(expectedPatch), semanticVersion.NextPatchVersion());
+        Assert.Equal(SemanticVersion.Parse(expectedMinor), semanticVersion.NextMinorVersion());
+        Assert.Equal(SemanticVersion.Parse(expectedMajor), semanticVersion.NextMajorVersion());
+        Assert.True(semanticVersion.NextPatchVersion() > semanticVersion);
+        Assert.True(semanticVersion.NextMinorVersion() > semanticVersion);
+        Assert.True(semanticVersion.NextMajorVersion() > semanticVersion);
+    }
 }

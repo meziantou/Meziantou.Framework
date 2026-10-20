@@ -2,11 +2,16 @@ namespace Meziantou.Framework.Language;
 
 /// <summary>Represents a diagnostic produced while reading source text.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs" ref:region="Diagnostic_GetDiagnostics" ref:dedent="true">
+/// var tree = XmlSyntaxTree.ParseText("&lt;root&gt;&lt;child&gt;&lt;/root&gt;");
+///
+/// var messages = new List&lt;string&gt;();
 /// foreach (var diagnostic in tree.GetDiagnostics())
 /// {
-///     Console.WriteLine($"{diagnostic.Id} at {diagnostic.Location}: {diagnostic.Message}");
+///     messages.Add($"{diagnostic.Id} at {diagnostic.Location}: {diagnostic.Message}");
 /// }
+///
+/// Assert.Equal(["XML0001 at (0,6)-(0,13): Missing end tag for 'child'."], messages);
 /// </code>
 /// </example>
 public sealed record Diagnostic(string Id, string Message, DiagnosticSeverity Severity, Location Location)

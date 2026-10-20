@@ -4,11 +4,16 @@ namespace Meziantou.Framework.Language.Css;
 
 /// <summary>The base of every node in a CSS tree.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Css.Tests/CssSyntaxTreeTests.cs" ref:region="CssSyntaxNode_DescendantNodes" ref:dedent="true">
+/// var tree = CssSyntaxTree.ParseText("a { color: red }");
+///
+/// var kinds = new List&lt;SyntaxKind&gt;();
 /// foreach (var node in tree.GetRoot().DescendantNodes())
 /// {
-///     _ = node.Kind();
+///     kinds.Add(node.Kind());
 /// }
+///
+/// Assert.Equal([SyntaxKind.StyleRule, SyntaxKind.SelectorList, SyntaxKind.ComplexSelector, SyntaxKind.ComplexSelectorPart, SyntaxKind.CompoundSelector, SyntaxKind.TypeSelector, SyntaxKind.Block, SyntaxKind.Declaration, SyntaxKind.TokenValue], kinds);
 /// </code>
 /// </example>
 public abstract class CssSyntaxNode : SyntaxNode

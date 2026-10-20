@@ -58,6 +58,27 @@ public sealed class ShellSyntaxVisitorTests
     }
 
     [Fact]
+    public void Rewriter_DocumentationExample()
+    {
+        var tree = ShellSyntaxTree.ParseText("ls -l | wc -l", ShellDialect.Bash);
+
+        var rewritten = new RenameCommand().Visit(tree.GetRoot());
+
+        Assert.Equal("dir -l | wc -l", rewritten?.ToFullString());
+    }
+
+    [Fact]
+    public void Walker_DocumentationExample()
+    {
+        var tree = ShellSyntaxTree.ParseText("ls -l | wc -l && echo $(date)", ShellDialect.Bash);
+        var counter = new SimpleCommandCounter();
+
+        counter.Visit(tree.GetRoot());
+
+        Assert.Equal(4, counter.Count);
+    }
+
+    [Fact]
     public void DescendantTokens_AreInSourceOrder()
     {
         var tree = ShellSyntaxTree.ParseText("echo $(a b) tail", ShellDialect.Bash);
@@ -75,6 +96,42 @@ public sealed class ShellSyntaxVisitorTests
         var starts = tree.GetRoot().DescendantNodesAndTokens().Select(item => item.FullSpan.Start).ToArray();
 
         Assert.Equal(starts.OrderBy(start => start), starts);
+    }
+
+    [Fact]
+    public void DescendantNodes_DocumentationExample()
+    {
+        #region ShellSyntaxNode_DescendantNodes
+        var tree = ShellSyntaxTree.ParseText("ls -l", ShellDialect.Bash);
+
+        var kinds = new List<SyntaxKind>();
+        foreach (var node in tree.GetRoot().DescendantNodes())
+        {
+            kinds.Add(node.Kind());
+        }
+
+        Assert.Equal([SyntaxKind.StatementList, SyntaxKind.Command, SyntaxKind.Word, SyntaxKind.LiteralWordPart, SyntaxKind.Word, SyntaxKind.LiteralWordPart], kinds);
+        #endregion
+    }
+
+    [Fact]
+    public void SyntaxKind_DocumentationExample()
+    {
+        #region SyntaxKind_CompareKind
+        var tree = ShellSyntaxTree.ParseText("ls -l | wc -l && echo done", ShellDialect.Bash);
+
+        var commandCount = 0;
+        foreach (var node in tree.GetRoot().DescendantNodes())
+        {
+            if (node.Kind() == SyntaxKind.Command)
+            {
+                // handle a simple command
+                commandCount++;
+            }
+        }
+
+        Assert.Equal(3, commandCount);
+        #endregion
     }
 
     [Fact]
@@ -129,6 +186,32 @@ public sealed class ShellSyntaxVisitorTests
             return node.WithElements(new SyntaxList<ShellSyntaxNode>(elements.Cast<ShellSyntaxNode>()));
         }
     }
+
+    #region ShellSyntaxRewriter_RenameCommand
+    private sealed class RenameCommand : ShellSyntaxRewriter
+    {
+        public override SyntaxNode? VisitCommand(ShellCommandSyntax node)
+        {
+            if (node.Name is { } name && node.NameValue == "ls")
+                return node.ReplaceNode(name, name.WithText("dir"));
+
+            return base.VisitCommand(node);
+        }
+    }
+    #endregion
+
+    #region ShellSyntaxWalker_SimpleCommandCounter
+    private sealed class SimpleCommandCounter : ShellSyntaxWalker
+    {
+        public int Count { get; private set; }
+
+        public override void VisitCommand(ShellCommandSyntax node)
+        {
+            Count++;
+            base.VisitCommand(node);
+        }
+    }
+    #endregion
 
     [Fact]
     public void Rewriter_UsingWithText_KeepsLeadingCommentsAndIndentation()

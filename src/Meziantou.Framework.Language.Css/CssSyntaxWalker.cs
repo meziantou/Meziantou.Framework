@@ -4,11 +4,16 @@ namespace Meziantou.Framework.Language.Css;
 
 /// <summary>Visits a CSS node and everything below it.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Css.Tests/CssSyntaxTreeTests.cs" ref:region="CssSyntaxWalker_DeclarationCounter" ref:dedent="true">
 /// private sealed class DeclarationCounter : CssSyntaxWalker
 /// {
 ///     public int Count { get; private set; }
-///     public override void VisitDeclaration(CssDeclarationSyntax node) { Count++; base.VisitDeclaration(node); }
+///
+///     public override void VisitDeclaration(CssDeclarationSyntax node)
+///     {
+///         Count++;
+///         base.VisitDeclaration(node);
+///     }
 /// }
 /// </code>
 /// </example>

@@ -7,9 +7,11 @@ namespace Meziantou.Framework.Language.Xml;
 /// <see cref="XPathNavigator"/> implementation backed directly by <see cref="XmlSyntaxNode"/> instances.
 /// </summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs" ref:region="XmlSyntaxNavigator_SelectSingleNode" ref:dedent="true">
+/// var document = XmlSyntaxTree.ParseText("&lt;root&gt;&lt;item&gt;value&lt;/item&gt;&lt;/root&gt;").GetRoot();
 /// var navigator = new XmlSyntaxNavigator(document);
 /// var result = navigator.SelectSingleNode("/root/item");
+/// Assert.Equal("value", result?.Value);
 /// </code>
 /// </example>
 internal sealed class XmlSyntaxNavigator : XPathNavigator

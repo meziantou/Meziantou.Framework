@@ -4,9 +4,10 @@ namespace Meziantou.Framework.Language.Xml;
 
 /// <summary>An XML document read from source text, together with what is wrong with it.</summary>
 /// <example>
-/// <code>
-/// var tree = XmlSyntaxTree.ParseText(xml);
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs" ref:region="XmlSyntaxTree_WithChanges" ref:dedent="true">
+/// var tree = XmlSyntaxTree.ParseText("&lt;root /&gt;");
 /// var updated = tree.WithChanges(new TextChange(new TextSpan(0, 0), "&lt;!--generated--&gt;"));
+/// Assert.Equal("&lt;!--generated--&gt;&lt;root /&gt;", updated.GetText().Text);
 /// </code>
 /// </example>
 public sealed class XmlSyntaxTree : SyntaxTree

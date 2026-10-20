@@ -7,9 +7,10 @@ namespace Meziantou.Framework.Language.Xml;
 /// Formats XML syntax trees/documents using <see cref="XmlFormattingOptions"/>.
 /// </summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs" ref:region="Formatter_Format" ref:dedent="true">
 /// var tree = XmlSyntaxTree.ParseText("&lt;root&gt;&lt;item/&gt;&lt;/root&gt;");
 /// var formatted = Formatter.Format(tree);
+/// Assert.Equal("&lt;root&gt;\n  &lt;item /&gt;\n&lt;/root&gt;", formatted.ToFullString());
 /// </code>
 /// </example>
 public static class Formatter

@@ -105,6 +105,16 @@ public sealed class ShellEditingTests
         Assert.Equal("xxx bbb zzz", updated.GetText().Text);
     }
 
+    [Fact]
+    public void WithChanges_DocumentationExample()
+    {
+        #region ShellSyntaxTree_WithChanges
+        var tree = ShellSyntaxTree.ParseText("ls -l | wc -l", ShellDialect.Bash);
+        var updated = tree.WithChanges(new TextChange(new TextSpan(0, 2), "dir"));
+        Assert.Equal("dir -l | wc -l", updated.GetText().Text);
+        #endregion
+    }
+
     public static TheoryData<string, ShellDialect> IncompleteScripts() => new()
     {
         // Each of these ends in a missing token, so some of the text belongs to a node without belonging to its Span.

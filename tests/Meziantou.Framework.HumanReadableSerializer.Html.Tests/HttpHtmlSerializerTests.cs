@@ -14,6 +14,28 @@ public sealed class HttpHtmlSerializerTests
     }
 
     [Fact]
+    public void ReadmeExample_Usage()
+    {
+        using var httpResponseMessage = new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = new StringContent("""<p z='1' a=2 nonce=abc>test</p>""", encoding: null, "text/html"),
+        };
+
+        #region HtmlFormatter_Usage
+        var options = new HumanReadableSerializerOptions()
+            .AddHtmlFormatter(new HtmlFormatterOptions
+            {
+                OrderAttributes = true,
+                RedactContentSecurityPolicyNonce = true,
+            });
+
+        var text = HumanReadableSerializer.Serialize(httpResponseMessage, options);
+        #endregion
+
+        Assert.Contains("""Value: <p a="2" nonce="[redacted]" z="1">test</p>""", text);
+    }
+
+    [Fact]
     public void StringValue()
     {
         using var httpContent = new StringContent("""dummy""", encoding: null, "text/html");

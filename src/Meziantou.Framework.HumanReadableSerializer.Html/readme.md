@@ -14,10 +14,10 @@ A value that contains a doctype or an `html`, `head` or `body` tag is parsed as 
 
 ## Usage
 
-```csharp
-using Meziantou.Framework.HumanReadable;
-using Meziantou.Framework.HumanReadable.ValueFormatters;
+The types are in the `Meziantou.Framework.HumanReadable` and `Meziantou.Framework.HumanReadable.ValueFormatters` namespaces.
 
+<!-- ref:../../tests/Meziantou.Framework.HumanReadableSerializer.Html.Tests/HttpHtmlSerializerTests.cs;region=HtmlFormatter_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 var options = new HumanReadableSerializerOptions()
     .AddHtmlFormatter(new HtmlFormatterOptions
     {
@@ -27,12 +27,17 @@ var options = new HumanReadableSerializerOptions()
 
 var text = HumanReadableSerializer.Serialize(httpResponseMessage, options);
 ```
+<!-- endref -->
 
 ### Meziantou.Framework.SnapshotTesting
 
+<!-- ref:../../samples/Meziantou.Framework.HumanReadableSerializer.Html.Samples/SnapshotTesting/SnapshotConfiguration.cs;format=md-fenced-code-block -->
 ```csharp
+using System.Runtime.CompilerServices;
 using Meziantou.Framework.HumanReadable.ValueFormatters;
 using Meziantou.Framework.SnapshotTesting;
+
+namespace SnapshotTestingSample;
 
 internal static class SnapshotConfiguration
 {
@@ -46,12 +51,17 @@ internal static class SnapshotConfiguration
     }
 }
 ```
+<!-- endref -->
 
 ### Meziantou.Framework.InlineSnapshotTesting
 
+<!-- ref:../../samples/Meziantou.Framework.HumanReadableSerializer.Html.Samples/InlineSnapshotTesting/SnapshotConfiguration.cs;format=md-fenced-code-block -->
 ```csharp
+using System.Runtime.CompilerServices;
 using Meziantou.Framework.HumanReadable.ValueFormatters;
 using Meziantou.Framework.InlineSnapshotTesting;
+
+namespace InlineSnapshotTestingSample;
 
 internal static class SnapshotConfiguration
 {
@@ -67,3 +77,4 @@ internal static class SnapshotConfiguration
     }
 }
 ```
+<!-- endref -->

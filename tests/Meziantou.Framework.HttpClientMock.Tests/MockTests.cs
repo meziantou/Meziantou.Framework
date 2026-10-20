@@ -14,6 +14,19 @@ namespace Meziantou.Framework.Tests;
 public sealed class MockTests(ITestOutputHelper testOutputHelper)
 {
     [Fact]
+    public async Task HttpClientMock_Example()
+    {
+        #region HttpClientMock_Example
+        await using var mock = new HttpClientMock();
+        mock.MapGet("/api/users", () => Results.Ok(new { name = "John" }));
+        using var httpClient = mock.CreateHttpClient();
+        using var response = await httpClient.GetAsync(new Uri("/api/users", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("""{"name":"John"}""", await response.Content.ReadAsStringAsync());
+        #endregion
+    }
+
+    [Fact]
     public async Task Results_ForwardToUpstream_HttpClient()
     {
         await using var mock1 = new HttpClientMock(XUnitLogger.CreateLogger(testOutputHelper));

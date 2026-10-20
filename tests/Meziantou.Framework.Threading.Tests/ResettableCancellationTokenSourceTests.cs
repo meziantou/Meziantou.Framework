@@ -3,6 +3,23 @@ namespace Meziantou.Framework.Threading.Tests;
 public sealed class ResettableCancellationTokenSourceTests
 {
     [Fact]
+    public async Task ResettableCancellationTokenSource_Example()
+    {
+        #region ResettableCancellationTokenSource_Usage
+        using var cts = new ResettableCancellationTokenSource(cancelOnResetAndDispose: true);
+
+        // Use the token
+        var token = cts.Token;
+        await Task.Delay(1, token);
+
+        // Reset to reuse: the previous token is canceled, read Token again to get a new one
+        cts.Reset();
+        Assert.True(token.IsCancellationRequested);
+        await Task.Delay(1, cts.Token);
+        #endregion
+    }
+
+    [Fact]
     public void Dispose_IsIdempotent()
     {
         var cts = new ResettableCancellationTokenSource(cancelOnResetAndDispose: true);

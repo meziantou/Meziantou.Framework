@@ -47,6 +47,16 @@ public sealed class JsonSyntaxTreeTests
     }
 
     [Fact]
+    public void ParseText_DocumentationExample()
+    {
+        #region JsonSyntaxTree_ParseText
+        var tree = JsonSyntaxTree.ParseText("""{ "name": "value" }""");
+        var name = ((JsonObjectSyntax)tree.GetRoot().Value!).GetMember("name");
+        Assert.Equal("value", ((JsonStringSyntax)name!.Value).Value);
+        #endregion
+    }
+
+    [Fact]
     public void ParseText_BuildsObjectTree()
     {
         const string Text = """{ "name": "value", "enabled": true, "items": [1, null] }""";
@@ -687,6 +697,53 @@ public sealed class JsonSyntaxTreeTests
 
         Assert.Equal(2, walker.CommentCount);
     }
+
+    [Fact]
+    public void Walker_DocumentationExample()
+    {
+        var tree = JsonSyntaxTree.ParseText("""{ "a": "x", "b": ["y", 1] }""");
+        var counter = new StringCounter();
+
+        counter.Visit(tree.GetRoot());
+
+        Assert.Equal(2, counter.Count);
+    }
+
+    #region JsonSyntaxWalker_StringCounter
+    private sealed class StringCounter : JsonSyntaxWalker
+    {
+        public int Count { get; private set; }
+
+        public override void VisitJsonString(JsonStringSyntax node)
+        {
+            Count++;
+            base.VisitJsonString(node);
+        }
+    }
+    #endregion
+
+    [Fact]
+    public void Rewriter_DocumentationExample()
+    {
+        var tree = JsonSyntaxTree.ParseText("""{ "a": 1, "b": { "c": 2 } }""");
+
+        var rewritten = new RenameMembers().Visit(tree.GetRoot());
+
+        Assert.Equal("""{ "A": 1, "B": { "C": 2 } }""", rewritten!.ToFullString());
+    }
+
+    #region JsonSyntaxRewriter_RenameMembers
+    private sealed class RenameMembers : JsonSyntaxRewriter
+    {
+        public override SyntaxNode? VisitJsonMember(JsonMemberSyntax node)
+        {
+            // Rewrite the value first, so the members of nested objects are renamed too
+            var member = (JsonMemberSyntax)base.VisitJsonMember(node)!;
+
+            return member.WithName(member.Name.ToUpperInvariant());
+        }
+    }
+    #endregion
 
     private sealed class CommentCountingWalker() : JsonSyntaxWalker(SyntaxWalkerDepth.Trivia)
     {

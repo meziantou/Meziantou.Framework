@@ -2,12 +2,10 @@ namespace Meziantou.Framework.HumanReadable;
 
 /// <summary>Serializes objects to a human-readable text format.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.HumanReadableSerializer.Tests/SerializerTests.cs" ref:region="HumanReadableSerializer_Serialize" ref:dedent="true">
 /// var obj = new { Name = "John Doe", Age = 32 };
 /// var output = HumanReadableSerializer.Serialize(obj);
-/// // Output:
-/// // Name: John Doe
-/// // Age: 32
+/// Assert.Equal("Name: John Doe\nAge: 32", output);
 /// </code>
 /// </example>
 public static class HumanReadableSerializer

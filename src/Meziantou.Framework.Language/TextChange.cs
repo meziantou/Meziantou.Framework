@@ -4,9 +4,13 @@ namespace Meziantou.Framework.Language;
 
 /// <summary>Represents a text replacement applied to a <see cref="SourceText"/> or to a syntax tree.</summary>
 /// <example>
-/// <code>
-/// var change = new TextChange(new TextSpan(10, 5), "2.0.0");
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs" ref:region="TextChange_WithChanges" ref:dedent="true">
+/// var tree = XmlSyntaxTree.ParseText("&lt;version&gt;1.0.0&lt;/version&gt;");
+///
+/// // Replace the 5 characters starting at offset 9 ("1.0.0")
+/// var change = new TextChange(new TextSpan(9, 5), "2.0.0");
 /// var updated = tree.WithChanges(change);
+/// Assert.Equal("&lt;version&gt;2.0.0&lt;/version&gt;", updated.GetText().Text);
 /// </code>
 /// </example>
 [StructLayout(LayoutKind.Auto)]

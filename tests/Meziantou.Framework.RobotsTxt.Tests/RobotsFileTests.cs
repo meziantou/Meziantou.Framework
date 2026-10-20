@@ -2,6 +2,27 @@ namespace Meziantou.Framework.RobotsTxt.Tests;
 
 public sealed class RobotsFileTests
 {
+    [Fact]
+    public void RobotsFile_Example()
+    {
+        #region RobotsFile_Example
+        var robots = RobotsFile.Parse("""
+            User-agent: *
+            Disallow: /private/
+            Allow: /public/
+
+            Sitemap: https://example.com/sitemap.xml
+            """);
+
+        Assert.True(robots.IsAllowed("Googlebot", "/public/page"));
+        Assert.False(robots.IsAllowed("Googlebot", "/private/page"));
+        Assert.Equal(["https://example.com/sitemap.xml"], robots.Sitemaps);
+
+        // Invalid lines are reported instead of throwing
+        Assert.Empty(robots.ParseErrors);
+        #endregion
+    }
+
     // -------------------------------------------------------------------------
     // Parsing
     // -------------------------------------------------------------------------

@@ -21,6 +21,18 @@ public sealed class SourceTextTests
         Assert.Equal(new TextLine(0, 0, 0, ""), line);
     }
 
+    [Fact]
+    public void TextLine_DocumentationExample()
+    {
+        #region TextLine_FromSourceText
+        var line = SourceText.From("first\nsecond").Lines[1];
+        var text = line.Text;
+        Assert.Equal("second", text);
+        Assert.Equal(1, line.LineNumber);
+        Assert.Equal(6, line.Start);
+        #endregion
+    }
+
     [Theory]
     [InlineData("a", 1)]
     [InlineData("a\nb", 2)]

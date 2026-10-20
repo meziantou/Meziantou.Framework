@@ -1,0 +1,26 @@
+@inject QueryStringService QueryStringService
+
+<input type="search" value="@SearchTerm" @onchange="e => UpdateSearch(e.Value as string)" />
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? SearchTerm { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int PageNumber { get; set; } = 1;
+
+    protected override void OnInitialized()
+    {
+        // Read query string parameters and populate properties
+        QueryStringService.SetParametersFromQueryString(this);
+    }
+
+    private async Task UpdateSearch(string? newSearchTerm)
+    {
+        SearchTerm = newSearchTerm;
+        // Update the URL with new query string parameters
+        await QueryStringService.UpdateQueryString(this);
+    }
+}

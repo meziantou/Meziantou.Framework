@@ -11,18 +11,19 @@ namespace Meziantou.Framework;
 /// <see href="https://developer.mozilla.org/en-US/docs/Web/API/URL_Pattern_API">MDN - URL Pattern API</see>
 /// </remarks>
 /// <example>
-/// <code language="csharp">
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Uri.Tests/UrlPatternTests.cs" ref:region="UrlPattern_Example" ref:dedent="true">
 /// // Create a pattern and test if a URL matches
 /// var pattern = UrlPattern.Create("https://example.com/users/:id");
-/// bool isMatch = pattern.IsMatch("https://example.com/users/123"); // true
+/// Assert.True(pattern.IsMatch("https://example.com/users/123"));
 ///
 /// // Extract captured groups from a URL
 /// var result = pattern.Match("https://example.com/users/456");
-/// string userId = result?.Pathname.Groups["id"]; // "456"
+/// Assert.NotNull(result);
+/// Assert.Equal("456", result.Pathname.Groups["id"]);
 ///
 /// // Use wildcards to match any value
 /// var wildcardPattern = UrlPattern.Create("https://*.example.com/*");
-/// wildcardPattern.IsMatch("https://api.example.com/data"); // true
+/// Assert.True(wildcardPattern.IsMatch("https://api.example.com/data"));
 /// </code>
 /// </example>
 public sealed class UrlPattern

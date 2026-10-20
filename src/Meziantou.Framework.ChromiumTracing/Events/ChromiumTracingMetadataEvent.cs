@@ -4,17 +4,16 @@ namespace Meziantou.Framework.ChromiumTracing;
 
 /// <summary>Represents a metadata event that adds process and thread names for better visualization.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.ChromiumTracing.Tests/WriterTests.cs" ref:region="ChromiumTracingMetadataEvent_Example" ref:dedent="true">
+/// await using var writer = ChromiumTracingWriter.Create("trace.json");
 /// await writer.WriteEventAsync(ChromiumTracingMetadataEvent.ProcessName(
 ///     Environment.ProcessId,
-///     "My Application"
-/// ));
+///     "My Application"));
 ///
 /// await writer.WriteEventAsync(ChromiumTracingMetadataEvent.ThreadName(
 ///     Environment.ProcessId,
 ///     Environment.CurrentManagedThreadId,
-///     "Main Thread"
-/// ));
+///     "Main Thread"));
 /// </code>
 /// </example>
 public sealed class ChromiumTracingMetadataEvent : ChromiumTracingEvent

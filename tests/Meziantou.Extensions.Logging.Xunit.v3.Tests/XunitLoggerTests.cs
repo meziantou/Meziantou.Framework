@@ -10,6 +10,53 @@ namespace Meziantou.Extensions.Logging.Xunit.v3.Tests;
 
 public sealed class XunitLoggerTests
 {
+    #region XUnitLogger_Example
+    public sealed class MyTests(ITestOutputHelper testOutputHelper)
+    {
+        [Fact]
+        public void MyTest()
+        {
+            var logger = XUnitLogger.CreateLogger(testOutputHelper);
+            logger.LogInformation("This message will appear in the test output");
+        }
+    }
+    #endregion
+
+    [Fact]
+    public void XUnitLoggerBuilderExtensions_Example()
+    {
+        #region XUnitLoggerBuilderExtensions_Example
+        var testOutputHelper = TestContext.Current.TestOutputHelper;
+        using var host = new HostBuilder()
+            .ConfigureLogging(builder =>
+            {
+                builder.AddXunit(testOutputHelper);
+            })
+            .Build();
+
+        var logger = host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("MyCategory");
+        logger.LogInformation("This message will appear in the test output");
+        #endregion
+    }
+
+    [Fact]
+    public void XUnitLoggerProvider_Example()
+    {
+        #region XUnitLoggerProvider_Example
+        var testOutputHelper = TestContext.Current.TestOutputHelper;
+        using var provider = new XUnitLoggerProvider(testOutputHelper);
+        using var host = new HostBuilder()
+            .ConfigureLogging(builder =>
+            {
+                builder.Services.AddSingleton<ILoggerProvider>(provider);
+            })
+            .Build();
+
+        var logger = host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("MyCategory");
+        logger.LogInformation("This message will appear in the test output");
+        #endregion
+    }
+
     [Fact]
     public void XUnitLoggerProviderTest()
     {

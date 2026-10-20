@@ -35,6 +35,29 @@ public sealed class XmlSyntaxTreeTests
     }
 
     [Fact]
+    public void WithChanges_DocumentationExample()
+    {
+        #region XmlSyntaxTree_WithChanges
+        var tree = XmlSyntaxTree.ParseText("<root />");
+        var updated = tree.WithChanges(new TextChange(new TextSpan(0, 0), "<!--generated-->"));
+        Assert.Equal("<!--generated--><root />", updated.GetText().Text);
+        #endregion
+    }
+
+    [Fact]
+    public void TextChange_DocumentationExample()
+    {
+        #region TextChange_WithChanges
+        var tree = XmlSyntaxTree.ParseText("<version>1.0.0</version>");
+
+        // Replace the 5 characters starting at offset 9 ("1.0.0")
+        var change = new TextChange(new TextSpan(9, 5), "2.0.0");
+        var updated = tree.WithChanges(change);
+        Assert.Equal("<version>2.0.0</version>", updated.GetText().Text);
+        #endregion
+    }
+
+    [Fact]
     public void ParseText_InvalidXml_DoesNotThrowAndReturnsDiagnostics()
     {
         var exception = Record.Exception(() => XmlSyntaxTree.ParseText("<root><child></root>"));
@@ -47,6 +70,22 @@ public sealed class XmlSyntaxTreeTests
     }
 
     [Fact]
+    public void Diagnostic_DocumentationExample()
+    {
+        #region Diagnostic_GetDiagnostics
+        var tree = XmlSyntaxTree.ParseText("<root><child></root>");
+
+        var messages = new List<string>();
+        foreach (var diagnostic in tree.GetDiagnostics())
+        {
+            messages.Add($"{diagnostic.Id} at {diagnostic.Location}: {diagnostic.Message}");
+        }
+
+        Assert.Equal(["XML0001 at (0,6)-(0,13): Missing end tag for 'child'."], messages);
+        #endregion
+    }
+
+    [Fact]
     public void SyntaxFactory_CreatesNodes()
     {
         var element = SyntaxFactory.XmlElement(
@@ -55,6 +94,16 @@ public sealed class XmlSyntaxTreeTests
             [SyntaxFactory.XmlText("hello")]);
 
         Assert.Equal("<book id=\"42\">hello</book>", element.ToFullString());
+    }
+
+    [Fact]
+    public void SyntaxFactory_DocumentationExample()
+    {
+        #region SyntaxFactory_XmlDocument
+        var node = SyntaxFactory.XmlEmptyElement("package", [SyntaxFactory.XmlAttribute("version", "1.0.0")]);
+        var document = SyntaxFactory.XmlDocument(node);
+        Assert.Equal("<package version=\"1.0.0\" />", document.ToFullString());
+        #endregion
     }
 
     [Fact]
@@ -327,6 +376,27 @@ public sealed class XmlSyntaxTreeTests
     private static string FormatText(string text, XmlFormattingOptions options) => Formatter.Format(XmlSyntaxTree.ParseText(text).GetRoot(), options).ToFullString();
 
     [Fact]
+    public void Formatter_DocumentationExample()
+    {
+        #region Formatter_Format
+        var tree = XmlSyntaxTree.ParseText("<root><item/></root>");
+        var formatted = Formatter.Format(tree);
+        Assert.Equal("<root>\n  <item />\n</root>", formatted.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void XmlFormattingOptions_DocumentationExample()
+    {
+        #region XmlFormattingOptions_Format
+        var tree = XmlSyntaxTree.ParseText("<root><item id=\"1\"/></root>");
+        var options = new XmlFormattingOptions { IndentationSize = 4, NewLine = "\r\n" };
+        var formatted = Formatter.Format(tree.GetRoot(), options);
+        Assert.Equal("<root>\r\n    <item id=\"1\" />\r\n</root>", formatted.ToFullString());
+        #endregion
+    }
+
+    [Fact]
     public void SourceText_ToStringReturnsTheText()
     {
         const string Text = "<root>\n  <a />\n</root>";
@@ -352,6 +422,17 @@ public sealed class XmlSyntaxTreeTests
         Assert.Single(nodes);
         Assert.Equal(XPathNodeType.Element, nodes[0].NodeType);
         Assert.Equal("book", nodes[0].Name);
+    }
+
+    [Fact]
+    public void XmlSyntaxNavigator_DocumentationExample()
+    {
+        #region XmlSyntaxNavigator_SelectSingleNode
+        var document = XmlSyntaxTree.ParseText("<root><item>value</item></root>").GetRoot();
+        var navigator = new XmlSyntaxNavigator(document);
+        var result = navigator.SelectSingleNode("/root/item");
+        Assert.Equal("value", result?.Value);
+        #endregion
     }
 
     [Fact]
@@ -878,6 +959,43 @@ public sealed class XmlSyntaxTreeTests
     }
 
     [Fact]
+    public void DescendantNodes_DocumentationExample()
+    {
+        #region XmlSyntaxNode_DescendantNodes
+        var tree = XmlSyntaxTree.ParseText("<root><item /></root>");
+
+        var kinds = new List<SyntaxKind>();
+        foreach (var node in tree.GetRoot().DescendantNodes())
+        {
+            kinds.Add(node.Kind());
+        }
+
+        Assert.Equal([SyntaxKind.XmlElement, SyntaxKind.XmlElementStartTag, SyntaxKind.XmlEmptyElement, SyntaxKind.XmlElementEndTag], kinds);
+        #endregion
+    }
+
+    [Fact]
+    public void SyntaxKind_DocumentationExample()
+    {
+        #region SyntaxKind_CompareKind
+        var tree = XmlSyntaxTree.ParseText("<root><item /><item>text</item></root>");
+
+        var elementCount = 0;
+        foreach (var node in tree.GetRoot().DescendantNodes())
+        {
+            if (node.Kind() == SyntaxKind.XmlElement)
+            {
+                // handle element
+                elementCount++;
+            }
+        }
+
+        // <item /> is an XmlEmptyElement, so only <root> and the second <item> are counted
+        Assert.Equal(2, elementCount);
+        #endregion
+    }
+
+    [Fact]
     public void DocumentType_WithName_RenamesTheDeclaration()
     {
         var tree = XmlSyntaxTree.ParseText("<!DOCTYPE html><root />");
@@ -1090,6 +1208,21 @@ public sealed class XmlSyntaxTreeTests
     }
 
     [Fact]
+    public void SyntaxAnnotation_DocumentationExample()
+    {
+        #region SyntaxAnnotation_FindAnnotatedNode
+        var root = XmlSyntaxTree.ParseText("<root><item>1</item></root>").GetRoot();
+        var node = root.DescendantNodes().OfType<XmlElementSyntax>().Single(element => element.Name == "item");
+
+        var marker = new SyntaxAnnotation();
+        var annotated = node.WithAdditionalAnnotations(marker);
+        var updated = root.ReplaceNode(node, annotated);
+        var found = updated.GetAnnotatedNodes(marker).Single();
+        Assert.Equal("<item>1</item>", found.ToFullString());
+        #endregion
+    }
+
+    [Fact]
     public void Walker_VisitsEveryNodeAndTheVisitorVisitsOnlyOne()
     {
         var tree = XmlSyntaxTree.ParseText("<root><a id='1'>x</a></root>");
@@ -1127,6 +1260,38 @@ public sealed class XmlSyntaxTreeTests
         Assert.Equal("<root><z>1</z><z>2</z><b>3</b></root>", rewritten?.ToFullString());
     }
 
+    [Fact]
+    public void Rewriter_DocumentationExample()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root><item /></root>");
+
+        var rewritten = new RenameRoot().Visit(tree.GetRoot());
+
+        Assert.Equal("<renamed><item /></renamed>", rewritten?.ToFullString());
+    }
+
+    [Fact]
+    public void Walker_DocumentationExample()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root a='1'><item b='2' c='3' /><item>text</item></root>");
+
+        var elementCounter = new ElementCounter();
+        elementCounter.Visit(tree.GetRoot());
+        var attributeCounter = new AttributeCounter();
+        attributeCounter.Visit(tree.GetRoot());
+
+        Assert.Equal(2, elementCounter.Count);
+        Assert.Equal(3, attributeCounter.Count);
+    }
+
+    [Fact]
+    public void VisitorWithResult_DocumentationExample()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root></root>");
+
+        Assert.Equal("root", new ElementName().Visit(tree.GetRoot().Nodes[0]));
+    }
+
     private sealed class NodeCounter : XmlSyntaxWalker
     {
         public int Count { get; private set; }
@@ -1152,6 +1317,47 @@ public sealed class XmlSyntaxTreeTests
             return visited?.Name == from ? visited.WithName(to) : visited;
         }
     }
+
+    #region XmlSyntaxRewriter_RenameRoot
+    private sealed class RenameRoot : XmlSyntaxRewriter
+    {
+        public override SyntaxNode? VisitElement(XmlElementSyntax node)
+            => node.Name == "root" ? node.WithName("renamed") : base.VisitElement(node);
+    }
+    #endregion
+
+    #region XmlSyntaxVisitor_ElementCounter
+    private sealed class ElementCounter : XmlSyntaxWalker
+    {
+        public int Count { get; private set; }
+
+        public override void VisitElement(XmlElementSyntax node)
+        {
+            Count++;
+            base.VisitElement(node);
+        }
+    }
+    #endregion
+
+    #region XmlSyntaxVisitor_ElementName
+    private sealed class ElementName : XmlSyntaxVisitor<string?>
+    {
+        public override string? VisitElement(XmlElementSyntax node) => node.Name;
+    }
+    #endregion
+
+    #region XmlSyntaxWalker_AttributeCounter
+    private sealed class AttributeCounter : XmlSyntaxWalker
+    {
+        public int Count { get; private set; }
+
+        public override void VisitAttribute(XmlAttributeSyntax node)
+        {
+            Count++;
+            base.VisitAttribute(node);
+        }
+    }
+    #endregion
 
     private static void AssertSpan(int expectedStart, int expectedLength, TextSpan actual)
     {

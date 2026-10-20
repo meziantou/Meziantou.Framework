@@ -6,6 +6,24 @@ namespace Meziantou.Framework.Tests;
 public sealed class FullPathTests
 {
     [Fact]
+    public void FullPathExample()
+    {
+        #region FullPath_Example
+        // Create FullPath
+        FullPath rootPath = FullPath.FromPath("demo");
+        FullPath filePath = rootPath / "temp" / "file.txt";
+
+        // Compare paths (case-insensitive on Windows, macOS, iOS and tvOS, case-sensitive elsewhere)
+        Assert.False(filePath == rootPath);
+        Assert.True(filePath.Parent.Parent == rootPath);
+
+        // Get relative path (temp\file.txt on Windows, temp/file.txt elsewhere)
+        string relativePath = filePath.MakePathRelativeTo(rootPath);
+        Assert.Equal(Path.Combine("temp", "file.txt"), relativePath);
+        #endregion
+    }
+
+    [Fact]
     public void IsEmpty()
     {
         Assert.True(default(FullPath).IsEmpty);
@@ -1091,6 +1109,21 @@ public sealed class FullPathTests
     {
         var fullPath = FullPath.GetKnownFolderPath(KnownFolder.Downloads);
         Assert.NotEmpty(fullPath.Value);
+    }
+
+    [Fact]
+    [RunIf(TestOperatingSystems.Windows)]
+    public void KnownFolderExample()
+    {
+        #region KnownFolder_Example
+        // Get path to Downloads folder
+        FullPath downloadsPath = FullPath.GetKnownFolderPath(KnownFolder.Downloads);
+        Assert.False(downloadsPath.IsEmpty);
+
+        // Get path to Documents folder
+        FullPath documentsPath = FullPath.GetKnownFolderPath(KnownFolder.Documents);
+        Assert.False(documentsPath.IsEmpty);
+        #endregion
     }
 
     [Fact]

@@ -3,6 +3,21 @@ namespace Meziantou.Framework.Csv.Tests;
 public class CsvWriterTests
 {
     [Fact]
+    public async Task CsvWriter_DocumentationExample()
+    {
+        #region CsvWriter_WriteRowAsync
+        using var writer = new StringWriter();
+        var csvWriter = new CsvWriter(writer) { EndOfLine = "\n" };
+
+        await csvWriter.WriteRowAsync("Name", "Age");
+        await csvWriter.WriteRowAsync("John", "30");
+        await csvWriter.WriteRowAsync("Jane", "25");
+
+        Assert.Equal("Name,Age\nJohn,30\nJane,25", writer.ToString());
+        #endregion
+    }
+
+    [Fact]
     public async Task CsvWriterAsync_NoEscape()
     {
         using var sw = new StringWriter();

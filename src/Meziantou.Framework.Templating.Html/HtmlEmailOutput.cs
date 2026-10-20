@@ -5,12 +5,25 @@ namespace Meziantou.Framework.Templating;
 
 /// <summary>Provides output writing capabilities for HTML email templates with support for HTML encoding, URL encoding, sections, and content identifiers.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Templating.Html.Tests/EmailTemplateTest.cs" ref:region="HtmlEmailOutput_Example" ref:dedent="true">
+/// using var template = new HtmlEmailTemplate();
+/// using var writer = new StringWriter();
 /// var output = new HtmlEmailOutput(template, writer);
-/// output.WriteHtmlEncode("&lt;b&gt;text&lt;/b&gt;"); // Outputs: &amp;lt;b&amp;gt;text&amp;lt;/b&amp;gt;
-/// output.WriteHtmlAttributeEncode("a b"); // Outputs: a&amp;#x20;b
-/// output.WriteUrlEncode("value&amp;param"); // Outputs: value%26param
-/// output.WriteContentIdentifier("logo.png"); // Outputs: cid:logo.png
+///
+/// output.WriteHtmlEncode("&lt;b&gt;text&lt;/b&gt;");
+/// Assert.Equal("&amp;lt;b&amp;gt;text&amp;lt;/b&amp;gt;", writer.ToString());
+///
+/// writer.GetStringBuilder().Clear();
+/// output.WriteHtmlAttributeEncode("a b");
+/// Assert.Equal("a&amp;#x20;b", writer.ToString());
+///
+/// writer.GetStringBuilder().Clear();
+/// output.WriteUrlEncode("value&amp;param");
+/// Assert.Equal("value%26param", writer.ToString());
+///
+/// writer.GetStringBuilder().Clear();
+/// output.WriteContentIdentifier("logo.png");
+/// Assert.Equal("cid:logo.png", writer.ToString());
 /// </code>
 /// </example>
 public class HtmlEmailOutput(Template template, TextWriter writer) : Output(template, writer)

@@ -10,9 +10,10 @@ namespace Meziantou.Framework.Language.Xml;
 /// without re-reading any text.
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs" ref:region="SyntaxFactory_XmlDocument" ref:dedent="true">
 /// var node = SyntaxFactory.XmlEmptyElement("package", [SyntaxFactory.XmlAttribute("version", "1.0.0")]);
 /// var document = SyntaxFactory.XmlDocument(node);
+/// Assert.Equal("&lt;package version=\"1.0.0\" /&gt;", document.ToFullString());
 /// </code>
 /// </example>
 public static class SyntaxFactory

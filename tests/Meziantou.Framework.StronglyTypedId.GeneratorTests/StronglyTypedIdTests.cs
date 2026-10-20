@@ -671,6 +671,51 @@ public sealed partial class StronglyTypedIdTests
     }
 
     [Fact]
+    public void StronglyTypedIdAttributeExample()
+    {
+        #region StronglyTypedIdAttribute_Usage
+        var userId = UserId.FromInt32(42);
+        var json = System.Text.Json.JsonSerializer.Serialize(userId);
+        Assert.Equal("42", json);
+        #endregion
+    }
+
+    [Fact]
+    public void StronglyTypedIdAttributeOfTExample()
+    {
+        #region StronglyTypedIdAttributeOfT_Usage
+        var productId = ProductId.New();
+        var json = System.Text.Json.JsonSerializer.Serialize(productId);
+        Assert.Equal($"\"{productId.Value}\"", json);
+        #endregion
+    }
+
+    [Fact]
+    public void IStronglyTypedIdExample()
+    {
+        #region IStronglyTypedId_Usage
+        var userId = UserId.FromInt32(42);
+        IStronglyTypedId stronglyTypedId = userId;
+        Assert.Equal("42", stronglyTypedId.ValueAsString);
+        Assert.Equal(typeof(int), stronglyTypedId.UnderlyingType);
+        #endregion
+    }
+
+    [Fact]
+    public void IStronglyTypedIdOfTExample()
+    {
+#pragma warning disable CA1859 // Use concrete types when possible for improved performance
+        #region IStronglyTypedIdOfT_Usage
+        var guid = Guid.NewGuid();
+        var orderId = OrderId.FromGuid(guid);
+        IStronglyTypedId<Guid> typedId = orderId;
+        Guid value = typedId.Value; // Direct access to the typed value
+        Assert.Equal(guid, value);
+        #endregion
+#pragma warning restore CA1859
+    }
+
+    [Fact]
     public void IdInt32Comparable_ImplementsMembers()
     {
         var value = IdInt32Comparable.FromInt32(1);
@@ -795,6 +840,27 @@ public sealed partial class StronglyTypedIdTests
     {
         public T? Value { get; set; }
     }
+
+    #region StronglyTypedIdAttribute_Declaration
+    [StronglyTypedId(typeof(int))]
+    public partial struct UserId
+    {
+    }
+    #endregion
+
+    #region StronglyTypedIdAttributeOfT_Declaration
+    [StronglyTypedId<Guid>]
+    public partial struct ProductId
+    {
+    }
+    #endregion
+
+    #region IStronglyTypedIdOfT_Declaration
+    [StronglyTypedId(typeof(Guid))]
+    public partial struct OrderId
+    {
+    }
+    #endregion
 
 #nullable enable
     [StronglyTypedId(typeof(bool))]

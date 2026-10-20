@@ -8,18 +8,17 @@ namespace Meziantou.Framework.Http;
 
 /// <summary>A collection of HSTS (HTTP Strict Transport Security) domain policies that determines which domains should be accessed over HTTPS.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Http.Hsts.Tests/HstsDomainPolicyCollectionTests.cs" ref:region="HstsDomainPolicyCollection_Example" ref:dedent="true">
 /// // Create a collection with preloaded domains from the Chromium HSTS preload list
 /// var policies = new HstsDomainPolicyCollection(includePreloadDomains: true);
+/// Assert.True(policies.MustUpgradeRequest("github.com"));
 ///
 /// // Add a custom domain policy
 /// policies.Add("example.com", TimeSpan.FromDays(365), includeSubdomains: true);
 ///
 /// // Check if a domain should be upgraded to HTTPS
-/// if (policies.MustUpgradeRequest("example.com"))
-/// {
-///     // Upgrade HTTP to HTTPS
-/// }
+/// Assert.True(policies.MustUpgradeRequest("example.com"));
+/// Assert.True(policies.MustUpgradeRequest("www.example.com"));
 /// </code>
 /// </example>
 /// <remarks>

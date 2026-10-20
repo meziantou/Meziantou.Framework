@@ -2,10 +2,15 @@ namespace Meziantou.Framework.CodeDom;
 
 /// <summary>Represents an interface declaration.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs" ref:region="InterfaceDeclaration_Example" ref:dedent="true">
 /// var iface = new InterfaceDeclaration("IRepository");
-/// iface.Parameters.Add(new TypeParameter("T"));
-/// iface.Members.Add(new MethodDeclaration("Get") { ReturnType = new TypeReference("T") });
+/// var typeParameter = new TypeParameter("T");
+/// iface.Parameters.Add(typeParameter);
+/// iface.Members.Add(new MethodDeclaration("Get") { ReturnType = typeParameter });
+/// var code = iface.ToCsharpString();
+///
+/// Assert.StartsWith("interface IRepository&lt;T&gt;", code);
+/// Assert.Contains("Get();", code);
 /// </code>
 /// </example>
 public class InterfaceDeclaration : TypeDeclaration, IParametrableType, IInheritanceParameters, ITypeDeclarationContainer, IMemberContainer

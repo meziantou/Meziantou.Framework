@@ -5,10 +5,15 @@ namespace Meziantou.Framework.CodeOwners;
 /// <summary>
 /// Represents a single owner of a <see cref="CodeOwnersEntry"/>.
 /// <example>
-/// <code>
-/// var entries = CodeOwnersFile.Parse("*.js @user1 docs@example.com", CodeOwnersDialect.GitLab);
-/// // entries[0].Owners[0]: Type=Username, Name="user1"
-/// // entries[0].Owners[1]: Type=EmailAddress, Name="docs@example.com"
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.CodeOwners.Tests/CodeOwnersParserTests.cs" ref:region="CodeOwner_Example" ref:dedent="true">
+/// var file = CodeOwnersFile.Parse("*.js @user1 docs@example.com", CodeOwnersDialect.GitLab);
+/// var owners = file.Entries[0].Owners;
+///
+/// Assert.Equal(CodeOwnerType.Username, owners[0].Type);
+/// Assert.Equal("user1", owners[0].Name);
+///
+/// Assert.Equal(CodeOwnerType.EmailAddress, owners[1].Type);
+/// Assert.Equal("docs@example.com", owners[1].Name);
 /// </code>
 /// </example>
 /// </summary>

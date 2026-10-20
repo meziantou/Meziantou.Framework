@@ -2,11 +2,20 @@ namespace Meziantou.Framework.Language.Shell;
 
 /// <summary>Identifies what a node, token, or trivium in a shell tree is.</summary>
 /// <example>
-/// <code>
-/// if (node.Kind() == SyntaxKind.Command)
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxVisitorTests.cs" ref:region="SyntaxKind_CompareKind" ref:dedent="true">
+/// var tree = ShellSyntaxTree.ParseText("ls -l | wc -l &amp;&amp; echo done", ShellDialect.Bash);
+///
+/// var commandCount = 0;
+/// foreach (var node in tree.GetRoot().DescendantNodes())
 /// {
-///     // handle a simple command
+///     if (node.Kind() == SyntaxKind.Command)
+///     {
+///         // handle a simple command
+///         commandCount++;
+///     }
 /// }
+///
+/// Assert.Equal(3, commandCount);
 /// </code>
 /// </example>
 public enum SyntaxKind

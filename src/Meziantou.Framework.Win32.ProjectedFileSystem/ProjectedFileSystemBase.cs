@@ -9,18 +9,21 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 
 /// <summary>Base class for creating a virtual file system using Windows Projected File System (ProjFS).</summary>
 /// <example>
-/// <code>
-/// public class MyVirtualFileSystem : ProjectedFileSystemBase
-/// {
-///     public MyVirtualFileSystem(string rootFolder) : base(rootFolder) { }
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/Meziantou.Framework.Win32.ProjectedFileSystem.Samples/Program.cs" ref:region="ProjectedFileSystemBase_Usage" ref:dedent="true">
+/// var rootPath = @"C:\MyVirtualFS";
+/// Directory.CreateDirectory(rootPath);
+/// using var vfs = new MyVirtualFileSystem(rootPath);
+/// vfs.Start(options: null);
 ///
+/// public class MyVirtualFileSystem(string rootFolder) : ProjectedFileSystemBase(rootFolder)
+/// {
 ///     protected override ValueTask&lt;IEnumerable&lt;ProjectedFileSystemEntry&gt;&gt; GetEntriesAsync(string path)
 ///     {
 ///         if (string.IsNullOrEmpty(path))
 ///         {
 ///             return ValueTask.FromResult&lt;IEnumerable&lt;ProjectedFileSystemEntry&gt;&gt;(
 ///             [
-///                 ProjectedFileSystemEntry.File("file.txt", length: 100),
+///                 ProjectedFileSystemEntry.File("file.txt", length: 13),
 ///                 ProjectedFileSystemEntry.Directory("folder"),
 ///             ]);
 ///         }
@@ -36,11 +39,6 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 ///         return ValueTask.FromResult&lt;Stream?&gt;(null);
 ///     }
 /// }
-///
-/// var rootPath = @"C:\MyVirtualFS";
-/// Directory.CreateDirectory(rootPath);
-/// using var vfs = new MyVirtualFileSystem(rootPath);
-/// vfs.Start(options: null);
 /// </code>
 /// </example>
 // https://github.com/Microsoft/Windows-classic-samples/blob/master/Samples/ProjectedFileSystem/regfsProvider.cpp

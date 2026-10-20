@@ -4,9 +4,9 @@ namespace Meziantou.AspNetCore.Mvc.TagHelpers;
 
 /// <summary>Converts a <see cref="DateTimeOffset"/> value to a properly formatted <c>datetime</c> attribute for HTML elements.</summary>
 /// <example>
-/// <code language="razor">
-/// &lt;time datetime-value="@DateTimeOffset.Now"&gt;Just now&lt;/time&gt;
-/// &lt;!-- Outputs: &lt;time datetime="2024-01-15T10:30:45.123Z"&gt;Just now&lt;/time&gt; --&gt;
+/// <code language="razor" xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../samples/Meziantou.AspNetCore.Mvc.Samples/Views/Examples/Time.cshtml">
+/// &lt;time datetime-value="@DateTimeOffset.UtcNow"&gt;Just now&lt;/time&gt;
+/// @* Rendered as &lt;time datetime="2024-01-15T10:30:45.123Z"&gt;Just now&lt;/time&gt; *@
 /// </code>
 /// </example>
 /// <remarks>

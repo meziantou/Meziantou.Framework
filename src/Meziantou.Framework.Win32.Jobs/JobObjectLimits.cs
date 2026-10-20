@@ -8,12 +8,13 @@ namespace Meziantou.Framework.Win32;
 /// <see langword="null"/> - the default - to leave that limit alone.
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Win32.Jobs.Tests/JobObjectTests.cs" ref:region="JobObjectLimits_SetLimits" ref:dedent="true">
+/// using var job = new JobObject();
 /// var limits = new JobObjectLimits
 /// {
 ///     Flags = JobObjectLimitFlags.KillOnJobClose,
 ///     ActiveProcessLimit = 10,
-///     ProcessMemoryLimit = 100 * 1024 * 1024 // 100 MB
+///     ProcessMemoryLimit = 100 * 1024 * 1024, // 100 MB
 /// };
 /// job.SetLimits(limits);
 /// </code>

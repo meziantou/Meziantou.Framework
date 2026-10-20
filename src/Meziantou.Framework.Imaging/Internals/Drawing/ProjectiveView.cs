@@ -25,6 +25,14 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// transformation reduces a lot (beyond the horizon of what is seen, curves are cut no finer than a factor of
 /// <see cref="MinScale"/>); the factor is at most <see cref="MaxScale"/>.
 /// </para>
+/// <para>
+/// What a pen draws around the inside of a curve is within half its width (or the corners of its square caps, at the
+/// ends of dashes): the vertices of its chords are smooth, and joined with round joins. Only at the ends of a curve,
+/// where it can meet another segment at a corner, does a miter reach further: <see cref="EndReach"/>. A curve is cut
+/// for <see cref="Reach"/> where it is far from its ends (<see cref="GetScale"/>), and for <see cref="EndReach"/> next to
+/// them (<see cref="GetEndScale"/>): the miters of a pen do not make the whole curve reach the horizon of the plane,
+/// where it would be cut 65,536 times finer.
+/// </para>
 /// </remarks>
 [StructLayout(LayoutKind.Auto)]
 internal readonly struct ProjectiveView
@@ -39,6 +47,11 @@ internal readonly struct ProjectiveView
     private readonly double _numerator;
 
     public ProjectiveView(in ProjectiveTransform transform, double left, double top, double right, double bottom, double reach)
+        : this(transform, left, top, right, bottom, reach, reach)
+    {
+    }
+
+    public ProjectiveView(in ProjectiveTransform transform, double left, double top, double right, double bottom, double reach, double endReach)
     {
         Transform = transform;
         Left = left;
@@ -46,6 +59,7 @@ internal readonly struct ProjectiveView
         Right = right;
         Bottom = bottom;
         Reach = reach;
+        EndReach = endReach;
         IsFlat = transform.IsFlat;
         var distance = Math.Sqrt(Math.Max(Math.Max((left * left) + (top * top), (right * right) + (top * top)), Math.Max((left * left) + (bottom * bottom), (right * right) + (bottom * bottom))));
         _numerator = PathFlattener.GetLargestRadius(transform.M11, transform.M12, transform.M21, transform.M22) + (distance * Math.Sqrt((transform.M13 * transform.M13) + (transform.M23 * transform.M23)));
@@ -65,31 +79,45 @@ internal readonly struct ProjectiveView
     /// <summary>Gets the distance, in the plane, around a curve that what is drawn from it can reach: the half-width of a pen.</summary>
     public double Reach { get; }
 
+    /// <summary>Gets the distance, in the plane, around the ends of a curve that what is drawn from it can reach: <see cref="Reach"/>, or the miters of a pen.</summary>
+    public double EndReach { get; }
+
     /// <summary>Gets a value indicating whether the transformation flattens the plane, up to rounding: nothing is seen of it.</summary>
     public bool IsFlat { get; }
 
     /// <summary>Gets the same view of what is drawn around a curve: the stroke of a pen.</summary>
     /// <param name="margin">The distance on the canvas around the rectangle that is seen.</param>
     /// <param name="reach">The distance in the plane around a curve.</param>
-    public ProjectiveView Inflate(double margin, double reach) => new(Transform, Left - margin, Top - margin, Right + margin, Bottom + margin, Reach + reach);
+    public ProjectiveView Inflate(double margin, double reach) => Inflate(margin, reach, reach);
+
+    /// <summary>Gets the same view of what is drawn around a curve, further around its ends: the stroke of a pen that miters its corners.</summary>
+    /// <param name="margin">The distance on the canvas around the rectangle that is seen.</param>
+    /// <param name="reach">The distance in the plane around a curve.</param>
+    /// <param name="endReach">The distance in the plane around the ends of a curve.</param>
+    public ProjectiveView Inflate(double margin, double reach, double endReach) => new(Transform, Left - margin, Top - margin, Right + margin, Bottom + margin, Reach + reach, EndReach + endReach);
 
     /// <summary>Gets the same view of the shape of what is drawn itself, with nothing around it.</summary>
     public ProjectiveView WithoutReach() => new(Transform, Left, Top, Right, Bottom, reach: 0);
 
-    /// <summary>Gets a bound of the factor by which the transformation enlarges a length in the part of a rectangle of the plane that is seen.</summary>
-    public double GetScale(double minX, double minY, double maxX, double maxY)
+    /// <summary>Gets a bound of the factor by which the transformation enlarges a length in the part of a rectangle of the plane that is seen, with <see cref="Reach"/> around it.</summary>
+    public double GetScale(double minX, double minY, double maxX, double maxY) => GetScaleWithReach(minX, minY, maxX, maxY, Reach);
+
+    /// <summary>Gets a bound of the factor by which the transformation enlarges a length in the part of a rectangle of the plane that is seen, with <see cref="EndReach"/> around it: a part of a curve at one of its ends.</summary>
+    public double GetEndScale(double minX, double minY, double maxX, double maxY) => GetScaleWithReach(minX, minY, maxX, maxY, EndReach);
+
+    private double GetScaleWithReach(double minX, double minY, double maxX, double maxY, double reach)
     {
         // The rectangle, then each half-plane cuts the polygon (at most 8 vertices: one more per cut)
         Span<double> polygon = stackalloc double[16];
         Span<double> cut = stackalloc double[16];
-        polygon[0] = minX - Reach;
-        polygon[1] = minY - Reach;
-        polygon[2] = maxX + Reach;
-        polygon[3] = minY - Reach;
-        polygon[4] = maxX + Reach;
-        polygon[5] = maxY + Reach;
-        polygon[6] = minX - Reach;
-        polygon[7] = maxY + Reach;
+        polygon[0] = minX - reach;
+        polygon[1] = minY - reach;
+        polygon[2] = maxX + reach;
+        polygon[3] = minY - reach;
+        polygon[4] = maxX + reach;
+        polygon[5] = maxY + reach;
+        polygon[6] = minX - reach;
+        polygon[7] = maxY + reach;
         var count = 4;
         for (var plane = 0; plane < 4 && count > 0; plane++)
         {

@@ -4,9 +4,9 @@ namespace Meziantou.Framework.TemporaryContainers;
 
 /// <summary>Describes how a container should be created. Configure an instance and call <see cref="CreateContainer"/> to obtain a runnable <see cref="TemporaryContainer"/>.</summary>
 /// <example>
-/// <code>
-/// var definition = new ContainerDefinition(new RegistryImage("redis:8"));
-/// definition.Environment.Add("ALLOW_EMPTY_PASSWORD", "yes");
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/Meziantou.Framework.TemporaryContainers.Samples/Examples.cs" ref:region="ContainerDefinition_Example" ref:dedent="true">
+/// var definition = new ContainerDefinition(ImageSource.FromRegistry("redis:8"));
+/// definition.Environment.Add("TZ", "UTC");
 /// definition.Ports.Add(new ContainerPort(6379));
 /// definition.WaitStrategies.Add(Wait.ForPort(6379));
 ///

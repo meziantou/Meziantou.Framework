@@ -4,18 +4,19 @@ namespace Meziantou.Extensions.Logging.InMemory;
 
 /// <summary>Provides a logger provider that stores log entries in memory.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Extensions.Logging.InMemory.Tests/InMemoryLoggerTests.cs" ref:region="InMemoryLoggerProvider_Example" ref:dedent="true">
 /// // Use with dependency injection
 /// var services = new ServiceCollection();
 /// using var provider = new InMemoryLoggerProvider();
-/// services.AddLogging(builder => builder.AddProvider(provider));
-/// 
-/// var serviceProvider = services.BuildServiceProvider();
-/// var logger = serviceProvider.GetRequiredService&lt;ILogger&lt;MyClass&gt;&gt;();
+/// services.AddLogging(builder =&gt; builder.AddProvider(provider));
+///
+/// using var serviceProvider = services.BuildServiceProvider();
+/// var logger = serviceProvider.GetRequiredService&lt;ILoggerFactory&gt;().CreateLogger("MyCategory");
 /// logger.LogInformation("Test message");
-/// 
+///
 /// // Access logs through the provider
-/// var logs = provider.Logs.Informations;
+/// var log = Assert.Single(provider.Logs.Informations);
+/// Assert.Equal("Test message", log.Message);
 /// </code>
 /// </example>
 public sealed class InMemoryLoggerProvider : ILoggerProvider, ISupportExternalScope

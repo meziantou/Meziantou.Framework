@@ -130,6 +130,38 @@ public sealed class AccessTokenTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void FromWellKnownDocumentationExample()
+    {
+        #region SecurityIdentifier_FromWellKnown
+        var adminSid = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinBuiltinAdministratorsSid);
+        var systemSid = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinLocalSystemSid);
+        Assert.Equal("S-1-5-32-544", adminSid.Sid);
+        Assert.Equal("S-1-5-18", systemSid.Sid);
+        #endregion
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void SecurityIdentifierDocumentationExample()
+    {
+        #region SecurityIdentifier_Usage
+        // Get a well-known SID
+        var adminSid = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinBuiltinAdministratorsSid);
+        Assert.Equal("S-1-5-32-544", adminSid.Sid);
+
+        // The account name is localized: "BUILTIN\Administrators" on an English version of Windows
+        Assert.NotEmpty(adminSid.FullName);
+
+        // Compare SIDs
+        using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
+        var ownerSid = token.GetOwner();
+        if (ownerSid == adminSid)
+        {
+            // The owner is the Administrators group, which is the case of an elevated process
+        }
+        #endregion
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void SecurityIdentifiersWithTheSameSidAreEqual()
     {
         var sid = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinBuiltinAdministratorsSid);

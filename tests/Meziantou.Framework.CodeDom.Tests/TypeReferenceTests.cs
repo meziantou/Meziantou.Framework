@@ -35,6 +35,20 @@ public class TypeReferenceTests
         Assert.Equal([typeof(int).FullName], typeReference.Parameters.Select(p => p.ClrFullTypeName));
     }
 
+    [Fact]
+    public void Documentation_TypeReference()
+    {
+        #region TypeReference_Example
+        var stringType = new TypeReference(typeof(string));
+        var listOfInt = new TypeReference(typeof(List<>)).MakeGeneric(new TypeReference(typeof(int)));
+        var intArray = new TypeReference(typeof(int)).MakeArray(1);
+
+        Assert.Equal("System.String", stringType.ClrFullTypeName);
+        Assert.Equal("System.Collections.Generic.List<System.Int32>", listOfInt.ClrFullTypeName);
+        Assert.Equal("System.Int32[]", intArray.ClrFullTypeName);
+        #endregion
+    }
+
     private sealed class TestNested
     {
         public sealed class TestNested2

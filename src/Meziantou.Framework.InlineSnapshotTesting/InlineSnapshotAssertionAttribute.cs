@@ -5,9 +5,11 @@ namespace Meziantou.Framework.InlineSnapshotTesting;
 /// This attribute is used to enable snapshot validation in helper methods.
 /// </summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs" ref:region="InlineSnapshotAssertionAttribute_Example" ref:dedent="true">
+/// Helper(new { Name = "John" }, "Name: John");
+///
 /// [InlineSnapshotAssertion(nameof(expected))]
-/// static void Helper(object data, string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+/// static void Helper(object data, string expected, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
 /// {
 ///     InlineSnapshot.Validate(data, expected, filePath, lineNumber);
 /// }

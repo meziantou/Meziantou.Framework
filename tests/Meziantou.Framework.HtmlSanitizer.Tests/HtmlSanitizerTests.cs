@@ -25,6 +25,16 @@ public class HtmlSanitizerTests
     }
 
     [Fact]
+    public void Sanitize_DocumentationExample()
+    {
+        #region HtmlSanitizer_SanitizeHtmlFragment
+        var sanitizer = new HtmlSanitizer();
+        var safeHtml = sanitizer.SanitizeHtmlFragment("<p>Hello <script>alert('xss')</script>World</p>");
+        Assert.Equal("<p>Hello World</p>", safeHtml);
+        #endregion
+    }
+
+    [Fact]
     public void Sanitize_Null_ReturnsNull()
     {
         var sanitizer = new HtmlSanitizer();

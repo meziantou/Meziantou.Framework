@@ -4,8 +4,8 @@ namespace Meziantou.Framework.DataAnnotations;
 
 /// <summary>Validates that a string property contains an absolute URI.</summary>
 /// <example>
-/// <code>
-/// public class MyModel
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Tests/DataAnnotations/AbsoluteUriAttributeTests.cs" ref:region="AbsoluteUriAttribute_Usage" ref:dedent="true">
+/// public sealed class MyModel
 /// {
 ///     [AbsoluteUri]
 ///     public string? Url { get; set; }

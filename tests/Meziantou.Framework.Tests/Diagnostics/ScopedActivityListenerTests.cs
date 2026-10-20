@@ -32,6 +32,25 @@ public sealed class ScopedActivityListenerTests
     private static string[] OperationNames(IEnumerable<Activity> activities) => [.. activities.Select(activity => activity.OperationName)];
 
     [Fact]
+    public async Task ScopedActivityListener_Example()
+    {
+        #region ScopedActivityListener_Usage
+        using var source = new ActivitySource("Sample.ScopedActivityListener");
+        using var listener = new ScopedActivityListener(new() { SourceNames = ["Sample.ScopedActivityListener"] });
+
+        // Code that starts activities, such as a call to an instrumented library
+        using (source.StartActivity("DoWork"))
+        {
+            await Task.Delay(10);
+        }
+
+        var activity = Assert.Single(listener.Activities);
+        Assert.Equal("DoWork", activity.OperationName);
+        Assert.True(activity.Duration > TimeSpan.Zero);
+        #endregion
+    }
+
+    [Fact]
     public void ActivityStartedInsideScope_IsCaptured()
     {
         using var source = CreateSource();

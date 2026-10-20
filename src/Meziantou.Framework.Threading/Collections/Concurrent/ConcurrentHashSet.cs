@@ -7,15 +7,12 @@ namespace Meziantou.Framework.Collections.Concurrent;
 /// <summary>Represents a thread-safe set of unique values.</summary>
 /// <typeparam name="T">The type of elements in the set.</typeparam>
 /// <example>
-/// <code><![CDATA[
-/// var set = new ConcurrentHashSet<int>();
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../../tests/Meziantou.Framework.Threading.Tests/ConcurrentHashSetTests.cs" ref:region="ConcurrentHashSet_Usage" ref:dedent="true">
+/// var set = new ConcurrentHashSet&lt;int&gt;();
 /// set.Add(1);
 /// set.Add(2);
-/// if (set.Contains(1))
-/// {
-///     Console.WriteLine("Set contains 1");
-/// }
-/// ]]></code>
+/// Assert.Contains(1, set);
+/// </code>
 /// </example>
 /// <remarks>The set comparison methods (<see cref="IsSubsetOf(IEnumerable{T})"/>, <see cref="IsSupersetOf(IEnumerable{T})"/>, <see cref="Overlaps(IEnumerable{T})"/>, <see cref="SetEquals(IEnumerable{T})"/> and their proper variants) do not take an atomic snapshot of the set: elements can be added or removed while they run, so their result is best-effort and only reflects a set that was not modified concurrently.</remarks>
 public sealed class ConcurrentHashSet<T> : ISet<T>, IReadOnlySet<T>

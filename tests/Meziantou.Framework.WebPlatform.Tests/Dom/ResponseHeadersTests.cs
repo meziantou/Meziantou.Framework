@@ -6,6 +6,22 @@ namespace Meziantou.Framework.WebPlatform.Tests.Dom;
 /// <summary>The headers of the responses (<see cref="DocumentResource.Headers"/>) used by the documents.</summary>
 public sealed class ResponseHeadersTests
 {
+    [Fact]
+    public void DocumentResource_Example()
+    {
+        #region DocumentResource_Example
+        // A resource created from its decoded content
+        var page = new DocumentResource("<p>Hello</p>");
+        Assert.Equal("<p>Hello</p>", page.Content);
+
+        // A resource created from its bytes, decoded using the charset of the Content-Type header
+        var bytes = "console.log('Hello');"u8.ToArray();
+        var script = new DocumentResource(bytes) { Headers = [new("Content-Type", "text/javascript; charset=utf-8")] };
+        Assert.Null(script.Content);
+        Assert.Equal(bytes, script.ContentBytes?.ToArray());
+        #endregion
+    }
+
     [Theory]
     [InlineData("Sun, 06 Nov 1994 08:49:37 GMT")]
     [InlineData("Sunday, 06-Nov-94 08:49:37 GMT")]

@@ -2,9 +2,12 @@ namespace Meziantou.Framework.CodeDom;
 
 /// <summary>Represents an object instantiation expression using the new keyword.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs" ref:region="NewObjectExpression_Example" ref:dedent="true">
 /// var newObj = new NewObjectExpression(typeof(StringBuilder));
 /// var newObjWithArgs = new NewObjectExpression(typeof(StringBuilder), new LiteralExpression("initial value"));
+///
+/// Assert.Equal("new global::System.Text.StringBuilder()", newObj.ToCsharpString());
+/// Assert.Equal("new global::System.Text.StringBuilder(\"initial value\")", newObjWithArgs.ToCsharpString());
 /// </code>
 /// </example>
 public class NewObjectExpression : Expression

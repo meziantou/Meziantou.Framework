@@ -3,6 +3,23 @@ namespace Meziantou.Framework.Csv.Tests;
 public class CsvReaderTests
 {
     [Fact]
+    public async Task CsvReader_DocumentationExample()
+    {
+        #region CsvReader_ReadRowAsync
+        using var reader = new StringReader("Name,Age\nJohn,30\nJane,25");
+        var csvReader = new CsvReader(reader) { HasHeaderRow = true };
+
+        var lines = new List<string>();
+        while (await csvReader.ReadRowAsync() is { } row)
+        {
+            lines.Add($"{row["Name"]} is {row["Age"]} years old");
+        }
+
+        Assert.Equal(["John is 30 years old", "Jane is 25 years old"], lines);
+        #endregion
+    }
+
+    [Fact]
     public async Task CsvReader_RowWithoutHeader()
     {
         var sb = new StringBuilder();

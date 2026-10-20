@@ -9,15 +9,17 @@ namespace Meziantou.Extensions.Logging.Xunit.v3;
 
 /// <summary>Provides extension methods for <see cref="ILoggingBuilder"/> to add xUnit.net logging support.</summary>
 /// <example>
-/// <code>
-/// using Microsoft.Extensions.Hosting;
-///
-/// var host = new HostBuilder()
-///     .ConfigureLogging(builder =>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Extensions.Logging.Xunit.v3.Tests/XunitLoggerTests.cs" ref:region="XUnitLoggerBuilderExtensions_Example" ref:dedent="true">
+/// var testOutputHelper = TestContext.Current.TestOutputHelper;
+/// using var host = new HostBuilder()
+///     .ConfigureLogging(builder =&gt;
 ///     {
 ///         builder.AddXunit(testOutputHelper);
 ///     })
 ///     .Build();
+///
+/// var logger = host.Services.GetRequiredService&lt;ILoggerFactory&gt;().CreateLogger("MyCategory");
+/// logger.LogInformation("This message will appear in the test output");
 /// </code>
 /// </example>
 public static class XUnitLoggerBuilderExtensions

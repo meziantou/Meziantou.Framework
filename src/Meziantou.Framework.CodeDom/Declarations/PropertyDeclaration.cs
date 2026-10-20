@@ -2,11 +2,26 @@ namespace Meziantou.Framework.CodeDom;
 
 /// <summary>Represents a property declaration.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs" ref:region="PropertyDeclaration_Example" ref:dedent="true">
 /// var prop = new PropertyDeclaration("Name", typeof(string));
 /// prop.Modifiers = Modifiers.Public;
-/// prop.Getter = new PropertyAccessorDeclaration();
-/// prop.Setter = new PropertyAccessorDeclaration();
+/// prop.Getter = new ReturnStatement(new MemberReferenceExpression(new ThisExpression(), "_name"));
+/// prop.Setter = new AssignStatement(new MemberReferenceExpression(new ThisExpression(), "_name"), new ValueArgumentExpression());
+///
+/// Assert.Equal("""
+///     public string Name
+///     {
+///         get
+///         {
+///             return this._name;
+///         }
+///         set
+///         {
+///             this._name = value;
+///         }
+///     }
+///
+///     """, prop.ToCsharpString());
 /// </code>
 /// </example>
 public class PropertyDeclaration : MemberDeclaration, IModifiers

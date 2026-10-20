@@ -2,9 +2,18 @@ namespace Meziantou.Framework.Scheduling;
 
 /// <summary>Represents a monthly recurrence rule.</summary>
 /// <example>
-/// <code>
-/// var rrule = new MonthlyRecurrenceRule { ByMonthDays = { -1 } }; // Last day of each month
-/// var nextOccurrences = rrule.GetNextOccurrences(DateTime.Now).ToArray();
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Scheduling.Tests/RecurrenceRuleTests.cs" ref:region="MonthlyRecurrenceRule_Example" ref:dedent="true">
+/// // Last day of each month
+/// var rrule = RecurrenceRule.Parse("FREQ=MONTHLY;BYMONTHDAY=-1");
+/// var nextOccurrences = rrule.GetNextOccurrences(new DateTime(2024, 01, 15, 09, 00, 00)).Take(3).ToArray();
+///
+/// Assert.Equal(
+///     [
+///         new DateTime(2024, 01, 31, 09, 00, 00),
+///         new DateTime(2024, 02, 29, 09, 00, 00),
+///         new DateTime(2024, 03, 31, 09, 00, 00),
+///     ],
+///     nextOccurrences);
 /// </code>
 /// </example>
 internal sealed class MonthlyRecurrenceRule : RecurrenceRule

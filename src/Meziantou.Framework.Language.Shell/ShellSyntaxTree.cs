@@ -4,9 +4,10 @@ namespace Meziantou.Framework.Language.Shell;
 
 /// <summary>A shell script read from source text, together with what is wrong with it.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Shell.Tests/ShellEditingTests.cs" ref:region="ShellSyntaxTree_WithChanges" ref:dedent="true">
 /// var tree = ShellSyntaxTree.ParseText("ls -l | wc -l", ShellDialect.Bash);
 /// var updated = tree.WithChanges(new TextChange(new TextSpan(0, 2), "dir"));
+/// Assert.Equal("dir -l | wc -l", updated.GetText().Text);
 /// </code>
 /// </example>
 public sealed class ShellSyntaxTree : SyntaxTree

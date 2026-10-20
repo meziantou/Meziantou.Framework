@@ -7,19 +7,23 @@ namespace Meziantou.Framework.Versioning;
 /// Each bound can be inclusive or exclusive.
 /// </summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Versioning.Tests/SemanticVersionRangeTests.cs" ref:region="SemanticVersionRange_Example" ref:dedent="true">
 /// // NuGet format examples
-/// var range1 = SemanticVersionRange.ParseNuGet("[1.0.0, 2.0.0)"); // >=1.0.0 and &lt;2.0.0
-/// var range2 = SemanticVersionRange.ParseNuGet("1.0.0");          // >=1.0.0
+/// var range1 = SemanticVersionRange.ParseNuGet("[1.0.0, 2.0.0)"); // &gt;=1.0.0 and &lt;2.0.0
+/// var range2 = SemanticVersionRange.ParseNuGet("1.0.0");          // &gt;=1.0.0
 /// var range3 = SemanticVersionRange.ParseNuGet("[1.0.0]");        // ==1.0.0
+/// Assert.Equal(SemanticVersionRange.GreaterThanOrEqual(SemanticVersion.Parse("1.0.0")), range2);
+/// Assert.Equal(SemanticVersionRange.Exact(SemanticVersion.Parse("1.0.0")), range3);
 ///
 /// // npm format examples
-/// var range4 = SemanticVersionRange.ParseNpm("&gt;=1.0.0 &lt;2.0.0");  // >=1.0.0 and &lt;2.0.0
-/// var range5 = SemanticVersionRange.ParseNpm("&lt;=2.0.0");           // &lt;=2.0.0
+/// var range4 = SemanticVersionRange.ParseNpm("&gt;=1.0.0 &lt;2.0.0");  // &gt;=1.0.0 and &lt;2.0.0
+/// var range5 = SemanticVersionRange.ParseNpm("&lt;=2.0.0");         // &lt;=2.0.0
+/// Assert.Equal(range1, range4);
+/// Assert.Equal(SemanticVersionRange.LessThanOrEqual(SemanticVersion.Parse("2.0.0")), range5);
 ///
 /// // Check if a version satisfies the range
 /// var version = SemanticVersion.Parse("1.5.0");
-/// Console.WriteLine(range1.Satisfies(version)); // true
+/// Assert.True(range1.Satisfies(version));
 /// </code>
 /// </example>
 [Meziantou.Analyzer.Annotations.CultureInsensitiveType]

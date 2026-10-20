@@ -14,6 +14,60 @@ public sealed class UndoRedoManagerTests
     }
 
     [Fact]
+    public async Task UndoRedoManager_Example()
+    {
+        #region UndoRedoManager_Usage
+        var manager = new UndoRedoManager();
+        var list = new List<int>();
+
+        // Asynchronous execute and unexecute delegates
+        await manager.RecordActionAsync(
+            execute: ct => { list.Add(1); return ValueTask.CompletedTask; },
+            unexecute: ct => { list.RemoveAt(list.Count - 1); return ValueTask.CompletedTask; });
+
+        // Synchronous execute and unexecute delegates
+        await manager.RecordActionAsync(
+            execute: () => list.Add(2),
+            unexecute: () => list.RemoveAt(list.Count - 1));
+        Assert.Equal([1, 2], list);
+
+        await manager.UndoAsync();
+        Assert.Equal([1], list);
+
+        await manager.RedoAsync();
+        Assert.Equal([1, 2], list);
+        #endregion
+    }
+
+    [Fact]
+    public async Task UndoRedoDelegateAction_Example()
+    {
+        #region UndoRedoDelegateAction_Usage
+        var savedContents = new List<string>();
+
+        async ValueTask SaveAsync(CancellationToken cancellationToken)
+        {
+            await Task.Delay(1, cancellationToken);
+            savedContents.Add("content");
+        }
+
+        void Restore() => savedContents.RemoveAt(savedContents.Count - 1);
+
+        // Asynchronous execute, synchronous unexecute
+        var action = new UndoRedoDelegateAction(
+            execute: ct => SaveAsync(ct),
+            unexecute: () => Restore());
+
+        var manager = new UndoRedoManager();
+        await manager.RecordActionAsync(action);
+        Assert.Equal(["content"], savedContents);
+
+        await manager.UndoAsync();
+        Assert.Empty(savedContents);
+        #endregion
+    }
+
+    [Fact]
     public async Task RecordAction_ExecutesActionAndEnablesUndo()
     {
         var manager = new UndoRedoManager();
@@ -218,6 +272,28 @@ public sealed class UndoRedoManagerTests
         Assert.True(reentrant.UndoWasRejected);
         Assert.Equal(["p", "n"], doc);
         Assert.Equal(2, manager.UndoableActions.Count);
+    }
+
+    [Fact]
+    public async Task UndoRedoTransaction_Example()
+    {
+        #region UndoRedoTransaction_Usage
+        var manager = new UndoRedoManager();
+        var list = new List<string>();
+
+        await using (var transaction = manager.CreateTransaction())
+        {
+            await manager.RecordActionAsync(() => list.Add("first"), () => list.Remove("first"));
+            await manager.RecordActionAsync(() => list.Add("second"), () => list.Remove("second"));
+            await transaction.CommitAsync();
+        }
+
+        Assert.Equal(["first", "second"], list);
+
+        // A single UndoAsync reverts both actions
+        await manager.UndoAsync();
+        Assert.Empty(list);
+        #endregion
     }
 
     [Fact]

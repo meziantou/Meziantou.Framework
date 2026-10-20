@@ -2,15 +2,19 @@ namespace Meziantou.Framework.Scheduling;
 
 /// <summary>Represents an iCalendar calendar containing events.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Scheduling.Tests/InternetCalendarTests.cs" ref:region="InternetCalendar_Example" ref:dedent="true">
 /// var calendar = new InternetCalendar();
 /// calendar.Events.Add(new Event
 /// {
-///     Start = DateTime.Now,
-///     End = DateTime.Now.AddHours(1),
-///     Summary = "Meeting"
+///     Start = new DateTime(2024, 01, 02, 08, 00, 00, DateTimeKind.Utc),
+///     End = new DateTime(2024, 01, 02, 09, 00, 00, DateTimeKind.Utc),
+///     Summary = "Meeting",
 /// });
 /// var icsContent = calendar.ToIcs();
+///
+/// Assert.Contains("BEGIN:VEVENT", icsContent);
+/// Assert.Contains("DTSTART:20240102T080000Z", icsContent);
+/// Assert.Contains("SUMMARY:Meeting", icsContent);
 /// </code>
 /// </example>
 public sealed class InternetCalendar

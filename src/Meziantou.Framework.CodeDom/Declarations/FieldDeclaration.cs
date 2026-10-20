@@ -2,8 +2,13 @@ namespace Meziantou.Framework.CodeDom;
 
 /// <summary>Represents a field declaration.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs" ref:region="FieldDeclaration_Example" ref:dedent="true">
 /// var field = new FieldDeclaration("_count", typeof(int), Modifiers.Private, new LiteralExpression(0));
+///
+/// Assert.Equal("""
+///     private int _count = 0;
+///
+///     """, field.ToCsharpString());
 /// </code>
 /// </example>
 public class FieldDeclaration : MemberDeclaration, IModifiers

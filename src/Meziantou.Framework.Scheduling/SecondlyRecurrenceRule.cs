@@ -2,9 +2,13 @@ namespace Meziantou.Framework.Scheduling;
 
 /// <summary>Represents a secondly recurrence rule.</summary>
 /// <example>
-/// <code>
-/// var rrule = new SecondlyRecurrenceRule { Interval = 30, Occurrences = 10 };
-/// var nextOccurrences = rrule.GetNextOccurrences(DateTime.Now).ToArray();
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Scheduling.Tests/RecurrenceRuleTests.cs" ref:region="SecondlyRecurrenceRule_Example" ref:dedent="true">
+/// // Every 30 seconds, 10 times
+/// var rrule = RecurrenceRule.Parse("FREQ=SECONDLY;INTERVAL=30;COUNT=10");
+/// var nextOccurrences = rrule.GetNextOccurrences(new DateTime(2024, 01, 01, 09, 00, 00)).ToArray();
+///
+/// Assert.HasCount(10, nextOccurrences);
+/// Assert.Equal(new DateTime(2024, 01, 01, 09, 00, 30), nextOccurrences[1]);
 /// </code>
 /// </example>
 internal sealed class SecondlyRecurrenceRule : RecurrenceRule

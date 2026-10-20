@@ -5,6 +5,37 @@ namespace Meziantou.Framework.WPF.Tests;
 public sealed class DelegateCommandTests
 {
     [Fact]
+    public void DocumentationExample()
+    {
+        var viewModel = new MyViewModel();
+
+        Assert.True(viewModel.SaveCommand.CanExecute(parameter: null));
+        viewModel.SaveCommand.Execute(parameter: null);
+    }
+
+    #region DelegateCommand_ViewModel
+    public class MyViewModel
+    {
+        public IDelegateCommand SaveCommand { get; }
+
+        public MyViewModel()
+        {
+            SaveCommand = DelegateCommand.Create(Save, CanSave);
+        }
+
+        private void Save()
+        {
+            // Save logic
+        }
+
+        private bool CanSave()
+        {
+            return true;
+        }
+    }
+    #endregion
+
+    [Fact]
     public void ExecuteAction()
     {
         var count = 0;

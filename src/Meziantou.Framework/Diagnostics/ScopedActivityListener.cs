@@ -32,14 +32,20 @@ namespace Meziantou.Framework.Diagnostics;
 /// </para>
 /// </remarks>
 /// <example>
-/// <code><![CDATA[
-/// using var listener = new ScopedActivityListener(new() { SourceNames = ["Meziantou.Framework.DnsClient"] });
-/// await DoWorkAsync();
-/// foreach (var activity in listener.Activities)
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Tests/Diagnostics/ScopedActivityListenerTests.cs" ref:region="ScopedActivityListener_Usage" ref:dedent="true">
+/// using var source = new ActivitySource("Sample.ScopedActivityListener");
+/// using var listener = new ScopedActivityListener(new() { SourceNames = ["Sample.ScopedActivityListener"] });
+///
+/// // Code that starts activities, such as a call to an instrumented library
+/// using (source.StartActivity("DoWork"))
 /// {
-///     Console.WriteLine($"{activity.OperationName}: {activity.Duration}");
+///     await Task.Delay(10);
 /// }
-/// ]]></code>
+///
+/// var activity = Assert.Single(listener.Activities);
+/// Assert.Equal("DoWork", activity.OperationName);
+/// Assert.True(activity.Duration &gt; TimeSpan.Zero);
+/// </code>
 /// </example>
 public sealed class ScopedActivityListener : IDisposable
 {

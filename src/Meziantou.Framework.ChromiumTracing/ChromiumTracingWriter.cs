@@ -8,7 +8,7 @@ namespace Meziantou.Framework.ChromiumTracing;
 
 /// <summary>Writes trace events in the Chromium Trace Event Format to a stream.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.ChromiumTracing.Tests/WriterTests.cs" ref:region="ChromiumTracingWriter_Example" ref:dedent="true">
 /// await using var writer = ChromiumTracingWriter.Create("trace.json");
 /// await writer.WriteEventAsync(new ChromiumTracingCompleteEvent
 /// {
@@ -17,7 +17,7 @@ namespace Meziantou.Framework.ChromiumTracing;
 ///     Timestamp = DateTimeOffset.UtcNow,
 ///     Duration = TimeSpan.FromMilliseconds(150),
 ///     ProcessId = Environment.ProcessId,
-///     ThreadId = Environment.CurrentManagedThreadId
+///     ThreadId = Environment.CurrentManagedThreadId,
 /// });
 /// </code>
 /// </example>

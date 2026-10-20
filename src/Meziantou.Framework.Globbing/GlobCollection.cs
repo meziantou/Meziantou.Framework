@@ -6,11 +6,10 @@ namespace Meziantou.Framework.Globbing;
 /// <summary>Represents a collection of glob patterns that can be evaluated together.</summary>
 /// <example>
 /// Combine multiple glob patterns with include and exclude rules:
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/Meziantou.Framework.Globbing.Samples/Examples.cs" ref:region="GlobCollection_EnumerateFiles" ref:dedent="true">
 /// var globs = new GlobCollection(
 ///     Glob.Parse("**/*.txt", GlobDialect.Standard),
-///     Glob.Parse("!temp/**/*", GlobDialect.Standard)
-/// );
+///     Glob.Parse("!temp/**/*", GlobDialect.Standard));
 ///
 /// foreach (var file in globs.EnumerateFiles("C:/MyProject"))
 /// {

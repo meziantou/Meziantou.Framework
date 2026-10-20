@@ -9,11 +9,15 @@ namespace Meziantou.Framework.SimpleQueryLanguage;
 /// that translate expressions to SQL or other query languages.
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.SimpleQueryLanguage.Tests/ExpressionQueryBuilderTests.cs" ref:region="ExpressionQuery_Apply" ref:dedent="true">
 /// var queryBuilder = new ExpressionQueryBuilder&lt;Person&gt;();
-/// queryBuilder.AddHandler("name", item => item.FullName);
-/// var query = queryBuilder.Build("name:john");
-/// var results = await dbContext.People.Apply(query).ToListAsync();
+/// queryBuilder.AddHandler("name", item =&gt; item.FullName);
+/// var query = queryBuilder.Build("name:John");
+///
+/// // Apply works on any IQueryable&lt;T&gt;, such as an Entity Framework Core DbSet&lt;T&gt;
+/// var people = new[] { new Person("John Doe", 30), new Person("Jane Doe", 25) }.AsQueryable();
+/// var results = query.Apply(people).ToList();
+/// Assert.Equal("John Doe", Assert.Single(results).FullName);
 /// </code>
 /// </example>
 public sealed class ExpressionQuery<T>

@@ -13,12 +13,16 @@ namespace Meziantou.Framework.SimpleQueryLanguage;
 /// this builder creates <see cref="Expression{TDelegate}"/> objects that can be translated to SQL by EF Core.
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.SimpleQueryLanguage.Tests/ExpressionQueryBuilderTests.cs" ref:region="ExpressionQueryBuilder_Build" ref:dedent="true">
 /// var queryBuilder = new ExpressionQueryBuilder&lt;Person&gt;();
-/// queryBuilder.AddHandler("name", item => item.FullName);
-/// queryBuilder.AddHandler&lt;int&gt;("age", item => item.Age);
-/// var query = queryBuilder.Build("name:john AND age>=21");
-/// var results = await dbContext.People.Apply(query).ToListAsync();
+/// queryBuilder.AddHandler("name", item =&gt; item.FullName);
+/// queryBuilder.AddHandler&lt;int&gt;("age", item =&gt; item.Age);
+/// var query = queryBuilder.Build("name:John AND age&gt;=21");
+///
+/// // Apply works on any IQueryable&lt;T&gt;, such as an Entity Framework Core DbSet&lt;T&gt;
+/// var people = new[] { new Person("John Doe", 30), new Person("John Smith", 18), new Person("Jane Doe", 25) }.AsQueryable();
+/// var results = query.Apply(people).ToList();
+/// Assert.Equal("John Doe", Assert.Single(results).FullName);
 /// </code>
 /// </example>
 public sealed class ExpressionQueryBuilder<T>

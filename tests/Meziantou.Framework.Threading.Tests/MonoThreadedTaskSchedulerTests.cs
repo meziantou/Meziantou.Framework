@@ -18,6 +18,20 @@ public sealed class MonoThreadedTaskSchedulerTests : IDisposable
     }
 
     [Fact]
+    public async Task MonoThreadedTaskScheduler_Example()
+    {
+        #region MonoThreadedTaskScheduler_Usage
+        using var scheduler = new MonoThreadedTaskScheduler("MyWorkerThread");
+        var threadName = await Task.Factory.StartNew(
+            () => Thread.CurrentThread.Name,
+            CancellationToken.None,
+            TaskCreationOptions.None,
+            scheduler);
+        Assert.Equal("MyWorkerThread", threadName);
+        #endregion
+    }
+
+    [Fact]
     public void MaximumConcurrencyLevel_IsOne()
     {
         // The TPL reads this to size partitions; the base TaskScheduler value is int.MaxValue, which is the

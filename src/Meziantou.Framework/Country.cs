@@ -2,10 +2,13 @@ namespace Meziantou.Framework;
 
 /// <summary>Provides utilities for working with countries and region information.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Tests/CountryTests.cs" ref:region="Country_GetUnicodeFlag" ref:dedent="true">
 /// var region = new RegionInfo("US");
-/// string flag = Country.GetUnicodeFlag(region); // Returns "🇺🇸"
-/// string flag2 = Country.GetUnicodeFlag("FR"); // Returns "🇫🇷"
+/// string flag = Country.GetUnicodeFlag(region);
+/// Assert.Equal("\U0001F1FA\U0001F1F8", flag); // US flag emoji
+///
+/// string flag2 = Country.GetUnicodeFlag("FR");
+/// Assert.Equal("\U0001F1EB\U0001F1F7", flag2); // FR flag emoji
 /// </code>
 /// </example>
 public static class Country

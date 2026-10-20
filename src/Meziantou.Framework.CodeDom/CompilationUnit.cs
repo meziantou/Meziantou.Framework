@@ -2,12 +2,16 @@ namespace Meziantou.Framework.CodeDom;
 
 /// <summary>Represents a compilation unit (source file) containing namespaces, types, and using directives.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs" ref:region="CompilationUnit_Example" ref:dedent="true">
 /// var unit = new CompilationUnit();
 /// unit.Usings.Add(new UsingDirective("System"));
 /// var ns = unit.AddNamespace("MyNamespace");
-/// var cls = ns.AddType(new ClassDeclaration("MyClass"));
+/// ns.AddType(new ClassDeclaration("MyClass"));
 /// var code = unit.ToCsharpString();
+///
+/// Assert.StartsWith("using System;", code);
+/// Assert.Contains("namespace MyNamespace", code);
+/// Assert.Contains("class MyClass", code);
 /// </code>
 /// </example>
 public class CompilationUnit : CodeObject, ITypeDeclarationContainer, INamespaceDeclarationContainer, IUsingDirectiveContainer, ICommentable, INullableContext

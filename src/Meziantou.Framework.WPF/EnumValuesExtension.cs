@@ -4,8 +4,13 @@ namespace Meziantou.Framework.WPF;
 
 /// <summary>XAML markup extension that provides all values of an enum type.</summary>
 /// <example>
-/// <code>
-/// &lt;ComboBox ItemsSource="{wpf:EnumValues {x:Type MyEnum}}" /&gt;
+/// <code language="xml" xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/Meziantou.Framework.WPF.EnumComboBox/Examples/EnumValuesExample.xaml">
+/// &lt;UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+///              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+///              xmlns:wpf="clr-namespace:Meziantou.Framework.WPF;assembly=Meziantou.Framework.WPF"
+///              xmlns:local="clr-namespace:Meziantou.Framework.WPF.EnumComboBox"&gt;
+///     &lt;ComboBox ItemsSource="{wpf:EnumValues {x:Type local:Week}}" /&gt;
+/// &lt;/UserControl&gt;
 /// </code>
 /// </example>
 [MarkupExtensionReturnType(typeof(IEnumerable<Enum>))]

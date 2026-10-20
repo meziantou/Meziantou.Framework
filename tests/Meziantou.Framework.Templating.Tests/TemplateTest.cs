@@ -7,6 +7,18 @@ namespace Meziantou.Framework.Templating.Tests;
 public class TemplateTest
 {
     [Fact]
+    public void Template_Example()
+    {
+        #region Template_Example
+        using var template = new Template();
+        template.Load("Hello <%=Name%>!");
+        template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
+        var result = template.Run("Meziantou");
+        Assert.Equal("Hello Meziantou!", result);
+        #endregion
+    }
+
+    [Fact]
     public void Template_TextOnly()
     {
         // Arrange

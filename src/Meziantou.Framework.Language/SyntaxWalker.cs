@@ -8,12 +8,12 @@ namespace Meziantou.Framework.Language;
 /// built on its visitor.
 /// </remarks>
 /// <example>
-/// <code>
-/// private sealed class TokenCounter : SyntaxWalker
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Tests/SyntaxTreeInvariantTests.cs" ref:region="SyntaxWalker_TokenCounter" ref:dedent="true">
+/// private sealed class TokenCounter() : SyntaxWalker(SyntaxWalkerDepth.Token)
 /// {
-///     public TokenCounter() : base(SyntaxWalkerDepth.Token) { }
 ///     public int Count { get; private set; }
-///     protected override void VisitToken(SyntaxToken token) => Count++;
+///
+///     protected override void VisitToken(SyntaxToken token) =&gt; Count++;
 /// }
 /// </code>
 /// </example>

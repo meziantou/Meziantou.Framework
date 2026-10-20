@@ -2,6 +2,30 @@ namespace Meziantou.Framework.Tests;
 
 public sealed class BcryptTests
 {
+    [Fact]
+    public void ReadmeExample_HashPassword()
+    {
+        #region Bcrypt_HashPassword
+        var hash = Bcrypt.HashPassword("my password");
+        var ok = Bcrypt.Verify("my password", hash);
+        Assert.True(ok);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_RevisionAndWorkFactor()
+    {
+        #region Bcrypt_RevisionAndWorkFactor
+        var hash = Bcrypt.HashPassword(
+            password: "my password",
+            workFactor: 12,
+            version: BcryptVersion.Revision2B);
+
+        var shouldRehash = Bcrypt.NeedsRehash(hash, workFactor: 13, version: BcryptVersion.Revision2B);
+        Assert.True(shouldRehash);
+        #endregion
+    }
+
     [Theory]
     [InlineData("", "$2a$06$DCq7YPn5Rq63x1Lad4cll.", "$2a$06$DCq7YPn5Rq63x1Lad4cll.TV4S6ytwfsfvkgY8jIucDrjc8deX1s.")]
     [InlineData("abc", "$2a$10$WvvTPHKwdBJ3uk0Z37EMR.", "$2a$10$WvvTPHKwdBJ3uk0Z37EMR.hLA2W6N9AEBhEgrAOljy2Ae5MtaSIUi")]

@@ -32,6 +32,46 @@ public sealed class BloomFilterTests
         return data;
     }
 
+    [Fact]
+    public void ReadmeExample_BloomFilter()
+    {
+        #region BloomFilter_Usage
+        // Configure the filter for ~1,000 items and 1% false positive probability
+        var size = BloomFilterSize.CreateOptimalSize(expectedItemCount: 1000, falsePositiveProbability: 0.01);
+        var filter = BloomFilter.CreateXXHash3(size);
+
+        filter.Add("alice@example.com");
+        filter.Add("bob@example.com");
+
+        // Item may exist (no false negatives)
+        Assert.True(filter.MayContain("alice@example.com"));
+
+        // Approximate number of inserted items
+        var estimatedItemCount = filter.GetEstimateCount();
+        Assert.Equal(2, estimatedItemCount, tolerance: 0.1);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_CountingBloomFilter()
+    {
+        #region CountingBloomFilter_Usage
+        var size = CountingBloomFilterSize.CreateOptimalSize(expectedItemCount: 1000, falsePositiveProbability: 0.01);
+        var filter = CountingBloomFilter.CreateXXHash3(size);
+
+        filter.Add("alice@example.com");
+        filter.Add("alice@example.com");
+
+        Assert.True(filter.MayContain("alice@example.com"));
+        var estimatedCount = filter.GetEstimatedCount("alice@example.com");
+        Assert.True(estimatedCount >= 2);
+
+        filter.Remove("alice@example.com");
+        #endregion
+
+        Assert.True(filter.MayContain("alice@example.com"));
+    }
+
     [Theory]
     [MemberData(nameof(AllAlgorithmsAndValues))]
     public void Add_ThenMayContain_ReturnsTrue_ForAllAlgorithmsAndTypes(string createMethodName, object value)

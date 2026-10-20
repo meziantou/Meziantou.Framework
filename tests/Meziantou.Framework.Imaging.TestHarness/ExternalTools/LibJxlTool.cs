@@ -124,6 +124,24 @@ public sealed partial class LibJxlTool
     }
 
     /// <summary>
+    /// Decodes every displayed frame with <c>djxl --color_space</c>: the samples are converted to the given color space.
+    /// Without it, djxl returns the samples of an image stored in XYB and described by an ICC profile in linear sRGB, even
+    /// when the profile is sRGB (libjxl 0.12.0).
+    /// </summary>
+    /// <param name="inputPath">The JPEG XL file.</param>
+    /// <param name="colorSpace">The color space, in the syntax of libjxl, such as <c>RGB_D65_SRG_Rel_SRG</c> for sRGB.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>The frames.</returns>
+    /// <exception cref="InvalidOperationException">djxl rejected the file.</exception>
+    public async Task<NpyFrames> DecodeFramesAsync(FullPath inputPath, string colorSpace, CancellationToken cancellationToken)
+    {
+        var output = inputPath + ".djxl-" + colorSpace + ".npy";
+        File.Delete(output);
+        await RunCheckedAsync(DjxlPath, [inputPath, output, "--quiet", "--num_threads=0", "--color_space=" + colorSpace], cancellationToken).ConfigureAwait(false);
+        return NpyFrames.Parse(await File.ReadAllBytesAsync(output, cancellationToken).ConfigureAwait(false));
+    }
+
+    /// <summary>
     /// Decodes a still image, or the first frame of an animation, with <c>djxl</c> to a Netpbm file (PAM) at the bit depth
     /// of the file: integer samples, with no conversion from floating point on the reading side.
     /// </summary>

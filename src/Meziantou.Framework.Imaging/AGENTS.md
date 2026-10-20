@@ -295,6 +295,18 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   which made a constant channel larger than the colors, and the description of an ANS distribution is longer than a
   small group. The effort only selects what is searched; `jxl-quality` shows the sizes per effort. A change of the
   encoder is checked by the interop tests (djxl and jxl-oxide must read the file like the decoder of the library does).
+  A lossy image labeled with an sRGB ICC profile keeps the profile, byte for byte, where cjxl replaces it with the
+  enumerated sRGB encoding. The reference decoders read such a file differently from an enumerated one, and comparing
+  their raw output with the library is wrong on both sides
+  (`ALossyImageWithAnSrgbProfileDecodesLikeTheReferenceDecoders`):
+  - djxl 0.12.0 returns the samples in linear sRGB (its PNG output is labeled "sRGB Linear") for every XYB image with an
+    ICC profile, even an sRGB one: decode with `--color_space=RGB_D65_SRG_Rel_SRG` (`Gra_D65_Rel_SRG` for gray) to
+    compare. It cannot convert at all when the profile has no `wtpt` tag ("Failed to set color space").
+  - jxl-oxide 0.12.6 converts to the profile and maps the colors outside its gamut into it, where djxl and the library
+    clip each channel. It also moves colors close to the boundary by up to 0.0015, and P3 files by much more (up to
+    7,105/65535 on the macOS wallpaper thumbnails). It reads the colorants of a synthetic version 4 profile with a D65
+    `wtpt` and no `chad` as adapted from D65, unlike djxl, the library and its own handling of Apple's real profiles.
+    Compare the pixels in gamut only.
 - **Lossy JPEG XL quality tools** (`JpegXlVarDctEncoder`). Each one is kept or left out on measurements, not on what
   other encoders do: file size at equal PSNR, SSIM, MS-SSIM, XPSNR and VMAF (FFmpeg and the `vmaf` tool on djxl output)
   over photographs of several sizes, with cjxl at its efforts 3 and 7 as the yardstick. Measure again before changing a

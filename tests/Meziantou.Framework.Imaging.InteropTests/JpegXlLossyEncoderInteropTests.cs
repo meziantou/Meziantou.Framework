@@ -1,3 +1,4 @@
+using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.ExternalTools;
@@ -85,6 +86,75 @@ public sealed class JpegXlLossyEncoderInteropTests
         var psnr = GetPsnr(pattern, reference, frame: 0, rowOffset: 0, out var worstAlpha);
         Assert.True(psnr >= minimumPsnr, $"{name}: djxl {jxl.Version} decodes the file at {psnr:F2} dB of the source, less than {minimumPsnr:F1} dB.");
         Assert.True(worstAlpha < 1e-6, $"{name}: the alpha channel is not exact in djxl {jxl.Version} (distance {worstAlpha}).");
+    }
+
+    /// <summary>
+    /// A lossy image labeled with an sRGB profile keeps that profile, byte for byte, and its samples mean the same colors
+    /// for the reference decoders. djxl returns the samples of an image stored in XYB with an ICC profile in linear sRGB (a
+    /// PNG output is labeled "sRGB Linear"), even when the profile is sRGB: they are compared as sRGB with
+    /// <c>--color_space</c>, then as linear sRGB without it. djxl cannot convert to sRGB when the profile has no media white
+    /// point (<c>wtpt</c>), which version 4 requires. jxl-oxide converts the samples to the profile. The D65 case has the
+    /// media white point of the display, without an adaptation tag, as macOS writes in screenshots and wallpapers, which
+    /// version 4 does not allow: djxl and the library read its colorants as adapted to D50, but jxl-oxide adapts them again
+    /// from D65 for such a synthetic profile (up to 80 levels of 255), so it is only compared with djxl.
+    /// </summary>
+    [Theory]
+    [InlineData("photo-rgb8", "srgb", false)]
+    [InlineData("photo-rgb16", "srgb", false)]
+    [InlineData("photo-rgb8", "srgb-d65-white", true)]
+    [InlineData("photo-gray8", "gray", false)]
+    public async Task ALossyImageWithAnSrgbProfileDecodesLikeTheReferenceDecoders(string patternName, string profileName, bool skipOxide)
+    {
+        var jxl = await RequiredTools.LibJxlAsync();
+        var pattern = JpegXlPattern.Get(patternName);
+        var curve = IccProfileBuilder.SrgbCurve();
+        var profile = profileName switch
+        {
+            "srgb" => CreateSrgbProfile(D50White),
+            "srgb-d65-white" => CreateSrgbProfile(IccProfileBuilder.Xyz(0.95045, 1, 1.08905)),
+            "gray" => IccProfileBuilder.BuildBytes("GRAY", "XYZ ", [("wtpt", D50White), ("kTRC", curve)]),
+            _ => throw new ArgumentOutOfRangeException(nameof(profileName)),
+        };
+
+        var name = $"{patternName}-{profileName}";
+        var path = InteropSettings.GetArtifactsDirectory(nameof(ALossyImageWithAnSrgbProfileDecodesLikeTheReferenceDecoders)) / (name + ".jxl");
+        using (var source = CreateImage(pattern, rowOffset: 0))
+        {
+            source.Metadata.IccProfile = new IccProfile(new MetadataBlob(profile));
+            await source.SaveAsync(path, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Quality = 90 }, XunitCancellationToken);
+        }
+
+        var info = await jxl.GetInfoAsync(path, XunitCancellationToken);
+        Assert.True(info.IsXybEncoded);
+        Assert.Equal(profile.Length, info.IccProfileLength);
+        Assert.Equal(profile, await jxl.GetOriginalIccProfileAsync(path, XunitCancellationToken));
+
+        var colorSpace = pattern.Channels >= 3 ? "RGB_D65_SRG_Rel_SRG" : "Gra_D65_Rel_SRG";
+        using var decoded = await JpegXlReferenceComparison.AssertDecodesLikeTheReferencesAsync(path, JpegXlReferenceComparison.DjxlTolerance, JpegXlReferenceComparison.Skip, name, colorSpace);
+        Assert.Equal(profile, decoded.Metadata.IccProfile?.Data.ToArray());
+        var srgb = await jxl.DecodeFramesAsync(path, colorSpace, XunitCancellationToken);
+        if (!skipOxide)
+        {
+            AssertInGamutSamplesMatchOxide(decoded, srgb, await (await RequiredTools.JxlOxideAsync()).DecodeFramesAsync(path, XunitCancellationToken), name);
+        }
+
+        // The default output of djxl: the same colors, in linear sRGB
+        var linear = await jxl.DecodeFramesAsync(path, XunitCancellationToken);
+        var worst = 0.0;
+        for (var y = 0; y < linear.Height; y++)
+        {
+            for (var x = 0; x < linear.Width; x++)
+            {
+                for (var c = 0; c < linear.ChannelCount; c++)
+                {
+                    double expected = Math.Clamp(srgb.GetSample(0, x, y, c), 0f, 1f);
+                    expected = expected <= 0.04045 ? expected / 12.92 : Math.Pow((expected + 0.055) / 1.055, 2.4);
+                    worst = Math.Max(worst, Math.Abs(Math.Clamp(linear.GetSample(0, x, y, c), 0f, 1f) - expected));
+                }
+            }
+        }
+
+        Assert.True(worst <= 0.002, $"{name}: the default output of djxl {jxl.Version} is not the linear sRGB of its sRGB output (distance {worst:F5}).");
     }
 
     /// <summary>A better quality is a larger file that is closer to the source, as the reference decoder shows it.</summary>
@@ -222,6 +292,85 @@ public sealed class JpegXlLossyEncoderInteropTests
             var psnr = GetPsnr(pattern, reference, i, rowOffset: i * 37, out _);
             Assert.True(psnr >= minimumPsnr, $"{patternName}: frame {i} is at {psnr:F2} dB of its source in djxl {jxl.Version}, less than {minimumPsnr:F1} dB.");
         }
+    }
+
+    private static byte[] D50White => IccProfileBuilder.Xyz(0.9642, 1, 0.8249);
+
+    /// <summary>
+    /// Compares the colors of the library with jxl-oxide on the pixels in the gamut of the profile, as djxl decodes them
+    /// without clamping. When it converts to an ICC profile, jxl-oxide maps the colors outside the gamut into it, where
+    /// djxl and the library clip each channel, and moves the colors close to its boundary by up to 0.0015 (libjxl 0.12.0,
+    /// jxl-oxide 0.12.6): the largest distance allows for that, and the mean distance stays within the usual tolerance and
+    /// the mean rounding of the library's samples.
+    /// </summary>
+    private static void AssertInGamutSamplesMatchOxide(Image decoded, NpyFrames djxl, NpyFrames oxide, string context)
+    {
+        Assert.Equal((djxl.Width, djxl.Height, djxl.ChannelCount), (oxide.Width, oxide.Height, oxide.ChannelCount));
+        using var typed = decoded.CloneAs<Rgba64>(new PixelConversionOptions { DiscardIncompatibleColorProfile = true });
+        var pixels = new Rgba64[decoded.Width * decoded.Height];
+        typed.Frames[0].CopyPixelDataTo(pixels);
+        var is8Bit = decoded.PixelFormat is PixelFormat.Gray8 or PixelFormat.Rgb24 or PixelFormat.Rgba32 or PixelFormat.Bgra32;
+        var rounding = (0.5 / (is8Bit ? byte.MaxValue : ushort.MaxValue)) + 1e-7;
+        var colorChannels = djxl.ChannelCount >= 3 ? 3 : 1;
+        var outOfGamut = 0;
+        var worst = 0.0;
+        var sum = 0.0;
+        var count = 0;
+        for (var y = 0; y < djxl.Height; y++)
+        {
+            for (var x = 0; x < djxl.Width; x++)
+            {
+                var isInGamut = true;
+                for (var c = 0; c < colorChannels; c++)
+                {
+                    isInGamut &= djxl.GetSample(0, x, y, c) is >= 0 and <= 1;
+                }
+
+                if (!isInGamut)
+                {
+                    outOfGamut++;
+                    continue;
+                }
+
+                var pixel = pixels[(y * djxl.Width) + x];
+                for (var c = 0; c < colorChannels; c++)
+                {
+                    var actual = c switch
+                    {
+                        0 => pixel.R,
+                        1 => pixel.G,
+                        _ => pixel.B,
+                    };
+
+                    var difference = Math.Abs((actual / 65535.0) - Math.Clamp(oxide.GetSample(0, x, y, c), 0f, 1f));
+                    worst = Math.Max(worst, difference);
+                    sum += difference;
+                    count++;
+                }
+            }
+        }
+
+        Assert.True(outOfGamut <= djxl.Width * djxl.Height / 50, $"{context}: {outOfGamut} pixels are out of gamut in djxl, more than 2% of the image.");
+        Assert.True(worst <= 0.002 + rounding, $"{context}: the library and jxl-oxide differ by {worst:F5} on the pixels in gamut.");
+        Assert.True(sum / count <= JpegXlReferenceComparison.OxideTolerance + (rounding / 2), $"{context}: the library and jxl-oxide differ by {sum / count:F6} on average on the pixels in gamut.");
+    }
+
+    /// <summary>An sRGB display profile of version 4 with the given media white point and no adaptation tag.</summary>
+    private static byte[] CreateSrgbProfile(byte[] whitePoint)
+    {
+        var curve = IccProfileBuilder.SrgbCurve();
+        return IccProfileBuilder.BuildBytes(
+            "RGB ",
+            "XYZ ",
+            [
+                ("wtpt", whitePoint),
+                ("rXYZ", IccProfileBuilder.Xyz(IccProfileBuilder.SrgbColorants[0][0], IccProfileBuilder.SrgbColorants[0][1], IccProfileBuilder.SrgbColorants[0][2])),
+                ("gXYZ", IccProfileBuilder.Xyz(IccProfileBuilder.SrgbColorants[1][0], IccProfileBuilder.SrgbColorants[1][1], IccProfileBuilder.SrgbColorants[1][2])),
+                ("bXYZ", IccProfileBuilder.Xyz(IccProfileBuilder.SrgbColorants[2][0], IccProfileBuilder.SrgbColorants[2][1], IccProfileBuilder.SrgbColorants[2][2])),
+                ("rTRC", curve),
+                ("gTRC", curve),
+                ("bTRC", curve),
+            ]);
     }
 
     /// <summary>Computes the peak signal-to-noise ratio of the color channels of a decoded frame against the samples of the pattern.</summary>

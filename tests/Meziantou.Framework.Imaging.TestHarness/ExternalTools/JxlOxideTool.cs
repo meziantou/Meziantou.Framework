@@ -48,7 +48,7 @@ public sealed partial class JxlOxideTool
 
     /// <summary>
     /// Decodes every displayed frame to floating-point samples (<c>jxl-oxide decode -f npy</c>, one worker thread). The
-    /// frames are coalesced, like those of <see cref="LibJxlTool.DecodeFramesAsync"/>.
+    /// frames are coalesced, like those of <see cref="LibJxlTool.DecodeFramesAsync(FullPath, CancellationToken)"/>.
     /// </summary>
     /// <param name="inputPath">The JPEG XL file.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>

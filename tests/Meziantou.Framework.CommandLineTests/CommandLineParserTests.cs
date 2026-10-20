@@ -3,6 +3,32 @@ namespace Meziantou.Framework.CommandLineTests;
 public class CommandLineParserTests
 {
     [Fact]
+    public void ReadmeExample_Usage()
+    {
+        #region CommandLineParser_Usage
+        // Parse current process arguments
+        var currentParser = CommandLineParser.Current;
+        Assert.NotNull(currentParser);
+
+        // Or parse custom arguments
+        var parser = new CommandLineParser();
+        parser.Parse(["/name=John", "/verbose", "input.txt"]);
+
+        // Check if an argument exists
+        Assert.True(parser.HasArgument("verbose"));
+
+        // Get named argument value
+        Assert.Equal("John", parser.GetArgument("name"));
+
+        // Get positional argument (the index in the array of arguments)
+        Assert.Equal("input.txt", parser.GetArgument(2));
+
+        // Check if help was requested: detects -?, /?, -help, /help, --help
+        Assert.False(parser.HelpRequested);
+        #endregion
+    }
+
+    [Fact]
     public void HasArgument_01()
     {
         // Arrange

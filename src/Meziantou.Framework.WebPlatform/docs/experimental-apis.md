@@ -11,16 +11,16 @@ identifier to use the feature:
 
 ```xml
 <PropertyGroup>
-  <NoWarn>$(NoWarn);WEBPLATEXP0001</NoWarn>
+  <NoWarn>$(NoWarn);WEBPLATEXP0005</NoWarn>
 </PropertyGroup>
 ```
 
 or locally:
 
 ```csharp
-#pragma warning disable WEBPLATEXP0001
-element.AppendHtml("<p>Hello</p>");
-#pragma warning restore WEBPLATEXP0001
+#pragma warning disable WEBPLATEXP0005
+var query = element.MatchContainer("(width > 400px)");
+#pragma warning restore WEBPLATEXP0005
 ```
 
 The attribute only concerns the .NET API: the scripts use these features as any other one (some of them can be hidden from
@@ -34,11 +34,12 @@ its section below).
 
 <a id="WEBPLATEXP0001"></a>
 
-## WEBPLATEXP0001: HTML insertion methods
+## WEBPLATEXP0001: HTML insertion methods (retired)
 
-The HTML insertion methods proposed by [whatwg/html#12753](https://github.com/whatwg/html/pull/12753): `Element.AppendHtml()`,
-`PrependHtml()`, `BeforeHtml()`, `AfterHtml()` and `ReplaceWithHtml()`, their `*Unsafe` variants, and the same methods of
-`ShadowRoot` (`AppendHtml`, `PrependHtml`) and `CharacterData` (`BeforeHtml`, `AfterHtml`, `ReplaceWithHtml`).
+The HTML insertion methods (`Element.AppendHtml()`, `PrependHtml()`, `BeforeHtml()`, `AfterHtml()`, `ReplaceWithHtml()`
+and their `*Unsafe` variants) are defined by the
+[HTML Standard](https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#html-insertion-methods) since
+[whatwg/html#12753](https://github.com/whatwg/html/pull/12753) was merged: they are not experimental anymore.
 
 <a id="WEBPLATEXP0002"></a>
 

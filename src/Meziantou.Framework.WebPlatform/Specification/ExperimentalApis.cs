@@ -11,9 +11,6 @@ internal static class ExperimentalApis
     /// <summary>The URL of the documentation of the diagnostics.</summary>
     public const string UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}";
 
-    /// <summary>The HTML insertion methods (https://github.com/whatwg/html/pull/12753): <c>appendHTML()</c>, <c>prependHTML()</c>, <c>beforeHTML()</c>, <c>afterHTML()</c>, <c>replaceWithHTML()</c> and their unsafe variants.</summary>
-    public const string HtmlInsertionMethods = "WEBPLATEXP0001";
-
     /// <summary>The streaming HTML insertion methods (https://github.com/whatwg/html/pull/12758): <c>streamHTML()</c>, <c>streamAppendHTML()</c>...</summary>
     public const string StreamingHtmlInsertion = "WEBPLATEXP0002";
 

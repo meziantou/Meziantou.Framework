@@ -24,7 +24,7 @@ internal static class Binding_StylePropertyMap<TAdapter, TValue> where TAdapter 
         var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.StylePropertyMap>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("set", 1, a.Length);
         var a0 = r.ToUsvString(a[0]);
-        var a1 = new global::System.Collections.Generic.List<object?>(); for (var i = 1; i < a.Length; i++) { a1.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_72(r, a[i])); }
+        var a1 = new global::System.Collections.Generic.List<object?>(); for (var i = 1; i < a.Length; i++) { a1.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_74(r, a[i])); }
         o.Set(a0, global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a1!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssStyleValueOrString(r, e))).ToArray()); return r.Adapter.Undefined;
     }
     private static TValue Op_append(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
@@ -32,7 +32,7 @@ internal static class Binding_StylePropertyMap<TAdapter, TValue> where TAdapter 
         var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.StylePropertyMap>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("append", 1, a.Length);
         var a0 = r.ToUsvString(a[0]);
-        var a1 = new global::System.Collections.Generic.List<object?>(); for (var i = 1; i < a.Length; i++) { a1.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_72(r, a[i])); }
+        var a1 = new global::System.Collections.Generic.List<object?>(); for (var i = 1; i < a.Length; i++) { a1.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_74(r, a[i])); }
         o.Append(a0, global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a1!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssStyleValueOrString(r, e))).ToArray()); return r.Adapter.Undefined;
     }
     private static TValue Op_delete(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)

@@ -4208,7 +4208,7 @@
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/item-placement/flow-tolerance/column-fit-tolerance-infinite-explicit-placement.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/item-placement/flow-tolerance/column-flow-tolerance-infinite.html": {
     "reftest": "PASS"

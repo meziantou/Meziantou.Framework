@@ -473,7 +473,7 @@ internal readonly record struct GridLanesDirection(GridLanesOrientation Orientat
     }
 }
 
-/// <summary>https://drafts.csswg.org/css-grid-3/#placement-tolerance: the <c>flow-tolerance</c> property.</summary>
+/// <summary>https://drafts.csswg.org/css-grid-3/#placement-tolerance: the <c>fit-tolerance</c> property (formerly <c>flow-tolerance</c>).</summary>
 /// <param name="IsNormal">Whether the value is <c>normal</c>: 1em in grid lanes layout.</param>
 /// <param name="IsInfinite">Whether the value is <c>infinite</c>: the items are placed strictly in order.</param>
 /// <param name="Length">The &lt;length-percentage&gt; (the percentages resolve against the grid-axis content box size).</param>

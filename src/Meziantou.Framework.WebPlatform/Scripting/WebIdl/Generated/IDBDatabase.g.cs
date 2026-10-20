@@ -34,7 +34,7 @@ internal static class Binding_IDBDatabase<TAdapter, TValue> where TAdapter : str
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.IdbDatabase>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("transaction", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_56(r, a[0]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_58(r, a[0]);
         var a1 = r.IsMissing(a, 1) ? (string)"readonly" : r.ToEnumerationValue(a[1], "IDBTransactionMode", WebIdlHelpers<TAdapter, TValue>.Enum_IDBTransactionMode_Values);
         var a2 = r.IsMissing(a, 2) ? (global::Meziantou.Framework.WebPlatform.Dom.IdbTransactionOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_IdbTransactionOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_IdbTransactionOptions(r, a[2]);
         var result = o.Transaction(a0, WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_IdbTransactionMode(a1), a2); return r.Wrap(result);

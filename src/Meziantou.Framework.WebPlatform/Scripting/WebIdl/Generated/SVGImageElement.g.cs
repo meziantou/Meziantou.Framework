@@ -26,6 +26,8 @@ internal static class Binding_SVGImageElement<TAdapter, TValue> where TAdapter :
     private static TValue Get_preserveAspectRatio(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.SvgImageElement>(t, Binding); return r.Wrap(o.PreserveAspectRatio); }
     private static TValue Get_crossOrigin(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.SvgImageElement>(t, Binding); return r.FromString(o.CrossOrigin); }
     private static void Set_crossOrigin(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.SvgImageElement>(t, Binding); var x = (r.IsNullOrUndefined(v) ? (string?)null : r.ToDomString(v)); o.CrossOrigin = x; }
+    private static TValue Get_referrerPolicy(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.SvgImageElement>(t, Binding); return r.FromString(o.ReferrerPolicy); }
+    private static void Set_referrerPolicy(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.SvgImageElement>(t, Binding); var x = r.ToDomString(v); o.ReferrerPolicy = x; }
     private static TValue Get_href(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.SvgImageElement>(t, Binding); return r.Wrap(o.Href); }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
@@ -35,6 +37,7 @@ internal static class Binding_SVGImageElement<TAdapter, TValue> where TAdapter :
         r.DefineAttribute(instanceTarget, "height", Get_height, null);
         r.DefineAttribute(instanceTarget, "preserveAspectRatio", Get_preserveAspectRatio, null);
         r.DefineAttribute(instanceTarget, "crossOrigin", Get_crossOrigin, Set_crossOrigin);
+        r.DefineAttribute(instanceTarget, "referrerPolicy", Get_referrerPolicy, Set_referrerPolicy);
         r.DefineAttribute(instanceTarget, "href", Get_href, null);
     }
 }

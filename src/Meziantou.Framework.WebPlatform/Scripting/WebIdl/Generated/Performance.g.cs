@@ -96,7 +96,7 @@ internal static class Binding_Performance<TAdapter, TValue> where TAdapter : str
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Performance>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("measure", 1, a.Length);
         var a0 = r.ToDomString(a[0]);
-        var a1 = r.IsMissing(a, 1) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_66(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_66(r, a[1]);
+        var a1 = r.IsMissing(a, 1) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_68(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_68(r, a[1]);
         var has2 = !r.IsMissing(a, 2); var a2 = has2 ? (string?)r.ToDomString(a[2]) : default;
         var result = o.Measure(a0, a1, (has2 ? a2 : (string?)null)); return r.Wrap(result);
     }

@@ -19,8 +19,6 @@ internal static class Binding_MessagePort<TAdapter, TValue> where TAdapter : str
         DefineMembers = DefineMembers,
     };
 
-    private static TValue Get_onclose(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "close");
-    private static void Set_onclose(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "close", v, isOnBeforeUnloadEventHandler: false);
     private static TValue Get_onmessage(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "message");
     private static void Set_onmessage(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "message", v, isOnBeforeUnloadEventHandler: false);
     private static TValue Get_onmessageerror(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "messageerror");
@@ -61,7 +59,6 @@ internal static class Binding_MessagePort<TAdapter, TValue> where TAdapter : str
     }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
-        r.DefineAttribute(instanceTarget, "onclose", Get_onclose, Set_onclose);
         r.DefineAttribute(instanceTarget, "onmessage", Get_onmessage, Set_onmessage);
         r.DefineAttribute(instanceTarget, "onmessageerror", Get_onmessageerror, Set_onmessageerror);
         r.DefineOperation(instanceTarget, "postMessage", 1, Op_postMessage);

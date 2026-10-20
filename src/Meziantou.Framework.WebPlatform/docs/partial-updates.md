@@ -1,13 +1,13 @@
 # HTML insertion methods and partial updates
 
-The library implements the HTML insertion methods proposed for the HTML Standard and the `<template for>` patching of
-the HTML Standard. They are available from .NET and from the scripts. The positional and streaming methods are
-[experimental .NET APIs](experimental-apis.md) (`WEBPLATEXP0001` and `WEBPLATEXP0002`).
+The library implements the HTML insertion methods of the HTML Standard, the streaming methods proposed for the HTML
+Standard and the `<template for>` patching of the HTML Standard. They are available from .NET and from the scripts. The
+streaming methods are [experimental .NET APIs](experimental-apis.md) (`WEBPLATEXP0002`).
 
 ## Positional methods
 
 The positional methods parse HTML as `setHTML()` and `setHTMLUnsafe()` do, and insert the result at a position instead
-of replacing the children (https://github.com/whatwg/html/pull/12753):
+of replacing the children (https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#html-insertion-methods):
 
 | Method | Inserts the result |
 |---|---|

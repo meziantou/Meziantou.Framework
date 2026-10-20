@@ -258,7 +258,7 @@ public sealed class MessagePort : EventTarget, IStructuredTransferable
         }
     }
 
-    /// <summary>Closes the port: it is disentangled, and a close event is fired at the other port (https://html.spec.whatwg.org/multipage/web-messaging.html#dom-messageport-close).</summary>
+    /// <summary>Closes the port: it is disentangled (https://html.spec.whatwg.org/multipage/web-messaging.html#dom-messageport-close).</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#dom-messageport-close"/>
     [IdlMember("close", "https://html.spec.whatwg.org/multipage/web-messaging.html#dom-messageport-close")]
     public void Close()
@@ -283,19 +283,18 @@ public sealed class MessagePort : EventTarget, IStructuredTransferable
     }
 
     /// <summary>
-    /// Disentangles the port (https://html.spec.whatwg.org/multipage/web-messaging.html#disentangle): a close event is fired at
-    /// the other port (e.g. when the port is closed, or when its worker ends).
+    /// Disentangles the port (https://html.spec.whatwg.org/multipage/web-messaging.html#disentangle), e.g. when the port is
+    /// closed, or when its worker ends.
     /// </summary>
     internal void Disentangle()
     {
-        MessagePort? otherPort;
         lock (StateLock)
         {
             _detached = true;
             if (_entanglement is not { } entanglement)
                 return;
 
-            otherPort = EntangledPortLocked;
+            var otherPort = EntangledPortLocked;
             entanglement.Closed = true;
             entanglement.Holders[0] = null;
             entanglement.Holders[1] = null;
@@ -305,8 +304,6 @@ public sealed class MessagePort : EventTarget, IStructuredTransferable
                 otherPort._entanglement = null;
             }
         }
-
-        otherPort?.RelevantGlobal?.QueueGlobalTask(() => otherPort.FireEvent(new Event("close")));
     }
 
     /// <summary>Gets or sets the handler of the message event; setting it enables the port message queue.</summary>
@@ -325,15 +322,6 @@ public sealed class MessagePort : EventTarget, IStructuredTransferable
     {
         get => GetEventHandler("messageerror");
         set => SetEventHandler("messageerror", value);
-    }
-
-    /// <summary>Gets or sets the event handler of the <c>close</c> event.</summary>
-    /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#handler-messageport-onclose"/>
-    [IdlMember("onclose", "https://html.spec.whatwg.org/multipage/web-messaging.html#handler-messageport-onclose")]
-    public Action<Event>? OnClose
-    {
-        get => GetEventHandler("close");
-        set => SetEventHandler("close", value);
     }
 
     // The first time onmessage is set, the port message queue is enabled (https://html.spec.whatwg.org/multipage/web-messaging.html#handler-messageport-onmessage)

@@ -145,7 +145,7 @@ internal static class Binding_Path2D<TAdapter, TValue> where TAdapter : struct, 
 
     private static object Construct(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::System.ReadOnlySpan<TValue> a)
     {
-        var has0 = !r.IsMissing(a, 0); var a0 = has0 ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_65(r, a[0]) : default;
+        var has0 = !r.IsMissing(a, 0); var a0 = has0 ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_67(r, a[0]) : default;
         if (!has0) { return new global::Meziantou.Framework.WebPlatform.Dom.Path2D(); }
         if (has0) { return new global::Meziantou.Framework.WebPlatform.Dom.Path2D(a0); }
         throw r.CreateTypeError("Failed to execute 'constructor': the arguments are not supported");

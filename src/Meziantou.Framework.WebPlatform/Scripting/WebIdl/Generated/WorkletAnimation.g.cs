@@ -30,7 +30,7 @@ internal static class Binding_WorkletAnimation<TAdapter, TValue> where TAdapter 
     {
         if (a.Length < 1) throw r.NotEnoughArguments("WorkletAnimation", 1, a.Length);
         var a0 = r.ToDomString(a[0]);
-        var a1 = r.IsMissing(a, 1) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_87(r, a[1]);
+        var a1 = r.IsMissing(a, 1) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_89(r, a[1]);
         var has2 = !r.IsMissing(a, 2); var a2 = has2 ? (global::Meziantou.Framework.WebPlatform.Animations.AnimationTimeline?)(r.IsNullOrUndefined(a[2]) ? (global::Meziantou.Framework.WebPlatform.Animations.AnimationTimeline?)null : r.ToInterface<global::Meziantou.Framework.WebPlatform.Animations.AnimationTimeline>(a[2], "AnimationTimeline")) : default;
         var has3 = !r.IsMissing(a, 3); var a3 = has3 ? (object?)r.ToAny(a[3]) : default;
         if ((a1 is null or global::Meziantou.Framework.WebPlatform.Animations.AnimationEffect) && !has2 && !has3) { return new global::Meziantou.Framework.WebPlatform.Animations.WorkletAnimation(a0, (global::Meziantou.Framework.WebPlatform.Animations.AnimationEffect)a1!); }

@@ -2,7 +2,7 @@ using Meziantou.Framework.WebPlatform.Dom;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Html;
 
-/// <summary>The positional and streaming HTML insertion methods (https://github.com/whatwg/html/pull/12753, https://github.com/whatwg/html/pull/12758).</summary>
+/// <summary>The positional and streaming HTML insertion methods (https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#html-insertion-methods, https://github.com/whatwg/html/pull/12758).</summary>
 public sealed class HtmlInsertionTests
 {
     private static Element CreateContainer(string html = "<span>a</span>")

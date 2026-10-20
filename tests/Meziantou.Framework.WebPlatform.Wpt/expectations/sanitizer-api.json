@@ -31,7 +31,10 @@
     "total": 8
   },
   "sanitizer-api/sanitizer-default-config.html": {
-    "total": 1
+    "total": 1,
+    "failures": {
+      "Get the expected default config": "FAIL"
+    }
   },
   "sanitizer-api/sanitizer-get.html": {
     "total": 9
@@ -43,14 +46,7 @@
     "total": 4
   },
   "sanitizer-api/sanitizer-javascript-url.html": {
-    "total": 1278,
-    "failures": {
-      "parseHTMLUnsafe { sanitizer: \"default\" } default configuration, \"<math><a href=\"javascript:alert(1)\"></a></math>\"": "FAIL",
-      "parseHTMLUnsafe { sanitizer: new Sanitizer() } default configuration, \"<math><a href=\"javascript:alert(1)\"></a></math>\"": "FAIL",
-      "setHTMLUnsafe { sanitizer: \"default\" } default configuration, \"<math><a href=\"javascript:alert(1)\"></a></math>\"": "FAIL",
-      "setHTMLUnsafe { sanitizer: new Sanitizer() } default configuration, \"<math><a href=\"javascript:alert(1)\"></a></math>\"": "FAIL",
-      "setJavascriptURLs(true) on the default configuration, \"<math><a href=\"javascript:alert(1)\"></a></math>\"": "FAIL"
-    }
+    "total": 1278
   },
   "sanitizer-api/sanitizer-modifiers.html": {
     "total": 22

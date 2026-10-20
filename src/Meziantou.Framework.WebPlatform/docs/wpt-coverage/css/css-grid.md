@@ -8,8 +8,8 @@
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 636 | 641 | 0 | 99% |
 | [Tentative](#tentative-tests) | 29 | 33 | 0 | 88% |
-| [Reftests](#reftests) | 1,666 | 1,708 | 0 | 98% |
-| **All** | **2,331** | **2,382** | **0** | **98%** |
+| [Reftests](#reftests) | 1,667 | 1,708 | 0 | 98% |
+| **All** | **2,332** | **2,382** | **0** | **98%** |
 
 ## Stable tests
 
@@ -1622,7 +1622,7 @@
 | [`grid-lanes/item-placement/dense-packing/row-fill-reverse-dense-packing-indefinite-size-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/row-fill-reverse-dense-packing-indefinite-size-001.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-flow-tolerance-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-flow-tolerance-001.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-flow-tolerance-002.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-flow-tolerance-002.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/flow-tolerance/column-fit-tolerance-infinite-explicit-placement.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/column-fit-tolerance-infinite-explicit-placement.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `fit-tolerance`, the new name of `flow-tolerance` (CSSWG resolution of 2026-08-05 in https://github.com/w3c/csswg-drafts/issues/10884, after the pinned specification data, which names the property `flow-tolerance`; WebKit renamed it and keeps `flow-tolerance` as an alias); passes in Safari only |
+| [`grid-lanes/item-placement/flow-tolerance/column-fit-tolerance-infinite-explicit-placement.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/column-fit-tolerance-infinite-explicit-placement.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/flow-tolerance/column-flow-tolerance-infinite.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/column-flow-tolerance-infinite.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/flow-tolerance/column-initial-flow-tolerance.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/column-initial-flow-tolerance.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/flow-tolerance/flow-tolerance-column-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-column-001.html) | Pass | 1 / 1 |  |  |

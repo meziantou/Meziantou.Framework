@@ -1992,12 +1992,16 @@
     "total": 13
   },
   "html/dom/idlharness.any.js#dedicatedworker": {
-    "total": 805
+    "total": 805,
+    "failures": {
+      "MessagePort interface: attribute onclose": "FAIL"
+    }
   },
   "html/dom/idlharness.https.html?exclude=(Document|Window|HTML.+)": {
     "total": 1743,
     "failures": {
       "Location interface: stringifier": "FAIL",
+      "MessagePort interface: attribute onclose": "FAIL",
       "NotRestoredReasonDetails interface object length": "FAIL",
       "NotRestoredReasonDetails interface object name": "FAIL",
       "NotRestoredReasonDetails interface: attribute reason": "FAIL",

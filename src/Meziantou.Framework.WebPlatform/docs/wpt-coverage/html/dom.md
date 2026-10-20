@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 202 | 207 | 0 | 98% |
+| [Stable](#stable-tests) | 201 | 207 | 0 | 97% |
 | [Tentative](#tentative-tests) | 27 | 33 | 0 | 82% |
 | [Reftests](#reftests) | 127 | 127 | 0 | 100% |
-| **All** | **356** | **367** | **0** | **97%** |
+| **All** | **355** | **367** | **0** | **97%** |
 
 ## Stable tests
 
@@ -144,8 +144,8 @@
 | [`elements/the-innertext-and-outertext-properties/multiple-text-nodes.window.js`](https://wpt.fyi/results/html/dom/elements/the-innertext-and-outertext-properties/multiple-text-nodes.window.js) | Pass | 1 / 1 |  |  |
 | [`elements/the-innertext-and-outertext-properties/outertext-setter.html`](https://wpt.fyi/results/html/dom/elements/the-innertext-and-outertext-properties/outertext-setter.html) | Pass | 43 / 43 |  |  |
 | [`historical.html`](https://wpt.fyi/results/html/dom/historical.html) | Pass | 13 / 13 |  |  |
-| [`idlharness.any.js`](https://wpt.fyi/results/html/dom/idlharness.any.js) | Pass | 805 / 805 |  |  |
-| [`idlharness.https.html`](https://wpt.fyi/results/html/dom/idlharness.https.html) | Fail | 5,901 / 5,940 | JINT, NOT IMPLEMENTED | `document.all` cannot be `[[IsHTMLDDA]]` (typeof); `NotRestoredReasons` |
+| [`idlharness.any.js`](https://wpt.fyi/results/html/dom/idlharness.any.js) | Fail | 804 / 805 | TEST BUG | the IDL of the tests (`interfaces/html.idl`) still has `MessagePort.onclose`, which the HTML Standard removed with the `close` event of the ports |
+| [`idlharness.https.html`](https://wpt.fyi/results/html/dom/idlharness.https.html) | Fail | 5,900 / 5,940 | TEST BUG, JINT, NOT IMPLEMENTED | the IDL of the tests (`interfaces/html.idl`) still has `MessagePort.onclose`, which the HTML Standard removed with the `close` event of the ports; `document.all` cannot be `[[IsHTMLDDA]]` (typeof); `NotRestoredReasons` |
 | [`reflection-embedded.html`](https://wpt.fyi/results/html/dom/reflection-embedded.html) | Pass | 9,429 / 9,429 |  |  |
 | [`reflection-forms-weekmonth.html`](https://wpt.fyi/results/html/dom/reflection-forms-weekmonth.html) | Pass | 1,618 / 1,618 |  |  |
 | [`reflection-forms.html`](https://wpt.fyi/results/html/dom/reflection-forms.html) | Pass | 8,817 / 8,817 |  |  |

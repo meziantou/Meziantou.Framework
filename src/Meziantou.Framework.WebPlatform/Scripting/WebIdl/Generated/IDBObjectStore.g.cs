@@ -118,7 +118,7 @@ internal static class Binding_IDBObjectStore<TAdapter, TValue> where TAdapter : 
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.IdbObjectStore>(t, Binding);
         if (a.Length < 2) throw r.NotEnoughArguments("createIndex", 2, a.Length);
         var a0 = r.ToDomString(a[0]);
-        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_56(r, a[1]);
+        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_58(r, a[1]);
         var a2 = r.IsMissing(a, 2) ? (global::Meziantou.Framework.WebPlatform.Dom.IdbIndexParameters)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_IdbIndexParameters(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_IdbIndexParameters(r, a[2]);
         var result = o.CreateIndex(a0, a1, a2); return r.Wrap(result);
     }

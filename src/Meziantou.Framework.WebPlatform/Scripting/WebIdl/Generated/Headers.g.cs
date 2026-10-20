@@ -75,7 +75,7 @@ internal static class Binding_Headers<TAdapter, TValue> where TAdapter : struct,
 
     private static object Construct(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::System.ReadOnlySpan<TValue> a)
     {
-        var has0 = !r.IsMissing(a, 0); var a0 = has0 ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_55(r, a[0]) : default;
+        var has0 = !r.IsMissing(a, 0); var a0 = has0 ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_57(r, a[0]) : default;
         if (!has0) { return new global::Meziantou.Framework.WebPlatform.Dom.Headers(); }
         if ((a0 is null or global::System.Collections.Generic.IEnumerable<global::System.Collections.Generic.IReadOnlyList<string>>) && has0) { return new global::Meziantou.Framework.WebPlatform.Dom.Headers((global::System.Collections.Generic.IEnumerable<global::System.Collections.Generic.IReadOnlyList<string>>)a0!); }
         if ((a0 is null or global::System.Collections.Generic.IEnumerable<global::System.Collections.Generic.KeyValuePair<string, string>>) && has0) { return new global::Meziantou.Framework.WebPlatform.Dom.Headers((global::System.Collections.Generic.IEnumerable<global::System.Collections.Generic.KeyValuePair<string, string>>)a0!); }

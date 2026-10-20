@@ -101,6 +101,7 @@
   "RsaOtherPrimesInfo": "Implemented in JavaScript by the WebIDL bindings (Scripting/WebIdl/WebCrypto.js), because the algorithm normalization converts the dictionaries to a type that depends on the algorithm name",
   "RsaPssParams": "Implemented in JavaScript by the WebIDL bindings (Scripting/WebIdl/WebCrypto.js), because the algorithm normalization converts the dictionaries to a type that depends on the algorithm name",
   "SVGUseElementShadowRoot": "Out of scope: use element instantiation and animations require rendering",
+  "ScrollResult": "Not implemented: the scroll methods return a promise resolved with undefined, not with a ScrollResult (https://drafts.csswg.org/cssom-view/#dictdef-scrollresult)",
   "SequenceEffect": "Not implemented: the timing hierarchy of the group effects (Web Animations Level 2, https://drafts.csswg.org/web-animations-2/#grouping-and-synchronization)",
   "ServiceWorkerGlobalScope.cookieStore": "Not implemented: the Cookie Store API of the service workers (the cookie change subscriptions of a registration)",
   "ServiceWorkerGlobalScope.oncookiechange": "Not implemented: the Cookie Store API of the service workers (the cookie change subscriptions of a registration)",

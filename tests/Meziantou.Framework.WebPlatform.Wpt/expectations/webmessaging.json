@@ -227,25 +227,13 @@
     "total": 1
   },
   "webmessaging/message-channels/historical.any.js": {
-    "total": 3,
-    "failures": {
-      "MessagePort should not have an onclose event handler IDL attribute": "FAIL",
-      "No close event should be fired when an entangled port is closed": "FAIL"
-    }
+    "total": 3
   },
   "webmessaging/message-channels/historical.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "MessagePort should not have an onclose event handler IDL attribute": "FAIL",
-      "No close event should be fired when an entangled port is closed": "FAIL"
-    }
+    "total": 3
   },
   "webmessaging/message-channels/historical.any.js#sharedworker": {
-    "total": 3,
-    "failures": {
-      "MessagePort should not have an onclose event handler IDL attribute": "FAIL",
-      "No close event should be fired when an entangled port is closed": "FAIL"
-    }
+    "total": 3
   },
   "webmessaging/message-channels/implied-start.any.js": {
     "total": 1

@@ -73,7 +73,7 @@ internal static class Binding_WebSocket<TAdapter, TValue> where TAdapter : struc
     {
         if (a.Length < 1) throw r.NotEnoughArguments("WebSocket", 1, a.Length);
         var a0 = r.ToUsvString(a[0]);
-        var a1 = r.IsMissing(a, 1) ? (object?)(object)new global::System.Collections.Generic.List<object?>() : WebIdlHelpers<TAdapter, TValue>.ToUnion_56(r, a[1]);
+        var a1 = r.IsMissing(a, 1) ? (object?)(object)new global::System.Collections.Generic.List<object?>() : WebIdlHelpers<TAdapter, TValue>.ToUnion_58(r, a[1]);
         return new global::Meziantou.Framework.WebPlatform.Dom.WebSocket(a0, a1);
     }
 }

@@ -22,11 +22,11 @@
 | [`sanitizer-boolean-defaults.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-boolean-defaults.html) | Pass | 4 / 4 |  |  |
 | [`sanitizer-config.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-config.html) | Pass | 72 / 72 |  |  |
 | [`sanitizer-custom-elements-constructor.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-custom-elements-constructor.html) | Pass | 8 / 8 |  |  |
-| [`sanitizer-default-config.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-default-config.html) | Pass | 1 / 1 |  |  |
+| [`sanitizer-default-config.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-default-config.html) | Fail | 0 / 1 | TEST BUG | the expected default configuration of the test does not have the MathML `<a>` element that the Sanitizer API added to the built-in safe default configuration (`sanitizer-javascript-url.html` of the same commit expects it) |
 | [`sanitizer-get.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-get.html) | Pass | 9 / 9 |  |  |
 | [`sanitizer-in-adoption-agency.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-in-adoption-agency.html) | Pass | 15 / 15 |  |  |
 | [`sanitizer-inert-document.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-inert-document.html) | Pass | 4 / 4 |  |  |
-| [`sanitizer-javascript-url.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-javascript-url.html) | Fail | 1,273 / 1,278 | BUG | the default sanitizer configuration drops the MathML `<a>` element instead of keeping it and removing only its `javascript:` `href` |
+| [`sanitizer-javascript-url.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-javascript-url.html) | Pass | 1,278 / 1,278 |  |  |
 | [`sanitizer-modifiers.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-modifiers.html) | Pass | 22 / 22 |  |  |
 | [`sanitizer-names.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-names.html) | Pass | 27 / 27 |  |  |
 | [`sanitizer-parseHTML.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-parseHTML.html) | Pass | 28 / 28 |  |  |

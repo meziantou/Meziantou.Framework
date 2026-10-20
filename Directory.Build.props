@@ -41,7 +41,7 @@
   <!-- The diagnostics of the experimental APIs of Meziantou.Framework.WebPlatform (Specification/ExperimentalApis.cs,
        docs/experimental-apis.md) only target the consumers of the packages: the projects of the repository use them freely. -->
   <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Meziantou.Framework.WebPlatform'))">
-    <NoWarn>$(NoWarn);WEBPLATEXP0001;WEBPLATEXP0002;WEBPLATEXP0003;WEBPLATEXP0004;WEBPLATEXP0005;WEBPLATEXP0006;WEBPLATEXP0007;WEBPLATEXP0008;WEBPLATEXP0009;WEBPLATEXP0010;WEBPLATEXP0011</NoWarn>
+    <NoWarn>$(NoWarn);WEBPLATEXP0002;WEBPLATEXP0003;WEBPLATEXP0004;WEBPLATEXP0005;WEBPLATEXP0006;WEBPLATEXP0007;WEBPLATEXP0008;WEBPLATEXP0009;WEBPLATEXP0010;WEBPLATEXP0011</NoWarn>
   </PropertyGroup>
 
   <!-- Package configuration -->

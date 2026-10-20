@@ -110,6 +110,31 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
   and mutation fuzzing (`FontFuzzTests`). The test-side writers are not oracles: a file they write is a fixture only
   after the corpus generator has read it back with the reference decoders.
 
+## System fonts
+
+`SystemFonts/` indexes the fonts installed on the machine: `SystemFontCollection` (`Default`, scanned once per process,
+or `Create` for chosen directories) holds a `SystemFontDescriptor` per face (file, index in the file, names, style,
+axes). Imaging users load the face with `FontCollection.Load(FilePath)[FaceIndex]`; WebPlatform wraps the collection
+in `InstalledFontCollection.FromSystemFonts` when `BrowsingContextOptions.UseSystemFonts` is set.
+
+- **Where the fonts are** (`SystemFontDirectories`). Windows: `SpecialFolder.Fonts`, `%LOCALAPPDATA%\Microsoft\Windows\Fonts`,
+  and the full paths of the values of `HKLM` and `HKCU\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts`. macOS: the
+  `Library/Fonts` directories of the user, the computer, the network and the system, and the
+  `com_apple_MobileAsset_Font*` directories of `/System/Library/AssetsV2` (downloaded fonts). Other systems: the `dir`
+  elements of the configuration of fontconfig (`FontConfigFile`: `fonts.conf`, its `include`s, `reset-dirs`; the other
+  elements are ignored, nothing is run), and the XDG font directories. The fonts reserved by macOS for its interface
+  (`PingFangUI.ttc`) are not scanned: their outlines are in a format the reader does not support.
+- **A scan reads no font.** `SystemFontScanner` reads the table directories and the `head`, `OS/2`, `post`, `name` and
+  `fvar` tables with `RandomAccess` (a few kilobytes per file, 786 faces in about 30 ms on macOS). Only a WOFF or WOFF2
+  file is loaded whole. The names and the style come from `FaceStyle`, which `FontFace` uses too: the index and a loaded
+  face always agree (`FontTests.SystemFontsAreIndexedWithoutLoadingThem` compares them).
+- **A file the font code would not load is left out whole**: an invalid face, a face without outlines nor color glyphs (the
+  rule of WebPlatform's `FontFile`), a file that cannot be read. Errors never escape a scan.
+- `Match` is the font matching of CSS Fonts 4 §5.2 (width, then style, then weight) on the descriptors; WebPlatform has
+  its own (`FontMatcher`), fed with `FontSelectionCapabilities.FromSystemFont`.
+- The paths are compared with the rules of the file system (ignoring case on Windows and macOS), the names with
+  `OrdinalIgnoreCase`; the order of `Fonts` (family, path, index) does not depend on the order of the file system.
+
 ## Shaping
 
 `TextShaper` (`Shaping/`) turns the characters of a run (one font, script, language and direction) into

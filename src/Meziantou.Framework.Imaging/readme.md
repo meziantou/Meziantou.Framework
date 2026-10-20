@@ -1867,7 +1867,10 @@ every few hundred dashes.
 ### Fonts
 
 `Font` and `FontCollection` (namespace `Meziantou.Framework.Imaging.Typography`) read font files. Nothing comes from the
-operating system: no installed font is used, and a font is always a file, a stream or bytes given by the caller.
+operating system by itself: a font is always a file, a stream or bytes given by the caller. To use a font installed on
+the machine, find its file with `SystemFontCollection` of `Meziantou.Framework.Fonts`, a dependency of the library:
+`SystemFontCollection.Default.Match("Arial", weight: 700)` gives the face of the family closest to the style (`null` when
+the family is not installed), and `FontCollection.Load(face.FilePath)[face.FaceIndex]` loads it.
 
 <!-- snippet: load-font -->
 ```csharp

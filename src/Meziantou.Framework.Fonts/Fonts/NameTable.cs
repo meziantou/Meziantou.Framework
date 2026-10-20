@@ -10,6 +10,7 @@ internal static class NameTable
 {
     public const int FamilyName = 1;
     public const int SubfamilyName = 2;
+    public const int FullName = 4;
     public const int PostScriptName = 6;
     public const int TypographicFamilyName = 16;
     public const int TypographicSubfamilyName = 17;

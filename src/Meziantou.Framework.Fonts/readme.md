@@ -11,5 +11,18 @@ What it covers:
 - Color fonts: `COLR` versions 0 and 1, `CPAL`, `sbix`, `CBDT`
 - Horizontal and vertical metrics, `BASE` baselines
 - Text shaping with `GSUB` and `GPOS`, and the shaping models of complex scripts (Arabic, Hebrew, Indic, Khmer, Myanmar, Thai and Lao, Hangul, and the universal shaping engine)
+- The fonts installed on Windows, macOS and Linux (`SystemFontCollection`): an index of their faces by family and by name, read without loading the fonts, and the font matching of CSS to choose a face of a family
+
+```csharp
+// The fonts of the machine are scanned once per process; only the tables that describe a face are read.
+var fonts = SystemFontCollection.Default;
+if (fonts.Match("Arial", weight: 700, isItalic: false) is { } face)
+{
+    using var stream = File.OpenRead(face.FilePath);
+    var font = FontLoader.Load(stream, new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024))[face.FaceIndex];
+}
+```
+
+The installed fonts are found in the fonts directory of Windows, in the fonts installed for the user and in the files the registry lists; in the `Library/Fonts` directories of macOS and in the fonts it downloads on demand; and on Linux in the directories of the configuration of fontconfig (`fonts.conf` and the files it includes) and in the XDG font directories. `SystemFontCollection.Create` indexes chosen directories instead.
 
 It is written from the specifications and checked against HarfBuzz and FreeType.

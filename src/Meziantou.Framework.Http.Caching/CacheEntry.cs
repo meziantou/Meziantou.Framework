@@ -272,7 +272,7 @@ internal sealed class CacheEntry
         ArgumentNullException.ThrowIfNull(entry);
 
         var serializedResponse = entry.SerializedResponse.ToArray();
-        ResponseSerializer.EnsureWellFormed(serializedResponse);
+        ResponseSerializer.EnsureValid(serializedResponse);
 
         var cacheEntry = new CacheEntry(serializedResponse)
         {

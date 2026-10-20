@@ -354,6 +354,39 @@ public class StaleResponseTests
     }
 
     [Theory]
+    [InlineData("null")]
+    [InlineData("[]")]
+    [InlineData("""{"HttpStatusCode":"OK"}""")]
+    [InlineData("""{"HttpStatusCode":1000}""")]
+    [InlineData("""{"HttpStatusCode":-1}""")]
+    [InlineData("""{"HttpStatusCode":200,"ReasonPhrase":"a\nb"}""")]
+    [InlineData("""{"HttpStatusCode":200,"Content":"not base64!"}""")]
+    [InlineData("""{"HttpStatusCode":200,"Headers":[{"Key":"X-Custom","Value":null}]}""")]
+    public async Task WhenStoredPayloadIsWellFormedJsonButNotAResponseThenTheRequestGoesToTheOrigin(string payload)
+    {
+        // The entry is fresh, so it would be served if its payload described a response
+        var timeProvider = new FakeTimeProvider();
+        var store = new InMemoryHttpCacheStore();
+        await store.SetEntryAsync("GET http://example.com/resource", new HttpCachePersistenceEntry
+        {
+            RequestTime = timeProvider.GetUtcNow(),
+            ResponseTime = timeProvider.GetUtcNow(),
+            ResponseDate = timeProvider.GetUtcNow(),
+            MaxAge = TimeSpan.FromHours(1),
+            SerializedResponse = Encoding.UTF8.GetBytes(payload),
+        }, CancellationToken.None);
+
+        using var innerHandler = new StubHandler();
+        innerHandler.AddResponse(static () => CreateResponse(HttpStatusCode.OK, "from-origin", ("Cache-Control", "max-age=3600")));
+
+        using var handler = new HttpCachingDelegateHandler(innerHandler, store, new HttpCachingOptions { TimeProvider = timeProvider });
+        using var client = new HttpClient(handler);
+
+        using var response = await client.GetAsync("http://example.com/resource", CancellationToken.None);
+        Assert.Equal("from-origin", await response.Content.ReadAsStringAsync(CancellationToken.None));
+    }
+
+    [Theory]
     [InlineData(HttpStatusCode.InternalServerError)]
     [InlineData(HttpStatusCode.BadGateway)]
     [InlineData(HttpStatusCode.ServiceUnavailable)]

@@ -54,28 +54,25 @@ internal static class ResponseSerializer
         return payload;
     }
 
-    /// <summary>Throws when the payload is not well-formed JSON.</summary>
+    /// <summary>Throws a <see cref="JsonException"/> when the payload cannot be turned back into a response.</summary>
     /// <remarks>
     /// Entries come from an external store and can be truncated or corrupted. Validating on read keeps the
     /// failure inside the cache lookup, where it is turned into a cache miss, instead of letting it escape
-    /// from the message handler once the response is being built.
+    /// from the message handler once the response is being built. Well-formed JSON is not enough: a corrupted
+    /// byte can leave the payload well-formed while making the body invalid Base64 or the status code out of
+    /// range, which only fails once the response is built.
     /// </remarks>
-    public static void EnsureWellFormed(ReadOnlySpan<byte> data)
+    public static void EnsureValid(ReadOnlySpan<byte> data)
     {
         if (data.IsEmpty)
             throw new JsonException("The serialized response is empty");
 
-        var reader = new Utf8JsonReader(data);
-        while (reader.Read())
-        {
-        }
+        _ = DeserializeMessage(data);
     }
 
     public static HttpResponseMessage Deserialize(byte[] data)
     {
-        var serialized = JsonSerializer.Deserialize(data, SerializationContext.Default.SerializedResponseMessage);
-        if (serialized is null)
-            throw new ArgumentException("Invalid serialized response data", nameof(data));
+        var serialized = DeserializeMessage(data);
 
         var response = new HttpResponseMessage(serialized.HttpStatusCode)
         {
@@ -112,6 +109,27 @@ internal static class ResponseSerializer
         }
 
         return response;
+    }
+
+    /// <summary>Deserializes the payload, or throws a <see cref="JsonException"/> when it does not describe a response <see cref="Deserialize"/> can build.</summary>
+    private static SerializedResponseMessage DeserializeMessage(ReadOnlySpan<byte> data)
+    {
+        var serialized = JsonSerializer.Deserialize(data, SerializationContext.Default.SerializedResponseMessage)
+            ?? throw new JsonException("The serialized response is null");
+
+        // The checks of the HttpResponseMessage constructor and of the ReasonPhrase setter
+        if ((int)serialized.HttpStatusCode is < 0 or > 999)
+            throw new JsonException("The serialized status code is out of range");
+
+        if (serialized.ReasonPhrase is not null && serialized.ReasonPhrase.AsSpan().IndexOfAny('\r', '\n', '\0') >= 0)
+            throw new JsonException("The serialized reason phrase contains a new-line or NUL character");
+
+        if (HasHeaderWithoutValues(serialized.Headers) || HasHeaderWithoutValues(serialized.ContentHeaders) || HasHeaderWithoutValues(serialized.TrailingHeaders))
+            throw new JsonException("A serialized header has no values");
+
+        return serialized;
+
+        static bool HasHeaderWithoutValues(IEnumerable<KeyValuePair<string, string[]>>? headers) => headers is not null && headers.Any(header => header.Value is null);
     }
 
     [return: NotNullIfNotNull(nameof(headers))]

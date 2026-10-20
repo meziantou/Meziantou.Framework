@@ -530,11 +530,6 @@ public partial class Emitter : IEmitter
     /// <summary>Check if a tag is valid.</summary>
     private void AnalyzeTag(string tag)
     {
-        // A tag that no directive can shorten is written in the verbatim form "!<...>". Writing it as is would
-        // produce text such as "tag:example.com,2000:app/foo", which reads as a plain scalar.
-        _tagData.Handle = null;
-        _tagData.Suffix = tag;
-
         // The non-specific tag is always written as "!", even when a %TAG directive redefines the primary handle. Its
         // verbatim form "!<!>" is invalid.
         if (tag == "!")
@@ -544,20 +539,29 @@ public partial class Emitter : IEmitter
             return;
         }
 
-        // A shorthand needs a non-empty suffix: "!!" alone is invalid, and "!" alone is the non-specific tag.
-        if (tag.StartsWith("!", StringComparison.Ordinal))
+        // A tag can be given as a shorthand whose handle has a global prefix, such as "!!str" for
+        // "tag:yaml.org,2002:str". It is expanded, then shortened like a resolved tag. A handle whose prefix is a local
+        // tag is not expanded: the parser resolves "!m!b" with "%TAG !m! !m!!a-" to "!m!!a-b", which still starts with
+        // the handle, and expanding it again would not load back. A shorthand needs a non-empty suffix: "!!" alone is
+        // invalid.
+        if (tag is ['!', ..])
         {
             foreach (var directive in _tagDirectives)
             {
-                if (directive.Handle.Length > 1 && tag.Length > directive.Handle.Length && tag.StartsWith(directive.Handle, StringComparison.Ordinal))
+                if (directive.Handle.Length > 1 && directive.Prefix is [not '!', ..] && tag.Length > directive.Handle.Length && tag.StartsWith(directive.Handle, StringComparison.Ordinal))
                 {
-                    _tagData.Handle = directive.Handle;
-                    _tagData.Suffix = tag.Substring(directive.Handle.Length);
-                    return;
+                    tag = string.Concat(directive.Prefix, tag.AsSpan(directive.Handle.Length));
+                    break;
                 }
             }
         }
 
+        // A tag that no directive can shorten is written in the verbatim form "!<...>". Writing it as is would
+        // produce text such as "tag:example.com,2000:app/foo", which reads as a plain scalar.
+        _tagData.Handle = null;
+        _tagData.Suffix = tag;
+
+        // A shorthand needs a non-empty suffix: "!" alone is the non-specific tag.
         foreach (var tagDirective in _tagDirectives)
         {
             if (tag.Length > tagDirective.Prefix.Length && tag.StartsWith(tagDirective.Prefix, StringComparison.Ordinal))

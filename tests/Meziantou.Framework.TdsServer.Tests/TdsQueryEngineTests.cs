@@ -2336,6 +2336,38 @@ public sealed class TdsQueryEngineTests
             expectedMaterializedQueries: "Customer[].Where(customer => ((IIF((customer.Id > 1), \"Y\", \"N\") == \"Y\") AndAlso (customer.Id == 2))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
+    // The engine reads the arguments of COALESCE, NULLIF and IIF from their SQL text. It used to read it back from
+    // SqlCodeObject.Xml, whose XmlWriter rejects the characters XML does not allow and rewrites "--" in the text.
+    // SqlClient re-encodes the command text, so the query delegate is called directly to keep the unpaired surrogates.
+    [Fact]
+    public async Task QueryEngine_NullScalarFunctions_KeepStringLiteralsXmlCannotRepresent()
+    {
+        var handler = TdsQueryEngine.CreateQueryHandler(CreateQueryEngineOptions());
+        foreach (var literal in (string[])["fall\0\0\0O", "Ali\uDCE2ce", "\uD800", "a--b"])
+        {
+            Assert.Equal([3], await ExecuteIdQueryAsync(handler, $"SELECT Id FROM nullable_customers WHERE COALESCE(Name, '{literal}') = '{literal}'"));
+            Assert.Equal([1], await ExecuteIdQueryAsync(handler, $"SELECT Id FROM nullable_customers WHERE NULLIF('{literal}', '{literal}') IS NULL AND Id = 1"));
+            Assert.Equal([2], await ExecuteIdQueryAsync(handler, $"SELECT Id FROM nullable_customers WHERE IIF(Id = 2, '{literal}', 'other') = '{literal}'"));
+        }
+
+        static async Task<int[]> ExecuteIdQueryAsync(TdsQueryDelegate handler, string commandText)
+        {
+            var result = await handler(
+                new TdsQueryContext
+                {
+                    RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, 1433),
+                    RequestType = TdsQueryRequestType.SqlBatch,
+                    CommandText = commandText,
+                    HasCompleteParameters = true,
+                },
+                CancellationToken.None);
+
+            Assert.Null(result.Error?.Message);
+            var resultSet = Assert.Single(result.ResultSets);
+            return [.. resultSet.Rows.Select(row => Assert.IsType<int>(row[0]))];
+        }
+    }
+
     [Fact]
     public async Task SqlClient_QueryEngine_IifFunction_WithAnExistsCondition_ReturnsProjectedRows()
     {

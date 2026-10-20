@@ -216,7 +216,7 @@ public sealed class FontFuzzTests
         return data;
     }
 
-    private static FuzzFailure? RunWithWatchdog(byte[] input, out CheckResult result)
+    internal static FuzzFailure? RunWithWatchdog(byte[] input, out CheckResult result)
     {
         CheckResult caseResult = default;
         var task = Task.Run(() =>
@@ -613,7 +613,7 @@ public sealed class FontFuzzTests
             """);
     }
 
-    private readonly record struct CheckResult(string Outcome, int DecodedGlyphs, int RejectedGlyphs);
+    internal readonly record struct CheckResult(string Outcome, int DecodedGlyphs, int RejectedGlyphs);
 
     /// <summary>Checks the structure of an outline: contours that are opened, drawn and closed, with coordinates in range.</summary>
     private sealed class CheckingSink : OutlineSink

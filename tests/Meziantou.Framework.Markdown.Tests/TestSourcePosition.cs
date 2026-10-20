@@ -992,6 +992,37 @@ literal      ( 5, 3) 24-24", "gridtables");
     }
 
     [Fact]
+    public void TestGridTableLineShorterThanTheColumns()
+    {
+        // The cells of a line that ends before the end of their column end at the end of the line, not in the next line
+        // or after the end of the text
+        Check("+---+---+\n| a |\n| b", @"
+table        ( 0, 0)  0-18
+tablerow     ( 1, 0) 10-14
+tablecell    ( 1, 0) 10-14
+paragraph    ( 1, 2) 12-12
+literal      ( 1, 2) 12-12
+tablecell    ( 1, 4) 14-14
+tablerow     ( 2, 0) 16-18
+tablecell    ( 2, 0) 16-18
+paragraph    ( 2, 2) 18-18
+literal      ( 2, 2) 18-18", "gridtables");
+    }
+
+    [Fact]
+    public void TestInvalidGridTableAfterALineShorterThanTheColumns()
+    {
+        // The paragraph that replaces the table has the span of the table, which includes its cells
+        Check("+---+---+\n| a |\n+", @"
+paragraph    ( 0, 0)  0-16
+literal      ( 0, 0)  0-8
+linebreak    ( 0, 9)  9-9
+literal      ( 1, 0) 10-14
+linebreak    ( 1, 5) 15-15
+literal      ( 2, 0) 16-16", "gridtables");
+    }
+
+    [Fact]
     public void TestIndentedCode()
     {
         //     01 2 345678 9ABCDE

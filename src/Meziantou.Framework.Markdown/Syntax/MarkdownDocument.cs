@@ -30,4 +30,8 @@ public class MarkdownDocument : ContainerBlock
 
     // Empty cells added to the short rows of all the tables of the document (see Table.MaximumAutocompletedCells)
     internal long AutocompletedTableCells { get; set; }
+
+    // With trivia, the text of the document when it contains NUL characters, which the parser replaces with U+FFFD (CommonMark
+    // 2.3, Insecure characters): the roundtrip renderer writes them back as they were (see NullCharacterWriter)
+    internal string? TextWithNullCharacters { get; set; }
 }

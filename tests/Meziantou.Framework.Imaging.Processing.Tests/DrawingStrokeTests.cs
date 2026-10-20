@@ -670,6 +670,31 @@ public sealed class DrawingStrokeTests
     }
 
     [Fact]
+    public void AWidePenCoversTheCanvasWhateverTheTransformation()
+    {
+        // Dots 4 million pixels wide, one every half pixel, through a transformation: the image of a layer of a rectangle
+        // (a translation), a translation, a turn and a scaling, a mirror. The first dot that covers the canvas still ends
+        // the stroke: the millions of dots that reach it took minutes before (fuzzing, issue #3488).
+        var pen = new Pen(White, 4000000) { DashPattern = [0, 0.5], LineCap = LineCap.Round };
+        DrawingAction stroke = canvas => canvas.StrokeLine(pen, new PointD(-4000000, 1.5), new PointD(2, 1.5));
+        DrawingAction[] drawings =
+        [
+            canvas => canvas.Layer(new RectangleD(-1.5, -2, 9, 7), 1, stroke),
+            canvas => canvas.Transform(AffineTransform.CreateTranslation(0.25, 0.5), stroke),
+            canvas => canvas.Transform(AffineTransform.CreateRotation(30).Then(AffineTransform.CreateScale(0.5, 2)), stroke),
+            canvas => canvas.Transform(AffineTransform.CreateScale(-1, 1), stroke),
+        ];
+        foreach (var drawing in drawings)
+        {
+            using var budget = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+            budget.CancelAfter(TimeSpan.FromSeconds(60));
+            using var image = NewBlack(4, 3);
+            image.Frames[0].Draw(drawing, budget.Token);
+            AssertGray8(image, [[255, 255, 255, 255], [255, 255, 255, 255], [255, 255, 255, 255]]);
+        }
+    }
+
+    [Fact]
     public void AJoinOutsideTheCanvasStillShowsWhereItReachesIt()
     {
         // A sharp corner on the right of the canvas, pointing to the left: its two segments stay outside, and only the

@@ -45,6 +45,9 @@ public class SemanticVersionTests
             { "1.0.0-alpha", new SemanticVersion(1, 0, 0, "alpha") },
             { "1.0.0-alpha.1", new SemanticVersion(1, 0, 0, ["alpha", "1"], []) },
             { "1.0.0-0123alpha", new SemanticVersion(1, 0, 0, "0123alpha") },
+            { "1.0.0-0", new SemanticVersion(1, 0, 0, "0") }, // A zero numeric identifier has no leading zero
+            { "1.0.0-0.3.7", new SemanticVersion(1, 0, 0, ["0", "3", "7"], []) },
+            { "1.0.0-alpha.0", new SemanticVersion(1, 0, 0, ["alpha", "0"], []) },
             { "1.1.2-alpha.1+label", new SemanticVersion(1, 1, 2, ["alpha", "1"], ["label"]) },
         };
     }
@@ -161,6 +164,7 @@ public class SemanticVersionTests
 
     [Theory]
     // Numeric identifiers compare numerically, whatever their magnitude
+    [InlineData("1.0.0-0", "1.0.0-1")]
     [InlineData("1.0.0-2", "1.0.0-10")]
     [InlineData("1.0.0-99999999999", "1.0.0-100000000000")]
     [InlineData("1.0.0-2147483647", "1.0.0-2147483648")] // Straddles int.MaxValue

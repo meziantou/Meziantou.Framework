@@ -24,6 +24,64 @@ public sealed partial class StronglyTypedIdTests
         BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard));
     }
 
+    [Fact]
+    public void ReadmeExample_Format()
+    {
+        #region StronglyTypedId_Format
+        var id = ProjectId.FromInt32(42);
+        Assert.Equal("ProjectId { Value = 42 }", $"{id}");
+        Assert.Equal("00042", $"{id:D5}");
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_GuidVersion7()
+    {
+        #region StronglyTypedId_GuidVersion7Usage
+        var id = InvoiceId.New(); // Uses Guid.CreateVersion7()
+        Assert.Equal(7, id.Value.Version);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_GuidNone()
+    {
+        Assert.Null(typeof(ExternalId).GetMethod("New"));
+    }
+
+    [Fact]
+    public void ReadmeExample_Comparable()
+    {
+        #region StronglyTypedId_ComparableUsage
+        var low = Priority.FromInt32(1);
+        var high = Priority.FromInt32(2);
+
+        // IComparable<Priority> and the comparison operators are generated
+        Assert.True(low < high);
+        Assert.True(high >= low);
+        Assert.Equal(-1, low.CompareTo(high));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Interfaces()
+    {
+        #region StronglyTypedId_Interfaces
+        // The generated type implements IStronglyTypedId and IStronglyTypedId<int>
+        var userId = UserId.FromInt32(42);
+
+        // Access via interface
+        IStronglyTypedId stronglyTypedId = userId;
+        Assert.Equal("42", stronglyTypedId.ValueAsString);
+        Assert.Equal(typeof(int), stronglyTypedId.UnderlyingType);
+
+        // Access via generic interface
+        Assert.Equal(42, GetValue(userId));
+
+        static T GetValue<T>(IStronglyTypedId<T> id) => id.Value;
+        #endregion
+    }
+
     public static TheoryData<Type, string, object> GetData()
     {
         var now = DateTime.UtcNow;
@@ -1029,4 +1087,45 @@ public sealed partial class StronglyTypedIdTests
         {
         }
     }
+
+    #region StronglyTypedId_Declaration
+    [StronglyTypedId<int>]
+    public partial struct ProjectId { }
+    #endregion
+
+    #region StronglyTypedId_DeclarationTypeof
+    [StronglyTypedId(typeof(int))]
+    public partial struct CustomerId { }
+    #endregion
+
+    #region StronglyTypedId_Configuration
+    [StronglyTypedId(idType: typeof(long),
+                     generateSystemTextJsonConverter: true,
+                     generateNewtonsoftJsonConverter: true,
+                     generateSystemComponentModelTypeConverter: true,
+                     generateMongoDBBsonSerialization: true,
+                     addCodeGeneratedAttribute: true
+                     )]
+    public partial struct OrderId { }
+    #endregion
+
+    #region StronglyTypedId_GuidVersion7
+    [StronglyTypedId<Guid>(GuidGenerationStrategy = GuidGenerationStrategy.Version7)]
+    public partial struct InvoiceId { }
+    #endregion
+
+    #region StronglyTypedId_GuidNone
+    [StronglyTypedId<Guid>(GuidGenerationStrategy = GuidGenerationStrategy.None)]
+    public partial struct ExternalId { } // No New() method is generated
+    #endregion
+
+    #region StronglyTypedId_Comparable
+    [StronglyTypedId<int>]
+    public partial struct Priority : IComparable { }
+    #endregion
+
+    #region StronglyTypedId_InterfacesDeclaration
+    [StronglyTypedId(typeof(int))]
+    public partial struct UserId { }
+    #endregion
 }

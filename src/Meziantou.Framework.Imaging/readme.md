@@ -50,7 +50,7 @@ color conversion, and bounded-memory streaming.
 - Explicit policies for alpha, precision, metadata and color-profile losses; configurable resource limits
 
 This document is the user guide: it describes what the library guarantees to its callers. Every C# example below is
-compiled and run by the test suite.
+copied from code that compiles, and most of them also run in the test suite.
 
 ## Table of contents
 

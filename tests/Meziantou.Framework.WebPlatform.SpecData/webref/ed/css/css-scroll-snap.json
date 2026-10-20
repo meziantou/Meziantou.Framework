@@ -9,7 +9,7 @@
       "href": "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-snap-type",
       "value": "none | [ x | y | block | inline | both | pair ] [ mandatory | proximity ]?",
       "initial": "none",
-      "appliesTo": "all elements",
+      "appliesTo": "scroll containers",
       "inherited": "no",
       "percentages": "n/a",
       "computedValue": "specified keyword(s)",

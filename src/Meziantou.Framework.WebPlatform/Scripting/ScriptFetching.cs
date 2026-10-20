@@ -33,7 +33,7 @@ internal static class ScriptFetching
         // A potential-CORS request (https://html.spec.whatwg.org/multipage/urls-and-fetching.html#create-a-potential-cors-request)
         // whose referrer policy is the one of the referrerpolicy attribute (https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element)
         // and whose integrity metadata is the value of the integrity attribute
-        var request = SubresourceFetching.CreateRequest(document, parsedUrl, RequestDestination.Script, cors: element.HasAttribute("crossorigin"), (element as HtmlScriptElement)?.ReferrerPolicy ?? "", element, useCredentials: SubresourceFetching.UsesCredentials(element), integrity: (element as HtmlScriptElement)?.GetAttributeValue("integrity") ?? "");
+        var request = SubresourceFetching.CreateRequest(document, parsedUrl, RequestDestination.Script, cors: element.HasAttribute("crossorigin"), element switch { HtmlScriptElement script => script.ReferrerPolicy, SvgScriptElement svgScript => svgScript.ReferrerPolicy, _ => "" }, element, useCredentials: SubresourceFetching.UsesCredentials(element), integrity: (element as HtmlScriptElement)?.GetAttributeValue("integrity") ?? "");
         request.ParserInserted = element is HtmlScriptElement { IsParserInserted: true } or SvgScriptElement { IsParserInserted: true };
 
         // https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element: "If el is currently render-blocking,

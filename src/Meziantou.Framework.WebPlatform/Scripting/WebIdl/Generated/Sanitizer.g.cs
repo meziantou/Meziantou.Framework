@@ -28,49 +28,49 @@ internal static class Binding_Sanitizer<TAdapter, TValue> where TAdapter : struc
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Sanitizer>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("allowElement", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_23(r, a[0]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_22(r, a[0]);
         var result = o.AllowElement(WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_SanitizerElementWithAttributes(r, a0)); return r.FromBoolean(result);
     }
     private static TValue Op_removeElement(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Sanitizer>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("removeElement", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_25(r, a[0]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_24(r, a[0]);
         var result = o.RemoveElement(WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_SanitizerElement(r, a0)); return r.FromBoolean(result);
     }
     private static TValue Op_replaceElementWithChildren(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Sanitizer>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("replaceElementWithChildren", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_25(r, a[0]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_24(r, a[0]);
         var result = o.ReplaceElementWithChildren(WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_SanitizerElement(r, a0)); return r.FromBoolean(result);
     }
     private static TValue Op_allowProcessingInstruction(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Sanitizer>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("allowProcessingInstruction", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_24(r, a[0]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_23(r, a[0]);
         var result = o.AllowProcessingInstruction(WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_SanitizerPI(r, a0)); return r.FromBoolean(result);
     }
     private static TValue Op_removeProcessingInstruction(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Sanitizer>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("removeProcessingInstruction", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_24(r, a[0]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_23(r, a[0]);
         var result = o.RemoveProcessingInstruction(WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_SanitizerPI(r, a0)); return r.FromBoolean(result);
     }
     private static TValue Op_allowAttribute(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Sanitizer>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("allowAttribute", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_22(r, a[0]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_21(r, a[0]);
         var result = o.AllowAttribute(WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_SanitizerAttribute(r, a0)); return r.FromBoolean(result);
     }
     private static TValue Op_removeAttribute(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Sanitizer>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("removeAttribute", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_22(r, a[0]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_21(r, a[0]);
         var result = o.RemoveAttribute(WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_SanitizerAttribute(r, a0)); return r.FromBoolean(result);
     }
     private static TValue Op_setComments(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
@@ -117,7 +117,7 @@ internal static class Binding_Sanitizer<TAdapter, TValue> where TAdapter : struc
 
     private static object Construct(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::System.ReadOnlySpan<TValue> a)
     {
-        var a0 = r.IsMissing(a, 0) ? (object?)(object)"default" : WebIdlHelpers<TAdapter, TValue>.ToUnion_69(r, a[0]);
+        var a0 = r.IsMissing(a, 0) ? (object?)(object)"default" : WebIdlHelpers<TAdapter, TValue>.ToUnion_71(r, a[0]);
         return new global::Meziantou.Framework.WebPlatform.Dom.Sanitizer((a0 is null ? (global::Meziantou.Framework.WebPlatform.Dom.SanitizerConfigOrSanitizerPresets?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_SanitizerConfigOrSanitizerPresets(r, a0)));
     }
 }

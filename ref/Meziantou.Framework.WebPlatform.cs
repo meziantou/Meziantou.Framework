@@ -1198,6 +1198,7 @@ namespace Meziantou.Framework.WebPlatform.Css.Om
         public string FillRule { get => throw null; set { } }
         public string FillSize { get => throw null; set { } }
         public string Filter { get => throw null; set { } }
+        public string FitTolerance { get => throw null; set { } }
         public string Flex { get => throw null; set { } }
         public string FlexBasis { get => throw null; set { } }
         public string FlexDirection { get => throw null; set { } }
@@ -1624,6 +1625,7 @@ namespace Meziantou.Framework.WebPlatform.Css.Om
         public string TimelineTriggerActiveRangeEnd { get => throw null; set { } }
         public string TimelineTriggerActiveRangeStart { get => throw null; set { } }
         public string TimelineTriggerName { get => throw null; set { } }
+        public string TimelineTriggerRange { get => throw null; set { } }
         public string TimelineTriggerSource { get => throw null; set { } }
         public string Top { get => throw null; set { } }
         public string TouchAction { get => throw null; set { } }
@@ -3415,30 +3417,21 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.Element? PreviousElementSibling { get => throw null; }
         public override string? TextContent { get => throw null; set { } }
         public void After(params System.ReadOnlySpan<Meziantou.Framework.WebPlatform.Dom.NodeOrString> nodes) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void AfterHtml(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlOptions? options = null) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void AfterHtmlUnsafe(Meziantou.Framework.WebPlatform.Dom.TrustedHtml html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void AfterHtmlUnsafe(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
         public void AppendData(string data) { }
         public void Before(params System.ReadOnlySpan<Meziantou.Framework.WebPlatform.Dom.NodeOrString> nodes) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void BeforeHtml(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlOptions? options = null) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void BeforeHtmlUnsafe(Meziantou.Framework.WebPlatform.Dom.TrustedHtml html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void BeforeHtmlUnsafe(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
         public void DeleteData(uint offset, uint count) { }
         public void InsertData(uint offset, string data) { }
         public void Remove() { }
         public void ReplaceData(uint offset, uint count, string data) { }
         public void ReplaceWith(params System.ReadOnlySpan<Meziantou.Framework.WebPlatform.Dom.NodeOrString> nodes) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void ReplaceWithHtml(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlOptions? options = null) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void ReplaceWithHtmlUnsafe(Meziantou.Framework.WebPlatform.Dom.TrustedHtml html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void ReplaceWithHtmlUnsafe(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
         [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0002", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public Meziantou.Framework.WebPlatform.Dom.HtmlStreamWriter StreamAfterHtml(Meziantou.Framework.WebPlatform.Dom.SetHtmlOptions? options = null) => throw null;
@@ -4737,28 +4730,19 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string TagName { get => throw null; }
         public override string? TextContent { get => throw null; set { } }
         public void After(params System.ReadOnlySpan<Meziantou.Framework.WebPlatform.Dom.NodeOrString> nodes) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void AfterHtml(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlOptions? options = null) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void AfterHtmlUnsafe(Meziantou.Framework.WebPlatform.Dom.TrustedHtml html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void AfterHtmlUnsafe(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
         public Meziantou.Framework.WebPlatform.Animations.Animation Animate(System.Collections.Generic.IEnumerable<Meziantou.Framework.WebPlatform.Animations.Keyframe>? keyframes, Meziantou.Framework.WebPlatform.Dom.KeyframeAnimationOptions? options = null) => throw null;
         public Meziantou.Framework.WebPlatform.Animations.Animation Animate(System.Collections.Generic.IEnumerable<Meziantou.Framework.WebPlatform.Animations.Keyframe>? keyframes, double duration) => throw null;
         public void Append(params System.ReadOnlySpan<Meziantou.Framework.WebPlatform.Dom.NodeOrString> nodes) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void AppendHtml(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlOptions? options = null) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void AppendHtmlUnsafe(Meziantou.Framework.WebPlatform.Dom.TrustedHtml html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void AppendHtmlUnsafe(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
         public Meziantou.Framework.WebPlatform.Dom.ShadowRoot AttachShadow(Meziantou.Framework.WebPlatform.Dom.ShadowRootInit init) => throw null;
         public void Before(params System.ReadOnlySpan<Meziantou.Framework.WebPlatform.Dom.NodeOrString> nodes) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void BeforeHtml(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlOptions? options = null) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void BeforeHtmlUnsafe(Meziantou.Framework.WebPlatform.Dom.TrustedHtml html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void BeforeHtmlUnsafe(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
         public bool CheckVisibility(Meziantou.Framework.WebPlatform.Dom.CheckVisibilityOptions? options = null) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.Element? Closest(Meziantou.Framework.WebPlatform.Css.Selectors.SelectorList selectors) => throw null;
@@ -4794,11 +4778,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool Matches(string selectors) => throw null;
         public void MoveBefore(Meziantou.Framework.WebPlatform.Dom.Node node, Meziantou.Framework.WebPlatform.Dom.Node? child) { }
         public void Prepend(params System.ReadOnlySpan<Meziantou.Framework.WebPlatform.Dom.NodeOrString> nodes) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void PrependHtml(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlOptions? options = null) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void PrependHtmlUnsafe(Meziantou.Framework.WebPlatform.Dom.TrustedHtml html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void PrependHtmlUnsafe(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
         public Meziantou.Framework.WebPlatform.Css.Om.CssPseudoElement? Pseudo(string type) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.Element? QuerySelector(Meziantou.Framework.WebPlatform.Css.Selectors.SelectorList selectors) => throw null;
@@ -4816,11 +4797,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.Attr RemoveAttributeNode(Meziantou.Framework.WebPlatform.Dom.Attr attr) => throw null;
         public void ReplaceChildren(params System.ReadOnlySpan<Meziantou.Framework.WebPlatform.Dom.NodeOrString> nodes) { }
         public void ReplaceWith(params System.ReadOnlySpan<Meziantou.Framework.WebPlatform.Dom.NodeOrString> nodes) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void ReplaceWithHtml(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlOptions? options = null) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void ReplaceWithHtmlUnsafe(Meziantou.Framework.WebPlatform.Dom.TrustedHtml html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void ReplaceWithHtmlUnsafe(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
         public System.Threading.Tasks.Task RequestFullscreen(Meziantou.Framework.WebPlatform.Dom.FullscreenOptions? options = null) => throw null;
         public System.Threading.Tasks.Task RequestPointerLock(Meziantou.Framework.WebPlatform.Dom.PointerLockOptions? options = null) => throw null;
@@ -7839,7 +7817,6 @@ namespace Meziantou.Framework.WebPlatform.Dom
 
     public sealed class MessagePort : Meziantou.Framework.WebPlatform.Dom.EventTarget
     {
-        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnClose { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnMessage { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnMessageError { get => throw null; set { } }
         public void Close() { }
@@ -9523,11 +9500,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool Serializable { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.SlotAssignmentMode SlotAssignment { get => throw null; }
         public Meziantou.Framework.WebPlatform.Css.Om.StyleSheetList StyleSheets { get => throw null; }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void AppendHtml(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlOptions? options = null) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void AppendHtmlUnsafe(Meziantou.Framework.WebPlatform.Dom.TrustedHtml html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void AppendHtmlUnsafe(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
         [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0009", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public Meziantou.Framework.WebPlatform.Dom.Element? ElementFromPoint(double x, double y) => throw null;
@@ -9537,11 +9511,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string GetHtml(Meziantou.Framework.WebPlatform.Dom.GetHtmlOptions? options = null) => throw null;
         [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0009", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public Meziantou.Framework.WebPlatform.Dom.Selection? GetSelection() => throw null;
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void PrependHtml(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlOptions? options = null) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void PrependHtmlUnsafe(Meziantou.Framework.WebPlatform.Dom.TrustedHtml html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0001", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void PrependHtmlUnsafe(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
         public void SetHtml(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlOptions? options = null) { }
         public void SetHtmlUnsafe(Meziantou.Framework.WebPlatform.Dom.TrustedHtml html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
@@ -10519,6 +10490,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.SvgAnimatedLength Height { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.SvgAnimatedString Href { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.SvgAnimatedPreserveAspectRatio PreserveAspectRatio { get => throw null; }
+        public string ReferrerPolicy { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.SvgAnimatedLength Width { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.SvgAnimatedLength X { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.SvgAnimatedLength Y { get => throw null; }
@@ -10728,6 +10700,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
     {
         public string? CrossOrigin { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.SvgAnimatedString Href { get => throw null; }
+        public string ReferrerPolicy { get => throw null; set { } }
         public string Type { get => throw null; set { } }
     }
 
@@ -10847,11 +10820,15 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public const ushort TextpathMethodtypeAlign = 1;
         public const ushort TextpathMethodtypeStretch = 2;
         public const ushort TextpathMethodtypeUnknown = 0;
+        public const ushort TextpathSidetypeLeft = 1;
+        public const ushort TextpathSidetypeRight = 2;
+        public const ushort TextpathSidetypeUnknown = 0;
         public const ushort TextpathSpacingtypeAuto = 1;
         public const ushort TextpathSpacingtypeExact = 2;
         public const ushort TextpathSpacingtypeUnknown = 0;
         public Meziantou.Framework.WebPlatform.Dom.SvgAnimatedString Href { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.SvgAnimatedEnumeration Method { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.SvgAnimatedEnumeration Side { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.SvgAnimatedEnumeration Spacing { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.SvgAnimatedLength StartOffset { get => throw null; }
     }

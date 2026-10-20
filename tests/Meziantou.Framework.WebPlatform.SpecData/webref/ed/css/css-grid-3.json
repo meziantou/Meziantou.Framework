@@ -28,8 +28,8 @@
       ]
     },
     {
-      "name": "flow-tolerance",
-      "href": "https://drafts.csswg.org/css-grid-3/#propdef-flow-tolerance",
+      "name": "fit-tolerance",
+      "href": "https://drafts.csswg.org/css-grid-3/#propdef-fit-tolerance",
       "value": "normal | <length-percentage [0,∞]> | infinite",
       "initial": "normal",
       "appliesTo": "grid lanes containers",
@@ -42,28 +42,28 @@
         {
           "name": "<length-percentage>",
           "prose": "Specifies the tie threshold for the grid lanes container. Placement positions are considered to be equally good (“tied”) if they are within the specified distance from the shortest position.",
-          "href": "https://drafts.csswg.org/css-grid-3/#valdef-flow-tolerance-length-percentage",
+          "href": "https://drafts.csswg.org/css-grid-3/#valdef-fit-tolerance-length-percentage",
           "type": "value",
           "value": "<length-percentage>"
         },
         {
           "name": "normal",
           "prose": "Resolves to a used value of 1em in grid lanes layout and a used value of 0 in all other layout modes.",
-          "href": "https://drafts.csswg.org/css-grid-3/#valdef-flow-tolerance-normal",
+          "href": "https://drafts.csswg.org/css-grid-3/#valdef-fit-tolerance-normal",
           "type": "value",
           "value": "normal"
         },
         {
           "name": "infinite",
           "prose": "Specifies an infinite tie threshold. This makes items distribute themselves strictly in order, without considering the length of the tracks at all.",
-          "href": "https://drafts.csswg.org/css-grid-3/#valdef-flow-tolerance-infinite",
+          "href": "https://drafts.csswg.org/css-grid-3/#valdef-fit-tolerance-infinite",
           "type": "value",
           "value": "infinite"
         }
       ],
       "styleDeclaration": [
-        "flow-tolerance",
-        "flowTolerance"
+        "fit-tolerance",
+        "fitTolerance"
       ]
     }
   ],

@@ -14,13 +14,13 @@
     },
     {
       "name": ":interest-source",
-      "prose": "The :interest-source pseudo-class applies to an interest source element that the user is currently \"showing interest\" in, and the :interest-target pseudo-class applies to the associated interest target of an element matching :interest-source.",
+      "prose": "The :interest-source pseudo-class applies to an interest source element that the user is currently showing interest in, and the :interest-target pseudo-class applies to the associated interest target of an element matching :interest-source.",
       "href": "https://drafts.csswg.org/selectors-5/#selectordef-interest-source",
       "value": ":interest-source"
     },
     {
       "name": ":interest-target",
-      "prose": "The :interest-source pseudo-class applies to an interest source element that the user is currently \"showing interest\" in, and the :interest-target pseudo-class applies to the associated interest target of an element matching :interest-source.",
+      "prose": "The :interest-source pseudo-class applies to an interest source element that the user is currently showing interest in, and the :interest-target pseudo-class applies to the associated interest target of an element matching :interest-source.",
       "href": "https://drafts.csswg.org/selectors-5/#selectordef-interest-target",
       "value": ":interest-target"
     },

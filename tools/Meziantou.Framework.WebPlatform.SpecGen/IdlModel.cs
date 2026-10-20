@@ -375,13 +375,11 @@ internal sealed partial class IdlModel
             definition.Members.RemoveAll(m => m.Kind is IdlMemberKind.Attribute or IdlMemberKind.Const or IdlMemberKind.Field && !seen.Add(m.Kind + " " + m.Name + " " + m.Special));
         }
 
-        AddTrustedTypesScriptElementAttributes(model);
         SetExecCommandValueType(model);
         SetMouseEventCoordinateTypes(model);
         AddShadowRootGetSelection(model);
         AddShadowRootElementFromPoint(model);
         AddTrustedHtmlParserOptions(model);
-        AddHtmlInsertionMethods(model);
         AddFontFaceWidth(model);
         AddUIEventPseudoTarget(model);
         AddElementMatchContainer(model);
@@ -498,59 +496,6 @@ internal sealed partial class IdlModel
                 options.Type = new IdlType { Union = true, Subtypes = [new IdlType { Name = optionsName }, new IdlType { Name = "TrustedHTMLParserOptions" }] };
             }
         }
-    }
-
-    /// <summary>
-    /// The HTML insertion methods proposed in https://github.com/whatwg/html/pull/12753 (implemented by Blink and used by the
-    /// <c>template for</c> tests): <c>appendHTML()</c> and <c>prependHTML()</c> on Element and ShadowRoot, <c>beforeHTML()</c>,
-    /// <c>afterHTML()</c> and <c>replaceWithHTML()</c> on NonDocumentTypeChildNode, and their <c>*Unsafe</c> variants. Their
-    /// arguments are the ones of <c>setHTML()</c> and <c>setHTMLUnsafe()</c> in webref:
-    /// <code>
-    /// partial interface Element {
-    ///   [CEReactions] undefined appendHTML(DOMString html, optional SetHTMLOptions options = {});
-    ///   [CEReactions] undefined appendHTMLUnsafe((TrustedHTML or DOMString) html, optional SetHTMLUnsafeOptions options = {});
-    ///   ...
-    /// };
-    /// </code>
-    /// </summary>
-    private static void AddHtmlInsertionMethods(IdlModel model)
-    {
-        if (!model.Definitions.TryGetValue("Element", out var element) || element.Members.Exists(m => m.Name == "appendHTML"))
-            return;
-
-        var setHtml = element.Members.Find(m => m.Kind == IdlMemberKind.Operation && m.Name == "setHTML");
-        var setHtmlUnsafe = element.Members.Find(m => m.Kind == IdlMemberKind.Operation && m.Name == "setHTMLUnsafe");
-        if (setHtml is null || setHtmlUnsafe is null)
-            return;
-
-        foreach (var (interfaceName, methods) in (ReadOnlySpan<(string, string[])>)[
-            ("Element", ["append", "prepend", "before", "after", "replaceWith"]),
-            ("ShadowRoot", ["append", "prepend"]),
-            ("CharacterData", ["before", "after", "replaceWith"])])
-        {
-            if (!model.Definitions.TryGetValue(interfaceName, out var definition))
-                continue;
-
-            foreach (var method in methods)
-            {
-                var declaringDefinition = method is "append" or "prepend" ? interfaceName : "NonDocumentTypeChildNode";
-                definition.Members.Add(Clone(setHtml, method + "HTML", declaringDefinition));
-                definition.Members.Add(Clone(setHtmlUnsafe, method + "HTMLUnsafe", declaringDefinition));
-            }
-        }
-
-        static IdlMember Clone(IdlMember operation, string name, string declaringDefinition) => new()
-        {
-            Kind = IdlMemberKind.Operation,
-            Name = name,
-            Type = operation.Type,
-            Arguments = operation.Arguments,
-            ExtAttrs = operation.ExtAttrs,
-            Href = "https://whatpr.org/html/12753/dynamic-markup-insertion.html#dom-" + declaringDefinition.ToLowerInvariant() + "-" + name.ToLowerInvariant(),
-            Source = operation.Source,
-            DeclaringDefinition = declaringDefinition,
-            ExperimentalApi = "HtmlInsertionMethods",
-        };
     }
 
     /// <summary>
@@ -1082,38 +1027,6 @@ internal sealed partial class IdlModel
                 };
             }
         }
-    }
-
-    /// <summary>
-    /// The Trusted Types specification adds attributes to HTMLScriptElement (https://w3c.github.io/trusted-types/dist/spec/#enforcement-in-scripts)
-    /// in a partial interface that webref does not include, as it redefines attributes of HTML and DOM. The innerText and
-    /// textContent attributes of HTMLScriptElement are distinct from the ones of HTMLElement and Node.
-    /// </summary>
-    private static void AddTrustedTypesScriptElementAttributes(IdlModel model)
-    {
-        if (!model.Definitions.TryGetValue("HTMLScriptElement", out var definition))
-            return;
-
-        var ceReactions = new IdlExtendedAttribute { Name = "CEReactions" };
-        IdlType Union(bool nullable, params IdlType[] subtypes) => new() { Union = true, Nullable = nullable, Subtypes = [.. subtypes] };
-        definition.Members.Add(new IdlMember
-        {
-            Kind = IdlMemberKind.Attribute,
-            Name = "innerText",
-            Type = Union(nullable: false, new IdlType { Name = "TrustedScript" }, new IdlType { Name = "DOMString", ExtAttrs = [new IdlExtendedAttribute { Name = "LegacyNullToEmptyString" }] }),
-            ExtAttrs = [ceReactions],
-            Source = "trusted-types",
-            DeclaringDefinition = definition.Name,
-        });
-        definition.Members.Add(new IdlMember
-        {
-            Kind = IdlMemberKind.Attribute,
-            Name = "textContent",
-            Type = Union(nullable: true, new IdlType { Name = "TrustedScript" }, new IdlType { Name = "DOMString" }),
-            ExtAttrs = [ceReactions],
-            Source = "trusted-types",
-            DeclaringDefinition = definition.Name,
-        });
     }
 
     /// <summary>

@@ -31,14 +31,14 @@ internal static class Binding_URLPattern<TAdapter, TValue> where TAdapter : stru
     private static TValue Op_test(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.UrlPattern>(t, Binding);
-        var a0 = r.IsMissing(a, 0) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_80(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_80(r, a[0]);
+        var a0 = r.IsMissing(a, 0) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_82(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_82(r, a[0]);
         var has1 = !r.IsMissing(a, 1); var a1 = has1 ? (string?)r.ToUsvString(a[1]) : default;
         var result = o.Test(WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_UrlPatternInput(r, a0), (has1 ? a1 : (string?)null)); return r.FromBoolean(result);
     }
     private static TValue Op_exec(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.UrlPattern>(t, Binding);
-        var a0 = r.IsMissing(a, 0) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_80(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_80(r, a[0]);
+        var a0 = r.IsMissing(a, 0) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_82(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_82(r, a[0]);
         var has1 = !r.IsMissing(a, 1); var a1 = has1 ? (string?)r.ToUsvString(a[1]) : default;
         var result = o.Exec(WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_UrlPatternInput(r, a0), (has1 ? a1 : (string?)null)); return (result is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_UrlPatternResult(r, dictionaryValue) : r.Adapter.Null);
     }
@@ -65,14 +65,14 @@ internal static class Binding_URLPattern<TAdapter, TValue> where TAdapter : stru
             case 0:
             {
                 if (a.Length < 2) throw r.NotEnoughArguments("URLPattern", 2, a.Length);
-                var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_80(r, a[0]);
+                var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_82(r, a[0]);
                 var a1 = r.ToUsvString(a[1]);
                 var a2 = r.IsMissing(a, 2) ? (global::Meziantou.Framework.WebPlatform.Dom.UrlPatternOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_UrlPatternOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_UrlPatternOptions(r, a[2]);
                 return new global::Meziantou.Framework.WebPlatform.Dom.UrlPattern(WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_UrlPatternInput(r, a0), a1, a2);
             }
             case 1:
             {
-                var a0 = r.IsMissing(a, 0) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_80(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_80(r, a[0]);
+                var a0 = r.IsMissing(a, 0) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_82(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_82(r, a[0]);
                 var a1 = r.IsMissing(a, 1) ? (global::Meziantou.Framework.WebPlatform.Dom.UrlPatternOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_UrlPatternOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_UrlPatternOptions(r, a[1]);
                 return new global::Meziantou.Framework.WebPlatform.Dom.UrlPattern(WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_UrlPatternInput(r, a0), a1);
             }

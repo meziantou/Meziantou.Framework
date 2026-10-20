@@ -23,7 +23,7 @@ internal static class Binding_DOMParser<TAdapter, TValue> where TAdapter : struc
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.DomParser>(t, Binding);
         if (a.Length < 2) throw r.NotEnoughArguments("parseFromString", 2, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_26(r, a[0]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_25(r, a[0]);
         var a1 = r.ToEnumerationValue(a[1], "DOMParserSupportedType", WebIdlHelpers<TAdapter, TValue>.Enum_DOMParserSupportedType_Values);
         if ((a0 is null or string)) { var result = o.ParseFromString((string)a0!, WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_DomParserSupportedType(a1)); return r.Wrap(result); }
         if ((a0 is null or global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml)) { var result = o.ParseFromString((global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml)a0!, WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_DomParserSupportedType(a1)); return r.Wrap(result); }

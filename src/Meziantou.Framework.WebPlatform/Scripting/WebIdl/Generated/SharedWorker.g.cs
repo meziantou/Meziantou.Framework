@@ -32,8 +32,8 @@ internal static class Binding_SharedWorker<TAdapter, TValue> where TAdapter : st
     private static object Construct(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::System.ReadOnlySpan<TValue> a)
     {
         if (a.Length < 1) throw r.NotEnoughArguments("SharedWorker", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_70(r, a[0]);
-        var a1 = r.IsMissing(a, 1) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_71(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_71(r, a[1]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_72(r, a[0]);
+        var a1 = r.IsMissing(a, 1) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_73(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_73(r, a[1]);
         if ((a0 is null or string) && (a1 is null or string)) { return new global::Meziantou.Framework.WebPlatform.Dom.SharedWorker((string)a0!, (string)a1!); }
         if ((a0 is null or string) && (a1 is null or global::Meziantou.Framework.WebPlatform.Dom.SharedWorkerOptions)) { return new global::Meziantou.Framework.WebPlatform.Dom.SharedWorker((string)a0!, (global::Meziantou.Framework.WebPlatform.Dom.SharedWorkerOptions)a1!); }
         if ((a0 is null or global::Meziantou.Framework.WebPlatform.Dom.TrustedScriptUrl) && (a1 is null or global::Meziantou.Framework.WebPlatform.Dom.SharedWorkerOptions)) { return new global::Meziantou.Framework.WebPlatform.Dom.SharedWorker((global::Meziantou.Framework.WebPlatform.Dom.TrustedScriptUrl)a0!, (global::Meziantou.Framework.WebPlatform.Dom.SharedWorkerOptions)a1!); }

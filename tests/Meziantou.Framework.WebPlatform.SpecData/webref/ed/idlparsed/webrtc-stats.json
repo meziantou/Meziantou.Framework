@@ -1451,7 +1451,7 @@
         "href": "https://w3c.github.io/webrtc-stats/#dom-rtcsentrtpstreamstats"
       },
       "RTCOutboundRtpStreamStats": {
-        "fragment": "dictionary RTCOutboundRtpStreamStats : RTCSentRtpStreamStats {\n             DOMString            mid;\n             DOMString            mediaSourceId;\n             DOMString            remoteId;\n             DOMString            rid;\n             unsigned long        encodingIndex;\n             unsigned long long   headerBytesSent;\n             unsigned long long   retransmittedPacketsSent;\n             unsigned long long   retransmittedBytesSent;\n             unsigned long        rtxSsrc;\n             double               targetBitrate;\n             unsigned long long   totalEncodedBytesTarget;\n             unsigned long        frameWidth;\n             unsigned long        frameHeight;\n             double               framesPerSecond;\n             unsigned long        framesSent;\n             unsigned long        hugeFramesSent;\n             unsigned long        framesEncoded;\n             unsigned long        keyFramesEncoded;\n             unsigned long long   qpSum;\n             record<DOMString, double> psnrSum;\n             unsigned long long   psnrMeasurements;\n             double               totalEncodeTime;\n             double               totalPacketSendDelay;\n             RTCQualityLimitationReason                 qualityLimitationReason;\n             record<DOMString, double> qualityLimitationDurations;\n             unsigned long        qualityLimitationResolutionChanges;\n             unsigned long        nackCount;\n             unsigned long        firCount;\n             unsigned long        pliCount;\n             DOMString            encoderImplementation;\n             boolean              powerEfficientEncoder;\n             boolean              active;\n             DOMString            scalabilityMode;\n             unsigned long long   packetsSentWithEct1;\n};",
+        "fragment": "dictionary RTCOutboundRtpStreamStats : RTCSentRtpStreamStats {\n             DOMString            mid;\n             DOMString            mediaSourceId;\n             DOMString            remoteId;\n             DOMString            rid;\n             unsigned long        encodingIndex;\n             unsigned long long   headerBytesSent;\n             unsigned long long   retransmittedPacketsSent;\n             unsigned long long   retransmittedBytesSent;\n             unsigned long        rtxSsrc;\n             double               targetBitrate;\n             unsigned long        frameWidth;\n             unsigned long        frameHeight;\n             double               framesPerSecond;\n             unsigned long        framesSent;\n             unsigned long        hugeFramesSent;\n             unsigned long        framesEncoded;\n             unsigned long        keyFramesEncoded;\n             unsigned long long   qpSum;\n             record<DOMString, double> psnrSum;\n             unsigned long long   psnrMeasurements;\n             double               totalEncodeTime;\n             double               totalPacketSendDelay;\n             RTCQualityLimitationReason                 qualityLimitationReason;\n             record<DOMString, double> qualityLimitationDurations;\n             unsigned long        qualityLimitationResolutionChanges;\n             unsigned long        nackCount;\n             unsigned long        firCount;\n             unsigned long        pliCount;\n             DOMString            encoderImplementation;\n             boolean              powerEfficientEncoder;\n             boolean              active;\n             DOMString            scalabilityMode;\n             unsigned long long   packetsSentWithEct1;\n};",
         "type": "dictionary",
         "name": "RTCOutboundRtpStreamStats",
         "inheritance": "RTCSentRtpStreamStats",
@@ -1615,22 +1615,6 @@
             "default": null,
             "required": false,
             "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-targetbitrate"
-          },
-          {
-            "type": "field",
-            "name": "totalEncodedBytesTarget",
-            "extAttrs": [],
-            "idlType": {
-              "type": "dictionary-type",
-              "extAttrs": [],
-              "generic": "",
-              "nullable": false,
-              "union": false,
-              "idlType": "unsigned long long"
-            },
-            "default": null,
-            "required": false,
-            "href": "https://w3c.github.io/webrtc-stats/#dom-rtcoutboundrtpstreamstats-totalencodedbytestarget"
           },
           {
             "type": "field",

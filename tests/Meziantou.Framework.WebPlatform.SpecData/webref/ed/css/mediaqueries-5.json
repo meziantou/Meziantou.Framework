@@ -145,9 +145,16 @@
           "name": "display-mode",
           "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-display-mode",
           "for": "@media",
-          "value": "fullscreen | standalone | minimal-ui | browser | picture-in-picture",
+          "value": "application | fullscreen | standalone | minimal-ui | browser | picture-in-picture",
           "type": "discrete",
           "values": [
+            {
+              "name": "application",
+              "prose": "The top-level browsing context is an application context.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-display-mode-application",
+              "type": "value",
+              "value": "application"
+            },
             {
               "name": "fullscreen",
               "prose": "The browsing context is displayed with browser UI elements hidden and takes up the entirety of the available display area. The fullscreen context may have been caused by the fullscreen display mode in the application manifest, by the requestFullscreen() method of the Fullscreen API, or through some other means (such as the user manually activating fullscreen mode using the user agent’s built-in controls). Corresponds to the fullscreen display mode.",
@@ -171,7 +178,7 @@
             },
             {
               "name": "browser",
-              "prose": "The browsing context is displayed using the platform-specific convention for opening hyperlinks in the user agent (e.g., in a browser tab or web browser window with controls such as an address bar). This should be used for non-application contexts where no other display mode is appropriate. Corresponds to the browser display mode.",
+              "prose": "The browsing context is displayed using the platform-specific convention for opening hyperlinks in the user agent (e.g., in a browser tab or web browser window with controls such as an address bar). Only applicable in non-application contexts. Corresponds to the browser display mode.",
               "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-display-mode-browser",
               "type": "value",
               "value": "browser"

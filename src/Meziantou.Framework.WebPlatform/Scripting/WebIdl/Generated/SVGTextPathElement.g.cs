@@ -22,6 +22,7 @@ internal static class Binding_SVGTextPathElement<TAdapter, TValue> where TAdapte
     private static TValue Get_startOffset(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.SvgTextPathElement>(t, Binding); return r.Wrap(o.StartOffset); }
     private static TValue Get_method(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.SvgTextPathElement>(t, Binding); return r.Wrap(o.Method); }
     private static TValue Get_spacing(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.SvgTextPathElement>(t, Binding); return r.Wrap(o.Spacing); }
+    private static TValue Get_side(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.SvgTextPathElement>(t, Binding); return r.Wrap(o.Side); }
     private static TValue Get_href(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.SvgTextPathElement>(t, Binding); return r.Wrap(o.Href); }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
@@ -31,9 +32,13 @@ internal static class Binding_SVGTextPathElement<TAdapter, TValue> where TAdapte
         r.DefineConstant(interfaceObject, prototype, "TEXTPATH_SPACINGTYPE_UNKNOWN", r.Adapter.FromNumber(0d));
         r.DefineConstant(interfaceObject, prototype, "TEXTPATH_SPACINGTYPE_AUTO", r.Adapter.FromNumber(1d));
         r.DefineConstant(interfaceObject, prototype, "TEXTPATH_SPACINGTYPE_EXACT", r.Adapter.FromNumber(2d));
+        r.DefineConstant(interfaceObject, prototype, "TEXTPATH_SIDETYPE_UNKNOWN", r.Adapter.FromNumber(0d));
+        r.DefineConstant(interfaceObject, prototype, "TEXTPATH_SIDETYPE_LEFT", r.Adapter.FromNumber(1d));
+        r.DefineConstant(interfaceObject, prototype, "TEXTPATH_SIDETYPE_RIGHT", r.Adapter.FromNumber(2d));
         r.DefineAttribute(instanceTarget, "startOffset", Get_startOffset, null);
         r.DefineAttribute(instanceTarget, "method", Get_method, null);
         r.DefineAttribute(instanceTarget, "spacing", Get_spacing, null);
+        r.DefineAttribute(instanceTarget, "side", Get_side, null);
         r.DefineAttribute(instanceTarget, "href", Get_href, null);
     }
 }

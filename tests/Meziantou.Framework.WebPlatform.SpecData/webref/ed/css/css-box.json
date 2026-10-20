@@ -374,75 +374,12 @@
   "warnings": [
     {
       "msg": "Dangling value",
-      "name": "content-box",
-      "prose": "Refers to the content box or content edge. (In an SVG context, treated as fill-box.)",
-      "href": "https://drafts.csswg.org/css-box-4/#valdef-box-content-box",
-      "type": "value",
-      "value": "content-box",
-      "for": "<shape-box>"
-    },
-    {
-      "msg": "Dangling value",
-      "name": "content-box",
-      "prose": "Refers to the content box or content edge. (In an SVG context, treated as fill-box.)",
-      "href": "https://drafts.csswg.org/css-box-4/#valdef-box-content-box",
-      "type": "value",
-      "value": "content-box",
-      "for": "<geometry-box>"
-    },
-    {
-      "msg": "Dangling value",
-      "name": "padding-box",
-      "prose": "Refers to the padding box or padding edge. (In an SVG context, treated as fill-box.)",
-      "href": "https://drafts.csswg.org/css-box-4/#valdef-box-padding-box",
-      "type": "value",
-      "value": "padding-box",
-      "for": "<shape-box>"
-    },
-    {
-      "msg": "Dangling value",
-      "name": "padding-box",
-      "prose": "Refers to the padding box or padding edge. (In an SVG context, treated as fill-box.)",
-      "href": "https://drafts.csswg.org/css-box-4/#valdef-box-padding-box",
-      "type": "value",
-      "value": "padding-box",
-      "for": "<geometry-box>"
-    },
-    {
-      "msg": "Dangling value",
-      "name": "border-box",
-      "prose": "Refers to the border box or border edge. (In an SVG context, treated as stroke-box.)",
-      "href": "https://drafts.csswg.org/css-box-4/#valdef-box-border-box",
-      "type": "value",
-      "value": "border-box",
-      "for": "<shape-box>"
-    },
-    {
-      "msg": "Dangling value",
-      "name": "border-box",
-      "prose": "Refers to the border box or border edge. (In an SVG context, treated as stroke-box.)",
-      "href": "https://drafts.csswg.org/css-box-4/#valdef-box-border-box",
-      "type": "value",
-      "value": "border-box",
-      "for": "<geometry-box>"
-    },
-    {
-      "msg": "Dangling value",
       "name": "margin-box",
       "prose": "Refers to the margin box or margin edge. (In an SVG context, treated as stroke-box.)",
       "href": "https://drafts.csswg.org/css-box-4/#valdef-box-margin-box",
       "type": "value",
       "value": "margin-box",
       "for": "<shape-box>"
-    },
-    {
-      "msg": "Dangling value",
-      "name": "margin-box",
-      "prose": "Refers to the margin box or margin edge. (In an SVG context, treated as stroke-box.)",
-      "href": "https://drafts.csswg.org/css-box-4/#valdef-box-margin-box",
-      "type": "value",
-      "value": "margin-box",
-      "for": "<geometry-box>"
     },
     {
       "msg": "Dangling value",

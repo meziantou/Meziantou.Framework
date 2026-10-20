@@ -169,7 +169,7 @@ internal static class Binding_Range<TAdapter, TValue> where TAdapter : struct, g
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Range>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("createContextualFragment", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_26(r, a[0]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_25(r, a[0]);
         if ((a0 is null or string)) { var result = o.CreateContextualFragment((string)a0!); return r.Wrap(result); }
         if ((a0 is null or global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml)) { var result = o.CreateContextualFragment((global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml)a0!); return r.Wrap(result); }
         throw r.CreateTypeError("Failed to execute 'createContextualFragment': the arguments are not supported");

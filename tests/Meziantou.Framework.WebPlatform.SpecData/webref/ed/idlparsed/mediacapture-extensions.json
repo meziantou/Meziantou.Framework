@@ -15,15 +15,19 @@
       "functions": {
         "Window": [
           "MediaStreamTrack",
+          "OverconstrainedError",
           "MediaStreamTrackAudioStats",
           "MediaStreamTrackVideoStats",
-          "MediaStream"
+          "MediaStream",
+          "MediaStreamTrackEvent"
         ],
         "DedicatedWorker": [
           "MediaStreamTrack",
+          "OverconstrainedError",
           "MediaStreamTrackAudioStats",
           "MediaStreamTrackVideoStats",
-          "MediaStream"
+          "MediaStream",
+          "MediaStreamTrackEvent"
         ]
       }
     },
@@ -1137,6 +1141,34 @@
           "partial": true
         }
       ],
+      "OverconstrainedError": [
+        {
+          "fragment": "[Exposed=(Window,DedicatedWorker)]\npartial interface OverconstrainedError {\n};",
+          "type": "interface",
+          "name": "OverconstrainedError",
+          "inheritance": null,
+          "members": [],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier-list",
+                "value": [
+                  {
+                    "value": "Window"
+                  },
+                  {
+                    "value": "DedicatedWorker"
+                  }
+                ]
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
+      ],
       "MediaTrackSupportedConstraints": [
         {
           "fragment": "partial dictionary MediaTrackSupportedConstraints {\n  boolean powerEfficient = true;\n};",
@@ -2137,24 +2169,56 @@
           ],
           "partial": true
         }
+      ],
+      "MediaStreamTrackEvent": [
+        {
+          "fragment": "[Exposed=(Window,DedicatedWorker)]\npartial interface MediaStreamTrackEvent {\n};",
+          "type": "interface",
+          "name": "MediaStreamTrackEvent",
+          "inheritance": null,
+          "members": [],
+          "extAttrs": [
+            {
+              "type": "extended-attribute",
+              "name": "Exposed",
+              "rhs": {
+                "type": "identifier-list",
+                "value": [
+                  {
+                    "value": "Window"
+                  },
+                  {
+                    "value": "DedicatedWorker"
+                  }
+                ]
+              },
+              "arguments": []
+            }
+          ],
+          "partial": true
+        }
       ]
     },
     "globals": {},
     "exposed": {
       "Window": [
         "MediaStreamTrack",
+        "OverconstrainedError",
         "MediaStreamTrackAudioStats",
         "MediaStreamTrackVideoStats",
         "MediaStream",
+        "MediaStreamTrackEvent",
         "HTMLCameraElement",
         "HTMLMicrophoneElement",
         "HTMLUserMediaElement"
       ],
       "DedicatedWorker": [
         "MediaStreamTrack",
+        "OverconstrainedError",
         "MediaStreamTrackAudioStats",
         "MediaStreamTrackVideoStats",
-        "MediaStream"
+        "MediaStream",
+        "MediaStreamTrackEvent"
       ]
     },
     "dependencies": {
@@ -2169,6 +2233,7 @@
         "MediaStreamTrackVideoStats",
         "EventHandler"
       ],
+      "OverconstrainedError": [],
       "MediaStreamTrackAudioStats": [
         "DOMHighResTimeStamp"
       ],
@@ -2195,6 +2260,7 @@
       ],
       "MediaEffectInfo": [],
       "MediaStream": [],
+      "MediaStreamTrackEvent": [],
       "HTMLCameraElement": [
         "HTMLElement",
         "MediaStreamTrack",
@@ -2224,6 +2290,7 @@
       "MediaDevices",
       "MediaStreamConstraints",
       "MediaStreamTrack",
+      "OverconstrainedError",
       "DOMHighResTimeStamp",
       "MediaTrackSupportedConstraints",
       "MediaTrackCapabilities",
@@ -2236,6 +2303,7 @@
       "DOMRectInit",
       "ConstrainDOMString",
       "MediaStream",
+      "MediaStreamTrackEvent",
       "ImageBitmap",
       "HTMLElement",
       "DOMException"

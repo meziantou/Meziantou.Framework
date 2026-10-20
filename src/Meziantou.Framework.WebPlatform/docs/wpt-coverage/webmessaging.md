@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 130 | 131 | 0 | 99% |
+| [Stable](#stable-tests) | 131 | 131 | 0 | 100% |
 | [Tentative](#tentative-tests) | 0 | 7 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **130** | **138** | **0** | **94%** |
+| **All** | **131** | **138** | **0** | **95%** |
 
 ## Stable tests
 
@@ -56,7 +56,7 @@
 | [`message-channels/cross-document.html`](https://wpt.fyi/results/webmessaging/message-channels/cross-document.html) | Pass | 1 / 1 |  |  |
 | [`message-channels/detached-iframe.window.js`](https://wpt.fyi/results/webmessaging/message-channels/detached-iframe.window.js) | Pass | 2 / 2 |  |  |
 | [`message-channels/dictionary-transferrable.any.js`](https://wpt.fyi/results/webmessaging/message-channels/dictionary-transferrable.any.js) | Pass | 2 / 2 |  |  |
-| [`message-channels/historical.any.js`](https://wpt.fyi/results/webmessaging/message-channels/historical.any.js) | Fail | 3 / 9 | TEST BUG | the historical test expects no `onclose` attribute nor `close` event on `MessagePort`, which the HTML Standard defines (they fail in the browsers that implement them) |
+| [`message-channels/historical.any.js`](https://wpt.fyi/results/webmessaging/message-channels/historical.any.js) | Pass | 9 / 9 |  |  |
 | [`message-channels/implied-start.any.js`](https://wpt.fyi/results/webmessaging/message-channels/implied-start.any.js) | Pass | 2 / 2 |  |  |
 | [`message-channels/no-start.any.js`](https://wpt.fyi/results/webmessaging/message-channels/no-start.any.js) | Pass | 2 / 2 |  |  |
 | [`message-channels/worker-post-after-close.any.js`](https://wpt.fyi/results/webmessaging/message-channels/worker-post-after-close.any.js) | Pass | 2 / 2 |  |  |

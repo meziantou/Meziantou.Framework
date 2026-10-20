@@ -6,23 +6,28 @@
   "elements": [
     {
       "name": "ruby",
-      "href": "https://w3c.github.io/html-ruby/#elementdef-ruby"
+      "href": "https://w3c.github.io/html-ruby/#elementdef-ruby",
+      "interface": "HTMLElement"
     },
     {
       "name": "rb",
-      "href": "https://w3c.github.io/html-ruby/#elementdef-rb"
+      "href": "https://w3c.github.io/html-ruby/#elementdef-rb",
+      "interface": "HTMLElement"
     },
     {
       "name": "rt",
-      "href": "https://w3c.github.io/html-ruby/#elementdef-rt"
+      "href": "https://w3c.github.io/html-ruby/#elementdef-rt",
+      "interface": "HTMLElement"
     },
     {
       "name": "rtc",
-      "href": "https://w3c.github.io/html-ruby/#elementdef-rtc"
+      "href": "https://w3c.github.io/html-ruby/#elementdef-rtc",
+      "interface": "HTMLElement"
     },
     {
       "name": "rp",
-      "href": "https://w3c.github.io/html-ruby/#elementdef-rp"
+      "href": "https://w3c.github.io/html-ruby/#elementdef-rp",
+      "interface": "HTMLElement"
     }
   ]
 }

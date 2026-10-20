@@ -149,15 +149,10 @@
         "href": "https://gpuweb.github.io/gpuweb/#dictdef-gpuobjectdescriptorbase"
       },
       "GPUFeatureName": {
-        "fragment": "enum GPUFeatureName {\n    \"atomic-vec2u-min-max\",\n    \"core-features-and-limits\",\n    \"depth-clip-control\",\n    \"depth32float-stencil8\",\n    \"texture-compression-bc\",\n    \"texture-compression-bc-sliced-3d\",\n    \"texture-compression-etc2\",\n    \"texture-compression-astc\",\n    \"texture-compression-astc-sliced-3d\",\n    \"timestamp-query\",\n    \"indirect-first-instance\",\n    \"shader-f16\",\n    \"rg11b10ufloat-renderable\",\n    \"bgra8unorm-storage\",\n    \"float32-filterable\",\n    \"float32-blendable\",\n    \"clip-distances\",\n    \"dual-source-blending\",\n    \"subgroups\",\n    \"texture-formats-tier1\",\n    \"texture-formats-tier2\",\n    \"primitive-index\",\n    \"texture-component-swizzle\",\n    \"subgroup-size-control\",\n    \"texture-compression-unaligned\",\n};",
+        "fragment": "enum GPUFeatureName {\n    \"core-features-and-limits\",\n    \"depth-clip-control\",\n    \"depth32float-stencil8\",\n    \"texture-compression-bc\",\n    \"texture-compression-bc-sliced-3d\",\n    \"texture-compression-etc2\",\n    \"texture-compression-astc\",\n    \"texture-compression-astc-sliced-3d\",\n    \"timestamp-query\",\n    \"indirect-first-instance\",\n    \"shader-f16\",\n    \"rg11b10ufloat-renderable\",\n    \"bgra8unorm-storage\",\n    \"float32-filterable\",\n    \"float32-blendable\",\n    \"clip-distances\",\n    \"dual-source-blending\",\n    \"subgroups\",\n    \"texture-formats-tier1\",\n    \"texture-formats-tier2\",\n    \"primitive-index\",\n    \"texture-component-swizzle\",\n    \"subgroup-size-control\",\n    \"texture-compression-unaligned\",\n    \"atomic-vec2u-min-max\",\n};",
         "type": "enum",
         "name": "GPUFeatureName",
         "values": [
-          {
-            "type": "enum-value",
-            "value": "atomic-vec2u-min-max",
-            "href": "https://gpuweb.github.io/gpuweb/#dom-gpufeaturename-atomic-vec2u-min-max"
-          },
           {
             "type": "enum-value",
             "value": "core-features-and-limits",
@@ -277,6 +272,11 @@
             "type": "enum-value",
             "value": "texture-compression-unaligned",
             "href": "https://gpuweb.github.io/gpuweb/#dom-gpufeaturename-texture-compression-unaligned"
+          },
+          {
+            "type": "enum-value",
+            "value": "atomic-vec2u-min-max",
+            "href": "https://gpuweb.github.io/gpuweb/#dom-gpufeaturename-atomic-vec2u-min-max"
           }
         ],
         "extAttrs": [],

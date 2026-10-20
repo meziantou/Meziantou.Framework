@@ -48,7 +48,7 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("sendBeacon", 1, a.Length);
         var a0 = r.ToUsvString(a[0]);
-        var a1 = r.IsMissing(a, 1) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_64(r, a[1]);
+        var a1 = r.IsMissing(a, 1) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_66(r, a[1]);
         var result = o.SendBeacon(a0, a1); return r.FromBoolean(result);
     }
     private static TValue Op_taintEnabled(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)

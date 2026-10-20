@@ -11,6 +11,7 @@
           "TrustedHTML",
           "TrustedScript",
           "TrustedScriptURL",
+          "TrustedHTMLParserOptions",
           "TrustedTypePolicyFactory",
           "TrustedTypePolicy"
         ],
@@ -176,6 +177,26 @@
         ],
         "partial": false,
         "href": "https://w3c.github.io/trusted-types/dist/spec/#trustedscripturl"
+      },
+      "TrustedHTMLParserOptions": {
+        "fragment": "[Exposed=Window]\ninterface TrustedHTMLParserOptions {\n};",
+        "type": "interface",
+        "name": "TrustedHTMLParserOptions",
+        "inheritance": null,
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/trusted-types/dist/spec/#trustedhtmlparseroptions"
       },
       "TrustedTypePolicyFactory": {
         "fragment": "[Exposed=(Window,Worker)] interface TrustedTypePolicyFactory {\n    TrustedTypePolicy createPolicy(\n        DOMString policyName, optional TrustedTypePolicyOptions policyOptions = {});\n    boolean isHTML(any value);\n    boolean isScript(any value);\n    boolean isScriptURL(any value);\n    readonly attribute TrustedHTML emptyHTML;\n    readonly attribute TrustedScript emptyScript;\n    DOMString? getAttributeType(\n        DOMString tagName,\n        DOMString attribute,\n        optional DOMString? elementNs = \"\",\n        optional DOMString? attrNs = \"\");\n    DOMString? getPropertyType(\n        DOMString tagName,\n        DOMString property,\n        optional DOMString? elementNs = \"\");\n    readonly attribute TrustedTypePolicy? defaultPolicy;\n};",
@@ -559,7 +580,7 @@
         "href": "https://w3c.github.io/trusted-types/dist/spec/#trustedtypepolicyfactory"
       },
       "TrustedTypePolicy": {
-        "fragment": "[Exposed=(Window,Worker)]\ninterface TrustedTypePolicy {\n  readonly attribute DOMString name;\n  TrustedHTML createHTML(DOMString input, any... arguments);\n  TrustedScript createScript(DOMString input, any... arguments);\n  TrustedScriptURL createScriptURL(DOMString input, any... arguments);\n};",
+        "fragment": "[Exposed=(Window,Worker)]\ninterface TrustedTypePolicy {\n  readonly attribute DOMString name;\n  TrustedHTML createHTML(DOMString input, any... arguments);\n  TrustedScript createScript(DOMString input, any... arguments);\n  TrustedScriptURL createScriptURL(DOMString input, any... arguments);\n  [Exposed=Window] TrustedHTMLParserOptions createParserOptions(optional SetHTMLUnsafeOptions options = {}, any... arguments);\n};",
         "type": "interface",
         "name": "TrustedTypePolicy",
         "inheritance": null,
@@ -726,6 +747,67 @@
             "extAttrs": [],
             "special": "",
             "href": "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicy-createscripturl"
+          },
+          {
+            "type": "operation",
+            "name": "createParserOptions",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "TrustedHTMLParserOptions"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "options",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "SetHTMLUnsafeOptions"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "arguments",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "any"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": true
+              }
+            ],
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Exposed",
+                "rhs": {
+                  "type": "identifier",
+                  "value": "Window"
+                },
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "href": "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicy-createparseroptions"
           }
         ],
         "extAttrs": [
@@ -750,7 +832,7 @@
         "href": "https://w3c.github.io/trusted-types/dist/spec/#trustedtypepolicy"
       },
       "TrustedTypePolicyOptions": {
-        "fragment": "dictionary TrustedTypePolicyOptions {\n   CreateHTMLCallback createHTML;\n   CreateScriptCallback createScript;\n   CreateScriptURLCallback createScriptURL;\n};",
+        "fragment": "dictionary TrustedTypePolicyOptions {\n   CreateHTMLCallback createHTML;\n   CreateScriptCallback createScript;\n   CreateScriptURLCallback createScriptURL;\n   CreateParserOptionsCallback createParserOptions;\n};",
         "type": "dictionary",
         "name": "TrustedTypePolicyOptions",
         "inheritance": null,
@@ -802,6 +884,22 @@
             "default": null,
             "required": false,
             "href": "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyoptions-createscripturl"
+          },
+          {
+            "type": "field",
+            "name": "createParserOptions",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CreateParserOptionsCallback"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyoptions-createparseroptions"
           }
         ],
         "extAttrs": [],
@@ -955,6 +1053,55 @@
         "extAttrs": [],
         "href": "https://w3c.github.io/trusted-types/dist/spec/#callbackdef-createscripturlcallback"
       },
+      "CreateParserOptionsCallback": {
+        "fragment": "callback CreateParserOptionsCallback = SetHTMLUnsafeOptions? (SetHTMLUnsafeOptions options, any... arguments);",
+        "type": "callback",
+        "name": "CreateParserOptionsCallback",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": true,
+          "union": false,
+          "idlType": "SetHTMLUnsafeOptions"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "options",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "SetHTMLUnsafeOptions"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          },
+          {
+            "type": "argument",
+            "name": "arguments",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "any"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": true
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/trusted-types/dist/spec/#callbackdef-createparseroptionscallback"
+      },
       "TrustedType": {
         "fragment": "typedef (TrustedHTML or TrustedScript or TrustedScriptURL) TrustedType;",
         "type": "typedef",
@@ -1032,6 +1179,7 @@
         "TrustedHTML",
         "TrustedScript",
         "TrustedScriptURL",
+        "TrustedHTMLParserOptions",
         "TrustedTypePolicyFactory",
         "TrustedTypePolicy"
       ],
@@ -1047,6 +1195,7 @@
       "TrustedHTML": [],
       "TrustedScript": [],
       "TrustedScriptURL": [],
+      "TrustedHTMLParserOptions": [],
       "TrustedTypePolicyFactory": [
         "TrustedTypePolicy",
         "TrustedTypePolicyOptions",
@@ -1056,18 +1205,22 @@
       "TrustedTypePolicy": [
         "TrustedHTML",
         "TrustedScript",
-        "TrustedScriptURL"
+        "TrustedScriptURL",
+        "TrustedHTMLParserOptions",
+        "SetHTMLUnsafeOptions"
       ],
       "TrustedTypePolicyOptions": [
         "CreateHTMLCallback",
         "CreateScriptCallback",
-        "CreateScriptURLCallback"
+        "CreateScriptURLCallback",
+        "CreateParserOptionsCallback"
       ],
       "WindowOrWorkerGlobalScope": [
         "TrustedTypePolicyFactory"
       ]
     },
     "externalDependencies": [
+      "SetHTMLUnsafeOptions",
       "WindowOrWorkerGlobalScope"
     ],
     "hasObsoleteIdl": false

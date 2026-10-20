@@ -1620,7 +1620,7 @@
     {
       "name": "corner-top-left",
       "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-top-left",
-      "value": "<'border-top-left-radius'> || <'corner-top-left-shape'>",
+      "value": "<'corner-top-left-shape'> || <'border-top-left-radius'>",
       "initial": "0",
       "appliesTo": "all elements (but see prose)",
       "inherited": "no",
@@ -1640,7 +1640,7 @@
     {
       "name": "corner-top-right",
       "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-top-right",
-      "value": "<'border-top-left-radius'> || <'corner-top-left-shape'>",
+      "value": "<'corner-top-left-shape'> || <'border-top-left-radius'>",
       "initial": "0",
       "appliesTo": "all elements (but see prose)",
       "inherited": "no",
@@ -1660,7 +1660,7 @@
     {
       "name": "corner-bottom-left",
       "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-bottom-left",
-      "value": "<'border-top-left-radius'> || <'corner-top-left-shape'>",
+      "value": "<'corner-top-left-shape'> || <'border-top-left-radius'>",
       "initial": "0",
       "appliesTo": "all elements (but see prose)",
       "inherited": "no",
@@ -1680,7 +1680,7 @@
     {
       "name": "corner-bottom-right",
       "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-bottom-right",
-      "value": "<'border-top-left-radius'> || <'corner-top-left-shape'>",
+      "value": "<'corner-top-left-shape'> || <'border-top-left-radius'>",
       "initial": "0",
       "appliesTo": "all elements (but see prose)",
       "inherited": "no",
@@ -1700,7 +1700,7 @@
     {
       "name": "corner-start-start",
       "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-start-start",
-      "value": "<'border-top-left-radius'> || <'corner-top-left-shape'>",
+      "value": "<'corner-top-left-shape'> || <'border-top-left-radius'>",
       "initial": "0",
       "appliesTo": "all elements (but see prose)",
       "inherited": "no",
@@ -1720,7 +1720,7 @@
     {
       "name": "corner-start-end",
       "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-start-end",
-      "value": "<'border-top-left-radius'> || <'corner-top-left-shape'>",
+      "value": "<'corner-top-left-shape'> || <'border-top-left-radius'>",
       "initial": "0",
       "appliesTo": "all elements (but see prose)",
       "inherited": "no",
@@ -1740,7 +1740,7 @@
     {
       "name": "corner-end-start",
       "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-end-start",
-      "value": "<'border-top-left-radius'> || <'corner-top-left-shape'>",
+      "value": "<'corner-top-left-shape'> || <'border-top-left-radius'>",
       "initial": "0",
       "appliesTo": "all elements (but see prose)",
       "inherited": "no",
@@ -1760,7 +1760,7 @@
     {
       "name": "corner-end-end",
       "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-end-end",
-      "value": "<'border-top-left-radius'> || <'corner-top-left-shape'>",
+      "value": "<'corner-top-left-shape'> || <'border-top-left-radius'>",
       "initial": "0",
       "appliesTo": "all elements (but see prose)",
       "inherited": "no",
@@ -1780,7 +1780,7 @@
     {
       "name": "corner-top",
       "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-top",
-      "value": "<'border-top-radius'> || <'corner-top-shape'>",
+      "value": "<'corner-top-shape'> || <'border-top-radius'>",
       "initial": "0",
       "appliesTo": "all elements (but see prose)",
       "inherited": "no",
@@ -1800,7 +1800,7 @@
     {
       "name": "corner-right",
       "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-right",
-      "value": "<'border-top-radius'> || <'corner-top-shape'>",
+      "value": "<'corner-top-shape'> || <'border-top-radius'>",
       "initial": "0",
       "appliesTo": "all elements (but see prose)",
       "inherited": "no",
@@ -1820,7 +1820,7 @@
     {
       "name": "corner-bottom",
       "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-bottom",
-      "value": "<'border-top-radius'> || <'corner-top-shape'>",
+      "value": "<'corner-top-shape'> || <'border-top-radius'>",
       "initial": "0",
       "appliesTo": "all elements (but see prose)",
       "inherited": "no",
@@ -1840,7 +1840,7 @@
     {
       "name": "corner-left",
       "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-left",
-      "value": "<'border-top-radius'> || <'corner-top-shape'>",
+      "value": "<'corner-top-shape'> || <'border-top-radius'>",
       "initial": "0",
       "appliesTo": "all elements (but see prose)",
       "inherited": "no",
@@ -1860,7 +1860,7 @@
     {
       "name": "corner-block-start",
       "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-block-start",
-      "value": "<'border-top-radius'> || <'corner-top-shape'>",
+      "value": "<'corner-top-shape'> || <'border-top-radius'>",
       "initial": "0",
       "appliesTo": "all elements (but see prose)",
       "inherited": "no",
@@ -1880,7 +1880,7 @@
     {
       "name": "corner-block-end",
       "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-block-end",
-      "value": "<'border-top-radius'> || <'corner-top-shape'>",
+      "value": "<'corner-top-shape'> || <'border-top-radius'>",
       "initial": "0",
       "appliesTo": "all elements (but see prose)",
       "inherited": "no",
@@ -1900,7 +1900,7 @@
     {
       "name": "corner-inline-start",
       "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-inline-start",
-      "value": "<'border-top-radius'> || <'corner-top-shape'>",
+      "value": "<'corner-top-shape'> || <'border-top-radius'>",
       "initial": "0",
       "appliesTo": "all elements (but see prose)",
       "inherited": "no",
@@ -1920,7 +1920,7 @@
     {
       "name": "corner-inline-end",
       "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner-inline-end",
-      "value": "<'border-top-radius'> || <'corner-top-shape'>",
+      "value": "<'corner-top-shape'> || <'border-top-radius'>",
       "initial": "0",
       "appliesTo": "all elements (but see prose)",
       "inherited": "no",
@@ -1940,7 +1940,7 @@
     {
       "name": "corner",
       "href": "https://drafts.csswg.org/css-borders-4/#propdef-corner",
-      "value": "<'border-radius'> || <'corner-shape'>",
+      "value": "<'corner-shape'> || <'border-radius'>",
       "initial": "0",
       "appliesTo": "all elements (but see prose)",
       "inherited": "no",
@@ -1952,8 +1952,8 @@
         "corner"
       ],
       "longhands": [
-        "border-radius",
-        "corner-shape"
+        "corner-shape",
+        "border-radius"
       ]
     },
     {

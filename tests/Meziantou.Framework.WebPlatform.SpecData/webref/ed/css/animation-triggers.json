@@ -207,9 +207,29 @@
       ]
     },
     {
+      "name": "timeline-trigger-range",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#propdef-timeline-trigger-range",
+      "value": "[ <'timeline-trigger-activation-range'> [ / <'timeline-trigger-active-range'> ]? ]#",
+      "initial": "see individual properties",
+      "appliesTo": "see individual properties",
+      "inherited": "see individual properties",
+      "percentages": "see individual properties",
+      "computedValue": "see individual properties",
+      "animationType": "see individual properties",
+      "canonicalOrder": "per grammar",
+      "styleDeclaration": [
+        "timeline-trigger-range",
+        "timelineTriggerRange"
+      ],
+      "longhands": [
+        "timeline-trigger-activation-range",
+        "timeline-trigger-active-range"
+      ]
+    },
+    {
       "name": "timeline-trigger",
       "href": "https://drafts.csswg.org/animation-triggers-1/#propdef-timeline-trigger",
-      "value": "none | [ <'timeline-trigger-name'> <'timeline-trigger-source'> <'timeline-trigger-activation-range'> [ / <'timeline-trigger-active-range'> ]? ]#",
+      "value": "none | [ <'timeline-trigger-name'> <'timeline-trigger-source'> [ <'timeline-trigger-range'> ]? ]#",
       "initial": "see individual properties",
       "appliesTo": "see individual properties",
       "inherited": "see individual properties",
@@ -233,8 +253,7 @@
       "longhands": [
         "timeline-trigger-name",
         "timeline-trigger-source",
-        "timeline-trigger-activation-range",
-        "timeline-trigger-active-range"
+        "timeline-trigger-range"
       ]
     },
     {
@@ -256,7 +275,7 @@
     {
       "name": "event-trigger-source",
       "href": "https://drafts.csswg.org/animation-triggers-1/#propdef-event-trigger-source",
-      "value": "[ none | <event-trigger-event>+ [ / <event-trigger-event>+ ]? ]#",
+      "value": "[ none | <event-function>+ [ / <event-function>+ ]? ]#",
       "initial": "none",
       "appliesTo": "all elements",
       "inherited": "no",
@@ -273,11 +292,11 @@
           "value": "none"
         },
         {
-          "name": "<event-trigger-event>+ [ / <event-trigger-event>+ ]?",
+          "name": "<event-function>+ [ / <event-function>+ ]?",
           "prose": "Defines what event(s) the event trigger responds to. If a / is used in the value, the event trigger is stateful; the set of events before the / are the event trigger’s enter events, while those after the / are the exit events. (The same events can occur in both sets.) Otherwise, the event trigger is stateless, and the provided events are its enter events.",
-          "href": "https://drafts.csswg.org/animation-triggers-1/#valdef-event-trigger-source-event-trigger-event--event-trigger-event",
+          "href": "https://drafts.csswg.org/animation-triggers-1/#valdef-event-trigger-source-event-function--event-function",
           "type": "value",
-          "value": "<event-trigger-event>+ [ / <event-trigger-event>+ ]?"
+          "value": "<event-function>+ [ / <event-function>+ ]?"
         }
       ],
       "styleDeclaration": [
@@ -347,10 +366,78 @@
   "selectors": [],
   "values": [
     {
-      "name": "<event-trigger-event>",
-      "href": "https://drafts.csswg.org/animation-triggers-1/#typedef-event-trigger-event",
+      "name": "<event-function>",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#typedef-event-function",
       "type": "type",
-      "value": "activate | interest | click | touch | dblclick | keypress(<string>) | ..."
+      "value": "<click()> | <dblclick()> | <pointerenter()> | <pointerleave()> | <pointerup()> | <pointerdown()> | <keypress()> | <focusin()> | <focusout()> | <input()> | <change()>",
+      "values": [
+        {
+          "name": "keypress()",
+          "value": "keypress( <string>? )",
+          "href": "https://drafts.csswg.org/animation-triggers-1/#funcdef-event-function-keypress",
+          "type": "function"
+        }
+      ]
+    },
+    {
+      "name": "click()",
+      "value": "click()",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#funcdef-click",
+      "type": "function"
+    },
+    {
+      "name": "dblclick()",
+      "value": "dblclick()",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#funcdef-dblclick",
+      "type": "function"
+    },
+    {
+      "name": "pointerenter()",
+      "value": "pointerenter()",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#funcdef-pointerenter",
+      "type": "function"
+    },
+    {
+      "name": "pointerleave()",
+      "value": "pointerleave()",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#funcdef-pointerleave",
+      "type": "function"
+    },
+    {
+      "name": "pointerup()",
+      "value": "pointerup()",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#funcdef-pointerup",
+      "type": "function"
+    },
+    {
+      "name": "pointerdown()",
+      "value": "pointerdown()",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#funcdef-pointerdown",
+      "type": "function"
+    },
+    {
+      "name": "focusin()",
+      "value": "focusin()",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#funcdef-focusin",
+      "type": "function"
+    },
+    {
+      "name": "focusout()",
+      "value": "focusout()",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#funcdef-focusout",
+      "type": "function"
+    },
+    {
+      "name": "input()",
+      "value": "input()",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#funcdef-input",
+      "type": "function"
+    },
+    {
+      "name": "change()",
+      "value": "change()",
+      "href": "https://drafts.csswg.org/animation-triggers-1/#funcdef-change",
+      "type": "function"
     },
     {
       "name": "<animation-action>",

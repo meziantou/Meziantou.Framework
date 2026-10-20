@@ -1376,6 +1376,17 @@ public sealed partial class CssStyleProperties : CssStyleDeclaration
         get => GetPropertyValue("grid-lanes-pack");
         set => SetProperty("grid-lanes-pack", value ?? "");
     }
+
+    /// <summary>Gets or sets the <c>flow-tolerance</c> property of the declaration block, the legacy name alias of <c>fit-tolerance</c>.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
+    [IdlMember("flowTolerance", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
+    [IdlMember("flow-tolerance", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
+    public string FlowTolerance
+    {
+        get => GetPropertyValue("flow-tolerance");
+        set => SetProperty("flow-tolerance", value ?? "");
+    }
 }
 
 /// <summary>https://drafts.csswg.org/css-fonts-5/#cssfontfacedescriptors</summary>

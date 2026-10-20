@@ -11,17 +11,7 @@
           "Instance",
           "Memory",
           "Table",
-          "Global"
-        ],
-        "Window": [
-          "Tag",
-          "Exception"
-        ],
-        "Worker": [
-          "Tag",
-          "Exception"
-        ],
-        "Worklet": [
+          "Global",
           "Tag",
           "Exception"
         ]
@@ -73,7 +63,7 @@
         "href": "https://webassembly.github.io/spec/js-api/#dictdef-webassemblyinstantiatedsource"
       },
       "WebAssemblyCompileOptions": {
-        "fragment": "dictionary WebAssemblyCompileOptions {\n    USVString? importedStringConstants;\n    sequence<USVString> builtins;\n};",
+        "fragment": "dictionary WebAssemblyCompileOptions {\n    USVString? importedStringConstants = null;\n    sequence<USVString> builtins = [];\n};",
         "type": "dictionary",
         "name": "WebAssemblyCompileOptions",
         "inheritance": null,
@@ -90,7 +80,9 @@
               "union": false,
               "idlType": "USVString"
             },
-            "default": null,
+            "default": {
+              "type": "null"
+            },
             "required": false,
             "href": "https://webassembly.github.io/spec/js-api/#dom-webassemblycompileoptions-importedstringconstants"
           },
@@ -115,7 +107,10 @@
                 }
               ]
             },
-            "default": null,
+            "default": {
+              "type": "sequence",
+              "value": []
+            },
             "required": false,
             "href": "https://webassembly.github.io/spec/js-api/#dom-webassemblycompileoptions-builtins"
           }
@@ -1633,7 +1628,7 @@
         "href": "https://webassembly.github.io/spec/js-api/#dictdef-tagtype"
       },
       "Tag": {
-        "fragment": "[LegacyNamespace=WebAssembly, Exposed=(Window,Worker,Worklet)]\ninterface Tag {\n  constructor(TagType type);\n};",
+        "fragment": "[LegacyNamespace=WebAssembly, Exposed=*]\ninterface Tag {\n  constructor(TagType type);\n};",
         "type": "interface",
         "name": "Tag",
         "inheritance": null,
@@ -1676,18 +1671,8 @@
             "type": "extended-attribute",
             "name": "Exposed",
             "rhs": {
-              "type": "identifier-list",
-              "value": [
-                {
-                  "value": "Window"
-                },
-                {
-                  "value": "Worker"
-                },
-                {
-                  "value": "Worklet"
-                }
-              ]
+              "type": "*",
+              "value": null
             },
             "arguments": []
           }
@@ -1726,7 +1711,7 @@
         "href": "https://webassembly.github.io/spec/js-api/#dictdef-exceptionoptions"
       },
       "Exception": {
-        "fragment": "[LegacyNamespace=WebAssembly, Exposed=(Window,Worker,Worklet)]\ninterface Exception {\n  constructor(Tag exceptionTag, sequence<any> payload, optional ExceptionOptions options = {});\n  any getArg(Tag exceptionTag, [EnforceRange] unsigned long index);\n  boolean is(Tag exceptionTag);\n  readonly attribute (DOMString or undefined) stack;\n};",
+        "fragment": "[LegacyNamespace=WebAssembly, Exposed=*]\ninterface Exception {\n  constructor(Tag exceptionTag, sequence<any> payload, optional ExceptionOptions options = {});\n  any getArg(Tag exceptionTag, [EnforceRange] unsigned long index);\n  boolean is(Tag exceptionTag);\n  readonly attribute (DOMString or undefined) stack;\n};",
         "type": "interface",
         "name": "Exception",
         "inheritance": null,
@@ -1934,18 +1919,8 @@
             "type": "extended-attribute",
             "name": "Exposed",
             "rhs": {
-              "type": "identifier-list",
-              "value": [
-                {
-                  "value": "Window"
-                },
-                {
-                  "value": "Worker"
-                },
-                {
-                  "value": "Worklet"
-                }
-              ]
+              "type": "*",
+              "value": null
             },
             "arguments": []
           }
@@ -1963,17 +1938,7 @@
         "Instance",
         "Memory",
         "Table",
-        "Global"
-      ],
-      "Window": [
-        "Tag",
-        "Exception"
-      ],
-      "Worker": [
-        "Tag",
-        "Exception"
-      ],
-      "Worklet": [
+        "Global",
         "Tag",
         "Exception"
       ]

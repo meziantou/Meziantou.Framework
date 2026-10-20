@@ -483,7 +483,7 @@ internal static class Binding_Document<TAdapter, TValue> where TAdapter : struct
     private static TValue Op_parseHTMLUnsafe_Static(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         if (a.Length < 1) throw r.NotEnoughArguments("parseHTMLUnsafe", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_26(r, a[0]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_25(r, a[0]);
         var a1 = r.IsMissing(a, 1) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_35(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_35(r, a[1]);
         if ((a0 is null or string)) { var result = global::Meziantou.Framework.WebPlatform.Dom.Document.ParseHtmlUnsafe((string)a0!, (a1 is null ? (global::Meziantou.Framework.WebPlatform.Dom.ParseHtmlUnsafeOptionsOrTrustedHtmlParserOptions?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_ParseHtmlUnsafeOptionsOrTrustedHtmlParserOptions(r, a1))); return r.Wrap(result); }
         if ((a0 is null or global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml)) { var result = global::Meziantou.Framework.WebPlatform.Dom.Document.ParseHtmlUnsafe((global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml)a0!, (a1 is null ? (global::Meziantou.Framework.WebPlatform.Dom.ParseHtmlUnsafeOptionsOrTrustedHtmlParserOptions?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_ParseHtmlUnsafeOptionsOrTrustedHtmlParserOptions(r, a1))); return r.Wrap(result); }
@@ -535,13 +535,13 @@ internal static class Binding_Document<TAdapter, TValue> where TAdapter : struct
     private static TValue Op_write(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding);
-        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_26(r, a[i])); }
+        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_25(r, a[i])); }
         o.Write(global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a0!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_TrustedHtmlOrString(r, e))).ToArray()); return r.Adapter.Undefined;
     }
     private static TValue Op_writeln(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding);
-        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_26(r, a[i])); }
+        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_25(r, a[i])); }
         o.Writeln(global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a0!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_TrustedHtmlOrString(r, e))).ToArray()); return r.Adapter.Undefined;
     }
     private static TValue Op_hasFocus(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
@@ -555,7 +555,7 @@ internal static class Binding_Document<TAdapter, TValue> where TAdapter : struct
         if (a.Length < 1) throw r.NotEnoughArguments("execCommand", 1, a.Length);
         var a0 = r.ToDomString(a[0]);
         var a1 = r.IsMissing(a, 1) ? (bool)false : r.ToBoolean(a[1]);
-        var a2 = r.IsMissing(a, 2) ? (object?)(object)"" : WebIdlHelpers<TAdapter, TValue>.ToUnion_26(r, a[2]);
+        var a2 = r.IsMissing(a, 2) ? (object?)(object)"" : WebIdlHelpers<TAdapter, TValue>.ToUnion_25(r, a[2]);
         if ((a2 is null or string)) { var result = o.ExecCommand(a0, a1, (string)a2!); return r.FromBoolean(result); }
         if ((a2 is null or global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml)) { var result = o.ExecCommand(a0, a1, (global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml)a2!); return r.FromBoolean(result); }
         throw r.CreateTypeError("Failed to execute 'execCommand': the arguments are not supported");
@@ -668,19 +668,19 @@ internal static class Binding_Document<TAdapter, TValue> where TAdapter : struct
     private static TValue Op_prepend(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding);
-        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_20(r, a[i])); }
+        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_27(r, a[i])); }
         o.Prepend(global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a0!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_NodeOrString(r, e))).ToArray()); return r.Adapter.Undefined;
     }
     private static TValue Op_append(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding);
-        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_20(r, a[i])); }
+        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_27(r, a[i])); }
         o.Append(global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a0!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_NodeOrString(r, e))).ToArray()); return r.Adapter.Undefined;
     }
     private static TValue Op_replaceChildren(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding);
-        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_20(r, a[i])); }
+        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_27(r, a[i])); }
         o.ReplaceChildren(global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a0!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_NodeOrString(r, e))).ToArray()); return r.Adapter.Undefined;
     }
     private static TValue Op_moveBefore(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)

@@ -66,8 +66,8 @@
     },
     {
       "name": "::highlight()",
-      "value": "::highlight(<custom-ident>)",
-      "href": "https://drafts.csswg.org/css-pseudo-4/#selectordef-highlight-custom-ident"
+      "value": "::highlight(<highlight-name-selector>)",
+      "href": "https://drafts.csswg.org/css-pseudo-4/#selectordef-highlight-highlight-name-selector"
     },
     {
       "name": "::before",
@@ -88,11 +88,24 @@
       "value": "::marker"
     },
     {
+      "name": "::interest-button",
+      "prose": "The ::interest-button pseudo-element represents a button which, when pressed, shows interest in the originating element. This pseudo-element only exists on valid interest sources. (See interest-delay, :interest-source, and :interest-target for more discussion of this feature, and the HTML interestfor attribute.)",
+      "href": "https://drafts.csswg.org/css-pseudo-4/#selectordef-interest-button",
+      "value": "::interest-button"
+    },
+    {
       "name": "::details-content",
       "prose": "The ::details-content pseudo-element targets the additional information in a details element that can be expanded or collapsed. It is an element-backed pseudo-element.",
       "href": "https://drafts.csswg.org/css-pseudo-4/#selectordef-details-content",
       "value": "::details-content"
     }
   ],
-  "values": []
+  "values": [
+    {
+      "name": "<highlight-name-selector>",
+      "href": "https://drafts.csswg.org/css-pseudo-4/#typedef-highlight-name-selector",
+      "type": "type",
+      "value": "'*' | <custom-ident>"
+    }
+  ]
 }

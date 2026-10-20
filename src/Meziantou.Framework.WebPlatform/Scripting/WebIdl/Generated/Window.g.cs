@@ -556,7 +556,7 @@ internal static class Binding_Window<TAdapter, TValue> where TAdapter : struct, 
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("setTimeout", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_85(r, a[0]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_87(r, a[0]);
         var a1 = r.IsMissing(a, 1) ? (int)(int)(0d) : r.ToLong(a[1], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
         var a2 = new global::System.Collections.Generic.List<object?>(); for (var i = 2; i < a.Length; i++) { a2.Add(r.ToAny(a[i])); }
         var result = o.SetTimeout(WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_TimerHandler(r, a0), a1, a2.ToArray()); return r.FromNumber((double)result);
@@ -571,7 +571,7 @@ internal static class Binding_Window<TAdapter, TValue> where TAdapter : struct, 
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("setInterval", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_85(r, a[0]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_87(r, a[0]);
         var a1 = r.IsMissing(a, 1) ? (int)(int)(0d) : r.ToLong(a[1], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
         var a2 = new global::System.Collections.Generic.List<object?>(); for (var i = 2; i < a.Length; i++) { a2.Add(r.ToAny(a[i])); }
         var result = o.SetInterval(WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_TimerHandler(r, a0), a1, a2.ToArray()); return r.FromNumber((double)result);
@@ -598,14 +598,14 @@ internal static class Binding_Window<TAdapter, TValue> where TAdapter : struct, 
             case 0:
             {
                 if (a.Length < 1) throw r.NotEnoughArguments("createImageBitmap", 1, a.Length);
-                var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_86(r, a[0]);
+                var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_88(r, a[0]);
                 var a1 = r.IsMissing(a, 1) ? (global::Meziantou.Framework.WebPlatform.Dom.ImageBitmapOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ImageBitmapOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ImageBitmapOptions(r, a[1]);
                 var result = o.CreateImageBitmap(a0, a1); return r.ToPromise(result, static (r, value) => r.Wrap(value));
             }
             case 1:
             {
                 if (a.Length < 5) throw r.NotEnoughArguments("createImageBitmap", 5, a.Length);
-                var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_86(r, a[0]);
+                var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_88(r, a[0]);
                 var a1 = r.ToLong(a[1], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
                 var a2 = r.ToLong(a[2], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
                 var a3 = r.ToLong(a[3], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);

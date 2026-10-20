@@ -574,7 +574,7 @@ internal sealed class GridLayoutStyle
         ColumnEnd = GridLine.Parse(style.GetComputedValue("grid-column-end"));
         LanesDirection = GridLanesDirection.Parse(style.GetComputedValue("grid-lanes-direction"));
         LanesPackDense = style.GetComputedValue("grid-lanes-pack") == "dense";
-        FlowTolerance = FlowTolerance.Parse(style.GetComputedValue("flow-tolerance"), zoom);
+        FlowTolerance = FlowTolerance.Parse(style.GetComputedValue("fit-tolerance"), zoom);
     }
 
     public GridTrackList TemplateRows { get; }

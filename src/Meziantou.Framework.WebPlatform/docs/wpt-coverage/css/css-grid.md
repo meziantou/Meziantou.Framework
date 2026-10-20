@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 718 | 725 | 0 | 99% |
+| [Stable](#stable-tests) | 719 | 725 | 0 | 99% |
 | [Tentative](#tentative-tests) | 29 | 33 | 0 | 88% |
-| [Reftests](#reftests) | 1,677 | 1,717 | 0 | 98% |
-| **All** | **2,424** | **2,475** | **0** | **98%** |
+| [Reftests](#reftests) | 1,678 | 1,717 | 0 | 98% |
+| **All** | **2,426** | **2,475** | **0** | **98%** |
 
 ## Stable tests
 
@@ -469,7 +469,7 @@
 | [`grid-items/grid-minimum-size-grid-items-023.html`](https://wpt.fyi/results/css/css-grid/grid-items/grid-minimum-size-grid-items-023.html) | Pass | 60 / 60 |  |  |
 | [`grid-items/grid-minimum-size-grid-items-024.html`](https://wpt.fyi/results/css/css-grid/grid-items/grid-minimum-size-grid-items-024.html) | Pass | 45 / 45 |  |  |
 | [`grid-items/grid-minimum-size-grid-items-025.html`](https://wpt.fyi/results/css/css-grid/grid-items/grid-minimum-size-grid-items-025.html) | Pass | 60 / 60 |  |  |
-| [`grid-lanes/animation/fit-tolerance-interpolation.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/animation/fit-tolerance-interpolation.html) | Fail | 0 / 240 | NOT IMPLEMENTED | `fit-tolerance`, the new name of `flow-tolerance` (CSSWG resolution of 2026-08-05 in https://github.com/w3c/csswg-drafts/issues/10884, after the pinned specification data, which names the property `flow-tolerance`; WebKit renamed it and keeps `flow-tolerance` as an alias); passes in Safari only |
+| [`grid-lanes/animation/fit-tolerance-interpolation.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/animation/fit-tolerance-interpolation.html) | Pass | 240 / 240 |  |  |
 | [`grid-lanes/animation/flow-tolerance-interpolation.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/animation/flow-tolerance-interpolation.html) | Pass | 240 / 240 |  |  |
 | [`grid-lanes/animation/grid-template-columns-interpolation.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/animation/grid-template-columns-interpolation.html) | Pass | 726 / 726 |  |  |
 | [`grid-lanes/animation/grid-template-rows-interpolation.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/animation/grid-template-rows-interpolation.html) | Pass | 726 / 726 |  |  |
@@ -1706,7 +1706,7 @@
 | [`grid-lanes/item-placement/dense-packing/row-fill-reverse-dense-packing-indefinite-size-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/row-fill-reverse-dense-packing-indefinite-size-001.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-flow-tolerance-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-flow-tolerance-001.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-flow-tolerance-002.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-flow-tolerance-002.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/flow-tolerance/column-fit-tolerance-infinite-explicit-placement.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/column-fit-tolerance-infinite-explicit-placement.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `fit-tolerance`, the new name of `flow-tolerance` (CSSWG resolution of 2026-08-05 in https://github.com/w3c/csswg-drafts/issues/10884, after the pinned specification data, which names the property `flow-tolerance`; WebKit renamed it and keeps `flow-tolerance` as an alias); passes in Safari only |
+| [`grid-lanes/item-placement/flow-tolerance/column-fit-tolerance-infinite-explicit-placement.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/column-fit-tolerance-infinite-explicit-placement.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/flow-tolerance/column-flow-tolerance-infinite.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/column-flow-tolerance-infinite.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/flow-tolerance/column-initial-flow-tolerance.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/column-initial-flow-tolerance.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/flow-tolerance/flow-tolerance-column-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-column-001.html) | Pass | 1 / 1 |  |  |

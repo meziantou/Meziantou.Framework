@@ -395,10 +395,10 @@ internal static class DynamicMarkup
     /// <summary>Whether <paramref name="element"/> is an HTML or SVG script element.</summary>
     public static bool IsScriptElement(Element? element) => element is not null && element.LocalName == "script" && element.NamespaceUri is Namespaces.Html or Namespaces.Svg;
 
-    /// <summary>https://whatpr.org/html/12753/dynamic-markup-insertion.html#target-for-html-insertion</summary>
+    /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#target-for-html-insertion</summary>
     public static Node GetTargetForHtmlInsertion(Node target) => target is HtmlTemplateElement template ? template.Content : target;
 
-    /// <summary>https://whatpr.org/html/12753/dynamic-markup-insertion.html#parent-for-html-insertion</summary>
+    /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#parent-for-html-insertion</summary>
     /// <exception cref="DomException">The parent is a template element, a document or a document fragment without a host.</exception>
     public static Node? GetParentForHtmlInsertion(Node node)
     {

@@ -659,6 +659,15 @@ public partial class SvgImageElement
         set => Html.Reflection.SetNullableString(this, "crossorigin", value);
     }
 
+    /// <summary>https://svgwg.org/svg2-draft/embedded.html#__svg__SVGImageElement__referrerPolicy</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/embedded.html#__svg__SVGImageElement__referrerPolicy"/>
+    [IdlMember("referrerPolicy", "https://w3c.github.io/svgwg/svg2-draft/embedded.html#__svg__SVGImageElement__referrerPolicy")]
+    public string ReferrerPolicy
+    {
+        get => Html.Reflection.GetEnumerated(this, "referrerpolicy", Html.EnumeratedAttributes.Referrerpolicy);
+        set => Html.Reflection.SetString(this, "referrerpolicy", value);
+    }
+
     internal override void AttributeChangeSteps(string localName, string? oldValue, string? value, string? @namespace)
     {
         base.AttributeChangeSteps(localName, oldValue, value, @namespace);
@@ -721,7 +730,7 @@ public partial class SvgImageElement
             return;
         }
 
-        var request = SubresourceFetching.CreateRequest(document, url, RequestDestination.Image, cors: HasAttribute("crossorigin"), referrerPolicy: "", this, useCredentials: SubresourceFetching.UsesCredentials(this));
+        var request = SubresourceFetching.CreateRequest(document, url, RequestDestination.Image, cors: HasAttribute("crossorigin"), referrerPolicy: ReferrerPolicy, this, useCredentials: SubresourceFetching.UsesCredentials(this));
         if (!SubresourceFetching.Fetch(document, request, OnFetched))
             return;
 
@@ -1161,6 +1170,15 @@ public partial class SvgScriptElement
     {
         get => Html.Reflection.GetNullableEnumerated(this, "crossorigin", Html.EnumeratedAttributes.Crossorigin);
         set => Html.Reflection.SetNullableString(this, "crossorigin", value);
+    }
+
+    /// <summary>https://svgwg.org/svg2-draft/interact.html#__svg__SVGScriptElement__referrerPolicy</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/interact.html#__svg__SVGScriptElement__referrerPolicy"/>
+    [IdlMember("referrerPolicy", "https://w3c.github.io/svgwg/svg2-draft/interact.html#__svg__SVGScriptElement__referrerPolicy")]
+    public string ReferrerPolicy
+    {
+        get => Html.Reflection.GetEnumerated(this, "referrerpolicy", Html.EnumeratedAttributes.Referrerpolicy);
+        set => Html.Reflection.SetString(this, "referrerpolicy", value);
     }
 
     private bool _alreadyProcessed;

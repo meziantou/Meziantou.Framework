@@ -526,14 +526,14 @@
       "values": [
         {
           "name": "auto",
-          "prose": "Specifies that kerning is applied at the discretion of the user agent",
+          "prose": "Specifies that kerning is applied, to proportionally-spaced glyphs, at the discretion of the user agent",
           "href": "https://drafts.csswg.org/css-fonts-4/#font-kerning-auto-value",
           "type": "value",
           "value": "auto"
         },
         {
           "name": "normal",
-          "prose": "Specifies that kerning is applied",
+          "prose": "Specifies that kerning is applied, to proportionally-spaced glyphs",
           "href": "https://drafts.csswg.org/css-fonts-4/#font-kerning-normal-value",
           "type": "value",
           "value": "normal"

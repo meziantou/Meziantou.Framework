@@ -118,6 +118,10 @@ internal static partial class CssPropertyRegistry
 
         ["zoom"] = "normal | <number [0,\u221E]> | <percentage [0,\u221E]>",
 
+        // https://drafts.csswg.org/css-content-3/#quotes-property: the editor's draft of webref has a placeholder keyword
+        // (bikeshed-this) instead of match-parent
+        ["quotes"] = "auto | none | match-parent | [ <string> <string> ]+",
+
         // https://drafts.csswg.org/css-overflow-5/#scroll-marker-group-property: the mode keyword follows the position, as in
         // Chrome (the grammar of the specification, "[ before | after ] || [ links | tabs ]", accepts the mode alone and first:
         // WPT css/css-overflow/parsing/scroll-markers-invalid.tentative.html)
@@ -149,6 +153,10 @@ internal static partial class CssPropertyRegistry
         // https://drafts.csswg.org/scroll-animations-1/#animation-range: the longhands of animation-range are single values
         // (webref references the comma-separated lists of the longhands)
         ["animation-range"] = "[ [ normal | <length-percentage> | <timeline-range-name> <length-percentage>? ] [ normal | <length-percentage> | <timeline-range-name> <length-percentage>? ]? ]#",
+
+        // https://drafts.csswg.org/css-animations-2/#timeline-trigger: the ranges are optional, and the longhands of the ranges
+        // are single values (webref references timeline-trigger-range, a comma-separated list, in each item of the list)
+        ["timeline-trigger"] = "none | [ <'timeline-trigger-name'> <'timeline-trigger-source'> [ <'timeline-trigger-activation-range'> [ / <'timeline-trigger-active-range'> ]? ]? ]#",
 
         // https://drafts.fxtf.org/css-masking/#clip-property: the legacy rect() of clip takes 4 lengths or auto, separated by
         // commas or (like the browsers) by whitespace; the <rect()> of webref is the basic shape
@@ -242,6 +250,10 @@ internal static partial class CssPropertyRegistry
         new("grid-lanes-direction", "normal | [ row | column ] [ fill-reverse || track-reverse ]?", "normal", false, [], null, AnimationType: CssAnimationTypeKind.Discrete),
         new("grid-lanes-pack", "normal | dense", "normal", false, [], null, AnimationType: CssAnimationTypeKind.Discrete),
         new("grid-lanes", "none | [ <string> || [ <track-list> | <auto-track-list> ] || <'grid-lanes-direction'> ]", "none", false, ["grid-template-columns", "grid-template-rows", "grid-template-areas", "grid-lanes-direction"], null, AnimationType: CssAnimationTypeKind.Shorthand),
+
+        // https://drafts.csswg.org/css-grid-3/#placement-tolerance: flow-tolerance is the former name of fit-tolerance
+        // (https://github.com/w3c/csswg-drafts/issues/10884), kept as a legacy name alias as in WebKit (the WPT tests use both)
+        new("flow-tolerance", "normal | <length-percentage [0,\u221E]> | infinite", "normal", false, [], "fit-tolerance"),
     ];
 
     /// <summary>
@@ -269,6 +281,9 @@ internal static partial class CssPropertyRegistry
 
         // https://drafts.csswg.org/scroll-animations-1/#view-timeline-shorthand: view-timeline also sets view-timeline-inset
         ["view-timeline"] = ["view-timeline-name", "view-timeline-axis", "view-timeline-inset"],
+
+        // https://drafts.csswg.org/css-animations-2/#timeline-trigger (see OverriddenGrammars)
+        ["timeline-trigger"] = ["timeline-trigger-name", "timeline-trigger-source", "timeline-trigger-activation-range", "timeline-trigger-active-range"],
     };
 
     private static readonly FrozenDictionary<string, CssPropertyDefinition> ByName = CreatePropertyMap();
@@ -559,6 +574,10 @@ internal static partial class CssPropertyRegistry
     /// <summary>The types that are defined in prose by the specifications (they are not in webref).</summary>
     private static readonly Dictionary<string, string> SupplementalTypes = new(StringComparer.Ordinal)
     {
+        // https://drafts.csswg.org/css-lists-3/#typedef-symbolic-glyph: the former name of <symbolic-glyph>, still used by the
+        // <content-list> of css-content-3
+        ["<symbolic-counter-style>"] = "<symbolic-glyph>",
+
         // https://drafts.csswg.org/css-page-3/#typedef-page-size-page-size
         ["<page-size>"] = "a5 | a4 | a3 | b5 | b4 | jis-b5 | jis-b4 | letter | legal | ledger",
 

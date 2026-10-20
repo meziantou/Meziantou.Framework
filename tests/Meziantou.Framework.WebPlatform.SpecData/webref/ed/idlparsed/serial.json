@@ -1,6 +1,6 @@
 {
   "spec": {
-    "title": "Web Serial API",
+    "title": "WebSerial Standard",
     "url": "https://serial.spec.whatwg.org/"
   },
   "idlparsed": {
@@ -172,7 +172,7 @@
           }
         ],
         "partial": false,
-        "href": "https://serial.spec.whatwg.org/#dom-serial"
+        "href": "https://serial.spec.whatwg.org/#serial"
       },
       "SerialPortRequestOptions": {
         "fragment": "dictionary SerialPortRequestOptions {\n  sequence<SerialPortFilter> filters;\n  sequence<BluetoothServiceUUID> allowedBluetoothServiceClassIds;\n};",
@@ -233,7 +233,7 @@
         ],
         "extAttrs": [],
         "partial": false,
-        "href": "https://serial.spec.whatwg.org/#dom-serialportrequestoptions"
+        "href": "https://serial.spec.whatwg.org/#dictdef-serialportrequestoptions"
       },
       "SerialPortFilter": {
         "fragment": "dictionary SerialPortFilter {\n  unsigned short usbVendorId;\n  unsigned short usbProductId;\n  BluetoothServiceUUID bluetoothServiceClassId;\n};",
@@ -292,7 +292,7 @@
         ],
         "extAttrs": [],
         "partial": false,
-        "href": "https://serial.spec.whatwg.org/#dom-serialportfilter"
+        "href": "https://serial.spec.whatwg.org/#dictdef-serialportfilter"
       },
       "SerialPort": {
         "fragment": "[Exposed=(DedicatedWorker,Window), SecureContext]\ninterface SerialPort : EventTarget {\n  attribute EventHandler onconnect;\n  attribute EventHandler ondisconnect;\n  readonly attribute boolean connected;\n  readonly attribute ReadableStream? readable;\n  readonly attribute WritableStream? writable;\n\n  SerialPortInfo getInfo();\n\n  Promise<undefined> open(SerialOptions options);\n  Promise<undefined> setSignals(optional SerialOutputSignals signals = {});\n  Promise<SerialInputSignals> getSignals();\n  Promise<undefined> close();\n  Promise<undefined> forget();\n};",
@@ -642,10 +642,10 @@
         ],
         "extAttrs": [],
         "partial": false,
-        "href": "https://serial.spec.whatwg.org/#dom-serialportinfo"
+        "href": "https://serial.spec.whatwg.org/#dictdef-serialportinfo"
       },
       "SerialOptions": {
-        "fragment": "dictionary SerialOptions {\n  [EnforceRange] required unsigned long baudRate;\n  [EnforceRange] octet dataBits = 8;\n  [EnforceRange] octet stopBits = 1;\n  ParityType parity = \"none\";\n  [EnforceRange] unsigned long bufferSize = 255;\n  FlowControlType flowControl = \"none\";\n};",
+        "fragment": "dictionary SerialOptions {\n  required [EnforceRange] unsigned long baudRate;\n  [EnforceRange] octet dataBits = 8;\n  [EnforceRange] octet stopBits = 1;\n  ParityType parity = \"none\";\n  [EnforceRange] unsigned long bufferSize = 255;\n  FlowControlType flowControl = \"none\";\n};",
         "type": "dictionary",
         "name": "SerialOptions",
         "inheritance": null,
@@ -653,17 +653,17 @@
           {
             "type": "field",
             "name": "baudRate",
-            "extAttrs": [
-              {
-                "type": "extended-attribute",
-                "name": "EnforceRange",
-                "rhs": null,
-                "arguments": []
-              }
-            ],
+            "extAttrs": [],
             "idlType": {
               "type": "dictionary-type",
-              "extAttrs": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "EnforceRange",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
               "generic": "",
               "nullable": false,
               "union": false,
@@ -792,7 +792,7 @@
         ],
         "extAttrs": [],
         "partial": false,
-        "href": "https://serial.spec.whatwg.org/#dom-serialoptions"
+        "href": "https://serial.spec.whatwg.org/#dictdef-serialoptions"
       },
       "ParityType": {
         "fragment": "enum ParityType {\n  \"none\",\n  \"even\",\n  \"odd\"\n};",
@@ -816,7 +816,7 @@
           }
         ],
         "extAttrs": [],
-        "href": "https://serial.spec.whatwg.org/#dom-paritytype"
+        "href": "https://serial.spec.whatwg.org/#enumdef-paritytype"
       },
       "FlowControlType": {
         "fragment": "enum FlowControlType {\n  \"none\",\n  \"hardware\"\n};",
@@ -835,7 +835,7 @@
           }
         ],
         "extAttrs": [],
-        "href": "https://serial.spec.whatwg.org/#dom-flowcontroltype"
+        "href": "https://serial.spec.whatwg.org/#enumdef-flowcontroltype"
       },
       "SerialOutputSignals": {
         "fragment": "dictionary SerialOutputSignals {\n  boolean dataTerminalReady;\n  boolean requestToSend;\n  boolean break;\n};",
@@ -894,7 +894,7 @@
         ],
         "extAttrs": [],
         "partial": false,
-        "href": "https://serial.spec.whatwg.org/#dom-serialoutputsignals"
+        "href": "https://serial.spec.whatwg.org/#dictdef-serialoutputsignals"
       },
       "SerialInputSignals": {
         "fragment": "dictionary SerialInputSignals {\n  required boolean dataCarrierDetect;\n  required boolean clearToSend;\n  required boolean ringIndicator;\n  required boolean dataSetReady;\n};",
@@ -969,7 +969,7 @@
         ],
         "extAttrs": [],
         "partial": false,
-        "href": "https://serial.spec.whatwg.org/#dom-serialinputsignals"
+        "href": "https://serial.spec.whatwg.org/#dictdef-serialinputsignals"
       }
     },
     "idlExtendedNames": {

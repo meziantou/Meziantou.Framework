@@ -217,15 +217,6 @@
       "href": "https://drafts.csswg.org/css-fonts-5/#valdef-font-family-xxx",
       "type": "value",
       "value": "xxx",
-      "for": "font-family"
-    },
-    {
-      "msg": "Dangling value",
-      "name": "xxx",
-      "prose": "Placeholder text for the xxx generic font family.",
-      "href": "https://drafts.csswg.org/css-fonts-5/#valdef-font-family-xxx",
-      "type": "value",
-      "value": "xxx",
       "for": "<generic-font-family>"
     },
     {

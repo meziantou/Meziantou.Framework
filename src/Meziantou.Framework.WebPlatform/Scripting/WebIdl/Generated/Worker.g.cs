@@ -67,7 +67,7 @@ internal static class Binding_Worker<TAdapter, TValue> where TAdapter : struct, 
     private static object Construct(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::System.ReadOnlySpan<TValue> a)
     {
         if (a.Length < 1) throw r.NotEnoughArguments("Worker", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_70(r, a[0]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_72(r, a[0]);
         var a1 = r.IsMissing(a, 1) ? (global::Meziantou.Framework.WebPlatform.Dom.WorkerOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_WorkerOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_WorkerOptions(r, a[1]);
         if ((a0 is null or string)) { return new global::Meziantou.Framework.WebPlatform.Dom.Worker((string)a0!, a1); }
         if ((a0 is null or global::Meziantou.Framework.WebPlatform.Dom.TrustedScriptUrl)) { return new global::Meziantou.Framework.WebPlatform.Dom.Worker((global::Meziantou.Framework.WebPlatform.Dom.TrustedScriptUrl)a0!, a1); }

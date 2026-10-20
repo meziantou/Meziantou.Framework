@@ -71,21 +71,21 @@ public sealed class MessageChannelTests : IDisposable
     }
 
     [Fact]
-    public void Close_FiresACloseEventAtTheOtherPort()
+    public void Close_DisentanglesThePortsWithoutFiringACloseEvent()
     {
         var document = Load("""
             <script>
               const log = [];
               const channel = new MessageChannel();
-              channel.port1.onclose = () => log.push('port1 closed');
-              channel.port2.onclose = () => log.push('port2 closed');
+              channel.port1.addEventListener('close', () => log.push('port1 closed'));
+              channel.port2.addEventListener('close', () => log.push('port2 closed'));
               channel.port2.onmessage = () => log.push('received');
               channel.port1.close();
               channel.port1.postMessage('m');
-              setTimeout(() => document.title = log.join(), 0);
+              setTimeout(() => document.title = log.join() || 'none', 0);
             </script>
             """);
-        Assert.Equal("port2 closed", document.Title);
+        Assert.Equal("none", document.Title);
     }
 
     [Fact]

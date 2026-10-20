@@ -266,7 +266,7 @@
     {
       "name": "block-ellipsis",
       "href": "https://drafts.csswg.org/css-overflow-4/#propdef-block-ellipsis",
-      "value": "no-ellipsis | auto | <string>",
+      "value": "no-ellipsis | ellipsis | <string>",
       "initial": "no-ellipsis",
       "appliesTo": "block containers",
       "inherited": "yes",
@@ -283,11 +283,11 @@
           "value": "no-ellipsis"
         },
         {
-          "name": "auto",
+          "name": "ellipsis",
           "prose": "Render an ellipsis character (U+2026)—​or a more typographically-appropriate equivalent—​as the block overflow ellipsis at the end of the affected line box. UAs should use the conventions of the content language, writing system, and writing mode to determine the most appropriate ellipsis string.",
-          "href": "https://drafts.csswg.org/css-overflow-4/#valdef-block-ellipsis-auto",
+          "href": "https://drafts.csswg.org/css-overflow-4/#valdef-block-ellipsis-ellipsis",
           "type": "value",
-          "value": "auto"
+          "value": "ellipsis"
         },
         {
           "name": "<string>",
@@ -305,7 +305,7 @@
     {
       "name": "line-clamp",
       "href": "https://drafts.csswg.org/css-overflow-4/#propdef-line-clamp",
-      "value": "none | [<integer [1,∞]> || <'block-ellipsis'>] -webkit-legacy?",
+      "value": "none | [<'max-lines'> || <'block-ellipsis'>] -webkit-legacy?",
       "initial": "none",
       "appliesTo": "see individual properties",
       "inherited": "see individual properties",
@@ -316,21 +316,21 @@
       "values": [
         {
           "name": "none",
-          "prose": "Sets max-lines to none, continue to auto, and block-ellipsis to no-ellipsis.",
+          "prose": "Sets max-lines to auto, continue to normal, and block-ellipsis to no-ellipsis.",
           "href": "https://drafts.csswg.org/css-overflow-4/#valdef-line-clamp-none",
           "type": "value",
           "value": "none"
         },
         {
-          "name": "<integer [1,∞]>",
-          "prose": "Sets continue to collapse if either or both values are specified, unless the -webkit-legacy keyword is also specified. Sets max-lines to the specified <integer> or to none if omitted, and block-ellipsis to other component of the value if specified or to auto if omitted.",
-          "href": "https://drafts.csswg.org/css-overflow-4/#valdef-line-clamp-integer-1",
+          "name": "<max-lines>",
+          "prose": "Sets continue to collapse if either or both values are specified, unless the -webkit-legacy keyword is also specified (see below). Sets max-lines and block-ellipsis to the corresponding values, or to max-lines: auto and block-ellipsis: ellipsis respectively if omitted.",
+          "href": "https://drafts.csswg.org/css-overflow-4/#valdef-line-clamp-max-lines",
           "type": "value",
-          "value": "<integer [1,∞]>"
+          "value": "<max-lines>"
         },
         {
           "name": "<block-ellipsis>",
-          "prose": "Sets continue to collapse if either or both values are specified, unless the -webkit-legacy keyword is also specified. Sets max-lines to the specified <integer> or to none if omitted, and block-ellipsis to other component of the value if specified or to auto if omitted.",
+          "prose": "Sets continue to collapse if either or both values are specified, unless the -webkit-legacy keyword is also specified (see below). Sets max-lines and block-ellipsis to the corresponding values, or to max-lines: auto and block-ellipsis: ellipsis respectively if omitted.",
           "href": "https://drafts.csswg.org/css-overflow-4/#valdef-line-clamp-block-ellipsis",
           "type": "value",
           "value": "<block-ellipsis>"
@@ -378,8 +378,8 @@
     {
       "name": "continue",
       "href": "https://drafts.csswg.org/css-overflow-4/#propdef-continue",
-      "value": "auto | discard | collapse | -webkit-legacy",
-      "initial": "auto",
+      "value": "normal | discard | collapse | -webkit-legacy",
+      "initial": "normal",
       "appliesTo": "block containers and multicol containers",
       "inherited": "no",
       "percentages": "N/A",
@@ -395,15 +395,15 @@
           "value": "-webkit-legacy"
         },
         {
-          "name": "auto",
+          "name": "normal",
           "prose": "If the box has more content than can fit, the excess content is handled according to the usual rules.",
-          "href": "https://drafts.csswg.org/css-overflow-4/#valdef-continue-auto",
+          "href": "https://drafts.csswg.org/css-overflow-4/#valdef-continue-normal",
           "type": "value",
-          "value": "auto"
+          "value": "normal"
         },
         {
           "name": "collapse",
-          "prose": "If the box is a block container, then it must establish an independent formatting context that also becomes a line-clamp container. This causes all content after the clamp point to be visually hidden, and to not be taken into account for the box’s automatic block size. If the box is a multicol container, the behavior is the same as auto.",
+          "prose": "If the box is a block container, then it must establish an independent formatting context that also becomes a line-clamp container. This causes all content after the clamp point to be visually suppressed, and to not be taken into account for the box’s automatic block size (see § 5.3.1 Line-clamp containers for details). Visually suppressed content is treated as content hidden by overflow: clip, and unlike content made invisible by visibility: hidden or excluded from the box tree by display: none: it is not painted, and like ink overflow, does not affect layout or otherwise extend the scrollable overflow area. However, it remains part of of sequential focus navigation, and remains exposed through the accessibility tree. Any overflow visually suppressed boxes and line boxes might have is itself counted as ink overflow rather than scrollable overflow. If the box is a multicol container, the behavior is the same as normal.",
           "href": "https://drafts.csswg.org/css-overflow-4/#valdef-continue-collapse",
           "type": "value",
           "value": "collapse"
@@ -423,21 +423,28 @@
     {
       "name": "max-lines",
       "href": "https://drafts.csswg.org/css-overflow-4/#propdef-max-lines",
-      "value": "none | <integer [1,∞]>",
-      "initial": "none",
+      "value": "auto || <integer [1,∞]>",
+      "initial": "auto",
       "appliesTo": "block containers which are also either line-clamp containers or fragmentation containers that capture region breaks",
       "inherited": "no",
       "percentages": "N/A",
-      "computedValue": "the keyword none or an integer",
+      "computedValue": "the keyword auto, or an integer, or both",
       "canonicalOrder": "per grammar",
       "animationType": "by computed value type",
       "values": [
         {
-          "name": "none",
-          "prose": "If the value of max-lines is not none, then, given a computed value of N:",
-          "href": "https://drafts.csswg.org/css-overflow-4/#valdef-max-lines-none",
+          "name": "<integer [1,∞]>",
+          "prose": "Given an integer N, if the box is a line-clamp container, it has an line-based clamp point, set to the first possible clamp point after its Nth descendant in-flow line box. If fewer than N line boxes exist, or if there are no possible clamp points after the Nth descendant in-flow line box, then that line-clamp container has no line-based clamp point. If the box is instead a fragmentation container that captures region breaks, then a region break is forced after its Nth descendant in-flow line box. If fewer than N line boxes exist, then max-lines introduces no region break. Only line boxes in the same block formatting context are counted: the contents of descendants that establish independent formatting contexts are skipped over while counting line boxes. Only positive integers are accepted. Zero or negative integers are invalid and must cause the declaration to be ignored.",
+          "href": "https://drafts.csswg.org/css-overflow-4/#max-lines-integer",
           "type": "value",
-          "value": "none"
+          "value": "<integer [1,∞]>"
+        },
+        {
+          "name": "auto",
+          "prose": "If the box is a line-clamp container, it has an auto clamp point, set to the last possible clamp point such that, for it and all previous possible clamp points, the container’s automatic block size (as determined in § 5.3.1 Line-clamp containers) is not greater than the block size the box would have if its automatic block size were infinite. If the block size would be infinite, then there is no auto clamp point.",
+          "href": "https://drafts.csswg.org/css-overflow-4/#max-lines-auto",
+          "type": "value",
+          "value": "auto"
         }
       ],
       "styleDeclaration": [

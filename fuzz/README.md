@@ -41,7 +41,7 @@ private static void Parser(ReadOnlySpan<byte> data)
 - The seeds are the inputs the corpus starts from, usually the conformance suites of the unit tests, embedded in the fuzz
   project. Every seed must pass.
 - The dictionary lists the tokens of the format (keywords, punctuation), which libFuzzer inserts into the inputs.
-- Target names are unique across all the projects: they name the corpus caches and the issues.
+- Target names are unique across all the projects: they name the corpus directories and the issues.
 - `Program.cs` passes a lambda to `FuzzProgram.Run`: when fuzzing, the list is only built once SharpFuzz has set up the
   memory the instrumented code writes its coverage to, so the static fields of the targets may call the library.
 
@@ -77,7 +77,33 @@ clang -O2 -fsanitize=fuzzer libfuzzer-dotnet.cc -o libfuzzer-dotnet
 ```
 
 Each target gets `artifacts/fuzz/results/<target>`: the libFuzzer log, the failing input (`crash-*`, `timeout-*`),
-and `failure.md`, the body of the issue the weekly workflow opens. The corpus is kept in `artifacts/fuzz-corpus`.
+and `failure.md`, the body of the issue the weekly workflow opens.
+
+### Corpus
+
+The corpus of each target is kept in `artifacts/fuzz-corpus/<target>`: libFuzzer adds the inputs that reach new
+coverage, and `eng/run-fuzz.ps1` minimizes it after a campaign that passes. Each weekly campaign starts from the corpus
+the previous one reached:
+
+- Every run of `fuzz-sharpfuzz.yml` uploads the corpus of every project as its `fuzz-corpus` artifact, laid out as
+  `<project>/<arch>/<target>`. Its `save-corpus` job takes the `fuzz-corpus` artifact of the previous run and replaces
+  the corpus of the projects the run fuzzed.
+- Before fuzzing, `eng/restore-fuzz-corpus.ps1` downloads the most recent `fuzz-corpus` artifact, from the runs of the
+  current branch, else from the runs of `main`, and extracts the corpus of the project: the corpus of the same
+  architecture, else the corpus of the other one (the inputs do not depend on it). Without any, the campaign starts from
+  the seeds.
+
+The corpus is an artifact, not a cache. The other caches of the repository fill its 10 GB cache storage in about a
+day, and GitHub evicts the least recently used caches first, so a corpus cache was evicted long before the next weekly
+campaign. Artifacts are not evicted, but they expire after 7 days (the retention of the repository), the interval
+between two campaigns of a project. Carrying the corpus of every project over to every run, one run each night, keeps
+it alive: it is lost only when the workflow does not complete a run for 7 days.
+
+To fuzz locally from the corpus of the weekly campaigns (needs an authenticated GitHub CLI):
+
+```bash
+pwsh eng/restore-fuzz-corpus.ps1 -Path artifacts/fuzz-corpus -Project Meziantou.Framework.Yaml.Fuzz -Architecture x64 -Repository meziantou/Meziantou.Framework -Branch main
+```
 
 ### Regressions
 

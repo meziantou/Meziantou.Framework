@@ -5,6 +5,162 @@ namespace Meziantou.Framework.Language.Xml.Tests;
 
 public sealed class XmlSyntaxTreeTests
 {
+    [Fact]
+    public void ReadmeExample_Overview()
+    {
+        #region XmlSyntaxTree_Overview
+        const string Xml = "<root><item version='1.0.0' /></root>";
+
+        var tree = XmlSyntaxTree.ParseText(Xml);
+
+        // The text comes back exactly as it went in.
+        Assert.Equal(tree.GetText().Text, tree.GetRoot().ToFullString());
+
+        // Find a node with XPath, and edit it without touching anything else.
+        var updated = tree.GetRoot().ReplaceNode("//item/@version", node => ((XmlAttributeSyntax)node).WithValue("2.0.0"));
+
+        Assert.Equal("<root><item version='2.0.0' /></root>", updated.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Tokens()
+    {
+        var tree = XmlSyntaxTree.ParseText("<root><item version='1.0.0' /></root>");
+
+        #region XmlSyntaxTree_Tokens
+        var attribute = (XmlAttributeSyntax)tree.GetRoot().SelectSingleSyntaxNode("//item/@version")!;
+
+        Assert.Equal("version", attribute.NameToken.Text);
+        Assert.Equal("'", attribute.StartQuoteToken.Text);
+        Assert.Equal("1.0.0", attribute.ValueToken.Text);
+        Assert.Equal("1.0.0", attribute.Value);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Trivia()
+    {
+        #region XmlSyntaxTree_Trivia
+        var tree = XmlSyntaxTree.ParseText("<root>\n  <book id = '1' />\n</root>");
+        var book = (XmlEmptyElementSyntax)tree.GetRoot().SelectSingleSyntaxNode("//book")!;
+
+        Assert.Equal(" ", book.Attributes[0].NameToken.LeadingTrivia.ToFullString());
+        Assert.Equal(" ", book.Attributes[0].EqualsToken.LeadingTrivia.ToFullString());
+
+        var root = (XmlElementSyntax)tree.GetRoot().Nodes[0];
+        Assert.Equal("\n  ", ((XmlTextSyntax)root.Content[0]).Text);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Editing()
+    {
+        #region XmlSyntaxTree_Editing
+        var tree = XmlSyntaxTree.ParseText("<root><a>1</a><b>2</b></root>");
+        var root = (XmlElementSyntax)tree.GetRoot().Nodes[0];
+        var b = root.Content.OfType<XmlElementSyntax>().Single(element => element.Name == "b");
+
+        XmlDocumentSyntax updated = tree.GetRoot().ReplaceNode(b, b.WithInnerText("two"));
+
+        Assert.Equal("<root><a>1</a><b>two</b></root>", updated.ToFullString());
+
+        // <a> was not touched, so it is the very same node.
+        Assert.True(root.Content[0].IsIncrementallyIdenticalTo(((XmlElementSyntax)updated.Nodes[0]).Content[0]));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_XPathWithNamespaces()
+    {
+        #region XmlSyntaxTree_XPathWithNamespaces
+        var tree = XmlSyntaxTree.ParseText("<root xmlns:pkg='urn:test'><pkg:item pkg:version='1.0.0' /></root>");
+        var namespaces = new XmlNamespaceManager(new NameTable());
+        namespaces.AddNamespace("pkg", "urn:test");
+
+        var item = tree.GetRoot().SelectSingleSyntaxNode("//pkg:item", namespaces);
+        var version = tree.GetRoot().SelectSingleSyntaxNode("//pkg:item/@pkg:version", namespaces);
+
+        Assert.IsType<XmlEmptyElementSyntax>(item);
+        Assert.Equal("1.0.0", ((XmlAttributeSyntax)version!).Value);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Annotations()
+    {
+        #region XmlSyntaxTree_Annotations
+        var root = XmlSyntaxTree.ParseText("<root><a>1</a><b>2</b></root>").GetRoot();
+        var a = root.DescendantNodes().OfType<XmlElementSyntax>().Single(element => element.Name == "a");
+
+        var marker = new SyntaxAnnotation();
+        var marked = root.ReplaceNode(a, a.WithAdditionalAnnotations(marker));
+
+        // Something else entirely: replace <b>, which rebuilds the path from <b> up to the root
+        var b = marked.DescendantNodes().OfType<XmlElementSyntax>().Single(element => element.Name == "b");
+        var edited = marked.ReplaceNode(b, b.WithInnerText("two"));
+
+        var found = edited.GetAnnotatedNodes(marker).Single();
+        Assert.Equal("<a>1</a>", found.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Diagnostics()
+    {
+        #region XmlSyntaxTree_Diagnostics
+        var messages = new List<string>();
+        foreach (var diagnostic in XmlSyntaxTree.ParseText("<root>\n  <item>\n</root>").GetDiagnostics())
+        {
+            var line = diagnostic.Location.GetLineSpan().Start;
+            messages.Add($"{diagnostic.Id} ({line.Line},{line.Character}): {diagnostic.Message}");
+        }
+
+        Assert.Equal(["XML0001 (1,2): Missing end tag for 'item'."], messages);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Walker()
+    {
+        #region XmlSyntaxTree_WalkerUsage
+        var counter = new ElementCounter();
+        counter.Visit(XmlSyntaxTree.ParseText("<root><a><b></b></a><c /></root>").GetRoot());
+
+        // <c /> is an XmlEmptyElementSyntax, so VisitElement does not count it
+        Assert.Equal(3, counter.Count);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_EditingByText()
+    {
+        #region XmlSyntaxTree_EditingByText
+        var tree = XmlSyntaxTree.ParseText("<root><a /></root>");
+        var updated = tree.WithChanges(new TextChange(new TextSpan(6, 5), "<b />"));
+
+        Assert.Equal("<root><b /></root>", updated.GetRoot().ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_LanguageDiagnostics()
+    {
+        #region Language_Diagnostics
+        var tree = XmlSyntaxTree.ParseText("<root>\n  <item>\n</root>");
+
+        var diagnostic = Assert.Single(tree.GetDiagnostics());
+        Assert.Equal("XML0001 at (1,2)-(1,8): Missing end tag for 'item'.", $"{diagnostic.Id} at {diagnostic.Location}: {diagnostic.Message}");
+
+        var lineSpan = diagnostic.Location.GetLineSpan();
+        Assert.Equal(1, lineSpan.Start.Line);      // zero-based
+        Assert.Equal(2, lineSpan.Start.Character); // zero-based
+
+        // The location is bound to the tree's own text
+        Assert.Same(tree.GetText(), diagnostic.Location.SourceText);
+        #endregion
+    }
+
     public static TheoryData<string> RoundTripSamples => new()
     {
         "<?xml version=\"1.0\"?><root xmlns='urn:default' xmlns:a='urn:attr'><a:item id='1'>value</a:item><!--comment--><![CDATA[data]]></root>",
@@ -1608,4 +1764,17 @@ public sealed class XmlSyntaxTreeTests
 
         Assert.Same(document, Formatter.Format(document));
     }
+
+    #region XmlSyntaxTree_Walker
+    private sealed class ElementCounter : XmlSyntaxWalker
+    {
+        public int Count { get; private set; }
+
+        public override void VisitElement(XmlElementSyntax node)
+        {
+            Count++;
+            base.VisitElement(node);
+        }
+    }
+    #endregion
 }

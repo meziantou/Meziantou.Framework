@@ -20,10 +20,10 @@ It reads CSS as browsers read it today:
 Parsing never throws and never gives up. Whatever the text says, the tree reproduces it exactly, and anything wrong
 with it is reported through `GetDiagnostics()`.
 
-```csharp
-using Meziantou.Framework.Language;
-using Meziantou.Framework.Language.Css;
+The types are in the `Meziantou.Framework.Language.Css` namespace, and the shared ones (`SyntaxNode`, …) in `Meziantou.Framework.Language`.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Css.Tests/CssSyntaxTreeTests.cs;region=CssSyntaxTree_Overview;format=md-fenced-code-block;dedent=true -->
+```csharp
 var tree = CssSyntaxTree.ParseText("""
     .card {
       color: red; /* the brand color */
@@ -32,9 +32,10 @@ var tree = CssSyntaxTree.ParseText("""
     }
     """);
 
-Console.WriteLine(tree.GetDiagnostics().Count); // 0
-Console.WriteLine(tree.GetRoot().ToFullString() == tree.GetText().Text); // True
+Assert.Empty(tree.GetDiagnostics());
+Assert.Equal(tree.GetText().Text, tree.GetRoot().ToFullString());
 ```
+<!-- endref -->
 
 ## The shape of a tree
 
@@ -103,17 +104,22 @@ list and its rule alone.
 
 ## Selectors
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Css.Tests/CssSyntaxTreeTests.cs;region=CssSyntaxTree_Selectors;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var rule = (CssQualifiedRuleSyntax)CssSyntaxTree.ParseText("nav > a.active:hover, [href^='https' i] {}").GetRoot().Statements[0];
 
+var parts = new List<string>();
 foreach (var selector in rule.Selectors!.Selectors.OfType<CssComplexSelectorSyntax>())
 {
     foreach (var part in selector.Parts)
     {
-        Console.WriteLine($"{part.CombinatorKind}: {part.Compound}"); // None: nav, Child: a.active:hover, None: [href^='https' i]
+        parts.Add($"{part.CombinatorKind}: {part.Compound}");
     }
 }
+
+Assert.Equal(["None: nav", "Child: a.active:hover", "None: [href^='https' i]"], parts);
 ```
+<!-- endref -->
 
 Whitespace is trivia, so the descendant combinator has no node of its own: a part with no `Combinator` after the first
 is a descendant of the part before it, and `CombinatorKind` says so. A comment is not whitespace: `a/**/.b` is one
@@ -130,13 +136,15 @@ this parser. One with a vendor prefix is not reported.
 
 Nodes are immutable: every change returns a new node, and everything you did not change keeps its text.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Css.Tests/CssSyntaxTreeTests.cs;region=CssSyntaxTree_Editing;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var root = CssSyntaxTree.ParseText("a { color: red; /* keep */ }").GetRoot();
 var value = (CssTokenValueSyntax)root.DescendantNodes().OfType<CssDeclarationSyntax>().Single().Values[0];
 
 var updated = root.ReplaceNode(value, value.WithToken(SyntaxFactory.Identifier("blue").WithTriviaFrom(value.Token)));
-Console.WriteLine(updated.ToFullString()); // a { color: blue; /* keep */ }
+Assert.Equal("a { color: blue; /* keep */ }", updated.ToFullString());
 ```
+<!-- endref -->
 
 `SyntaxFactory` builds tokens and nodes. `Identifier`, `StringToken`, `Hash`, `AtKeyword`, and `FunctionToken` escape
 what has to be, `Number`, `Percentage`, and `Dimension` write numbers that read back as themselves, and `Declaration`
@@ -146,14 +154,18 @@ reported then.
 
 ## Diagnostics
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Css.Tests/CssSyntaxTreeTests.cs;region=CssSyntaxTree_Diagnostics;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var messages = new List<string>();
 foreach (var diagnostic in CssSyntaxTree.ParseText("a { color: }").GetDiagnostics())
 {
     var line = diagnostic.Location.GetLineSpan().Start;
-    Console.WriteLine($"{diagnostic.Id} ({line.Line},{line.Character}): {diagnostic.Message}");
-    // CSS0011 (0,4): The declaration 'color' has no value.
+    messages.Add($"{diagnostic.Id} ({line.Line},{line.Character}): {diagnostic.Message}");
 }
+
+Assert.Equal(["CSS0011 (0,4): The declaration 'color' has no value."], messages);
 ```
+<!-- endref -->
 
 An error is something a browser drops: the declaration, the rule, or the construct it is in. A warning is something a
 browser accepts, or that may only be newer than this parser.
@@ -202,13 +214,24 @@ the limit says.
 `SyntaxWalkerDepth`. `CssSyntaxRewriter` returns a new tree from the nodes it rewrites, and the nodes it does not
 change are kept as they are.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Css.Tests/CssSyntaxTreeTests.cs;region=CssSyntaxTree_Rewriter;format=md-fenced-code-block;dedent=true -->
 ```csharp
-sealed class RenameClass : CssSyntaxRewriter
+private sealed class RenameClass : CssSyntaxRewriter
 {
     public override SyntaxNode? VisitClassSelector(CssClassSelectorSyntax node)
         => node.Name == "old" ? node.WithNameToken(SyntaxFactory.Identifier("new").WithTriviaFrom(node.NameToken)) : base.VisitClassSelector(node);
 }
 ```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Css.Tests/CssSyntaxTreeTests.cs;region=CssSyntaxTree_RewriterUsage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var root = CssSyntaxTree.ParseText(".old, .other .old { color: red; }").GetRoot();
+
+var updated = new RenameClass().Visit(root);
+Assert.Equal(".new, .other .new { color: red; }", updated?.ToFullString());
+```
+<!-- endref -->
 
 ## Not covered
 

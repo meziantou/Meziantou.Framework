@@ -287,6 +287,15 @@
   "css/css-borders/corner-shape/corner-shape-offset-path-coord-box-002.html": {
     "reftest": "PASS"
   },
+  "css/css-borders/corner-shape/corner-shape-outline-auto-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-outline-auto-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-outline-auto-003.html": {
+    "reftest": "PASS"
+  },
   "css/css-borders/corner-shape/corner-shape-outline-offset-bevel.html": {
     "reftest": "PASS"
   },
@@ -468,6 +477,9 @@
   "css/css-borders/corner-shape/render-corner-shape.html?border-top-left-radius=50&corner-shape=-5&border-left-width=55&border-top-width=20": {
     "reftest": "PASS"
   },
+  "css/css-borders/corner-shape/render-corner-shape.html?border-top-right-radius=100%&shadow-position=inset&shadow-spread=20": {
+    "reftest": "FAIL"
+  },
   "css/css-borders/corner-shape/render-corner-shape.html?border-top-right-radius=100&corner-top-right-shape=0&shadow-spread=30": {
     "reftest": "PASS"
   },
@@ -519,13 +531,40 @@
   "css/css-borders/corner-shape/render-corner-shape.html?corner-bottom-right-shape=bevel&corner-bottom-left-shape=bevel": {
     "reftest": "PASS"
   },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=-0.5&border-top-left-radius=100%&border-width=20": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=-0.5&border-top-right-radius=100%&border-top-width=20&border-bottom-width=20&shadow-position=inset&shadow-spread=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=-0.5&border-top-right-radius=100%&shadow-position=inset&shadow-spread=20": {
+    "reftest": "PASS"
+  },
   "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=-0.5&border-top-right-radius=100%,50&border-width=10&border-top-width=40": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=-1&border-top-left-radius=100%&border-width=20": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=-1&border-top-right-radius=100%&border-top-width=20&border-bottom-width=20&shadow-position=inset&shadow-spread=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=-1&border-top-right-radius=100%&shadow-position=inset&shadow-spread=20": {
     "reftest": "PASS"
   },
   "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=-2&border-radius=20%&border-width=20": {
     "reftest": "PASS"
   },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=-2&border-top-left-radius=100%&border-width=20": {
+    "reftest": "PASS"
+  },
   "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=-2&border-top-left-radius=40%&border-width=20": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=-2&border-top-right-radius=100%&border-top-width=20&border-bottom-width=20&shadow-position=inset&shadow-spread=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=-2&border-top-right-radius=100%&shadow-position=inset&shadow-spread=20": {
     "reftest": "PASS"
   },
   "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=-3&border-top-right-radius=100%,50&border-width=10&border-top-width=40": {
@@ -534,10 +573,34 @@
   "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=-7&border-radius=20%&border-width=20": {
     "reftest": "PASS"
   },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=0&border-top-left-radius=100%&border-width=20": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=0&border-top-left-radius=50%&border-bottom-left-radius=50%&border-left-width=40&shadow-position=inset&shadow-spread=20": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=0&border-top-right-radius=100%&border-top-width=20&border-bottom-width=20&shadow-position=inset&shadow-spread=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=0&border-top-right-radius=100%&shadow-position=inset&shadow-spread=20": {
+    "reftest": "PASS"
+  },
   "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=0.1&border-top-right-radius=40,60&shadow-spread=90&clip-path=margin-box&margin-top=30&margin-right=-20&border-width=10": {
     "reftest": "PASS"
   },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=0.2&border-top-left-radius=50%&border-bottom-left-radius=50%&border-left-width=40&shadow-position=inset&shadow-offset-x=40": {
+    "reftest": "PASS"
+  },
   "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=0.4&border-top-right-radius=40,60&shadow-spread=90&clip-path=margin-box&margin-top=30&margin-right=-20&border-width=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=0.5&border-top-left-radius=100%&border-width=20": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=0.5&border-top-right-radius=100%&border-top-width=20&border-bottom-width=20&shadow-position=inset&shadow-spread=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=0.5&border-top-right-radius=100%&shadow-position=inset&shadow-spread=20": {
     "reftest": "PASS"
   },
   "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=0.5&border-top-right-radius=100%,50&border-width=10&border-top-width=40": {
@@ -549,7 +612,22 @@
   "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=0.8&border-radius=40&border-width=10": {
     "reftest": "PASS"
   },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=1&border-top-left-radius=100%&border-width=20": {
+    "reftest": "FAIL"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=1&border-top-right-radius=100%&border-top-width=20&border-bottom-width=20&shadow-position=inset&shadow-spread=10": {
+    "reftest": "FAIL"
+  },
   "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=1&border-top-right-radius=40,60&shadow-spread=90&clip-path=margin-box&margin-top=30&margin-right=-20&border-width=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=2&border-top-left-radius=100%&border-width=20": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=2&border-top-right-radius=100%&border-top-width=20&border-bottom-width=20&shadow-position=inset&shadow-spread=10": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=2&border-top-right-radius=100%&shadow-position=inset&shadow-spread=20": {
     "reftest": "PASS"
   },
   "css/css-borders/corner-shape/render-corner-shape.html?corner-shape=2.3&border-radius=40%": {

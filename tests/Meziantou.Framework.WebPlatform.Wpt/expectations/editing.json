@@ -106,6 +106,13 @@
       "Test valid values of TextFormat underlineStyle and underlineThickness": "FAIL"
     }
   },
+  "editing/edit-context/edit-context-undo-redo.tentative.html": {
+    "total": 2,
+    "failures": {
+      "Redo in EditContext.": "FAIL",
+      "Undo in EditContext.": "FAIL"
+    }
+  },
   "editing/event.html": {
     "total": 180,
     "failures": {

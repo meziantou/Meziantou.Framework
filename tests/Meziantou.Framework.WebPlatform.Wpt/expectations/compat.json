@@ -1,9 +1,6 @@
 {
   "compat/css-style-declaration-alias-enumeration.html": {
-    "total": 51,
-    "failures": {
-      "WebKitBackgroundClip found on CSSStyleDeclaration": "FAIL"
-    }
+    "total": 51
   },
   "compat/historical.html": {
     "total": 3
@@ -63,6 +60,9 @@
   },
   "compat/webkit-box-z-index.html": {
     "reftest": "PASS"
+  },
+  "compat/webkit-device-pixel-ratio-serialization.html": {
+    "total": 5
   },
   "compat/webkit-gradient-comma.html": {
     "total": 2

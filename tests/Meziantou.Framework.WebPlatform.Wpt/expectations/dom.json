@@ -38,6 +38,9 @@
   "dom/collections/HTMLCollection-delete.html": {
     "total": 4
   },
+  "dom/collections/HTMLCollection-detached-root-gc.html": {
+    "total": 5
+  },
   "dom/collections/HTMLCollection-empty-name.html": {
     "total": 7
   },
@@ -886,11 +889,56 @@
   "dom/nodes/Document-adoptNode.html": {
     "total": 7
   },
+  "dom/nodes/Document-base-url-not-live.window.js": {
+    "total": 2
+  },
   "dom/nodes/Document-characterSet-normalization-1.html": {
     "total": 315
   },
   "dom/nodes/Document-characterSet-normalization-2.html": {
     "total": 339
+  },
+  "dom/nodes/Document-cloneNode-about-base-url-relative.window.js": {
+    "total": 4,
+    "failures": {
+      "A data: <base> in an about:blank document and its clone falls back to the inherited base URL": "FAIL",
+      "A relative <base> inserted into a shallow clone of an about:blank document resolves against the inherited base URL": "FAIL",
+      "Clone of an about:blank document with a relative <base>": "FAIL"
+    }
+  },
+  "dom/nodes/Document-cloneNode-about-base-url.window.js": {
+    "total": 5,
+    "failures": {
+      "Clone of an about:blank document after detaching the source": "FAIL",
+      "Clone of an about:blank document with a <base>": "FAIL",
+      "Deep clone of an about:blank document": "FAIL",
+      "Shallow clone of an about:blank document": "FAIL"
+    }
+  },
+  "dom/nodes/Document-cloneNode-base-url-xml.window.js": {
+    "total": 3,
+    "failures": {
+      "Clone of an XHTML document with a <base>": "FAIL"
+    }
+  },
+  "dom/nodes/Document-cloneNode-base-url.window.js": {
+    "total": 11,
+    "failures": {
+      "Clone of a createHTMLDocument() document with a <base>": "FAIL",
+      "Inserting a <base> into a shallow clone overrides the copied base URL": "FAIL",
+      "Shallow clone is unaffected by later mutation of the source": "FAIL",
+      "Shallow clone of a document with a <base>": "FAIL",
+      "Shallow clone of a document with a relative <base>": "FAIL",
+      "Shallow clone's base URL survives later mutation of the clone": "FAIL"
+    }
+  },
+  "dom/nodes/Document-cloneNode-srcdoc-base-url.window.js": {
+    "total": 4,
+    "failures": {
+      "A data: <base> in an about:srcdoc document and its clone falls back to the inherited base URL": "FAIL",
+      "A relative <base> inserted into a shallow clone of an about:srcdoc document resolves against the inherited base URL": "FAIL",
+      "Clone of an about:srcdoc document with a relative <base>": "FAIL"
+    }
   },
   "dom/nodes/Document-constructor-svg.svg": {
     "total": 4
@@ -1245,6 +1293,12 @@
   "dom/nodes/MutationObserver-callback-arguments.html": {
     "total": 1
   },
+  "dom/nodes/MutationObserver-callback-order.window.js": {
+    "total": 3,
+    "failures": {
+      "Mutation observers are notified in the order they were created": "FAIL"
+    }
+  },
   "dom/nodes/MutationObserver-callback-tricky.html": {
     "total": 2
   },
@@ -1280,6 +1334,15 @@
   },
   "dom/nodes/MutationObserver-textContent.html": {
     "total": 4
+  },
+  "dom/nodes/MutationObserver-transient-registered-observers.window.js": {
+    "total": 15,
+    "failures": {
+      "A removed subtree is no longer observed after mutation observers are notified, even if no record was queued": "FAIL",
+      "Removing a node from an observed subtree queues the mutation observer microtask": "FAIL",
+      "observe() on a node in a removed subtree keeps observing it after mutation observers are notified": "FAIL",
+      "observe() stops observing subtrees removed from a removed subtree": "FAIL"
+    }
   },
   "dom/nodes/MutationObserver-xml-parser.xhtml": {
     "total": 1
@@ -1881,6 +1944,9 @@
   "dom/nodes/moveBefore/moveBefore-as-flex-item.html": {
     "reftest": "PASS"
   },
+  "dom/nodes/moveBefore/moveBefore-child-list-selector-invalidation.html": {
+    "total": 9
+  },
   "dom/nodes/moveBefore/moveBefore-dir.html": {
     "total": 1
   },
@@ -1893,6 +1959,9 @@
   "dom/nodes/moveBefore/moveBefore-id-map.html": {
     "total": 4
   },
+  "dom/nodes/moveBefore/moveBefore-into-display-none.html": {
+    "total": 1
+  },
   "dom/nodes/moveBefore/moveBefore-lang.html": {
     "total": 1
   },
@@ -1901,6 +1970,9 @@
   },
   "dom/nodes/moveBefore/moveBefore-nodeiterator.html": {
     "total": 1
+  },
+  "dom/nodes/moveBefore/moveBefore-optgroup.html": {
+    "total": 3
   },
   "dom/nodes/moveBefore/moveBefore-option-recalc-style.html": {
     "total": 1
@@ -1922,6 +1994,12 @@
   },
   "dom/nodes/moveBefore/moveBefore-size-query.html": {
     "total": 1
+  },
+  "dom/nodes/moveBefore/mutation-observer-moved-subtree.window.js": {
+    "total": 1,
+    "failures": {
+      "A subtree moved out of an observed subtree by moveBefore() is observed until mutation observers are notified": "FAIL"
+    }
   },
   "dom/nodes/moveBefore/mutation-observer.html": {
     "total": 2
@@ -2866,6 +2944,24 @@
   },
   "dom/ranges/Range-detach.html": {
     "total": 1
+  },
+  "dom/ranges/Range-expand-shadow.tentative.html": {
+    "total": 13,
+    "failures": {
+      "Range.expand(\"word\") before <video controls> does not leak user-agent shadow tree nodes": "FAIL",
+      "Range.expand(\"word\") inside a shadow root does not enter a nested closed shadow root": "FAIL",
+      "Range.expand(\"word\") when document has display:none does not crash": "FAIL",
+      "Range.expand('block') starting inside shadow root does not escape to document": "FAIL",
+      "Range.expand('document') starting inside shadow root does not escape to document": "FAIL",
+      "Range.expand('sentence') after shadow host does not enter shadow tree": "FAIL",
+      "Range.expand('sentence') before shadow host with preceding text does not enter shadow tree": "FAIL",
+      "Range.expand('sentence') from empty flex box before shadow host does not enter shadow tree": "FAIL",
+      "Range.expand('sentence') starting inside shadow root does not escape to document": "FAIL",
+      "Range.expand('word') after shadow host does not enter shadow tree": "FAIL",
+      "Range.expand('word') before shadow host with preceding text does not enter shadow tree": "FAIL",
+      "Range.expand('word') from empty flex box before shadow host does not enter shadow tree": "FAIL",
+      "Range.expand('word') starting inside shadow root does not escape to document": "FAIL"
+    }
   },
   "dom/ranges/Range-extractContents-around-shadow.html": {
     "total": 44

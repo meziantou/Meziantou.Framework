@@ -1215,7 +1215,10 @@
     "total": 8
   },
   "mixed-content/imageset.https.sub.html": {
-    "total": 1
+    "total": 1,
+    "failures": {
+      "Makes sure imageset blockable resources are not downloaded": "FAIL"
+    }
   },
   "mixed-content/nested-iframes.window.js": {
     "total": 2

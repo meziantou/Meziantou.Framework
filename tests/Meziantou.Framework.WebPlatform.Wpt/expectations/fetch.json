@@ -712,6 +712,24 @@
   "fetch/api/headers/header-setcookie.any.js#sharedworker": {
     "total": 24
   },
+  "fetch/api/headers/header-values-last-event-id.any.js": {
+    "total": 1,
+    "failures": {
+      "fetch() sends the bytes of a non-ASCII Last-Event-ID header value unchanged": "FAIL"
+    }
+  },
+  "fetch/api/headers/header-values-last-event-id.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "fetch() sends the bytes of a non-ASCII Last-Event-ID header value unchanged": "FAIL"
+    }
+  },
+  "fetch/api/headers/header-values-last-event-id.any.js#sharedworker": {
+    "total": 1,
+    "failures": {
+      "fetch() sends the bytes of a non-ASCII Last-Event-ID header value unchanged": "FAIL"
+    }
+  },
   "fetch/api/headers/header-values-normalize.any.js": {
     "total": 62
   },
@@ -1034,13 +1052,22 @@
     "total": 1
   },
   "fetch/api/request/request-bad-port.any.js": {
-    "total": 83
+    "total": 84,
+    "failures": {
+      "Request on a port that is not bad should succeed through the proxy.": "FAIL"
+    }
   },
   "fetch/api/request/request-bad-port.any.js#dedicatedworker": {
-    "total": 83
+    "total": 84,
+    "failures": {
+      "Request on a port that is not bad should succeed through the proxy.": "FAIL"
+    }
   },
   "fetch/api/request/request-bad-port.any.js#sharedworker": {
-    "total": 83
+    "total": 84,
+    "failures": {
+      "Request on a port that is not bad should succeed through the proxy.": "FAIL"
+    }
   },
   "fetch/api/request/request-cache-default-conditional.any.js": {
     "total": 40
@@ -1226,13 +1253,22 @@
     "total": 45
   },
   "fetch/api/request/request-disturbed.any.js": {
-    "total": 9
+    "total": 9,
+    "failures": {
+      "Input request used for creating new request with a new body is not disturbed": "FAIL"
+    }
   },
   "fetch/api/request/request-disturbed.any.js#dedicatedworker": {
-    "total": 9
+    "total": 9,
+    "failures": {
+      "Input request used for creating new request with a new body is not disturbed": "FAIL"
+    }
   },
   "fetch/api/request/request-disturbed.any.js#sharedworker": {
-    "total": 9
+    "total": 9,
+    "failures": {
+      "Input request used for creating new request with a new body is not disturbed": "FAIL"
+    }
   },
   "fetch/api/request/request-error.any.js": {
     "total": 22
@@ -3289,10 +3325,11 @@
     }
   },
   "fetch/http-cache/vary.any.js": {
-    "total": 13,
+    "total": 14,
     "failures": {
       "HTTP cache doesn't invalidate existing Vary response": "FAIL",
       "HTTP cache doesn't pay attention to headers not listed in Vary": "FAIL",
+      "HTTP cache doesn't use Vary response when request contains a variant header": "FAIL",
       "HTTP cache doesn't use Vary response when request doesn't match": "FAIL",
       "HTTP cache doesn't use Vary response when request omits variant header": "FAIL",
       "HTTP cache doesn't use Vary response with a field value of '*'": "FAIL",
@@ -3307,10 +3344,11 @@
     }
   },
   "fetch/http-cache/vary.any.js#dedicatedworker": {
-    "total": 13,
+    "total": 14,
     "failures": {
       "HTTP cache doesn't invalidate existing Vary response": "FAIL",
       "HTTP cache doesn't pay attention to headers not listed in Vary": "FAIL",
+      "HTTP cache doesn't use Vary response when request contains a variant header": "FAIL",
       "HTTP cache doesn't use Vary response when request doesn't match": "FAIL",
       "HTTP cache doesn't use Vary response when request omits variant header": "FAIL",
       "HTTP cache doesn't use Vary response with a field value of '*'": "FAIL",
@@ -3325,10 +3363,11 @@
     }
   },
   "fetch/http-cache/vary.any.js#sharedworker": {
-    "total": 13,
+    "total": 14,
     "failures": {
       "HTTP cache doesn't invalidate existing Vary response": "FAIL",
       "HTTP cache doesn't pay attention to headers not listed in Vary": "FAIL",
+      "HTTP cache doesn't use Vary response when request contains a variant header": "FAIL",
       "HTTP cache doesn't use Vary response when request doesn't match": "FAIL",
       "HTTP cache doesn't use Vary response when request omits variant header": "FAIL",
       "HTTP cache doesn't use Vary response with a field value of '*'": "FAIL",
@@ -4323,6 +4362,9 @@
       "Status(199) should be ignored.": "FAIL"
     }
   },
+  "fetch/security/canvas-tainted-serviceworker-passthrough-redirect.https.html": {
+    "total": 1
+  },
   "fetch/security/dangling-markup/dangling-markup-mitigation-allowed-apis.https.html": {
     "harness": "TIMEOUT",
     "total": 0
@@ -4389,6 +4431,9 @@
   },
   "fetch/security/redirect-to-url-with-credentials.https.html": {
     "total": 7
+  },
+  "fetch/security/stylesheet-cssrules-serviceworker-passthrough-redirect.https.html": {
+    "total": 1
   },
   "fetch/stale-while-revalidate/fetch-sw.https.html": {
     "harness": "TIMEOUT",

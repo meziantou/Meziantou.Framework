@@ -682,6 +682,9 @@
   "css/css-backgrounds/background-image-gradient-currentcolor-radial-repaint.html": {
     "reftest": "PASS"
   },
+  "css/css-backgrounds/background-image-gradient-currentcolor-self-repaint.html": {
+    "reftest": "PASS"
+  },
   "css/css-backgrounds/background-image-gradient-currentcolor-visited.html": {
     "reftest": "PASS"
   },
@@ -2224,6 +2227,9 @@
   "css/css-backgrounds/box-shadow-table-row-display.html": {
     "reftest": "PASS"
   },
+  "css/css-backgrounds/box-shadow/block-in-inline-fragmentation-001.html": {
+    "reftest": "PASS"
+  },
   "css/css-backgrounds/box-shadow/box-shadow-table-row-display.html": {
     "reftest": "PASS"
   },
@@ -2402,10 +2408,10 @@
     "total": 48
   },
   "css/css-backgrounds/parsing/background-image-invalid.html": {
-    "total": 12
+    "total": 14
   },
   "css/css-backgrounds/parsing/background-image-valid.html": {
-    "total": 13
+    "total": 15
   },
   "css/css-backgrounds/parsing/background-invalid.html": {
     "total": 2

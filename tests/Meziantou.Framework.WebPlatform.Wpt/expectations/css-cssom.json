@@ -227,6 +227,9 @@
   "css/cssom/adoptedstylesheets-modify-array-and-sheet.html": {
     "total": 3
   },
+  "css/cssom/adoptedstylesheets-observablearray-removal.html": {
+    "total": 12
+  },
   "css/cssom/adoptedstylesheets-observablearray.html": {
     "total": 5
   },
@@ -247,6 +250,9 @@
   },
   "css/cssom/caretPositionFromPoint-in-flex-container.html": {
     "total": 3
+  },
+  "css/cssom/caretPositionFromPoint-textarea.html": {
+    "total": 4
   },
   "css/cssom/caretPositionFromPoint-with-transformation.html": {
     "total": 1
@@ -432,10 +438,7 @@
     }
   },
   "css/cssom/font-family-serialization-001.html": {
-    "total": 27,
-    "failures": {
-      "Serialization of prefixed -webkit-<generic-family>": "FAIL"
-    }
+    "total": 27
   },
   "css/cssom/font-shorthand-serialization.html": {
     "total": 1
@@ -477,6 +480,9 @@
     "total": 10
   },
   "css/cssom/getComputedStyle-important.html": {
+    "total": 2
+  },
+  "css/cssom/getComputedStyle-inset-inline-containing-block-vertical.html": {
     "total": 2
   },
   "css/cssom/getComputedStyle-insets-absolute-roundtrip.html": {
@@ -668,6 +674,9 @@
   "css/cssom/medialist-interfaces-004.html": {
     "total": 2
   },
+  "css/cssom/medialist-mutation-after-owner-gc.html": {
+    "total": 9
+  },
   "css/cssom/mediaquery-sort-dedup.html": {
     "total": 2
   },
@@ -754,6 +763,9 @@
   },
   "css/cssom/style-attr-clone.html": {
     "reftest": "PASS"
+  },
+  "css/cssom/style-attr-stray-braces.tentative.html": {
+    "total": 16
   },
   "css/cssom/style-attr-update-across-documents.html": {
     "total": 1

@@ -15,8 +15,8 @@
     "harness": "ERROR",
     "total": 2,
     "failures": {
-      "COEP support on DedicatedWorker.": "FAIL",
-      "COEP-Report-Only support on DedicatedWorker.": "FAIL"
+      "COEP support on DedicatedWorker.": "TIMEOUT",
+      "COEP-Report-Only support on DedicatedWorker.": "NOTRUN"
     }
   },
   "html/cross-origin-embedder-policy/cache-storage-reporting-document.https.html": {
@@ -28,17 +28,19 @@
     }
   },
   "html/cross-origin-embedder-policy/cache-storage-reporting-service-worker.https.html": {
+    "harness": "TIMEOUT",
     "total": 2,
     "failures": {
-      "COEP support on ServiceWorker.": "FAIL",
-      "COEP-Report-Only support on ServiceWorker.": "FAIL"
+      "COEP support on ServiceWorker.": "TIMEOUT",
+      "COEP-Report-Only support on ServiceWorker.": "NOTRUN"
     }
   },
   "html/cross-origin-embedder-policy/cache-storage-reporting-shared-worker.https.html": {
+    "harness": "TIMEOUT",
     "total": 2,
     "failures": {
-      "COEP support on SharedWorker.": "FAIL",
-      "COEP-Report-Only support on SharedWorker.": "FAIL"
+      "COEP support on SharedWorker.": "TIMEOUT",
+      "COEP-Report-Only support on SharedWorker.": "NOTRUN"
     }
   },
   "html/cross-origin-embedder-policy/coep-frame-javascript.https.html": {
@@ -218,6 +220,9 @@
       "Multiple globals for Worker constructor: COEP reports": "FAIL"
     }
   },
+  "html/cross-origin-embedder-policy/no-secure-context-https-iframe.html": {
+    "total": 2
+  },
   "html/cross-origin-embedder-policy/no-secure-context.html": {
     "total": 1
   },
@@ -335,6 +340,9 @@
       "parent: |header(cross-origin-embedder-policy-report-only,require-corp), target: |header(cross-origin-resource-policy,cross-origin), with empty frame: false": "TIMEOUT",
       "parent: |header(cross-origin-embedder-policy-report-only,require-corp), target: |header(cross-origin-resource-policy,cross-origin), with empty frame: true": "TIMEOUT"
     }
+  },
+  "html/cross-origin-embedder-policy/reporting-report-to-must-be-string.https.window.js": {
+    "total": 4
   },
   "html/cross-origin-embedder-policy/reporting-subresource-corp.https.html": {
     "harness": "TIMEOUT",

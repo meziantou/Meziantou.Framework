@@ -421,6 +421,9 @@
   "css/css-transitions/starting-style-name-defining-rules.html": {
     "total": 2
   },
+  "css/css-transitions/starting-style-revert-layer-cascade.html": {
+    "total": 2
+  },
   "css/css-transitions/starting-style-rule-basic.html": {
     "total": 3
   },
@@ -526,6 +529,12 @@
   },
   "css/css-transitions/transitions-retarget.html": {
     "total": 1
+  },
+  "css/css-transitions/ua-important.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Transitions can't override UA !important declarations on <marquee>": "FAIL"
+    }
   },
   "css/css-transitions/unregistered-custom-property-transition.html": {
     "total": 3

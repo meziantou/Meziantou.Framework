@@ -33,6 +33,12 @@
   "html/user-activation/chained-setTimeout.html": {
     "total": 7
   },
+  "html/user-activation/consumption-crossorigin.sub.html": {
+    "total": 9
+  },
+  "html/user-activation/consumption-sameorigin.html": {
+    "total": 9
+  },
   "html/user-activation/detached-iframe.html": {
     "total": 1
   },

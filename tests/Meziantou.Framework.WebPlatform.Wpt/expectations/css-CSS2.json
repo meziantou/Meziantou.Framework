@@ -9968,6 +9968,9 @@
   "css/CSS2/normal-flow/cross-domain-iframe-paint-order.sub.html": {
     "reftest": "PASS"
   },
+  "css/CSS2/normal-flow/dynamic-padding-change-with-style-update-before-layout.html": {
+    "reftest": "PASS"
+  },
   "css/CSS2/normal-flow/dynamic-percentage-height.html": {
     "reftest": "PASS"
   },

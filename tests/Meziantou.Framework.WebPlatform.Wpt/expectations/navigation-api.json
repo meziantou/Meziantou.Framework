@@ -538,6 +538,78 @@
   "navigation-api/navigate-event/traverseTo-detach.html": {
     "total": 1
   },
+  "navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html?from=coop&to=coop-coep": {
+    "total": 1,
+    "failures": {
+      "navigation.activation.from after same-origin coop to coop-coep and back": "PRECONDITION_FAILED"
+    }
+  },
+  "navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html?from=coop&to=coop-coep&cross-origin": {
+    "total": 1,
+    "failures": {
+      "navigation.activation.from after cross-origin coop to coop-coep and back": "PRECONDITION_FAILED"
+    }
+  },
+  "navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html?from=coop&to=none": {
+    "total": 1,
+    "failures": {
+      "navigation.activation.from after same-origin coop to none and back": "PRECONDITION_FAILED"
+    }
+  },
+  "navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html?from=coop&to=none&cross-origin": {
+    "total": 1,
+    "failures": {
+      "navigation.activation.from after cross-origin coop to none and back": "PRECONDITION_FAILED"
+    }
+  },
+  "navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html?from=coop-coep&to=coop": {
+    "total": 1,
+    "failures": {
+      "navigation.activation.from after same-origin coop-coep to coop and back": "PRECONDITION_FAILED"
+    }
+  },
+  "navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html?from=coop-coep&to=coop&cross-origin": {
+    "total": 1,
+    "failures": {
+      "navigation.activation.from after cross-origin coop-coep to coop and back": "PRECONDITION_FAILED"
+    }
+  },
+  "navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html?from=coop-coep&to=none": {
+    "total": 1,
+    "failures": {
+      "navigation.activation.from after same-origin coop-coep to none and back": "PRECONDITION_FAILED"
+    }
+  },
+  "navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html?from=coop-coep&to=none&cross-origin": {
+    "total": 1,
+    "failures": {
+      "navigation.activation.from after cross-origin coop-coep to none and back": "PRECONDITION_FAILED"
+    }
+  },
+  "navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html?from=none&to=coop": {
+    "total": 1,
+    "failures": {
+      "navigation.activation.from after same-origin none to coop and back": "PRECONDITION_FAILED"
+    }
+  },
+  "navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html?from=none&to=coop&cross-origin": {
+    "total": 1,
+    "failures": {
+      "navigation.activation.from after cross-origin none to coop and back": "PRECONDITION_FAILED"
+    }
+  },
+  "navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html?from=none&to=coop-coep": {
+    "total": 1,
+    "failures": {
+      "navigation.activation.from after same-origin none to coop-coep and back": "PRECONDITION_FAILED"
+    }
+  },
+  "navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html?from=none&to=coop-coep&cross-origin": {
+    "total": 1,
+    "failures": {
+      "navigation.activation.from after cross-origin none to coop-coep and back": "PRECONDITION_FAILED"
+    }
+  },
   "navigation-api/navigation-activation/activation-after-bfcache-cross-origin-clears-from.html": {
     "total": 1,
     "failures": {
@@ -1376,6 +1448,18 @@
   "navigation-api/scroll-behavior/after-transition-reject.html": {
     "total": 1
   },
+  "navigation-api/scroll-behavior/after-transition-reload-after-traverse.html": {
+    "total": 1,
+    "failures": {
+      "scroll: after-transition on a reload of a traversed-to fragment entry scrolls to the fragment": "FAIL"
+    }
+  },
+  "navigation-api/scroll-behavior/after-transition-reload-no-fragment.html": {
+    "total": 1,
+    "failures": {
+      "scroll: after-transition on a reload without a fragment scrolls to the beginning of the document": "FAIL"
+    }
+  },
   "navigation-api/scroll-behavior/after-transition-reload-no-scroll-anchoring.html": {
     "total": 1,
     "failures": {
@@ -1398,6 +1482,12 @@
     }
   },
   "navigation-api/scroll-behavior/after-transition-timing.html": {
+    "total": 1
+  },
+  "navigation-api/scroll-behavior/after-transition-traverse-no-fragment.html": {
+    "total": 1
+  },
+  "navigation-api/scroll-behavior/after-transition-traverse-to-fragment.html": {
     "total": 1
   },
   "navigation-api/scroll-behavior/manual-basic.html": {

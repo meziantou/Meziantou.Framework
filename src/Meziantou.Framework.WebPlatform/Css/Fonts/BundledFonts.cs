@@ -51,8 +51,9 @@ internal sealed class BundledFont
 /// sources and licenses.
 /// </summary>
 /// <remarks>
-/// The fonts are immutable and shared by all the documents. The system fonts are never used, so that the layout is the
-/// same on every machine.
+/// The fonts are immutable and shared by all the documents. The system fonts are not used unless the host opts in
+/// (<see cref="Dom.BrowsingContextOptions.UseSystemFonts"/>), so that the layout is the same on every machine; even then,
+/// the bundled fonts keep their names and the generic families.
 /// </remarks>
 internal static class BundledFonts
 {

@@ -34,7 +34,14 @@ internal sealed class SfntDirectory
     /// <summary>Reads the directory at an offset of the file.</summary>
     public static SfntDirectory Read(ReadOnlySpan<byte> file, long offset)
     {
-        var header = FontBinary.Slice(file, offset, HeaderLength);
+        var length = GetLength(FontBinary.Slice(file, offset, HeaderLength));
+        return ReadDirectory(FontBinary.Slice(file, offset, length), file.Length);
+    }
+
+    /// <summary>Gets the length of a directory, its header and its records, from its header.</summary>
+    /// <param name="header">The first <see cref="HeaderLength"/> bytes of the directory.</param>
+    public static int GetLength(ReadOnlySpan<byte> header)
+    {
         var version = FontBinary.UInt32(header, 0);
         switch (version)
         {
@@ -48,8 +55,22 @@ internal sealed class SfntDirectory
                 throw FontErrors.Invalid($"a face has the unknown signature 0x{version:X8}.");
         }
 
+        return HeaderLength + (FontBinary.UInt16(header, 4) * RecordLength);
+    }
+
+    /// <summary>
+    /// Reads a directory from its bytes, the header and the records, without the rest of the file: a table must lie
+    /// inside a file of <paramref name="fileLength"/> bytes.
+    /// </summary>
+    public static SfntDirectory ReadDirectory(ReadOnlySpan<byte> directory, long fileLength)
+    {
+        var header = FontBinary.Slice(directory, 0, HeaderLength);
+        var version = FontBinary.UInt32(header, 0);
         var count = FontBinary.UInt16(header, 4);
-        var records = FontBinary.Slice(file, offset + HeaderLength, (long)count * RecordLength);
+        var records = FontBinary.Slice(directory, HeaderLength, GetLength(header) - HeaderLength);
+
+        // The offsets are kept as 32-bit integers: a table lies within the first 2 GiB of the file.
+        var end = Math.Min(fileLength, int.MaxValue);
         var tags = new uint[count];
         var offsets = new int[count];
         var lengths = new int[count];
@@ -59,7 +80,7 @@ internal sealed class SfntDirectory
             var tag = FontBinary.UInt32(record, 0);
             var tableOffset = FontBinary.UInt32(record, 8);
             var tableLength = FontBinary.UInt32(record, 12);
-            if ((long)tableOffset + tableLength > file.Length)
+            if ((long)tableOffset + tableLength > end)
                 throw FontErrors.InvalidTable(tag, "lies outside the file.");
 
             tags[i] = tag;

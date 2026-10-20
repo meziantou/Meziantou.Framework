@@ -369,7 +369,10 @@ internal sealed class FontSelector
 
         foreach (var fallback in installedFonts.Fallbacks)
         {
-            entries.Add(new FontFallbackList.FallbackFontEntry(CreateMatchedFont([fallback.Font.Font], [fallback.Font.Capabilities], description), fallback.Ranges));
+            if (CreateMatchedFont([fallback.Font], description) is { } matched)
+            {
+                entries.Add(new FontFallbackList.FallbackFontEntry(matched, fallback.Ranges));
+            }
         }
     }
 
@@ -445,20 +448,28 @@ internal sealed class FontSelector
             return new FontFallbackList.InstalledFamilyEntry(CreateMatchedFont(fonts, capabilities, description));
         }
 
-        if (_document.InstalledFonts?.GetFamilyFonts(family) is { Count: > 0 } installed)
-        {
-            var fonts = new OpenTypeFont[installed.Count];
-            var capabilities = new FontSelectionCapabilities[installed.Count];
-            for (var i = 0; i < installed.Count; i++)
-            {
-                fonts[i] = installed[i].Font;
-                capabilities[i] = installed[i].Capabilities;
-            }
-
-            return new FontFallbackList.InstalledFamilyEntry(CreateMatchedFont(fonts, capabilities, description));
-        }
+        if (_document.InstalledFonts?.GetFamilyFonts(family) is { Count: > 0 } installed && CreateMatchedFont(installed, description) is { } matched)
+            return new FontFallbackList.InstalledFamilyEntry(matched);
 
         return null;
+    }
+
+    /// <summary>
+    /// Selects the face of a family installed by the host for a description. Only the selected face is loaded: a font
+    /// installed on the machine is read from its file on first use, and a family whose selected face can no longer be
+    /// loaded is not installed (the result is the same for every description of the family, as the font is cached).
+    /// </summary>
+    private static MatchedFont? CreateMatchedFont(IReadOnlyList<InstalledFont> fonts, FontDescription description)
+    {
+        var capabilities = new FontSelectionCapabilities[fonts.Count];
+        for (var i = 0; i < fonts.Count; i++)
+        {
+            capabilities[i] = fonts[i].Capabilities;
+        }
+
+        var indices = new List<int>(fonts.Count);
+        var selected = FontMatcher.Select(capabilities, description.Weight, description.Style, description.Width, indices, description.SynthesizeStyle);
+        return fonts[indices[0]].Font is { } font ? new MatchedFont(font, face: null, description, selected, FontFaceDescriptorValues.Default, capabilities[indices[0]]) : null;
     }
 
     /// <summary>Selects the face of an installed family for a description (https://drafts.csswg.org/css-fonts-4/#font-style-matching).</summary>

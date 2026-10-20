@@ -118,6 +118,20 @@ internal sealed class FontFile
         return file;
     }
 
+    /// <summary>
+    /// Returns the file of a face of this file whose only face is that face, for a <c>local()</c> source that names a face of
+    /// a collection: a font face uses the first face of its file. The face keeps its file and its index for the rendering.
+    /// </summary>
+    internal FontFile GetSingleFaceFile(OpenTypeFont face)
+    {
+        if (_faces.Length == 1)
+            return this;
+
+        var file = new FontFile(Format, Data, faceCount: 1);
+        file._faces[0] = face;
+        return file;
+    }
+
     /// <summary>Loads a font file. The array must not be modified afterwards.</summary>
     public static FontFile? Load(byte[] data)
     {

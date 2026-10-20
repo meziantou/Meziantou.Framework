@@ -125,6 +125,9 @@ internal static class FontTags
     /// <summary>The tag of the 'CBDT' table.</summary>
     public const uint Cbdt = ((uint)'C' << 24) | ((uint)'B' << 16) | ((uint)'D' << 8) | 'T';
 
+    /// <summary>The tag of the 'SVG ' table.</summary>
+    public const uint Svg = ((uint)'S' << 24) | ((uint)'V' << 16) | ((uint)'G' << 8) | ' ';
+
     /// <summary>The tag of the 'EBLC' table.</summary>
     public const uint Eblc = ((uint)'E' << 24) | ((uint)'B' << 16) | ((uint)'L' << 8) | 'C';
 

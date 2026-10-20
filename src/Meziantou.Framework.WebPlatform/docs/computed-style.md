@@ -898,7 +898,8 @@ reader (see [Fonts in docs/layout.md](layout.md#fonts)); like the browsers, a fi
 rejected, even when it starts with a font signature. The request URL modifiers of a source apply to its request (see
 [Request URL modifiers](#request-url-modifiers)). The `local()` sources are the bundled fonts (see
 [Bundled fonts](layout.md#bundled-fonts)), matched by their full name or PostScript name (e.g. `local(Ahem)`,
-`local("Tinos Bold")`): the fonts installed on the machine are never used. A font face created from binary data is
+`local("Tinos Bold")`), else the fonts installed by the host, and the fonts installed on the machine when
+`BrowsingContextOptions.UseSystemFonts` is set (see [System fonts](layout.md#system-fonts)). A font face created from binary data is
 loaded when its data is a valid font file.
 
 ```csharp

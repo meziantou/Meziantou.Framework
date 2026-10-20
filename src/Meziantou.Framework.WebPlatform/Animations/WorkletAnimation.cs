@@ -157,6 +157,14 @@ public sealed class WorkletAnimation : Animation
         }
     }
 
+    internal override void UpdateEffectRegistrations()
+    {
+        foreach (var effect in GetEffects())
+        {
+            (effect as KeyframeEffect)?.UpdateRegistration();
+        }
+    }
+
     /// <summary>The effects have no local time while the animation is idle. Returns whether an effect had one.</summary>
     internal bool ClearLocalTimes()
     {

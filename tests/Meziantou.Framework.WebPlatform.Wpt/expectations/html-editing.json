@@ -29,6 +29,9 @@
   "html/editing/dnd/datastore/datatransfer-getdata-url.html": {
     "total": 11
   },
+  "html/editing/dnd/datastore/datatransfer-text-plain-prefix-format.html": {
+    "total": 10
+  },
   "html/editing/dnd/datastore/datatransfer-types.html": {
     "total": 5
   },

@@ -107,6 +107,9 @@
   "css/css-anchor-position/anchor-fixed-pos-descendant.html": {
     "reftest": "PASS"
   },
+  "css/css-anchor-position/anchor-fixedpos-nested-scroll-001.html": {
+    "reftest": "PASS"
+  },
   "css/css-anchor-position/anchor-function-chain-pseudo-elements.html": {
     "reftest": "PASS"
   },
@@ -452,6 +455,21 @@
   },
   "css/css-anchor-position/anchor-scroll-009.html": {
     "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-scroll-010.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-scroll-011.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-scroll-012.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-scroll-013.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/anchor-scroll-014.html": {
+    "total": 1
   },
   "css/css-anchor-position/anchor-scroll-chained-001.html": {
     "reftest": "PASS"

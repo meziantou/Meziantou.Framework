@@ -364,6 +364,87 @@ public sealed class StyleInvalidationTests : IDisposable
     }
 
     [Fact]
+    public void Transition_OfAPseudoElementWhoseElementKeepsItsStyle()
+    {
+        var document = Parse("<style>#a::before { content: 'x'; color: red; transition: color 1s linear } #a.on::before { color: green }</style><div id=a></div><div id=b></div>");
+        var engine = document.GetStyleEngine();
+        var a = Find(document, "#a");
+        var styleOfA = engine.GetStyle(a);
+        var styleOfB = Style(document, "#b");
+        Assert.Equal(Red, document.DefaultView!.GetComputedStyle(a, "::before").GetPropertyValue("color"));
+
+        a.ClassList.Add("on");
+
+        // (the style of another element is read: the transition starts without a read of the style of the pseudo-element)
+        Assert.Same(styleOfB, Style(document, "#b"));
+        Assert.Same(styleOfA, engine.GetStyle(a));
+        Assert.NotNull(document.AnimationsOrNull?.GetElementAnimations(a)?.Get("before"));
+    }
+
+    [Fact]
+    public void Transition_OfAnInsertedElement_StartsFromItsStartingStyle()
+    {
+        var document = Parse("<style>.item { opacity: 1; transition: opacity 1s linear } @starting-style { .item { opacity: 0 } }</style><div id=list><div class=item></div></div><div id=b></div>");
+        var engine = document.GetStyleEngine();
+        _ = ComputeAll(document);
+        var styleOfB = Style(document, "#b");
+        var count = engine.ElementInvalidationCount;
+        var item = document.CreateElement("div");
+        item.ClassList.Add("item");
+        var container = document.CreateElement("div");
+        container.AppendChild(item);
+
+        Find(document, "#list").AppendChild(container);
+
+        // (the style of another element is read: the transition starts without a read of the style of the inserted element)
+        Assert.Same(styleOfB, Style(document, "#b"));
+        Assert.Equal(count + 1, engine.ElementInvalidationCount);
+        Assert.NotNull(document.AnimationsOrNull?.GetElementAnimations(item)?.Get(pseudoElement: null));
+    }
+
+    [Fact]
+    public void AnimationFrame_StartsTheAnimationsOfTheChangedElements()
+    {
+        var document = Parse("<style>*, ::before, ::after { box-sizing: border-box } @keyframes fade { from { opacity: 0 } to { opacity: 1 } } .on { animation: fade 1s linear } #b { transition: color 1s linear } #b.red { color: red }</style><div id=a></div><div id=b></div><div id=c></div>");
+        Advance(1000d / 60);
+        var styleOfC = Style(document, "#c");
+        var a = Find(document, "#a");
+        var b = Find(document, "#b");
+
+        a.ClassList.Add("on");
+        b.ClassList.Add("red");
+        Advance(1000d / 60);
+
+        // (the rendering steps start the animation and the transition: nothing read the styles)
+        Assert.NotNull(document.AnimationsOrNull?.GetElementAnimations(a)?.Get(pseudoElement: null));
+        Assert.NotNull(document.AnimationsOrNull?.GetElementAnimations(b)?.Get(pseudoElement: null));
+        Assert.Same(styleOfC, Style(document, "#c"));
+    }
+
+    [Fact]
+    public void AnimationFrame_StartsTheAnimationsOfAnAttachedShadowTree()
+    {
+        // (the styles of the document and of its first shadow tree declare no animation: the rendering steps compute them all)
+        var document = Parse("<div id=first><template shadowrootmode=open><style>p { color: green }</style><p></p></template></div><div id=host></div>");
+        Advance(1000d / 60);
+        var shadow = Find(document, "#host").AttachShadow(new ShadowRootInit { Mode = ShadowRootMode.Open });
+        shadow.InnerHtml = "<style>@keyframes fade { from { opacity: 0 } to { opacity: 1 } } #t { animation: fade 1s linear }</style><div id=t></div>";
+        Advance(1000d / 60);
+
+        // (the rules of the new shadow tree are known once the styles of its elements are computed by the rendering steps)
+        Assert.NotNull(document.AnimationsOrNull?.GetElementAnimations(shadow.GetElementById("t")!)?.Get(pseudoElement: null));
+
+        shadow.InnerHtml = "<style>@keyframes fade { from { opacity: 0 } to { opacity: 1 } } .on { animation: fade 1s linear }</style><div id=u></div>";
+        Advance(1000d / 60);
+        var u = shadow.GetElementById("u")!;
+        Assert.Null(document.AnimationsOrNull?.GetElementAnimations(u)?.Get(pseudoElement: null));
+
+        u.ClassList.Add("on");
+        Advance(1000d / 60);
+        Assert.NotNull(document.AnimationsOrNull?.GetElementAnimations(u)?.Get(pseudoElement: null));
+    }
+
+    [Fact]
     public void Animation_RestylesTheTargetOnly()
     {
         var document = Parse("<style>@keyframes fade { from { opacity: 0 } to { opacity: 1 } } #a { animation: fade 1s linear }</style><div id=a><span id=c></span></div><div id=b></div>");

@@ -5,6 +5,76 @@
   "html/rendering/bidi-rendering/slot-no-isolate-001.html": {
     "reftest": "PASS"
   },
+  "html/rendering/bidi-rendering/unicode-bidi-ua-rules-iso-8859-8.html": {
+    "total": 67,
+    "failures": {
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <address>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <article>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <aside>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <blockquote>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <caption>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <center>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <col>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <colgroup>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <dd>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <dir>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <div>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <dl>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <dt>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <figcaption>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <figure>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <footer>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <form>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <h1>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <h2>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <h3>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <h4>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <h5>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <h6>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <header>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <hgroup>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <hr>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=checkbox>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=color>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=date>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=datetime-local>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=email>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=file>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=hidden>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=image>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=number>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=password>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=radio>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=range>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=search>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=tel>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=text>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=time>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=url>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <legend>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <li>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <listing>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <main>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <menu>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <nav>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <ol>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <p>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <plaintext>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <pre>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <search>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <section>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <summary>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <table>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <tbody>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <td>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <tfoot>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <th>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <thead>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <tr>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <ul>": "FAIL",
+      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <xmp>": "FAIL"
+    }
+  },
   "html/rendering/bidi-rendering/unicode-bidi-ua-rules.html": {
     "total": 130
   },
@@ -390,6 +460,9 @@
   },
   "html/rendering/non-replaced-elements/tables/transformed-tbody-tr-collapsed-border.html": {
     "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/the-br-element/br-and-wbr-with-non-inline-display.html": {
+    "reftest": "FAIL"
   },
   "html/rendering/non-replaced-elements/the-br-element/br-clear-presentational-hints.html": {
     "reftest": "PASS"
@@ -798,6 +871,12 @@
   },
   "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/img-alt-crash-001.html": {
     "total": 1
+  },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/img-aspect-ratio-alt-text.html": {
+    "total": 2,
+    "failures": {
+      "An error image with alt text and height:100% fills its definite grid area": "FAIL"
+    }
   },
   "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/img-aspect-ratio-lazy.html": {
     "total": 1
@@ -1489,7 +1568,7 @@
     "reftest": "PASS"
   },
   "html/rendering/widgets/the-select-element/select-label-appearance.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "html/rendering/widgets/the-select-element/select-optgroup-dir-invalidation.html": {
     "reftest": "PASS"

@@ -2166,51 +2166,63 @@
     "total": 1
   },
   "websockets/stream/tentative/abort.any.js#dedicatedworker?wpt_flags=h2": {
-    "total": 3,
+    "total": 5,
     "failures": {
       "abort after connect should do nothing": "FAIL",
       "abort before constructing should prevent connection": "FAIL",
-      "abort during handshake should work": "FAIL"
+      "abort during handshake should work": "FAIL",
+      "close after abort before constructing should do nothing": "FAIL",
+      "close after abort during handshake should do nothing": "FAIL"
     }
   },
   "websockets/stream/tentative/abort.any.js#dedicatedworker?wss": {
-    "total": 3,
+    "total": 5,
     "failures": {
       "abort after connect should do nothing": "FAIL",
       "abort before constructing should prevent connection": "FAIL",
-      "abort during handshake should work": "FAIL"
+      "abort during handshake should work": "FAIL",
+      "close after abort before constructing should do nothing": "FAIL",
+      "close after abort during handshake should do nothing": "FAIL"
     }
   },
   "websockets/stream/tentative/abort.any.js#sharedworker?wpt_flags=h2": {
-    "total": 3,
+    "total": 5,
     "failures": {
       "abort after connect should do nothing": "FAIL",
       "abort before constructing should prevent connection": "FAIL",
-      "abort during handshake should work": "FAIL"
+      "abort during handshake should work": "FAIL",
+      "close after abort before constructing should do nothing": "FAIL",
+      "close after abort during handshake should do nothing": "FAIL"
     }
   },
   "websockets/stream/tentative/abort.any.js#sharedworker?wss": {
-    "total": 3,
+    "total": 5,
     "failures": {
       "abort after connect should do nothing": "FAIL",
       "abort before constructing should prevent connection": "FAIL",
-      "abort during handshake should work": "FAIL"
+      "abort during handshake should work": "FAIL",
+      "close after abort before constructing should do nothing": "FAIL",
+      "close after abort during handshake should do nothing": "FAIL"
     }
   },
   "websockets/stream/tentative/abort.any.js?wpt_flags=h2": {
-    "total": 3,
+    "total": 5,
     "failures": {
       "abort after connect should do nothing": "FAIL",
       "abort before constructing should prevent connection": "FAIL",
-      "abort during handshake should work": "FAIL"
+      "abort during handshake should work": "FAIL",
+      "close after abort before constructing should do nothing": "FAIL",
+      "close after abort during handshake should do nothing": "FAIL"
     }
   },
   "websockets/stream/tentative/abort.any.js?wss": {
-    "total": 3,
+    "total": 5,
     "failures": {
       "abort after connect should do nothing": "FAIL",
       "abort before constructing should prevent connection": "FAIL",
-      "abort during handshake should work": "FAIL"
+      "abort during handshake should work": "FAIL",
+      "close after abort before constructing should do nothing": "FAIL",
+      "close after abort during handshake should do nothing": "FAIL"
     }
   },
   "websockets/stream/tentative/backpressure-receive.any.js#dedicatedworker?wpt_flags=h2": {

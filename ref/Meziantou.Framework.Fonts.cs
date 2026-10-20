@@ -728,6 +728,38 @@ namespace Meziantou.Framework.Fonts
         public static bool operator !=(Meziantou.Framework.Fonts.ShapingFeature left, Meziantou.Framework.Fonts.ShapingFeature right) => throw null;
     }
 
+    public sealed class SystemFontCollection
+    {
+        public static Meziantou.Framework.Fonts.SystemFontCollection Default { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Fonts.SystemFontDescriptor> Fonts { get => throw null; }
+        public static Meziantou.Framework.Fonts.SystemFontCollection Create(System.Collections.Generic.IEnumerable<string> paths) => throw null;
+        public Meziantou.Framework.Fonts.SystemFontDescriptor? FindByName(string name) => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Fonts.SystemFontDescriptor> GetFamily(string familyName) => throw null;
+        public Meziantou.Framework.Fonts.SystemFontDescriptor? Match(string familyName, int weight = 400, bool isItalic = false) => throw null;
+    }
+
+    public sealed class SystemFontDescriptor
+    {
+        public System.ReadOnlySpan<Meziantou.Framework.Fonts.FontAxisRecord> Axes { get => throw null; }
+        public int FaceIndex { get => throw null; }
+        public string FamilyName { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> FamilyNames { get => throw null; }
+        public string FilePath { get => throw null; }
+        public string? FullName { get => throw null; }
+        public bool HasOs2 { get => throw null; }
+        public bool IsItalic { get => throw null; }
+        public bool IsMonospaced { get => throw null; }
+        public bool IsOblique { get => throw null; }
+        public double ItalicAngle { get => throw null; }
+        public int MacStyle { get => throw null; }
+        public string? PostScriptName { get => throw null; }
+        public int Selection { get => throw null; }
+        public string SubfamilyName { get => throw null; }
+        public int Weight { get => throw null; }
+        public int WidthClass { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
     public static class TextShaper
     {
         public static void AddText(Meziantou.Framework.Fonts.GlyphBuffer buffer, System.ReadOnlySpan<char> text, int clusterOffset = 0) { }

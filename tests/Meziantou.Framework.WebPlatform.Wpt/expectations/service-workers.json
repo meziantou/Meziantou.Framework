@@ -12,16 +12,28 @@
     "total": 9
   },
   "service-workers/cache-storage/cache-add.https.any.js": {
-    "total": 23
+    "total": 24,
+    "failures": {
+      "Cache.addAll should succeed when an entry matches an earlier entry only under its own vary header": "FAIL"
+    }
   },
   "service-workers/cache-storage/cache-add.https.any.js#dedicatedworker": {
-    "total": 23
+    "total": 24,
+    "failures": {
+      "Cache.addAll should succeed when an entry matches an earlier entry only under its own vary header": "FAIL"
+    }
   },
   "service-workers/cache-storage/cache-add.https.any.js#serviceworker": {
-    "total": 23
+    "total": 24,
+    "failures": {
+      "Cache.addAll should succeed when an entry matches an earlier entry only under its own vary header": "FAIL"
+    }
   },
   "service-workers/cache-storage/cache-add.https.any.js#sharedworker": {
-    "total": 23
+    "total": 24,
+    "failures": {
+      "Cache.addAll should succeed when an entry matches an earlier entry only under its own vary header": "FAIL"
+    }
   },
   "service-workers/cache-storage/cache-api-nested-worker.https.html": {
     "total": 1
@@ -434,6 +446,7 @@
   "service-workers/service-worker/fetch-canvas-tainting-video-with-range-request.https.html": {
     "total": 5,
     "failures": {
+      "range responses from single origin with both opaque and non-opaque responses": "FAIL",
       "synth and same-origin fallback range responses": "FAIL"
     }
   },

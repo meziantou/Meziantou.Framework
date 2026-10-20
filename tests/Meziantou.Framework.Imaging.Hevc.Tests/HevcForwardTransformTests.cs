@@ -52,9 +52,9 @@ public sealed class HevcForwardTransformTests
     [InlineData(5, 0, 10, 1)]
     [InlineData(2, 0, 12, 1)]
     [InlineData(2, 1, 12, 1)]
-    [InlineData(3, 0, 12, 1)]
+    [InlineData(3, 0, 12, 2)]
     [InlineData(4, 0, 12, 3)]
-    [InlineData(5, 0, 12, 5)]
+    [InlineData(5, 0, 12, 6)]
     public void AResidualIsUndoneByTheInverseProcess(int log2TrafoSize, int trType, int bitDepth, int maxError)
     {
         var random = new Random((log2TrafoSize * 100) + (trType * 50) + bitDepth);
@@ -139,22 +139,88 @@ public sealed class HevcForwardTransformTests
     }
 
     [Fact]
-    public void TheBasesOfTheEvenCoefficientsAreSymmetricAndTheOthersAntisymmetric()
+    public void TheBasesOfTheEvenCoefficientsAreThoseOfTheSmallerTransform()
     {
         // The even and odd decomposition of the forward transform relies on it: the value of the coefficient k at the sample
-        // nTbS - 1 - i is ( -1 )^k times its value at the sample i
+        // nTbS - 1 - i is ( -1 )^k times its value at the sample i, and the value of the coefficient 2 * m at the sample
+        // i < nTbS / 2 is the value of the coefficient m of the transform of nTbS / 2 samples, down to the transform of 2
+        // samples, ( a, a ) and ( a, -a )
         for (var log2TrafoSize = 2; log2TrafoSize <= 5; log2TrafoSize++)
         {
             var nTbS = 1 << log2TrafoSize;
-            var basis = HevcForwardTransform.GetDctBasis(log2TrafoSize);
-            for (var k = 0; k < nTbS; k++)
+            var (rowBits, columnBits, _) = HevcForwardTransform.GetBasisBits(log2TrafoSize);
+            foreach (var (basis, bits) in new[] { (HevcForwardTransform.GetRowBasis(log2TrafoSize, trType: 0).ToArray(), rowBits), (HevcForwardTransform.GetColumnBasis(log2TrafoSize, trType: 0).ToArray(), columnBits), (HevcForwardTransform.GetExactBasis(log2TrafoSize, trType: 0).ToArray(), 12) })
             {
-                for (var i = 0; i < nTbS; i++)
+                Assert.Equal(64 << bits, basis[0]);
+                Assert.Equal(64 << bits, basis[nTbS / 2 * nTbS]);
+                for (var k = 0; k < nTbS; k++)
                 {
-                    var mirrored = basis[(k * nTbS) + nTbS - 1 - i];
-                    Assert.Equal(basis[(k * nTbS) + i], (k & 1) is 0 ? mirrored : -mirrored);
+                    for (var i = 0; i < nTbS; i++)
+                    {
+                        var mirrored = basis[(k * nTbS) + nTbS - 1 - i];
+                        Assert.Equal(basis[(k * nTbS) + i], (k & 1) is 0 ? mirrored : -mirrored);
+                    }
+                }
+
+                // The same number of fractional bits gives the same bases to the smaller transform
+                for (var smaller = 1; smaller < log2TrafoSize; smaller++)
+                {
+                    var step = 1 << (log2TrafoSize - smaller);
+                    var size = 1 << smaller;
+                    var smallerBasis = smaller is 1 ? null : HevcForwardTransform.CreateBases(smaller, trType: 0, bits)[0];
+                    for (var m = 0; m < size; m++)
+                    {
+                        for (var i = 0; i < size / 2; i++)
+                        {
+                            var expected = smallerBasis is null ? 64 << bits : smallerBasis[(m * size) + i];
+                            Assert.Equal(expected, basis[(m * step * nTbS) + i]);
+                        }
+                    }
                 }
             }
+        }
+    }
+
+    [Fact]
+    public void TheSumsOfProductsFitIn32Bits()
+    {
+        // The vector path computes the sums of the products in 32-bit lanes, which wrap around: the largest sum of the first
+        // stage is the one of residual samples of 12 bits whose signs are those of a basis, and the largest of the second
+        // stage the one of the largest intermediate values; both are below 2^30, with their rounding
+        for (var log2TrafoSize = 2; log2TrafoSize <= 5; log2TrafoSize++)
+        {
+            var nTbS = 1 << log2TrafoSize;
+            for (var trType = 0; trType <= (log2TrafoSize is 2 ? 1 : 0); trType++)
+            {
+                var (_, _, intermediateBits) = HevcForwardTransform.GetBasisBits(log2TrafoSize);
+                foreach (var bitDepth in new[] { 8, 10, 12 })
+                {
+                    var rowShift = HevcForwardTransform.GetRowShift(log2TrafoSize, bitDepth);
+                    var rowSum = GetLargestSumOfMagnitudes(HevcForwardTransform.GetRowBasis(log2TrafoSize, trType), nTbS) * ((1L << bitDepth) - 1);
+                    Assert.True(rowSum + (1L << (rowShift - 1)) < 1L << 30, $"{nTbS} samples, {bitDepth} bits: {rowSum}");
+                    var intermediate = (rowSum + (1L << (rowShift - 1))) >> rowShift;
+                    Assert.True(intermediate <= 1L << intermediateBits, $"{nTbS} samples, {bitDepth} bits: {intermediate}");
+                    var columnSum = GetLargestSumOfMagnitudes(HevcForwardTransform.GetColumnBasis(log2TrafoSize, trType), nTbS) * intermediate;
+                    Assert.True(columnSum + (1L << 14) < 1L << 30, $"{nTbS} samples, {bitDepth} bits: {columnSum}");
+                }
+            }
+        }
+
+        static long GetLargestSumOfMagnitudes(ReadOnlySpan<int> basis, int nTbS)
+        {
+            long largest = 0;
+            for (var k = 0; k < nTbS; k++)
+            {
+                long sum = 0;
+                foreach (var value in basis.Slice(k * nTbS, nTbS))
+                {
+                    sum += Math.Abs(value);
+                }
+
+                largest = Math.Max(largest, sum);
+            }
+
+            return largest;
         }
     }
 
@@ -162,37 +228,73 @@ public sealed class HevcForwardTransformTests
     [InlineData(8)]
     [InlineData(10)]
     [InlineData(12)]
-    public void TheEvenAndOddDecompositionGivesTheFullMatrixProducts(int bitDepth)
+    public void TheVectorPathGivesTheDirectProducts(int bitDepth)
     {
         var random = new Random(bitDepth);
-        var maxValue = (1 << bitDepth) - 1;
         for (var log2TrafoSize = 2; log2TrafoSize <= 5; log2TrafoSize++)
         {
             var count = 1 << (log2TrafoSize << 1);
             var residual = new int[count];
             var expected = new int[count];
             var actual = new int[count];
-            for (var iteration = 0; iteration < 200; iteration++)
+            for (var trType = 0; trType <= (log2TrafoSize is 2 ? 1 : 0); trType++)
             {
-                // Random residuals, sparse ones, constant ones and the extremes of the bit depth
-                var kind = iteration % 5;
-                for (var i = 0; i < count; i++)
+                for (var iteration = 0; iteration < 200; iteration++)
                 {
-                    residual[i] = kind switch
-                    {
-                        0 => random.Next(-maxValue, maxValue + 1),
-                        1 => random.Next(8) is 0 ? random.Next(-maxValue, maxValue + 1) : 0,
-                        2 => iteration % 2 is 0 ? maxValue : -maxValue,
-                        3 => random.Next(2) is 0 ? maxValue : -maxValue,
-                        _ => random.Next(-4, 5),
-                    };
+                    FillResidual(residual, random, iteration, bitDepth);
+                    HevcForwardTransform.ForwardScalar(residual, expected, log2TrafoSize, trType, bitDepth);
+                    HevcForwardTransform.Forward(residual, actual, log2TrafoSize, trType, bitDepth);
+                    Assert.Equal(expected, actual);
                 }
-
-                HevcForwardTransform.ForwardFullMatrix(residual, expected, log2TrafoSize, HevcForwardTransform.GetDctBasis(log2TrafoSize), bitDepth);
-                HevcForwardTransform.Forward(residual, actual, log2TrafoSize, trType: 0, bitDepth);
-                Assert.Equal(expected, actual);
             }
         }
+    }
+
+    [Theory]
+
+    // The size, the transform type, the bit depth and the largest difference between a coefficient and the one of the
+    // exact product by the inverse of the matrix of the decoder, rounded once: the two stages round the intermediate
+    // values and use bases with fewer fractional bits. The coefficients have 16 bits: a difference of 2 is 2^-14 of
+    // their range
+    [InlineData(2, 0, 8, 1)]
+    [InlineData(2, 1, 8, 2)]
+    [InlineData(3, 0, 8, 2)]
+    [InlineData(4, 0, 8, 2)]
+    [InlineData(5, 0, 8, 2)]
+    [InlineData(2, 0, 10, 1)]
+    [InlineData(2, 1, 10, 1)]
+    [InlineData(3, 0, 10, 2)]
+    [InlineData(4, 0, 10, 2)]
+    [InlineData(5, 0, 10, 2)]
+    [InlineData(2, 0, 12, 1)]
+    [InlineData(2, 1, 12, 1)]
+    [InlineData(3, 0, 12, 2)]
+    [InlineData(4, 0, 12, 2)]
+    [InlineData(5, 0, 12, 2)]
+    public void TheCoefficientsAreCloseToTheExactProduct(int log2TrafoSize, int trType, int bitDepth, int maxDifference)
+    {
+        var random = new Random((log2TrafoSize * 100) + (trType * 50) + bitDepth);
+        var count = 1 << (log2TrafoSize << 1);
+        var residual = new int[count];
+        var expected = new int[count];
+        var actual = new int[count];
+        var worst = 0;
+        long squaredDifference = 0;
+        const int Iterations = 1000;
+        for (var iteration = 0; iteration < Iterations; iteration++)
+        {
+            FillResidual(residual, random, iteration, bitDepth);
+            HevcForwardTransform.ForwardExact(residual, expected, log2TrafoSize, trType, bitDepth);
+            HevcForwardTransform.Forward(residual, actual, log2TrafoSize, trType, bitDepth);
+            for (var i = 0; i < count; i++)
+            {
+                var difference = Math.Abs(actual[i] - expected[i]);
+                worst = Math.Max(worst, difference);
+                squaredDifference += (long)difference * difference;
+            }
+        }
+
+        Assert.True(worst <= maxDifference, $"The largest difference is {worst}; the mean squared difference is {squaredDifference / (double)(Iterations * count):F3}");
     }
 
     [Fact]
@@ -360,6 +462,35 @@ public sealed class HevcForwardTransformTests
                 }
 
                 Assert.Equal(residual, coded);
+            }
+        }
+    }
+
+    // Random residuals, sparse ones, small ones, smooth ones, edges, and the extremes of the bit depth
+    private static void FillResidual(int[] residual, Random random, int iteration, int bitDepth)
+    {
+        var nTbS = (int)Math.Sqrt(residual.Length);
+        var maxValue = (1 << bitDepth) - 1;
+        var slopeX = random.Next(-maxValue / nTbS, (maxValue / nTbS) + 1);
+        var slopeY = random.Next(-maxValue / nTbS, (maxValue / nTbS) + 1);
+        var amplitude = random.Next(1, maxValue + 1);
+        var edge = random.Next(nTbS);
+        for (var y = 0; y < nTbS; y++)
+        {
+            for (var x = 0; x < nTbS; x++)
+            {
+                residual[(y * nTbS) + x] = (iteration % 9) switch
+                {
+                    0 => random.Next(-maxValue, maxValue + 1),
+                    1 => random.Next(8) is 0 ? random.Next(-maxValue, maxValue + 1) : 0,
+                    2 => iteration % 2 is 0 ? maxValue : -maxValue,
+                    3 => random.Next(2) is 0 ? maxValue : -maxValue,
+                    4 => random.Next(-4, 5),
+                    5 => Math.Clamp(((x - (nTbS / 2)) * slopeX) + ((y - (nTbS / 2)) * slopeY), -maxValue, maxValue),
+                    6 => x < edge ? amplitude : -amplitude,
+                    7 => ((x + y) & 1) is 0 ? maxValue : -maxValue,
+                    _ => random.Next(-amplitude, amplitude + 1),
+                };
             }
         }
     }

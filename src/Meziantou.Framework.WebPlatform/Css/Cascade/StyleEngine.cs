@@ -46,7 +46,30 @@ internal sealed partial class StyleEngine
 
     private Dictionary<(Element Element, string? PseudoElement), ComputedStyle> _styles = [];
     private Dictionary<(Element Element, string? PseudoElement), ComputedStyle> _spareStyles = [];
-    private bool _fullRecalcPending;
+
+    /// <summary>
+    /// Whether the styles are computed again at the next style read, for the transitions (see <see cref="RecalculateStyles"/>):
+    /// the styles of all the elements when <see cref="_recalcAll"/> is set, otherwise the styles of <see cref="_recalcSubtrees"/>
+    /// and <see cref="_recalcElements"/>.
+    /// </summary>
+    private bool _recalcPending;
+
+    /// <summary>Whether the pending computation of the styles computes the styles of all the elements (all the styles were invalidated).</summary>
+    private bool _recalcAll;
+
+    /// <summary>The roots of the subtrees whose styles the pending computation computes (their styles were discarded, or they were inserted).</summary>
+    private readonly HashSet<Element> _recalcSubtrees = new(ReferenceEqualityComparer.Instance);
+
+    /// <summary>The elements whose pseudo-element styles the pending computation computes (their own styles were kept).</summary>
+    private readonly HashSet<Element> _recalcElements = new(ReferenceEqualityComparer.Instance);
+
+    /// <summary>
+    /// Whether <see cref="ComputeAnimationStyles"/> computed the styles of all the elements, and every style discarded since then
+    /// was added to the pending computation of the styles (see <see cref="RecalculateStyles"/>): the next update of the animations
+    /// only computes the pending styles.
+    /// </summary>
+    private bool _animationStylesComputed;
+
     private bool _includeStartingStyle;
     private bool _recalculating;
 
@@ -97,6 +120,14 @@ internal sealed partial class StyleEngine
     /// <summary>The styles whose computed value of a property is computed before the one of a descendant (see <see cref="ComputedStyle"/>).</summary>
     internal List<ComputedStyle> PendingAncestors { get; } = [];
 
+    /// <summary>
+    /// The computed values that the styles of the engine share (see <see cref="Cascade.ComputedValueTable"/>), replaced by a new
+    /// table when it is full (the styles keep the table their values refer to).
+    /// </summary>
+    internal ComputedValueTable ComputedValueTable => _computedValueTable is { IsFull: false } table ? table : _computedValueTable = new();
+
+    private ComputedValueTable? _computedValueTable;
+
     /// <summary>Returns the shared cascaded values whose logical properties are mapped for each writing mode and direction (see <see cref="_logicalCascades"/>).</summary>
     internal List<(string WritingMode, bool RightToLeft, Dictionary<string, CascadedValue> Mapped)> GetLogicalCascades(Dictionary<string, CascadedValue> cascaded) => _logicalCascades.GetOrCreateValue(cascaded);
 
@@ -123,7 +154,7 @@ internal sealed partial class StyleEngine
     private bool _shadowTreesHaveScrollStateQueries;
 
     /// <summary>The styles computed before the last change of the styles, used by the transitions (the before-change styles).</summary>
-    private readonly Dictionary<(Element Element, string? PseudoElement), ComputedStyle> _beforeChangeStyles = [];
+    private Dictionary<(Element Element, string? PseudoElement), ComputedStyle> _beforeChangeStyles = [];
 
     /// <summary>Whether the before-change styles have the same computed values as the new styles when their cascaded values are the same.</summary>
     internal bool BeforeChangeComparableByCascade { get; private set; }
@@ -359,13 +390,51 @@ internal sealed partial class StyleEngine
         return true;
     }
 
+    /// <summary>
+    /// Computes the styles that create, update and cancel the CSS animations and transitions of the document (see
+    /// <see cref="Dom.Document.FlushAnimationStyles"/>): the styles discarded since the last update when they were all added to
+    /// the pending computation of the styles (see <see cref="RecalculateStyles"/>), otherwise the styles of all the elements, e.g.
+    /// at the first update, or after a change while no known rule declared an animation or a transition (the rules of a shadow
+    /// tree are known once the style of one of its elements is computed).
+    /// </summary>
+    public void ComputeAnimationStyles()
+    {
+        EnsureUpToDate();
+        if (_recalculating)
+            return;
+
+        if (!_animationStylesComputed && _document.BrowsingContext is not null)
+        {
+            _animationStylesComputed = true;
+            _recalcPending = true;
+            _recalcAll = true;
+            _recalcSubtrees.Clear();
+            _recalcElements.Clear();
+        }
+
+        // (the subtrees whose styles the layout discarded are not computed by a style read, see InvalidateQueryContainerDescendants)
+        if (!_recalcPending && _recalcSubtrees.Count == 0)
+            return;
+
+        _recalculating = true;
+        try
+        {
+            RecalculateStyles();
+        }
+        finally
+        {
+            _recalculating = false;
+        }
+    }
+
     /// <summary>Removes the before-change styles of the elements that are no longer connected.</summary>
     public void PruneBeforeChangeStyles()
     {
         if (_beforeChangeStyles.Count == 0)
             return;
 
-        foreach (var key in _beforeChangeStyles.Keys.ToArray())
+        // (the entries can be removed while the dictionary is enumerated)
+        foreach (var key in _beforeChangeStyles.Keys)
         {
             if (!key.Element.IsConnected)
             {
@@ -827,13 +896,12 @@ internal sealed partial class StyleEngine
 
     private ComputedStyle GetStyleCore(Element element, string? pseudoElement)
     {
-        if (_fullRecalcPending && !_recalculating)
+        if (_recalcPending && !_recalculating)
         {
-            _fullRecalcPending = false;
             _recalculating = true;
             try
             {
-                RecalculateAllStyles();
+                RecalculateStyles();
             }
             finally
             {
@@ -1404,9 +1472,16 @@ internal sealed partial class StyleEngine
         // change compares the styles with this state
         if (_environmentOverride is null && MayHaveTransitions())
         {
-            foreach (var (key, style) in previousStyles)
+            if (_beforeChangeStyles.Count == 0)
             {
-                _beforeChangeStyles[key] = style;
+                (_beforeChangeStyles, previousStyles) = (previousStyles, _beforeChangeStyles);
+            }
+            else
+            {
+                foreach (var (key, style) in previousStyles)
+                {
+                    _beforeChangeStyles[key] = style;
+                }
             }
 
             if (domChanged)
@@ -1414,11 +1489,12 @@ internal sealed partial class StyleEngine
                 PruneBeforeChangeStyles();
             }
 
-            _fullRecalcPending = _document.BrowsingContext is not null;
+            ScheduleRecalculation(all: true);
         }
         else
         {
             _beforeChangeStyles.Clear();
+            _animationStylesComputed = false;
         }
 
         previousStyles.Clear();
@@ -1567,7 +1643,18 @@ internal sealed partial class StyleEngine
             }
         }
 
+        // (the styles that the layout does not compute again, e.g. of the elements that are not rendered, are computed by the next
+        // update of the animations, see ComputeAnimationStyles)
         var mayHaveTransitions = _environmentOverride is null && MayHaveTransitions();
+        if (mayHaveTransitions)
+        {
+            AddRecalculationRoot(container, subtree: true);
+        }
+        else
+        {
+            _animationStylesComputed = false;
+        }
+
         foreach (var key in keys)
         {
             _styles.Remove(key, out var discarded);
@@ -1877,35 +1964,196 @@ internal sealed partial class StyleEngine
         || _document.AnimationsOrNull?.HasDeclarativeAnimations == true || GetTreeStyles(_document).Rules.DeclaresAnimations;
 
     /// <summary>
-    /// Computes the styles of all the elements of the document (and of their ::marker, ::before and ::after pseudo-elements when
-    /// the rules may apply to them): the transitions of the elements whose style changed start.
+    /// Schedules the computation of the styles at the next style read, for the transitions (see <see cref="RecalculateStyles"/>):
+    /// of all the elements when <paramref name="all"/> is set, otherwise of the elements added to <see cref="_recalcSubtrees"/>
+    /// and <see cref="_recalcElements"/> (see <see cref="AddRecalculationRoot"/>). The styles of a document without browsing
+    /// context are not computed in advance.
     /// </summary>
-    private void RecalculateAllStyles()
+    private void ScheduleRecalculation(bool all)
     {
-        var pseudoElements = new List<string>(3);
-        var rules = GetTreeStyles(_document).Rules;
-        foreach (var pseudoElement in (ReadOnlySpan<string>)["marker", "before", "after"])
+        if (_document.BrowsingContext is null)
         {
-            if (rules.MayHaveRulesFor(pseudoElement))
-            {
-                pseudoElements.Add(pseudoElement);
-            }
+            ClearRecalculation();
+            _animationStylesComputed = false;
+            return;
         }
 
-        foreach (var node in _document.ShadowIncludingInclusiveDescendants())
+        _recalcPending = true;
+        if (all)
         {
-            if (node is not Element element)
-                continue;
+            _recalcAll = true;
+            _recalcSubtrees.Clear();
+            _recalcElements.Clear();
+        }
+    }
 
-            GetStyle(element);
-            foreach (var pseudoElement in pseudoElements)
+    /// <summary>Adds an element whose styles the next computation of the styles computes: with its descendants when <paramref name="subtree"/> is set, otherwise only its pseudo-elements.</summary>
+    private void AddRecalculationRoot(Element element, bool subtree)
+    {
+        if (_recalcAll)
+            return;
+
+        if (subtree)
+        {
+            _recalcSubtrees.Add(element);
+        }
+        else
+        {
+            _recalcElements.Add(element);
+        }
+    }
+
+    private void ClearRecalculation()
+    {
+        _recalcPending = false;
+        _recalcAll = false;
+        _recalcSubtrees.Clear();
+        _recalcElements.Clear();
+    }
+
+    /// <summary>
+    /// Computes the styles of the elements whose styles were invalidated, in tree order (the order of the transitions,
+    /// https://drafts.csswg.org/css-transitions-2/#animation-composite-order): the transitions of the elements whose style changed
+    /// start. After an invalidation of all the styles, the styles of all the elements are computed; after an invalidation
+    /// element by element, the styles of the subtrees whose styles were discarded and of the inserted nodes. The styles of the
+    /// ::marker, ::before and ::after pseudo-elements are computed when a candidate rule declares an animation or a transition
+    /// property for them, or when they have animations (nothing else reads them: the box tree computes them when needed).
+    /// </summary>
+    private void RecalculateStyles()
+    {
+        var all = _recalcAll || _document.HasShadowRoots;
+        var subtrees = _recalcSubtrees;
+        var elements = _recalcElements;
+
+        // (the styles are computed for one version, see GetStyle)
+        _updatesSuspended++;
+        try
+        {
+            var pseudoElements = new List<string>(3);
+            foreach (var pseudoElement in (ReadOnlySpan<string>)["marker", "before", "after"])
             {
-                GetStyle(element, pseudoElement);
+                if (MayHaveAnimatedPseudoElements(pseudoElement))
+                {
+                    pseudoElements.Add(pseudoElement);
+                }
             }
+
+            if (all)
+            {
+                foreach (var node in _document.ShadowIncludingInclusiveDescendants())
+                {
+                    if (node is Element element)
+                    {
+                        RecalculateStyle(element, pseudoElements);
+                    }
+                }
+            }
+            else if (subtrees.Count > 0 || elements.Count > 0)
+            {
+                // The ancestors of the roots are walked down to the roots, in tree order (the document has no shadow tree)
+                var ancestors = new HashSet<Node>(ReferenceEqualityComparer.Instance);
+                AddAncestors(ancestors, subtrees);
+                AddAncestors(ancestors, elements);
+                var node = (Node?)_document;
+                while (node is not null)
+                {
+                    var descend = ancestors.Contains(node);
+                    if (node is Element element)
+                    {
+                        if (subtrees.Contains(element))
+                        {
+                            for (var descendant = (Node?)element; descendant is not null; descendant = descendant.GetNextInTreeOrder(element))
+                            {
+                                if (descendant is Element descendantElement)
+                                {
+                                    RecalculateStyle(descendantElement, pseudoElements);
+                                }
+                            }
+
+                            descend = false;
+                        }
+                        else if (elements.Contains(element))
+                        {
+                            RecalculateStyle(element, pseudoElements);
+                        }
+                    }
+
+                    node = descend && node.FirstChild is { } firstChild ? firstChild : node.GetNextInTreeOrderSkippingChildren(_document);
+                }
+            }
+        }
+        finally
+        {
+            _updatesSuspended--;
+            ClearRecalculation();
         }
 
         // The pseudo-elements of the active view transition
         _document.ComputeViewTransitionPseudoElementStyles();
+
+        void AddAncestors(HashSet<Node> ancestors, HashSet<Element> roots)
+        {
+            foreach (var root in roots)
+            {
+                if (!root.IsConnected || !ReferenceEquals(root.NodeDocument, _document))
+                    continue;
+
+                for (var ancestor = root.ParentNode; ancestor is not null && ancestors.Add(ancestor); ancestor = ancestor.ParentNode)
+                {
+                }
+            }
+        }
+    }
+
+    /// <summary>Computes the style of an element and the styles of its pseudo-elements that may have transitions or animations (see <see cref="RecalculateStyles"/>).</summary>
+    private void RecalculateStyle(Element element, List<string> pseudoElements)
+    {
+        _ = GetStyleCore(element, pseudoElement: null);
+        if (pseudoElements.Count == 0)
+            return;
+
+        var elementAnimations = _document.AnimationsOrNull?.GetElementAnimations(element);
+        foreach (var pseudoElement in pseudoElements)
+        {
+            if (elementAnimations?.Get(pseudoElement) is not null || MayHaveAnimatedPseudoElementRules(element, pseudoElement))
+            {
+                _ = GetStyleCore(element, pseudoElement);
+            }
+        }
+    }
+
+    /// <summary>Returns whether a rule of the trees of the document declares an animation or a transition property for the pseudo-element, or whether the pseudo-element of an element has animations.</summary>
+    private bool MayHaveAnimatedPseudoElements(string pseudoElement)
+    {
+        if (_document.AnimationsOrNull is not null)
+            return true;
+
+        foreach (var tree in _trees.Values)
+        {
+            if (tree.Rules.DeclaresAnimationsFor(pseudoElement))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Returns whether a rule may declare an animation or a transition property for a pseudo-element of an element, like
+    /// <see cref="MayHaveAuthorPseudoElementRules"/>: the candidate rules of the document for an element of the document, otherwise
+    /// whether a tree has such a rule. The rules of the user agent declare none.
+    /// </summary>
+    private bool MayHaveAnimatedPseudoElementRules(Element element, string pseudoElement)
+    {
+        if (!_document.HasShadowRoots || (element.GetRoot() is Dom.Document && element.AttachedShadowRoot is null && element.Slottable?.AssignedSlot is null))
+            return GetTreeStyles(_document).Rules.MayHaveAnimationRulesFor(element, pseudoElement);
+
+        foreach (var tree in _trees.Values)
+        {
+            if (tree.Rules.DeclaresAnimationsFor(pseudoElement))
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>

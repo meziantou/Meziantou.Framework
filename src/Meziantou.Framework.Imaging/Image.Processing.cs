@@ -302,38 +302,33 @@ public abstract partial class Image
     }
 
     /// <summary>
-    /// Blurs every displayed frame and the poster in place: a convolution by a row of weights, then by the same weights
-    /// as a column. Both are prepared before a pixel changes.
+    /// Blurs every displayed frame and the poster in place: one separable convolution, each row filtered by the weights
+    /// then the filtered rows combined by the same weights as a column, without rounding in between. The scratch is
+    /// prepared before a pixel changes.
     /// </summary>
     internal void BlurAllFrames(double[] weights, ConvolutionEdgeMode edgeMode, ConvolutionWorkingSpace workingSpace, CancellationToken cancellationToken)
     {
         Owner.EnsureCanModify("blur the image");
-        using var horizontal = CreateConvolutionPlan(new ConvolutionOptions(new ConvolutionKernel(weights.Length, 1, weights)) { EdgeMode = edgeMode, WorkingSpace = workingSpace });
-        using var vertical = CreateConvolutionPlan(new ConvolutionOptions(new ConvolutionKernel(1, weights.Length, weights)) { EdgeMode = edgeMode, WorkingSpace = workingSpace });
+        using var plan = CreateBlurPlan(weights, edgeMode, workingSpace);
         cancellationToken.ThrowIfCancellationRequested();
-        horizontal.Prepare(Owner.Scope);
-        vertical.Prepare(Owner.Scope);
+        plan.Prepare(Owner.Scope);
         _metadata.RemoveStaleThumbnail();
         foreach (var frame in GetAllFrames())
         {
             using var lease = frame.GetStorage().AcquireLease();
-            frame.ConvolvePixels(lease, horizontal, cancellationToken);
-            frame.ConvolvePixels(lease, vertical, cancellationToken);
+            frame.ConvolvePixels(lease, plan, cancellationToken);
         }
     }
 
     /// <summary>Blurs one attached frame of this image in place, as <see cref="BlurAllFrames"/> does for all of them.</summary>
     internal void BlurFrame(ImageFrame frame, PixelStorage storage, double[] weights, ConvolutionEdgeMode edgeMode, ConvolutionWorkingSpace workingSpace, CancellationToken cancellationToken)
     {
-        using var horizontal = CreateConvolutionPlan(new ConvolutionOptions(new ConvolutionKernel(weights.Length, 1, weights)) { EdgeMode = edgeMode, WorkingSpace = workingSpace });
-        using var vertical = CreateConvolutionPlan(new ConvolutionOptions(new ConvolutionKernel(1, weights.Length, weights)) { EdgeMode = edgeMode, WorkingSpace = workingSpace });
+        using var plan = CreateBlurPlan(weights, edgeMode, workingSpace);
         cancellationToken.ThrowIfCancellationRequested();
         using var lease = storage.AcquireLease();
-        horizontal.Prepare(Owner.Scope);
-        vertical.Prepare(Owner.Scope);
+        plan.Prepare(Owner.Scope);
         _metadata.RemoveStaleThumbnail();
-        frame.ConvolvePixels(lease, horizontal, cancellationToken);
-        frame.ConvolvePixels(lease, vertical, cancellationToken);
+        frame.ConvolvePixels(lease, plan, cancellationToken);
     }
 
     /// <summary>Large frames are convolved by up to MaxDegreeOfParallelism workers (row bands, bit-identical results).</summary>
@@ -341,6 +336,13 @@ public abstract partial class Image
     {
         var transfer = options.WorkingSpace == ConvolutionWorkingSpace.LinearSrgb ? GetLinearLightTransfer("convolution", "convolve") : (byte)0;
         return new ConvolutionPlan(options.Kernel, options.EdgeMode, options.PreserveAlpha, transfer is not 0, PixelFormat, _size, _configuration.MaxDegreeOfParallelism, transfer);
+    }
+
+    /// <summary>The separable plan of a blur: the weights as a column, every row filtered by the same weights first.</summary>
+    private ConvolutionPlan CreateBlurPlan(double[] weights, ConvolutionEdgeMode edgeMode, ConvolutionWorkingSpace workingSpace)
+    {
+        var transfer = workingSpace == ConvolutionWorkingSpace.LinearSrgb ? GetLinearLightTransfer("convolution", "convolve") : (byte)0;
+        return new ConvolutionPlan(new ConvolutionKernel(1, weights.Length, weights), edgeMode, preserveAlpha: false, transfer is not 0, PixelFormat, _size, _configuration.MaxDegreeOfParallelism, transfer, rowWeights: weights);
     }
 
     /// <summary>

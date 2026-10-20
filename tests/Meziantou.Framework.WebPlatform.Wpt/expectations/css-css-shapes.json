@@ -241,6 +241,9 @@
   "css/css-shapes/shape-outside-invalid-inset-004.html": {
     "total": 1
   },
+  "css/css-shapes/shape-outside-shape-function.html": {
+    "total": 5
+  },
   "css/css-shapes/shape-outside/assorted/float-retry-push-circle.html": {
     "reftest": "PASS"
   },
@@ -445,6 +448,9 @@
   "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-linear-gradient-horizontal-rtl.html": {
     "reftest": "PASS"
   },
+  "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-linear-gradient-last-column.html": {
+    "total": 3
+  },
   "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-radial-gradient-001.html": {
     "total": 1
   },
@@ -546,6 +552,9 @@
   },
   "css/css-shapes/shape-outside/shape-image/shape-image-029.html": {
     "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-image/shape-image-030.html": {
+    "total": 5
   },
   "css/css-shapes/shape-outside/supported-shapes/circle/shape-outside-circle-013.html": {
     "reftest": "PASS"

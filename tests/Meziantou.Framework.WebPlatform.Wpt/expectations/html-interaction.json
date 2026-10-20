@@ -44,6 +44,81 @@
   "html/interaction/focus/focus-selection.html": {
     "total": 2
   },
+  "html/interaction/focus/focusreset/focusreset-basic.tentative.html": {
+    "total": 9,
+    "failures": {
+      "Removing the focused element doesn't fire blur/focusout, only focusreset": "FAIL",
+      "Removing the focused element fires focusreset at the document": "FAIL",
+      "Trying to focus the removed element while disconnected doesn't cancel focusreset": "FAIL",
+      "onfocusreset event handler IDL attribute on Document": "FAIL",
+      "onfocusreset event handler is invoked, with focus reset to the viewport": "FAIL"
+    }
+  },
+  "html/interaction/focus/focusreset/focusreset-cancelled-by-focus-update.tentative.html": {
+    "total": 13,
+    "failures": {
+      "Focusing another element in a later task doesn't cancel focusreset": "FAIL",
+      "Focusing another element in a microtask queued after the removal doesn't cancel focusreset": "FAIL",
+      "Focusing another element in a rAF callback doesn't cancel focusreset": "FAIL",
+      "Re-inserting the element without re-focusing it doesn't cancel focusreset": "FAIL"
+    }
+  },
+  "html/interaction/focus/focusreset/focusreset-iframe.tentative.html": {
+    "total": 8,
+    "failures": {
+      "Removing a focused iframe (with its viewport focused) fires focusreset at the parent document": "FAIL",
+      "Removing an iframe which contains the focused element fires focusreset at the parent document": "FAIL",
+      "Removing the focused element in the parent doesn't fire focusreset at unrelated iframes": "FAIL",
+      "Removing the focused element inside an iframe fires focusreset only at the iframe's document": "FAIL"
+    }
+  },
+  "html/interaction/focus/focusreset/focusreset-moveBefore.tentative.html": {
+    "total": 3,
+    "failures": {
+      "Removing the focused element after moveBefore() fires focusreset": "FAIL"
+    }
+  },
+  "html/interaction/focus/focusreset/focusreset-removal-variants.tentative.html": {
+    "total": 22,
+    "failures": {
+      "A focus reset from within a focusreset handler fires another focusreset asynchronously": "FAIL",
+      "Focus can be moved from a focusreset handler": "FAIL",
+      "Focus resets in separate tasks each fire their own focusreset": "FAIL",
+      "Moving the focused element into a DocumentFragment": "FAIL",
+      "Moving the focused element into a different document": "FAIL",
+      "Multiple removals of focused elements in the same task coalesce into one focusreset": "FAIL",
+      "Removing a focused <input>": "FAIL",
+      "Removing a focused contenteditable element": "FAIL",
+      "Removing a focused element in a shadow tree": "FAIL",
+      "Removing a focused element inside an open <dialog>": "FAIL",
+      "Removing a focused element that is slotted": "FAIL",
+      "Removing a focused element with tabindex": "FAIL",
+      "Removing a shadow host whose shadow tree contains the focused element": "FAIL",
+      "Removing an ancestor of the focused element": "FAIL",
+      "Removing via Range.deleteContents()": "FAIL",
+      "Removing via innerHTML": "FAIL",
+      "Removing via outerHTML": "FAIL",
+      "Removing via parent.removeChild()": "FAIL",
+      "Removing via replaceChild()": "FAIL",
+      "Removing via replaceChildren()": "FAIL",
+      "Removing via replaceWith()": "FAIL",
+      "Removing via textContent": "FAIL"
+    }
+  },
+  "html/interaction/focus/focusreset/focusreset-timing.tentative.html": {
+    "total": 9,
+    "failures": {
+      "Dirtying layout from a focusreset handler is handled gracefully": "FAIL",
+      "Removal during a ResizeObserver callback fires focusreset before the next frame": "FAIL",
+      "Removal during a microtask fires focusreset in the same microtask checkpoint": "FAIL",
+      "Removal during a rAF callback fires focusreset right after that callback": "FAIL",
+      "focusreset is fired after MutationObserver callbacks": "FAIL",
+      "focusreset is fired after slotchange events": "FAIL",
+      "focusreset is fired before the next task and the next rendering update": "FAIL",
+      "focusreset is fired from a microtask queued at the time of removal": "FAIL",
+      "focusreset is not fired synchronously": "FAIL"
+    }
+  },
   "html/interaction/focus/processing-model/focus-fixup-rule-one-no-dialogs.html": {
     "total": 8
   },

@@ -297,6 +297,9 @@
   "css/css-inline/br-font-size.html": {
     "reftest": "PASS"
   },
+  "css/css-inline/br-line-height-inherited-quirks.html": {
+    "reftest": "PASS"
+  },
   "css/css-inline/br-line-height.html": {
     "reftest": "PASS"
   },
@@ -441,6 +444,15 @@
   },
   "css/css-inline/initial-letter/initial-letter-block-position-margins.html": {
     "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-block-position-over-sunk-vlr.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-inline/initial-letter/initial-letter-block-position-over-sunk-vrl.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-inline/initial-letter/initial-letter-block-position-over-sunk.html": {
+    "reftest": "FAIL"
   },
   "css/css-inline/initial-letter/initial-letter-block-position-raise-over-ruby-tall.html": {
     "reftest": "PASS"

@@ -106,15 +106,13 @@ internal sealed partial class ComputedStyle
         if (!IncludeTransitions)
             return this;
 
-        if (_afterChangeStyle is { } afterChangeStyle)
+        if (_rareData?.AfterChangeStyle is { } afterChangeStyle)
             return afterChangeStyle;
 
         // The inherited values are the ones of the after-change style of the parent
         _cascadedShared = true;
-        return _afterChangeStyle = WithVisitedCascadeOf(new ComputedStyle(Engine, Element, PseudoElement, Parent?.CreateAfterChangeStyle(), _cascaded, cascadedShared: true) { HighlightParent = HighlightParent, IncludeTransitions = false }, sameCascadedValues: true);
+        return Rare.AfterChangeStyle = WithVisitedCascadeOf(new ComputedStyle(Engine, Element, PseudoElement, Parent?.CreateAfterChangeStyle(), _cascaded, cascadedShared: true) { HighlightParent = HighlightParent, IncludeTransitions = false }, sameCascadedValues: true);
     }
-
-    private ComputedStyle? _afterChangeStyle;
 
     /// <summary>
     /// Returns the style with the same cascade and the animations of the element at the current time: the before-change style

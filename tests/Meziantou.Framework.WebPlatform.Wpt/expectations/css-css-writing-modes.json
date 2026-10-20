@@ -3527,6 +3527,9 @@
   "css/css-writing-modes/vertical-alignment-vrl-026.xht": {
     "reftest": "PASS"
   },
+  "css/css-writing-modes/vertical-containing-block-width-changes.html": {
+    "reftest": "PASS"
+  },
   "css/css-writing-modes/vlr-text-orientation-sideways-alongside-vlr-floats.html": {
     "reftest": "PASS"
   },

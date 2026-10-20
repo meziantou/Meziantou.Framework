@@ -19,8 +19,18 @@ internal sealed partial class StyleEngine
     /// </summary>
     internal static bool VerifyInvalidations { get; set; } = System.Environment.GetEnvironmentVariable("WEBPLATFORM_VERIFY_STYLE_INVALIDATION") == "1";
 
-    /// <summary>The names of the pseudo-elements whose styles are computed, by element (to discard them with the style of the element).</summary>
-    private readonly Dictionary<Element, List<string>> _pseudoElementStyleNames = new(ReferenceEqualityComparer.Instance);
+    /// <summary>
+    /// The names of the pseudo-elements whose styles are computed, by element (to discard them with the style of the element). The
+    /// arrays are never modified (a name is added by replacing the array), so the elements share the common ones (see
+    /// <see cref="CommonPseudoElementStyleNames"/>).
+    /// </summary>
+    private readonly Dictionary<Element, string[]> _pseudoElementStyleNames = new(ReferenceEqualityComparer.Instance);
+
+    /// <summary>The names of the pseudo-elements whose styles <see cref="RecalculateAllStyles"/> computes for every element, in its order.</summary>
+    private static readonly string[][] CommonPseudoElementStyleNames =
+    [
+        ["marker"], ["marker", "before"], ["marker", "before", "after"], ["marker", "after"], ["before"], ["before", "after"], ["after"],
+    ];
 
     /// <summary>Whether styles of WebVTT objects were computed (they inherit from their media element, out of the tree).</summary>
     private bool _hasWebVttStyles;
@@ -37,11 +47,20 @@ internal sealed partial class StyleEngine
     private void AddPseudoElementStyleName(Element element, string pseudoElement)
     {
         ref var names = ref CollectionsMarshal.GetValueRefOrAddDefault(_pseudoElementStyleNames, element, out _);
-        names ??= [];
-        if (!names.Contains(pseudoElement))
+        if (names is not null && Array.IndexOf(names, pseudoElement) >= 0)
+            return;
+
+        string[] result = names is null ? [pseudoElement] : [.. names, pseudoElement];
+        foreach (var common in CommonPseudoElementStyleNames)
         {
-            names.Add(pseudoElement);
+            if (common.AsSpan().SequenceEqual(result))
+            {
+                result = common;
+                break;
+            }
         }
+
+        names = result;
     }
 
     /// <summary>The changes of the document since the last update of the styles (see <see cref="ConsumeElementInvalidations"/>).</summary>
@@ -140,6 +159,13 @@ internal sealed partial class StyleEngine
                 PruneBeforeChangeStyles();
             }
 
+            // (the inserted elements are not added to a pending computation of the styles: the next update of the animations
+            // computes the styles of all the elements, see ComputeAnimationStyles)
+            if (!_recalcAll)
+            {
+                _animationStylesComputed = false;
+            }
+
             ElementInvalidationCount++;
             return true;
         }
@@ -168,14 +194,15 @@ internal sealed partial class StyleEngine
             }
 
             // The styles before the change are kept for the transitions, and the invalidated styles are computed again at the
-            // next style read or animation frame (see EnsureUpToDate)
+            // next style read or animation frame (see InvalidationWork.Apply and RecalculateStyles)
             if (mayHaveTransitions)
             {
-                _fullRecalcPending = _document.BrowsingContext is not null;
+                ScheduleRecalculation(all: false);
             }
             else
             {
                 _beforeChangeStyles.Clear();
+                _animationStylesComputed = false;
             }
 
             if (VerifyInvalidations)
@@ -264,11 +291,11 @@ internal sealed partial class StyleEngine
         return false;
     }
 
-    /// <summary>Removes the styles of the pseudo-elements of an element.</summary>
-    private void DiscardPseudoElementStyles(Element element, bool keepBeforeChange)
+    /// <summary>Removes the styles of the pseudo-elements of an element; returns false when the element had none.</summary>
+    private bool DiscardPseudoElementStyles(Element element, bool keepBeforeChange)
     {
         if (!_pseudoElementStyleNames.Remove(element, out var names))
-            return;
+            return false;
 
         AddBoxTreeChange(element);
         foreach (var name in names)
@@ -278,6 +305,8 @@ internal sealed partial class StyleEngine
                 _beforeChangeStyles[(element, name)] = style;
             }
         }
+
+        return true;
     }
 
     /// <summary>
@@ -744,10 +773,16 @@ internal sealed partial class StyleEngine
             return result;
         }
 
-        /// <summary>Discards the styles of the removed nodes, then checks the styles of the affected elements.</summary>
+        /// <summary>
+        /// Discards the styles of the removed nodes, then checks the styles of the affected elements. When the styles may have
+        /// transitions, the discarded styles are kept as the before-change styles, and the elements whose styles were discarded
+        /// and the inserted elements are added to the styles computed again by the next style read (see <see cref="RecalculateStyles"/>).
+        /// </summary>
         public void Apply(bool mayHaveTransitions)
         {
-            // (a node inserted again, e.g. by moveBefore(), keeps its styles as the before-change styles)
+            // (a node inserted again, e.g. by moveBefore(), keeps its styles as the before-change styles; an inserted element
+            // without styles transitions from its starting style, and starts its animations: Discard adds it to the styles
+            // computed again)
             foreach (var node in _removed)
             {
                 if (node is Element element)
@@ -830,7 +865,11 @@ internal sealed partial class StyleEngine
                 return true;
             }
 
-            engine.DiscardPseudoElementStyles(element, mayHaveTransitions);
+            if (engine.DiscardPseudoElementStyles(element, mayHaveTransitions) && mayHaveTransitions)
+            {
+                engine.AddRecalculationRoot(element, subtree: false);
+            }
+
             return false;
         }
 
@@ -859,6 +898,11 @@ internal sealed partial class StyleEngine
         {
             // (the boxes of the descendants are built again with the boxes of the element)
             engine.AddBoxTreeChange(root);
+            if (keepBeforeChange && root.IsConnected)
+            {
+                engine.AddRecalculationRoot(root, subtree: true);
+            }
+
             var node = (Node?)root;
             while (node is not null)
             {

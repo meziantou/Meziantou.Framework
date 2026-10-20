@@ -20,7 +20,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The weights of the horizontal pass of a resize are padded (<see cref="CreatePadded"/>): every window is widened with zero
 /// weights to the same number of taps (<see cref="PaddedCount"/>), so that the vector loops sum several output pixels with
 /// one loop and no tails. The padding taps come before the window only where the window would otherwise end after
-/// <see cref="Last"/>. A padding tap adds <c>0 x</c> to the sum of the scalar loop: the working samples are finite (they
+/// <see cref="Last"/>. A padding tap adds <c>0 x</c> to the sum of the scalar loop (with a fused multiply-add, whose exact
+/// product is that zero): the working samples are finite (they
 /// are computed from 8- or 16-bit samples), so that product is a zero, and a sum started from <c>+0</c> is never <c>-0</c>
 /// (in round-to-nearest, <c>a + b</c> is <c>-0</c> only when both are), so adding a zero, before or after the other taps,
 /// leaves every bit of it unchanged: <c>+0 + -0</c> is <c>+0</c> and <c>s + 0</c> is <c>s</c> for a nonzero <c>s</c>.

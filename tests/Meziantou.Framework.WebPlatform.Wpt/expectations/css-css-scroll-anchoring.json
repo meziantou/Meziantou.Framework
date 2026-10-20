@@ -65,6 +65,9 @@
   "css/css-scroll-anchoring/contain-paint-offscreen-container.html": {
     "total": 1
   },
+  "css/css-scroll-anchoring/content-visibility-hidden-in-size-container.html": {
+    "total": 2
+  },
   "css/css-scroll-anchoring/contenteditable-insert-line-at-top.tentative.html": {
     "harness": "TIMEOUT",
     "total": 1,

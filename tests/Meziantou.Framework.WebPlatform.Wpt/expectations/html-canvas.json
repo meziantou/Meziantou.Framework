@@ -2229,10 +2229,17 @@
   },
   "html/canvas/element/manual/draw-element-image/canvas-transform-update.tentative.html": {
     "harness": "ERROR",
-    "total": 6,
+    "total": 13,
     "failures": {
+      "drawElementImage() accounts for CTM and ignores element transform-origin": "NOTRUN",
+      "drawElementImage() accounts for non-zero sx and sy offset": "NOTRUN",
       "drawElementImage() automatically updates element canvas transform by default": "FAIL",
       "drawElementImage() does not update element canvas transform with {preserveElementGeometry: true}": "NOTRUN",
+      "drawElementImage() element transform accounts for canvas CSS pixel scale": "NOTRUN",
+      "drawElementImage() element transform accounts for canvas grid pixel scale": "NOTRUN",
+      "drawElementImage() element transform accounts for canvas pixel scale, zoom, CTM, and dx/dy": "NOTRUN",
+      "drawElementImage() element transform does not include CSS transform on the element": "NOTRUN",
+      "drawElementImage() element transform is not affected by zoom on the canvas": "NOTRUN",
       "drawElementImage() updates element canvas transform with explicit {preserveElementGeometry: false}": "NOTRUN",
       "drawElementImage() with destination size overload (4 arguments)": "NOTRUN",
       "drawElementImage() with source and destination rect overload (8 arguments)": "NOTRUN",
@@ -2243,12 +2250,12 @@
     "harness": "ERROR",
     "total": 6,
     "failures": {
-      "ElementImage width and height should be in canvas pixel grid coordinate space": "FAIL",
-      "ElementImage width and height update when canvas pixel grid size changes": "NOTRUN",
-      "ElementImage.close() invalidates the image for drawing": "FAIL",
-      "captureElementImage on a nested canvas should succeed": "FAIL",
+      "ElementImage.close() invalidates the image for drawing and default size queries": "FAIL",
+      "captureElementImage and getElementImageDefaultSize on a nested canvas should succeed": "FAIL",
+      "captureElementImage and getElementImageDefaultSize should use the most recently painted size": "FAIL",
       "captureElementImage should return an object that can be drawn": "FAIL",
-      "captureElementImage size should be the most recently painted size": "FAIL"
+      "getElementImageDefaultSize should return size in canvas pixel grid coordinate space": "FAIL",
+      "getElementImageDefaultSize updates when canvas pixel grid size changes": "NOTRUN"
     }
   },
   "html/canvas/element/manual/draw-element-image/changes-in-paint-event.tentative.html": {
@@ -2285,6 +2292,12 @@
     "reftest": "TIMEOUT"
   },
   "html/canvas/element/manual/draw-element-image/css-backdrop-filter-on-div.tentative.html": {
+    "reftest": "TIMEOUT"
+  },
+  "html/canvas/element/manual/draw-element-image/css-backdrop-filter-with-mix-blend-mode-and-opacity.tentative.html": {
+    "reftest": "TIMEOUT"
+  },
+  "html/canvas/element/manual/draw-element-image/css-backdrop-filter-with-mix-blend-mode.tentative.html": {
     "reftest": "TIMEOUT"
   },
   "html/canvas/element/manual/draw-element-image/css-backdrop-filter-with-sibling.tentative.html": {
@@ -2326,6 +2339,9 @@
   "html/canvas/element/manual/draw-element-image/css-transform-on-div.tentative.html": {
     "reftest": "TIMEOUT"
   },
+  "html/canvas/element/manual/draw-element-image/descendant-filter.tentative.html": {
+    "reftest": "PASS"
+  },
   "html/canvas/element/manual/draw-element-image/dialog-paints-in-top-layer.tentative.html": {
     "reftest": "FAIL"
   },
@@ -2358,7 +2374,7 @@
   "html/canvas/element/manual/draw-element-image/draw-element-image-display-none.tentative.html": {
     "total": 1,
     "failures": {
-      "Canvas drawElementImage() should throw when drawn child is not laid out.": "FAIL"
+      "Canvas drawElementImage() and getElementImageDefaultSize() should throw when drawn child is not laid out.": "FAIL"
     }
   },
   "html/canvas/element/manual/draw-element-image/draw-element-image-empty.tentative.html": {
@@ -2377,10 +2393,22 @@
   "html/canvas/element/manual/draw-element-image/draw-element-image-scale-variant.tentative.html": {
     "reftest": "TIMEOUT"
   },
+  "html/canvas/element/manual/draw-element-image/drawElementImage-dest-rect-non-finite.tentative.html": {
+    "total": 1,
+    "failures": {
+      "drawElementImage handles non-finite dest rect parameters": "FAIL"
+    }
+  },
   "html/canvas/element/manual/draw-element-image/drawElementImage-dest-rect.tentative.html": {
     "total": 1,
     "failures": {
       "drawElementImage handles negative dest width and height": "FAIL"
+    }
+  },
+  "html/canvas/element/manual/draw-element-image/drawElementImage-src-rect-non-finite.tentative.html": {
+    "total": 1,
+    "failures": {
+      "drawElementImage handles non-finite source rect parameters": "FAIL"
     }
   },
   "html/canvas/element/manual/draw-element-image/drawElementImage-src-rect.tentative.html": {
@@ -2405,8 +2433,8 @@
     "harness": "ERROR",
     "total": 2,
     "failures": {
-      "ElementImage width and height should support fractional values": "FAIL",
-      "ElementImage width and height should support fractional values in canvas pixel grid coordinate space": "FAIL"
+      "getElementImageDefaultSize width and height should support fractional values": "FAIL",
+      "getElementImageDefaultSize width and height should support fractional values in canvas pixel grid coordinate space": "FAIL"
     }
   },
   "html/canvas/element/manual/draw-element-image/element-shadow.tentative.html": {
@@ -2682,11 +2710,14 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/onpaint-remove-drawable-element.tentative.html": {
-    "total": 4,
+    "total": 7,
     "failures": {
+      "onpaint should fire and report drawable ancestor when a nested drawable element is removed": "FAIL",
       "onpaint should fire when a deeply nested element with the drawable attribute is removed": "FAIL",
       "onpaint should fire when a direct child with the drawable attribute is removed": "FAIL",
+      "onpaint should fire when a drawable element becomes display:none": "FAIL",
       "onpaint should fire when a nested element with the drawable attribute is removed": "FAIL",
+      "onpaint should fire when a non-drawable ancestor of an element with the drawable attribute is removed": "FAIL",
       "onpaint should fire when an inline element with the drawable attribute is removed": "FAIL"
     }
   },
@@ -2717,6 +2748,9 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/opacity-animation.tentative.html": {
+    "reftest": "TIMEOUT"
+  },
+  "html/canvas/element/manual/draw-element-image/opacity-zero-ancestor.tentative.html": {
     "reftest": "TIMEOUT"
   },
   "html/canvas/element/manual/draw-element-image/percent-sizing.tentative.html": {
@@ -2804,6 +2838,12 @@
     "total": 1,
     "failures": {
       "drawElementImage does not draw cross-origin box-reflect images": "FAIL"
+    }
+  },
+  "html/canvas/element/manual/draw-element-image/privacy/box-reflect-images-in-iframe-moved-ignored.tentative.https.sub.html": {
+    "total": 1,
+    "failures": {
+      "drawElementImage does not draw cross-origin box-reflect images in an iframe moved under canvas": "FAIL"
     }
   },
   "html/canvas/element/manual/draw-element-image/privacy/canvas-in-custom-element-images-ignored.tentative.html": {
@@ -2916,6 +2956,12 @@
     "total": 1,
     "failures": {
       "drawElementImage does not draw cross-origin picture element images": "FAIL"
+    }
+  },
+  "html/canvas/element/manual/draw-element-image/privacy/popover-show-hide-background-image-ignored.tentative.https.sub.html": {
+    "total": 1,
+    "failures": {
+      "drawElementImage does not draw cross-origin background images after popover is closed": "FAIL"
     }
   },
   "html/canvas/element/manual/draw-element-image/privacy/pseudos/before-after-images-ignored.tentative.https.sub.html": {
@@ -3131,6 +3177,12 @@
       "drawElementImage does not use cross-origin feImages on nested filtered SVG content inside masks": "FAIL"
     }
   },
+  "html/canvas/element/manual/draw-element-image/privacy/svg/svg-mask-on-svg-content-ignored.tentative.https.sub.html": {
+    "total": 1,
+    "failures": {
+      "drawElementImage does not use cross-origin mask images on SVG content": "FAIL"
+    }
+  },
   "html/canvas/element/manual/draw-element-image/privacy/svg/svg-mask-visited.tentative.https.sub.html": {
     "total": 1,
     "failures": {
@@ -3200,6 +3252,12 @@
       "drawElementImage does not draw cross-origin images": "FAIL"
     }
   },
+  "html/canvas/element/manual/draw-element-image/privacy/visited-link/image-map-area-visited-color-ignored.tentative.html": {
+    "total": 1,
+    "failures": {
+      "drawElementImage does not reveal image map area visited colors": "FAIL"
+    }
+  },
   "html/canvas/element/manual/draw-element-image/privacy/visited-link/visited-link-color-ignored.tentative.html": {
     "total": 1,
     "failures": {
@@ -3217,6 +3275,9 @@
     "failures": {
       "drawElementImage uses unvisited link colors in custom selection": "FAIL"
     }
+  },
+  "html/canvas/element/manual/draw-element-image/privacy/visited-link/visited-link-decorating-box.tentative.html": {
+    "reftest": "TIMEOUT"
   },
   "html/canvas/element/manual/draw-element-image/privacy/visited-link/visited-link-decoration-color-ignored.tentative.html": {
     "total": 1,
@@ -3598,7 +3659,7 @@
     "total": 93
   },
   "html/canvas/element/manual/imagebitmap/createImageBitmap-origin.sub.html": {
-    "total": 21
+    "total": 27
   },
   "html/canvas/element/manual/imagebitmap/createImageBitmap-premultiplyAlpha.html": {
     "total": 12
@@ -5381,7 +5442,10 @@
     "total": 1
   },
   "html/canvas/element/text/2d.text.font.parse.invalid.html": {
-    "total": 1
+    "total": 1,
+    "failures": {
+      "Canvas test: 2d.text.font.parse.invalid": "FAIL"
+    }
   },
   "html/canvas/element/text/2d.text.font.parse.size.percentage.default.html": {
     "total": 1
@@ -9785,12 +9849,16 @@
   },
   "html/canvas/offscreen/manual/draw-element-image/canvas-transform-update-worker.tentative.html": {
     "harness": "ERROR",
-    "total": 5,
+    "total": 9,
     "failures": {
       "Multiple drawElementImage calls in same worker turn batch into a single elementgeometryupdate event": "NOTRUN",
       "clearElementGeometry on worker clears geometry and dispatches elementgeometryupdate event": "NOTRUN",
+      "drawElementImage on worker accounts for non-zero sx and sy offset": "NOTRUN",
       "drawElementImage on worker dispatches elementgeometryupdate and updates element transform by default": "FAIL",
       "drawElementImage on worker does not update element transform with {preserveElementGeometry: true}": "NOTRUN",
+      "drawElementImage on worker element transform accounts for canvas CSS pixel scale": "NOTRUN",
+      "drawElementImage on worker element transform accounts for offscreen pixel scale, zoom, CTM, and dx/dy": "NOTRUN",
+      "drawElementImage on worker element transform does not include CSS transform on the element": "NOTRUN",
       "drawElementImage on worker updates element transform with explicit {preserveElementGeometry: false}": "NOTRUN"
     }
   },
@@ -12528,10 +12596,16 @@
     "total": 1
   },
   "html/canvas/offscreen/text/2d.text.font.parse.invalid.html": {
-    "total": 1
+    "total": 1,
+    "failures": {
+      "OffscreenCanvas test: 2d.text.font.parse.invalid": "FAIL"
+    }
   },
   "html/canvas/offscreen/text/2d.text.font.parse.invalid.worker.js": {
-    "total": 1
+    "total": 1,
+    "failures": {
+      "2d": "FAIL"
+    }
   },
   "html/canvas/offscreen/text/2d.text.font.parse.system.html": {
     "total": 1

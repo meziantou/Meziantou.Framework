@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Runtime.InteropServices;
+using SystemFontDescriptor = Meziantou.Framework.Fonts.SystemFontDescriptor;
 
 namespace Meziantou.Framework.WebPlatform.Css.Fonts;
 
@@ -38,29 +39,66 @@ internal readonly record struct FontSelectionCapabilities(FontValueRange Weight,
     public static FontSelectionCapabilities FromFont(OpenTypeFont font)
     {
         var variations = font.Variations;
-        var weight = variations.GetAxis(OpenTypeTag.WeightAxis) is { } wght ? new FontValueRange(wght.MinValue, wght.MaxValue) : FontValueRange.Single(font.WeightClass is >= 1 and <= 1000 ? font.WeightClass : 400);
-        var width = variations.GetAxis(OpenTypeTag.WidthAxis) is { } wdth ? new FontValueRange(wdth.MinValue, wdth.MaxValue) : FontValueRange.Single(font.WidthPercentage);
+        return FromStyle(
+            variations.GetAxis(OpenTypeTag.WeightAxis) is { } wght ? new FontValueRange(wght.MinValue, wght.MaxValue) : null,
+            variations.GetAxis(OpenTypeTag.WidthAxis) is { } wdth ? new FontValueRange(wdth.MinValue, wdth.MaxValue) : null,
+            variations.GetAxis(OpenTypeTag.ItalicAxis) is { } ital ? new FontValueRange(ital.MinValue, ital.MaxValue) : null,
+            variations.GetAxis(OpenTypeTag.SlantAxis) is { } slnt ? new FontValueRange(slnt.MinValue, slnt.MaxValue) : null,
+            font.WeightClass,
+            font.WidthPercentage,
+            font.IsItalic,
+            font.IsOblique,
+            font.ItalicAngle);
+    }
 
-        FontValueRange? italic = null;
-        FontValueRange? oblique = null;
-        if (variations.GetAxis(OpenTypeTag.ItalicAxis) is { } ital)
+    /// <summary>
+    /// The capabilities of a font installed on the machine, from what the system font index read of its tables without
+    /// loading it: the same values as <see cref="FromFont"/> gives once the font is loaded.
+    /// </summary>
+    public static FontSelectionCapabilities FromSystemFont(SystemFontDescriptor font)
+    {
+        return FromStyle(
+            GetAxis(font, OpenTypeTag.WeightAxis),
+            GetAxis(font, OpenTypeTag.WidthAxis),
+            GetAxis(font, OpenTypeTag.ItalicAxis),
+            GetAxis(font, OpenTypeTag.SlantAxis),
+            font.HasOs2 ? font.Weight : 400,
+            OpenTypeFont.GetWidthPercentage(font.WidthClass),
+            OpenTypeFont.IsItalicStyle(font.Selection, font.MacStyle),
+            OpenTypeFont.IsObliqueStyle(font.Selection),
+            font.ItalicAngle);
+
+        static FontValueRange? GetAxis(SystemFontDescriptor font, uint tag)
         {
-            italic = new FontValueRange(ital.MinValue, ital.MaxValue);
+            foreach (var axis in font.Axes)
+            {
+                if (axis.Tag == tag)
+                    return new FontValueRange(axis.Minimum / 65536.0, axis.Maximum / 65536.0);
+            }
+
+            return null;
         }
+    }
+
+    /// <summary>
+    /// The capabilities of the style of a font: the ranges of its <c>wght</c>, <c>wdth</c>, <c>ital</c> and <c>slnt</c>
+    /// variation axes when it has them, else its weight class, width and style.
+    /// </summary>
+    private static FontSelectionCapabilities FromStyle(FontValueRange? weightAxis, FontValueRange? widthAxis, FontValueRange? italicAxis, FontValueRange? slantAxis, int weightClass, double widthPercentage, bool isItalic, bool isOblique, double italicAngle)
+    {
+        var weight = weightAxis ?? FontValueRange.Single(weightClass is >= 1 and <= 1000 ? weightClass : 400);
+        var width = widthAxis ?? FontValueRange.Single(widthPercentage);
 
         // The slnt axis is counter-clockwise: an oblique angle is the opposite of the value of the axis
-        if (variations.GetAxis(OpenTypeTag.SlantAxis) is { } slnt)
-        {
-            oblique = new FontValueRange(-slnt.MaxValue, -slnt.MinValue);
-        }
-
+        var italic = italicAxis;
+        var oblique = slantAxis?.Negate();
         if (italic is null && oblique is null)
         {
-            if (font.IsOblique)
+            if (isOblique)
             {
-                oblique = FontValueRange.Single(font.ItalicAngle != 0 ? -font.ItalicAngle : FontSlope.DefaultObliqueAngle);
+                oblique = FontValueRange.Single(italicAngle != 0 ? -italicAngle : FontSlope.DefaultObliqueAngle);
             }
-            else if (font.IsItalic)
+            else if (isItalic)
             {
                 italic = FontValueRange.Single(1);
             }

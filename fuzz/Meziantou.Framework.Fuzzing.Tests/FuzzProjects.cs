@@ -14,6 +14,7 @@ internal static class FuzzProjects
         ("Meziantou.Framework.Dns.Fuzz", DnsFuzz.DnsFuzzTargets.All),
         ("Meziantou.Framework.Globbing.Fuzz", Globbing.Fuzz.GlobbingFuzzTargets.All),
         ("Meziantou.Framework.HtmlSanitizer.Fuzz", Sanitizers.Fuzz.HtmlSanitizerFuzzTargets.All),
+        ("Meziantou.Framework.Http.Caching.Fuzz", Http.Caching.Fuzz.HttpCachingFuzzTargets.All),
         ("Meziantou.Framework.Http.Htpasswd.Fuzz", Http.Htpasswd.Fuzz.HtpasswdFuzzTargets.All),
         ("Meziantou.Framework.JsonPath.Fuzz", JsonPath.Fuzz.JsonPathFuzzTargets.All),
         ("Meziantou.Framework.Language.Fuzz", Language.Fuzz.LanguageFuzzTargets.All),

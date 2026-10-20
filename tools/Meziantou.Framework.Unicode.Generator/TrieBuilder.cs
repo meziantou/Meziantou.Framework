@@ -44,33 +44,32 @@ internal sealed record Trie(int Shift1, int Shift2, ushort[] Stage1, ushort[] St
     }
 }
 
+/// <summary>A three-stage table whose values and indexes all take two bytes.</summary>
+/// <param name="Shift1">The number of low bits of a code point that the first stage ignores.</param>
+/// <param name="Shift2">The number of low bits of a code point that select a value inside a block of the third stage.</param>
+/// <param name="Stage1">For each group of <c>1 &lt;&lt; Shift1</c> code points, the index of a block of the second stage.</param>
+/// <param name="Stage2">Blocks of <c>1 &lt;&lt; (Shift1 - Shift2)</c> indexes of blocks of the third stage.</param>
+/// <param name="Stage3">Blocks of <c>1 &lt;&lt; Shift2</c> values.</param>
+internal sealed record WideTrie(int Shift1, int Shift2, ushort[] Stage1, ushort[] Stage2, ushort[] Stage3)
+{
+    public int ByteCount => (Stage1.Length + Stage2.Length + Stage3.Length) * 2;
+
+    public ushort Lookup(int codePoint)
+    {
+        var block2 = Stage1[codePoint >> Shift1];
+        var block3 = Stage2[(block2 << (Shift1 - Shift2)) + ((codePoint >> Shift2) & ((1 << (Shift1 - Shift2)) - 1))];
+        return Stage3[(block3 << Shift2) + (codePoint & ((1 << Shift2) - 1))];
+    }
+}
+
 internal static class TrieBuilder
 {
     /// <summary>Builds the smallest table among the block sizes tried, and checks it against the values.</summary>
     public static Trie Build(byte[] values)
     {
-        if (values.Length != Trie.CodePointCount)
-            throw new ArgumentException("One value per code point is expected", nameof(values));
-
-        Trie? best = null;
-        for (var shift2 = 3; shift2 <= 8; shift2++)
-        {
-            for (var bits2 = 2; bits2 <= 9; bits2++)
-            {
-                var shift1 = shift2 + bits2;
-                if (shift1 > 16)
-                    continue;
-
-                var candidate = Build(values, shift1, shift2);
-                if (candidate is not null && (best is null || candidate.ByteCount < best.ByteCount))
-                {
-                    best = candidate;
-                }
-            }
-        }
-
-        if (best is null)
-            throw new InvalidOperationException("No block size fits the table");
+        var best = BuildSmallest(values, (shift1, shift2) => Build(values, shift1, shift2) is { } stages
+            ? new Trie(shift1, shift2, stages.Stage1, stages.Stage2, stages.Stage3)
+            : null, trie => trie.ByteCount);
 
         for (var codePoint = 0; codePoint < values.Length; codePoint++)
         {
@@ -81,17 +80,60 @@ internal static class TrieBuilder
         return best;
     }
 
-    private static Trie? Build(byte[] values, int shift1, int shift2)
+    /// <summary>Builds the smallest table of two-byte values among the block sizes tried, and checks it against the values.</summary>
+    public static WideTrie BuildWide(ushort[] values)
+    {
+        var best = BuildSmallest(values, (shift1, shift2) => Build(values, shift1, shift2) is { } stages
+            ? new WideTrie(shift1, shift2, stages.Stage1, stages.Stage2, stages.Stage3)
+            : null, trie => trie.ByteCount);
+
+        for (var codePoint = 0; codePoint < values.Length; codePoint++)
+        {
+            if (best.Lookup(codePoint) != values[codePoint])
+                throw new InvalidOperationException($"The table disagrees with its source at U+{codePoint:X4}");
+        }
+
+        return best;
+    }
+
+    private static TTrie BuildSmallest<TValue, TTrie>(TValue[] values, Func<int, int, TTrie?> build, Func<TTrie, int> getByteCount)
+        where TTrie : class
+    {
+        if (values.Length != Trie.CodePointCount)
+            throw new ArgumentException("One value per code point is expected", nameof(values));
+
+        TTrie? best = null;
+        for (var shift2 = 3; shift2 <= 8; shift2++)
+        {
+            for (var bits2 = 2; bits2 <= 9; bits2++)
+            {
+                var shift1 = shift2 + bits2;
+                if (shift1 > 16)
+                    continue;
+
+                var candidate = build(shift1, shift2);
+                if (candidate is not null && (best is null || getByteCount(candidate) < getByteCount(best)))
+                {
+                    best = candidate;
+                }
+            }
+        }
+
+        return best ?? throw new InvalidOperationException("No block size fits the table");
+    }
+
+    private static (ushort[] Stage1, ushort[] Stage2, T[] Stage3)? Build<T>(T[] values, int shift1, int shift2)
+        where T : unmanaged, IEquatable<T>
     {
         var block3Size = 1 << shift2;
         var block2Size = 1 << (shift1 - shift2);
 
-        var stage3 = new List<byte>();
-        var block3Indexes = new Dictionary<BlockKey<byte>, int>();
+        var stage3 = new List<T>();
+        var block3Indexes = new Dictionary<BlockKey<T>, int>();
         var stage2Entries = new ushort[values.Length >> shift2];
         for (var block = 0; block < stage2Entries.Length; block++)
         {
-            var key = new BlockKey<byte>(values, block * block3Size, block3Size);
+            var key = new BlockKey<T>(values, block * block3Size, block3Size);
             if (!block3Indexes.TryGetValue(key, out var index))
             {
                 index = block3Indexes.Count;
@@ -127,7 +169,7 @@ internal static class TrieBuilder
             stage1[block] = (ushort)index;
         }
 
-        return new Trie(shift1, shift2, stage1, [.. stage2], [.. stage3]);
+        return (stage1, [.. stage2], [.. stage3]);
     }
 
     /// <summary>Formats numbers as the elements of a collection expression, wrapped to keep the lines short.</summary>

@@ -22,6 +22,7 @@ internal static class FuzzProjects
         ("Meziantou.Framework.MediaTags.Fuzz", MediaTags.Fuzz.MediaTagsFuzzTargets.All),
         ("Meziantou.Framework.PostgreSqlServer.Fuzz", PostgreSql.Fuzz.PostgreSqlServerFuzzTargets.All),
         ("Meziantou.Framework.RobotsTxt.Fuzz", RobotsTxt.Fuzz.RobotsTxtFuzzTargets.All),
+        ("Meziantou.Framework.Scheduling.Fuzz", Scheduling.Fuzz.SchedulingFuzzTargets.All),
         ("Meziantou.Framework.SimpleQueryLanguage.Fuzz", SimpleQueryLanguage.Fuzz.SimpleQueryLanguageFuzzTargets.All),
         ("Meziantou.Framework.SyntaxHighlighting.Fuzz", SyntaxHighlighting.Fuzz.SyntaxHighlightingFuzzTargets.All),
         ("Meziantou.Framework.TdsServer.Fuzz", TdsServer.Fuzz.TdsServerFuzzTargets.All),

@@ -46,13 +46,16 @@ public static class UnicodeBidi
     {
         for (var index = 0; index < text.Length;)
         {
-            // No character below U+0590 is right-to-left or is a directional formatting character.
+            // No character below U+0590 is right-to-left or is a directional formatting character: skip them with a
+            // vectorized search.
             if (text[index] < 0x0590)
             {
-                index++;
-                continue;
-            }
+                var next = text[index..].IndexOfAnyExceptInRange('\0', '\u058F');
+                if (next < 0)
+                    return false;
 
+                index += next;
+            }
             var value = UnicodeProperties.GetBidiClass(Unicode.DecodeAt(text, index, out var length));
             if (value is Bidi.RightToLeft or Bidi.RightToLeftArabic or Bidi.ArabicNumber
                 or Bidi.LeftToRightEmbedding or Bidi.LeftToRightOverride or Bidi.RightToLeftEmbedding or Bidi.RightToLeftOverride
@@ -150,7 +153,7 @@ public static class UnicodeBidi
         var workspaceLength = GetWorkspaceLength(paragraph.Length);
         if (workspaceLength <= StackallocLimit * WorkspaceFactor)
         {
-            Span<int> workspace = stackalloc int[StackallocLimit * WorkspaceFactor];
+            Span<int> workspace = stackalloc int[workspaceLength];
             return ResolveLevels(paragraph, direction, levels, workspace);
         }
 
@@ -186,6 +189,15 @@ public static class UnicodeBidi
             throw new ArgumentException("The workspace is too small: see GetWorkspaceLength", nameof(workspace));
 
         var count = paragraph.Length;
+
+        // Without right-to-left characters, Arabic numbers and explicit directional formatting characters, the
+        // paragraph is left-to-right and every level is 0: European numbers become L after L (rule W7).
+        if (direction is not UnicodeBidiDirection.RightToLeft && !MayRequireBidi(paragraph))
+        {
+            levels[..count].Clear();
+            return 0;
+        }
+
         var classes = workspace[..count];
         for (var index = 0; index < count;)
         {

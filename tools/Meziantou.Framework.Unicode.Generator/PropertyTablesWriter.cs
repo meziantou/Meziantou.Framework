@@ -166,6 +166,7 @@ internal static class PropertyTablesWriter
 
         AppendBytes(tables, sizes, "CaseTuples", caseBytes, "12-byte entries: three little-endian 32-bit differences, see GetCase.");
         AppendBytes(tables, sizes, "SpecialCasingMappings", specialCasingRecords, "The unconditional full case mappings of SpecialCasing.txt: 6-byte entries sorted by code point: the code point (3 bytes), the offset of its mappings in SpecialCasingPool (2 bytes), then the lengths of its lowercase (bits 0-1), titlecase (bits 2-3) and uppercase (bits 4-5) mappings, little-endian.");
+        AppendSpecialCasingFilter(tables, specialCasingRecords);
         AppendBytes(tables, sizes, "SpecialCasingPool", EncodeUInt24(specialCasingPool), "The code points of the full case mappings, 3 bytes each, little-endian: the lowercase, the titlecase then the uppercase mapping of each entry of SpecialCasingMappings.");
         AppendBytes(tables, sizes, "BidiMirroringPairs", EncodeUInt24(mirroringPairs), "Bidi_Mirroring_Glyph: 6-byte entries sorted by code point: the code point then its mirrored code point, 3 bytes each, little-endian.");
         AppendBytes(tables, sizes, "BidiBracketPairs", EncodeUInt24(bracketPairs), "Bidi_Paired_Bracket: 6-byte entries sorted by code point: the code point then its paired bracket, 3 bytes each, little-endian.");
@@ -255,6 +256,25 @@ internal static class PropertyTablesWriter
                 private static ReadOnlySpan<byte> {{name}}Stage3 =>
                 [{{TrieBuilder.FormatElements<byte>(trie.Stage3, "        ")}}
                 ];
+
+            """).ReplaceLineEndings("\n"));
+    }
+
+    /// <summary>Emits a test that rules out most code points before SpecialCasingMappings is searched.</summary>
+    private static void AppendSpecialCasingFilter(StringBuilder destination, byte[] records)
+    {
+        var codePoints = new List<int>();
+        for (var offset = 0; offset < records.Length; offset += 6)
+        {
+            codePoints.Add(records[offset] | (records[offset + 1] << 8) | (records[offset + 2] << 16));
+        }
+
+        var pages = string.Join(" or ", codePoints.Select(codePoint => codePoint >> 8).Distinct().Order().Select(page => string.Create(CultureInfo.InvariantCulture, $"0x{page:X}")));
+        destination.Append(string.Create(CultureInfo.InvariantCulture, $$"""
+
+                /// <summary>Determines whether a code point can be in SpecialCasingMappings: it is in one of the blocks of 256 code points that have an entry, and is not below the first entry.</summary>
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                internal static bool MayHaveSpecialCasing(int codePoint) => codePoint >= 0x{{codePoints.Min():X}} && (codePoint >> 8) is {{pages}};
 
             """).ReplaceLineEndings("\n"));
     }

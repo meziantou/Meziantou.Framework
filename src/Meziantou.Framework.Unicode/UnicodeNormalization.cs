@@ -50,17 +50,22 @@ public static class UnicodeNormalization
     {
         ArgumentNullException.ThrowIfNull(value);
         ValidateForm(form);
-        if (QuickCheck(value, form) is QuickCheckResult.Yes)
+        if (QuickCheck(value, form, out var prefix) is QuickCheckResult.Yes)
             return value;
 
-        var buffer = Normalize(value, form, out var count);
+        // The text before the first character the quick check cannot accept is normalized already: only the rest is.
+        var buffer = Normalize(value.AsSpan(prefix), form, out var count);
         try
         {
-            var length = GetUtf16Length(buffer.AsSpan(0, count));
-            if (length == value.Length && Matches(buffer.AsSpan(0, count), value))
+            var length = prefix + GetUtf16Length(buffer.AsSpan(0, count));
+            if (length == value.Length && Matches(buffer.AsSpan(0, count), value.AsSpan(prefix)))
                 return value;
 
-            return string.Create(length, (buffer, count), (destination, state) => Encode(state.buffer.AsSpan(0, state.count), destination));
+            return string.Create(length, (buffer, count, value, prefix), (destination, state) =>
+            {
+                state.value.AsSpan(0, state.prefix).CopyTo(destination);
+                Encode(state.buffer.AsSpan(0, state.count), destination[state.prefix..]);
+            });
         }
         finally
         {
@@ -79,7 +84,7 @@ public static class UnicodeNormalization
     {
         ValidateForm(form);
         charsWritten = 0;
-        if (QuickCheck(source, form) is QuickCheckResult.Yes)
+        if (QuickCheck(source, form, out var prefix) is QuickCheckResult.Yes)
         {
             if (!source.TryCopyTo(destination))
                 return false;
@@ -88,14 +93,15 @@ public static class UnicodeNormalization
             return true;
         }
 
-        var buffer = Normalize(source, form, out var count);
+        var buffer = Normalize(source[prefix..], form, out var count);
         try
         {
-            var length = GetUtf16Length(buffer.AsSpan(0, count));
+            var length = prefix + GetUtf16Length(buffer.AsSpan(0, count));
             if (length > destination.Length)
                 return false;
 
-            Encode(buffer.AsSpan(0, count), destination);
+            source[..prefix].CopyTo(destination);
+            Encode(buffer.AsSpan(0, count), destination[prefix..]);
             charsWritten = length;
             return true;
         }
@@ -113,13 +119,13 @@ public static class UnicodeNormalization
     public static int GetNormalizedLength(ReadOnlySpan<char> source, NormalizationForm form = NormalizationForm.FormC)
     {
         ValidateForm(form);
-        if (QuickCheck(source, form) is QuickCheckResult.Yes)
+        if (QuickCheck(source, form, out var prefix) is QuickCheckResult.Yes)
             return source.Length;
 
-        var buffer = Normalize(source, form, out var count);
+        var buffer = Normalize(source[prefix..], form, out var count);
         try
         {
-            return GetUtf16Length(buffer.AsSpan(0, count));
+            return prefix + GetUtf16Length(buffer.AsSpan(0, count));
         }
         finally
         {
@@ -135,7 +141,7 @@ public static class UnicodeNormalization
     public static bool IsNormalized(ReadOnlySpan<char> value, NormalizationForm form = NormalizationForm.FormC)
     {
         ValidateForm(form);
-        switch (QuickCheck(value, form))
+        switch (QuickCheck(value, form, out var prefix))
         {
             case QuickCheckResult.Yes:
                 return true;
@@ -144,10 +150,11 @@ public static class UnicodeNormalization
                 return false;
         }
 
-        var buffer = Normalize(value, form, out var count);
+        var rest = value[prefix..];
+        var buffer = Normalize(rest, form, out var count);
         try
         {
-            return GetUtf16Length(buffer.AsSpan(0, count)) == value.Length && Matches(buffer.AsSpan(0, count), value);
+            return GetUtf16Length(buffer.AsSpan(0, count)) == rest.Length && Matches(buffer.AsSpan(0, count), rest);
         }
         finally
         {
@@ -320,7 +327,15 @@ public static class UnicodeNormalization
         return count + 1;
     }
 
-    private static QuickCheckResult QuickCheck(ReadOnlySpan<char> text, NormalizationForm form)
+    /// <summary>Applies the quick check algorithm of UAX #15.</summary>
+    /// <param name="text">The text.</param>
+    /// <param name="form">The normalization form.</param>
+    /// <param name="prefix">
+    /// The length of the longest prefix that is normalized and that the rest of the text cannot change: it ends before
+    /// a starter that the quick check accepts and that is before the first character it does not accept. The length
+    /// of the text when the result is <see cref="QuickCheckResult.Yes"/>.
+    /// </param>
+    private static QuickCheckResult QuickCheck(ReadOnlySpan<char> text, NormalizationForm form, out int prefix)
     {
         var (no, maybe) = form switch
         {
@@ -333,10 +348,28 @@ public static class UnicodeNormalization
         // The characters below this limit are starters that no form changes: U+00C0 is the first character that has a
         // canonical decomposition, and U+00A0 the first one that has a compatibility decomposition.
         var unchanged = form is NormalizationForm.FormC or NormalizationForm.FormD ? 0xC0 : 0xA0;
+        // Skip the characters below the limit at the start of the text with a vectorized search: much text is ASCII.
+        var start = text.IndexOfAnyInRange((char)unchanged, char.MaxValue);
+        if (start < 0)
+        {
+            prefix = text.Length;
+            return QuickCheckResult.Yes;
+        }
+
+        var result = QuickCheck(text, start, unchanged, no, maybe, out var firstRejected);
+        prefix = result is QuickCheckResult.Yes ? text.Length : GetStablePrefixLength(text, firstRejected);
+        return result;
+    }
+
+    /// <summary>Applies the quick check from an index.</summary>
+    /// <param name="firstRejected">The index of the first character whose quick check value is not Yes, or that is not in canonical order.</param>
+    private static QuickCheckResult QuickCheck(ReadOnlySpan<char> text, int index, int unchanged, int no, int maybe, out int firstRejected)
+    {
         var result = QuickCheckResult.Yes;
         var lastClass = 0;
+        firstRejected = -1;
         var tuples = UnicodeNormalizationTables.NormalizationTuples;
-        for (var index = 0; index < text.Length;)
+        while (index < text.Length)
         {
             var c = text[index];
             if (c < unchanged)
@@ -351,10 +384,18 @@ public static class UnicodeNormalization
             var combiningClass = tuples[entry];
             var flags = tuples[entry + 1];
             if ((flags & no) != 0 || (combiningClass != 0 && lastClass > combiningClass))
-                return QuickCheckResult.No;
-
-            if ((flags & maybe) != 0)
             {
+                if (result is QuickCheckResult.Yes)
+                {
+                    firstRejected = index - length;
+                }
+
+                return QuickCheckResult.No;
+            }
+
+            if ((flags & maybe) != 0 && result is QuickCheckResult.Yes)
+            {
+                firstRejected = index - length;
                 result = QuickCheckResult.Maybe;
             }
 
@@ -364,10 +405,31 @@ public static class UnicodeNormalization
         return result;
     }
 
+    /// <summary>Gets the length of the text before the last starter that is before an index.</summary>
+    /// <remarks>
+    /// The quick check accepts every character before the index: the text before such a starter is normalized, and
+    /// the rest of the text cannot change it, since nothing reorders or composes across a starter that the quick check
+    /// accepts.
+    /// </remarks>
+    private static int GetStablePrefixLength(ReadOnlySpan<char> text, int index)
+    {
+        var tuples = UnicodeNormalizationTables.NormalizationTuples;
+        while (index > 0)
+        {
+            var codePoint = Unicode.DecodeBefore(text, index, out var length);
+            index -= length;
+            if (tuples[UnicodeNormalizationTables.GetNormalization(codePoint) * 2] == 0)
+                return index;
+        }
+
+        return 0;
+    }
+
     /// <summary>Normalizes a text into a rented buffer of code points, which the caller returns to the shared pool.</summary>
     private static int[] Normalize(ReadOnlySpan<char> text, NormalizationForm form, out int count)
     {
         var isCompatibility = form is NormalizationForm.FormKC or NormalizationForm.FormKD;
+        var decomposable = isCompatibility ? NfkdNo : NfdNo;
         var buffer = ArrayPool<int>.Shared.Rent(Math.Max(16, text.Length + (text.Length / 2)));
         count = 0;
         Span<int> canonical = stackalloc int[4];
@@ -383,6 +445,20 @@ public static class UnicodeNormalization
             if (buffer.Length - count < UnicodeNormalizationTables.MaxCompatibilityDecompositionLength)
             {
                 Grow(ref buffer, count);
+            }
+
+            // Most code points have no decomposition: they are written as they are, without a search of the mappings.
+            var entry = UnicodeNormalizationTables.GetNormalization(codePoint) * 2;
+            if ((tuples[entry + 1] & decomposable) == 0)
+            {
+                buffer[count++] = codePoint;
+                if (tuples[entry] == 0)
+                {
+                    Reorder(buffer.AsSpan(runStart, count - 1 - runStart));
+                    runStart = count;
+                }
+
+                continue;
             }
 
             var start = count;
@@ -515,11 +591,14 @@ public static class UnicodeNormalization
         var count = 0;
         foreach (var codePoint in buffer)
         {
-            var combiningClass = tuples[UnicodeNormalizationTables.GetNormalization(codePoint) * 2];
+            var entry = UnicodeNormalizationTables.GetNormalization(codePoint) * 2;
+            var combiningClass = tuples[entry];
 
             // A character combines with the last starter unless a character between them blocks it: one whose class
-            // is 0 or is not lower than its own.
-            if (starter >= 0 && (lastClass == 0 || lastClass < combiningClass) && TryComposeCanonical(buffer[starter], codePoint, out var composite))
+            // is 0 or is not lower than its own. Only the characters whose NFC_Quick_Check is Maybe are the second
+            // character of a composition: the others are not searched for.
+            if (starter >= 0 && (tuples[entry + 1] & (NfcMaybe | NfkcMaybe)) != 0 && (lastClass == 0 || lastClass < combiningClass)
+                && TryComposeCanonical(buffer[starter], codePoint, out var composite))
             {
                 buffer[starter] = composite;
                 continue;

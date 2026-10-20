@@ -11,8 +11,11 @@ namespace Meziantou.Framework.Fonts;
 /// <param name="Start">The cluster of the first character the value is for.</param>
 /// <param name="End">The cluster after the last character the value is for.</param>
 [StructLayout(LayoutKind.Auto)]
-internal readonly record struct ShapingFeature(uint Tag, int Value, int Start = 0, int End = int.MaxValue)
+public readonly record struct ShapingFeature(uint Tag, int Value, int Start = 0, int End = int.MaxValue)
 {
+    /// <summary>Initializes a feature for the whole run from the four characters of its tag.</summary>
+    /// <param name="tag">The four characters of the tag, such as <c>liga</c>.</param>
+    /// <param name="value">The value of the feature.</param>
     public ShapingFeature(string tag, int value = 1)
         : this(ToTag(tag), value)
     {

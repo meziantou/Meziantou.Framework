@@ -8,7 +8,7 @@ namespace Meziantou.Framework.Fonts;
 /// The header is validated when the table is read; everything else is validated when it is used, and a reference
 /// outside the table is an <see cref="InvalidFontException"/>.
 /// </remarks>
-internal sealed class LayoutTable
+public sealed class LayoutTable
 {
     /// <summary>The index of a feature that is not required: a language system that has no required feature.</summary>
     public const int NoFeature = 0xFFFF;
@@ -102,7 +102,7 @@ internal sealed class LayoutTable
     public int GetLookupCount(ReadOnlySpan<byte> table) => FontBinary.UInt16(table, _lookups);
 
     /// <summary>Gets a lookup.</summary>
-    public LayoutLookup GetLookup(ReadOnlySpan<byte> table, int index)
+    internal LayoutLookup GetLookup(ReadOnlySpan<byte> table, int index)
     {
         if ((uint)index >= (uint)GetLookupCount(table))
             throw FontErrors.Invalid("a layout table refers to a lookup that does not exist.");
@@ -115,7 +115,7 @@ internal sealed class LayoutTable
     }
 
     /// <summary>Gets the position of a subtable of a lookup.</summary>
-    public static int GetSubtable(ReadOnlySpan<byte> table, in LayoutLookup lookup, int index)
+    internal static int GetSubtable(ReadOnlySpan<byte> table, in LayoutLookup lookup, int index)
         => lookup.Offset + FontBinary.UInt16(table, lookup.Offset + 6 + (index * 2));
 
     /// <summary>Finds the language system of a script and a language.</summary>

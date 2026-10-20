@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Fonts;
 /// temporary buffers.
 /// </summary>
 /// <remarks>A font keeps the environment it was loaded with (<see cref="FontData.Environment"/>).</remarks>
-internal abstract class FontEnvironment
+public abstract class FontEnvironment
 {
     /// <summary>Gets the limits.</summary>
     public abstract FontResourceLimits Limits { get; }

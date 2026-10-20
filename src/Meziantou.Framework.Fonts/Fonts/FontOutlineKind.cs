@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Fonts;
 
 /// <summary>The format of the outlines of a font.</summary>
-internal enum FontOutlineKind
+public enum FontOutlineKind
 {
     /// <summary>The font has no outline table: its glyphs are bitmaps, or it only carries metrics.</summary>
     None = 0,

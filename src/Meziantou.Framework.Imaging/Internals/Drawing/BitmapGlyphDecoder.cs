@@ -12,7 +12,7 @@ internal static class BitmapGlyphDecoder
     /// <exception cref="ImageResourceLimitException">The image exceeds a limit of the configuration of the font.</exception>
     public static ColorGlyph CreateGlyph(FontFace face, in BitmapGlyph bitmap, double size)
     {
-        var data = face.Data.Bytes.AsSpan(bitmap.Offset, bitmap.Length);
+        var data = face.Data.Bytes.Span.Slice(bitmap.Offset, bitmap.Length);
         var configuration = ImageFontEnvironment.GetConfiguration(face);
         Image<Rgba32> image;
         try
@@ -51,24 +51,7 @@ internal static class BitmapGlyphDecoder
 
             var pixels = new byte[targetWidth * targetHeight * 4];
             image.Frames[0].CopyPixelBytesTo(pixels);
-            FontErrors.EnsureCoordinates(left, top);
-            FontErrors.EnsureCoordinates(left + width, top - height);
-            return new ColorGlyph
-            {
-                Ops = [new ColorOp(ColorOpKind.FillImage, 0, -1, 0)],
-                Paints = [new ColorPaint(ColorPaintKind.Image, -1, 0, 0, 0, 0)],
-                Stops = [],
-
-                // The left and the top of the image, and the size of one of its pixels.
-                Numbers = [left, top, width / targetWidth, height / targetHeight],
-                XMin = left,
-                YMin = top - height,
-                XMax = left + width,
-                YMax = top,
-                LayerDepth = 1,
-                ClipDepth = 0,
-                Image = new ColorImage(targetWidth, targetHeight, pixels),
-            };
+            return ColorGlyph.FromImage(new ColorImage(targetWidth, targetHeight, pixels), left, top, width, height);
         }
     }
 

@@ -3,15 +3,15 @@ namespace Meziantou.Framework.Fonts;
 /// <summary>Creates the exceptions of the font code.</summary>
 internal static class FontErrors
 {
-    public static InvalidFontException Invalid(string message) => new("The font is invalid: " + message);
+    internal static InvalidFontException Invalid(string message) => new("The font is invalid: " + message);
 
-    public static InvalidFontException InvalidTable(uint tag, string message)
+    internal static InvalidFontException InvalidTable(uint tag, string message)
         => new($"The font is invalid: the '{FontTags.Format(tag)}' table {message}");
 
-    public static InvalidFontException InvalidTable(uint tag, string message, Exception innerException)
+    internal static InvalidFontException InvalidTable(uint tag, string message, Exception innerException)
         => new($"The font is invalid: the '{FontTags.Format(tag)}' table {message}", innerException);
 
-    public static InvalidFontException Truncated()
+    internal static InvalidFontException Truncated()
         => new("The font is invalid: a table is truncated or refers to data outside its bounds.");
 
     /// <summary>
@@ -29,5 +29,5 @@ internal static class FontErrors
             throw Invalid("a glyph has a point outside the coordinates an outline can have.");
     }
 
-    public static UnsupportedFontFeatureException Unsupported(string message, string feature) => new(message, feature);
+    internal static UnsupportedFontFeatureException Unsupported(string message, string feature) => new(message, feature);
 }

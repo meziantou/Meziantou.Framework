@@ -11,11 +11,13 @@ namespace Meziantou.Framework.Fonts;
 /// describe an outline whose size is exponential in the size of the file. One counter bounds them all.
 /// </remarks>
 [StructLayout(LayoutKind.Auto)]
-internal struct GlyphBudget
+public struct GlyphBudget
 {
     private readonly long _limit;
     private long _used;
 
+    /// <summary>Initializes a new budget for a glyph.</summary>
+    /// <param name="limits">The limits whose <see cref="FontResourceLimits.MaxGlyphComplexity"/> bounds the operations.</param>
     public GlyphBudget(FontResourceLimits limits)
     {
         _limit = limits.MaxGlyphComplexity;

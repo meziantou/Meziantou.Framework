@@ -104,7 +104,7 @@ public sealed class FontReaderTests
         }
 
         // The decoded data is an sfnt font whose tables are the ones of the original font (in the order of their tags)
-        var reloaded = FontFile.Load(font.Data);
+        var reloaded = FontFile.Load(font.Data.Span);
         Assert.NotNull(reloaded);
         Assert.Equal(FontFileFormat.OpenType, reloaded.Format);
         Assert.Equal(expected.TableTags.Order(), font.TableTags);

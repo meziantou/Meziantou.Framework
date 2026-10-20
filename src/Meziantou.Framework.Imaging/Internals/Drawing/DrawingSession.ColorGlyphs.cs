@@ -159,13 +159,13 @@ internal sealed partial class DrawingSession
     private void DrawColorGlyph(ColorSurface surface, ColorGlyph glyph, FontFace face, in Affine2D placement, CompositeMode mode, BlendMode blend, bool paint)
     {
         var rasterizer = _rasterizer!;
-        var numbers = glyph.Numbers.AsSpan();
+        var numbers = glyph.Numbers;
         if (paint)
         {
             surface.Begin();
         }
 
-        foreach (ref readonly var op in glyph.Ops.AsSpan())
+        foreach (ref readonly var op in glyph.Ops)
         {
             switch (op.Kind)
             {

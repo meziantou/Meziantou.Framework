@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Fonts;
 
 /// <summary>An instance of a variable font: a value for each axis, and what only depends on these values.</summary>
 /// <remarks>The scalars of the regions of each variation store are computed once, when the instance is created.</remarks>
-internal sealed class FontInstance
+public sealed class FontInstance
 {
     /// <summary>The normalized value 1, the end of an axis, as a 16.16 number.</summary>
     private const int One = 1 << 16;
@@ -13,35 +13,38 @@ internal sealed class FontInstance
     /// <summary>The value 1 as a 2.14 fixed-point number: the largest normalized value of an axis.</summary>
     public const int TableOne = One >> TableShift;
 
-    public FontInstance(int[] userCoordinates, int[] coordinates)
+    private readonly int[] _userCoordinates;
+    private readonly int[] _coordinates;
+
+    internal FontInstance(int[] userCoordinates, int[] coordinates)
     {
-        UserCoordinates = userCoordinates;
-        Coordinates = coordinates;
+        _userCoordinates = userCoordinates;
+        _coordinates = coordinates;
     }
 
     /// <summary>Gets the value of each axis, in the units of the axis, as 16.16 fixed-point numbers.</summary>
-    public int[] UserCoordinates { get; }
+    public ReadOnlySpan<int> UserCoordinates => _userCoordinates;
 
     /// <summary>Gets the normalized value of each axis, from -1 to 1, as 2.14 fixed-point numbers: the form of the variation tables.</summary>
-    public int[] Coordinates { get; }
+    public ReadOnlySpan<int> Coordinates => _coordinates;
 
     /// <summary>Gets the scalars of the store of the <c>HVAR</c> table.</summary>
-    public double[] AdvanceScalars { get; set; } = [];
+    internal double[] AdvanceScalars { get; set; } = [];
 
     /// <summary>Gets or sets the scalar of each region of the variation store of the vertical metrics (<c>VVAR</c>).</summary>
-    public double[] VerticalScalars { get; set; } = [];
+    internal double[] VerticalScalars { get; set; } = [];
 
     /// <summary>Gets or sets the scalars of the store of the <c>BASE</c> table, which the coordinates of the baselines refer to.</summary>
-    public double[] BaselineScalars { get; set; } = [];
+    internal double[] BaselineScalars { get; set; } = [];
 
     /// <summary>Gets the scalars of the store of the <c>GDEF</c> table, which the positions of the <c>GPOS</c> table refer to.</summary>
-    public double[] LayoutScalars { get; set; } = [];
+    internal double[] LayoutScalars { get; set; } = [];
 
     /// <summary>Gets the scalars of the store of the <c>CFF2</c> table.</summary>
-    public double[] OutlineScalars { get; set; } = [];
+    internal double[] OutlineScalars { get; set; } = [];
 
     /// <summary>Gets the scalars of the store of the <c>COLR</c> table.</summary>
-    public double[] ColorScalars { get; set; } = [];
+    internal double[] ColorScalars { get; set; } = [];
 
     /// <summary>
     /// Normalizes the value of an axis: -1 at its minimum, 0 at its default, 1 at its maximum. OpenType specification,

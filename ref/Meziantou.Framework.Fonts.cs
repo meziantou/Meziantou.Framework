@@ -2,3 +2,745 @@
 // Target Frameworks: net10.0, net11.0
 #nullable enable
 
+namespace Meziantou.Framework.Fonts
+{
+    public readonly struct BitmapGlyph : System.IEquatable<Meziantou.Framework.Fonts.BitmapGlyph>
+    {
+        public int? Bottom { get => throw null; init { } }
+        public Meziantou.Framework.Fonts.BitmapGlyphFormat Format { get => throw null; init { } }
+        public int Left { get => throw null; init { } }
+        public int Length { get => throw null; init { } }
+        public int Offset { get => throw null; init { } }
+        public int PixelsPerEmX { get => throw null; init { } }
+        public int PixelsPerEmY { get => throw null; init { } }
+        public int Top { get => throw null; init { } }
+        public BitmapGlyph(int Offset, int Length, int PixelsPerEmX, int PixelsPerEmY, int Left, int? Bottom, int Top, Meziantou.Framework.Fonts.BitmapGlyphFormat Format) { }
+        public void Deconstruct(out int Offset, out int Length, out int PixelsPerEmX, out int PixelsPerEmY, out int Left, out int? Bottom, out int Top, out Meziantou.Framework.Fonts.BitmapGlyphFormat Format) => throw null;
+        public bool Equals(Meziantou.Framework.Fonts.BitmapGlyph other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.Fonts.BitmapGlyph left, Meziantou.Framework.Fonts.BitmapGlyph right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Fonts.BitmapGlyph left, Meziantou.Framework.Fonts.BitmapGlyph right) => throw null;
+    }
+
+    public enum BitmapGlyphFormat
+    {
+        Png = 0,
+        Jpeg = 1,
+        Tiff = 2,
+    }
+
+    public enum CmapVariation
+    {
+        NotFound = 0,
+        UseDefault = 1,
+        Glyph = 2,
+    }
+
+    public enum ColorCompositeMode
+    {
+        Clear = 0,
+        Source = 1,
+        Destination = 2,
+        SourceOver = 3,
+        DestinationOver = 4,
+        SourceIn = 5,
+        DestinationIn = 6,
+        SourceOut = 7,
+        DestinationOut = 8,
+        SourceAtop = 9,
+        DestinationAtop = 10,
+        Xor = 11,
+        Plus = 12,
+        Screen = 13,
+        Overlay = 14,
+        Darken = 15,
+        Lighten = 16,
+        ColorDodge = 17,
+        ColorBurn = 18,
+        HardLight = 19,
+        SoftLight = 20,
+        Difference = 21,
+        Exclusion = 22,
+        Multiply = 23,
+        Hue = 24,
+        Saturation = 25,
+        Color = 26,
+        Luminosity = 27,
+    }
+
+    public sealed class ColorGlyph
+    {
+        public int ClipDepth { get => throw null; }
+        public Meziantou.Framework.Fonts.ColorImage? Image { get => throw null; }
+        public bool IsEmpty { get => throw null; }
+        public int LayerDepth { get => throw null; }
+        public System.ReadOnlySpan<double> Numbers { get => throw null; }
+        public System.ReadOnlySpan<Meziantou.Framework.Fonts.ColorOp> Ops { get => throw null; }
+        public System.ReadOnlySpan<Meziantou.Framework.Fonts.ColorPaint> Paints { get => throw null; }
+        public System.ReadOnlySpan<Meziantou.Framework.Fonts.ColorStop> Stops { get => throw null; }
+        public double XMax { get => throw null; }
+        public double XMin { get => throw null; }
+        public double YMax { get => throw null; }
+        public double YMin { get => throw null; }
+        public static Meziantou.Framework.Fonts.ColorGlyph FromImage(Meziantou.Framework.Fonts.ColorImage image, double left, double top, double width, double height) => throw null;
+    }
+
+    public sealed class ColorImage
+    {
+        public int Height { get => throw null; }
+        public System.ReadOnlySpan<byte> Pixels { get => throw null; }
+        public int Width { get => throw null; }
+        public ColorImage(int width, int height, byte[] pixels) { }
+    }
+
+    public readonly struct ColorLayer : System.IEquatable<Meziantou.Framework.Fonts.ColorLayer>
+    {
+        public int Glyph { get => throw null; init { } }
+        public int PaletteIndex { get => throw null; init { } }
+        public ColorLayer(int Glyph, int PaletteIndex) { }
+        public void Deconstruct(out int Glyph, out int PaletteIndex) => throw null;
+        public bool Equals(Meziantou.Framework.Fonts.ColorLayer other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.Fonts.ColorLayer left, Meziantou.Framework.Fonts.ColorLayer right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Fonts.ColorLayer left, Meziantou.Framework.Fonts.ColorLayer right) => throw null;
+    }
+
+    public readonly struct ColorOp : System.IEquatable<Meziantou.Framework.Fonts.ColorOp>
+    {
+        public int Glyph { get => throw null; init { } }
+        public Meziantou.Framework.Fonts.ColorOpKind Kind { get => throw null; init { } }
+        public int Paint { get => throw null; init { } }
+        public int Transform { get => throw null; init { } }
+        public ColorOp(Meziantou.Framework.Fonts.ColorOpKind Kind, int Glyph, int Transform, int Paint) { }
+        public void Deconstruct(out Meziantou.Framework.Fonts.ColorOpKind Kind, out int Glyph, out int Transform, out int Paint) => throw null;
+        public bool Equals(Meziantou.Framework.Fonts.ColorOp other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.Fonts.ColorOp left, Meziantou.Framework.Fonts.ColorOp right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Fonts.ColorOp left, Meziantou.Framework.Fonts.ColorOp right) => throw null;
+    }
+
+    public enum ColorOpKind
+    {
+        FillGlyph = 0,
+        FillClip = 1,
+        FillImage = 2,
+        PushClipGlyph = 3,
+        PushClipBox = 4,
+        PopClip = 5,
+        PushLayer = 6,
+        PopLayer = 7,
+    }
+
+    public readonly struct ColorPaint : System.IEquatable<Meziantou.Framework.Fonts.ColorPaint>
+    {
+        public int Extend { get => throw null; init { } }
+        public int FirstStop { get => throw null; init { } }
+        public int Geometry { get => throw null; init { } }
+        public Meziantou.Framework.Fonts.ColorPaintKind Kind { get => throw null; init { } }
+        public int StopCount { get => throw null; init { } }
+        public int Transform { get => throw null; init { } }
+        public ColorPaint(Meziantou.Framework.Fonts.ColorPaintKind Kind, int Transform, int Geometry, int FirstStop, int StopCount, int Extend) { }
+        public void Deconstruct(out Meziantou.Framework.Fonts.ColorPaintKind Kind, out int Transform, out int Geometry, out int FirstStop, out int StopCount, out int Extend) => throw null;
+        public bool Equals(Meziantou.Framework.Fonts.ColorPaint other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.Fonts.ColorPaint left, Meziantou.Framework.Fonts.ColorPaint right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Fonts.ColorPaint left, Meziantou.Framework.Fonts.ColorPaint right) => throw null;
+    }
+
+    public enum ColorPaintKind
+    {
+        Solid = 0,
+        Linear = 1,
+        Radial = 2,
+        Sweep = 3,
+        Image = 4,
+    }
+
+    public readonly struct ColorStop : System.IEquatable<Meziantou.Framework.Fonts.ColorStop>
+    {
+        public double Alpha { get => throw null; init { } }
+        public double Blue { get => throw null; init { } }
+        public double Green { get => throw null; init { } }
+        public bool IsForeground { get => throw null; init { } }
+        public double Offset { get => throw null; init { } }
+        public double Red { get => throw null; init { } }
+        public ColorStop(double Offset, double Red, double Green, double Blue, double Alpha, bool IsForeground) { }
+        public void Deconstruct(out double Offset, out double Red, out double Green, out double Blue, out double Alpha, out bool IsForeground) => throw null;
+        public bool Equals(Meziantou.Framework.Fonts.ColorStop other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.Fonts.ColorStop left, Meziantou.Framework.Fonts.ColorStop right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Fonts.ColorStop left, Meziantou.Framework.Fonts.ColorStop right) => throw null;
+    }
+
+    public abstract class FontAllocator
+    {
+        public abstract long Limit { get; }
+        public abstract Meziantou.Framework.Fonts.FontBuffer Rent(int length, bool clear);
+        public Meziantou.Framework.Fonts.FontBuffer Rent<T>(long count) where T : unmanaged => throw null;
+    }
+
+    public readonly struct FontAxisRecord
+    {
+        public int Default { get => throw null; }
+        public bool IsHidden { get => throw null; }
+        public int Maximum { get => throw null; }
+        public int Minimum { get => throw null; }
+        public int NameId { get => throw null; }
+        public uint Tag { get => throw null; }
+    }
+
+    public abstract class FontBuffer : System.IDisposable
+    {
+        public abstract int Length { get; }
+        public abstract System.Span<byte> Span { get; }
+        public abstract void Dispose();
+    }
+
+    public sealed class FontData
+    {
+        public System.ReadOnlyMemory<byte> Bytes { get => throw null; }
+        public Meziantou.Framework.Fonts.FontEnvironment Environment { get => throw null; }
+        public Meziantou.Framework.Fonts.FontResourceLimits Limits { get => throw null; }
+        public bool UseEmbeddedBitmaps { get => throw null; }
+    }
+
+    public abstract class FontEnvironment
+    {
+        public abstract Meziantou.Framework.Fonts.FontResourceLimits Limits { get; }
+        public abstract Meziantou.Framework.Fonts.FontAllocator CreateAllocator(string name);
+    }
+
+    public abstract class FontException : System.Exception
+    {
+    }
+
+    public sealed class FontFace
+    {
+        public int AverageCharWidth { get => throw null; }
+        public System.ReadOnlySpan<Meziantou.Framework.Fonts.FontAxisRecord> Axes { get => throw null; }
+        public int CapHeight { get => throw null; }
+        public Meziantou.Framework.Fonts.FontData Data { get => throw null; }
+        public string FamilyName { get => throw null; }
+        public System.ReadOnlyMemory<byte> GdefData { get => throw null; }
+        public int GlyphCount { get => throw null; }
+        public System.ReadOnlyMemory<byte> GposData { get => throw null; }
+        public Meziantou.Framework.Fonts.LayoutTable? Gsub { get => throw null; }
+        public System.ReadOnlyMemory<byte> GsubData { get => throw null; }
+        public bool HasColorGlyphs { get => throw null; }
+        public bool HasColorLayers { get => throw null; }
+        public bool HasLegacyKerning { get => throw null; }
+        public bool HasMathConstants { get => throw null; }
+        public bool HasMathTable { get => throw null; }
+        public bool HasOs2 { get => throw null; }
+        public bool HasPost { get => throw null; }
+        public bool HasVerticalMetrics { get => throw null; }
+        public int HeadFlags { get => throw null; }
+        public int HorizontalAscender { get => throw null; }
+        public int HorizontalDescender { get => throw null; }
+        public int HorizontalLineGap { get => throw null; }
+        public Meziantou.Framework.Fonts.FontInstance? Instance { get => throw null; }
+        public bool IsItalic { get => throw null; }
+        public bool IsMonospaced { get => throw null; }
+        public double ItalicAngle { get => throw null; }
+        public int MacStyle { get => throw null; }
+        public int MathMinConnectorOverlap { get => throw null; }
+        public System.ReadOnlySpan<Meziantou.Framework.Fonts.FontInstanceRecord> NamedInstances { get => throw null; }
+        public int Os2Version { get => throw null; }
+        public Meziantou.Framework.Fonts.FontOutlineKind Outlines { get => throw null; }
+        public int PaletteCount { get => throw null; }
+        public int PaletteEntryCount { get => throw null; }
+        public string? PostScriptName { get => throw null; }
+        public int Selection { get => throw null; }
+        public int StrikeoutPosition { get => throw null; }
+        public int StrikeoutSize { get => throw null; }
+        public string SubfamilyName { get => throw null; }
+        public int SubscriptYOffset { get => throw null; }
+        public int SuperscriptYOffset { get => throw null; }
+        public System.ReadOnlySpan<uint> TableTags { get => throw null; }
+        public int TypoAscender { get => throw null; }
+        public int TypoDescender { get => throw null; }
+        public int TypoLineGap { get => throw null; }
+        public int UnderlinePosition { get => throw null; }
+        public int UnderlineThickness { get => throw null; }
+        public int UnitsPerEm { get => throw null; }
+        public bool UseTypoMetrics { get => throw null; }
+        public bool VariesAdvancesWithOutlines { get => throw null; }
+        public int VerticalAscender { get => throw null; }
+        public int VerticalDescender { get => throw null; }
+        public int VerticalLineGap { get => throw null; }
+        public int Weight { get => throw null; }
+        public int WidthClass { get => throw null; }
+        public int WinAscent { get => throw null; }
+        public int WinDescent { get => throw null; }
+        public int XHeight { get => throw null; }
+        public int XMax { get => throw null; }
+        public int XMin { get => throw null; }
+        public int YMax { get => throw null; }
+        public int YMin { get => throw null; }
+        public Meziantou.Framework.Fonts.ColorGlyph? BuildColorGlyph(int glyphId, int palette, Meziantou.Framework.Fonts.GlyphScratch scratch, ref Meziantou.Framework.Fonts.GlyphBudget budget) => throw null;
+        public void DecodeOutline(int glyphId, Meziantou.Framework.Fonts.OutlineSink sink, Meziantou.Framework.Fonts.GlyphScratch scratch, ref Meziantou.Framework.Fonts.GlyphBudget budget) { }
+        public void DecodeOutline(int glyphId, double size, Meziantou.Framework.Fonts.OutlineSink sink, Meziantou.Framework.Fonts.GlyphScratch scratch, ref Meziantou.Framework.Fonts.GlyphBudget budget) { }
+        public int GetAdvanceHeight(int glyphId) => throw null;
+        public int GetAdvanceWidth(int glyphId) => throw null;
+        public Meziantou.Framework.Fonts.ColorLayer[]? GetColorLayers(int glyphId) => throw null;
+        public int GetLayoutDelta(int outer, int inner) => throw null;
+        public int GetLeftSideBearing(int glyphId) => throw null;
+        public int GetLegacyKerning(int left, int right) => throw null;
+        public int GetLigatureCarets(int glyphId, System.Span<int> carets) => throw null;
+        public int GetMathConstant(Meziantou.Framework.Fonts.MathConstant constant) => throw null;
+        public Meziantou.Framework.Fonts.MathGlyphConstruction? GetMathGlyphConstruction(int glyphId, bool isVertical) => throw null;
+        public string? GetName(int nameId) => throw null;
+        public System.Collections.Generic.IReadOnlyList<string> GetNames(int nameId) => throw null;
+        public void GetPaletteType(int palette, out bool isForLightBackground, out bool isForDarkBackground) => throw null;
+        public int GetTopSideBearing(int glyphId) => throw null;
+        public void GetVerticalOrigin(int glyphId, Meziantou.Framework.Fonts.GlyphScratch? scratch, out int x, out int y) => throw null;
+        public bool IsColorGlyph(int glyphId) => throw null;
+        public bool IsLayeredColorGlyph(int glyphId) => throw null;
+        public bool IsMathExtendedShape(int glyphId) => throw null;
+        public int MapCodePoint(int codePoint) => throw null;
+        public Meziantou.Framework.Fonts.CmapVariation MapVariation(int codePoint, int selector, out int glyphId) => throw null;
+        public bool TryGetBaseline(bool isVertical, System.ReadOnlySpan<uint> scripts, uint baseline, out int coordinate) => throw null;
+        public bool TryGetBitmapGlyph(int glyphId, double size, out Meziantou.Framework.Fonts.BitmapGlyph glyph) => throw null;
+        public bool TryGetGlyphBounds(int glyphId, Meziantou.Framework.Fonts.GlyphScratch scratch, out Meziantou.Framework.Fonts.GlyphBox bounds) => throw null;
+        public bool TryGetIdeographicCenter(bool isVertical, System.ReadOnlySpan<uint> scripts, out double center) => throw null;
+        public bool TryGetMathItalicsCorrection(int glyphId, out int value) => throw null;
+        public bool TryGetMathTopAccentAttachment(int glyphId, out int value) => throw null;
+        public bool TryGetPaletteColor(int palette, int entry, out int red, out int green, out int blue, out int alpha) => throw null;
+        public bool TryGetTable(uint tag, out System.ReadOnlyMemory<byte> table) => throw null;
+        public Meziantou.Framework.Fonts.FontFace WithCoordinates(System.ReadOnlySpan<int> userCoordinates) => throw null;
+    }
+
+    public sealed class FontInstance
+    {
+        public const int TableOne = 16384;
+        public const int TableShift = 2;
+        public System.ReadOnlySpan<int> Coordinates { get => throw null; }
+        public System.ReadOnlySpan<int> UserCoordinates { get => throw null; }
+        public static int Normalize(in Meziantou.Framework.Fonts.FontAxisRecord axis, int value) => throw null;
+        public static int ToTableValue(int value) => throw null;
+    }
+
+    public sealed class FontInstanceRecord
+    {
+        public System.ReadOnlySpan<int> Coordinates { get => throw null; }
+        public int NameId { get => throw null; }
+        public int PostScriptNameId { get => throw null; }
+    }
+
+    public static class FontLoader
+    {
+        public static Meziantou.Framework.Fonts.FontFace[] Load(System.IO.Stream stream, Meziantou.Framework.Fonts.FontEnvironment environment, bool useEmbeddedBitmaps = false) => throw null;
+        public static Meziantou.Framework.Fonts.FontFace[] Load(System.ReadOnlySpan<byte> data, Meziantou.Framework.Fonts.FontEnvironment environment, bool useEmbeddedBitmaps = false) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Fonts.FontFace[]> LoadAsync(System.IO.Stream stream, Meziantou.Framework.Fonts.FontEnvironment environment, bool useEmbeddedBitmaps, System.Threading.CancellationToken cancellationToken) => throw null;
+    }
+
+    public enum FontOutlineKind
+    {
+        None = 0,
+        TrueType = 1,
+        Cff = 2,
+        Cff2 = 3,
+    }
+
+    public sealed class FontResourceLimitException : Meziantou.Framework.Fonts.FontException
+    {
+        public Meziantou.Framework.Fonts.FontResourceLimitKind Kind { get => throw null; }
+        public long Limit { get => throw null; }
+        public long? Requested { get => throw null; }
+    }
+
+    public enum FontResourceLimitKind
+    {
+        EncodedBytes = 0,
+        FontBytes = 1,
+        GlyphComplexity = 2,
+        TextGlyphs = 3,
+        LiveAllocationBytes = 4,
+    }
+
+    public sealed class FontResourceLimits
+    {
+        public const long DefaultMaxEncodedBytes = 268435456L;
+        public const long DefaultMaxFontBytes = 268435456L;
+        public const long DefaultMaxGlyphComplexity = 1000000L;
+        public const long DefaultMaxTextGlyphs = 1000000L;
+        public static Meziantou.Framework.Fonts.FontResourceLimits Default { get => throw null; }
+        public long MaxEncodedBytes { get => throw null; init { } }
+        public long MaxFontBytes { get => throw null; init { } }
+        public long MaxGlyphComplexity { get => throw null; init { } }
+        public long MaxTextGlyphs { get => throw null; init { } }
+    }
+
+    public sealed class GlyphBoundsSink : Meziantou.Framework.Fonts.OutlineSink
+    {
+        public bool IsEmpty { get => throw null; }
+        public double MaxX { get => throw null; }
+        public double MaxY { get => throw null; }
+        public double MinX { get => throw null; }
+        public double MinY { get => throw null; }
+        public override void Close() { }
+        public override void CubicTo(double control1X, double control1Y, double control2X, double control2Y, double x, double y) { }
+        public override void LineTo(double x, double y) { }
+        public override void MoveTo(double x, double y) { }
+        public override void QuadraticTo(double controlX, double controlY, double x, double y) { }
+        public void Reset() { }
+    }
+
+    public readonly struct GlyphBox : System.IEquatable<Meziantou.Framework.Fonts.GlyphBox>
+    {
+        public int XMax { get => throw null; init { } }
+        public int XMin { get => throw null; init { } }
+        public int YMax { get => throw null; init { } }
+        public int YMin { get => throw null; init { } }
+        public GlyphBox(int XMin, int YMin, int XMax, int YMax) { }
+        public void Deconstruct(out int XMin, out int YMin, out int XMax, out int YMax) => throw null;
+        public bool Equals(Meziantou.Framework.Fonts.GlyphBox other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.Fonts.GlyphBox left, Meziantou.Framework.Fonts.GlyphBox right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Fonts.GlyphBox left, Meziantou.Framework.Fonts.GlyphBox right) => throw null;
+    }
+
+    public struct GlyphBudget
+    {
+        public GlyphBudget(Meziantou.Framework.Fonts.FontResourceLimits limits) { }
+        public void Charge(long count) { }
+    }
+
+    public sealed class GlyphBuffer
+    {
+        public const int MaxContextLength = 5;
+        public System.Span<Meziantou.Framework.Fonts.GlyphInfo> Info { get => throw null; }
+        public int Length { get => throw null; }
+        public System.Span<Meziantou.Framework.Fonts.GlyphPosition> Positions { get => throw null; }
+        public System.ReadOnlySpan<int> PostContext { get => throw null; }
+        public System.ReadOnlySpan<int> PreContext { get => throw null; }
+        public GlyphBuffer(Meziantou.Framework.Fonts.FontResourceLimits limits) { }
+        public void Add(int codePoint, int cluster) { }
+        public byte AllocateLigatureId() => throw null;
+        public void Charge(int count) { }
+        public void Clear() { }
+        public void CreatePositions() { }
+        public void Delete(int index) { }
+        public void MarkUnsafeToBreak(int start, int end) { }
+        public void MergeClusters(int start, int end) { }
+        public void Remove(System.ReadOnlySpan<int> indexes) { }
+        public void Repeat(int index, int copies) { }
+        public void Resize(int index, int oldCount, int newCount) { }
+        public void Reverse() { }
+        public void SetContext(System.ReadOnlySpan<int> before, System.ReadOnlySpan<int> after) { }
+        public void StartPass(int subtableCount) { }
+        public void StartShaping() { }
+    }
+
+    public struct GlyphInfo
+    {
+        public const int BaseGlyph = 2;
+        public System.Globalization.UnicodeCategory Category;
+        public const int ClassMask = 14;
+        public int Cluster;
+        public int CodePoint;
+        public byte CombiningClass;
+        public const int DefaultIgnorable = 1;
+        public byte Flags;
+        public int Glyph;
+        public const int Hidden = 16;
+        public const int Ligated = 16;
+        public byte LigatureComponent;
+        public const int LigatureGlyph = 4;
+        public byte LigatureId;
+        public const int LigatureWithComponents = 64;
+        public byte MarkAttachmentClass;
+        public const int MarkGlyph = 8;
+        public uint Mask;
+        public const int Multiplied = 32;
+        public byte Props;
+        public byte ShaperData;
+        public const int Substituted = 8;
+        public byte Syllable;
+        public byte SyllableCategory;
+        public byte SyllablePosition;
+        public const int UnsafeToBreak = 32;
+        public const int ZeroWidthJoiner = 4;
+        public const int ZeroWidthNonJoiner = 2;
+        public readonly bool IsBase { get => throw null; }
+        public readonly bool IsIgnorable { get => throw null; }
+        public readonly bool IsLigature { get => throw null; }
+        public readonly bool IsMark { get => throw null; }
+        public readonly bool IsUnsafeToBreak { get => throw null; }
+    }
+
+    public struct GlyphPosition
+    {
+        public int AttachmentChain;
+        public byte AttachmentType;
+        public const byte CursiveAttachment = 2;
+        public const byte MarkAttachment = 1;
+        public const byte NoAttachment = 0;
+        public int XAdvance;
+        public int XOffset;
+        public int YAdvance;
+        public int YOffset;
+    }
+
+    public sealed class GlyphScratch : System.IDisposable
+    {
+        public int Count { get => throw null; }
+        public System.Span<double> Work { get => throw null; }
+        public GlyphScratch(Meziantou.Framework.Fonts.FontAllocator scope) { }
+        public int Add(int count) => throw null;
+        public void Dispose() { }
+        public int RentWork(long count) => throw null;
+        public void Reset() { }
+        public void ReturnWork(int start) { }
+    }
+
+    public sealed class InvalidFontException : Meziantou.Framework.Fonts.FontException
+    {
+    }
+
+    public static class LayoutQueries
+    {
+        public static readonly uint DefaultScript;
+        public static (Meziantou.Framework.Fonts.GlyphPosition First, Meziantou.Framework.Fonts.GlyphPosition Second) GetPairAdjustment(Meziantou.Framework.Fonts.FontFace face, uint feature, int first, int second, uint scriptTag) => throw null;
+        public static int GetSingleSubstitution(Meziantou.Framework.Fonts.FontFace face, uint feature, int glyph, uint scriptTag) => throw null;
+        public static bool HasFeature(Meziantou.Framework.Fonts.FontFace face, bool isPositioning, uint feature) => throw null;
+        public static bool HasFeature(Meziantou.Framework.Fonts.FontFace face, bool isPositioning, Meziantou.Framework.UnicodeScript script, uint feature) => throw null;
+        public static bool HasVerticalAlternate(Meziantou.Framework.Fonts.FontFace face, int glyph) => throw null;
+        public static bool WouldSubstitute(Meziantou.Framework.Fonts.FontFace face, Meziantou.Framework.UnicodeScript script, uint feature, int glyph) => throw null;
+    }
+
+    public sealed class LayoutTable
+    {
+        public const int NoFeature = 65535;
+        public int FindFeature(System.ReadOnlySpan<byte> table, uint tag) => throw null;
+        public int FindFeatureSubstitutions(System.ReadOnlySpan<byte> table, System.ReadOnlySpan<int> coordinates) => throw null;
+        public int FindLanguageSystem(System.ReadOnlySpan<byte> table, System.ReadOnlySpan<uint> scripts, System.ReadOnlySpan<uint> languages) => throw null;
+        public uint FindScriptTag(System.ReadOnlySpan<byte> table, System.ReadOnlySpan<uint> scripts) => throw null;
+        public static int GetFeatureCount(System.ReadOnlySpan<byte> table, int languageSystem) => throw null;
+        public static int GetFeatureIndex(System.ReadOnlySpan<byte> table, int languageSystem, int index) => throw null;
+        public int GetFeatureListCount(System.ReadOnlySpan<byte> table) => throw null;
+        public int GetFeatureLookup(System.ReadOnlySpan<byte> table, int feature, int index, int substitutions = 0) => throw null;
+        public int GetFeatureLookupCount(System.ReadOnlySpan<byte> table, int feature, int substitutions = 0) => throw null;
+        public uint GetFeatureTag(System.ReadOnlySpan<byte> table, int feature) => throw null;
+        public int GetLookupCount(System.ReadOnlySpan<byte> table) => throw null;
+        public static int GetRequiredFeature(System.ReadOnlySpan<byte> table, int languageSystem) => throw null;
+        public static Meziantou.Framework.Fonts.LayoutTable? Read(System.ReadOnlySpan<byte> table) => throw null;
+    }
+
+    public enum MathConstant
+    {
+        ScriptPercentScaleDown = 0,
+        ScriptScriptPercentScaleDown = 1,
+        DelimitedSubFormulaMinHeight = 2,
+        DisplayOperatorMinHeight = 3,
+        MathLeading = 4,
+        AxisHeight = 5,
+        AccentBaseHeight = 6,
+        FlattenedAccentBaseHeight = 7,
+        SubscriptShiftDown = 8,
+        SubscriptTopMax = 9,
+        SubscriptBaselineDropMin = 10,
+        SuperscriptShiftUp = 11,
+        SuperscriptShiftUpCramped = 12,
+        SuperscriptBottomMin = 13,
+        SuperscriptBaselineDropMax = 14,
+        SubSuperscriptGapMin = 15,
+        SuperscriptBottomMaxWithSubscript = 16,
+        SpaceAfterScript = 17,
+        UpperLimitGapMin = 18,
+        UpperLimitBaselineRiseMin = 19,
+        LowerLimitGapMin = 20,
+        LowerLimitBaselineDropMin = 21,
+        StackTopShiftUp = 22,
+        StackTopDisplayStyleShiftUp = 23,
+        StackBottomShiftDown = 24,
+        StackBottomDisplayStyleShiftDown = 25,
+        StackGapMin = 26,
+        StackDisplayStyleGapMin = 27,
+        StretchStackTopShiftUp = 28,
+        StretchStackBottomShiftDown = 29,
+        StretchStackGapAboveMin = 30,
+        StretchStackGapBelowMin = 31,
+        FractionNumeratorShiftUp = 32,
+        FractionNumeratorDisplayStyleShiftUp = 33,
+        FractionDenominatorShiftDown = 34,
+        FractionDenominatorDisplayStyleShiftDown = 35,
+        FractionNumeratorGapMin = 36,
+        FractionNumDisplayStyleGapMin = 37,
+        FractionRuleThickness = 38,
+        FractionDenominatorGapMin = 39,
+        FractionDenomDisplayStyleGapMin = 40,
+        SkewedFractionHorizontalGap = 41,
+        SkewedFractionVerticalGap = 42,
+        OverbarVerticalGap = 43,
+        OverbarRuleThickness = 44,
+        OverbarExtraAscender = 45,
+        UnderbarVerticalGap = 46,
+        UnderbarRuleThickness = 47,
+        UnderbarExtraDescender = 48,
+        RadicalVerticalGap = 49,
+        RadicalDisplayStyleVerticalGap = 50,
+        RadicalRuleThickness = 51,
+        RadicalExtraAscender = 52,
+        RadicalKernBeforeDegree = 53,
+        RadicalKernAfterDegree = 54,
+        RadicalDegreeBottomRaisePercent = 55,
+    }
+
+    public sealed class MathGlyphConstruction
+    {
+        public int AssemblyItalicsCorrection { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Fonts.MathGlyphPart> AssemblyParts { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Fonts.MathGlyphVariant> Variants { get => throw null; }
+    }
+
+    public readonly struct MathGlyphPart : System.IEquatable<Meziantou.Framework.Fonts.MathGlyphPart>
+    {
+        public int EndConnectorLength { get => throw null; init { } }
+        public int FullAdvance { get => throw null; init { } }
+        public int Glyph { get => throw null; init { } }
+        public bool IsExtender { get => throw null; init { } }
+        public int StartConnectorLength { get => throw null; init { } }
+        public MathGlyphPart(int Glyph, int StartConnectorLength, int EndConnectorLength, int FullAdvance, bool IsExtender) { }
+        public void Deconstruct(out int Glyph, out int StartConnectorLength, out int EndConnectorLength, out int FullAdvance, out bool IsExtender) => throw null;
+        public bool Equals(Meziantou.Framework.Fonts.MathGlyphPart other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.Fonts.MathGlyphPart left, Meziantou.Framework.Fonts.MathGlyphPart right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Fonts.MathGlyphPart left, Meziantou.Framework.Fonts.MathGlyphPart right) => throw null;
+    }
+
+    public readonly struct MathGlyphVariant : System.IEquatable<Meziantou.Framework.Fonts.MathGlyphVariant>
+    {
+        public int AdvanceMeasurement { get => throw null; init { } }
+        public int Glyph { get => throw null; init { } }
+        public MathGlyphVariant(int Glyph, int AdvanceMeasurement) { }
+        public void Deconstruct(out int Glyph, out int AdvanceMeasurement) => throw null;
+        public bool Equals(Meziantou.Framework.Fonts.MathGlyphVariant other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.Fonts.MathGlyphVariant left, Meziantou.Framework.Fonts.MathGlyphVariant right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Fonts.MathGlyphVariant left, Meziantou.Framework.Fonts.MathGlyphVariant right) => throw null;
+    }
+
+    public static class OpenTypeLanguage
+    {
+        public static uint[] GetTags(System.ReadOnlySpan<char> languageTag) => throw null;
+        public static bool IsWellFormed(System.ReadOnlySpan<char> languageTag) => throw null;
+    }
+
+    public static class OpenTypeScript
+    {
+        public const uint Default = 1145457748U;
+        public const int MaxTagCount = 6;
+        public static Meziantou.Framework.UnicodeScript FromIso15924(uint code) => throw null;
+        public static int GetTags(Meziantou.Framework.UnicodeScript script, System.Span<uint> tags) => throw null;
+    }
+
+    public abstract class OutlineSink
+    {
+        public abstract void Close();
+        public abstract void CubicTo(double control1X, double control1Y, double control2X, double control2Y, double x, double y);
+        public abstract void LineTo(double x, double y);
+        public abstract void MoveTo(double x, double y);
+        public abstract void QuadraticTo(double controlX, double controlY, double x, double y);
+    }
+
+    public sealed class PooledFontEnvironment : Meziantou.Framework.Fonts.FontEnvironment
+    {
+        public override Meziantou.Framework.Fonts.FontResourceLimits Limits { get => throw null; }
+        public PooledFontEnvironment(Meziantou.Framework.Fonts.FontResourceLimits limits, long maxLiveAllocationBytes) { }
+        public override Meziantou.Framework.Fonts.FontAllocator CreateAllocator(string name) => throw null;
+    }
+
+    public sealed class ShapingCache
+    {
+        public int GetAdvanceWidth(Meziantou.Framework.Fonts.FontFace face, int glyph) => throw null;
+        public void Trim() { }
+    }
+
+    public readonly struct ShapingFeature : System.IEquatable<Meziantou.Framework.Fonts.ShapingFeature>
+    {
+        public int End { get => throw null; init { } }
+        public bool IsGlobal { get => throw null; }
+        public int Start { get => throw null; init { } }
+        public uint Tag { get => throw null; init { } }
+        public int Value { get => throw null; init { } }
+        public ShapingFeature(string tag, int value = 1) { }
+        public ShapingFeature(uint Tag, int Value, int Start = 0, int End = 2147483647) { }
+        public void Deconstruct(out uint Tag, out int Value, out int Start, out int End) => throw null;
+        public bool Equals(Meziantou.Framework.Fonts.ShapingFeature other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static uint ToTag(string tag) => throw null;
+        public static bool operator ==(Meziantou.Framework.Fonts.ShapingFeature left, Meziantou.Framework.Fonts.ShapingFeature right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Fonts.ShapingFeature left, Meziantou.Framework.Fonts.ShapingFeature right) => throw null;
+    }
+
+    public static class TextShaper
+    {
+        public static void AddText(Meziantou.Framework.Fonts.GlyphBuffer buffer, System.ReadOnlySpan<char> text, int clusterOffset = 0) { }
+        public static bool IsSynthesizedSpace(int codePoint) => throw null;
+        public static void Shape(Meziantou.Framework.Fonts.GlyphBuffer buffer, Meziantou.Framework.Fonts.FontFace face, Meziantou.Framework.UnicodeScript script, System.ReadOnlySpan<uint> languages, bool isRightToLeft, System.ReadOnlySpan<Meziantou.Framework.Fonts.ShapingFeature> features, bool isVertical = false, Meziantou.Framework.Fonts.GlyphScratch? scratch = null, Meziantou.Framework.Fonts.ShapingCache? cache = null, bool areCharactersMirrored = false) { }
+    }
+
+    public sealed class UnknownFontFormatException : Meziantou.Framework.Fonts.FontException
+    {
+    }
+
+    public sealed class UnsupportedFontFeatureException : Meziantou.Framework.Fonts.FontException
+    {
+        public string Feature { get => throw null; }
+    }
+}

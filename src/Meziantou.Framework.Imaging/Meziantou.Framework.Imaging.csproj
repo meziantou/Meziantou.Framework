@@ -13,12 +13,23 @@
   <ItemGroup>
     <!-- The Unicode algorithms text layout needs (properties, normalization, scripts, line breaking, bidi) -->
     <ProjectReference Include="..\Meziantou.Framework.Unicode\Meziantou.Framework.Unicode.csproj" />
-    <!-- The font reader and the shaper, shared with Meziantou.Framework.WebPlatform; their API is internal -->
+    <!-- The font reader and the shaper, shared with Meziantou.Framework.WebPlatform -->
     <ProjectReference Include="..\Meziantou.Framework.Fonts\Meziantou.Framework.Fonts.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Meziantou.Framework.Fonts" />
+  </ItemGroup>
+
+  <!-- Helpers of Meziantou.Framework.Fonts the library also needs: the files are compiled here too, in the namespace of the library, so that they stay internal to both -->
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);MEZIANTOU_FRAMEWORK_IMAGING</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Meziantou.Framework.Fonts\Infrastructure\Adler32.cs" Link="Internals\Shared\Adler32.cs" />
+    <Compile Include="..\Meziantou.Framework.Fonts\Infrastructure\DeterministicAngle.cs" Link="Internals\Shared\DeterministicAngle.cs" />
+    <Compile Include="..\Meziantou.Framework.Fonts\Fonts\FontTags.cs" Link="Internals\Shared\FontTags.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -50,7 +61,7 @@
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Imaging.Tests" />
   </ItemGroup>
 
-  <!-- The library uses the internal API of Meziantou.Framework.Fonts: it depends on the exact version of that package -->
+  <!-- The library is released together with Meziantou.Framework.Fonts: it depends on the exact version of that package -->
   <Target Name="UseExactProjectReferenceVersions" AfterTargets="_GetProjectReferenceVersions">
     <ItemGroup>
       <_ExactProjectReferencesWithVersions Include="@(_ProjectReferencesWithVersions)" Condition="'%(Filename)' == 'Meziantou.Framework.Fonts'" ProjectVersion="[%(_ProjectReferencesWithVersions.ProjectVersion)]" />

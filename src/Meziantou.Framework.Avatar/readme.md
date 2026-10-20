@@ -4,19 +4,22 @@ Generate deterministic avatar SVG strings from a name.
 
 ## Usage
 
-```c#
-using Meziantou.Framework;
+The types are in the `Meziantou.Framework` namespace.
 
+<!-- ref:../../tests/Meziantou.Framework.Avatar.Tests/AvatarGeneratorTests.cs;region=AvatarGenerator_CreateSvg;format=md-fenced-code-block;dedent=true -->
+```csharp
 var svg = AvatarGenerator.CreateSvg("John Doe");
+Assert.StartsWith("<svg ", svg);
+Assert.Contains("aria-label=\"JD\"", svg);
 ```
+<!-- endref -->
 
 `AvatarGenerator` extracts a 1-2 grapheme bigram from the name and selects a background/foreground pair from the palette using a hash of the name.
 
 ## Customize the output
 
-```c#
-using Meziantou.Framework;
-
+<!-- ref:../../tests/Meziantou.Framework.Avatar.Tests/AvatarGeneratorTests.cs;region=AvatarGenerator_CustomOptions;format=md-fenced-code-block;dedent=true -->
+```csharp
 var options = new AvatarOptions
 {
     Bigram = "JD", // optional explicit 1-2 grapheme bigram
@@ -27,7 +30,10 @@ options.Palette.Clear();
 options.Palette.Add(new AvatarColorPair("#CFDADE", "#153037")); // background, then foreground
 
 var svg = AvatarGenerator.CreateSvg("John Doe", options);
+Assert.Contains("width=\"128\" height=\"128\"", svg);
+Assert.Contains("<circle cx=\"64\" cy=\"64\" r=\"64\" fill=\"#CFDADE\"/>", svg);
 ```
+<!-- endref -->
 
 ## How the bigram is chosen
 

@@ -7,6 +7,35 @@ namespace Meziantou.Framework.Tests;
 public class AvatarGeneratorTests
 {
     [Fact]
+    public void ReadmeExample_CreateSvg()
+    {
+        #region AvatarGenerator_CreateSvg
+        var svg = AvatarGenerator.CreateSvg("John Doe");
+        Assert.StartsWith("<svg ", svg);
+        Assert.Contains("aria-label=\"JD\"", svg);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_CustomOptions()
+    {
+        #region AvatarGenerator_CustomOptions
+        var options = new AvatarOptions
+        {
+            Bigram = "JD", // optional explicit 1-2 grapheme bigram
+            Shape = AvatarShape.Round, // Round, Square, or RoundedSquare
+            Size = 128,
+        };
+        options.Palette.Clear();
+        options.Palette.Add(new AvatarColorPair("#CFDADE", "#153037")); // background, then foreground
+
+        var svg = AvatarGenerator.CreateSvg("John Doe", options);
+        Assert.Contains("width=\"128\" height=\"128\"", svg);
+        Assert.Contains("<circle cx=\"64\" cy=\"64\" r=\"64\" fill=\"#CFDADE\"/>", svg);
+        #endregion
+    }
+
+    [Fact]
     public void CreateSvg_ExtractBigramFromMultiWordName()
     {
         var svg = AvatarGenerator.CreateSvg("John Doe", new AvatarOptions());
@@ -169,7 +198,7 @@ public class AvatarGeneratorTests
 
         var svg = AvatarGenerator.CreateSvg("John Doe", options);
 
-        Assert.Contains("<circle cx=\"32\" cy=\"32\" r=\"32\" fill=\"#cfdade\"/>", svg);
+        Assert.Contains("<circle cx=\"32\" cy=\"32\" r=\"32\" fill=\"#CFDADE\"/>", svg);
         Assert.DoesNotContain("<rect", svg);
     }
 

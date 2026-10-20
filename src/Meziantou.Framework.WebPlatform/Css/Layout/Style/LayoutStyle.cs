@@ -48,27 +48,40 @@ internal sealed class LayoutStyle
     private bool _isMultiColumnContainer;
     private bool _isScrollInitialTarget;
     private ContinueKind _continue;
-    private BlockStep? _blockStep;
     private TextGroupAlign _textGroupAlign;
     private double _zoom;
     private double _effectiveZoom;
     private double _fontSize;
     private LineHeight _lineHeight;
-    private VerticalAlign _verticalAlign;
 
     private BoxModelStyle? _box;
-    private InsetStyle? _insets;
     private TextLayoutStyle? _text;
     private FontLayoutStyle? _font;
-    private FlexLayoutStyle? _flex;
-    private AlignmentStyle? _alignment;
-    private GridLayoutStyle? _grid;
-    private TableLayoutStyle? _table;
     private FragmentationStyle? _fragmentation;
-    private GapDecorationStyle? _gapDecorations;
-    private OverflowStyle? _overflow;
-    private ReplacedStyle? _replaced;
-    private AnchorPositioningStyle? _anchor;
+    private RareFields? _rare;
+
+    /// <summary>The groups and the values that few boxes use or that rarely have a value, allocated on first use to keep the styles small.</summary>
+    private sealed class RareFields
+    {
+        public InsetStyle? Insets;
+        public FlexLayoutStyle? Flex;
+        public AlignmentStyle? Alignment;
+        public GridLayoutStyle? Grid;
+        public TableLayoutStyle? Table;
+        public GapDecorationStyle? GapDecorations;
+        public OverflowStyle? Overflow;
+        public ReplacedStyle? Replaced;
+        public AnchorPositioningStyle? Anchor;
+
+        /// <summary>The <see cref="WillChangeProperties"/> when there are some.</summary>
+        public string[]? WillChangeProperties;
+        public BlockStep? BlockStep;
+
+        /// <summary>The <see cref="VerticalAlign"/> when it is not the initial value.</summary>
+        public VerticalAlign VerticalAlign;
+    }
+
+    private RareFields Rare => _rare ??= new RareFields();
 
     internal LayoutStyle(ComputedStyle style) => _style = style;
 
@@ -386,37 +399,41 @@ internal sealed class LayoutStyle
     {
         get
         {
-            if (_willChangeProperties is null)
+            if (!IsResolved(ResolvedFields.WillChange))
             {
+                string[] properties;
                 var value = _style.GetComputedValue("will-change");
                 if (value is "auto" or "")
                 {
-                    _willChangeProperties = [];
+                    properties = [];
                 }
                 else
                 {
-                    var parts = value.Split([' ', ','], StringSplitOptions.RemoveEmptyEntries);
-                    for (var i = 0; i < parts.Length; i++)
+                    properties = value.Split([' ', ','], StringSplitOptions.RemoveEmptyEntries);
+                    for (var i = 0; i < properties.Length; i++)
                     {
-                        var name = Infra.InfraAscii.ToAsciiLowercase(parts[i]);
-                        parts[i] = Values.CssPropertyRegistry.Get(name)?.Name ?? name;
+                        var name = Infra.InfraAscii.ToAsciiLowercase(properties[i]);
+                        properties[i] = Values.CssPropertyRegistry.Get(name)?.Name ?? name;
                     }
-
-                    _willChangeProperties = parts;
                 }
 
                 if (_style.GetRelevantAnimatedProperties() is { } animated)
                 {
-                    animated.UnionWith(_willChangeProperties);
-                    _willChangeProperties = [.. animated];
+                    animated.UnionWith(properties);
+                    properties = [.. animated];
                 }
+
+                if (properties.Length > 0)
+                {
+                    Rare.WillChangeProperties = properties;
+                }
+
+                _resolved |= ResolvedFields.WillChange;
             }
 
-            return _willChangeProperties;
+            return _rare?.WillChangeProperties ?? [];
         }
     }
-
-    private string[]? _willChangeProperties;
 
     /// <summary>
     /// Whether the box is a multi-column container (https://drafts.csswg.org/css-multicol-2/#multi-column-container): column-count,
@@ -474,15 +491,19 @@ internal sealed class LayoutStyle
             if (!IsResolved(ResolvedFields.BlockStep))
             {
                 var size = _style.GetComputedValue("block-step-size");
-                _blockStep = size == "none" ? null : new BlockStep(
-                    BoxModelStyle.ParseFixedLength(size, EffectiveZoom),
-                    LayoutKeywords.ParseBlockStepInsert(_style.GetComputedValue("block-step-insert")),
-                    LayoutKeywords.ParseBlockStepAlign(_style.GetComputedValue("block-step-align")),
-                    LayoutKeywords.ParseBlockStepRound(_style.GetComputedValue("block-step-round")));
+                if (size != "none")
+                {
+                    Rare.BlockStep = new BlockStep(
+                        BoxModelStyle.ParseFixedLength(size, EffectiveZoom),
+                        LayoutKeywords.ParseBlockStepInsert(_style.GetComputedValue("block-step-insert")),
+                        LayoutKeywords.ParseBlockStepAlign(_style.GetComputedValue("block-step-align")),
+                        LayoutKeywords.ParseBlockStepRound(_style.GetComputedValue("block-step-round")));
+                }
+
                 _resolved |= ResolvedFields.BlockStep;
             }
 
-            return _blockStep;
+            return _rare?.BlockStep;
         }
     }
 
@@ -974,12 +995,17 @@ internal sealed class LayoutStyle
             if (!IsResolved(ResolvedFields.VerticalAlign))
             {
                 // The longhands of vertical-align are not inherited: without declaration, they have their initial value (baseline)
-                _verticalAlign = _text?.VerticalAlign
+                var verticalAlign = _text?.VerticalAlign
                     ?? (_style.MayHaveCascadedValueStartingWith("alignment-baseline", "baseline-") ? TextLayoutStyle.ParseVerticalAlign(_style, EffectiveZoom) : default);
+                if (verticalAlign != default)
+                {
+                    Rare.VerticalAlign = verticalAlign;
+                }
+
                 _resolved |= ResolvedFields.VerticalAlign;
             }
 
-            return _verticalAlign;
+            return _rare?.VerticalAlign ?? default;
         }
     }
 
@@ -994,72 +1020,103 @@ internal sealed class LayoutStyle
     public bool MayHaveBoxEdges => _box is not null || _style.MayHaveCascadedValueStartingWith("margin", "padding", "border");
 
     /// <summary>The box model: sizes, margins, paddings, borders, aspect ratio (converted together on first access).</summary>
-    public BoxModelStyle Box => _box ??= new BoxModelStyle(_style, EffectiveZoom);
+    public BoxModelStyle Box => _box ??= Share(new BoxModelStyle(_style, EffectiveZoom));
 
     /// <summary>The insets and z-index of the positioned boxes.</summary>
-    public InsetStyle Insets => _insets ??= new InsetStyle(_style, EffectiveZoom);
+    public InsetStyle Insets => _rare?.Insets ?? (Rare.Insets = Share(new InsetStyle(_style, EffectiveZoom)));
 
     /// <summary>The properties of the inline layout and of the line breaking.</summary>
-    public TextLayoutStyle Text => _text ??= new TextLayoutStyle(_style, EffectiveZoom, FontSize);
+    public TextLayoutStyle Text => _text ??= Share(new TextLayoutStyle(_style, EffectiveZoom, FontSize));
 
     /// <summary>The properties of the font matching (https://drafts.csswg.org/css-fonts-4/#font-matching-algorithm).</summary>
     public FontLayoutStyle Font => _font ??= new FontLayoutStyle(_style);
 
     /// <summary>The properties of the flex containers and of the flex items.</summary>
-    public FlexLayoutStyle Flex => _flex ??= new FlexLayoutStyle(_style, EffectiveZoom);
+    public FlexLayoutStyle Flex => _rare?.Flex ?? (Rare.Flex = Share(new FlexLayoutStyle(_style, EffectiveZoom)));
 
     /// <summary>The box alignment properties and the gaps.</summary>
-    public AlignmentStyle Alignment => _alignment ??= new AlignmentStyle(_style, EffectiveZoom);
+    public AlignmentStyle Alignment => _rare?.Alignment ?? (Rare.Alignment = Share(new AlignmentStyle(_style, EffectiveZoom)));
 
     /// <summary>The properties of the grid containers and of the grid items.</summary>
-    public GridLayoutStyle Grid => _grid ??= new GridLayoutStyle(_style, EffectiveZoom);
+    public GridLayoutStyle Grid => _rare?.Grid ?? (Rare.Grid = new GridLayoutStyle(_style, EffectiveZoom));
 
     /// <summary>The properties of the tables.</summary>
-    public TableLayoutStyle Table => _table ??= new TableLayoutStyle(_style, EffectiveZoom);
+    public TableLayoutStyle Table => _rare?.Table ?? (Rare.Table = new TableLayoutStyle(_style, EffectiveZoom));
 
     /// <summary>The properties of the multi-column layout and of the fragmentation.</summary>
-    public FragmentationStyle Fragmentation => _fragmentation ??= new FragmentationStyle(_style, EffectiveZoom);
+    public FragmentationStyle Fragmentation => _fragmentation ??= Share(new FragmentationStyle(_style, EffectiveZoom));
 
     /// <summary>The gap decoration properties (https://drafts.csswg.org/css-gaps-1/#gap-decorations).</summary>
-    public GapDecorationStyle GapDecorations => _gapDecorations ??= new GapDecorationStyle(_style, EffectiveZoom);
+    public GapDecorationStyle GapDecorations => _rare?.GapDecorations ?? (Rare.GapDecorations = new GapDecorationStyle(_style, EffectiveZoom));
 
     /// <summary>
     /// Whether the box may paint gap decorations: the style of a rule is not <c>none</c>. The rule styles are not inherited, so they
     /// have their initial value (none) without declaration (a cheap test before <see cref="GapDecorations"/>).
     /// </summary>
-    public bool HasGapRules => _gapDecorations is not null
-        ? _gapDecorations.HasRules
+    public bool HasGapRules => _rare?.GapDecorations is { } gapDecorations
+        ? gapDecorations.HasRules
         : (_style.MayHaveCascadedValue("column-rule-style") || _style.MayHaveCascadedValue("row-rule-style")) && GapDecorations.HasRules;
 
     /// <summary>The properties of the scroll containers and of the overflow.</summary>
-    public OverflowStyle Overflow => _overflow ??= new OverflowStyle(_style, EffectiveZoom);
+    public OverflowStyle Overflow => _rare?.Overflow ?? (Rare.Overflow = new OverflowStyle(_style, EffectiveZoom));
 
     /// <summary>The properties of the replaced elements.</summary>
-    public ReplacedStyle Replaced => _replaced ??= new ReplacedStyle(_style, EffectiveZoom);
+    public ReplacedStyle Replaced => _rare?.Replaced ?? (Rare.Replaced = new ReplacedStyle(_style, EffectiveZoom));
 
     /// <summary>The properties of the anchor positioning (https://drafts.csswg.org/css-anchor-position-1/).</summary>
-    public AnchorPositioningStyle Anchor => _anchor ??= new AnchorPositioningStyle(_style);
+    public AnchorPositioningStyle Anchor => _rare?.Anchor ?? (Rare.Anchor = new AnchorPositioningStyle(_style));
 
     /// <summary>
     /// Whether the box may have anchor names (https://drafts.csswg.org/css-anchor-position-1/#name): <c>anchor-name</c> is not
     /// inherited, so it has its initial value (none) without declaration (a cheap test before <see cref="Anchor"/>).
     /// </summary>
-    public bool MayHaveAnchorName => _anchor is not null ? _anchor.AnchorNames is not null : _style.MayHaveCascadedValue("anchor-name");
+    public bool MayHaveAnchorName => _rare?.Anchor is { } anchor ? anchor.AnchorNames is not null : _style.MayHaveCascadedValue("anchor-name");
+
+    /// <summary>Returns the group of properties of another style of the engine that is equal to <paramref name="group"/>, or <paramref name="group"/> (see <see cref="LayoutStyleGroupTable"/>).</summary>
+    private T Share<T>(T group)
+        where T : class, IEquatable<T> => _style.Engine.LayoutStyleGroups.Share(group);
 
     // ----------------------------------------------------------------------------------------------------------------
     // Caches of the sizes known without layout (see BoxSizes)
     // ----------------------------------------------------------------------------------------------------------------
 
-    private (bool Resolved, double? Value) _contentWidth;
-    private (bool Resolved, double? Value) _contentHeight;
+    // (NaN when the size is not known without layout, see ResolvedFields.ContentWidth and ContentHeight)
+    private double _contentWidth;
+    private double _contentHeight;
 
-    /// <summary>The cache of the size of the content box in a physical axis computed by <see cref="BoxSizes"/>.</summary>
-    internal ref (bool Resolved, double? Value) GetContentSizeCache(bool horizontal) => ref horizontal ? ref _contentWidth : ref _contentHeight;
+    /// <summary>Returns the size of the content box in a physical axis computed by <see cref="BoxSizes"/>, when it is cached.</summary>
+    internal bool TryGetCachedContentSize(bool horizontal, out double? size)
+    {
+        if (!IsResolved(horizontal ? ResolvedFields.ContentWidth : ResolvedFields.ContentHeight))
+        {
+            size = null;
+            return false;
+        }
+
+        var value = horizontal ? _contentWidth : _contentHeight;
+        size = double.IsNaN(value) ? null : value;
+        return true;
+    }
+
+    /// <summary>Caches the size of the content box in a physical axis computed by <see cref="BoxSizes"/> (see <see cref="TryGetCachedContentSize"/>).</summary>
+    internal void SetCachedContentSize(bool horizontal, double? size)
+    {
+        if (horizontal)
+        {
+            _contentWidth = size ?? double.NaN;
+            _resolved |= ResolvedFields.ContentWidth;
+        }
+        else
+        {
+            _contentHeight = size ?? double.NaN;
+            _resolved |= ResolvedFields.ContentHeight;
+        }
+    }
 
     private bool IsResolved(ResolvedFields field) => (_resolved & field) == field;
 
     [Flags]
-    private enum ResolvedFields : uint
+    private enum ResolvedFields : ulong
     {
         Display = 1 << 0,
         Position = 1 << 1,
@@ -1092,5 +1149,8 @@ internal sealed class LayoutStyle
         TextGroupAlign = 1 << 28,
         BlockStep = 1 << 29,
         ScrollInitialTarget = 1 << 30,
+        WillChange = 1UL << 31,
+        ContentWidth = 1UL << 32,
+        ContentHeight = 1UL << 33,
     }
 }

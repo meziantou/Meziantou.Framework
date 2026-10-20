@@ -5,6 +5,26 @@ namespace Meziantou.Framework.Uri.Tests;
 public sealed class QueryStringUtilitiesTests
 {
     [Fact]
+    public void ReadmeExample_Usage()
+    {
+        #region QueryStringUtilities_Usage
+        var query = QueryStringUtilities.ParseQuery("?author=meziantou&tag=dotnet&tag=csharp");
+        Assert.Equal("meziantou", query["author"].ToString());
+        Assert.Equal(["dotnet", "csharp"], query["tag"].ToArray());
+
+        var uri = "https://www.meziantou.net/?author=meziantou";
+        Assert.Equal("https://www.meziantou.net/?author=meziantou&name=value", QueryStringUtilities.AddQueryString(uri, "name", "value"));
+        Assert.Equal("https://www.meziantou.net/?author=john", QueryStringUtilities.AddOrReplaceQueryString(uri, "author", "john"));
+
+        // Replace the whole query string
+        Assert.Equal("https://www.meziantou.net/?name=value", QueryStringUtilities.SetQueryString(uri, [KeyValuePair.Create("name", (string?)"value")]));
+
+        // Remove a query string parameter
+        Assert.Equal("https://www.meziantou.net/", QueryStringUtilities.RemoveQueryString(uri, "author"));
+        #endregion
+    }
+
+    [Fact]
     public void SetQueryString_Append()
     {
         var uri = "http://www.example.com/";

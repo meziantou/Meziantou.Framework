@@ -18,8 +18,9 @@ internal static class JpegXlReferenceComparison
     public const double Skip = -1;
 
     /// <summary>Decodes a file with the library and with the reference decoders, and compares every sample of every frame.</summary>
+    /// <param name="djxlColorSpace">The color space djxl converts to (<c>--color_space</c>), or <see langword="null"/> for its default output.</param>
     /// <returns>The image the library decoded.</returns>
-    public static async Task<Image> AssertDecodesLikeTheReferencesAsync(FullPath path, double djxlTolerance, double oxideTolerance, string context)
+    public static async Task<Image> AssertDecodesLikeTheReferencesAsync(FullPath path, double djxlTolerance, double oxideTolerance, string context, string? djxlColorSpace = null)
     {
         var jxl = await RequiredTools.LibJxlAsync();
         var oxide = await RequiredTools.JxlOxideAsync();
@@ -27,7 +28,9 @@ internal static class JpegXlReferenceComparison
         var image = Image.Load(data);
         try
         {
-            var djxlFrames = djxlTolerance >= 0 ? await jxl.DecodeFramesAsync(path, XunitCancellationToken) : null;
+            var djxlFrames = djxlTolerance < 0 ? null
+                : djxlColorSpace is null ? await jxl.DecodeFramesAsync(path, XunitCancellationToken)
+                : await jxl.DecodeFramesAsync(path, djxlColorSpace, XunitCancellationToken);
             var oxideFrames = oxideTolerance >= 0 ? await oxide.DecodeFramesAsync(path, XunitCancellationToken) : null;
             Assert.True(djxlFrames is not null || oxideFrames is not null, "A case is compared with at least one reference decoder.");
             if (djxlFrames is not null && oxideFrames is not null)

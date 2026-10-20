@@ -16,6 +16,7 @@ on:
         default: all
         options:
           - all
+          - codeowners
           - dependency-scanning
           - globbing
           - html-sanitizer
@@ -70,6 +71,7 @@ env:
   # with the fewest, and gets an option of the component input (Meziantou.Framework.Fuzzing.Tests checks both).
   FUZZ_PROJECTS: |
     [
+      { "project": "Meziantou.Framework.CodeOwners.Fuzz",         "component": "codeowners",          "day": 1 },
       { "project": "Meziantou.Framework.DependencyScanning.Fuzz", "component": "dependency-scanning", "day": 0 },
       { "project": "Meziantou.Framework.Globbing.Fuzz",           "component": "globbing",            "day": 0 },
       { "project": "Meziantou.Framework.HtmlSanitizer.Fuzz",      "component": "html-sanitizer",      "day": 1 },

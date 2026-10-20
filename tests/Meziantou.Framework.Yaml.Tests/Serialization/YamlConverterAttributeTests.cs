@@ -4,6 +4,27 @@ namespace Meziantou.Framework.Yaml.Tests.Serialization;
 public sealed class YamlConverterAttributeTests
 {
     [Fact]
+    public void ReadmeExample_CustomConverter()
+    {
+        #region YamlConverter_Register
+        var options = new YamlSerializerOptions { Converters = [new UriConverter()] };
+        #endregion
+
+        var yaml = YamlSerializer.Serialize(new Uri("https://example.com/"), options);
+        Assert.Equal("https://example.com/\n", yaml);
+        Assert.Equal(new Uri("../relative", UriKind.Relative), YamlSerializer.Deserialize<Uri>("../relative", options));
+    }
+
+    #region YamlConverter_Create
+    internal sealed class UriConverter : YamlConverter<Uri>
+    {
+        public override Uri Read(YamlReader reader) => new(reader.GetScalarValue(), UriKind.RelativeOrAbsolute);
+
+        public override void Write(YamlWriter writer, Uri value) => writer.WriteString(value.ToString());
+    }
+    #endregion
+
+    [Fact]
     public void Deserialize_UsesPropertyLevelConverter()
     {
         var value = YamlSerializer.Deserialize<PropertyLevelModel>("A: 1\n")!;
@@ -173,6 +194,7 @@ public sealed class YamlConverterAttributeTests
         public Box<string>? Text { get; set; }
     }
 
+    #region YamlConverterAttribute_OpenGeneric
     [YamlConverter(typeof(BoxConverter<>))]
     private sealed class Box<T>
     {
@@ -181,7 +203,7 @@ public sealed class YamlConverterAttributeTests
         public T? Value { get; }
     }
 
-    private sealed class BoxConverter<T> : YamlConverter<Box<T>?>
+    private sealed class BoxConverter<T> : YamlConverter<Box<T>?> // used for Box<int>, Box<string>, ...
     {
         public override Box<T>? Read(YamlReader reader)
         {
@@ -207,6 +229,7 @@ public sealed class YamlConverterAttributeTests
             writer.WriteScalar(Convert.ToString(value.Value, CultureInfo.InvariantCulture));
         }
     }
+    #endregion
 
     private sealed class Pair<TFirst, TSecond>
     {

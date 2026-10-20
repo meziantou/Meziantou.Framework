@@ -4,6 +4,29 @@ namespace Meziantou.Framework.Yaml.Tests.Serialization;
 public sealed class YamlNamingPolicyAttributeTests
 {
     [Fact]
+    public void ReadmeExample_NamingPolicy()
+    {
+        var product = YamlSerializer.Deserialize<Product>("id: 1\ndisplayName: Table\ncreation_date: 2024-01-02\n");
+
+        Assert.Equal(1, product!.Id);
+        Assert.Equal("Table", product.DisplayName);
+        Assert.Equal(new DateTime(2024, 1, 2), product.CreationDate);
+    }
+
+    #region YamlNamingPolicyAttribute_Usage
+    [YamlNamingPolicy(YamlKnownNamingPolicy.SnakeCaseLower)]
+    internal sealed class Product
+    {
+        public int Id { get; set; }                       // id
+
+        [YamlNamingPolicy(YamlKnownNamingPolicy.CamelCase)]
+        public string? DisplayName { get; set; }          // displayName
+
+        public DateTime CreationDate { get; set; }        // creation_date
+    }
+    #endregion
+
+    [Fact]
     public void MemberLevel_AppliesPolicyToAnnotatedMemberOnly()
     {
         var yaml = YamlSerializer.Serialize(new MemberPolicyModel { FirstValue = 1, SecondValue = 2 });

@@ -5,6 +5,23 @@ namespace Meziantou.Framework.Yaml.Tests.Serialization;
 public sealed class YamlEnumMemberNameTests
 {
     [Fact]
+    public void ReadmeExample_EnumMemberName()
+    {
+        Assert.Equal("very-high\n", YamlSerializer.Serialize(Level.VeryHigh));
+        Assert.Equal(Level.VeryHigh, YamlSerializer.Deserialize<Level>("very-high"));
+    }
+
+    #region YamlEnumMemberNameAttribute_Usage
+    internal enum Level
+    {
+        Low,
+
+        [YamlEnumMemberName("very-high")]
+        VeryHigh,                                         // very-high
+    }
+    #endregion
+
+    [Fact]
     public void Serialize_UsesCustomEnumName()
     {
         var yaml = YamlSerializer.Serialize(new ColorModel { Color = Color.Green });

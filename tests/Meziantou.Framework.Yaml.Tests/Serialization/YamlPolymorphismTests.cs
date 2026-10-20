@@ -230,6 +230,25 @@ internal sealed partial class PolymorphismEdgeCaseYamlContext : YamlSerializerCo
 
 public class YamlPolymorphismTests
 {
+    [Fact]
+    public void ReadmeExample_OpenGenericDerivedType()
+    {
+        Assert.IsType<Dog<string>>(YamlSerializer.Deserialize<Animal<string>>("$type: dog\n"));
+        Assert.IsType<Dog<int>>(YamlSerializer.Deserialize<Animal<int>>("$type: dog\n"));
+    }
+
+    #region YamlDerivedTypeAttribute_OpenGeneric
+    [YamlPolymorphic]
+    [YamlDerivedType(typeof(Dog<>), "dog")]
+    internal abstract class Animal<T>
+    {
+    }
+
+    internal sealed class Dog<T> : Animal<T>  // Animal<string> uses Dog<string>, Animal<int> uses Dog<int>
+    {
+    }
+    #endregion
+
     [YamlPolymorphic]
     [YamlDerivedType(typeof(Dog), "dog", Tag = "!dog")]
     [YamlDerivedType(typeof(Cat), "cat", Tag = "!cat")]

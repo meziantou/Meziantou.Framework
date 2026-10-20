@@ -6,6 +6,17 @@ namespace Meziantou.Framework.Yaml.Tests;
 public class SchemaTests
 {
     [Fact]
+    public void ReadmeExample_ExtendedSchema()
+    {
+        #region YamlSchemaKind_Extended
+        var options = new YamlSerializerOptions { UseSchema = true, Schema = YamlSchemaKind.Extended };
+
+        var values = YamlSerializer.Deserialize<Dictionary<string, object>>("enabled: yes", options);
+        Assert.True(values!["enabled"] is true); // true, not "yes"
+        #endregion
+    }
+
+    [Fact]
     public void TestFailsafeSchema()
     {
         var schema = new FailsafeSchema();

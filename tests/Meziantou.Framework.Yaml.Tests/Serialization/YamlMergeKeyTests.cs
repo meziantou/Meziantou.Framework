@@ -5,6 +5,28 @@ namespace Meziantou.Framework.Yaml.Tests.Serialization;
 public sealed class YamlMergeKeyTests
 {
     [Fact]
+    public void ReadmeExample_MergeAlias()
+    {
+        var yaml = """
+            defaults: &defaults
+              timeout: 30
+              retries: 2
+
+            prod:
+              <<: *defaults
+              timeout: 60   # wins over the merged value
+            """;
+
+        #region YamlMergeKey_Alias
+        var options = new YamlSerializerOptions { ReferenceHandling = YamlReferenceHandling.Preserve };
+        var config = YamlSerializer.Deserialize<Dictionary<string, Dictionary<string, int>>>(yaml, options);
+
+        Assert.Equal(60, config!["prod"]["timeout"]);
+        Assert.Equal(2, config["prod"]["retries"]);
+        #endregion
+    }
+
+    [Fact]
     public void Deserialize_Object_ShouldApplyMergeKey()
     {
         var yaml =

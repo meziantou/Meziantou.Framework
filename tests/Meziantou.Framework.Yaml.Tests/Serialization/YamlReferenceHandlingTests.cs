@@ -141,6 +141,64 @@ internal sealed partial class ReferenceHandlingYamlContext : YamlSerializerConte
 
 public class YamlReferenceHandlingTests
 {
+    [Fact]
+    public void ReadmeExample_Aliases()
+    {
+        #region YamlReferenceHandling_Aliases
+        var options = new YamlSerializerOptions { ReferenceHandling = YamlReferenceHandling.Preserve };
+
+        var config = YamlSerializer.Deserialize<Config>("""
+            First: &shared
+              Timeout: 30
+            Second: *shared
+            """, options);
+
+        Assert.Same(config!.First, config.Second);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_PreserveMinimal()
+    {
+        #region YamlReferenceHandling_PreserveMinimal
+        var shared = new Section { Timeout = 1 };
+        var yaml = YamlSerializer.Serialize(new Config { First = shared, Second = shared },
+            new YamlSerializerOptions { ReferenceHandling = YamlReferenceHandling.PreserveMinimal });
+        #endregion
+
+        Assert.Equal("First: &id001\n  Timeout: 1\n  Retries: 0\nSecond: *id001\n", yaml);
+    }
+
+    [Fact]
+    public void ReadmeExample_MergeKeys()
+    {
+        #region YamlReferenceHandling_MergeKeys
+        var section = YamlSerializer.Deserialize<Section>("""
+            <<: { Timeout: 30, Retries: 2 }
+            Timeout: 60
+            """);
+
+        Assert.Equal(60, section!.Timeout);
+        Assert.Equal(2, section.Retries);
+        #endregion
+    }
+
+    #region YamlReferenceHandling_Model
+    internal sealed class Config
+    {
+        public Section? First { get; set; }
+
+        public Section? Second { get; set; }
+    }
+
+    internal sealed class Section
+    {
+        public int Timeout { get; set; }
+
+        public int Retries { get; set; }
+    }
+    #endregion
+
     private sealed class Node
     {
         public string Name { get; set; } = string.Empty;

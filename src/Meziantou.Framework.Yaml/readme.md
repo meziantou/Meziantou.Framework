@@ -54,10 +54,27 @@ Four API layers are available, from the lowest level to the highest:
 
 ## Serialize and deserialize objects
 
-```csharp
-using Meziantou.Framework.Yaml;
-using Meziantou.Framework.Yaml.Serialization;
+`YamlSerializer` and `YamlSerializerOptions` are in the `Meziantou.Framework.Yaml` namespace, and the attributes in
+`Meziantou.Framework.Yaml.Serialization`. Given this model:
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerSourceGenerationTests.cs;region=YamlSerializer_Product;format=md-fenced-code-block;dedent=true -->
+```csharp
+public sealed class Product
+{
+    public int Id { get; set; }
+
+    [YamlPropertyName("name")]
+    public string DisplayName { get; set; } = "";
+
+    public string[] Tags { get; set; } = [];
+}
+```
+<!-- endref -->
+
+`Serialize` writes an instance as YAML, and `Deserialize` reads it back:
+
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerApiTests.cs;region=YamlSerializer_SerializeAndDeserialize;format=md-fenced-code-block;dedent=true -->
+```csharp
 var options = new YamlSerializerOptions
 {
     PropertyNamingPolicy = YamlNamingPolicy.KebabCaseLower,
@@ -70,18 +87,19 @@ var yaml = YamlSerializer.Serialize(new Product
     Tags = ["new", "featured"],
 }, options);
 
+Assert.Equal("""
+    id: 1
+    name: Sample product
+    tags:
+      - new
+      - featured
+
+    """, yaml);
+
 var product = YamlSerializer.Deserialize<Product>(yaml, options);
-
-public sealed class Product
-{
-    public int Id { get; set; }
-
-    [YamlPropertyName("name")]
-    public string DisplayName { get; set; } = "";
-
-    public string[] Tags { get; set; } = [];
-}
+Assert.Equal("Sample product", product!.DisplayName);
 ```
+<!-- endref -->
 
 `YamlSerializer` reads from a `string`, a `TextReader` (streaming), or a UTF-8 `Stream`, and writes to a `string`, a
 `TextWriter`, a UTF-8 `Stream`, or an `IBufferWriter<char>`. Every overload has a generic and a `Type`-based form, and
@@ -89,12 +107,16 @@ accepts either a `YamlSerializerOptions`, a `YamlSerializerContext`, or a `YamlT
 
 `TryDeserialize` returns `false` instead of throwing when the payload cannot be bound:
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerApiTests.cs;region=YamlSerializer_TryDeserialize;format=md-fenced-code-block;dedent=true -->
 ```csharp
-if (YamlSerializer.TryDeserialize<Product>(yaml, out var value, options))
+if (YamlSerializer.TryDeserialize<Product>("Id: 1", out var value))
 {
-    Use(value);
+    Assert.Equal(1, value!.Id);
 }
+
+Assert.False(YamlSerializer.TryDeserialize<Product>("Id: not a number", out _));
 ```
+<!-- endref -->
 
 When a stream contains several documents, `YamlSerializer.Deserialize` binds the first one. Use
 [`YamlStream`](#document-object-model) to read every document.
@@ -262,14 +284,16 @@ Flow output is read back by the deserializer like any other YAML, and scalars co
 `StringStyle` selects the style used for string values. The default, `Any`, lets the writer choose between the plain
 and the double-quoted style. `Literal` writes a block scalar instead:
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerApiTests.cs;region=YamlScalarStylePreferences_StringStyle;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var options = new YamlSerializerOptions
 {
     ScalarStylePreferences = new YamlScalarStylePreferences { StringStyle = ScalarStyle.Literal },
 };
 
-YamlSerializer.Serialize(new { Script = "echo one\necho two\n" }, options);
+var yaml = YamlSerializer.Serialize(new { Script = "echo one\necho two\n" }, options);
 ```
+<!-- endref -->
 
 ```yaml
 Script: |
@@ -288,6 +312,7 @@ only — mapping keys and non-string scalars such as numbers, booleans, and date
 
 `[YamlStringStyle]` overrides the style for one member and for the strings below it:
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerApiTests.cs;region=YamlStringStyleAttribute_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 internal sealed class Job
 {
@@ -297,6 +322,7 @@ internal sealed class Job
     public string? Name { get; set; }
 }
 ```
+<!-- endref -->
 
 ```yaml
 Script: |-
@@ -307,9 +333,11 @@ Name: build
 
 `PreferQuotedForAmbiguousScalars` keeps a round-trip faithful when a string looks like another type:
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerApiTests.cs;region=YamlScalarStylePreferences_AmbiguousScalars;format=md-fenced-code-block;dedent=true -->
 ```csharp
-YamlSerializer.Serialize(new { A = "yes", B = "123", C = "plain" });
+var yaml = YamlSerializer.Serialize(new { A = "yes", B = "123", C = "plain" });
 ```
+<!-- endref -->
 
 ```yaml
 A: yes
@@ -376,6 +404,7 @@ schema; it has no effect on the integer types.
 `YamlNamingPolicyAttribute` overrides `YamlSerializerOptions.PropertyNamingPolicy`. On a type it applies to every
 member; on a member it applies to that member only. `YamlPropertyNameAttribute` takes precedence over both.
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlNamingPolicyAttributeTests.cs;region=YamlNamingPolicyAttribute_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 [YamlNamingPolicy(YamlKnownNamingPolicy.SnakeCaseLower)]
 internal sealed class Product
@@ -388,12 +417,14 @@ internal sealed class Product
     public DateTime CreationDate { get; set; }        // creation_date
 }
 ```
+<!-- endref -->
 
 ### Ignoring members
 
 `YamlIgnoreAttribute` overrides `YamlSerializerOptions.DefaultIgnoreCondition`. On a type it sets the default condition
 for every property and field; on a member it applies to that member only.
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlIgnoreAttributeTests.cs;region=YamlIgnoreAttribute_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 [YamlIgnore(Condition = YamlIgnoreCondition.WhenWritingNull)]
 internal sealed class Product
@@ -407,9 +438,11 @@ internal sealed class Product
     public string? Secret { get; set; }               // never serialized nor deserialized
 }
 ```
+<!-- endref -->
 
 ### Ordering members
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlObjectConverterContractTests.cs;region=YamlPropertyOrderAttribute_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 internal sealed class Product
 {
@@ -420,9 +453,11 @@ internal sealed class Product
     public string? Name { get; set; }
 }
 ```
+<!-- endref -->
 
 ### Enum member names
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlEnumMemberNameTests.cs;region=YamlEnumMemberNameAttribute_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 internal enum Level
 {
@@ -432,28 +467,36 @@ internal enum Level
     VeryHigh,                                         // very-high
 }
 ```
+<!-- endref -->
 
 ### Populating existing values
 
 `YamlObjectCreationHandling.Populate` adds to the value a member already holds instead of replacing it. It applies to
 collections and to nested objects.
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlObjectCreationHandlingTests.cs;region=YamlObjectCreationHandling_Settings;format=md-fenced-code-block;dedent=true -->
 ```csharp
 internal sealed class Settings
 {
     [YamlObjectCreationHandling(YamlObjectCreationHandling.Populate)]
     public List<string> Tags { get; set; } = ["default"];
 }
-
-// Tags: ["default", "extra"]
-YamlSerializer.Deserialize<Settings>("Tags:\n  - extra\n");
 ```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlObjectCreationHandlingTests.cs;region=YamlObjectCreationHandling_Deserialize;format=md-fenced-code-block;dedent=true -->
+```csharp
+var settings = YamlSerializer.Deserialize<Settings>("Tags:\n  - extra\n");
+Assert.Equal(["default", "extra"], settings!.Tags);
+```
+<!-- endref -->
 
 ### Extension data
 
 `YamlExtensionDataAttribute` collects the mapping keys that match no member. The annotated member must be a
 `YamlMapping`, or a dictionary whose keys are `string` and whose values are `object` or `YamlNode`:
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlExtensionDataTests.cs;region=YamlExtensionDataAttribute_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 internal sealed class Product
 {
@@ -463,6 +506,7 @@ internal sealed class Product
     public IReadOnlyDictionary<string, object?>? Extra { get; set; }
 }
 ```
+<!-- endref -->
 
 The supported dictionary types are `Dictionary<string, TValue>`, `IDictionary<string, TValue>`, and
 `IReadOnlyDictionary<string, TValue>`. A read-only dictionary cannot be mutated through its declared type, so the
@@ -474,6 +518,7 @@ updated in place.
 
 Implement any of these interfaces to run code around serialization:
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlLifecycleCallbackTests.cs;region=IYamlOnSerializing_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 internal sealed class Product : IYamlOnSerializing, IYamlOnSerialized, IYamlOnDeserializing, IYamlOnDeserialized
 {
@@ -483,6 +528,7 @@ internal sealed class Product : IYamlOnSerializing, IYamlOnSerialized, IYamlOnDe
     public void OnDeserialized() { }
 }
 ```
+<!-- endref -->
 
 An exception thrown from a callback is wrapped in a `YamlException`.
 
@@ -491,6 +537,7 @@ An exception thrown from a callback is wrapped in a `YamlException`.
 Custom converters derive from `YamlConverter<T>` and are registered through `YamlSerializerOptions.Converters`,
 `YamlSourceGenerationOptionsAttribute.Converters`, or `YamlConverterAttribute`.
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlConverterAttributeTests.cs;region=YamlConverter_Create;format=md-fenced-code-block;dedent=true -->
 ```csharp
 internal sealed class UriConverter : YamlConverter<Uri>
 {
@@ -498,9 +545,14 @@ internal sealed class UriConverter : YamlConverter<Uri>
 
     public override void Write(YamlWriter writer, Uri value) => writer.WriteString(value.ToString());
 }
+```
+<!-- endref -->
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlConverterAttributeTests.cs;region=YamlConverter_Register;format=md-fenced-code-block;dedent=true -->
+```csharp
 var options = new YamlSerializerOptions { Converters = [new UriConverter()] };
 ```
+<!-- endref -->
 
 `YamlReader` walks the payload token by token (`TokenType`, `Read()`, `Skip()`, `GetScalarValue()`, `Tag`, `Anchor`,
 `Alias`), and `YamlWriter` emits it (`WriteStartMapping()`, `WritePropertyName()`, `WriteScalar()` overloads for every
@@ -515,22 +567,50 @@ Derive from `YamlConverterFactory` to create converters dynamically for a family
 annotated member, is a generic type with the same number of generic parameters. The converter is closed over the type
 arguments of the target type.
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlConverterAttributeTests.cs;region=YamlConverterAttribute_OpenGeneric;format=md-fenced-code-block;dedent=true -->
 ```csharp
 [YamlConverter(typeof(BoxConverter<>))]
-internal sealed class Box<T>
+private sealed class Box<T>
 {
-    public T? Value { get; set; }
+    public Box(T? value) => Value = value;
+
+    public T? Value { get; }
 }
 
-internal sealed class BoxConverter<T> : YamlConverter<Box<T>>  // used for Box<int>, Box<string>, ...
+private sealed class BoxConverter<T> : YamlConverter<Box<T>?> // used for Box<int>, Box<string>, ...
 {
+    public override Box<T>? Read(YamlReader reader)
+    {
+        if (reader.TokenType is YamlTokenType.Scalar && YamlScalar.IsNull(reader.ScalarValue.AsSpan()))
+        {
+            reader.Read();
+            return null;
+        }
+
+        var scalar = reader.GetScalarValue();
+        reader.Read();
+        return new Box<T>((T)Convert.ChangeType(scalar, typeof(T), CultureInfo.InvariantCulture));
+    }
+
+    public override void Write(YamlWriter writer, Box<T>? value)
+    {
+        if (value is null)
+        {
+            writer.WriteNullValue();
+            return;
+        }
+
+        writer.WriteScalar(Convert.ToString(value.Value, CultureInfo.InvariantCulture));
+    }
 }
 ```
+<!-- endref -->
 
 ## Polymorphism
 
 Annotate a base type with `YamlPolymorphicAttribute` and register its derived types with `YamlDerivedTypeAttribute`.
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerApiTests.cs;region=YamlPolymorphicAttribute_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 [YamlPolymorphic]
 [YamlDerivedType(typeof(Dog), "dog")]
@@ -539,7 +619,12 @@ internal abstract class Animal
 {
     public string Name { get; set; } = "";
 }
+
+internal sealed class Dog : Animal;
+
+internal sealed class Cat : Animal;
 ```
+<!-- endref -->
 
 ```yaml
 $type: dog
@@ -555,11 +640,18 @@ Name: Rex
 
 Discriminators can be strings or integers. With the `Tag` style, the discriminator is a YAML tag:
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlTagOnlyDerivedTypeTests.cs;region=YamlTypeDiscriminatorStyle_Tag;format=md-fenced-code-block;dedent=true -->
 ```csharp
 [YamlPolymorphic(DiscriminatorStyle = YamlTypeDiscriminatorStyle.Tag)]
 [YamlDerivedType(typeof(Dog), Tag = "!dog")]
-internal abstract class Animal;
+internal abstract class Animal
+{
+    public string Name { get; set; } = "";
+}
+
+internal sealed class Dog : Animal;
 ```
+<!-- endref -->
 
 ```yaml
 !dog
@@ -595,6 +687,7 @@ ones, and attributes win on conflicts. The mappings are copied when the `YamlPol
 `YamlSerializerOptions.PolymorphismOptions`, and the instance becomes read-only: changing the mappings afterwards throws
 `NotSupportedException`, so options already in use, and the copies made from them with `with`, cannot change.
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlRuntimeDerivedTypeTests.cs;region=YamlPolymorphismOptions_DerivedTypeMappings;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var options = new YamlSerializerOptions
 {
@@ -607,6 +700,7 @@ var options = new YamlSerializerOptions
     },
 };
 ```
+<!-- endref -->
 
 `YamlDerivedTypeMappingAttribute` does the same declaratively, and is the form the source generator understands.
 
@@ -616,6 +710,7 @@ var options = new YamlSerializerOptions
 each instantiation of the base type by matching the base type it declares, so a single attribute covers every
 instantiation.
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlPolymorphismTests.cs;region=YamlDerivedTypeAttribute_OpenGeneric;format=md-fenced-code-block;dedent=true -->
 ```csharp
 [YamlPolymorphic]
 [YamlDerivedType(typeof(Dog<>), "dog")]
@@ -627,6 +722,7 @@ internal sealed class Dog<T> : Animal<T>  // Animal<string> uses Dog<string>, An
 {
 }
 ```
+<!-- endref -->
 
 ### Closed hierarchies
 
@@ -634,6 +730,7 @@ A `closed` class hierarchy already lists its derived types in metadata, so they 
 `YamlDerivedTypeAttribute`. Set `InferClosedTypePolymorphism` to register every derived type of a closed base type
 automatically, using the derived type name, without the generic arity suffix, as its discriminator.
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlTagOnlyDerivedTypeTests.cs;region=YamlPolymorphism_ClosedHierarchy;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public closed class Shape
 {
@@ -642,25 +739,33 @@ public closed class Shape
 
 public sealed class Circle : Shape { public double Radius { get; set; } }
 public sealed class Square : Shape { public double Side { get; set; } }
+```
+<!-- endref -->
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlTagOnlyDerivedTypeTests.cs;region=YamlPolymorphismOptions_InferClosedTypePolymorphism;format=md-fenced-code-block;dedent=true -->
+```csharp
 var options = new YamlSerializerOptions
 {
     PolymorphismOptions = new YamlPolymorphismOptions { InferClosedTypePolymorphism = true },
 };
 
 Shape shape = new Circle { Name = "circle", Radius = 3 };
-var yaml = YamlSerializer.Serialize(shape, options); // $type: Circle
+var yaml = YamlSerializer.Serialize(shape, options);
+Assert.Equal("$type: Circle\nName: circle\nRadius: 3.0\n", yaml);
 ```
+<!-- endref -->
 
 Inference is opt-in. It can also be enabled for a single type with `YamlPolymorphicAttribute`, which takes precedence
 over the serializer options, so `InferClosedTypePolymorphism = false` excludes a type from a global opt-in:
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerApiTests.cs;region=YamlPolymorphicAttribute_InferClosedTypePolymorphism;format=md-fenced-code-block;dedent=true -->
 ```csharp
 [YamlPolymorphic(InferClosedTypePolymorphism = true)]
 public closed class Shape
 {
 }
 ```
+<!-- endref -->
 
 Explicit registrations replace inference: a type declaring `YamlDerivedTypeAttribute` or a runtime mapping registers
 only those derived types. Enabling `YamlPolymorphicAttribute.InferClosedTypePolymorphism` on a type that is not declared
@@ -687,12 +792,17 @@ prod:
   timeout: 60   # wins over the merged value
 ```
 
-Merge keys are part of the `Core` and `Extended` schemas; they are plain keys for `YamlSchemaKind.Json`. An alias as the merge value requires `ReferenceHandling = YamlReferenceHandling.Preserve`, as aliases are only resolved in that mode:
+Merge keys are part of the `Core` and `Extended` schemas; they are plain keys for `YamlSchemaKind.Json`. An alias as the merge value requires `ReferenceHandling = YamlReferenceHandling.Preserve`, as aliases are only resolved in that mode. Reading the document above:
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlMergeKeyTests.cs;region=YamlMergeKey_Alias;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var options = new YamlSerializerOptions { ReferenceHandling = YamlReferenceHandling.Preserve };
-var config = YamlSerializer.Deserialize<Config>(yaml, options);
+var config = YamlSerializer.Deserialize<Dictionary<string, Dictionary<string, int>>>(yaml, options);
+
+Assert.Equal(60, config!["prod"]["timeout"]);
+Assert.Equal(2, config["prod"]["retries"]);
 ```
+<!-- endref -->
 
 An alias merges the entries of the anchored mapping node as they appear in the document, the same way as an inline mapping, whatever type the anchored node was deserialized into: a member the anchored mapping leaves out is not merged. The nodes a merge alias replays count towards `MaxAliasExpansionNodeCount`.
 
@@ -700,11 +810,18 @@ An alias merges the entries of the anchored mapping node as they appear in the d
 
 A C# union is serialized as its selected case, without a wrapper:
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlCSharpUnionTests.cs;region=YamlUnion_Setting;format=md-fenced-code-block;dedent=true -->
 ```csharp
 internal union Setting(bool, int, string);
-
-YamlSerializer.Serialize(new Setting(42)); // 42
 ```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlCSharpUnionTests.cs;region=YamlUnion_Serialize;format=md-fenced-code-block;dedent=true -->
+```csharp
+var yaml = YamlSerializer.Serialize(new Setting(42));
+Assert.Equal("42\n", yaml);
+```
+<!-- endref -->
 
 Cases are selected by YAML shape when deserializing, so a union whose cases use distinct shapes needs no configuration.
 A case matching the shape of the value exactly wins: `Setting` reads `42` as an `int` and `"42"` as a `string`. When no
@@ -719,18 +836,25 @@ A payload matching several cases &mdash; two cases that both serialize as a mapp
 type classifier is registered. The classifier can only select one of the matching cases. `YamlUnionTypeStructuralClassifier`
 tells mapping cases apart by their keys:
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlCSharpUnionTests.cs;region=YamlUnionTypeStructuralClassifier_Shape;format=md-fenced-code-block;dedent=true -->
 ```csharp
 internal union Shape(Circle, Rectangle);
 internal sealed class Circle { public int Radius { get; set; } }
 internal sealed class Rectangle { public int Width { get; set; } public int Height { get; set; } }
+```
+<!-- endref -->
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlCSharpUnionTests.cs;region=YamlUnionTypeStructuralClassifier_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 var options = new YamlSerializerOptions
 {
     TypeClassifiers = [new YamlUnionTypeStructuralClassifier()],
 };
 
-YamlSerializer.Deserialize<Shape>("Radius: 3", options); // Circle
+var shape = YamlSerializer.Deserialize<Shape>("Radius: 3", options);
+Assert.Equal(3, Assert.IsType<Circle>(shape.Value).Radius);
 ```
+<!-- endref -->
 
 The classifier starts with every mapping case as a candidate and eliminates the cases that do not declare a key present
 in the payload. Keys no case declares eliminate only the cases that reject unmapped members, and a case missing a
@@ -745,20 +869,27 @@ with `AllowReadingFromString` a quoted number such as `"42"` also matches the nu
 `AllowNamedFloatingPointLiterals` a quoted `"NaN"`, `"Infinity"`, or `"-Infinity"` also matches the floating-point
 cases. A scalar matching several cases is ambiguous and needs a type classifier:
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlCSharpUnionTests.cs;region=YamlUnion_NumberHandling;format=md-fenced-code-block;dedent=true -->
 ```csharp
 [YamlNumberHandling(YamlNumberHandling.AllowReadingFromString)]
 internal union IdOrName(int, string);
-
-YamlSerializer.Deserialize<IdOrName>("\"alice\""); // "alice"
-YamlSerializer.Deserialize<IdOrName>("42");        // 42
-YamlSerializer.Deserialize<IdOrName>("\"42\"");    // throws: both cases match
 ```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlCSharpUnionTests.cs;region=YamlUnion_NumberHandling_Deserialize;format=md-fenced-code-block;dedent=true -->
+```csharp
+Assert.Equal("alice", YamlSerializer.Deserialize<IdOrName>("\"alice\"").Value);
+Assert.Equal(42, YamlSerializer.Deserialize<IdOrName>("42").Value);
+Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<IdOrName>("\"42\"")); // both cases match
+```
+<!-- endref -->
 
 ## Type classifiers
 
 Implement `YamlTypeClassifierFactory` to select a union case, or a derived type, with your own rules. `CanClassify`
 receives a context whose `Kind` is either `YamlTypeClassifierKind.Union` or `YamlTypeClassifierKind.PolymorphicType`:
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlPolymorphicClassifierTests.cs;region=YamlTypeClassifierFactory_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 internal sealed class ShapeClassifier : YamlTypeClassifierFactory
 {
@@ -766,9 +897,25 @@ internal sealed class ShapeClassifier : YamlTypeClassifierFactory
         => context.Kind is YamlTypeClassifierKind.PolymorphicType && context.DeclaringType == typeof(Shape);
 
     public override YamlTypeClassifier CreateYamlClassifier(YamlTypeClassifierContext context, YamlSerializerOptions options)
-        => reader => /* inspect the payload and return a type from context.DerivedTypes */;
+        => reader =>
+        {
+            // The classifier reads a copy of the value: select the derived type from the first key of the mapping
+            if (reader.TokenType is not YamlTokenType.StartMapping)
+                return null;
+
+            reader.Read();
+            var type = reader.GetScalarValue() switch
+            {
+                "Radius" => typeof(Circle),
+                "Side" => typeof(Square),
+                _ => null,
+            };
+
+            return context.DerivedTypes.Any(derivedType => derivedType.DerivedType == type) ? type : null;
+        };
 }
 ```
+<!-- endref -->
 
 The classifier reads a private copy of the value, so it may consume the reader. It never overrides an explicit
 discriminator or tag: it runs only once those have failed to resolve a type, and returning `null` falls back to the
@@ -788,8 +935,28 @@ Declaring an anchor is always allowed when reading. Set `AllowAnchors = false` t
 
 ### Aliases
 
-Resolving an alias requires object reference tracking, so `ReferenceHandling` must be `Preserve` or `PreserveMinimal`:
+Resolving an alias requires object reference tracking, so `ReferenceHandling` must be `Preserve` or `PreserveMinimal`.
+The examples of this section use this model:
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlReferenceHandlingTests.cs;region=YamlReferenceHandling_Model;format=md-fenced-code-block;dedent=true -->
+```csharp
+internal sealed class Config
+{
+    public Section? First { get; set; }
+
+    public Section? Second { get; set; }
+}
+
+internal sealed class Section
+{
+    public int Timeout { get; set; }
+
+    public int Retries { get; set; }
+}
+```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlReferenceHandlingTests.cs;region=YamlReferenceHandling_Aliases;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var options = new YamlSerializerOptions { ReferenceHandling = YamlReferenceHandling.Preserve };
 
@@ -799,8 +966,9 @@ var config = YamlSerializer.Deserialize<Config>("""
     Second: *shared
     """, options);
 
-// ReferenceEquals(config.First, config.Second) is true
+Assert.Same(config!.First, config.Second);
 ```
+<!-- endref -->
 
 Without it, an alias throws `YamlException: Aliases are not supported when deserializing into '…' unless
 ReferenceHandling is Preserve`. Set `AllowAliases = false` to reject aliases outright.
@@ -813,15 +981,18 @@ When writing, `ReferenceHandling` decides whether shared objects become anchors 
 | `Preserve` | Every object gets an anchor; repeated references become aliases. Cycles are supported. |
 | `PreserveMinimal` | A pre-serialization pass identifies shared and cyclic references, and only those get an anchor. |
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlReferenceHandlingTests.cs;region=YamlReferenceHandling_PreserveMinimal;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var shared = new Section { Timeout = 1 };
-YamlSerializer.Serialize(new Config { First = shared, Second = shared },
+var yaml = YamlSerializer.Serialize(new Config { First = shared, Second = shared },
     new YamlSerializerOptions { ReferenceHandling = YamlReferenceHandling.PreserveMinimal });
 ```
+<!-- endref -->
 
 ```yaml
 First: &id001
   Timeout: 1
+  Retries: 0
 Second: *id001
 ```
 
@@ -834,13 +1005,17 @@ called by both passes, though: a converter with side effects can check `YamlWrit
 A merge key whose value is a mapping, or a sequence of mappings, is applied when reading. Later keys win over merged
 ones, and earlier entries of a merge sequence win over later ones.
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlReferenceHandlingTests.cs;region=YamlReferenceHandling_MergeKeys;format=md-fenced-code-block;dedent=true -->
 ```csharp
-YamlSerializer.Deserialize<Section>("""
+var section = YamlSerializer.Deserialize<Section>("""
     <<: { Timeout: 30, Retries: 2 }
     Timeout: 60
     """);
-// Timeout = 60, Retries = 2
+
+Assert.Equal(60, section!.Timeout);
+Assert.Equal(2, section.Retries);
 ```
+<!-- endref -->
 
 Merge keys are only recognized under the `Core` and `Extended` schemas; the `Json` and `Failsafe` schemas treat `<<` as
 an ordinary key. A merge key whose value is an alias additionally requires `ReferenceHandling` to be `Preserve` or
@@ -872,10 +1047,14 @@ scalars as strings. Null, booleans, `.inf` and `.nan` keep the core schema spell
 `!!null`, `!!bool`, `!!int` or `!!float` tag is honored when reading into `object`; a scalar that does not match its tag
 throws a `YamlException`. Set `UseSchema = true` to apply the selected schema’s scalar spelling rules.
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/SchemaTests.cs;region=YamlSchemaKind_Extended;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var options = new YamlSerializerOptions { UseSchema = true, Schema = YamlSchemaKind.Extended };
-YamlSerializer.Deserialize<Dictionary<string, object>>("enabled: yes", options); // true, not "yes"
+
+var values = YamlSerializer.Deserialize<Dictionary<string, object>>("enabled: yes", options);
+Assert.True(values!["enabled"] is true); // true, not "yes"
 ```
+<!-- endref -->
 
 The schema types (`FailsafeSchema`, `JsonSchema`, `CoreSchema`, `ExtendedSchema`) are public, derive from `SchemaBase`,
 and implement `IYamlSchema`. They expose tag expansion and shortening, scalar rules, and tag registration, so a custom
@@ -884,12 +1063,11 @@ schema can be built by deriving from one of them and overriding `PrepareScalarRu
 ## Source generation
 
 Declare a partial context derived from `YamlSerializerContext` and annotate each root type with
-`YamlSerializableAttribute`.
+`YamlSerializableAttribute`. Both are in the `Meziantou.Framework.Yaml.Serialization` namespace. This context serializes
+the `Product` type of [Serialize and deserialize objects](#serialize-and-deserialize-objects):
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerSourceGenerationTests.cs;region=YamlSerializerContext_Declare;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Yaml;
-using Meziantou.Framework.Yaml.Serialization;
-
 [YamlSerializable(typeof(Product))]
 [YamlSourceGenerationOptions(
     PropertyNamingPolicy = YamlKnownNamingPolicy.KebabCaseLower,
@@ -897,25 +1075,42 @@ using Meziantou.Framework.Yaml.Serialization;
 public sealed partial class AppYamlContext : YamlSerializerContext
 {
 }
+```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerSourceGenerationTests.cs;region=YamlSerializerContext_TypeInfo;format=md-fenced-code-block;dedent=true -->
+```csharp
+var product = new Product { Id = 1, DisplayName = "Sample product", Tags = ["new"] };
 
 var yaml = YamlSerializer.Serialize(product, AppYamlContext.Default.Product);
+Assert.Equal("id: 1\nname: Sample product\ntags:\n  - new\n", yaml);
+
 var copy = YamlSerializer.Deserialize(yaml, AppYamlContext.Default.Product);
+Assert.Equal("Sample product", copy!.DisplayName);
 ```
+<!-- endref -->
 
 The context itself can be passed to the serializer:
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerSourceGenerationTests.cs;region=YamlSerializerContext_Context;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var product = new Product { Id = 1, DisplayName = "Sample product" };
+
 var yaml = YamlSerializer.Serialize(product, AppYamlContext.Default);
 var copy = YamlSerializer.Deserialize<Product>(yaml, AppYamlContext.Default);
+Assert.Equal("Sample product", copy!.DisplayName);
 ```
+<!-- endref -->
 
 `YamlSourceGenerationOptionsAttribute` mirrors most of `YamlSerializerOptions`, including `Converters`. A context can
 also be constructed with a `YamlSerializerOptions` instance, and `CreateOptions` derives an options instance that keeps
 the context as its resolver:
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerSourceGenerationTests.cs;region=YamlSerializerContext_CreateOptions;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var options = AppYamlContext.Default.CreateOptions(o => o with { SourceName = "config.yaml" });
 ```
+<!-- endref -->
 
 The attribute values initialize the options of `AppYamlContext.Default`, and the generated code reads most options at run
 time, so an options instance with other values is honored. A few options shape the generated code instead, and an options
@@ -978,11 +1173,11 @@ deserialization.
 
 ## Document Object Model
 
-Use the DOM when you need to inspect or transform YAML without binding to a CLR type.
+Use the DOM when you need to inspect or transform YAML without binding to a CLR type. Its types are in the
+`Meziantou.Framework.Yaml.Model` namespace.
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/YamlNodeTest.cs;region=YamlStream_Load;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Yaml.Model;
-
 var stream = YamlStream.Load(new StringReader("""
     product:
       id: 1
@@ -993,7 +1188,9 @@ var document = stream[0];
 var root = (YamlMapping)document.Contents!;
 var product = (YamlMapping)root["product"]!;
 var name = ((YamlValue)product["name"]!).Value;
+Assert.Equal("Sample product", name);
 ```
+<!-- endref -->
 
 `YamlStream` is a list of `YamlDocument`, so a multi-document stream is read in one pass. `YamlMapping` implements both
 `IDictionary<YamlElement, YamlElement>` and `IList<KeyValuePair<…>>`, so entries keep their document order and can be
@@ -1002,10 +1199,15 @@ exposes `Anchor` and `Tag`.
 
 Every node supports `DeepClone()`, `WriteTo(TextWriter)`, `EnumerateEvents()`, and bridges to the serializer:
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerApiTests.cs;region=YamlNode_FromObject;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var product = new Product { Id = 1, DisplayName = "Sample product" };
+
 var node = YamlNode.FromObject(product);
 var back = node.ToObject<Product>();
+Assert.Equal("Sample product", back!.DisplayName);
 ```
+<!-- endref -->
 
 A `YamlNode` can also be used directly as a member type, which is how `[YamlExtensionData]` keeps unmatched content in
 its original form.
@@ -1013,11 +1215,11 @@ its original form.
 ## Syntax tree
 
 `YamlSyntaxTree` produces a lossless representation: with `IncludeTrivia`, comments and whitespace are preserved and
-`ToFullString()` returns the original text byte for byte. Every node and token carries a `Span` and a `FullSpan`.
+`ToFullString()` returns the original text byte for byte. Every node and token carries a `Span` and a `FullSpan`. The
+syntax tree types are in the `Meziantou.Framework.Yaml.Syntax` namespace.
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Syntax/YamlSyntaxTreeTests.cs;region=YamlSyntaxTree_Parse;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Yaml.Syntax;
-
 var yaml = """
     # deployment settings
     replicas: 3 # keep in sync with the chart
@@ -1025,34 +1227,72 @@ var yaml = """
 
 var tree = YamlSyntaxTree.Parse(yaml, new YamlSyntaxOptions { IncludeTrivia = true });
 
+var tokens = new List<string>();
 foreach (var token in tree.Tokens)
 {
-    Console.WriteLine($"{token.Kind} {token.Span} {token.Text}");
+    tokens.Add($"{token.Kind} {token.Span} {token.Text}");
 }
 
-Console.WriteLine(tree.ToFullString() == yaml); // True
+Assert.Equal(
+[
+    "StreamStart 0:0 ",
+    "CommentTrivia 0:21 # deployment settings",
+    "NewLineTrivia 21:22 \n",
+    "BlockMappingStart 22:22 ",
+    "Key 22:22 ",
+    "Scalar 22:30 replicas",
+    "Value 30:31 :",
+    "WhitespaceTrivia 31:32  ",
+    "Scalar 32:33 3",
+    "WhitespaceTrivia 33:34  ",
+    "CommentTrivia 34:63 # keep in sync with the chart",
+    "BlockEnd 63:63 ",
+    "StreamEnd 63:63 ",
+], tokens);
+Assert.Equal(yaml, tree.ToFullString());
 ```
+<!-- endref -->
 
 This is the layer to use for tooling: linters, formatters, or edits that must not disturb the rest of the file.
 
 ## Parser and emitter
 
-The event-based API mirrors libyaml and is available for streaming scenarios.
+The event-based API mirrors libyaml and is available for streaming scenarios. `Parser` and `EventReader` are in the
+`Meziantou.Framework.Yaml` namespace, and the events in `Meziantou.Framework.Yaml.Events`. This example lists the keys of
+the root mapping of each document:
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/EventReaderTests.cs;region=EventReader_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Yaml;
-using Meziantou.Framework.Yaml.Events;
+var yaml = """
+    name: first
+    items: [1, 2]
+    ---
+    name: second
+    """;
 
 var parser = Parser.CreateParser(new StringReader(yaml));
 var reader = new EventReader(parser);
 
+var keys = new List<string>();
 reader.Expect<StreamStart>();
 while (!reader.Accept<StreamEnd>())
 {
     reader.Expect<DocumentStart>();
-    // Peek, Allow, Accept, Skip(untilDepth) ...
+    reader.Expect<MappingStart>();
+    while (reader.Allow<MappingEnd>() is null)
+    {
+        keys.Add(reader.Expect<Scalar>().Value);
+        reader.Skip(); // Skip the value, and its children for a collection
+    }
+
+    reader.Expect<DocumentEnd>();
 }
+
+Assert.Equal(["name", "items", "name"], keys);
 ```
+<!-- endref -->
+
+`EventReader` also provides `Peek<T>()`, which reads the next event without consuming it, and `Skip(untilDepth)`.
 
 `Emitter` writes parsing events to a `TextWriter` and accepts an indentation width, a maximum line width, and a
 canonical mode.
@@ -1065,11 +1305,14 @@ failures.
 
 Set `SourceName` to prefix messages with the origin of the document:
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerApiTests.cs;region=YamlSerializerOptions_SourceName;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var options = new YamlSerializerOptions { SourceName = "config.yaml" };
-YamlSerializer.Deserialize<Config>(yaml, options);
-// config.yaml: (Lin: 0, Col: 3, Chr: 3) - ...: Expected a Scalar token but found 'StartSequence'.
+
+var exception = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Product>("Id: [1, 2]", options));
+Assert.Equal("config.yaml: (Lin: 0, Col: 4, Chr: 4) - (Lin: 0, Col: 4, Chr: 4): Expected a Scalar token but found 'StartSequence'.", exception.Message);
 ```
+<!-- endref -->
 
 Use `TryDeserialize` when a failure is expected and an exception is not wanted.
 
@@ -1084,6 +1327,7 @@ Use `TryDeserialize` when a failure is expected and an exception is not wanted.
 | `DuplicateKeyHandling` | `Error` | Rejects mappings with duplicate keys. |
 | `UnsafeAllowDeserializeFromTagTypeName` | `false` | Allows a YAML tag to name a CLR type to instantiate. Enable it only for trusted input. |
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerApiTests.cs;region=YamlSerializerOptions_Hardening;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var options = new YamlSerializerOptions
 {
@@ -1092,7 +1336,11 @@ var options = new YamlSerializerOptions
     AllowAliases = false,
     UnmappedMemberHandling = YamlUnmappedMemberHandling.Disallow,
 };
+
+Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Product>("Id: &id 1", options));
+Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Product>("Price: 10", options));
 ```
+<!-- endref -->
 
 The document object model expands each alias into a copy of the anchored subtree, so nesting anchors makes the node
 count grow exponentially while the document grows linearly. `MaxDepth` does not bound this, because the growth is in
@@ -1102,6 +1350,15 @@ expansion, so documents that do not use aliases are never affected.
 Pass the options to `YamlStream.Load` when reading untrusted input into the model; the parameterless overload uses
 `YamlSerializerOptions.Default`:
 
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/YamlNodeTest.cs;region=YamlStream_LoadWithOptions;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var options = new YamlSerializerOptions { MaxAliasExpansionNodeCount = 1_000 };
+
+using var reader = new StringReader("""
+    base: &base { name: default }
+    copy: *base
+    """);
+
 var stream = YamlStream.Load(reader, options);
 ```
+<!-- endref -->

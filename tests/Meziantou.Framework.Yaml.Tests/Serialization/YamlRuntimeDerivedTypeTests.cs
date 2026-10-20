@@ -3,6 +3,32 @@ using Meziantou.Framework.Yaml.Serialization;
 namespace Meziantou.Framework.Yaml.Tests.Serialization;
 public class YamlRuntimeDerivedTypeTests
 {
+    [Fact]
+    public void ReadmeExample_DerivedTypeMappings()
+    {
+        #region YamlPolymorphismOptions_DerivedTypeMappings
+        var options = new YamlSerializerOptions
+        {
+            PolymorphismOptions = new YamlPolymorphismOptions
+            {
+                DerivedTypeMappings =
+                {
+                    [typeof(Animal)] = [new YamlDerivedType(typeof(Dog), "dog")],
+                },
+            },
+        };
+        #endregion
+
+        Assert.Equal("Rex", Assert.IsType<Dog>(YamlSerializer.Deserialize<Animal>("$type: dog\nName: Rex\n", options)).Name);
+    }
+
+    internal abstract class Animal
+    {
+        public string Name { get; set; } = "";
+    }
+
+    internal sealed class Dog : Animal;
+
     // ---- Model types: no [YamlDerivedType] attributes on base ----
 
     private abstract class Vehicle

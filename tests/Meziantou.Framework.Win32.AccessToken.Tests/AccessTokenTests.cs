@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Win32.Tests;
@@ -10,6 +11,127 @@ public sealed class AccessTokenTests
     public AccessTokenTests(ITestOutputHelper output)
     {
         _output = output;
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ReadmeExample_Open()
+    {
+        #region AccessToken_Open
+        // Open the current process token
+        using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
+
+        // Open a token for a specific process
+        using var process = Process.GetCurrentProcess();
+        using var processToken = AccessToken.OpenProcessToken(process, TokenAccessLevels.Query);
+        #endregion
+
+        Assert.Equal(token.GetOwner(), processToken.GetOwner());
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ReadmeExample_Query()
+    {
+        #region AccessToken_Query
+        using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
+
+        // Get token type (Primary or Impersonation)
+        var tokenType = token.GetTokenType();
+        Assert.Equal(TokenType.TokenPrimary, tokenType);
+
+        // Check if token is elevated
+        var isElevated = token.IsElevated();
+
+        // Get elevation type (Unknown, Default, Full, or Limited)
+        var elevationType = token.GetElevationType();
+        Assert.NotEqual(TokenElevationType.Unknown, elevationType);
+        if (elevationType == TokenElevationType.Limited)
+        {
+            // The filtered token of an administrator when UAC is enabled
+            Assert.False(isElevated);
+        }
+
+        // Check if token is restricted
+        var isRestricted = token.IsRestricted();
+        Assert.False(isRestricted);
+
+        // Get token owner
+        var owner = token.GetOwner();
+        Assert.StartsWith("S-1-", owner.Sid);
+
+        // Get mandatory integrity level
+        var integrityLevel = token.GetMandatoryIntegrityLevel();
+        Assert.StartsWith("S-1-16-", integrityLevel.Sid.Sid);
+
+        // Enumerate all groups
+        var everyone = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinWorldSid);
+        Assert.Contains(token.EnumerateGroups(), group => group.Sid == everyone);
+
+        // Enumerate restricted SIDs
+        Assert.Empty(token.EnumerateRestrictedSid());
+
+        // Enumerate all privileges
+        Assert.Contains(token.EnumeratePrivileges(), privilege => privilege.Name == Privileges.SE_CHANGE_NOTIFY_NAME);
+        #endregion
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ReadmeExample_IsAdministrator()
+    {
+        #region AccessToken_IsAdministrator
+        bool IsAdministrator()
+        {
+            using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
+
+            // Check if current token has admin rights
+            if (IsAdministrator(token))
+                return true;
+
+            if (token.GetElevationType() == TokenElevationType.Limited)
+            {
+                // If limited, check the linked token (elevated token)
+                using var linkedToken = token.GetLinkedToken();
+                return linkedToken is not null && IsAdministrator(linkedToken);
+            }
+
+            return false;
+
+            static bool IsAdministrator(AccessToken accessToken)
+            {
+                var adminSid = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinBuiltinAdministratorsSid);
+                foreach (var group in accessToken.EnumerateGroups())
+                {
+                    if (group.Attributes.HasFlag(GroupSidAttributes.SE_GROUP_ENABLED) &&
+                        group.Sid == adminSid)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+        #endregion
+
+        Assert.Equal(AccessTokenTests.IsAdministrator(), IsAdministrator());
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ReadmeExample_SecurityIdentifiers()
+    {
+        #region AccessToken_SecurityIdentifiers
+        // Get SID from well-known type
+        var adminSid = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinBuiltinAdministratorsSid);
+        Assert.Equal("S-1-5-32-544", adminSid.Sid);
+        Assert.Equal($@"{adminSid.Domain}\{adminSid.Name}", adminSid.FullName); // BUILTIN\Administrators on an English Windows
+
+        // Get well-known integrity level SIDs
+        var lowIntegrity = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinLowLabelSid);
+        var mediumIntegrity = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinMediumLabelSid);
+        var highIntegrity = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinHighLabelSid);
+        Assert.Equal("S-1-16-4096", lowIntegrity.Sid);
+        Assert.Equal("S-1-16-8192", mediumIntegrity.Sid);
+        Assert.Equal("S-1-16-12288", highIntegrity.Sid);
+        #endregion
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]

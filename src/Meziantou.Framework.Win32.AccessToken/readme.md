@@ -13,11 +13,12 @@
 
 ## Usage
 
+The types are in the `Meziantou.Framework.Win32` namespace, and `Process` is in `System.Diagnostics`.
+
 ### Opening an Access Token
 
+<!-- ref:../../tests/Meziantou.Framework.Win32.AccessToken.Tests/AccessTokenTests.cs;region=AccessToken_Open;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Win32;
-
 // Open the current process token
 using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
 
@@ -25,56 +26,59 @@ using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
 using var process = Process.GetCurrentProcess();
 using var processToken = AccessToken.OpenProcessToken(process, TokenAccessLevels.Query);
 ```
+<!-- endref -->
 
 ### Querying Token Information
 
+<!-- ref:../../tests/Meziantou.Framework.Win32.AccessToken.Tests/AccessTokenTests.cs;region=AccessToken_Query;format=md-fenced-code-block;dedent=true -->
 ```csharp
 using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
 
 // Get token type (Primary or Impersonation)
 var tokenType = token.GetTokenType();
+Assert.Equal(TokenType.TokenPrimary, tokenType);
 
 // Check if token is elevated
-bool isElevated = token.IsElevated();
+var isElevated = token.IsElevated();
 
 // Get elevation type (Unknown, Default, Full, or Limited)
 var elevationType = token.GetElevationType();
+Assert.NotEqual(TokenElevationType.Unknown, elevationType);
+if (elevationType == TokenElevationType.Limited)
+{
+    // The filtered token of an administrator when UAC is enabled
+    Assert.False(isElevated);
+}
 
 // Check if token is restricted
-bool isRestricted = token.IsRestricted();
+var isRestricted = token.IsRestricted();
+Assert.False(isRestricted);
 
 // Get token owner
 var owner = token.GetOwner();
-Console.WriteLine($"Owner: {owner.FullName} ({owner.Sid})");
+Assert.StartsWith("S-1-", owner.Sid);
 
 // Get mandatory integrity level
 var integrityLevel = token.GetMandatoryIntegrityLevel();
-Console.WriteLine($"Integrity Level: {integrityLevel?.Sid}");
+Assert.StartsWith("S-1-16-", integrityLevel.Sid.Sid);
 
 // Enumerate all groups
-foreach (var group in token.EnumerateGroups())
-{
-    Console.WriteLine($"Group: {group.Sid.FullName}");
-    Console.WriteLine($"  SID: {group.Sid.Sid}");
-    Console.WriteLine($"  Attributes: {group.Attributes}");
-}
+var everyone = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinWorldSid);
+Assert.Contains(token.EnumerateGroups(), group => group.Sid == everyone);
 
 // Enumerate restricted SIDs
-foreach (var group in token.EnumerateRestrictedSid())
-{
-    Console.WriteLine($"Restricted SID: {group.Sid.FullName}");
-}
+Assert.Empty(token.EnumerateRestrictedSid());
 
 // Enumerate all privileges
-foreach (var privilege in token.EnumeratePrivileges())
-{
-    Console.WriteLine($"Privilege: {privilege.Name}");
-    Console.WriteLine($"  Attributes: {privilege.Attributes}");
-}
+Assert.Contains(token.EnumeratePrivileges(), privilege => privilege.Name == Privileges.SE_CHANGE_NOTIFY_NAME);
 ```
+<!-- endref -->
 
 ### Managing Privileges
 
+A privilege can only be enabled when the token holds it: `SE_DEBUG_NAME` is granted to administrators.
+
+<!-- ref:../../samples/Meziantou.Framework.Win32.AccessTokenConsole/ReadmeExamples.cs;region=AccessToken_ManagePrivileges;format=md-fenced-code-block;dedent=true -->
 ```csharp
 using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query | TokenAccessLevels.AdjustPrivileges);
 
@@ -90,9 +94,11 @@ token.RemovePrivilege(Privileges.SE_DEBUG_NAME);
 // Disable all privileges
 token.DisableAllPrivileges();
 ```
+<!-- endref -->
 
 ### Checking for Administrator Privileges
 
+<!-- ref:../../tests/Meziantou.Framework.Win32.AccessToken.Tests/AccessTokenTests.cs;region=AccessToken_IsAdministrator;format=md-fenced-code-block;dedent=true -->
 ```csharp
 bool IsAdministrator()
 {
@@ -106,7 +112,7 @@ bool IsAdministrator()
     {
         // If limited, check the linked token (elevated token)
         using var linkedToken = token.GetLinkedToken();
-        return IsAdministrator(linkedToken);
+        return linkedToken is not null && IsAdministrator(linkedToken);
     }
 
     return false;
@@ -122,24 +128,31 @@ bool IsAdministrator()
                 return true;
             }
         }
+
         return false;
     }
 }
 ```
+<!-- endref -->
 
 ### Working with Security Identifiers
 
+<!-- ref:../../tests/Meziantou.Framework.Win32.AccessToken.Tests/AccessTokenTests.cs;region=AccessToken_SecurityIdentifiers;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Get SID from well-known type
 var adminSid = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinBuiltinAdministratorsSid);
-Console.WriteLine($"Admin SID: {adminSid.Sid}");
-Console.WriteLine($"Admin Name: {adminSid.FullName}");
+Assert.Equal("S-1-5-32-544", adminSid.Sid);
+Assert.Equal($@"{adminSid.Domain}\{adminSid.Name}", adminSid.FullName); // BUILTIN\Administrators on an English Windows
 
 // Get well-known integrity level SIDs
 var lowIntegrity = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinLowLabelSid);
 var mediumIntegrity = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinMediumLabelSid);
 var highIntegrity = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinHighLabelSid);
+Assert.Equal("S-1-16-4096", lowIntegrity.Sid);
+Assert.Equal("S-1-16-8192", mediumIntegrity.Sid);
+Assert.Equal("S-1-16-12288", highIntegrity.Sid);
 ```
+<!-- endref -->
 
 ## API Reference
 

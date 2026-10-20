@@ -400,10 +400,15 @@ public partial class KeyframeEffect : AnimationEffect
         Animation?.OnEffectChanged();
     }
 
-    /// <summary>Registers the effect with the document of its target while it is associated with an animation (the effect stack of the target).</summary>
-    private void UpdateRegistration()
+    /// <summary>
+    /// Registers the effect with the document of its target while it is associated with an animation that is not idle and that
+    /// is not settled out of effect (the effect stack of the target, see <see cref="IsSettledOutOfEffect"/>): the canceled and
+    /// completed CSS transitions and animations would otherwise stay in the effect stack of their target. A change of the
+    /// animation (e.g. <c>play()</c>) registers the effect again (see <see cref="Animations.Animation.IsIdle"/>).
+    /// </summary>
+    internal void UpdateRegistration()
     {
-        var target = Animation is null ? null : _target;
+        var target = Animation is { IsIdle: false } animation && !IsSettledOutOfEffect(animation) ? _target : null;
         if (ReferenceEquals(target, _registeredTarget) && _pseudoElement == _registeredPseudoElement && ReferenceEquals(target?.NodeDocument, _registeredDocument))
             return;
 
@@ -419,6 +424,25 @@ public partial class KeyframeEffect : AnimationEffect
         {
             _registeredDocument!.Animations.AddEffect(target, _pseudoElement, this);
         }
+    }
+
+    /// <summary>
+    /// Returns whether the animation is finished, and its effect is neither current nor in effect and stays so until the animation
+    /// or the effect is changed: its current time is held, on a timeline whose time never goes backwards. The effect stays in the
+    /// effect stack while the animation has pending events (the view transitions find the animations through the effect stacks).
+    /// </summary>
+    private bool IsSettledOutOfEffect(Animation animation)
+    {
+        if (animation.PlayStateValue != AnimationPlayState.Finished || animation.TimelineValue is { IsMonotonicallyIncreasing: false } || IsInEffect)
+            return false;
+
+        // (an effect is current before its active phase while its animation plays forwards, and after it while it plays backwards,
+        // see IsCurrent)
+        var phase = GetPhase(LocalTime);
+        if ((animation.EffectivePlaybackRate > 0 && phase == AnimationEffectPhase.Before) || (animation.EffectivePlaybackRate < 0 && phase == AnimationEffectPhase.After))
+            return false;
+
+        return animation.DocumentForTiming?.AnimationsOrNull?.HasPendingEvents(animation) != true;
     }
 
     /// <summary>

@@ -96,6 +96,17 @@ public class InvalidationBenchmarks
         _transitionsCard.ClassList.Toggle("selected");
         return _transitions.RunFrame();
     }
+
+    /// <summary>
+    /// Toggles a class of one card that changes its transitioned properties, then runs one animation frame: every toggle cancels
+    /// or reverses the running transitions of the card.
+    /// </summary>
+    [Benchmark]
+    public object? TransitionReversalFrame()
+    {
+        _transitionsCard.ClassList.Toggle("highlight");
+        return _transitions.RunFrame();
+    }
 }
 
 /// <summary>The document of <see cref="InvalidationBenchmarks"/> with a running CSS animation or transitions, advanced one frame at a time.</summary>
@@ -247,6 +258,7 @@ internal static class InvalidationProfile
             "offset" => () => benchmarks.OffsetTopAfterEachWrite(),
             "frame" => benchmarks.AnimationFrame,
             "transition-frame" => benchmarks.ClassChangeTransitionFrame,
+            "transition-reversal" => benchmarks.TransitionReversalFrame,
             _ => throw new ArgumentOutOfRangeException(nameof(scenario)),
         };
 

@@ -223,6 +223,29 @@ public sealed class PostgreSqlServerSecurityTests
     }
 
     [Fact]
+    public async Task BindParameterLengthNearInt32MaxValue_ReportsAnErrorAndTheConnectionSurvives()
+    {
+        using var server = CreateServer();
+        await server.StartAsync();
+
+        using var client = await RawPostgreSqlClient.ConnectAsync(server.Ports[0]);
+        await client.AuthenticateClearTextAsync();
+        await client.SendParseAsync("s1", "SELECT $1");
+
+        // Portal "", statement "s1", no format code, one parameter whose length is int.MaxValue but has no value
+        await client.SendMessageAsync((byte)'B', new byte[] { 0, (byte)'s', (byte)'1', 0, 0, 0, 0, 1, 0x7F, 0xFF, 0xFF, 0xFF });
+        await client.SendSyncAsync();
+
+        var messages = await client.ReadUntilReadyForQueryAsync();
+        Assert.Equal([(byte)'1', (byte)'E', (byte)'Z'], messages.Select(message => message.Type));
+        Assert.Equal("08P01", messages[1].ErrorFields()['C']);
+
+        await client.SendSimpleQueryAsync("SELECT 1");
+        var afterRecovery = await client.ReadUntilReadyForQueryAsync();
+        Assert.Contains(afterRecovery, message => message.Type == (byte)'D');
+    }
+
+    [Fact]
     public async Task PreparedStatementLimit_IsEnforced()
     {
         using var server = CreateServer(configure: options => options.MaxPreparedStatementsPerConnection = 4);

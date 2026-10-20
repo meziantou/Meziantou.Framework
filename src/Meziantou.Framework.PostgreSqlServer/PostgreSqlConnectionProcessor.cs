@@ -402,7 +402,8 @@ internal sealed class PostgreSqlConnectionProcessor
 
         var initialResponseLength = BinaryPrimitives.ReadInt32BigEndian(payload.Slice(index, 4));
         index += 4;
-        if (initialResponseLength < 0 || index + initialResponseLength > payload.Length)
+        // Compared by subtraction: index + initialResponseLength overflows for a length close to int.MaxValue.
+        if (initialResponseLength < 0 || initialResponseLength > payload.Length - index)
         {
             throw new InvalidDataException("Invalid SCRAM initial response length.");
         }
@@ -547,7 +548,8 @@ internal sealed class PostgreSqlConnectionProcessor
             byte[]? value = null;
             if (valueLength >= 0)
             {
-                if (index + valueLength > payload.Length)
+                // Compared by subtraction: index + valueLength overflows for a length close to int.MaxValue.
+                if (valueLength > payload.Length - index)
                 {
                     throw new InvalidDataException("Invalid Bind parameter payload.");
                 }

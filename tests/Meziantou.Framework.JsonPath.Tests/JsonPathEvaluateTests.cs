@@ -8,6 +8,66 @@ namespace Meziantou.Framework.JsonPathTests;
 public sealed class JsonPathEvaluateTests
 {
     [Fact]
+    public void ReadmeExample_Usage()
+    {
+        #region JsonPath_Usage
+        var document = JsonNode.Parse("""{"store":{"book":[{"title":"A"},{"title":"B"}]}}""");
+
+        // Parse a JSONPath expression (can be reused)
+        var path = JsonPath.Parse("$.store.book[*].title");
+
+        // Evaluate against a document
+        var result = path.Evaluate(document);
+        var matches = new List<string>();
+        foreach (var match in result)
+        {
+            matches.Add($"{match.Path}: {match.Value}");
+        }
+
+        Assert.Equal(["$['store']['book'][0]['title']: A", "$['store']['book'][1]['title']: B"], matches);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_EvaluationModes()
+    {
+        #region JsonPath_EvaluationModes
+        var doc = JsonNode.Parse("""{"a": 1}""");
+        var path = JsonPath.Parse("$.name");
+
+        var laxValue = path.EvaluateValue(doc, JsonPathEvaluationMode.Lax);
+        Assert.Null(laxValue);
+
+        Assert.Throws<JsonPathEvaluationException>(() => path.EvaluateValue(doc, JsonPathEvaluationMode.Strict));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_CustomNavigator()
+    {
+        #region JsonPath_CustomNavigator
+        var myRoot = MyNode.Object(new()
+        {
+            ["items"] = MyNode.Array(
+                MyNode.Object(new() { ["name"] = MyNode.String("a"), ["enabled"] = MyNode.Boolean(true) }),
+                MyNode.Object(new() { ["name"] = MyNode.String("b"), ["enabled"] = MyNode.Boolean(false) })),
+        });
+
+        var path = JsonPath.Parse("$.items[?@.enabled == true]");
+        var result = path.Evaluate(root: myRoot, navigator: MyNodeNavigator.Instance);
+
+        var matches = new List<string>();
+        foreach (var match in result)
+        {
+            MyNode? node = match.Value;
+            matches.Add($"{match.Path}: {node?.Properties["name"]?.Value}");
+        }
+
+        Assert.Equal(["$['items'][0]: a"], matches);
+        #endregion
+    }
+
+    [Fact]
     public void Evaluate_RootOnly()
     {
         var doc = JsonNode.Parse("""{"a": 1}""");
@@ -1760,3 +1820,84 @@ public sealed class JsonPathEvaluateTests
         }
     }
 }
+
+#pragma warning disable MA0048 // File name must match type name
+#region JsonPath_CustomNavigatorTypes
+internal sealed class MyNode
+{
+    private MyNode(JsonPathNodeKind kind) => Kind = kind;
+
+    public JsonPathNodeKind Kind { get; }
+    public object? Value { get; private init; } // string, double or bool
+    public Dictionary<string, MyNode?> Properties { get; private init; } = [];
+    public List<MyNode?> Items { get; private init; } = [];
+
+    public static MyNode Object(Dictionary<string, MyNode?> properties) => new(JsonPathNodeKind.Object) { Properties = properties };
+    public static MyNode Array(params MyNode?[] items) => new(JsonPathNodeKind.Array) { Items = [.. items] };
+    public static MyNode String(string value) => new(JsonPathNodeKind.String) { Value = value };
+    public static MyNode Number(double value) => new(JsonPathNodeKind.Number) { Value = value };
+    public static MyNode Boolean(bool value) => new(JsonPathNodeKind.Boolean) { Value = value };
+}
+
+internal sealed class MyNodeNavigator : JsonPathNavigator<MyNode>
+{
+    public static MyNodeNavigator Instance { get; } = new();
+
+    // A null node is JSON null
+    public override JsonPathNodeKind GetKind(MyNode? value) => value?.Kind ?? JsonPathNodeKind.Null;
+
+    public override IEnumerable<JsonPathProperty<MyNode>> GetProperties(MyNode? value)
+        => value?.Properties.Select(property => new JsonPathProperty<MyNode>(property.Key, property.Value)) ?? [];
+
+    public override bool TryGetPropertyValue(MyNode? value, string name, out MyNode? result)
+    {
+        result = null;
+        return value is not null && value.Properties.TryGetValue(name, out result);
+    }
+
+    public override int GetArrayLength(MyNode? value) => value?.Items.Count ?? 0;
+
+    public override bool TryGetElement(MyNode? value, int index, out MyNode? result)
+    {
+        if (value is not null && index >= 0 && index < value.Items.Count)
+        {
+            result = value.Items[index];
+            return true;
+        }
+
+        result = null;
+        return false;
+    }
+
+    public override bool TryGetString(MyNode? value, out string? result)
+    {
+        result = value?.Value as string;
+        return result is not null;
+    }
+
+    public override bool TryGetNumber(MyNode? value, out double result)
+    {
+        if (value?.Value is double number)
+        {
+            result = number;
+            return true;
+        }
+
+        result = 0;
+        return false;
+    }
+
+    public override bool TryGetBoolean(MyNode? value, out bool result)
+    {
+        if (value?.Value is bool boolean)
+        {
+            result = boolean;
+            return true;
+        }
+
+        result = false;
+        return false;
+    }
+}
+#endregion
+#pragma warning restore MA0048

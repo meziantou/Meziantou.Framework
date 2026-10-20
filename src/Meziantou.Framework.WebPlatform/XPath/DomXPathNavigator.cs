@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Xml;
 using System.Xml.XPath;
 using Meziantou.Framework.WebPlatform.Dom;
@@ -20,6 +21,10 @@ internal sealed class DomXPathNavigator : XPathNavigator
     // Namespace nodes: the element and the list of the in-scope namespaces of the element, with the current index
     private List<(string Prefix, string Namespace)>? _namespaces;
     private int _namespaceIndex = -1;
+
+    // The root of the tree of an attribute without owner element: the XPath engine moves from an attribute to its parent
+    // without checking the result (the following axis loops on an attribute that has no parent)
+    private bool _detachedAttributeRoot;
 
     public DomXPathNavigator(Node node)
     {
@@ -44,6 +49,7 @@ internal sealed class DomXPathNavigator : XPathNavigator
         _attributeIndex = other._attributeIndex;
         _namespaces = other._namespaces;
         _namespaceIndex = other._namespaceIndex;
+        _detachedAttributeRoot = other._detachedAttributeRoot;
     }
 
     /// <summary>The DOM node of the current position (the Attr node for attributes, the first Text node of a text run), or null for namespace nodes.</summary>
@@ -51,7 +57,7 @@ internal sealed class DomXPathNavigator : XPathNavigator
     {
         get
         {
-            if (_namespaceIndex >= 0)
+            if (_namespaceIndex >= 0 || _detachedAttributeRoot)
                 return null;
 
             if (_attributeIndex >= 0)
@@ -68,7 +74,7 @@ internal sealed class DomXPathNavigator : XPathNavigator
     public override XPathNavigator Clone() => new DomXPathNavigator(this);
 
     public override bool IsSamePosition(XPathNavigator other) =>
-        other is DomXPathNavigator navigator && ReferenceEquals(navigator._node, _node) && navigator._attributeIndex == _attributeIndex && navigator._namespaceIndex == _namespaceIndex;
+        other is DomXPathNavigator navigator && ReferenceEquals(navigator._node, _node) && navigator._attributeIndex == _attributeIndex && navigator._namespaceIndex == _namespaceIndex && navigator._detachedAttributeRoot == _detachedAttributeRoot;
 
     public override bool MoveTo(XPathNavigator other)
     {
@@ -79,6 +85,7 @@ internal sealed class DomXPathNavigator : XPathNavigator
         _attributeIndex = navigator._attributeIndex;
         _namespaces = navigator._namespaces;
         _namespaceIndex = navigator._namespaceIndex;
+        _detachedAttributeRoot = navigator._detachedAttributeRoot;
         return true;
     }
 
@@ -95,6 +102,9 @@ internal sealed class DomXPathNavigator : XPathNavigator
 
             if (IsOnAttribute)
                 return XPathNodeType.Attribute;
+
+            if (_detachedAttributeRoot)
+                return XPathNodeType.Root;
 
             return _node switch
             {
@@ -123,7 +133,7 @@ internal sealed class DomXPathNavigator : XPathNavigator
             {
                 Element element => element.LocalName,
                 ProcessingInstruction pi => pi.Target,
-                Attr attr => attr.LocalName,
+                Attr attr when !_detachedAttributeRoot => attr.LocalName,
                 _ => "",
             };
         }
@@ -148,7 +158,7 @@ internal sealed class DomXPathNavigator : XPathNavigator
             {
                 Element element => element.Prefix is null ? element.LocalName : element.Prefix + ":" + element.LocalName,
                 ProcessingInstruction pi => pi.Target,
-                Attr attr => attr.Name,
+                Attr attr when !_detachedAttributeRoot => attr.Name,
                 _ => "",
             };
         }
@@ -167,7 +177,7 @@ internal sealed class DomXPathNavigator : XPathNavigator
             return _node switch
             {
                 Element element => element.NamespaceUri ?? "",
-                Attr attr => attr.NamespaceUri ?? "",
+                Attr attr when !_detachedAttributeRoot => attr.NamespaceUri ?? "",
                 _ => "",
             };
         }
@@ -186,7 +196,7 @@ internal sealed class DomXPathNavigator : XPathNavigator
             return _node switch
             {
                 Element element => element.Prefix ?? "",
-                Attr attr => attr.Prefix ?? "",
+                Attr attr when !_detachedAttributeRoot => attr.Prefix ?? "",
                 _ => "",
             };
         }
@@ -228,7 +238,7 @@ internal sealed class DomXPathNavigator : XPathNavigator
                     // Comments and processing instructions
                     return characterData.Data;
 
-                case Attr attr:
+                case Attr attr when !_detachedAttributeRoot:
                     // An attribute without owner element
                     return attr.Value;
 
@@ -383,6 +393,12 @@ internal sealed class DomXPathNavigator : XPathNavigator
             return true;
         }
 
+        if (_node is Attr && !_detachedAttributeRoot)
+        {
+            _detachedAttributeRoot = true;
+            return true;
+        }
+
         var parent = _node.ParentNode;
         if (parent is null)
             return false;
@@ -397,6 +413,7 @@ internal sealed class DomXPathNavigator : XPathNavigator
         _namespaceIndex = -1;
         _namespaces = null;
         _node = _node.GetRoot();
+        _detachedAttributeRoot = _node is Attr;
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -519,7 +536,9 @@ internal sealed class DomXPathNavigator : XPathNavigator
     /// <summary>The id() function (https://www.w3.org/TR/xpath-10/#function-id): the elements whose ID is the given value.</summary>
     public override bool MoveToId(string id)
     {
-        var root = _node.GetRoot();
+        // The elements of the tree scope of the node (its shadow root, or else its document, as in the browsers): the id()
+        // of a node of a disconnected tree selects the elements of the document
+        Node root = _node.GetRoot() as ShadowRoot ?? (Node)_node.NodeDocument;
         for (var node = root.FirstChild; node is not null; node = node.GetNextInTreeOrder(root))
         {
             if (node is Element element && element.IdValue == id)
@@ -528,6 +547,7 @@ internal sealed class DomXPathNavigator : XPathNavigator
                 _attributeIndex = -1;
                 _namespaceIndex = -1;
                 _namespaces = null;
+                _detachedAttributeRoot = false;
                 return true;
             }
         }
@@ -545,8 +565,15 @@ internal sealed class DomXPathNavigator : XPathNavigator
 
         if (!ReferenceEquals(_node, other._node))
         {
-            if (!ReferenceEquals(_node.GetRoot(), other._node.GetRoot()))
-                return XmlNodeOrder.Unknown;
+            // The trees are in an arbitrary but consistent order, so that the union of nodes of different trees keeps them all
+            var root = _node.GetRoot();
+            var otherRoot = other._node.GetRoot();
+            if (!ReferenceEquals(root, otherRoot))
+            {
+                var hash = RuntimeHelpers.GetHashCode(root);
+                var otherHash = RuntimeHelpers.GetHashCode(otherRoot);
+                return hash == otherHash ? XmlNodeOrder.Unknown : hash < otherHash ? XmlNodeOrder.Before : XmlNodeOrder.After;
+            }
 
             // An element precedes its attributes and namespaces, which precede its children
             if (_node.IsAncestorOf(other._node))
@@ -559,7 +586,7 @@ internal sealed class DomXPathNavigator : XPathNavigator
         }
 
         // Same element: the element, then its namespace nodes, then its attributes
-        static int Rank(DomXPathNavigator navigator) => navigator.IsOnNamespace ? 1 + navigator._namespaceIndex : navigator.IsOnAttribute ? 100000 + navigator._attributeIndex : 0;
+        static int Rank(DomXPathNavigator navigator) => navigator._detachedAttributeRoot ? -1 : navigator.IsOnNamespace ? 1 + navigator._namespaceIndex : navigator.IsOnAttribute ? 100000 + navigator._attributeIndex : 0;
         return Rank(this) < Rank(other) ? XmlNodeOrder.Before : XmlNodeOrder.After;
     }
 }

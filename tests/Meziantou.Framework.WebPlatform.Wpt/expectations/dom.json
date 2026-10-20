@@ -3404,6 +3404,9 @@
   "dom/window-extends-event-target.html": {
     "total": 3
   },
+  "dom/xpath-evaluation-detached-nodes.html": {
+    "total": 17
+  },
   "dom/xpath-result-single-node-value-nullable.html": {
     "total": 1
   }

@@ -399,8 +399,8 @@ internal sealed class Vp8LDecoder : IDisposable
 
     private void DecodePixels(Span<uint> pixels, int width, ReadOnlySpan<Vp8LPrefixCode> groups, ReadOnlySpan<uint> entropyImage, int entropyWidth, int prefixBits, Span<uint> cache, int cacheBits)
     {
-        // The bit reader state is held in locals (registers) and stored back on exit. Pixels and cache entries are addressed by
-        // reference: position < total, hashes and keys < cache size; prefix-code tables are addressed by their built offsets
+        // The bit reader state is held in locals (registers) and stored back on exit. Pixels and cache entries are addressed
+        // by reference: position < total, hashes and keys < cache size; prefix-code tables are addressed by their built offsets
         var reader = _reader;
         reader.Load(out var value, out var bits, out var bytePosition);
         ref var data = ref unsafe(MemoryMarshal.GetArrayDataReference(reader.Data));

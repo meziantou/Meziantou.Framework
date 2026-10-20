@@ -17,10 +17,12 @@ const string StepTrimmable = "trimmable";
 const string StepSlnx = "slnx";
 const string StepTemplates = "templates";
 const string StepBom = "bom";
+const string StepSnippets = "snippets";
+const string StepPublicSuffix = "public-suffix";
 const string StepValidateTestProjects = "validate-testprojects";
 const string AnalyzerRulesSectionMarker = "<!-- analyzer-rules -->";
-string[] defaultSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepBom];
-string[] knownSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepBom, StepValidateTestProjects];
+string[] defaultSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepSnippets, StepPublicSuffix, StepBom];
+string[] knownSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepSnippets, StepPublicSuffix, StepBom, StepValidateTestProjects];
 var updatedFiles = new ConcurrentQueue<string>();
 var outputPath = "slnx";
 var selectedSteps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -33,8 +35,8 @@ for (var i = 0; i < args.Length; i++)
             Console.WriteLine("Usage: dotnet run ./eng/update-all.cs [-- --step <name>] [--output-path <path>]");
             Console.WriteLine("Runs source generation/update steps.");
             Console.WriteLine("Available step names:");
-            Console.WriteLine("  readme, trimmable, slnx, templates, bom, validate-testprojects, all");
-            Console.WriteLine("Default order: readme -> trimmable -> slnx -> templates -> bom");
+            Console.WriteLine("  readme, trimmable, slnx, templates, snippets, public-suffix, bom, validate-testprojects, all");
+            Console.WriteLine("Default order: readme -> trimmable -> slnx -> templates -> snippets -> public-suffix -> bom");
             return 0;
 
         case "--output-path" when i + 1 < args.Length:
@@ -90,7 +92,21 @@ if (ShouldRunStep(StepTemplates))
     tasks.Add(Task.Run(() => RunTemplateStep(rootPath)));
 }
 
+if (ShouldRunStep(StepSnippets))
+{
+    Console.WriteLine("[update-all] Running snippets");
+    tasks.Add(Task.Run(() => RunUpdateSnippetsStep(rootPath)));
+}
+
 await Task.WhenAll(tasks);
+
+// Builds projects that the parallel steps also build, which would fail with file locks (MSB3026) if run at the same time
+if (ShouldRunStep(StepPublicSuffix))
+{
+    Console.WriteLine("[update-all] Running public-suffix");
+    RunValidatePublicSuffixListStep(rootPath);
+}
+
 if (ShouldRunStep(StepBom))
 {
     Console.WriteLine("[update-all] Running bom");
@@ -177,6 +193,76 @@ void RunTemplateStep(FullPath rootPath)
             updatedFiles.Enqueue(relativeTemplatePath);
         }
     });
+}
+
+// Fills the code examples of the XML documentation and of the readme files from regions of tests and samples, and
+// the other file references of the repository, using Meziantou.FileReferencer
+void RunUpdateSnippetsStep(FullPath rootPath)
+{
+    TimeSpan[] retryDelays = [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(15)];
+    if (RunProcessAndReturnExitCodeWithRetry(rootPath, "dotnet", ["tool", "restore"], retryDelays) != 0)
+    {
+        Console.WriteLine("ERROR: 'dotnet tool restore' failed");
+        updatedFiles.Enqueue("dotnet-tools.json");
+        return;
+    }
+
+    var psi = new ProcessStartInfo("dotnet")
+    {
+        UseShellExecute = false,
+        WorkingDirectory = rootPath,
+        RedirectStandardOutput = true,
+        Environment = { ["TERM"] = "dumb" },
+    };
+
+    foreach (var argument in (string[])["tool", "run", "Meziantou.FileReferencer", "--", ".", "--git-tracked-only"])
+    {
+        psi.ArgumentList.Add(argument);
+    }
+
+    foreach (var line in File.ReadLines(rootPath / "eng" / "file-references-exclusions.txt"))
+    {
+        if (line is "" or ['#', ..])
+            continue;
+
+        psi.ArgumentList.Add("--exclude");
+        psi.ArgumentList.Add(line);
+    }
+
+    // The tool reports each file it rewrites on the standard output. Errors go to the standard error, which is not redirected.
+    const string UpdatedFilePrefix = "Updating file ";
+    using var process = Process.Start(psi)!;
+    while (process.StandardOutput.ReadLine() is { } line)
+    {
+        if (line.StartsWith(UpdatedFilePrefix, StringComparison.Ordinal))
+        {
+            var relativePath = (rootPath / line[UpdatedFilePrefix.Length..]).MakePathRelativeTo(rootPath);
+            Console.WriteLine($"[update-snippets] Updated {relativePath}");
+            updatedFiles.Enqueue(relativePath);
+        }
+    }
+
+    process.WaitForExit();
+    if (process.ExitCode is not 0)
+    {
+        Console.WriteLine("ERROR: Some file references are invalid, see the errors above");
+        updatedFiles.Enqueue("(invalid file references)");
+    }
+}
+
+// Checks that the rules embedded in Meziantou.Framework.Uri are generated from the public suffix list shared with
+// Meziantou.Framework.WebPlatform. Regenerating them needs the network and bumps the package version, so this step only checks.
+void RunValidatePublicSuffixListStep(FullPath rootPath)
+{
+    var latestTargetFramework = GetLatestTargetFramework(rootPath);
+    var csprojPath = rootPath / "tools" / "Meziantou.Framework.Uri.PublicSuffix.Generator" / "Meziantou.Framework.Uri.PublicSuffix.Generator.csproj";
+    BuildToolProjectWithRetry(csprojPath, latestTargetFramework);
+    var exitCode = RunProcessAndReturnExitCode(rootPath, "dotnet", ["run", "--project", csprojPath, "--no-build", "--framework", latestTargetFramework, "--", "--check"]);
+    if (exitCode is not 0)
+    {
+        Console.WriteLine("ERROR: The public suffix list of Meziantou.Framework.Uri is out of date. Run 'dotnet run --project tools/Meziantou.Framework.Uri.PublicSuffix.Generator'");
+        updatedFiles.Enqueue("src/Meziantou.Framework.Uri/PublicSuffix/PublicSuffixList.g.cs");
+    }
 }
 
 void RunUpdateBomStep(FullPath rootPath)

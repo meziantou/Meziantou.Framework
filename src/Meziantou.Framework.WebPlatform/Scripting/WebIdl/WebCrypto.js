@@ -156,8 +156,8 @@
   const getTypedArrayName = (value) => isObject(value) ? apply(typedArrayName, value, []) : undefined;
   const isBufferSource = (value) => isObject(value) && (isArrayBuffer(value) || getTypedArrayName(value) !== undefined || isDataView(value));
 
-  // https://webidl.spec.whatwg.org/#js-buffer-source-types: BufferSource is not [AllowShared]. The value is kept as a
-  // reference: the bytes are copied when the algorithm says so.
+  // https://webidl.spec.whatwg.org/#js-buffer-source-types: BufferSource is not [AllowShared]. The value is kept as
+  // a reference: the bytes are copied when the algorithm says so.
   function convertBufferSource(value, what) {
     if (isObject(value)) {
       if (isArrayBuffer(value)) return value;

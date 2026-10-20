@@ -57,10 +57,6 @@ jobs:
         uses: $/.github/actions/setup-dotnet
       - name: Validate generated files and test project TFMs
         run: dotnet run ./eng/update-all.cs
-      - name: Validate the public suffix list of Meziantou.Framework.Uri
-        run: |
-          dotnet run --project tools/Meziantou.Framework.Uri.PublicSuffix.Generator -- --check
-          if ($LASTEXITCODE -ne 0) { throw "The public suffix list of Meziantou.Framework.Uri is not generated from tests/Meziantou.Framework.WebPlatform.SpecData/publicsuffix/public_suffix_list.dat" }
 
   run_analyzers:
     if: github.event_name != 'schedule'

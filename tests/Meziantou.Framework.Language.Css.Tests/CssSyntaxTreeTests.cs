@@ -390,6 +390,34 @@ public sealed class CssSyntaxTreeTests
     }
 
     [Fact]
+    public void ParseText_DocumentationExample()
+    {
+        #region CssSyntaxTree_ParseText
+        var tree = CssSyntaxTree.ParseText(".card { color: red; &:hover { color: blue } }");
+        var rule = (CssQualifiedRuleSyntax)tree.GetRoot().Statements[0];
+        var selectors = (CssSelectorListSyntax)rule.Prelude!;
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Equal(".card", selectors.Selectors.Single().ToString());
+        #endregion
+    }
+
+    [Fact]
+    public void DescendantNodes_DocumentationExample()
+    {
+        #region CssSyntaxNode_DescendantNodes
+        var tree = CssSyntaxTree.ParseText("a { color: red }");
+
+        var kinds = new List<SyntaxKind>();
+        foreach (var node in tree.GetRoot().DescendantNodes())
+        {
+            kinds.Add(node.Kind());
+        }
+
+        Assert.Equal([SyntaxKind.StyleRule, SyntaxKind.SelectorList, SyntaxKind.ComplexSelector, SyntaxKind.ComplexSelectorPart, SyntaxKind.CompoundSelector, SyntaxKind.TypeSelector, SyntaxKind.Block, SyntaxKind.Declaration, SyntaxKind.TokenValue], kinds);
+        #endregion
+    }
+
+    [Fact]
     public void ParseText_AtRulePreludeStructure()
     {
         Assert.Equal(
@@ -813,6 +841,15 @@ public sealed class CssSyntaxTreeTests
         Assert.Equal("", CssSyntaxAssert.Diagnostics(CssSyntaxTree.Create(newRoot)));
     }
 
+    [Fact]
+    public void SyntaxFactory_DocumentationExample()
+    {
+        #region SyntaxFactory_Declaration
+        var declaration = SyntaxFactory.Declaration("color", SyntaxFactory.CssTokenValue(SyntaxFactory.Identifier("red")));
+        Assert.Equal("color: red;", declaration.ToFullString());
+        #endregion
+    }
+
     [Theory]
     [InlineData("@media (a) and (b) {}", "@media (a) and (b) and (c) {}")]
     [InlineData("@media (a) or (b) {}", "@media (a) or (b) or (c) {}")]
@@ -884,6 +921,27 @@ public sealed class CssSyntaxTreeTests
         var rewritten = (CssStyleSheetSyntax)new RenameClassRewriter().Visit(root)!;
 
         Assert.Equal(".new, .other > .new { } :is(.new) { }", rewritten.ToFullString());
+    }
+
+    [Fact]
+    public void Rewriter_DocumentationExample()
+    {
+        var root = CssSyntaxTree.ParseText(".old, .other > .old { }").GetRoot();
+
+        var rewritten = new RenameClass().Visit(root);
+
+        Assert.Equal(".new, .other > .new { }", rewritten?.ToFullString());
+    }
+
+    [Fact]
+    public void Walker_DocumentationExample()
+    {
+        var root = CssSyntaxTree.ParseText("a { color: red; margin: 0 } @media print { b { color: black } }").GetRoot();
+        var counter = new DeclarationCounter();
+
+        counter.Visit(root);
+
+        Assert.Equal(3, counter.Count);
     }
 
     [Fact]
@@ -996,6 +1054,27 @@ public sealed class CssSyntaxTreeTests
     {
         public override SyntaxNode? VisitTypeSelector(CssTypeSelectorSyntax node) => node.WithNameToken(SyntaxFactory.Identifier("b").WithTriviaFrom(node.NameToken));
     }
+
+    #region CssSyntaxRewriter_RenameClass
+    private sealed class RenameClass : CssSyntaxRewriter
+    {
+        public override SyntaxNode? VisitClassSelector(CssClassSelectorSyntax node)
+            => node.Name == "old" ? node.WithNameToken(SyntaxFactory.Identifier("new").WithTriviaFrom(node.NameToken)) : base.VisitClassSelector(node);
+    }
+    #endregion
+
+    #region CssSyntaxWalker_DeclarationCounter
+    private sealed class DeclarationCounter : CssSyntaxWalker
+    {
+        public int Count { get; private set; }
+
+        public override void VisitDeclaration(CssDeclarationSyntax node)
+        {
+            Count++;
+            base.VisitDeclaration(node);
+        }
+    }
+    #endregion
 
     /// <summary>A small generator whose sequence does not change between runtimes, so a failure can be reproduced from its seed.</summary>
     private sealed class DeterministicRandom(int seed)

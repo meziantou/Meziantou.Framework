@@ -4,11 +4,16 @@ namespace Meziantou.Framework.Language.Json;
 
 /// <summary>Visits a JSON node and everything below it.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Json.Tests/JsonSyntaxTreeTests.cs" ref:region="JsonSyntaxWalker_StringCounter" ref:dedent="true">
 /// private sealed class StringCounter : JsonSyntaxWalker
 /// {
 ///     public int Count { get; private set; }
-///     public override void VisitJsonString(JsonStringSyntax node) { Count++; base.VisitJsonString(node); }
+///
+///     public override void VisitJsonString(JsonStringSyntax node)
+///     {
+///         Count++;
+///         base.VisitJsonString(node);
+///     }
 /// }
 /// </code>
 /// </example>

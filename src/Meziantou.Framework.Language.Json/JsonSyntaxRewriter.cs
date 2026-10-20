@@ -6,10 +6,16 @@ namespace Meziantou.Framework.Language.Json;
 /// costs nothing and keeps every node.
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Json.Tests/JsonSyntaxTreeTests.cs" ref:region="JsonSyntaxRewriter_RenameMembers" ref:dedent="true">
 /// private sealed class RenameMembers : JsonSyntaxRewriter
 /// {
-///     public override SyntaxNode? VisitJsonMember(JsonMemberSyntax node) => node.WithName(node.Name.ToUpperInvariant());
+///     public override SyntaxNode? VisitJsonMember(JsonMemberSyntax node)
+///     {
+///         // Rewrite the value first, so the members of nested objects are renamed too
+///         var member = (JsonMemberSyntax)base.VisitJsonMember(node)!;
+///
+///         return member.WithName(member.Name.ToUpperInvariant());
+///     }
 /// }
 /// </code>
 /// </example>

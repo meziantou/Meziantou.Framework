@@ -5,13 +5,14 @@ namespace Meziantou.Framework.CodeOwners;
 /// <summary>
 /// Describes why a CODEOWNERS file is invalid, and where.
 /// <example>
-/// <code>
-/// if (!CodeOwnersFile.TryParse("[Section\n* @user1", CodeOwnersDialect.GitLab, out var file, out var error))
-/// {
-///     // error.Kind: CodeOwnersParseErrorKind.UnterminatedSectionHeader
-///     // error.LineNumber: 1
-///     // error.LinePosition: 1
-/// }
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.CodeOwners.Tests/CodeOwnersParserTests.cs" ref:region="CodeOwnersParseError_Example" ref:dedent="true">
+/// var isValid = CodeOwnersFile.TryParse("[Section\n* @user1", CodeOwnersDialect.GitLab, out var file, out var error);
+///
+/// Assert.False(isValid);
+/// Assert.Null(file);
+/// Assert.Equal(CodeOwnersParseErrorKind.UnterminatedSectionHeader, error.Kind);
+/// Assert.Equal(1, error.LineNumber);
+/// Assert.Equal(1, error.LinePosition);
 /// </code>
 /// </example>
 /// </summary>

@@ -8,9 +8,10 @@ namespace Meziantou.Framework.Language.Json;
 /// with it is reported through <see cref="GetDiagnostics"/>. Comments and trailing commas are accepted and kept.
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Json.Tests/JsonSyntaxTreeTests.cs" ref:region="JsonSyntaxTree_ParseText" ref:dedent="true">
 /// var tree = JsonSyntaxTree.ParseText("""{ "name": "value" }""");
 /// var name = ((JsonObjectSyntax)tree.GetRoot().Value!).GetMember("name");
+/// Assert.Equal("value", ((JsonStringSyntax)name!.Value).Value);
 /// </code>
 /// </example>
 public sealed class JsonSyntaxTree : SyntaxTree

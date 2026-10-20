@@ -22,6 +22,74 @@ public sealed partial class InMemoryLoggerTests
         Assert.Equal("[sample] Information: Test\n  => [{\"Key\":\"{OriginalFormat}\",\"Value\":\"Test\"}]", log.ToString());
     }
 
+    [Fact]
+    public void InMemoryLogger_Example()
+    {
+        #region InMemoryLogger_Example
+        // Create a logger directly
+        var logger = InMemoryLogger.CreateLogger("MyCategory");
+        logger.LogInformation("Test message");
+
+        // Access captured logs
+        Assert.Single(logger.Logs.Informations);
+        Assert.Contains(logger.Logs, log => log.Message == "Test message");
+        #endregion
+    }
+
+    [Fact]
+    public void InMemoryLogCollection_Example()
+    {
+        #region InMemoryLogCollection_Example
+        var logger = InMemoryLogger.CreateLogger("sample");
+        logger.LogInformation("Application started");
+        logger.LogError("Error while processing the request");
+
+        // Filter by log level
+        var errors = logger.Logs.Errors;
+        var infos = logger.Logs.Informations;
+        Assert.Single(errors);
+        Assert.Single(infos);
+
+        // Search for specific entries
+        var entry = logger.Logs.Find(log => log.Message.StartsWith("Error", StringComparison.Ordinal));
+        Assert.NotNull(entry);
+        Assert.Equal(LogLevel.Error, entry.LogLevel);
+        #endregion
+    }
+
+    [Fact]
+    public void InMemoryLogEntry_Example()
+    {
+        #region InMemoryLogEntry_Example
+        var logger = InMemoryLogger.CreateLogger("sample");
+        logger.LogInformation("User {UserId} logged in", 123);
+
+        var log = logger.Logs.Informations.Single();
+        Assert.Equal("User 123 logged in", log.Message);
+        Assert.True(log.TryGetParameterValue("UserId", out var userId));
+        Assert.Equal(123, userId);
+        #endregion
+    }
+
+    [Fact]
+    public void InMemoryLoggerProvider_Example()
+    {
+        #region InMemoryLoggerProvider_Example
+        // Use with dependency injection
+        var services = new ServiceCollection();
+        using var provider = new InMemoryLoggerProvider();
+        services.AddLogging(builder => builder.AddProvider(provider));
+
+        using var serviceProvider = services.BuildServiceProvider();
+        var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("MyCategory");
+        logger.LogInformation("Test message");
+
+        // Access logs through the provider
+        var log = Assert.Single(provider.Logs.Informations);
+        Assert.Equal("Test message", log.Message);
+        #endregion
+    }
+
     [Theory]
     [InlineData(LogLevel.Trace)]
     [InlineData(LogLevel.Debug)]

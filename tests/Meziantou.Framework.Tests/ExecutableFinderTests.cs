@@ -246,6 +246,18 @@ public class ExecutableFinderTests
         }
     }
 
+    [Fact]
+    public void ExecutableFinder_GetFullExecutablePath_Example()
+    {
+        #region ExecutableFinder_GetFullExecutablePath
+        string? gitPath = ExecutableFinder.GetFullExecutablePath("git");
+        if (gitPath is not null)
+        {
+            Assert.True(File.Exists(gitPath));
+        }
+        #endregion
+    }
+
     [Fact, RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
     public void GetFullExecutablePathTests_Linux()
     {

@@ -4,11 +4,15 @@ namespace Meziantou.Framework.WPF;
 
 /// <summary>Converts boolean values to custom values for WPF data binding.</summary>
 /// <example>
-/// <code>
-/// &lt;Window.Resources&gt;
-///     &lt;wpf:BooleanToValueConverter x:Key="BoolToVisibility" TrueValue="{x:Static Visibility.Visible}" FalseValue="{x:Static Visibility.Collapsed}" /&gt;
-/// &lt;/Window.Resources&gt;
-/// &lt;TextBlock Visibility="{Binding IsEnabled, Converter={StaticResource BoolToVisibility}}" /&gt;
+/// <code language="xml" xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/Meziantou.Framework.WPF.EnumComboBox/Examples/BooleanToValueConverterExample.xaml">
+/// &lt;UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+///              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+///              xmlns:wpf="clr-namespace:Meziantou.Framework.WPF;assembly=Meziantou.Framework.WPF"&gt;
+///     &lt;UserControl.Resources&gt;
+///         &lt;wpf:BooleanToValueConverter x:Key="BoolToVisibility" TrueValue="{x:Static Visibility.Visible}" FalseValue="{x:Static Visibility.Collapsed}" /&gt;
+///     &lt;/UserControl.Resources&gt;
+///     &lt;TextBlock Text="Shown when IsEnabled is true" Visibility="{Binding IsEnabled, Converter={StaticResource BoolToVisibility}}" /&gt;
+/// &lt;/UserControl&gt;
 /// </code>
 /// </example>
 public sealed class BooleanToValueConverter : IValueConverter

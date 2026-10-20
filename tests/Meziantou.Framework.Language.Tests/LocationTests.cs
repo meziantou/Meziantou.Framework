@@ -14,6 +14,19 @@ public sealed class LocationTests
     }
 
     [Fact]
+    public void DocumentationExample()
+    {
+        #region Location_GetLineSpan
+        var text = "one\ntwo\nthree line here";
+        var location = new Location(new TextSpan(15, 7), SourceText.From(text));
+
+        // Lines and columns are zero-based
+        Assert.Equal("(2,7)-(2,14)", location.ToString());
+        Assert.Equal(2, location.GetLineSpan().Start.Line);
+        #endregion
+    }
+
+    [Fact]
     public void GetLineSpan_MapsARangeCrossingALineBreak()
     {
         var source = SourceText.From("one\ntwo");

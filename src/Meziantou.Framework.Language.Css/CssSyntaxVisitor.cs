@@ -5,11 +5,16 @@ namespace Meziantou.Framework.Language.Css;
 /// Visiting a node does not visit its children. Derive from <see cref="CssSyntaxWalker"/> to walk a whole tree.
 /// </remarks>
 /// <example>
-/// <code>
-/// sealed class Counter : CssSyntaxWalker
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Css.Tests/CssSyntaxTreeTests.cs" ref:region="CssSyntaxWalker_DeclarationCounter" ref:dedent="true">
+/// private sealed class DeclarationCounter : CssSyntaxWalker
 /// {
 ///     public int Count { get; private set; }
-///     public override void VisitDeclaration(CssDeclarationSyntax node) { Count++; base.VisitDeclaration(node); }
+///
+///     public override void VisitDeclaration(CssDeclarationSyntax node)
+///     {
+///         Count++;
+///         base.VisitDeclaration(node);
+///     }
 /// }
 /// </code>
 /// </example>

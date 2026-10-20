@@ -33,6 +33,16 @@ key without separator
     }
 
     [Fact]
+    public void ParseText_DocumentationExample()
+    {
+        #region IniSyntaxTree_ParseText
+        var tree = IniSyntaxTree.ParseText("[server]\nport = 8080\n");
+        var port = tree.GetRoot().GetValue("server", "port");
+        Assert.Equal("8080", port);
+        #endregion
+    }
+
+    [Fact]
     public void ParseText_BuildsIniTree()
     {
         const string Text = """

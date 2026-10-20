@@ -13,13 +13,22 @@ namespace Meziantou.Framework.UndoRedo;
 /// the innermost out.
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.UndoRedo.Tests/UndoRedoManagerTests.cs" ref:region="UndoRedoTransaction_Usage" ref:dedent="true">
+/// var manager = new UndoRedoManager();
+/// var list = new List&lt;string&gt;();
+///
 /// await using (var transaction = manager.CreateTransaction())
 /// {
-///     await manager.RecordActionAsync(addFirst, removeFirst);
-///     await manager.RecordActionAsync(addSecond, removeSecond);
+///     await manager.RecordActionAsync(() =&gt; list.Add("first"), () =&gt; list.Remove("first"));
+///     await manager.RecordActionAsync(() =&gt; list.Add("second"), () =&gt; list.Remove("second"));
 ///     await transaction.CommitAsync();
-/// } // a single UndoAsync reverts both actions
+/// }
+///
+/// Assert.Equal(["first", "second"], list);
+///
+/// // A single UndoAsync reverts both actions
+/// await manager.UndoAsync();
+/// Assert.Empty(list);
 /// </code>
 /// </example>
 public sealed class UndoRedoTransaction : IUndoRedoAction, IAsyncDisposable

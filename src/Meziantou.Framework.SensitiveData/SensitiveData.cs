@@ -14,17 +14,19 @@ namespace Meziantou.Framework;
 /// Provides factory methods for creating <see cref="SensitiveData{T}"/> instances.
 /// </summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.SensitiveData.Tests/SensitiveDataTests.cs" ref:region="SensitiveData_Create" ref:dedent="true">
 /// // Create sensitive data from a string
 /// using var secret = SensitiveData.Create("my-password");
 ///
 /// // Reveal the data when needed
 /// string password = secret.RevealToString();
+/// Assert.Equal("my-password", password);
 ///
 /// // Create sensitive data from a byte array
-/// byte[] key = new byte[] { 1, 2, 3, 4, 5 };
+/// byte[] key = [1, 2, 3, 4, 5];
 /// using var sensitiveKey = SensitiveData.Create(key);
 /// byte[] revealedKey = sensitiveKey.RevealToArray();
+/// Assert.Equal(key, revealedKey);
 /// </code>
 /// </example>
 public static partial class SensitiveData
@@ -216,25 +218,28 @@ public static partial class SensitiveData
 /// </para>
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.SensitiveData.Tests/SensitiveDataTests.cs" ref:region="SensitiveDataOfT_Reveal" ref:dedent="true">
 /// // Create and use sensitive data
 /// using var secret = SensitiveData.Create("my-secret-password");
 ///
 /// // Get the length without revealing the data
 /// int length = secret.GetLength();
+/// Assert.Equal(18, length);
 ///
 /// // Reveal data into an existing buffer
 /// char[] buffer = new char[length];
 /// secret.RevealInto(buffer);
+/// Assert.Equal("my-secret-password", new string(buffer));
 ///
 /// // Or reveal to a new array
 /// char[] revealed = secret.RevealToArray();
+/// Assert.Equal("my-secret-password", new string(revealed));
 ///
 /// // Use the data with a callback to avoid keeping it in memory
-/// secret.RevealAndUse(arg: Console.Out, static (span, output) =>
+/// secret.RevealAndUse(arg: length, static (span, expectedLength) =&gt;
 /// {
 ///     // Process the sensitive data here
-///     output.WriteLine($"Processing {span.Length} characters");
+///     Assert.HasCount(expectedLength, span);
 /// });
 /// </code>
 /// </example>

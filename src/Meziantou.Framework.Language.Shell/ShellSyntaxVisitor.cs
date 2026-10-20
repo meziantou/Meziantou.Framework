@@ -5,11 +5,16 @@ namespace Meziantou.Framework.Language.Shell;
 /// Visiting a node does not visit its children. Derive from <see cref="ShellSyntaxWalker"/> to walk a whole tree.
 /// </remarks>
 /// <example>
-/// <code>
-/// sealed class Counter : ShellSyntaxWalker
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxVisitorTests.cs" ref:region="ShellSyntaxWalker_SimpleCommandCounter" ref:dedent="true">
+/// private sealed class SimpleCommandCounter : ShellSyntaxWalker
 /// {
 ///     public int Count { get; private set; }
-///     public override void VisitCommand(ShellCommandSyntax node) { Count++; base.VisitCommand(node); }
+///
+///     public override void VisitCommand(ShellCommandSyntax node)
+///     {
+///         Count++;
+///         base.VisitCommand(node);
+///     }
 /// }
 /// </code>
 /// </example>

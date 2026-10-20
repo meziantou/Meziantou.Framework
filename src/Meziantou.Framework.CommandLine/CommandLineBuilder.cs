@@ -5,18 +5,18 @@ namespace Meziantou.Framework;
 /// The implementation is based on the article: <see href="https://blogs.msdn.microsoft.com/twistylittlepassagesallalike/2011/04/23/everyone-quotes-command-line-arguments-the-wrong-way/">Everyone quotes command line arguments the wrong way</see>.
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.CommandLineTests/CommandLineBuilderTests.cs" ref:region="CommandLineBuilder_Example" ref:dedent="true">
 /// // Quote a single argument for standard Windows applications
 /// var arg = CommandLineBuilder.WindowsQuotedArgument(@"path with spaces\file.txt");
-/// // Returns: "path with spaces\file.txt"
+/// Assert.Equal(@"""path with spaces\file.txt""", arg);
 ///
 /// // Quote multiple arguments
 /// var args = CommandLineBuilder.WindowsQuotedArguments("arg1", "path with spaces", "normal");
-/// // Returns: arg1 "path with spaces" normal
+/// Assert.Equal(@"arg1 ""path with spaces"" normal", args);
 ///
-/// // Quote for cmd.exe (handles special characters like &amp;, |, ^, etc.)
+/// // Quote for cmd.exe (escapes special characters like &amp;, |, ^, etc.)
 /// var cmdArg = CommandLineBuilder.WindowsCmdArgument(@"malicious argument"" &amp; whoami");
-/// // Returns properly escaped argument safe for cmd.exe
+/// Assert.Equal(@"^""malicious argument\^"" ^&amp; whoami^""", cmdArg);
 /// </code>
 /// </example>
 #if CommandLineBuilder_PUBLIC

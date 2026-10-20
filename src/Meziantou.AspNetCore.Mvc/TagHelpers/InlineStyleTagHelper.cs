@@ -9,15 +9,9 @@ namespace Meziantou.AspNetCore.Mvc.TagHelpers;
 /// A TagHelper that inlines CSS files into &lt;style&gt; elements to reduce HTTP requests.
 /// </summary>
 /// <example>
-/// <code language="razor">
-/// &lt;!-- Input --&gt;
+/// <code language="razor" xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../samples/Meziantou.AspNetCore.Mvc.Samples/Views/Examples/InlineStyle.cshtml">
 /// &lt;inline-style href="site.css" /&gt;
-///
-/// &lt;!-- Output --&gt;
-/// &lt;style&gt;
-/// body { margin: 0; padding: 0; }
-/// /* ... CSS content ... */
-/// &lt;/style&gt;
+/// @* Rendered as &lt;style&gt;/* content of wwwroot/site.css */&lt;/style&gt; *@
 /// </code>
 /// </example>
 /// <remarks>

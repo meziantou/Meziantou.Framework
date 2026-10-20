@@ -15,12 +15,27 @@ public static class MixedConsumerProducer
     /// <exception cref="AggregateException">One or more invocations of <paramref name="action"/> threw an exception. Remaining items are still processed, and all exceptions are reported once processing completes.</exception>
     /// <exception cref="OperationCanceledException"><see cref="ParallelOptions.CancellationToken"/> was canceled.</exception>
     /// <example>
-    /// <code><![CDATA[
-    /// var initialUrls = new[] { "https://example.com" };
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Threading.Tests/MixedConsumerProducerTests.cs" ref:region="MixedConsumerProducer_Process" ref:dedent="true">
+    /// // A fake website where each page links to other pages
+    /// var website = new Dictionary&lt;string, string[]&gt;(StringComparer.Ordinal)
+    /// {
+    ///     ["https://example.com/"] = ["https://example.com/a", "https://example.com/b"],
+    ///     ["https://example.com/a"] = ["https://example.com/a/1"],
+    /// };
+    /// var crawledPages = new ConcurrentBag&lt;string&gt;();
+    ///
+    /// async Task&lt;string[]&gt; CrawlPageAsync(string url, CancellationToken cancellationToken)
+    /// {
+    ///     await Task.Delay(1, cancellationToken);
+    ///     crawledPages.Add(url);
+    ///     return website.GetValueOrDefault(url, []);
+    /// }
+    ///
+    /// var initialUrls = new[] { "https://example.com/" };
     /// await MixedConsumerProducer.Process(
     ///     initialUrls,
     ///     new ParallelOptions { MaxDegreeOfParallelism = 4 },
-    ///     async (context, url, ct) =>
+    ///     async (context, url, ct) =&gt;
     ///     {
     ///         var links = await CrawlPageAsync(url, ct);
     ///         foreach (var link in links)
@@ -28,7 +43,9 @@ public static class MixedConsumerProducer
     ///             context.Enqueue(link);
     ///         }
     ///     });
-    /// ]]></code>
+    ///
+    /// Assert.Equal(["https://example.com/", "https://example.com/a", "https://example.com/a/1", "https://example.com/b"], crawledPages.Order(StringComparer.Ordinal));
+    /// </code>
     /// </example>
     public static async Task Process<T>(IEnumerable<T> initialItems, ParallelOptions options, Func<MixedConsumerProducerContext<T>, T, CancellationToken, ValueTask> action)
     {

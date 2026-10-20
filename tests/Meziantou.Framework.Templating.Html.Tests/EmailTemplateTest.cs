@@ -7,6 +7,46 @@ namespace Meziantou.Framework.Templating.Tests;
 public class EmailTemplateTest
 {
     [Fact]
+    public void HtmlEmailTemplate_Example()
+    {
+        #region HtmlEmailTemplate_Example
+        using var template = new HtmlEmailTemplate();
+        template.Load("<title>{{@begin_section title}}Welcome{{@end_section}}</title><h1>Hello {{#html userName}}!</h1>");
+        template.Arguments.Add(new TemplateArgument("userName", typeof(string)));
+
+        var result = template.Run(out var metadata, new Dictionary<string, object?> { ["userName"] = "John" });
+        Assert.Equal("<title>Welcome</title><h1>Hello John!</h1>", result);
+        Assert.NotNull(metadata);
+        Assert.Equal("Welcome", metadata.Title);
+        #endregion
+    }
+
+    [Fact]
+    public void HtmlEmailOutput_Example()
+    {
+        #region HtmlEmailOutput_Example
+        using var template = new HtmlEmailTemplate();
+        using var writer = new StringWriter();
+        var output = new HtmlEmailOutput(template, writer);
+
+        output.WriteHtmlEncode("<b>text</b>");
+        Assert.Equal("&lt;b&gt;text&lt;/b&gt;", writer.ToString());
+
+        writer.GetStringBuilder().Clear();
+        output.WriteHtmlAttributeEncode("a b");
+        Assert.Equal("a&#x20;b", writer.ToString());
+
+        writer.GetStringBuilder().Clear();
+        output.WriteUrlEncode("value&param");
+        Assert.Equal("value%26param", writer.ToString());
+
+        writer.GetStringBuilder().Clear();
+        output.WriteContentIdentifier("logo.png");
+        Assert.Equal("cid:logo.png", writer.ToString());
+        #endregion
+    }
+
+    [Fact]
     public void EmailTemplate_01()
     {
         // Arrange

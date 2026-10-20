@@ -4,11 +4,16 @@ namespace Meziantou.Framework.Language.Regex;
 
 /// <summary>Visits a regular-expression node and everything below it.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxVisitorTests.cs" ref:region="RegexSyntaxWalker_LiteralCounter" ref:dedent="true">
 /// private sealed class LiteralCounter : RegexSyntaxWalker
 /// {
 ///     public int Count { get; private set; }
-///     public override void VisitLiteral(RegexLiteralSyntax node) { Count++; base.VisitLiteral(node); }
+///
+///     public override void VisitLiteral(RegexLiteralSyntax node)
+///     {
+///         Count++;
+///         base.VisitLiteral(node);
+///     }
 /// }
 /// </code>
 /// </example>

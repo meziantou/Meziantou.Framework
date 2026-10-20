@@ -8,9 +8,9 @@ namespace Meziantou.Extensions.Logging;
 
 /// <summary>Provides extension methods for <see cref="ILoggingBuilder"/> to add file logging support.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/Meziantou.Extensions.Logging.FileLogger.Samples/Examples.cs" ref:region="FileLoggerBuilderExtensions_AddFile" ref:dedent="true">
 /// var builder = Host.CreateApplicationBuilder(args);
-/// builder.Logging.AddFile(options =>
+/// builder.Logging.AddFile(options =&gt;
 /// {
 ///     options.Directory = "logs";
 ///     options.RollInterval = RollInterval.Daily;

@@ -14,10 +14,10 @@ public static class Range
 
 /// <summary>Represents a range of comparable values with support for various inclusion/exclusion boundary checks.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Tests/RangeTests.cs" ref:region="Range_IsInRangeInclusive" ref:dedent="true">
 /// var range = new Range&lt;int&gt;(1, 10);
-/// bool isInRange = range.IsInRangeInclusive(5); // true
-/// bool isOutOfRange = range.IsInRangeInclusive(15); // false
+/// Assert.True(range.IsInRangeInclusive(5));
+/// Assert.False(range.IsInRangeInclusive(15));
 /// </code>
 /// </example>
 [StructLayout(LayoutKind.Auto)]

@@ -5,18 +5,24 @@ namespace Meziantou.Framework.Threading;
 
 /// <summary>Provides an asynchronous lock that can be awaited to ensure exclusive access to a resource.</summary>
 /// <example>
-/// <code><![CDATA[
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Threading.Tests/AsyncLockTests.cs" ref:region="AsyncLock_Usage" ref:dedent="true">
 /// var asyncLock = new AsyncLock();
-/// 
+/// var counter = 0;
+///
 /// async Task AccessResourceAsync()
 /// {
 ///     using (await asyncLock.LockAsync())
 ///     {
 ///         // Critical section - only one task can execute this at a time
-///         await DoWorkAsync();
+///         var value = counter;
+///         await Task.Yield();
+///         counter = value + 1;
 ///     }
 /// }
-/// ]]></code>
+///
+/// await Task.WhenAll(AccessResourceAsync(), AccessResourceAsync(), AccessResourceAsync());
+/// Assert.Equal(3, counter);
+/// </code>
 /// </example>
 [DebuggerDisplay("Signaled: {_signaled}")]
 public sealed class AsyncLock

@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Win32;
 
 /// <summary>Provides methods to manage credentials in the Windows Credential Manager.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Win32.CredentialManager.Tests/CredentialManagerTests.cs" ref:region="CredentialManager_WriteReadDelete" ref:dedent="true">
 /// // Save a credential
 /// CredentialManager.WriteCredential(
 ///     applicationName: "MyApp",
@@ -22,7 +22,7 @@ namespace Meziantou.Framework.Win32;
 ///
 /// // Read a credential
 /// var credential = CredentialManager.ReadCredential("MyApp");
-/// Console.WriteLine(credential?.UserName);
+/// Assert.Equal("user@example.com", credential?.UserName);
 ///
 /// // Delete a credential
 /// CredentialManager.DeleteCredential("MyApp");

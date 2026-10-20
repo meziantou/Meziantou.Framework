@@ -5,6 +5,17 @@ namespace Meziantou.Framework.Tests.Collections;
 public class ConcurrentHashSetTests
 {
     [Fact]
+    public void ConcurrentHashSet_Example()
+    {
+        #region ConcurrentHashSet_Usage
+        var set = new ConcurrentHashSet<int>();
+        set.Add(1);
+        set.Add(2);
+        Assert.Contains(1, set);
+        #endregion
+    }
+
+    [Fact]
     public void TestConcurrentHashSet()
     {
         ConcurrentHashSet<int> set = [];

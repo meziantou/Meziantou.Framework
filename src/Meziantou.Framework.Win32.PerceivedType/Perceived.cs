@@ -6,17 +6,19 @@ namespace Meziantou.Framework.Win32;
 
 /// <summary>Defines a file's perceived type based on its extension.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Win32.PerceivedType.Tests/PerceivedTests.cs" ref:region="Perceived_GetPerceivedType" ref:dedent="true">
 /// // Get perceived type for a file
 /// var perceived = Perceived.GetPerceivedType(".txt");
-/// Console.WriteLine(perceived.PerceivedType); // Output: Text
-/// Console.WriteLine(perceived.PerceivedTypeSource); // Output: SoftCoded, NativeSupport
+/// Assert.Equal(PerceivedType.Text, perceived.PerceivedType);
+/// Assert.NotEqual(PerceivedTypeSource.Undefined, perceived.PerceivedTypeSource); // e.g. SoftCoded, NativeSupport
 ///
 /// // Add custom perceived types
 /// Perceived.AddPerceived(".myext", PerceivedType.Text);
+/// Assert.Equal(PerceivedType.Text, Perceived.GetPerceivedType("file.myext").PerceivedType);
 ///
 /// // Add default perceived types for common development file extensions
 /// Perceived.AddDefaultPerceivedTypes();
+/// Assert.Equal(PerceivedType.Text, Perceived.GetPerceivedType("Program.cs").PerceivedType);
 /// </code>
 /// </example>
 public sealed class Perceived

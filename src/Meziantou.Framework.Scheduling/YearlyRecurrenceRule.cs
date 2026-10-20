@@ -2,9 +2,17 @@ namespace Meziantou.Framework.Scheduling;
 
 /// <summary>Represents a yearly recurrence rule.</summary>
 /// <example>
-/// <code>
-/// var rrule = new YearlyRecurrenceRule { ByMonths = { 1 }, ByMonthDays = { 1 } };
-/// var nextOccurrences = rrule.GetNextOccurrences(DateTime.Now).ToArray();
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Scheduling.Tests/RecurrenceRuleTests.cs" ref:region="YearlyRecurrenceRule_Example" ref:dedent="true">
+/// // Every January 1st
+/// var rrule = RecurrenceRule.Parse("FREQ=YEARLY;BYMONTH=1;BYMONTHDAY=1");
+/// var nextOccurrences = rrule.GetNextOccurrences(new DateTime(2024, 06, 01, 09, 00, 00)).Take(2).ToArray();
+///
+/// Assert.Equal(
+///     [
+///         new DateTime(2025, 01, 01, 09, 00, 00),
+///         new DateTime(2026, 01, 01, 09, 00, 00),
+///     ],
+///     nextOccurrences);
 /// </code>
 /// </example>
 internal sealed class YearlyRecurrenceRule : RecurrenceRule

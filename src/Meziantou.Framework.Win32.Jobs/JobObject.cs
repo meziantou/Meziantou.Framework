@@ -10,16 +10,20 @@ namespace Meziantou.Framework.Win32;
 
 /// <summary>A utility class that represents a Windows job object. Job objects allow groups of processes to be managed as a unit.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Win32.Jobs.Tests/JobObjectTests.cs" ref:region="JobObject_KillOnJobClose" ref:dedent="true">
 /// using var job = new JobObject();
 /// job.SetLimits(new JobObjectLimits
 /// {
-///     Flags = JobObjectLimitFlags.KillOnJobClose
+///     Flags = JobObjectLimitFlags.KillOnJobClose,
 /// });
-/// job.AssignProcess(Process.GetCurrentProcess());
 ///
-/// // Start a child process that will be terminated when the job is disposed
-/// var childProcess = Process.Start("child.exe");
+/// // Start a child process and assign it to the job
+/// using var childProcess = Process.Start(new ProcessStartInfo("ping", "127.0.0.1 -n 100") { CreateNoWindow = true })!;
+/// job.AssignProcess(childProcess);
+///
+/// // Disposing the job terminates the child process
+/// job.Dispose();
+/// childProcess.WaitForExit();
 /// </code>
 /// </example>
 [SupportedOSPlatform("windows5.1.2600")]

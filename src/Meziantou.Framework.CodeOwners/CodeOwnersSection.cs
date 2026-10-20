@@ -3,7 +3,7 @@ namespace Meziantou.Framework.CodeOwners;
 /// <summary>
 /// Represents a section in a CODEOWNERS file, which groups patterns and defines review requirements.
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.CodeOwners.Tests/CodeOwnersParserTests.cs" ref:region="CodeOwnersSection_Example" ref:dedent="true">
 /// var content = """
 ///     [Backend][2] @backend-team
 ///     *.cs @csharp-owner
@@ -11,9 +11,15 @@ namespace Meziantou.Framework.CodeOwners;
 ///     ^[Optional]
 ///     docs/* @docs-owner
 ///     """;
-/// var file = CodeOwnersFile.Parse(content);
-/// // file.Entries[0].Section: Name="Backend", RequiredReviewerCount=2
-/// // file.Entries[1].Section: Name="Optional", IsOptional=true
+/// var file = CodeOwnersFile.Parse(content, CodeOwnersDialect.GitLab);
+///
+/// var backend = file.Entries[0].Section!;
+/// Assert.Equal("Backend", backend.Name);
+/// Assert.Equal(2, backend.RequiredReviewerCount);
+///
+/// var optional = file.Entries[1].Section!;
+/// Assert.Equal("Optional", optional.Name);
+/// Assert.True(optional.IsOptional);
 /// </code>
 /// </example>
 /// </summary>

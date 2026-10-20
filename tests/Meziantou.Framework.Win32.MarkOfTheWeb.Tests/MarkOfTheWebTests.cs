@@ -5,6 +5,27 @@ namespace Meziantou.Framework.Win32.Tests;
 public sealed class MarkOfTheWebTests
 {
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void DocumentationExample()
+    {
+        #region MarkOfTheWeb_SetGetRemove
+        var path = Path.GetTempFileName();
+
+        // Add the Mark of the Web to a file
+        MarkOfTheWeb.SetFileZone(path, UrlZone.Internet);
+
+        // Get the zone of a file
+        var zone = MarkOfTheWeb.GetFileZone(path);
+        Assert.Equal(UrlZone.Internet, zone);
+
+        // Remove the Mark of the Web from a file
+        MarkOfTheWeb.RemoveFileZone(path);
+        Assert.Null(MarkOfTheWeb.GetFileZoneContent(path));
+        #endregion
+
+        File.Delete(path);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void Get()
     {
         var path = Path.GetTempFileName();

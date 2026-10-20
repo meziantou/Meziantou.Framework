@@ -4,7 +4,8 @@ namespace Meziantou.Framework.ChromiumTracing;
 
 /// <summary>Represents an instant event that marks a single point in time.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.ChromiumTracing.Tests/WriterTests.cs" ref:region="ChromiumTracingInstantEvent_Example" ref:dedent="true">
+/// await using var writer = ChromiumTracingWriter.Create("trace.json");
 /// await writer.WriteEventAsync(new ChromiumTracingInstantEvent
 /// {
 ///     Name = "Checkpoint",
@@ -12,7 +13,7 @@ namespace Meziantou.Framework.ChromiumTracing;
 ///     Timestamp = DateTimeOffset.UtcNow,
 ///     Scope = ChromiumTracingInstantEventScope.Thread,
 ///     ProcessId = Environment.ProcessId,
-///     ThreadId = Environment.CurrentManagedThreadId
+///     ThreadId = Environment.CurrentManagedThreadId,
 /// });
 /// </code>
 /// </example>

@@ -13,6 +13,20 @@ public sealed class DiagnosticDescriptorTests
         Assert.Equal(DiagnosticSeverity.Error, descriptor.DefaultSeverity);
     }
 
+    [Fact]
+    public void DocumentationExample()
+    {
+        #region DiagnosticDescriptor_Create
+        var descriptor = new DiagnosticDescriptor("XML0001", "Missing end tag", "Missing end tag for '{0}'.", DiagnosticSeverity.Error);
+
+        // Create a diagnostic from the descriptor: the arguments fill the message template
+        var diagnostic = Diagnostic.Create(descriptor, Location.None, "root");
+        Assert.Equal("XML0001", diagnostic.Id);
+        Assert.Equal("Missing end tag for 'root'.", diagnostic.Message);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        #endregion
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("  ")]

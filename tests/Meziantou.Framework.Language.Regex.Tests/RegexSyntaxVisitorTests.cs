@@ -66,6 +66,30 @@ public sealed class RegexSyntaxVisitorTests
         Assert.Equal(Pattern, string.Concat(tree.GetRoot().DescendantTokens().Select(token => token.ToFullString())));
     }
 
+    [Fact]
+    public void Walker_DocumentationExample()
+    {
+        var tree = RegexSyntaxTree.ParseText("ab|c", RegexDialect.Net);
+        var counter = new LiteralCounter();
+
+        counter.Visit(tree.GetRoot());
+
+        Assert.Equal(3, counter.Count);
+    }
+
+    #region RegexSyntaxWalker_LiteralCounter
+    private sealed class LiteralCounter : RegexSyntaxWalker
+    {
+        public int Count { get; private set; }
+
+        public override void VisitLiteral(RegexLiteralSyntax node)
+        {
+            Count++;
+            base.VisitLiteral(node);
+        }
+    }
+    #endregion
+
     private sealed class NodeCounter : RegexSyntaxWalker
     {
         public int Count { get; private set; }

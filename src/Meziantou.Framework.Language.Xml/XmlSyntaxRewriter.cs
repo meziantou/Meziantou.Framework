@@ -6,11 +6,11 @@ namespace Meziantou.Framework.Language.Xml;
 /// costs nothing and keeps every node.
 /// </remarks>
 /// <example>
-/// <code>
-/// sealed class RenameRoot : XmlSyntaxRewriter
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs" ref:region="XmlSyntaxRewriter_RenameRoot" ref:dedent="true">
+/// private sealed class RenameRoot : XmlSyntaxRewriter
 /// {
 ///     public override SyntaxNode? VisitElement(XmlElementSyntax node)
-///         => node.Name == "root" ? node.WithName("renamed") : base.VisitElement(node);
+///         =&gt; node.Name == "root" ? node.WithName("renamed") : base.VisitElement(node);
 /// }
 /// </code>
 /// </example>

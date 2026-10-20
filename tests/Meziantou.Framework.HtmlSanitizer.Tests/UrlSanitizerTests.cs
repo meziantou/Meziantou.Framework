@@ -2,6 +2,15 @@ namespace Meziantou.Framework.Sanitizers.Tests;
 
 public class UrlSanitizerTests
 {
+    [Fact]
+    public void IsSafeUrl_DocumentationExample()
+    {
+        #region UrlSanitizer_IsSafeUrl
+        Assert.True(UrlSanitizer.IsSafeUrl("https://example.com"));
+        Assert.False(UrlSanitizer.IsSafeUrl("javascript:alert('xss')"));
+        #endregion
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("https://example.com")]

@@ -5,13 +5,13 @@ namespace Meziantou.Framework.Win32;
 
 /// <summary>Represents an AMSI session that correlates multiple scan requests within the same context.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Win32.AmsiTests/AmsiContextTests.cs" ref:region="AmsiSession_IsMalware" ref:dedent="true">
 /// using var context = AmsiContext.Create("MyApplication");
+///
+/// // The scans of a session are correlated, e.g. the fragments of a script
 /// using var session = context.CreateSession();
-/// if (session.IsMalware("suspicious content", "file1.txt"))
-/// {
-///     Console.WriteLine("Malware detected in file1.txt");
-/// }
+/// Assert.False(session.IsMalware("Hello world", "file1.txt"));
+/// Assert.True(session.IsMalware(@"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*", "file2.txt"));
 /// </code>
 /// </example>
 [SupportedOSPlatform("windows10.0.10240")]

@@ -3,6 +3,110 @@ namespace Meziantou.Framework.Tests;
 public class TemporaryDirectoryTests
 {
     [Fact]
+    public async Task DocumentationExample()
+    {
+        #region TemporaryDirectory_Example
+        // Basic usage with using statement
+        using var tempDir = TemporaryDirectory.Create();
+        var filePath = tempDir.CreateTextFile("test.txt", "Hello World");
+        Assert.Equal("Hello World", File.ReadAllText(filePath));
+        // Directory is automatically deleted when disposed
+
+        // Async disposal
+        await using var tempDir2 = TemporaryDirectory.Create();
+        await tempDir2.CreateTextFileAsync("data.json", "{}");
+
+        // Working with subdirectories
+        using var tempDir3 = TemporaryDirectory.Create();
+        tempDir3.CreateDirectory("subdir");
+        var nestedFile = tempDir3.GetFullPath("subdir/file.txt");
+        File.WriteAllText(nestedFile, "content");
+
+        // Using path operators
+        using var tempDir4 = TemporaryDirectory.Create();
+        var path = tempDir4 / "data" / "output.txt";
+        Assert.Equal(tempDir4.GetFullPath("data/output.txt"), path);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_GetFullPath()
+    {
+        #region TemporaryDirectory_GetFullPath
+        using var tempDir = TemporaryDirectory.Create();
+        var fullPath = tempDir.GetFullPath("data/output.txt");
+        Assert.Equal(tempDir.FullPath / "data" / "output.txt", fullPath);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_CreateEmptyFile()
+    {
+        #region TemporaryDirectory_CreateEmptyFile
+        using var tempDir = TemporaryDirectory.Create();
+        var filePath = tempDir.CreateEmptyFile("test.txt");
+        Assert.Equal(0, new FileInfo(filePath).Length);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_CreateTextFile()
+    {
+        #region TemporaryDirectory_CreateTextFile
+        using var tempDir = TemporaryDirectory.Create();
+        var filePath = tempDir.CreateTextFile("config.json", "{ \"setting\": \"value\" }");
+        Assert.Equal("{ \"setting\": \"value\" }", File.ReadAllText(filePath));
+        #endregion
+    }
+
+    [Fact]
+    public async Task DocumentationExample_CreateTextFileAsync()
+    {
+        #region TemporaryDirectory_CreateTextFileAsync
+        await using var tempDir = TemporaryDirectory.Create();
+        var filePath = await tempDir.CreateTextFileAsync("data.txt", "Hello World");
+        Assert.Equal("Hello World", await File.ReadAllTextAsync(filePath));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_CreateDirectory()
+    {
+        #region TemporaryDirectory_CreateDirectory
+        using var tempDir = TemporaryDirectory.Create();
+        var dirPath = tempDir.CreateDirectory("data/output");
+        Assert.True(Directory.Exists(dirPath));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_SlashOperator()
+    {
+        #region TemporaryDirectory_SlashOperator
+        using var tempDir = TemporaryDirectory.Create();
+        var filePath = tempDir / "data" / "output.txt";
+        Assert.Equal(tempDir.GetFullPath("data/output.txt"), filePath);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_TemporaryFile()
+    {
+        #region TemporaryFile_Example
+        // Basic usage with using statement
+        using var tempFile = TemporaryFile.Create();
+        File.WriteAllText(tempFile, "content");
+
+        // Provide a file name
+        using var tempFile2 = TemporaryFile.Create("custom.txt");
+        Assert.Equal("custom.txt", tempFile2.FullPath.Name);
+
+        // Provide a full path. The file must not exist.
+        using var tempFile3 = TemporaryFile.Create(Path.Combine(Path.GetTempPath(), $"custom-{Guid.NewGuid():N}.txt"));
+        #endregion
+    }
+
+    [Fact]
     public void CreateInParallel()
     {
         const int Iterations = 400;

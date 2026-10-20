@@ -10,16 +10,18 @@ namespace Meziantou.Framework;
 
 /// <summary>Represents an absolute file or directory path with convenient path manipulation methods.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.FullPath.Tests/FullPathTests.cs" ref:region="FullPath_Example" ref:dedent="true">
 /// // Create FullPath
 /// FullPath rootPath = FullPath.FromPath("demo");
 /// FullPath filePath = rootPath / "temp" / "file.txt";
 ///
 /// // Compare paths (case-insensitive on Windows, macOS, iOS and tvOS, case-sensitive elsewhere)
-/// bool areEqual = filePath == rootPath;
+/// Assert.False(filePath == rootPath);
+/// Assert.True(filePath.Parent.Parent == rootPath);
 ///
-/// // Get relative path
-/// string relativePath = filePath.MakePathRelativeTo(rootPath); // temp\file.txt
+/// // Get relative path (temp\file.txt on Windows, temp/file.txt elsewhere)
+/// string relativePath = filePath.MakePathRelativeTo(rootPath);
+/// Assert.Equal(Path.Combine("temp", "file.txt"), relativePath);
 /// </code>
 /// </example>
 [JsonConverter(typeof(FullPathJsonConverter))]

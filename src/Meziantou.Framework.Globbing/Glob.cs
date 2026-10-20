@@ -84,15 +84,13 @@ namespace Meziantou.Framework.Globbing;
 /// </summary>
 /// <example>
 /// Parse a glob pattern and check if a path matches:
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs" ref:region="Glob_IsMatch" ref:dedent="true">
 /// var glob = Glob.Parse("src/**/*.txt", GlobDialect.Standard);
-/// if (glob.IsMatch("src/folder/file.txt"))
-/// {
-///     Console.WriteLine("File matches!");
-/// }
+/// Assert.True(glob.IsMatch("src/folder/file.txt"));
+/// Assert.False(glob.IsMatch("docs/file.txt"));
 /// </code>
 /// Enumerate files that match a glob pattern:
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/Meziantou.Framework.Globbing.Samples/Examples.cs" ref:region="Glob_EnumerateFiles" ref:dedent="true">
 /// var glob = Glob.Parse("**/*.cs", GlobDialect.Standard, GlobOptions.IgnoreCase);
 /// foreach (var file in glob.EnumerateFiles("C:/MyProject"))
 /// {

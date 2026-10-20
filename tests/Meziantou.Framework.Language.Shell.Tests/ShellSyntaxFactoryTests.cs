@@ -11,6 +11,16 @@ public sealed class ShellSyntaxFactoryTests
     }
 
     [Fact]
+    public void Command_DocumentationExample()
+    {
+        #region SyntaxFactory_Command
+        // Arguments are quoted when the dialect requires it
+        var command = SyntaxFactory.Command(ShellDialect.Bash, "echo", "hello world");
+        Assert.Equal("echo 'hello world'", command.ToFullString());
+        #endregion
+    }
+
+    [Fact]
     public void Command_QuotesArgumentsThatNeedIt()
     {
         var command = SyntaxFactory.Command(ShellDialect.Bash, "echo", "two words", "plain");

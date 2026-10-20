@@ -5,15 +5,17 @@ namespace Meziantou.Framework.Annotations;
 /// The source generator creates methods for conversion, comparison, serialization, and other common operations.
 /// </summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs" ref:region="StronglyTypedIdAttribute_Declaration" ref:dedent="true">
 /// [StronglyTypedId(typeof(int))]
 /// public partial struct UserId
 /// {
 /// }
-///
-/// // Usage:
+/// </code>
+/// Usage:
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs" ref:region="StronglyTypedIdAttribute_Usage" ref:dedent="true">
 /// var userId = UserId.FromInt32(42);
-/// var json = JsonSerializer.Serialize(userId);
+/// var json = System.Text.Json.JsonSerializer.Serialize(userId);
+/// Assert.Equal("42", json);
 /// </code>
 /// </example>
 [System.Diagnostics.Conditional("StronglyTypedId_Attributes")]
@@ -77,15 +79,17 @@ public sealed class StronglyTypedIdAttribute : Attribute
 /// </summary>
 /// <typeparam name="T">The underlying type of the strongly-typed identifier (e.g., <see cref="int"/>, <see cref="Guid"/>, <see cref="string"/>).</typeparam>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs" ref:region="StronglyTypedIdAttributeOfT_Declaration" ref:dedent="true">
 /// [StronglyTypedId&lt;Guid&gt;]
 /// public partial struct ProductId
 /// {
 /// }
-///
-/// // Usage:
+/// </code>
+/// Usage:
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs" ref:region="StronglyTypedIdAttributeOfT_Usage" ref:dedent="true">
 /// var productId = ProductId.New();
-/// var json = JsonSerializer.Serialize(productId);
+/// var json = System.Text.Json.JsonSerializer.Serialize(productId);
+/// Assert.Equal($"\"{productId.Value}\"", json);
 /// </code>
 /// </example>
 [System.Diagnostics.Conditional("StronglyTypedId_Attributes")]

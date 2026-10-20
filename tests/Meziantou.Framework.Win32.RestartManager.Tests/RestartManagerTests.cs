@@ -14,6 +14,43 @@ public class RestartManagerTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void DocumentationExample()
+    {
+        #region RestartManager_Usage
+        var path = Path.GetTempFileName();
+
+        // The file is locked while this stream is open
+        using var stream = File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+        // Check if a file is locked
+        Assert.True(RestartManager.IsFileLocked(path));
+
+        // Get processes locking a file. The caller owns the returned Process instances.
+        var processes = RestartManager.GetProcessesLockingFile(path);
+        foreach (var process in processes)
+        {
+            Assert.Equal(Environment.ProcessId, process.Id);
+            process.Dispose();
+        }
+
+        // Manual session management
+        using var session = RestartManager.CreateSession();
+        session.RegisterFile(path);
+        if (session.IsResourcesLocked())
+        {
+            foreach (var process in session.GetProcessesLockingResources())
+            {
+                // Handle locked resources
+                process.Dispose();
+            }
+        }
+        #endregion
+
+        stream.Dispose();
+        File.Delete(path);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void GetProcessesLockingFile()
     {
         var path = Path.GetTempFileName();

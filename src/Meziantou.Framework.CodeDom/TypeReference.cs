@@ -2,10 +2,14 @@ namespace Meziantou.Framework.CodeDom;
 
 /// <summary>Represents a reference to a type, including support for generics, arrays, and nullable annotations.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.CodeDom.Tests/TypeReferenceTests.cs" ref:region="TypeReference_Example" ref:dedent="true">
 /// var stringType = new TypeReference(typeof(string));
 /// var listOfInt = new TypeReference(typeof(List&lt;&gt;)).MakeGeneric(new TypeReference(typeof(int)));
 /// var intArray = new TypeReference(typeof(int)).MakeArray(1);
+///
+/// Assert.Equal("System.String", stringType.ClrFullTypeName);
+/// Assert.Equal("System.Collections.Generic.List&lt;System.Int32&gt;", listOfInt.ClrFullTypeName);
+/// Assert.Equal("System.Int32[]", intArray.ClrFullTypeName);
 /// </code>
 /// </example>
 public class TypeReference

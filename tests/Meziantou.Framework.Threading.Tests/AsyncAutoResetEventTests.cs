@@ -9,6 +9,25 @@ public class AsyncAutoResetEventTests
     private static readonly TimeSpan RaceBudget = TimeSpan.FromSeconds(5);
 
     [Fact]
+    public async Task AsyncAutoResetEvent_Example()
+    {
+        #region AsyncAutoResetEvent_Usage
+        var autoResetEvent = new AsyncAutoResetEvent(initialState: false);
+
+        // In one task
+        var waitingTask = Task.Run(async () =>
+        {
+            await autoResetEvent.WaitAsync();
+            return "Event was set!";
+        });
+
+        // In another task
+        autoResetEvent.Set();
+        Assert.Equal("Event was set!", await waitingTask);
+        #endregion
+    }
+
+    [Fact]
     public async Task WaitAsync_InitiallySignaled_CompletesImmediatelyOnce()
     {
         var e = new AsyncAutoResetEvent(initialState: true);

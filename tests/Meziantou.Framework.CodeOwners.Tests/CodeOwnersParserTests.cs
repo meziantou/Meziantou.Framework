@@ -29,6 +29,47 @@ public sealed class CodeOwnersParserTests
     }
 
     [Fact]
+    public void CodeOwnersFileExample()
+    {
+        #region CodeOwnersFile_Parse
+        var file = CodeOwnersFile.Parse("* @user1\n*.js @js-owner", CodeOwnersDialect.GitHub);
+
+        Assert.Equal("*", file.Entries[0].Pattern);
+        Assert.Equal("@user1", file.Entries[0].Owners[0].ToString());
+
+        Assert.Equal("*.js", file.Entries[1].Pattern);
+        Assert.Equal("@js-owner", file.Entries[1].Owners[0].ToString());
+        #endregion
+    }
+
+    [Fact]
+    public void CodeOwnersEntryExample()
+    {
+        #region CodeOwnersEntry_Example
+        // Parse a CODEOWNERS file
+        var file = CodeOwnersFile.Parse("*.js @user1 @user2", CodeOwnersDialect.GitLab);
+        var entry = file.Entries[0];
+        Assert.Equal("*.js", entry.Pattern);
+        Assert.Equal(["@user1", "@user2"], entry.Owners.Select(owner => owner.ToString()));
+        #endregion
+    }
+
+    [Fact]
+    public void CodeOwnerExample()
+    {
+        #region CodeOwner_Example
+        var file = CodeOwnersFile.Parse("*.js @user1 docs@example.com", CodeOwnersDialect.GitLab);
+        var owners = file.Entries[0].Owners;
+
+        Assert.Equal(CodeOwnerType.Username, owners[0].Type);
+        Assert.Equal("user1", owners[0].Name);
+
+        Assert.Equal(CodeOwnerType.EmailAddress, owners[1].Type);
+        Assert.Equal("docs@example.com", owners[1].Name);
+        #endregion
+    }
+
+    [Fact]
     public void ParseSingleLineCodeOwnersWithEscapedPatternCharacters()
     {
         var actual = CodeOwnersFile.Parse("foo\\ bar\\@baz @user1", CodeOwnersDialect.GitLab).Entries;
@@ -150,6 +191,29 @@ public sealed class CodeOwnersParserTests
         };
         Assert.Equal(expected, actual);
         Assert.True(actual[2].IsOptional);
+    }
+
+    [Fact]
+    public void CodeOwnersSectionExample()
+    {
+        #region CodeOwnersSection_Example
+        var content = """
+            [Backend][2] @backend-team
+            *.cs @csharp-owner
+
+            ^[Optional]
+            docs/* @docs-owner
+            """;
+        var file = CodeOwnersFile.Parse(content, CodeOwnersDialect.GitLab);
+
+        var backend = file.Entries[0].Section!;
+        Assert.Equal("Backend", backend.Name);
+        Assert.Equal(2, backend.RequiredReviewerCount);
+
+        var optional = file.Entries[1].Section!;
+        Assert.Equal("Optional", optional.Name);
+        Assert.True(optional.IsOptional);
+        #endregion
     }
 
     [Fact]
@@ -431,6 +495,20 @@ public sealed class CodeOwnersParserTests
 
         var exception = Assert.Throws<CodeOwnersParseException>(() => CodeOwnersFile.Parse("* @user1\n[Test][0]\n", CodeOwnersDialect.GitLab));
         Assert.Equal("The CODEOWNERS file is invalid at line 2, position 7: the required reviewer count is not a positive integer", exception.Message);
+    }
+
+    [Fact]
+    public void CodeOwnersParseErrorExample()
+    {
+        #region CodeOwnersParseError_Example
+        var isValid = CodeOwnersFile.TryParse("[Section\n* @user1", CodeOwnersDialect.GitLab, out var file, out var error);
+
+        Assert.False(isValid);
+        Assert.Null(file);
+        Assert.Equal(CodeOwnersParseErrorKind.UnterminatedSectionHeader, error.Kind);
+        Assert.Equal(1, error.LineNumber);
+        Assert.Equal(1, error.LinePosition);
+        #endregion
     }
 
     [Theory]

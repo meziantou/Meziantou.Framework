@@ -10,11 +10,12 @@ namespace Meziantou.AspNetCore.Components;
 /// </para>
 /// </remarks>
 /// <example>
-/// <code>
-/// // In Program.cs or Startup.cs
+/// Register the service in <c>Program.cs</c>:
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/BlazorAppSample/Program.cs" ref:region="ClipboardService_Registration" ref:dedent="true">
 /// builder.Services.AddClipboard();
-///
-/// // In a component
+/// </code>
+/// Use it in a component:
+/// <code language="razor" xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/BlazorAppSample/Examples/ClipboardServiceExample.razor">
 /// @inject ClipboardService ClipboardService
 ///
 /// &lt;button @onclick="CopyToClipboard"&gt;Copy&lt;/button&gt;

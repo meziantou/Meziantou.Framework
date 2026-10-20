@@ -3,9 +3,12 @@ namespace Meziantou.Framework;
 /// <summary>
 /// Provides methods for generating URL-friendly slugs from text.
 /// <example>
-/// <code>
-/// var slug = Slug.Create("This is a test!"); // "This-is-a-test"
-/// var lowerSlug = Slug.Create("Hello World", new SlugOptions { CasingTransformation = CasingTransformation.ToLowerCase }); // "hello-world"
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Slug.Tests/SlugTests.cs" ref:region="Slug_Example" ref:dedent="true">
+/// var slug = Slug.Create("This is a test!");
+/// Assert.Equal("This-is-a-test", slug);
+///
+/// var lowerSlug = Slug.Create("Hello World", new SlugOptions { CasingTransformation = CasingTransformation.ToLowerCase });
+/// Assert.Equal("hello-world", lowerSlug);
 /// </code>
 /// </example>
 /// </summary>

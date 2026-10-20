@@ -8,9 +8,10 @@ namespace Meziantou.Framework.Language.Ini;
 /// with it is reported through <see cref="GetDiagnostics"/>.
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Ini.Tests/IniSyntaxTreeTests.cs" ref:region="IniSyntaxTree_ParseText" ref:dedent="true">
 /// var tree = IniSyntaxTree.ParseText("[server]\nport = 8080\n");
 /// var port = tree.GetRoot().GetValue("server", "port");
+/// Assert.Equal("8080", port);
 /// </code>
 /// </example>
 public sealed class IniSyntaxTree : SyntaxTree

@@ -2,10 +2,15 @@ namespace Meziantou.Framework.CodeDom;
 
 /// <summary>Represents a namespace declaration containing types, nested namespaces, and using directives.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs" ref:region="NamespaceDeclaration_Example" ref:dedent="true">
 /// var ns = new NamespaceDeclaration("MyNamespace");
 /// ns.Usings.Add(new UsingDirective("System"));
-/// var cls = ns.AddType(new ClassDeclaration("MyClass"));
+/// ns.AddType(new ClassDeclaration("MyClass"));
+/// var code = ns.ToCsharpString();
+///
+/// Assert.StartsWith("namespace MyNamespace", code);
+/// Assert.Contains("using System;", code);
+/// Assert.Contains("class MyClass", code);
 /// </code>
 /// </example>
 public class NamespaceDeclaration : CodeObject, ITypeDeclarationContainer, INamespaceDeclarationContainer, IUsingDirectiveContainer, ICommentable

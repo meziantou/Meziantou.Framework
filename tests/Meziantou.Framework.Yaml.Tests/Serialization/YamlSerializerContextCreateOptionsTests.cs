@@ -115,6 +115,17 @@ public class YamlSerializerContextCreateOptionsTests
     }
 
     [Fact]
+    public void CreateOptions_DocumentationExample()
+    {
+        #region YamlSerializerContext_CreateOptions
+        var context = new TestYamlSerializerContext();
+        var options = context.CreateOptions(o => o with { SourceName = "config.yaml" });
+        var person = YamlSerializer.Deserialize<GeneratedPerson>("first_name: John\n", options);
+        Assert.Equal("John", person!.FirstName);
+        #endregion
+    }
+
+    [Fact]
     public void CreateOptions_ResultCanBeUsedForDeserialization()
     {
         var context = new TestYamlSerializerContext();

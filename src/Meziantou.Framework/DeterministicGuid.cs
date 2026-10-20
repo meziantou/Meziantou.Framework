@@ -61,9 +61,11 @@ namespace Meziantou.Framework;
 /// Provides methods for generating deterministic (version 3 and version 5) GUIDs according to <see href="https://www.ietf.org/rfc/rfc4122.txt">RFC 4122</see>.
 /// </summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Tests/DeterministicGuidTests.cs" ref:region="DeterministicGuid_Create" ref:dedent="true">
 /// // Generate a GUID from a DNS name
 /// var guid = DeterministicGuid.Create(DeterministicGuid.DnsNamespace, "example.com", DeterministicGuidVersion.Version5);
+/// Assert.Equal(Guid.Parse("cfbff0d1-9375-5685-968c-48ce8b15ae17"), guid);
+///
 /// // The same input will always generate the same GUID
 /// var guid2 = DeterministicGuid.Create(DeterministicGuid.DnsNamespace, "example.com", DeterministicGuidVersion.Version5);
 /// Assert.Equal(guid, guid2);

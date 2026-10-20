@@ -5,11 +5,15 @@ namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 /// <summary>Represents a snapshot of CPU information including processor name, core counts, frequencies, and hardware intrinsics support.</summary>
 /// <example>
 /// Get CPU information:
-/// <code>
-/// var cpuInfo = CpuSnapshot.Get();
-/// Console.WriteLine($"Processor: {cpuInfo.ProcessorName}");
-/// Console.WriteLine($"Cores: {cpuInfo.PhysicalCoreCount} physical, {cpuInfo.LogicalCoreCount} logical");
-/// Console.WriteLine($"Max Frequency: {cpuInfo.MaxFrequency} MHz");
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Diagnostics.ContextSnapshot.Tests/SnapshotTests.cs" ref:region="CpuSnapshot_AddCpu" ref:dedent="true">
+/// var snapshot = new ContextSnapshotBuilder().AddCpu().BuildSnapshot();
+/// var cpuInfo = Assert.IsType&lt;CpuSnapshot&gt;(snapshot["CPU"]);
+///
+/// // A value is null when it is not available on the current platform
+/// Assert.NotEqual("", cpuInfo.ProcessorName);
+/// Assert.True(cpuInfo.PhysicalCoreCount is null or &gt; 0);
+/// Assert.True(cpuInfo.LogicalCoreCount is null or &gt; 0);
+/// Assert.True(cpuInfo.MaxFrequency is null or &gt; 0); // in hertz
 /// </code>
 /// </example>
 public sealed class CpuSnapshot

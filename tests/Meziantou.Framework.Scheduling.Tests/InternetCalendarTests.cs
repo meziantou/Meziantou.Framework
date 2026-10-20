@@ -88,6 +88,25 @@ public sealed class InternetCalendarTests
     }
 
     [Fact]
+    public void DocumentationExample()
+    {
+        #region InternetCalendar_Example
+        var calendar = new InternetCalendar();
+        calendar.Events.Add(new Event
+        {
+            Start = new DateTime(2024, 01, 02, 08, 00, 00, DateTimeKind.Utc),
+            End = new DateTime(2024, 01, 02, 09, 00, 00, DateTimeKind.Utc),
+            Summary = "Meeting",
+        });
+        var icsContent = calendar.ToIcs();
+
+        Assert.Contains("BEGIN:VEVENT", icsContent);
+        Assert.Contains("DTSTART:20240102T080000Z", icsContent);
+        Assert.Contains("SUMMARY:Meeting", icsContent);
+        #endregion
+    }
+
+    [Fact]
     public void ToIcs_WritesTheStartAndEndWithTheTimeZoneIdentifier()
     {
         var @event = new Event

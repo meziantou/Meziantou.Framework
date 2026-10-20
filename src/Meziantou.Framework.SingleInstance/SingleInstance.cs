@@ -9,13 +9,13 @@ namespace Meziantou.Framework;
 /// <summary>Ensures that only a single instance of an application can run at a time and provides communication between instances.</summary>
 /// <example>
 /// Basic usage:
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/SingleInstanceConsoleAppSample/SingleInstanceExamples.cs" ref:region="SingleInstance_BasicUsage" ref:dedent="true">
 /// var applicationId = new Guid("dfae4e70-179f-4726-aa98-00a832315f5a");
 /// using var singleInstance = new SingleInstance(applicationId);
 ///
 /// // Subscribe before calling StartApplication, otherwise a notification raised
 /// // between the server starting and the handler being attached is dropped.
-/// singleInstance.NewInstance += (sender, e) =>
+/// singleInstance.NewInstance += (sender, e) =&gt;
 /// {
 ///     // Handle notification from another instance
 ///     Console.WriteLine($"New instance started with {e.Arguments.Length} arguments");

@@ -3,10 +3,14 @@ namespace Meziantou.Framework.CodeOwners;
 /// <summary>
 /// Represents a parsed CODEOWNERS file.
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.CodeOwners.Tests/CodeOwnersParserTests.cs" ref:region="CodeOwnersFile_Parse" ref:dedent="true">
 /// var file = CodeOwnersFile.Parse("* @user1\n*.js @js-owner", CodeOwnersDialect.GitHub);
-/// // file.Entries[0]: Pattern="*", Owners=[@user1]
-/// // file.Entries[1]: Pattern="*.js", Owners=[@js-owner]
+///
+/// Assert.Equal("*", file.Entries[0].Pattern);
+/// Assert.Equal("@user1", file.Entries[0].Owners[0].ToString());
+///
+/// Assert.Equal("*.js", file.Entries[1].Pattern);
+/// Assert.Equal("@js-owner", file.Entries[1].Owners[0].ToString());
 /// </code>
 /// </example>
 /// </summary>

@@ -36,6 +36,21 @@ public class CircularBufferTests
     }
 
     [Fact]
+    public void CircularBuffer_AllowOverwrite_Example()
+    {
+        #region CircularBuffer_AllowOverwrite
+        var buffer = new CircularBuffer<int>(3) { AllowOverwrite = true };
+        buffer.AddLast(1);
+        buffer.AddLast(2);
+        buffer.AddLast(3);
+        Assert.Equal([1, 2, 3], buffer);
+
+        buffer.AddLast(4); // overwrites 1
+        Assert.Equal([2, 3, 4], buffer);
+        #endregion
+    }
+
+    [Fact]
     public void Test_AddLast()
     {
         var list = new CircularBuffer<int>(3) { AllowOverwrite = true };

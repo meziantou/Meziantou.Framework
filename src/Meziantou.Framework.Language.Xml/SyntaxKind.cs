@@ -2,11 +2,21 @@ namespace Meziantou.Framework.Language.Xml;
 
 /// <summary>Identifies what a node, token, or trivium in an XML tree is.</summary>
 /// <example>
-/// <code>
-/// if (node.Kind() == SyntaxKind.XmlElement)
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs" ref:region="SyntaxKind_CompareKind" ref:dedent="true">
+/// var tree = XmlSyntaxTree.ParseText("&lt;root&gt;&lt;item /&gt;&lt;item&gt;text&lt;/item&gt;&lt;/root&gt;");
+///
+/// var elementCount = 0;
+/// foreach (var node in tree.GetRoot().DescendantNodes())
 /// {
-///     // handle element
+///     if (node.Kind() == SyntaxKind.XmlElement)
+///     {
+///         // handle element
+///         elementCount++;
+///     }
 /// }
+///
+/// // &lt;item /&gt; is an XmlEmptyElement, so only &lt;root&gt; and the second &lt;item&gt; are counted
+/// Assert.Equal(2, elementCount);
 /// </code>
 /// </example>
 public enum SyntaxKind

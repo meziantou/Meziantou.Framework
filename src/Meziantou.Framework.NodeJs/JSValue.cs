@@ -13,8 +13,16 @@ namespace Meziantou.Framework.NodeJs;
 /// <para>It cannot be serialized in any other way: the resulting <see cref="JsonNode"/> cannot be written as JSON, and a <see cref="JSValue"/> cannot be a member of an object serialized using reflection.</para>
 /// </remarks>
 /// <example>
-/// <code>
-/// await node.InvokeAsync("./module.mjs", "run", [JSValue.Undefined, JSValue.BigInt(long.MaxValue), new JsonObject { ["date"] = JSValue.Date(DateTimeOffset.UtcNow) }]);
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.NodeJs.Tests/NodeJsHostTests.cs" ref:region="JSValue_Example" ref:dedent="true">
+/// await using var node = await NodeJsHost.StartAsync();
+///
+/// var types = await node.EvaluateAsync(
+///     "return [typeof args[0], typeof args[1], args[2].date instanceof Date];",
+///     [JSValue.Undefined, JSValue.BigInt(long.MaxValue), new JsonObject { ["date"] = JSValue.Date(DateTimeOffset.UtcNow) }]);
+///
+/// Assert.Equal("undefined", types[0].GetString());
+/// Assert.Equal("bigint", types[1].GetString());
+/// Assert.True(types[2].GetBoolean());
 /// </code>
 /// </example>
 [JsonConverter(typeof(NodeJsArgumentConverter<JSValue>))]

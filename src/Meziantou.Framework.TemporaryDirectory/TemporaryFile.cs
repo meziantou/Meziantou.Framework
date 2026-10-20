@@ -4,16 +4,17 @@ namespace Meziantou.Framework;
 
 /// <summary>Represents a temporary file that is automatically deleted when disposed.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.TemporaryDirectory.Tests/TemporaryDirectoryTests.cs" ref:region="TemporaryFile_Example" ref:dedent="true">
 /// // Basic usage with using statement
 /// using var tempFile = TemporaryFile.Create();
 /// File.WriteAllText(tempFile, "content");
 ///
 /// // Provide a file name
 /// using var tempFile2 = TemporaryFile.Create("custom.txt");
+/// Assert.Equal("custom.txt", tempFile2.FullPath.Name);
 ///
-/// // Provide a full path
-/// using var tempFile3 = TemporaryFile.Create(@"C:\temp\custom.txt");
+/// // Provide a full path. The file must not exist.
+/// using var tempFile3 = TemporaryFile.Create(Path.Combine(Path.GetTempPath(), $"custom-{Guid.NewGuid():N}.txt"));
 /// </code>
 /// </example>
 /// <remarks>

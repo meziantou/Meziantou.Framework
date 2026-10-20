@@ -169,6 +169,55 @@ public class TemplateTest
     }
 
     [Fact]
+    public void ReadmeExample_DefaultUsings()
+    {
+        #region Template_DefaultUsings
+        using var template = new Template();
+        template.Load("<%= Enumerable.Range(1, 5).Sum() %>");
+        var result = template.Run();
+        Assert.Equal("15", result);
+        #endregion
+    }
+
+    [Fact]
+    public void Template_DefaultUsings_TypesOutsideCoreLibAreAvailable()
+    {
+        using var template = new Template();
+        template.Load("""
+            <%
+            var queue = new Queue<int>([1, 2]);
+            var stack = new Stack<int>([3]);
+            var uri = new Uri("https://example.com/path");
+            var writer = Console.Out;
+            %><%= queue.Sum() + stack.Peek() %>|<%= uri.AbsolutePath %>|<%= writer is not null %>
+            """);
+
+        var result = template.Run();
+        Assert.Equal("6|/path|True", result);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Template_DefaultUsing_CanBeImportedExplicitly(bool useDirective)
+    {
+        using var template = new Template();
+        if (useDirective)
+        {
+            template.Load("<%@ using System.Linq %><%= Enumerable.Range(1, 5).Sum() %>");
+        }
+        else
+        {
+            template.Usings.Add("System.Linq");
+            template.Load("<%= Enumerable.Range(1, 5).Sum() %>");
+        }
+
+        var result = template.Run();
+        Assert.Equal("15", result);
+        Assert.Single(template.SourceCode!.Split('\n'), line => string.Equals(line.Trim(), "using System.Linq;", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void ReadmeExample_Usings()
     {
         #region Template_Usings

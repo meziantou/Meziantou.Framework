@@ -487,7 +487,8 @@ public class Template : IDisposable
         using var sw = new StringWriter();
         using (var tw = new IndentedTextWriter(sw))
         {
-            foreach (var @using in Usings)
+            // A namespace imported by default can also be imported explicitly; emitting it twice would raise CS0105
+            foreach (var @using in Usings.Distinct(StringComparer.Ordinal))
             {
                 tw.WriteLine("using " + @using + ";");
             }
@@ -744,6 +745,11 @@ public class Template : IDisposable
             new AssemblyReference(typeof(Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfo).Assembly.Location),
             new AssemblyReference(typeof(System.Dynamic.DynamicObject).Assembly.Location),
             new AssemblyReference(typeof(System.Linq.Expressions.ExpressionType).Assembly.Location),
+            // Types of the namespaces imported by default that are not defined in System.Private.CoreLib
+            new AssemblyReference(typeof(Enumerable).Assembly.Location),
+            new AssemblyReference(Assembly.Load(new AssemblyName("System.Collections")).Location),
+            new AssemblyReference(typeof(Uri).Assembly.Location),
+            new AssemblyReference(typeof(Console).Assembly.Location),
             new AssemblyReference(Assembly.Load(new AssemblyName("mscorlib")).Location),
             new AssemblyReference(Assembly.Load(new AssemblyName("System.Runtime")).Location),
             new AssemblyReference(Assembly.Load(new AssemblyName("System.Dynamic.Runtime")).Location),

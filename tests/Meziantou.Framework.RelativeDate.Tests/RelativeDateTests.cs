@@ -1,6 +1,7 @@
 ﻿#pragma warning disable MA0011 // IFormatProvider is missing
 using System.Collections;
 using System.Resources;
+using Meziantou.Xunit;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.Tests;
@@ -29,6 +30,30 @@ public class RelativeDateTests
         var dates = new RelativeDate[1];
         var result = dates[0].ToString(format: null, CultureInfo.InvariantCulture);
         Assert.EndsWith(" years ago", result);
+    }
+
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void Documentation_Example()
+    {
+        #region RelativeDate_Example
+        // Basic usage
+        var pastDate = RelativeDate.Get(DateTime.UtcNow.AddHours(-2));
+        Assert.Equal("2 hours ago", pastDate.ToString(null, CultureInfo.InvariantCulture));
+
+        // With localization
+        var date = RelativeDate.Get(DateTime.UtcNow.AddMinutes(-30));
+        Assert.Equal("il y a 30 minutes", date.ToString(null, CultureInfo.GetCultureInfo("fr")));
+        Assert.Equal("30 minutes ago", date.ToString(null, CultureInfo.InvariantCulture));
+
+        // With custom TimeProvider for testing
+        var fakeTimeProvider = new FakeTimeProvider();
+        fakeTimeProvider.SetUtcNow(new DateTimeOffset(2024, 1, 1, 12, 0, 0, TimeSpan.Zero));
+        var testDate = RelativeDate.Get(new DateTime(2024, 1, 1, 10, 0, 0, DateTimeKind.Utc), fakeTimeProvider);
+        Assert.Equal("2 hours ago", testDate.ToString(null, CultureInfo.InvariantCulture));
+
+        var futureDate = RelativeDate.Get(new DateTime(2024, 1, 4, 12, 0, 0, DateTimeKind.Utc), fakeTimeProvider);
+        Assert.Equal("in 3 days", futureDate.ToString(null, CultureInfo.InvariantCulture));
+        #endregion
     }
 
     [Theory]
@@ -389,6 +414,30 @@ public class RelativeDateTests
         }
     }
 
+    // Swaps LocalizationProvider.Current, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
+    public void Documentation_LocalizationProvider()
+    {
+        var previousProvider = LocalizationProvider.Current;
+        try
+        {
+            #region LocalizationProvider_Example
+            // Use custom localization provider
+            LocalizationProvider.Current = new UpperCaseLocalizationProvider();
+
+            var date = RelativeDate.Get(DateTime.UtcNow.AddHours(-2));
+            Assert.Equal("2 HOURS AGO", date.ToString(null, CultureInfo.InvariantCulture));
+
+            // Restore default
+            LocalizationProvider.Current = ResxLocalizationProvider.Instance;
+            #endregion
+        }
+        finally
+        {
+            LocalizationProvider.Current = previousProvider;
+        }
+    }
+
     private sealed class CultureFormatProvider(CultureInfo culture) : IFormatProvider
     {
         public object? GetFormat(Type? formatType) => formatType == typeof(CultureInfo) ? culture : null;
@@ -398,6 +447,16 @@ public class RelativeDateTests
     {
         public string GetString(string name, CultureInfo? culture) => culture?.Name ?? "<null>";
     }
+
+    #region LocalizationProvider_CustomProvider
+    private sealed class UpperCaseLocalizationProvider : ILocalizationProvider
+    {
+        public string GetString(string name, CultureInfo? culture)
+        {
+            return ResxLocalizationProvider.Instance.GetString(name, culture).ToUpperInvariant();
+        }
+    }
+    #endregion
 
     private static string GetDigits(string value) => string.Concat(value.Where(char.IsAsciiDigit));
 #endif

@@ -4,23 +4,23 @@ namespace Meziantou.Framework;
 
 /// <summary>
 /// Provides utility methods for converting values between types with more flexibility than System.Convert.
+/// </summary>
 /// <example>
-/// <code><![CDATA[
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.TypeConverter.Tests/ConvertUtilitiesTests.cs" ref:region="ConvertUtilities_Example" ref:dedent="true">
 /// // Using TryChangeType
-/// if (ConvertUtilities.TryChangeType("42", out int value))
-/// {
-///     Console.WriteLine(value); // 42
-/// }
+/// Assert.True(ConvertUtilities.TryChangeType("42", CultureInfo.InvariantCulture, out int value));
+/// Assert.Equal(42, value);
 ///
 /// // Using ChangeType with default value
-/// var result = ConvertUtilities.ChangeType<int>("invalid", defaultValue: 0);
+/// var result = ConvertUtilities.ChangeType&lt;int&gt;("invalid", defaultValue: 0, CultureInfo.InvariantCulture);
+/// Assert.Equal(0, result);
 ///
 /// // Convert with culture-specific formatting
 /// var cultureInfo = CultureInfo.GetCultureInfo("fr-FR");
-/// var number = ConvertUtilities.ChangeType<decimal>("1234,56", defaultValue: 0m, provider: cultureInfo);
-/// ]]></code>
+/// var number = ConvertUtilities.ChangeType&lt;decimal&gt;("1234,56", defaultValue: 0m, provider: cultureInfo);
+/// Assert.Equal(1234.56m, number);
+/// </code>
 /// </example>
-/// </summary>
 public static class ConvertUtilities
 {
     /// <summary>Gets a value indicating whether an instance of the type can be created.</summary>

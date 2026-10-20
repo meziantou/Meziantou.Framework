@@ -2,9 +2,11 @@ namespace Meziantou.Framework.CodeDom;
 
 /// <summary>Represents a method invocation expression.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs" ref:region="MethodInvokeExpression_Example" ref:dedent="true">
 /// var method = new MemberReferenceExpression(typeof(Console), "WriteLine");
 /// var invoke = new MethodInvokeExpression(method, new LiteralExpression("Hello World"));
+///
+/// Assert.Equal("global::System.Console.WriteLine(\"Hello World\")", invoke.ToCsharpString());
 /// </code>
 /// </example>
 public class MethodInvokeExpression : Expression

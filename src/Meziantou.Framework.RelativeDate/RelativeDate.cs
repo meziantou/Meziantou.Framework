@@ -4,24 +4,24 @@ namespace Meziantou.Framework;
 
 /// <summary>Represents a date and time that can be formatted as a human-readable relative time string (e.g., "2 hours ago", "in 3 days").</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.RelativeDate.Tests/RelativeDateTests.cs" ref:region="RelativeDate_Example" ref:dedent="true">
 /// // Basic usage
 /// var pastDate = RelativeDate.Get(DateTime.UtcNow.AddHours(-2));
-/// Console.WriteLine(pastDate); // "2 hours ago"
-///
-/// var futureDate = RelativeDate.Get(DateTime.UtcNow.AddDays(3));
-/// Console.WriteLine(futureDate); // "in 3 days"
+/// Assert.Equal("2 hours ago", pastDate.ToString(null, CultureInfo.InvariantCulture));
 ///
 /// // With localization
 /// var date = RelativeDate.Get(DateTime.UtcNow.AddMinutes(-30));
-/// Console.WriteLine(date.ToString(null, CultureInfo.GetCultureInfo("fr"))); // "il y a 30 minutes"
-/// Console.WriteLine(date.ToString(null, CultureInfo.InvariantCulture)); // "30 minutes ago"
+/// Assert.Equal("il y a 30 minutes", date.ToString(null, CultureInfo.GetCultureInfo("fr")));
+/// Assert.Equal("30 minutes ago", date.ToString(null, CultureInfo.InvariantCulture));
 ///
 /// // With custom TimeProvider for testing
 /// var fakeTimeProvider = new FakeTimeProvider();
 /// fakeTimeProvider.SetUtcNow(new DateTimeOffset(2024, 1, 1, 12, 0, 0, TimeSpan.Zero));
 /// var testDate = RelativeDate.Get(new DateTime(2024, 1, 1, 10, 0, 0, DateTimeKind.Utc), fakeTimeProvider);
-/// Console.WriteLine(testDate); // "2 hours ago"
+/// Assert.Equal("2 hours ago", testDate.ToString(null, CultureInfo.InvariantCulture));
+///
+/// var futureDate = RelativeDate.Get(new DateTime(2024, 1, 4, 12, 0, 0, DateTimeKind.Utc), fakeTimeProvider);
+/// Assert.Equal("in 3 days", futureDate.ToString(null, CultureInfo.InvariantCulture));
 /// </code>
 /// </example>
 /// <remarks>

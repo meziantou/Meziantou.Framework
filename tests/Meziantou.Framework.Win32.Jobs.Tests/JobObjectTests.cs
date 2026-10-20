@@ -50,8 +50,9 @@ public class JobObjectTests
         var memoryInfo = job.GetMemoryAccountingInformation();
         #endregion
 
-        Assert.Equal(1u, basicInfo.ActiveProcesses);
-        Assert.Equal(1u, basicAndIoInfo.BasicInfo.TotalProcesses);
+        // Windows can add helper processes, such as the console host, to the job
+        Assert.NotEqual(0u, basicInfo.ActiveProcesses);
+        Assert.NotEqual(0u, basicAndIoInfo.BasicInfo.TotalProcesses);
         Assert.NotEqual(0ul, memoryInfo.PeakJobMemoryUsed);
 
         job.Terminate();

@@ -172,7 +172,7 @@ Assert.Equal("""
         ██  ██      ████
       ████████          ████
 
-    """, microText);
+    """, microText, ignoreLineEndingDifferences: true);
 ```
 <!-- endref -->
 

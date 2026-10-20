@@ -35,7 +35,7 @@ public class QRCodeConsoleRendererTests
                 ██  ██      ████
               ████████          ████
 
-            """, microText);
+            """, microText, ignoreLineEndingDifferences: true);
         #endregion
 
         Assert.NotEmpty(text);

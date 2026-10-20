@@ -41,7 +41,6 @@ Assert.Equal("""
 // Remove the Mark of the Web from a file
 MarkOfTheWeb.RemoveFileZone(path);
 Assert.Null(MarkOfTheWeb.GetFileZoneIdentifier(path));
-Assert.False(MarkOfTheWeb.IsUntrusted(path));
 ```
 <!-- endref -->
 

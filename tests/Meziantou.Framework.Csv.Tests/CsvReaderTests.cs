@@ -75,6 +75,19 @@ public class CsvReaderTests
     }
 
     [Fact]
+    public async Task CsvReader_ColumnNumberCountsBothCharactersOfAnEscapedQuote()
+    {
+        using var sr = new StringReader("\"ab\"\"\"\n\"a\"\"b\"");
+        var reader = new CsvReader(sr);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(7, reader.ColumnNumber);
+
+        await reader.ReadRowAsync();
+        Assert.Equal(6, reader.ColumnNumber);
+    }
+
+    [Fact]
     public async Task CsvReader_LineNumberCountsConsumedLineTerminators()
     {
         using var sr = new StringReader("a\nb\nc");

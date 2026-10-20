@@ -10,6 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Bencode.Fuzz\Meziantou.Framework.Bencode.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.CodeOwners.Fuzz\Meziantou.Framework.CodeOwners.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.DependencyScanning.Fuzz\Meziantou.Framework.DependencyScanning.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Globbing.Fuzz\Meziantou.Framework.Globbing.Fuzz.csproj" />

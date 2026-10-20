@@ -2,6 +2,56 @@ namespace Meziantou.Framework.RobotsTxt.Tests;
 
 public sealed class RobotsFileTests
 {
+    [Fact]
+    public void ReadmeExample_Parse()
+    {
+        #region RobotsFile_Parse
+        var robots = RobotsFile.Parse("""
+            User-agent: *
+            Disallow: /private/
+            Allow: /private/public/
+            Crawl-delay: 1.5
+
+            Sitemap: https://example.com/sitemap.xml
+            """);
+
+        Assert.True(robots.IsAllowed("Googlebot", "/private/public/page"));
+        Assert.False(robots.IsAllowed("Googlebot", "/private/secret"));
+        Assert.Equal(TimeSpan.FromSeconds(1.5), robots.GetCrawlDelay("Googlebot"));
+        Assert.Equal(["https://example.com/sitemap.xml"], robots.Sitemaps);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Wildcards()
+    {
+        #region RobotsFile_Wildcards
+        var robots = RobotsFile.Parse("""
+            User-agent: *
+            Disallow: /*.php$
+            Allow: /index.php
+            """);
+
+        Assert.True(robots.IsAllowed("AnyBot", "/index.php"));
+        Assert.False(robots.IsAllowed("AnyBot", "/admin.php"));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ParseErrors()
+    {
+        #region RobotsFile_ParseErrors
+        var robots = RobotsFile.Parse("""
+            User-agent: *
+            Host: example.com
+            this line has no colon
+            """);
+
+        var errors = robots.ParseErrors.Select(error => $"{error.LineNumber}: {error.Kind} => {error.Line}");
+        Assert.Equal(["2: UnknownDirective => Host: example.com", "3: MalformedLine => this line has no colon"], errors);
+        #endregion
+    }
+
     // -------------------------------------------------------------------------
     // Parsing
     // -------------------------------------------------------------------------

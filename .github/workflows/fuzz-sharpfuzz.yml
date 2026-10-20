@@ -26,6 +26,7 @@ on:
           - language
           - markdown
           - media-tags
+          - postgresql-server
           - robots-txt
           - simple-query-language
           - syntax-highlighting
@@ -85,6 +86,7 @@ env:
       { "project": "Meziantou.Framework.Language.Fuzz",            "component": "language",              "day": 2 },
       { "project": "Meziantou.Framework.Markdown.Fuzz",            "component": "markdown",              "day": 2 },
       { "project": "Meziantou.Framework.MediaTags.Fuzz",           "component": "media-tags",            "day": 3 },
+      { "project": "Meziantou.Framework.PostgreSqlServer.Fuzz",    "component": "postgresql-server",     "day": 6 },
       { "project": "Meziantou.Framework.RobotsTxt.Fuzz",           "component": "robots-txt",            "day": 0 },
       { "project": "Meziantou.Framework.SimpleQueryLanguage.Fuzz", "component": "simple-query-language", "day": 5 },
       { "project": "Meziantou.Framework.SyntaxHighlighting.Fuzz",  "component": "syntax-highlighting",   "day": 3 },

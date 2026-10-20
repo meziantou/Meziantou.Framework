@@ -20,6 +20,7 @@
     <ProjectReference Include="..\Meziantou.Framework.Language.Fuzz\Meziantou.Framework.Language.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Markdown.Fuzz\Meziantou.Framework.Markdown.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.MediaTags.Fuzz\Meziantou.Framework.MediaTags.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.PostgreSqlServer.Fuzz\Meziantou.Framework.PostgreSqlServer.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.RobotsTxt.Fuzz\Meziantou.Framework.RobotsTxt.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.SimpleQueryLanguage.Fuzz\Meziantou.Framework.SimpleQueryLanguage.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.SyntaxHighlighting.Fuzz\Meziantou.Framework.SyntaxHighlighting.Fuzz.csproj" />

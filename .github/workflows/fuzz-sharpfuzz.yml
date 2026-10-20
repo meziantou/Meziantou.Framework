@@ -1,26 +1,54 @@
-# Coverage-guided fuzzing of a SharpFuzz project (fuzz/*.Fuzz, see fuzz/README.md), called by the weekly workflow of
-# each project (fuzz-<component>.yml). eng/run-fuzz.ps1 instruments the libraries with sharpfuzz and runs libFuzzer on
-# every target, on x64 and on arm64, so that the hardware intrinsics paths of both (SSE/AVX and AdvSimd) are fuzzed. The
-# corpus each target reaches is cached, so every campaign starts where the previous one stopped. It writes a result.json
-# and a failure.md file per target, so the report job opens an issue for every failing target (or comments on the open
-# one with the same title) with the failing input and the commands that reproduce it.
+# Weekly coverage-guided fuzzing of the SharpFuzz projects (fuzz/*.Fuzz, see fuzz/README.md). Each schedule fuzzes the
+# projects of its night (FUZZ_PROJECTS); a manual run fuzzes one component, or all of them. eng/run-fuzz.ps1 instruments
+# the libraries with sharpfuzz and runs libFuzzer on every target of a project, on x64 and on arm64, so that the
+# hardware intrinsics paths of both (SSE/AVX and AdvSimd) are fuzzed. The corpus each target reaches is cached, so every
+# campaign starts where the previous one stopped. It writes a result.json and a failure.md file per target, so the
+# report job opens an issue for every failing target (or comments on the open one with the same title) with the failing
+# input and the commands that reproduce it.
 name: fuzz-sharpfuzz
+run-name: fuzz-sharpfuzz (${{ inputs.component || github.event.schedule }})
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
-      project:
-        description: The fuzz project, for instance Meziantou.Framework.Yaml.Fuzz
-        type: string
-        required: true
       component:
-        description: The component label of its issues (component:<component>)
-        type: string
-        required: true
+        description: Component to fuzz (all fuzzes every project)
+        type: choice
+        default: all
+        options:
+          - all
+          - dependency-scanning
+          - globbing
+          - html-sanitizer
+          - jsonpath
+          - language
+          - markdown
+          - media-tags
+          - syntax-highlighting
+          - tds-server
+          - toml
+          - unicode
+          - webplatform
+          - yaml
       duration_seconds:
         description: Time budget of each target, in seconds
         type: number
         default: 300
         required: false
+  schedule:
+    - cron: '0 3 * * 0' # weekly, Sunday 3:00 in Toronto (follows daylight saving time)
+      timezone: America/Toronto
+    - cron: '0 3 * * 1' # weekly, Monday 3:00 in Toronto (follows daylight saving time)
+      timezone: America/Toronto
+    - cron: '0 3 * * 2' # weekly, Tuesday 3:00 in Toronto (follows daylight saving time)
+      timezone: America/Toronto
+    - cron: '0 3 * * 3' # weekly, Wednesday 3:00 in Toronto (follows daylight saving time)
+      timezone: America/Toronto
+    - cron: '0 3 * * 4' # weekly, Thursday 3:00 in Toronto (follows daylight saving time)
+      timezone: America/Toronto
+    - cron: '0 3 * * 5' # weekly, Friday 3:00 in Toronto (follows daylight saving time)
+      timezone: America/Toronto
+    - cron: '0 3 * * 6' # weekly, Saturday 3:00 in Toronto (follows daylight saving time)
+      timezone: America/Toronto
 
 permissions:
   contents: read
@@ -28,7 +56,7 @@ permissions:
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
   DOTNET_NOLOGO: true
-  FUZZ_DURATION_SECONDS: ${{ inputs.duration_seconds }}
+  FUZZ_DURATION_SECONDS: ${{ inputs.duration_seconds || 300 }}
   SHARPFUZZ_VERSION: 2.3.0
   # libFuzzer driver for SharpFuzz (https://github.com/Metalnem/libfuzzer-dotnet): the x64 release binary, and the
   # source of the same release (v2025.05.02.0904), which the arm64 jobs build
@@ -36,14 +64,58 @@ env:
   LIBFUZZER_DOTNET_SHA256: c2c2a90d94c409a4af339a0d4f244e0442c5a5d249be0f1252ba07871f285958
   LIBFUZZER_DOTNET_SOURCE_URL: https://raw.githubusercontent.com/Metalnem/libfuzzer-dotnet/bd39d4e88d715ab460a929943645be2a186cde52/libfuzzer-dotnet.cc
   LIBFUZZER_DOTNET_SOURCE_SHA256: 90f019e2e9ad3a0b93c7ecc2c5afb2fbfc8b5aab6aac51c7e0d349ec79354f36
+  # Every fuzz/*.Fuzz project, the component label of its issues, and the night of its weekly campaign (0 is Sunday, see
+  # the schedules). Two fuzz workflows run each night at 3:00, fuzz-imaging.yml included: a new project takes a night
+  # with the fewest, and gets an option of the component input (Meziantou.Framework.Fuzzing.Tests checks both).
+  FUZZ_PROJECTS: |
+    [
+      { "project": "Meziantou.Framework.DependencyScanning.Fuzz", "component": "dependency-scanning", "day": 0 },
+      { "project": "Meziantou.Framework.Globbing.Fuzz",           "component": "globbing",            "day": 0 },
+      { "project": "Meziantou.Framework.HtmlSanitizer.Fuzz",      "component": "html-sanitizer",      "day": 1 },
+      { "project": "Meziantou.Framework.JsonPath.Fuzz",           "component": "jsonpath",            "day": 1 },
+      { "project": "Meziantou.Framework.Language.Fuzz",           "component": "language",            "day": 2 },
+      { "project": "Meziantou.Framework.Markdown.Fuzz",           "component": "markdown",            "day": 2 },
+      { "project": "Meziantou.Framework.MediaTags.Fuzz",          "component": "media-tags",          "day": 3 },
+      { "project": "Meziantou.Framework.SyntaxHighlighting.Fuzz", "component": "syntax-highlighting", "day": 3 },
+      { "project": "Meziantou.Framework.TdsServer.Fuzz",          "component": "tds-server",          "day": 4 },
+      { "project": "Meziantou.Framework.Toml.Fuzz",               "component": "toml",                "day": 4 },
+      { "project": "Meziantou.Framework.Unicode.Fuzz",            "component": "unicode",             "day": 5 },
+      { "project": "Meziantou.Framework.WebPlatform.Fuzz",        "component": "webplatform",         "day": 5 },
+      { "project": "Meziantou.Framework.Yaml.Fuzz",               "component": "yaml",                "day": 6 }
+    ]
 
 defaults:
   run:
     shell: pwsh
 
 jobs:
+  # The projects of the night of the schedule, or of the component of a manual run
+  select:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    outputs:
+      projects: ${{ steps.select.outputs.projects }}
+    steps:
+      - id: select
+        name: Select the projects
+        env:
+          COMPONENT: ${{ inputs.component }}
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          $projects = @($env:FUZZ_PROJECTS | ConvertFrom-Json)
+          $selected = @(switch ($env:GITHUB_EVENT_NAME) {
+            # The cron expression of the schedule, whose day of the week is the night of the projects
+            'schedule' { $projects | Where-Object { "$($_.day)" -eq ($env:SCHEDULE -split ' ')[-1] } }
+            default { $projects | Where-Object { $env:COMPONENT -eq 'all' -or $_.component -eq $env:COMPONENT } }
+          })
+          if ($selected.Count -eq 0) { throw "No project to fuzz (event $env:GITHUB_EVENT_NAME, schedule '$env:SCHEDULE', component '$env:COMPONENT')" }
+
+          $selected | ForEach-Object { "- ``$($_.project)``" } >> $env:GITHUB_STEP_SUMMARY
+          "projects=$(ConvertTo-Json -InputObject @($selected | Select-Object project, component) -Compress)" >> $env:GITHUB_OUTPUT
+
   fuzz:
-    name: fuzz (${{ matrix.platform.arch }})
+    name: fuzz (${{ matrix.fuzz.project }}, ${{ matrix.platform.arch }})
+    needs: [ select ]
     runs-on: ${{ matrix.platform.runner }}
     timeout-minutes: 180
     strategy:
@@ -52,6 +124,7 @@ jobs:
         platform:
           - { runner: ubuntu-26.04, arch: x64 }
           - { runner: ubuntu-26.04-arm, arch: arm64 }
+        fuzz: ${{ fromJSON(needs.select.outputs.projects) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET
@@ -92,25 +165,25 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: artifacts/fuzz-corpus
-          key: fuzz-corpus-${{ inputs.project }}-${{ matrix.platform.arch }}-${{ github.run_id }}
+          key: fuzz-corpus-${{ matrix.fuzz.project }}-${{ matrix.platform.arch }}-${{ github.run_id }}
           # The corpus of the other architecture when this one has none: the inputs do not depend on it
           restore-keys: |
-            fuzz-corpus-${{ inputs.project }}-${{ matrix.platform.arch }}-
-            fuzz-corpus-${{ inputs.project }}-
+            fuzz-corpus-${{ matrix.fuzz.project }}-${{ matrix.platform.arch }}-
+            fuzz-corpus-${{ matrix.fuzz.project }}-
       - name: Fuzz
         run: |
           "Commit ``$env:GITHUB_SHA``, $env:FUZZ_DURATION_SECONDS s per target" >> $env:GITHUB_STEP_SUMMARY
-          ./eng/run-fuzz.ps1 -Project fuzz/${{ inputs.project }} -DurationSeconds $env:FUZZ_DURATION_SECONDS -LibFuzzer "$env:FUZZ_TOOLS/libfuzzer-dotnet" -SharpFuzz "$env:FUZZ_TOOLS/sharpfuzz"
+          ./eng/run-fuzz.ps1 -Project fuzz/${{ matrix.fuzz.project }} -DurationSeconds $env:FUZZ_DURATION_SECONDS -LibFuzzer "$env:FUZZ_TOOLS/libfuzzer-dotnet" -SharpFuzz "$env:FUZZ_TOOLS/sharpfuzz"
       - name: Save corpus
         if: always()
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: artifacts/fuzz-corpus
-          key: fuzz-corpus-${{ inputs.project }}-${{ matrix.platform.arch }}-${{ github.run_id }}
+          key: fuzz-corpus-${{ matrix.fuzz.project }}-${{ matrix.platform.arch }}-${{ github.run_id }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
-          name: fuzz-results-${{ inputs.project }}-${{ matrix.platform.arch }}
+          name: fuzz-results-${{ matrix.fuzz.project }}-${{ matrix.platform.arch }}
           if-no-files-found: warn
           # Linked from the issues: the failing inputs stay available until the failure is investigated
           retention-days: 30
@@ -119,24 +192,30 @@ jobs:
             !artifacts/fuzz/results/*/seeds/**
             !artifacts/fuzz/results/*/merged-corpus/**
 
+  # One job per project, so that the issues of each project get the label of its component
   report:
-    needs: [ fuzz ]
-    if: always() && github.repository == 'meziantou/Meziantou.Framework'
+    name: report (${{ matrix.fuzz.project }})
+    needs: [ select, fuzz ]
+    if: always() && needs.select.result == 'success' && github.repository == 'meziantou/Meziantou.Framework'
     runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: read
       issues: write
+    strategy:
+      fail-fast: false
+      matrix:
+        fuzz: ${{ fromJSON(needs.select.outputs.projects) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Download fuzz results
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           # A pattern: one artifact per architecture, and a job that failed before uploading its results leaves none
-          pattern: fuzz-results-${{ inputs.project }}*
+          pattern: fuzz-results-${{ matrix.fuzz.project }}*
           path: fuzz-results
       - name: Open or update issues
-        run: ./eng/report-fuzz-failures.ps1 -Project ${{ inputs.project }} -ResultsDirectory fuzz-results -Labels fuzzing, component:${{ inputs.component }}
+        run: ./eng/report-fuzz-failures.ps1 -Project ${{ matrix.fuzz.project }} -ResultsDirectory fuzz-results -Labels fuzzing, component:${{ matrix.fuzz.component }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FUZZ_JOB_RESULT: ${{ needs.fuzz.result }}

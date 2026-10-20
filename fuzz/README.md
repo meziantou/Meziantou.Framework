@@ -7,13 +7,13 @@ The fuzz projects live apart from `tests/` because their campaigns run at a diff
 - `Meziantou.Framework.*.Fuzz`: coverage-guided fuzzing with [SharpFuzz](https://github.com/Metalnem/sharpfuzz) and
   [libFuzzer](https://llvm.org/docs/LibFuzzer.html) (through [libfuzzer-dotnet](https://github.com/Metalnem/libfuzzer-dotnet)).
 
-Both run weekly, on x64 and on arm64. Each SharpFuzz project has its own workflow,
-`.github/workflows/fuzz-<component>.yml`, which calls the shared `.github/workflows/fuzz-sharpfuzz.yml`; the Imaging
-fuzz tests run in `.github/workflows/fuzz-imaging.yml`. Two of these workflows run each night at 3:00 (Toronto time): a
-new project gets a workflow of its own on a night with the fewest (`Meziantou.Framework.Fuzzing.Tests` checks both).
-`eng/run-fuzz.ps1` (SharpFuzz) and `eng/run-imaging-fuzz.ps1` (Imaging) write a `result.json` and a `failure.md` file
-for each target under `artifacts/fuzz/results`, and `eng/report-fuzz-failures.ps1` opens an issue for each failed
-target, labeled with the component of the project.
+Both run weekly, on x64 and on arm64. `.github/workflows/fuzz-sharpfuzz.yml` fuzzes the SharpFuzz projects: its
+`FUZZ_PROJECTS` table gives the component label of each project and the night of its campaign, and a manual run fuzzes
+one component or all of them. `.github/workflows/fuzz-imaging.yml` runs the Imaging fuzz tests. Two campaigns run each
+night at 3:00 (Toronto time): a new project gets a row on a night with the fewest, and an option of the `component`
+input (`Meziantou.Framework.Fuzzing.Tests` checks both). `eng/run-fuzz.ps1` (SharpFuzz) and `eng/run-imaging-fuzz.ps1`
+(Imaging) write a `result.json` and a `failure.md` file for each target under `artifacts/fuzz/results`, and
+`eng/report-fuzz-failures.ps1` opens an issue for each failed target, labeled with the component of the project.
 
 ## SharpFuzz projects
 
@@ -77,7 +77,7 @@ clang -O2 -fsanitize=fuzzer libfuzzer-dotnet.cc -o libfuzzer-dotnet
 ```
 
 Each target gets `artifacts/fuzz/results/<target>`: the libFuzzer log, the failing input (`crash-*`, `timeout-*`),
-and `failure.md`, the body of the issue the weekly workflow of the project opens. The corpus is kept in `artifacts/fuzz-corpus`.
+and `failure.md`, the body of the issue the weekly workflow opens. The corpus is kept in `artifacts/fuzz-corpus`.
 
 ### Regressions
 

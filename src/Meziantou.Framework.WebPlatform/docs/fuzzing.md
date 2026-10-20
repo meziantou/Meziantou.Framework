@@ -28,7 +28,7 @@ every CI build.
 ## Running
 
 `eng/run-fuzz.ps1` publishes the targets, instruments the library, and runs each target with libFuzzer (Linux only, see
-[fuzz/README.md](../../../fuzz/README.md#running-a-campaign)). The weekly `fuzz-webplatform` workflow runs every target, caches its
+[fuzz/README.md](../../../fuzz/README.md#running-a-campaign)). The weekly `fuzz-sharpfuzz` workflow runs every target, caches its
 corpus from run to run, and opens an issue for each failed target:
 
 ```bash
@@ -71,7 +71,7 @@ files (`--corpus`, e.g. the corpus of the `webplatform-html` fuzzing target).
 
 A difference fails the comparison, except for the deviations of Chromium from the HTML Standard listed with their reason
 in `tools/Meziantou.Framework.WebPlatform.ChromiumDiff/known-differences.json` (a listed input whose trees are now the same also fails, so the list stays
-accurate). The CI compares the tree construction tests, and the weekly `fuzz-webplatform` workflow compares the pages.
+accurate). The CI compares the tree construction tests, and the weekly `fuzz-sharpfuzz` workflow compares the pages.
 
 Chromium handles U+0000 in its input preprocessor instead of in the tokenizer and the tree builder: it drops the NULs in
 the data state (so a NUL before the DOCTYPE does not switch to quirks mode) and replaces them by U+FFFD in the other

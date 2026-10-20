@@ -3,7 +3,7 @@
 # requests run them with a small fixed budget; eng/run-imaging-fuzz.ps1 runs them with a new base seed every week and a
 # time budget per campaign. It writes a result.json and a failure.md file per failed test, so the report job opens an
 # issue for every failing test (or comments on the open one with the same title) with the minimized input and the
-# commands that reproduce it. Two fuzz workflows run each night at 3:00 (see fuzz-sharpfuzz.yml).
+# commands that reproduce it. Two fuzz campaigns run each night at 3:00 (see FUZZ_PROJECTS in fuzz-sharpfuzz.yml).
 name: fuzz-imaging
 on:
   workflow_dispatch:

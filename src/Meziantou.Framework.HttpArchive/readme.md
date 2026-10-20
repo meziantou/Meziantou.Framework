@@ -24,9 +24,10 @@ A property left out of the JSON keeps its default (`""` for strings, an empty li
 
 ## Parse a HAR file
 
-```c#
-using Meziantou.Framework.HttpArchive;
+The types are in the `Meziantou.Framework.HttpArchive` namespace.
 
+<!-- ref:../../samples/Meziantou.Framework.Http.Samples/HttpArchiveExamples.cs;region=HarDocument_ParseFile;format=md-fenced-code-block;dedent=true -->
+```csharp
 await using var stream = File.OpenRead("traffic.har");
 var document = await HarDocument.ParseAsync(stream);
 
@@ -35,12 +36,14 @@ foreach (var entry in document.Log?.Entries ?? [])
     Console.WriteLine($"{entry.Request?.Method} {entry.Request?.Url} -> {entry.Response?.Status}");
 }
 ```
+<!-- endref -->
 
 ## Create and write a HAR document
 
-```c#
-using Meziantou.Framework.HttpArchive;
+`WriteToAsync` writes to any stream, such as a `MemoryStream` or the `FileStream` returned by `File.Create("output.har")`:
 
+<!-- ref:../../tests/Meziantou.Framework.HttpArchive.Tests/HarDocumentTests.cs;region=HarDocument_CreateAndWrite;format=md-fenced-code-block;dedent=true -->
+```csharp
 var document = new HarDocument
 {
     Log = new HarLog
@@ -71,15 +74,15 @@ var document = new HarDocument
     },
 };
 
-await using var stream = File.Create("output.har");
+using var stream = new MemoryStream();
 await document.WriteToAsync(stream, indented: true);
 ```
+<!-- endref -->
 
 ## Convert HAR entries to HttpClient messages
 
-```c#
-using Meziantou.Framework.HttpArchive;
-
+<!-- ref:../../samples/Meziantou.Framework.Http.Samples/HttpArchiveExamples.cs;region=HarEntry_ConvertToHttpMessages;format=md-fenced-code-block;dedent=true -->
+```csharp
 var document = HarDocument.Parse(File.ReadAllText("traffic.har"));
 var entry = document.Log!.Entries![0];
 
@@ -88,4 +91,5 @@ var entry = document.Log!.Entries![0];
 using var request = entry.ToHttpRequestMessage();
 using var response = entry.ToHttpResponseMessage();
 ```
+<!-- endref -->
 

@@ -193,6 +193,50 @@ public sealed class HarDocumentTests
     }
 
     [Fact]
+    public async Task ReadmeExample_CreateAndWrite()
+    {
+        #region HarDocument_CreateAndWrite
+        var document = new HarDocument
+        {
+            Log = new HarLog
+            {
+                Version = "1.2",
+                Creator = new HarCreator
+                {
+                    Name = "MyTool",
+                    Version = "1.0.0",
+                },
+                Entries =
+                [
+                    new HarEntry
+                    {
+                        StartedDateTime = DateTimeOffset.UtcNow,
+                        Request = new HarRequest
+                        {
+                            Method = "GET",
+                            Url = "https://example.com/api/data",
+                        },
+                        Response = new HarResponse
+                        {
+                            Status = 200,
+                            StatusText = "OK",
+                        },
+                    },
+                ],
+            },
+        };
+
+        using var stream = new MemoryStream();
+        await document.WriteToAsync(stream, indented: true);
+        #endregion
+
+        stream.Position = 0;
+        var parsed = await HarDocument.ParseAsync(stream);
+        Assert.Equal("MyTool", parsed.Log!.Creator!.Name);
+        Assert.Equal("https://example.com/api/data", Assert.Single(parsed.Log.Entries!).Request!.Url);
+    }
+
+    [Fact]
     public async Task ParseAsync_FromStream()
     {
         var stream = new MemoryStream(Encoding.UTF8.GetBytes(CompleteHar));

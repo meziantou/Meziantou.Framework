@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.Http.Recording/Meziantou.Framework.Http.Recording.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.HttpArchive/Meziantou.Framework.HttpArchive.csproj" />
   </ItemGroup>
 
 </Project>

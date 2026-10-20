@@ -4,8 +4,54 @@ using Meziantou.Framework.Toml.Serialization;
 
 namespace Meziantou.Framework.Toml.Tests;
 
-public sealed class CrossProjectPolymorphismTests
+public sealed partial class CrossProjectPolymorphismTests
 {
+    [Fact]
+    public void ReadmeExample_RuntimeMappings()
+    {
+        #region TomlPolymorphismOptions_DerivedTypeMappings
+        var options = new TomlSerializerOptions
+        {
+            PolymorphismOptions = new TomlPolymorphismOptions
+            {
+                TypeDiscriminatorPropertyName = "kind",
+                DerivedTypeMappings = new Dictionary<Type, IReadOnlyList<TomlDerivedType>>
+                {
+                    [typeof(Animal)] = [new(typeof(Cat), "cat"), new(typeof(Dog), "dog")],
+                },
+            },
+        };
+        #endregion
+
+        const string Toml = "kind = \"dog\"\nName = \"Rex\"\nBreed = \"Labrador\"\n";
+        Assert.Equal("Labrador", Assert.IsType<Dog>(TomlSerializer.Deserialize<Animal>(Toml, options)).Breed);
+        Assert.Equal("Labrador", Assert.IsType<Dog>(TomlSerializer.Deserialize(Toml, AnimalContext.Default.Animal)).Breed);
+        Assert.Equal(Toml, TomlSerializer.Serialize<Animal>(new Dog { Name = "Rex", Breed = "Labrador" }, AnimalContext.Default.Animal));
+    }
+
+    #region TomlDerivedTypeMapping_Context
+    [TomlSerializable(typeof(Animal))]
+    [TomlDerivedTypeMapping(typeof(Animal), typeof(Cat), "cat")]
+    [TomlDerivedTypeMapping(typeof(Animal), typeof(Dog), "dog")]
+    internal sealed partial class AnimalContext : TomlSerializerContext;
+    #endregion
+
+    [TomlPolymorphic(TypeDiscriminatorPropertyName = "kind")]
+    internal abstract class Animal
+    {
+        public string Name { get; set; } = "";
+    }
+
+    internal sealed class Cat : Animal
+    {
+        public bool Indoor { get; set; }
+    }
+
+    internal sealed class Dog : Animal
+    {
+        public string Breed { get; set; } = "";
+    }
+
     [Fact]
     public void RuntimeMappings_CanSerializeAndDeserializeCrossProjectRoot()
     {

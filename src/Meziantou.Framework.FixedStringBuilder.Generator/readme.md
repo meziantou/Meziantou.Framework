@@ -6,10 +6,12 @@ Source generator and analyzer to create fixed-length string structs.
 
 Add a partial struct and decorate it with `FixedStringBuilderAttribute`:
 
-````csharp
+<!-- ref:../../tests/Meziantou.Framework.FixedStringBuilder.Tests/FixedStringBuilderTests.cs;region=FixedStringBuilderGenerator_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 [FixedStringBuilderAttribute(10)]
 public partial struct FixedStringBuilder10;
-````
+```
+<!-- endref -->
 
 The generator emits:
 

@@ -14,6 +14,161 @@ namespace Meziantou.Framework.Tests;
 public sealed class MockTests(ITestOutputHelper testOutputHelper)
 {
     [Fact]
+    public async Task ReadmeExample_Configure()
+    {
+        #region HttpClientMock_Configure
+        await using var mock = new HttpClientMock();
+        mock.MapGet("/", () => Results.Ok("test"));
+        mock.MapGet("/todos/{id}", (int id) => Results.Ok("test"));
+        mock.MapGet("/todos?search=abc", () => Results.Ok("test"));
+        mock.MapGet("/todos", (string search) => Results.Ok("test"));
+
+        mock.MapGet("https://example.com/path?search=text", () => Results.Ok("test"));
+
+        // Return raw content
+        mock.MapGet("/json", () => Results.Extensions.RawJson("""{"id": 1}"""));
+        mock.MapGet("/xml", () => Results.Extensions.RawXml("""<root></root>"""));
+
+        // Forward the request to the upstream server
+        mock.MapGet("/upstream", () => Results.Extensions.ForwardToUpstream());
+
+        // Forward any request that doesn't match a configure route to the upstream server
+        mock.ForwardUnknownRequestsToUpstream();
+        #endregion
+
+        #region HttpClientMock_RequestCounter
+        mock.MapGet("/counter", (RequestCounter counter) => counter.Get());
+        #endregion
+
+        #region HttpClientMock_CreateHttpClient
+        using var httpClient = mock.CreateHttpClient();
+        #endregion
+
+        Assert.Equal("""{"id": 1}""", await httpClient.GetStringAsync("https://example.com/json", XunitCancellationToken));
+        Assert.Equal("\"test\"", await httpClient.GetStringAsync("https://example.com/todos/1", XunitCancellationToken));
+        Assert.Equal("\"test\"", await httpClient.GetStringAsync("https://example.com/path?search=text", XunitCancellationToken));
+        Assert.Equal("1", await httpClient.GetStringAsync("https://example.com/counter", XunitCancellationToken));
+        Assert.Equal("2", await httpClient.GetStringAsync("https://example.com/counter", XunitCancellationToken));
+
+        #region HttpClientMock_CreateHttpMessageHandler
+        using var httpMessageHandler = mock.CreateHttpMessageHandler();
+        #endregion
+
+        using var httpClientFromHandler = new HttpClient(httpMessageHandler);
+        Assert.Equal("<root></root>", await httpClientFromHandler.GetStringAsync("https://example.com/xml", XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task ReadmeExample_DependencyInjection()
+    {
+        await using var mock = new HttpClientMock();
+        mock.MapGet("/", () => "mocked");
+
+        #region HttpClientMock_DependencyInjection
+        var services = new ServiceCollection();
+        services.AddHttpClient();
+        services.AddHttpClient<SampleClient>();
+
+        // Mock both HttpClient
+        services.AddHttpClientMock(builder => builder
+            .AddHttpClientMock(mock)
+            .AddHttpClientMock<SampleClient>(mock));
+
+        // Alternative way to register the mock
+        services.AddHttpClient<SampleClient>()
+            .ConfigurePrimaryHttpMessageHandler(() => mock.CreateHttpMessageHandler());
+        #endregion
+
+        await using var serviceProvider = services.BuildServiceProvider();
+        Assert.Equal("mocked", await serviceProvider.GetRequiredService<HttpClient>().GetStringAsync("https://example.com/", XunitCancellationToken));
+        Assert.Equal("mocked", await serviceProvider.GetRequiredService<SampleClient>().GetStringAsync("https://example.com/"));
+    }
+
+    [Fact]
+    public async Task ReadmeExample_ThrowOnUnknownHttpClient()
+    {
+        await using var mock = new HttpClientMock();
+        mock.MapGet("/", () => "mocked");
+        var services = new ServiceCollection();
+        services.AddHttpClient();
+        services.AddHttpClient<SampleClient>();
+
+        #region HttpClientMock_ThrowOnUnknownHttpClient
+        services.AddHttpClientMock(builder => builder
+            .AddHttpClientMock(mock)
+            .ThrowOnUnknownHttpClient());
+        #endregion
+
+        await using var serviceProvider = services.BuildServiceProvider();
+        Assert.Equal("mocked", await serviceProvider.GetRequiredService<HttpClient>().GetStringAsync("https://example.com/", XunitCancellationToken));
+        Assert.NotNull(Record.Exception(() => serviceProvider.GetRequiredService<SampleClient>()));
+    }
+
+    [Fact]
+    public async Task ReadmeExample_ResiliencePolicies()
+    {
+        #region HttpClientMock_ResiliencePolicies
+        await using var mock = new HttpClientMock(configureLogging: null, configureServices: services =>
+        {
+            services.ConfigureHttpClientDefaults(services => services.AddStandardResilienceHandler());
+        });
+        #endregion
+
+        mock.MapGet("/", () => "mocked");
+        using var httpClient = mock.CreateHttpClient();
+        Assert.Equal("mocked", await httpClient.GetStringAsync("https://example.com/", XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task ReadmeExample_XUnitLoggerProvider()
+    {
+        #region HttpClientMock_XUnitLoggerProvider
+        using var loggerProvider = new XUnitLoggerProvider(testOutputHelper);
+        await using var mock = new HttpClientMock(loggerProvider);
+        #endregion
+
+        mock.MapGet("/", () => "mocked");
+        using var httpClient = mock.CreateHttpClient();
+        Assert.Equal("mocked", await httpClient.GetStringAsync("https://example.com/", XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task ReadmeExample_ConfigureLogging()
+    {
+        #region HttpClientMock_ConfigureLogging
+        using var loggerProvider = new XUnitLoggerProvider(testOutputHelper);
+        await using var mock = new HttpClientMock(logs =>
+        {
+            logs.AddProvider(loggerProvider);
+            logs.SetMinimumLevel(LogLevel.Trace);
+        });
+        #endregion
+
+        mock.MapGet("/", () => "mocked");
+        using var httpClient = mock.CreateHttpClient();
+        Assert.Equal("mocked", await httpClient.GetStringAsync("https://example.com/", XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task ReadmeExample_Configuration()
+    {
+        #region HttpClientMock_Configuration
+        await using var mock = new HttpClientMock(configureLogging: null, configureServices: services =>
+        {
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?> { ["Greeting"] = "Hello" })
+                .Build();
+            services.AddSingleton<IConfiguration>(configuration);
+        });
+
+        mock.MapGet("/greeting", (IConfiguration configuration) => configuration["Greeting"]);
+        #endregion
+
+        using var httpClient = mock.CreateHttpClient();
+        Assert.Equal("Hello", await httpClient.GetStringAsync("https://example.com/greeting", XunitCancellationToken));
+    }
+
+    [Fact]
     public async Task Results_ForwardToUpstream_HttpClient()
     {
         await using var mock1 = new HttpClientMock(XUnitLogger.CreateLogger(testOutputHelper));

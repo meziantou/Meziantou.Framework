@@ -13,19 +13,22 @@ An NTP server that responds to NTP time queries. Supports NTPv3 and NTPv4.
 
 ## Usage
 
-```c#
-using Meziantou.Framework.Ntp;
+The types are in the `Meziantou.Framework.Ntp` namespace.
 
+<!-- ref:../../tests/Meziantou.Framework.NtpServer.Tests/NtpServerTests.cs;region=NtpServer_Start;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Start an NTP server on a random port, serving every network interface
 using var server = new NtpServer(new NtpServerOptions { Port = 0 });
 await server.StartAsync();
 
-Console.WriteLine($"NTP server listening on port {server.Port}");
+Assert.NotEqual(0, server.Port); // The port the operating system assigned
 ```
+<!-- endref -->
 
 ### Serving only the local machine
 
-```c#
+<!-- ref:../../tests/Meziantou.Framework.NtpServer.Tests/NtpServerTests.cs;region=NtpServer_Loopback;format=md-fenced-code-block;dedent=true -->
+```csharp
 using var server = new NtpServer(new NtpServerOptions
 {
     Port = 0,
@@ -33,10 +36,16 @@ using var server = new NtpServer(new NtpServerOptions
 });
 await server.StartAsync();
 ```
+<!-- endref -->
 
 ### Custom time source
 
-```c#
+Any `TimeProvider` can be the time source, such as the `FakeTimeProvider` of the `Microsoft.Extensions.TimeProvider.Testing` package:
+
+<!-- ref:../../tests/Meziantou.Framework.NtpServer.Tests/NtpServerTests.cs;region=NtpServer_CustomTimeProvider;format=md-fenced-code-block;dedent=true -->
+```csharp
+var myCustomTimeProvider = new FakeTimeProvider(new DateTimeOffset(2024, 01, 01, 00, 00, 00, TimeSpan.Zero));
+
 using var server = new NtpServer(new NtpServerOptions
 {
     Port = 0,
@@ -45,18 +54,25 @@ using var server = new NtpServer(new NtpServerOptions
 });
 await server.StartAsync();
 ```
+<!-- endref -->
 
 ### Observing the listener
 
 `StartAsync` returns once the socket is bound; the listen loop runs in the background. `Completion`
 lets you observe it, so a loop that stops is not silent:
 
-```c#
-using var server = new NtpServer();
+<!-- ref:../../tests/Meziantou.Framework.NtpServer.Tests/NtpServerTests.cs;region=NtpServer_Completion;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var cts = new CancellationTokenSource();
+var cancellationToken = cts.Token;
+
+using var server = new NtpServer(new NtpServerOptions { Port = 0 });
 await server.StartAsync(cancellationToken);
 
+await cts.CancelAsync();
 await server.Completion; // completes on Dispose or cancellation, faults on an unrecoverable error
 ```
+<!-- endref -->
 
 Per-datagram socket errors do not stop the loop.
 

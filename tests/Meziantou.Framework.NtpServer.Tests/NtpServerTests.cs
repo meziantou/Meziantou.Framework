@@ -25,6 +25,72 @@ public sealed class NtpServerTests : IAsyncLifetime
         return ValueTask.CompletedTask;
     }
 
+    [Fact]
+    public async Task ReadmeExample_Start()
+    {
+        #region NtpServer_Start
+        // Start an NTP server on a random port, serving every network interface
+        using var server = new NtpServer(new NtpServerOptions { Port = 0 });
+        await server.StartAsync();
+
+        Assert.NotEqual(0, server.Port); // The port the operating system assigned
+        #endregion
+
+        var response = await CreateClient(server).QueryAsync(XunitCancellationToken);
+        Assert.Equal(2, response.Stratum);
+    }
+
+    [Fact]
+    public async Task ReadmeExample_Loopback()
+    {
+        #region NtpServer_Loopback
+        using var server = new NtpServer(new NtpServerOptions
+        {
+            Port = 0,
+            BindAddress = IPAddress.Loopback,
+        });
+        await server.StartAsync();
+        #endregion
+
+        var response = await CreateClient(server).QueryAsync(XunitCancellationToken);
+        Assert.Equal(2, response.Stratum);
+    }
+
+    [Fact]
+    public async Task ReadmeExample_CustomTimeProvider()
+    {
+        #region NtpServer_CustomTimeProvider
+        var myCustomTimeProvider = new FakeTimeProvider(new DateTimeOffset(2024, 01, 01, 00, 00, 00, TimeSpan.Zero));
+
+        using var server = new NtpServer(new NtpServerOptions
+        {
+            Port = 0,
+            TimeProvider = myCustomTimeProvider,
+            Stratum = 2,
+        });
+        await server.StartAsync();
+        #endregion
+
+        var response = await CreateClient(server).QueryAsync(XunitCancellationToken);
+        Assert.Equal(2, response.Stratum);
+        Assert.Equal(new DateTimeOffset(2024, 01, 01, 00, 00, 00, TimeSpan.Zero), response.TransmitTimestamp, TimeSpan.FromSeconds(1));
+    }
+
+    [Fact]
+    public async Task ReadmeExample_Completion()
+    {
+        #region NtpServer_Completion
+        using var cts = new CancellationTokenSource();
+        var cancellationToken = cts.Token;
+
+        using var server = new NtpServer(new NtpServerOptions { Port = 0 });
+        await server.StartAsync(cancellationToken);
+
+        await cts.CancelAsync();
+        await server.Completion; // completes on Dispose or cancellation, faults on an unrecoverable error
+        #endregion
+    }
+
     private static NtpClient CreateClient(NtpServer server, Action<NtpClientOptions>? configure = null)
     {
         var options = new NtpClientOptions { Port = server.Port, Timeout = TimeSpan.FromSeconds(2) };

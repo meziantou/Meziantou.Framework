@@ -9,6 +9,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// on its own thread, and its scripts run in the realm of its own script engine (<see cref="ScriptEngine.CreateWorkerScriptEngine"/>):
 /// the members of a worker global scope must be used on the thread of the worker.
 /// </summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#workerglobalscope"/>
 [IdlInterface("WorkerGlobalScope", "https://html.spec.whatwg.org/multipage/workers.html#workerglobalscope")]
 public abstract partial class WorkerGlobalScope : GlobalScope
 {
@@ -100,14 +101,17 @@ public abstract partial class WorkerGlobalScope : GlobalScope
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/workers.html#dom-workerglobalscope-self</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-workerglobalscope-self"/>
     [IdlMember("self", "https://html.spec.whatwg.org/multipage/workers.html#dom-workerglobalscope-self")]
     public WorkerGlobalScope Self => this;
 
     /// <summary>https://html.spec.whatwg.org/multipage/workers.html#dom-workerglobalscope-location</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-workerglobalscope-location"/>
     [IdlMember("location", "https://html.spec.whatwg.org/multipage/workers.html#dom-workerglobalscope-location")]
     public WorkerLocation Location => _location ??= new WorkerLocation(this);
 
     /// <summary>https://html.spec.whatwg.org/multipage/workers.html#dom-worker-navigator</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-worker-navigator"/>
     [IdlMember("navigator", "https://html.spec.whatwg.org/multipage/workers.html#dom-worker-navigator")]
     public WorkerNavigator Navigator => _navigator ??= new WorkerNavigator(this);
 
@@ -123,10 +127,12 @@ public abstract partial class WorkerGlobalScope : GlobalScope
     /// the scripts of the worker and added to the set, which the text of its <see cref="OffscreenCanvas"/> objects uses
     /// once they are loaded. A worker has no CSS-connected font face.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfacesource-fonts"/>
     [IdlMember("fonts", "https://drafts.csswg.org/css-font-loading/#dom-fontfacesource-fonts")]
     public Css.Om.FontFaceSet Fonts => FontSourceDocument.Fonts;
 
     /// <summary>https://html.spec.whatwg.org/multipage/webappapis.html#dom-origin</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#dom-origin"/>
     [IdlMember("origin", "https://html.spec.whatwg.org/multipage/webappapis.html#dom-origin")]
     public override string Origin => OriginRecord.Serialize();
 
@@ -134,6 +140,7 @@ public abstract partial class WorkerGlobalScope : GlobalScope
     /// https://html.spec.whatwg.org/multipage/webappapis.html#dom-issecurecontext: the creator of the worker is a secure
     /// context, and the URL of the worker is potentially trustworthy (or a data: or blob: URL).
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#dom-issecurecontext"/>
     [IdlMember("isSecureContext", "https://html.spec.whatwg.org/multipage/webappapis.html#dom-issecurecontext")]
     public override bool IsSecureContext => Agent.CreatorIsSecureContext && (Url.Scheme is "data" or "blob" || ReferrerPolicies.IsPotentiallyTrustworthy(Url));
 
@@ -142,6 +149,7 @@ public abstract partial class WorkerGlobalScope : GlobalScope
     /// isolated capability of its owner (except a worker created from a data: URL); a shared worker is isolated when its
     /// embedder policy is compatible with cross-origin isolation (https://html.spec.whatwg.org/multipage/workers.html#run-a-worker).
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#dom-crossoriginisolated"/>
     [IdlMember("crossOriginIsolated", "https://html.spec.whatwg.org/multipage/webappapis.html#dom-crossoriginisolated")]
     public override bool CrossOriginIsolated => Agent.Kind != WorkerKind.Dedicated
         ? EmbedderPolicy.IsCompatibleWithCrossOriginIsolation(EnvironmentDocument.EmbedderPolicy.Value)
@@ -173,6 +181,7 @@ public abstract partial class WorkerGlobalScope : GlobalScope
     /// (https://html.spec.whatwg.org/multipage/workers.html#dom-workerglobalscope-importscripts).
     /// </summary>
     /// <param name="urls">The URLs of the scripts (strings or <see cref="TrustedScriptUrl"/> objects), relative to the URL of the worker.</param>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-workerglobalscope-importscripts"/>
     [IdlMember("importScripts", "https://html.spec.whatwg.org/multipage/workers.html#dom-workerglobalscope-importscripts")]
     public void ImportScripts(IEnumerable<object> urls)
     {
@@ -220,6 +229,7 @@ public abstract partial class WorkerGlobalScope : GlobalScope
         => WorkerScriptFetching.FetchImportedScript(this, url, blobUrlEntry, out mutedErrors);
 
     /// <summary>Gets or sets the event handler of the <c>error</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#handler-workerglobalscope-onerror"/>
     [IdlMember("onerror", "https://html.spec.whatwg.org/multipage/workers.html#handler-workerglobalscope-onerror")]
     public Action<Event>? OnError
     {
@@ -228,6 +238,7 @@ public abstract partial class WorkerGlobalScope : GlobalScope
     }
 
     /// <summary>Gets or sets the event handler of the <c>languagechange</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#handler-workerglobalscope-onlanguagechange"/>
     [IdlMember("onlanguagechange", "https://html.spec.whatwg.org/multipage/workers.html#handler-workerglobalscope-onlanguagechange")]
     public Action<Event>? OnLanguageChange
     {
@@ -236,6 +247,7 @@ public abstract partial class WorkerGlobalScope : GlobalScope
     }
 
     /// <summary>Gets or sets the event handler of the <c>offline</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#handler-workerglobalscope-onoffline"/>
     [IdlMember("onoffline", "https://html.spec.whatwg.org/multipage/workers.html#handler-workerglobalscope-onoffline")]
     public Action<Event>? OnOffline
     {
@@ -244,6 +256,7 @@ public abstract partial class WorkerGlobalScope : GlobalScope
     }
 
     /// <summary>Gets or sets the event handler of the <c>online</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#handler-workerglobalscope-ononline"/>
     [IdlMember("ononline", "https://html.spec.whatwg.org/multipage/workers.html#handler-workerglobalscope-ononline")]
     public Action<Event>? OnOnline
     {
@@ -252,6 +265,7 @@ public abstract partial class WorkerGlobalScope : GlobalScope
     }
 
     /// <summary>Gets or sets the event handler of the <c>rejectionhandled</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#handler-workerglobalscope-onrejectionhandled"/>
     [IdlMember("onrejectionhandled", "https://html.spec.whatwg.org/multipage/workers.html#handler-workerglobalscope-onrejectionhandled")]
     public Action<Event>? OnRejectionHandled
     {
@@ -260,6 +274,7 @@ public abstract partial class WorkerGlobalScope : GlobalScope
     }
 
     /// <summary>Gets or sets the event handler of the <c>unhandledrejection</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#handler-workerglobalscope-onunhandledrejection"/>
     [IdlMember("onunhandledrejection", "https://html.spec.whatwg.org/multipage/workers.html#handler-workerglobalscope-onunhandledrejection")]
     public Action<Event>? OnUnhandledRejection
     {
@@ -274,6 +289,7 @@ public abstract partial class WorkerGlobalScope : GlobalScope
 /// The global object of a dedicated worker (https://html.spec.whatwg.org/multipage/workers.html#dedicated-workers-and-the-dedicatedworkerglobalscope-interface):
 /// the messages it posts are fired at its <see cref="Worker"/> object, and the errors it does not handle are propagated to it.
 /// </summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dedicatedworkerglobalscope"/>
 [IdlInterface("DedicatedWorkerGlobalScope", "https://html.spec.whatwg.org/multipage/workers.html#dedicatedworkerglobalscope")]
 public sealed class DedicatedWorkerGlobalScope : WorkerGlobalScope
 {
@@ -292,6 +308,7 @@ public sealed class DedicatedWorkerGlobalScope : WorkerGlobalScope
     /// per second) measured with <see cref="DomEventLoop.TimeProvider"/>.
     /// </summary>
     /// <exception cref="DomException">A <c>NotSupportedError</c> when the owner of the worker is not a window (a nested worker).</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-animationframeprovider-requestanimationframe"/>
     [IdlMember("requestAnimationFrame", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-animationframeprovider-requestanimationframe")]
     public uint RequestAnimationFrame(FrameRequestCallback callback)
     {
@@ -317,6 +334,7 @@ public sealed class DedicatedWorkerGlobalScope : WorkerGlobalScope
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#animationframeprovider-cancelanimationframe</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#animationframeprovider-cancelanimationframe"/>
     [IdlMember("cancelAnimationFrame", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#animationframeprovider-cancelanimationframe")]
     public void CancelAnimationFrame(uint handle)
     {
@@ -354,10 +372,12 @@ public sealed class DedicatedWorkerGlobalScope : WorkerGlobalScope
     internal override string InterfaceName => "DedicatedWorkerGlobalScope";
 
     /// <summary>https://html.spec.whatwg.org/multipage/workers.html#dom-dedicatedworkerglobalscope-name</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-dedicatedworkerglobalscope-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/workers.html#dom-dedicatedworkerglobalscope-name")]
     public string WorkerName => Name;
 
     /// <summary>Posts a message to the <see cref="Worker"/> object (https://html.spec.whatwg.org/multipage/workers.html#dom-dedicatedworkerglobalscope-postmessage).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-dedicatedworkerglobalscope-postmessage"/>
     [IdlMember("postMessage", "https://html.spec.whatwg.org/multipage/workers.html#dom-dedicatedworkerglobalscope-postmessage")]
     public void PostMessage(object? message, IReadOnlyList<object> transfer)
     {
@@ -366,14 +386,17 @@ public sealed class DedicatedWorkerGlobalScope : WorkerGlobalScope
     }
 
     /// <summary>Posts a message to the <see cref="Worker"/> object (https://html.spec.whatwg.org/multipage/workers.html#dom-dedicatedworkerglobalscope-postmessage-options).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-dedicatedworkerglobalscope-postmessage-options"/>
     [IdlMember("postMessage", "https://html.spec.whatwg.org/multipage/workers.html#dom-dedicatedworkerglobalscope-postmessage-options")]
     public void PostMessage(object? message, StructuredSerializeOptions? options = null) => Agent.InsidePort?.PostMessageCore(message, options?.Transfer ?? [], source: null);
 
     /// <summary>Closes the worker: its event loop ends once the running task completes (https://html.spec.whatwg.org/multipage/workers.html#dom-dedicatedworkerglobalscope-close).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-dedicatedworkerglobalscope-close"/>
     [IdlMember("close", "https://html.spec.whatwg.org/multipage/workers.html#dom-dedicatedworkerglobalscope-close")]
     public void Close() => Agent.Close();
 
     /// <summary>Gets or sets the event handler of the <c>message</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#handler-messageeventtarget-onmessage"/>
     [IdlMember("onmessage", "https://html.spec.whatwg.org/multipage/web-messaging.html#handler-messageeventtarget-onmessage")]
     public Action<Event>? OnMessage
     {
@@ -382,6 +405,7 @@ public sealed class DedicatedWorkerGlobalScope : WorkerGlobalScope
     }
 
     /// <summary>Gets or sets the event handler of the <c>messageerror</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#handler-messageeventtarget-onmessageerror"/>
     [IdlMember("onmessageerror", "https://html.spec.whatwg.org/multipage/web-messaging.html#handler-messageeventtarget-onmessageerror")]
     public Action<Event>? OnMessageError
     {
@@ -432,6 +456,7 @@ public sealed class DedicatedWorkerGlobalScope : WorkerGlobalScope
 /// each <see cref="SharedWorker"/> object connected to the worker fires a <c>connect</c> event, whose port is entangled with
 /// the <see cref="SharedWorker.Port"/> of the object.
 /// </summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#sharedworkerglobalscope"/>
 [IdlInterface("SharedWorkerGlobalScope", "https://html.spec.whatwg.org/multipage/workers.html#sharedworkerglobalscope")]
 public sealed class SharedWorkerGlobalScope : WorkerGlobalScope
 {
@@ -445,14 +470,17 @@ public sealed class SharedWorkerGlobalScope : WorkerGlobalScope
     internal override string InterfaceName => "SharedWorkerGlobalScope";
 
     /// <summary>https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworkerglobalscope-name</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworkerglobalscope-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworkerglobalscope-name")]
     public string WorkerName => Name;
 
     /// <summary>Closes the worker (https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworkerglobalscope-close).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworkerglobalscope-close"/>
     [IdlMember("close", "https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworkerglobalscope-close")]
     public void Close() => Agent.Close();
 
     /// <summary>Gets or sets the event handler of the <c>connect</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#handler-sharedworkerglobalscope-onconnect"/>
     [IdlMember("onconnect", "https://html.spec.whatwg.org/multipage/workers.html#handler-sharedworkerglobalscope-onconnect")]
     public Action<Event>? OnConnect
     {

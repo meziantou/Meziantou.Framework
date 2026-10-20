@@ -7,6 +7,7 @@ namespace Meziantou.Framework.WebPlatform.Animations;
 /// An animation created by the <c>animation-*</c> properties (https://drafts.csswg.org/css-animations-2/#the-CSSAnimation-interface).
 /// It is updated when the styles of its owning element change, except for the properties changed through the API.
 /// </summary>
+/// <seealso href="https://drafts.csswg.org/css-animations-2/#cssanimation"/>
 [IdlInterface("CSSAnimation", "https://drafts.csswg.org/css-animations-2/#cssanimation")]
 public sealed class CssAnimation : Animation
 {
@@ -23,6 +24,7 @@ public sealed class CssAnimation : Animation
     }
 
     /// <summary>Gets the name of the animation: the value of <c>animation-name</c> (https://drafts.csswg.org/css-animations-2/#dom-cssanimation-animationname).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-animations-2/#dom-cssanimation-animationname"/>
     [IdlMember("animationName", "https://drafts.csswg.org/css-animations-2/#dom-cssanimation-animationname")]
     public string AnimationName { get; }
 

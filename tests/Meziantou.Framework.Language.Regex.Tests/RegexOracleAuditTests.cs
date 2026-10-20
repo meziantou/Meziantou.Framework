@@ -155,7 +155,7 @@ public sealed class RegexOracleAuditTests
     [Theory]
     [InlineData(@"\x{41}", "A")]
     [InlineData(@"\x41", "A")]
-    [InlineData(@"\x4", "")]
+    [InlineData(@"\x4", "\u0004")]
     public void AHexEscapeMayBeShortOrBraced(string pattern, string value)
     {
         var escape = Assert.Single(Accepts(pattern, Options(RegexDialect.PcrePerl)).GetRoot().DescendantNodes().OfType<RegexCharacterEscapeSyntax>());

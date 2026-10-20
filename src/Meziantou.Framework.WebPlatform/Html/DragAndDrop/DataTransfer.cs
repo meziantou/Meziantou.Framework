@@ -79,6 +79,7 @@ internal sealed class ClipboardClearState
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/dnd.html#functionstringcallback</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#functionstringcallback"/>
 [IdlInterface("FunctionStringCallback", "https://html.spec.whatwg.org/multipage/dnd.html#functionstringcallback")]
 public delegate void FunctionStringCallback(string data);
 
@@ -86,6 +87,7 @@ public delegate void FunctionStringCallback(string data);
 /// Exposes the drag data store of a drag-and-drop operation (https://html.spec.whatwg.org/multipage/dnd.html#the-datatransfer-interface).
 /// The objects created for the drag-and-drop events are only associated with the drag data store while the event is dispatched.
 /// </summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#datatransfer"/>
 [IdlInterface("DataTransfer", "https://html.spec.whatwg.org/multipage/dnd.html#datatransfer")]
 public sealed class DataTransfer
 {
@@ -97,6 +99,7 @@ public sealed class DataTransfer
     private FileList? _fileList;
 
     /// <summary>https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer"/>
     [IdlMember("constructor", "https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer")]
     public DataTransfer()
         : this(new DragDataStore { Mode = DragDataStoreMode.ReadWrite }, dropEffect: "none", effectAllowed: "none")
@@ -115,6 +118,7 @@ public sealed class DataTransfer
     internal DragDataStore? Store { get; private set; }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-dropeffect</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-dropeffect"/>
     [IdlMember("dropEffect", "https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-dropeffect")]
     public string DropEffect
     {
@@ -130,6 +134,7 @@ public sealed class DataTransfer
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-effectallowed</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-effectallowed"/>
     [IdlMember("effectAllowed", "https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-effectallowed")]
     public string EffectAllowed
     {
@@ -145,10 +150,12 @@ public sealed class DataTransfer
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-items</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-items"/>
     [IdlMember("items", "https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-items")]
     public DataTransferItemList Items => _items ??= new DataTransferItemList(this);
 
     /// <summary>https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-setdragimage</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-setdragimage"/>
     [IdlMember("setDragImage", "https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-setdragimage")]
     public void SetDragImage(Element image, int x, int y)
     {
@@ -160,10 +167,12 @@ public sealed class DataTransfer
     }
 
     /// <summary>The types array (https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-types): the same array until the drag data store item list changes.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-types"/>
     [IdlMember("types", "https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-types")]
     public IReadOnlyList<string> Types => _types;
 
     /// <summary>https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-getdata</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-getdata"/>
     [IdlMember("getData", "https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-getdata")]
     public string GetData(string format)
     {
@@ -181,6 +190,7 @@ public sealed class DataTransfer
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-setdata</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-setdata"/>
     [IdlMember("setData", "https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-setdata")]
     public void SetData(string format, string data)
     {
@@ -197,6 +207,7 @@ public sealed class DataTransfer
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-cleardata</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-cleardata"/>
     [IdlMember("clearData", "https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-cleardata")]
     public void ClearData(string? format = null)
     {
@@ -223,6 +234,7 @@ public sealed class DataTransfer
     }
 
     /// <summary>The files of the drag data store (https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-files): a live list, empty in the protected mode.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-files"/>
     [IdlMember("files", "https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-files")]
     public FileList Files
     {
@@ -319,6 +331,7 @@ public sealed class DataTransfer
 }
 
 /// <summary>The list of the items of a drag data store (https://html.spec.whatwg.org/multipage/dnd.html#the-datatransferitemlist-interface).</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#datatransferitemlist"/>
 [IdlInterface("DataTransferItemList", "https://html.spec.whatwg.org/multipage/dnd.html#datatransferitemlist")]
 public sealed class DataTransferItemList : IReadOnlyList<DataTransferItem>
 {
@@ -331,10 +344,12 @@ public sealed class DataTransferItemList : IReadOnlyList<DataTransferItem>
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitemlist-length</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitemlist-length"/>
     [IdlMember("length", "https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitemlist-length")]
     public uint Length => (uint)(_dataTransfer.Store?.Items.Count ?? 0);
 
     /// <summary>The indexed property getter (https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitemlist-item): the same object each time for an item.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitemlist-item"/>
     [IdlMember("getter", "https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitemlist-item")]
     public DataTransferItem? this[uint index]
     {
@@ -354,6 +369,7 @@ public sealed class DataTransferItemList : IReadOnlyList<DataTransferItem>
     DataTransferItem IReadOnlyList<DataTransferItem>.this[int index] => this[(uint)index] ?? throw new ArgumentOutOfRangeException(nameof(index));
 
     /// <summary>Adds a text item (https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitemlist-add).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitemlist-add"/>
     [IdlMember("add", "https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitemlist-add")]
     public DataTransferItem? Add(string data, string type)
     {
@@ -370,6 +386,7 @@ public sealed class DataTransferItemList : IReadOnlyList<DataTransferItem>
     }
 
     /// <summary>Adds a file item (https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitemlist-add).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitemlist-add"/>
     [IdlMember("add", "https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitemlist-add")]
     public DataTransferItem? Add(File data)
     {
@@ -389,6 +406,7 @@ public sealed class DataTransferItemList : IReadOnlyList<DataTransferItem>
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitemlist-remove</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitemlist-remove"/>
     [IdlMember("remove", "https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitemlist-remove")]
     public void Remove(uint index)
     {
@@ -403,6 +421,7 @@ public sealed class DataTransferItemList : IReadOnlyList<DataTransferItem>
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitemlist-clear</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitemlist-clear"/>
     [IdlMember("clear", "https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitemlist-clear")]
     public void Clear()
     {
@@ -431,6 +450,7 @@ public sealed class DataTransferItemList : IReadOnlyList<DataTransferItem>
 }
 
 /// <summary>An item of a drag data store (https://html.spec.whatwg.org/multipage/dnd.html#the-datatransferitem-interface).</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#datatransferitem"/>
 [IdlInterface("DataTransferItem", "https://html.spec.whatwg.org/multipage/dnd.html#datatransferitem")]
 public sealed class DataTransferItem
 {
@@ -447,14 +467,17 @@ public sealed class DataTransferItem
     private DragDataStoreMode? Mode => _dataTransfer.Store is { } store && store.Items.Contains(_item) ? store.Mode : null;
 
     /// <summary>https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitem-kind</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitem-kind"/>
     [IdlMember("kind", "https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitem-kind")]
     public string Kind => Mode is null ? "" : _item.Kind == DragDataItemKind.Text ? "string" : "file";
 
     /// <summary>https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitem-type</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitem-type"/>
     [IdlMember("type", "https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitem-type")]
     public string Type => Mode is null ? "" : _item.Type;
 
     /// <summary>https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitem-getasstring: the callback is invoked from a task.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitem-getasstring"/>
     [IdlMember("getAsString", "https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitem-getasstring")]
     public void GetAsString(FunctionStringCallback? callback)
     {
@@ -473,6 +496,7 @@ public sealed class DataTransferItem
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitem-getasfile</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitem-getasfile"/>
     [IdlMember("getAsFile", "https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransferitem-getasfile")]
     public File? GetAsFile()
     {

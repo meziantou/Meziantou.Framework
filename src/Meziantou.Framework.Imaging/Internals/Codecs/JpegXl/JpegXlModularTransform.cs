@@ -1,4 +1,5 @@
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -809,12 +810,31 @@ internal sealed class JpegXlModularTransform
         {
             for (; x <= averages.Length - 4; x += 4)
             {
-                var (beforeLow, beforeHigh) = Vector128.Widen(Vector128.Create(previous.Slice(x, 4)));
-                var (averageLow, averageHigh) = Vector128.Widen(Vector128.Create(averages.Slice(x, 4)));
-                var (nextLow, nextHigh) = Vector128.Widen(Vector128.Create(nextAverages.Slice(x, 4)));
+                var before = Vector128.Create(previous.Slice(x, 4));
+                var average = Vector128.Create(averages.Slice(x, 4));
+                var next = Vector128.Create(nextAverages.Slice(x, 4));
+                var (beforeLow, beforeHigh) = Vector128.Widen(before);
+                var (averageLow, averageHigh) = Vector128.Widen(average);
+                var (nextLow, nextHigh) = Vector128.Widen(next);
                 var (residualLow, residualHigh) = Vector128.Widen(Vector128.Create(residuals.Slice(x, 4)));
-                var differenceLow = residualLow + GetSmoothTendency(beforeLow, averageLow, nextLow);
-                var differenceHigh = residualHigh + GetSmoothTendency(beforeHigh, averageHigh, nextHigh);
+                Vector128<long> differenceLow;
+                Vector128<long> differenceHigh;
+                if (Sse2.IsSupported)
+                {
+                    // x64 converts between 64-bit integers and doubles in software (without AVX-512DQ): the divisions start
+                    // from the 32-bit samples and end in 32-bit quotients, which hold them
+                    DivideBy12(before, average, next, out var decreasing, out var increasing);
+                    var (decreasingLow, decreasingHigh) = Vector128.Widen(decreasing);
+                    var (increasingLow, increasingHigh) = Vector128.Widen(increasing);
+                    differenceLow = residualLow + GetSmoothTendency(beforeLow, averageLow, nextLow, decreasingLow, increasingLow);
+                    differenceHigh = residualHigh + GetSmoothTendency(beforeHigh, averageHigh, nextHigh, decreasingHigh, increasingHigh);
+                }
+                else
+                {
+                    differenceLow = residualLow + GetSmoothTendency(beforeLow, averageLow, nextLow);
+                    differenceHigh = residualHigh + GetSmoothTendency(beforeHigh, averageHigh, nextHigh);
+                }
+
                 var valueLow = averageLow + HalfTowardZero(differenceLow);
                 var valueHigh = averageHigh + HalfTowardZero(differenceHigh);
                 Vector128.Narrow(valueLow, valueHigh).CopyTo(first.Slice(x, 4));
@@ -846,8 +866,45 @@ internal sealed class JpegXlModularTransform
         // 4 before - 3 next - average, then plus or minus 6, divided by 12 rounded toward zero
         var numerator = (before << 2) - ((next << 1) + next) - average;
         var six = Vector128.Create(6L);
-        var decreasing = DivideBy12(numerator + six);
-        var increasing = DivideBy12(numerator - six);
+        return GetSmoothTendency(before, average, next, DivideBy12(numerator + six), DivideBy12(numerator - six));
+
+        static Vector128<long> DivideBy12(Vector128<long> value) => Vector128.ConvertToInt64(Vector128.ConvertToDouble(value) / Vector128.Create(12.0));
+    }
+
+    /// <summary>
+    /// The quotients of the two cases of <see cref="GetSmoothTendency(long, long, long)"/> on four lanes, from the 32-bit
+    /// samples: the numerators (at most 2^34 in magnitude) and their divisions are the doubles that the 64-bit path
+    /// computes, and the quotients, rounded toward zero, are below 2^31 in magnitude.
+    /// </summary>
+    private static void DivideBy12(Vector128<int> before, Vector128<int> average, Vector128<int> next, out Vector128<int> decreasing, out Vector128<int> increasing)
+    {
+        if (Avx.IsSupported)
+        {
+            var numerator = (Avx.ConvertToVector256Double(before) * Vector256.Create(4.0)) - (Avx.ConvertToVector256Double(next) * Vector256.Create(3.0)) - Avx.ConvertToVector256Double(average);
+            decreasing = Avx.ConvertToVector128Int32WithTruncation((numerator + Vector256.Create(6.0)) / Vector256.Create(12.0));
+            increasing = Avx.ConvertToVector128Int32WithTruncation((numerator - Vector256.Create(6.0)) / Vector256.Create(12.0));
+            return;
+        }
+
+        // Two lanes at a time: the conversions read and write the two low lanes
+        var numeratorLow = GetNumerator(before, average, next);
+        var numeratorHigh = GetNumerator(Upper(before), Upper(average), Upper(next));
+        decreasing = Combine(Divide(numeratorLow + Vector128.Create(6.0)), Divide(numeratorHigh + Vector128.Create(6.0)));
+        increasing = Combine(Divide(numeratorLow - Vector128.Create(6.0)), Divide(numeratorHigh - Vector128.Create(6.0)));
+
+        static Vector128<int> Upper(Vector128<int> value) => Sse2.Shuffle(value, 0b_11_10_11_10);
+
+        static Vector128<double> GetNumerator(Vector128<int> before, Vector128<int> average, Vector128<int> next)
+            => (Sse2.ConvertToVector128Double(before) * Vector128.Create(4.0)) - (Sse2.ConvertToVector128Double(next) * Vector128.Create(3.0)) - Sse2.ConvertToVector128Double(average);
+
+        static Vector128<int> Divide(Vector128<double> value) => Sse2.ConvertToVector128Int32WithTruncation(value / Vector128.Create(12.0));
+
+        static Vector128<int> Combine(Vector128<int> low, Vector128<int> high) => Sse2.UnpackLow(low.AsInt64(), high.AsInt64()).AsInt32();
+    }
+
+    /// <summary><see cref="GetSmoothTendency(long, long, long)"/> on two lanes, from the quotients of its two cases.</summary>
+    private static Vector128<long> GetSmoothTendency(Vector128<long> before, Vector128<long> average, Vector128<long> next, Vector128<long> decreasing, Vector128<long> increasing)
+    {
         var beforeGap = (before - average) << 1;
         var nextGap = (average - next) << 1;
         var one = Vector128<long>.One;
@@ -864,8 +921,6 @@ internal sealed class JpegXlModularTransform
         var isIncreasing = Vector128.LessThanOrEqual(before, average) & Vector128.LessThanOrEqual(average, next);
         var result = Vector128.ConditionalSelect(isIncreasing, increasing, Vector128<long>.Zero);
         return Vector128.ConditionalSelect(isDecreasing, decreasing, result);
-
-        static Vector128<long> DivideBy12(Vector128<long> value) => Vector128.ConvertToInt64(Vector128.ConvertToDouble(value) / Vector128.Create(12.0));
     }
 
     /// <summary>The expected difference of two samples from their average and the neighboring ones, when they are monotonic (section H.6.2.2).</summary>

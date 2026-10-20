@@ -16,6 +16,7 @@ namespace Meziantou.Framework.WebPlatform.Css.Om;
 /// <c>change</c> events are fired when the event loop updates the rendering, after the <c>change</c> events of the media
 /// query lists, while the document of the element is fully active.
 /// </remarks>
+/// <seealso href="https://drafts.csswg.org/css-conditional-5/#containerquerylist"/>
 [IdlInterface("ContainerQueryList", "https://drafts.csswg.org/css-conditional-5/#containerquerylist")]
 [Experimental(ExperimentalApis.MatchContainer, UrlFormat = ExperimentalApis.UrlFormat)]
 public sealed class ContainerQueryList : EventTarget, IRealmBoundPlatformObject
@@ -48,6 +49,7 @@ public sealed class ContainerQueryList : EventTarget, IRealmBoundPlatformObject
     Window? IRealmBoundPlatformObject.RealmWindow => _window;
 
     /// <summary>Gets the serialized container conditions, or the empty string when the query is invalid.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-conditional-5/#dom-containerquerylist-query"/>
     [IdlMember("query", "https://drafts.csswg.org/css-conditional-5/#dom-containerquerylist-query")]
     public string Query { get; }
 
@@ -56,6 +58,7 @@ public sealed class ContainerQueryList : EventTarget, IRealmBoundPlatformObject
     /// queries are evaluated with the sizes of the containers computed by the layout (a forced layout when the element is in a
     /// size container).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-conditional-5/#dom-containerquerylist-matches"/>
     [IdlMember("matches", "https://drafts.csswg.org/css-conditional-5/#dom-containerquerylist-matches")]
     public bool Matches
     {
@@ -71,6 +74,7 @@ public sealed class ContainerQueryList : EventTarget, IRealmBoundPlatformObject
     }
 
     /// <summary>Gets or sets the event handler of the <c>change</c> event.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-conditional-5/#dom-containerquerylist-onchange"/>
     [IdlMember("onchange", "https://drafts.csswg.org/css-conditional-5/#dom-containerquerylist-onchange")]
     public Action<Event>? OnChange
     {

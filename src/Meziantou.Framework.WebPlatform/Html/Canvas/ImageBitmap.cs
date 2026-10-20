@@ -6,94 +6,116 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// The orientation of the image of an <see cref="ImageBitmap"/> (https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#imageorientation):
 /// the IDL enumeration <c>ImageOrientation</c>.
 /// </summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#imageorientation"/>
 [IdlInterface("ImageOrientation", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#imageorientation")]
 public enum ImageBitmapOrientation
 {
     /// <summary>The image is oriented by its EXIF metadata.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imageorientation-from-image"/>
     [IdlMember("from-image", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imageorientation-from-image")]
     FromImage,
 
     /// <summary>The image is oriented by its EXIF metadata, then flipped vertically.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imageorientation-flipy"/>
     [IdlMember("flipY", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imageorientation-flipy")]
     FlipY,
 }
 
 /// <summary>Whether the colors of an <see cref="ImageBitmap"/> are premultiplied by their alpha (https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#premultiplyalpha).</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#premultiplyalpha"/>
 [IdlInterface("PremultiplyAlpha", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#premultiplyalpha")]
 public enum PremultiplyAlpha
 {
     /// <summary>The colors are not premultiplied.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-premultiplyalpha-none"/>
     [IdlMember("none", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-premultiplyalpha-none")]
     None,
 
     /// <summary>The colors are premultiplied (the precision of the colors of the transparent pixels is reduced).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-premultiplyalpha-premultiply"/>
     [IdlMember("premultiply", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-premultiplyalpha-premultiply")]
     Premultiply,
 
     /// <summary>The choice of the user agent (the colors are not premultiplied).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-premultiplyalpha-default"/>
     [IdlMember("default", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-premultiplyalpha-default")]
     Default,
 }
 
 /// <summary>Whether the colors of a decoded image are converted to sRGB (https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#colorspaceconversion).</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#colorspaceconversion"/>
 [IdlInterface("ColorSpaceConversion", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#colorspaceconversion")]
 public enum ColorSpaceConversion
 {
     /// <summary>The colors are the encoded values (the color profile of the image is ignored).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-colorspaceconversion-none"/>
     [IdlMember("none", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-colorspaceconversion-none")]
     None,
 
     /// <summary>The colors are converted to sRGB.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-colorspaceconversion-default"/>
     [IdlMember("default", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-colorspaceconversion-default")]
     Default,
 }
 
 /// <summary>The quality of the scaling of an <see cref="ImageBitmap"/> (https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#resizequality).</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#resizequality"/>
 [IdlInterface("ResizeQuality", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#resizequality")]
 public enum ResizeQuality
 {
     /// <summary>The nearest pixel (the pixels stay sharp).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-resizequality-pixelated"/>
     [IdlMember("pixelated", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-resizequality-pixelated")]
     Pixelated,
 
     /// <summary>A bilinear interpolation.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-resizequality-low"/>
     [IdlMember("low", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-resizequality-low")]
     Low,
 
     /// <summary>A bilinear interpolation, with the average of the covered pixels when the image is reduced.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-resizequality-medium"/>
     [IdlMember("medium", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-resizequality-medium")]
     Medium,
 
     /// <summary>A bilinear interpolation, with the average of the covered pixels when the image is reduced.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-resizequality-high"/>
     [IdlMember("high", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-resizequality-high")]
     High,
 }
 
 /// <summary>The options of <c>createImageBitmap()</c> (https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#imagebitmapoptions).</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#imagebitmapoptions"/>
 [IdlInterface("ImageBitmapOptions", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#imagebitmapoptions")]
 public sealed class ImageBitmapOptions
 {
     /// <summary>Gets the orientation of the image.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagebitmapoptions-imageorientation"/>
     [IdlMember("imageOrientation", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagebitmapoptions-imageorientation")]
     public ImageBitmapOrientation ImageOrientation { get; init; }
 
     /// <summary>Gets whether the colors are premultiplied by their alpha.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagebitmapoptions-premultiplyalpha"/>
     [IdlMember("premultiplyAlpha", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagebitmapoptions-premultiplyalpha")]
     public PremultiplyAlpha PremultiplyAlpha { get; init; } = PremultiplyAlpha.Default;
 
     /// <summary>Gets whether the colors of a decoded image are converted to sRGB.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagebitmapoptions-colorspaceconversion"/>
     [IdlMember("colorSpaceConversion", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagebitmapoptions-colorspaceconversion")]
     public ColorSpaceConversion ColorSpaceConversion { get; init; } = ColorSpaceConversion.Default;
 
     /// <summary>Gets the width of the bitmap, or null for the width of the source rectangle (or the one of its aspect ratio when <see cref="ResizeHeight"/> is set).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagebitmapoptions-resizewidth"/>
     [IdlMember("resizeWidth", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagebitmapoptions-resizewidth")]
     public uint? ResizeWidth { get; init; }
 
     /// <summary>Gets the height of the bitmap, or null for the height of the source rectangle (or the one of its aspect ratio when <see cref="ResizeWidth"/> is set).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagebitmapoptions-resizeheight"/>
     [IdlMember("resizeHeight", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagebitmapoptions-resizeheight")]
     public uint? ResizeHeight { get; init; }
 
     /// <summary>Gets the quality of the scaling.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagebitmapoptions-resizequality"/>
     [IdlMember("resizeQuality", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagebitmapoptions-resizequality")]
     public ResizeQuality ResizeQuality { get; init; } = ResizeQuality.Low;
 }
@@ -103,6 +125,7 @@ public sealed class ImageBitmapOptions
 /// created by <c>createImageBitmap()</c> (<see cref="GlobalScope.CreateImageBitmap(object?, ImageBitmapOptions?)"/>) from an
 /// image, a canvas, a blob, an image data or another bitmap. It is serializable and transferable.
 /// </summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#imagebitmap"/>
 [IdlInterface("ImageBitmap", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#imagebitmap")]
 public sealed class ImageBitmap : IStructuredSerializable, IStructuredTransferable
 {
@@ -115,14 +138,17 @@ public sealed class ImageBitmap : IStructuredSerializable, IStructuredTransferab
     internal BitmapPixels? Bitmap { get; private set; }
 
     /// <summary>Gets the width of the bitmap in pixels (0 when it is detached).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagebitmap-width"/>
     [IdlMember("width", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagebitmap-width")]
     public uint Width => (uint)(Bitmap?.Width ?? 0);
 
     /// <summary>Gets the height of the bitmap in pixels (0 when it is detached).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagebitmap-height"/>
     [IdlMember("height", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagebitmap-height")]
     public uint Height => (uint)(Bitmap?.Height ?? 0);
 
     /// <summary>Releases the bitmap data (https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagebitmap-close): the bitmap is detached.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagebitmap-close"/>
     [IdlMember("close", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagebitmap-close")]
     public void Close() => Bitmap = null;
 

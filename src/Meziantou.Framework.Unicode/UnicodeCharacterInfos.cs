@@ -1,400 +1,393 @@
 using System.Collections;
-using System.Reflection;
 using static Meziantou.Framework.UnicodeDataFormat;
 
 namespace Meziantou.Framework;
 
+/// <summary>Reads the Unicode Character Database out of the generated tables, in place.</summary>
+/// <remarks>
+/// The tables are spans over static data: nothing is copied or parsed when the program starts, and a lookup only
+/// finds the property record of a character. Every other field of <see cref="UnicodeCharacterInfo"/> is decoded
+/// when it is read. Names, decomposition mappings and strings are materialized lazily and cached, so a program
+/// that never asks for them never pays for them. See <see cref="UnicodeDataFormat"/> for the layout.
+/// </remarks>
 internal static partial class UnicodeCharacterInfos
 {
-    private const string ResourceName = "Meziantou.Framework.Resources.UnicodeData.bin";
+    private const int MaxCodePoint = 0x10FFFF;
 
-    private static readonly UnicodeDataTable Table = UnicodeDataTable.Load();
+    // The decoded names, by bucket: a program that reads a few names does not allocate a slot for every one.
+    private static readonly string?[]?[] NameCache = new string?[]?[(NamedCharacterCount + NameBucketSize - 1) / NameBucketSize];
+    private static string?[]? s_decompositions;
+    private static string?[]? s_strings;
+    private static int s_count = -1;
 
-    public static IReadOnlyCollection<UnicodeCharacterInfo> AllCharacters => Table;
+    public static IReadOnlyCollection<UnicodeCharacterInfo> AllCharacters { get; } = new CharacterCollection();
 
     public static bool TryGetInfo(Rune rune, out UnicodeCharacterInfo info)
     {
-        return Table.TryGetInfo(rune, out info);
+        var propertyIndex = GetPropertyIndex(rune.Value);
+        if (propertyIndex == 0)
+        {
+            info = default;
+            return false;
+        }
+
+        info = new UnicodeCharacterInfo(rune, propertyIndex, name: null);
+        return true;
     }
 
-    /// <summary>Reads the Unicode Character Database out of the embedded resource, in place.</summary>
-    /// <remarks>
-    /// The resource is kept as a single byte array and searched rather than expanded into a
-    /// dictionary of every code point: the database describes hundreds of thousands of characters,
-    /// but they only take a few thousand distinct property tuples once contiguous ranges are kept
-    /// as ranges.
-    /// Only names and decomposition mappings are materialized as strings, lazily and cached, so a
-    /// program that never asks for them never pays for them. See <see cref="UnicodeDataFormat"/>
-    /// for the layout.
-    /// </remarks>
-    private sealed class UnicodeDataTable : IReadOnlyCollection<UnicodeCharacterInfo>
+    /// <summary>Gets the index of the property record of a code point, or 0 when the code point is not a character.</summary>
+    private static int GetPropertyIndex(int codePoint)
     {
-        private readonly byte[] _data;
+        var block3 = GetBlock3(GetBlock2(codePoint), codePoint);
+        return ReadUInt16(PropertyIndexStage3, ((block3 << PropertyIndexShift2) + (codePoint & ((1 << PropertyIndexShift2) - 1))) * 2);
+    }
 
-        private readonly UnicodeCharacterProperties[] _properties;
-        private readonly int[] _runStarts;
-        private readonly int[] _runLengths;
-        private readonly int[] _runProperties;
+    private static int GetBlock2(int codePoint) => ReadUInt16(PropertyIndexStage1, (codePoint >> PropertyIndexShift1) * 2);
 
-        private readonly int[] _namedCodePoints;
-        private readonly int[] _nameBucketOffsets;
-        private readonly int _nameTextStart;
-        private string?[]? _names;
+    private static int GetBlock3(int block2, int codePoint)
+    {
+        const int Bits2 = PropertyIndexShift1 - PropertyIndexShift2;
+        return ReadUInt16(PropertyIndexStage2, ((block2 << Bits2) + ((codePoint >> PropertyIndexShift2) & ((1 << Bits2) - 1))) * 2);
+    }
 
-        private readonly string[] _rangeNames;
-        private readonly int[] _rangeNameStarts;
-        private readonly int[] _rangeNameLengths;
-        private readonly int[] _rangeNameIndexes;
-
-        private readonly string[] _decompositionTags;
-        private readonly int[] _decompositionCodePoints;
-        private readonly int[] _decompositionOffsets;
-        private string?[]? _decompositions;
-
-        private readonly StringColumn _numericValues;
-        private readonly StringColumn _unicode1Names;
-        private readonly StringColumn _isoComments;
-
-        public int Count { get; }
-
-        public static UnicodeDataTable Load()
+    /// <summary>Finds the first character after <paramref name="codePoint"/>.</summary>
+    /// <returns>The code point of the character, or -1 when there is none.</returns>
+    private static int GetNextCharacter(int codePoint, out int propertyIndex)
+    {
+        const int Block2Mask = (1 << PropertyIndexShift1) - 1;
+        const int Block3Mask = (1 << PropertyIndexShift2) - 1;
+        while (codePoint < MaxCodePoint)
         {
-            using var stream = typeof(Unicode).GetTypeInfo().Assembly.GetManifestResourceStream(ResourceName);
-            if (stream is null)
-                throw new InvalidOperationException("Cannot find Unicode data resource: " + ResourceName);
+            codePoint++;
 
-            var data = new byte[stream.Length];
-            stream.ReadExactly(data);
-            return new UnicodeDataTable(data);
+            // Most code points are not characters, and they come in whole blocks of the table.
+            var block2 = GetBlock2(codePoint);
+            if (block2 == PropertyIndexEmptyBlock2)
+            {
+                codePoint |= Block2Mask;
+                continue;
+            }
+
+            var block3 = GetBlock3(block2, codePoint);
+            if (block3 == PropertyIndexEmptyBlock3)
+            {
+                codePoint |= Block3Mask;
+                continue;
+            }
+
+            propertyIndex = ReadUInt16(PropertyIndexStage3, ((block3 << PropertyIndexShift2) + (codePoint & Block3Mask)) * 2);
+            if (propertyIndex != 0)
+                return codePoint;
         }
 
-        private UnicodeDataTable(byte[] data)
+        propertyIndex = 0;
+        return -1;
+    }
+
+    /// <summary>Gets a one-byte field of a property record.</summary>
+    public static byte GetPropertyField(int propertyIndex, int field) => Properties[(propertyIndex * PropertyRecordSize) + field];
+
+    /// <summary>Gets a simple case mapping, or <see langword="null"/> when the character does not have one.</summary>
+    public static Rune? GetCaseMapping(int codePoint, int propertyIndex, byte flag, int field)
+    {
+        if ((GetPropertyField(propertyIndex, FlagsField) & flag) == 0)
+            return null;
+
+        if (Rune.TryCreate(codePoint + ReadInt24(Properties, (propertyIndex * PropertyRecordSize) + field), out var result))
+            return result;
+
+        return null;
+    }
+
+    public static string GetName(int codePoint)
+    {
+        var range = FindFloorRecord(RangeNames, RangeNameRecordSize, codePoint);
+        if (range >= 0 && codePoint <= ReadUInt24(RangeNames, range + 3))
+            return GetString(ReadUInt16(RangeNames, range + 6));
+
+        var bucket = FindFloorRecord(NameBuckets, NameBucketRecordSize, codePoint);
+        if (bucket >= 0)
         {
-            _data = data;
-            var span = data.AsSpan();
-            if (!span[..Magic.Length].SequenceEqual(Magic) || span[Magic.Length] != LayoutVersion)
-                throw new InvalidDataException("The Unicode data resource is not in the expected format.");
+            var name = GetNameInBucket(bucket, codePoint);
+            if (name is not null)
+                return name;
+        }
 
-            var position = HeaderLength;
+        return string.Empty;
+    }
 
-            var propertyCount = ReadVarInt(span, ref position);
-            _properties = new UnicodeCharacterProperties[propertyCount];
-            for (var i = 0; i < propertyCount; i++)
+    /// <summary>Decodes the name of <paramref name="codePoint"/> by replaying the front-coding of its bucket.</summary>
+    private static string? GetNameInBucket(int bucketOffset, int codePoint)
+    {
+        var entries = NameEntries;
+        var firstEntryPosition = ReadUInt24(NameBuckets, bucketOffset + 3);
+        var bucket = bucketOffset / NameBucketRecordSize;
+        var firstOrdinal = bucket * NameBucketSize;
+        var count = Math.Min(NameBucketSize, NamedCharacterCount - firstOrdinal);
+
+        // Find the entry first: when its name is cached, nothing has to be decoded.
+        var position = firstEntryPosition;
+        var current = ReadUInt24(NameBuckets, bucketOffset);
+        var index = 0;
+        while (true)
+        {
+            current += ReadVarInt(entries, ref position);
+            if (current == codePoint)
+                break;
+
+            index++;
+            if (current > codePoint || index == count)
+                return null;
+
+            position += 2;
+        }
+
+        // Caching keeps a code point looked up more than once from decoding and allocating its name again.
+        var names = NameCache[bucket] ?? CreateCache(ref NameCache[bucket], NameBucketSize);
+        var name = names[index];
+        if (name is not null)
+            return name;
+
+        Span<byte> buffer = stackalloc byte[MaxSerializedStringLength];
+        position = firstEntryPosition;
+        var textPosition = ReadUInt24(NameBuckets, bucketOffset + 6);
+        var length = 0;
+        for (var i = 0; i <= index; i++)
+        {
+            ReadVarInt(entries, ref position);
+            length = DecodeFrontCodedName(ref position, ref textPosition, buffer);
+        }
+
+        name = Encoding.UTF8.GetString(buffer[..length]);
+        names[index] = name;
+        return name;
+    }
+
+    /// <summary>Applies the next name entry to <paramref name="buffer"/>, which holds the previous name, and returns the length of the name.</summary>
+    private static int DecodeFrontCodedName(ref int entryPosition, ref int textPosition, Span<byte> buffer)
+    {
+        var entries = NameEntries;
+        var sharedPrefixLength = entries[entryPosition];
+        var suffixLength = entries[entryPosition + 1];
+        entryPosition += 2;
+        NameText.Slice(textPosition, suffixLength).CopyTo(buffer[sharedPrefixLength..]);
+        textPosition += suffixLength;
+        return sharedPrefixLength + suffixLength;
+    }
+
+    public static string? GetDecompositionMapping(int codePoint)
+    {
+        var record = UnicodeTableReader.FindRecord(Decompositions, DecompositionRecordSize, codePoint);
+        if (record < 0)
+            return null;
+
+        var decompositions = s_decompositions ?? CreateCache(ref s_decompositions, Decompositions.Length / DecompositionRecordSize);
+        var index = record / DecompositionRecordSize;
+        var mapping = decompositions[index];
+        if (mapping is not null)
+            return mapping;
+
+        var data = DecompositionMappings;
+        var position = ReadUInt24(Decompositions, record + 3);
+        var tag = data[position];
+        var mappingLength = data[position + 1];
+        position += 2;
+
+        var builder = new StringBuilder();
+        if (tag != 0)
+        {
+            builder.Append(GetString(tag - 1));
+        }
+
+        for (var i = 0; i < mappingLength; i++)
+        {
+            if (builder.Length > 0)
             {
-                var fixedPart = span.Slice(position, PropertyFixedLength);
-                position += PropertyFixedLength;
-                _properties[i] = new UnicodeCharacterProperties(
-                    (UnicodeCategory)fixedPart[0],
-                    (UnicodeBidirectionalCategory)fixedPart[1],
-                    fixedPart[2],
-                    (sbyte)fixedPart[3],
-                    (sbyte)fixedPart[4],
-                    fixedPart[5],
-                    fixedPart[6],
-                    ReadZigZagVarInt(span, ref position),
-                    ReadZigZagVarInt(span, ref position),
-                    ReadZigZagVarInt(span, ref position));
+                builder.Append(' ');
             }
 
-            var runCount = ReadVarInt(span, ref position);
-            _runStarts = new int[runCount];
-            _runLengths = new int[runCount];
-            _runProperties = new int[runCount];
-            var count = 0;
-            var previousEnd = 0;
-            for (var i = 0; i < runCount; i++)
+            builder.Append(CultureInfo.InvariantCulture, $"{ReadVarInt(data, ref position):X4}");
+        }
+
+        mapping = builder.ToString();
+        decompositions[index] = mapping;
+        return mapping;
+    }
+
+    public static string? GetNumericValue(int codePoint) => GetStringValue(NumericValues, codePoint);
+
+    public static string? GetUnicode1Name(int codePoint) => GetStringValue(Unicode1Names, codePoint);
+
+    public static string? GetIsoComment(int codePoint) => GetStringValue(IsoComments, codePoint);
+
+    private static string? GetStringValue(ReadOnlySpan<byte> records, int codePoint)
+    {
+        var record = UnicodeTableReader.FindRecord(records, StringValueRecordSize, codePoint);
+        return record < 0 ? null : GetString(ReadUInt16(records, record + 3));
+    }
+
+    private static string GetString(int index)
+    {
+        var strings = s_strings ?? CreateCache(ref s_strings, (StringOffsets.Length / StringOffsetSize) - 1);
+        var value = strings[index];
+        if (value is not null)
+            return value;
+
+        var start = ReadUInt24(StringOffsets, index * StringOffsetSize);
+        var end = ReadUInt24(StringOffsets, (index + 1) * StringOffsetSize);
+        value = Encoding.UTF8.GetString(Strings[start..end]);
+        strings[index] = value;
+        return value;
+    }
+
+    /// <summary>Finds the last record whose three-byte key is not greater than <paramref name="key"/>, in records sorted by that key.</summary>
+    /// <returns>The offset of the record, or -1.</returns>
+    private static int FindFloorRecord(ReadOnlySpan<byte> records, int recordSize, int key)
+    {
+        var low = 0;
+        var high = (records.Length / recordSize) - 1;
+        while (low <= high)
+        {
+            var middle = (int)(((uint)low + (uint)high) / 2);
+            if (ReadUInt24(records, middle * recordSize) <= key)
             {
-                var start = previousEnd + ReadVarInt(span, ref position);
-                var length = ReadVarInt(span, ref position);
-                _runStarts[i] = start;
-                _runLengths[i] = length;
-                _runProperties[i] = ReadVarInt(span, ref position);
-                previousEnd = start + length;
-                count += length;
+                low = middle + 1;
             }
-
-            Count = count;
-
-            var namedCount = ReadVarInt(span, ref position);
-            _namedCodePoints = ReadCodePoints(span, ref position, namedCount);
-            _nameBucketOffsets = new int[(namedCount + NameBucketSize - 1) / NameBucketSize];
-            var offset = 0;
-            for (var i = 0; i < _nameBucketOffsets.Length; i++)
+            else
             {
-                offset += ReadVarInt(span, ref position);
-                _nameBucketOffsets[i] = offset;
+                high = middle - 1;
             }
+        }
 
-            var nameTextLength = ReadVarInt(span, ref position);
-            _nameTextStart = position;
-            position += nameTextLength;
+        return high < 0 ? -1 : high * recordSize;
+    }
 
-            _rangeNames = ReadStringList(span, ref position);
-            var rangeNameRunCount = ReadVarInt(span, ref position);
-            _rangeNameStarts = new int[rangeNameRunCount];
-            _rangeNameLengths = new int[rangeNameRunCount];
-            _rangeNameIndexes = new int[rangeNameRunCount];
-            previousEnd = 0;
-            for (var i = 0; i < rangeNameRunCount; i++)
+    private static string?[] CreateCache(ref string?[]? location, int length)
+    {
+        // Two threads may build the array at once; the loser's entries are simply recomputed.
+        return Interlocked.CompareExchange(ref location, new string?[length], comparand: null) ?? location;
+    }
+
+    private sealed class CharacterCollection : IReadOnlyCollection<UnicodeCharacterInfo>
+    {
+        public int Count
+        {
+            get
             {
-                var start = previousEnd + ReadVarInt(span, ref position);
-                var length = ReadVarInt(span, ref position);
-                _rangeNameStarts[i] = start;
-                _rangeNameLengths[i] = length;
-                _rangeNameIndexes[i] = ReadVarInt(span, ref position);
-                previousEnd = start + length;
-            }
-
-            _decompositionTags = ReadStringList(span, ref position);
-            var decompositionCount = ReadVarInt(span, ref position);
-            _decompositionCodePoints = new int[decompositionCount];
-            _decompositionOffsets = new int[decompositionCount];
-            var codePoint = 0;
-            for (var i = 0; i < decompositionCount; i++)
-            {
-                codePoint += ReadVarInt(span, ref position);
-                _decompositionCodePoints[i] = codePoint;
-                _decompositionOffsets[i] = position;
-                position++; // tag
-                var mappingLength = span[position];
-                position++;
-                for (var j = 0; j < mappingLength; j++)
+                // Counted from the table rather than taken from the generator, so that it describes what is
+                // enumerated. It is only computed once, and only for the programs that ask.
+                var count = s_count;
+                if (count < 0)
                 {
-                    ReadVarInt(span, ref position);
-                }
-            }
+                    count = 0;
+                    var codePoint = -1;
+                    while ((codePoint = GetNextCharacter(codePoint, out _)) >= 0)
+                    {
+                        count++;
+                    }
 
-            _numericValues = StringColumn.Read(span, ref position);
-            _unicode1Names = StringColumn.Read(span, ref position);
-            _isoComments = StringColumn.Read(span, ref position);
+                    s_count = count;
+                }
+
+                return count;
+            }
         }
 
-        public bool TryGetInfo(Rune rune, out UnicodeCharacterInfo info)
+        public IEnumerator<UnicodeCharacterInfo> GetEnumerator() => new CharacterEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    /// <summary>Enumerates the characters in code point order, decoding the names as it goes.</summary>
+    /// <remarks>
+    /// The names are read forward, so each one costs a single front-coding step instead of a search and the replay
+    /// of its bucket. They are not added to the cache: a program that enumerates every character once does not
+    /// keep tens of thousands of names alive for the rest of its life.
+    /// </remarks>
+    private sealed class CharacterEnumerator : IEnumerator<UnicodeCharacterInfo>
+    {
+        private readonly byte[] _nameBuffer = new byte[MaxSerializedStringLength];
+        private int _codePoint;
+        private int _nameOrdinal;
+        private int _nextNamedCodePoint;
+        private int _nameEntryPosition;
+        private int _nameTextPosition;
+        private int _rangeOffset;
+        private UnicodeCharacterInfo _current;
+
+        public CharacterEnumerator()
         {
-            var index = FindRange(_runStarts, _runLengths, rune.Value);
-            if (index < 0)
+            Reset();
+        }
+
+        public UnicodeCharacterInfo Current => _current;
+
+        object IEnumerator.Current => Current;
+
+        public bool MoveNext()
+        {
+            var codePoint = GetNextCharacter(_codePoint, out var propertyIndex);
+            if (codePoint < 0)
             {
-                info = default;
+                _codePoint = MaxCodePoint;
+                _current = default;
                 return false;
             }
 
-            info = CreateInfo(rune.Value, _runProperties[index]);
+            _codePoint = codePoint;
+            _current = new UnicodeCharacterInfo(new Rune(codePoint), propertyIndex, GetNextName(codePoint));
             return true;
         }
 
-        public IEnumerator<UnicodeCharacterInfo> GetEnumerator()
+        public void Reset()
         {
-            for (var i = 0; i < _runStarts.Length; i++)
+            _codePoint = -1;
+            _nameOrdinal = 0;
+            _nameEntryPosition = 0;
+            _nameTextPosition = 0;
+            _rangeOffset = 0;
+            _current = default;
+            _nextNamedCodePoint = NamedCharacterCount > 0 ? ReadUInt24(NameBuckets, 0) + ReadVarInt(NameEntries, ref _nameEntryPosition) : int.MaxValue;
+        }
+
+        public void Dispose()
+        {
+        }
+
+        private string GetNextName(int codePoint)
+        {
+            if (codePoint == _nextNamedCodePoint)
             {
-                var end = _runStarts[i] + _runLengths[i];
-                var propertyIndex = _runProperties[i];
-                for (var codePoint = _runStarts[i]; codePoint < end; codePoint++)
+                var length = DecodeFrontCodedName(ref _nameEntryPosition, ref _nameTextPosition, _nameBuffer);
+                var name = NameCache[_nameOrdinal / NameBucketSize]?[_nameOrdinal % NameBucketSize] ?? Encoding.UTF8.GetString(_nameBuffer, 0, length);
+                _nameOrdinal++;
+                if (_nameOrdinal == NamedCharacterCount)
                 {
-                    yield return CreateInfo(codePoint, propertyIndex);
+                    _nextNamedCodePoint = int.MaxValue;
                 }
-            }
-        }
+                else
+                {
+                    if (_nameOrdinal % NameBucketSize == 0)
+                    {
+                        _nextNamedCodePoint = ReadUInt24(NameBuckets, _nameOrdinal / NameBucketSize * NameBucketRecordSize);
+                    }
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+                    _nextNamedCodePoint += ReadVarInt(NameEntries, ref _nameEntryPosition);
+                }
 
-        private UnicodeCharacterInfo CreateInfo(int codePoint, int propertyIndex)
-        {
-            var properties = _properties[propertyIndex];
-            return new UnicodeCharacterInfo(
-                rune: new Rune(codePoint),
-                name: GetName(codePoint),
-                category: properties.Category,
-                bidiCategory: properties.BidiCategory,
-                block: UnicodeBlocks.GetBlock(codePoint),
-                canonicalCombiningClass: properties.CanonicalCombiningClass,
-                decompositionMapping: GetDecompositionMapping(codePoint),
-                decimalDigitValue: properties.DecimalDigitValue,
-                digitValue: properties.DigitValue,
-                numericValue: _numericValues.Get(codePoint),
-                mirrored: (properties.Flags & MirroredFlag) != 0,
-                unicode1Name: _unicode1Names.Get(codePoint),
-                isoComment: _isoComments.Get(codePoint),
-                simpleUppercaseMapping: properties.GetMapping(codePoint, HasUppercaseFlag),
-                simpleLowercaseMapping: properties.GetMapping(codePoint, HasLowercaseFlag),
-                simpleTitlecaseMapping: properties.GetMapping(codePoint, HasTitlecaseFlag),
-                emojiProperties: properties.EmojiProperties);
-        }
-
-        private string GetName(int codePoint)
-        {
-            var index = Array.BinarySearch(_namedCodePoints, codePoint);
-            if (index >= 0)
-                return GetNameAt(index);
-
-            var rangeIndex = FindRange(_rangeNameStarts, _rangeNameLengths, codePoint);
-            return rangeIndex < 0 ? string.Empty : _rangeNames[_rangeNameIndexes[rangeIndex]];
-        }
-
-        /// <summary>Decodes the name at <paramref name="index"/> by replaying its front-coding bucket.</summary>
-        private string GetNameAt(int index)
-        {
-            // Caching keeps a code point looked up more than once from decoding and allocating its
-            // name again, which the eagerly expanded table this replaced did for free.
-            var names = _names ?? CreateCache(ref _names, _namedCodePoints.Length);
-            var name = names[index];
-            if (name is not null)
                 return name;
-
-            var span = _data.AsSpan();
-            var position = _nameTextStart + _nameBucketOffsets[index / NameBucketSize];
-            Span<byte> buffer = stackalloc byte[MaxSerializedStringLength];
-            var length = 0;
-            for (var i = index - (index % NameBucketSize); i <= index; i++)
-            {
-                length = ReadFrontCoded(span, ref position, buffer);
             }
 
-            name = Encoding.UTF8.GetString(buffer[..length]);
-            names[index] = name;
-            return name;
-        }
-
-        private string? GetDecompositionMapping(int codePoint)
-        {
-            var index = Array.BinarySearch(_decompositionCodePoints, codePoint);
-            if (index < 0)
-                return null;
-
-            var decompositions = _decompositions ?? CreateCache(ref _decompositions, _decompositionCodePoints.Length);
-            var mapping = decompositions[index];
-            if (mapping is not null)
-                return mapping;
-
-            var span = _data.AsSpan();
-            var position = _decompositionOffsets[index];
-            var tag = span[position];
-            position++;
-            var mappingLength = span[position];
-            position++;
-
-            var builder = new StringBuilder();
-            if (tag != 0)
+            var rangeNames = RangeNames;
+            while (_rangeOffset < rangeNames.Length && ReadUInt24(rangeNames, _rangeOffset + 3) < codePoint)
             {
-                builder.Append(_decompositionTags[tag - 1]);
+                _rangeOffset += RangeNameRecordSize;
             }
 
-            for (var i = 0; i < mappingLength; i++)
-            {
-                if (builder.Length > 0)
-                {
-                    builder.Append(' ');
-                }
+            if (_rangeOffset < rangeNames.Length && ReadUInt24(rangeNames, _rangeOffset) <= codePoint)
+                return GetString(ReadUInt16(rangeNames, _rangeOffset + 6));
 
-                builder.Append(CultureInfo.InvariantCulture, $"{ReadVarInt(span, ref position):X4}");
-            }
-
-            mapping = builder.ToString();
-            decompositions[index] = mapping;
-            return mapping;
-        }
-
-        /// <summary>Finds the range containing <paramref name="codePoint"/>, or a negative value.</summary>
-        private static int FindRange(int[] starts, int[] lengths, int codePoint)
-        {
-            var index = Array.BinarySearch(starts, codePoint);
-            if (index >= 0)
-                return index;
-
-            // The greatest start below the code point; ~index is where it would be inserted.
-            index = ~index - 1;
-            if (index < 0 || codePoint >= starts[index] + lengths[index])
-                return -1;
-
-            return index;
-        }
-
-        private static int[] ReadCodePoints(ReadOnlySpan<byte> data, ref int position, int count)
-        {
-            var values = new int[count];
-            var codePoint = 0;
-            for (var i = 0; i < count; i++)
-            {
-                codePoint += ReadVarInt(data, ref position);
-                values[i] = codePoint;
-            }
-
-            return values;
-        }
-
-        private static string[] ReadStringList(ReadOnlySpan<byte> data, ref int position)
-        {
-            var values = new string[ReadVarInt(data, ref position)];
-            for (var i = 0; i < values.Length; i++)
-            {
-                var length = data[position];
-                position++;
-                values[i] = Encoding.UTF8.GetString(data.Slice(position, length));
-                position += length;
-            }
-
-            return values;
-        }
-
-        /// <summary>Decodes one front-coded entry into <paramref name="buffer"/> and returns its length.</summary>
-        private static int ReadFrontCoded(ReadOnlySpan<byte> data, ref int position, Span<byte> buffer)
-        {
-            var sharedPrefixLength = data[position];
-            var suffixLength = data[position + 1];
-            position += 2;
-            data.Slice(position, suffixLength).CopyTo(buffer[sharedPrefixLength..]);
-            position += suffixLength;
-            return sharedPrefixLength + suffixLength;
-        }
-
-        private static string?[] CreateCache(ref string?[]? location, int length)
-        {
-            // Two threads may build the array at once; the loser's entries are simply recomputed.
-            return Interlocked.CompareExchange(ref location, new string?[length], comparand: null) ?? location;
-        }
-
-        /// <summary>A property that only a few thousand code points have, stored as a sorted side table.</summary>
-        private readonly struct StringColumn
-        {
-            private readonly string[] _values;
-            private readonly int[] _codePoints;
-            private readonly int[] _indexes;
-
-            private StringColumn(string[] values, int[] codePoints, int[] indexes)
-            {
-                _values = values;
-                _codePoints = codePoints;
-                _indexes = indexes;
-            }
-
-            public static StringColumn Read(ReadOnlySpan<byte> data, ref int position)
-            {
-                var values = new string[ReadVarInt(data, ref position)];
-                Span<byte> buffer = stackalloc byte[MaxSerializedStringLength];
-                for (var i = 0; i < values.Length; i++)
-                {
-                    var length = ReadFrontCoded(data, ref position, buffer);
-                    values[i] = Encoding.UTF8.GetString(buffer[..length]);
-                }
-
-                var count = ReadVarInt(data, ref position);
-                var codePoints = new int[count];
-                var indexes = new int[count];
-                var codePoint = 0;
-                for (var i = 0; i < count; i++)
-                {
-                    codePoint += ReadVarInt(data, ref position);
-                    codePoints[i] = codePoint;
-                    indexes[i] = ReadVarInt(data, ref position);
-                }
-
-                return new StringColumn(values, codePoints, indexes);
-            }
-
-            public string? Get(int codePoint)
-            {
-                var index = Array.BinarySearch(_codePoints, codePoint);
-                return index < 0 ? null : _values[_indexes[index]];
-            }
+            return string.Empty;
         }
     }
 }

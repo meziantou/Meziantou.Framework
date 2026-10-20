@@ -28,6 +28,7 @@ public sealed class Font
     private readonly FontNamedInstance[] _namedInstances;
     private readonly FontVariationSetting[] _variations;
     private FontColorPalette[]? _palettes;
+    private WeakReference<ShapingCache?>? _shapingCache;
 
     internal Font(FontFace face)
         : this(face, CreateAxes(face), namedInstances: null)
@@ -50,6 +51,48 @@ public sealed class Font
     }
 
     internal FontFace Face { get; }
+
+    /// <summary>
+    /// Returns what shaping computed from the font for the last layout that is done with it (the digests of its lookups,
+    /// the plans of its runs, the kerning of its pairs), or a new cache when another layout uses it or when the garbage
+    /// collector discarded it.
+    /// </summary>
+    internal ShapingCache RentShapingCache()
+    {
+        if (Volatile.Read(ref _shapingCache) is { } reference)
+        {
+            lock (reference)
+            {
+                if (reference.TryGetTarget(out var cache) && cache is not null)
+                {
+                    reference.SetTarget(null);
+                    return cache;
+                }
+            }
+        }
+
+        return new ShapingCache();
+    }
+
+    /// <summary>
+    /// Returns a cache that a layout shaped the runs of the font with: it is kept for the next layout, weakly, so that a
+    /// font does not keep it alive (it is rebuilt by the next layout after a full collection).
+    /// </summary>
+    internal void ReturnShapingCache(ShapingCache cache)
+    {
+        cache.Trim();
+        var reference = Volatile.Read(ref _shapingCache);
+        if (reference is null)
+        {
+            reference = new WeakReference<ShapingCache?>(target: null);
+            reference = Interlocked.CompareExchange(ref _shapingCache, reference, null) ?? reference;
+        }
+
+        lock (reference)
+        {
+            reference.SetTarget(cache);
+        }
+    }
 
     /// <summary>Gets the name of the family of the font, such as <c>Noto Sans</c>; empty when the font has no name.</summary>
     /// <remarks>The typographic family name is used when the font has one: it groups every weight and style of the design.</remarks>

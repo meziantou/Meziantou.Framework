@@ -31,6 +31,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// WebSockets of a worker when it ends.
 /// </para>
 /// </remarks>
+/// <seealso href="https://websockets.spec.whatwg.org/#websocket"/>
 [IdlInterface("WebSocket", "https://websockets.spec.whatwg.org/#websocket")]
 #pragma warning disable CA1001 // The fetch controller and the connection are disposed when the connection is closed
 public sealed class WebSocket : EventTarget
@@ -42,18 +43,22 @@ public sealed class WebSocket : EventTarget
     private static readonly ConditionalWeakTable<GlobalScope, List<WebSocket>> ActiveWebSockets = [];
 
     /// <summary>The state of a WebSocket whose connection has not yet been established.</summary>
+    /// <seealso href="https://websockets.spec.whatwg.org/#dom-websocket-connecting"/>
     [IdlMember("CONNECTING", "https://websockets.spec.whatwg.org/#dom-websocket-connecting")]
     public const ushort Connecting = 0;
 
     /// <summary>The state of a WebSocket whose connection is established: the messages can be sent and received.</summary>
+    /// <seealso href="https://websockets.spec.whatwg.org/#dom-websocket-open"/>
     [IdlMember("OPEN", "https://websockets.spec.whatwg.org/#dom-websocket-open")]
     public const ushort Open = 1;
 
     /// <summary>The state of a WebSocket whose closing handshake was started, or whose <see cref="Close"/> method was called.</summary>
+    /// <seealso href="https://websockets.spec.whatwg.org/#dom-websocket-closing"/>
     [IdlMember("CLOSING", "https://websockets.spec.whatwg.org/#dom-websocket-closing")]
     public const ushort Closing = 2;
 
     /// <summary>The state of a WebSocket whose connection is closed or could not be opened.</summary>
+    /// <seealso href="https://websockets.spec.whatwg.org/#dom-websocket-closed"/>
     [IdlMember("CLOSED", "https://websockets.spec.whatwg.org/#dom-websocket-closed")]
     public const ushort Closed = 3;
 
@@ -98,6 +103,7 @@ public sealed class WebSocket : EventTarget
     /// A <c>SyntaxError</c> when the URL is not valid, has another scheme or a fragment, or when a subprotocol is not a valid
     /// token or appears twice (ASCII case-insensitively).
     /// </exception>
+    /// <seealso href="https://websockets.spec.whatwg.org/#dom-websocket-websocket"/>
     [IdlMember("constructor", "https://websockets.spec.whatwg.org/#dom-websocket-websocket")]
     public WebSocket(string url, object? protocols = null)
     {
@@ -131,6 +137,7 @@ public sealed class WebSocket : EventTarget
     }
 
     /// <summary>Gets the URL of the WebSocket, serialized (https://websockets.spec.whatwg.org/#dom-websocket-url).</summary>
+    /// <seealso href="https://websockets.spec.whatwg.org/#dom-websocket-url"/>
     [IdlMember("url", "https://websockets.spec.whatwg.org/#dom-websocket-url")]
     public string Url => _url.Serialize();
 
@@ -138,6 +145,7 @@ public sealed class WebSocket : EventTarget
     /// Gets the state of the connection (https://websockets.spec.whatwg.org/#dom-websocket-readystate):
     /// <see cref="Connecting"/>, <see cref="Open"/>, <see cref="Closing"/> or <see cref="Closed"/>.
     /// </summary>
+    /// <seealso href="https://websockets.spec.whatwg.org/#dom-websocket-readystate"/>
     [IdlMember("readyState", "https://websockets.spec.whatwg.org/#dom-websocket-readystate")]
     public ushort ReadyState { get; private set; }
 
@@ -146,22 +154,27 @@ public sealed class WebSocket : EventTarget
     /// network as of the last task (https://websockets.spec.whatwg.org/#dom-websocket-bufferedamount). It only increases
     /// once the connection is closed.
     /// </summary>
+    /// <seealso href="https://websockets.spec.whatwg.org/#dom-websocket-bufferedamount"/>
     [IdlMember("bufferedAmount", "https://websockets.spec.whatwg.org/#dom-websocket-bufferedamount")]
     public ulong BufferedAmount { get; private set; }
 
     /// <summary>Gets the extensions selected by the server (the <c>Sec-WebSocket-Extensions</c> header of its response), or the empty string.</summary>
+    /// <seealso href="https://websockets.spec.whatwg.org/#dom-websocket-extensions"/>
     [IdlMember("extensions", "https://websockets.spec.whatwg.org/#dom-websocket-extensions")]
     public string Extensions { get; private set; } = "";
 
     /// <summary>Gets the subprotocol selected by the server (the <c>Sec-WebSocket-Protocol</c> header of its response), or the empty string.</summary>
+    /// <seealso href="https://websockets.spec.whatwg.org/#dom-websocket-protocol"/>
     [IdlMember("protocol", "https://websockets.spec.whatwg.org/#dom-websocket-protocol")]
     public string Protocol { get; private set; } = "";
 
     /// <summary>Gets or sets how the binary messages are exposed: as a <see cref="Blob"/> (the default) or as a <see cref="byte"/> array (an <c>ArrayBuffer</c>).</summary>
+    /// <seealso href="https://websockets.spec.whatwg.org/#dom-websocket-binarytype"/>
     [IdlMember("binaryType", "https://websockets.spec.whatwg.org/#dom-websocket-binarytype")]
     public BinaryType BinaryType { get; set; }
 
     /// <summary>Gets or sets the event handler of the <c>open</c> event.</summary>
+    /// <seealso href="https://websockets.spec.whatwg.org/#handler-websocket-onopen"/>
     [IdlMember("onopen", "https://websockets.spec.whatwg.org/#handler-websocket-onopen")]
     public Action<Event>? OnOpen
     {
@@ -170,6 +183,7 @@ public sealed class WebSocket : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>error</c> event.</summary>
+    /// <seealso href="https://websockets.spec.whatwg.org/#handler-websocket-onerror"/>
     [IdlMember("onerror", "https://websockets.spec.whatwg.org/#handler-websocket-onerror")]
     public Action<Event>? OnError
     {
@@ -178,6 +192,7 @@ public sealed class WebSocket : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>close</c> event.</summary>
+    /// <seealso href="https://websockets.spec.whatwg.org/#handler-websocket-onclose"/>
     [IdlMember("onclose", "https://websockets.spec.whatwg.org/#handler-websocket-onclose")]
     public Action<Event>? OnClose
     {
@@ -186,6 +201,7 @@ public sealed class WebSocket : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>message</c> event.</summary>
+    /// <seealso href="https://websockets.spec.whatwg.org/#handler-websocket-onmessage"/>
     [IdlMember("onmessage", "https://websockets.spec.whatwg.org/#handler-websocket-onmessage")]
     public Action<Event>? OnMessage
     {
@@ -200,6 +216,7 @@ public sealed class WebSocket : EventTarget
     /// <param name="code">The status code of the Close frame: <c>1000</c> or a code from <c>3000</c> to <c>4999</c>, or null for a Close frame without status code.</param>
     /// <param name="reason">The reason of the Close frame (at most 123 bytes in UTF-8), or null.</param>
     /// <exception cref="DomException">An <c>InvalidAccessError</c> when the code is not valid, or a <c>SyntaxError</c> when the reason is too long.</exception>
+    /// <seealso href="https://websockets.spec.whatwg.org/#dom-websocket-close"/>
     [IdlMember("close", "https://websockets.spec.whatwg.org/#dom-websocket-close")]
     public void Close(ushort? code = null, string? reason = null)
     {
@@ -241,6 +258,7 @@ public sealed class WebSocket : EventTarget
     /// </summary>
     /// <param name="data">The message.</param>
     /// <exception cref="DomException">An <c>InvalidStateError</c> when the connection is not established yet.</exception>
+    /// <seealso href="https://websockets.spec.whatwg.org/#dom-websocket-send"/>
     [IdlMember("send", "https://websockets.spec.whatwg.org/#dom-websocket-send")]
     public void Send(object? data)
     {
@@ -948,14 +966,17 @@ public sealed class WebSocket : EventTarget
 }
 
 /// <summary>How the binary messages of a <see cref="WebSocket"/> are exposed (https://websockets.spec.whatwg.org/#enumdef-binarytype).</summary>
+/// <seealso href="https://websockets.spec.whatwg.org/#enumdef-binarytype"/>
 [IdlInterface("BinaryType", "https://websockets.spec.whatwg.org/#enumdef-binarytype")]
 public enum BinaryType
 {
     /// <summary>A <see cref="Dom.FileApi.Blob"/>.</summary>
+    /// <seealso href="https://websockets.spec.whatwg.org/#dom-binarytype-blob"/>
     [IdlMember("blob", "https://websockets.spec.whatwg.org/#dom-binarytype-blob")]
     Blob,
 
     /// <summary>A <see cref="byte"/> array (an <c>ArrayBuffer</c> in JavaScript).</summary>
+    /// <seealso href="https://websockets.spec.whatwg.org/#dom-binarytype-arraybuffer"/>
     [IdlMember("arraybuffer", "https://websockets.spec.whatwg.org/#dom-binarytype-arraybuffer")]
     ArrayBuffer,
 }

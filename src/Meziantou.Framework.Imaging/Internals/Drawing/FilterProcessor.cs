@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using Meziantou.Framework.Imaging.Drawing;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -21,10 +22,17 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal sealed class FilterProcessor : IDisposable
 {
+    /// <summary>The number of columns the vertical passes blur at once, row by row.</summary>
+    private const int StripColumns = 8;
+
+    /// <summary>The number of weights of a blur below a deviation of 2 pixels: three deviations on each side, rounded up.</summary>
+    private const int MaxStripWeights = 13;
+
     private readonly AllocationScope _scope;
     private readonly ImageConfiguration _configuration;
     private PooledBuffer? _row;
     private PooledBuffer? _weights;
+    private PooledBuffer? _strip;
     private FilterSurface? _scratch;
     private Rectangle _edges;
     private Rectangle _extent;
@@ -72,6 +80,13 @@ internal sealed class FilterProcessor : IDisposable
         _m22 = m22;
         _cancellationToken = cancellationToken;
     }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the vertical passes of the blurs read the rows of strips of columns, with
+    /// vectors (the default when they are accelerated), rather than each column (the scalar reference). Both give the
+    /// same bits.
+    /// </summary>
+    internal bool UseColumnStrips { get; set; } = Vector128.IsHardwareAccelerated;
 
     /// <summary>Gets or sets the rectangle the edge modes apply to; setting it sets <see cref="Extent"/> too.</summary>
     public Rectangle Edges
@@ -460,8 +475,9 @@ internal sealed class FilterProcessor : IDisposable
     {
         _row?.Dispose();
         _weights?.Dispose();
+        _strip?.Dispose();
         _scratch?.Dispose();
-        _row = _weights = null;
+        _row = _weights = _strip = null;
         _scratch = null;
     }
 
@@ -496,6 +512,14 @@ internal sealed class FilterProcessor : IDisposable
         if (sigma >= 2)
         {
             var size = (int)Math.Floor((3 * Math.Sqrt(2 * Math.PI) * sigma / 4) + 0.5);
+            if (!horizontal && UseColumnStrips)
+            {
+                var half = size / 2;
+                var even = (size & 1) == 0 ? 1 : 0;
+                BoxColumns(surface, [half, half - even, half - even, half, half, half], mode);
+                return;
+            }
+
             if ((size & 1) != 0)
             {
                 var half = size / 2;
@@ -525,6 +549,12 @@ internal sealed class FilterProcessor : IDisposable
 
         var weights = unsafe(MemoryMarshal.Cast<byte, double>(_weights.Span))[..taps];
         GaussianKernel.Fill(sigma, weights);
+        if (!horizontal && UseColumnStrips)
+        {
+            BlurColumns(surface, weights, radius, mode);
+            return;
+        }
+
         var bounds = surface.Bounds;
         var length = horizontal ? bounds.Width : bounds.Height;
         var lines = horizontal ? bounds.Height : bounds.Width;
@@ -655,6 +685,288 @@ internal sealed class FilterProcessor : IDisposable
             sum[2] += sign * entry[2];
             sum[3] += sign * entry[3];
         }
+    }
+
+    /// <summary>
+    /// Blurs the columns of a surface with weights, in place, as <see cref="BlurAxis"/> blurs one column: a strip of
+    /// columns is copied, then each row of the result sums the copied rows that its weights read, in the order of the
+    /// weights, every column of the strip at once.
+    /// </summary>
+    private void BlurColumns(FilterSurface surface, ReadOnlySpan<double> weights, int radius, FilterEdgeMode mode)
+    {
+        var bounds = surface.Bounds;
+        var width = bounds.Width;
+        var length = bounds.Height;
+        var edges = mode == FilterEdgeMode.Transparent ? _extent : _edges;
+        var strip = GetStrip(bounds);
+        var values = surface.Values;
+        Span<int> rows = stackalloc int[MaxStripWeights];
+        Span<double> rowWeights = stackalloc double[MaxStripWeights];
+        for (var x = 0; x < width; x += StripColumns)
+        {
+            _cancellationToken.ThrowIfCancellationRequested();
+            var lineLength = 4 * Math.Min(StripColumns, width - x);
+            CopyStrip(values, width, x, strip, lineLength, length);
+            for (var y = 0; y < length; y++)
+            {
+                // The rows the weights read, and their weights, in the order of the weights
+                var count = 0;
+                for (var tap = 0; tap < weights.Length; tap++)
+                {
+                    var at = MapIndex(bounds.Top + y - radius + tap, bounds.Top, length, edges.Top, edges.Bottom, mode);
+                    if (at < 0)
+                        continue;
+
+                    rows[count] = at * lineLength;
+                    rowWeights[count] = weights[tap];
+                    count++;
+                }
+
+                WeightRows(strip, rows[..count], rowWeights[..count], values.Slice(4 * ((y * width) + x), lineLength));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Applies three box blurs to the columns of a surface, in place, as <see cref="BoxAxis"/> blurs one column: a strip
+    /// of columns is copied, blurred into the surface, blurred back into the copy, then into the surface, every column
+    /// of the strip at once.
+    /// </summary>
+    /// <param name="surface">The surface.</param>
+    /// <param name="windows">The pixels before and after the pixel of each of the three windows.</param>
+    /// <param name="mode">The edge mode.</param>
+    private void BoxColumns(FilterSurface surface, ReadOnlySpan<int> windows, FilterEdgeMode mode)
+    {
+        var bounds = surface.Bounds;
+        var width = bounds.Width;
+        var length = bounds.Height;
+        var edges = mode == FilterEdgeMode.Transparent ? _extent : _edges;
+        var strip = GetStrip(bounds);
+        var values = surface.Values;
+        var stride = 4 * width;
+        Span<double> sums = stackalloc double[4 * StripColumns];
+        for (var x = 0; x < width; x += StripColumns)
+        {
+            _cancellationToken.ThrowIfCancellationRequested();
+            var lineLength = 4 * Math.Min(StripColumns, width - x);
+            var lineSums = sums[..lineLength];
+            CopyStrip(values, width, x, strip, lineLength, length);
+            BoxLines(strip, 0, lineLength, values, 4 * x, stride, lineSums, windows[0], windows[1], bounds.Top, length, edges.Top, edges.Bottom, mode);
+            BoxLines(values, 4 * x, stride, strip, 0, lineLength, lineSums, windows[2], windows[3], bounds.Top, length, edges.Top, edges.Bottom, mode);
+            BoxLines(strip, 0, lineLength, values, 4 * x, stride, lineSums, windows[4], windows[5], bounds.Top, length, edges.Top, edges.Bottom, mode);
+        }
+    }
+
+    /// <summary>
+    /// Averages the windows of lines of values, from <paramref name="before"/> lines before each line to
+    /// <paramref name="after"/> lines after it: the sums of the first window, then each line adds the line that enters
+    /// the window and removes the one that leaves it, as <see cref="BoxAxis"/> does for each value.
+    /// </summary>
+    private static void BoxLines(ReadOnlySpan<float> source, int sourceOffset, int sourceStride, Span<float> target, int targetOffset, int targetStride, Span<double> sums, int before, int after, int start, int length, int edgeStart, int edgeEnd, FilterEdgeMode mode)
+    {
+        var lineLength = sums.Length;
+        sums.Clear();
+        for (var offset = -before; offset <= after; offset++)
+        {
+            var at = MapIndex(start + offset, start, length, edgeStart, edgeEnd, mode);
+            if (at >= 0)
+            {
+                StepBox(sums, size: 0, output: default, source.Slice(sourceOffset + (at * sourceStride), lineLength), leaving: default);
+            }
+        }
+
+        var size = before + after + 1;
+        for (var i = 0; i < length; i++)
+        {
+            var entering = MapIndex(start + i + after + 1, start, length, edgeStart, edgeEnd, mode);
+            var leaving = MapIndex(start + i - before, start, length, edgeStart, edgeEnd, mode);
+            StepBox(
+                sums,
+                size,
+                target.Slice(targetOffset + (i * targetStride), lineLength),
+                entering < 0 ? default : source.Slice(sourceOffset + (entering * sourceStride), lineLength),
+                leaving < 0 ? default : source.Slice(sourceOffset + (leaving * sourceStride), lineLength));
+        }
+    }
+
+    /// <summary>
+    /// Writes sums divided by the size of their window, unless the output is empty, then adds the values of a line that
+    /// enters the window and subtracts those of a line that leaves it, unless they are empty.
+    /// </summary>
+    private static void StepBox(Span<double> sums, int size, Span<float> output, ReadOnlySpan<float> entering, ReadOnlySpan<float> leaving)
+    {
+        var count = sums.Length;
+        var hasOutput = !output.IsEmpty;
+        var hasEntering = !entering.IsEmpty;
+        var hasLeaving = !leaving.IsEmpty;
+        if ((hasOutput && output.Length != count) || (hasEntering && entering.Length != count) || (hasLeaving && leaving.Length != count))
+            throw new ArgumentException("The lines must have the length of the sums.", nameof(sums));
+
+        var i = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            var divisor = Vector128.Create((double)size);
+            ref var sum = ref unsafe(MemoryMarshal.GetReference(sums));
+            ref var result = ref unsafe(MemoryMarshal.GetReference(output));
+            ref var added = ref unsafe(MemoryMarshal.GetReference(entering));
+            ref var removed = ref unsafe(MemoryMarshal.GetReference(leaving));
+            for (; i + 4 <= count; i += 4)
+            {
+                var low = unsafe(Vector128.LoadUnsafe(ref sum, (nuint)i));
+                var high = unsafe(Vector128.LoadUnsafe(ref sum, (nuint)(i + 2)));
+                if (hasOutput)
+                {
+                    unsafe { Vector128.Narrow(low / divisor, high / divisor).StoreUnsafe(ref result, (nuint)i); }
+                }
+
+                if (hasEntering)
+                {
+                    var value = unsafe(Vector128.LoadUnsafe(ref added, (nuint)i));
+                    low += Vector128.WidenLower(value);
+                    high += Vector128.WidenUpper(value);
+                }
+
+                if (hasLeaving)
+                {
+                    var value = unsafe(Vector128.LoadUnsafe(ref removed, (nuint)i));
+                    low -= Vector128.WidenLower(value);
+                    high -= Vector128.WidenUpper(value);
+                }
+
+                unsafe
+                {
+                    low.StoreUnsafe(ref sum, (nuint)i);
+                    high.StoreUnsafe(ref sum, (nuint)(i + 2));
+                }
+            }
+        }
+
+        for (; i < count; i++)
+        {
+            if (hasOutput)
+            {
+                output[i] = (float)(sums[i] / size);
+            }
+
+            if (hasEntering)
+            {
+                sums[i] += entering[i];
+            }
+
+            if (hasLeaving)
+            {
+                sums[i] -= leaving[i];
+            }
+        }
+    }
+
+    /// <summary>
+    /// Sums rows of values with weights: each output value is the sum, in double precision and in the order of the rows,
+    /// of the weight of each row times the value of its column, kept in single precision.
+    /// </summary>
+    /// <param name="lines">The rows, one after the other.</param>
+    /// <param name="rows">The index of the first value of each row in <paramref name="lines"/>.</param>
+    /// <param name="weights">The weight of each row.</param>
+    /// <param name="output">The sums: as many as the values of a row.</param>
+    private static void WeightRows(ReadOnlySpan<float> lines, ReadOnlySpan<int> rows, ReadOnlySpan<double> weights, Span<float> output)
+    {
+        var count = output.Length;
+        foreach (var row in rows)
+        {
+            if ((uint)row > (uint)(lines.Length - count))
+                throw new ArgumentOutOfRangeException(nameof(rows));
+        }
+
+        weights = weights[..rows.Length];
+        var i = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            ref var source = ref unsafe(MemoryMarshal.GetReference(lines));
+            ref var target = ref unsafe(MemoryMarshal.GetReference(output));
+            for (; i + 8 <= count; i += 8)
+            {
+                var sum0 = Vector128<double>.Zero;
+                var sum1 = Vector128<double>.Zero;
+                var sum2 = Vector128<double>.Zero;
+                var sum3 = Vector128<double>.Zero;
+                for (var row = 0; row < rows.Length; row++)
+                {
+                    var weight = Vector128.Create(weights[row]);
+                    var offset = (nuint)(rows[row] + i);
+                    var first = unsafe(Vector128.LoadUnsafe(ref source, offset));
+                    var second = unsafe(Vector128.LoadUnsafe(ref source, offset + 4));
+                    sum0 += weight * Vector128.WidenLower(first);
+                    sum1 += weight * Vector128.WidenUpper(first);
+                    sum2 += weight * Vector128.WidenLower(second);
+                    sum3 += weight * Vector128.WidenUpper(second);
+                }
+
+                unsafe
+                {
+                    Vector128.Narrow(sum0, sum1).StoreUnsafe(ref target, (nuint)i);
+                    Vector128.Narrow(sum2, sum3).StoreUnsafe(ref target, (nuint)(i + 4));
+                }
+            }
+
+            for (; i + 4 <= count; i += 4)
+            {
+                var sum0 = Vector128<double>.Zero;
+                var sum1 = Vector128<double>.Zero;
+                for (var row = 0; row < rows.Length; row++)
+                {
+                    var weight = Vector128.Create(weights[row]);
+                    var value = unsafe(Vector128.LoadUnsafe(ref source, (nuint)(rows[row] + i)));
+                    sum0 += weight * Vector128.WidenLower(value);
+                    sum1 += weight * Vector128.WidenUpper(value);
+                }
+
+                unsafe { Vector128.Narrow(sum0, sum1).StoreUnsafe(ref target, (nuint)i); }
+            }
+        }
+
+        for (; i < count; i++)
+        {
+            double sum = 0;
+            for (var row = 0; row < rows.Length; row++)
+            {
+                sum += weights[row] * lines[rows[row] + i];
+            }
+
+            output[i] = (float)sum;
+        }
+    }
+
+    /// <summary>Copies a strip of columns of a surface, row by row, one row after the other.</summary>
+    private static void CopyStrip(ReadOnlySpan<float> values, int width, int x, Span<float> strip, int lineLength, int length)
+    {
+        for (var y = 0; y < length; y++)
+        {
+            values.Slice(4 * ((y * width) + x), lineLength).CopyTo(strip.Slice(y * lineLength, lineLength));
+        }
+    }
+
+    /// <summary>Gets the buffer of a strip of columns of a surface: <see cref="StripColumns"/> columns, or fewer, of each row.</summary>
+    private Span<float> GetStrip(Rectangle bounds)
+    {
+        var count = 4 * Math.Min(StripColumns, bounds.Width) * bounds.Height;
+        if (_strip is null || _strip.Length < (long)count * sizeof(float))
+        {
+            _strip?.Dispose();
+            _strip = null;
+            _strip = ResampleWeights.Rent<float>(_scope, count);
+        }
+
+        return unsafe(MemoryMarshal.Cast<byte, float>(_strip.Span))[..count];
+    }
+
+    /// <summary>Gets the index in a line of the pixel an edge mode reads at a position, or -1 for a transparent pixel.</summary>
+    private static int MapIndex(int position, int start, int length, int edgeStart, int edgeEnd, FilterEdgeMode mode)
+    {
+        if (!TryMap(ref position, edgeStart, edgeEnd, mode))
+            return -1;
+
+        var at = position - start;
+        return (uint)at < (uint)length ? at : -1;
     }
 
     /// <summary>Gets the alpha of a pixel of a surface, or of the pixel the edge mode gives beyond it.</summary>

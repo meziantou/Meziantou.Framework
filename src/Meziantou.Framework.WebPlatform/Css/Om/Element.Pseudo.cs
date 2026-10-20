@@ -11,6 +11,7 @@ public partial class Element
     /// (https://drafts.csswg.org/css-pseudo-4/#dom-element-pseudo). The pseudo-element is returned even when it is not
     /// generated, and the same object is returned for the same pseudo-element.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-pseudo-4/#dom-element-pseudo"/>
     [IdlMember("pseudo", "https://drafts.csswg.org/css-pseudo-4/#dom-element-pseudo")]
     public CssPseudoElement? Pseudo(string type)
     {

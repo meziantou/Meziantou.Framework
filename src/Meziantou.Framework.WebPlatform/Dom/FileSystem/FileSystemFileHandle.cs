@@ -4,10 +4,12 @@ using File = Meziantou.Framework.WebPlatform.Dom.FileApi.File;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>The options of <see cref="FileSystemFileHandle.CreateWritable"/> (https://fs.spec.whatwg.org/#dictdef-filesystemcreatewritableoptions).</summary>
+/// <seealso href="https://fs.spec.whatwg.org/#dictdef-filesystemcreatewritableoptions"/>
 [IdlInterface("FileSystemCreateWritableOptions", "https://fs.spec.whatwg.org/#dictdef-filesystemcreatewritableoptions")]
 public sealed class FileSystemCreateWritableOptions
 {
     /// <summary>Gets whether the stream starts with the content of the file (it starts empty by default).</summary>
+    /// <seealso href="https://fs.spec.whatwg.org/#dom-filesystemcreatewritableoptions-keepexistingdata"/>
     [IdlMember("keepExistingData", "https://fs.spec.whatwg.org/#dom-filesystemcreatewritableoptions-keepexistingdata")]
     public bool KeepExistingData { get; init; }
 
@@ -34,6 +36,7 @@ public sealed class FileSystemCreateSyncAccessHandleOptions
 }
 
 /// <summary>A handle to a file (https://fs.spec.whatwg.org/#api-filesystemfilehandle).</summary>
+/// <seealso href="https://fs.spec.whatwg.org/#filesystemfilehandle"/>
 [IdlInterface("FileSystemFileHandle", "https://fs.spec.whatwg.org/#filesystemfilehandle")]
 public sealed class FileSystemFileHandle : FileSystemHandle
 {
@@ -49,6 +52,7 @@ public sealed class FileSystemFileHandle : FileSystemHandle
     /// Returns a <see cref="File"/> with the current content of the file (https://fs.spec.whatwg.org/#dom-filesystemfilehandle-getfile):
     /// a snapshot, which the later writes do not change. The task fails with a <c>NotFoundError</c> when the file does not exist.
     /// </summary>
+    /// <seealso href="https://fs.spec.whatwg.org/#dom-filesystemfilehandle-getfile"/>
     [IdlMember("getFile", "https://fs.spec.whatwg.org/#dom-filesystemfilehandle-getfile")]
     public Task<File> GetFile()
         => Invoke(() =>
@@ -123,6 +127,7 @@ public sealed class FileSystemFileHandle : FileSystemHandle
     /// holds an exclusive lock on the file until it is closed. The task fails with a <c>NotFoundError</c> when the file does
     /// not exist, and with a <c>NoModificationAllowedError</c> when the lock cannot be taken.
     /// </summary>
+    /// <seealso href="https://fs.spec.whatwg.org/#dom-filesystemfilehandle-createsyncaccesshandle"/>
     [IdlMember("createSyncAccessHandle", "https://fs.spec.whatwg.org/#dom-filesystemfilehandle-createsyncaccesshandle")]
     public Task<FileSystemSyncAccessHandle> CreateSyncAccessHandle() => CreateSyncAccessHandle(options: null);
 
@@ -366,10 +371,12 @@ public sealed class FileSystemWritableFileStream
 }
 
 /// <summary>The options of <see cref="FileSystemSyncAccessHandle.Read"/> and <see cref="FileSystemSyncAccessHandle.Write"/> (https://fs.spec.whatwg.org/#dictdef-filesystemreadwriteoptions).</summary>
+/// <seealso href="https://fs.spec.whatwg.org/#dictdef-filesystemreadwriteoptions"/>
 [IdlInterface("FileSystemReadWriteOptions", "https://fs.spec.whatwg.org/#dictdef-filesystemreadwriteoptions")]
 public sealed class FileSystemReadWriteOptions
 {
     /// <summary>Gets the position of the first byte that is read or written (the position of the cursor by default).</summary>
+    /// <seealso href="https://fs.spec.whatwg.org/#dom-filesystemreadwriteoptions-at"/>
     [IdlMember("at", "https://fs.spec.whatwg.org/#dom-filesystemreadwriteoptions-at")]
     public ulong? At { get; init; }
 }
@@ -379,6 +386,7 @@ public sealed class FileSystemReadWriteOptions
 /// <see cref="FileSystemFileHandle.CreateSyncAccessHandle()"/> in a dedicated worker: it reads and writes a file in place,
 /// synchronously, and holds a lock on the file until it is closed.
 /// </summary>
+/// <seealso href="https://fs.spec.whatwg.org/#filesystemsyncaccesshandle"/>
 [IdlInterface("FileSystemSyncAccessHandle", "https://fs.spec.whatwg.org/#filesystemsyncaccesshandle")]
 public sealed class FileSystemSyncAccessHandle
 {
@@ -478,6 +486,7 @@ public sealed class FileSystemSyncAccessHandle
 
     /// <summary>Sets the size of the file (https://fs.spec.whatwg.org/#dom-filesystemsyncaccesshandle-truncate): the file is truncated or grows with zeros, and a cursor after its end moves to its end.</summary>
     /// <exception cref="QuotaExceededError">The new size exceeds the quota of the storage.</exception>
+    /// <seealso href="https://fs.spec.whatwg.org/#dom-filesystemsyncaccesshandle-truncate"/>
     [IdlMember("truncate", "https://fs.spec.whatwg.org/#dom-filesystemsyncaccesshandle-truncate")]
     public void Truncate(ulong newSize)
     {
@@ -507,6 +516,7 @@ public sealed class FileSystemSyncAccessHandle
     }
 
     /// <summary>Returns the size of the file, in bytes (https://fs.spec.whatwg.org/#dom-filesystemsyncaccesshandle-getsize).</summary>
+    /// <seealso href="https://fs.spec.whatwg.org/#dom-filesystemsyncaccesshandle-getsize"/>
     [IdlMember("getSize", "https://fs.spec.whatwg.org/#dom-filesystemsyncaccesshandle-getsize")]
     public ulong GetSize()
     {
@@ -515,6 +525,7 @@ public sealed class FileSystemSyncAccessHandle
     }
 
     /// <summary>Transfers the modifications of the file to the storage (https://fs.spec.whatwg.org/#dom-filesystemsyncaccesshandle-flush).</summary>
+    /// <seealso href="https://fs.spec.whatwg.org/#dom-filesystemsyncaccesshandle-flush"/>
     [IdlMember("flush", "https://fs.spec.whatwg.org/#dom-filesystemsyncaccesshandle-flush")]
     public void Flush()
     {
@@ -528,6 +539,7 @@ public sealed class FileSystemSyncAccessHandle
     }
 
     /// <summary>Closes the access handle (https://fs.spec.whatwg.org/#dom-filesystemsyncaccesshandle-close): its lock is released, and its other methods throw an <c>InvalidStateError</c>.</summary>
+    /// <seealso href="https://fs.spec.whatwg.org/#dom-filesystemsyncaccesshandle-close"/>
     [IdlMember("close", "https://fs.spec.whatwg.org/#dom-filesystemsyncaccesshandle-close")]
     public void Close() => Release();
 

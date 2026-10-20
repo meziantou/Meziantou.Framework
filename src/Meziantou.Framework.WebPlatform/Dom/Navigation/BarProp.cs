@@ -5,6 +5,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// window (<c>window.locationbar</c>, <c>window.menubar</c>...). There is no user interface: for compatibility, the
 /// specification makes them all visible, except in a popup (<see cref="BrowsingContext.IsPopup"/>).
 /// </summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#barprop"/>
 [IdlInterface("BarProp", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#barprop")]
 public sealed class BarProp
 {
@@ -17,6 +18,7 @@ public sealed class BarProp
     /// context of the window is a popup. The specification returns true for a window without browsing context, but the
     /// browsers return false (the window has no user interface anymore), which the web-platform-tests expect.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-barprop-visible"/>
     [IdlMember("visible", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-barprop-visible")]
     public bool Visible => _window.BrowsingContext is { } browsingContext && !browsingContext.Top.IsPopup;
 }

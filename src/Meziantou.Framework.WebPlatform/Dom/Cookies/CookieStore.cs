@@ -4,85 +4,105 @@ using Meziantou.Framework.WebPlatform.Urls;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://cookiestore.spec.whatwg.org/#dictdef-cookiestoregetoptions</summary>
+/// <seealso href="https://cookiestore.spec.whatwg.org/#dictdef-cookiestoregetoptions"/>
 [IdlInterface("CookieStoreGetOptions", "https://cookiestore.spec.whatwg.org/#dictdef-cookiestoregetoptions")]
 public sealed class CookieStoreGetOptions
 {
     /// <summary>Gets the name of the cookies, or null when the member is not present.</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookiestoregetoptions-name"/>
     [IdlMember("name", "https://cookiestore.spec.whatwg.org/#dom-cookiestoregetoptions-name")]
     public string? Name { get; init; }
 
     /// <summary>Gets the URL of the cookies (the creation URL of the document, possibly without its fragment), or null when the member is not present.</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookiestoregetoptions-url"/>
     [IdlMember("url", "https://cookiestore.spec.whatwg.org/#dom-cookiestoregetoptions-url")]
     public string? Url { get; init; }
 }
 
 /// <summary>https://cookiestore.spec.whatwg.org/#dictdef-cookieinit</summary>
+/// <seealso href="https://cookiestore.spec.whatwg.org/#dictdef-cookieinit"/>
 [IdlInterface("CookieInit", "https://cookiestore.spec.whatwg.org/#dictdef-cookieinit")]
 public sealed class CookieInit
 {
     /// <summary>Gets the name of the cookie.</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookieinit-name"/>
     [IdlMember("name", "https://cookiestore.spec.whatwg.org/#dom-cookieinit-name")]
     public required string Name { get; init; }
 
     /// <summary>Gets the value of the cookie.</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookieinit-value"/>
     [IdlMember("value", "https://cookiestore.spec.whatwg.org/#dom-cookieinit-value")]
     public required string Value { get; init; }
 
     /// <summary>Gets the expiry time, in milliseconds since the Unix epoch, or null.</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookieinit-expires"/>
     [IdlMember("expires", "https://cookiestore.spec.whatwg.org/#dom-cookieinit-expires")]
     public double? Expires { get; init; }
 
     /// <summary>Gets the domain of the cookie, or null for a host-only cookie.</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookieinit-domain"/>
     [IdlMember("domain", "https://cookiestore.spec.whatwg.org/#dom-cookieinit-domain")]
     public string? Domain { get; init; }
 
     /// <summary>Gets the path of the cookie.</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookieinit-path"/>
     [IdlMember("path", "https://cookiestore.spec.whatwg.org/#dom-cookieinit-path")]
     public string Path { get; init; } = "/";
 
     /// <summary>Gets the <c>SameSite</c> policy of the cookie.</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookieinit-samesite"/>
     [IdlMember("sameSite", "https://cookiestore.spec.whatwg.org/#dom-cookieinit-samesite")]
     public CookieSameSite SameSite { get; init; } = CookieSameSite.Strict;
 
     /// <summary>Gets a value indicating whether the cookie is a partitioned cookie.</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookieinit-partitioned"/>
     [IdlMember("partitioned", "https://cookiestore.spec.whatwg.org/#dom-cookieinit-partitioned")]
     public bool Partitioned { get; init; }
 
     /// <summary>Gets the maximum age, in seconds, or null.</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookieinit-maxage"/>
     [IdlMember("maxAge", "https://cookiestore.spec.whatwg.org/#dom-cookieinit-maxage")]
     public long? MaxAge { get; init; }
 }
 
 /// <summary>https://cookiestore.spec.whatwg.org/#dictdef-cookiestoredeleteoptions</summary>
+/// <seealso href="https://cookiestore.spec.whatwg.org/#dictdef-cookiestoredeleteoptions"/>
 [IdlInterface("CookieStoreDeleteOptions", "https://cookiestore.spec.whatwg.org/#dictdef-cookiestoredeleteoptions")]
 public sealed class CookieStoreDeleteOptions
 {
     /// <summary>Gets the name of the cookie to delete.</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookiestoredeleteoptions-name"/>
     [IdlMember("name", "https://cookiestore.spec.whatwg.org/#dom-cookiestoredeleteoptions-name")]
     public required string Name { get; init; }
 
     /// <summary>Gets the domain of the cookie to delete, or null for a host-only cookie.</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookiestoredeleteoptions-domain"/>
     [IdlMember("domain", "https://cookiestore.spec.whatwg.org/#dom-cookiestoredeleteoptions-domain")]
     public string? Domain { get; init; }
 
     /// <summary>Gets the path of the cookie to delete.</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookiestoredeleteoptions-path"/>
     [IdlMember("path", "https://cookiestore.spec.whatwg.org/#dom-cookiestoredeleteoptions-path")]
     public string Path { get; init; } = "/";
 
     /// <summary>Gets a value indicating whether the cookie to delete is a partitioned cookie.</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookiestoredeleteoptions-partitioned"/>
     [IdlMember("partitioned", "https://cookiestore.spec.whatwg.org/#dom-cookiestoredeleteoptions-partitioned")]
     public bool Partitioned { get; init; }
 }
 
 /// <summary>A cookie returned by the Cookie Store API (https://cookiestore.spec.whatwg.org/#dictdef-cookielistitem).</summary>
+/// <seealso href="https://cookiestore.spec.whatwg.org/#dictdef-cookielistitem"/>
 [IdlInterface("CookieListItem", "https://cookiestore.spec.whatwg.org/#dictdef-cookielistitem")]
 public sealed class CookieListItem
 {
     /// <summary>Gets the name of the cookie (decoded from UTF-8), or null when the member is not present.</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookielistitem-name"/>
     [IdlMember("name", "https://cookiestore.spec.whatwg.org/#dom-cookielistitem-name")]
     public string? Name { get; init; }
 
     /// <summary>Gets the value of the cookie (decoded from UTF-8), or null when the member is not present (a deleted cookie of a change event).</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookielistitem-value"/>
     [IdlMember("value", "https://cookiestore.spec.whatwg.org/#dom-cookielistitem-value")]
     public string? Value { get; init; }
 
@@ -101,6 +121,7 @@ public sealed class CookieListItem
 /// The change events are fired for the changes of the jar observable from the document (the cookies of other documents,
 /// of the responses, and of <c>document.cookie</c>).
 /// </remarks>
+/// <seealso href="https://cookiestore.spec.whatwg.org/#cookiestore"/>
 [IdlInterface("CookieStore", "https://cookiestore.spec.whatwg.org/#cookiestore")]
 public sealed class CookieStore : EventTarget, ICookieChangeListener
 {
@@ -115,6 +136,7 @@ public sealed class CookieStore : EventTarget, ICookieChangeListener
     internal override Window? RelevantGlobal => Window;
 
     /// <summary>The event handler of the change events (https://cookiestore.spec.whatwg.org/#dom-cookiestore-onchange).</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookiestore-onchange"/>
     [IdlMember("onchange", "https://cookiestore.spec.whatwg.org/#dom-cookiestore-onchange")]
     public Action<Event>? OnChange
     {
@@ -123,6 +145,7 @@ public sealed class CookieStore : EventTarget, ICookieChangeListener
     }
 
     /// <summary>Returns the first script-visible cookie with the name (https://cookiestore.spec.whatwg.org/#dom-cookiestore-get), or null.</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookiestore-get"/>
     [IdlMember("get", "https://cookiestore.spec.whatwg.org/#dom-cookiestore-get")]
     public Task<CookieListItem?> Get(string name)
     {
@@ -134,6 +157,7 @@ public sealed class CookieStore : EventTarget, ICookieChangeListener
     }
 
     /// <summary>Returns the first script-visible cookie matching the options (https://cookiestore.spec.whatwg.org/#dom-cookiestore-get-options), or null.</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookiestore-get-options"/>
     [IdlMember("get", "https://cookiestore.spec.whatwg.org/#dom-cookiestore-get-options")]
     public Task<CookieListItem?> Get(CookieStoreGetOptions? options = null)
     {
@@ -150,6 +174,7 @@ public sealed class CookieStore : EventTarget, ICookieChangeListener
     }
 
     /// <summary>Returns the script-visible cookies with the name (https://cookiestore.spec.whatwg.org/#dom-cookiestore-getall).</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookiestore-getall"/>
     [IdlMember("getAll", "https://cookiestore.spec.whatwg.org/#dom-cookiestore-getall")]
     public Task<IReadOnlyList<CookieListItem>> GetAll(string name)
     {
@@ -161,6 +186,7 @@ public sealed class CookieStore : EventTarget, ICookieChangeListener
     }
 
     /// <summary>Returns the script-visible cookies matching the options (https://cookiestore.spec.whatwg.org/#dom-cookiestore-getall-options).</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookiestore-getall-options"/>
     [IdlMember("getAll", "https://cookiestore.spec.whatwg.org/#dom-cookiestore-getall-options")]
     public Task<IReadOnlyList<CookieListItem>> GetAll(CookieStoreGetOptions? options = null)
     {
@@ -175,6 +201,7 @@ public sealed class CookieStore : EventTarget, ICookieChangeListener
     }
 
     /// <summary>Sets a cookie for the path <c>/</c>, Secure and SameSite=Strict (https://cookiestore.spec.whatwg.org/#dom-cookiestore-set).</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookiestore-set"/>
     [IdlMember("set", "https://cookiestore.spec.whatwg.org/#dom-cookiestore-set")]
     public Task Set(string name, string value)
     {
@@ -187,6 +214,7 @@ public sealed class CookieStore : EventTarget, ICookieChangeListener
     }
 
     /// <summary>Sets a cookie (https://cookiestore.spec.whatwg.org/#dom-cookiestore-set-options).</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookiestore-set-options"/>
     [IdlMember("set", "https://cookiestore.spec.whatwg.org/#dom-cookiestore-set-options")]
     public Task Set(CookieInit options)
     {
@@ -198,6 +226,7 @@ public sealed class CookieStore : EventTarget, ICookieChangeListener
     }
 
     /// <summary>Deletes the cookie with the name and the path <c>/</c> (https://cookiestore.spec.whatwg.org/#dom-cookiestore-delete).</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookiestore-delete"/>
     [IdlMember("delete", "https://cookiestore.spec.whatwg.org/#dom-cookiestore-delete")]
     public Task Delete(string name)
     {
@@ -210,6 +239,7 @@ public sealed class CookieStore : EventTarget, ICookieChangeListener
     }
 
     /// <summary>Deletes a cookie (https://cookiestore.spec.whatwg.org/#dom-cookiestore-delete-options).</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookiestore-delete-options"/>
     [IdlMember("delete", "https://cookiestore.spec.whatwg.org/#dom-cookiestore-delete-options")]
     public Task Delete(CookieStoreDeleteOptions options)
     {
@@ -481,23 +511,28 @@ public sealed class CookieStore : EventTarget, ICookieChangeListener
 }
 
 /// <summary>https://cookiestore.spec.whatwg.org/#dictdef-cookiechangeeventinit</summary>
+/// <seealso href="https://cookiestore.spec.whatwg.org/#dictdef-cookiechangeeventinit"/>
 [IdlInterface("CookieChangeEventInit", "https://cookiestore.spec.whatwg.org/#dictdef-cookiechangeeventinit")]
 public sealed class CookieChangeEventInit : EventInit
 {
     /// <summary>Gets the cookies that were created or modified.</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookiechangeeventinit-changed"/>
     [IdlMember("changed", "https://cookiestore.spec.whatwg.org/#dom-cookiechangeeventinit-changed")]
     public IReadOnlyList<CookieListItem>? Changed { get; init; }
 
     /// <summary>Gets the cookies that were deleted or expired.</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookiechangeeventinit-deleted"/>
     [IdlMember("deleted", "https://cookiestore.spec.whatwg.org/#dom-cookiechangeeventinit-deleted")]
     public IReadOnlyList<CookieListItem>? Deleted { get; init; }
 }
 
 /// <summary>The change events of the Cookie Store API (https://cookiestore.spec.whatwg.org/#cookiechangeevent), fired at <c>window.cookieStore</c>.</summary>
+/// <seealso href="https://cookiestore.spec.whatwg.org/#cookiechangeevent"/>
 [IdlInterface("CookieChangeEvent", "https://cookiestore.spec.whatwg.org/#cookiechangeevent")]
 public sealed class CookieChangeEvent : Event
 {
     /// <summary>Creates a cookie change event with the given type and initialization dictionary.</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookiechangeevent-cookiechangeevent"/>
     [IdlMember("constructor", "https://cookiestore.spec.whatwg.org/#dom-cookiechangeevent-cookiechangeevent")]
     public CookieChangeEvent(string type, CookieChangeEventInit? eventInitDict = null)
         : base(type, eventInitDict)
@@ -507,10 +542,12 @@ public sealed class CookieChangeEvent : Event
     }
 
     /// <summary>Gets the created or changed cookies (https://cookiestore.spec.whatwg.org/#dom-cookiechangeevent-changed).</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookiechangeevent-changed"/>
     [IdlMember("changed", "https://cookiestore.spec.whatwg.org/#dom-cookiechangeevent-changed")]
     public IReadOnlyList<CookieListItem> Changed { get; }
 
     /// <summary>Gets the deleted cookies, without value (https://cookiestore.spec.whatwg.org/#dom-cookiechangeevent-deleted).</summary>
+    /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookiechangeevent-deleted"/>
     [IdlMember("deleted", "https://cookiestore.spec.whatwg.org/#dom-cookiechangeevent-deleted")]
     public IReadOnlyList<CookieListItem> Deleted { get; }
 }

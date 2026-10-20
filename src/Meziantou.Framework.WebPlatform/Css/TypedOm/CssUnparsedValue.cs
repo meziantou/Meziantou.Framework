@@ -65,12 +65,14 @@ public readonly struct CssUnparsedSegment : IUnionValue, IEquatable<CssUnparsedS
 /// strings and <see cref="CssVariableReferenceValue"/> objects, e.g. calc(42px + var(--foo)) is the string "calc(42px + ",
 /// a reference to --foo and the string ")".
 /// </summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssunparsedvalue"/>
 [IdlInterface("CSSUnparsedValue", "https://drafts.css-houdini.org/css-typed-om-1/#cssunparsedvalue")]
 public sealed class CssUnparsedValue : CssStyleValue, IReadOnlyList<CssUnparsedSegment>
 {
     private readonly List<CssUnparsedSegment> _tokens;
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssunparsedvalue-cssunparsedvalue</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssunparsedvalue-cssunparsedvalue"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssunparsedvalue-cssunparsedvalue")]
     public CssUnparsedValue(IEnumerable<CssUnparsedSegment> members)
     {
@@ -79,6 +81,7 @@ public sealed class CssUnparsedValue : CssStyleValue, IReadOnlyList<CssUnparsedS
     }
 
     /// <summary>Gets the number of segments.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssunparsedvalue-length"/>
     [IdlMember("length", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssunparsedvalue-length")]
     public uint Length => (uint)_tokens.Count;
 
@@ -86,6 +89,8 @@ public sealed class CssUnparsedValue : CssStyleValue, IReadOnlyList<CssUnparsedS
     /// Gets or sets a segment (https://drafts.css-houdini.org/css-typed-om-1/#cssunparsedvalue-indexed-property): setting the
     /// index that follows the last segment appends a segment, a greater index throws a RangeError.
     /// </summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssunparsedvalue-__getter__-index-index"/>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssunparsedvalue-__setter__-index-val-val"/>
     [IdlMember("getter", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssunparsedvalue-__getter__-index-index")]
     [IdlMember("setter", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssunparsedvalue-__setter__-index-val-val")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
@@ -163,12 +168,14 @@ public sealed class CssUnparsedValue : CssStyleValue, IReadOnlyList<CssUnparsedS
 }
 
 /// <summary>A var() reference (https://drafts.css-houdini.org/css-typed-om-1/#cssvariablereferencevalue).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssvariablereferencevalue"/>
 [IdlInterface("CSSVariableReferenceValue", "https://drafts.css-houdini.org/css-typed-om-1/#cssvariablereferencevalue")]
 public sealed class CssVariableReferenceValue
 {
     private string _variable;
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssvariablereferencevalue-cssvariablereferencevalue</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssvariablereferencevalue-cssvariablereferencevalue"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssvariablereferencevalue-cssvariablereferencevalue")]
     public CssVariableReferenceValue(string variable, CssUnparsedValue? fallback = null)
     {
@@ -177,6 +184,7 @@ public sealed class CssVariableReferenceValue
     }
 
     /// <summary>The name of the custom property (e.g. "--foo").</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssvariablereferencevalue-variable"/>
     [IdlMember("variable", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssvariablereferencevalue-variable")]
     public string Variable
     {
@@ -187,6 +195,7 @@ public sealed class CssVariableReferenceValue
     /// <summary>
     /// Gets the fallback value used when the custom property is not defined, or null when there is none.
     /// </summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssvariablereferencevalue-fallback"/>
     [IdlMember("fallback", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssvariablereferencevalue-fallback")]
     public CssUnparsedValue? Fallback { get; }
 

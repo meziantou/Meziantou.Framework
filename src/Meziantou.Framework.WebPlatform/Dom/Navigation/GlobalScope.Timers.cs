@@ -3,11 +3,13 @@ using Meziantou.Framework.WebPlatform.Scripting;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>The <c>Function</c> callback function type (https://webidl.spec.whatwg.org/#Function): <c>any (any... arguments)</c>.</summary>
+/// <seealso href="https://webidl.spec.whatwg.org/#Function"/>
 [IdlInterface("Function", "https://webidl.spec.whatwg.org/#Function")]
 public delegate object? FunctionCallback(params object?[] arguments);
 
 /// <summary>https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#framerequestcallback</summary>
 /// <param name="time">The time of the frame, in milliseconds relative to the time origin of the global object (see <see cref="Performance.Now"/>).</param>
+/// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#framerequestcallback"/>
 [IdlInterface("FrameRequestCallback", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#framerequestcallback")]
 public delegate void FrameRequestCallback(double time);
 
@@ -16,6 +18,7 @@ public delegate void FrameRequestCallback(double time);
 /// (https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#timerhandler): a callback, or the source text of a
 /// script (a string or a <see cref="TrustedScript"/>), which only runs when the browsing context has a script engine.
 /// </summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#timerhandler"/>
 [IdlInterface("TimerHandler", "https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#timerhandler")]
 public readonly struct TimerHandler : IUnionValue, IEquatable<TimerHandler>
 {
@@ -99,6 +102,7 @@ public abstract partial class GlobalScope
     /// <param name="timeout">The delay in milliseconds.</param>
     /// <param name="arguments">The arguments of the callback.</param>
     /// <returns>The identifier of the timer, for <see cref="ClearTimeout"/>.</returns>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-settimeout"/>
     [IdlMember("setTimeout", "https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-settimeout")]
     public int SetTimeout(TimerHandler handler, int timeout = 0, params object?[] arguments) => InitializeTimer(handler, timeout, arguments, repeat: false, previousId: null);
 
@@ -107,6 +111,7 @@ public abstract partial class GlobalScope
     /// <param name="timeout">The interval in milliseconds.</param>
     /// <param name="arguments">The arguments of the callback.</param>
     /// <returns>The identifier of the timer, for <see cref="ClearInterval"/>.</returns>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-setinterval"/>
     [IdlMember("setInterval", "https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-setinterval")]
     public int SetInterval(TimerHandler handler, int timeout = 0, params object?[] arguments) => InitializeTimer(handler, timeout, arguments, repeat: true, previousId: null);
 
@@ -119,10 +124,12 @@ public abstract partial class GlobalScope
     public int SetInterval(Action handler, int timeout = 0) => SetInterval((TimerHandler)handler, timeout);
 
     /// <summary>https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-cleartimeout</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-cleartimeout"/>
     [IdlMember("clearTimeout", "https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-cleartimeout")]
     public void ClearTimeout(int id = 0) => _activeTimers.Remove(id);
 
     /// <summary>https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-clearinterval</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-clearinterval"/>
     [IdlMember("clearInterval", "https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-clearinterval")]
     public void ClearInterval(int id = 0) => _activeTimers.Remove(id);
 

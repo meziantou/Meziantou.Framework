@@ -5,6 +5,7 @@ using File = Meziantou.Framework.WebPlatform.Dom.FileApi.File;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://html.spec.whatwg.org/multipage/custom-elements.html#elementinternals</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#elementinternals"/>
 [IdlInterface("ElementInternals", "https://html.spec.whatwg.org/multipage/custom-elements.html#elementinternals")]
 public sealed partial class ElementInternals
 {
@@ -21,6 +22,7 @@ public sealed partial class ElementInternals
     internal HtmlElement Target { get; }
 
     /// <summary>https://html.spec.whatwg.org/multipage/custom-elements.html#dom-elementinternals-shadowroot</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-elementinternals-shadowroot"/>
     [IdlMember("shadowRoot", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-elementinternals-shadowroot")]
     public ShadowRoot? ShadowRoot => Target.AttachedShadowRoot is { AvailableToElementInternals: true } shadow ? shadow : null;
 
@@ -33,6 +35,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/custom-elements.html#dom-elementinternals-setformvalue</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-elementinternals-setformvalue"/>
     [IdlMember("setFormValue", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-elementinternals-setformvalue")]
     public void SetFormValue(FileOrStringOrFormData? value)
     {
@@ -42,6 +45,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/custom-elements.html#dom-elementinternals-setformvalue</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-elementinternals-setformvalue"/>
     [IdlMember("setFormValue", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-elementinternals-setformvalue")]
     public void SetFormValue(FileOrStringOrFormData? value, FileOrStringOrFormData? state)
     {
@@ -59,6 +63,7 @@ public sealed partial class ElementInternals
     };
 
     /// <summary>https://html.spec.whatwg.org/multipage/custom-elements.html#dom-elementinternals-form</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/forms.html#dom-elementinternals-form"/>
     [IdlMember("form", "https://html.spec.whatwg.org/multipage/forms.html#dom-elementinternals-form")]
     public HtmlFormElement? Form
     {
@@ -70,6 +75,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/custom-elements.html#dom-elementinternals-setvalidity</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-elementinternals-setvalidity"/>
     [IdlMember("setValidity", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-elementinternals-setvalidity")]
     public void SetValidity(ValidityStateFlags? flags = null, string? message = null, HtmlElement? anchor = null)
     {
@@ -98,6 +104,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/custom-elements.html#dom-elementinternals-willvalidate</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-elementinternals-willvalidate"/>
     [IdlMember("willValidate", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-elementinternals-willvalidate")]
     public bool WillValidate
     {
@@ -109,6 +116,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/custom-elements.html#dom-elementinternals-validity</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-elementinternals-validity"/>
     [IdlMember("validity", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-elementinternals-validity")]
     public ValidityState Validity
     {
@@ -120,10 +128,12 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/custom-elements.html#dom-elementinternals-validationmessage</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-elementinternals-validationmessage"/>
     [IdlMember("validationMessage", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-elementinternals-validationmessage")]
     public string ValidationMessage => GetFormAssociatedData().ValidationMessage;
 
     /// <summary>https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-elementinternals-checkvalidity</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-elementinternals-checkvalidity"/>
     [IdlMember("checkValidity", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-elementinternals-checkvalidity")]
     public bool CheckValidity()
     {
@@ -132,6 +142,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-elementinternals-reportvalidity</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-elementinternals-reportvalidity"/>
     [IdlMember("reportValidity", "https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-elementinternals-reportvalidity")]
     public bool ReportValidity()
     {
@@ -142,6 +153,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/forms.html#dom-elementinternals-labels</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/forms.html#dom-elementinternals-labels"/>
     [IdlMember("labels", "https://html.spec.whatwg.org/multipage/forms.html#dom-elementinternals-labels")]
     public NodeList Labels
     {
@@ -153,6 +165,7 @@ public sealed partial class ElementInternals
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/custom-elements.html#dom-elementinternals-states</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-elementinternals-states"/>
     [IdlMember("states", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-elementinternals-states")]
     public CustomStateSet States => Target.States;
 
@@ -280,48 +293,59 @@ public sealed partial class ElementInternals
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/custom-elements.html#validitystateflags</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#validitystateflags"/>
 [IdlInterface("ValidityStateFlags", "https://html.spec.whatwg.org/multipage/custom-elements.html#validitystateflags")]
 public sealed class ValidityStateFlags
 {
     /// <summary>Gets a value indicating whether the control is required but has no value.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-validitystateflags-valuemissing"/>
     [IdlMember("valueMissing", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-validitystateflags-valuemissing")]
     public bool ValueMissing { get; init; }
 
     /// <summary>
     /// Gets a value indicating whether the value is not in the required syntax (such as an e-mail address or a URL).
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-validitystateflags-typemismatch"/>
     [IdlMember("typeMismatch", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-validitystateflags-typemismatch")]
     public bool TypeMismatch { get; init; }
 
     /// <summary>Gets a value indicating whether the value does not match the required pattern.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-validitystateflags-patternmismatch"/>
     [IdlMember("patternMismatch", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-validitystateflags-patternmismatch")]
     public bool PatternMismatch { get; init; }
 
     /// <summary>Gets a value indicating whether the value is longer than the maximum length.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-validitystateflags-toolong"/>
     [IdlMember("tooLong", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-validitystateflags-toolong")]
     public bool TooLong { get; init; }
 
     /// <summary>Gets a value indicating whether the value is shorter than the minimum length.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-validitystateflags-tooshort"/>
     [IdlMember("tooShort", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-validitystateflags-tooshort")]
     public bool TooShort { get; init; }
 
     /// <summary>Gets a value indicating whether the value is lower than the minimum.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-validitystateflags-rangeunderflow"/>
     [IdlMember("rangeUnderflow", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-validitystateflags-rangeunderflow")]
     public bool RangeUnderflow { get; init; }
 
     /// <summary>Gets a value indicating whether the value is greater than the maximum.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-validitystateflags-rangeoverflow"/>
     [IdlMember("rangeOverflow", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-validitystateflags-rangeoverflow")]
     public bool RangeOverflow { get; init; }
 
     /// <summary>Gets a value indicating whether the value does not fit the allowed step.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-validitystateflags-stepmismatch"/>
     [IdlMember("stepMismatch", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-validitystateflags-stepmismatch")]
     public bool StepMismatch { get; init; }
 
     /// <summary>Gets a value indicating whether the user provided input that cannot be converted to a value.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-validitystateflags-badinput"/>
     [IdlMember("badInput", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-validitystateflags-badinput")]
     public bool BadInput { get; init; }
 
     /// <summary>Gets a value indicating whether a custom validity error message is set.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-validitystateflags-customerror"/>
     [IdlMember("customError", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-validitystateflags-customerror")]
     public bool CustomError { get; init; }
 
@@ -383,6 +407,7 @@ public sealed class ValidityStateFlags
 }
 
 /// <summary>The <c>(File or USVString or FormData)</c> union of <see cref="ElementInternals.SetFormValue(FileOrStringOrFormData?)"/>.</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/custom-elements.html#dom-elementinternals-setformvalue"/>
 [IdlInterface("(File or USVString or FormData)", "https://html.spec.whatwg.org/multipage/custom-elements.html#dom-elementinternals-setformvalue")]
 public readonly struct FileOrStringOrFormData : IUnionValue, IEquatable<FileOrStringOrFormData>
 {

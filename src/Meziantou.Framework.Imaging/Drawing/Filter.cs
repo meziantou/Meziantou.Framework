@@ -46,4 +46,16 @@ public abstract class Filter
 
     /// <summary>Gets how far, in the drawing, the filter moves what it filters: along x and along y.</summary>
     internal abstract (double X, double Y) GetReach();
+
+    /// <summary>
+    /// Gets the number of steps of a filter that leaves transparent the pixels beyond its reach (<see cref="GetReach"/>)
+    /// from the pixels that are not transparent, when it reads transparent pixels beyond the canvas, and that gives
+    /// the pixels within it from those pixels alone: such a filter can be applied to those pixels only.
+    /// </summary>
+    /// <param name="isAfterReach">
+    /// <see langword="true"/> when a filter with a reach comes before this one: its running sums leave values of a few
+    /// units of the last place beyond its reach, which only a filter that does not divide by the alpha keeps that small.
+    /// </param>
+    /// <returns>The number of steps, each of which may read one pixel beyond the reach; -1 when the filter is not such a filter.</returns>
+    internal virtual int GetLocalSteps(bool isAfterReach) => -1;
 }

@@ -8,71 +8,88 @@ using Meziantou.Framework.WebPlatform.Urls;
 namespace Meziantou.Framework.WebPlatform.Css.Om;
 
 /// <summary>The status of a <see cref="FontFace"/> (https://drafts.csswg.org/css-font-loading/#enumdef-fontfaceloadstatus).</summary>
+/// <seealso href="https://drafts.csswg.org/css-font-loading/#enumdef-fontfaceloadstatus"/>
 [IdlInterface("FontFaceLoadStatus", "https://drafts.csswg.org/css-font-loading/#enumdef-fontfaceloadstatus")]
 public enum FontFaceLoadStatus
 {
     /// <summary>The font face is not loaded yet and no load was requested.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfaceloadstatus-unloaded"/>
     [IdlMember("unloaded", "https://drafts.csswg.org/css-font-loading/#dom-fontfaceloadstatus-unloaded")]
     Unloaded,
 
     /// <summary>The font face is being loaded.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfaceloadstatus-loading"/>
     [IdlMember("loading", "https://drafts.csswg.org/css-font-loading/#dom-fontfaceloadstatus-loading")]
     Loading,
 
     /// <summary>The font face is loaded and ready to use.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfaceloadstatus-loaded"/>
     [IdlMember("loaded", "https://drafts.csswg.org/css-font-loading/#dom-fontfaceloadstatus-loaded")]
     Loaded,
 
     /// <summary>The font face failed to load or to parse.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfaceloadstatus-error"/>
     [IdlMember("error", "https://drafts.csswg.org/css-font-loading/#dom-fontfaceloadstatus-error")]
     Error,
 }
 
 /// <summary>The descriptors of a <see cref="FontFace"/> (https://drafts.csswg.org/css-font-loading/#dictdef-fontfacedescriptors).</summary>
+/// <seealso href="https://drafts.csswg.org/css-font-loading/#dictdef-fontfacedescriptors"/>
 [IdlInterface("FontFaceDescriptors", "https://drafts.csswg.org/css-font-loading/#dictdef-fontfacedescriptors")]
 public sealed class FontFaceDescriptors
 {
     /// <summary>Gets the value of the <c>font-style</c> descriptor of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfacedescriptors-style"/>
     [IdlMember("style", "https://drafts.csswg.org/css-font-loading/#dom-fontfacedescriptors-style")]
     public string Style { get; init; } = "normal";
 
     /// <summary>Gets the value of the <c>font-weight</c> descriptor of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfacedescriptors-weight"/>
     [IdlMember("weight", "https://drafts.csswg.org/css-font-loading/#dom-fontfacedescriptors-weight")]
     public string Weight { get; init; } = "normal";
 
     /// <summary>The legacy name alias of <see cref="Width"/>, used when <see cref="Width"/> is null.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfacedescriptors-stretch"/>
     [IdlMember("stretch", "https://drafts.csswg.org/css-font-loading/#dom-fontfacedescriptors-stretch")]
     public string Stretch { get; init; } = "normal";
 
     /// <summary>The width of the font face, or null to use <see cref="Stretch"/>.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfacedescriptors-width"/>
     [IdlMember("width", "https://drafts.csswg.org/css-font-loading/#dom-fontfacedescriptors-width")]
     public string? Width { get; init; }
 
     /// <summary>Gets the value of the <c>unicode-range</c> descriptor of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfacedescriptors-unicoderange"/>
     [IdlMember("unicodeRange", "https://drafts.csswg.org/css-font-loading/#dom-fontfacedescriptors-unicoderange")]
     public string UnicodeRange { get; init; } = "U+0-10FFFF";
 
     /// <summary>Gets the value of the <c>font-feature-settings</c> descriptor of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfacedescriptors-featuresettings"/>
     [IdlMember("featureSettings", "https://drafts.csswg.org/css-font-loading/#dom-fontfacedescriptors-featuresettings")]
     public string FeatureSettings { get; init; } = "normal";
 
     /// <summary>Gets the value of the <c>font-variation-settings</c> descriptor of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfacedescriptors-variationsettings"/>
     [IdlMember("variationSettings", "https://drafts.csswg.org/css-font-loading/#dom-fontfacedescriptors-variationsettings")]
     public string VariationSettings { get; init; } = "normal";
 
     /// <summary>Gets the value of the <c>font-display</c> descriptor of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfacedescriptors-display"/>
     [IdlMember("display", "https://drafts.csswg.org/css-font-loading/#dom-fontfacedescriptors-display")]
     public string Display { get; init; } = "auto";
 
     /// <summary>Gets the value of the <c>ascent-override</c> descriptor of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfacedescriptors-ascentoverride"/>
     [IdlMember("ascentOverride", "https://drafts.csswg.org/css-font-loading/#dom-fontfacedescriptors-ascentoverride")]
     public string AscentOverride { get; init; } = "normal";
 
     /// <summary>Gets the value of the <c>descent-override</c> descriptor of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfacedescriptors-descentoverride"/>
     [IdlMember("descentOverride", "https://drafts.csswg.org/css-font-loading/#dom-fontfacedescriptors-descentoverride")]
     public string DescentOverride { get; init; } = "normal";
 
     /// <summary>Gets the value of the <c>line-gap-override</c> descriptor of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfacedescriptors-linegapoverride"/>
     [IdlMember("lineGapOverride", "https://drafts.csswg.org/css-font-loading/#dom-fontfacedescriptors-linegapoverride")]
     public string LineGapOverride { get; init; } = "normal";
 }
@@ -88,6 +105,7 @@ public sealed class FontFaceDescriptors
 /// decoded and validated by the managed font reader). The <c>local()</c> sources are the bundled fonts (the installed fonts
 /// of the library, see <see cref="BundledFonts"/>), matched by full name or PostScript name.
 /// </remarks>
+/// <seealso href="https://drafts.csswg.org/css-font-loading/#fontface"/>
 [IdlInterface("FontFace", "https://drafts.csswg.org/css-font-loading/#fontface")]
 public sealed class FontFace
 {
@@ -115,6 +133,7 @@ public sealed class FontFace
     private CssFontFaceRule? _rule;
 
     /// <summary>Creates a font face whose source is a list of URLs (the value of the <c>src</c> descriptor of @font-face, e.g. <c>url(font.woff)</c>).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontface-fontface"/>
     [IdlMember("constructor", "https://drafts.csswg.org/css-font-loading/#dom-fontface-fontface")]
     public FontFace(string family, string source, FontFaceDescriptors? descriptors = null)
     {
@@ -135,6 +154,7 @@ public sealed class FontFace
     }
 
     /// <summary>Creates a font face from the binary data of a font file.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontface-fontface"/>
     [IdlMember("constructor", "https://drafts.csswg.org/css-font-loading/#dom-fontface-fontface")]
     public FontFace(string family, ReadOnlySpan<byte> source, FontFaceDescriptors? descriptors = null)
     {
@@ -225,6 +245,7 @@ public sealed class FontFace
     }
 
     /// <summary>Gets or sets the <c>font-family</c> descriptor of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontface-family"/>
     [IdlMember("family", "https://drafts.csswg.org/css-font-loading/#dom-fontface-family")]
     public string Family
     {
@@ -233,6 +254,7 @@ public sealed class FontFace
     }
 
     /// <summary>Gets or sets the <c>font-style</c> descriptor of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontface-style"/>
     [IdlMember("style", "https://drafts.csswg.org/css-font-loading/#dom-fontface-style")]
     public string Style
     {
@@ -241,6 +263,7 @@ public sealed class FontFace
     }
 
     /// <summary>Gets or sets the <c>font-weight</c> descriptor of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontface-weight"/>
     [IdlMember("weight", "https://drafts.csswg.org/css-font-loading/#dom-fontface-weight")]
     public string Weight
     {
@@ -249,6 +272,7 @@ public sealed class FontFace
     }
 
     /// <summary>The legacy name alias of <see cref="Width"/>.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontface-stretch"/>
     [IdlMember("stretch", "https://drafts.csswg.org/css-font-loading/#dom-fontface-stretch")]
     public string Stretch
     {
@@ -257,6 +281,7 @@ public sealed class FontFace
     }
 
     /// <summary>Gets or sets the <c>font-width</c> descriptor of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontface-width"/>
     [IdlMember("width", "https://drafts.csswg.org/css-font-loading/#dom-fontface-width")]
     public string Width
     {
@@ -265,6 +290,7 @@ public sealed class FontFace
     }
 
     /// <summary>Gets or sets the <c>unicode-range</c> descriptor of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontface-unicoderange"/>
     [IdlMember("unicodeRange", "https://drafts.csswg.org/css-font-loading/#dom-fontface-unicoderange")]
     public string UnicodeRange
     {
@@ -273,6 +299,7 @@ public sealed class FontFace
     }
 
     /// <summary>Gets or sets the <c>font-feature-settings</c> descriptor of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontface-featuresettings"/>
     [IdlMember("featureSettings", "https://drafts.csswg.org/css-font-loading/#dom-fontface-featuresettings")]
     public string FeatureSettings
     {
@@ -281,6 +308,7 @@ public sealed class FontFace
     }
 
     /// <summary>Gets or sets the <c>font-variation-settings</c> descriptor of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontface-variationsettings"/>
     [IdlMember("variationSettings", "https://drafts.csswg.org/css-font-loading/#dom-fontface-variationsettings")]
     public string VariationSettings
     {
@@ -289,6 +317,7 @@ public sealed class FontFace
     }
 
     /// <summary>Gets or sets the <c>font-display</c> descriptor of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontface-display"/>
     [IdlMember("display", "https://drafts.csswg.org/css-font-loading/#dom-fontface-display")]
     public string Display
     {
@@ -297,6 +326,7 @@ public sealed class FontFace
     }
 
     /// <summary>Gets or sets the <c>ascent-override</c> descriptor of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontface-ascentoverride"/>
     [IdlMember("ascentOverride", "https://drafts.csswg.org/css-font-loading/#dom-fontface-ascentoverride")]
     public string AscentOverride
     {
@@ -305,6 +335,7 @@ public sealed class FontFace
     }
 
     /// <summary>Gets or sets the <c>descent-override</c> descriptor of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontface-descentoverride"/>
     [IdlMember("descentOverride", "https://drafts.csswg.org/css-font-loading/#dom-fontface-descentoverride")]
     public string DescentOverride
     {
@@ -313,6 +344,7 @@ public sealed class FontFace
     }
 
     /// <summary>Gets or sets the <c>line-gap-override</c> descriptor of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontface-linegapoverride"/>
     [IdlMember("lineGapOverride", "https://drafts.csswg.org/css-font-loading/#dom-fontface-linegapoverride")]
     public string LineGapOverride
     {
@@ -321,14 +353,17 @@ public sealed class FontFace
     }
 
     /// <summary>Gets the load status of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontface-status"/>
     [IdlMember("status", "https://drafts.csswg.org/css-font-loading/#dom-fontface-status")]
     public FontFaceLoadStatus Status { get; private set; }
 
     /// <summary>The [[FontStatusPromise]]: fulfilled when the font face is loaded, rejected when it fails to load.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontface-loaded"/>
     [IdlMember("loaded", "https://drafts.csswg.org/css-font-loading/#dom-fontface-loaded")]
     public Task<FontFace> Loaded => _fontStatusPromise.Task;
 
     /// <summary>Loads a font face whose source is a list of URLs (https://drafts.csswg.org/css-font-loading/#font-face-load).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontface-load"/>
     [IdlMember("load", "https://drafts.csswg.org/css-font-loading/#dom-fontface-load")]
     public Task<FontFace> Load()
     {

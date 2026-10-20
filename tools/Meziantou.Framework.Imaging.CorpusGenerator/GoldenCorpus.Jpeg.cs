@@ -307,7 +307,7 @@ internal static partial class GoldenCorpus
             new("jpeg/progressive-precision12-gray-refinement", CommonCorpus.Deepen(CommonCorpus.PatternDetailGray(17, 9, 86)), ["-precision", "12", "-quality", "80", "-restart", "3B"], "gray", null, ProgressiveGrayScript,
                 "12-bit grayscale samples with a custom scan script: DC from bit 2, luma band 1-5 refined from bit 3, band 6-63 from bit 1, restart interval of 3 blocks.", Precision: 12),
         ];
-        var jpegXmp = Bytes.Utf8("<?xpacket begin=\"﻿\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?><x:xmpmeta xmlns:x=\"adobe:ns:meta/\">" +
+        var jpegXmp = Bytes.Utf8("<?xpacket begin=\"\uFEFF\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?><x:xmpmeta xmlns:x=\"adobe:ns:meta/\">" +
                                  "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"/></x:xmpmeta><?xpacket end=\"r\"?>");
         foreach (var (fixtureId, img, arguments, sampling, orientation, scans, caseNotes, ffmpegEncoded, precision) in cases)
         {

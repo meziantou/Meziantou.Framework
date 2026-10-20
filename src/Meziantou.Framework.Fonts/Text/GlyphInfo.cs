@@ -4,13 +4,20 @@ namespace Meziantou.Framework.Fonts;
 
 /// <summary>A glyph of a text being shaped: its identifier, the characters it comes from, and what shaping knows about it.</summary>
 [StructLayout(LayoutKind.Auto)]
-internal struct GlyphInfo
+public struct GlyphInfo
 {
     // The class of the glyph, with the values of the GDEF glyph class definition as bits. They are the bits a lookup
     // flag uses to ignore a class of glyphs.
+    /// <summary>The glyph is a base glyph.</summary>
     public const int BaseGlyph = 0x02;
+
+    /// <summary>The glyph is a ligature.</summary>
     public const int LigatureGlyph = 0x04;
+
+    /// <summary>The glyph is a mark.</summary>
     public const int MarkGlyph = 0x08;
+
+    /// <summary>The bits of the class of the glyph.</summary>
     public const int ClassMask = BaseGlyph | LigatureGlyph | MarkGlyph;
 
     /// <summary>The glyph was put in place of others by a substitution of several glyphs by one.</summary>
@@ -104,10 +111,13 @@ internal struct GlyphInfo
     /// <summary>What the character is in a syllable, for the scripts shaped syllable by syllable.</summary>
     public byte SyllableCategory;
 
+    /// <summary>Gets a value indicating whether the glyph is a mark.</summary>
     public readonly bool IsMark => (Props & MarkGlyph) != 0;
 
+    /// <summary>Gets a value indicating whether the glyph is a base glyph.</summary>
     public readonly bool IsBase => (Props & BaseGlyph) != 0;
 
+    /// <summary>Gets a value indicating whether the glyph is a ligature.</summary>
     public readonly bool IsLigature => (Props & LigatureGlyph) != 0;
 
     /// <summary>Gets a value indicating whether the glyph still stands for a default ignorable character.</summary>

@@ -24,6 +24,7 @@ internal enum CssFontFeatureType
 /// functions of the families of the rule. The feature value blocks of the same type are merged (the last declaration of a
 /// name wins). The feature values are not used: the fonts are not rendered.
 /// </summary>
+/// <seealso href="https://drafts.csswg.org/css-fonts-4/#cssfontfeaturevaluesrule"/>
 [IdlInterface("CSSFontFeatureValuesRule", "https://drafts.csswg.org/css-fonts-4/#cssfontfeaturevaluesrule")]
 public sealed class CssFontFeatureValuesRule : CssRule
 {
@@ -46,6 +47,7 @@ public sealed class CssFontFeatureValuesRule : CssRule
     public override ushort Type => FontFeatureValuesRule;
 
     /// <summary>The family names of the rule, serialized as a comma-separated list. Setting a value that is not a list of family names does nothing.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesrule-fontfamily"/>
     [IdlMember("fontFamily", "https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesrule-fontfamily")]
     public string FontFamily
     {
@@ -61,30 +63,37 @@ public sealed class CssFontFeatureValuesRule : CssRule
     }
 
     /// <summary>Gets the map of the <c>@annotation</c> feature values.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesrule-annotation"/>
     [IdlMember("annotation", "https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesrule-annotation")]
     public CssFontFeatureValuesMap Annotation => _maps[(int)CssFontFeatureType.Annotation];
 
     /// <summary>Gets the map of the <c>@ornaments</c> feature values.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesrule-ornaments"/>
     [IdlMember("ornaments", "https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesrule-ornaments")]
     public CssFontFeatureValuesMap Ornaments => _maps[(int)CssFontFeatureType.Ornaments];
 
     /// <summary>Gets the map of the <c>@stylistic</c> feature values.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesrule-stylistic"/>
     [IdlMember("stylistic", "https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesrule-stylistic")]
     public CssFontFeatureValuesMap Stylistic => _maps[(int)CssFontFeatureType.Stylistic];
 
     /// <summary>Gets the map of the <c>@swash</c> feature values.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesrule-swash"/>
     [IdlMember("swash", "https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesrule-swash")]
     public CssFontFeatureValuesMap Swash => _maps[(int)CssFontFeatureType.Swash];
 
     /// <summary>Gets the map of the <c>@character-variant</c> feature values.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesrule-charactervariant"/>
     [IdlMember("characterVariant", "https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesrule-charactervariant")]
     public CssFontFeatureValuesMap CharacterVariant => _maps[(int)CssFontFeatureType.CharacterVariant];
 
     /// <summary>Gets the map of the <c>@styleset</c> feature values.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesrule-styleset"/>
     [IdlMember("styleset", "https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesrule-styleset")]
     public CssFontFeatureValuesMap Styleset => _maps[(int)CssFontFeatureType.Styleset];
 
     /// <summary>Gets the map of the <c>@historical-forms</c> feature values.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesrule-historicalforms"/>
     [IdlMember("historicalForms", "https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesrule-historicalforms")]
     public CssFontFeatureValuesMap HistoricalForms => _maps[(int)CssFontFeatureType.HistoricalForms];
 
@@ -166,6 +175,7 @@ public sealed class CssFontFeatureValuesRule : CssRule
 /// https://drafts.csswg.org/css-fonts-4/#cssfontfeaturevaluesmap: the feature values of a feature value block of a
 /// @font-feature-values rule, by name, in insertion order.
 /// </summary>
+/// <seealso href="https://drafts.csswg.org/css-fonts-4/#cssfontfeaturevaluesmap"/>
 [IdlInterface("CSSFontFeatureValuesMap", "https://drafts.csswg.org/css-fonts-4/#cssfontfeaturevaluesmap")]
 public sealed class CssFontFeatureValuesMap : IReadOnlyCollection<KeyValuePair<string, IReadOnlyList<uint>>>
 {
@@ -203,10 +213,12 @@ public sealed class CssFontFeatureValuesMap : IReadOnlyCollection<KeyValuePair<s
     /// https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesmap-set: defines the feature value name. Throws an
     /// <c>InvalidAccessError</c> when the number of values is not valid for the type of the feature value block.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesmap-set"/>
     [IdlMember("set", "https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesmap-set")]
     public void Set(string featureValueName, uint values) => Set(featureValueName, [values]);
 
     /// <inheritdoc cref="Set(string, uint)"/>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesmap-set"/>
     [IdlMember("set", "https://drafts.csswg.org/css-fonts-4/#dom-cssfontfeaturevaluesmap-set")]
     public void Set(string featureValueName, IReadOnlyList<uint> values)
     {

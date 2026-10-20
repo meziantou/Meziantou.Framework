@@ -472,7 +472,7 @@ public sealed class MarkOfTheWebTests
     [Fact]
     public void ZoneIdentifier_Parse_IgnoresCaseWhitespaceByteOrderMarkAndComments()
     {
-        var zoneIdentifier = ZoneIdentifier.Parse("﻿; comment\n  [ zonetransfer ]  \n  zoneid = 4 \n\n hosturl = https://example.com/file.txt \n");
+        var zoneIdentifier = ZoneIdentifier.Parse("\uFEFF; comment\n  [ zonetransfer ]  \n  zoneid = 4 \n\n hosturl = https://example.com/file.txt \n");
 
         Assert.Equal(UrlZone.Untrusted, zoneIdentifier.Zone);
         Assert.Null(zoneIdentifier.ReferrerUrl);

@@ -7,10 +7,12 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// An origin (https://html.spec.whatwg.org/multipage/browsers.html#dom-origin-interface), for the same origin and same site
 /// comparisons.
 /// </summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/browsers.html#dom-origin-interface"/>
 [IdlInterface("Origin", "https://html.spec.whatwg.org/multipage/browsers.html#dom-origin-interface")]
 public sealed class Origin
 {
     /// <summary>Creates a new opaque origin (https://html.spec.whatwg.org/multipage/browsers.html#dom-origin-constructor).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/browsers.html#dom-origin-constructor"/>
     [IdlMember("constructor", "https://html.spec.whatwg.org/multipage/browsers.html#dom-origin-constructor")]
     public Origin()
     {
@@ -34,6 +36,7 @@ public sealed class Origin
     /// <param name="value">The value.</param>
     /// <returns>A new <see cref="Origin"/> object.</returns>
     /// <exception cref="TypeErrorException">The value has no origin.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/browsers.html#dom-origin-from"/>
     [IdlMember("from", "https://html.spec.whatwg.org/multipage/browsers.html#dom-origin-from")]
     public static Origin From(object? value)
     {
@@ -85,10 +88,12 @@ public sealed class Origin
     }
 
     /// <summary>Gets whether the origin is opaque (https://html.spec.whatwg.org/multipage/browsers.html#dom-origin-opaque).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/browsers.html#dom-origin-opaque"/>
     [IdlMember("opaque", "https://html.spec.whatwg.org/multipage/browsers.html#dom-origin-opaque")]
     public bool Opaque => Record.IsOpaque;
 
     /// <summary>Returns whether the origin is same origin with another one (https://html.spec.whatwg.org/multipage/browsers.html#dom-origin-issameorigin).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/browsers.html#dom-origin-issameorigin"/>
     [IdlMember("isSameOrigin", "https://html.spec.whatwg.org/multipage/browsers.html#dom-origin-issameorigin")]
     public bool IsSameOrigin(Origin other)
     {
@@ -97,6 +102,7 @@ public sealed class Origin
     }
 
     /// <summary>Returns whether the origin is same site with another one (https://html.spec.whatwg.org/multipage/browsers.html#dom-origin-issamesite).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/browsers.html#dom-origin-issamesite"/>
     [IdlMember("isSameSite", "https://html.spec.whatwg.org/multipage/browsers.html#dom-origin-issamesite")]
     public bool IsSameSite(Origin other)
     {

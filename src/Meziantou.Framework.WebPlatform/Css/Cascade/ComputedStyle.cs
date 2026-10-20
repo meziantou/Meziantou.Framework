@@ -179,6 +179,58 @@ internal sealed partial class ComputedStyle
         }
     }
 
+    /// <summary>The container types of the ancestors of the style (see <see cref="AncestorContainerTypes"/>), with <see cref="AncestorContainerTypesResolved"/> once known.</summary>
+    private byte _ancestorContainerTypes;
+
+    private const byte AncestorContainerTypesResolved = 0x80;
+
+    /// <summary>
+    /// The union of the container types (https://drafts.csswg.org/css-conditional-5/#container-type) of the ancestors of the style
+    /// (the styles of <see cref="Parent"/>), known once per style: the ancestors without a declaration of <c>container-type</c> are
+    /// not query containers, their computed values are not read.
+    /// </summary>
+    internal ContainerType AncestorContainerTypes
+    {
+        get
+        {
+            if ((_ancestorContainerTypes & AncestorContainerTypesResolved) != 0)
+                return (ContainerType)(_ancestorContainerTypes & ~AncestorContainerTypesResolved);
+
+            // The ancestors are resolved from the topmost one that is not resolved (iteratively, the trees can be deep)
+            var ancestors = Engine.PendingAncestors;
+            var start = ancestors.Count;
+            for (var style = this; style is not null && (style._ancestorContainerTypes & AncestorContainerTypesResolved) == 0; style = style.Parent)
+            {
+                ancestors.Add(style);
+            }
+
+            try
+            {
+                for (var i = ancestors.Count - 1; i >= start; i--)
+                {
+                    var style = ancestors[i];
+                    var types = style.Parent is { } parent ? parent.AncestorContainerTypes | parent.OwnContainerType : ContainerType.Normal;
+                    style._ancestorContainerTypes = (byte)((byte)types | AncestorContainerTypesResolved);
+                }
+            }
+            finally
+            {
+                ancestors.RemoveRange(start, ancestors.Count - start);
+            }
+
+            return (ContainerType)(_ancestorContainerTypes & ~AncestorContainerTypesResolved);
+        }
+    }
+
+    /// <summary>The container type of the style: <c>container-type</c> is not inherited, so it is normal without a declaration of it.</summary>
+    private ContainerType OwnContainerType => MayHaveNonInheritedValue("container-type") ? Layout.ContainerType : ContainerType.Normal;
+
+    /// <summary>
+    /// Returns whether a property that is not inherited may have a value other than its initial value (see <see cref="MayHaveCascadedValue"/>);
+    /// the values of a highlight pseudo-element and of a visited style may come from another style.
+    /// </summary>
+    private bool MayHaveNonInheritedValue(string property) => IsHighlight || _unvisitedStyle is not null || MayHaveCascadedValue(property);
+
     /// <summary>The computed font size in pixels.</summary>
     public double FontSize => double.IsNaN(_fontSize) ? _fontSize = CssValueComputer.ParsePixels(GetComputedValue("font-size")) ?? CssValueComputer.MediumFontSize : _fontSize;
 
@@ -515,7 +567,8 @@ internal sealed partial class ComputedStyle
     /// </summary>
     internal ComputedStyle? TryGetAnchorPositionedStyle(string physical)
     {
-        if (PositionBaseStyle is not null || Array.IndexOf(AnchorPositioning.AcceptedProperties, physical) < 0 || !Layout.IsAbsolutelyPositioned)
+        // (the computed position is tested first: the typed view of the style is not created for the other boxes)
+        if (PositionBaseStyle is not null || Array.IndexOf(AnchorPositioning.AcceptedProperties, physical) < 0 || GetComputedValue("position") is not ("absolute" or "fixed") || !Layout.IsAbsolutelyPositioned)
             return null;
 
         var anchor = Layout.Anchor;
@@ -558,8 +611,9 @@ internal sealed partial class ComputedStyle
             {
                 // A length is its used value, unless the block step sizing inserts space in the margins or the paddings
                 // (https://drafts.csswg.org/css-rhythm/#block-step-insert)
+                // (block-step-size is not inherited: the typed view of the style is not created when no declaration may set it)
                 var isAuto = value == "auto";
-                if (!isAuto && !value.Contains('%', StringComparison.Ordinal) && Layout.BlockStep is null)
+                if (!isAuto && !value.Contains('%', StringComparison.Ordinal) && (!MayHaveNonInheritedValue("block-step-size") || Layout.BlockStep is null))
                     return null;
 
                 var isPadding = physical[0] == 'p';
@@ -1127,11 +1181,24 @@ internal sealed partial class ComputedStyle
     /// <summary>Substitutes the functions of the value of a shorthand (a pending-substitution value) and returns the value of the longhand.</summary>
     private string? SubstituteShorthand(string shorthand, string text, string longhand, SubstitutionContext context)
     {
-        var substituted = CssSubstitution.Substitute(text, context, out var taintedRanges);
-        if (substituted is null || CssSubstitution.UsesTaintedUrl(substituted, taintedRanges))
-            return null;
+        // The longhands of the declaration share the substitution (the value does not depend on the longhand being computed,
+        // unless it invokes a custom function or random(), or a registered custom property may depend on the property)
+        List<CssLonghandValue>? longhands;
+        if (context.Frame is null && RegisteredProperties.Count == 0 && !MayDependOnComputedProperty(text))
+        {
+            var key = (shorthand, text, context.TreeScope, context.AttrElement);
+            var substitutedShorthands = Rare.SubstitutedShorthands ??= [];
+            if (!substitutedShorthands.TryGetValue(key, out longhands))
+            {
+                longhands = SubstituteShorthand(shorthand, text, context);
+                substitutedShorthands[key] = longhands;
+            }
+        }
+        else
+        {
+            longhands = SubstituteShorthand(shorthand, text, context);
+        }
 
-        var longhands = ParseSubstitutedValue(shorthand, substituted);
         if (longhands is null)
             return null;
 
@@ -1142,6 +1209,41 @@ internal sealed partial class ComputedStyle
         }
 
         return null;
+    }
+
+    /// <summary>Substitutes the functions of the value of a shorthand and parses the result into its longhands, or returns null when it is invalid.</summary>
+    private static List<CssLonghandValue>? SubstituteShorthand(string shorthand, string text, SubstitutionContext context)
+    {
+        var substituted = CssSubstitution.Substitute(text, context, out var taintedRanges);
+        if (substituted is null || CssSubstitution.UsesTaintedUrl(substituted, taintedRanges))
+            return null;
+
+        return ParseSubstitutedValue(shorthand, substituted);
+    }
+
+    /// <summary>
+    /// Returns whether the substitution of a value may depend on the property being computed (see <see cref="CssSubstitution.BeginPropertyComputation"/>):
+    /// the invocations of the custom functions (<c>--name()</c>) and the random() functions are identified by the property.
+    /// </summary>
+    private static bool MayDependOnComputedProperty(string text)
+    {
+        if (text.Contains("random(", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        // A function whose name is a dashed identifier
+        for (var index = text.IndexOf('(', StringComparison.Ordinal); index > 0; index = text.AsSpan(index + 1).IndexOf('(') is var next and >= 0 ? index + 1 + next : -1)
+        {
+            var start = index;
+            while (start > 0 && (char.IsAsciiLetterOrDigit(text[start - 1]) || text[start - 1] is '-' or '_' or '\\' || text[start - 1] >= 0x80))
+            {
+                start--;
+            }
+
+            if (index - start > 2 && text[start] == '-' && text[start + 1] == '-')
+                return true;
+        }
+
+        return false;
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -1160,6 +1262,11 @@ internal sealed partial class ComputedStyle
 
         if (_rareData?.CustomProperties is { } customProperties && customProperties.TryGetValue(name, out var result))
             return result;
+
+        // A value inherited unchanged is the value of the ancestor that computes it (nothing is allocated on the styles between them)
+        var source = GetCustomPropertySource(name);
+        if (!ReferenceEquals(source, this))
+            return source.GetCustomPropertyValue(name);
 
         var rareData = Rare;
 
@@ -1218,8 +1325,55 @@ internal sealed partial class ComputedStyle
         if (_unvisitedStyle is { } unvisited)
             return unvisited.IsCustomPropertyTainted(name);
 
+        var source = GetCustomPropertySource(name);
+        if (!ReferenceEquals(source, this))
+            return source.IsCustomPropertyTainted(name);
+
         GetCustomPropertyValue(name);
         return _rareData?.TaintedCustomProperties is { } taintedCustomProperties && taintedCustomProperties.Contains(name);
+    }
+
+    /// <summary>
+    /// Returns the style that computes the value of a custom property this style inherits unchanged: the nearest ancestor (or the
+    /// style itself) that declares or animates it, has computed it, or does not inherit it. The styles between them have the same
+    /// value, with the same attr()-taint (https://drafts.csswg.org/css-variables/#defining-variables).
+    /// </summary>
+    private ComputedStyle GetCustomPropertySource(string name)
+    {
+        var registration = RegisteredProperties.GetValueOrDefault(name);
+        var style = this;
+        while (style.Parent is { } parent && style._unvisitedStyle is null && style._effects is not { Count: > 0 } && ((registration?.Inherits ?? true) || style.IsHighlight)
+            && !(style.HasCustomPropertyDeclarations && style._cascaded.ContainsKey(name)) && style._rareData?.CustomProperties?.ContainsKey(name) is not true)
+        {
+            style = parent;
+        }
+
+        return style;
+    }
+
+    /// <summary>Whether a custom property has a cascaded value (see <see cref="HasCustomPropertyDeclarations"/>): 0 when not known yet, 1 when none has, 2 otherwise.</summary>
+    private byte _customPropertyDeclarations;
+
+    /// <summary>Whether a custom property has a cascaded value: most styles declare none, they inherit all of them.</summary>
+    private bool HasCustomPropertyDeclarations
+    {
+        get
+        {
+            if (_customPropertyDeclarations == 0)
+            {
+                _customPropertyDeclarations = 1;
+                foreach (var name in _cascaded.Keys)
+                {
+                    if (CssPropertyRegistry.IsCustomProperty(name))
+                    {
+                        _customPropertyDeclarations = 2;
+                        break;
+                    }
+                }
+            }
+
+            return _customPropertyDeclarations == 2;
+        }
     }
 
     /// <summary>Returns the computed value of a custom property of the parent, which the value inherits along with its attr()-taint.</summary>
@@ -1595,35 +1749,58 @@ internal sealed partial class ComputedStyle
             return;
 
         _logicalPropertiesResolved = true;
-        List<(string Physical, CascadedValue Value)>? mapped = null;
-        foreach (var (name, value) in _cascaded)
-        {
-            if (LogicalProperties.GetPhysicalProperty(name, this) is { } physical)
-            {
-                mapped ??= [];
-                mapped.Add((physical, value));
-            }
-        }
-
-        if (mapped is null)
+        if (!HasFlowRelativeProperty(_cascaded))
             return;
 
-        // The mapping depends on the writing mode of the element: the cascaded values shared with other elements are copied, and
-        // so are the cascaded values the style was created with (the style engine compares them with a new cascade, see
-        // InitialCascade)
-        if (_cascadedShared || ReferenceEquals(_cascaded, InitialCascade))
+        // The mapping depends on the writing mode of the element: the cascaded values the style was created with are not modified
+        // (the style engine compares them with a new cascade, see InitialCascade). The cascaded values shared with other elements
+        // are mapped once for each writing mode and direction, and the mapped values are shared too.
+        if (!_cascadedShared)
         {
-            _cascaded = new Dictionary<string, CascadedValue>(_cascaded, StringComparer.Ordinal);
-            _cascadedShared = false;
+            _cascaded = MapLogicalProperties(_cascaded);
+            return;
         }
 
-        foreach (var (physical, value) in mapped)
+        var writingMode = GetComputedValue("writing-mode");
+        var rightToLeft = LogicalProperties.IsRightToLeft(this);
+        var mappedCascades = Engine.GetLogicalCascades(_cascaded);
+        foreach (var (mappedWritingMode, mappedRightToLeft, mapped) in mappedCascades)
         {
-            if (!_cascaded.TryGetValue(physical, out var existing) || value.WinsOver(existing))
+            if (mappedRightToLeft == rightToLeft && string.Equals(mappedWritingMode, writingMode, StringComparison.Ordinal))
             {
-                _cascaded[physical] = value;
+                _cascaded = mapped;
+                return;
             }
         }
+
+        _cascaded = MapLogicalProperties(_cascaded);
+        mappedCascades.Add((writingMode, rightToLeft, _cascaded));
+
+        static bool HasFlowRelativeProperty(Dictionary<string, CascadedValue> cascaded)
+        {
+            foreach (var name in cascaded.Keys)
+            {
+                if (LogicalProperties.IsFlowRelative(name))
+                    return true;
+            }
+
+            return false;
+        }
+    }
+
+    /// <summary>Returns a copy of the cascaded values where the logical properties are mapped to the physical properties of the element.</summary>
+    private Dictionary<string, CascadedValue> MapLogicalProperties(Dictionary<string, CascadedValue> cascaded)
+    {
+        var result = new Dictionary<string, CascadedValue>(cascaded, StringComparer.Ordinal);
+        foreach (var (name, value) in cascaded)
+        {
+            if (LogicalProperties.GetPhysicalProperty(name, this) is { } physical && (!result.TryGetValue(physical, out var existing) || value.WinsOver(existing)))
+            {
+                result[physical] = value;
+            }
+        }
+
+        return result;
     }
 
     /// <summary>The state of the styles that use custom properties or mixins: most styles do not.</summary>
@@ -1639,40 +1816,47 @@ internal sealed partial class ComputedStyle
         public List<string>? CustomPropertyNames;
         public HashSet<string>? CustomPropertyCycles;
         public Dictionary<string, HashSet<string>>? UnitCycles;
+
+        /// <summary>The longhands of the shorthand declarations whose substitution functions were substituted (null when the result is invalid).</summary>
+        public Dictionary<(string Shorthand, string Text, Node? TreeScope, Element? AttrElement), List<CssLonghandValue>?>? SubstitutedShorthands;
     }
 
     /// <summary>
     /// The computed values of a style, by property: most styles only have a few computed values (e.g. display), which are
-    /// stored in a small array, searched linearly, then in a dictionary. The styles whose values are all computed (e.g. all
-    /// the declarations of getComputedStyle() are read) store them in an array indexed by property, which is smaller than a
-    /// dictionary of hundreds of entries, and is not resized.
+    /// stored in a small array, searched linearly. The other styles store a bitmap of the computed properties, by property
+    /// index (see <see cref="CssPropertyRegistry.GetIndex"/>), and the values of these properties in a packed array, in the
+    /// order of their index: unlike a dictionary, it has no buckets, no hash codes and no names, and unlike an array indexed
+    /// by property, it does not have a slot for each of the hundreds of properties.
     /// </summary>
     private struct ComputedValues
     {
         private const int MaxArrayLength = 8;
-        private const int MaxDictionaryCount = 64;
 
         private (string Property, string Value)[]? _array;
-        private int _count;
-        private Dictionary<string, string>? _dictionary;
 
-        /// <summary>The values by index of property (see <see cref="CssPropertyRegistry.GetIndex"/>); the other names are in <see cref="_dictionary"/>.</summary>
-        private string?[]? _byIndex;
+        /// <summary>The number of values (in <see cref="_array"/> or in <see cref="_values"/>).</summary>
+        private int _count;
+
+        /// <summary>The bit of the index of each property that has a value in <see cref="_values"/>, once there are more than <see cref="MaxArrayLength"/> values.</summary>
+        private ulong[]? _present;
+
+        /// <summary>The values of the properties of <see cref="_present"/>, in the order of their index.</summary>
+        private string[]? _values;
 
         public readonly bool TryGetValue(string property, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out string value)
         {
-            if (_byIndex is not null)
+            if (_present is not null)
             {
                 var index = CssPropertyRegistry.GetIndex(property);
-                if (index >= 0)
+                if (index >= 0 && IsPresent(index))
                 {
-                    value = _byIndex[index];
-                    return value is not null;
+                    value = _values![GetPosition(index)];
+                    return true;
                 }
-            }
 
-            if (_dictionary is not null)
-                return _dictionary.TryGetValue(property, out value);
+                value = null;
+                return false;
+            }
 
             var array = _array;
             for (var i = 0; i < _count; i++)
@@ -1693,38 +1877,15 @@ internal sealed partial class ComputedStyle
 
         public void Set(string property, string value)
         {
-            if (_byIndex is not null)
+            if (_present is not null)
             {
+                // The values are only stored by property index: the names that are not supported properties are never computed
                 var index = CssPropertyRegistry.GetIndex(property);
                 if (index >= 0)
                 {
-                    _byIndex[index] = value;
-                }
-                else
-                {
-                    (_dictionary ??= new(StringComparer.Ordinal))[property] = value;
+                    SetByIndex(index, value);
                 }
 
-                return;
-            }
-
-            if (_dictionary is not null)
-            {
-                if (_dictionary.Count >= MaxDictionaryCount && !_dictionary.ContainsKey(property))
-                {
-                    _byIndex = new string?[CssPropertyRegistry.PropertyNameCount];
-                    var dictionary = _dictionary;
-                    _dictionary = null;
-                    foreach (var (existingProperty, existingValue) in dictionary)
-                    {
-                        Set(existingProperty, existingValue);
-                    }
-
-                    Set(property, value);
-                    return;
-                }
-
-                _dictionary[property] = value;
                 return;
             }
 
@@ -1739,16 +1900,17 @@ internal sealed partial class ComputedStyle
 
             if (_count == MaxArrayLength)
             {
-                var dictionary = new Dictionary<string, string>(MaxArrayLength * 2, StringComparer.Ordinal);
-                foreach (var (existingProperty, existingValue) in _array!)
-                {
-                    dictionary.Add(existingProperty, existingValue);
-                }
-
-                dictionary.Add(property, value);
-                _dictionary = dictionary;
+                var array = _array!;
                 _array = null;
                 _count = 0;
+                _present = new ulong[(CssPropertyRegistry.PropertyNameCount + 63) / 64];
+                _values = new string[MaxArrayLength * 2];
+                foreach (var (existingProperty, existingValue) in array)
+                {
+                    Set(existingProperty, existingValue);
+                }
+
+                Set(property, value);
                 return;
             }
 
@@ -1758,6 +1920,43 @@ internal sealed partial class ComputedStyle
             }
 
             _array[_count++] = (property, value);
+        }
+
+        private readonly bool IsPresent(int index) => (_present![index >> 6] & (1UL << index)) != 0;
+
+        /// <summary>The position of the value of the property in <see cref="_values"/>: the number of present properties whose index is lower.</summary>
+        private readonly int GetPosition(int index)
+        {
+            var present = _present!;
+            var word = index >> 6;
+            var position = System.Numerics.BitOperations.PopCount(present[word] & ((1UL << index) - 1));
+            for (var i = 0; i < word; i++)
+            {
+                position += System.Numerics.BitOperations.PopCount(present[i]);
+            }
+
+            return position;
+        }
+
+        private void SetByIndex(int index, string value)
+        {
+            var position = GetPosition(index);
+            if (IsPresent(index))
+            {
+                _values![position] = value;
+                return;
+            }
+
+            if (_count == _values!.Length)
+            {
+                // The arrays grow by half of their length, as the number of computed values is usually far from the number of properties
+                Array.Resize(ref _values, Math.Min(CssPropertyRegistry.PropertyNameCount, _count + (_count / 2)));
+            }
+
+            Array.Copy(_values, position, _values, position + 1, _count - position);
+            _values[position] = value;
+            _present![index >> 6] |= 1UL << index;
+            _count++;
         }
     }
 }

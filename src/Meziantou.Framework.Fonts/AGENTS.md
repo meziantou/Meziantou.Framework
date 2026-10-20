@@ -8,13 +8,18 @@ These instructions complete the repository-level `AGENTS.md`.
 
 ## Hard constraints
 
-- **The API is internal.** Every type is `internal` and the packages that use the code see it through
-  `InternalsVisibleTo`; they depend on the exact version of this package (`UseExactProjectReferenceVersions` in their
-  project file), so they are released together with it. Do not add public types: a public API of this package is a
-  separate design.
+- **The public API is what the packages that use the code need.** A type is `public` when `Meziantou.Framework.Imaging`,
+  `Meziantou.Framework.WebPlatform` or `Meziantou.Framework.WebPlatform.Imaging` uses it, and everything else stays
+  `internal` (the tests, the fuzzing and the benchmarks see it through `InternalsVisibleTo`; the libraries do not).
+  These packages still depend on the exact version of this package (`UseExactProjectReferenceVersions` in their project
+  file) and are released together with it. Every public member is documented (`DisableDocumentationWarnings` is
+  `false`), and the public API is recorded in `ref/` by the build.
+- `Adler32`, `DeterministicAngle` (`Infrastructure/`) and `FontTags` are compiled into `Meziantou.Framework.Imaging`
+  too, in its namespace (`MEZIANTOU_FRAMEWORK_IMAGING`): they are helpers, not font API, and stay internal to both
+  assemblies. WebPlatform has its own tag constants (`OpenTypeTag`).
 - **The code depends on nothing of the packages that use it.** Its only dependency is `Meziantou.Framework.Unicode`.
   What it needs from its caller is a `FontEnvironment`: the `FontResourceLimits`, and a `FontAllocator` for the
-  temporary buffers (the allocation scopes of Imaging). It throws its own internal exceptions
+  temporary buffers (the allocation scopes of Imaging). It throws its own exceptions
   (`InvalidFontException`, `UnsupportedFontFeatureException`, `UnknownFontFormatException`,
   `FontResourceLimitException`, raised by `FontErrors`); each caller converts them at its public boundary (Imaging:
   `FontExceptionTranslation`). Decoding the image of a bitmap glyph needs image codecs: the reader gives the bytes and a

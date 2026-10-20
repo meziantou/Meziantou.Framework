@@ -11,18 +11,22 @@ namespace Meziantou.Framework.WebPlatform.Dom.FileApi;
 /// created); a reader created without current global object (e.g. from .NET without script engine) reads the blob and
 /// fires the events synchronously.
 /// </summary>
+/// <seealso href="https://w3c.github.io/FileAPI/#dfn-filereader"/>
 [IdlInterface("FileReader", "https://w3c.github.io/FileAPI/#dfn-filereader")]
 public sealed class FileReader : EventTarget
 {
     /// <summary>The state of a reader that has no read in progress and no result (<c>EMPTY</c>).</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#dom-filereader-empty"/>
     [IdlMember("EMPTY", "https://w3c.github.io/FileAPI/#dom-filereader-empty")]
     public const ushort Empty = 0;
 
     /// <summary>The state of a reader that is reading a blob (<c>LOADING</c>).</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#dom-filereader-loading"/>
     [IdlMember("LOADING", "https://w3c.github.io/FileAPI/#dom-filereader-loading")]
     public const ushort Loading = 1;
 
     /// <summary>The state of a reader whose read has completed (<c>DONE</c>).</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#dom-filereader-done"/>
     [IdlMember("DONE", "https://w3c.github.io/FileAPI/#dom-filereader-done")]
     public const ushort Done = 2;
 
@@ -30,28 +34,34 @@ public sealed class FileReader : EventTarget
     private int _readId;
 
     /// <summary>Creates a reader in the <see cref="Empty"/> state.</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#filereaderConstrctr"/>
     [IdlMember("constructor", "https://w3c.github.io/FileAPI/#filereaderConstrctr")]
     public FileReader()
     {
     }
 
     /// <summary>Gets the state of the reader: <see cref="Empty"/>, <see cref="Loading"/> or <see cref="Done"/>.</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#dom-filereader-readystate"/>
     [IdlMember("readyState", "https://w3c.github.io/FileAPI/#dom-filereader-readystate")]
     public ushort ReadyState { get; private set; }
 
     /// <summary>Gets the result of the read: a <see cref="string"/>, a <see cref="byte"/> array (an <c>ArrayBuffer</c> in JavaScript), or null.</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#dom-filereader-result"/>
     [IdlMember("result", "https://w3c.github.io/FileAPI/#dom-filereader-result")]
     public FileReaderResult? Result { get; private set; }
 
     /// <summary>Gets the error of the read, or null.</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#dom-filereader-error"/>
     [IdlMember("error", "https://w3c.github.io/FileAPI/#dom-filereader-error")]
     public DomException? Error { get; private set; }
 
     /// <summary>Reads the blob as bytes (https://w3c.github.io/FileAPI/#dfn-readAsArrayBuffer).</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#dfn-readAsArrayBuffer"/>
     [IdlMember("readAsArrayBuffer", "https://w3c.github.io/FileAPI/#dfn-readAsArrayBuffer")]
     public void ReadAsArrayBuffer(Blob blob) => Read(blob, static (bytes, _) => FileReaderResult.FromBytes(bytes.ToArray()));
 
     /// <summary>Reads the blob as a binary string: each byte is a code unit (https://w3c.github.io/FileAPI/#readAsBinaryString).</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#readAsBinaryString"/>
     [IdlMember("readAsBinaryString", "https://w3c.github.io/FileAPI/#readAsBinaryString")]
     public void ReadAsBinaryString(Blob blob) => Read(blob, static (bytes, _) => FileReaderResult.FromString(Encoding.Latin1.GetString(bytes)));
 
@@ -59,14 +69,17 @@ public sealed class FileReader : EventTarget
     /// Reads the blob as text (https://w3c.github.io/FileAPI/#readAsDataText), decoded with the byte order mark, else the
     /// <paramref name="encoding"/> label, else the <c>charset</c> of the type of the blob, else UTF-8.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#readAsDataText"/>
     [IdlMember("readAsText", "https://w3c.github.io/FileAPI/#readAsDataText")]
     public void ReadAsText(Blob blob, string? encoding = null) => Read(blob, (bytes, type) => FileReaderResult.FromString(DecodeText(bytes, type, encoding)));
 
     /// <summary>Reads the blob as a <c>data:</c> URL whose body is base64-encoded (https://w3c.github.io/FileAPI/#dfn-readAsDataURL).</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#dfn-readAsDataURL"/>
     [IdlMember("readAsDataURL", "https://w3c.github.io/FileAPI/#dfn-readAsDataURL")]
     public void ReadAsDataUrl(Blob blob) => Read(blob, static (bytes, type) => FileReaderResult.FromString("data:" + (type.Length > 0 ? type : "application/octet-stream") + ";base64," + Convert.ToBase64String(bytes)));
 
     /// <summary>Aborts the read (https://w3c.github.io/FileAPI/#dfn-abort).</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#dfn-abort"/>
     [IdlMember("abort", "https://w3c.github.io/FileAPI/#dfn-abort")]
     public void Abort()
     {
@@ -87,6 +100,7 @@ public sealed class FileReader : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>loadstart</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#dfn-onloadstart"/>
     [IdlMember("onloadstart", "https://w3c.github.io/FileAPI/#dfn-onloadstart")]
     public Action<Event>? OnLoadStart
     {
@@ -95,6 +109,7 @@ public sealed class FileReader : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>progress</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#dfn-onprogress"/>
     [IdlMember("onprogress", "https://w3c.github.io/FileAPI/#dfn-onprogress")]
     public Action<Event>? OnProgress
     {
@@ -103,6 +118,7 @@ public sealed class FileReader : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>load</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#dfn-onload"/>
     [IdlMember("onload", "https://w3c.github.io/FileAPI/#dfn-onload")]
     public Action<Event>? OnLoad
     {
@@ -111,6 +127,7 @@ public sealed class FileReader : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>abort</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#dfn-onabort"/>
     [IdlMember("onabort", "https://w3c.github.io/FileAPI/#dfn-onabort")]
     public Action<Event>? OnAbort
     {
@@ -119,6 +136,7 @@ public sealed class FileReader : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>error</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#dfn-onerror"/>
     [IdlMember("onerror", "https://w3c.github.io/FileAPI/#dfn-onerror")]
     public Action<Event>? OnError
     {
@@ -127,6 +145,7 @@ public sealed class FileReader : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>loadend</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#dfn-onloadend"/>
     [IdlMember("onloadend", "https://w3c.github.io/FileAPI/#dfn-onloadend")]
     public Action<Event>? OnLoadEnd
     {
@@ -217,6 +236,7 @@ public sealed class FileReader : EventTarget
 }
 
 /// <summary>The result of a <see cref="FileReader"/>: a string or a byte array (an <c>ArrayBuffer</c> in JavaScript).</summary>
+/// <seealso href="https://w3c.github.io/FileAPI/#dom-filereader-result"/>
 [IdlInterface("(DOMString or ArrayBuffer)", "https://w3c.github.io/FileAPI/#dom-filereader-result")]
 public readonly struct FileReaderResult : IUnionValue, IEquatable<FileReaderResult>
 {

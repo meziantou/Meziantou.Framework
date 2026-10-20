@@ -5,6 +5,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 public partial class HtmlLabelElement
 {
     /// <summary>https://html.spec.whatwg.org/multipage/forms.html#labeled-control</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/forms.html#dom-label-control"/>
     [IdlMember("control", "https://html.spec.whatwg.org/multipage/forms.html#dom-label-control")]
     public HtmlElement? Control
     {
@@ -82,6 +83,7 @@ public partial class HtmlLabelElement
     };
 
     /// <summary>https://html.spec.whatwg.org/multipage/forms.html#dom-label-form</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/forms.html#dom-label-form"/>
     [IdlMember("form", "https://html.spec.whatwg.org/multipage/forms.html#dom-label-form")]
     public HtmlFormElement? Form => Control?.FormOwner;
 }
@@ -89,6 +91,7 @@ public partial class HtmlLabelElement
 public partial class HtmlLegendElement
 {
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#dom-legend-form</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-legend-form"/>
     [IdlMember("form", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-legend-form")]
     public HtmlFormElement? Form => ParentNode is HtmlFieldSetElement fieldset ? fieldset.FormOwner : null;
 }
@@ -98,10 +101,12 @@ public partial class HtmlFieldSetElement
     private HtmlCollection? _elements;
 
     /// <summary>Gets the type of the control, always <c>fieldset</c>.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-fieldset-type"/>
     [IdlMember("type", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-fieldset-type")]
     public string Type => "fieldset";
 
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#dom-fieldset-elements: the listed elements that are descendants.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-fieldset-elements"/>
     [IdlMember("elements", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-fieldset-elements")]
     public HtmlCollection Elements => _elements ??= new HtmlCollection(this, static e => e is HtmlElement { IsListed: true });
 }
@@ -115,10 +120,12 @@ public partial class HtmlOutputElement
     private string? _defaultValueOverride;
 
     /// <summary>Gets the type of the control, always <c>output</c>.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-output-type"/>
     [IdlMember("type", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-output-type")]
     public string Type => "output";
 
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#dom-output-defaultvalue</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-output-defaultvalue"/>
     [IdlMember("defaultValue", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-output-defaultvalue")]
     public string DefaultValue
     {
@@ -138,6 +145,7 @@ public partial class HtmlOutputElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#dom-output-value</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-output-value"/>
     [IdlMember("value", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-output-value")]
     public string Value
     {

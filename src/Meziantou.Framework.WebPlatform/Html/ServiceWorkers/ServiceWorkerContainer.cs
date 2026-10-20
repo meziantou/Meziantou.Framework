@@ -12,6 +12,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// The registrations are stored by <see cref="BrowsingContextOptions.ServiceWorkers"/>. The service workers need a script
 /// engine (<see cref="BrowsingContextOptions.ScriptEngine"/>): they run on their own thread, with their own event loop.
 /// </remarks>
+/// <seealso href="https://w3c.github.io/ServiceWorker/#serviceworkercontainer"/>
 [IdlInterface("ServiceWorkerContainer", "https://w3c.github.io/ServiceWorker/#serviceworkercontainer")]
 public sealed class ServiceWorkerContainer : EventTarget
 {
@@ -30,6 +31,7 @@ public sealed class ServiceWorkerContainer : EventTarget
     private Document Client => _global.EnvironmentDocument;
 
     /// <summary>Gets the service worker that controls the client (https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-controller), or null.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-controller"/>
     [IdlMember("controller", "https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-controller")]
     public ServiceWorker? Controller => Client.ActiveServiceWorker is { } worker && Client.ServiceWorkerClient is not { IsDiscarded: true } ? _global.GetServiceWorkerObject(worker) : null;
 
@@ -37,6 +39,7 @@ public sealed class ServiceWorkerContainer : EventTarget
     /// Gets a promise fulfilled with the registration of the client once it has an active worker
     /// (https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-ready).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-ready"/>
     [IdlMember("ready", "https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-ready")]
     public Task<ServiceWorkerRegistration> Ready
     {
@@ -88,6 +91,7 @@ public sealed class ServiceWorkerContainer : EventTarget
     /// <summary>Registers a service worker (https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-register).</summary>
     /// <param name="scriptUrl">The URL of the script, relative to the API base URL of the client.</param>
     /// <param name="options">The options: the scope, the type of the script and the update via cache mode.</param>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-register"/>
     [IdlMember("register", "https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-register")]
     public Task<ServiceWorkerRegistration> Register(string scriptUrl, RegistrationOptions? options = null)
     {
@@ -96,6 +100,7 @@ public sealed class ServiceWorkerContainer : EventTarget
     }
 
     /// <summary>Registers a service worker whose script URL was created by a Trusted Types policy (https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-register).</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-register"/>
     [IdlMember("register", "https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-register")]
     public Task<ServiceWorkerRegistration> Register(TrustedScriptUrl scriptUrl, RegistrationOptions? options = null)
     {
@@ -215,6 +220,7 @@ public sealed class ServiceWorkerContainer : EventTarget
 
     /// <summary>Returns the registration whose scope matches a URL (https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-getregistration).</summary>
     /// <param name="clientUrl">The URL, relative to the API base URL of the client (the URL of the client by default).</param>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-getregistration"/>
     [IdlMember("getRegistration", "https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-getregistration")]
     public Task<ServiceWorkerRegistration?> GetRegistration(string clientUrl = "")
     {
@@ -242,6 +248,7 @@ public sealed class ServiceWorkerContainer : EventTarget
     }
 
     /// <summary>Returns the registrations of the origin of the client (https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-getregistrations).</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-getregistrations"/>
     [IdlMember("getRegistrations", "https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-getregistrations")]
     public Task<IReadOnlyList<ServiceWorkerRegistration>> GetRegistrations()
     {
@@ -259,6 +266,7 @@ public sealed class ServiceWorkerContainer : EventTarget
     }
 
     /// <summary>Enables the client message queue: the messages of the service workers are dispatched (https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-startmessages).</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-startmessages"/>
     [IdlMember("startMessages", "https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-startmessages")]
     public void StartMessages() => EnableClientMessageQueue();
 
@@ -306,6 +314,7 @@ public sealed class ServiceWorkerContainer : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>controllerchange</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-oncontrollerchange"/>
     [IdlMember("oncontrollerchange", "https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-oncontrollerchange")]
     public Action<Event>? OnControllerChange
     {
@@ -314,6 +323,7 @@ public sealed class ServiceWorkerContainer : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>message</c> event: setting it enables the client message queue.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-onmessage"/>
     [IdlMember("onmessage", "https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-onmessage")]
     public Action<Event>? OnMessage
     {
@@ -322,6 +332,7 @@ public sealed class ServiceWorkerContainer : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>messageerror</c> event.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-onmessageerror"/>
     [IdlMember("onmessageerror", "https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-onmessageerror")]
     public Action<Event>? OnMessageError
     {

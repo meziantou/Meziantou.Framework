@@ -20,34 +20,35 @@ internal static class FontBinary
 
     public static int UInt16(ReadOnlySpan<byte> data, int offset)
     {
-        if (offset < 0 || offset > data.Length - 2)
+        if ((ulong)(uint)offset + 2 > (uint)data.Length)
             throw FontErrors.Truncated();
 
-        return BinaryPrimitives.ReadUInt16BigEndian(data[offset..]);
+        return BinaryPrimitives.ReadUInt16BigEndian(data.Slice(offset, 2));
     }
 
     public static int Int16(ReadOnlySpan<byte> data, int offset)
     {
-        if (offset < 0 || offset > data.Length - 2)
+        if ((ulong)(uint)offset + 2 > (uint)data.Length)
             throw FontErrors.Truncated();
 
-        return BinaryPrimitives.ReadInt16BigEndian(data[offset..]);
+        return BinaryPrimitives.ReadInt16BigEndian(data.Slice(offset, 2));
     }
 
     public static int UInt24(ReadOnlySpan<byte> data, int offset)
     {
-        if (offset < 0 || offset > data.Length - 3)
+        if ((ulong)(uint)offset + 3 > (uint)data.Length)
             throw FontErrors.Truncated();
 
-        return (data[offset] << 16) | (data[offset + 1] << 8) | data[offset + 2];
+        var bytes = data.Slice(offset, 3);
+        return (bytes[0] << 16) | (bytes[1] << 8) | bytes[2];
     }
 
     public static uint UInt32(ReadOnlySpan<byte> data, int offset)
     {
-        if (offset < 0 || offset > data.Length - 4)
+        if ((ulong)(uint)offset + 4 > (uint)data.Length)
             throw FontErrors.Truncated();
 
-        return BinaryPrimitives.ReadUInt32BigEndian(data[offset..]);
+        return BinaryPrimitives.ReadUInt32BigEndian(data.Slice(offset, 4));
     }
 
     public static int Int32(ReadOnlySpan<byte> data, int offset) => (int)UInt32(data, offset);

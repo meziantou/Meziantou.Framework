@@ -194,7 +194,7 @@ internal static partial class GoldenCorpus
         img = new Img(w, h, "rgb", 8, rgb);
         var iccRgb = CommonCorpus.IccProfile("RGB ");
         var exif = CommonCorpus.ExifTiff(littleEndian: false, 8, pixelSize: (w, h), thumbnail: Bytes.Ascii("stale-thumbnail-placeholder!"), software: "corpus generator");
-        var xmp = Bytes.Utf8("<?xpacket begin=\"﻿\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?><x:xmpmeta xmlns:x=\"adobe:ns:meta/\">" +
+        var xmp = Bytes.Utf8("<?xpacket begin=\"\uFEFF\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?><x:xmpmeta xmlns:x=\"adobe:ns:meta/\">" +
             "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"><rdf:Description rdf:about=\"\" " +
             "xmlns:dc=\"http://purl.org/dc/elements/1.1/\"><dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">Corpus</rdf:li>" +
             "</rdf:Alt></dc:title></rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end=\"r\"?>");

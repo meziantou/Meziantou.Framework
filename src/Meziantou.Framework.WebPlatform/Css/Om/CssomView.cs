@@ -314,6 +314,7 @@ public partial class Element
     /// Returns a <see cref="ContainerQueryList"/> that evaluates a comma-separated list of container conditions for the
     /// element (https://github.com/w3c/csswg-drafts/pull/13551, a tentative extension of CSS Conditional 5).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-conditional-5/#dom-element-matchcontainer"/>
     [IdlMember("matchContainer", "https://drafts.csswg.org/css-conditional-5/#dom-element-matchcontainer")]
     [Experimental(ExperimentalApis.MatchContainer, UrlFormat = ExperimentalApis.UrlFormat)]
     public ContainerQueryList MatchContainer(string query)
@@ -330,6 +331,7 @@ public partial class Element
     /// list is empty when the element has no box (it is not connected, it or one of its ancestors has <c>display: none</c>,
     /// <c>display: contents</c>, or its document has no browsing context).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-element-getclientrects"/>
     [IdlMember("getClientRects", "https://drafts.csswg.org/cssom-view/#dom-element-getclientrects")]
     public DomRectList GetClientRects()
     {
@@ -348,6 +350,7 @@ public partial class Element
     /// in the coordinates of the viewport: the union of the rectangles of <see cref="GetClientRects"/> (ignoring the empty ones,
     /// unless they all are), a zero rectangle when the element has no box.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-element-getboundingclientrect"/>
     [IdlMember("getBoundingClientRect", "https://drafts.csswg.org/cssom-view/#dom-element-getboundingclientrect")]
     public DomRect GetBoundingClientRect()
     {
@@ -371,11 +374,13 @@ public sealed partial class ShadowRoot
     /// the document). The member was defined by the obsolete Shadow DOM specification and is implemented by the browsers, but
     /// CSSOM View only defines it for the documents (https://github.com/w3c/csswg-drafts/issues/556).
     /// </summary>
+    /// <seealso href="https://www.w3.org/TR/2018/NOTE-shadow-dom-20180301/#extensions-to-the-documentorshadowroot-mixin"/>
     [IdlMember("elementFromPoint", "https://www.w3.org/TR/2018/NOTE-shadow-dom-20180301/#extensions-to-the-documentorshadowroot-mixin")]
     [Experimental(ExperimentalApis.ShadowRootExtensions, UrlFormat = ExperimentalApis.UrlFormat)]
     public Element? ElementFromPoint(double x, double y) => NodeDocument.ElementFromPoint(x, y, this);
 
     /// <summary>Returns the elements at a point of the viewport, topmost first, retargeted against the shadow root: see <see cref="ElementFromPoint"/> and <see cref="Document.ElementsFromPoint(double, double)"/>.</summary>
+    /// <seealso href="https://www.w3.org/TR/2018/NOTE-shadow-dom-20180301/#extensions-to-the-documentorshadowroot-mixin"/>
     [IdlMember("elementsFromPoint", "https://www.w3.org/TR/2018/NOTE-shadow-dom-20180301/#extensions-to-the-documentorshadowroot-mixin")]
     [Experimental(ExperimentalApis.ShadowRootExtensions, UrlFormat = ExperimentalApis.UrlFormat)]
     public IReadOnlyList<Element> ElementsFromPoint(double x, double y) => NodeDocument.ElementsFromPoint(x, y, this);
@@ -388,6 +393,7 @@ public partial class Document
     /// the element of the topmost box at the point (see <see cref="ElementsFromPoint(double, double)"/>), else the document element. Returns null
     /// when the point is outside of the viewport or the document has no browsing context.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-document-elementfrompoint"/>
     [IdlMember("elementFromPoint", "https://drafts.csswg.org/cssom-view/#dom-document-elementfrompoint")]
     public Element? ElementFromPoint(double x, double y) => ElementFromPoint(x, y, this);
 
@@ -421,6 +427,7 @@ public partial class Document
     /// hit testing, see <see cref="HitTesting"/>). The list is empty when the point is outside of the viewport or the document
     /// has no browsing context.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-document-elementsfrompoint"/>
     [IdlMember("elementsFromPoint", "https://drafts.csswg.org/cssom-view/#dom-document-elementsfrompoint")]
     public IReadOnlyList<Element> ElementsFromPoint(double x, double y) => ElementsFromPoint(x, y, this);
 
@@ -465,6 +472,7 @@ public partial class Document
     /// the element under the point. The positions in the shadow trees that are not given in the options are the positions of
     /// their shadow hosts. Returns null when the point is outside of the viewport or the document has no browsing context.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-document-caretpositionfrompoint"/>
     [IdlMember("caretPositionFromPoint", "https://drafts.csswg.org/cssom-view/#dom-document-caretpositionfrompoint")]
     public CaretPosition? CaretPositionFromPoint(double x, double y, CaretPositionFromPointOptions? options = null)
     {
@@ -552,6 +560,7 @@ public partial class Window
     /// Returns a <see cref="MediaQueryList"/> that evaluates a media query list against the environment of the document
     /// (https://drafts.csswg.org/cssom-view/#dom-window-matchmedia).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-matchmedia"/>
     [IdlMember("matchMedia", "https://drafts.csswg.org/cssom-view/#dom-window-matchmedia")]
     public MediaQueryList MatchMedia(string query)
     {
@@ -635,18 +644,22 @@ public partial class Window
     }
 
     /// <summary>Gets the screen of the window (https://drafts.csswg.org/cssom-view/#dom-window-screen).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-screen"/>
     [IdlMember("screen", "https://drafts.csswg.org/cssom-view/#dom-window-screen")]
     public Screen Screen => _screen ??= new Screen(this);
 
     /// <summary>Gets the number of device pixels per CSS pixel (https://drafts.csswg.org/cssom-view/#dom-window-devicepixelratio): <see cref="ViewportOptions.DevicePixelRatio"/>.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-devicepixelratio"/>
     [IdlMember("devicePixelRatio", "https://drafts.csswg.org/cssom-view/#dom-window-devicepixelratio")]
     public double DevicePixelRatio => StyleEngine.CreateEnvironment(Document).DevicePixelRatio;
 
     /// <summary>Gets the width of the viewport (https://drafts.csswg.org/cssom-view/#dom-window-innerwidth): <see cref="ViewportOptions.Width"/>, or the width of the iframe.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-innerwidth"/>
     [IdlMember("innerWidth", "https://drafts.csswg.org/cssom-view/#dom-window-innerwidth")]
     public int InnerWidth => (int)StyleEngine.CreateEnvironment(Document).Width;
 
     /// <summary>Gets the height of the viewport (https://drafts.csswg.org/cssom-view/#dom-window-innerheight): <see cref="ViewportOptions.Height"/>, or the height of the iframe.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-innerheight"/>
     [IdlMember("innerHeight", "https://drafts.csswg.org/cssom-view/#dom-window-innerheight")]
     public int InnerHeight => (int)StyleEngine.CreateEnvironment(Document).Height;
 }
@@ -660,6 +673,7 @@ public sealed partial class Range
     /// fragments (their advance along the inline axis, the ascent and descent of the font along the block axis; a collapsed
     /// range in a text gives a rectangle without width), with the transforms applied.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-range-getclientrects"/>
     [IdlMember("getClientRects", "https://drafts.csswg.org/cssom-view/#dom-range-getclientrects")]
     public DomRectList GetClientRects()
     {
@@ -674,6 +688,7 @@ public sealed partial class Range
     }
 
     /// <summary>Returns the bounding box of the boxes of the range (https://drafts.csswg.org/cssom-view/#dom-range-getboundingclientrect): see <see cref="GetClientRects"/> and <see cref="Element.GetBoundingClientRect"/>.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-range-getboundingclientrect"/>
     [IdlMember("getBoundingClientRect", "https://drafts.csswg.org/cssom-view/#dom-range-getboundingclientrect")]
     public DomRect GetBoundingClientRect()
     {
@@ -737,6 +752,7 @@ public sealed partial class Range
 /// The screen of the output device (https://drafts.csswg.org/cssom-view/#the-screen-interface): the size of the viewport of
 /// the top-level browsing context (see <see cref="ViewportOptions"/>), or 0 when the window has no browsing context.
 /// </summary>
+/// <seealso href="https://drafts.csswg.org/cssom-view/#screen"/>
 [IdlInterface("Screen", "https://drafts.csswg.org/cssom-view/#screen")]
 public sealed class Screen : IRealmBoundPlatformObject
 {
@@ -750,26 +766,32 @@ public sealed class Screen : IRealmBoundPlatformObject
     Window? IRealmBoundPlatformObject.RealmWindow => _window;
 
     /// <summary>Gets the available width of the screen (https://drafts.csswg.org/cssom-view/#dom-screen-availwidth): the width of the screen.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-screen-availwidth"/>
     [IdlMember("availWidth", "https://drafts.csswg.org/cssom-view/#dom-screen-availwidth")]
     public int AvailWidth => Width;
 
     /// <summary>Gets the available height of the screen (https://drafts.csswg.org/cssom-view/#dom-screen-availheight): the height of the screen.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-screen-availheight"/>
     [IdlMember("availHeight", "https://drafts.csswg.org/cssom-view/#dom-screen-availheight")]
     public int AvailHeight => Height;
 
     /// <summary>Gets the width of the screen in CSS pixels (https://drafts.csswg.org/cssom-view/#dom-screen-width).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-screen-width"/>
     [IdlMember("width", "https://drafts.csswg.org/cssom-view/#dom-screen-width")]
     public int Width => _window.BrowsingContext is null ? 0 : (int)StyleEngine.CreateEnvironment(_window.Document).DeviceWidth;
 
     /// <summary>Gets the height of the screen in CSS pixels (https://drafts.csswg.org/cssom-view/#dom-screen-height).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-screen-height"/>
     [IdlMember("height", "https://drafts.csswg.org/cssom-view/#dom-screen-height")]
     public int Height => _window.BrowsingContext is null ? 0 : (int)StyleEngine.CreateEnvironment(_window.Document).DeviceHeight;
 
     /// <summary>Gets the number of bits used to represent the colors (https://drafts.csswg.org/cssom-view/#dom-screen-colordepth): 24, as recommended when it is unknown.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-screen-colordepth"/>
     [IdlMember("colorDepth", "https://drafts.csswg.org/cssom-view/#dom-screen-colordepth")]
     public uint ColorDepth => 24;
 
     /// <summary>Gets the number of bits used to represent the colors (https://drafts.csswg.org/cssom-view/#dom-screen-pixeldepth): <see cref="ColorDepth"/>.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-screen-pixeldepth"/>
     [IdlMember("pixelDepth", "https://drafts.csswg.org/cssom-view/#dom-screen-pixeldepth")]
     public uint PixelDepth => ColorDepth;
 }

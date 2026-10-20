@@ -1,19 +1,39 @@
 namespace Meziantou.Framework.Fonts;
 
 /// <summary>
-/// What shaping computes from a font alone, kept for the runs of one layout: the glyphs each lookup of its layout tables
+/// What shaping computes from a font alone, kept for the runs of a layout: the glyphs each lookup of its layout tables
 /// may apply at, the plan of the runs of each font and settings, and the advances a variable font computes from the
-/// outlines of its glyphs. A font has no cache of its own; this one lives as long as the engine that lays out a text.
+/// outlines of its glyphs. A font has no cache of its own; the caller keeps this one as long as it wants, and uses it
+/// for one shaping at a time.
 /// </summary>
-internal sealed class ShapingCache
+public sealed class ShapingCache
 {
+    /// <summary>The number of plans of a font a cache keeps once a layout is done: the settings of the runs of the next layouts are likely the same.</summary>
+    internal const int MaxRetainedPlans = 64;
+
     private readonly Dictionary<FontFace, (LookupDigests? Substitutions, LookupDigests? Positions)> _digests = [];
     private readonly Dictionary<FontFace, List<TextShaper.Plan>> _plans = [];
     private readonly Dictionary<(FontFace Face, int Glyph), int> _advances = [];
     private LayoutApplier? _applier;
 
+    /// <summary>
+    /// Prepares the cache to be kept after a layout: the applier is dropped (it refers to the glyphs of the layout), and
+    /// so are the plans of a font shaped with too many different settings.
+    /// </summary>
+    public void Trim()
+    {
+        _applier = null;
+        foreach (var plans in _plans.Values)
+        {
+            if (plans.Count > MaxRetainedPlans)
+            {
+                plans.Clear();
+            }
+        }
+    }
+
     /// <summary>Gets the applier of the lookups of a run, kept from a run to the next one.</summary>
-    public LayoutApplier GetApplier(GlyphBuffer buffer, FontFace face)
+    internal LayoutApplier GetApplier(GlyphBuffer buffer, FontFace face)
     {
         if (_applier is null)
         {
@@ -46,7 +66,7 @@ internal sealed class ShapingCache
     }
 
     /// <summary>Gets the plan of the runs of a font shaped with settings: a new one, not complete, for the first run.</summary>
-    public TextShaper.Plan GetPlan(FontFace face, UnicodeScript script, ReadOnlySpan<uint> languages, bool isRightToLeft, bool isVertical, ReadOnlySpan<ShapingFeature> features)
+    internal TextShaper.Plan GetPlan(FontFace face, UnicodeScript script, ReadOnlySpan<uint> languages, bool isRightToLeft, bool isVertical, ReadOnlySpan<ShapingFeature> features)
     {
         if (!_plans.TryGetValue(face, out var plans))
         {
@@ -66,7 +86,7 @@ internal sealed class ShapingCache
     }
 
     /// <summary>Gets the digests of the lookups of the GSUB or GPOS table of a font, which has the table.</summary>
-    public LookupDigests GetDigests(FontFace face, bool isPositioning)
+    internal LookupDigests GetDigests(FontFace face, bool isPositioning)
     {
         _digests.TryGetValue(face, out var entry);
         var digests = isPositioning ? entry.Positions : entry.Substitutions;
@@ -80,6 +100,6 @@ internal sealed class ShapingCache
     }
 
     /// <summary>Creates the digests of the lookups of the GSUB or GPOS table of a font, which has the table.</summary>
-    public static LookupDigests Create(FontFace face, bool isPositioning)
+    internal static LookupDigests Create(FontFace face, bool isPositioning)
         => isPositioning ? new LookupDigests(face.Gpos!, face.GposData, isPositioning: true) : new LookupDigests(face.Gsub!, face.GsubData, isPositioning: false);
 }

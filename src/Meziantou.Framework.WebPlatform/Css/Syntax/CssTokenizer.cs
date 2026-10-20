@@ -45,17 +45,7 @@ internal sealed class CssTokenizer
     internal static string Preprocess(string input)
     {
         var index = input.AsSpan().IndexOfAny("\r\f\0");
-        var hasSurrogates = false;
-        foreach (var c in input)
-        {
-            if (char.IsSurrogate(c))
-            {
-                hasSurrogates = true;
-                break;
-            }
-        }
-
-        if (index < 0 && !hasSurrogates)
+        if (index < 0 && !HasLoneSurrogate(input))
             return input;
 
         var builder = new StringBuilder(input.Length);
@@ -98,6 +88,23 @@ internal sealed class CssTokenizer
         }
 
         return builder.ToString();
+    }
+
+    /// <summary>Returns true when the input contains a surrogate that is not part of a pair.</summary>
+    private static bool HasLoneSurrogate(string input)
+    {
+        var span = input.AsSpan();
+        while (true)
+        {
+            var index = span.IndexOfAnyInRange('\uD800', '\uDFFF');
+            if (index < 0)
+                return false;
+
+            if (!char.IsHighSurrogate(span[index]) || index + 1 >= span.Length || !char.IsLowSurrogate(span[index + 1]))
+                return true;
+
+            span = span[(index + 2)..];
+        }
     }
 
     // ----------------------------------------------------------------------------------------------------------------

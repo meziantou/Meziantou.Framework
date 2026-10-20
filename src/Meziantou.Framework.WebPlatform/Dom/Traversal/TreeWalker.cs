@@ -1,6 +1,7 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://dom.spec.whatwg.org/#interface-treewalker</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#treewalker"/>
 [IdlInterface("TreeWalker", "https://dom.spec.whatwg.org/#treewalker")]
 public sealed class TreeWalker
 {
@@ -14,18 +15,22 @@ public sealed class TreeWalker
     }
 
     /// <summary>Gets the root node of the traversal.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-treewalker-root"/>
     [IdlMember("root", "https://dom.spec.whatwg.org/#dom-treewalker-root")]
     public Node Root => _traverser.Root;
 
     /// <summary>Gets the bit mask of the node types the walker presents.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-treewalker-whattoshow"/>
     [IdlMember("whatToShow", "https://dom.spec.whatwg.org/#dom-treewalker-whattoshow")]
     public uint WhatToShow => _traverser.WhatToShow;
 
     /// <summary>Gets the filter used to accept, reject or skip nodes, or null when there is none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-treewalker-filter"/>
     [IdlMember("filter", "https://dom.spec.whatwg.org/#dom-treewalker-filter")]
     public INodeFilter? Filter => _traverser.Filter;
 
     /// <summary>Gets or sets the node the walker is currently positioned at.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-treewalker-currentnode"/>
     [IdlMember("currentNode", "https://dom.spec.whatwg.org/#dom-treewalker-currentnode")]
     public Node CurrentNode
     {
@@ -34,6 +39,7 @@ public sealed class TreeWalker
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-treewalker-parentnode</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-treewalker-parentnode"/>
     [IdlMember("parentNode", "https://dom.spec.whatwg.org/#dom-treewalker-parentnode")]
     public Node? ParentNode()
     {
@@ -54,12 +60,14 @@ public sealed class TreeWalker
     /// <summary>
     /// Moves to the first visible child of the current node and returns it, or null when there is none.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-treewalker-firstchild"/>
     [IdlMember("firstChild", "https://dom.spec.whatwg.org/#dom-treewalker-firstchild")]
     public Node? FirstChild() => TraverseChildren(first: true);
 
     /// <summary>
     /// Moves to the last visible child of the current node and returns it, or null when there is none.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-treewalker-lastchild"/>
     [IdlMember("lastChild", "https://dom.spec.whatwg.org/#dom-treewalker-lastchild")]
     public Node? LastChild() => TraverseChildren(first: false);
 
@@ -109,12 +117,14 @@ public sealed class TreeWalker
     /// <summary>
     /// Moves to the next visible sibling of the current node and returns it, or null when there is none.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-treewalker-nextsibling"/>
     [IdlMember("nextSibling", "https://dom.spec.whatwg.org/#dom-treewalker-nextsibling")]
     public Node? NextSibling() => TraverseSiblings(next: true);
 
     /// <summary>
     /// Moves to the previous visible sibling of the current node and returns it, or null when there is none.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-treewalker-previoussibling"/>
     [IdlMember("previousSibling", "https://dom.spec.whatwg.org/#dom-treewalker-previoussibling")]
     public Node? PreviousSibling() => TraverseSiblings(next: false);
 
@@ -155,6 +165,7 @@ public sealed class TreeWalker
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-treewalker-previousnode</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-treewalker-previousnode"/>
     [IdlMember("previousNode", "https://dom.spec.whatwg.org/#dom-treewalker-previousnode")]
     public Node? PreviousNode()
     {
@@ -196,6 +207,7 @@ public sealed class TreeWalker
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-treewalker-nextnode</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-treewalker-nextnode"/>
     [IdlMember("nextNode", "https://dom.spec.whatwg.org/#dom-treewalker-nextnode")]
     public Node? NextNode()
     {

@@ -421,8 +421,8 @@ internal static partial class HeicCorpus
         Limit("frame-pixels-over-limit", "window-rgb8-lossless", "MaxFramePixels", 339, "FramePixels", "Reuses heic/window-rgb8-lossless (20x17, 340 pixels) with MaxFramePixels = 339.");
         Limit("encoded-bytes-over-limit", "window-rgb8-lossless", "MaxEncodedBytes", context.Inputs["window-rgb8-lossless"].Length - 1, "EncodedBytes",
             "Reuses heic/window-rgb8-lossless with MaxEncodedBytes one byte below the file length: the data of the item end with the file.");
-        Limit("live-allocation-over-limit", "lossless-rgb8-64x64", "MaxLiveAllocationBytes", 65536, "LiveAllocationBytes",
-            "Reuses heic/lossless-rgb8-64x64 with 64 KiB of live allocations: enough to read the file and to parse the container, not to decode a 64x64 picture.");
+        Limit("live-allocation-over-limit", "lossless-rgb8-64x64", "MaxLiveAllocationBytes", 49152, "LiveAllocationBytes",
+            "Reuses heic/lossless-rgb8-64x64 with 48 KiB of live allocations: enough to read the file and to parse the container, not to decode a 64x64 picture.");
         Limit("clap-picture-over-limit", "lossless-rgb8", "MaxFramePixels", 4095, "FramePixels",
             "Reuses heic/lossless-rgb8, a 12x9 image that a clap property cuts out of a 64x64 picture, with MaxFramePixels = 4095: the limit applies to the picture that is decoded (4096 pixels), not to the aperture.");
 

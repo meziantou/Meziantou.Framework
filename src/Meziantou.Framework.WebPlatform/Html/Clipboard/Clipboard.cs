@@ -8,10 +8,12 @@ using Meziantou.Framework.WebPlatform.Infra;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://w3c.github.io/clipboard-apis/#dictdef-clipboardunsanitizedformats</summary>
+/// <seealso href="https://w3c.github.io/clipboard-apis/#dictdef-clipboardunsanitizedformats"/>
 [IdlInterface("ClipboardUnsanitizedFormats", "https://w3c.github.io/clipboard-apis/#dictdef-clipboardunsanitizedformats")]
 public sealed class ClipboardUnsanitizedFormats
 {
     /// <summary>The MIME types whose data must not be sanitized (only <c>text/html</c> is allowed), or null when the member is not present.</summary>
+    /// <seealso href="https://w3c.github.io/clipboard-apis/#dom-clipboardunsanitizedformats-unsanitized"/>
     [IdlMember("unsanitized", "https://w3c.github.io/clipboard-apis/#dom-clipboardunsanitizedformats-unsanitized")]
     public IReadOnlyList<string>? Unsanitized { get; init; }
 }
@@ -29,6 +31,7 @@ public sealed class ClipboardUnsanitizedFormats
 /// The <c>clipboardchange</c> events are fired at this object (as in the browsers, and in the examples of the
 /// specification), for the documents allowed to read the clipboard.
 /// </remarks>
+/// <seealso href="https://w3c.github.io/clipboard-apis/#clipboard"/>
 [IdlInterface("Clipboard", "https://w3c.github.io/clipboard-apis/#clipboard")]
 public sealed class Clipboard : EventTarget
 {
@@ -51,6 +54,7 @@ public sealed class Clipboard : EventTarget
     /// Reads the items of the system clipboard (https://w3c.github.io/clipboard-apis/#dom-clipboard-read): their types are
     /// known, their data is read by <see cref="ClipboardItem.GetType(string)"/>.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/clipboard-apis/#dom-clipboard-read"/>
     [IdlMember("read", "https://w3c.github.io/clipboard-apis/#dom-clipboard-read")]
     public Task<IReadOnlyList<ClipboardItem>> Read(ClipboardUnsanitizedFormats? formats = null)
     {
@@ -92,6 +96,7 @@ public sealed class Clipboard : EventTarget
     }
 
     /// <summary>Reads the text of the system clipboard (https://w3c.github.io/clipboard-apis/#dom-clipboard-readtext): the task fails with a <c>NotFoundError</c> when there is no text.</summary>
+    /// <seealso href="https://w3c.github.io/clipboard-apis/#dom-clipboard-readtext"/>
     [IdlMember("readText", "https://w3c.github.io/clipboard-apis/#dom-clipboard-readtext")]
     public Task<string> ReadText()
     {
@@ -124,6 +129,7 @@ public sealed class Clipboard : EventTarget
     /// their representations is available. The task fails with a <c>NotAllowedError</c> when the data of a representation
     /// is not available, or when its type is not a mandatory or an optional data type (or not the type of the representation).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/clipboard-apis/#dom-clipboard-write"/>
     [IdlMember("write", "https://w3c.github.io/clipboard-apis/#dom-clipboard-write")]
     public Task Write(IReadOnlyList<ClipboardItem> data)
     {
@@ -165,6 +171,7 @@ public sealed class Clipboard : EventTarget
     }
 
     /// <summary>Writes text to the system clipboard (https://w3c.github.io/clipboard-apis/#dom-clipboard-writetext).</summary>
+    /// <seealso href="https://w3c.github.io/clipboard-apis/#dom-clipboard-writetext"/>
     [IdlMember("writeText", "https://w3c.github.io/clipboard-apis/#dom-clipboard-writetext")]
     public Task WriteText(string data)
     {

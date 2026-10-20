@@ -7,7 +7,7 @@ namespace Meziantou.Framework.Fonts;
 /// kept by its owner, so that decoding the same glyphs again allocates nothing.
 /// </summary>
 /// <remarks>A font has no cache and no state of its own: several threads can decode its glyphs, each with its own scratch.</remarks>
-internal sealed class GlyphScratch : IDisposable
+public sealed class GlyphScratch : IDisposable
 {
     private const int InitialCapacity = 128;
 
@@ -18,6 +18,8 @@ internal sealed class GlyphScratch : IDisposable
     private int _workCapacity;
     private int _workCount;
 
+    /// <summary>Initializes a new instance of the <see cref="GlyphScratch"/> class.</summary>
+    /// <param name="scope">The allocator the storage is rented from.</param>
     public GlyphScratch(FontAllocator scope)
     {
         _scope = scope;
@@ -27,7 +29,7 @@ internal sealed class GlyphScratch : IDisposable
     public int Count { get; private set; }
 
     /// <summary>Gets the points.</summary>
-    public Span<GlyphPoint> Points => _buffer is null ? default : unsafe(MemoryMarshal.Cast<byte, GlyphPoint>(_buffer.Span))[..Count];
+    internal Span<GlyphPoint> Points => _buffer is null ? default : unsafe(MemoryMarshal.Cast<byte, GlyphPoint>(_buffer.Span))[..Count];
 
     /// <summary>Removes every point and keeps the storage.</summary>
     public void Reset()
@@ -85,6 +87,7 @@ internal sealed class GlyphScratch : IDisposable
     /// <summary>Returns the working numbers rented last.</summary>
     public void ReturnWork(int start) => _workCount = start;
 
+    /// <summary>Returns the storage to the allocator.</summary>
     public void Dispose()
     {
         _buffer?.Dispose();

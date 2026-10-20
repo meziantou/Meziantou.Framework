@@ -7,6 +7,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// object (<see cref="Window.TrustedTypes"/>, <see cref="WorkerGlobalScope.TrustedTypes"/>). A document without a window
 /// (e.g. a document parsed without a browsing context) is its own global object: see <see cref="Document.TrustedTypes"/>.
 /// </summary>
+/// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#trustedtypepolicyfactory"/>
 [IdlInterface("TrustedTypePolicyFactory", "https://w3c.github.io/trusted-types/dist/spec/#trustedtypepolicyfactory")]
 public sealed class TrustedTypePolicyFactory
 {
@@ -34,6 +35,7 @@ public sealed class TrustedTypePolicyFactory
 
     /// <summary>https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-createpolicy</summary>
     /// <exception cref="TypeErrorException">The creation of the policy is blocked by <see cref="Document.TrustedTypesDirectives"/>, or a default policy already exists.</exception>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-createpolicy"/>
     [IdlMember("createPolicy", "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-createpolicy")]
     public TrustedTypePolicy CreatePolicy(string policyName, TrustedTypePolicyOptions? policyOptions = null)
     {
@@ -57,26 +59,32 @@ public sealed class TrustedTypePolicyFactory
     }
 
     /// <summary>https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-ishtml</summary>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-ishtml"/>
     [IdlMember("isHTML", "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-ishtml")]
     public bool IsHtml(object? value) => value is TrustedHtml;
 
     /// <summary>https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-isscript</summary>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-isscript"/>
     [IdlMember("isScript", "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-isscript")]
     public bool IsScript(object? value) => value is TrustedScript;
 
     /// <summary>https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-isscripturl</summary>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-isscripturl"/>
     [IdlMember("isScriptURL", "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-isscripturl")]
     public bool IsScriptUrl(object? value) => value is TrustedScriptUrl;
 
     /// <summary>https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-emptyhtml</summary>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-emptyhtml"/>
     [IdlMember("emptyHTML", "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-emptyhtml")]
     public TrustedHtml EmptyHtml { get; } = new("");
 
     /// <summary>https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-emptyscript</summary>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-emptyscript"/>
     [IdlMember("emptyScript", "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-emptyscript")]
     public TrustedScript EmptyScript { get; } = new("");
 
     /// <summary>https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-defaultpolicy</summary>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-defaultpolicy"/>
     [IdlMember("defaultPolicy", "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-defaultpolicy")]
     public TrustedTypePolicy? DefaultPolicy { get; private set; }
 
@@ -84,6 +92,7 @@ public sealed class TrustedTypePolicyFactory
     /// https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-getattributetype: the name of the trusted
     /// type required by a content attribute (<c>"TrustedHTML"</c>, <c>"TrustedScript"</c> or <c>"TrustedScriptURL"</c>), or null.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-getattributetype"/>
     [IdlMember("getAttributeType", "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-getattributetype")]
     public string? GetAttributeType(string tagName, string attribute, string? elementNs = "", string? attrNs = "")
     {
@@ -109,6 +118,7 @@ public sealed class TrustedTypePolicyFactory
     /// https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-getpropertytype: the name of the trusted
     /// type required by an IDL attribute of an element (<c>"TrustedHTML"</c>, <c>"TrustedScript"</c> or <c>"TrustedScriptURL"</c>), or null.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-getpropertytype"/>
     [IdlMember("getPropertyType", "https://w3c.github.io/trusted-types/dist/spec/#dom-trustedtypepolicyfactory-getpropertytype")]
     public string? GetPropertyType(string tagName, string property, string? elementNs = "")
     {

@@ -1,35 +1,43 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>The options of a <see cref="PerformanceMark"/> (https://w3c.github.io/user-timing/#dom-performancemarkoptions).</summary>
+/// <seealso href="https://w3c.github.io/user-timing/#dom-performancemarkoptions"/>
 [IdlInterface("PerformanceMarkOptions", "https://w3c.github.io/user-timing/#dom-performancemarkoptions")]
 public sealed class PerformanceMarkOptions
 {
     /// <summary>Gets or sets the data of the mark, which is structured-cloned (a value of the script engine or a serializable value), or null.</summary>
+    /// <seealso href="https://w3c.github.io/user-timing/#dom-performancemarkoptions-detail"/>
     [IdlMember("detail", "https://w3c.github.io/user-timing/#dom-performancemarkoptions-detail")]
     public object? Detail { get; set; }
 
     /// <summary>Gets or sets the time of the mark, in milliseconds relative to the time origin, or null for the current time.</summary>
+    /// <seealso href="https://w3c.github.io/user-timing/#dom-performancemarkoptions-starttime"/>
     [IdlMember("startTime", "https://w3c.github.io/user-timing/#dom-performancemarkoptions-starttime")]
     public double? StartTime { get; set; }
 }
 
 /// <summary>The options of <see cref="Performance.Measure(string, object?, string?)"/> (https://w3c.github.io/user-timing/#dom-performancemeasureoptions).</summary>
+/// <seealso href="https://w3c.github.io/user-timing/#dom-performancemeasureoptions"/>
 [IdlInterface("PerformanceMeasureOptions", "https://w3c.github.io/user-timing/#dom-performancemeasureoptions")]
 public sealed class PerformanceMeasureOptions
 {
     /// <summary>Gets or sets the data of the measure, which is structured-cloned (a value of the script engine or a serializable value), or null.</summary>
+    /// <seealso href="https://w3c.github.io/user-timing/#dom-performancemeasureoptions-detail"/>
     [IdlMember("detail", "https://w3c.github.io/user-timing/#dom-performancemeasureoptions-detail")]
     public object? Detail { get; set; }
 
     /// <summary>Gets or sets the start of the measure: the name of a mark (a string) or a time in milliseconds (a double), or null.</summary>
+    /// <seealso href="https://w3c.github.io/user-timing/#dom-performancemeasureoptions-start"/>
     [IdlMember("start", "https://w3c.github.io/user-timing/#dom-performancemeasureoptions-start")]
     public object? Start { get; set; }
 
     /// <summary>Gets or sets the duration of the measure, in milliseconds, or null.</summary>
+    /// <seealso href="https://w3c.github.io/user-timing/#dom-performancemeasureoptions-duration"/>
     [IdlMember("duration", "https://w3c.github.io/user-timing/#dom-performancemeasureoptions-duration")]
     public double? Duration { get; set; }
 
     /// <summary>Gets or sets the end of the measure: the name of a mark (a string) or a time in milliseconds (a double), or null.</summary>
+    /// <seealso href="https://w3c.github.io/user-timing/#dom-performancemeasureoptions-end"/>
     [IdlMember("end", "https://w3c.github.io/user-timing/#dom-performancemeasureoptions-end")]
     public object? End { get; set; }
 }
@@ -38,6 +46,7 @@ public sealed class PerformanceMeasureOptions
 /// A named time of the performance timeline of a global object (https://w3c.github.io/user-timing/#performancemark), created by
 /// <see cref="Performance.Mark"/> (which adds it to the timeline) or by its constructor (which does not).
 /// </summary>
+/// <seealso href="https://w3c.github.io/user-timing/#dom-performancemark"/>
 [IdlInterface("PerformanceMark", "https://w3c.github.io/user-timing/#dom-performancemark")]
 public sealed class PerformanceMark : PerformanceEntry
 {
@@ -49,6 +58,7 @@ public sealed class PerformanceMark : PerformanceEntry
     /// <param name="markOptions">The time and the data of the mark.</param>
     /// <exception cref="TypeErrorException">The start time is negative.</exception>
     /// <exception cref="DomException">A <c>SyntaxError</c> when the name is the name of an attribute of <see cref="PerformanceTiming"/>, in a window; a <c>DataCloneError</c> when the data cannot be structured-cloned.</exception>
+    /// <seealso href="https://w3c.github.io/user-timing/#dom-performancemark-constructor"/>
     [IdlMember("constructor", "https://w3c.github.io/user-timing/#dom-performancemark-constructor")]
     public PerformanceMark(string markName, PerformanceMarkOptions? markOptions = null)
         : this(GlobalScope.Current ?? throw new InvalidOperationException("A performance mark can only be created by a window or a worker"), markName, markOptions)
@@ -67,6 +77,7 @@ public sealed class PerformanceMark : PerformanceEntry
     }
 
     /// <summary>Gets the data of the mark: the structured clone of the detail of the options, or null.</summary>
+    /// <seealso href="https://w3c.github.io/user-timing/#dom-performancemark-detail"/>
     [IdlMember("detail", "https://w3c.github.io/user-timing/#dom-performancemark-detail")]
     public object? Detail { get; }
 
@@ -98,6 +109,7 @@ public sealed class PerformanceMark : PerformanceEntry
 /// The time between two times of the performance timeline of a global object (https://w3c.github.io/user-timing/#performancemeasure),
 /// created by <see cref="Performance.Measure(string, object?, string?)"/>.
 /// </summary>
+/// <seealso href="https://w3c.github.io/user-timing/#dom-performancemeasure"/>
 [IdlInterface("PerformanceMeasure", "https://w3c.github.io/user-timing/#dom-performancemeasure")]
 public sealed class PerformanceMeasure : PerformanceEntry
 {
@@ -111,6 +123,7 @@ public sealed class PerformanceMeasure : PerformanceEntry
     }
 
     /// <summary>Gets the data of the measure: the structured clone of the detail of the options, or null.</summary>
+    /// <seealso href="https://w3c.github.io/user-timing/#dom-performancemeasure-detail"/>
     [IdlMember("detail", "https://w3c.github.io/user-timing/#dom-performancemeasure-detail")]
     public object? Detail { get; }
 }

@@ -5,6 +5,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 public partial class Document
 {
     /// <summary>Returns a live collection of the descendant elements with the given qualified name.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-getelementsbytagname"/>
     [IdlMember("getElementsByTagName", "https://dom.spec.whatwg.org/#dom-document-getelementsbytagname")]
     public HtmlCollection GetElementsByTagName(string qualifiedName)
     {
@@ -13,6 +14,7 @@ public partial class Document
     }
 
     /// <summary>Returns a live collection of the descendant elements with the given namespace and local name.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-getelementsbytagnamens"/>
     [IdlMember("getElementsByTagNameNS", "https://dom.spec.whatwg.org/#dom-document-getelementsbytagnamens")]
     public HtmlCollection GetElementsByTagNameNS(string? @namespace, string localName)
     {
@@ -21,6 +23,7 @@ public partial class Document
     }
 
     /// <summary>Returns a live collection of the descendant elements that have all the given class names.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-getelementsbyclassname"/>
     [IdlMember("getElementsByClassName", "https://dom.spec.whatwg.org/#dom-document-getelementsbyclassname")]
     public HtmlCollection GetElementsByClassName(string classNames)
     {
@@ -29,6 +32,7 @@ public partial class Document
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-document-createevent</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-createevent"/>
     [IdlMember("createEvent", "https://dom.spec.whatwg.org/#dom-document-createevent")]
     public Event CreateEvent(string @interface)
     {
@@ -58,10 +62,12 @@ public partial class Document
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-document-createrange</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-createrange"/>
     [IdlMember("createRange", "https://dom.spec.whatwg.org/#dom-document-createrange")]
     public Range CreateRange() => new(this);
 
     /// <summary>https://dom.spec.whatwg.org/#dom-document-createnodeiterator</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-createnodeiterator"/>
     [IdlMember("createNodeIterator", "https://dom.spec.whatwg.org/#dom-document-createnodeiterator")]
     public NodeIterator CreateNodeIterator(Node root, uint whatToShow = NodeFilter.ShowAll, INodeFilter? filter = null)
     {
@@ -70,6 +76,7 @@ public partial class Document
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-document-createtreewalker</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-document-createtreewalker"/>
     [IdlMember("createTreeWalker", "https://dom.spec.whatwg.org/#dom-document-createtreewalker")]
     public TreeWalker CreateTreeWalker(Node root, uint whatToShow = NodeFilter.ShowAll, INodeFilter? filter = null)
     {

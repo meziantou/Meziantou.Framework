@@ -19,6 +19,7 @@ public partial class HtmlElement : Element
     private partial int ComputeTabIndex() => Reflection.GetTabIndex(this);
 
     /// <summary>https://html.spec.whatwg.org/multipage/interaction.html#dom-hidden</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-hidden"/>
     [IdlMember("hidden", "https://html.spec.whatwg.org/multipage/interaction.html#dom-hidden")]
     public BooleanOrDoubleOrString? Hidden
     {
@@ -112,6 +113,7 @@ public partial class HtmlElement : Element
     private bool _clickInProgress;
 
     /// <summary>https://html.spec.whatwg.org/multipage/interaction.html#dom-click</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-click"/>
     [IdlMember("click", "https://html.spec.whatwg.org/multipage/interaction.html#dom-click")]
     public void Click()
     {

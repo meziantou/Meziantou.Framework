@@ -339,10 +339,12 @@ public partial class Document
     /// Gets whether the document is prerendering: it is in a prerendering traversable, which is not shown, until a navigation
     /// activates it (https://wicg.github.io/nav-speculation/prerendering.html#dom-document-prerendering).
     /// </summary>
+    /// <seealso href="https://wicg.github.io/nav-speculation/prerendering.html#dom-document-prerendering"/>
     [IdlMember("prerendering", "https://wicg.github.io/nav-speculation/prerendering.html#dom-document-prerendering")]
     public bool Prerendering => BrowsingContext is { } browsingContext && ReferenceEquals(browsingContext.Document, this) && browsingContext.Top.IsPrerendering;
 
     /// <summary>Gets or sets the event handler of the <c>prerenderingchange</c> event (the <c>onprerenderingchange</c> event handler attribute).</summary>
+    /// <seealso href="https://wicg.github.io/nav-speculation/prerendering.html#dom-document-onprerenderingchange"/>
     [IdlMember("onprerenderingchange", "https://wicg.github.io/nav-speculation/prerendering.html#dom-document-onprerenderingchange")]
     public Action<Event>? OnPrerenderingChange
     {

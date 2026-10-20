@@ -8,7 +8,7 @@ namespace Meziantou.Framework.Fonts;
 /// place. The bytes read are bounded by <see cref="FontResourceLimits.MaxEncodedBytes"/>, and the bytes the font keeps
 /// by <see cref="FontResourceLimits.MaxFontBytes"/>.
 /// </remarks>
-internal static class FontLoader
+public static class FontLoader
 {
     private const int ChunkLength = 64 * 1024;
 
@@ -22,19 +22,37 @@ internal static class FontLoader
             throw new FontResourceLimitException(FontResourceLimitKind.EncodedBytes, limits.MaxEncodedBytes, data.Length);
 
         EnsureFontBytes(limits, data.Length);
+
+        // A WOFF2 file is expanded from the span: only the font it holds is kept, not a copy of the file.
+        if (data.Length >= 4 && FontBinary.UInt32(data, 0) == FontTags.Woff2)
+            return ParseExpanded(Woff2Reader.Decode(data, environment), environment, useEmbeddedBitmaps);
+
         return Parse(data.ToArray(), environment, useEmbeddedBitmaps);
     }
 
+    /// <summary>Reads the faces of a font file from a stream.</summary>
+    /// <param name="stream">The stream of the font file, read to its end.</param>
+    /// <param name="environment">The limits and the storage of the font code.</param>
+    /// <param name="useEmbeddedBitmaps">Whether the bitmaps without colors of the font replace its outlines at the sizes they are made for.</param>
+    /// <returns>The faces of the file: one for a font, one per font of a collection.</returns>
     public static FontFace[] Load(Stream stream, FontEnvironment environment, bool useEmbeddedBitmaps = false)
     {
         var limits = environment.Limits;
         var buffer = new byte[GetInitialLength(stream, limits)];
         var length = 0;
+        Span<byte> next = stackalloc byte[1];
         while (true)
         {
             if (length == buffer.Length)
             {
+                // The buffer is full, which is the end of a seekable stream: one more byte says whether to grow it.
+                if (stream.Read(next) == 0)
+                    break;
+
                 buffer = Grow(buffer, limits);
+                buffer[length++] = next[0];
+                EnsureEncodedBytes(limits, length);
+                continue;
             }
 
             var read = stream.Read(buffer.AsSpan(length));
@@ -48,17 +66,32 @@ internal static class FontLoader
         return Parse(Trim(buffer, length), environment, useEmbeddedBitmaps);
     }
 
+    /// <summary>Reads the faces of a font file from a stream, asynchronously.</summary>
+    /// <param name="stream">The stream of the font file, read to its end.</param>
+    /// <param name="environment">The limits and the storage of the font code.</param>
+    /// <param name="useEmbeddedBitmaps">Whether the bitmaps without colors of the font replace its outlines at the sizes they are made for.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>The faces of the file: one for a font, one per font of a collection.</returns>
     public static async Task<FontFace[]> LoadAsync(Stream stream, FontEnvironment environment, bool useEmbeddedBitmaps, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var limits = environment.Limits;
         var buffer = new byte[GetInitialLength(stream, limits)];
         var length = 0;
+        byte[]? next = null;
         while (true)
         {
             if (length == buffer.Length)
             {
+                // The buffer is full, which is the end of a seekable stream: one more byte says whether to grow it.
+                next ??= new byte[1];
+                if (await stream.ReadAsync(next, cancellationToken).ConfigureAwait(false) == 0)
+                    break;
+
                 buffer = Grow(buffer, limits);
+                buffer[length++] = next[0];
+                EnsureEncodedBytes(limits, length);
+                continue;
             }
 
             var read = await stream.ReadAsync(buffer.AsMemory(length), cancellationToken).ConfigureAwait(false);
@@ -83,7 +116,7 @@ internal static class FontLoader
                 throw new FontResourceLimitException(FontResourceLimitKind.EncodedBytes, limits.MaxEncodedBytes, remaining);
 
             if (remaining is > 0 and < int.MaxValue)
-                return (int)remaining + 1;
+                return (int)remaining;
         }
 
         return ChunkLength;
@@ -120,11 +153,10 @@ internal static class FontLoader
         if (bytes.Length < 4)
             throw new UnknownFontFormatException("The data is not a font: it is shorter than a font signature.");
 
-        var limits = environment.Limits;
         switch (FontBinary.UInt32(bytes, 0))
         {
             case FontTags.Woff:
-                bytes = WoffReader.Decode(bytes, limits);
+                bytes = WoffReader.Decode(bytes, environment.Limits);
                 break;
 
             case FontTags.Woff2:
@@ -132,7 +164,14 @@ internal static class FontLoader
                 break;
         }
 
+        return ParseExpanded(bytes, environment, useEmbeddedBitmaps);
+    }
+
+    /// <summary>Creates the faces of a font file that is not a compressed container, or of the font a container held.</summary>
+    private static FontFace[] ParseExpanded(byte[] bytes, FontEnvironment environment, bool useEmbeddedBitmaps)
+    {
         // A container holds a font, never another container.
+        var limits = environment.Limits;
         EnsureFontBytes(limits, bytes.Length);
         switch (bytes.Length < 4 ? 0 : FontBinary.UInt32(bytes, 0))
         {
@@ -153,7 +192,7 @@ internal static class FontLoader
     /// <summary>Reads the header of a font collection: OpenType specification, "Font Collections".</summary>
     private static FontFace[] ParseCollection(FontData data)
     {
-        var file = data.Bytes.AsSpan();
+        var file = data.RawBytes.AsSpan();
         var majorVersion = FontBinary.UInt16(file, 4);
         if (majorVersion is not (1 or 2))
             throw FontErrors.Invalid($"the font collection has the unknown version {majorVersion}.");

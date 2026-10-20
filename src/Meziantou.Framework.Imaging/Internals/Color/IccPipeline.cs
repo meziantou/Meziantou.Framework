@@ -13,6 +13,9 @@ internal sealed class IccPipeline
     /// <summary>The largest number of components a stage reads or writes.</summary>
     public const int MaxChannels = 4;
 
+    /// <summary>The number of colors that the kernels convert together, stored by component (<see cref="IccStage.ApplyBatch"/>).</summary>
+    public const int BatchSize = 64;
+
     /// <summary>
     /// The colors whose output curves are evaluated before <see cref="GetByteOutputTables"/> builds the tables: building
     /// the table of a curve costs about 40,000 evaluations of the curve (0.3 to 1 ms), which saves 4 to 45 ns per sample
@@ -25,6 +28,11 @@ internal sealed class IccPipeline
     private static readonly QuantizationThresholds[] NoByteOutputTables = [];
 
     private readonly IccStage[] _stages;
+
+    // The curves of the first stage when it is one curve per source channel (ByteInputTables): the tone curves, or the
+    // CICP decoding of every channel
+    private readonly IccCurve[]? _inputCurves;
+    private readonly CicpDecodeStage? _inputDecode;
 
     // The inverse tone curves of the last stage, one per destination channel, when it is not the first stage and not
     // only identities (cheaper to evaluate than to look up)
@@ -47,6 +55,7 @@ internal sealed class IccPipeline
         // IccCurvesStage on the same normalized sample, so that using the table gives bit-identical results
         if (stages.Length > 0 && stages[0] is IccCurvesStage { Curves: var curves } && curves.Length == sourceChannelCount)
         {
+            _inputCurves = curves;
             var tables = new double[sourceChannelCount][];
             for (var channel = 0; channel < tables.Length; channel++)
             {
@@ -63,6 +72,7 @@ internal sealed class IccPipeline
         }
         else if (stages.Length > 0 && stages[0] is CicpDecodeStage decode && decode.ChannelCount == sourceChannelCount)
         {
+            _inputDecode = decode;
             // The same function for every channel of a CICP source, evaluated as the stage does
             var table = new double[256];
             for (var sample = 0; sample < table.Length; sample++)
@@ -96,6 +106,12 @@ internal sealed class IccPipeline
 
     /// <summary>Gets the inverse tone curves of the last stage that <see cref="GetByteOutputTables"/> replaces, one per destination channel; <see langword="null"/> when it does not.</summary>
     internal IccInverseCurve[]? OutputCurves => _outputCurves;
+
+    /// <summary>Gets a value indicating whether the first stage is one curve per source channel (<see cref="ByteInputTables"/> is not <see langword="null"/>).</summary>
+    public bool HasInputCurves => ByteInputTables is not null;
+
+    /// <summary>Gets the number of stages.</summary>
+    internal int StageCount => _stages.Length;
 
     /// <summary>Gets the number of device channels of the source profile.</summary>
     public int SourceChannelCount { get; }
@@ -276,7 +292,15 @@ internal sealed class IccPipeline
         var tables = new QuantizationThresholds[curves.Length];
         for (var channel = 0; channel < tables.Length; channel++)
         {
+            // The channels whose curve is the same curve (the same tag of the profile) share its table
             var curve = curves[channel];
+            var shared = Array.FindIndex(curves, 0, channel, other => ReferenceEquals(other, curve));
+            if (shared >= 0)
+            {
+                tables[channel] = tables[shared];
+                continue;
+            }
+
             if (QuantizationThresholds.Create(value => IccByteSample.Store(curve.Evaluate(value)), byte.MaxValue) is not { } table)
                 return NoByteOutputTables;
 
@@ -284,6 +308,27 @@ internal sealed class IccPipeline
         }
 
         return tables;
+    }
+
+    /// <summary>
+    /// Evaluates the first stage on one normalized sample of a source channel, as the stage does, when it is one curve per
+    /// source channel (<see cref="HasInputCurves"/>).
+    /// </summary>
+    public double EvaluateInputCurve(int channel, double value) => _inputDecode is { } decode ? decode.Evaluate(value) : _inputCurves![channel].Evaluate(value);
+
+    /// <summary>Determines whether two source channels have the same input curve (the same function, so the same table), when <see cref="HasInputCurves"/>.</summary>
+    public bool HaveSameInputCurve(int channel, int other) => _inputDecode is not null || ReferenceEquals(_inputCurves![channel], _inputCurves[other]);
+
+    /// <summary>
+    /// Applies the stages from <paramref name="first"/> to <paramref name="end"/> (excluded) to colors stored by component
+    /// (<see cref="IccStage.ApplyBatch"/>), with the results of <see cref="Apply"/> for each color.
+    /// </summary>
+    public void ApplyBatch(Span<double> components, int count, int first, int end)
+    {
+        for (var i = first; i < end; i++)
+        {
+            _stages[i].ApplyBatch(components, count);
+        }
     }
 
     /// <summary>Converts one color in place, starting after the first stage: the values come from <see cref="ByteInputTables"/>.</summary>

@@ -3,6 +3,7 @@ using System.Text;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://dom.spec.whatwg.org/#interface-characterdata</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#characterdata"/>
 [IdlInterface("CharacterData", "https://dom.spec.whatwg.org/#characterdata")]
 public abstract partial class CharacterData : Node
 {
@@ -15,6 +16,7 @@ public abstract partial class CharacterData : Node
     }
 
     /// <summary>Gets or sets the text data of the node.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-characterdata-data"/>
     [IdlMember("data", "https://dom.spec.whatwg.org/#dom-characterdata-data")]
     public string Data
     {
@@ -26,6 +28,7 @@ public abstract partial class CharacterData : Node
     internal void SetDataCore(string value) => _data = value;
 
     /// <summary>Gets the length of the data, in UTF-16 code units.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-characterdata-length"/>
     [IdlMember("length", "https://dom.spec.whatwg.org/#dom-characterdata-length")]
     public uint Length => (uint)_data.Length;
 
@@ -44,6 +47,7 @@ public abstract partial class CharacterData : Node
     }
 
     /// <summary>https://dom.spec.whatwg.org/#concept-cd-substring</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-characterdata-substringdata"/>
     [IdlMember("substringData", "https://dom.spec.whatwg.org/#dom-characterdata-substringdata")]
     public string SubstringData(uint offset, uint count)
     {
@@ -58,18 +62,22 @@ public abstract partial class CharacterData : Node
     }
 
     /// <summary>Appends the given string to the data.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-characterdata-appenddata"/>
     [IdlMember("appendData", "https://dom.spec.whatwg.org/#dom-characterdata-appenddata")]
     public void AppendData(string data) => ReplaceData(Length, 0, data);
 
     /// <summary>Inserts the given string in the data at the given offset.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-characterdata-insertdata"/>
     [IdlMember("insertData", "https://dom.spec.whatwg.org/#dom-characterdata-insertdata")]
     public void InsertData(uint offset, string data) => ReplaceData(offset, 0, data);
 
     /// <summary>Removes the given number of code units from the data, starting at the given offset.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-characterdata-deletedata"/>
     [IdlMember("deleteData", "https://dom.spec.whatwg.org/#dom-characterdata-deletedata")]
     public void DeleteData(uint offset, uint count) => ReplaceData(offset, count, "");
 
     /// <summary>https://dom.spec.whatwg.org/#concept-cd-replace</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-characterdata-replacedata"/>
     [IdlMember("replaceData", "https://dom.spec.whatwg.org/#dom-characterdata-replacedata")]
     public void ReplaceData(uint offset, uint count, string data)
     {
@@ -108,10 +116,12 @@ public abstract partial class CharacterData : Node
 }
 
 /// <summary>https://dom.spec.whatwg.org/#interface-text</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#text"/>
 [IdlInterface("Text", "https://dom.spec.whatwg.org/#text")]
 public partial class Text : CharacterData
 {
     /// <summary>Creates a text node with the given data.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-text-text"/>
     [IdlMember("constructor", "https://dom.spec.whatwg.org/#dom-text-text")]
     public Text(string data = "")
         : this(Document.CurrentGlobalDocument, data)
@@ -130,10 +140,12 @@ public partial class Text : CharacterData
     public override string NodeName => "#text";
 
     /// <summary>Gets the open shadow tree slot the text node is assigned to, or null when it is not assigned.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-slotable-assignedslot"/>
     [IdlMember("assignedSlot", "https://dom.spec.whatwg.org/#dom-slotable-assignedslot")]
     public HtmlSlotElement? AssignedSlot => Slots.FindASlot(this, open: true);
 
     /// <summary>https://dom.spec.whatwg.org/#concept-text-split</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-text-splittext"/>
     [IdlMember("splitText", "https://dom.spec.whatwg.org/#dom-text-splittext")]
     public Text SplitText(uint offset)
     {
@@ -164,6 +176,7 @@ public partial class Text : CharacterData
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-text-wholetext</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-text-wholetext"/>
     [IdlMember("wholeText", "https://dom.spec.whatwg.org/#dom-text-wholetext")]
     public string WholeText
     {
@@ -189,6 +202,7 @@ public partial class Text : CharacterData
 }
 
 /// <summary>https://dom.spec.whatwg.org/#interface-cdatasection</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#cdatasection"/>
 [IdlInterface("CDATASection", "https://dom.spec.whatwg.org/#cdatasection")]
 public sealed class CDataSection : Text
 {
@@ -207,10 +221,12 @@ public sealed class CDataSection : Text
 }
 
 /// <summary>https://dom.spec.whatwg.org/#interface-comment</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#comment"/>
 [IdlInterface("Comment", "https://dom.spec.whatwg.org/#comment")]
 public sealed class Comment : CharacterData
 {
     /// <summary>Creates a comment node with the given data.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-comment-comment"/>
     [IdlMember("constructor", "https://dom.spec.whatwg.org/#dom-comment-comment")]
     public Comment(string data = "")
         : this(Document.CurrentGlobalDocument, data)

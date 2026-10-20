@@ -1,6 +1,7 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://dom.spec.whatwg.org/#interface-nodeiterator</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#nodeiterator"/>
 [IdlInterface("NodeIterator", "https://dom.spec.whatwg.org/#nodeiterator")]
 public sealed class NodeIterator
 {
@@ -16,34 +17,42 @@ public sealed class NodeIterator
     }
 
     /// <summary>Gets the root node of the traversal.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-nodeiterator-root"/>
     [IdlMember("root", "https://dom.spec.whatwg.org/#dom-nodeiterator-root")]
     public Node Root => _traverser.Root;
 
     /// <summary>Gets the node the iterator is currently positioned at.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-nodeiterator-referencenode"/>
     [IdlMember("referenceNode", "https://dom.spec.whatwg.org/#dom-nodeiterator-referencenode")]
     public Node ReferenceNode => _reference.Node;
 
     /// <summary>Gets a value indicating whether the iterator is positioned before the reference node.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-nodeiterator-pointerbeforereferencenode"/>
     [IdlMember("pointerBeforeReferenceNode", "https://dom.spec.whatwg.org/#dom-nodeiterator-pointerbeforereferencenode")]
     public bool PointerBeforeReferenceNode => _reference.PointerBefore;
 
     /// <summary>Gets the bit mask of the node types the iterator presents.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-nodeiterator-whattoshow"/>
     [IdlMember("whatToShow", "https://dom.spec.whatwg.org/#dom-nodeiterator-whattoshow")]
     public uint WhatToShow => _traverser.WhatToShow;
 
     /// <summary>Gets the filter used to accept, reject or skip nodes, or null when there is none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-nodeiterator-filter"/>
     [IdlMember("filter", "https://dom.spec.whatwg.org/#dom-nodeiterator-filter")]
     public INodeFilter? Filter => _traverser.Filter;
 
     /// <summary>Moves the iterator to the next accepted node and returns it, or null when there is none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-nodeiterator-nextnode"/>
     [IdlMember("nextNode", "https://dom.spec.whatwg.org/#dom-nodeiterator-nextnode")]
     public Node? NextNode() => Traverse(next: true);
 
     /// <summary>Moves the iterator to the previous accepted node and returns it, or null when there is none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-nodeiterator-previousnode"/>
     [IdlMember("previousNode", "https://dom.spec.whatwg.org/#dom-nodeiterator-previousnode")]
     public Node? PreviousNode() => Traverse(next: false);
 
     /// <summary>Does nothing (https://dom.spec.whatwg.org/#dom-nodeiterator-detach).</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-nodeiterator-detach"/>
     [IdlMember("detach", "https://dom.spec.whatwg.org/#dom-nodeiterator-detach")]
     public void Detach()
     {

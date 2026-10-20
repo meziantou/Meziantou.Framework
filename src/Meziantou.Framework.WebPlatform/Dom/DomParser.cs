@@ -3,31 +3,38 @@ using Meziantou.Framework.WebPlatform.Xml;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#domparsersupportedtype</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#domparsersupportedtype"/>
 [IdlInterface("DOMParserSupportedType", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#domparsersupportedtype")]
 public enum DomParserSupportedType
 {
     /// <summary>The <c>text/html</c> type, parsed as HTML.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-domparsersupportedtype-texthtml"/>
     [IdlMember("text/html", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-domparsersupportedtype-texthtml")]
     TextHtml,
 
     /// <summary>The <c>text/xml</c> type, parsed as XML.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-domparsersupportedtype-otherwise"/>
     [IdlMember("text/xml", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-domparsersupportedtype-otherwise")]
     TextXml,
 
     /// <summary>The <c>application/xml</c> type, parsed as XML.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-domparsersupportedtype-otherwise"/>
     [IdlMember("application/xml", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-domparsersupportedtype-otherwise")]
     ApplicationXml,
 
     /// <summary>The <c>application/xhtml+xml</c> type, parsed as XML.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-domparsersupportedtype-otherwise"/>
     [IdlMember("application/xhtml+xml", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-domparsersupportedtype-otherwise")]
     ApplicationXhtmlXml,
 
     /// <summary>The <c>image/svg+xml</c> type, parsed as XML.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-domparsersupportedtype-otherwise"/>
     [IdlMember("image/svg+xml", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-domparsersupportedtype-otherwise")]
     ImageSvgXml,
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#domparser</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#domparser"/>
 [IdlInterface("DOMParser", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#domparser")]
 public sealed class DomParser
 {
@@ -38,6 +45,7 @@ public sealed class DomParser
     private readonly Document _relevantDocument;
 
     /// <summary>Creates a parser associated with the current global document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-domparser-constructor"/>
     [IdlMember("constructor", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-domparser-constructor")]
     public DomParser()
     {
@@ -46,6 +54,7 @@ public sealed class DomParser
 
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-domparser-parsefromstring</summary>
     /// <exception cref="TypeErrorException">Trusted Types are enforced and the default policy did not convert the value.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-domparser-parsefromstring"/>
     [IdlMember("parseFromString", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-domparser-parsefromstring")]
     public Document ParseFromString(string markup, DomParserSupportedType type)
     {
@@ -54,6 +63,7 @@ public sealed class DomParser
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-domparser-parsefromstring</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-domparser-parsefromstring"/>
     [IdlMember("parseFromString", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-domparser-parsefromstring")]
     public Document ParseFromString(TrustedHtml markup, DomParserSupportedType type)
     {
@@ -99,16 +109,19 @@ public sealed class DomParser
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#xmlserializer</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#xmlserializer"/>
 [IdlInterface("XMLSerializer", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#xmlserializer")]
 public sealed class XmlSerializer
 {
     /// <summary>Creates an XML serializer.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-xmlserializer-constructor"/>
     [IdlMember("constructor", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-xmlserializer-constructor")]
     public XmlSerializer()
     {
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-xmlserializer-serializetostring</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-xmlserializer-serializetostring"/>
     [IdlMember("serializeToString", "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-xmlserializer-serializetostring")]
     public string SerializeToString(Node root)
     {

@@ -1088,7 +1088,7 @@ internal sealed partial class PowerShellParser
         '0' => "\0",
         'a' => "\a",
         'b' => "\b",
-        'e' => "",
+        'e' => "\u001B",
         'f' => "\f",
         'n' => "\n",
         'r' => "\r",

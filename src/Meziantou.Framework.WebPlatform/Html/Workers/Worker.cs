@@ -4,57 +4,70 @@ using Meziantou.Framework.WebPlatform.Urls;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://html.spec.whatwg.org/multipage/workers.html#workertype</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#workertype"/>
 [IdlInterface("WorkerType", "https://html.spec.whatwg.org/multipage/workers.html#workertype")]
 public enum WorkerType
 {
     /// <summary>A classic script worker.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-workertype-classic"/>
     [IdlMember("classic", "https://html.spec.whatwg.org/multipage/workers.html#dom-workertype-classic")]
     Classic,
 
     /// <summary>A module script worker.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-workertype-module"/>
     [IdlMember("module", "https://html.spec.whatwg.org/multipage/workers.html#dom-workertype-module")]
     Module,
 }
 
 /// <summary>The credentials mode of a request (https://fetch.spec.whatwg.org/#requestcredentials).</summary>
+/// <seealso href="https://fetch.spec.whatwg.org/#requestcredentials"/>
 [IdlInterface("RequestCredentials", "https://fetch.spec.whatwg.org/#requestcredentials")]
 public enum RequestCredentials
 {
     /// <summary>Credentials are never sent.</summary>
+    /// <seealso href="https://fetch.spec.whatwg.org/#dom-requestcredentials-omit"/>
     [IdlMember("omit", "https://fetch.spec.whatwg.org/#dom-requestcredentials-omit")]
     Omit,
 
     /// <summary>Credentials are sent only to same-origin URLs.</summary>
+    /// <seealso href="https://fetch.spec.whatwg.org/#dom-requestcredentials-same-origin"/>
     [IdlMember("same-origin", "https://fetch.spec.whatwg.org/#dom-requestcredentials-same-origin")]
     SameOrigin,
 
     /// <summary>Credentials are always sent.</summary>
+    /// <seealso href="https://fetch.spec.whatwg.org/#dom-requestcredentials-include"/>
     [IdlMember("include", "https://fetch.spec.whatwg.org/#dom-requestcredentials-include")]
     Include,
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/workers.html#workeroptions</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#workeroptions"/>
 [IdlInterface("WorkerOptions", "https://html.spec.whatwg.org/multipage/workers.html#workeroptions")]
 public class WorkerOptions
 {
     /// <summary>Gets the name of the worker, exposed by its global object.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-workeroptions-name"/>
     [IdlMember("name", "https://html.spec.whatwg.org/multipage/workers.html#dom-workeroptions-name")]
     public string Name { get; init; } = "";
 
     /// <summary>Gets the type of the script: a classic script, or a module script.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-workeroptions-type"/>
     [IdlMember("type", "https://html.spec.whatwg.org/multipage/workers.html#dom-workeroptions-type")]
     public WorkerType Type { get; init; } = WorkerType.Classic;
 
     /// <summary>Gets the credentials mode of the fetch of a module script.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-workeroptions-credentials"/>
     [IdlMember("credentials", "https://html.spec.whatwg.org/multipage/workers.html#dom-workeroptions-credentials")]
     public RequestCredentials Credentials { get; init; } = RequestCredentials.SameOrigin;
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/workers.html#sharedworkeroptions</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#sharedworkeroptions"/>
 [IdlInterface("SharedWorkerOptions", "https://html.spec.whatwg.org/multipage/workers.html#sharedworkeroptions")]
 public sealed class SharedWorkerOptions : WorkerOptions
 {
     /// <summary>Gets whether the worker outlives its last owner for a while (not supported: the shared workers live as long as their browsing context group).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworkeroptions-extendedlifetime"/>
     [IdlMember("extendedLifetime", "https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworkeroptions-extendedlifetime")]
     public bool ExtendedLifetime { get; init; }
 }
@@ -70,6 +83,7 @@ public sealed class SharedWorkerOptions : WorkerOptions
 /// the browsing context of its owner is disposed. The event loop of the owner considers that an operation is in progress
 /// while the worker has a task to run.
 /// </remarks>
+/// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#worker"/>
 [IdlInterface("Worker", "https://html.spec.whatwg.org/multipage/workers.html#worker")]
 public sealed class Worker : EventTarget
 {
@@ -81,6 +95,7 @@ public sealed class Worker : EventTarget
     /// <param name="options">The options.</param>
     /// <exception cref="InvalidOperationException">There is no current global object (no script is running).</exception>
     /// <exception cref="DomException">A <c>SyntaxError</c> when the URL is invalid.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-worker"/>
     [IdlMember("constructor", "https://html.spec.whatwg.org/multipage/workers.html#dom-worker")]
     public Worker(string scriptUrl, WorkerOptions? options = null)
         : this(GetCurrentGlobal(), GetCompliantScriptUrl(GetCurrentGlobal(), scriptUrl, "Worker constructor"), options)
@@ -90,6 +105,7 @@ public sealed class Worker : EventTarget
     /// <summary>Creates a worker whose owner is the current global object (https://html.spec.whatwg.org/multipage/workers.html#dom-worker).</summary>
     /// <param name="scriptUrl">The URL of the script, created by a Trusted Types policy.</param>
     /// <param name="options">The options.</param>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-worker"/>
     [IdlMember("constructor", "https://html.spec.whatwg.org/multipage/workers.html#dom-worker")]
     public Worker(TrustedScriptUrl scriptUrl, WorkerOptions? options = null)
         : this(GetCurrentGlobal(), GetCompliantScriptUrl(GetCurrentGlobal(), scriptUrl, "Worker constructor"), options)
@@ -157,6 +173,7 @@ public sealed class Worker : EventTarget
     }
 
     /// <summary>Terminates the worker: its running script is aborted and its event loop ends (https://html.spec.whatwg.org/multipage/workers.html#dom-worker-terminate).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-worker-terminate"/>
     [IdlMember("terminate", "https://html.spec.whatwg.org/multipage/workers.html#dom-worker-terminate")]
     public void Terminate()
     {
@@ -168,6 +185,7 @@ public sealed class Worker : EventTarget
     /// <summary>Posts a message to the worker (https://html.spec.whatwg.org/multipage/workers.html#dom-worker-postmessage).</summary>
     /// <param name="message">The message: a value of the script engine, a .NET primitive value or a serializable platform object, or null for <c>undefined</c>.</param>
     /// <param name="transfer">The objects to transfer.</param>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-worker-postmessage"/>
     [IdlMember("postMessage", "https://html.spec.whatwg.org/multipage/workers.html#dom-worker-postmessage")]
     public void PostMessage(object? message, IReadOnlyList<object> transfer)
     {
@@ -178,10 +196,12 @@ public sealed class Worker : EventTarget
     /// <summary>Posts a message to the worker (https://html.spec.whatwg.org/multipage/workers.html#dom-worker-postmessage-options).</summary>
     /// <param name="message">The message: a value of the script engine, a .NET primitive value or a serializable platform object, or null for <c>undefined</c>.</param>
     /// <param name="options">The objects to transfer.</param>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-worker-postmessage-options"/>
     [IdlMember("postMessage", "https://html.spec.whatwg.org/multipage/workers.html#dom-worker-postmessage-options")]
     public void PostMessage(object? message, StructuredSerializeOptions? options = null) => _outsidePort.PostMessageCore(message, options?.Transfer ?? [], source: null);
 
     /// <summary>Gets or sets the event handler of the <c>message</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#handler-messageeventtarget-onmessage"/>
     [IdlMember("onmessage", "https://html.spec.whatwg.org/multipage/web-messaging.html#handler-messageeventtarget-onmessage")]
     public Action<Event>? OnMessage
     {
@@ -190,6 +210,7 @@ public sealed class Worker : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>messageerror</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#handler-messageeventtarget-onmessageerror"/>
     [IdlMember("onmessageerror", "https://html.spec.whatwg.org/multipage/web-messaging.html#handler-messageeventtarget-onmessageerror")]
     public Action<Event>? OnMessageError
     {
@@ -198,6 +219,7 @@ public sealed class Worker : EventTarget
     }
 
     /// <summary>Gets or sets the event handler of the <c>error</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#handler-abstractworker-onerror"/>
     [IdlMember("onerror", "https://html.spec.whatwg.org/multipage/workers.html#handler-abstractworker-onerror")]
     public Action<Event>? OnError
     {
@@ -213,12 +235,14 @@ public sealed class Worker : EventTarget
 /// the worker through its <see cref="Port"/>.
 /// </summary>
 /// <remarks>A shared worker lives until it calls <c>close()</c> or its browsing context group is disposed.</remarks>
+/// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#sharedworker"/>
 [IdlInterface("SharedWorker", "https://html.spec.whatwg.org/multipage/workers.html#sharedworker")]
 public sealed class SharedWorker : EventTarget
 {
     /// <summary>Connects to a shared worker, created if needed (https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworker).</summary>
     /// <param name="scriptUrl">The URL of the script, relative to the API base URL of the current global object.</param>
     /// <param name="name">The name of the worker.</param>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworker"/>
     [IdlMember("constructor", "https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworker")]
     public SharedWorker(string scriptUrl, string name)
         : this(scriptUrl, new SharedWorkerOptions { Name = name })
@@ -230,6 +254,7 @@ public sealed class SharedWorker : EventTarget
     /// <param name="options">The options.</param>
     /// <exception cref="InvalidOperationException">There is no current window.</exception>
     /// <exception cref="DomException">A <c>SyntaxError</c> when the URL is invalid.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworker"/>
     [IdlMember("constructor", "https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworker")]
     public SharedWorker(string scriptUrl, SharedWorkerOptions? options = null)
         : this(GetCurrentGlobal(), Worker.GetCompliantScriptUrl(GetCurrentGlobal(), scriptUrl, "SharedWorker constructor"), options)
@@ -239,6 +264,7 @@ public sealed class SharedWorker : EventTarget
     /// <summary>Connects to a shared worker, created if needed (https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworker).</summary>
     /// <param name="scriptUrl">The URL of the script, created by a Trusted Types policy.</param>
     /// <param name="options">The options.</param>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworker"/>
     [IdlMember("constructor", "https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworker")]
     public SharedWorker(TrustedScriptUrl scriptUrl, SharedWorkerOptions? options = null)
         : this(GetCurrentGlobal(), Worker.GetCompliantScriptUrl(GetCurrentGlobal(), scriptUrl, "SharedWorker constructor"), options)
@@ -248,6 +274,7 @@ public sealed class SharedWorker : EventTarget
     /// <summary>Connects to a shared worker, created if needed (https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworker).</summary>
     /// <param name="scriptUrl">The URL of the script, created by a Trusted Types policy.</param>
     /// <param name="name">The name of the worker.</param>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworker"/>
     [IdlMember("constructor", "https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworker")]
     public SharedWorker(TrustedScriptUrl scriptUrl, string name)
         : this(scriptUrl, new SharedWorkerOptions { Name = name })
@@ -271,10 +298,12 @@ public sealed class SharedWorker : EventTarget
     }
 
     /// <summary>Gets the port connected to the <c>connect</c> event of the worker (https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworker-port).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworker-port"/>
     [IdlMember("port", "https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworker-port")]
     public MessagePort Port { get; }
 
     /// <summary>Gets or sets the event handler of the <c>error</c> event.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#handler-abstractworker-onerror"/>
     [IdlMember("onerror", "https://html.spec.whatwg.org/multipage/workers.html#handler-abstractworker-onerror")]
     public Action<Event>? OnError
     {
@@ -387,6 +416,7 @@ internal static class SharedWorkerManager
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/workers.html#worker-locations: the URL of a worker.</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#workerlocation"/>
 [IdlInterface("WorkerLocation", "https://html.spec.whatwg.org/multipage/workers.html#workerlocation")]
 public sealed class WorkerLocation
 {
@@ -400,38 +430,47 @@ public sealed class WorkerLocation
     private UrlRecord Record => _global.Url;
 
     /// <summary>Gets the serialized URL of the worker script.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-workerlocation-href"/>
     [IdlMember("href", "https://html.spec.whatwg.org/multipage/workers.html#dom-workerlocation-href")]
     public string Href => Record.Serialize();
 
     /// <summary>Gets the serialized origin of the worker script URL.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-workerlocation-origin"/>
     [IdlMember("origin", "https://html.spec.whatwg.org/multipage/workers.html#dom-workerlocation-origin")]
     public string Origin => Record.SerializeOrigin();
 
     /// <summary>Gets the scheme of the worker script URL followed by a colon.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-workerlocation-protocol"/>
     [IdlMember("protocol", "https://html.spec.whatwg.org/multipage/workers.html#dom-workerlocation-protocol")]
     public string Protocol => Record.Scheme + ":";
 
     /// <summary>Gets the host and the port (when not the default one) of the worker script URL.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-workerlocation-host"/>
     [IdlMember("host", "https://html.spec.whatwg.org/multipage/workers.html#dom-workerlocation-host")]
     public string Host => new Url(Record).Host;
 
     /// <summary>Gets the host of the worker script URL.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-workerlocation-hostname"/>
     [IdlMember("hostname", "https://html.spec.whatwg.org/multipage/workers.html#dom-workerlocation-hostname")]
     public string Hostname => new Url(Record).Hostname;
 
     /// <summary>Gets the port of the worker script URL, or an empty string when it is the default one.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-workerlocation-port"/>
     [IdlMember("port", "https://html.spec.whatwg.org/multipage/workers.html#dom-workerlocation-port")]
     public string Port => new Url(Record).Port;
 
     /// <summary>Gets the path of the worker script URL.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-workerlocation-pathname"/>
     [IdlMember("pathname", "https://html.spec.whatwg.org/multipage/workers.html#dom-workerlocation-pathname")]
     public string Pathname => Record.SerializePath();
 
     /// <summary>Gets the query of the worker script URL, with its leading question mark, or an empty string.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-workerlocation-search"/>
     [IdlMember("search", "https://html.spec.whatwg.org/multipage/workers.html#dom-workerlocation-search")]
     public string Search => new Url(Record).Search;
 
     /// <summary>Gets the fragment of the worker script URL, with its leading number sign, or an empty string.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-workerlocation-hash"/>
     [IdlMember("hash", "https://html.spec.whatwg.org/multipage/workers.html#dom-workerlocation-hash")]
     public string Hash => new Url(Record).Hash;
 
@@ -441,6 +480,7 @@ public sealed class WorkerLocation
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/workers.html#the-workernavigator-object: the identity and the state of the user agent in a worker.</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#workernavigator"/>
 [IdlInterface("WorkerNavigator", "https://html.spec.whatwg.org/multipage/workers.html#workernavigator")]
 public sealed partial class WorkerNavigator
 {
@@ -457,66 +497,82 @@ public sealed partial class WorkerNavigator
     }
 
     /// <summary>Gets the storage manager of the worker (https://storage.spec.whatwg.org/#dom-navigatorstorage-storage).</summary>
+    /// <seealso href="https://storage.spec.whatwg.org/#dom-navigatorstorage-storage"/>
     [IdlMember("storage", "https://storage.spec.whatwg.org/#dom-navigatorstorage-storage")]
     public StorageManager Storage => _storage ??= new StorageManager(_global);
 
     /// <summary>Gets the lock manager of the worker (https://w3c.github.io/web-locks/#dom-navigatorlocks-locks).</summary>
+    /// <seealso href="https://w3c.github.io/web-locks/#dom-navigatorlocks-locks"/>
     [IdlMember("locks", "https://w3c.github.io/web-locks/#dom-navigatorlocks-locks")]
     public LockManager Locks => _locks ??= new LockManager(_global);
 
     /// <summary>Gets the service workers of the worker (https://w3c.github.io/ServiceWorker/#navigator-service-worker).</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-workernavigator-serviceworker"/>
     [IdlMember("serviceWorker", "https://w3c.github.io/ServiceWorker/#dom-workernavigator-serviceworker")]
     public ServiceWorkerContainer ServiceWorker => _serviceWorker ??= _global.ServiceWorkerObjects.Container ?? new ServiceWorkerContainer(_global);
 
     /// <summary>Gets the legacy application code name, always <c>Mozilla</c>.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-appcodename"/>
     [IdlMember("appCodeName", "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-appcodename")]
     public string AppCodeName => "Mozilla";
 
     /// <summary>Gets the legacy application name, always <c>Netscape</c>.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-appname"/>
     [IdlMember("appName", "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-appname")]
     public string AppName => "Netscape";
 
     /// <summary>Gets the legacy application version, derived from the user agent.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-appversion"/>
     [IdlMember("appVersion", "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-appversion")]
     public string AppVersion => UserAgent.StartsWith("Mozilla/", StringComparison.Ordinal) ? UserAgent["Mozilla/".Length..] : UserAgent;
 
     /// <summary>Gets the platform of the user agent, an empty string.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-platform"/>
     [IdlMember("platform", "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-platform")]
     public string Platform => "";
 
     /// <summary>Gets the legacy product name, always <c>Gecko</c>.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-product"/>
     [IdlMember("product", "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-product")]
     public string Product => "Gecko";
 
     /// <summary>Gets the legacy product sub-version.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-productsub"/>
     [IdlMember("productSub", "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-productsub")]
     public string ProductSub => "20100101";
 
     /// <summary>Gets the user agent string.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-useragent"/>
     [IdlMember("userAgent", "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-useragent")]
     public string UserAgent => Navigator.DefaultUserAgent;
 
     /// <summary>Gets the vendor of the user agent, an empty string.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-vendor"/>
     [IdlMember("vendor", "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-vendor")]
     public string Vendor => "";
 
     /// <summary>Gets the legacy vendor sub-version, an empty string.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-vendorsub"/>
     [IdlMember("vendorSub", "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-vendorsub")]
     public string VendorSub => "";
 
     /// <summary>Gets the preferred language of the user.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-language"/>
     [IdlMember("language", "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-language")]
     public string Language => DefaultLanguages[0];
 
     /// <summary>Gets the languages preferred by the user, by order of preference.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-languages"/>
     [IdlMember("languages", "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-languages")]
     public IReadOnlyList<string> Languages => DefaultLanguages;
 
     /// <summary>Gets a value indicating whether the user agent is online.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-online"/>
     [IdlMember("onLine", "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-online")]
     public bool OnLine => true;
 
     /// <summary>Gets the number of logical processors available to the user agent.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/workers.html#dom-navigator-hardwareconcurrency"/>
     [IdlMember("hardwareConcurrency", "https://html.spec.whatwg.org/multipage/workers.html#dom-navigator-hardwareconcurrency")]
     public ulong HardwareConcurrency => (ulong)Environment.ProcessorCount;
 }

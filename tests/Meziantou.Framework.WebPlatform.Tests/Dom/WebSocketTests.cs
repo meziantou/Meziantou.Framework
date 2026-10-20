@@ -86,7 +86,7 @@ public sealed class WebSocketTests : IDisposable
             <script>
               const ws = new WebSocket('ws://127.0.0.1:{{server.Port}}/path?q', ['chat', 'other']);
               const log = [];
-              document.title = ws.url + '|' + ws.readyState + '|' + ws.binaryType;
+              document.documentElement.setAttribute('data-initial', ws.url + '|' + ws.readyState + '|' + ws.binaryType);
               ws.onopen = () => {
                 log.push('open:' + ws.readyState + ':' + ws.protocol + ':' + ws.extensions);
                 ws.send('hello');
@@ -111,7 +111,9 @@ public sealed class WebSocketTests : IDisposable
               };
             </script>
             """, "http://127.0.0.1/");
-        Assert.Equal($"ws://127.0.0.1:{server.Port}/path?q|0|blob", document.Title);
+
+        // The state when the constructor returns (the loopback server can complete the exchange before the end of Load)
+        Assert.Equal($"ws://127.0.0.1:{server.Port}/path?q|0|blob", document.DocumentElement!.GetAttribute("data-initial"));
 
         await WaitUntilAsync(() => document.Title.Contains("close:", StringComparison.Ordinal), () => document.Title);
         Assert.Equal($"open:1:chat:|buffered:8|text:echo:hello:ws://127.0.0.1:{server.Port}|blob:true:3|arraybuffer:1,2,3|close:4000:bye:true:3:0", document.Title);

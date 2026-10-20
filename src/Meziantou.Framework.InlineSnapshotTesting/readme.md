@@ -182,6 +182,7 @@ The HumanReadableSerializer has many options to make the snapshot deterministic 
                 WriteIndented = true,
             });
 
+            // Requires the Meziantou.Framework.HumanReadableSerializer.Html package
             options.AddHtmlFormatter(new HtmlFormatterOptions
             {
                 OrderAttributes = true,
@@ -199,6 +200,8 @@ The HumanReadableSerializer has many options to make the snapshot deterministic 
         })
         .Validate(...);
     ````
+
+    HTML values are not formatted by default. `AddHtmlFormatter` is provided by the [`Meziantou.Framework.HumanReadableSerializer.Html`](https://www.nuget.org/packages/Meziantou.Framework.HumanReadableSerializer.Html) package, which parses the HTML and serializes it back as defined by the HTML specification.
 
 - Ignore members
 

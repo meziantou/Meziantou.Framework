@@ -18,7 +18,7 @@ namespace Meziantou.Framework.Fonts;
 /// shaping is, the lookups a rule applies and the number of subtables of the font are what is bounded.
 /// </para>
 /// </remarks>
-internal sealed class GlyphBuffer
+public sealed class GlyphBuffer
 {
     /// <summary>The lookups the rules of the lookups of a run can apply, per character: far more than any font needs.</summary>
     private const int OperationsPerCharacter = 1024;
@@ -39,6 +39,8 @@ internal sealed class GlyphBuffer
     private long _subtables;
     private byte _nextLigatureId;
 
+    /// <summary>Initializes a new instance of the <see cref="GlyphBuffer"/> class.</summary>
+    /// <param name="limits">The limits whose <see cref="FontResourceLimits.MaxTextGlyphs"/> bounds the number of glyphs.</param>
     public GlyphBuffer(FontResourceLimits limits)
     {
         _maxLength = limits.MaxTextGlyphs;
@@ -190,6 +192,24 @@ internal sealed class GlyphBuffer
         }
 
         Length = (int)newLength;
+    }
+
+    /// <summary>Removes the glyphs at increasing indexes, moving the glyphs that follow each of them once.</summary>
+    public void Remove(ReadOnlySpan<int> indexes)
+    {
+        if (indexes.IsEmpty)
+            return;
+
+        var write = indexes[0];
+        for (var i = 0; i < indexes.Length; i++)
+        {
+            var start = indexes[i] + 1;
+            var end = i + 1 < indexes.Length ? indexes[i + 1] : Length;
+            Array.Copy(_info, start, _info, write, end - start);
+            write += end - start;
+        }
+
+        Length = write;
     }
 
     /// <summary>Gives a range of glyphs one cluster: the smallest of theirs, extended to the glyphs that already share a cluster with an end of the range.</summary>

@@ -276,6 +276,50 @@ public sealed class WebPDecoderTests
     }
 
     [Fact]
+    public void EagerLossyLoadsConvertRowsAsTheyAreFinalLikeReaders()
+    {
+        // An eager load of a lossy image without alpha decodes it through a window of macroblock rows that moves every
+        // Vp8Decoder.WindowMacroblockRows rows; a reader decodes the whole frame first: both give the same pixels, for
+        // heights around the window and the moves, in RGB and RGBA
+        foreach (var (width, height) in new[] { (37, 150), (37, 152), (21, 153), (40, 167), (33, 280), (19, 409), (16, 16) })
+        {
+            var pixels = new Rgba32[width * height];
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                var noise = (uint)i * 2654435761u;
+                pixels[i] = new Rgba32((byte)(noise >> 24), (byte)((i / width) + (i % width)), (byte)((noise >> 16) & 0x3F), 255);
+            }
+
+            using var source = Image.ImportPixelData<Rgba32>(pixels, width, height);
+            using var stream = new MemoryStream();
+            source.Save(stream, new WebPEncoder { Compression = WebPCompression.Lossy, Quality = 60 });
+            var data = stream.ToArray();
+            using (var eager = Image.Load<Rgb24>(data))
+            using (var reader = Image.OpenReader<Rgb24>(new MemoryStream(data)))
+            using (var read = reader.ReadFrame())
+            {
+                Assert.NotNull(read);
+                Assert.Equal(GetBytes(read), GetBytes(eager), $"{width}x{height} RGB");
+            }
+
+            using (var eager = Image.Load<Rgba32>(data))
+            using (var reader = Image.OpenReader<Rgba32>(new MemoryStream(data)))
+            using (var read = reader.ReadFrame())
+            {
+                Assert.NotNull(read);
+                Assert.Equal(GetBytes(read), GetBytes(eager), $"{width}x{height} RGBA");
+            }
+        }
+
+        static byte[] GetBytes(Image image)
+        {
+            var bytes = new byte[image.Width * image.Height * 4];
+            image.Frames[0].CopyPixelBytesTo(bytes);
+            return bytes;
+        }
+    }
+
+    [Fact]
     public void LosslessImagesWithoutTheAlphaHintAreOpaque()
     {
         // A conforming encoder clears the hint only when every alpha is 255; the hint is authoritative otherwise

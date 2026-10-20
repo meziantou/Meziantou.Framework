@@ -127,7 +127,7 @@ public sealed class HyphenatorTests
         // A character that is not a letter of the patterns
         Assert.Equal("imple2mentation", Hyphenate("en", "imple2mentation"));
         Assert.Equal("2020-12-12", Hyphenate("en", "2020-12-12"));
-        Assert.Equal("imple­mentation", Hyphenate("en", "imple­mentation"));
+        Assert.Equal("imple\u00ADmentation", Hyphenate("en", "imple\u00ADmentation"));
 
         // Too short (5 characters at least) or too long (62 at most)
         Assert.Equal("tab", Hyphenate("en", "tab"));

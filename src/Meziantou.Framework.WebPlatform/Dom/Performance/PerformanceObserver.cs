@@ -4,31 +4,38 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// <param name="entries">The entries observed since the previous call.</param>
 /// <param name="observer">The observer.</param>
 /// <param name="options">The number of entries dropped because a buffer was full, on the first call after <see cref="PerformanceObserver.Observe"/>.</param>
+/// <seealso href="https://w3c.github.io/performance-timeline/#dom-performanceobservercallback"/>
 [IdlInterface("PerformanceObserverCallback", "https://w3c.github.io/performance-timeline/#dom-performanceobservercallback")]
 public delegate void PerformanceObserverCallback(PerformanceObserverEntryList entries, PerformanceObserver observer, PerformanceObserverCallbackOptions options);
 
 /// <summary>https://w3c.github.io/performance-timeline/#dom-performanceobservercallbackoptions</summary>
+/// <seealso href="https://w3c.github.io/performance-timeline/#dom-performanceobservercallbackoptions"/>
 [IdlInterface("PerformanceObserverCallbackOptions", "https://w3c.github.io/performance-timeline/#dom-performanceobservercallbackoptions")]
 public sealed class PerformanceObserverCallbackOptions
 {
     /// <summary>Gets the number of entries dropped because a buffer was full, or null when it is not reported.</summary>
+    /// <seealso href="https://w3c.github.io/performance-timeline/#dom-performanceobservercallbackoptions-droppedentriescount"/>
     [IdlMember("droppedEntriesCount", "https://w3c.github.io/performance-timeline/#dom-performanceobservercallbackoptions-droppedentriescount")]
     public ulong? DroppedEntriesCount { get; set; }
 }
 
 /// <summary>https://w3c.github.io/performance-timeline/#performanceobserverinit-dictionary</summary>
+/// <seealso href="https://w3c.github.io/performance-timeline/#dom-performanceobserverinit"/>
 [IdlInterface("PerformanceObserverInit", "https://w3c.github.io/performance-timeline/#dom-performanceobserverinit")]
 public sealed class PerformanceObserverInit
 {
     /// <summary>Gets or sets the entry types to observe. No other member can be set with it.</summary>
+    /// <seealso href="https://w3c.github.io/performance-timeline/#dom-performanceobserverinit-entrytypes"/>
     [IdlMember("entryTypes", "https://w3c.github.io/performance-timeline/#dom-performanceobserverinit-entrytypes")]
     public IReadOnlyList<string>? EntryTypes { get; set; }
 
     /// <summary>Gets or sets a single entry type to observe.</summary>
+    /// <seealso href="https://w3c.github.io/performance-timeline/#dom-performanceobserverinit-type"/>
     [IdlMember("type", "https://w3c.github.io/performance-timeline/#dom-performanceobserverinit-type")]
     public string? Type { get; set; }
 
     /// <summary>Gets or sets whether the entries of the performance entry buffer of <see cref="Type"/> are observed.</summary>
+    /// <seealso href="https://w3c.github.io/performance-timeline/#dom-performanceobserverinit-buffered"/>
     [IdlMember("buffered", "https://w3c.github.io/performance-timeline/#dom-performanceobserverinit-buffered")]
     public bool? Buffered { get; set; }
 
@@ -37,6 +44,7 @@ public sealed class PerformanceObserverInit
     /// with <see cref="Type"/>, in milliseconds (https://w3c.github.io/event-timing/#sec-modifications-perf-timeline): 104 by
     /// default, and at least 16.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/event-timing/#dom-performanceobserverinit-durationthreshold"/>
     [IdlMember("durationThreshold", "https://w3c.github.io/event-timing/#dom-performanceobserverinit-durationthreshold")]
     public double? DurationThreshold { get; set; }
 }
@@ -51,6 +59,7 @@ internal sealed class RegisteredPerformanceObserver(PerformanceObserver observer
 }
 
 /// <summary>Observes the entries added to the performance timeline of a global object (https://w3c.github.io/performance-timeline/#the-performanceobserver-interface).</summary>
+/// <seealso href="https://w3c.github.io/performance-timeline/#dom-performanceobserver"/>
 [IdlInterface("PerformanceObserver", "https://w3c.github.io/performance-timeline/#dom-performanceobserver")]
 public sealed class PerformanceObserver
 {
@@ -60,6 +69,7 @@ public sealed class PerformanceObserver
 
     /// <summary>Creates an observer of the performance timeline of the current global object.</summary>
     /// <param name="callback">The callback invoked with the observed entries.</param>
+    /// <seealso href="https://w3c.github.io/performance-timeline/#dom-performanceobserver-constructor"/>
     [IdlMember("constructor", "https://w3c.github.io/performance-timeline/#dom-performanceobserver-constructor")]
     public PerformanceObserver(PerformanceObserverCallback callback)
         : this(GlobalScope.Current ?? throw new InvalidOperationException("A performance observer can only be created by a window or a worker"), callback)
@@ -92,11 +102,13 @@ public sealed class PerformanceObserver
     internal bool RequiresDroppedEntries { get; set; }
 
     /// <summary>Gets the entry types supported by the user agent, in alphabetical order (https://w3c.github.io/performance-timeline/#supportedentrytypes-attribute).</summary>
+    /// <seealso href="https://w3c.github.io/performance-timeline/#dom-performanceobserver-supportedentrytypes"/>
     [IdlMember("supportedEntryTypes", "https://w3c.github.io/performance-timeline/#dom-performanceobserver-supportedentrytypes")]
     public static IReadOnlyList<string> SupportedEntryTypes => GlobalScope.Current?.Performance.SupportedEntryTypes ?? [PerformanceResourceTiming.ResourceEntryType];
 
     /// <summary>Starts to observe the entries of one or several types (https://w3c.github.io/performance-timeline/#observe-method).</summary>
     /// <param name="options">The entry types to observe.</param>
+    /// <seealso href="https://w3c.github.io/performance-timeline/#dom-performanceobserver-observe"/>
     [IdlMember("observe", "https://w3c.github.io/performance-timeline/#dom-performanceobserver-observe")]
     public void Observe(PerformanceObserverInit? options = null)
     {
@@ -177,6 +189,7 @@ public sealed class PerformanceObserver
     }
 
     /// <summary>Stops observing the entries and discards the entries of the observer buffer (https://w3c.github.io/performance-timeline/#disconnect-method).</summary>
+    /// <seealso href="https://w3c.github.io/performance-timeline/#dom-performanceobserver-disconnect"/>
     [IdlMember("disconnect", "https://w3c.github.io/performance-timeline/#dom-performanceobserver-disconnect")]
     public void Disconnect()
     {
@@ -185,6 +198,7 @@ public sealed class PerformanceObserver
     }
 
     /// <summary>Returns the entries of the observer buffer and empties it (https://w3c.github.io/performance-timeline/#takerecords-method).</summary>
+    /// <seealso href="https://w3c.github.io/performance-timeline/#dom-performanceobserver-takerecords"/>
     [IdlMember("takeRecords", "https://w3c.github.io/performance-timeline/#dom-performanceobserver-takerecords")]
     public IReadOnlyList<PerformanceEntry> TakeRecords()
     {
@@ -210,6 +224,7 @@ public sealed class PerformanceObserver
 }
 
 /// <summary>The entries given to the callback of a <see cref="PerformanceObserver"/> (https://w3c.github.io/performance-timeline/#performanceobserverentrylist-interface).</summary>
+/// <seealso href="https://w3c.github.io/performance-timeline/#dom-performanceobserverentrylist"/>
 [IdlInterface("PerformanceObserverEntryList", "https://w3c.github.io/performance-timeline/#dom-performanceobserverentrylist")]
 public sealed class PerformanceObserverEntryList
 {
@@ -221,10 +236,12 @@ public sealed class PerformanceObserverEntryList
     }
 
     /// <summary>Returns the entries, in chronological order.</summary>
+    /// <seealso href="https://w3c.github.io/performance-timeline/#dom-performanceobserverentrylist-getentries"/>
     [IdlMember("getEntries", "https://w3c.github.io/performance-timeline/#dom-performanceobserverentrylist-getentries")]
     public IReadOnlyList<PerformanceEntry> GetEntries() => Filter(name: null, type: null);
 
     /// <summary>Returns the entries of a type, in chronological order.</summary>
+    /// <seealso href="https://w3c.github.io/performance-timeline/#dom-performanceobserverentrylist-getentriesbytype"/>
     [IdlMember("getEntriesByType", "https://w3c.github.io/performance-timeline/#dom-performanceobserverentrylist-getentriesbytype")]
     public IReadOnlyList<PerformanceEntry> GetEntriesByType(string type)
     {
@@ -233,6 +250,7 @@ public sealed class PerformanceObserverEntryList
     }
 
     /// <summary>Returns the entries of a name, and optionally of a type, in chronological order.</summary>
+    /// <seealso href="https://w3c.github.io/performance-timeline/#dom-performanceobserverentrylist-getentriesbyname"/>
     [IdlMember("getEntriesByName", "https://w3c.github.io/performance-timeline/#dom-performanceobserverentrylist-getentriesbyname")]
     public IReadOnlyList<PerformanceEntry> GetEntriesByName(string name, string? type = null)
     {

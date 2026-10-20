@@ -3,27 +3,33 @@ using Meziantou.Framework.WebPlatform.Css.Layout;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://drafts.csswg.org/resize-observer-1/#enumdef-resizeobserverboxoptions</summary>
+/// <seealso href="https://drafts.csswg.org/resize-observer-1/#enumdef-resizeobserverboxoptions"/>
 [IdlInterface("ResizeObserverBoxOptions", "https://drafts.csswg.org/resize-observer-1/#enumdef-resizeobserverboxoptions")]
 public enum ResizeObserverBoxOptions
 {
     /// <summary>The size of the border area of the box.</summary>
+    /// <seealso href="https://drafts.csswg.org/resize-observer-1/#dom-resizeobserverboxoptions-border-box"/>
     [IdlMember("border-box", "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserverboxoptions-border-box")]
     BorderBox,
 
     /// <summary>The size of the content area of the box.</summary>
+    /// <seealso href="https://drafts.csswg.org/resize-observer-1/#dom-resizeobserverboxoptions-content-box"/>
     [IdlMember("content-box", "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserverboxoptions-content-box")]
     ContentBox,
 
     /// <summary>The size of the content area of the box in integral device pixels, before the transforms are applied.</summary>
+    /// <seealso href="https://drafts.csswg.org/resize-observer-1/#dom-resizeobserverboxoptions-device-pixel-content-box"/>
     [IdlMember("device-pixel-content-box", "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserverboxoptions-device-pixel-content-box")]
     DevicePixelContentBox,
 }
 
 /// <summary>https://drafts.csswg.org/resize-observer-1/#dictdef-resizeobserveroptions</summary>
+/// <seealso href="https://drafts.csswg.org/resize-observer-1/#dictdef-resizeobserveroptions"/>
 [IdlInterface("ResizeObserverOptions", "https://drafts.csswg.org/resize-observer-1/#dictdef-resizeobserveroptions")]
 public sealed class ResizeObserverOptions
 {
     /// <summary>Gets or sets the box whose size changes are observed (the content box by default).</summary>
+    /// <seealso href="https://drafts.csswg.org/resize-observer-1/#dom-resizeobserveroptions-box"/>
     [IdlMember("box", "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserveroptions-box")]
     public ResizeObserverBoxOptions Box { get; set; } = ResizeObserverBoxOptions.ContentBox;
 }
@@ -31,10 +37,12 @@ public sealed class ResizeObserverOptions
 /// <summary>https://drafts.csswg.org/resize-observer-1/#callbackdef-resizeobservercallback</summary>
 /// <param name="entries">The entries of the observed elements whose size changed.</param>
 /// <param name="observer">The observer.</param>
+/// <seealso href="https://drafts.csswg.org/resize-observer-1/#callbackdef-resizeobservercallback"/>
 [IdlInterface("ResizeObserverCallback", "https://drafts.csswg.org/resize-observer-1/#callbackdef-resizeobservercallback")]
 public delegate void ResizeObserverCallback(IReadOnlyList<ResizeObserverEntry> entries, ResizeObserver observer);
 
 /// <summary>The size of a box in the inline and block axes of its writing mode (https://drafts.csswg.org/resize-observer-1/#resizeobserversize).</summary>
+/// <seealso href="https://drafts.csswg.org/resize-observer-1/#resizeobserversize"/>
 [IdlInterface("ResizeObserverSize", "https://drafts.csswg.org/resize-observer-1/#resizeobserversize")]
 public sealed class ResizeObserverSize
 {
@@ -45,15 +53,18 @@ public sealed class ResizeObserverSize
     }
 
     /// <summary>Gets the size of the box in its inline axis.</summary>
+    /// <seealso href="https://drafts.csswg.org/resize-observer-1/#dom-resizeobserversize-inlinesize"/>
     [IdlMember("inlineSize", "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserversize-inlinesize")]
     public double InlineSize { get; }
 
     /// <summary>Gets the size of the box in its block axis.</summary>
+    /// <seealso href="https://drafts.csswg.org/resize-observer-1/#dom-resizeobserversize-blocksize"/>
     [IdlMember("blockSize", "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserversize-blocksize")]
     public double BlockSize { get; }
 }
 
 /// <summary>The sizes of an observed element when its size changed (https://drafts.csswg.org/resize-observer-1/#resize-observer-entry-interface).</summary>
+/// <seealso href="https://drafts.csswg.org/resize-observer-1/#resizeobserverentry"/>
 [IdlInterface("ResizeObserverEntry", "https://drafts.csswg.org/resize-observer-1/#resizeobserverentry")]
 public sealed class ResizeObserverEntry
 {
@@ -67,6 +78,7 @@ public sealed class ResizeObserverEntry
     }
 
     /// <summary>Gets the element whose size changed.</summary>
+    /// <seealso href="https://drafts.csswg.org/resize-observer-1/#dom-resizeobserverentry-target"/>
     [IdlMember("target", "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserverentry-target")]
     public Element Target { get; }
 
@@ -74,18 +86,22 @@ public sealed class ResizeObserverEntry
     /// Gets the content rect of the element (https://drafts.csswg.org/resize-observer-1/#content-rect): the size of its content
     /// box, at the position of its padding top and padding left.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/resize-observer-1/#dom-resizeobserverentry-contentrect"/>
     [IdlMember("contentRect", "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserverentry-contentrect")]
     public DomRectReadOnly ContentRect { get; }
 
     /// <summary>Gets the sizes of the border box of the element, one per fragment.</summary>
+    /// <seealso href="https://drafts.csswg.org/resize-observer-1/#dom-resizeobserverentry-borderboxsize"/>
     [IdlMember("borderBoxSize", "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserverentry-borderboxsize")]
     public IReadOnlyList<ResizeObserverSize> BorderBoxSize { get; }
 
     /// <summary>Gets the sizes of the content box of the element, one per fragment.</summary>
+    /// <seealso href="https://drafts.csswg.org/resize-observer-1/#dom-resizeobserverentry-contentboxsize"/>
     [IdlMember("contentBoxSize", "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserverentry-contentboxsize")]
     public IReadOnlyList<ResizeObserverSize> ContentBoxSize { get; }
 
     /// <summary>Gets the sizes of the content box of the element in integral device pixels, one per fragment.</summary>
+    /// <seealso href="https://drafts.csswg.org/resize-observer-1/#dom-resizeobserverentry-devicepixelcontentboxsize"/>
     [IdlMember("devicePixelContentBoxSize", "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserverentry-devicepixelcontentboxsize")]
     public IReadOnlyList<ResizeObserverSize> DevicePixelContentBoxSize { get; }
 }
@@ -96,6 +112,7 @@ public sealed class ResizeObserverEntry
 /// (https://html.spec.whatwg.org/multipage/webappapis.html#update-the-rendering), so only the elements of the documents of a
 /// <see cref="BrowsingContext"/> are observed.
 /// </summary>
+/// <seealso href="https://drafts.csswg.org/resize-observer-1/#resizeobserver"/>
 [IdlInterface("ResizeObserver", "https://drafts.csswg.org/resize-observer-1/#resizeobserver")]
 public sealed class ResizeObserver
 {
@@ -111,6 +128,7 @@ public sealed class ResizeObserver
     /// observed element.
     /// </summary>
     /// <param name="callback">The callback invoked with the entries.</param>
+    /// <seealso href="https://drafts.csswg.org/resize-observer-1/#dom-resizeobserver-resizeobserver"/>
     [IdlMember("constructor", "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserver-resizeobserver")]
     public ResizeObserver(ResizeObserverCallback callback)
     {
@@ -134,6 +152,7 @@ public sealed class ResizeObserver
     /// <summary>Starts observing the size of an element, or changes the observed box of an observed element (https://drafts.csswg.org/resize-observer-1/#dom-resizeobserver-observe).</summary>
     /// <param name="target">The element to observe.</param>
     /// <param name="options">The box to observe (the content box by default).</param>
+    /// <seealso href="https://drafts.csswg.org/resize-observer-1/#dom-resizeobserver-observe"/>
     [IdlMember("observe", "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserver-observe")]
     public void Observe(Element target, ResizeObserverOptions? options = null)
     {
@@ -153,6 +172,7 @@ public sealed class ResizeObserver
 
     /// <summary>Stops observing the size of an element (https://drafts.csswg.org/resize-observer-1/#dom-resizeobserver-unobserve).</summary>
     /// <param name="target">The observed element.</param>
+    /// <seealso href="https://drafts.csswg.org/resize-observer-1/#dom-resizeobserver-unobserve"/>
     [IdlMember("unobserve", "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserver-unobserve")]
     public void Unobserve(Element target)
     {
@@ -164,6 +184,7 @@ public sealed class ResizeObserver
     }
 
     /// <summary>Stops observing all the elements (https://drafts.csswg.org/resize-observer-1/#dom-resizeobserver-disconnect).</summary>
+    /// <seealso href="https://drafts.csswg.org/resize-observer-1/#dom-resizeobserver-disconnect"/>
     [IdlMember("disconnect", "https://drafts.csswg.org/resize-observer-1/#dom-resizeobserver-disconnect")]
     public void Disconnect()
     {

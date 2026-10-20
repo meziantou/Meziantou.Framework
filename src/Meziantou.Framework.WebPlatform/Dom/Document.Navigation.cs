@@ -389,6 +389,7 @@ public partial class Document
     /// Gets the policy object of the document (https://w3c.github.io/webappsec-permissions-policy/#dom-document-permissionspolicy):
     /// the features that its permissions policy allows.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/webappsec-permissions-policy/#dom-document-permissionspolicy"/>
     [IdlMember("permissionsPolicy", "https://w3c.github.io/webappsec-permissions-policy/#dom-document-permissionspolicy")]
     public PermissionsPolicy PermissionsPolicy => field ??= new PermissionsPolicy(this);
 

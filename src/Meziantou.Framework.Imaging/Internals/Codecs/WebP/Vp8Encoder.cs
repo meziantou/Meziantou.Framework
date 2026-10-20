@@ -502,7 +502,7 @@ internal sealed class Vp8Encoder : IDisposable
         Span<short> best = stackalloc short[16];
         Span<short> dequantized = stackalloc short[16];
         Span<byte> bestPixels = stackalloc byte[16];
-        Span<byte> edge = stackalloc byte[13];
+        Span<byte> edge = stackalloc byte[Vp8Reconstruction.SubBlockEdgeLength];
         Span<byte> sourcePixels = stackalloc byte[16];
         Span<byte> pixels = stackalloc byte[16];
         var modeCount = _effort >= 4 ? 10 : 6;

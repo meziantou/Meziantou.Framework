@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Fonts;
 
 /// <summary>Receives the outline of a glyph: closed contours of lines and Bézier curves, in font units with the y axis up.</summary>
-internal abstract class OutlineSink
+public abstract class OutlineSink
 {
     /// <summary>Starts a contour.</summary>
     public abstract void MoveTo(double x, double y);

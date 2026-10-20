@@ -8,6 +8,7 @@ namespace Meziantou.Framework.WebPlatform.Css.TypedOm;
 /// specialized subclass are direct <see cref="CssStyleValue"/> objects: they are opaque, and are only valid for the property
 /// they were reified for (https://drafts.css-houdini.org/css-typed-om-1/#reify-as-a-cssstylevalue).
 /// </summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssstylevalue"/>
 [IdlInterface("CSSStyleValue", "https://drafts.css-houdini.org/css-typed-om-1/#cssstylevalue")]
 public class CssStyleValue
 {
@@ -28,10 +29,12 @@ public class CssStyleValue
     internal string? AssociatedProperty { get; }
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssstylevalue-parse</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssstylevalue-parse"/>
     [IdlMember("parse", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssstylevalue-parse")]
     public static CssStyleValue Parse(string property, string cssText) => CssStyleValueReifier.Parse(property, cssText, parseMultiple: false)[0];
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssstylevalue-parseall</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssstylevalue-parseall"/>
     [IdlMember("parseAll", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssstylevalue-parseall")]
     public static IReadOnlyList<CssStyleValue> ParseAll(string property, string cssText) => CssStyleValueReifier.Parse(property, cssText, parseMultiple: true);
 
@@ -41,12 +44,14 @@ public class CssStyleValue
 }
 
 /// <summary>A keyword or an identifier (https://drafts.css-houdini.org/css-typed-om-1/#csskeywordvalue).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#csskeywordvalue"/>
 [IdlInterface("CSSKeywordValue", "https://drafts.css-houdini.org/css-typed-om-1/#csskeywordvalue")]
 public sealed class CssKeywordValue : CssStyleValue
 {
     private string _value;
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-csskeywordvalue-csskeywordvalue</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csskeywordvalue-csskeywordvalue"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csskeywordvalue-csskeywordvalue")]
     public CssKeywordValue(string value)
     {
@@ -54,6 +59,7 @@ public sealed class CssKeywordValue : CssStyleValue
     }
 
     /// <summary>Gets or sets the keyword; it must not be empty.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csskeywordvalue-value"/>
     [IdlMember("value", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csskeywordvalue-value")]
     public string Value
     {
@@ -79,6 +85,7 @@ public sealed class CssKeywordValue : CssStyleValue
 /// An &lt;image&gt; value (https://drafts.css-houdini.org/css-typed-om-1/#cssimagevalue). The object is opaque: it is only
 /// a value that can be set to a property that accepts images.
 /// </summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssimagevalue"/>
 [IdlInterface("CSSImageValue", "https://drafts.css-houdini.org/css-typed-om-1/#cssimagevalue")]
 public sealed class CssImageValue : CssStyleValue
 {

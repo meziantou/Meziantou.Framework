@@ -298,13 +298,13 @@ internal sealed class PngDecoder : PngDecodeObserver, IPartialFrameRenderer
                 {
                     if (image is not null)
                     {
-                        source.Slice(offset, bytesPerPixel).CopyTo(destination[offset..]);
+                        PngInterlace.CopyPixel(source[offset..], destination[offset..], bytesPerPixel);
                     }
                 }
                 else if (hasAnchor)
                 {
                     // The top left pixel of the block is decoded: it is never written here
-                    anchor.Slice((x - (x % blockWidth)) * bytesPerPixel, bytesPerPixel).CopyTo(destination[offset..]);
+                    PngInterlace.CopyPixel(anchor[((x - (x % blockWidth)) * bytesPerPixel)..], destination[offset..], bytesPerPixel);
                 }
                 else
                 {
@@ -386,12 +386,6 @@ internal sealed class PngDecoder : PngDecodeObserver, IPartialFrameRenderer
             pixels = converted;
         }
 
-        var stride = row.Step * bytesPerPixel;
-        var offset = row.X * bytesPerPixel;
-        for (var i = 0; i < row.Width; i++)
-        {
-            pixels.Slice(i * bytesPerPixel, bytesPerPixel).CopyTo(destination[offset..]);
-            offset += stride;
-        }
+        PngInterlace.CopyPixels(pixels, 1, destination[(row.X * bytesPerPixel)..], row.Step, row.Width, bytesPerPixel);
     }
 }

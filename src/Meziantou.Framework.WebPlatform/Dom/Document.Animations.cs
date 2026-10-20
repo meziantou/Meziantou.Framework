@@ -38,6 +38,7 @@ public partial class Document
     internal double? LoadEventTime { get; private set; }
 
     /// <summary>Gets the default document timeline (https://drafts.csswg.org/web-animations-1/#dom-document-timeline).</summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-document-timeline"/>
     [IdlMember("timeline", "https://drafts.csswg.org/web-animations-1/#dom-document-timeline")]
     public DocumentTimeline Timeline => Animations.DefaultTimeline;
 
@@ -45,6 +46,7 @@ public partial class Document
     /// Returns the relevant animations of the elements of the document (not of its shadow trees), sorted by their composite
     /// order (https://drafts.csswg.org/web-animations-1/#dom-documentorshadowroot-getanimations).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-documentorshadowroot-getanimations"/>
     [IdlMember("getAnimations", "https://drafts.csswg.org/web-animations-1/#dom-documentorshadowroot-getanimations")]
     public IReadOnlyList<Animation> GetAnimations()
     {
@@ -148,6 +150,7 @@ public partial class ShadowRoot
     /// Returns the relevant animations of the elements of the shadow tree, sorted by their composite order
     /// (https://drafts.csswg.org/web-animations-1/#dom-documentorshadowroot-getanimations).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/web-animations-1/#dom-documentorshadowroot-getanimations"/>
     [IdlMember("getAnimations", "https://drafts.csswg.org/web-animations-1/#dom-documentorshadowroot-getanimations")]
     public IReadOnlyList<Animation> GetAnimations()
     {

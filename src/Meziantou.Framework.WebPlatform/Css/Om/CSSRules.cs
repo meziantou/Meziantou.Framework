@@ -10,60 +10,74 @@ using Meziantou.Framework.WebPlatform.Infra;
 namespace Meziantou.Framework.WebPlatform.Css.Om;
 
 /// <summary>https://drafts.csswg.org/cssom/#the-cssrule-interface</summary>
+/// <seealso href="https://drafts.csswg.org/cssom/#cssrule"/>
 [IdlInterface("CSSRule", "https://drafts.csswg.org/cssom/#cssrule")]
 public abstract partial class CssRule
 {
     /// <summary>The value of <see cref="Type"/> for style rules (<c>STYLE_RULE</c>).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssrule-style_rule"/>
     [IdlMember("STYLE_RULE", "https://drafts.csswg.org/cssom/#dom-cssrule-style_rule")]
     public const ushort StyleRule = 1;
 
     /// <summary>The value of <see cref="Type"/> for <c>@charset</c> rules (<c>CHARSET_RULE</c>).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssrule-charset_rule"/>
     [IdlMember("CHARSET_RULE", "https://drafts.csswg.org/cssom/#dom-cssrule-charset_rule")]
     public const ushort CharsetRule = 2;
 
     /// <summary>The value of <see cref="Type"/> for <c>@import</c> rules (<c>IMPORT_RULE</c>).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssrule-import_rule"/>
     [IdlMember("IMPORT_RULE", "https://drafts.csswg.org/cssom/#dom-cssrule-import_rule")]
     public const ushort ImportRule = 3;
 
     /// <summary>The value of <see cref="Type"/> for <c>@media</c> rules (<c>MEDIA_RULE</c>).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssrule-media_rule"/>
     [IdlMember("MEDIA_RULE", "https://drafts.csswg.org/cssom/#dom-cssrule-media_rule")]
     public const ushort MediaRule = 4;
 
     /// <summary>The value of <see cref="Type"/> for <c>@font-face</c> rules (<c>FONT_FACE_RULE</c>).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssrule-font_face_rule"/>
     [IdlMember("FONT_FACE_RULE", "https://drafts.csswg.org/cssom/#dom-cssrule-font_face_rule")]
     public const ushort FontFaceRule = 5;
 
     /// <summary>The value of <see cref="Type"/> for <c>@page</c> rules (<c>PAGE_RULE</c>).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssrule-page_rule"/>
     [IdlMember("PAGE_RULE", "https://drafts.csswg.org/cssom/#dom-cssrule-page_rule")]
     public const ushort PageRule = 6;
 
     /// <summary>The value of <see cref="Type"/> for <c>@keyframes</c> rules (<c>KEYFRAMES_RULE</c>).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-animations-1/#dom-cssrule-keyframes_rule"/>
     [IdlMember("KEYFRAMES_RULE", "https://drafts.csswg.org/css-animations-1/#dom-cssrule-keyframes_rule")]
     public const ushort KeyframesRule = 7;
 
     /// <summary>The value of <see cref="Type"/> for keyframe rules (<c>KEYFRAME_RULE</c>).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-animations-1/#dom-cssrule-keyframe_rule"/>
     [IdlMember("KEYFRAME_RULE", "https://drafts.csswg.org/css-animations-1/#dom-cssrule-keyframe_rule")]
     public const ushort KeyframeRule = 8;
 
     /// <summary>The value of <see cref="Type"/> for page margin rules (<c>MARGIN_RULE</c>).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssrule-margin_rule"/>
     [IdlMember("MARGIN_RULE", "https://drafts.csswg.org/cssom/#dom-cssrule-margin_rule")]
     public const ushort MarginRule = 9;
 
     /// <summary>The value of <see cref="Type"/> for <c>@namespace</c> rules (<c>NAMESPACE_RULE</c>).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssrule-namespace_rule"/>
     [IdlMember("NAMESPACE_RULE", "https://drafts.csswg.org/cssom/#dom-cssrule-namespace_rule")]
     public const ushort NamespaceRule = 10;
 
     /// <summary>The value of <see cref="Type"/> for <c>@counter-style</c> rules (<c>COUNTER_STYLE_RULE</c>).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-counter-styles-3/#dom-cssrule-counter_style_rule"/>
     [IdlMember("COUNTER_STYLE_RULE", "https://drafts.csswg.org/css-counter-styles-3/#dom-cssrule-counter_style_rule")]
     public const ushort CounterStyleRule = 11;
 
     /// <summary>The value of <see cref="Type"/> for <c>@supports</c> rules (<c>SUPPORTS_RULE</c>).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-conditional-3/#dom-cssrule-supports_rule"/>
     [IdlMember("SUPPORTS_RULE", "https://drafts.csswg.org/css-conditional-3/#dom-cssrule-supports_rule")]
     public const ushort SupportsRule = 12;
 
     /// <summary>
     /// The value of <see cref="Type"/> for <c>@font-feature-values</c> rules (<c>FONT_FEATURE_VALUES_RULE</c>).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-4/#dom-cssrule-font_feature_values_rule"/>
     [IdlMember("FONT_FEATURE_VALUES_RULE", "https://drafts.csswg.org/css-fonts-4/#dom-cssrule-font_feature_values_rule")]
     public const ushort FontFeatureValuesRule = 14;
 
@@ -74,6 +88,7 @@ public abstract partial class CssRule
     /// <summary>
     /// https://drafts.csswg.org/cssom/#dom-cssrule-csstext: the getter serializes the rule; the setter does nothing.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssrule-csstext"/>
     [IdlMember("cssText", "https://drafts.csswg.org/cssom/#dom-cssrule-csstext")]
     public string CssText
     {
@@ -84,14 +99,17 @@ public abstract partial class CssRule
     /// <summary>
     /// Gets the rule that contains this rule, or null when the rule is at the top level of a style sheet.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssrule-parentrule"/>
     [IdlMember("parentRule", "https://drafts.csswg.org/cssom/#dom-cssrule-parentrule")]
     public CssRule? ParentRule { get; internal set; }
 
     /// <summary>Gets the style sheet that contains the rule, or null when the rule is not in a style sheet.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssrule-parentstylesheet"/>
     [IdlMember("parentStyleSheet", "https://drafts.csswg.org/cssom/#dom-cssrule-parentstylesheet")]
     public CssStyleSheet? ParentStyleSheet { get; private set; }
 
     /// <summary>https://drafts.csswg.org/cssom/#dom-cssrule-type: 0 for the rule types that have no legacy type.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssrule-type"/>
     [IdlMember("type", "https://drafts.csswg.org/cssom/#dom-cssrule-type")]
     public virtual ushort Type => 0;
 
@@ -207,6 +225,7 @@ public abstract partial class CssRule
 }
 
 /// <summary>https://drafts.csswg.org/cssom/#the-cssrulelist-interface</summary>
+/// <seealso href="https://drafts.csswg.org/cssom/#cssrulelist"/>
 [IdlInterface("CSSRuleList", "https://drafts.csswg.org/cssom/#cssrulelist")]
 public sealed class CssRuleList : IReadOnlyList<CssRule>
 {
@@ -218,10 +237,12 @@ public sealed class CssRuleList : IReadOnlyList<CssRule>
     }
 
     /// <summary>Returns the rule at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssrulelist-item"/>
     [IdlMember("item", "https://drafts.csswg.org/cssom/#dom-cssrulelist-item")]
     public CssRule? Item(uint index) => index < (uint)_rules.Count ? _rules[(int)index] : null;
 
     /// <summary>Gets the rule at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssrulelist-item"/>
     [IdlMember("getter", "https://drafts.csswg.org/cssom/#dom-cssrulelist-item")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public CssRule? this[uint index] => Item(index);
@@ -232,6 +253,7 @@ public sealed class CssRuleList : IReadOnlyList<CssRule>
     public CssRule this[int index] => _rules[index];
 
     /// <summary>Gets the number of rules in the list.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssrulelist-length"/>
     [IdlMember("length", "https://drafts.csswg.org/cssom/#dom-cssrulelist-length")]
     public uint Length => (uint)_rules.Count;
 
@@ -247,6 +269,7 @@ public sealed class CssRuleList : IReadOnlyList<CssRule>
 }
 
 /// <summary>https://drafts.csswg.org/cssom/#the-cssgroupingrule-interface</summary>
+/// <seealso href="https://drafts.csswg.org/cssom/#cssgroupingrule"/>
 [IdlInterface("CSSGroupingRule", "https://drafts.csswg.org/cssom/#cssgroupingrule")]
 public abstract class CssGroupingRule : CssRule
 {
@@ -262,6 +285,7 @@ public abstract class CssGroupingRule : CssRule
     internal override bool HasMultilineBlock => true;
 
     /// <summary>Gets the list of the child rules of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssgroupingrule-cssrules"/>
     [IdlMember("cssRules", "https://drafts.csswg.org/cssom/#dom-cssgroupingrule-cssrules")]
     public CssRuleList CssRules => _ruleList ??= new CssRuleList(_rules);
 
@@ -276,6 +300,7 @@ public abstract class CssGroupingRule : CssRule
     /// Parses a rule and inserts it in the child rules at the given index, and returns the index at which it was
     /// inserted.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssgroupingrule-insertrule"/>
     [IdlMember("insertRule", "https://drafts.csswg.org/cssom/#dom-cssgroupingrule-insertrule")]
     public uint InsertRule(string rule, uint index = 0)
     {
@@ -287,11 +312,13 @@ public abstract class CssGroupingRule : CssRule
     }
 
     /// <summary>Removes the child rule at the given index.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssgroupingrule-deleterule"/>
     [IdlMember("deleteRule", "https://drafts.csswg.org/cssom/#dom-cssgroupingrule-deleterule")]
     public void DeleteRule(uint index) => CssRuleParser.RemoveRule(_rules, index, ParentStyleSheet);
 }
 
 /// <summary>https://drafts.csswg.org/css-conditional-3/#the-cssconditionrule-interface</summary>
+/// <seealso href="https://drafts.csswg.org/css-conditional-3/#cssconditionrule"/>
 [IdlInterface("CSSConditionRule", "https://drafts.csswg.org/css-conditional-3/#cssconditionrule")]
 public abstract class CssConditionRule : CssGroupingRule
 {
@@ -300,11 +327,13 @@ public abstract class CssConditionRule : CssGroupingRule
     }
 
     /// <summary>Gets the text of the condition of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-conditional-3/#dom-cssconditionrule-conditiontext"/>
     [IdlMember("conditionText", "https://drafts.csswg.org/css-conditional-3/#dom-cssconditionrule-conditiontext")]
     public abstract string ConditionText { get; }
 }
 
 /// <summary>https://drafts.csswg.org/cssom/#the-cssstylerule-interface</summary>
+/// <seealso href="https://drafts.csswg.org/cssom/#cssstylerule"/>
 [IdlInterface("CSSStyleRule", "https://drafts.csswg.org/cssom/#cssstylerule")]
 public sealed class CssStyleRule : CssGroupingRule
 {
@@ -325,6 +354,7 @@ public sealed class CssStyleRule : CssGroupingRule
     public override ushort Type => StyleRule;
 
     /// <summary>Gets or sets the serialized selector list of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstylerule-selectortext"/>
     [IdlMember("selectorText", "https://drafts.csswg.org/cssom/#dom-cssstylerule-selectortext")]
     public string SelectorText
     {
@@ -343,10 +373,12 @@ public sealed class CssStyleRule : CssGroupingRule
     }
 
     /// <summary>Gets the declaration block of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstylerule-style"/>
     [IdlMember("style", "https://drafts.csswg.org/cssom/#dom-cssstylerule-style")]
     public CssStyleProperties Style => _style ??= new CssStyleProperties(this);
 
     /// <summary>The declarations of the rule as <see cref="TypedOm.CssStyleValue"/> objects (https://drafts.css-houdini.org/css-typed-om-1/#dom-cssstylerule-stylemap).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssstylerule-stylemap"/>
     [IdlMember("styleMap", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssstylerule-stylemap")]
     public TypedOm.StylePropertyMap StyleMap => _styleMap ??= new TypedOm.StylePropertyMap(Style);
 
@@ -359,6 +391,7 @@ public sealed class CssStyleRule : CssGroupingRule
 }
 
 /// <summary>https://drafts.csswg.org/css-nesting/#the-cssnestrule</summary>
+/// <seealso href="https://drafts.csswg.org/css-nesting-1/#cssnesteddeclarations"/>
 [IdlInterface("CSSNestedDeclarations", "https://drafts.csswg.org/css-nesting-1/#cssnesteddeclarations")]
 public sealed class CssNestedDeclarations : CssRule
 {
@@ -368,6 +401,7 @@ public sealed class CssNestedDeclarations : CssRule
     }
 
     /// <summary>Gets the declarations of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-nesting-1/#dom-cssnesteddeclarations-style"/>
     [IdlMember("style", "https://drafts.csswg.org/css-nesting-1/#dom-cssnesteddeclarations-style")]
     public CssStyleProperties Style { get; }
 
@@ -381,6 +415,7 @@ public sealed class CssNestedDeclarations : CssRule
 }
 
 /// <summary>https://drafts.csswg.org/css-conditional-3/#the-cssmediarule-interface</summary>
+/// <seealso href="https://drafts.csswg.org/css-conditional-3/#cssmediarule"/>
 [IdlInterface("CSSMediaRule", "https://drafts.csswg.org/css-conditional-3/#cssmediarule")]
 public sealed class CssMediaRule : CssConditionRule
 {
@@ -391,10 +426,12 @@ public sealed class CssMediaRule : CssConditionRule
     }
 
     /// <summary>Gets the media query list of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-conditional-3/#dom-cssmediarule-media"/>
     [IdlMember("media", "https://drafts.csswg.org/css-conditional-3/#dom-cssmediarule-media")]
     public MediaList Media { get; }
 
     /// <summary>https://drafts.csswg.org/css-conditional-5/#dom-cssmediarule-matches: there is no viewport, so the media features are not evaluated.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-conditional-5/#dom-cssmediarule-matches"/>
     [IdlMember("matches", "https://drafts.csswg.org/css-conditional-5/#dom-cssmediarule-matches")]
     public bool Matches => MediaQueryEvaluator.Matches(Media, GetMediaEnvironment());
 
@@ -412,6 +449,7 @@ public sealed class CssMediaRule : CssConditionRule
 /// The rule is exposed in the CSSOM, but the references to custom media queries (<c>(--name)</c>) are not resolved: they are
 /// &lt;general-enclosed&gt; and evaluate to unknown.
 /// </summary>
+/// <seealso href="https://drafts.csswg.org/mediaqueries-5/#csscustommediarule"/>
 [IdlInterface("CSSCustomMediaRule", "https://drafts.csswg.org/mediaqueries-5/#csscustommediarule")]
 public sealed class CssCustomMediaRule : CssRule
 {
@@ -422,10 +460,12 @@ public sealed class CssCustomMediaRule : CssRule
     }
 
     /// <summary>Gets the name of the custom media query, including the leading <c>--</c>.</summary>
+    /// <seealso href="https://drafts.csswg.org/mediaqueries-5/#dom-csscustommediarule-name"/>
     [IdlMember("name", "https://drafts.csswg.org/mediaqueries-5/#dom-csscustommediarule-name")]
     public string Name { get; }
 
     /// <summary>The media query list of the rule, or the boolean of the <c>true</c> and <c>false</c> queries.</summary>
+    /// <seealso href="https://drafts.csswg.org/mediaqueries-5/#dom-csscustommediarule-query"/>
     [IdlMember("query", "https://drafts.csswg.org/mediaqueries-5/#dom-csscustommediarule-query")]
     public MediaListOrBoolean Query { get; }
 
@@ -499,6 +539,7 @@ public readonly struct MediaListOrBoolean : IUnionValue, IEquatable<MediaListOrB
 }
 
 /// <summary>https://drafts.csswg.org/css-conditional-3/#the-csssupportsrule-interface</summary>
+/// <seealso href="https://drafts.csswg.org/css-conditional-3/#csssupportsrule"/>
 [IdlInterface("CSSSupportsRule", "https://drafts.csswg.org/css-conditional-3/#csssupportsrule")]
 public sealed class CssSupportsRule : CssConditionRule
 {
@@ -516,6 +557,7 @@ public sealed class CssSupportsRule : CssConditionRule
     /// <summary>
     /// Gets a value indicating whether the supports condition of the rule currently evaluates to true.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-conditional-5/#dom-csssupportsrule-matches"/>
     [IdlMember("matches", "https://drafts.csswg.org/css-conditional-5/#dom-csssupportsrule-matches")]
     public bool Matches => _matches;
 
@@ -528,21 +570,25 @@ public sealed class CssSupportsRule : CssConditionRule
 }
 
 /// <summary>https://drafts.csswg.org/css-conditional-5/#dictdef-csscontainercondition</summary>
+/// <seealso href="https://drafts.csswg.org/css-conditional-5/#dictdef-csscontainercondition"/>
 [IdlInterface("CSSContainerCondition", "https://drafts.csswg.org/css-conditional-5/#dictdef-csscontainercondition")]
 public sealed class CssContainerCondition
 {
     /// <summary>
     /// Gets the name of the container targeted by the condition, or an empty string when the condition has no name.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-conditional-5/#dom-csscontainercondition-name"/>
     [IdlMember("name", "https://drafts.csswg.org/css-conditional-5/#dom-csscontainercondition-name")]
     public required string Name { get; init; }
 
     /// <summary>Gets the text of the container query of the condition.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-conditional-5/#dom-csscontainercondition-query"/>
     [IdlMember("query", "https://drafts.csswg.org/css-conditional-5/#dom-csscontainercondition-query")]
     public required string Query { get; init; }
 }
 
 /// <summary>https://drafts.csswg.org/css-conditional-5/#the-csscontainerrule-interface</summary>
+/// <seealso href="https://drafts.csswg.org/css-conditional-5/#csscontainerrule"/>
 [IdlInterface("CSSContainerRule", "https://drafts.csswg.org/css-conditional-5/#csscontainerrule")]
 public sealed class CssContainerRule : CssConditionRule
 {
@@ -553,6 +599,7 @@ public sealed class CssContainerRule : CssConditionRule
     }
 
     /// <summary>Gets the container conditions of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-conditional-5/#dom-csscontainerrule-conditions"/>
     [IdlMember("conditions", "https://drafts.csswg.org/css-conditional-5/#dom-csscontainerrule-conditions")]
     public IReadOnlyList<CssContainerCondition> Conditions { get; }
 
@@ -563,12 +610,14 @@ public sealed class CssContainerRule : CssConditionRule
     /// Gets the name of the container targeted by the rule, or an empty string when the rule has not exactly one
     /// condition.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-conditional-5/#dom-csscontainerrule-containername"/>
     [IdlMember("containerName", "https://drafts.csswg.org/css-conditional-5/#dom-csscontainerrule-containername")]
     public string ContainerName => Conditions.Count == 1 ? Conditions[0].Name : "";
 
     /// <summary>
     /// Gets the container query of the rule, or an empty string when the rule has not exactly one condition.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-conditional-5/#dom-csscontainerrule-containerquery"/>
     [IdlMember("containerQuery", "https://drafts.csswg.org/css-conditional-5/#dom-csscontainerrule-containerquery")]
     public string ContainerQuery => Conditions.Count == 1 ? Conditions[0].Query : "";
 
@@ -579,6 +628,7 @@ public sealed class CssContainerRule : CssConditionRule
 }
 
 /// <summary>https://drafts.csswg.org/cssom/#the-cssimportrule-interface</summary>
+/// <seealso href="https://drafts.csswg.org/cssom/#cssimportrule"/>
 [IdlInterface("CSSImportRule", "https://drafts.csswg.org/cssom/#cssimportrule")]
 public sealed class CssImportRule : CssRule
 {
@@ -593,10 +643,12 @@ public sealed class CssImportRule : CssRule
     }
 
     /// <summary>Gets the URL of the imported style sheet.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssimportrule-href"/>
     [IdlMember("href", "https://drafts.csswg.org/cssom/#dom-cssimportrule-href")]
     public string Href { get; }
 
     /// <summary>Gets the media query list that conditions the import.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssimportrule-media"/>
     [IdlMember("media", "https://drafts.csswg.org/cssom/#dom-cssimportrule-media")]
     public MediaList Media { get; }
 
@@ -605,6 +657,7 @@ public sealed class CssImportRule : CssRule
     /// with the <see cref="DocumentLoader"/> of the browsing context (it is never fetched without a loader, for a constructed
     /// style sheet, or when the <c>supports()</c> condition is false).
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssimportrule-stylesheet"/>
     [IdlMember("styleSheet", "https://drafts.csswg.org/cssom/#dom-cssimportrule-stylesheet")]
     public CssStyleSheet? StyleSheet { get; internal set; }
 
@@ -612,12 +665,14 @@ public sealed class CssImportRule : CssRule
     /// Gets the name of the cascade layer in which the imported style sheet is placed, an empty string for an anonymous
     /// layer, or null when the import has no <c>layer</c>.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssimportrule-layername"/>
     [IdlMember("layerName", "https://drafts.csswg.org/cssom/#dom-cssimportrule-layername")]
     public string? LayerName { get; }
 
     /// <summary>
     /// Gets the text of the <c>supports()</c> condition of the import, or null when the import has no condition.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssimportrule-supportstext"/>
     [IdlMember("supportsText", "https://drafts.csswg.org/cssom/#dom-cssimportrule-supportstext")]
     public string? SupportsText { get; }
 
@@ -688,6 +743,7 @@ public sealed class CssImportRule : CssRule
 }
 
 /// <summary>https://drafts.csswg.org/cssom/#the-cssnamespacerule-interface</summary>
+/// <seealso href="https://drafts.csswg.org/cssom/#cssnamespacerule"/>
 [IdlInterface("CSSNamespaceRule", "https://drafts.csswg.org/cssom/#cssnamespacerule")]
 public sealed class CssNamespaceRule : CssRule
 {
@@ -698,10 +754,12 @@ public sealed class CssNamespaceRule : CssRule
     }
 
     /// <summary>Gets the namespace URI of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssnamespacerule-namespaceuri"/>
     [IdlMember("namespaceURI", "https://drafts.csswg.org/cssom/#dom-cssnamespacerule-namespaceuri")]
     public string NamespaceUri { get; }
 
     /// <summary>Gets the namespace prefix of the rule, or an empty string for the default namespace.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssnamespacerule-prefix"/>
     [IdlMember("prefix", "https://drafts.csswg.org/cssom/#dom-cssnamespacerule-prefix")]
     public string Prefix { get; }
 
@@ -725,6 +783,7 @@ public sealed class CssNamespaceRule : CssRule
 }
 
 /// <summary>https://drafts.csswg.org/css-fonts/#cssfontfacerule</summary>
+/// <seealso href="https://drafts.csswg.org/css-fonts-5/#cssfontfacerule"/>
 [IdlInterface("CSSFontFaceRule", "https://drafts.csswg.org/css-fonts-5/#cssfontfacerule")]
 public sealed class CssFontFaceRule : CssRule
 {
@@ -734,6 +793,7 @@ public sealed class CssFontFaceRule : CssRule
     }
 
     /// <summary>Gets the descriptors of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacerule-style"/>
     [IdlMember("style", "https://drafts.csswg.org/css-fonts-5/#dom-cssfontfacerule-style")]
     public CssFontFaceDescriptors Style { get; }
 
@@ -748,6 +808,7 @@ public sealed class CssFontFaceRule : CssRule
 }
 
 /// <summary>https://drafts.csswg.org/cssom/#the-csspagerule-interface</summary>
+/// <seealso href="https://drafts.csswg.org/cssom/#csspagerule"/>
 [IdlInterface("CSSPageRule", "https://drafts.csswg.org/cssom/#csspagerule")]
 public sealed class CssPageRule : CssGroupingRule
 {
@@ -760,6 +821,7 @@ public sealed class CssPageRule : CssGroupingRule
     private string PageSelector { get; set; }
 
     /// <summary>Gets or sets the serialized page selector of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-csspagerule-selectortext"/>
     [IdlMember("selectorText", "https://drafts.csswg.org/cssom/#dom-csspagerule-selectortext")]
     public string SelectorText
     {
@@ -775,6 +837,7 @@ public sealed class CssPageRule : CssGroupingRule
     }
 
     /// <summary>Gets the descriptors of the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-csspagerule-style"/>
     [IdlMember("style", "https://drafts.csswg.org/cssom/#dom-csspagerule-style")]
     public CssPageDescriptors Style { get; }
 
@@ -790,6 +853,7 @@ public sealed class CssPageRule : CssGroupingRule
 }
 
 /// <summary>https://drafts.csswg.org/cssom/#the-cssmarginrule-interface</summary>
+/// <seealso href="https://drafts.csswg.org/cssom/#cssmarginrule"/>
 [IdlInterface("CSSMarginRule", "https://drafts.csswg.org/cssom/#cssmarginrule")]
 public sealed class CssMarginRule : CssRule
 {
@@ -800,10 +864,12 @@ public sealed class CssMarginRule : CssRule
     }
 
     /// <summary>Gets the name of the page margin box of the rule (e.g. <c>top-left</c>).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssmarginrule-name"/>
     [IdlMember("name", "https://drafts.csswg.org/cssom/#dom-cssmarginrule-name")]
     public string Name { get; }
 
     /// <summary>The descriptors of the margin rule: a CSSStyleProperties object, as in browsers.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssmarginrule-style"/>
     [IdlMember("style", "https://drafts.csswg.org/cssom/#dom-cssmarginrule-style")]
     public CssStyleDeclaration Style { get; }
 
@@ -816,6 +882,7 @@ public sealed class CssMarginRule : CssRule
 }
 
 /// <summary>https://drafts.csswg.org/css-animations/#interface-csskeyframesrule</summary>
+/// <seealso href="https://drafts.csswg.org/css-animations-1/#csskeyframesrule"/>
 [IdlInterface("CSSKeyframesRule", "https://drafts.csswg.org/css-animations-1/#csskeyframesrule")]
 public sealed class CssKeyframesRule : CssRule
 {
@@ -831,6 +898,7 @@ public sealed class CssKeyframesRule : CssRule
     internal override List<CssRule> ChildRules => _rules;
 
     /// <summary>Gets or sets the name of the animation.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-animations-1/#dom-csskeyframesrule-name"/>
     [IdlMember("name", "https://drafts.csswg.org/css-animations-1/#dom-csskeyframesrule-name")]
     public string Name
     {
@@ -844,14 +912,17 @@ public sealed class CssKeyframesRule : CssRule
     }
 
     /// <summary>Gets the list of the keyframe rules.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-animations-1/#dom-csskeyframesrule-cssrules"/>
     [IdlMember("cssRules", "https://drafts.csswg.org/css-animations-1/#dom-csskeyframesrule-cssrules")]
     public CssRuleList CssRules => _ruleList ??= new CssRuleList(_rules);
 
     /// <summary>Gets the number of keyframe rules.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-animations-1/#dom-csskeyframesrule-length"/>
     [IdlMember("length", "https://drafts.csswg.org/css-animations-1/#dom-csskeyframesrule-length")]
     public uint Length => (uint)_rules.Count;
 
     /// <summary>Gets the keyframe rule at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-animations-1/#dom-csskeyframesrule-getter"/>
     [IdlMember("getter", "https://drafts.csswg.org/css-animations-1/#dom-csskeyframesrule-getter")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public CssKeyframeRule? this[uint index] => index < (uint)_rules.Count ? (CssKeyframeRule)_rules[(int)index] : null;
@@ -868,6 +939,7 @@ public sealed class CssKeyframesRule : CssRule
     }
 
     /// <summary>Parses a keyframe rule and appends it to the keyframes.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-animations-1/#dom-csskeyframesrule-appendrule"/>
     [IdlMember("appendRule", "https://drafts.csswg.org/css-animations-1/#dom-csskeyframesrule-appendrule")]
     public void AppendRule(string rule)
     {
@@ -888,6 +960,7 @@ public sealed class CssKeyframesRule : CssRule
     }
 
     /// <summary>Removes the last keyframe rule whose key text matches the given selector.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-animations-1/#dom-csskeyframesrule-deleterule"/>
     [IdlMember("deleteRule", "https://drafts.csswg.org/css-animations-1/#dom-csskeyframesrule-deleterule")]
     public void DeleteRule(string select)
     {
@@ -906,6 +979,7 @@ public sealed class CssKeyframesRule : CssRule
     /// <summary>
     /// Returns the last keyframe rule whose key text matches the given selector, or null when there is none.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-animations-1/#dom-csskeyframesrule-findrule"/>
     [IdlMember("findRule", "https://drafts.csswg.org/css-animations-1/#dom-csskeyframesrule-findrule")]
     public CssKeyframeRule? FindRule(string select)
     {
@@ -943,6 +1017,7 @@ public sealed class CssKeyframesRule : CssRule
 }
 
 /// <summary>https://drafts.csswg.org/css-animations/#interface-csskeyframerule</summary>
+/// <seealso href="https://drafts.csswg.org/css-animations-1/#csskeyframerule"/>
 [IdlInterface("CSSKeyframeRule", "https://drafts.csswg.org/css-animations-1/#csskeyframerule")]
 public sealed class CssKeyframeRule : CssRule
 {
@@ -956,6 +1031,7 @@ public sealed class CssKeyframeRule : CssRule
     internal List<string> Keys { get; private set; }
 
     /// <summary>Gets or sets the serialized keyframe selector list of the rule (e.g. <c>0%, 50%</c>).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-animations-1/#dom-csskeyframerule-keytext"/>
     [IdlMember("keyText", "https://drafts.csswg.org/css-animations-1/#dom-csskeyframerule-keytext")]
     public string KeyText
     {
@@ -969,6 +1045,7 @@ public sealed class CssKeyframeRule : CssRule
     }
 
     /// <summary>Gets the declaration block of the keyframe.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-animations-1/#dom-csskeyframerule-style"/>
     [IdlMember("style", "https://drafts.csswg.org/css-animations-1/#dom-csskeyframerule-style")]
     public CssStyleProperties Style { get; }
 
@@ -981,6 +1058,7 @@ public sealed class CssKeyframeRule : CssRule
 }
 
 /// <summary>https://drafts.csswg.org/css-cascade-5/#csslayerblockrule</summary>
+/// <seealso href="https://drafts.csswg.org/css-cascade-5/#csslayerblockrule"/>
 [IdlInterface("CSSLayerBlockRule", "https://drafts.csswg.org/css-cascade-5/#csslayerblockrule")]
 public sealed class CssLayerBlockRule : CssGroupingRule
 {
@@ -990,6 +1068,7 @@ public sealed class CssLayerBlockRule : CssGroupingRule
     }
 
     /// <summary>Gets the name of the cascade layer, or an empty string for an anonymous layer.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-cascade-5/#dom-csslayerblockrule-name"/>
     [IdlMember("name", "https://drafts.csswg.org/css-cascade-5/#dom-csslayerblockrule-name")]
     public string Name { get; }
 
@@ -997,6 +1076,7 @@ public sealed class CssLayerBlockRule : CssGroupingRule
 }
 
 /// <summary>https://drafts.csswg.org/css-cascade-5/#csslayerstatementrule</summary>
+/// <seealso href="https://drafts.csswg.org/css-cascade-5/#csslayerstatementrule"/>
 [IdlInterface("CSSLayerStatementRule", "https://drafts.csswg.org/css-cascade-5/#csslayerstatementrule")]
 public sealed class CssLayerStatementRule : CssRule
 {
@@ -1006,6 +1086,7 @@ public sealed class CssLayerStatementRule : CssRule
     }
 
     /// <summary>Gets the names of the cascade layers declared by the statement.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-cascade-5/#dom-csslayerstatementrule-namelist"/>
     [IdlMember("nameList", "https://drafts.csswg.org/css-cascade-5/#dom-csslayerstatementrule-namelist")]
     public IReadOnlyList<string> NameList { get; }
 
@@ -1015,6 +1096,7 @@ public sealed class CssLayerStatementRule : CssRule
 }
 
 /// <summary>https://drafts.csswg.org/css-cascade-6/#cssscoperule</summary>
+/// <seealso href="https://drafts.csswg.org/css-cascade-6/#cssscoperule"/>
 [IdlInterface("CSSScopeRule", "https://drafts.csswg.org/css-cascade-6/#cssscoperule")]
 public sealed class CssScopeRule : CssGroupingRule
 {
@@ -1027,12 +1109,14 @@ public sealed class CssScopeRule : CssGroupingRule
     /// <summary>
     /// Gets the text of the scoping root selector of the rule, or null when the rule has no scoping root.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-cascade-6/#dom-cssscoperule-start"/>
     [IdlMember("start", "https://drafts.csswg.org/css-cascade-6/#dom-cssscoperule-start")]
     public string? Start { get; }
 
     /// <summary>
     /// Gets the text of the scoping limit selector of the rule, or null when the rule has no scoping limit.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-cascade-6/#dom-cssscoperule-end"/>
     [IdlMember("end", "https://drafts.csswg.org/css-cascade-6/#dom-cssscoperule-end")]
     public string? End { get; }
 
@@ -1062,6 +1146,7 @@ public sealed class CssScopeRule : CssGroupingRule
 }
 
 /// <summary>https://drafts.csswg.org/css-transitions-2/#the-cssstartingstylerule-interface</summary>
+/// <seealso href="https://drafts.csswg.org/css-transitions-2/#cssstartingstylerule"/>
 [IdlInterface("CSSStartingStyleRule", "https://drafts.csswg.org/css-transitions-2/#cssstartingstylerule")]
 public sealed class CssStartingStyleRule : CssGroupingRule
 {
@@ -1073,6 +1158,7 @@ public sealed class CssStartingStyleRule : CssGroupingRule
 }
 
 /// <summary>https://drafts.css-houdini.org/css-properties-values-api/#the-css-property-rule-interface</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-properties-values-api-1/#csspropertyrule"/>
 [IdlInterface("CSSPropertyRule", "https://drafts.css-houdini.org/css-properties-values-api-1/#csspropertyrule")]
 public sealed class CssPropertyRule : CssRule
 {
@@ -1089,18 +1175,22 @@ public sealed class CssPropertyRule : CssRule
     internal Cascade.CustomPropertyRegistration Registration { get; }
 
     /// <summary>Gets the name of the registered custom property, including the leading <c>--</c>.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-properties-values-api-1/#dom-csspropertyrule-name"/>
     [IdlMember("name", "https://drafts.css-houdini.org/css-properties-values-api-1/#dom-csspropertyrule-name")]
     public string Name { get; }
 
     /// <summary>Gets the syntax string of the registered custom property.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-properties-values-api-1/#dom-csspropertyrule-syntax"/>
     [IdlMember("syntax", "https://drafts.css-houdini.org/css-properties-values-api-1/#dom-csspropertyrule-syntax")]
     public string Syntax { get; }
 
     /// <summary>Gets a value indicating whether the registered custom property inherits.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-properties-values-api-1/#dom-csspropertyrule-inherits"/>
     [IdlMember("inherits", "https://drafts.css-houdini.org/css-properties-values-api-1/#dom-csspropertyrule-inherits")]
     public bool Inherits { get; }
 
     /// <summary>Gets the initial value of the registered custom property, or null when the rule has none.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-properties-values-api-1/#dom-csspropertyrule-initialvalue"/>
     [IdlMember("initialValue", "https://drafts.css-houdini.org/css-properties-values-api-1/#dom-csspropertyrule-initialvalue")]
     public string? InitialValue { get; }
 
@@ -1127,6 +1217,7 @@ public sealed class CssPropertyRule : CssRule
 /// https://drafts.csswg.org/css-view-transitions-2/#cssviewtransitionrule: the <c>@view-transition</c> rule, which opts the
 /// document in to the cross-document view transitions (https://drafts.csswg.org/css-view-transitions-2/#view-transition-rule).
 /// </summary>
+/// <seealso href="https://drafts.csswg.org/css-view-transitions-2/#cssviewtransitionrule"/>
 [IdlInterface("CSSViewTransitionRule", "https://drafts.csswg.org/css-view-transitions-2/#cssviewtransitionrule")]
 public sealed class CssViewTransitionRule : CssRule
 {
@@ -1138,10 +1229,12 @@ public sealed class CssViewTransitionRule : CssRule
     }
 
     /// <summary>Gets the value of the <c>navigation</c> descriptor (<c>auto</c> or <c>none</c>), or an empty string when it is missing or invalid.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-view-transitions-2/#dom-cssviewtransitionrule-navigation"/>
     [IdlMember("navigation", "https://drafts.csswg.org/css-view-transitions-2/#dom-cssviewtransitionrule-navigation")]
     public string Navigation { get; }
 
     /// <summary>Gets the types of the <c>types</c> descriptor (none for <c>none</c>).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-view-transitions-2/#dom-cssviewtransitionrule-types"/>
     [IdlMember("types", "https://drafts.csswg.org/css-view-transitions-2/#dom-cssviewtransitionrule-types")]
     public IReadOnlyList<string> Types { get; }
 
@@ -1168,6 +1261,7 @@ public sealed class CssViewTransitionRule : CssRule
 }
 
 /// <summary>https://drafts.csswg.org/css-counter-styles/#the-csscounterstylerule-interface</summary>
+/// <seealso href="https://drafts.csswg.org/css-counter-styles-3/#csscounterstylerule"/>
 [IdlInterface("CSSCounterStyleRule", "https://drafts.csswg.org/css-counter-styles-3/#csscounterstylerule")]
 public sealed class CssCounterStyleRule : CssRule
 {
@@ -1193,6 +1287,7 @@ public sealed class CssCounterStyleRule : CssRule
     public override ushort Type => CounterStyleRule;
 
     /// <summary>Gets or sets the name of the counter style.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-name"/>
     [IdlMember("name", "https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-name")]
     public string Name
     {
@@ -1259,6 +1354,7 @@ public sealed class CssCounterStyleRule : CssRule
     }
 
     /// <summary>Gets or sets the <c>system</c> descriptor of the counter style.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-system"/>
     [IdlMember("system", "https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-system")]
     public string System
     {
@@ -1267,6 +1363,7 @@ public sealed class CssCounterStyleRule : CssRule
     }
 
     /// <summary>Gets or sets the <c>symbols</c> descriptor of the counter style.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-symbols"/>
     [IdlMember("symbols", "https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-symbols")]
     public string Symbols
     {
@@ -1275,6 +1372,7 @@ public sealed class CssCounterStyleRule : CssRule
     }
 
     /// <summary>Gets or sets the <c>additive-symbols</c> descriptor of the counter style.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-additivesymbols"/>
     [IdlMember("additiveSymbols", "https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-additivesymbols")]
     public string AdditiveSymbols
     {
@@ -1283,6 +1381,7 @@ public sealed class CssCounterStyleRule : CssRule
     }
 
     /// <summary>Gets or sets the <c>negative</c> descriptor of the counter style.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-negative"/>
     [IdlMember("negative", "https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-negative")]
     public string Negative
     {
@@ -1291,6 +1390,7 @@ public sealed class CssCounterStyleRule : CssRule
     }
 
     /// <summary>Gets or sets the <c>prefix</c> descriptor of the counter style.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-prefix"/>
     [IdlMember("prefix", "https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-prefix")]
     public string Prefix
     {
@@ -1299,6 +1399,7 @@ public sealed class CssCounterStyleRule : CssRule
     }
 
     /// <summary>Gets or sets the <c>suffix</c> descriptor of the counter style.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-suffix"/>
     [IdlMember("suffix", "https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-suffix")]
     public string Suffix
     {
@@ -1307,6 +1408,7 @@ public sealed class CssCounterStyleRule : CssRule
     }
 
     /// <summary>Gets or sets the <c>range</c> descriptor of the counter style.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-range"/>
     [IdlMember("range", "https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-range")]
     public string Range
     {
@@ -1315,6 +1417,7 @@ public sealed class CssCounterStyleRule : CssRule
     }
 
     /// <summary>Gets or sets the <c>pad</c> descriptor of the counter style.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-pad"/>
     [IdlMember("pad", "https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-pad")]
     public string Pad
     {
@@ -1323,6 +1426,7 @@ public sealed class CssCounterStyleRule : CssRule
     }
 
     /// <summary>Gets or sets the <c>speak-as</c> descriptor of the counter style.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-speakas"/>
     [IdlMember("speakAs", "https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-speakas")]
     public string SpeakAs
     {
@@ -1331,6 +1435,7 @@ public sealed class CssCounterStyleRule : CssRule
     }
 
     /// <summary>Gets or sets the <c>fallback</c> descriptor of the counter style.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-fallback"/>
     [IdlMember("fallback", "https://drafts.csswg.org/css-counter-styles-3/#dom-csscounterstylerule-fallback")]
     public string Fallback
     {
@@ -1344,6 +1449,7 @@ public sealed class CssCounterStyleRule : CssRule
 }
 
 /// <summary>https://drafts.csswg.org/css-fonts-4/#om-fontpalettevalues</summary>
+/// <seealso href="https://drafts.csswg.org/css-fonts-4/#cssfontpalettevaluesrule"/>
 [IdlInterface("CSSFontPaletteValuesRule", "https://drafts.csswg.org/css-fonts-4/#cssfontpalettevaluesrule")]
 public sealed class CssFontPaletteValuesRule : CssRule
 {
@@ -1356,20 +1462,24 @@ public sealed class CssFontPaletteValuesRule : CssRule
     }
 
     /// <summary>Gets the name of the palette values, including the leading <c>--</c>.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-4/#dom-cssfontpalettevaluesrule-name"/>
     [IdlMember("name", "https://drafts.csswg.org/css-fonts-4/#dom-cssfontpalettevaluesrule-name")]
     public string Name { get; }
 
     /// <summary>Gets the <c>font-family</c> descriptor of the rule, or an empty string when it is not set.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-4/#dom-cssfontpalettevaluesrule-fontfamily"/>
     [IdlMember("fontFamily", "https://drafts.csswg.org/css-fonts-4/#dom-cssfontpalettevaluesrule-fontfamily")]
     public string FontFamily => _descriptors.GetValueOrDefault("font-family", "");
 
     /// <summary>Gets the <c>base-palette</c> descriptor of the rule, or an empty string when it is not set.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-4/#dom-cssfontpalettevaluesrule-basepalette"/>
     [IdlMember("basePalette", "https://drafts.csswg.org/css-fonts-4/#dom-cssfontpalettevaluesrule-basepalette")]
     public string BasePalette => _descriptors.GetValueOrDefault("base-palette", "");
 
     /// <summary>
     /// Gets the <c>override-colors</c> descriptor of the rule, or an empty string when it is not set.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-4/#dom-cssfontpalettevaluesrule-overridecolors"/>
     [IdlMember("overrideColors", "https://drafts.csswg.org/css-fonts-4/#dom-cssfontpalettevaluesrule-overridecolors")]
     public string OverrideColors => _descriptors.GetValueOrDefault("override-colors", "");
 

@@ -5,10 +5,12 @@ using Meziantou.Framework.WebPlatform.Urls;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://html.spec.whatwg.org/multipage/worklets.html#workletoptions</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/worklets.html#workletoptions"/>
 [IdlInterface("WorkletOptions", "https://html.spec.whatwg.org/multipage/worklets.html#workletoptions")]
 public sealed class WorkletOptions
 {
     /// <summary>Gets the credentials mode of the fetches of the module scripts.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/worklets.html#dom-workletoptions-credentials"/>
     [IdlMember("credentials", "https://html.spec.whatwg.org/multipage/worklets.html#dom-workletoptions-credentials")]
     public RequestCredentials Credentials { get; init; } = RequestCredentials.SameOrigin;
 }
@@ -24,6 +26,7 @@ public sealed class WorkletOptions
 /// loop of the document, never concurrently with the scripts of the document. The global scopes are created by the first
 /// call of <see cref="AddModule"/>, and are terminated when the document is destroyed.
 /// </remarks>
+/// <seealso href="https://html.spec.whatwg.org/multipage/worklets.html#worklet"/>
 [IdlInterface("Worklet", "https://html.spec.whatwg.org/multipage/worklets.html#worklet")]
 public abstract class Worklet
 {
@@ -72,6 +75,7 @@ public abstract class Worklet
     /// cannot run: no script engine, a document that is not a secure context or that is destroyed); or with the error of a
     /// module that cannot be parsed or linked.
     /// </returns>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/worklets.html#dom-worklet-addmodule"/>
     [IdlMember("addModule", "https://html.spec.whatwg.org/multipage/worklets.html#dom-worklet-addmodule")]
     public Task AddModule(string moduleUrl, WorkletOptions? options = null)
     {

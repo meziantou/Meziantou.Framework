@@ -386,12 +386,14 @@ internal static class CssImageFetching
             // The presentation attributes of the SVG elements (a mask is fetched as an image)
             if (!(images && resources) && element is SvgElement)
             {
-                foreach (var attribute in element.Attributes)
+                for (var i = 0; i < element.AttributeCount; i++)
                 {
-                    if (attribute.NamespaceUri is null && attribute.Value.Contains("url(", StringComparison.OrdinalIgnoreCase) && ResourceAttributes.Contains(attribute.LocalName) && MayReferenceExternalResource(attribute.Value))
+                    var value = element.GetAttributeValue(i);
+                    var localName = element.GetAttributeLocalName(i);
+                    if (element.GetAttributeNamespace(i) is null && value.Contains("url(", StringComparison.OrdinalIgnoreCase) && ResourceAttributes.Contains(localName) && MayReferenceExternalResource(value))
                     {
-                        images = images || attribute.LocalName == "mask";
-                        resources = resources || attribute.LocalName != "mask";
+                        images = images || localName == "mask";
+                        resources = resources || localName != "mask";
                     }
                 }
             }

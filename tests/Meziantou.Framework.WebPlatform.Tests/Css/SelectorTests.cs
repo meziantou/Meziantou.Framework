@@ -297,6 +297,70 @@ public sealed class SelectorTests
     }
 
     [Fact]
+    public void QuerySelectorAll_AncestorFilter()
+    {
+        var document = Parse("<!DOCTYPE html><div id=a class='x y'><section><p id=p1></p></section></div><svg><foreignObject><p id=p2></p></foreignObject></svg>");
+        Assert.Equal(["p1"], document.QuerySelectorAll("#a p").Select(n => ((Element)n).Id));
+        Assert.Equal(["p1"], document.QuerySelectorAll(".y > section > p").Select(n => ((Element)n).Id));
+        Assert.Equal(["p1"], document.QuerySelectorAll("DIV.x P").Select(n => ((Element)n).Id)); // HTML element names are case-insensitive
+        Assert.Equal(["p2"], document.QuerySelectorAll("foreignObject p").Select(n => ((Element)n).Id));
+        Assert.Empty(document.QuerySelectorAll("foreignobject p")); // SVG element names are case-sensitive
+        Assert.Empty(document.QuerySelectorAll(".X p"));
+        Assert.Empty(document.QuerySelectorAll("#a ~ section p, .z p"));
+        Assert.Equal(["p2"], document.QuerySelectorAll("#a ~ * p").Select(n => ((Element)n).Id));
+        Assert.Equal(["p1", "p2"], document.QuerySelectorAll("#a p, svg p").Select(n => ((Element)n).Id));
+
+        // The ancestors of the root of the query are matched too
+        var section = document.QuerySelector("section")!;
+        Assert.Equal(["p1"], section.QuerySelectorAll("body .x p").Select(n => ((Element)n).Id));
+        Assert.Same(document.GetElementById("p1"), section.QuerySelector("#a section > p"));
+
+        // The features of the ancestors follow the mutations
+        document.GetElementById("a")!.ClassName = "z";
+        Assert.Equal(["p1"], document.QuerySelectorAll(".z p").Select(n => ((Element)n).Id));
+        Assert.Empty(document.QuerySelectorAll(".x p"));
+
+        // In quirks mode, the IDs and the classes of the ancestors match ASCII case-insensitively
+        var quirks = Parse("<div id=Q class=Foo><p></p></div>");
+        Assert.Single(quirks.QuerySelectorAll("#q p"));
+        Assert.Single(quirks.QuerySelectorAll(".FOO > p"));
+    }
+
+    [Fact]
+    public void QuerySelectorAll_SubjectKey()
+    {
+        var document = Parse("<!DOCTYPE html><div id=a class='x y' title=t></div><DIV-X class=x></DIV-X><svg><foreignObject class=x></foreignObject></svg>");
+        Assert.Equal(["a"], document.QuerySelectorAll("div.y#a[title=t]").Select(n => ((Element)n).Id));
+        Assert.Equal(["div", "div-x", "foreignObject"], document.QuerySelectorAll(".x").Select(n => ((Element)n).LocalName));
+        Assert.Equal(["div-x"], document.QuerySelectorAll("DIV-X.x").Select(n => ((Element)n).LocalName));
+        Assert.Equal(["foreignObject"], document.QuerySelectorAll("foreignObject.x").Select(n => ((Element)n).LocalName));
+        Assert.Empty(document.QuerySelectorAll("FOREIGNOBJECT.x"));
+        Assert.Empty(document.QuerySelectorAll("div.X"));
+
+        // An HTML element whose local name is not lowercase only matches a type selector of the same case
+        var element = document.CreateElementNS("http://www.w3.org/1999/xhtml", "DIV");
+        element.ClassName = "x";
+        document.Body!.AppendChild(element);
+        Assert.Equal(["div"], document.QuerySelectorAll("div.x").Select(n => ((Element)n).LocalName));
+        Assert.Empty(document.QuerySelectorAll("DIV.x:not(#a)"));
+    }
+
+    [Fact]
+    public void QuerySelectorAll_NthChild_MovedElement()
+    {
+        var document = Parse("<!DOCTYPE html><ul id=a><li>a1<li>a2<li>a3</ul><ul id=b><li>b1<li>b2</ul>");
+        var a = document.GetElementById("a")!;
+        var b = document.GetElementById("b")!;
+        Assert.Equal(["a2", "b2"], document.QuerySelectorAll("li:nth-child(2)").Select(n => n.TextContent));
+
+        // The cached index of a moved element is not used in its new parent
+        b.InsertBefore(a.LastElementChild!, b.FirstChild);
+        Assert.Equal(["a2", "b1"], document.QuerySelectorAll("li:nth-child(2)").Select(n => n.TextContent));
+        Assert.Equal(["a2", "b2"], document.QuerySelectorAll("li:nth-last-child(1)").Select(n => n.TextContent));
+        Assert.Equal(["a3"], document.QuerySelectorAll("#b > li:first-child").Select(n => n.TextContent));
+    }
+
+    [Fact]
     public void QuerySelectorAll_Id()
     {
         var document = Parse("<!DOCTYPE html><div id=a><p id=x class=c>1</p><div id=b><p id=x>2</p></div></div><p id=x class=c>3</p>");

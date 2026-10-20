@@ -6,6 +6,7 @@ using Meziantou.Framework.WebPlatform.Urls;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://url.spec.whatwg.org/#url-class</summary>
+/// <seealso href="https://url.spec.whatwg.org/#url"/>
 [IdlInterface("URL", "https://url.spec.whatwg.org/#url")]
 [SuppressMessage("Naming", "CA1724:Type names should not match namespaces", Justification = "Name defined by the specification")]
 public sealed class Url
@@ -16,6 +17,7 @@ public sealed class Url
     /// Creates a URL by parsing the given string against the optional base URL; throws a <c>TypeError</c> when it is
     /// invalid.
     /// </summary>
+    /// <seealso href="https://url.spec.whatwg.org/#dom-url-url"/>
     [IdlMember("constructor", "https://url.spec.whatwg.org/#dom-url-url")]
     public Url(string url, string? @base = null)
     {
@@ -49,6 +51,7 @@ public sealed class Url
     /// <summary>
     /// Returns the URL obtained by parsing the given string against the optional base URL, or null when it is invalid.
     /// </summary>
+    /// <seealso href="https://url.spec.whatwg.org/#dom-url-parse"/>
     [IdlMember("parse", "https://url.spec.whatwg.org/#dom-url-parse")]
     public static Url? Parse(string url, string? @base = null)
     {
@@ -58,6 +61,7 @@ public sealed class Url
     }
 
     /// <summary>Returns whether the given string can be parsed as a URL against the optional base URL.</summary>
+    /// <seealso href="https://url.spec.whatwg.org/#dom-url-canparse"/>
     [IdlMember("canParse", "https://url.spec.whatwg.org/#dom-url-canparse")]
     public static bool CanParse(string url, string? @base = null)
     {
@@ -70,6 +74,7 @@ public sealed class Url
     /// revoked or the document of the current global object is destroyed. The URL can be navigated to (e.g. the
     /// <c>src</c> of an iframe) by the documents of the browsing context group of the current global object.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#dfn-createObjectURL"/>
     [IdlMember("createObjectURL", "https://w3c.github.io/FileAPI/#dfn-createObjectURL")]
     public static string CreateObjectUrl(Blob obj)
     {
@@ -84,6 +89,7 @@ public sealed class Url
     /// attaches the source. The URL of a media source constructed in a dedicated worker cannot be used (the source is
     /// attached by its <see cref="MediaSource.Handle"/>).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#dfn-createObjectURL"/>
     [IdlMember("createObjectURL", "https://w3c.github.io/FileAPI/#dfn-createObjectURL")]
     public static string CreateObjectUrl(MediaSource obj)
     {
@@ -93,6 +99,7 @@ public sealed class Url
     }
 
     /// <summary>Revokes a <c>blob:</c> URL created by <see cref="CreateObjectUrl(Blob)"/> (https://w3c.github.io/FileAPI/#dfn-revokeObjectURL).</summary>
+    /// <seealso href="https://w3c.github.io/FileAPI/#dfn-revokeObjectURL"/>
     [IdlMember("revokeObjectURL", "https://w3c.github.io/FileAPI/#dfn-revokeObjectURL")]
     public static void RevokeObjectUrl(string url)
     {
@@ -106,6 +113,7 @@ public sealed class Url
     }
 
     /// <summary>Gets or sets the serialized URL; setting an invalid URL throws a <c>TypeError</c>.</summary>
+    /// <seealso href="https://url.spec.whatwg.org/#dom-url-href"/>
     [IdlMember("href", "https://url.spec.whatwg.org/#dom-url-href")]
     public string Href
     {
@@ -120,10 +128,12 @@ public sealed class Url
     }
 
     /// <summary>Gets the serialized origin of the URL.</summary>
+    /// <seealso href="https://url.spec.whatwg.org/#dom-url-origin"/>
     [IdlMember("origin", "https://url.spec.whatwg.org/#dom-url-origin")]
     public string Origin => _url.SerializeOrigin();
 
     /// <summary>Gets or sets the scheme of the URL followed by a colon.</summary>
+    /// <seealso href="https://url.spec.whatwg.org/#dom-url-protocol"/>
     [IdlMember("protocol", "https://url.spec.whatwg.org/#dom-url-protocol")]
     public string Protocol
     {
@@ -136,6 +146,7 @@ public sealed class Url
     }
 
     /// <summary>Gets or sets the percent-encoded username of the URL.</summary>
+    /// <seealso href="https://url.spec.whatwg.org/#dom-url-username"/>
     [IdlMember("username", "https://url.spec.whatwg.org/#dom-url-username")]
     public string Username
     {
@@ -151,6 +162,7 @@ public sealed class Url
     }
 
     /// <summary>Gets or sets the percent-encoded password of the URL.</summary>
+    /// <seealso href="https://url.spec.whatwg.org/#dom-url-password"/>
     [IdlMember("password", "https://url.spec.whatwg.org/#dom-url-password")]
     public string Password
     {
@@ -166,6 +178,7 @@ public sealed class Url
     }
 
     /// <summary>Gets or sets the host of the URL, followed by the port when it is not the default one.</summary>
+    /// <seealso href="https://url.spec.whatwg.org/#dom-url-host"/>
     [IdlMember("host", "https://url.spec.whatwg.org/#dom-url-host")]
     public string Host
     {
@@ -190,6 +203,7 @@ public sealed class Url
     }
 
     /// <summary>Gets or sets the host of the URL, without the port.</summary>
+    /// <seealso href="https://url.spec.whatwg.org/#dom-url-hostname"/>
     [IdlMember("hostname", "https://url.spec.whatwg.org/#dom-url-hostname")]
     public string Hostname
     {
@@ -205,6 +219,7 @@ public sealed class Url
     }
 
     /// <summary>Gets or sets the port of the URL, or an empty string when it is the default one.</summary>
+    /// <seealso href="https://url.spec.whatwg.org/#dom-url-port"/>
     [IdlMember("port", "https://url.spec.whatwg.org/#dom-url-port")]
     public string Port
     {
@@ -226,6 +241,7 @@ public sealed class Url
     }
 
     /// <summary>Gets or sets the serialized path of the URL.</summary>
+    /// <seealso href="https://url.spec.whatwg.org/#dom-url-pathname"/>
     [IdlMember("pathname", "https://url.spec.whatwg.org/#dom-url-pathname")]
     public string Pathname
     {
@@ -243,6 +259,7 @@ public sealed class Url
     }
 
     /// <summary>Gets or sets the query of the URL, prefixed by <c>?</c>, or an empty string when it is empty.</summary>
+    /// <seealso href="https://url.spec.whatwg.org/#dom-url-search"/>
     [IdlMember("search", "https://url.spec.whatwg.org/#dom-url-search")]
     public string Search
     {
@@ -265,12 +282,14 @@ public sealed class Url
     }
 
     /// <summary>Gets the <c>URLSearchParams</c> object associated with the query of the URL.</summary>
+    /// <seealso href="https://url.spec.whatwg.org/#dom-url-searchparams"/>
     [IdlMember("searchParams", "https://url.spec.whatwg.org/#dom-url-searchparams")]
     public UrlSearchParams SearchParams { get; }
 
     /// <summary>
     /// Gets or sets the fragment of the URL, prefixed by <c>#</c>, or an empty string when it is empty.
     /// </summary>
+    /// <seealso href="https://url.spec.whatwg.org/#dom-url-hash"/>
     [IdlMember("hash", "https://url.spec.whatwg.org/#dom-url-hash")]
     public string Hash
     {
@@ -291,6 +310,7 @@ public sealed class Url
     }
 
     /// <summary>Returns the serialized URL, as <c>toJSON()</c> does.</summary>
+    /// <seealso href="https://url.spec.whatwg.org/#dom-url-tojson"/>
     [IdlMember("toJSON", "https://url.spec.whatwg.org/#dom-url-tojson")]
     public string ToJson() => Href;
 

@@ -40,6 +40,7 @@ public partial class SvgAnimationElement
     /// https://svgwg.org/specs/animations/#__svg__SVGAnimationElement__targetElement: the element referenced by the href
     /// attribute, or the parent element.
     /// </summary>
+    /// <seealso href="https://svgwg.org/specs/animations/#__svg__SVGAnimationElement__targetElement"/>
     [IdlMember("targetElement", "https://svgwg.org/specs/animations/#__svg__SVGAnimationElement__targetElement")]
     public SvgElement? TargetElement => IsConnected ? FindTargetElement() : null;
 

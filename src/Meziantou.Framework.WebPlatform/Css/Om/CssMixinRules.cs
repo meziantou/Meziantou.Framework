@@ -14,6 +14,7 @@ namespace Meziantou.Framework.WebPlatform.Css.Om;
 /// The body of a mixin is experimental: the web-platform-tests (and the browsers) wrap the declarations and the rules that
 /// are applied in a @result rule, which the specification no longer defines.
 /// </remarks>
+/// <seealso href="https://drafts.csswg.org/css-mixins-1/#cssmixinrule"/>
 [IdlInterface("CSSMixinRule", "https://drafts.csswg.org/css-mixins-1/#cssmixinrule")]
 public sealed class CssMixinRule : CssGroupingRule
 {
@@ -24,16 +25,19 @@ public sealed class CssMixinRule : CssGroupingRule
     }
 
     /// <summary>Gets the name of the mixin, including the leading <c>--</c>.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-mixins-1/#dom-cssmixinrule-name"/>
     [IdlMember("name", "https://drafts.csswg.org/css-mixins-1/#dom-cssmixinrule-name")]
     public string Name { get; }
 
     internal List<CssFunctionParameterDefinition> Parameters { get; }
 
     /// <summary>Returns the parameters of the mixin.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-mixins-1/#dom-cssmixinrule-getparameters"/>
     [IdlMember("getParameters", "https://drafts.csswg.org/css-mixins-1/#dom-cssmixinrule-getparameters")]
     public IReadOnlyList<CssFunctionParameter> GetParameters() => [.. Parameters.Select(p => new CssFunctionParameter { Name = p.Name, Type = p.Type.Text, DefaultValue = p.DefaultValue })];
 
     /// <summary>Whether the mixin accepts a contents block: its body contains a @contents rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-mixins-1/#dom-cssmixinrule-contents"/>
     [IdlMember("contents", "https://drafts.csswg.org/css-mixins-1/#dom-cssmixinrule-contents")]
     public bool Contents => ContainsContentsRule(ChildRules);
 
@@ -110,6 +114,7 @@ internal sealed class CssApplyPrelude(string name, List<string> arguments)
 }
 
 /// <summary>https://drafts.csswg.org/css-mixins-1/#cssapplyblockrule: an @apply rule with a contents block, whose rules are the child rules.</summary>
+/// <seealso href="https://drafts.csswg.org/css-mixins-1/#cssapplyblockrule"/>
 [IdlInterface("CSSApplyBlockRule", "https://drafts.csswg.org/css-mixins-1/#cssapplyblockrule")]
 public sealed class CssApplyBlockRule : CssGroupingRule
 {
@@ -121,10 +126,12 @@ public sealed class CssApplyBlockRule : CssGroupingRule
     internal CssApplyPrelude Prelude { get; }
 
     /// <summary>Gets the name of the mixin applied by the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-mixins-1/#dom-cssapplyblockrule-name"/>
     [IdlMember("name", "https://drafts.csswg.org/css-mixins-1/#dom-cssapplyblockrule-name")]
     public string Name => CssSerializer.SerializeIdentifier(Prelude.Name);
 
     /// <summary>Returns the arguments of the rule as serialized text.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-mixins-1/#dom-cssapplyblockrule-getarguments"/>
     [IdlMember("getArguments", "https://drafts.csswg.org/css-mixins-1/#dom-cssapplyblockrule-getarguments")]
     public IReadOnlyList<string> GetArguments() => [.. Prelude.Arguments];
 
@@ -135,6 +142,7 @@ public sealed class CssApplyBlockRule : CssGroupingRule
 }
 
 /// <summary>https://drafts.csswg.org/css-mixins-1/#cssapplystatementrule: an @apply rule without a contents block.</summary>
+/// <seealso href="https://drafts.csswg.org/css-mixins-1/#cssapplystatementrule"/>
 [IdlInterface("CSSApplyStatementRule", "https://drafts.csswg.org/css-mixins-1/#cssapplystatementrule")]
 public sealed class CssApplyStatementRule : CssRule
 {
@@ -146,10 +154,12 @@ public sealed class CssApplyStatementRule : CssRule
     internal CssApplyPrelude Prelude { get; }
 
     /// <summary>Gets the name of the mixin applied by the rule.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-mixins-1/#dom-cssapplystatementrule-name"/>
     [IdlMember("name", "https://drafts.csswg.org/css-mixins-1/#dom-cssapplystatementrule-name")]
     public string Name => CssSerializer.SerializeIdentifier(Prelude.Name);
 
     /// <summary>Returns the arguments of the rule as serialized text.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-mixins-1/#dom-cssapplystatementrule-getarguments"/>
     [IdlMember("getArguments", "https://drafts.csswg.org/css-mixins-1/#dom-cssapplystatementrule-getarguments")]
     public IReadOnlyList<string> GetArguments() => [.. Prelude.Arguments];
 
@@ -159,6 +169,7 @@ public sealed class CssApplyStatementRule : CssRule
 }
 
 /// <summary>https://drafts.csswg.org/css-mixins-1/#csscontentsblockrule: a @contents rule with a fallback block, whose rules are the child rules.</summary>
+/// <seealso href="https://drafts.csswg.org/css-mixins-1/#csscontentsblockrule"/>
 [IdlInterface("CSSContentsBlockRule", "https://drafts.csswg.org/css-mixins-1/#csscontentsblockrule")]
 public sealed class CssContentsBlockRule : CssGroupingRule
 {
@@ -172,6 +183,7 @@ public sealed class CssContentsBlockRule : CssGroupingRule
 }
 
 /// <summary>https://drafts.csswg.org/css-mixins-1/#csscontentsstatementrule: a @contents rule without a fallback block.</summary>
+/// <seealso href="https://drafts.csswg.org/css-mixins-1/#csscontentsstatementrule"/>
 [IdlInterface("CSSContentsStatementRule", "https://drafts.csswg.org/css-mixins-1/#csscontentsstatementrule")]
 public sealed class CssContentsStatementRule : CssRule
 {
@@ -192,6 +204,7 @@ internal sealed record CssPrivateDeclaration(string Name, CssSyntaxDefinition Ty
 /// properties of the style rule that contains it: &lt;custom-property-name&gt; &lt;css-type&gt;? : &lt;declaration-value&gt;.
 /// The private properties are not applied by the cascade.
 /// </summary>
+/// <seealso href="https://github.com/w3c/csswg-drafts/issues/14243#issuecomment-5180782117"/>
 [IdlInterface("CSSPrivateRule", "https://github.com/w3c/csswg-drafts/issues/14243#issuecomment-5180782117")]
 [Experimental(ExperimentalApis.CssMixinResultAndPrivateRules, UrlFormat = ExperimentalApis.UrlFormat)]
 public sealed class CssPrivateRule : CssRule

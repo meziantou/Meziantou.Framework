@@ -16,6 +16,7 @@ public partial class HtmlVideoElement
     /// Gets the natural width of the video in CSS pixels (https://html.spec.whatwg.org/multipage/media.html#dom-video-videowidth),
     /// or 0 when the dimensions are not known (the ready state is <c>HAVE_NOTHING</c>, or the resource has no video).
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-video-videowidth"/>
     [IdlMember("videoWidth", "https://html.spec.whatwg.org/multipage/media.html#dom-video-videowidth")]
     public uint VideoWidth => ReadyState == HaveNothing ? 0 : (uint)MediaVideoWidth;
 
@@ -23,6 +24,7 @@ public partial class HtmlVideoElement
     /// Gets the natural height of the video in CSS pixels (https://html.spec.whatwg.org/multipage/media.html#dom-video-videoheight),
     /// or 0 when the dimensions are not known (the ready state is <c>HAVE_NOTHING</c>, or the resource has no video).
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-video-videoheight"/>
     [IdlMember("videoHeight", "https://html.spec.whatwg.org/multipage/media.html#dom-video-videoheight")]
     public uint VideoHeight => ReadyState == HaveNothing ? 0 : (uint)MediaVideoHeight;
 
@@ -188,6 +190,7 @@ public partial class HtmlVideoElement
     /// the numbers of frames reported by the player of the media backend (<see cref="MediaPlayer.TotalVideoFrames"/>,
     /// <see cref="MediaPlayer.DroppedVideoFrames"/>; 0 without player), at the current time.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/media-playback-quality/#dom-htmlvideoelement-getvideoplaybackquality"/>
     [IdlMember("getVideoPlaybackQuality", "https://w3c.github.io/media-playback-quality/#dom-htmlvideoelement-getvideoplaybackquality")]
     public VideoPlaybackQuality GetVideoPlaybackQuality()
     {
@@ -251,6 +254,7 @@ public partial class HtmlVideoElement
 }
 
 /// <summary>The playback quality metrics of a video element (https://w3c.github.io/media-playback-quality/#videoplaybackquality).</summary>
+/// <seealso href="https://w3c.github.io/media-playback-quality/#videoplaybackquality"/>
 [IdlInterface("VideoPlaybackQuality", "https://w3c.github.io/media-playback-quality/#videoplaybackquality")]
 public sealed class VideoPlaybackQuality
 {
@@ -262,18 +266,22 @@ public sealed class VideoPlaybackQuality
     }
 
     /// <summary>Gets the time the object was created, in milliseconds since the time origin of the window.</summary>
+    /// <seealso href="https://w3c.github.io/media-playback-quality/#dom-videoplaybackquality-creationtime"/>
     [IdlMember("creationTime", "https://w3c.github.io/media-playback-quality/#dom-videoplaybackquality-creationtime")]
     public double CreationTime { get; }
 
     /// <summary>Gets the number of video frames that were dropped instead of being displayed.</summary>
+    /// <seealso href="https://w3c.github.io/media-playback-quality/#dom-videoplaybackquality-droppedvideoframes"/>
     [IdlMember("droppedVideoFrames", "https://w3c.github.io/media-playback-quality/#dom-videoplaybackquality-droppedvideoframes")]
     public uint DroppedVideoFrames { get; }
 
     /// <summary>Gets the number of video frames that were displayed or dropped.</summary>
+    /// <seealso href="https://w3c.github.io/media-playback-quality/#dom-videoplaybackquality-totalvideoframes"/>
     [IdlMember("totalVideoFrames", "https://w3c.github.io/media-playback-quality/#dom-videoplaybackquality-totalvideoframes")]
     public uint TotalVideoFrames { get; }
 
     /// <summary>Gets the number of corrupted video frames: always 0 (the attribute is deprecated).</summary>
+    /// <seealso href="https://w3c.github.io/media-playback-quality/#dom-videoplaybackquality-corruptedvideoframes"/>
     [IdlMember("corruptedVideoFrames", "https://w3c.github.io/media-playback-quality/#dom-videoplaybackquality-corruptedvideoframes")]
     public uint CorruptedVideoFrames => 0;
 }

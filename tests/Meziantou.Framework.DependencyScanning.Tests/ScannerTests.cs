@@ -1,4 +1,5 @@
 #pragma warning disable MA0101
+#pragma warning disable MA0243 // Tab characters in raw string literals are part of the test input
 using System.Collections.Immutable;
 using System.Text.RegularExpressions;
 using Meziantou.Framework.DependencyScanning.Scanners;

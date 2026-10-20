@@ -7,6 +7,7 @@ public partial class Document
     /// an object without members, which tells the scripts that the text directives are supported. The fragment directive of
     /// the URL is not exposed.
     /// </summary>
+    /// <seealso href="https://wicg.github.io/scroll-to-text-fragment/#dom-document-fragmentdirective"/>
     [IdlMember("fragmentDirective", "https://wicg.github.io/scroll-to-text-fragment/#dom-document-fragmentdirective")]
     public FragmentDirective FragmentDirective => field ??= new FragmentDirective();
 
@@ -132,6 +133,7 @@ public partial class Document
 /// https://wicg.github.io/scroll-to-text-fragment/#fragmentdirective: the object returned by <see cref="Document.FragmentDirective"/>,
 /// which has no members (it is there for the feature detection of the text directives).
 /// </summary>
+/// <seealso href="https://wicg.github.io/scroll-to-text-fragment/#fragmentdirective"/>
 [IdlInterface("FragmentDirective", "https://wicg.github.io/scroll-to-text-fragment/#fragmentdirective")]
 public sealed class FragmentDirective
 {

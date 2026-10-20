@@ -1,10 +1,12 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://dom.spec.whatwg.org/#interface-abortcontroller</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#abortcontroller"/>
 [IdlInterface("AbortController", "https://dom.spec.whatwg.org/#abortcontroller")]
 public class AbortController
 {
     /// <summary>Creates a controller with a new signal.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-abortcontroller-abortcontroller"/>
     [IdlMember("constructor", "https://dom.spec.whatwg.org/#dom-abortcontroller-abortcontroller")]
     public AbortController()
     {
@@ -18,15 +20,18 @@ public class AbortController
     }
 
     /// <summary>Gets the signal controlled by the controller.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-abortcontroller-signal"/>
     [IdlMember("signal", "https://dom.spec.whatwg.org/#dom-abortcontroller-signal")]
     public AbortSignal Signal { get; }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-abortcontroller-abort</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-abortcontroller-abort"/>
     [IdlMember("abort", "https://dom.spec.whatwg.org/#dom-abortcontroller-abort")]
     public void Abort(object? reason = null) => Signal.SignalAbort(reason);
 }
 
 /// <summary>https://dom.spec.whatwg.org/#interface-AbortSignal</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#abortsignal"/>
 [IdlInterface("AbortSignal", "https://dom.spec.whatwg.org/#abortsignal")]
 public class AbortSignal : EventTarget
 {
@@ -53,14 +58,17 @@ public class AbortSignal : EventTarget
     internal object? AbortReason { get; private set; }
 
     /// <summary>Gets a value indicating whether the signal has been aborted.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-abortsignal-aborted"/>
     [IdlMember("aborted", "https://dom.spec.whatwg.org/#dom-abortsignal-aborted")]
     public bool Aborted => AbortReason is not null;
 
     /// <summary>Gets the reason the signal was aborted, or null when it is not aborted.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-abortsignal-reason"/>
     [IdlMember("reason", "https://dom.spec.whatwg.org/#dom-abortsignal-reason")]
     public object? Reason => AbortReason;
 
     /// <summary>Gets or sets the event handler of the <c>abort</c> event.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-abortsignal-onabort"/>
     [IdlMember("onabort", "https://dom.spec.whatwg.org/#dom-abortsignal-onabort")]
     public Action<Event>? OnAbort
     {
@@ -69,6 +77,7 @@ public class AbortSignal : EventTarget
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-abortsignal-abort</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-abortsignal-abort"/>
     [IdlMember("abort", "https://dom.spec.whatwg.org/#dom-abortsignal-abort")]
     public static AbortSignal Abort(object? reason = null)
     {
@@ -83,6 +92,7 @@ public class AbortSignal : EventTarget
     /// https://dom.spec.whatwg.org/#dom-abortsignal-timeout: the timer runs on the event loop of the current global object
     /// (the window or the worker of the running script). Without one, the signal is never aborted: use <see cref="Timeout(GlobalScope, ulong)"/>.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-abortsignal-timeout"/>
     [IdlMember("timeout", "https://dom.spec.whatwg.org/#dom-abortsignal-timeout")]
     public static AbortSignal Timeout(ulong milliseconds)
     {
@@ -114,6 +124,7 @@ public class AbortSignal : EventTarget
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-abortsignal-any</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-abortsignal-any"/>
     [IdlMember("any", "https://dom.spec.whatwg.org/#dom-abortsignal-any")]
     public static AbortSignal Any(IEnumerable<AbortSignal> signals)
     {
@@ -236,6 +247,7 @@ public class AbortSignal : EventTarget
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-abortsignal-throwifaborted</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-abortsignal-throwifaborted"/>
     [IdlMember("throwIfAborted", "https://dom.spec.whatwg.org/#dom-abortsignal-throwifaborted")]
     public void ThrowIfAborted()
     {

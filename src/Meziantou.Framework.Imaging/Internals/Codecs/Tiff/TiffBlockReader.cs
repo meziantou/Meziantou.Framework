@@ -81,6 +81,9 @@ internal sealed class TiffBlockReader : IDisposable
     public ReadOnlySpan<byte> ReadBlock(int index, int rowCount)
     {
         var page = _page;
+        if (TryGetStoredRows(index, rowCount, out var rows))
+            return rows;
+
         _block ??= _source.Scope.Rent(page.BlockRowLength * page.BlockHeight, AllocationKind.DecoderState, clear: false);
         var destination = _block.Span[..(rowCount * page.BlockRowLength)];
         if (page.IsJpeg)
@@ -192,7 +195,12 @@ internal sealed class TiffBlockReader : IDisposable
     /// </summary>
     /// <param name="index">The index of the block.</param>
     /// <param name="decodedLength">The number of bytes the block decompresses to.</param>
-    private PooledBuffer ReadCompressed(int index, long decodedLength)
+    /// <param name="copy">
+    /// The buffer that holds the bytes, which the caller disposes, or <see langword="null"/> when they are the bytes of an
+    /// input held in memory: they are only copied when they must be changed (bit order) or the input is a stream.
+    /// </param>
+    /// <returns>The compressed bytes.</returns>
+    private ReadOnlySpan<byte> ReadCompressed(int index, long decodedLength, out PooledBuffer? copy)
     {
         var (offset, storedLength) = GetStoredRange(index);
         if (storedLength == 0)
@@ -202,13 +210,51 @@ internal sealed class TiffBlockReader : IDisposable
         // end-of-line code per row), 1.5 for LZW and 2 for PackBits data that never repeats, about 6.5 for a JPEG block
         // whose every coefficient has the longest code. A JPEG datastream also carries tables and application segments
         var needed = (decodedLength * MaxCompressionExpansion) + (_page.IsJpeg || _page.IsJpeg2000 ? MaxJpegOverhead : MaxBlockOverhead);
-        var compressed = _source.ReadToBuffer(offset, Math.Min(storedLength, needed));
+        var length = Math.Min(storedLength, needed);
+        copy = null;
+        if (!_page.IsLeastSignificantBitFirst && CanDecompressInPlace && _source.TryGetSpan(offset, length, out var stored))
+            return stored;
+
+        copy = _source.ReadToBuffer(offset, length);
         if (_page.IsLeastSignificantBitFirst)
         {
-            ReverseBits(compressed.Span);
+            ReverseBits(copy.Span);
         }
 
-        return compressed;
+        return copy.Span;
+    }
+
+#if NET11_0_OR_GREATER
+    /// <summary>Gets a value indicating whether the decompressor of the page reads the compressed bytes where they are.</summary>
+    private static bool CanDecompressInPlace => true;
+#else
+    /// <summary>
+    /// Gets a value indicating whether the decompressor of the page reads the compressed bytes where they are. The Deflate
+    /// decompressor of .NET 10 reads a stream, which is created over a buffer.
+    /// </summary>
+    private bool CanDecompressInPlace => !_page.IsDeflate;
+#endif
+
+    /// <summary>
+    /// Gets the rows of an uncompressed block that needs no change straight from an input held in memory, with the checks
+    /// of <see cref="Decompress"/>.
+    /// </summary>
+    /// <returns><see langword="false"/> when the block is read into the buffer of the reader.</returns>
+    private bool TryGetStoredRows(int index, int rowCount, out ReadOnlySpan<byte> rows)
+    {
+        rows = default;
+        var page = _page;
+        if (page.Compression != TiffFormat.CompressionNone || page.IsJpeg || page.IsJpeg2000 || page.YCbCr is not null || page.Predictor == TiffFormat.PredictorHorizontalDifferencing || page.IsLeastSignificantBitFirst)
+            return false;
+
+        // A tile is always stored in full, even when it extends past the bottom edge of the page; a strip is not
+        var (offset, storedLength) = GetStoredRange(index);
+        var length = (long)(page.IsTiled ? page.BlockHeight : rowCount) * page.BlockRowLength;
+        if (storedLength < length || !_source.TryGetSpan(offset, length, out var stored))
+            return false; // Decompress reads it, or reports that it is too short
+
+        rows = stored[..(rowCount * page.BlockRowLength)];
+        return true;
     }
 
     private static void ReverseBits(Span<byte> data)
@@ -239,47 +285,61 @@ internal sealed class TiffBlockReader : IDisposable
             return;
         }
 
-        using var compressed = ReadCompressed(index, destination.Length);
+        var compressed = ReadCompressed(index, destination.Length, out var copy);
+        using var owner = copy;
         if (page.IsDeflate)
         {
-            Inflate(compressed, destination, index);
+            Inflate(compressed, copy, destination, index);
             return;
         }
 
         if (page.IsCcitt)
         {
-            DecodeFax(compressed.Span, destination, rowCount, index);
+            DecodeFax(compressed, destination, rowCount, index);
             return;
         }
 
         int written;
         if (page.Compression == TiffFormat.CompressionLzw)
         {
-            if (TiffLzwDecoder.UsesOldBitOrder(compressed.Span))
+            if (TiffLzwDecoder.UsesOldBitOrder(compressed))
                 throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The LZW data of the TIFF block {index} of page {page.Index} uses the bit order of TIFF 5.0 drafts (least significant bit first), which is not supported."), "Compression: LZW with the old bit order");
 
             _lzw ??= new TiffLzwDecoder(_source.Scope);
-            if (!_lzw.TryDecode(compressed.Span, destination, out written))
+            if (!_lzw.TryDecode(compressed, destination, out written))
                 throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The LZW data of the TIFF block {index} of page {page.Index} is malformed: a code refers to a string that was not defined."));
         }
         else
         {
-            written = TiffPackBits.Decode(compressed.Span, destination);
+            written = TiffPackBits.Decode(compressed, destination);
         }
 
         if (written != destination.Length)
             throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The {TiffFormat.GetCompressionName(page.Compression)} data of the TIFF block {index} of page {page.Index} produced {written} bytes; {destination.Length} are required."));
     }
 
-    private void Inflate(PooledBuffer compressed, Span<byte> destination, int index)
+    /// <param name="compressed">The compressed bytes.</param>
+    /// <param name="copy">The buffer that holds them, or <see langword="null"/> when they are the bytes of the input (.NET 11 only).</param>
+    /// <param name="destination">The rows of the block.</param>
+    /// <param name="index">The index of the block.</param>
+    private void Inflate(ReadOnlySpan<byte> compressed, PooledBuffer? copy, Span<byte> destination, int index)
     {
 #if NET11_0_OR_GREATER
-        if (TryInflate(compressed.Span, destination))
+        if (TryInflate(compressed, destination))
             return;
 
         // The stream path defines the errors: it reads the block again and reports how it fails
 #endif
-        InflateStream(compressed, destination, index);
+        if (copy is not null)
+        {
+            InflateStream(copy, destination, index);
+            return;
+        }
+
+        // The stream reads a buffer
+        using var buffer = _source.Scope.Rent(compressed.Length, AllocationKind.DecoderState, clear: false);
+        compressed.CopyTo(buffer.Span);
+        InflateStream(buffer, destination, index);
     }
 
     private void InflateStream(PooledBuffer compressed, Span<byte> destination, int index)
@@ -467,7 +527,8 @@ internal sealed class TiffBlockReader : IDisposable
     {
         var page = _page;
         var receiver = _jpegReceiver!;
-        using var compressed = ReadCompressed(index, (long)rowCount * page.BlockRowLength);
+        var compressed = ReadCompressed(index, (long)rowCount * page.BlockRowLength, out var copy);
+        using var owner = copy;
         if (handler is not null && page.DecodedBitsPerSample == 16)
         {
             // The rows of 16-bit samples are handed over in the byte order of the file, like the ones of a buffer
@@ -484,7 +545,7 @@ internal sealed class TiffBlockReader : IDisposable
             }
 
             using var parser = new JpegStructureParser(_source.Context, StructureWalk.Decode, decoder);
-            if (!parser.Parse(compressed.Span, isEndOfInput: true, out _).IsComplete)
+            if (!parser.Parse(compressed, isEndOfInput: true, out _).IsComplete)
                 throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG data of the TIFF block {index} of page {page.Index} is truncated."));
         }
         catch (InvalidImageContentException exception) when (exception.Format == ImageFormat.Jpeg)
@@ -512,13 +573,14 @@ internal sealed class TiffBlockReader : IDisposable
     {
         var page = _page;
         var receiver = _jpeg2000Receiver!;
-        using var compressed = ReadCompressed(index, (long)rowCount * page.BlockRowLength);
+        var compressed = ReadCompressed(index, (long)rowCount * page.BlockRowLength, out var copy);
+        using var owner = copy;
         receiver.Begin(index, rowCount, buffer);
         try
         {
             using var decoder = new Jpeg2000SampleDecoder(_source.Context, receiver);
             using var parser = new Jpeg2000StructureParser(_source.Context, StructureWalk.Decode, decoder, isEmbedded: true);
-            if (!parser.Parse(compressed.Span, isEndOfInput: true, out _).IsComplete)
+            if (!parser.Parse(compressed, isEndOfInput: true, out _).IsComplete)
                 throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG 2000 data of the TIFF block {index} of page {page.Index} is truncated."));
         }
         catch (InvalidImageContentException exception) when (exception.Format == ImageFormat.Jpeg2000)

@@ -10,4 +10,4 @@ namespace Meziantou.Framework.Fonts;
 /// <param name="StopCount">The number of stops of a gradient.</param>
 /// <param name="Extend">How a gradient continues outside its color line: 0 pads, 1 repeats, 2 reflects.</param>
 [StructLayout(LayoutKind.Auto)]
-internal readonly record struct ColorPaint(ColorPaintKind Kind, int Transform, int Geometry, int FirstStop, int StopCount, int Extend);
+public readonly record struct ColorPaint(ColorPaintKind Kind, int Transform, int Geometry, int FirstStop, int StopCount, int Extend);

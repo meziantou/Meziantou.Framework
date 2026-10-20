@@ -6,14 +6,15 @@ public partial class Element
 {
 
     /// <summary>Gets the live token list of the <c>class</c> attribute.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-classlist"/>
     [IdlMember("classList", "https://dom.spec.whatwg.org/#dom-element-classlist")]
     public DomTokenList ClassList => ElementRareData.ClassList ??= new DomTokenList(this, "class");
 
     /// <summary>Gets the live map of the attributes of the element.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-attributes"/>
     [IdlMember("attributes", "https://dom.spec.whatwg.org/#dom-element-attributes")]
     public NamedNodeMap Attributes => ElementRareData.AttributeMap ??= new NamedNodeMap(this);
 
-    /// <summary>Returns the classes of the element (https://dom.spec.whatwg.org/#concept-class), cached until the attribute changes.</summary>
     /// <summary>
     /// Returns the classes of the element for the selectors: the animated value of the class attribute when a SMIL animation
     /// animates it (https://svgwg.org/specs/animations/#TermAnimatedValue), as in the browsers.
@@ -26,15 +27,29 @@ public partial class Element
         return GetClassNames();
     }
 
+    /// <summary>Returns the classes of the element (https://dom.spec.whatwg.org/#concept-class), cached until the attribute changes.</summary>
     internal ClassNames GetClassNames()
     {
-        var value = GetAttributeValue("class");
-        if (value is null)
+        var index = FindAttribute(null, "class");
+        if (index < 0)
             return default;
 
-        // A single class (the most common case) is the value of the attribute: it is neither parsed nor cached in the rare data
+        // A single class (the most common case) is the value of the attribute: it is neither parsed nor cached
+        ref var slot = ref _attributes![index];
+        var value = slot.Value;
         if (value.Length > 0 && value.AsSpan().IndexOfAny(" \t\n\f\r") < 0)
             return new ClassNames(value);
+
+        // The classes are cached in the attribute until its value changes, unless it has an Attr node (it is rarely created)
+        if (slot.Extra is List<string> cached)
+            return new ClassNames(cached);
+
+        if (slot.Extra is null)
+        {
+            var classNames = OrderedSets.Parse(value);
+            slot.Extra = classNames;
+            return new ClassNames(classNames);
+        }
 
         var rareData = ElementRareData;
         if (rareData.ClassNames is null || !ReferenceEquals(value, rareData.ClassNamesSource))
@@ -47,6 +62,7 @@ public partial class Element
     }
 
     /// <summary>Returns a live collection of the descendant elements with the given qualified name.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-getelementsbytagname"/>
     [IdlMember("getElementsByTagName", "https://dom.spec.whatwg.org/#dom-element-getelementsbytagname")]
     public HtmlCollection GetElementsByTagName(string qualifiedName)
     {
@@ -55,6 +71,7 @@ public partial class Element
     }
 
     /// <summary>Returns a live collection of the descendant elements with the given namespace and local name.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-getelementsbytagnamens"/>
     [IdlMember("getElementsByTagNameNS", "https://dom.spec.whatwg.org/#dom-element-getelementsbytagnamens")]
     public HtmlCollection GetElementsByTagNameNS(string? @namespace, string localName)
     {
@@ -63,6 +80,7 @@ public partial class Element
     }
 
     /// <summary>Returns a live collection of the descendant elements that have all the given class names.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-getelementsbyclassname"/>
     [IdlMember("getElementsByClassName", "https://dom.spec.whatwg.org/#dom-element-getelementsbyclassname")]
     public HtmlCollection GetElementsByClassName(string classNames)
     {
@@ -92,6 +110,7 @@ public partial class Element
     /// Inserts the element at the given position relative to this element and returns it, or null when it cannot be
     /// inserted.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-insertadjacentelement"/>
     [IdlMember("insertAdjacentElement", "https://dom.spec.whatwg.org/#dom-element-insertadjacentelement")]
     public Element? InsertAdjacentElement(string where, Element element)
     {
@@ -101,6 +120,7 @@ public partial class Element
     }
 
     /// <summary>Inserts a text node with the given data at the given position relative to this element.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-insertadjacenttext"/>
     [IdlMember("insertAdjacentText", "https://dom.spec.whatwg.org/#dom-element-insertadjacenttext")]
     public void InsertAdjacentText(string where, string data)
     {
@@ -111,6 +131,7 @@ public partial class Element
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-element-matches</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-matches"/>
     [IdlMember("matches", "https://dom.spec.whatwg.org/#dom-element-matches")]
     public bool Matches(string selectors) => Matches(Css.Selectors.SelectorCache.Parse(selectors));
 
@@ -123,10 +144,12 @@ public partial class Element
     }
 
     /// <summary>https://dom.spec.whatwg.org/#dom-element-webkitmatchesselector</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-webkitmatchesselector"/>
     [IdlMember("webkitMatchesSelector", "https://dom.spec.whatwg.org/#dom-element-webkitmatchesselector")]
     public bool WebkitMatchesSelector(string selectors) => Matches(selectors);
 
     /// <summary>https://dom.spec.whatwg.org/#dom-element-closest</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-element-closest"/>
     [IdlMember("closest", "https://dom.spec.whatwg.org/#dom-element-closest")]
     public Element? Closest(string selectors) => Closest(Css.Selectors.SelectorCache.Parse(selectors));
 
@@ -159,6 +182,9 @@ internal readonly struct ClassNames
     public int Count => _single is not null ? 1 : _list?.Count ?? 0;
 
     public string this[int index] => _single ?? _list![index];
+
+    /// <summary>Returns whether the class is one of the classes (case-sensitive).</summary>
+    public bool Contains(string className) => _single is not null ? _single == className : _list is not null && _list.Contains(className);
 
     public Enumerator GetEnumerator() => new(this);
 

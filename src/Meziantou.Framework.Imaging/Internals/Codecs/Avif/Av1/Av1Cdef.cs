@@ -427,7 +427,10 @@ internal static class Av1Cdef
         var unavailable = Vector128.Create(Unavailable).AsInt16();
         var eight = Vector128.Create((short)8);
         var destination = samples.Slice((y0 * stride) + x0);
-        for (var i = 0; i < h; i++)
+
+        // A row of 8 samples per vector, or two rows of 4 samples (the second one in the upper lanes)
+        var rowsPerVector = w is 4 ? 2 : 1;
+        for (var i = 0; i < h; i += rowsPerVector)
         {
             var center = ((i + 2) * EdgeWindowStride) + 2;
             var x = Load(window, center, w);
@@ -453,20 +456,20 @@ internal static class Av1Cdef
             // (8 + sum - (sum < 0 ? 1 : 0)) >> 4: the sign of the sum is -1 or 0
             var filtered = x + ((eight + sum + (sum >> 15)) >> 4);
             var result = Vector128.Min(Vector128.Max(filtered, min.AsInt16()), max).AsUInt16();
-            var row = destination.Slice(i * stride, w);
             if (w is 8)
             {
-                result.CopyTo(row);
+                result.CopyTo(destination.Slice(i * stride, w));
             }
             else
             {
-                result.GetLower().CopyTo(row);
+                result.GetLower().CopyTo(destination.Slice(i * stride, w));
+                result.GetUpper().CopyTo(destination.Slice((i + 1) * stride, w));
             }
         }
 
         static Vector128<short> Load(ReadOnlySpan<ushort> window, int index, int w) => w is 8
             ? Vector128.Create(window.Slice(index, 8)).AsInt16()
-            : Vector64.Create(window.Slice(index, 4)).ToVector128().AsInt16();
+            : Vector128.Create(Vector64.Create(window.Slice(index, 4)), Vector64.Create(window.Slice(index + EdgeWindowStride, 4))).AsInt16();
     }
 
     /// <summary>The scalar reference of <see cref="FilterEdgeBlock"/>.</summary>
@@ -620,16 +623,22 @@ internal static class Av1Cdef
         var priThreshold = Vector128.Create((short)priStr);
         var secThreshold = Vector128.Create((short)secStr);
         var eight = Vector128.Create((short)8);
-        for (var i = 0; i < h; i++)
+
+        // A row of 8 samples per vector, or two rows of 4 samples (the second one in the upper lanes); with an odd number of
+        // rows of 4 samples, the last row is alone in the lower lanes
+        var rowsPerVector = w is 4 ? 2 : 1;
+        for (var i = 0; i < h; i += rowsPerVector)
         {
             var center = ((i + 2) * stride) + 2;
-            var x = Load(ref source, center, w);
+            var lowerOnly = w is 4 && i + 1 == h;
+            var secondRow = lowerOnly ? -1 : stride;
+            var x = Load(ref source, center, w, secondRow);
             var max = x;
             var min = x;
             var sum = Vector128<short>.Zero;
             for (var t = 0; t < 4; t++)
             {
-                var p = Load(ref source, center + offsets[t], w);
+                var p = Load(ref source, center + offsets[t], w, secondRow);
                 max = Vector128.Max(p, max);
                 min = Vector128.Min(p, min);
                 if (priStr is not 0)
@@ -638,7 +647,7 @@ internal static class Av1Cdef
 
             for (var t = 4; t < TapCount; t++)
             {
-                var p = Load(ref source, center + offsets[t], w);
+                var p = Load(ref source, center + offsets[t], w, secondRow);
                 max = Vector128.Max(p, max);
                 min = Vector128.Min(p, min);
                 if (secStr is not 0)
@@ -656,19 +665,27 @@ internal static class Av1Cdef
             else
             {
                 unsafe { Unsafe.WriteUnaligned(ref Unsafe.As<ushort, byte>(ref target), result.AsUInt64().ToScalar()); }
+                if (!lowerOnly)
+                    unsafe { Unsafe.WriteUnaligned(ref Unsafe.As<ushort, byte>(ref Unsafe.Add(ref target, stride)), result.AsUInt64().GetElement(1)); }
             }
         }
 
-        // 8 samples, or 4 samples in the lower lanes (nothing is read after them)
+        // 8 samples, or 4 samples and the 4 samples secondRow further in the upper lanes (zero when secondRow is negative:
+        // nothing is read after the 4 samples of the last row)
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static Vector128<short> Load(ref ushort source, int index, int w)
+        static Vector128<short> Load(ref ushort source, int index, int w, int secondRow)
         {
             ref var first = ref unsafe(Unsafe.Add(ref source, index));
-            return w is 8
-                ? unsafe(Vector128.LoadUnsafe(ref first)).AsInt16()
-                : Vector128.CreateScalar(unsafe(Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<ushort, byte>(ref first)))).AsInt16();
-        }
+            if (w is 8)
+                return unsafe(Vector128.LoadUnsafe(ref first)).AsInt16();
 
+            // Vector loads: inserting the rows from general registers would make every vector depend on the previous one
+            var lower = unsafe(Vector64.LoadUnsafe(ref first));
+            if (secondRow < 0)
+                return lower.ToVector128().AsInt16();
+
+            return Vector128.Create(lower, unsafe(Vector64.LoadUnsafe(ref Unsafe.Add(ref first, secondRow)))).AsInt16();
+        }
     }
 
     // ConstrainShifted on every lane

@@ -2846,9 +2846,9 @@ public sealed class InternetCalendarTests
     public void Parse_ReadsASlicedSpan()
     {
         var ics = CreateIcs("SUMMARY:Meeting");
-        var padded = "﻿leading" + ics + "trailing";
+        var padded = "\uFEFFleading" + ics + "trailing";
 
-        var calendar = InternetCalendar.Parse(padded.AsSpan("﻿leading".Length, ics.Length));
+        var calendar = InternetCalendar.Parse(padded.AsSpan("\uFEFFleading".Length, ics.Length));
 
         Assert.Equal("Meeting", Assert.Single(calendar.Events).Summary);
     }

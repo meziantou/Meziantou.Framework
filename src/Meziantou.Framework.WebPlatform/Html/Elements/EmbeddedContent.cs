@@ -37,6 +37,7 @@ public partial class HtmlCanvasElement : ICanvasHost
     /// <param name="options">The options of the context.</param>
     /// <returns>The context, or null.</returns>
     /// <exception cref="DomException">An <c>InvalidStateError</c> when the canvas is the placeholder of an <see cref="OffscreenCanvas"/>.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-canvas-getcontext"/>
     [IdlMember("getContext", "https://html.spec.whatwg.org/multipage/canvas.html#dom-canvas-getcontext")]
     public object? GetContext(string contextId, CanvasRenderingContext2DSettings? options = null)
     {
@@ -79,6 +80,7 @@ public partial class HtmlCanvasElement : ICanvasHost
     /// <param name="type">The MIME type of the file.</param>
     /// <param name="quality">The quality of the lossy formats from 0 to 1 (another value is the default quality), or null for the default quality.</param>
     /// <exception cref="DomException">A <c>SecurityError</c> when the canvas is not origin-clean.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-canvas-todataurl"/>
     [IdlMember("toDataURL", "https://html.spec.whatwg.org/multipage/canvas.html#dom-canvas-todataurl")]
     public string ToDataUrl(string type = "image/png", double? quality = null)
     {
@@ -98,6 +100,7 @@ public partial class HtmlCanvasElement : ICanvasHost
     /// <param name="type">The MIME type of the file (PNG, JPEG or WebP; another type is serialized as PNG).</param>
     /// <param name="quality">The quality of the lossy formats: a number from 0 to 1, else the default quality.</param>
     /// <exception cref="DomException">An <c>InvalidStateError</c> for the placeholder of an <see cref="OffscreenCanvas"/>, a <c>SecurityError</c> when the canvas is not origin-clean.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-canvas-toblob"/>
     [IdlMember("toBlob", "https://html.spec.whatwg.org/multipage/canvas.html#dom-canvas-toblob")]
     public void ToBlob(BlobCallback callback, string type = "image/png", double? quality = null)
     {
@@ -147,6 +150,7 @@ public partial class HtmlCanvasElement : ICanvasHost
     /// the canvas becomes its placeholder and displays the frames drawn by its rendering context (e.g. in a worker).
     /// </summary>
     /// <exception cref="DomException">An <c>InvalidStateError</c> when the canvas has a context or was already transferred.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-canvas-transfercontroltooffscreen"/>
     [IdlMember("transferControlToOffscreen", "https://html.spec.whatwg.org/multipage/canvas.html#dom-canvas-transfercontroltooffscreen")]
     public OffscreenCanvas TransferControlToOffscreen()
     {
@@ -225,6 +229,7 @@ public partial class HtmlCanvasElement : ICanvasHost
 
 /// <summary>The callback of <c>HTMLCanvasElement.toBlob()</c> (https://html.spec.whatwg.org/multipage/canvas.html#blobcallback).</summary>
 /// <param name="blob">The image file, or null when the canvas has no pixels.</param>
+/// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#blobcallback"/>
 [IdlInterface("BlobCallback", "https://html.spec.whatwg.org/multipage/canvas.html#blobcallback")]
 public delegate void BlobCallback(FileApi.Blob? blob);
 
@@ -233,6 +238,7 @@ public partial class HtmlScriptElement
     private bool _forceAsync = true;
 
     /// <summary>https://html.spec.whatwg.org/multipage/scripting.html#dom-script-async</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-script-async"/>
     [IdlMember("async", "https://html.spec.whatwg.org/multipage/scripting.html#dom-script-async")]
     public bool Async
     {
@@ -293,6 +299,7 @@ public partial class HtmlScriptElement
 
     /// <summary>https://html.spec.whatwg.org/multipage/scripting.html#dom-script-text</summary>
     /// <exception cref="TypeErrorException">Trusted Types are enforced and the default policy did not convert the value.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-script-text"/>
     [IdlMember("text", "https://html.spec.whatwg.org/multipage/scripting.html#dom-script-text")]
     public string Text
     {
@@ -301,6 +308,7 @@ public partial class HtmlScriptElement
     }
 
     /// <summary>The text setter with a <see cref="TrustedScript"/> value (https://w3c.github.io/trusted-types/dist/spec/#the-text-idl-attribute).</summary>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#the-text-idl-attribute"/>
     [IdlMember("text", "https://w3c.github.io/trusted-types/dist/spec/#the-text-idl-attribute")]
     public void SetText(TrustedScript value)
     {
@@ -319,6 +327,7 @@ public partial class HtmlScriptElement
     /// the one of Node, which does not apply Trusted Types (the default policy is then applied when the script is prepared).
     /// </summary>
     /// <exception cref="TypeErrorException">Trusted Types are enforced and the default policy did not convert the value.</exception>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#the-textContent-idl-attribute"/>
     [IdlMember("textContent", "https://w3c.github.io/trusted-types/dist/spec/#the-textContent-idl-attribute")]
     public new string? TextContent
     {
@@ -327,6 +336,7 @@ public partial class HtmlScriptElement
     }
 
     /// <summary>The textContent setter with a <see cref="TrustedScript"/> value (https://w3c.github.io/trusted-types/dist/spec/#the-textContent-idl-attribute).</summary>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#the-textContent-idl-attribute"/>
     [IdlMember("textContent", "https://w3c.github.io/trusted-types/dist/spec/#the-textContent-idl-attribute")]
     public void SetTextContent(TrustedScript value)
     {
@@ -345,6 +355,7 @@ public partial class HtmlScriptElement
     /// the one of HTMLElement, which does not apply Trusted Types (the default policy is then applied when the script is prepared).
     /// </summary>
     /// <exception cref="TypeErrorException">Trusted Types are enforced and the default policy did not convert the value.</exception>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#the-innerText-idl-attribute"/>
     [IdlMember("innerText", "https://w3c.github.io/trusted-types/dist/spec/#the-innerText-idl-attribute")]
     public new string InnerText
     {
@@ -357,6 +368,7 @@ public partial class HtmlScriptElement
     }
 
     /// <summary>The innerText setter with a <see cref="TrustedScript"/> value (https://w3c.github.io/trusted-types/dist/spec/#the-innerText-idl-attribute).</summary>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#the-innerText-idl-attribute"/>
     [IdlMember("innerText", "https://w3c.github.io/trusted-types/dist/spec/#the-innerText-idl-attribute")]
     public void SetInnerText(TrustedScript value)
     {
@@ -372,6 +384,7 @@ public partial class HtmlScriptElement
 
     /// <summary>https://w3c.github.io/trusted-types/dist/spec/#the-src-idl-attribute</summary>
     /// <exception cref="TypeErrorException">Trusted Types are enforced and the default policy did not convert the value.</exception>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-script-src"/>
     [IdlMember("src", "https://html.spec.whatwg.org/multipage/scripting.html#dom-script-src")]
     public string Src
     {
@@ -384,6 +397,7 @@ public partial class HtmlScriptElement
     }
 
     /// <summary>The src setter with a <see cref="TrustedScriptUrl"/> value (https://w3c.github.io/trusted-types/dist/spec/#the-src-idl-attribute).</summary>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#the-src-idl-attribute"/>
     [IdlMember("src", "https://w3c.github.io/trusted-types/dist/spec/#the-src-idl-attribute")]
     public void SetSrc(TrustedScriptUrl value)
     {
@@ -421,6 +435,7 @@ public partial class HtmlScriptElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/scripting.html#dom-script-supports</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-script-supports"/>
     [IdlMember("supports", "https://html.spec.whatwg.org/multipage/scripting.html#dom-script-supports")]
     public static bool Supports(string type)
     {
@@ -1004,6 +1019,7 @@ internal enum ScriptElementType
 public partial class HtmlStyleElement
 {
     /// <summary>https://html.spec.whatwg.org/multipage/semantics.html#dom-style-disabled: the disabled flag of the associated style sheet.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-style-disabled"/>
     [IdlMember("disabled", "https://html.spec.whatwg.org/multipage/semantics.html#dom-style-disabled")]
     public bool Disabled
     {
@@ -1021,6 +1037,7 @@ public partial class HtmlStyleElement
 public partial class HtmlTitleElement
 {
     /// <summary>Gets or sets the text content of the <c>title</c> element.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/semantics.html#dom-title-text"/>
     [IdlMember("text", "https://html.spec.whatwg.org/multipage/semantics.html#dom-title-text")]
     public string Text
     {
@@ -1034,6 +1051,7 @@ public partial class HtmlMapElement
     private HtmlCollection? _areas;
 
     /// <summary>Gets the <c>area</c> elements of the image map.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/image-maps.html#dom-map-areas"/>
     [IdlMember("areas", "https://html.spec.whatwg.org/multipage/image-maps.html#dom-map-areas")]
     public HtmlCollection Areas => _areas ??= new HtmlCollection(this, static e => e.IsHtml(TagId.Area));
 }
@@ -1041,6 +1059,7 @@ public partial class HtmlMapElement
 public partial class HtmlMarqueeElement
 {
     /// <summary>https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-loop</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-loop"/>
     [IdlMember("loop", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-loop")]
     public int Loop
     {
@@ -1059,12 +1078,14 @@ public partial class HtmlMarqueeElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-start: the marquee is never rendered.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-start"/>
     [IdlMember("start", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-start")]
     public void Start()
     {
     }
 
     /// <summary>Stops the scrolling of the <c>marquee</c> (no effect, as the marquee is never rendered).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-stop"/>
     [IdlMember("stop", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-marquee-stop")]
     public void Stop()
     {
@@ -1074,6 +1095,7 @@ public partial class HtmlMarqueeElement
 public partial class HtmlProgressElement
 {
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#dom-progress-position</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-progress-position"/>
     [IdlMember("position", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-progress-position")]
     public double Position
     {
@@ -1101,6 +1123,7 @@ public partial class HtmlDialogElement
     private InternalCloseWatcher? _closeWatcher;
 
     /// <summary>https://html.spec.whatwg.org/multipage/interactive-elements.html#dom-dialog-returnvalue</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interactive-elements.html#dom-dialog-returnvalue"/>
     [IdlMember("returnValue", "https://html.spec.whatwg.org/multipage/interactive-elements.html#dom-dialog-returnvalue")]
     public string ReturnValue
     {
@@ -1109,6 +1132,7 @@ public partial class HtmlDialogElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/interactive-elements.html#dom-dialog-show</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interactive-elements.html#dom-dialog-show"/>
     [IdlMember("show", "https://html.spec.whatwg.org/multipage/interactive-elements.html#dom-dialog-show")]
     public void Show()
     {
@@ -1136,14 +1160,17 @@ public partial class HtmlDialogElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/interactive-elements.html#dom-dialog-showmodal</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interactive-elements.html#dom-dialog-showmodal"/>
     [IdlMember("showModal", "https://html.spec.whatwg.org/multipage/interactive-elements.html#dom-dialog-showmodal")]
     public void ShowModal() => ShowModal(source: null);
 
     /// <summary>https://html.spec.whatwg.org/multipage/interactive-elements.html#dom-dialog-close</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interactive-elements.html#dom-dialog-close"/>
     [IdlMember("close", "https://html.spec.whatwg.org/multipage/interactive-elements.html#dom-dialog-close")]
     public void Close(string? returnValue = null) => CloseDialog(returnValue, source: null);
 
     /// <summary>https://html.spec.whatwg.org/multipage/interactive-elements.html#dom-dialog-requestclose</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interactive-elements.html#dom-dialog-requestclose"/>
     [IdlMember("requestClose", "https://html.spec.whatwg.org/multipage/interactive-elements.html#dom-dialog-requestclose")]
     public void RequestClose(string? returnValue = null) => RequestCloseDialog(returnValue, source: null);
 
@@ -1389,6 +1416,7 @@ public partial class HtmlAudioElement
     /// <param name="document">The document of the element (the associated document of the current global object).</param>
     /// <param name="src">The value of the src attribute, or null.</param>
     /// <returns>The new element.</returns>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-audio"/>
     [IdlMember("Audio", "https://html.spec.whatwg.org/multipage/media.html#dom-audio")]
     public static HtmlAudioElement Create(Document document, string? src = null)
     {

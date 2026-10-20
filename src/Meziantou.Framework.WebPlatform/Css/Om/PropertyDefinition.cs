@@ -4,22 +4,27 @@ using Meziantou.Framework.WebPlatform.Dom;
 namespace Meziantou.Framework.WebPlatform.Css.Om;
 
 /// <summary>The definition of a custom property registered by <see cref="Css.RegisterProperty(PropertyDefinition)"/> (https://drafts.css-houdini.org/css-properties-values-api/#dictdef-propertydefinition).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-properties-values-api-1/#dictdef-propertydefinition"/>
 [IdlInterface("PropertyDefinition", "https://drafts.css-houdini.org/css-properties-values-api-1/#dictdef-propertydefinition")]
 public sealed class PropertyDefinition
 {
     /// <summary>The name of the custom property (e.g. "--my-color").</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-properties-values-api-1/#dom-propertydefinition-name"/>
     [IdlMember("name", "https://drafts.css-houdini.org/css-properties-values-api-1/#dom-propertydefinition-name")]
     public required string Name { get; init; }
 
     /// <summary>The syntax of the values (e.g. "&lt;color&gt;" or "&lt;length&gt;+ | auto"), "*" for any value.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-properties-values-api-1/#dom-propertydefinition-syntax"/>
     [IdlMember("syntax", "https://drafts.css-houdini.org/css-properties-values-api-1/#dom-propertydefinition-syntax")]
     public string Syntax { get; init; } = "*";
 
     /// <summary>Gets a value indicating whether the custom property inherits its value from its parent.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-properties-values-api-1/#dom-propertydefinition-inherits"/>
     [IdlMember("inherits", "https://drafts.css-houdini.org/css-properties-values-api-1/#dom-propertydefinition-inherits")]
     public bool Inherits { get; init; } = true;
 
     /// <summary>The initial value, required unless the syntax is "*". It must be computationally independent (e.g. 10px, but not 1em or var(--x)).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-properties-values-api-1/#dom-propertydefinition-initialvalue"/>
     [IdlMember("initialValue", "https://drafts.css-houdini.org/css-properties-values-api-1/#dom-propertydefinition-initialvalue")]
     public string? InitialValue { get; init; }
 }
@@ -32,6 +37,7 @@ public static partial class Css
     /// (https://drafts.css-houdini.org/css-properties-values-api/#dom-css-registerproperty).
     /// </summary>
     /// <exception cref="DomException">The name or the syntax is invalid, the initial value does not match the syntax (SyntaxError), or the property is already registered (InvalidModificationError).</exception>
+    /// <seealso href="https://drafts.css-houdini.org/css-properties-values-api-1/#dom-css-registerproperty"/>
     [IdlMember("registerProperty", "https://drafts.css-houdini.org/css-properties-values-api-1/#dom-css-registerproperty")]
     public static void RegisterProperty(PropertyDefinition definition) => RegisterProperty(Document.CurrentGlobalDocument, definition);
 

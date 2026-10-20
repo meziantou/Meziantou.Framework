@@ -556,7 +556,7 @@ internal sealed class Lexer(SourceText source, TomlVersion version)
             }
 
             // A byte order mark is not part of the document it starts.
-            if (Position == 0 && Current == '﻿')
+            if (Position == 0 && Current == '\uFEFF')
             {
                 Position++;
                 Add(ref trivia, SyntaxKind.WhitespaceTrivia, start);
@@ -664,7 +664,7 @@ internal sealed class Lexer(SourceText source, TomlVersion version)
         => value is ' ' or '\t' or '\r' or '\n' or '#' or '=' or '[' or ']' or '{' or '}' or ',' or '"' or '\'' || IsNonTomlWhitespace(value);
 
     private static bool IsNonTomlWhitespace(char value)
-        => value is not (' ' or '\t' or '\r' or '\n') && (char.IsWhiteSpace(value) || value == '﻿');
+        => value is not (' ' or '\t' or '\r' or '\n') && (char.IsWhiteSpace(value) || value == '\uFEFF');
 
     /// <summary>Gets whether a character is a control character, other than tab, that TOML does not allow in text.</summary>
     private static bool IsControlCharacter(char value) => value is (< ' ' and not '\t') or '\u007F';

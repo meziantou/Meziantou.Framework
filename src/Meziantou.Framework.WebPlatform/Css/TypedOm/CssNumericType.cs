@@ -4,71 +4,88 @@ using Meziantou.Framework.WebPlatform.Infra;
 namespace Meziantou.Framework.WebPlatform.Css.TypedOm;
 
 /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#enumdef-cssnumericbasetype</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#enumdef-cssnumericbasetype"/>
 [IdlInterface("CSSNumericBaseType", "https://drafts.css-houdini.org/css-typed-om-1/#enumdef-cssnumericbasetype")]
 public enum CssNumericBaseType
 {
     /// <summary>The <c>length</c> base type.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericbasetype-length"/>
     [IdlMember("length", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericbasetype-length")]
     Length,
 
     /// <summary>The <c>angle</c> base type.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericbasetype-angle"/>
     [IdlMember("angle", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericbasetype-angle")]
     Angle,
 
     /// <summary>The <c>time</c> base type.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericbasetype-time"/>
     [IdlMember("time", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericbasetype-time")]
     Time,
 
     /// <summary>The <c>frequency</c> base type.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericbasetype-frequency"/>
     [IdlMember("frequency", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericbasetype-frequency")]
     Frequency,
 
     /// <summary>The <c>resolution</c> base type.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericbasetype-resolution"/>
     [IdlMember("resolution", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericbasetype-resolution")]
     Resolution,
 
     /// <summary>The <c>flex</c> base type.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericbasetype-flex"/>
     [IdlMember("flex", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericbasetype-flex")]
     Flex,
 
     /// <summary>The <c>percent</c> base type.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericbasetype-percent"/>
     [IdlMember("percent", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericbasetype-percent")]
     Percent,
 }
 
 /// <summary>The type of a numeric value, returned by <see cref="CssNumericValue.Type"/> (https://drafts.css-houdini.org/css-typed-om-1/#dictdef-cssnumerictype).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dictdef-cssnumerictype"/>
 [IdlInterface("CSSNumericType", "https://drafts.css-houdini.org/css-typed-om-1/#dictdef-cssnumerictype")]
 public sealed class CssNumericType
 {
     /// <summary>Gets the exponent of the <c>length</c> base type, or null when it is zero.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumerictype-length"/>
     [IdlMember("length", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumerictype-length")]
     public int? Length { get; init; }
 
     /// <summary>Gets the exponent of the <c>angle</c> base type, or null when it is zero.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumerictype-angle"/>
     [IdlMember("angle", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumerictype-angle")]
     public int? Angle { get; init; }
 
     /// <summary>Gets the exponent of the <c>time</c> base type, or null when it is zero.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumerictype-time"/>
     [IdlMember("time", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumerictype-time")]
     public int? Time { get; init; }
 
     /// <summary>Gets the exponent of the <c>frequency</c> base type, or null when it is zero.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumerictype-frequency"/>
     [IdlMember("frequency", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumerictype-frequency")]
     public int? Frequency { get; init; }
 
     /// <summary>Gets the exponent of the <c>resolution</c> base type, or null when it is zero.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumerictype-resolution"/>
     [IdlMember("resolution", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumerictype-resolution")]
     public int? Resolution { get; init; }
 
     /// <summary>Gets the exponent of the <c>flex</c> base type, or null when it is zero.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumerictype-flex"/>
     [IdlMember("flex", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumerictype-flex")]
     public int? Flex { get; init; }
 
     /// <summary>Gets the exponent of the <c>percent</c> base type, or null when it is zero.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumerictype-percent"/>
     [IdlMember("percent", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumerictype-percent")]
     public int? Percent { get; init; }
 
     /// <summary>Gets the base type that percentages are resolved against, or null when there is none.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumerictype-percenthint"/>
     [IdlMember("percentHint", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumerictype-percenthint")]
     public CssNumericBaseType? PercentHint { get; init; }
 }

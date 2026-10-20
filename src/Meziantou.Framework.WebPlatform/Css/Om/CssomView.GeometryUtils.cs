@@ -8,22 +8,27 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 // boxes of a node, and the conversion of points between the local coordinates of the nodes, from the fragment tree.
 
 /// <summary>https://drafts.csswg.org/cssom-view/#enumdef-cssboxtype</summary>
+/// <seealso href="https://drafts.csswg.org/cssom-view/#enumdef-cssboxtype"/>
 [IdlInterface("CSSBoxType", "https://drafts.csswg.org/cssom-view/#enumdef-cssboxtype")]
 public enum CssBoxType
 {
     /// <summary>The margin box.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-cssboxtype-margin"/>
     [IdlMember("margin", "https://drafts.csswg.org/cssom-view/#dom-cssboxtype-margin")]
     Margin,
 
     /// <summary>The border box.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-cssboxtype-border"/>
     [IdlMember("border", "https://drafts.csswg.org/cssom-view/#dom-cssboxtype-border")]
     Border,
 
     /// <summary>The padding box.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-cssboxtype-padding"/>
     [IdlMember("padding", "https://drafts.csswg.org/cssom-view/#dom-cssboxtype-padding")]
     Padding,
 
     /// <summary>The content box.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-cssboxtype-content"/>
     [IdlMember("content", "https://drafts.csswg.org/cssom-view/#dom-cssboxtype-content")]
     Content,
 }
@@ -32,6 +37,7 @@ public enum CssBoxType
 /// The <c>GeometryNode</c> union (https://drafts.csswg.org/cssom-view/#typedefdef-geometrynode): a <see cref="Text"/>, an
 /// <see cref="Element"/>, a <see cref="CssPseudoElement"/> or a <see cref="Document"/>.
 /// </summary>
+/// <seealso href="https://drafts.csswg.org/cssom-view/#typedefdef-geometrynode"/>
 [IdlInterface("(Text or Element or CSSPseudoElement or Document)", "https://drafts.csswg.org/cssom-view/#typedefdef-geometrynode")]
 public readonly struct GeometryNode : IUnionValue, IEquatable<GeometryNode>
 {
@@ -97,27 +103,33 @@ public readonly struct GeometryNode : IUnionValue, IEquatable<GeometryNode>
 }
 
 /// <summary>https://drafts.csswg.org/cssom-view/#dictdef-boxquadoptions</summary>
+/// <seealso href="https://drafts.csswg.org/cssom-view/#dictdef-boxquadoptions"/>
 [IdlInterface("BoxQuadOptions", "https://drafts.csswg.org/cssom-view/#dictdef-boxquadoptions")]
 public sealed class BoxQuadOptions
 {
     /// <summary>Gets the box of the quads.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-boxquadoptions-box"/>
     [IdlMember("box", "https://drafts.csswg.org/cssom-view/#dom-boxquadoptions-box")]
     public CssBoxType Box { get; init; } = CssBoxType.Border;
 
     /// <summary>Gets the node whose coordinates the quads are expressed in (the viewport by default).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-boxquadoptions-relativeto"/>
     [IdlMember("relativeTo", "https://drafts.csswg.org/cssom-view/#dom-boxquadoptions-relativeto")]
     public GeometryNode? RelativeTo { get; init; }
 }
 
 /// <summary>https://drafts.csswg.org/cssom-view/#dictdef-convertcoordinateoptions</summary>
+/// <seealso href="https://drafts.csswg.org/cssom-view/#dictdef-convertcoordinateoptions"/>
 [IdlInterface("ConvertCoordinateOptions", "https://drafts.csswg.org/cssom-view/#dictdef-convertcoordinateoptions")]
 public sealed class ConvertCoordinateOptions
 {
     /// <summary>Gets the box of the node the coordinates are converted from.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-convertcoordinateoptions-frombox"/>
     [IdlMember("fromBox", "https://drafts.csswg.org/cssom-view/#dom-convertcoordinateoptions-frombox")]
     public CssBoxType FromBox { get; init; } = CssBoxType.Border;
 
     /// <summary>Gets the box of the node the coordinates are converted to.</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-convertcoordinateoptions-tobox"/>
     [IdlMember("toBox", "https://drafts.csswg.org/cssom-view/#dom-convertcoordinateoptions-tobox")]
     public CssBoxType ToBox { get; init; } = CssBoxType.Border;
 }
@@ -129,18 +141,22 @@ public partial class Element
     /// per box fragment (or the bounding box of an element of an SVG document fragment), with the transforms, in the coordinates
     /// of the viewport or of <see cref="BoxQuadOptions.RelativeTo"/>.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-geometryutils-getboxquads"/>
     [IdlMember("getBoxQuads", "https://drafts.csswg.org/cssom-view/#dom-geometryutils-getboxquads")]
     public IReadOnlyList<DomQuad> GetBoxQuads(BoxQuadOptions? options = null) => GeometryUtils.GetBoxQuads(this, options);
 
     /// <summary>Converts a quad from the coordinates of a node to the coordinates of the element (https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertquadfromnode).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertquadfromnode"/>
     [IdlMember("convertQuadFromNode", "https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertquadfromnode")]
     public DomQuad ConvertQuadFromNode(DomQuadInit quad, GeometryNode from, ConvertCoordinateOptions? options = null) => GeometryUtils.ConvertQuadFromNode(this, quad, from, options);
 
     /// <summary>Converts a rectangle from the coordinates of a node to the coordinates of the element (https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertrectfromnode).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertrectfromnode"/>
     [IdlMember("convertRectFromNode", "https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertrectfromnode")]
     public DomQuad ConvertRectFromNode(DomRectReadOnly rect, GeometryNode from, ConvertCoordinateOptions? options = null) => GeometryUtils.ConvertRectFromNode(this, rect, from, options);
 
     /// <summary>Converts a point from the coordinates of a node to the coordinates of the element (https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertpointfromnode).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertpointfromnode"/>
     [IdlMember("convertPointFromNode", "https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertpointfromnode")]
     public DomPoint ConvertPointFromNode(DomPointInit point, GeometryNode from, ConvertCoordinateOptions? options = null) => GeometryUtils.ConvertPointFromNode(this, point, from, options);
 }
@@ -152,18 +168,22 @@ public partial class Text
     /// its text fragments (see <see cref="Range.GetClientRects"/>), in the coordinates of the viewport or of
     /// <see cref="BoxQuadOptions.RelativeTo"/>.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-geometryutils-getboxquads"/>
     [IdlMember("getBoxQuads", "https://drafts.csswg.org/cssom-view/#dom-geometryutils-getboxquads")]
     public IReadOnlyList<DomQuad> GetBoxQuads(BoxQuadOptions? options = null) => GeometryUtils.GetBoxQuads(this, options);
 
     /// <summary>Converts a quad from the coordinates of a node to the coordinates of the text, which are the ones of its parent element (https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertquadfromnode).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertquadfromnode"/>
     [IdlMember("convertQuadFromNode", "https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertquadfromnode")]
     public DomQuad ConvertQuadFromNode(DomQuadInit quad, GeometryNode from, ConvertCoordinateOptions? options = null) => GeometryUtils.ConvertQuadFromNode(this, quad, from, options);
 
     /// <summary>Converts a rectangle from the coordinates of a node to the coordinates of the text (https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertrectfromnode).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertrectfromnode"/>
     [IdlMember("convertRectFromNode", "https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertrectfromnode")]
     public DomQuad ConvertRectFromNode(DomRectReadOnly rect, GeometryNode from, ConvertCoordinateOptions? options = null) => GeometryUtils.ConvertRectFromNode(this, rect, from, options);
 
     /// <summary>Converts a point from the coordinates of a node to the coordinates of the text (https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertpointfromnode).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertpointfromnode"/>
     [IdlMember("convertPointFromNode", "https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertpointfromnode")]
     public DomPoint ConvertPointFromNode(DomPointInit point, GeometryNode from, ConvertCoordinateOptions? options = null) => GeometryUtils.ConvertPointFromNode(this, point, from, options);
 }
@@ -174,18 +194,22 @@ public partial class Document
     /// Returns the quad of the document (https://drafts.csswg.org/cssom-view/#dom-geometryutils-getboxquads): the layout
     /// viewport, in the coordinates of the viewport or of <see cref="BoxQuadOptions.RelativeTo"/>.
     /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-geometryutils-getboxquads"/>
     [IdlMember("getBoxQuads", "https://drafts.csswg.org/cssom-view/#dom-geometryutils-getboxquads")]
     public IReadOnlyList<DomQuad> GetBoxQuads(BoxQuadOptions? options = null) => GeometryUtils.GetBoxQuads(this, options);
 
     /// <summary>Converts a quad from the coordinates of a node to the coordinates of the viewport of the document (https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertquadfromnode).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertquadfromnode"/>
     [IdlMember("convertQuadFromNode", "https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertquadfromnode")]
     public DomQuad ConvertQuadFromNode(DomQuadInit quad, GeometryNode from, ConvertCoordinateOptions? options = null) => GeometryUtils.ConvertQuadFromNode(this, quad, from, options);
 
     /// <summary>Converts a rectangle from the coordinates of a node to the coordinates of the viewport of the document (https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertrectfromnode).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertrectfromnode"/>
     [IdlMember("convertRectFromNode", "https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertrectfromnode")]
     public DomQuad ConvertRectFromNode(DomRectReadOnly rect, GeometryNode from, ConvertCoordinateOptions? options = null) => GeometryUtils.ConvertRectFromNode(this, rect, from, options);
 
     /// <summary>Converts a point from the coordinates of a node to the coordinates of the viewport of the document (https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertpointfromnode).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertpointfromnode"/>
     [IdlMember("convertPointFromNode", "https://drafts.csswg.org/cssom-view/#dom-geometryutils-convertpointfromnode")]
     public DomPoint ConvertPointFromNode(DomPointInit point, GeometryNode from, ConvertCoordinateOptions? options = null) => GeometryUtils.ConvertPointFromNode(this, point, from, options);
 }

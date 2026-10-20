@@ -3813,7 +3813,12 @@ that are 0, the default alignment of `position-area`, the center of the default 
   gutters are subtracted from the content box (a definite size keeps its `box-sizing` meaning), added to the automatic sizes
   (shrink-to-fit, `auto` block size), and the border box is at least the borders and paddings (a box too small for its gutters is overflowed by them, as in the browsers). The viewport does the
   same (`LayoutEngine.LayoutViewport`): its scrollbars are outside of the initial containing block (the `clientWidth` of the
-  root), `innerWidth` includes them.
+  root), `innerWidth` includes them. On the first layout of a document, the vertical scrollbar of an `auto` viewport is
+  assumed when the text of the in-flow boxes cannot fit in twice the height of the viewport (`EstimateTextBlockSize`: half
+  an em wide and 1.2em tall per character), which saves the second layout of a long document at a narrower width (the
+  layout result cache keeps nothing once the initial containing block changes); the guess is kept only when the document
+  overflows the viewport by at least half its height (the scrollbar cannot make it fit), else the viewport is laid out
+  again without scrollbars.
 - **Scrollable overflow** ([§2.2](https://drafts.csswg.org/css-overflow-3/#scrollable-overflow-calculation),
   `BoxFragment.ScrollableOverflow`, lazy): the border box and the contributions of the children: the scrollable overflow of a
   child (its border box and its contents) clipped to its overflow clip edge in the axes it clips (`ClipsOverflowX`/`Y`: the used
@@ -5537,7 +5542,10 @@ Windows-1256 fonts are not supported.
   content language (`Language`: the `lang` of the element, for `locl` and the language system), `font-language-override`
   (`LanguageOverride`) and the characters around the text (`Context`: the joining of the Arabic letters across the inline
   boxes). `TextShapingOptions.FromStyle` reads them from the computed style (`ComputedStyle.ShapingOptions`, cached on the
-  style).
+  style). A style that declares none of the properties they depend on (nor `font-family`, which changes an inherited font
+  size, and is not animated), whose element has no `lang` attribute and the element of its parent style as parent (a slotted
+  element inherits its style from its slot, its language from its parent), shares the options of its parent; `ComputedStyle.Fonts`
+  shares the fonts of the parent in the same way when no property of the `FontDescription` is declared.
 - The features follow the [feature precedence](https://drafts.csswg.org/css-fonts-4/#feature-precedence): the
   `font-feature-settings` descriptor of the `@font-face` rule (`MatchedFont.FaceFeatures`), then the features of
   `font-kerning`, `font-variant-ligatures`, `font-variant-caps`, `font-variant-numeric`, `font-variant-east-asian`,
@@ -5660,7 +5668,7 @@ width (without allocating the glyphs); `ComputedStyle.ShapeText(text)` and `Comp
 and the options of an element. The cache (`TextShapeCache`) belongs to the `FontFallbackList`, so it is discarded with
 the lists of the document when its fonts change (a font face is loaded, added or removed, the style sheets, the DOM or the
 environment change: see `FontSelector`), and it needs no other invalidation. The lookups take spans (no allocation on a
-hit); the cache is cleared when it holds 16,384 entries or 1 M characters, and the runs longer than 65,536 characters are
+hit, and the entries of the last options are kept to skip the hashing of the options); the cache is cleared when it holds 16,384 entries or 1 M characters, and the runs longer than 65,536 characters are
 not cached. `TextMeasurementBenchmarks` measures the shaping of the text runs of the Wikipedia article (about 3.5 ms) and
 the measurement of its words with a cold cache (about 2.1 ms) and a warm one (about 0.22 ms); `LayoutBenchmarks`
 measures the layout of the article.

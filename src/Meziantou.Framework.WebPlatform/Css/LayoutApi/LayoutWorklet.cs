@@ -123,6 +123,7 @@ internal sealed class LayoutWorklet : Worklet
 /// The global object of a layout worklet (https://drafts.css-houdini.org/css-layout-api-1/#layoutworkletglobalscope): the
 /// scripts added to <c>CSS.layoutWorklet</c> register the classes that lay out the <c>display: layout()</c> boxes.
 /// </summary>
+/// <seealso href="https://drafts.css-houdini.org/css-layout-api-1/#layoutworkletglobalscope"/>
 [IdlInterface("LayoutWorkletGlobalScope", "https://drafts.css-houdini.org/css-layout-api-1/#layoutworkletglobalscope")]
 public sealed class LayoutWorkletGlobalScope : WorkletGlobalScope
 {
@@ -159,6 +160,7 @@ public sealed class LayoutWorkletGlobalScope : WorkletGlobalScope
     /// </param>
     /// <exception cref="TypeErrorException">The name is empty, the options are invalid, the prototype of the class is not an object, or it has no <c>intrinsicSizes</c> or <c>layout</c> function.</exception>
     /// <exception cref="DomException">An <c>InvalidModificationError</c> when the name is already registered in the global scope.</exception>
+    /// <seealso href="https://drafts.css-houdini.org/css-layout-api-1/#dom-layoutworkletglobalscope-registerlayout"/>
     [IdlMember("registerLayout", "https://drafts.css-houdini.org/css-layout-api-1/#dom-layoutworkletglobalscope-registerlayout")]
     public void RegisterLayout(string name, WorkletClassConstructor layoutCtor)
     {

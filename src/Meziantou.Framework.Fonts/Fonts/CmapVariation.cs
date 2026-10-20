@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Fonts;
 
 /// <summary>What the font says of a variation sequence: a base character followed by a variation selector.</summary>
-internal enum CmapVariation
+public enum CmapVariation
 {
     /// <summary>The font does not support the sequence.</summary>
     NotFound = 0,

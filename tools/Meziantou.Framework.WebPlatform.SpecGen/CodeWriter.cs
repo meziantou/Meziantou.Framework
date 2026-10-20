@@ -36,6 +36,9 @@ internal sealed class CodeWriter
     /// <summary>Writes a documentation comment with a summary (the text is XML, e.g. with &lt;c&gt; elements).</summary>
     public CodeWriter Summary(string xml) => Line("/// <summary>" + xml + "</summary>");
 
+    /// <summary>Writes a documentation comment that links to a URL (e.g. the specification of an [IdlMember]).</summary>
+    public CodeWriter SeeAlso(string url) => Line("/// <seealso href=\"" + XmlText(url) + "\"/>");
+
     /// <summary>Escapes a text for a documentation comment.</summary>
     public static string XmlText(string text) => System.Security.SecurityElement.Escape(text);
 

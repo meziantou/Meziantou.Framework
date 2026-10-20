@@ -127,6 +127,20 @@ public sealed class HeicDecodingTests
         AssertBlocks(ImageSnapshots.CaptureFrame(image.Frames[0]));
     }
 
+    [Fact]
+    public void AGridFailsAtATileOfItsLastRow()
+    {
+        // The rows of a grid are converted as soon as their row of tiles is decoded: a tile of the last row that is truncated
+        // still fails the load, with the error of a grid whose rows are converted at the end, and the image is released
+        var file = ReferenceHeif.Parse(HeicTestFiles.Grid);
+        var lastTile = file.GetGridTiles(file.PrimaryItem!)[^1];
+        var builder = HeifFileBuilder.From(HeicTestFiles.Grid);
+        var tile = builder.GetItem(lastTile.Id);
+        tile.Data = tile.Data[..(tile.Data.Length / 2)];
+        var exception = Assert.Throws<InvalidImageContentException>(() => Image.Load(builder.Build()));
+        Assert.Contains("truncated", exception.Message, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

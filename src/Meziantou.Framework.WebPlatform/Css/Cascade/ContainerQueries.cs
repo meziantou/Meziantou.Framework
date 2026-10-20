@@ -264,16 +264,7 @@ internal static class ContainerQueries
     /// <summary>Returns whether an ancestor of a style (the style of the parent element in the flat tree, or of the originating element of a pseudo-element) is a size container.</summary>
     internal static bool IsInSizeContainer(ComputedStyle style) => IsInContainer(style, ContainerType.Size | ContainerType.InlineSize);
 
-    private static bool IsInContainer(ComputedStyle style, ContainerType types)
-    {
-        for (var ancestor = style.Parent; ancestor is not null; ancestor = ancestor.Parent)
-        {
-            if ((ancestor.Layout.ContainerType & types) != ContainerType.Normal)
-                return true;
-        }
-
-        return false;
-    }
+    private static bool IsInContainer(ComputedStyle style, ContainerType types) => (style.AncestorContainerTypes & types) != ContainerType.Normal;
 }
 
 /// <summary>Evaluates the features of a container query against a query container.</summary>

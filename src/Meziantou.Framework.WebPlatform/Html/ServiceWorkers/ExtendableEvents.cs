@@ -7,6 +7,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// An event whose lifetime can be extended by promises (https://w3c.github.io/ServiceWorker/#extendableevent-interface):
 /// the lifecycle events (<c>install</c>, <c>activate</c>) and the functional events of the service workers.
 /// </summary>
+/// <seealso href="https://w3c.github.io/ServiceWorker/#extendableevent"/>
 [IdlInterface("ExtendableEvent", "https://w3c.github.io/ServiceWorker/#extendableevent")]
 public class ExtendableEvent : Event
 {
@@ -15,6 +16,7 @@ public class ExtendableEvent : Event
     private DomEventLoop? _eventLoop;
 
     /// <summary>Creates an extendable event.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-extendableevent-extendableevent"/>
     [IdlMember("constructor", "https://w3c.github.io/ServiceWorker/#dom-extendableevent-extendableevent")]
     public ExtendableEvent(string type, ExtendableEventInit? eventInitDict = null)
         : base(type, eventInitDict)
@@ -51,6 +53,7 @@ public class ExtendableEvent : Event
 
     /// <summary>Extends the lifetime of the event until the promise settles (https://w3c.github.io/ServiceWorker/#dom-extendableevent-waituntil).</summary>
     /// <exception cref="DomException">An <c>InvalidStateError</c> when the event is not trusted or not active.</exception>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-extendableevent-waituntil"/>
     [IdlMember("waitUntil", "https://w3c.github.io/ServiceWorker/#dom-extendableevent-waituntil")]
     public void WaitUntil(Task<object?> f)
     {
@@ -128,10 +131,12 @@ public class ExtendableEvent : Event
 }
 
 /// <summary>The <c>install</c> event of a service worker (https://w3c.github.io/ServiceWorker/#installevent).</summary>
+/// <seealso href="https://w3c.github.io/ServiceWorker/#installevent"/>
 [IdlInterface("InstallEvent", "https://w3c.github.io/ServiceWorker/#installevent")]
 public sealed class InstallEvent : ExtendableEvent
 {
     /// <summary>Creates an install event.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-installevent-installevent"/>
     [IdlMember("constructor", "https://w3c.github.io/ServiceWorker/#dom-installevent-installevent")]
     public InstallEvent(string type, ExtendableEventInit? eventInitDict = null)
         : base(type, eventInitDict)
@@ -144,12 +149,14 @@ public sealed class InstallEvent : ExtendableEvent
 /// service worker, which the service worker can answer with <see cref="RespondWith"/>. The request and the response are
 /// <c>Request</c> and <c>Response</c> objects of the script engine (the Fetch API is implemented in JavaScript).
 /// </summary>
+/// <seealso href="https://w3c.github.io/ServiceWorker/#fetchevent"/>
 [IdlInterface("FetchEvent", "https://w3c.github.io/ServiceWorker/#fetchevent")]
 public sealed class FetchEvent : ExtendableEvent
 {
     private TaskCompletionSource? _responded;
 
     /// <summary>Creates a fetch event.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-fetchevent-fetchevent"/>
     [IdlMember("constructor", "https://w3c.github.io/ServiceWorker/#dom-fetchevent-fetchevent")]
     public FetchEvent(string type, FetchEventInit eventInitDict)
         : base(type, eventInitDict)
@@ -166,26 +173,32 @@ public sealed class FetchEvent : ExtendableEvent
     }
 
     /// <summary>Gets the request: a <c>Request</c> object of the script engine.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-fetchevent-request"/>
     [IdlMember("request", "https://w3c.github.io/ServiceWorker/#dom-fetchevent-request")]
     public object Request { get; }
 
     /// <summary>Gets the promise of the response of the navigation preload (a <c>Response</c> object of the script engine, or undefined).</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-fetchevent-preloadresponse"/>
     [IdlMember("preloadResponse", "https://w3c.github.io/ServiceWorker/#dom-fetchevent-preloadresponse")]
     public Task<object?> PreloadResponse { get; }
 
     /// <summary>Gets the id of the client of the request, or an empty string.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-fetchevent-clientid"/>
     [IdlMember("clientId", "https://w3c.github.io/ServiceWorker/#dom-fetchevent-clientid")]
     public string ClientId { get; }
 
     /// <summary>Gets the id of the client created by a navigation, or an empty string.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-fetchevent-resultingclientid"/>
     [IdlMember("resultingClientId", "https://w3c.github.io/ServiceWorker/#dom-fetchevent-resultingclientid")]
     public string ResultingClientId { get; }
 
     /// <summary>Gets the id of the client replaced by a navigation, or an empty string.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-fetchevent-replacesclientid"/>
     [IdlMember("replacesClientId", "https://w3c.github.io/ServiceWorker/#dom-fetchevent-replacesclientid")]
     public string ReplacesClientId { get; }
 
     /// <summary>Gets the promise fulfilled once the event was handled.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-fetchevent-handled"/>
     [IdlMember("handled", "https://w3c.github.io/ServiceWorker/#dom-fetchevent-handled")]
     public Task Handled { get; }
 
@@ -206,6 +219,7 @@ public sealed class FetchEvent : ExtendableEvent
     /// must be fulfilled with a <c>Response</c> object, else the request is a network error.
     /// </summary>
     /// <exception cref="DomException">An <c>InvalidStateError</c> when the event is not being dispatched, or when the method was already called.</exception>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-fetchevent-respondwith"/>
     [IdlMember("respondWith", "https://w3c.github.io/ServiceWorker/#dom-fetchevent-respondwith")]
     public void RespondWith(Task<object?> r)
     {
@@ -255,10 +269,12 @@ public sealed class FetchEvent : ExtendableEvent
 }
 
 /// <summary>The <c>message</c> event of a service worker (https://w3c.github.io/ServiceWorker/#extendablemessageevent).</summary>
+/// <seealso href="https://w3c.github.io/ServiceWorker/#extendablemessageevent"/>
 [IdlInterface("ExtendableMessageEvent", "https://w3c.github.io/ServiceWorker/#extendablemessageevent")]
 public sealed class ExtendableMessageEvent : ExtendableEvent
 {
     /// <summary>Creates a message event.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-extendablemessageevent-extendablemessageevent"/>
     [IdlMember("constructor", "https://w3c.github.io/ServiceWorker/#dom-extendablemessageevent-extendablemessageevent")]
     public ExtendableMessageEvent(string type, ExtendableMessageEventInit? eventInitDict = null)
         : base(type, eventInitDict)
@@ -272,22 +288,27 @@ public sealed class ExtendableMessageEvent : ExtendableEvent
     }
 
     /// <summary>Gets the data of the message.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-extendablemessageevent-data"/>
     [IdlMember("data", "https://w3c.github.io/ServiceWorker/#dom-extendablemessageevent-data")]
     public object? Data { get; }
 
     /// <summary>Gets the origin of the sender.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-extendablemessageevent-origin"/>
     [IdlMember("origin", "https://w3c.github.io/ServiceWorker/#dom-extendablemessageevent-origin")]
     public string Origin { get; }
 
     /// <summary>Gets the last event ID.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-extendablemessageevent-lasteventid"/>
     [IdlMember("lastEventId", "https://w3c.github.io/ServiceWorker/#dom-extendablemessageevent-lasteventid")]
     public string LastEventId { get; }
 
     /// <summary>Gets the sender: a <see cref="Client"/>, a <see cref="ServiceWorker"/> or a <see cref="MessagePort"/>, or null.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-extendablemessageevent-source"/>
     [IdlMember("source", "https://w3c.github.io/ServiceWorker/#dom-extendablemessageevent-source")]
     public object? Source { get; }
 
     /// <summary>Gets the ports sent with the message.</summary>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-extendablemessageevent-ports"/>
     [IdlMember("ports", "https://w3c.github.io/ServiceWorker/#dom-extendablemessageevent-ports")]
     public IReadOnlyList<MessagePort> Ports { get; }
 }

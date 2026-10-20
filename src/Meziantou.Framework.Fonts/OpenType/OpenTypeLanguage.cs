@@ -49,7 +49,7 @@ namespace Meziantou.Framework.Fonts;
 /// standards (<c>i-klingon</c>, <c>art-lojban</c>) are not known: both give no tag.
 /// </para>
 /// </remarks>
-internal static partial class OpenTypeLanguage
+public static partial class OpenTypeLanguage
 {
     private const int RecordSize = 5;
 

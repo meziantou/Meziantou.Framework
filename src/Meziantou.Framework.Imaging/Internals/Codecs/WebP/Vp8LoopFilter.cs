@@ -6,9 +6,9 @@ using System.Runtime.Intrinsics;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// The VP8 loop filter (RFC 6386 section 15), applied in place to the reconstructed planes once every macroblock is
-/// reconstructed, in macroblock raster order: per macroblock, its left edge, its inner vertical edges, its top edge, then its
-/// inner horizontal edges. The simple filter changes only luma; the normal filter changes luma and chroma.
+/// The VP8 loop filter (RFC 6386 section 15), applied in place to the reconstructed planes in macroblock raster order (the
+/// whole frame, or one macroblock row at a time): per macroblock, its left edge, its inner vertical edges, its top edge, then
+/// its inner horizontal edges. The simple filter changes only luma; the normal filter changes luma and chroma.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -43,89 +43,111 @@ internal static class Vp8LoopFilter
     internal static void ApplyScalar(Vp8Planes planes, ReadOnlySpan<byte> filterInfo, int mbWidth, int mbHeight, bool simple, int sharpness)
         => Apply(planes, filterInfo, mbWidth, mbHeight, simple, sharpness, useVectors: false);
 
+    /// <summary>
+    /// Filters macroblock row <paramref name="mbY"/> of planes that hold the frame rows from <paramref name="lumaOrigin"/>
+    /// (<c>lumaOrigin / 2</c> for chroma): the rows of a frame filtered one after the other, in order, give the result of
+    /// <see cref="Apply(Vp8Planes, ReadOnlySpan{byte}, int, int, bool, int)"/>. The macroblock row reads and changes the 4 pixel
+    /// rows above it, and is read and changed by the next macroblock row in its last 4 pixel rows.
+    /// </summary>
+    /// <param name="planes">The reconstructed planes.</param>
+    /// <param name="rowInfo">The filter information of the macroblocks of the row.</param>
+    /// <param name="mbY">The macroblock row.</param>
+    /// <param name="lumaOrigin">The frame row of the first luma row of the planes (a multiple of 8).</param>
+    /// <param name="simple">Whether the simple filter is selected (otherwise the normal filter).</param>
+    /// <param name="sharpness">The sharpness level (0 to 7).</param>
+    public static void ApplyRow(Vp8Planes planes, ReadOnlySpan<byte> rowInfo, int mbY, int lumaOrigin, bool simple, int sharpness)
+        => ApplyRow(planes, rowInfo, mbY, lumaOrigin, simple, sharpness, Vector128.IsHardwareAccelerated);
+
     private static void Apply(Vp8Planes planes, ReadOnlySpan<byte> filterInfo, int mbWidth, int mbHeight, bool simple, int sharpness, bool useVectors)
+    {
+        for (var mbY = 0; mbY < mbHeight; mbY++)
+        {
+            ApplyRow(planes, filterInfo.Slice(mbY * mbWidth, mbWidth), mbY, lumaOrigin: 0, simple, sharpness, useVectors);
+        }
+    }
+
+    private static void ApplyRow(Vp8Planes planes, ReadOnlySpan<byte> rowInfo, int mbY, int lumaOrigin, bool simple, int sharpness, bool useVectors)
     {
         var y = planes.Y;
         var u = planes.U;
         var v = planes.V;
         var yStride = planes.YStride;
         var uvStride = planes.UVStride;
-        for (var mbY = 0; mbY < mbHeight; mbY++)
+        var yRow = ((mbY * 16) - lumaOrigin) * yStride;
+        var uvRow = ((mbY * 8) - (lumaOrigin / 2)) * uvStride;
+        for (var mbX = 0; mbX < rowInfo.Length; mbX++)
         {
-            for (var mbX = 0; mbX < mbWidth; mbX++)
+            var info = rowInfo[mbX];
+            var level = info & 0x3F;
+            if (level == 0)
+                continue;
+
+            var inner = (info & 0x80) != 0;
+            var interior = GetInteriorLimit(level, sharpness);
+            var edgeLimit = ((level + 2) * 2) + interior;
+            var subLimit = (level * 2) + interior;
+            var hevThreshold = level >= 40 ? 2 : level >= 15 ? 1 : 0;
+            var yOffset = yRow + (mbX * 16);
+            var uvOffset = uvRow + (mbX * 8);
+            if (simple)
             {
-                var info = filterInfo[(mbY * mbWidth) + mbX];
-                var level = info & 0x3F;
-                if (level == 0)
-                    continue;
-
-                var inner = (info & 0x80) != 0;
-                var interior = GetInteriorLimit(level, sharpness);
-                var edgeLimit = ((level + 2) * 2) + interior;
-                var subLimit = (level * 2) + interior;
-                var hevThreshold = level >= 40 ? 2 : level >= 15 ? 1 : 0;
-                var yOffset = (mbY * 16 * yStride) + (mbX * 16);
-                var uvOffset = (mbY * 8 * uvStride) + (mbX * 8);
-                if (simple)
-                {
-                    if (mbX > 0)
-                    {
-                        SimpleEdge(y, yOffset, 1, yStride, edgeLimit);
-                    }
-
-                    if (inner)
-                    {
-                        SimpleEdge(y, yOffset + 4, 1, yStride, subLimit);
-                        SimpleEdge(y, yOffset + 8, 1, yStride, subLimit);
-                        SimpleEdge(y, yOffset + 12, 1, yStride, subLimit);
-                    }
-
-                    if (mbY > 0)
-                    {
-                        SimpleEdge(y, yOffset, yStride, 1, edgeLimit);
-                    }
-
-                    if (inner)
-                    {
-                        SimpleEdge(y, yOffset + (4 * yStride), yStride, 1, subLimit);
-                        SimpleEdge(y, yOffset + (8 * yStride), yStride, 1, subLimit);
-                        SimpleEdge(y, yOffset + (12 * yStride), yStride, 1, subLimit);
-                    }
-
-                    continue;
-                }
-
                 if (mbX > 0)
                 {
-                    Edge(y, yOffset, 1, yStride, 16, edgeLimit, interior, hevThreshold, macroblock: true, useVectors);
-                    Edge(u, uvOffset, 1, uvStride, 8, edgeLimit, interior, hevThreshold, macroblock: true, useVectors);
-                    Edge(v, uvOffset, 1, uvStride, 8, edgeLimit, interior, hevThreshold, macroblock: true, useVectors);
+                    SimpleEdge(y, yOffset, 1, yStride, edgeLimit);
                 }
 
                 if (inner)
                 {
-                    Edge(y, yOffset + 4, 1, yStride, 16, subLimit, interior, hevThreshold, macroblock: false, useVectors);
-                    Edge(y, yOffset + 8, 1, yStride, 16, subLimit, interior, hevThreshold, macroblock: false, useVectors);
-                    Edge(y, yOffset + 12, 1, yStride, 16, subLimit, interior, hevThreshold, macroblock: false, useVectors);
-                    Edge(u, uvOffset + 4, 1, uvStride, 8, subLimit, interior, hevThreshold, macroblock: false, useVectors);
-                    Edge(v, uvOffset + 4, 1, uvStride, 8, subLimit, interior, hevThreshold, macroblock: false, useVectors);
+                    SimpleEdge(y, yOffset + 4, 1, yStride, subLimit);
+                    SimpleEdge(y, yOffset + 8, 1, yStride, subLimit);
+                    SimpleEdge(y, yOffset + 12, 1, yStride, subLimit);
                 }
 
                 if (mbY > 0)
                 {
-                    Edge(y, yOffset, yStride, 1, 16, edgeLimit, interior, hevThreshold, macroblock: true, useVectors);
-                    Edge(u, uvOffset, uvStride, 1, 8, edgeLimit, interior, hevThreshold, macroblock: true, useVectors);
-                    Edge(v, uvOffset, uvStride, 1, 8, edgeLimit, interior, hevThreshold, macroblock: true, useVectors);
+                    SimpleEdge(y, yOffset, yStride, 1, edgeLimit);
                 }
 
                 if (inner)
                 {
-                    Edge(y, yOffset + (4 * yStride), yStride, 1, 16, subLimit, interior, hevThreshold, macroblock: false, useVectors);
-                    Edge(y, yOffset + (8 * yStride), yStride, 1, 16, subLimit, interior, hevThreshold, macroblock: false, useVectors);
-                    Edge(y, yOffset + (12 * yStride), yStride, 1, 16, subLimit, interior, hevThreshold, macroblock: false, useVectors);
-                    Edge(u, uvOffset + (4 * uvStride), uvStride, 1, 8, subLimit, interior, hevThreshold, macroblock: false, useVectors);
-                    Edge(v, uvOffset + (4 * uvStride), uvStride, 1, 8, subLimit, interior, hevThreshold, macroblock: false, useVectors);
+                    SimpleEdge(y, yOffset + (4 * yStride), yStride, 1, subLimit);
+                    SimpleEdge(y, yOffset + (8 * yStride), yStride, 1, subLimit);
+                    SimpleEdge(y, yOffset + (12 * yStride), yStride, 1, subLimit);
                 }
+
+                continue;
+            }
+
+            if (mbX > 0)
+            {
+                Edge(y, yOffset, 1, yStride, 16, edgeLimit, interior, hevThreshold, macroblock: true, useVectors);
+                Edge(u, uvOffset, 1, uvStride, 8, edgeLimit, interior, hevThreshold, macroblock: true, useVectors);
+                Edge(v, uvOffset, 1, uvStride, 8, edgeLimit, interior, hevThreshold, macroblock: true, useVectors);
+            }
+
+            if (inner)
+            {
+                Edge(y, yOffset + 4, 1, yStride, 16, subLimit, interior, hevThreshold, macroblock: false, useVectors);
+                Edge(y, yOffset + 8, 1, yStride, 16, subLimit, interior, hevThreshold, macroblock: false, useVectors);
+                Edge(y, yOffset + 12, 1, yStride, 16, subLimit, interior, hevThreshold, macroblock: false, useVectors);
+                Edge(u, uvOffset + 4, 1, uvStride, 8, subLimit, interior, hevThreshold, macroblock: false, useVectors);
+                Edge(v, uvOffset + 4, 1, uvStride, 8, subLimit, interior, hevThreshold, macroblock: false, useVectors);
+            }
+
+            if (mbY > 0)
+            {
+                Edge(y, yOffset, yStride, 1, 16, edgeLimit, interior, hevThreshold, macroblock: true, useVectors);
+                Edge(u, uvOffset, uvStride, 1, 8, edgeLimit, interior, hevThreshold, macroblock: true, useVectors);
+                Edge(v, uvOffset, uvStride, 1, 8, edgeLimit, interior, hevThreshold, macroblock: true, useVectors);
+            }
+
+            if (inner)
+            {
+                Edge(y, yOffset + (4 * yStride), yStride, 1, 16, subLimit, interior, hevThreshold, macroblock: false, useVectors);
+                Edge(y, yOffset + (8 * yStride), yStride, 1, 16, subLimit, interior, hevThreshold, macroblock: false, useVectors);
+                Edge(y, yOffset + (12 * yStride), yStride, 1, 16, subLimit, interior, hevThreshold, macroblock: false, useVectors);
+                Edge(u, uvOffset + (4 * uvStride), uvStride, 1, 8, subLimit, interior, hevThreshold, macroblock: false, useVectors);
+                Edge(v, uvOffset + (4 * uvStride), uvStride, 1, 8, subLimit, interior, hevThreshold, macroblock: false, useVectors);
             }
         }
     }

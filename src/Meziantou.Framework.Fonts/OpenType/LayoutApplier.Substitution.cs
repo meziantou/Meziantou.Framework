@@ -201,12 +201,8 @@ internal sealed partial class LayoutApplier
             }
         }
 
-        // Remove the other components, from the last one so that the positions stay valid.
-        for (var i = positions.Length - 1; i >= 1; i--)
-        {
-            _buffer.Resize(positions[i], 1, 0);
-        }
-
+        // Remove the other components; the glyphs between them move once.
+        _buffer.Remove(positions[1..]);
         index = last - (positions.Length - 1) + 1;
     }
 

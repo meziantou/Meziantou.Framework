@@ -3,6 +3,7 @@ using System.Collections;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://dom.spec.whatwg.org/#interface-nodelist</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#nodelist"/>
 [IdlInterface("NodeList", "https://dom.spec.whatwg.org/#nodelist")]
 public abstract class NodeList : IReadOnlyList<Node>
 {
@@ -11,15 +12,18 @@ public abstract class NodeList : IReadOnlyList<Node>
     }
 
     /// <summary>Gets the number of nodes in the list.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-nodelist-length"/>
     [IdlMember("length", "https://dom.spec.whatwg.org/#dom-nodelist-length")]
     public abstract uint Length { get; }
 
     /// <summary>Returns the node at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-nodelist-item"/>
     [IdlMember("item", "https://dom.spec.whatwg.org/#dom-nodelist-item")]
     public abstract Node? Item(uint index);
 
     // The indexer is renamed in metadata as "Item" is the name of the item() method
     /// <summary>Gets the node at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-nodelist-item"/>
     [IdlMember("item", "https://dom.spec.whatwg.org/#dom-nodelist-item")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
     public Node? this[uint index] => Item(index);
@@ -34,6 +38,7 @@ public abstract class NodeList : IReadOnlyList<Node>
     public Node this[int index] => (index >= 0 ? Item((uint)index) : null) ?? throw new ArgumentOutOfRangeException(nameof(index));
 
     /// <inheritdoc/>
+    /// <seealso href="https://dom.spec.whatwg.org/#nodelist"/>
     [IdlMember("iterable", "https://dom.spec.whatwg.org/#nodelist")]
     public virtual IEnumerator<Node> GetEnumerator()
     {

@@ -33,6 +33,7 @@ public partial class HtmlMediaElement
     // ----------------------------------------------------------------------------------------------------------------
 
     /// <summary>Gets the readiness of the element to render the current playback position (https://html.spec.whatwg.org/multipage/media.html#dom-media-readystate).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-readystate"/>
     [IdlMember("readyState", "https://html.spec.whatwg.org/multipage/media.html#dom-media-readystate")]
     public ushort ReadyState => _readyState;
 
@@ -164,6 +165,7 @@ public partial class HtmlMediaElement
     /// Gets the length of the media resource in seconds (https://html.spec.whatwg.org/multipage/media.html#dom-media-duration):
     /// NaN when no media data is available, positive infinity for an unbounded stream.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-duration"/>
     [IdlMember("duration", "https://html.spec.whatwg.org/multipage/media.html#dom-media-duration")]
     public double Duration => _duration;
 
@@ -172,6 +174,7 @@ public partial class HtmlMediaElement
     /// default playback start position, without media data). Setting it seeks to the new position, limited to the seekable
     /// ranges of the media resource.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-currenttime"/>
     [IdlMember("currentTime", "https://html.spec.whatwg.org/multipage/media.html#dom-media-currenttime")]
     public double CurrentTime
     {
@@ -197,6 +200,7 @@ public partial class HtmlMediaElement
     }
 
     /// <summary>Seeks to near the given time, in seconds, as fast as possible (https://html.spec.whatwg.org/multipage/media.html#dom-media-fastseek).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-fastseek"/>
     [IdlMember("fastSeek", "https://html.spec.whatwg.org/multipage/media.html#dom-media-fastseek")]
     public void FastSeek(double time)
     {
@@ -214,6 +218,7 @@ public partial class HtmlMediaElement
     /// or null when the media resource has none (the timeline offset is NaN: the scripts get a <c>Date</c> object whose time
     /// value is NaN, an "Invalid Date").
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-getstartdate"/>
     [IdlMember("getStartDate", "https://html.spec.whatwg.org/multipage/media.html#dom-media-getstartdate")]
     public DateTime? GetStartDate() => _player?.StartDate?.UtcDateTime;
 
@@ -281,6 +286,7 @@ public partial class HtmlMediaElement
     private double EarliestPossiblePosition => _player is { Seekable: { Count: > 0 } seekable } ? Math.Max(seekable[0].Start, 0) : 0;
 
     /// <summary>Gets the time ranges of the media resource that are buffered (https://html.spec.whatwg.org/multipage/media.html#dom-media-buffered).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-buffered"/>
     [IdlMember("buffered", "https://html.spec.whatwg.org/multipage/media.html#dom-media-buffered")]
     public TimeRanges Buffered
     {
@@ -302,6 +308,7 @@ public partial class HtmlMediaElement
     }
 
     /// <summary>Gets the time ranges of the media resource that the user agent can seek to (https://html.spec.whatwg.org/multipage/media.html#dom-media-seekable).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-seekable"/>
     [IdlMember("seekable", "https://html.spec.whatwg.org/multipage/media.html#dom-media-seekable")]
     public TimeRanges Seekable
     {
@@ -320,6 +327,7 @@ public partial class HtmlMediaElement
     /// Gets the time ranges of the media resource that were reached through the usual monotonic increase of the current
     /// playback position during normal playback (https://html.spec.whatwg.org/multipage/media.html#dom-media-played).
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-played"/>
     [IdlMember("played", "https://html.spec.whatwg.org/multipage/media.html#dom-media-played")]
     public TimeRanges Played
     {
@@ -335,6 +343,7 @@ public partial class HtmlMediaElement
     // ----------------------------------------------------------------------------------------------------------------
 
     /// <summary>Gets a value indicating whether the playback is paused (https://html.spec.whatwg.org/multipage/media.html#dom-media-paused).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-paused"/>
     [IdlMember("paused", "https://html.spec.whatwg.org/multipage/media.html#dom-media-paused")]
     public bool Paused => _paused;
 
@@ -350,10 +359,12 @@ public partial class HtmlMediaElement
     }
 
     /// <summary>Gets a value indicating whether the element is seeking (https://html.spec.whatwg.org/multipage/media.html#dom-media-seeking).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-seeking"/>
     [IdlMember("seeking", "https://html.spec.whatwg.org/multipage/media.html#dom-media-seeking")]
     public bool Seeking => _seeking;
 
     /// <summary>Gets a value indicating whether the playback reached the end of the media resource, playing forwards (https://html.spec.whatwg.org/multipage/media.html#dom-media-ended).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-ended"/>
     [IdlMember("ended", "https://html.spec.whatwg.org/multipage/media.html#dom-media-ended")]
     public bool Ended => HasEndedPlayback && IsPlayingForwards;
 
@@ -433,6 +444,7 @@ public partial class HtmlMediaElement
     /// starts, or fails with a <c>NotAllowedError</c> (the autoplay policy), a <c>NotSupportedError</c> (the media resource is
     /// not suitable, or there is no media backend) or an <c>AbortError</c> (the element was paused or loaded another resource).
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-play"/>
     [IdlMember("play", "https://html.spec.whatwg.org/multipage/media.html#dom-media-play")]
     public Task Play()
     {
@@ -497,6 +509,7 @@ public partial class HtmlMediaElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/media.html#dom-media-pause</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-pause"/>
     [IdlMember("pause", "https://html.spec.whatwg.org/multipage/media.html#dom-media-pause")]
     public void Pause()
     {

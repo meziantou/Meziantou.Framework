@@ -12,6 +12,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// script, or the relevant document outside a script). The scripting bindings check that the members other than the
 /// setter of <see cref="Href"/> and <see cref="Replace"/> are accessed by a same origin-domain realm.
 /// </remarks>
+/// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#location"/>
 [IdlInterface("Location", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#location")]
 public sealed class Location
 {
@@ -35,6 +36,7 @@ public sealed class Location
     private UrlRecord Url => RelevantDocument?.UrlRecord ?? AboutBlank;
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-href</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-href"/>
     [IdlMember("href", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-href")]
     public string Href
     {
@@ -51,10 +53,12 @@ public sealed class Location
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-origin</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-origin"/>
     [IdlMember("origin", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-origin")]
     public string Origin => Url.SerializeOrigin();
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-protocol</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-protocol"/>
     [IdlMember("protocol", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-protocol")]
     public string Protocol
     {
@@ -77,6 +81,7 @@ public sealed class Location
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-host</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-host"/>
     [IdlMember("host", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-host")]
     public string Host
     {
@@ -97,6 +102,7 @@ public sealed class Location
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-hostname</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-hostname"/>
     [IdlMember("hostname", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-hostname")]
     public string Hostname
     {
@@ -117,6 +123,7 @@ public sealed class Location
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-port</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-port"/>
     [IdlMember("port", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-port")]
     public string Port
     {
@@ -145,6 +152,7 @@ public sealed class Location
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-pathname</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-pathname"/>
     [IdlMember("pathname", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-pathname")]
     public string Pathname
     {
@@ -166,6 +174,7 @@ public sealed class Location
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-search</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-search"/>
     [IdlMember("search", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-search")]
     public string Search
     {
@@ -192,6 +201,7 @@ public sealed class Location
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-hash</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-hash"/>
     [IdlMember("hash", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-hash")]
     public string Hash
     {
@@ -217,6 +227,7 @@ public sealed class Location
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-assign</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-assign"/>
     [IdlMember("assign", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-assign")]
     public void Assign(string url)
     {
@@ -229,6 +240,7 @@ public sealed class Location
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-replace</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-replace"/>
     [IdlMember("replace", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-replace")]
     public void Replace(string url)
     {
@@ -241,6 +253,7 @@ public sealed class Location
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-reload</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-reload"/>
     [IdlMember("reload", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-reload")]
     public void Reload()
     {
@@ -251,6 +264,7 @@ public sealed class Location
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-ancestororigins: the ancestor origins list of the relevant document.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-ancestororigins"/>
     [IdlMember("ancestorOrigins", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-ancestororigins")]
     public DomStringList AncestorOrigins
     {

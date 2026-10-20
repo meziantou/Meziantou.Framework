@@ -295,7 +295,7 @@ internal static partial class CssValueComputer
             case "content" when value == "normal" && style.PseudoElement is "before" or "after":
                 return "none";
             case "color":
-                return ComputeColorProperty(style, value);
+                return ComputeColorProperty(style, property, value);
             case "text-shadow" when value != "none":
                 return ComputeTextShadow(style, property, value, baseUrl);
             case "zoom":
@@ -319,6 +319,29 @@ internal static partial class CssValueComputer
         if (OpacityProperties.Contains(name))
             return ComputeOpacity(style, value);
 
+        // The values that do not depend on the element (e.g. 0px, a color, an absolute length) are computed once per style engine
+        // (a keyword is its own computed value: it is not worth a lookup)
+        if (IsLowercaseIdentifier(value))
+            return ComputeGenericProperty(style, property, value, baseUrl);
+
+        var engine = style.Engine;
+        if (engine.ContextFreeValues.TryGetValue(property, value, baseUrl, out var memoized))
+            return memoized;
+
+        var contextReads = engine.ComputationContextReads;
+        var result = ComputeGenericProperty(style, property, value, baseUrl);
+        if (engine.ComputationContextReads == contextReads)
+        {
+            engine.ContextFreeValues.Add(property, value, baseUrl, result);
+        }
+
+        return result;
+    }
+
+    /// <summary>Computes a value of a property that has no specific computation: the generic computation, clamped to the range of the property.</summary>
+    private static string ComputeGenericProperty(ComputedStyle style, CssPropertyDefinition property, string value, string? baseUrl)
+    {
+        var name = property.Name;
         var result = ClampMathFunctionResult(property, value, ComputeGeneric(style, property, value, baseUrl));
         if (IntegerProperties.Contains(name) && TryParseNumber(result, out var number))
             return SerializeNumber(Math.Floor(number + 0.5));
@@ -476,7 +499,18 @@ internal static partial class CssValueComputer
 
     private sealed class ComputationContext(ComputedStyle style, bool hasColors, string? baseUrl)
     {
-        public ComputedStyle Style { get; } = style;
+        /// <summary>The style the value is computed for: reading it makes the result depend on the element (see <see cref="StyleEngine.ComputationContextReads"/>).</summary>
+        public ComputedStyle Style
+        {
+            get
+            {
+                style.Engine.ComputationContextReads++;
+                return style;
+            }
+        }
+
+        /// <summary>The style the value is computed for, passed to a computation whose result does not depend on it (see <see cref="IsContextFreeColor"/>).</summary>
+        public ComputedStyle UntrackedStyle => style;
 
         public bool HasColors { get; } = hasColors;
 
@@ -516,7 +550,7 @@ internal static partial class CssValueComputer
                         return preserved;
 
                     case CssTokenType.Ident or CssTokenType.Hash when context.HasColors:
-                        return ComputeColor(value, context.Style, isColorProperty: false) is { } color ? Raw(color) : preserved;
+                        return ComputeColor(value, IsContextFreeColor(value) ? context.UntrackedStyle : context.Style, isColorProperty: false) is { } color ? Raw(color) : preserved;
 
                     case CssTokenType.Url:
                         return Raw(CssSerializer.SerializeUrl(ResolveUrl(token.Value, context)));
@@ -558,7 +592,7 @@ internal static partial class CssValueComputer
                 }
                 else if (context.HasColors && IsColorFunction(name))
                 {
-                    if (ComputeColor(function, context.Style, isColorProperty: false) is { } color)
+                    if (ComputeColor(function, IsContextFreeColor(function) ? context.UntrackedStyle : context.Style, isColorProperty: false) is { } color)
                         return Raw(color);
                 }
                 else if (name == "path")
@@ -2057,8 +2091,96 @@ internal static partial class CssValueComputer
 
     private static bool IsColorFunction(string name) => name is "rgb" or "rgba" or "hsl" or "hsla" or "hwb" or "lab" or "lch" or "oklab" or "oklch" or "ictcp" or "jzazbz" or "jzczhz" or "color" or "device-cmyk" or "light-dark" or "color-mix" or "color-hdr" or "alpha" or "contrast-color";
 
+    /// <summary>
+    /// Returns whether the computed value of a color does not depend on the element: a hex color, a named color, transparent, or
+    /// a color function of numbers, percentages and angles (no currentcolor, system color, light-dark(), relative color or math
+    /// function). <see cref="ComputeColor"/> does not read the style for such a color.
+    /// </summary>
+    private static bool IsContextFreeColor(CssComponentValue value)
+    {
+        switch (value)
+        {
+            case CssPreservedToken { Type: CssTokenType.Hash }:
+                return true;
+            case CssPreservedToken { Type: CssTokenType.Ident } ident:
+                return ident.Token.IsIdent("transparent") || CssColor.IsNamedColor(ident.Token.Value);
+            case CssFunction function when InfraAscii.ToAsciiLowercase(function.Name) is "rgb" or "rgba" or "hsl" or "hsla" or "hwb" or "lab" or "lch" or "oklab" or "oklch":
+                foreach (var argument in function.Value)
+                {
+                    if (argument is not (CssPreservedToken { Type: CssTokenType.Number or CssTokenType.Percentage or CssTokenType.Dimension or CssTokenType.Whitespace or CssTokenType.Comma or CssTokenType.Delim } or CssPreservedToken { Type: CssTokenType.Ident, Token.Value: "none" }))
+                        return false;
+                }
+
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>Returns whether the text of a color may be a color whose computed value does not depend on the element (see <see cref="IsContextFreeColor"/>), without parsing it.</summary>
+    private static bool IsContextFreeColorText(string value)
+    {
+        if (value.Length == 0)
+            return false;
+
+        if (value[0] == '#')
+            return value.AsSpan().IndexOfAny(" \t\n\r\f(),/") < 0;
+
+        var parenthesis = value.IndexOf('(', StringComparison.Ordinal);
+        if (parenthesis < 0)
+            return value.AsSpan().IndexOfAnyExceptInRange('a', 'z') < 0 && (value == "transparent" || CssColor.IsNamedColor(value));
+
+        if (value[^1] != ')' || value.AsSpan(0, parenthesis) is not ("rgb" or "rgba" or "hsl" or "hsla" or "hwb" or "lab" or "lch" or "oklab" or "oklch"))
+            return false;
+
+        // Numbers, percentages, angles (deg) and none
+        var arguments = value.AsSpan(parenthesis + 1, value.Length - parenthesis - 2);
+        for (var i = 0; i < arguments.Length; i++)
+        {
+            var c = arguments[i];
+            if (char.IsAsciiDigit(c) || c is ' ' or '.' or ',' or '/' or '%' or '+' or '-')
+                continue;
+
+            if (arguments[i..].StartsWith("deg", StringComparison.Ordinal))
+            {
+                i += 2;
+                continue;
+            }
+
+            if (arguments[i..].StartsWith("none", StringComparison.Ordinal))
+            {
+                i += 3;
+                continue;
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
     /// <summary>The color property: currentcolor is the inherited color (https://drafts.csswg.org/css-color-4/#resolving-color-values).</summary>
-    private static string ComputeColorProperty(ComputedStyle style, string value)
+    private static string ComputeColorProperty(ComputedStyle style, CssPropertyDefinition property, string value)
+    {
+        // A color that does not depend on the element (e.g. #202122) is computed once per style engine
+        if (!IsContextFreeColorText(value))
+            return ComputeColorPropertyCore(style, value);
+
+        var engine = style.Engine;
+        if (engine.ContextFreeValues.TryGetValue(property, value, baseUrl: null, out var memoized))
+            return memoized;
+
+        var contextReads = engine.ComputationContextReads;
+        var result = ComputeColorPropertyCore(style, value);
+        if (engine.ComputationContextReads == contextReads)
+        {
+            engine.ContextFreeValues.Add(property, value, baseUrl: null, result);
+        }
+
+        return result;
+    }
+
+    private static string ComputeColorPropertyCore(ComputedStyle style, string value)
     {
         // An inherited color-hdr() cannot be resolved to a color (https://drafts.csswg.org/css-color-hdr-1/#hdr-color-function):
         // currentcolor is replaced with it, e.g. color-mix(in srgb, currentcolor, red) keeps the color-hdr() of the parent

@@ -56,6 +56,7 @@ public partial class HtmlTemplateElement
     }
 
     /// <summary>Gets the template contents: the document fragment that holds the content of the template.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-template-content"/>
     [IdlMember("content", "https://html.spec.whatwg.org/multipage/scripting.html#dom-template-content")]
     public DocumentFragment Content => TemplateContents;
 

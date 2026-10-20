@@ -83,25 +83,64 @@ internal ref struct Av1LoopFilter
             filter._txSizes = state.GetLoopFilterTxSizes(plane);
             var rowStep = plane is 0 ? 1 : 1 << sequence.SubsamplingY;
             var colStep = plane is 0 ? 1 : 1 << sequence.SubsamplingX;
-            for (var pass = 0; pass < 2; pass++)
-            {
-                for (var row = 0; row < header.MiRows; row += rowStep)
-                {
-                    if ((row & 15) is 0)
-                        cancellationToken.ThrowIfCancellationRequested();
 
-                    for (var col = 0; col < header.MiCols; col += colStep)
-                    {
-                        filter.FilterEdge(plane, pass, row, col);
-                    }
+            // The edges are filtered by pairs of consecutive edges along their lines: the vertical edges of two rows of
+            // blocks, then the horizontal edges of two columns. The lines of the edges of a pair are distinct and the edges
+            // that cross a line are still filtered in order, so the samples are those of the order of section 7.14.1
+            for (var row = 0; row < header.MiRows; row += 2 * rowStep)
+            {
+                if ((row & 15) is 0)
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                for (var col = 0; col < header.MiCols; col += colStep)
+                {
+                    filter.FilterEdgePair(plane, pass: 0, row, col, row + rowStep, col);
+                }
+            }
+
+            for (var row = 0; row < header.MiRows; row += rowStep)
+            {
+                if ((row & 15) is 0)
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                for (var col = 0; col < header.MiCols; col += 2 * colStep)
+                {
+                    filter.FilterEdgePair(plane, pass: 1, row, col, row, col + colStep);
                 }
             }
         }
     }
 
-    // Section 7.14.2 "Edge loop filter process"
-    private void FilterEdge(int plane, int pass, int row, int col)
+    // Filters the edge (row, col) and the next one along its lines (row2, col2), outside the frame for the last edge of an odd
+    // number: two edges of the same size are filtered together, 8 lines per vector
+    private void FilterEdgePair(int plane, int pass, int row, int col, int row2, int col2)
     {
+        var hasFirst = TryGetEdge(plane, pass, row, col, out var position, out var filterSize);
+        var (limit, blimit, thresh) = (_limit, _blimit, _thresh);
+        var position2 = 0;
+        var filterSize2 = 0;
+        var hasSecond = row2 < _header.MiRows && col2 < _miCols && TryGetEdge(plane, pass, row2, col2, out position2, out filterSize2);
+        var step = pass is 0 ? 1 : _stride;
+        var lineStep = pass is 0 ? _stride : 1;
+        if (hasFirst && hasSecond && filterSize == filterSize2)
+        {
+            FilterLinePairs(_samples, position, step, lineStep, plane, filterSize, _bitDepth, limit, blimit, thresh, _limit, _blimit, _thresh);
+            return;
+        }
+
+        if (hasFirst)
+            FilterLines(_samples, position, step, lineStep, plane, filterSize, _bitDepth, limit, blimit, thresh);
+
+        if (hasSecond)
+            FilterLines(_samples, position2, step, lineStep, plane, filterSize2, _bitDepth, _limit, _blimit, _thresh);
+    }
+
+    // Section 7.14.2 "Edge loop filter process": whether the edge is filtered, the position of its first line, its filter
+    // size, and its levels in _limit, _blimit and _thresh
+    private bool TryGetEdge(int plane, int pass, int row, int col, out int position, out int filterSize)
+    {
+        position = 0;
+        filterSize = 0;
         var subX = plane is 0 ? 0 : _sequence.SubsamplingX;
         var subY = plane is 0 ? 0 : _sequence.SubsamplingY;
         var dx = pass is 0 ? 1 : 0;
@@ -111,7 +150,7 @@ internal ref struct Av1LoopFilter
         row |= subY;
         col |= subX;
         if (x >= _header.FrameWidth || y >= _header.FrameHeight || (pass is 0 && x is 0) || (pass is 1 && y is 0))
-            return;
+            return false;
 
         var xP = x >> subX;
         var yP = y >> subY;
@@ -145,22 +184,17 @@ internal ref struct Av1LoopFilter
 
         var applyFilter = isTxEdge && (isBlockEdge || !skip || isIntra);
         if (!applyFilter)
-            return;
+            return false;
 
         // Section 7.14.3 "Filter size process"
-        var filterSize = Math.Min(plane is 0 ? 16 : 8, baseSize);
+        filterSize = Math.Min(plane is 0 ? 16 : 8, baseSize);
         ComputeFilterStrength(row, col, plane, pass);
         if (_lvl is 0)
             ComputeFilterStrength(prevRow, prevCol, plane, pass);
 
-        if (_lvl is 0)
-            return;
-
-        // The 4 lines of the edge: rows for a vertical edge, columns for a horizontal one
-        var position = (yP * _stride) + xP;
-        var step = (dy * _stride) + dx;
-        var lineStep = (dx * _stride) + dy;
-        FilterLines(_samples, position, step, lineStep, plane, filterSize, _bitDepth, _limit, _blimit, _thresh);
+        // The 4 lines of the edge start at the position: rows for a vertical edge, columns for a horizontal one
+        position = (yP * _stride) + xP;
+        return _lvl is not 0;
     }
 
     /// <summary>
@@ -191,6 +225,199 @@ internal ref struct Av1LoopFilter
         {
             FilterSamples(samples, position + (i * lineStep), step, plane, filterSize, bitDepth, limit, blimit, thresh);
         }
+    }
+
+    /// <summary>
+    /// Filters the 8 lines of two consecutive edges of the same filter size: the lines of the edge at
+    /// <paramref name="position"/>, with the levels <paramref name="limit0"/>, <paramref name="blimit0"/> and
+    /// <paramref name="thresh0"/>, then the lines of the next edge, 4 lines further, with the levels <paramref name="limit1"/>,
+    /// <paramref name="blimit1"/> and <paramref name="thresh1"/>.
+    /// </summary>
+    /// <remarks>
+    /// With the <see cref="Av1Simd"/> operations, the 8 lines are the 16-bit lanes of the vectors, the lanes of each edge
+    /// with its levels: the differences of samples have 13 bits with their sign, the narrow filter stays within 15 bits
+    /// (3 * 4095 + 2048), and the sums of the wide filters, at most 16 * 4095 + 8, are computed modulo 2^16 as unsigned
+    /// values, which they fit.
+    /// </remarks>
+    internal static void FilterLinePairs(Span<ushort> samples, int position, int step, int lineStep, int plane, int filterSize, int bitDepth, int limit0, int blimit0, int thresh0, int limit1, int blimit1, int thresh1)
+    {
+        if (Av1Simd.IsSupported && (step is 1 || lineStep is 1))
+        {
+            FilterLinePairsVector(samples, position, step, lineStep, plane, filterSize, bitDepth, limit0, blimit0, thresh0, limit1, blimit1, thresh1);
+        }
+        else
+        {
+            FilterLinesScalar(samples, position, step, lineStep, plane, filterSize, bitDepth, limit0, blimit0, thresh0);
+            FilterLinesScalar(samples, position + (Av1Constants.MiSize * lineStep), step, lineStep, plane, filterSize, bitDepth, limit1, blimit1, thresh1);
+        }
+    }
+
+    // FilterLinesVector for the 8 lines of two edges in 16-bit lanes
+    [SkipLocalsInit]
+    private static void FilterLinePairsVector(Span<ushort> samples, int position, int step, int lineStep, int plane, int filterSize, int bitDepth, int limit0, int blimit0, int thresh0, int limit1, int blimit1, int thresh1)
+    {
+        var shift = bitDepth - 8;
+        int filterLen;
+        if (filterSize is 4)
+        {
+            filterLen = 4;
+        }
+        else if (plane is not 0)
+        {
+            filterLen = 6;
+        }
+        else
+        {
+            filterLen = filterSize is 8 ? 8 : 16;
+        }
+
+        // The samples of the lines at the offsets -8 to 7 from the edge, index 8 + offset
+        var reach = filterSize >= 16 ? 7 : filterLen >= 8 ? 4 : filterLen >= 6 ? 3 : 2;
+        Span<Vector128<short>> v = unsafe(stackalloc Vector128<short>[16]);
+        int loaded;
+        if (step is 1)
+        {
+            // Vertical edges: 8 or 16 consecutive samples of 8 rows, transposed into the lanes
+            loaded = reach > 4 ? 8 : 4;
+            for (var start = -loaded; start < loaded; start += 8)
+            {
+                Av1Simd.LoadTransposed8(samples, position + start, lineStep, v.Slice(8 + start, 8));
+            }
+        }
+        else
+        {
+            // Horizontal edges: the 8 lines are 8 consecutive samples of a row
+            loaded = reach;
+            for (var k = -reach; k < reach; k++)
+            {
+                v[8 + k] = Vector128.Create(samples.Slice(position + (k * step), 8)).AsInt16();
+            }
+        }
+
+        var p0 = v[7];
+        var p1 = v[6];
+        var q0 = v[8];
+        var q1 = v[9];
+        var limitBd = Halves(limit0 << shift, limit1 << shift);
+        var threshBd = Halves(thresh0 << shift, thresh1 << shift);
+        var hevMask = Vector128.GreaterThan(Vector128.Abs(p1 - p0), threshBd) | Vector128.GreaterThan(Vector128.Abs(q1 - q0), threshBd);
+        var masked = Vector128.GreaterThan(Vector128.Abs(p1 - p0), limitBd)
+            | Vector128.GreaterThan(Vector128.Abs(q1 - q0), limitBd)
+            | Vector128.GreaterThan((Vector128.Abs(p0 - q0) * 2) + (Vector128.Abs(p1 - q1) >> 1), Halves(blimit0 << shift, blimit1 << shift));
+        if (filterLen >= 6)
+            masked |= Vector128.GreaterThan(Vector128.Abs(v[5] - p1), limitBd) | Vector128.GreaterThan(Vector128.Abs(v[10] - q1), limitBd);
+
+        if (filterLen >= 8)
+            masked |= Vector128.GreaterThan(Vector128.Abs(v[4] - v[5]), limitBd) | Vector128.GreaterThan(Vector128.Abs(v[11] - v[10]), limitBd);
+
+        if (masked == Vector128<short>.AllBitsSet)
+            return;
+
+        var thresholdBd = Vector128.Create((short)(1 << shift));
+        var flatMask = Vector128<short>.Zero;
+        if (filterSize >= 8)
+        {
+            flatMask = Vector128.LessThanOrEqual(Vector128.Abs(p1 - p0), thresholdBd) & Vector128.LessThanOrEqual(Vector128.Abs(q1 - q0), thresholdBd)
+                & Vector128.LessThanOrEqual(Vector128.Abs(v[5] - p0), thresholdBd) & Vector128.LessThanOrEqual(Vector128.Abs(v[10] - q0), thresholdBd);
+            if (filterLen >= 8)
+                flatMask &= Vector128.LessThanOrEqual(Vector128.Abs(v[4] - p0), thresholdBd) & Vector128.LessThanOrEqual(Vector128.Abs(v[11] - q0), thresholdBd);
+        }
+
+        var flatMask2 = Vector128<short>.Zero;
+        if (filterSize >= 16)
+        {
+            flatMask2 = Vector128<short>.AllBitsSet;
+            for (var k = 4; k <= 6; k++)
+            {
+                flatMask2 &= Vector128.LessThanOrEqual(Vector128.Abs(v[7 - k] - p0), thresholdBd) & Vector128.LessThanOrEqual(Vector128.Abs(v[8 + k] - q0), thresholdBd);
+            }
+        }
+
+        // The lines that each filter applies to
+        var unmasked = ~masked;
+        var useNarrow = filterSize is 4 ? unmasked : unmasked & ~flatMask;
+        var useWide8 = filterSize is 4 ? Vector128<short>.Zero : filterSize is 8 ? unmasked & flatMask : unmasked & flatMask & ~flatMask2;
+        var useWide16 = filterSize >= 16 ? unmasked & flatMask & flatMask2 : Vector128<short>.Zero;
+        Span<Vector128<short>> output = unsafe(stackalloc Vector128<short>[16]);
+        v.Slice(8 - loaded, 2 * loaded).CopyTo(output[(8 - loaded)..]);
+        if (useNarrow != Vector128<short>.Zero)
+            NarrowFilterPairs(v, output, hevMask, useNarrow, bitDepth);
+
+        if (useWide8 != Vector128<short>.Zero)
+            WideFilterPairs(v, output, useWide8, plane is 0 ? 3 : 2, plane is 0 ? 0 : 1, log2Size: 3);
+
+        if (useWide16 != Vector128<short>.Zero)
+            WideFilterPairs(v, output, useWide16, 6, 1, log2Size: 4);
+
+        if (step is 1)
+        {
+            // The rows are written back whole: the samples that no filter changed are written with their value
+            for (var start = -loaded; start < loaded; start += 8)
+            {
+                Av1Simd.StoreTransposed8(samples, position + start, lineStep, output.Slice(8 + start, 8));
+            }
+
+            return;
+        }
+
+        // The filters write the offsets -6 to 5 at most
+        var written = Math.Min(reach, 6);
+        for (var k = -written; k < written; k++)
+        {
+            output[8 + k].AsUInt16().CopyTo(samples.Slice(position + (k * step), 8));
+        }
+
+        static Vector128<short> Halves(int first, int second) => Vector128.Create(Vector64.Create((short)first), Vector64.Create((short)second));
+    }
+
+    // NarrowFilterVector in 16-bit lanes
+    private static void NarrowFilterPairs(ReadOnlySpan<Vector128<short>> v, Span<Vector128<short>> output, Vector128<short> hevMask, Vector128<short> selected, int bitDepth)
+    {
+        var offset = Vector128.Create((short)(0x80 << (bitDepth - 8)));
+        var min = Vector128.Create((short)-(1 << (bitDepth - 1)));
+        var max = Vector128.Create((short)((1 << (bitDepth - 1)) - 1));
+        var ps1 = v[6] - offset;
+        var ps0 = v[7] - offset;
+        var qs0 = v[8] - offset;
+        var qs1 = v[9] - offset;
+        var filter = Vector128.ConditionalSelect(hevMask, Clamp(ps1 - qs1, min, max), Vector128<short>.Zero);
+        filter = Clamp(filter + ((qs0 - ps0) * 3), min, max);
+        var filter1 = Clamp(filter + Vector128.Create((short)4), min, max) >> 3;
+        var filter2 = Clamp(filter + Vector128.Create((short)3), min, max) >> 3;
+        output[8] = Vector128.ConditionalSelect(selected, Clamp(qs0 - filter1, min, max) + offset, output[8]);
+        output[7] = Vector128.ConditionalSelect(selected, Clamp(ps0 + filter2, min, max) + offset, output[7]);
+        var outer = selected & ~hevMask;
+        filter = (filter1 + Vector128<short>.One) >> 1;
+        output[9] = Vector128.ConditionalSelect(outer, Clamp(qs1 - filter, min, max) + offset, output[9]);
+        output[6] = Vector128.ConditionalSelect(outer, Clamp(ps1 + filter, min, max) + offset, output[6]);
+
+        static Vector128<short> Clamp(Vector128<short> value, Vector128<short> min, Vector128<short> max) => Vector128.Min(Vector128.Max(value, min), max);
+    }
+
+    // WideFilterVector in 16-bit lanes: the sums are unsigned and wrap, their final values fit 16 bits
+    private static void WideFilterPairs(ReadOnlySpan<Vector128<short>> v, Span<Vector128<short>> output, Vector128<short> selected, int n, int n2, int log2Size)
+    {
+        var wide = Vector128<ushort>.Zero;
+        for (var j = -n; j <= n; j++)
+        {
+            wide += Tap(v, -n + j, n);
+        }
+
+        var narrow = Vector128<ushort>.Zero;
+        for (var j = -n2; j <= n2; j++)
+        {
+            narrow += Tap(v, -n + j, n);
+        }
+
+        var round = Vector128.Create((ushort)(1 << (log2Size - 1)));
+        for (var i = -n; i < n; i++)
+        {
+            output[8 + i] = Vector128.ConditionalSelect(selected, ((wide + narrow + round) >> log2Size).AsInt16(), output[8 + i]);
+            wide += Tap(v, i + n + 1, n) - Tap(v, i - n, n);
+            narrow += Tap(v, i + n2 + 1, n) - Tap(v, i - n2, n);
+        }
+
+        static Vector128<ushort> Tap(ReadOnlySpan<Vector128<short>> v, int p, int n) => v[8 + Math.Clamp(p, -(n + 1), n)].AsUInt16();
     }
 
     // The entries of the vectors of the samples are written before they are read: the masks and the filters read the

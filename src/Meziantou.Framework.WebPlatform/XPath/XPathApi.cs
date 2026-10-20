@@ -7,55 +7,68 @@ using ClrXPathExpression = System.Xml.XPath.XPathExpression;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://dom.spec.whatwg.org/#callbackdef-xpathnsresolver</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#callbackdef-xpathnsresolver"/>
 [IdlInterface("XPathNSResolver", "https://dom.spec.whatwg.org/#callbackdef-xpathnsresolver")]
 public interface IXPathNSResolver
 {
     /// <summary>Returns the namespace URI associated with the given prefix, or null when there is none.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathnsresolver-lookupnamespaceuri"/>
     [IdlMember("lookupNamespaceURI", "https://dom.spec.whatwg.org/#dom-xpathnsresolver-lookupnamespaceuri")]
     string? LookupNamespaceUri(string? prefix);
 }
 
 /// <summary>https://dom.spec.whatwg.org/#interface-xpathresult (https://www.w3.org/TR/DOM-Level-3-XPath/xpath.html#XPathResult)</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#xpathresult"/>
 [IdlInterface("XPathResult", "https://dom.spec.whatwg.org/#xpathresult")]
 public sealed class XPathResult
 {
     /// <summary>The type that lets the evaluation choose the natural type of the result.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathresult-any_type"/>
     [IdlMember("ANY_TYPE", "https://dom.spec.whatwg.org/#dom-xpathresult-any_type")]
     public const ushort AnyType = 0;
 
     /// <summary>A single number.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathresult-number_type"/>
     [IdlMember("NUMBER_TYPE", "https://dom.spec.whatwg.org/#dom-xpathresult-number_type")]
     public const ushort NumberType = 1;
 
     /// <summary>A single string.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathresult-string_type"/>
     [IdlMember("STRING_TYPE", "https://dom.spec.whatwg.org/#dom-xpathresult-string_type")]
     public const ushort StringType = 2;
 
     /// <summary>A single boolean.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathresult-boolean_type"/>
     [IdlMember("BOOLEAN_TYPE", "https://dom.spec.whatwg.org/#dom-xpathresult-boolean_type")]
     public const ushort BooleanType = 3;
 
     /// <summary>An iterator over the nodes, in any order.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathresult-unordered_node_iterator_type"/>
     [IdlMember("UNORDERED_NODE_ITERATOR_TYPE", "https://dom.spec.whatwg.org/#dom-xpathresult-unordered_node_iterator_type")]
     public const ushort UnorderedNodeIteratorType = 4;
 
     /// <summary>An iterator over the nodes, in document order.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathresult-ordered_node_iterator_type"/>
     [IdlMember("ORDERED_NODE_ITERATOR_TYPE", "https://dom.spec.whatwg.org/#dom-xpathresult-ordered_node_iterator_type")]
     public const ushort OrderedNodeIteratorType = 5;
 
     /// <summary>A snapshot of the nodes, in any order.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathresult-unordered_node_snapshot_type"/>
     [IdlMember("UNORDERED_NODE_SNAPSHOT_TYPE", "https://dom.spec.whatwg.org/#dom-xpathresult-unordered_node_snapshot_type")]
     public const ushort UnorderedNodeSnapshotType = 6;
 
     /// <summary>A snapshot of the nodes, in document order.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathresult-ordered_node_snapshot_type"/>
     [IdlMember("ORDERED_NODE_SNAPSHOT_TYPE", "https://dom.spec.whatwg.org/#dom-xpathresult-ordered_node_snapshot_type")]
     public const ushort OrderedNodeSnapshotType = 7;
 
     /// <summary>A single node, any of the matching ones.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathresult-any_unordered_node_type"/>
     [IdlMember("ANY_UNORDERED_NODE_TYPE", "https://dom.spec.whatwg.org/#dom-xpathresult-any_unordered_node_type")]
     public const ushort AnyUnorderedNodeType = 8;
 
     /// <summary>A single node, the first matching one in document order.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathresult-first_ordered_node_type"/>
     [IdlMember("FIRST_ORDERED_NODE_TYPE", "https://dom.spec.whatwg.org/#dom-xpathresult-first_ordered_node_type")]
     public const ushort FirstOrderedNodeType = 9;
 
@@ -90,18 +103,22 @@ public sealed class XPathResult
     }
 
     /// <summary>Gets the type of the result, one of the <c>*_TYPE</c> constants.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathresult-resulttype"/>
     [IdlMember("resultType", "https://dom.spec.whatwg.org/#dom-xpathresult-resulttype")]
     public ushort ResultType { get; }
 
     /// <summary>Gets the number of the result; throws a <c>TypeError</c> when the result is not a number.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathresult-numbervalue"/>
     [IdlMember("numberValue", "https://dom.spec.whatwg.org/#dom-xpathresult-numbervalue")]
     public double NumberValue => ResultType == NumberType ? _number : throw new TypeErrorException("The result is not a number");
 
     /// <summary>Gets the string of the result; throws a <c>TypeError</c> when the result is not a string.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathresult-stringvalue"/>
     [IdlMember("stringValue", "https://dom.spec.whatwg.org/#dom-xpathresult-stringvalue")]
     public string StringValue => ResultType == StringType ? _string : throw new TypeErrorException("The result is not a string");
 
     /// <summary>Gets the boolean of the result; throws a <c>TypeError</c> when the result is not a boolean.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathresult-booleanvalue"/>
     [IdlMember("booleanValue", "https://dom.spec.whatwg.org/#dom-xpathresult-booleanvalue")]
     public bool BooleanValue => ResultType == BooleanType ? _boolean : throw new TypeErrorException("The result is not a boolean");
 
@@ -109,18 +126,21 @@ public sealed class XPathResult
     /// Gets the node of the result, or null when none matched; throws a <c>TypeError</c> when the result is not a
     /// single node.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathresult-singlenodevalue"/>
     [IdlMember("singleNodeValue", "https://dom.spec.whatwg.org/#dom-xpathresult-singlenodevalue")]
     public Node? SingleNodeValue => ResultType is AnyUnorderedNodeType or FirstOrderedNodeType
         ? (_nodes.Count > 0 ? _nodes[0] : null)
         : throw new TypeErrorException("The result is not a single node");
 
     /// <summary>Whether the document was modified since the result was created, which invalidates iterators.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathresult-invaliditeratorstate"/>
     [IdlMember("invalidIteratorState", "https://dom.spec.whatwg.org/#dom-xpathresult-invaliditeratorstate")]
     public bool InvalidIteratorState => ResultType is UnorderedNodeIteratorType or OrderedNodeIteratorType && _document is not null && _document.DomVersion != _documentVersion;
 
     /// <summary>
     /// Gets the number of nodes of the snapshot; throws a <c>TypeError</c> when the result is not a snapshot.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathresult-snapshotlength"/>
     [IdlMember("snapshotLength", "https://dom.spec.whatwg.org/#dom-xpathresult-snapshotlength")]
     public uint SnapshotLength => ResultType is UnorderedNodeSnapshotType or OrderedNodeSnapshotType
         ? (uint)_nodes.Count
@@ -130,6 +150,7 @@ public sealed class XPathResult
     /// Returns the next node of the iterator, or null at the end; throws an <c>InvalidStateError</c> when the document
     /// was modified.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathresult-iteratenext"/>
     [IdlMember("iterateNext", "https://dom.spec.whatwg.org/#dom-xpathresult-iteratenext")]
     public Node? IterateNext()
     {
@@ -143,6 +164,7 @@ public sealed class XPathResult
     }
 
     /// <summary>Returns the node of the snapshot at the given index, or null when the index is out of range.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathresult-snapshotitem"/>
     [IdlMember("snapshotItem", "https://dom.spec.whatwg.org/#dom-xpathresult-snapshotitem")]
     public Node? SnapshotItem(uint index)
     {
@@ -154,6 +176,7 @@ public sealed class XPathResult
 }
 
 /// <summary>https://dom.spec.whatwg.org/#interface-xpathexpression</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#xpathexpression"/>
 [IdlInterface("XPathExpression", "https://dom.spec.whatwg.org/#xpathexpression")]
 public sealed class XPathExpression
 {
@@ -234,6 +257,7 @@ public sealed class XPathExpression
     }
 
     /// <summary>https://www.w3.org/TR/DOM-Level-3-XPath/xpath.html#XPathExpression-evaluate</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathexpression-evaluate"/>
     [IdlMember("evaluate", "https://dom.spec.whatwg.org/#dom-xpathexpression-evaluate")]
     public XPathResult Evaluate(Node contextNode, ushort type = XPathResult.AnyType, XPathResult? result = null)
     {
@@ -434,26 +458,31 @@ public sealed class XPathExpression
 }
 
 /// <summary>https://dom.spec.whatwg.org/#interface-xpathevaluator</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#xpathevaluator"/>
 [IdlInterface("XPathEvaluator", "https://dom.spec.whatwg.org/#xpathevaluator")]
 public sealed class XPathEvaluator
 {
     /// <summary>Creates an evaluator.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathevaluator-xpathevaluator"/>
     [IdlMember("constructor", "https://dom.spec.whatwg.org/#dom-xpathevaluator-xpathevaluator")]
     public XPathEvaluator()
     {
     }
 
     /// <summary>Compiles the XPath expression, using the optional resolver for its namespace prefixes.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathevaluatorbase-createexpression"/>
     [IdlMember("createExpression", "https://dom.spec.whatwg.org/#dom-xpathevaluatorbase-createexpression")]
     public XPathExpression CreateExpression(string expression, IXPathNSResolver? resolver = null) => XPathEvaluatorBase.CreateExpression(expression, resolver);
 
     /// <summary>Returns a namespace resolver for the given node, which is the node itself.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathevaluatorbase-creatensresolver"/>
     [IdlMember("createNSResolver", "https://dom.spec.whatwg.org/#dom-xpathevaluatorbase-creatensresolver")]
     public Node CreateNSResolver(Node nodeResolver) => XPathEvaluatorBase.CreateNSResolver(nodeResolver);
 
     /// <summary>
     /// Evaluates the XPath expression against the context node and returns the result, of the requested type.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathevaluatorbase-evaluate"/>
     [IdlMember("evaluate", "https://dom.spec.whatwg.org/#dom-xpathevaluatorbase-evaluate")]
     public XPathResult Evaluate(string expression, Node contextNode, IXPathNSResolver? resolver = null, ushort type = XPathResult.AnyType, XPathResult? result = null) =>
         XPathEvaluatorBase.Evaluate(expression, contextNode, resolver, type, result);
@@ -485,16 +514,19 @@ internal static class XPathEvaluatorBase
 public partial class Document
 {
     /// <summary>Compiles the XPath expression, using the optional resolver for its namespace prefixes.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathevaluatorbase-createexpression"/>
     [IdlMember("createExpression", "https://dom.spec.whatwg.org/#dom-xpathevaluatorbase-createexpression")]
     public XPathExpression CreateExpression(string expression, IXPathNSResolver? resolver = null) => XPathEvaluatorBase.CreateExpression(expression, resolver);
 
     /// <summary>Returns a namespace resolver for the given node, which is the node itself.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathevaluatorbase-creatensresolver"/>
     [IdlMember("createNSResolver", "https://dom.spec.whatwg.org/#dom-xpathevaluatorbase-creatensresolver")]
     public Node CreateNSResolver(Node nodeResolver) => XPathEvaluatorBase.CreateNSResolver(nodeResolver);
 
     /// <summary>
     /// Evaluates the XPath expression against the context node and returns the result, of the requested type.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-xpathevaluatorbase-evaluate"/>
     [IdlMember("evaluate", "https://dom.spec.whatwg.org/#dom-xpathevaluatorbase-evaluate")]
     public XPathResult Evaluate(string expression, Node contextNode, IXPathNSResolver? resolver = null, ushort type = XPathResult.AnyType, XPathResult? result = null) =>
         XPathEvaluatorBase.Evaluate(expression, contextNode, resolver, type, result);

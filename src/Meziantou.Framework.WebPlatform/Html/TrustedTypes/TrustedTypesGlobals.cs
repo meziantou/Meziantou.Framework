@@ -131,6 +131,7 @@ public sealed partial class Window
     private TrustedTypePolicyFactory? _trustedTypes;
 
     /// <summary>https://w3c.github.io/trusted-types/dist/spec/#dom-windoworworkerglobalscope-trustedtypes</summary>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#dom-windoworworkerglobalscope-trustedtypes"/>
     [IdlMember("trustedTypes", "https://w3c.github.io/trusted-types/dist/spec/#dom-windoworworkerglobalscope-trustedtypes")]
     public TrustedTypePolicyFactory TrustedTypes => _trustedTypes ?? CreateTrustedTypes();
 
@@ -152,6 +153,7 @@ public abstract partial class WorkerGlobalScope
     /// directives of the CSP list of the worker (the policies of the response of its script, or the ones of its creator for a
     /// worker whose URL is a local scheme).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/trusted-types/dist/spec/#dom-windoworworkerglobalscope-trustedtypes"/>
     [IdlMember("trustedTypes", "https://w3c.github.io/trusted-types/dist/spec/#dom-windoworworkerglobalscope-trustedtypes")]
     public TrustedTypePolicyFactory TrustedTypes => _trustedTypes ?? CreateTrustedTypes();
 

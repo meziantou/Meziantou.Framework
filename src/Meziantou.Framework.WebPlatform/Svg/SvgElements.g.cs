@@ -10,6 +10,7 @@ using Meziantou.Framework.WebPlatform.Svg;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement"/>
 [IdlInterface("SVGAElement", "https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement")]
 public sealed partial class SvgAElement : SvgGraphicsElement
 {
@@ -23,10 +24,12 @@ public sealed partial class SvgAElement : SvgGraphicsElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>target</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement"/>
     [IdlMember("target", "https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement")]
     public SvgAnimatedString Target => SvgProperties.Get<SvgAnimatedString>(this, "target", "SVGAElement.target");
 
     /// <summary>Gets or sets the value of the <c>download</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement"/>
     [IdlMember("download", "https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement")]
     public string Download
     {
@@ -35,6 +38,7 @@ public sealed partial class SvgAElement : SvgGraphicsElement
     }
 
     /// <summary>Gets or sets the value of the <c>ping</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement"/>
     [IdlMember("ping", "https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement")]
     public string Ping
     {
@@ -43,6 +47,7 @@ public sealed partial class SvgAElement : SvgGraphicsElement
     }
 
     /// <summary>Gets or sets the value of the <c>rel</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement"/>
     [IdlMember("rel", "https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement")]
     public string Rel
     {
@@ -51,6 +56,7 @@ public sealed partial class SvgAElement : SvgGraphicsElement
     }
 
     /// <summary>Gets the tokens of the <c>rel</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement"/>
     [IdlMember("relList", "https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGAElement")]
     public DomTokenList RelList
     {
@@ -58,10 +64,12 @@ public sealed partial class SvgAElement : SvgGraphicsElement
     }
 
     /// <summary>Gets the <c>href</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGURIReference__href"/>
     [IdlMember("href", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGURIReference__href")]
     public SvgAnimatedString Href => SvgProperties.Get<SvgAnimatedString>(this, "href", "SVGURIReference.href");
 
     /// <summary>Gets or sets the value of the <c>hreflang</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-a-hreflang"/>
     [IdlMember("hreflang", "https://html.spec.whatwg.org/multipage/links.html#dom-a-hreflang")]
     public string Hreflang
     {
@@ -70,6 +78,7 @@ public sealed partial class SvgAElement : SvgGraphicsElement
     }
 
     /// <summary>Gets or sets the value of the <c>type</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/links.html#dom-a-type"/>
     [IdlMember("type", "https://html.spec.whatwg.org/multipage/links.html#dom-a-type")]
     public string Type
     {
@@ -87,6 +96,7 @@ public sealed partial class SvgAElement : SvgGraphicsElement
 }
 
 /// <summary>https://svgwg.org/specs/animations/#InterfaceSVGAnimateElement</summary>
+/// <seealso href="https://svgwg.org/specs/animations/#InterfaceSVGAnimateElement"/>
 [IdlInterface("SVGAnimateElement", "https://svgwg.org/specs/animations/#InterfaceSVGAnimateElement")]
 public sealed partial class SvgAnimateElement : SvgAnimationElement
 {
@@ -101,6 +111,7 @@ public sealed partial class SvgAnimateElement : SvgAnimationElement
 }
 
 /// <summary>https://svgwg.org/specs/animations/#InterfaceSVGAnimateMotionElement</summary>
+/// <seealso href="https://svgwg.org/specs/animations/#InterfaceSVGAnimateMotionElement"/>
 [IdlInterface("SVGAnimateMotionElement", "https://svgwg.org/specs/animations/#InterfaceSVGAnimateMotionElement")]
 public sealed partial class SvgAnimateMotionElement : SvgAnimationElement
 {
@@ -115,6 +126,7 @@ public sealed partial class SvgAnimateMotionElement : SvgAnimationElement
 }
 
 /// <summary>https://svgwg.org/specs/animations/#InterfaceSVGAnimateTransformElement</summary>
+/// <seealso href="https://svgwg.org/specs/animations/#InterfaceSVGAnimateTransformElement"/>
 [IdlInterface("SVGAnimateTransformElement", "https://svgwg.org/specs/animations/#InterfaceSVGAnimateTransformElement")]
 public sealed partial class SvgAnimateTransformElement : SvgAnimationElement
 {
@@ -129,6 +141,7 @@ public sealed partial class SvgAnimateTransformElement : SvgAnimationElement
 }
 
 /// <summary>https://svgwg.org/specs/animations/#InterfaceSVGAnimationElement</summary>
+/// <seealso href="https://svgwg.org/specs/animations/#InterfaceSVGAnimationElement"/>
 [IdlInterface("SVGAnimationElement", "https://svgwg.org/specs/animations/#InterfaceSVGAnimationElement")]
 public abstract partial class SvgAnimationElement : SvgElement
 {
@@ -142,6 +155,7 @@ public abstract partial class SvgAnimationElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the event handler of the <c>begin</c> event (the <c>onbegin</c> event handler attribute).</summary>
+    /// <seealso href="https://svgwg.org/specs/animations/#InterfaceSVGAnimationElement"/>
     [IdlMember("onbegin", "https://svgwg.org/specs/animations/#InterfaceSVGAnimationElement")]
     public Action<Event>? OnBegin
     {
@@ -150,6 +164,7 @@ public abstract partial class SvgAnimationElement : SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>end</c> event (the <c>onend</c> event handler attribute).</summary>
+    /// <seealso href="https://svgwg.org/specs/animations/#InterfaceSVGAnimationElement"/>
     [IdlMember("onend", "https://svgwg.org/specs/animations/#InterfaceSVGAnimationElement")]
     public Action<Event>? OnEnd
     {
@@ -158,6 +173,7 @@ public abstract partial class SvgAnimationElement : SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>repeat</c> event (the <c>onrepeat</c> event handler attribute).</summary>
+    /// <seealso href="https://svgwg.org/specs/animations/#InterfaceSVGAnimationElement"/>
     [IdlMember("onrepeat", "https://svgwg.org/specs/animations/#InterfaceSVGAnimationElement")]
     public Action<Event>? OnRepeat
     {
@@ -166,15 +182,18 @@ public abstract partial class SvgAnimationElement : SvgElement
     }
 
     /// <summary>Gets the <c>requiredExtensions</c> attribute as a <c>SVGStringList</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGTests__requiredExtensions"/>
     [IdlMember("requiredExtensions", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGTests__requiredExtensions")]
     public SvgStringList RequiredExtensions => SvgProperties.Get<SvgStringList>(this, "requiredExtensions", "SVGTests.requiredExtensions");
 
     /// <summary>Gets the <c>systemLanguage</c> attribute as a <c>SVGStringList</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGTests__systemLanguage"/>
     [IdlMember("systemLanguage", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGTests__systemLanguage")]
     public SvgStringList SystemLanguage => SvgProperties.Get<SvgStringList>(this, "systemLanguage", "SVGTests.systemLanguage");
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGCircleElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGCircleElement"/>
 [IdlInterface("SVGCircleElement", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGCircleElement")]
 public sealed partial class SvgCircleElement : SvgGeometryElement
 {
@@ -188,14 +207,17 @@ public sealed partial class SvgCircleElement : SvgGeometryElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>cx</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGCircleElement__cx"/>
     [IdlMember("cx", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGCircleElement__cx")]
     public SvgAnimatedLength Cx => SvgProperties.Get<SvgAnimatedLength>(this, "cx", "SVGCircleElement.cx");
 
     /// <summary>Gets the <c>cy</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGCircleElement__cy"/>
     [IdlMember("cy", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGCircleElement__cy")]
     public SvgAnimatedLength Cy => SvgProperties.Get<SvgAnimatedLength>(this, "cy", "SVGCircleElement.cy");
 
     /// <summary>Gets the <c>r</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGCircleElement__r"/>
     [IdlMember("r", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGCircleElement__r")]
     public SvgAnimatedLength R => SvgProperties.Get<SvgAnimatedLength>(this, "r", "SVGCircleElement.r");
 
@@ -210,6 +232,7 @@ public sealed partial class SvgCircleElement : SvgGeometryElement
 }
 
 /// <summary>https://drafts.csswg.org/css-masking-1/#svgclippathelement</summary>
+/// <seealso href="https://drafts.csswg.org/css-masking-1/#svgclippathelement"/>
 [IdlInterface("SVGClipPathElement", "https://drafts.csswg.org/css-masking-1/#svgclippathelement")]
 public sealed partial class SvgClipPathElement : SvgElement
 {
@@ -223,10 +246,12 @@ public sealed partial class SvgClipPathElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>clipPathUnits</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-masking-1/#dom-svgclippathelement-clippathunits"/>
     [IdlMember("clipPathUnits", "https://drafts.csswg.org/css-masking-1/#dom-svgclippathelement-clippathunits")]
     public SvgAnimatedEnumeration ClipPathUnits => SvgProperties.Get<SvgAnimatedEnumeration>(this, "clipPathUnits", "SVGClipPathElement.clipPathUnits");
 
     /// <summary>Gets the <c>transform</c> attribute as a <c>SVGAnimatedTransformList</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-masking-1/#dom-svgclippathelement-transform"/>
     [IdlMember("transform", "https://drafts.csswg.org/css-masking-1/#dom-svgclippathelement-transform")]
     public SvgAnimatedTransformList Transform => SvgProperties.Get<SvgAnimatedTransformList>(this, "transform", "SVGClipPathElement.transform");
 
@@ -240,6 +265,7 @@ public sealed partial class SvgClipPathElement : SvgElement
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgcomponenttransferfunctionelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgcomponenttransferfunctionelement"/>
 [IdlInterface("SVGComponentTransferFunctionElement", "https://drafts.csswg.org/filter-effects-1/#svgcomponenttransferfunctionelement")]
 public abstract partial class SvgComponentTransferFunctionElement : SvgElement
 {
@@ -253,54 +279,67 @@ public abstract partial class SvgComponentTransferFunctionElement : SvgElement
     partial void OnCreated();
 
     /// <summary>The <c>SVG_FECOMPONENTTRANSFER_TYPE_UNKNOWN</c> constant (0).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-svg_fecomponenttransfer_type_unknown"/>
     [IdlMember("SVG_FECOMPONENTTRANSFER_TYPE_UNKNOWN", "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-svg_fecomponenttransfer_type_unknown")]
     public const ushort SvgFecomponenttransferTypeUnknown = 0;
 
     /// <summary>The <c>SVG_FECOMPONENTTRANSFER_TYPE_IDENTITY</c> constant (1).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-svg_fecomponenttransfer_type_identity"/>
     [IdlMember("SVG_FECOMPONENTTRANSFER_TYPE_IDENTITY", "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-svg_fecomponenttransfer_type_identity")]
     public const ushort SvgFecomponenttransferTypeIdentity = 1;
 
     /// <summary>The <c>SVG_FECOMPONENTTRANSFER_TYPE_TABLE</c> constant (2).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-svg_fecomponenttransfer_type_table"/>
     [IdlMember("SVG_FECOMPONENTTRANSFER_TYPE_TABLE", "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-svg_fecomponenttransfer_type_table")]
     public const ushort SvgFecomponenttransferTypeTable = 2;
 
     /// <summary>The <c>SVG_FECOMPONENTTRANSFER_TYPE_DISCRETE</c> constant (3).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-svg_fecomponenttransfer_type_discrete"/>
     [IdlMember("SVG_FECOMPONENTTRANSFER_TYPE_DISCRETE", "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-svg_fecomponenttransfer_type_discrete")]
     public const ushort SvgFecomponenttransferTypeDiscrete = 3;
 
     /// <summary>The <c>SVG_FECOMPONENTTRANSFER_TYPE_LINEAR</c> constant (4).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-svg_fecomponenttransfer_type_linear"/>
     [IdlMember("SVG_FECOMPONENTTRANSFER_TYPE_LINEAR", "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-svg_fecomponenttransfer_type_linear")]
     public const ushort SvgFecomponenttransferTypeLinear = 4;
 
     /// <summary>The <c>SVG_FECOMPONENTTRANSFER_TYPE_GAMMA</c> constant (5).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-svg_fecomponenttransfer_type_gamma"/>
     [IdlMember("SVG_FECOMPONENTTRANSFER_TYPE_GAMMA", "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-svg_fecomponenttransfer_type_gamma")]
     public const ushort SvgFecomponenttransferTypeGamma = 5;
 
     /// <summary>Gets the <c>type</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-type"/>
     [IdlMember("type", "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-type")]
     public SvgAnimatedEnumeration Type => SvgProperties.Get<SvgAnimatedEnumeration>(this, "type", "SVGComponentTransferFunctionElement.type");
 
     /// <summary>Gets the <c>tableValues</c> attribute as a <c>SVGAnimatedNumberList</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-tablevalues"/>
     [IdlMember("tableValues", "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-tablevalues")]
     public SvgAnimatedNumberList TableValues => SvgProperties.Get<SvgAnimatedNumberList>(this, "tableValues", "SVGComponentTransferFunctionElement.tableValues");
 
     /// <summary>Gets the <c>slope</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-slope"/>
     [IdlMember("slope", "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-slope")]
     public SvgAnimatedNumber Slope => SvgProperties.Get<SvgAnimatedNumber>(this, "slope", "SVGComponentTransferFunctionElement.slope");
 
     /// <summary>Gets the <c>intercept</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-intercept"/>
     [IdlMember("intercept", "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-intercept")]
     public SvgAnimatedNumber Intercept => SvgProperties.Get<SvgAnimatedNumber>(this, "intercept", "SVGComponentTransferFunctionElement.intercept");
 
     /// <summary>Gets the <c>amplitude</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-amplitude"/>
     [IdlMember("amplitude", "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-amplitude")]
     public SvgAnimatedNumber Amplitude => SvgProperties.Get<SvgAnimatedNumber>(this, "amplitude", "SVGComponentTransferFunctionElement.amplitude");
 
     /// <summary>Gets the <c>exponent</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-exponent"/>
     [IdlMember("exponent", "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-exponent")]
     public SvgAnimatedNumber Exponent => SvgProperties.Get<SvgAnimatedNumber>(this, "exponent", "SVGComponentTransferFunctionElement.exponent");
 
     /// <summary>Gets the <c>offset</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-offset"/>
     [IdlMember("offset", "https://drafts.csswg.org/filter-effects-1/#dom-svgcomponenttransferfunctionelement-offset")]
     public SvgAnimatedNumber Offset => SvgProperties.Get<SvgAnimatedNumber>(this, "offset", "SVGComponentTransferFunctionElement.offset");
 
@@ -319,6 +358,7 @@ public abstract partial class SvgComponentTransferFunctionElement : SvgElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGDefsElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGDefsElement"/>
 [IdlInterface("SVGDefsElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGDefsElement")]
 public sealed partial class SvgDefsElement : SvgGraphicsElement
 {
@@ -333,6 +373,7 @@ public sealed partial class SvgDefsElement : SvgGraphicsElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGDescElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGDescElement"/>
 [IdlInterface("SVGDescElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGDescElement")]
 public sealed partial class SvgDescElement : SvgElement
 {
@@ -347,14 +388,17 @@ public sealed partial class SvgDescElement : SvgElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGElement"/>
 [IdlInterface("SVGElement", "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGElement")]
 public partial class SvgElement
 {
     /// <summary>Gets the <c>className</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGElement__className"/>
     [IdlMember("className", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGElement__className")]
     public new SvgAnimatedString ClassName => SvgProperties.Get<SvgAnimatedString>(this, "className", "SVGElement.className");
 
     /// <summary>Gets or sets the event handler of the <c>abort</c> event (the <c>onabort</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onabort"/>
     [IdlMember("onabort", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onabort")]
     public Action<Event>? OnAbort
     {
@@ -363,6 +407,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>auxclick</c> event (the <c>onauxclick</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onauxclick"/>
     [IdlMember("onauxclick", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onauxclick")]
     public Action<Event>? OnAuxClick
     {
@@ -371,6 +416,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>beforeinput</c> event (the <c>onbeforeinput</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onbeforeinput"/>
     [IdlMember("onbeforeinput", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onbeforeinput")]
     public Action<Event>? OnBeforeInput
     {
@@ -379,6 +425,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>beforematch</c> event (the <c>onbeforematch</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onbeforematch"/>
     [IdlMember("onbeforematch", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onbeforematch")]
     public Action<Event>? OnBeforeMatch
     {
@@ -387,6 +434,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>beforetoggle</c> event (the <c>onbeforetoggle</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onbeforetoggle"/>
     [IdlMember("onbeforetoggle", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onbeforetoggle")]
     public Action<Event>? OnBeforeToggle
     {
@@ -395,6 +443,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>blur</c> event (the <c>onblur</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onblur"/>
     [IdlMember("onblur", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onblur")]
     public Action<Event>? OnBlur
     {
@@ -403,6 +452,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>cancel</c> event (the <c>oncancel</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncancel"/>
     [IdlMember("oncancel", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncancel")]
     public Action<Event>? OnCancel
     {
@@ -411,6 +461,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>canplay</c> event (the <c>oncanplay</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncanplay"/>
     [IdlMember("oncanplay", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncanplay")]
     public Action<Event>? OnCanPlay
     {
@@ -419,6 +470,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>canplaythrough</c> event (the <c>oncanplaythrough</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncanplaythrough"/>
     [IdlMember("oncanplaythrough", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncanplaythrough")]
     public Action<Event>? OnCanPlayThrough
     {
@@ -427,6 +479,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>change</c> event (the <c>onchange</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onchange"/>
     [IdlMember("onchange", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onchange")]
     public Action<Event>? OnChange
     {
@@ -435,6 +488,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>click</c> event (the <c>onclick</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onclick"/>
     [IdlMember("onclick", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onclick")]
     public Action<Event>? OnClick
     {
@@ -443,6 +497,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>close</c> event (the <c>onclose</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onclose"/>
     [IdlMember("onclose", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onclose")]
     public Action<Event>? OnClose
     {
@@ -451,6 +506,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>command</c> event (the <c>oncommand</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncommand"/>
     [IdlMember("oncommand", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncommand")]
     public Action<Event>? OnCommand
     {
@@ -459,6 +515,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>contextlost</c> event (the <c>oncontextlost</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncontextlost"/>
     [IdlMember("oncontextlost", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncontextlost")]
     public Action<Event>? OnContextlost
     {
@@ -467,6 +524,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>contextmenu</c> event (the <c>oncontextmenu</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncontextmenu"/>
     [IdlMember("oncontextmenu", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncontextmenu")]
     public Action<Event>? OnContextMenu
     {
@@ -475,6 +533,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>contextrestored</c> event (the <c>oncontextrestored</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncontextrestored"/>
     [IdlMember("oncontextrestored", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncontextrestored")]
     public Action<Event>? OnContextRestored
     {
@@ -483,6 +542,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>copy</c> event (the <c>oncopy</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncopy"/>
     [IdlMember("oncopy", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncopy")]
     public Action<Event>? OnCopy
     {
@@ -491,6 +551,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>cuechange</c> event (the <c>oncuechange</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncuechange"/>
     [IdlMember("oncuechange", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncuechange")]
     public Action<Event>? OnCueChange
     {
@@ -499,6 +560,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>cut</c> event (the <c>oncut</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncut"/>
     [IdlMember("oncut", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oncut")]
     public Action<Event>? OnCut
     {
@@ -507,6 +569,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>dblclick</c> event (the <c>ondblclick</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondblclick"/>
     [IdlMember("ondblclick", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondblclick")]
     public Action<Event>? OnDblClick
     {
@@ -515,6 +578,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>drag</c> event (the <c>ondrag</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondrag"/>
     [IdlMember("ondrag", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondrag")]
     public Action<Event>? OnDrag
     {
@@ -523,6 +587,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>dragend</c> event (the <c>ondragend</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragend"/>
     [IdlMember("ondragend", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragend")]
     public Action<Event>? OnDragEnd
     {
@@ -531,6 +596,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>dragenter</c> event (the <c>ondragenter</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragenter"/>
     [IdlMember("ondragenter", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragenter")]
     public Action<Event>? OnDragEnter
     {
@@ -539,6 +605,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>dragleave</c> event (the <c>ondragleave</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragleave"/>
     [IdlMember("ondragleave", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragleave")]
     public Action<Event>? OnDragLeave
     {
@@ -547,6 +614,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>dragover</c> event (the <c>ondragover</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragover"/>
     [IdlMember("ondragover", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragover")]
     public Action<Event>? OnDragOver
     {
@@ -555,6 +623,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>dragstart</c> event (the <c>ondragstart</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragstart"/>
     [IdlMember("ondragstart", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondragstart")]
     public Action<Event>? OnDragStart
     {
@@ -563,6 +632,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>drop</c> event (the <c>ondrop</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondrop"/>
     [IdlMember("ondrop", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondrop")]
     public Action<Event>? OnDrop
     {
@@ -571,6 +641,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>durationchange</c> event (the <c>ondurationchange</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondurationchange"/>
     [IdlMember("ondurationchange", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ondurationchange")]
     public Action<Event>? OnDurationChange
     {
@@ -579,6 +650,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>emptied</c> event (the <c>onemptied</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onemptied"/>
     [IdlMember("onemptied", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onemptied")]
     public Action<Event>? OnEmptied
     {
@@ -587,6 +659,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>ended</c> event (the <c>onended</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onended"/>
     [IdlMember("onended", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onended")]
     public Action<Event>? OnEnded
     {
@@ -595,6 +668,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>error</c> event (the <c>onerror</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onerror"/>
     [IdlMember("onerror", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onerror")]
     public Action<Event>? OnError
     {
@@ -603,6 +677,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>focus</c> event (the <c>onfocus</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onfocus"/>
     [IdlMember("onfocus", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onfocus")]
     public Action<Event>? OnFocus
     {
@@ -611,6 +686,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>formdata</c> event (the <c>onformdata</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onformdata"/>
     [IdlMember("onformdata", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onformdata")]
     public Action<Event>? OnFormData
     {
@@ -619,6 +695,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>input</c> event (the <c>oninput</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oninput"/>
     [IdlMember("oninput", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oninput")]
     public Action<Event>? OnInput
     {
@@ -627,6 +704,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>invalid</c> event (the <c>oninvalid</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-oninvalid"/>
     [IdlMember("oninvalid", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-oninvalid")]
     public Action<Event>? OnInvalid
     {
@@ -635,6 +713,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>keydown</c> event (the <c>onkeydown</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onkeydown"/>
     [IdlMember("onkeydown", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onkeydown")]
     public Action<Event>? OnKeyDown
     {
@@ -643,6 +722,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>keypress</c> event (the <c>onkeypress</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onkeypress"/>
     [IdlMember("onkeypress", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onkeypress")]
     public Action<Event>? OnKeyPress
     {
@@ -651,6 +731,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>keyup</c> event (the <c>onkeyup</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onkeyup"/>
     [IdlMember("onkeyup", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onkeyup")]
     public Action<Event>? OnKeyUp
     {
@@ -659,6 +740,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>load</c> event (the <c>onload</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onload"/>
     [IdlMember("onload", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onload")]
     public Action<Event>? OnLoad
     {
@@ -667,6 +749,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>loadeddata</c> event (the <c>onloadeddata</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onloadeddata"/>
     [IdlMember("onloadeddata", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onloadeddata")]
     public Action<Event>? OnLoadedData
     {
@@ -675,6 +758,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>loadedmetadata</c> event (the <c>onloadedmetadata</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onloadedmetadata"/>
     [IdlMember("onloadedmetadata", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onloadedmetadata")]
     public Action<Event>? OnLoadedMetadata
     {
@@ -683,6 +767,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>loadstart</c> event (the <c>onloadstart</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onloadstart"/>
     [IdlMember("onloadstart", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onloadstart")]
     public Action<Event>? OnLoadStart
     {
@@ -691,6 +776,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>mousedown</c> event (the <c>onmousedown</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmousedown"/>
     [IdlMember("onmousedown", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmousedown")]
     public Action<Event>? OnMouseDown
     {
@@ -699,6 +785,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>mouseenter</c> event (the <c>onmouseenter</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseenter"/>
     [IdlMember("onmouseenter", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseenter")]
     public Action<Event>? OnMouseEnter
     {
@@ -707,6 +794,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>mouseleave</c> event (the <c>onmouseleave</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseleave"/>
     [IdlMember("onmouseleave", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseleave")]
     public Action<Event>? OnMouseLeave
     {
@@ -715,6 +803,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>mousemove</c> event (the <c>onmousemove</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmousemove"/>
     [IdlMember("onmousemove", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmousemove")]
     public Action<Event>? OnMouseMove
     {
@@ -723,6 +812,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>mouseout</c> event (the <c>onmouseout</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseout"/>
     [IdlMember("onmouseout", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseout")]
     public Action<Event>? OnMouseOut
     {
@@ -731,6 +821,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>mouseover</c> event (the <c>onmouseover</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseover"/>
     [IdlMember("onmouseover", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseover")]
     public Action<Event>? OnMouseOver
     {
@@ -739,6 +830,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>mouseup</c> event (the <c>onmouseup</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseup"/>
     [IdlMember("onmouseup", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onmouseup")]
     public Action<Event>? OnMouseUp
     {
@@ -747,6 +839,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>paste</c> event (the <c>onpaste</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onpaste"/>
     [IdlMember("onpaste", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onpaste")]
     public Action<Event>? OnPaste
     {
@@ -755,6 +848,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pause</c> event (the <c>onpause</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onpause"/>
     [IdlMember("onpause", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onpause")]
     public Action<Event>? OnPause
     {
@@ -763,6 +857,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>play</c> event (the <c>onplay</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onplay"/>
     [IdlMember("onplay", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onplay")]
     public Action<Event>? OnPlay
     {
@@ -771,6 +866,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>playing</c> event (the <c>onplaying</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onplaying"/>
     [IdlMember("onplaying", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onplaying")]
     public Action<Event>? OnPlaying
     {
@@ -779,6 +875,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>progress</c> event (the <c>onprogress</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onprogress"/>
     [IdlMember("onprogress", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onprogress")]
     public Action<Event>? OnProgress
     {
@@ -787,6 +884,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>ratechange</c> event (the <c>onratechange</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onratechange"/>
     [IdlMember("onratechange", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onratechange")]
     public Action<Event>? OnRateChange
     {
@@ -795,6 +893,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>reset</c> event (the <c>onreset</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onreset"/>
     [IdlMember("onreset", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onreset")]
     public Action<Event>? OnReset
     {
@@ -803,6 +902,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>resize</c> event (the <c>onresize</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onresize"/>
     [IdlMember("onresize", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onresize")]
     public Action<Event>? OnResize
     {
@@ -811,6 +911,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>scroll</c> event (the <c>onscroll</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onscroll"/>
     [IdlMember("onscroll", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onscroll")]
     public Action<Event>? OnScroll
     {
@@ -819,6 +920,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>scrollend</c> event (the <c>onscrollend</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onscrollend"/>
     [IdlMember("onscrollend", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onscrollend")]
     public Action<Event>? OnScrollEnd
     {
@@ -827,6 +929,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>securitypolicyviolation</c> event (the <c>onsecuritypolicyviolation</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onsecuritypolicyviolation"/>
     [IdlMember("onsecuritypolicyviolation", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onsecuritypolicyviolation")]
     public Action<Event>? OnSecurityPolicyViolation
     {
@@ -835,6 +938,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>seeked</c> event (the <c>onseeked</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onseeked"/>
     [IdlMember("onseeked", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onseeked")]
     public Action<Event>? OnSeeked
     {
@@ -843,6 +947,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>seeking</c> event (the <c>onseeking</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onseeking"/>
     [IdlMember("onseeking", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onseeking")]
     public Action<Event>? OnSeeking
     {
@@ -851,6 +956,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>select</c> event (the <c>onselect</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onselect"/>
     [IdlMember("onselect", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onselect")]
     public Action<Event>? OnSelect
     {
@@ -859,6 +965,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>slotchange</c> event (the <c>onslotchange</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onslotchange"/>
     [IdlMember("onslotchange", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onslotchange")]
     public Action<Event>? OnSlotChange
     {
@@ -867,6 +974,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>stalled</c> event (the <c>onstalled</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onstalled"/>
     [IdlMember("onstalled", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onstalled")]
     public Action<Event>? OnStalled
     {
@@ -875,6 +983,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>submit</c> event (the <c>onsubmit</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onsubmit"/>
     [IdlMember("onsubmit", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onsubmit")]
     public Action<Event>? OnSubmit
     {
@@ -883,6 +992,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>suspend</c> event (the <c>onsuspend</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onsuspend"/>
     [IdlMember("onsuspend", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onsuspend")]
     public Action<Event>? OnSuspend
     {
@@ -891,6 +1001,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>timeupdate</c> event (the <c>ontimeupdate</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ontimeupdate"/>
     [IdlMember("ontimeupdate", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ontimeupdate")]
     public Action<Event>? OnTimeUpdate
     {
@@ -899,6 +1010,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>toggle</c> event (the <c>ontoggle</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-ontoggle"/>
     [IdlMember("ontoggle", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-ontoggle")]
     public Action<Event>? OnToggle
     {
@@ -907,6 +1019,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>volumechange</c> event (the <c>onvolumechange</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onvolumechange"/>
     [IdlMember("onvolumechange", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onvolumechange")]
     public Action<Event>? OnVolumeChange
     {
@@ -915,6 +1028,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>waiting</c> event (the <c>onwaiting</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwaiting"/>
     [IdlMember("onwaiting", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwaiting")]
     public Action<Event>? OnWaiting
     {
@@ -923,6 +1037,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>webkitanimationend</c> event (the <c>onwebkitanimationend</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwebkitanimationend"/>
     [IdlMember("onwebkitanimationend", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwebkitanimationend")]
     public Action<Event>? OnWebkitAnimationEnd
     {
@@ -931,6 +1046,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>webkitanimationiteration</c> event (the <c>onwebkitanimationiteration</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwebkitanimationiteration"/>
     [IdlMember("onwebkitanimationiteration", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwebkitanimationiteration")]
     public Action<Event>? OnWebkitAnimationIteration
     {
@@ -939,6 +1055,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>webkitanimationstart</c> event (the <c>onwebkitanimationstart</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwebkitanimationstart"/>
     [IdlMember("onwebkitanimationstart", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwebkitanimationstart")]
     public Action<Event>? OnWebkitAnimationStart
     {
@@ -947,6 +1064,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>webkittransitionend</c> event (the <c>onwebkittransitionend</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwebkittransitionend"/>
     [IdlMember("onwebkittransitionend", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwebkittransitionend")]
     public Action<Event>? OnWebkitTransitionEnd
     {
@@ -955,6 +1073,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>wheel</c> event (the <c>onwheel</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwheel"/>
     [IdlMember("onwheel", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-onwheel")]
     public Action<Event>? OnWheel
     {
@@ -963,6 +1082,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>animationstart</c> event (the <c>onanimationstart</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationstart"/>
     [IdlMember("onanimationstart", "https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationstart")]
     public Action<Event>? OnAnimationStart
     {
@@ -971,6 +1091,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>animationiteration</c> event (the <c>onanimationiteration</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationiteration"/>
     [IdlMember("onanimationiteration", "https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationiteration")]
     public Action<Event>? OnAnimationIteration
     {
@@ -979,6 +1100,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>animationend</c> event (the <c>onanimationend</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationend"/>
     [IdlMember("onanimationend", "https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationend")]
     public Action<Event>? OnAnimationEnd
     {
@@ -987,6 +1109,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>animationcancel</c> event (the <c>onanimationcancel</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationcancel"/>
     [IdlMember("onanimationcancel", "https://drafts.csswg.org/css-animations-1/#dom-globaleventhandlers-onanimationcancel")]
     public Action<Event>? OnAnimationCancel
     {
@@ -995,6 +1118,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>scrollsnapchange</c> event (the <c>onscrollsnapchange</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-scroll-snap-2/#dom-globaleventhandlers-onscrollsnapchange"/>
     [IdlMember("onscrollsnapchange", "https://drafts.csswg.org/css-scroll-snap-2/#dom-globaleventhandlers-onscrollsnapchange")]
     public Action<Event>? OnScrollSnapChange
     {
@@ -1003,6 +1127,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>scrollsnapchanging</c> event (the <c>onscrollsnapchanging</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-scroll-snap-2/#dom-globaleventhandlers-onscrollsnapchanging"/>
     [IdlMember("onscrollsnapchanging", "https://drafts.csswg.org/css-scroll-snap-2/#dom-globaleventhandlers-onscrollsnapchanging")]
     public Action<Event>? OnScrollSnapChanging
     {
@@ -1011,6 +1136,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>transitionrun</c> event (the <c>ontransitionrun</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitionrun"/>
     [IdlMember("ontransitionrun", "https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitionrun")]
     public Action<Event>? OnTransitionRun
     {
@@ -1019,6 +1145,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>transitionstart</c> event (the <c>ontransitionstart</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitionstart"/>
     [IdlMember("ontransitionstart", "https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitionstart")]
     public Action<Event>? OnTransitionStart
     {
@@ -1027,6 +1154,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>transitionend</c> event (the <c>ontransitionend</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitionend"/>
     [IdlMember("ontransitionend", "https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitionend")]
     public Action<Event>? OnTransitionEnd
     {
@@ -1035,6 +1163,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>transitioncancel</c> event (the <c>ontransitioncancel</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitioncancel"/>
     [IdlMember("ontransitioncancel", "https://drafts.csswg.org/css-transitions-1/#dom-globaleventhandlers-ontransitioncancel")]
     public Action<Event>? OnTransitionCancel
     {
@@ -1043,6 +1172,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointerover</c> event (the <c>onpointerover</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerover"/>
     [IdlMember("onpointerover", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerover")]
     public Action<Event>? OnPointerOver
     {
@@ -1051,6 +1181,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointerenter</c> event (the <c>onpointerenter</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerenter"/>
     [IdlMember("onpointerenter", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerenter")]
     public Action<Event>? OnPointerEnter
     {
@@ -1059,6 +1190,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointerdown</c> event (the <c>onpointerdown</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerdown"/>
     [IdlMember("onpointerdown", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerdown")]
     public Action<Event>? OnPointerDown
     {
@@ -1067,6 +1199,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointermove</c> event (the <c>onpointermove</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointermove"/>
     [IdlMember("onpointermove", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointermove")]
     public Action<Event>? OnPointerMove
     {
@@ -1075,6 +1208,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointerrawupdate</c> event (the <c>onpointerrawupdate</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerrawupdate"/>
     [IdlMember("onpointerrawupdate", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerrawupdate")]
     public Action<Event>? OnPointerRawUpdate
     {
@@ -1083,6 +1217,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointerup</c> event (the <c>onpointerup</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerup"/>
     [IdlMember("onpointerup", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerup")]
     public Action<Event>? OnPointerUp
     {
@@ -1091,6 +1226,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointercancel</c> event (the <c>onpointercancel</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointercancel"/>
     [IdlMember("onpointercancel", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointercancel")]
     public Action<Event>? OnPointerCancel
     {
@@ -1099,6 +1235,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointerout</c> event (the <c>onpointerout</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerout"/>
     [IdlMember("onpointerout", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerout")]
     public Action<Event>? OnPointerOut
     {
@@ -1107,6 +1244,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pointerleave</c> event (the <c>onpointerleave</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerleave"/>
     [IdlMember("onpointerleave", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onpointerleave")]
     public Action<Event>? OnPointerLeave
     {
@@ -1115,6 +1253,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>gotpointercapture</c> event (the <c>ongotpointercapture</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-ongotpointercapture"/>
     [IdlMember("ongotpointercapture", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-ongotpointercapture")]
     public Action<Event>? OnGotPointerCapture
     {
@@ -1123,6 +1262,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>lostpointercapture</c> event (the <c>onlostpointercapture</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onlostpointercapture"/>
     [IdlMember("onlostpointercapture", "https://w3c.github.io/pointerevents/#dom-globaleventhandlers-onlostpointercapture")]
     public Action<Event>? OnLostPointerCapture
     {
@@ -1131,6 +1271,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>selectstart</c> event (the <c>onselectstart</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-globaleventhandlers-onselectstart"/>
     [IdlMember("onselectstart", "https://w3c.github.io/selection-api/#dom-globaleventhandlers-onselectstart")]
     public Action<Event>? OnSelectStart
     {
@@ -1139,6 +1280,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>selectionchange</c> event (the <c>onselectionchange</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/selection-api/#dom-globaleventhandlers-onselectionchange"/>
     [IdlMember("onselectionchange", "https://w3c.github.io/selection-api/#dom-globaleventhandlers-onselectionchange")]
     public Action<Event>? OnSelectionChange
     {
@@ -1147,6 +1289,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets a value indicating whether the element has the <c>autofocus</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-fe-autofocus"/>
     [IdlMember("autofocus", "https://html.spec.whatwg.org/multipage/dom.html#dom-fe-autofocus")]
     public bool Autofocus
     {
@@ -1155,6 +1298,7 @@ public partial class SvgElement
     }
 
     /// <summary>Gets or sets the value of the <c>tabindex</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-tabindex"/>
     [IdlMember("tabIndex", "https://html.spec.whatwg.org/multipage/interaction.html#dom-tabindex")]
     public int TabIndex
     {
@@ -1165,6 +1309,7 @@ public partial class SvgElement
     private partial int ComputeTabIndex();
 
     /// <summary>Gets or sets the event handler of the <c>contentvisibilityautostatechange</c> event (the <c>oncontentvisibilityautostatechange</c> event handler attribute).</summary>
+    /// <seealso href="https://drafts.csswg.org/css-contain-2/#content-visibility-auto-state-change"/>
     [IdlMember("oncontentvisibilityautostatechange", "https://drafts.csswg.org/css-contain-2/#content-visibility-auto-state-change")]
     [Experimental(ExperimentalApis.ContentVisibilityAutoStateChangeEventHandler, UrlFormat = ExperimentalApis.UrlFormat)]
     public Action<Event>? OnContentVisibilityAutoStateChange
@@ -1182,6 +1327,7 @@ public partial class SvgElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGEllipseElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGEllipseElement"/>
 [IdlInterface("SVGEllipseElement", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGEllipseElement")]
 public sealed partial class SvgEllipseElement : SvgGeometryElement
 {
@@ -1195,18 +1341,22 @@ public sealed partial class SvgEllipseElement : SvgGeometryElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>cx</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGEllipseElement__cx"/>
     [IdlMember("cx", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGEllipseElement__cx")]
     public SvgAnimatedLength Cx => SvgProperties.Get<SvgAnimatedLength>(this, "cx", "SVGEllipseElement.cx");
 
     /// <summary>Gets the <c>cy</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGEllipseElement__cy"/>
     [IdlMember("cy", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGEllipseElement__cy")]
     public SvgAnimatedLength Cy => SvgProperties.Get<SvgAnimatedLength>(this, "cy", "SVGEllipseElement.cy");
 
     /// <summary>Gets the <c>rx</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGEllipseElement__rx"/>
     [IdlMember("rx", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGEllipseElement__rx")]
     public SvgAnimatedLength Rx => SvgProperties.Get<SvgAnimatedLength>(this, "rx", "SVGEllipseElement.rx");
 
     /// <summary>Gets the <c>ry</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGEllipseElement__ry"/>
     [IdlMember("ry", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGEllipseElement__ry")]
     public SvgAnimatedLength Ry => SvgProperties.Get<SvgAnimatedLength>(this, "ry", "SVGEllipseElement.ry");
 
@@ -1222,6 +1372,7 @@ public sealed partial class SvgEllipseElement : SvgGeometryElement
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfeblendelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfeblendelement"/>
 [IdlInterface("SVGFEBlendElement", "https://drafts.csswg.org/filter-effects-1/#svgfeblendelement")]
 public sealed partial class SvgFEBlendElement : SvgElement
 {
@@ -1235,102 +1386,127 @@ public sealed partial class SvgFEBlendElement : SvgElement
     partial void OnCreated();
 
     /// <summary>The <c>SVG_FEBLEND_MODE_UNKNOWN</c> constant (0).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_unknown"/>
     [IdlMember("SVG_FEBLEND_MODE_UNKNOWN", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_unknown")]
     public const ushort SvgFeblendModeUnknown = 0;
 
     /// <summary>The <c>SVG_FEBLEND_MODE_NORMAL</c> constant (1).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_normal"/>
     [IdlMember("SVG_FEBLEND_MODE_NORMAL", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_normal")]
     public const ushort SvgFeblendModeNormal = 1;
 
     /// <summary>The <c>SVG_FEBLEND_MODE_MULTIPLY</c> constant (2).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_multiply"/>
     [IdlMember("SVG_FEBLEND_MODE_MULTIPLY", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_multiply")]
     public const ushort SvgFeblendModeMultiply = 2;
 
     /// <summary>The <c>SVG_FEBLEND_MODE_SCREEN</c> constant (3).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_screen"/>
     [IdlMember("SVG_FEBLEND_MODE_SCREEN", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_screen")]
     public const ushort SvgFeblendModeScreen = 3;
 
     /// <summary>The <c>SVG_FEBLEND_MODE_DARKEN</c> constant (4).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_darken"/>
     [IdlMember("SVG_FEBLEND_MODE_DARKEN", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_darken")]
     public const ushort SvgFeblendModeDarken = 4;
 
     /// <summary>The <c>SVG_FEBLEND_MODE_LIGHTEN</c> constant (5).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_lighten"/>
     [IdlMember("SVG_FEBLEND_MODE_LIGHTEN", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_lighten")]
     public const ushort SvgFeblendModeLighten = 5;
 
     /// <summary>The <c>SVG_FEBLEND_MODE_OVERLAY</c> constant (6).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_overlay"/>
     [IdlMember("SVG_FEBLEND_MODE_OVERLAY", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_overlay")]
     public const ushort SvgFeblendModeOverlay = 6;
 
     /// <summary>The <c>SVG_FEBLEND_MODE_COLOR_DODGE</c> constant (7).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_color_dodge"/>
     [IdlMember("SVG_FEBLEND_MODE_COLOR_DODGE", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_color_dodge")]
     public const ushort SvgFeblendModeColorDodge = 7;
 
     /// <summary>The <c>SVG_FEBLEND_MODE_COLOR_BURN</c> constant (8).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_color_burn"/>
     [IdlMember("SVG_FEBLEND_MODE_COLOR_BURN", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_color_burn")]
     public const ushort SvgFeblendModeColorBurn = 8;
 
     /// <summary>The <c>SVG_FEBLEND_MODE_HARD_LIGHT</c> constant (9).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_hard_light"/>
     [IdlMember("SVG_FEBLEND_MODE_HARD_LIGHT", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_hard_light")]
     public const ushort SvgFeblendModeHardLight = 9;
 
     /// <summary>The <c>SVG_FEBLEND_MODE_SOFT_LIGHT</c> constant (10).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_soft_light"/>
     [IdlMember("SVG_FEBLEND_MODE_SOFT_LIGHT", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_soft_light")]
     public const ushort SvgFeblendModeSoftLight = 10;
 
     /// <summary>The <c>SVG_FEBLEND_MODE_DIFFERENCE</c> constant (11).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_difference"/>
     [IdlMember("SVG_FEBLEND_MODE_DIFFERENCE", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_difference")]
     public const ushort SvgFeblendModeDifference = 11;
 
     /// <summary>The <c>SVG_FEBLEND_MODE_EXCLUSION</c> constant (12).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_exclusion"/>
     [IdlMember("SVG_FEBLEND_MODE_EXCLUSION", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_exclusion")]
     public const ushort SvgFeblendModeExclusion = 12;
 
     /// <summary>The <c>SVG_FEBLEND_MODE_HUE</c> constant (13).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_hue"/>
     [IdlMember("SVG_FEBLEND_MODE_HUE", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_hue")]
     public const ushort SvgFeblendModeHue = 13;
 
     /// <summary>The <c>SVG_FEBLEND_MODE_SATURATION</c> constant (14).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_saturation"/>
     [IdlMember("SVG_FEBLEND_MODE_SATURATION", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_saturation")]
     public const ushort SvgFeblendModeSaturation = 14;
 
     /// <summary>The <c>SVG_FEBLEND_MODE_COLOR</c> constant (15).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_color"/>
     [IdlMember("SVG_FEBLEND_MODE_COLOR", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_color")]
     public const ushort SvgFeblendModeColor = 15;
 
     /// <summary>The <c>SVG_FEBLEND_MODE_LUMINOSITY</c> constant (16).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_luminosity"/>
     [IdlMember("SVG_FEBLEND_MODE_LUMINOSITY", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-svg_feblend_mode_luminosity")]
     public const ushort SvgFeblendModeLuminosity = 16;
 
     /// <summary>Gets the <c>in1</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-in1"/>
     [IdlMember("in1", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-in1")]
     public SvgAnimatedString In1 => SvgProperties.Get<SvgAnimatedString>(this, "in1", "SVGFEBlendElement.in1");
 
     /// <summary>Gets the <c>in2</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-in2"/>
     [IdlMember("in2", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-in2")]
     public SvgAnimatedString In2 => SvgProperties.Get<SvgAnimatedString>(this, "in2", "SVGFEBlendElement.in2");
 
     /// <summary>Gets the <c>mode</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-mode"/>
     [IdlMember("mode", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeblendelement-mode")]
     public SvgAnimatedEnumeration Mode => SvgProperties.Get<SvgAnimatedEnumeration>(this, "mode", "SVGFEBlendElement.mode");
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x"/>
     [IdlMember("x", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGFilterPrimitiveStandardAttributes.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y"/>
     [IdlMember("y", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGFilterPrimitiveStandardAttributes.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width"/>
     [IdlMember("width", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGFilterPrimitiveStandardAttributes.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height"/>
     [IdlMember("height", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGFilterPrimitiveStandardAttributes.height");
 
     /// <summary>Gets the <c>result</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result"/>
     [IdlMember("result", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result")]
     public SvgAnimatedString Result => SvgProperties.Get<SvgAnimatedString>(this, "result", "SVGFilterPrimitiveStandardAttributes.result");
 
@@ -1350,6 +1526,7 @@ public sealed partial class SvgFEBlendElement : SvgElement
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfecolormatrixelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfecolormatrixelement"/>
 [IdlInterface("SVGFEColorMatrixElement", "https://drafts.csswg.org/filter-effects-1/#svgfecolormatrixelement")]
 public sealed partial class SvgFEColorMatrixElement : SvgElement
 {
@@ -1363,54 +1540,67 @@ public sealed partial class SvgFEColorMatrixElement : SvgElement
     partial void OnCreated();
 
     /// <summary>The <c>SVG_FECOLORMATRIX_TYPE_UNKNOWN</c> constant (0).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfecolormatrixelement-svg_fecolormatrix_type_unknown"/>
     [IdlMember("SVG_FECOLORMATRIX_TYPE_UNKNOWN", "https://drafts.csswg.org/filter-effects-1/#dom-svgfecolormatrixelement-svg_fecolormatrix_type_unknown")]
     public const ushort SvgFecolormatrixTypeUnknown = 0;
 
     /// <summary>The <c>SVG_FECOLORMATRIX_TYPE_MATRIX</c> constant (1).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfecolormatrixelement-svg_fecolormatrix_type_matrix"/>
     [IdlMember("SVG_FECOLORMATRIX_TYPE_MATRIX", "https://drafts.csswg.org/filter-effects-1/#dom-svgfecolormatrixelement-svg_fecolormatrix_type_matrix")]
     public const ushort SvgFecolormatrixTypeMatrix = 1;
 
     /// <summary>The <c>SVG_FECOLORMATRIX_TYPE_SATURATE</c> constant (2).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfecolormatrixelement-svg_fecolormatrix_type_saturate"/>
     [IdlMember("SVG_FECOLORMATRIX_TYPE_SATURATE", "https://drafts.csswg.org/filter-effects-1/#dom-svgfecolormatrixelement-svg_fecolormatrix_type_saturate")]
     public const ushort SvgFecolormatrixTypeSaturate = 2;
 
     /// <summary>The <c>SVG_FECOLORMATRIX_TYPE_HUEROTATE</c> constant (3).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfecolormatrixelement-svg_fecolormatrix_type_huerotate"/>
     [IdlMember("SVG_FECOLORMATRIX_TYPE_HUEROTATE", "https://drafts.csswg.org/filter-effects-1/#dom-svgfecolormatrixelement-svg_fecolormatrix_type_huerotate")]
     public const ushort SvgFecolormatrixTypeHuerotate = 3;
 
     /// <summary>The <c>SVG_FECOLORMATRIX_TYPE_LUMINANCETOALPHA</c> constant (4).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfecolormatrixelement-svg_fecolormatrix_type_luminancetoalpha"/>
     [IdlMember("SVG_FECOLORMATRIX_TYPE_LUMINANCETOALPHA", "https://drafts.csswg.org/filter-effects-1/#dom-svgfecolormatrixelement-svg_fecolormatrix_type_luminancetoalpha")]
     public const ushort SvgFecolormatrixTypeLuminancetoalpha = 4;
 
     /// <summary>Gets the <c>in1</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfecolormatrixelement-in1"/>
     [IdlMember("in1", "https://drafts.csswg.org/filter-effects-1/#dom-svgfecolormatrixelement-in1")]
     public SvgAnimatedString In1 => SvgProperties.Get<SvgAnimatedString>(this, "in1", "SVGFEColorMatrixElement.in1");
 
     /// <summary>Gets the <c>type</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfecolormatrixelement-type"/>
     [IdlMember("type", "https://drafts.csswg.org/filter-effects-1/#dom-svgfecolormatrixelement-type")]
     public SvgAnimatedEnumeration Type => SvgProperties.Get<SvgAnimatedEnumeration>(this, "type", "SVGFEColorMatrixElement.type");
 
     /// <summary>Gets the <c>values</c> attribute as a <c>SVGAnimatedNumberList</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfecolormatrixelement-values"/>
     [IdlMember("values", "https://drafts.csswg.org/filter-effects-1/#dom-svgfecolormatrixelement-values")]
     public SvgAnimatedNumberList Values => SvgProperties.Get<SvgAnimatedNumberList>(this, "values", "SVGFEColorMatrixElement.values");
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x"/>
     [IdlMember("x", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGFilterPrimitiveStandardAttributes.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y"/>
     [IdlMember("y", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGFilterPrimitiveStandardAttributes.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width"/>
     [IdlMember("width", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGFilterPrimitiveStandardAttributes.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height"/>
     [IdlMember("height", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGFilterPrimitiveStandardAttributes.height");
 
     /// <summary>Gets the <c>result</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result"/>
     [IdlMember("result", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result")]
     public SvgAnimatedString Result => SvgProperties.Get<SvgAnimatedString>(this, "result", "SVGFilterPrimitiveStandardAttributes.result");
 
@@ -1430,6 +1620,7 @@ public sealed partial class SvgFEColorMatrixElement : SvgElement
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfecomponenttransferelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfecomponenttransferelement"/>
 [IdlInterface("SVGFEComponentTransferElement", "https://drafts.csswg.org/filter-effects-1/#svgfecomponenttransferelement")]
 public sealed partial class SvgFEComponentTransferElement : SvgElement
 {
@@ -1443,26 +1634,32 @@ public sealed partial class SvgFEComponentTransferElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>in1</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfecomponenttransferelement-in1"/>
     [IdlMember("in1", "https://drafts.csswg.org/filter-effects-1/#dom-svgfecomponenttransferelement-in1")]
     public SvgAnimatedString In1 => SvgProperties.Get<SvgAnimatedString>(this, "in1", "SVGFEComponentTransferElement.in1");
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x"/>
     [IdlMember("x", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGFilterPrimitiveStandardAttributes.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y"/>
     [IdlMember("y", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGFilterPrimitiveStandardAttributes.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width"/>
     [IdlMember("width", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGFilterPrimitiveStandardAttributes.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height"/>
     [IdlMember("height", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGFilterPrimitiveStandardAttributes.height");
 
     /// <summary>Gets the <c>result</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result"/>
     [IdlMember("result", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result")]
     public SvgAnimatedString Result => SvgProperties.Get<SvgAnimatedString>(this, "result", "SVGFilterPrimitiveStandardAttributes.result");
 
@@ -1480,6 +1677,7 @@ public sealed partial class SvgFEComponentTransferElement : SvgElement
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfecompositeelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfecompositeelement"/>
 [IdlInterface("SVGFECompositeElement", "https://drafts.csswg.org/filter-effects-1/#svgfecompositeelement")]
 public sealed partial class SvgFECompositeElement : SvgElement
 {
@@ -1493,78 +1691,97 @@ public sealed partial class SvgFECompositeElement : SvgElement
     partial void OnCreated();
 
     /// <summary>The <c>SVG_FECOMPOSITE_OPERATOR_UNKNOWN</c> constant (0).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-svg_fecomposite_operator_unknown"/>
     [IdlMember("SVG_FECOMPOSITE_OPERATOR_UNKNOWN", "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-svg_fecomposite_operator_unknown")]
     public const ushort SvgFecompositeOperatorUnknown = 0;
 
     /// <summary>The <c>SVG_FECOMPOSITE_OPERATOR_OVER</c> constant (1).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-svg_fecomposite_operator_over"/>
     [IdlMember("SVG_FECOMPOSITE_OPERATOR_OVER", "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-svg_fecomposite_operator_over")]
     public const ushort SvgFecompositeOperatorOver = 1;
 
     /// <summary>The <c>SVG_FECOMPOSITE_OPERATOR_IN</c> constant (2).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-svg_fecomposite_operator_in"/>
     [IdlMember("SVG_FECOMPOSITE_OPERATOR_IN", "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-svg_fecomposite_operator_in")]
     public const ushort SvgFecompositeOperatorIn = 2;
 
     /// <summary>The <c>SVG_FECOMPOSITE_OPERATOR_OUT</c> constant (3).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-svg_fecomposite_operator_out"/>
     [IdlMember("SVG_FECOMPOSITE_OPERATOR_OUT", "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-svg_fecomposite_operator_out")]
     public const ushort SvgFecompositeOperatorOut = 3;
 
     /// <summary>The <c>SVG_FECOMPOSITE_OPERATOR_ATOP</c> constant (4).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-svg_fecomposite_operator_atop"/>
     [IdlMember("SVG_FECOMPOSITE_OPERATOR_ATOP", "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-svg_fecomposite_operator_atop")]
     public const ushort SvgFecompositeOperatorAtop = 4;
 
     /// <summary>The <c>SVG_FECOMPOSITE_OPERATOR_XOR</c> constant (5).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-svg_fecomposite_operator_xor"/>
     [IdlMember("SVG_FECOMPOSITE_OPERATOR_XOR", "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-svg_fecomposite_operator_xor")]
     public const ushort SvgFecompositeOperatorXor = 5;
 
     /// <summary>The <c>SVG_FECOMPOSITE_OPERATOR_ARITHMETIC</c> constant (6).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-svg_fecomposite_operator_arithmetic"/>
     [IdlMember("SVG_FECOMPOSITE_OPERATOR_ARITHMETIC", "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-svg_fecomposite_operator_arithmetic")]
     public const ushort SvgFecompositeOperatorArithmetic = 6;
 
     /// <summary>Gets the <c>in1</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-in1"/>
     [IdlMember("in1", "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-in1")]
     public SvgAnimatedString In1 => SvgProperties.Get<SvgAnimatedString>(this, "in1", "SVGFECompositeElement.in1");
 
     /// <summary>Gets the <c>in2</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-in2"/>
     [IdlMember("in2", "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-in2")]
     public SvgAnimatedString In2 => SvgProperties.Get<SvgAnimatedString>(this, "in2", "SVGFECompositeElement.in2");
 
     /// <summary>Gets the <c>operator</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-operator"/>
     [IdlMember("operator", "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-operator")]
     public SvgAnimatedEnumeration Operator => SvgProperties.Get<SvgAnimatedEnumeration>(this, "operator", "SVGFECompositeElement.operator");
 
     /// <summary>Gets the <c>k1</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-k1"/>
     [IdlMember("k1", "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-k1")]
     public SvgAnimatedNumber K1 => SvgProperties.Get<SvgAnimatedNumber>(this, "k1", "SVGFECompositeElement.k1");
 
     /// <summary>Gets the <c>k2</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-k2"/>
     [IdlMember("k2", "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-k2")]
     public SvgAnimatedNumber K2 => SvgProperties.Get<SvgAnimatedNumber>(this, "k2", "SVGFECompositeElement.k2");
 
     /// <summary>Gets the <c>k3</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-k3"/>
     [IdlMember("k3", "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-k3")]
     public SvgAnimatedNumber K3 => SvgProperties.Get<SvgAnimatedNumber>(this, "k3", "SVGFECompositeElement.k3");
 
     /// <summary>Gets the <c>k4</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-k4"/>
     [IdlMember("k4", "https://drafts.csswg.org/filter-effects-1/#dom-svgfecompositeelement-k4")]
     public SvgAnimatedNumber K4 => SvgProperties.Get<SvgAnimatedNumber>(this, "k4", "SVGFECompositeElement.k4");
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x"/>
     [IdlMember("x", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGFilterPrimitiveStandardAttributes.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y"/>
     [IdlMember("y", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGFilterPrimitiveStandardAttributes.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width"/>
     [IdlMember("width", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGFilterPrimitiveStandardAttributes.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height"/>
     [IdlMember("height", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGFilterPrimitiveStandardAttributes.height");
 
     /// <summary>Gets the <c>result</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result"/>
     [IdlMember("result", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result")]
     public SvgAnimatedString Result => SvgProperties.Get<SvgAnimatedString>(this, "result", "SVGFilterPrimitiveStandardAttributes.result");
 
@@ -1588,6 +1805,7 @@ public sealed partial class SvgFECompositeElement : SvgElement
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfeconvolvematrixelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfeconvolvematrixelement"/>
 [IdlInterface("SVGFEConvolveMatrixElement", "https://drafts.csswg.org/filter-effects-1/#svgfeconvolvematrixelement")]
 public sealed partial class SvgFEConvolveMatrixElement : SvgElement
 {
@@ -1601,86 +1819,107 @@ public sealed partial class SvgFEConvolveMatrixElement : SvgElement
     partial void OnCreated();
 
     /// <summary>The <c>SVG_EDGEMODE_UNKNOWN</c> constant (0).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-svg_edgemode_unknown"/>
     [IdlMember("SVG_EDGEMODE_UNKNOWN", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-svg_edgemode_unknown")]
     public const ushort SvgEdgemodeUnknown = 0;
 
     /// <summary>The <c>SVG_EDGEMODE_DUPLICATE</c> constant (1).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-svg_edgemode_duplicate"/>
     [IdlMember("SVG_EDGEMODE_DUPLICATE", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-svg_edgemode_duplicate")]
     public const ushort SvgEdgemodeDuplicate = 1;
 
     /// <summary>The <c>SVG_EDGEMODE_WRAP</c> constant (2).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-svg_edgemode_wrap"/>
     [IdlMember("SVG_EDGEMODE_WRAP", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-svg_edgemode_wrap")]
     public const ushort SvgEdgemodeWrap = 2;
 
     /// <summary>The <c>SVG_EDGEMODE_NONE</c> constant (3).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-svg_edgemode_none"/>
     [IdlMember("SVG_EDGEMODE_NONE", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-svg_edgemode_none")]
     public const ushort SvgEdgemodeNone = 3;
 
     /// <summary>Gets the <c>in1</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-in1"/>
     [IdlMember("in1", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-in1")]
     public SvgAnimatedString In1 => SvgProperties.Get<SvgAnimatedString>(this, "in1", "SVGFEConvolveMatrixElement.in1");
 
     /// <summary>Gets the <c>orderX</c> attribute as a <c>SVGAnimatedInteger</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-orderx"/>
     [IdlMember("orderX", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-orderx")]
     public SvgAnimatedInteger OrderX => SvgProperties.Get<SvgAnimatedInteger>(this, "orderX", "SVGFEConvolveMatrixElement.orderX");
 
     /// <summary>Gets the <c>orderY</c> attribute as a <c>SVGAnimatedInteger</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-ordery"/>
     [IdlMember("orderY", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-ordery")]
     public SvgAnimatedInteger OrderY => SvgProperties.Get<SvgAnimatedInteger>(this, "orderY", "SVGFEConvolveMatrixElement.orderY");
 
     /// <summary>Gets the <c>kernelMatrix</c> attribute as a <c>SVGAnimatedNumberList</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-kernelmatrix"/>
     [IdlMember("kernelMatrix", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-kernelmatrix")]
     public SvgAnimatedNumberList KernelMatrix => SvgProperties.Get<SvgAnimatedNumberList>(this, "kernelMatrix", "SVGFEConvolveMatrixElement.kernelMatrix");
 
     /// <summary>Gets the <c>divisor</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-divisor"/>
     [IdlMember("divisor", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-divisor")]
     public SvgAnimatedNumber Divisor => SvgProperties.Get<SvgAnimatedNumber>(this, "divisor", "SVGFEConvolveMatrixElement.divisor");
 
     /// <summary>Gets the <c>bias</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-bias"/>
     [IdlMember("bias", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-bias")]
     public SvgAnimatedNumber Bias => SvgProperties.Get<SvgAnimatedNumber>(this, "bias", "SVGFEConvolveMatrixElement.bias");
 
     /// <summary>Gets the <c>targetX</c> attribute as a <c>SVGAnimatedInteger</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-targetx"/>
     [IdlMember("targetX", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-targetx")]
     public SvgAnimatedInteger TargetX => SvgProperties.Get<SvgAnimatedInteger>(this, "targetX", "SVGFEConvolveMatrixElement.targetX");
 
     /// <summary>Gets the <c>targetY</c> attribute as a <c>SVGAnimatedInteger</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-targety"/>
     [IdlMember("targetY", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-targety")]
     public SvgAnimatedInteger TargetY => SvgProperties.Get<SvgAnimatedInteger>(this, "targetY", "SVGFEConvolveMatrixElement.targetY");
 
     /// <summary>Gets the <c>edgeMode</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-edgemode"/>
     [IdlMember("edgeMode", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-edgemode")]
     public SvgAnimatedEnumeration EdgeMode => SvgProperties.Get<SvgAnimatedEnumeration>(this, "edgeMode", "SVGFEConvolveMatrixElement.edgeMode");
 
     /// <summary>Gets the <c>kernelUnitLengthX</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-kernelunitlengthx"/>
     [IdlMember("kernelUnitLengthX", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-kernelunitlengthx")]
     public SvgAnimatedNumber KernelUnitLengthX => SvgProperties.Get<SvgAnimatedNumber>(this, "kernelUnitLengthX", "SVGFEConvolveMatrixElement.kernelUnitLengthX");
 
     /// <summary>Gets the <c>kernelUnitLengthY</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-kernelunitlengthy"/>
     [IdlMember("kernelUnitLengthY", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-kernelunitlengthy")]
     public SvgAnimatedNumber KernelUnitLengthY => SvgProperties.Get<SvgAnimatedNumber>(this, "kernelUnitLengthY", "SVGFEConvolveMatrixElement.kernelUnitLengthY");
 
     /// <summary>Gets the <c>preserveAlpha</c> attribute as a <c>SVGAnimatedBoolean</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-preservealpha"/>
     [IdlMember("preserveAlpha", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeconvolvematrixelement-preservealpha")]
     public SvgAnimatedBoolean PreserveAlpha => SvgProperties.Get<SvgAnimatedBoolean>(this, "preserveAlpha", "SVGFEConvolveMatrixElement.preserveAlpha");
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x"/>
     [IdlMember("x", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGFilterPrimitiveStandardAttributes.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y"/>
     [IdlMember("y", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGFilterPrimitiveStandardAttributes.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width"/>
     [IdlMember("width", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGFilterPrimitiveStandardAttributes.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height"/>
     [IdlMember("height", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGFilterPrimitiveStandardAttributes.height");
 
     /// <summary>Gets the <c>result</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result"/>
     [IdlMember("result", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result")]
     public SvgAnimatedString Result => SvgProperties.Get<SvgAnimatedString>(this, "result", "SVGFilterPrimitiveStandardAttributes.result");
 
@@ -1707,6 +1946,7 @@ public sealed partial class SvgFEConvolveMatrixElement : SvgElement
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfediffuselightingelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfediffuselightingelement"/>
 [IdlInterface("SVGFEDiffuseLightingElement", "https://drafts.csswg.org/filter-effects-1/#svgfediffuselightingelement")]
 public sealed partial class SvgFEDiffuseLightingElement : SvgElement
 {
@@ -1720,42 +1960,52 @@ public sealed partial class SvgFEDiffuseLightingElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>in1</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfediffuselightingelement-in1"/>
     [IdlMember("in1", "https://drafts.csswg.org/filter-effects-1/#dom-svgfediffuselightingelement-in1")]
     public SvgAnimatedString In1 => SvgProperties.Get<SvgAnimatedString>(this, "in1", "SVGFEDiffuseLightingElement.in1");
 
     /// <summary>Gets the <c>surfaceScale</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfediffuselightingelement-surfacescale"/>
     [IdlMember("surfaceScale", "https://drafts.csswg.org/filter-effects-1/#dom-svgfediffuselightingelement-surfacescale")]
     public SvgAnimatedNumber SurfaceScale => SvgProperties.Get<SvgAnimatedNumber>(this, "surfaceScale", "SVGFEDiffuseLightingElement.surfaceScale");
 
     /// <summary>Gets the <c>diffuseConstant</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfediffuselightingelement-diffuseconstant"/>
     [IdlMember("diffuseConstant", "https://drafts.csswg.org/filter-effects-1/#dom-svgfediffuselightingelement-diffuseconstant")]
     public SvgAnimatedNumber DiffuseConstant => SvgProperties.Get<SvgAnimatedNumber>(this, "diffuseConstant", "SVGFEDiffuseLightingElement.diffuseConstant");
 
     /// <summary>Gets the <c>kernelUnitLengthX</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfediffuselightingelement-kernelunitlengthx"/>
     [IdlMember("kernelUnitLengthX", "https://drafts.csswg.org/filter-effects-1/#dom-svgfediffuselightingelement-kernelunitlengthx")]
     public SvgAnimatedNumber KernelUnitLengthX => SvgProperties.Get<SvgAnimatedNumber>(this, "kernelUnitLengthX", "SVGFEDiffuseLightingElement.kernelUnitLengthX");
 
     /// <summary>Gets the <c>kernelUnitLengthY</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfediffuselightingelement-kernelunitlengthy"/>
     [IdlMember("kernelUnitLengthY", "https://drafts.csswg.org/filter-effects-1/#dom-svgfediffuselightingelement-kernelunitlengthy")]
     public SvgAnimatedNumber KernelUnitLengthY => SvgProperties.Get<SvgAnimatedNumber>(this, "kernelUnitLengthY", "SVGFEDiffuseLightingElement.kernelUnitLengthY");
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x"/>
     [IdlMember("x", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGFilterPrimitiveStandardAttributes.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y"/>
     [IdlMember("y", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGFilterPrimitiveStandardAttributes.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width"/>
     [IdlMember("width", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGFilterPrimitiveStandardAttributes.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height"/>
     [IdlMember("height", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGFilterPrimitiveStandardAttributes.height");
 
     /// <summary>Gets the <c>result</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result"/>
     [IdlMember("result", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result")]
     public SvgAnimatedString Result => SvgProperties.Get<SvgAnimatedString>(this, "result", "SVGFilterPrimitiveStandardAttributes.result");
 
@@ -1776,6 +2026,7 @@ public sealed partial class SvgFEDiffuseLightingElement : SvgElement
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfedisplacementmapelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfedisplacementmapelement"/>
 [IdlInterface("SVGFEDisplacementMapElement", "https://drafts.csswg.org/filter-effects-1/#svgfedisplacementmapelement")]
 public sealed partial class SvgFEDisplacementMapElement : SvgElement
 {
@@ -1789,62 +2040,77 @@ public sealed partial class SvgFEDisplacementMapElement : SvgElement
     partial void OnCreated();
 
     /// <summary>The <c>SVG_CHANNEL_UNKNOWN</c> constant (0).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-svg_channel_unknown"/>
     [IdlMember("SVG_CHANNEL_UNKNOWN", "https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-svg_channel_unknown")]
     public const ushort SvgChannelUnknown = 0;
 
     /// <summary>The <c>SVG_CHANNEL_R</c> constant (1).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-svg_channel_r"/>
     [IdlMember("SVG_CHANNEL_R", "https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-svg_channel_r")]
     public const ushort SvgChannelR = 1;
 
     /// <summary>The <c>SVG_CHANNEL_G</c> constant (2).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-svg_channel_g"/>
     [IdlMember("SVG_CHANNEL_G", "https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-svg_channel_g")]
     public const ushort SvgChannelG = 2;
 
     /// <summary>The <c>SVG_CHANNEL_B</c> constant (3).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-svg_channel_b"/>
     [IdlMember("SVG_CHANNEL_B", "https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-svg_channel_b")]
     public const ushort SvgChannelB = 3;
 
     /// <summary>The <c>SVG_CHANNEL_A</c> constant (4).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-svg_channel_a"/>
     [IdlMember("SVG_CHANNEL_A", "https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-svg_channel_a")]
     public const ushort SvgChannelA = 4;
 
     /// <summary>Gets the <c>in1</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-in1"/>
     [IdlMember("in1", "https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-in1")]
     public SvgAnimatedString In1 => SvgProperties.Get<SvgAnimatedString>(this, "in1", "SVGFEDisplacementMapElement.in1");
 
     /// <summary>Gets the <c>in2</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-in2"/>
     [IdlMember("in2", "https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-in2")]
     public SvgAnimatedString In2 => SvgProperties.Get<SvgAnimatedString>(this, "in2", "SVGFEDisplacementMapElement.in2");
 
     /// <summary>Gets the <c>scale</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-scale"/>
     [IdlMember("scale", "https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-scale")]
     public SvgAnimatedNumber Scale => SvgProperties.Get<SvgAnimatedNumber>(this, "scale", "SVGFEDisplacementMapElement.scale");
 
     /// <summary>Gets the <c>xChannelSelector</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-xchannelselector"/>
     [IdlMember("xChannelSelector", "https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-xchannelselector")]
     public SvgAnimatedEnumeration XChannelSelector => SvgProperties.Get<SvgAnimatedEnumeration>(this, "xChannelSelector", "SVGFEDisplacementMapElement.xChannelSelector");
 
     /// <summary>Gets the <c>yChannelSelector</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-ychannelselector"/>
     [IdlMember("yChannelSelector", "https://drafts.csswg.org/filter-effects-1/#dom-svgfedisplacementmapelement-ychannelselector")]
     public SvgAnimatedEnumeration YChannelSelector => SvgProperties.Get<SvgAnimatedEnumeration>(this, "yChannelSelector", "SVGFEDisplacementMapElement.yChannelSelector");
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x"/>
     [IdlMember("x", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGFilterPrimitiveStandardAttributes.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y"/>
     [IdlMember("y", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGFilterPrimitiveStandardAttributes.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width"/>
     [IdlMember("width", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGFilterPrimitiveStandardAttributes.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height"/>
     [IdlMember("height", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGFilterPrimitiveStandardAttributes.height");
 
     /// <summary>Gets the <c>result</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result"/>
     [IdlMember("result", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result")]
     public SvgAnimatedString Result => SvgProperties.Get<SvgAnimatedString>(this, "result", "SVGFilterPrimitiveStandardAttributes.result");
 
@@ -1866,6 +2132,7 @@ public sealed partial class SvgFEDisplacementMapElement : SvgElement
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfedistantlightelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfedistantlightelement"/>
 [IdlInterface("SVGFEDistantLightElement", "https://drafts.csswg.org/filter-effects-1/#svgfedistantlightelement")]
 public sealed partial class SvgFEDistantLightElement : SvgElement
 {
@@ -1879,10 +2146,12 @@ public sealed partial class SvgFEDistantLightElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>azimuth</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfedistantlightelement-azimuth"/>
     [IdlMember("azimuth", "https://drafts.csswg.org/filter-effects-1/#dom-svgfedistantlightelement-azimuth")]
     public SvgAnimatedNumber Azimuth => SvgProperties.Get<SvgAnimatedNumber>(this, "azimuth", "SVGFEDistantLightElement.azimuth");
 
     /// <summary>Gets the <c>elevation</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfedistantlightelement-elevation"/>
     [IdlMember("elevation", "https://drafts.csswg.org/filter-effects-1/#dom-svgfedistantlightelement-elevation")]
     public SvgAnimatedNumber Elevation => SvgProperties.Get<SvgAnimatedNumber>(this, "elevation", "SVGFEDistantLightElement.elevation");
 
@@ -1896,6 +2165,7 @@ public sealed partial class SvgFEDistantLightElement : SvgElement
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfedropshadowelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfedropshadowelement"/>
 [IdlInterface("SVGFEDropShadowElement", "https://drafts.csswg.org/filter-effects-1/#svgfedropshadowelement")]
 public sealed partial class SvgFEDropShadowElement : SvgElement
 {
@@ -1909,42 +2179,52 @@ public sealed partial class SvgFEDropShadowElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>in1</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfedropshadowelement-in1"/>
     [IdlMember("in1", "https://drafts.csswg.org/filter-effects-1/#dom-svgfedropshadowelement-in1")]
     public SvgAnimatedString In1 => SvgProperties.Get<SvgAnimatedString>(this, "in1", "SVGFEDropShadowElement.in1");
 
     /// <summary>Gets the <c>dx</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfedropshadowelement-dx"/>
     [IdlMember("dx", "https://drafts.csswg.org/filter-effects-1/#dom-svgfedropshadowelement-dx")]
     public SvgAnimatedNumber Dx => SvgProperties.Get<SvgAnimatedNumber>(this, "dx", "SVGFEDropShadowElement.dx");
 
     /// <summary>Gets the <c>dy</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfedropshadowelement-dy"/>
     [IdlMember("dy", "https://drafts.csswg.org/filter-effects-1/#dom-svgfedropshadowelement-dy")]
     public SvgAnimatedNumber Dy => SvgProperties.Get<SvgAnimatedNumber>(this, "dy", "SVGFEDropShadowElement.dy");
 
     /// <summary>Gets the <c>stdDeviationX</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfedropshadowelement-stddeviationx"/>
     [IdlMember("stdDeviationX", "https://drafts.csswg.org/filter-effects-1/#dom-svgfedropshadowelement-stddeviationx")]
     public SvgAnimatedNumber StdDeviationX => SvgProperties.Get<SvgAnimatedNumber>(this, "stdDeviationX", "SVGFEDropShadowElement.stdDeviationX");
 
     /// <summary>Gets the <c>stdDeviationY</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfedropshadowelement-stddeviationy"/>
     [IdlMember("stdDeviationY", "https://drafts.csswg.org/filter-effects-1/#dom-svgfedropshadowelement-stddeviationy")]
     public SvgAnimatedNumber StdDeviationY => SvgProperties.Get<SvgAnimatedNumber>(this, "stdDeviationY", "SVGFEDropShadowElement.stdDeviationY");
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x"/>
     [IdlMember("x", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGFilterPrimitiveStandardAttributes.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y"/>
     [IdlMember("y", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGFilterPrimitiveStandardAttributes.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width"/>
     [IdlMember("width", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGFilterPrimitiveStandardAttributes.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height"/>
     [IdlMember("height", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGFilterPrimitiveStandardAttributes.height");
 
     /// <summary>Gets the <c>result</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result"/>
     [IdlMember("result", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result")]
     public SvgAnimatedString Result => SvgProperties.Get<SvgAnimatedString>(this, "result", "SVGFilterPrimitiveStandardAttributes.result");
 
@@ -1965,6 +2245,7 @@ public sealed partial class SvgFEDropShadowElement : SvgElement
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfefloodelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfefloodelement"/>
 [IdlInterface("SVGFEFloodElement", "https://drafts.csswg.org/filter-effects-1/#svgfefloodelement")]
 public sealed partial class SvgFEFloodElement : SvgElement
 {
@@ -1978,22 +2259,27 @@ public sealed partial class SvgFEFloodElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x"/>
     [IdlMember("x", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGFilterPrimitiveStandardAttributes.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y"/>
     [IdlMember("y", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGFilterPrimitiveStandardAttributes.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width"/>
     [IdlMember("width", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGFilterPrimitiveStandardAttributes.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height"/>
     [IdlMember("height", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGFilterPrimitiveStandardAttributes.height");
 
     /// <summary>Gets the <c>result</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result"/>
     [IdlMember("result", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result")]
     public SvgAnimatedString Result => SvgProperties.Get<SvgAnimatedString>(this, "result", "SVGFilterPrimitiveStandardAttributes.result");
 
@@ -2010,6 +2296,7 @@ public sealed partial class SvgFEFloodElement : SvgElement
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfefuncaelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfefuncaelement"/>
 [IdlInterface("SVGFEFuncAElement", "https://drafts.csswg.org/filter-effects-1/#svgfefuncaelement")]
 public sealed partial class SvgFEFuncAElement : SvgComponentTransferFunctionElement
 {
@@ -2024,6 +2311,7 @@ public sealed partial class SvgFEFuncAElement : SvgComponentTransferFunctionElem
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfefuncbelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfefuncbelement"/>
 [IdlInterface("SVGFEFuncBElement", "https://drafts.csswg.org/filter-effects-1/#svgfefuncbelement")]
 public sealed partial class SvgFEFuncBElement : SvgComponentTransferFunctionElement
 {
@@ -2038,6 +2326,7 @@ public sealed partial class SvgFEFuncBElement : SvgComponentTransferFunctionElem
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfefuncgelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfefuncgelement"/>
 [IdlInterface("SVGFEFuncGElement", "https://drafts.csswg.org/filter-effects-1/#svgfefuncgelement")]
 public sealed partial class SvgFEFuncGElement : SvgComponentTransferFunctionElement
 {
@@ -2052,6 +2341,7 @@ public sealed partial class SvgFEFuncGElement : SvgComponentTransferFunctionElem
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfefuncrelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfefuncrelement"/>
 [IdlInterface("SVGFEFuncRElement", "https://drafts.csswg.org/filter-effects-1/#svgfefuncrelement")]
 public sealed partial class SvgFEFuncRElement : SvgComponentTransferFunctionElement
 {
@@ -2066,6 +2356,7 @@ public sealed partial class SvgFEFuncRElement : SvgComponentTransferFunctionElem
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfegaussianblurelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfegaussianblurelement"/>
 [IdlInterface("SVGFEGaussianBlurElement", "https://drafts.csswg.org/filter-effects-1/#svgfegaussianblurelement")]
 public sealed partial class SvgFEGaussianBlurElement : SvgElement
 {
@@ -2079,54 +2370,67 @@ public sealed partial class SvgFEGaussianBlurElement : SvgElement
     partial void OnCreated();
 
     /// <summary>The <c>SVG_EDGEMODE_UNKNOWN</c> constant (0).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-svg_edgemode_unknown"/>
     [IdlMember("SVG_EDGEMODE_UNKNOWN", "https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-svg_edgemode_unknown")]
     public const ushort SvgEdgemodeUnknown = 0;
 
     /// <summary>The <c>SVG_EDGEMODE_DUPLICATE</c> constant (1).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-svg_edgemode_duplicate"/>
     [IdlMember("SVG_EDGEMODE_DUPLICATE", "https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-svg_edgemode_duplicate")]
     public const ushort SvgEdgemodeDuplicate = 1;
 
     /// <summary>The <c>SVG_EDGEMODE_WRAP</c> constant (2).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-svg_edgemode_wrap"/>
     [IdlMember("SVG_EDGEMODE_WRAP", "https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-svg_edgemode_wrap")]
     public const ushort SvgEdgemodeWrap = 2;
 
     /// <summary>The <c>SVG_EDGEMODE_NONE</c> constant (3).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-svg_edgemode_none"/>
     [IdlMember("SVG_EDGEMODE_NONE", "https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-svg_edgemode_none")]
     public const ushort SvgEdgemodeNone = 3;
 
     /// <summary>Gets the <c>in1</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-in1"/>
     [IdlMember("in1", "https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-in1")]
     public SvgAnimatedString In1 => SvgProperties.Get<SvgAnimatedString>(this, "in1", "SVGFEGaussianBlurElement.in1");
 
     /// <summary>Gets the <c>stdDeviationX</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-stddeviationx"/>
     [IdlMember("stdDeviationX", "https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-stddeviationx")]
     public SvgAnimatedNumber StdDeviationX => SvgProperties.Get<SvgAnimatedNumber>(this, "stdDeviationX", "SVGFEGaussianBlurElement.stdDeviationX");
 
     /// <summary>Gets the <c>stdDeviationY</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-stddeviationy"/>
     [IdlMember("stdDeviationY", "https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-stddeviationy")]
     public SvgAnimatedNumber StdDeviationY => SvgProperties.Get<SvgAnimatedNumber>(this, "stdDeviationY", "SVGFEGaussianBlurElement.stdDeviationY");
 
     /// <summary>Gets the <c>edgeMode</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-edgemode"/>
     [IdlMember("edgeMode", "https://drafts.csswg.org/filter-effects-1/#dom-svgfegaussianblurelement-edgemode")]
     public SvgAnimatedEnumeration EdgeMode => SvgProperties.Get<SvgAnimatedEnumeration>(this, "edgeMode", "SVGFEGaussianBlurElement.edgeMode");
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x"/>
     [IdlMember("x", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGFilterPrimitiveStandardAttributes.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y"/>
     [IdlMember("y", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGFilterPrimitiveStandardAttributes.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width"/>
     [IdlMember("width", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGFilterPrimitiveStandardAttributes.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height"/>
     [IdlMember("height", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGFilterPrimitiveStandardAttributes.height");
 
     /// <summary>Gets the <c>result</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result"/>
     [IdlMember("result", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result")]
     public SvgAnimatedString Result => SvgProperties.Get<SvgAnimatedString>(this, "result", "SVGFilterPrimitiveStandardAttributes.result");
 
@@ -2146,6 +2450,7 @@ public sealed partial class SvgFEGaussianBlurElement : SvgElement
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfeimageelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfeimageelement"/>
 [IdlInterface("SVGFEImageElement", "https://drafts.csswg.org/filter-effects-1/#svgfeimageelement")]
 public sealed partial class SvgFEImageElement : SvgElement
 {
@@ -2159,34 +2464,42 @@ public sealed partial class SvgFEImageElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>preserveAspectRatio</c> attribute as a <c>SVGAnimatedPreserveAspectRatio</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeimageelement-preserveaspectratio"/>
     [IdlMember("preserveAspectRatio", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeimageelement-preserveaspectratio")]
     public SvgAnimatedPreserveAspectRatio PreserveAspectRatio => SvgProperties.Get<SvgAnimatedPreserveAspectRatio>(this, "preserveAspectRatio", "SVGFEImageElement.preserveAspectRatio");
 
     /// <summary>Gets the <c>crossOrigin</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeimageelement-crossorigin"/>
     [IdlMember("crossOrigin", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeimageelement-crossorigin")]
     public SvgAnimatedString CrossOrigin => SvgProperties.Get<SvgAnimatedString>(this, "crossOrigin", "SVGFEImageElement.crossOrigin");
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x"/>
     [IdlMember("x", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGFilterPrimitiveStandardAttributes.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y"/>
     [IdlMember("y", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGFilterPrimitiveStandardAttributes.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width"/>
     [IdlMember("width", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGFilterPrimitiveStandardAttributes.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height"/>
     [IdlMember("height", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGFilterPrimitiveStandardAttributes.height");
 
     /// <summary>Gets the <c>result</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result"/>
     [IdlMember("result", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result")]
     public SvgAnimatedString Result => SvgProperties.Get<SvgAnimatedString>(this, "result", "SVGFilterPrimitiveStandardAttributes.result");
 
     /// <summary>Gets the <c>href</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGURIReference__href"/>
     [IdlMember("href", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGURIReference__href")]
     public SvgAnimatedString Href => SvgProperties.Get<SvgAnimatedString>(this, "href", "SVGURIReference.href");
 
@@ -2206,6 +2519,7 @@ public sealed partial class SvgFEImageElement : SvgElement
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfemergeelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfemergeelement"/>
 [IdlInterface("SVGFEMergeElement", "https://drafts.csswg.org/filter-effects-1/#svgfemergeelement")]
 public sealed partial class SvgFEMergeElement : SvgElement
 {
@@ -2219,22 +2533,27 @@ public sealed partial class SvgFEMergeElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x"/>
     [IdlMember("x", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGFilterPrimitiveStandardAttributes.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y"/>
     [IdlMember("y", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGFilterPrimitiveStandardAttributes.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width"/>
     [IdlMember("width", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGFilterPrimitiveStandardAttributes.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height"/>
     [IdlMember("height", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGFilterPrimitiveStandardAttributes.height");
 
     /// <summary>Gets the <c>result</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result"/>
     [IdlMember("result", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result")]
     public SvgAnimatedString Result => SvgProperties.Get<SvgAnimatedString>(this, "result", "SVGFilterPrimitiveStandardAttributes.result");
 
@@ -2251,6 +2570,7 @@ public sealed partial class SvgFEMergeElement : SvgElement
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfemergenodeelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfemergenodeelement"/>
 [IdlInterface("SVGFEMergeNodeElement", "https://drafts.csswg.org/filter-effects-1/#svgfemergenodeelement")]
 public sealed partial class SvgFEMergeNodeElement : SvgElement
 {
@@ -2264,6 +2584,7 @@ public sealed partial class SvgFEMergeNodeElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>in1</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfemergenodeelement-in1"/>
     [IdlMember("in1", "https://drafts.csswg.org/filter-effects-1/#dom-svgfemergenodeelement-in1")]
     public SvgAnimatedString In1 => SvgProperties.Get<SvgAnimatedString>(this, "in1", "SVGFEMergeNodeElement.in1");
 
@@ -2276,6 +2597,7 @@ public sealed partial class SvgFEMergeNodeElement : SvgElement
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfemorphologyelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfemorphologyelement"/>
 [IdlInterface("SVGFEMorphologyElement", "https://drafts.csswg.org/filter-effects-1/#svgfemorphologyelement")]
 public sealed partial class SvgFEMorphologyElement : SvgElement
 {
@@ -2289,50 +2611,62 @@ public sealed partial class SvgFEMorphologyElement : SvgElement
     partial void OnCreated();
 
     /// <summary>The <c>SVG_MORPHOLOGY_OPERATOR_UNKNOWN</c> constant (0).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfemorphologyelement-svg_morphology_operator_unknown"/>
     [IdlMember("SVG_MORPHOLOGY_OPERATOR_UNKNOWN", "https://drafts.csswg.org/filter-effects-1/#dom-svgfemorphologyelement-svg_morphology_operator_unknown")]
     public const ushort SvgMorphologyOperatorUnknown = 0;
 
     /// <summary>The <c>SVG_MORPHOLOGY_OPERATOR_ERODE</c> constant (1).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfemorphologyelement-svg_morphology_operator_erode"/>
     [IdlMember("SVG_MORPHOLOGY_OPERATOR_ERODE", "https://drafts.csswg.org/filter-effects-1/#dom-svgfemorphologyelement-svg_morphology_operator_erode")]
     public const ushort SvgMorphologyOperatorErode = 1;
 
     /// <summary>The <c>SVG_MORPHOLOGY_OPERATOR_DILATE</c> constant (2).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfemorphologyelement-svg_morphology_operator_dilate"/>
     [IdlMember("SVG_MORPHOLOGY_OPERATOR_DILATE", "https://drafts.csswg.org/filter-effects-1/#dom-svgfemorphologyelement-svg_morphology_operator_dilate")]
     public const ushort SvgMorphologyOperatorDilate = 2;
 
     /// <summary>Gets the <c>in1</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfemorphologyelement-in1"/>
     [IdlMember("in1", "https://drafts.csswg.org/filter-effects-1/#dom-svgfemorphologyelement-in1")]
     public SvgAnimatedString In1 => SvgProperties.Get<SvgAnimatedString>(this, "in1", "SVGFEMorphologyElement.in1");
 
     /// <summary>Gets the <c>operator</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfemorphologyelement-operator"/>
     [IdlMember("operator", "https://drafts.csswg.org/filter-effects-1/#dom-svgfemorphologyelement-operator")]
     public SvgAnimatedEnumeration Operator => SvgProperties.Get<SvgAnimatedEnumeration>(this, "operator", "SVGFEMorphologyElement.operator");
 
     /// <summary>Gets the <c>radiusX</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfemorphologyelement-radiusx"/>
     [IdlMember("radiusX", "https://drafts.csswg.org/filter-effects-1/#dom-svgfemorphologyelement-radiusx")]
     public SvgAnimatedNumber RadiusX => SvgProperties.Get<SvgAnimatedNumber>(this, "radiusX", "SVGFEMorphologyElement.radiusX");
 
     /// <summary>Gets the <c>radiusY</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfemorphologyelement-radiusy"/>
     [IdlMember("radiusY", "https://drafts.csswg.org/filter-effects-1/#dom-svgfemorphologyelement-radiusy")]
     public SvgAnimatedNumber RadiusY => SvgProperties.Get<SvgAnimatedNumber>(this, "radiusY", "SVGFEMorphologyElement.radiusY");
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x"/>
     [IdlMember("x", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGFilterPrimitiveStandardAttributes.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y"/>
     [IdlMember("y", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGFilterPrimitiveStandardAttributes.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width"/>
     [IdlMember("width", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGFilterPrimitiveStandardAttributes.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height"/>
     [IdlMember("height", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGFilterPrimitiveStandardAttributes.height");
 
     /// <summary>Gets the <c>result</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result"/>
     [IdlMember("result", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result")]
     public SvgAnimatedString Result => SvgProperties.Get<SvgAnimatedString>(this, "result", "SVGFilterPrimitiveStandardAttributes.result");
 
@@ -2352,6 +2686,7 @@ public sealed partial class SvgFEMorphologyElement : SvgElement
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfeoffsetelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfeoffsetelement"/>
 [IdlInterface("SVGFEOffsetElement", "https://drafts.csswg.org/filter-effects-1/#svgfeoffsetelement")]
 public sealed partial class SvgFEOffsetElement : SvgElement
 {
@@ -2365,34 +2700,42 @@ public sealed partial class SvgFEOffsetElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>in1</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeoffsetelement-in1"/>
     [IdlMember("in1", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeoffsetelement-in1")]
     public SvgAnimatedString In1 => SvgProperties.Get<SvgAnimatedString>(this, "in1", "SVGFEOffsetElement.in1");
 
     /// <summary>Gets the <c>dx</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeoffsetelement-dx"/>
     [IdlMember("dx", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeoffsetelement-dx")]
     public SvgAnimatedNumber Dx => SvgProperties.Get<SvgAnimatedNumber>(this, "dx", "SVGFEOffsetElement.dx");
 
     /// <summary>Gets the <c>dy</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeoffsetelement-dy"/>
     [IdlMember("dy", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeoffsetelement-dy")]
     public SvgAnimatedNumber Dy => SvgProperties.Get<SvgAnimatedNumber>(this, "dy", "SVGFEOffsetElement.dy");
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x"/>
     [IdlMember("x", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGFilterPrimitiveStandardAttributes.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y"/>
     [IdlMember("y", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGFilterPrimitiveStandardAttributes.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width"/>
     [IdlMember("width", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGFilterPrimitiveStandardAttributes.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height"/>
     [IdlMember("height", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGFilterPrimitiveStandardAttributes.height");
 
     /// <summary>Gets the <c>result</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result"/>
     [IdlMember("result", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result")]
     public SvgAnimatedString Result => SvgProperties.Get<SvgAnimatedString>(this, "result", "SVGFilterPrimitiveStandardAttributes.result");
 
@@ -2412,6 +2755,7 @@ public sealed partial class SvgFEOffsetElement : SvgElement
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfepointlightelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfepointlightelement"/>
 [IdlInterface("SVGFEPointLightElement", "https://drafts.csswg.org/filter-effects-1/#svgfepointlightelement")]
 public sealed partial class SvgFEPointLightElement : SvgElement
 {
@@ -2425,14 +2769,17 @@ public sealed partial class SvgFEPointLightElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfepointlightelement-x"/>
     [IdlMember("x", "https://drafts.csswg.org/filter-effects-1/#dom-svgfepointlightelement-x")]
     public SvgAnimatedNumber X => SvgProperties.Get<SvgAnimatedNumber>(this, "x", "SVGFEPointLightElement.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfepointlightelement-y"/>
     [IdlMember("y", "https://drafts.csswg.org/filter-effects-1/#dom-svgfepointlightelement-y")]
     public SvgAnimatedNumber Y => SvgProperties.Get<SvgAnimatedNumber>(this, "y", "SVGFEPointLightElement.y");
 
     /// <summary>Gets the <c>z</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfepointlightelement-z"/>
     [IdlMember("z", "https://drafts.csswg.org/filter-effects-1/#dom-svgfepointlightelement-z")]
     public SvgAnimatedNumber Z => SvgProperties.Get<SvgAnimatedNumber>(this, "z", "SVGFEPointLightElement.z");
 
@@ -2447,6 +2794,7 @@ public sealed partial class SvgFEPointLightElement : SvgElement
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfespecularlightingelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfespecularlightingelement"/>
 [IdlInterface("SVGFESpecularLightingElement", "https://drafts.csswg.org/filter-effects-1/#svgfespecularlightingelement")]
 public sealed partial class SvgFESpecularLightingElement : SvgElement
 {
@@ -2460,46 +2808,57 @@ public sealed partial class SvgFESpecularLightingElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>in1</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfespecularlightingelement-in1"/>
     [IdlMember("in1", "https://drafts.csswg.org/filter-effects-1/#dom-svgfespecularlightingelement-in1")]
     public SvgAnimatedString In1 => SvgProperties.Get<SvgAnimatedString>(this, "in1", "SVGFESpecularLightingElement.in1");
 
     /// <summary>Gets the <c>surfaceScale</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfespecularlightingelement-surfacescale"/>
     [IdlMember("surfaceScale", "https://drafts.csswg.org/filter-effects-1/#dom-svgfespecularlightingelement-surfacescale")]
     public SvgAnimatedNumber SurfaceScale => SvgProperties.Get<SvgAnimatedNumber>(this, "surfaceScale", "SVGFESpecularLightingElement.surfaceScale");
 
     /// <summary>Gets the <c>specularConstant</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfespecularlightingelement-specularconstant"/>
     [IdlMember("specularConstant", "https://drafts.csswg.org/filter-effects-1/#dom-svgfespecularlightingelement-specularconstant")]
     public SvgAnimatedNumber SpecularConstant => SvgProperties.Get<SvgAnimatedNumber>(this, "specularConstant", "SVGFESpecularLightingElement.specularConstant");
 
     /// <summary>Gets the <c>specularExponent</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfespecularlightingelement-specularexponent"/>
     [IdlMember("specularExponent", "https://drafts.csswg.org/filter-effects-1/#dom-svgfespecularlightingelement-specularexponent")]
     public SvgAnimatedNumber SpecularExponent => SvgProperties.Get<SvgAnimatedNumber>(this, "specularExponent", "SVGFESpecularLightingElement.specularExponent");
 
     /// <summary>Gets the <c>kernelUnitLengthX</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfespecularlightingelement-kernelunitlengthx"/>
     [IdlMember("kernelUnitLengthX", "https://drafts.csswg.org/filter-effects-1/#dom-svgfespecularlightingelement-kernelunitlengthx")]
     public SvgAnimatedNumber KernelUnitLengthX => SvgProperties.Get<SvgAnimatedNumber>(this, "kernelUnitLengthX", "SVGFESpecularLightingElement.kernelUnitLengthX");
 
     /// <summary>Gets the <c>kernelUnitLengthY</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfespecularlightingelement-kernelunitlengthy"/>
     [IdlMember("kernelUnitLengthY", "https://drafts.csswg.org/filter-effects-1/#dom-svgfespecularlightingelement-kernelunitlengthy")]
     public SvgAnimatedNumber KernelUnitLengthY => SvgProperties.Get<SvgAnimatedNumber>(this, "kernelUnitLengthY", "SVGFESpecularLightingElement.kernelUnitLengthY");
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x"/>
     [IdlMember("x", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGFilterPrimitiveStandardAttributes.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y"/>
     [IdlMember("y", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGFilterPrimitiveStandardAttributes.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width"/>
     [IdlMember("width", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGFilterPrimitiveStandardAttributes.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height"/>
     [IdlMember("height", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGFilterPrimitiveStandardAttributes.height");
 
     /// <summary>Gets the <c>result</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result"/>
     [IdlMember("result", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result")]
     public SvgAnimatedString Result => SvgProperties.Get<SvgAnimatedString>(this, "result", "SVGFilterPrimitiveStandardAttributes.result");
 
@@ -2521,6 +2880,7 @@ public sealed partial class SvgFESpecularLightingElement : SvgElement
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfespotlightelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfespotlightelement"/>
 [IdlInterface("SVGFESpotLightElement", "https://drafts.csswg.org/filter-effects-1/#svgfespotlightelement")]
 public sealed partial class SvgFESpotLightElement : SvgElement
 {
@@ -2534,34 +2894,42 @@ public sealed partial class SvgFESpotLightElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfespotlightelement-x"/>
     [IdlMember("x", "https://drafts.csswg.org/filter-effects-1/#dom-svgfespotlightelement-x")]
     public SvgAnimatedNumber X => SvgProperties.Get<SvgAnimatedNumber>(this, "x", "SVGFESpotLightElement.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfespotlightelement-y"/>
     [IdlMember("y", "https://drafts.csswg.org/filter-effects-1/#dom-svgfespotlightelement-y")]
     public SvgAnimatedNumber Y => SvgProperties.Get<SvgAnimatedNumber>(this, "y", "SVGFESpotLightElement.y");
 
     /// <summary>Gets the <c>z</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfespotlightelement-z"/>
     [IdlMember("z", "https://drafts.csswg.org/filter-effects-1/#dom-svgfespotlightelement-z")]
     public SvgAnimatedNumber Z => SvgProperties.Get<SvgAnimatedNumber>(this, "z", "SVGFESpotLightElement.z");
 
     /// <summary>Gets the <c>pointsAtX</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfespotlightelement-pointsatx"/>
     [IdlMember("pointsAtX", "https://drafts.csswg.org/filter-effects-1/#dom-svgfespotlightelement-pointsatx")]
     public SvgAnimatedNumber PointsAtX => SvgProperties.Get<SvgAnimatedNumber>(this, "pointsAtX", "SVGFESpotLightElement.pointsAtX");
 
     /// <summary>Gets the <c>pointsAtY</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfespotlightelement-pointsaty"/>
     [IdlMember("pointsAtY", "https://drafts.csswg.org/filter-effects-1/#dom-svgfespotlightelement-pointsaty")]
     public SvgAnimatedNumber PointsAtY => SvgProperties.Get<SvgAnimatedNumber>(this, "pointsAtY", "SVGFESpotLightElement.pointsAtY");
 
     /// <summary>Gets the <c>pointsAtZ</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfespotlightelement-pointsatz"/>
     [IdlMember("pointsAtZ", "https://drafts.csswg.org/filter-effects-1/#dom-svgfespotlightelement-pointsatz")]
     public SvgAnimatedNumber PointsAtZ => SvgProperties.Get<SvgAnimatedNumber>(this, "pointsAtZ", "SVGFESpotLightElement.pointsAtZ");
 
     /// <summary>Gets the <c>specularExponent</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfespotlightelement-specularexponent"/>
     [IdlMember("specularExponent", "https://drafts.csswg.org/filter-effects-1/#dom-svgfespotlightelement-specularexponent")]
     public SvgAnimatedNumber SpecularExponent => SvgProperties.Get<SvgAnimatedNumber>(this, "specularExponent", "SVGFESpotLightElement.specularExponent");
 
     /// <summary>Gets the <c>limitingConeAngle</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfespotlightelement-limitingconeangle"/>
     [IdlMember("limitingConeAngle", "https://drafts.csswg.org/filter-effects-1/#dom-svgfespotlightelement-limitingconeangle")]
     public SvgAnimatedNumber LimitingConeAngle => SvgProperties.Get<SvgAnimatedNumber>(this, "limitingConeAngle", "SVGFESpotLightElement.limitingConeAngle");
 
@@ -2581,6 +2949,7 @@ public sealed partial class SvgFESpotLightElement : SvgElement
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfetileelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfetileelement"/>
 [IdlInterface("SVGFETileElement", "https://drafts.csswg.org/filter-effects-1/#svgfetileelement")]
 public sealed partial class SvgFETileElement : SvgElement
 {
@@ -2594,26 +2963,32 @@ public sealed partial class SvgFETileElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>in1</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfetileelement-in1"/>
     [IdlMember("in1", "https://drafts.csswg.org/filter-effects-1/#dom-svgfetileelement-in1")]
     public SvgAnimatedString In1 => SvgProperties.Get<SvgAnimatedString>(this, "in1", "SVGFETileElement.in1");
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x"/>
     [IdlMember("x", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGFilterPrimitiveStandardAttributes.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y"/>
     [IdlMember("y", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGFilterPrimitiveStandardAttributes.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width"/>
     [IdlMember("width", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGFilterPrimitiveStandardAttributes.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height"/>
     [IdlMember("height", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGFilterPrimitiveStandardAttributes.height");
 
     /// <summary>Gets the <c>result</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result"/>
     [IdlMember("result", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result")]
     public SvgAnimatedString Result => SvgProperties.Get<SvgAnimatedString>(this, "result", "SVGFilterPrimitiveStandardAttributes.result");
 
@@ -2631,6 +3006,7 @@ public sealed partial class SvgFETileElement : SvgElement
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfeturbulenceelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfeturbulenceelement"/>
 [IdlInterface("SVGFETurbulenceElement", "https://drafts.csswg.org/filter-effects-1/#svgfeturbulenceelement")]
 public sealed partial class SvgFETurbulenceElement : SvgElement
 {
@@ -2644,70 +3020,87 @@ public sealed partial class SvgFETurbulenceElement : SvgElement
     partial void OnCreated();
 
     /// <summary>The <c>SVG_TURBULENCE_TYPE_UNKNOWN</c> constant (0).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-svg_turbulence_type_unknown"/>
     [IdlMember("SVG_TURBULENCE_TYPE_UNKNOWN", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-svg_turbulence_type_unknown")]
     public const ushort SvgTurbulenceTypeUnknown = 0;
 
     /// <summary>The <c>SVG_TURBULENCE_TYPE_FRACTALNOISE</c> constant (1).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-svg_turbulence_type_fractalnoise"/>
     [IdlMember("SVG_TURBULENCE_TYPE_FRACTALNOISE", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-svg_turbulence_type_fractalnoise")]
     public const ushort SvgTurbulenceTypeFractalnoise = 1;
 
     /// <summary>The <c>SVG_TURBULENCE_TYPE_TURBULENCE</c> constant (2).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-svg_turbulence_type_turbulence"/>
     [IdlMember("SVG_TURBULENCE_TYPE_TURBULENCE", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-svg_turbulence_type_turbulence")]
     public const ushort SvgTurbulenceTypeTurbulence = 2;
 
     /// <summary>The <c>SVG_STITCHTYPE_UNKNOWN</c> constant (0).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-svg_stitchtype_unknown"/>
     [IdlMember("SVG_STITCHTYPE_UNKNOWN", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-svg_stitchtype_unknown")]
     public const ushort SvgStitchtypeUnknown = 0;
 
     /// <summary>The <c>SVG_STITCHTYPE_STITCH</c> constant (1).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-svg_stitchtype_stitch"/>
     [IdlMember("SVG_STITCHTYPE_STITCH", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-svg_stitchtype_stitch")]
     public const ushort SvgStitchtypeStitch = 1;
 
     /// <summary>The <c>SVG_STITCHTYPE_NOSTITCH</c> constant (2).</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-svg_stitchtype_nostitch"/>
     [IdlMember("SVG_STITCHTYPE_NOSTITCH", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-svg_stitchtype_nostitch")]
     public const ushort SvgStitchtypeNostitch = 2;
 
     /// <summary>Gets the <c>baseFrequencyX</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-basefrequencyx"/>
     [IdlMember("baseFrequencyX", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-basefrequencyx")]
     public SvgAnimatedNumber BaseFrequencyX => SvgProperties.Get<SvgAnimatedNumber>(this, "baseFrequencyX", "SVGFETurbulenceElement.baseFrequencyX");
 
     /// <summary>Gets the <c>baseFrequencyY</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-basefrequencyy"/>
     [IdlMember("baseFrequencyY", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-basefrequencyy")]
     public SvgAnimatedNumber BaseFrequencyY => SvgProperties.Get<SvgAnimatedNumber>(this, "baseFrequencyY", "SVGFETurbulenceElement.baseFrequencyY");
 
     /// <summary>Gets the <c>numOctaves</c> attribute as a <c>SVGAnimatedInteger</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-numoctaves"/>
     [IdlMember("numOctaves", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-numoctaves")]
     public SvgAnimatedInteger NumOctaves => SvgProperties.Get<SvgAnimatedInteger>(this, "numOctaves", "SVGFETurbulenceElement.numOctaves");
 
     /// <summary>Gets the <c>seed</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-seed"/>
     [IdlMember("seed", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-seed")]
     public SvgAnimatedNumber Seed => SvgProperties.Get<SvgAnimatedNumber>(this, "seed", "SVGFETurbulenceElement.seed");
 
     /// <summary>Gets the <c>stitchTiles</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-stitchtiles"/>
     [IdlMember("stitchTiles", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-stitchtiles")]
     public SvgAnimatedEnumeration StitchTiles => SvgProperties.Get<SvgAnimatedEnumeration>(this, "stitchTiles", "SVGFETurbulenceElement.stitchTiles");
 
     /// <summary>Gets the <c>type</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-type"/>
     [IdlMember("type", "https://drafts.csswg.org/filter-effects-1/#dom-svgfeturbulenceelement-type")]
     public SvgAnimatedEnumeration Type => SvgProperties.Get<SvgAnimatedEnumeration>(this, "type", "SVGFETurbulenceElement.type");
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x"/>
     [IdlMember("x", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGFilterPrimitiveStandardAttributes.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y"/>
     [IdlMember("y", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGFilterPrimitiveStandardAttributes.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width"/>
     [IdlMember("width", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGFilterPrimitiveStandardAttributes.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height"/>
     [IdlMember("height", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGFilterPrimitiveStandardAttributes.height");
 
     /// <summary>Gets the <c>result</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result"/>
     [IdlMember("result", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterprimitivestandardattributes-result")]
     public SvgAnimatedString Result => SvgProperties.Get<SvgAnimatedString>(this, "result", "SVGFilterPrimitiveStandardAttributes.result");
 
@@ -2729,6 +3122,7 @@ public sealed partial class SvgFETurbulenceElement : SvgElement
 }
 
 /// <summary>https://drafts.csswg.org/filter-effects-1/#svgfilterelement</summary>
+/// <seealso href="https://drafts.csswg.org/filter-effects-1/#svgfilterelement"/>
 [IdlInterface("SVGFilterElement", "https://drafts.csswg.org/filter-effects-1/#svgfilterelement")]
 public sealed partial class SvgFilterElement : SvgElement
 {
@@ -2742,26 +3136,32 @@ public sealed partial class SvgFilterElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>filterUnits</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterelement-filterunits"/>
     [IdlMember("filterUnits", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterelement-filterunits")]
     public SvgAnimatedEnumeration FilterUnits => SvgProperties.Get<SvgAnimatedEnumeration>(this, "filterUnits", "SVGFilterElement.filterUnits");
 
     /// <summary>Gets the <c>primitiveUnits</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterelement-primitiveunits"/>
     [IdlMember("primitiveUnits", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterelement-primitiveunits")]
     public SvgAnimatedEnumeration PrimitiveUnits => SvgProperties.Get<SvgAnimatedEnumeration>(this, "primitiveUnits", "SVGFilterElement.primitiveUnits");
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterelement-x"/>
     [IdlMember("x", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterelement-x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGFilterElement.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterelement-y"/>
     [IdlMember("y", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterelement-y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGFilterElement.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterelement-width"/>
     [IdlMember("width", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterelement-width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGFilterElement.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/filter-effects-1/#dom-svgfilterelement-height"/>
     [IdlMember("height", "https://drafts.csswg.org/filter-effects-1/#dom-svgfilterelement-height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGFilterElement.height");
 
@@ -2779,6 +3179,7 @@ public sealed partial class SvgFilterElement : SvgElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/embedded.html#InterfaceSVGForeignObjectElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/embedded.html#InterfaceSVGForeignObjectElement"/>
 [IdlInterface("SVGForeignObjectElement", "https://w3c.github.io/svgwg/svg2-draft/embedded.html#InterfaceSVGForeignObjectElement")]
 public sealed partial class SvgForeignObjectElement : SvgGraphicsElement
 {
@@ -2792,18 +3193,22 @@ public sealed partial class SvgForeignObjectElement : SvgGraphicsElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/embedded.html#__svg__SVGForeignObjectElement__x"/>
     [IdlMember("x", "https://w3c.github.io/svgwg/svg2-draft/embedded.html#__svg__SVGForeignObjectElement__x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGForeignObjectElement.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/embedded.html#__svg__SVGForeignObjectElement__y"/>
     [IdlMember("y", "https://w3c.github.io/svgwg/svg2-draft/embedded.html#__svg__SVGForeignObjectElement__y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGForeignObjectElement.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/embedded.html#__svg__SVGForeignObjectElement__width"/>
     [IdlMember("width", "https://w3c.github.io/svgwg/svg2-draft/embedded.html#__svg__SVGForeignObjectElement__width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGForeignObjectElement.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/embedded.html#__svg__SVGForeignObjectElement__height"/>
     [IdlMember("height", "https://w3c.github.io/svgwg/svg2-draft/embedded.html#__svg__SVGForeignObjectElement__height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGForeignObjectElement.height");
 
@@ -2819,6 +3224,7 @@ public sealed partial class SvgForeignObjectElement : SvgGraphicsElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGGElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGGElement"/>
 [IdlInterface("SVGGElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGGElement")]
 public sealed partial class SvgGElement : SvgGraphicsElement
 {
@@ -2833,6 +3239,7 @@ public sealed partial class SvgGElement : SvgGraphicsElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGGeometryElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGGeometryElement"/>
 [IdlInterface("SVGGeometryElement", "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGGeometryElement")]
 public abstract partial class SvgGeometryElement : SvgGraphicsElement
 {
@@ -2846,6 +3253,7 @@ public abstract partial class SvgGeometryElement : SvgGraphicsElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>pathLength</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGeometryElement__pathLength"/>
     [IdlMember("pathLength", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGeometryElement__pathLength")]
     public SvgAnimatedNumber PathLength => SvgProperties.Get<SvgAnimatedNumber>(this, "pathLength", "SVGGeometryElement.pathLength");
 
@@ -2858,6 +3266,7 @@ public abstract partial class SvgGeometryElement : SvgGraphicsElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGGradientElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGGradientElement"/>
 [IdlInterface("SVGGradientElement", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGGradientElement")]
 public abstract partial class SvgGradientElement : SvgElement
 {
@@ -2871,34 +3280,42 @@ public abstract partial class SvgGradientElement : SvgElement
     partial void OnCreated();
 
     /// <summary>The <c>SVG_SPREADMETHOD_UNKNOWN</c> constant (0).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGGradientElement__SVG_SPREADMETHOD_UNKNOWN"/>
     [IdlMember("SVG_SPREADMETHOD_UNKNOWN", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGGradientElement__SVG_SPREADMETHOD_UNKNOWN")]
     public const ushort SvgSpreadmethodUnknown = 0;
 
     /// <summary>The <c>SVG_SPREADMETHOD_PAD</c> constant (1).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGGradientElement__SVG_SPREADMETHOD_PAD"/>
     [IdlMember("SVG_SPREADMETHOD_PAD", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGGradientElement__SVG_SPREADMETHOD_PAD")]
     public const ushort SvgSpreadmethodPad = 1;
 
     /// <summary>The <c>SVG_SPREADMETHOD_REFLECT</c> constant (2).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGGradientElement__SVG_SPREADMETHOD_REFLECT"/>
     [IdlMember("SVG_SPREADMETHOD_REFLECT", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGGradientElement__SVG_SPREADMETHOD_REFLECT")]
     public const ushort SvgSpreadmethodReflect = 2;
 
     /// <summary>The <c>SVG_SPREADMETHOD_REPEAT</c> constant (3).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGGradientElement__SVG_SPREADMETHOD_REPEAT"/>
     [IdlMember("SVG_SPREADMETHOD_REPEAT", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGGradientElement__SVG_SPREADMETHOD_REPEAT")]
     public const ushort SvgSpreadmethodRepeat = 3;
 
     /// <summary>Gets the <c>gradientUnits</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGGradientElement__gradientUnits"/>
     [IdlMember("gradientUnits", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGGradientElement__gradientUnits")]
     public SvgAnimatedEnumeration GradientUnits => SvgProperties.Get<SvgAnimatedEnumeration>(this, "gradientUnits", "SVGGradientElement.gradientUnits");
 
     /// <summary>Gets the <c>gradientTransform</c> attribute as a <c>SVGAnimatedTransformList</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGGradientElement__gradientTransform"/>
     [IdlMember("gradientTransform", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGGradientElement__gradientTransform")]
     public SvgAnimatedTransformList GradientTransform => SvgProperties.Get<SvgAnimatedTransformList>(this, "gradientTransform", "SVGGradientElement.gradientTransform");
 
     /// <summary>Gets the <c>spreadMethod</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGGradientElement__spreadMethod"/>
     [IdlMember("spreadMethod", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGGradientElement__spreadMethod")]
     public SvgAnimatedEnumeration SpreadMethod => SvgProperties.Get<SvgAnimatedEnumeration>(this, "spreadMethod", "SVGGradientElement.spreadMethod");
 
     /// <summary>Gets the <c>href</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGURIReference__href"/>
     [IdlMember("href", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGURIReference__href")]
     public SvgAnimatedString Href => SvgProperties.Get<SvgAnimatedString>(this, "href", "SVGURIReference.href");
 
@@ -2914,6 +3331,7 @@ public abstract partial class SvgGradientElement : SvgElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGGraphicsElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGGraphicsElement"/>
 [IdlInterface("SVGGraphicsElement", "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGGraphicsElement")]
 public abstract partial class SvgGraphicsElement : SvgElement
 {
@@ -2927,14 +3345,17 @@ public abstract partial class SvgGraphicsElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>transform</c> attribute as a <c>SVGAnimatedTransformList</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGraphicsElement__transform"/>
     [IdlMember("transform", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGGraphicsElement__transform")]
     public SvgAnimatedTransformList Transform => SvgProperties.Get<SvgAnimatedTransformList>(this, "transform", "SVGGraphicsElement.transform");
 
     /// <summary>Gets the <c>requiredExtensions</c> attribute as a <c>SVGStringList</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGTests__requiredExtensions"/>
     [IdlMember("requiredExtensions", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGTests__requiredExtensions")]
     public SvgStringList RequiredExtensions => SvgProperties.Get<SvgStringList>(this, "requiredExtensions", "SVGTests.requiredExtensions");
 
     /// <summary>Gets the <c>systemLanguage</c> attribute as a <c>SVGStringList</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGTests__systemLanguage"/>
     [IdlMember("systemLanguage", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGTests__systemLanguage")]
     public SvgStringList SystemLanguage => SvgProperties.Get<SvgStringList>(this, "systemLanguage", "SVGTests.systemLanguage");
 
@@ -2947,6 +3368,7 @@ public abstract partial class SvgGraphicsElement : SvgElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/embedded.html#InterfaceSVGImageElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/embedded.html#InterfaceSVGImageElement"/>
 [IdlInterface("SVGImageElement", "https://w3c.github.io/svgwg/svg2-draft/embedded.html#InterfaceSVGImageElement")]
 public sealed partial class SvgImageElement : SvgGraphicsElement
 {
@@ -2960,26 +3382,32 @@ public sealed partial class SvgImageElement : SvgGraphicsElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/embedded.html#__svg__SVGImageElement__x"/>
     [IdlMember("x", "https://w3c.github.io/svgwg/svg2-draft/embedded.html#__svg__SVGImageElement__x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGImageElement.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/embedded.html#__svg__SVGImageElement__y"/>
     [IdlMember("y", "https://w3c.github.io/svgwg/svg2-draft/embedded.html#__svg__SVGImageElement__y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGImageElement.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/embedded.html#__svg__SVGImageElement__width"/>
     [IdlMember("width", "https://w3c.github.io/svgwg/svg2-draft/embedded.html#__svg__SVGImageElement__width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGImageElement.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/embedded.html#__svg__SVGImageElement__height"/>
     [IdlMember("height", "https://w3c.github.io/svgwg/svg2-draft/embedded.html#__svg__SVGImageElement__height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGImageElement.height");
 
     /// <summary>Gets the <c>preserveAspectRatio</c> attribute as a <c>SVGAnimatedPreserveAspectRatio</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/embedded.html#__svg__SVGImageElement__preserveAspectRatio"/>
     [IdlMember("preserveAspectRatio", "https://w3c.github.io/svgwg/svg2-draft/embedded.html#__svg__SVGImageElement__preserveAspectRatio")]
     public SvgAnimatedPreserveAspectRatio PreserveAspectRatio => SvgProperties.Get<SvgAnimatedPreserveAspectRatio>(this, "preserveAspectRatio", "SVGImageElement.preserveAspectRatio");
 
     /// <summary>Gets the <c>href</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGURIReference__href"/>
     [IdlMember("href", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGURIReference__href")]
     public SvgAnimatedString Href => SvgProperties.Get<SvgAnimatedString>(this, "href", "SVGURIReference.href");
 
@@ -2997,6 +3425,7 @@ public sealed partial class SvgImageElement : SvgGraphicsElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGLineElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGLineElement"/>
 [IdlInterface("SVGLineElement", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGLineElement")]
 public sealed partial class SvgLineElement : SvgGeometryElement
 {
@@ -3010,18 +3439,22 @@ public sealed partial class SvgLineElement : SvgGeometryElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>x1</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGLineElement__x1"/>
     [IdlMember("x1", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGLineElement__x1")]
     public SvgAnimatedLength X1 => SvgProperties.Get<SvgAnimatedLength>(this, "x1", "SVGLineElement.x1");
 
     /// <summary>Gets the <c>y1</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGLineElement__y1"/>
     [IdlMember("y1", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGLineElement__y1")]
     public SvgAnimatedLength Y1 => SvgProperties.Get<SvgAnimatedLength>(this, "y1", "SVGLineElement.y1");
 
     /// <summary>Gets the <c>x2</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGLineElement__x2"/>
     [IdlMember("x2", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGLineElement__x2")]
     public SvgAnimatedLength X2 => SvgProperties.Get<SvgAnimatedLength>(this, "x2", "SVGLineElement.x2");
 
     /// <summary>Gets the <c>y2</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGLineElement__y2"/>
     [IdlMember("y2", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGLineElement__y2")]
     public SvgAnimatedLength Y2 => SvgProperties.Get<SvgAnimatedLength>(this, "y2", "SVGLineElement.y2");
 
@@ -3037,6 +3470,7 @@ public sealed partial class SvgLineElement : SvgGeometryElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGLinearGradientElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGLinearGradientElement"/>
 [IdlInterface("SVGLinearGradientElement", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGLinearGradientElement")]
 public sealed partial class SvgLinearGradientElement : SvgGradientElement
 {
@@ -3050,18 +3484,22 @@ public sealed partial class SvgLinearGradientElement : SvgGradientElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>x1</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGLinearGradientElement__x1"/>
     [IdlMember("x1", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGLinearGradientElement__x1")]
     public SvgAnimatedLength X1 => SvgProperties.Get<SvgAnimatedLength>(this, "x1", "SVGLinearGradientElement.x1");
 
     /// <summary>Gets the <c>y1</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGLinearGradientElement__y1"/>
     [IdlMember("y1", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGLinearGradientElement__y1")]
     public SvgAnimatedLength Y1 => SvgProperties.Get<SvgAnimatedLength>(this, "y1", "SVGLinearGradientElement.y1");
 
     /// <summary>Gets the <c>x2</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGLinearGradientElement__x2"/>
     [IdlMember("x2", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGLinearGradientElement__x2")]
     public SvgAnimatedLength X2 => SvgProperties.Get<SvgAnimatedLength>(this, "x2", "SVGLinearGradientElement.x2");
 
     /// <summary>Gets the <c>y2</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGLinearGradientElement__y2"/>
     [IdlMember("y2", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGLinearGradientElement__y2")]
     public SvgAnimatedLength Y2 => SvgProperties.Get<SvgAnimatedLength>(this, "y2", "SVGLinearGradientElement.y2");
 
@@ -3077,6 +3515,7 @@ public sealed partial class SvgLinearGradientElement : SvgGradientElement
 }
 
 /// <summary>https://svgwg.org/specs/animations/#InterfaceSVGMPathElement</summary>
+/// <seealso href="https://svgwg.org/specs/animations/#InterfaceSVGMPathElement"/>
 [IdlInterface("SVGMPathElement", "https://svgwg.org/specs/animations/#InterfaceSVGMPathElement")]
 public sealed partial class SvgMPathElement : SvgElement
 {
@@ -3090,6 +3529,7 @@ public sealed partial class SvgMPathElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>href</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGURIReference__href"/>
     [IdlMember("href", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGURIReference__href")]
     public SvgAnimatedString Href => SvgProperties.Get<SvgAnimatedString>(this, "href", "SVGURIReference.href");
 
@@ -3102,6 +3542,7 @@ public sealed partial class SvgMPathElement : SvgElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/painting.html#InterfaceSVGMarkerElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/painting.html#InterfaceSVGMarkerElement"/>
 [IdlInterface("SVGMarkerElement", "https://w3c.github.io/svgwg/svg2-draft/painting.html#InterfaceSVGMarkerElement")]
 public sealed partial class SvgMarkerElement : SvgElement
 {
@@ -3115,66 +3556,82 @@ public sealed partial class SvgMarkerElement : SvgElement
     partial void OnCreated();
 
     /// <summary>The <c>SVG_MARKERUNITS_UNKNOWN</c> constant (0).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__SVG_MARKERUNITS_UNKNOWN"/>
     [IdlMember("SVG_MARKERUNITS_UNKNOWN", "https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__SVG_MARKERUNITS_UNKNOWN")]
     public const ushort SvgMarkerunitsUnknown = 0;
 
     /// <summary>The <c>SVG_MARKERUNITS_USERSPACEONUSE</c> constant (1).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__SVG_MARKERUNITS_USERSPACEONUSE"/>
     [IdlMember("SVG_MARKERUNITS_USERSPACEONUSE", "https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__SVG_MARKERUNITS_USERSPACEONUSE")]
     public const ushort SvgMarkerunitsUserspaceonuse = 1;
 
     /// <summary>The <c>SVG_MARKERUNITS_STROKEWIDTH</c> constant (2).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__SVG_MARKERUNITS_STROKEWIDTH"/>
     [IdlMember("SVG_MARKERUNITS_STROKEWIDTH", "https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__SVG_MARKERUNITS_STROKEWIDTH")]
     public const ushort SvgMarkerunitsStrokewidth = 2;
 
     /// <summary>The <c>SVG_MARKER_ORIENT_UNKNOWN</c> constant (0).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__SVG_MARKER_ORIENT_UNKNOWN"/>
     [IdlMember("SVG_MARKER_ORIENT_UNKNOWN", "https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__SVG_MARKER_ORIENT_UNKNOWN")]
     public const ushort SvgMarkerOrientUnknown = 0;
 
     /// <summary>The <c>SVG_MARKER_ORIENT_AUTO</c> constant (1).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__SVG_MARKER_ORIENT_AUTO"/>
     [IdlMember("SVG_MARKER_ORIENT_AUTO", "https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__SVG_MARKER_ORIENT_AUTO")]
     public const ushort SvgMarkerOrientAuto = 1;
 
     /// <summary>The <c>SVG_MARKER_ORIENT_ANGLE</c> constant (2).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__SVG_MARKER_ORIENT_ANGLE"/>
     [IdlMember("SVG_MARKER_ORIENT_ANGLE", "https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__SVG_MARKER_ORIENT_ANGLE")]
     public const ushort SvgMarkerOrientAngle = 2;
 
     /// <summary>The <c>SVG_MARKER_ORIENT_AUTO_START_REVERSE</c> constant (3).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__SVG_MARKER_ORIENT_AUTO_START_REVERSE"/>
     [IdlMember("SVG_MARKER_ORIENT_AUTO_START_REVERSE", "https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__SVG_MARKER_ORIENT_AUTO_START_REVERSE")]
     public const ushort SvgMarkerOrientAutoStartReverse = 3;
 
     /// <summary>Gets the <c>refX</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__refX"/>
     [IdlMember("refX", "https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__refX")]
     public SvgAnimatedLength RefX => SvgProperties.Get<SvgAnimatedLength>(this, "refX", "SVGMarkerElement.refX");
 
     /// <summary>Gets the <c>refY</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__refY"/>
     [IdlMember("refY", "https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__refY")]
     public SvgAnimatedLength RefY => SvgProperties.Get<SvgAnimatedLength>(this, "refY", "SVGMarkerElement.refY");
 
     /// <summary>Gets the <c>markerUnits</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__markerUnits"/>
     [IdlMember("markerUnits", "https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__markerUnits")]
     public SvgAnimatedEnumeration MarkerUnits => SvgProperties.Get<SvgAnimatedEnumeration>(this, "markerUnits", "SVGMarkerElement.markerUnits");
 
     /// <summary>Gets the <c>markerWidth</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__markerWidth"/>
     [IdlMember("markerWidth", "https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__markerWidth")]
     public SvgAnimatedLength MarkerWidth => SvgProperties.Get<SvgAnimatedLength>(this, "markerWidth", "SVGMarkerElement.markerWidth");
 
     /// <summary>Gets the <c>markerHeight</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__markerHeight"/>
     [IdlMember("markerHeight", "https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__markerHeight")]
     public SvgAnimatedLength MarkerHeight => SvgProperties.Get<SvgAnimatedLength>(this, "markerHeight", "SVGMarkerElement.markerHeight");
 
     /// <summary>Gets the <c>orientType</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__orientType"/>
     [IdlMember("orientType", "https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__orientType")]
     public SvgAnimatedEnumeration OrientType => SvgProperties.Get<SvgAnimatedEnumeration>(this, "orientType", "SVGMarkerElement.orientType");
 
     /// <summary>Gets the <c>orientAngle</c> attribute as a <c>SVGAnimatedAngle</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__orientAngle"/>
     [IdlMember("orientAngle", "https://w3c.github.io/svgwg/svg2-draft/painting.html#__svg__SVGMarkerElement__orientAngle")]
     public SvgAnimatedAngle OrientAngle => SvgProperties.Get<SvgAnimatedAngle>(this, "orientAngle", "SVGMarkerElement.orientAngle");
 
     /// <summary>Gets the <c>viewBox</c> attribute as a <c>SVGAnimatedRect</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGFitToViewBox__viewBox"/>
     [IdlMember("viewBox", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGFitToViewBox__viewBox")]
     public SvgAnimatedRect ViewBox => SvgProperties.Get<SvgAnimatedRect>(this, "viewBox", "SVGFitToViewBox.viewBox");
 
     /// <summary>Gets the <c>preserveAspectRatio</c> attribute as a <c>SVGAnimatedPreserveAspectRatio</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGFitToViewBox__preserveAspectRatio"/>
     [IdlMember("preserveAspectRatio", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGFitToViewBox__preserveAspectRatio")]
     public SvgAnimatedPreserveAspectRatio PreserveAspectRatio => SvgProperties.Get<SvgAnimatedPreserveAspectRatio>(this, "preserveAspectRatio", "SVGFitToViewBox.preserveAspectRatio");
 
@@ -3194,6 +3651,7 @@ public sealed partial class SvgMarkerElement : SvgElement
 }
 
 /// <summary>https://drafts.csswg.org/css-masking-1/#svgmaskelement</summary>
+/// <seealso href="https://drafts.csswg.org/css-masking-1/#svgmaskelement"/>
 [IdlInterface("SVGMaskElement", "https://drafts.csswg.org/css-masking-1/#svgmaskelement")]
 public sealed partial class SvgMaskElement : SvgElement
 {
@@ -3207,26 +3665,32 @@ public sealed partial class SvgMaskElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>maskUnits</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-masking-1/#dom-svgmaskelement-maskunits"/>
     [IdlMember("maskUnits", "https://drafts.csswg.org/css-masking-1/#dom-svgmaskelement-maskunits")]
     public SvgAnimatedEnumeration MaskUnits => SvgProperties.Get<SvgAnimatedEnumeration>(this, "maskUnits", "SVGMaskElement.maskUnits");
 
     /// <summary>Gets the <c>maskContentUnits</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-masking-1/#dom-svgmaskelement-maskcontentunits"/>
     [IdlMember("maskContentUnits", "https://drafts.csswg.org/css-masking-1/#dom-svgmaskelement-maskcontentunits")]
     public SvgAnimatedEnumeration MaskContentUnits => SvgProperties.Get<SvgAnimatedEnumeration>(this, "maskContentUnits", "SVGMaskElement.maskContentUnits");
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-masking-1/#dom-svgmaskelement-x"/>
     [IdlMember("x", "https://drafts.csswg.org/css-masking-1/#dom-svgmaskelement-x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGMaskElement.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-masking-1/#dom-svgmaskelement-y"/>
     [IdlMember("y", "https://drafts.csswg.org/css-masking-1/#dom-svgmaskelement-y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGMaskElement.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-masking-1/#dom-svgmaskelement-width"/>
     [IdlMember("width", "https://drafts.csswg.org/css-masking-1/#dom-svgmaskelement-width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGMaskElement.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-masking-1/#dom-svgmaskelement-height"/>
     [IdlMember("height", "https://drafts.csswg.org/css-masking-1/#dom-svgmaskelement-height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGMaskElement.height");
 
@@ -3244,6 +3708,7 @@ public sealed partial class SvgMaskElement : SvgElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGMetadataElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGMetadataElement"/>
 [IdlInterface("SVGMetadataElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGMetadataElement")]
 public sealed partial class SvgMetadataElement : SvgElement
 {
@@ -3258,6 +3723,7 @@ public sealed partial class SvgMetadataElement : SvgElement
 }
 
 /// <summary>https://svgwg.org/specs/paths/#InterfaceSVGPathElement</summary>
+/// <seealso href="https://svgwg.org/specs/paths/#InterfaceSVGPathElement"/>
 [IdlInterface("SVGPathElement", "https://svgwg.org/specs/paths/#InterfaceSVGPathElement")]
 public sealed partial class SvgPathElement : SvgGeometryElement
 {
@@ -3272,6 +3738,7 @@ public sealed partial class SvgPathElement : SvgGeometryElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGPatternElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGPatternElement"/>
 [IdlInterface("SVGPatternElement", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGPatternElement")]
 public sealed partial class SvgPatternElement : SvgElement
 {
@@ -3285,42 +3752,52 @@ public sealed partial class SvgPatternElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>patternUnits</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGPatternElement__patternUnits"/>
     [IdlMember("patternUnits", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGPatternElement__patternUnits")]
     public SvgAnimatedEnumeration PatternUnits => SvgProperties.Get<SvgAnimatedEnumeration>(this, "patternUnits", "SVGPatternElement.patternUnits");
 
     /// <summary>Gets the <c>patternContentUnits</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGPatternElement__patternContentUnits"/>
     [IdlMember("patternContentUnits", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGPatternElement__patternContentUnits")]
     public SvgAnimatedEnumeration PatternContentUnits => SvgProperties.Get<SvgAnimatedEnumeration>(this, "patternContentUnits", "SVGPatternElement.patternContentUnits");
 
     /// <summary>Gets the <c>patternTransform</c> attribute as a <c>SVGAnimatedTransformList</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGPatternElement__patternTransform"/>
     [IdlMember("patternTransform", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGPatternElement__patternTransform")]
     public SvgAnimatedTransformList PatternTransform => SvgProperties.Get<SvgAnimatedTransformList>(this, "patternTransform", "SVGPatternElement.patternTransform");
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGPatternElement__x"/>
     [IdlMember("x", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGPatternElement__x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGPatternElement.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGPatternElement__y"/>
     [IdlMember("y", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGPatternElement__y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGPatternElement.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGPatternElement__width"/>
     [IdlMember("width", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGPatternElement__width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGPatternElement.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGPatternElement__height"/>
     [IdlMember("height", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGPatternElement__height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGPatternElement.height");
 
     /// <summary>Gets the <c>viewBox</c> attribute as a <c>SVGAnimatedRect</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGFitToViewBox__viewBox"/>
     [IdlMember("viewBox", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGFitToViewBox__viewBox")]
     public SvgAnimatedRect ViewBox => SvgProperties.Get<SvgAnimatedRect>(this, "viewBox", "SVGFitToViewBox.viewBox");
 
     /// <summary>Gets the <c>preserveAspectRatio</c> attribute as a <c>SVGAnimatedPreserveAspectRatio</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGFitToViewBox__preserveAspectRatio"/>
     [IdlMember("preserveAspectRatio", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGFitToViewBox__preserveAspectRatio")]
     public SvgAnimatedPreserveAspectRatio PreserveAspectRatio => SvgProperties.Get<SvgAnimatedPreserveAspectRatio>(this, "preserveAspectRatio", "SVGFitToViewBox.preserveAspectRatio");
 
     /// <summary>Gets the <c>href</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGURIReference__href"/>
     [IdlMember("href", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGURIReference__href")]
     public SvgAnimatedString Href => SvgProperties.Get<SvgAnimatedString>(this, "href", "SVGURIReference.href");
 
@@ -3342,6 +3819,7 @@ public sealed partial class SvgPatternElement : SvgElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGPolygonElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGPolygonElement"/>
 [IdlInterface("SVGPolygonElement", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGPolygonElement")]
 public sealed partial class SvgPolygonElement : SvgGeometryElement
 {
@@ -3355,10 +3833,12 @@ public sealed partial class SvgPolygonElement : SvgGeometryElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>points</c> attribute as a <c>SVGPointList</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGAnimatedPoints__points"/>
     [IdlMember("points", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGAnimatedPoints__points")]
     public SvgPointList Points => SvgProperties.Get<SvgPointList>(this, "points", "SVGAnimatedPoints.points");
 
     /// <summary>Gets the <c>animatedPoints</c> attribute as a <c>SVGPointList</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGAnimatedPoints__animatedPoints"/>
     [IdlMember("animatedPoints", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGAnimatedPoints__animatedPoints")]
     public SvgPointList AnimatedPoints => SvgProperties.Get<SvgPointList>(this, "animatedPoints", "SVGAnimatedPoints.animatedPoints");
 
@@ -3371,6 +3851,7 @@ public sealed partial class SvgPolygonElement : SvgGeometryElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGPolylineElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGPolylineElement"/>
 [IdlInterface("SVGPolylineElement", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGPolylineElement")]
 public sealed partial class SvgPolylineElement : SvgGeometryElement
 {
@@ -3384,10 +3865,12 @@ public sealed partial class SvgPolylineElement : SvgGeometryElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>points</c> attribute as a <c>SVGPointList</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGAnimatedPoints__points"/>
     [IdlMember("points", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGAnimatedPoints__points")]
     public SvgPointList Points => SvgProperties.Get<SvgPointList>(this, "points", "SVGAnimatedPoints.points");
 
     /// <summary>Gets the <c>animatedPoints</c> attribute as a <c>SVGPointList</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGAnimatedPoints__animatedPoints"/>
     [IdlMember("animatedPoints", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGAnimatedPoints__animatedPoints")]
     public SvgPointList AnimatedPoints => SvgProperties.Get<SvgPointList>(this, "animatedPoints", "SVGAnimatedPoints.animatedPoints");
 
@@ -3400,6 +3883,7 @@ public sealed partial class SvgPolylineElement : SvgGeometryElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGRadialGradientElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGRadialGradientElement"/>
 [IdlInterface("SVGRadialGradientElement", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGRadialGradientElement")]
 public sealed partial class SvgRadialGradientElement : SvgGradientElement
 {
@@ -3413,26 +3897,32 @@ public sealed partial class SvgRadialGradientElement : SvgGradientElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>cx</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGRadialGradientElement__cx"/>
     [IdlMember("cx", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGRadialGradientElement__cx")]
     public SvgAnimatedLength Cx => SvgProperties.Get<SvgAnimatedLength>(this, "cx", "SVGRadialGradientElement.cx");
 
     /// <summary>Gets the <c>cy</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGRadialGradientElement__cy"/>
     [IdlMember("cy", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGRadialGradientElement__cy")]
     public SvgAnimatedLength Cy => SvgProperties.Get<SvgAnimatedLength>(this, "cy", "SVGRadialGradientElement.cy");
 
     /// <summary>Gets the <c>r</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGRadialGradientElement__r"/>
     [IdlMember("r", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGRadialGradientElement__r")]
     public SvgAnimatedLength R => SvgProperties.Get<SvgAnimatedLength>(this, "r", "SVGRadialGradientElement.r");
 
     /// <summary>Gets the <c>fx</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGRadialGradientElement__fx"/>
     [IdlMember("fx", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGRadialGradientElement__fx")]
     public SvgAnimatedLength Fx => SvgProperties.Get<SvgAnimatedLength>(this, "fx", "SVGRadialGradientElement.fx");
 
     /// <summary>Gets the <c>fy</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGRadialGradientElement__fy"/>
     [IdlMember("fy", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGRadialGradientElement__fy")]
     public SvgAnimatedLength Fy => SvgProperties.Get<SvgAnimatedLength>(this, "fy", "SVGRadialGradientElement.fy");
 
     /// <summary>Gets the <c>fr</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGRadialGradientElement__fr"/>
     [IdlMember("fr", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGRadialGradientElement__fr")]
     public SvgAnimatedLength Fr => SvgProperties.Get<SvgAnimatedLength>(this, "fr", "SVGRadialGradientElement.fr");
 
@@ -3450,6 +3940,7 @@ public sealed partial class SvgRadialGradientElement : SvgGradientElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGRectElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGRectElement"/>
 [IdlInterface("SVGRectElement", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#InterfaceSVGRectElement")]
 public sealed partial class SvgRectElement : SvgGeometryElement
 {
@@ -3463,26 +3954,32 @@ public sealed partial class SvgRectElement : SvgGeometryElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGRectElement__x"/>
     [IdlMember("x", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGRectElement__x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGRectElement.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGRectElement__y"/>
     [IdlMember("y", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGRectElement__y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGRectElement.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGRectElement__width"/>
     [IdlMember("width", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGRectElement__width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGRectElement.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGRectElement__height"/>
     [IdlMember("height", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGRectElement__height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGRectElement.height");
 
     /// <summary>Gets the <c>rx</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGRectElement__rx"/>
     [IdlMember("rx", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGRectElement__rx")]
     public SvgAnimatedLength Rx => SvgProperties.Get<SvgAnimatedLength>(this, "rx", "SVGRectElement.rx");
 
     /// <summary>Gets the <c>ry</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGRectElement__ry"/>
     [IdlMember("ry", "https://w3c.github.io/svgwg/svg2-draft/shapes.html#__svg__SVGRectElement__ry")]
     public SvgAnimatedLength Ry => SvgProperties.Get<SvgAnimatedLength>(this, "ry", "SVGRectElement.ry");
 
@@ -3500,6 +3997,7 @@ public sealed partial class SvgRectElement : SvgGeometryElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGSVGElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGSVGElement"/>
 [IdlInterface("SVGSVGElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGSVGElement")]
 public sealed partial class SvgSvgElement : SvgGraphicsElement
 {
@@ -3513,30 +4011,37 @@ public sealed partial class SvgSvgElement : SvgGraphicsElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__x"/>
     [IdlMember("x", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGSVGElement.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__y"/>
     [IdlMember("y", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGSVGElement.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__width"/>
     [IdlMember("width", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGSVGElement.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__height"/>
     [IdlMember("height", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGSVGElement.height");
 
     /// <summary>Gets the <c>viewBox</c> attribute as a <c>SVGAnimatedRect</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGFitToViewBox__viewBox"/>
     [IdlMember("viewBox", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGFitToViewBox__viewBox")]
     public SvgAnimatedRect ViewBox => SvgProperties.Get<SvgAnimatedRect>(this, "viewBox", "SVGFitToViewBox.viewBox");
 
     /// <summary>Gets the <c>preserveAspectRatio</c> attribute as a <c>SVGAnimatedPreserveAspectRatio</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGFitToViewBox__preserveAspectRatio"/>
     [IdlMember("preserveAspectRatio", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGFitToViewBox__preserveAspectRatio")]
     public SvgAnimatedPreserveAspectRatio PreserveAspectRatio => SvgProperties.Get<SvgAnimatedPreserveAspectRatio>(this, "preserveAspectRatio", "SVGFitToViewBox.preserveAspectRatio");
 
     /// <summary>Gets or sets the event handler of the <c>afterprint</c> event (the <c>onafterprint</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onafterprint"/>
     [IdlMember("onafterprint", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onafterprint")]
     public Action<Event>? OnAfterPrint
     {
@@ -3545,6 +4050,7 @@ public sealed partial class SvgSvgElement : SvgGraphicsElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>beforeprint</c> event (the <c>onbeforeprint</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onbeforeprint"/>
     [IdlMember("onbeforeprint", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onbeforeprint")]
     public Action<Event>? OnBeforePrint
     {
@@ -3553,6 +4059,7 @@ public sealed partial class SvgSvgElement : SvgGraphicsElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>beforeunload</c> event (the <c>onbeforeunload</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onbeforeunload"/>
     [IdlMember("onbeforeunload", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onbeforeunload")]
     public Action<Event>? OnBeforeUnload
     {
@@ -3561,6 +4068,7 @@ public sealed partial class SvgSvgElement : SvgGraphicsElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>hashchange</c> event (the <c>onhashchange</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onhashchange"/>
     [IdlMember("onhashchange", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onhashchange")]
     public Action<Event>? OnHashChange
     {
@@ -3569,6 +4077,7 @@ public sealed partial class SvgSvgElement : SvgGraphicsElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>languagechange</c> event (the <c>onlanguagechange</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onlanguagechange"/>
     [IdlMember("onlanguagechange", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onlanguagechange")]
     public Action<Event>? OnLanguageChange
     {
@@ -3577,6 +4086,7 @@ public sealed partial class SvgSvgElement : SvgGraphicsElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>message</c> event (the <c>onmessage</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onmessage"/>
     [IdlMember("onmessage", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onmessage")]
     public Action<Event>? OnMessage
     {
@@ -3585,6 +4095,7 @@ public sealed partial class SvgSvgElement : SvgGraphicsElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>messageerror</c> event (the <c>onmessageerror</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onmessageerror"/>
     [IdlMember("onmessageerror", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onmessageerror")]
     public Action<Event>? OnMessageError
     {
@@ -3593,6 +4104,7 @@ public sealed partial class SvgSvgElement : SvgGraphicsElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>offline</c> event (the <c>onoffline</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onoffline"/>
     [IdlMember("onoffline", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onoffline")]
     public Action<Event>? OnOffline
     {
@@ -3601,6 +4113,7 @@ public sealed partial class SvgSvgElement : SvgGraphicsElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>online</c> event (the <c>ononline</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-ononline"/>
     [IdlMember("ononline", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-ononline")]
     public Action<Event>? OnOnline
     {
@@ -3609,6 +4122,7 @@ public sealed partial class SvgSvgElement : SvgGraphicsElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pagehide</c> event (the <c>onpagehide</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpagehide"/>
     [IdlMember("onpagehide", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpagehide")]
     public Action<Event>? OnPageHide
     {
@@ -3617,6 +4131,7 @@ public sealed partial class SvgSvgElement : SvgGraphicsElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pagereveal</c> event (the <c>onpagereveal</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpagereveal"/>
     [IdlMember("onpagereveal", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpagereveal")]
     public Action<Event>? OnPageReveal
     {
@@ -3625,6 +4140,7 @@ public sealed partial class SvgSvgElement : SvgGraphicsElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pageshow</c> event (the <c>onpageshow</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpageshow"/>
     [IdlMember("onpageshow", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpageshow")]
     public Action<Event>? OnPageShow
     {
@@ -3633,6 +4149,7 @@ public sealed partial class SvgSvgElement : SvgGraphicsElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>pageswap</c> event (the <c>onpageswap</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpageswap"/>
     [IdlMember("onpageswap", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpageswap")]
     public Action<Event>? OnPageSwap
     {
@@ -3641,6 +4158,7 @@ public sealed partial class SvgSvgElement : SvgGraphicsElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>popstate</c> event (the <c>onpopstate</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpopstate"/>
     [IdlMember("onpopstate", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onpopstate")]
     public Action<Event>? OnPopState
     {
@@ -3649,6 +4167,7 @@ public sealed partial class SvgSvgElement : SvgGraphicsElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>rejectionhandled</c> event (the <c>onrejectionhandled</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onrejectionhandled"/>
     [IdlMember("onrejectionhandled", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onrejectionhandled")]
     public Action<Event>? OnRejectionHandled
     {
@@ -3657,6 +4176,7 @@ public sealed partial class SvgSvgElement : SvgGraphicsElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>storage</c> event (the <c>onstorage</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onstorage"/>
     [IdlMember("onstorage", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onstorage")]
     public Action<Event>? OnStorage
     {
@@ -3665,6 +4185,7 @@ public sealed partial class SvgSvgElement : SvgGraphicsElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>unhandledrejection</c> event (the <c>onunhandledrejection</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onunhandledrejection"/>
     [IdlMember("onunhandledrejection", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onunhandledrejection")]
     public Action<Event>? OnUnhandledRejection
     {
@@ -3673,6 +4194,7 @@ public sealed partial class SvgSvgElement : SvgGraphicsElement
     }
 
     /// <summary>Gets or sets the event handler of the <c>unload</c> event (the <c>onunload</c> event handler attribute).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onunload"/>
     [IdlMember("onunload", "https://html.spec.whatwg.org/multipage/webappapis.html#handler-window-onunload")]
     public Action<Event>? OnUnload
     {
@@ -3694,6 +4216,7 @@ public sealed partial class SvgSvgElement : SvgGraphicsElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/interact.html#InterfaceSVGScriptElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/interact.html#InterfaceSVGScriptElement"/>
 [IdlInterface("SVGScriptElement", "https://w3c.github.io/svgwg/svg2-draft/interact.html#InterfaceSVGScriptElement")]
 public sealed partial class SvgScriptElement : SvgElement
 {
@@ -3707,6 +4230,7 @@ public sealed partial class SvgScriptElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>type</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/interact.html#InterfaceSVGScriptElement"/>
     [IdlMember("type", "https://w3c.github.io/svgwg/svg2-draft/interact.html#InterfaceSVGScriptElement")]
     public string Type
     {
@@ -3715,6 +4239,7 @@ public sealed partial class SvgScriptElement : SvgElement
     }
 
     /// <summary>Gets the <c>href</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGURIReference__href"/>
     [IdlMember("href", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGURIReference__href")]
     public SvgAnimatedString Href => SvgProperties.Get<SvgAnimatedString>(this, "href", "SVGURIReference.href");
 
@@ -3727,6 +4252,7 @@ public sealed partial class SvgScriptElement : SvgElement
 }
 
 /// <summary>https://svgwg.org/specs/animations/#InterfaceSVGSetElement</summary>
+/// <seealso href="https://svgwg.org/specs/animations/#InterfaceSVGSetElement"/>
 [IdlInterface("SVGSetElement", "https://svgwg.org/specs/animations/#InterfaceSVGSetElement")]
 public sealed partial class SvgSetElement : SvgAnimationElement
 {
@@ -3741,6 +4267,7 @@ public sealed partial class SvgSetElement : SvgAnimationElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGStopElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGStopElement"/>
 [IdlInterface("SVGStopElement", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#InterfaceSVGStopElement")]
 public sealed partial class SvgStopElement : SvgElement
 {
@@ -3754,6 +4281,7 @@ public sealed partial class SvgStopElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>offset</c> attribute as a <c>SVGAnimatedNumber</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGStopElement__offset"/>
     [IdlMember("offset", "https://w3c.github.io/svgwg/svg2-draft/pservers.html#__svg__SVGStopElement__offset")]
     public SvgAnimatedNumber Offset => SvgProperties.Get<SvgAnimatedNumber>(this, "offset", "SVGStopElement.offset");
 
@@ -3766,6 +4294,7 @@ public sealed partial class SvgStopElement : SvgElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/styling.html#InterfaceSVGStyleElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/styling.html#InterfaceSVGStyleElement"/>
 [IdlInterface("SVGStyleElement", "https://w3c.github.io/svgwg/svg2-draft/styling.html#InterfaceSVGStyleElement")]
 public sealed partial class SvgStyleElement : SvgElement
 {
@@ -3779,6 +4308,7 @@ public sealed partial class SvgStyleElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets or sets the value of the <c>type</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/styling.html#InterfaceSVGStyleElement"/>
     [IdlMember("type", "https://w3c.github.io/svgwg/svg2-draft/styling.html#InterfaceSVGStyleElement")]
     public string Type
     {
@@ -3787,6 +4317,7 @@ public sealed partial class SvgStyleElement : SvgElement
     }
 
     /// <summary>Gets or sets the value of the <c>media</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/styling.html#InterfaceSVGStyleElement"/>
     [IdlMember("media", "https://w3c.github.io/svgwg/svg2-draft/styling.html#InterfaceSVGStyleElement")]
     public string Media
     {
@@ -3795,6 +4326,7 @@ public sealed partial class SvgStyleElement : SvgElement
     }
 
     /// <summary>Gets or sets the value of the <c>title</c> content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/styling.html#InterfaceSVGStyleElement"/>
     [IdlMember("title", "https://w3c.github.io/svgwg/svg2-draft/styling.html#InterfaceSVGStyleElement")]
     public string Title
     {
@@ -3804,6 +4336,7 @@ public sealed partial class SvgStyleElement : SvgElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGSwitchElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGSwitchElement"/>
 [IdlInterface("SVGSwitchElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGSwitchElement")]
 public sealed partial class SvgSwitchElement : SvgGraphicsElement
 {
@@ -3818,6 +4351,7 @@ public sealed partial class SvgSwitchElement : SvgGraphicsElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGSymbolElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGSymbolElement"/>
 [IdlInterface("SVGSymbolElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGSymbolElement")]
 public sealed partial class SvgSymbolElement : SvgGraphicsElement
 {
@@ -3831,10 +4365,12 @@ public sealed partial class SvgSymbolElement : SvgGraphicsElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>viewBox</c> attribute as a <c>SVGAnimatedRect</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGFitToViewBox__viewBox"/>
     [IdlMember("viewBox", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGFitToViewBox__viewBox")]
     public SvgAnimatedRect ViewBox => SvgProperties.Get<SvgAnimatedRect>(this, "viewBox", "SVGFitToViewBox.viewBox");
 
     /// <summary>Gets the <c>preserveAspectRatio</c> attribute as a <c>SVGAnimatedPreserveAspectRatio</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGFitToViewBox__preserveAspectRatio"/>
     [IdlMember("preserveAspectRatio", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGFitToViewBox__preserveAspectRatio")]
     public SvgAnimatedPreserveAspectRatio PreserveAspectRatio => SvgProperties.Get<SvgAnimatedPreserveAspectRatio>(this, "preserveAspectRatio", "SVGFitToViewBox.preserveAspectRatio");
 
@@ -3848,6 +4384,7 @@ public sealed partial class SvgSymbolElement : SvgGraphicsElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTSpanElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTSpanElement"/>
 [IdlInterface("SVGTSpanElement", "https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTSpanElement")]
 public sealed partial class SvgTSpanElement : SvgTextPositioningElement
 {
@@ -3862,6 +4399,7 @@ public sealed partial class SvgTSpanElement : SvgTextPositioningElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextContentElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextContentElement"/>
 [IdlInterface("SVGTextContentElement", "https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextContentElement")]
 public abstract partial class SvgTextContentElement : SvgGraphicsElement
 {
@@ -3875,22 +4413,27 @@ public abstract partial class SvgTextContentElement : SvgGraphicsElement
     partial void OnCreated();
 
     /// <summary>The <c>LENGTHADJUST_UNKNOWN</c> constant (0).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__LENGTHADJUST_UNKNOWN"/>
     [IdlMember("LENGTHADJUST_UNKNOWN", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__LENGTHADJUST_UNKNOWN")]
     public const ushort LengthadjustUnknown = 0;
 
     /// <summary>The <c>LENGTHADJUST_SPACING</c> constant (1).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__LENGTHADJUST_SPACING"/>
     [IdlMember("LENGTHADJUST_SPACING", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__LENGTHADJUST_SPACING")]
     public const ushort LengthadjustSpacing = 1;
 
     /// <summary>The <c>LENGTHADJUST_SPACINGANDGLYPHS</c> constant (2).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__LENGTHADJUST_SPACINGANDGLYPHS"/>
     [IdlMember("LENGTHADJUST_SPACINGANDGLYPHS", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__LENGTHADJUST_SPACINGANDGLYPHS")]
     public const ushort LengthadjustSpacingandglyphs = 2;
 
     /// <summary>Gets the <c>textLength</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__textLength"/>
     [IdlMember("textLength", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__textLength")]
     public SvgAnimatedLength TextLength => SvgProperties.Get<SvgAnimatedLength>(this, "textLength", "SVGTextContentElement.textLength");
 
     /// <summary>Gets the <c>lengthAdjust</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__lengthAdjust"/>
     [IdlMember("lengthAdjust", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__lengthAdjust")]
     public SvgAnimatedEnumeration LengthAdjust => SvgProperties.Get<SvgAnimatedEnumeration>(this, "lengthAdjust", "SVGTextContentElement.lengthAdjust");
 
@@ -3904,6 +4447,7 @@ public abstract partial class SvgTextContentElement : SvgGraphicsElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextElement"/>
 [IdlInterface("SVGTextElement", "https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextElement")]
 public sealed partial class SvgTextElement : SvgTextPositioningElement
 {
@@ -3918,6 +4462,7 @@ public sealed partial class SvgTextElement : SvgTextPositioningElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextPathElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextPathElement"/>
 [IdlInterface("SVGTextPathElement", "https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextPathElement")]
 public sealed partial class SvgTextPathElement : SvgTextContentElement
 {
@@ -3931,42 +4476,52 @@ public sealed partial class SvgTextPathElement : SvgTextContentElement
     partial void OnCreated();
 
     /// <summary>The <c>TEXTPATH_METHODTYPE_UNKNOWN</c> constant (0).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__TEXTPATH_METHODTYPE_UNKNOWN"/>
     [IdlMember("TEXTPATH_METHODTYPE_UNKNOWN", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__TEXTPATH_METHODTYPE_UNKNOWN")]
     public const ushort TextpathMethodtypeUnknown = 0;
 
     /// <summary>The <c>TEXTPATH_METHODTYPE_ALIGN</c> constant (1).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__TEXTPATH_METHODTYPE_ALIGN"/>
     [IdlMember("TEXTPATH_METHODTYPE_ALIGN", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__TEXTPATH_METHODTYPE_ALIGN")]
     public const ushort TextpathMethodtypeAlign = 1;
 
     /// <summary>The <c>TEXTPATH_METHODTYPE_STRETCH</c> constant (2).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__TEXTPATH_METHODTYPE_STRETCH"/>
     [IdlMember("TEXTPATH_METHODTYPE_STRETCH", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__TEXTPATH_METHODTYPE_STRETCH")]
     public const ushort TextpathMethodtypeStretch = 2;
 
     /// <summary>The <c>TEXTPATH_SPACINGTYPE_UNKNOWN</c> constant (0).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__TEXTPATH_SPACINGTYPE_UNKNOWN"/>
     [IdlMember("TEXTPATH_SPACINGTYPE_UNKNOWN", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__TEXTPATH_SPACINGTYPE_UNKNOWN")]
     public const ushort TextpathSpacingtypeUnknown = 0;
 
     /// <summary>The <c>TEXTPATH_SPACINGTYPE_AUTO</c> constant (1).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__TEXTPATH_SPACINGTYPE_AUTO"/>
     [IdlMember("TEXTPATH_SPACINGTYPE_AUTO", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__TEXTPATH_SPACINGTYPE_AUTO")]
     public const ushort TextpathSpacingtypeAuto = 1;
 
     /// <summary>The <c>TEXTPATH_SPACINGTYPE_EXACT</c> constant (2).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__TEXTPATH_SPACINGTYPE_EXACT"/>
     [IdlMember("TEXTPATH_SPACINGTYPE_EXACT", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__TEXTPATH_SPACINGTYPE_EXACT")]
     public const ushort TextpathSpacingtypeExact = 2;
 
     /// <summary>Gets the <c>startOffset</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__startOffset"/>
     [IdlMember("startOffset", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__startOffset")]
     public SvgAnimatedLength StartOffset => SvgProperties.Get<SvgAnimatedLength>(this, "startOffset", "SVGTextPathElement.startOffset");
 
     /// <summary>Gets the <c>method</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__method"/>
     [IdlMember("method", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__method")]
     public SvgAnimatedEnumeration Method => SvgProperties.Get<SvgAnimatedEnumeration>(this, "method", "SVGTextPathElement.method");
 
     /// <summary>Gets the <c>spacing</c> attribute as a <c>SVGAnimatedEnumeration</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__spacing"/>
     [IdlMember("spacing", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__spacing")]
     public SvgAnimatedEnumeration Spacing => SvgProperties.Get<SvgAnimatedEnumeration>(this, "spacing", "SVGTextPathElement.spacing");
 
     /// <summary>Gets the <c>href</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGURIReference__href"/>
     [IdlMember("href", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGURIReference__href")]
     public SvgAnimatedString Href => SvgProperties.Get<SvgAnimatedString>(this, "href", "SVGURIReference.href");
 
@@ -3982,6 +4537,7 @@ public sealed partial class SvgTextPathElement : SvgTextContentElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextPositioningElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextPositioningElement"/>
 [IdlInterface("SVGTextPositioningElement", "https://w3c.github.io/svgwg/svg2-draft/text.html#InterfaceSVGTextPositioningElement")]
 public abstract partial class SvgTextPositioningElement : SvgTextContentElement
 {
@@ -3995,22 +4551,27 @@ public abstract partial class SvgTextPositioningElement : SvgTextContentElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLengthList</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPositioningElement__x"/>
     [IdlMember("x", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPositioningElement__x")]
     public SvgAnimatedLengthList X => SvgProperties.Get<SvgAnimatedLengthList>(this, "x", "SVGTextPositioningElement.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLengthList</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPositioningElement__y"/>
     [IdlMember("y", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPositioningElement__y")]
     public SvgAnimatedLengthList Y => SvgProperties.Get<SvgAnimatedLengthList>(this, "y", "SVGTextPositioningElement.y");
 
     /// <summary>Gets the <c>dx</c> attribute as a <c>SVGAnimatedLengthList</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPositioningElement__dx"/>
     [IdlMember("dx", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPositioningElement__dx")]
     public SvgAnimatedLengthList Dx => SvgProperties.Get<SvgAnimatedLengthList>(this, "dx", "SVGTextPositioningElement.dx");
 
     /// <summary>Gets the <c>dy</c> attribute as a <c>SVGAnimatedLengthList</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPositioningElement__dy"/>
     [IdlMember("dy", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPositioningElement__dy")]
     public SvgAnimatedLengthList Dy => SvgProperties.Get<SvgAnimatedLengthList>(this, "dy", "SVGTextPositioningElement.dy");
 
     /// <summary>Gets the <c>rotate</c> attribute as a <c>SVGAnimatedNumberList</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPositioningElement__rotate"/>
     [IdlMember("rotate", "https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPositioningElement__rotate")]
     public SvgAnimatedNumberList Rotate => SvgProperties.Get<SvgAnimatedNumberList>(this, "rotate", "SVGTextPositioningElement.rotate");
 
@@ -4027,6 +4588,7 @@ public abstract partial class SvgTextPositioningElement : SvgTextContentElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGTitleElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGTitleElement"/>
 [IdlInterface("SVGTitleElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGTitleElement")]
 public sealed partial class SvgTitleElement : SvgElement
 {
@@ -4041,6 +4603,7 @@ public sealed partial class SvgTitleElement : SvgElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGUseElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGUseElement"/>
 [IdlInterface("SVGUseElement", "https://w3c.github.io/svgwg/svg2-draft/struct.html#InterfaceSVGUseElement")]
 public sealed partial class SvgUseElement : SvgGraphicsElement
 {
@@ -4054,22 +4617,27 @@ public sealed partial class SvgUseElement : SvgGraphicsElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>x</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGUseElement__x"/>
     [IdlMember("x", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGUseElement__x")]
     public SvgAnimatedLength X => SvgProperties.Get<SvgAnimatedLength>(this, "x", "SVGUseElement.x");
 
     /// <summary>Gets the <c>y</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGUseElement__y"/>
     [IdlMember("y", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGUseElement__y")]
     public SvgAnimatedLength Y => SvgProperties.Get<SvgAnimatedLength>(this, "y", "SVGUseElement.y");
 
     /// <summary>Gets the <c>width</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGUseElement__width"/>
     [IdlMember("width", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGUseElement__width")]
     public SvgAnimatedLength Width => SvgProperties.Get<SvgAnimatedLength>(this, "width", "SVGUseElement.width");
 
     /// <summary>Gets the <c>height</c> attribute as a <c>SVGAnimatedLength</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGUseElement__height"/>
     [IdlMember("height", "https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGUseElement__height")]
     public SvgAnimatedLength Height => SvgProperties.Get<SvgAnimatedLength>(this, "height", "SVGUseElement.height");
 
     /// <summary>Gets the <c>href</c> attribute as a <c>SVGAnimatedString</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGURIReference__href"/>
     [IdlMember("href", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGURIReference__href")]
     public SvgAnimatedString Href => SvgProperties.Get<SvgAnimatedString>(this, "href", "SVGURIReference.href");
 
@@ -4086,6 +4654,7 @@ public sealed partial class SvgUseElement : SvgGraphicsElement
 }
 
 /// <summary>https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGViewElement</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGViewElement"/>
 [IdlInterface("SVGViewElement", "https://w3c.github.io/svgwg/svg2-draft/linking.html#InterfaceSVGViewElement")]
 public sealed partial class SvgViewElement : SvgElement
 {
@@ -4099,10 +4668,12 @@ public sealed partial class SvgViewElement : SvgElement
     partial void OnCreated();
 
     /// <summary>Gets the <c>viewBox</c> attribute as a <c>SVGAnimatedRect</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGFitToViewBox__viewBox"/>
     [IdlMember("viewBox", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGFitToViewBox__viewBox")]
     public SvgAnimatedRect ViewBox => SvgProperties.Get<SvgAnimatedRect>(this, "viewBox", "SVGFitToViewBox.viewBox");
 
     /// <summary>Gets the <c>preserveAspectRatio</c> attribute as a <c>SVGAnimatedPreserveAspectRatio</c> object.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGFitToViewBox__preserveAspectRatio"/>
     [IdlMember("preserveAspectRatio", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGFitToViewBox__preserveAspectRatio")]
     public SvgAnimatedPreserveAspectRatio PreserveAspectRatio => SvgProperties.Get<SvgAnimatedPreserveAspectRatio>(this, "preserveAspectRatio", "SVGFitToViewBox.preserveAspectRatio");
 

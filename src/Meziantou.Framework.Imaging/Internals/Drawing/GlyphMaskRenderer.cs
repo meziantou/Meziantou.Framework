@@ -26,7 +26,7 @@ internal sealed class GlyphMaskRenderer : IDisposable
     private readonly PooledBuffer _coverage;
     private readonly FillSink _fill;
     private readonly GlyphPathSink _glyphSink = new();
-    private readonly GlyphBoundsSink _bounds = new();
+    private readonly RecordedOutlines.SingleRecorder _outline = new();
     private Stroker? _emboldener;
 
     /// <exception cref="ImageResourceLimitException">The scratch exceeds the allocation limit.</exception>
@@ -81,11 +81,13 @@ internal sealed class GlyphMaskRenderer : IDisposable
     /// <returns><see langword="false"/> when the glyph is too large for a mask.</returns>
     public bool Render(FontFace face, int glyph, double size, in Affine2D linear, double fractionX, double fractionY, double boldWidth, bool isAliased, GlyphScratch scratch, CancellationToken cancellationToken, bool prepareOnly = false)
     {
+        // The outline is decoded once, measured and recorded, then replayed for the contours and for the bold
         Left = Top = Width = Height = 0;
-        _bounds.Reset();
+        _outline.Begin();
         var budget = new GlyphBudget(face.Data.Limits);
-        face.DecodeOutline(glyph, size, _bounds, scratch, ref budget);
-        if (_bounds.IsEmpty)
+        face.DecodeOutline(glyph, size, _outline, scratch, ref budget);
+        var bounds = _outline.Bounds;
+        if (bounds.IsEmpty)
             return true;
 
         // The box of the control points, placed, with what the stroke of the bold reaches (a miter of 2) and a pixel
@@ -95,8 +97,8 @@ internal sealed class GlyphMaskRenderer : IDisposable
         var maxY = double.NegativeInfinity;
         for (var corner = 0; corner < 4; corner++)
         {
-            var x = (corner & 1) == 0 ? _bounds.MinX : _bounds.MaxX;
-            var y = (corner & 2) == 0 ? _bounds.MinY : _bounds.MaxY;
+            var x = (corner & 1) == 0 ? bounds.MinX : bounds.MaxX;
+            var y = (corner & 2) == 0 ? bounds.MinY : bounds.MaxY;
             var px = (linear.A * x) + (linear.C * y) + fractionX;
             var py = (linear.B * x) + (linear.D * y) + fractionY;
             minX = Math.Min(minX, px);
@@ -122,8 +124,7 @@ internal sealed class GlyphMaskRenderer : IDisposable
         // The contours of the glyph, the ones that turn the other way reversed, then the stroke of the bold
         _edges.Reset();
         _glyphSink.Begin(_fill, placement);
-        budget = new GlyphBudget(face.Data.Limits);
-        face.DecodeOutline(glyph, size, _glyphSink, scratch, ref budget);
+        SendOutline(face, glyph, size, scratch);
         _fill.End();
         if (_glyphSink.SignedArea < 0)
         {
@@ -136,8 +137,7 @@ internal sealed class GlyphMaskRenderer : IDisposable
             emboldener.SetOutput(hasTransform: false, default, 1);
             emboldener.Configure(boldWidth, LineJoin.Miter, GlyphRun.BoldMiterLimit);
             _glyphSink.Begin(emboldener, placement);
-            budget = new GlyphBudget(face.Data.Limits);
-            face.DecodeOutline(glyph, size, _glyphSink, scratch, ref budget);
+            SendOutline(face, glyph, size, scratch);
             emboldener.End();
         }
 
@@ -169,6 +169,19 @@ internal sealed class GlyphMaskRenderer : IDisposable
         }
 
         return true;
+    }
+
+    /// <summary>Sends the outline measured last to the glyph sink: replayed, or decoded again when it was too large to be recorded.</summary>
+    private void SendOutline(FontFace face, int glyph, double size, GlyphScratch scratch)
+    {
+        if (_outline.IsRecorded)
+        {
+            _outline.Replay(_glyphSink);
+            return;
+        }
+
+        var budget = new GlyphBudget(face.Data.Limits);
+        face.DecodeOutline(glyph, size, _glyphSink, scratch, ref budget);
     }
 
     public void Dispose()

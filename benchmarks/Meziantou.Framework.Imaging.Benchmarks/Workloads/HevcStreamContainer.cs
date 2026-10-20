@@ -4,7 +4,7 @@ namespace Meziantou.Framework.Imaging.Benchmarks.Workloads;
 
 /// <summary>
 /// A minimal HEIC file around an HEVC stream of the golden corpus (a still image for one access unit, an image sequence
-/// otherwise), so that the decoding workloads measure streams that another encoder wrote. The parameter sets go to the
+/// otherwise, or a grid of copies of a still image), so that the decoding workloads measure streams that another encoder wrote. The parameter sets go to the
 /// configuration record and the other NAL units, preceded by their length, to the data of the item or of the samples.
 /// </summary>
 internal static class HevcStreamContainer
@@ -20,6 +20,14 @@ internal static class HevcStreamContainer
     /// <param name="bitDepth">The bit depth: 8, 10 or 12.</param>
     /// <param name="chromaFormatIdc">The chroma format: 0 for 4:0:0, 1 for 4:2:0, 2 for 4:2:2, 3 for 4:4:4.</param>
     public static byte[] Wrap(ReadOnlySpan<byte> stream, int width, int height, int bitDepth, int chromaFormatIdc)
+    {
+        var (parameterSets, samples) = Split(stream);
+        var configuration = WriteConfiguration(parameterSets, bitDepth, chromaFormatIdc);
+        return samples.Count is 1 ? WrapStill(samples[0], width, height, configuration) : WrapSequence(samples, width, height, configuration);
+    }
+
+    // The parameter sets of a byte stream, and its access units as NAL units preceded by their length
+    private static (List<byte[]> ParameterSets, List<byte[]> Samples) Split(ReadOnlySpan<byte> stream)
     {
         var parameterSets = new List<byte[]>();
         var samples = new List<byte[]>();
@@ -63,8 +71,75 @@ internal static class HevcStreamContainer
         if (samples.Count is 0 || parameterSets.Count < 3)
             throw new InvalidOperationException("The HEVC stream has no picture or no parameter set.");
 
-        var configuration = WriteConfiguration(parameterSets, bitDepth, chromaFormatIdc);
-        return samples.Count is 1 ? WrapStill(samples[0], width, height, configuration) : WrapSequence(samples, width, height, configuration);
+        return (parameterSets, samples);
+    }
+
+    /// <summary>
+    /// Wraps a still image (ITU-T H.265, annex B) into an HEIC file whose primary item is a grid of copies of it, as the
+    /// cameras of phones write their photos: each tile is a coded item with its own copy of the data.
+    /// </summary>
+    /// <param name="stream">The stream of one picture: NAL units preceded by start codes.</param>
+    /// <param name="tileWidth">The width of the picture that a decoder outputs.</param>
+    /// <param name="tileHeight">The height of the picture that a decoder outputs.</param>
+    /// <param name="chromaFormatIdc">The chroma format: 0 for 4:0:0, 1 for 4:2:0, 2 for 4:2:2, 3 for 4:4:4.</param>
+    /// <param name="columns">The number of tiles of a row of the grid.</param>
+    /// <param name="rows">The number of rows of tiles.</param>
+    /// <param name="width">The width of the image, which the tiles of the last column cover.</param>
+    /// <param name="height">The height of the image, which the tiles of the last row cover.</param>
+    public static byte[] WrapGrid(ReadOnlySpan<byte> stream, int tileWidth, int tileHeight, int chromaFormatIdc, int columns, int rows, int width, int height)
+    {
+        var (parameterSets, samples) = Split(stream);
+        if (samples.Count is not 1)
+            throw new InvalidOperationException("The HEVC stream of a tile has several pictures.");
+
+        var configuration = WriteConfiguration(parameterSets, bitDepth: 8, chromaFormatIdc);
+        var data = samples[0];
+        var count = columns * rows;
+        var fileType = WriteBox("ftyp", [.. "heic"u8, 0, 0, 0, 0, .. "heic"u8, .. "mif1"u8, .. "miaf"u8]);
+        var handler = WriteFullBox("hdlr", 0, 0, [0, 0, 0, 0, .. "pict"u8, .. new byte[12], 0]);
+        var primaryItem = WriteFullBox("pitm", 0, 0, [0, 1]);
+
+        // Item 1 is the grid, items 2 to count + 1 its tiles in row-major order (ISO/IEC 23008-12, section 6.6.2.3)
+        var entries = new List<byte>(UInt16(count + 1));
+        entries.AddRange(WriteFullBox("infe", 2, 0, [0, 1, 0, 0, .. "grid"u8, 0]));
+        var references = new List<byte>([.. UInt16(1), .. UInt16(count)]);
+        var associations = new List<byte>([.. UInt32(count + 1), 0, 1, 1, 0x03]);
+        for (var i = 0; i < count; i++)
+        {
+            entries.AddRange(WriteFullBox("infe", 2, 0, [.. UInt16(i + 2), 0, 0, .. "hvc1"u8, 0]));
+            references.AddRange(UInt16(i + 2));
+            associations.AddRange([.. UInt16(i + 2), 2, 0x01, 0x82]);
+        }
+
+        var itemInformation = WriteFullBox("iinf", 0, 0, [.. entries]);
+        var itemReferences = WriteFullBox("iref", 0, 0, WriteBox("dimg", [.. references]));
+        var tileSize = WriteFullBox("ispe", 0, 0, [.. UInt32(tileWidth), .. UInt32(tileHeight)]);
+        var gridSize = WriteFullBox("ispe", 0, 0, [.. UInt32(width), .. UInt32(height)]);
+        var properties = WriteBox("iprp", [.. WriteBox("ipco", [.. tileSize, .. configuration, .. gridSize]), .. WriteFullBox("ipma", 0, 0, [.. associations])]);
+
+        // The ImageGrid structure: version 0, 16-bit sizes
+        byte[] grid = [0, 0, (byte)(rows - 1), (byte)(columns - 1), .. UInt16(width), .. UInt16(height)];
+
+        // The offsets of the items are in the payload of the 'mdat' box, which follows the 'meta' box
+        byte[] BuildMeta(int dataOffset)
+        {
+            var location = new List<byte>([0x44, 0x00, .. UInt16(count + 1), 0, 1, 0, 0, 0, 1, .. UInt32(dataOffset), .. UInt32(grid.Length)]);
+            for (var i = 0; i < count; i++)
+            {
+                location.AddRange([.. UInt16(i + 2), 0, 0, 0, 1, .. UInt32(dataOffset + grid.Length + (i * data.Length)), .. UInt32(data.Length)]);
+            }
+
+            return WriteFullBox("meta", 0, 0, [.. handler, .. primaryItem, .. WriteFullBox("iloc", 0, 0, [.. location]), .. itemInformation, .. itemReferences, .. properties]);
+        }
+
+        var meta = BuildMeta(fileType.Length + BuildMeta(0).Length + 8);
+        var payload = new List<byte>(grid);
+        for (var i = 0; i < count; i++)
+        {
+            payload.AddRange(data);
+        }
+
+        return [.. fileType, .. meta, .. WriteBox("mdat", [.. payload])];
     }
 
     // ISO/IEC 14496-15, section 8.3.3.1: the record of an 'hvcC' box. The profile, the tier and the level are left at 0:

@@ -278,7 +278,7 @@ public sealed class IniPropertySyntax : IniEntrySyntax
             indentation = item.IsKind(SyntaxKind.WhitespaceTrivia) ? indentation + item.ToFullString() : "";
         }
 
-        return indentation.Replace("﻿", "", StringComparison.Ordinal);
+        return indentation.Replace("\uFEFF", "", StringComparison.Ordinal);
     }
 
     internal override SyntaxNode? GetNodeSlot(int index) => null;

@@ -1,10 +1,10 @@
 namespace Meziantou.Framework.Fonts;
 
 /// <summary>The exception thrown when an operation would exceed a limit of <see cref="FontResourceLimits"/> or of a <see cref="FontAllocator"/>.</summary>
-#pragma warning disable CA1032, CA1064 // The exceptions of the font code never leave the libraries that use it: each one converts them to its own
-internal sealed class FontResourceLimitException : FontException
+#pragma warning disable CA1032 // The exceptions are created by the font code only
+public sealed class FontResourceLimitException : FontException
 {
-    public FontResourceLimitException(FontResourceLimitKind kind, long limit, long? requested)
+    internal FontResourceLimitException(FontResourceLimitKind kind, long limit, long? requested)
         : base(requested is null
             ? string.Create(CultureInfo.InvariantCulture, $"The resource limit '{kind}' ({limit}) was exceeded.")
             : string.Create(CultureInfo.InvariantCulture, $"The resource limit '{kind}' ({limit}) was exceeded: {requested} requested."))
@@ -23,4 +23,4 @@ internal sealed class FontResourceLimitException : FontException
     /// <summary>Gets the value that exceeded the limit, or <see langword="null"/> if unknown.</summary>
     public long? Requested { get; }
 }
-#pragma warning restore CA1032, CA1064
+#pragma warning restore CA1032

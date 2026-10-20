@@ -80,12 +80,6 @@ dotnet_diagnostic.MA0032.severity = none
 # Meziantou.Framework.Language.* parsers through InternalsVisibleTo, which the analyzer cannot see.
 dotnet_diagnostic.MA0182.severity = none
 
-[src/Meziantou.Framework.Fonts/**.cs]
-# MA0182: Avoid unused internal types
-# The whole API of the font reader and the shaper is internal: the entry points have no caller inside this assembly and
-# are used by Meziantou.Framework.Imaging and Meziantou.Framework.WebPlatform through InternalsVisibleTo.
-dotnet_diagnostic.MA0182.severity = none
-
 [src/Meziantou.Framework.Markdown/**.cs]
 # The public API keeps the shape of Markdig (https://github.com/xoofx/markdig), the library this project is derived from.
 # The following rules would require breaking changes to that API, so they are disabled for this project only.

@@ -6,12 +6,14 @@ using Meziantou.Framework.WebPlatform.Infra;
 namespace Meziantou.Framework.WebPlatform.Css.TypedOm;
 
 /// <summary>A &lt;transform-list&gt; value (https://drafts.css-houdini.org/css-typed-om-1/#csstransformvalue): a list of transform components.</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#csstransformvalue"/>
 [IdlInterface("CSSTransformValue", "https://drafts.css-houdini.org/css-typed-om-1/#csstransformvalue")]
 public sealed class CssTransformValue : CssStyleValue, IReadOnlyList<CssTransformComponent>
 {
     private readonly List<CssTransformComponent> _values;
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-csstransformvalue-csstransformvalue</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csstransformvalue-csstransformvalue"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csstransformvalue-csstransformvalue")]
     public CssTransformValue(IEnumerable<CssTransformComponent> transforms)
     {
@@ -27,6 +29,7 @@ public sealed class CssTransformValue : CssStyleValue, IReadOnlyList<CssTransfor
     }
 
     /// <summary>Gets the number of transform components.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csstransformvalue-length"/>
     [IdlMember("length", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csstransformvalue-length")]
     public uint Length => (uint)_values.Count;
 
@@ -34,6 +37,8 @@ public sealed class CssTransformValue : CssStyleValue, IReadOnlyList<CssTransfor
     /// Gets or sets a transform component (https://drafts.css-houdini.org/css-typed-om-1/#dom-csstransformvalue-__getter__-index-index):
     /// setting the index that follows the last component appends a component, a greater index throws a RangeError.
     /// </summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csstransformvalue-__getter__-index-index"/>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csstransformvalue-__setter__-index-val-val"/>
     [IdlMember("getter", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csstransformvalue-__getter__-index-index")]
     [IdlMember("setter", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csstransformvalue-__setter__-index-val-val")]
     [System.Runtime.CompilerServices.IndexerName("ItemAt")]
@@ -68,10 +73,12 @@ public sealed class CssTransformValue : CssStyleValue, IReadOnlyList<CssTransfor
     public int Count => _values.Count;
 
     /// <summary>Whether all the components are 2D (https://drafts.css-houdini.org/css-typed-om-1/#dom-csstransformvalue-is2d).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csstransformvalue-is2d"/>
     [IdlMember("is2D", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csstransformvalue-is2d")]
     public bool Is2D => _values.TrueForAll(value => value.Is2D);
 
     /// <summary>Returns the product of the matrices of the components (https://drafts.css-houdini.org/css-typed-om-1/#dom-csstransformvalue-tomatrix).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csstransformvalue-tomatrix"/>
     [IdlMember("toMatrix", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csstransformvalue-tomatrix")]
     public DomMatrix ToMatrix()
     {
@@ -97,6 +104,7 @@ public sealed class CssTransformValue : CssStyleValue, IReadOnlyList<CssTransfor
 }
 
 /// <summary>A &lt;transform-function&gt; (https://drafts.css-houdini.org/css-typed-om-1/#csstransformcomponent).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#csstransformcomponent"/>
 [IdlInterface("CSSTransformComponent", "https://drafts.css-houdini.org/css-typed-om-1/#csstransformcomponent")]
 public abstract class CssTransformComponent
 {
@@ -111,6 +119,7 @@ public abstract class CssTransformComponent
     /// Whether the component is a 2D transform (https://drafts.css-houdini.org/css-typed-om-1/#dom-csstransformcomponent-is2d).
     /// Setting it does nothing for the skews (always 2D) and the perspective (always 3D).
     /// </summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csstransformcomponent-is2d"/>
     [IdlMember("is2D", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csstransformcomponent-is2d")]
     public bool Is2D
     {
@@ -130,6 +139,7 @@ public abstract class CssTransformComponent
     /// Returns the equivalent 4x4 matrix of the component (https://drafts.css-houdini.org/css-typed-om-1/#dom-csstransformcomponent-tomatrix).
     /// The lengths must be compatible with px (a relative length or a percentage throws a TypeError).
     /// </summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csstransformcomponent-tomatrix"/>
     [IdlMember("toMatrix", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csstransformcomponent-tomatrix")]
     public DomMatrix ToMatrix() => DomMatrix.Create(GetMatrix(), Is2D);
 
@@ -177,6 +187,7 @@ public abstract class CssTransformComponent
 }
 
 /// <summary>translate(), translateX(), translateY(), translateZ() and translate3d() (https://drafts.css-houdini.org/css-typed-om-1/#csstranslate).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#csstranslate"/>
 [IdlInterface("CSSTranslate", "https://drafts.css-houdini.org/css-typed-om-1/#csstranslate")]
 public sealed class CssTranslate : CssTransformComponent
 {
@@ -185,6 +196,7 @@ public sealed class CssTranslate : CssTransformComponent
     private CssNumericValue _z;
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-csstranslate-csstranslate</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csstranslate-csstranslate"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csstranslate-csstranslate")]
     public CssTranslate(CssNumericValue x, CssNumericValue y, CssNumericValue? z = null)
         : base(is2D: z is null)
@@ -195,6 +207,7 @@ public sealed class CssTranslate : CssTransformComponent
     }
 
     /// <summary>Gets or sets the translation along the X axis.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csstranslate-x"/>
     [IdlMember("x", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csstranslate-x")]
     public CssNumericValue X
     {
@@ -203,6 +216,7 @@ public sealed class CssTranslate : CssTransformComponent
     }
 
     /// <summary>Gets or sets the translation along the Y axis.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csstranslate-y"/>
     [IdlMember("y", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csstranslate-y")]
     public CssNumericValue Y
     {
@@ -211,6 +225,7 @@ public sealed class CssTranslate : CssTransformComponent
     }
 
     /// <summary>Gets or sets the translation along the Z axis.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-csstranslate-z"/>
     [IdlMember("z", "https://drafts.css-houdini.org/css-typed-om-1/#dom-csstranslate-z")]
     public CssNumericValue Z
     {
@@ -232,6 +247,7 @@ public sealed class CssTranslate : CssTransformComponent
 }
 
 /// <summary>rotate(), rotateX(), rotateY(), rotateZ() and rotate3d() (https://drafts.css-houdini.org/css-typed-om-1/#cssrotate).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssrotate"/>
 [IdlInterface("CSSRotate", "https://drafts.css-houdini.org/css-typed-om-1/#cssrotate")]
 public sealed class CssRotate : CssTransformComponent
 {
@@ -241,6 +257,7 @@ public sealed class CssRotate : CssTransformComponent
     private CssNumericValue _angle;
 
     /// <summary>A 2D rotation (https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrotate-cssrotate).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrotate-cssrotate"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrotate-cssrotate")]
     public CssRotate(CssNumericValue angle)
         : base(is2D: true)
@@ -252,6 +269,7 @@ public sealed class CssRotate : CssTransformComponent
     }
 
     /// <summary>A 3D rotation around the axis (x, y, z) (https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrotate-cssrotate-x-y-z-angle).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrotate-cssrotate-x-y-z-angle"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrotate-cssrotate-x-y-z-angle")]
     public CssRotate(CssNumberish x, CssNumberish y, CssNumberish z, CssNumericValue angle)
         : base(is2D: false)
@@ -263,6 +281,7 @@ public sealed class CssRotate : CssTransformComponent
     }
 
     /// <summary>Gets or sets the X component of the rotation axis.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrotate-x"/>
     [IdlMember("x", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrotate-x")]
     public CssNumberish X
     {
@@ -271,6 +290,7 @@ public sealed class CssRotate : CssTransformComponent
     }
 
     /// <summary>Gets or sets the Y component of the rotation axis.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrotate-y"/>
     [IdlMember("y", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrotate-y")]
     public CssNumberish Y
     {
@@ -279,6 +299,7 @@ public sealed class CssRotate : CssTransformComponent
     }
 
     /// <summary>Gets or sets the Z component of the rotation axis.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrotate-z"/>
     [IdlMember("z", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrotate-z")]
     public CssNumberish Z
     {
@@ -287,6 +308,7 @@ public sealed class CssRotate : CssTransformComponent
     }
 
     /// <summary>Gets or sets the rotation angle.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrotate-angle"/>
     [IdlMember("angle", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrotate-angle")]
     public CssNumericValue Angle
     {
@@ -306,6 +328,7 @@ public sealed class CssRotate : CssTransformComponent
 }
 
 /// <summary>scale(), scaleX(), scaleY(), scaleZ() and scale3d() (https://drafts.css-houdini.org/css-typed-om-1/#cssscale).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssscale"/>
 [IdlInterface("CSSScale", "https://drafts.css-houdini.org/css-typed-om-1/#cssscale")]
 public sealed class CssScale : CssTransformComponent
 {
@@ -314,6 +337,7 @@ public sealed class CssScale : CssTransformComponent
     private CssNumericValue _z;
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssscale-cssscale</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssscale-cssscale"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssscale-cssscale")]
     public CssScale(CssNumberish x, CssNumberish y, CssNumberish? z = null)
         : base(is2D: z is null)
@@ -324,6 +348,7 @@ public sealed class CssScale : CssTransformComponent
     }
 
     /// <summary>Gets or sets the scale factor along the X axis.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssscale-x"/>
     [IdlMember("x", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssscale-x")]
     public CssNumberish X
     {
@@ -332,6 +357,7 @@ public sealed class CssScale : CssTransformComponent
     }
 
     /// <summary>Gets or sets the scale factor along the Y axis.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssscale-y"/>
     [IdlMember("y", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssscale-y")]
     public CssNumberish Y
     {
@@ -340,6 +366,7 @@ public sealed class CssScale : CssTransformComponent
     }
 
     /// <summary>Gets or sets the scale factor along the Z axis.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssscale-z"/>
     [IdlMember("z", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssscale-z")]
     public CssNumberish Z
     {
@@ -369,6 +396,7 @@ public sealed class CssScale : CssTransformComponent
 }
 
 /// <summary>skew() (https://drafts.css-houdini.org/css-typed-om-1/#cssskew).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssskew"/>
 [IdlInterface("CSSSkew", "https://drafts.css-houdini.org/css-typed-om-1/#cssskew")]
 public sealed class CssSkew : CssTransformComponent
 {
@@ -376,6 +404,7 @@ public sealed class CssSkew : CssTransformComponent
     private CssNumericValue _ay;
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssskew-cssskew</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssskew-cssskew"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssskew-cssskew")]
     public CssSkew(CssNumericValue ax, CssNumericValue ay)
         : base(is2D: true)
@@ -385,6 +414,7 @@ public sealed class CssSkew : CssTransformComponent
     }
 
     /// <summary>Gets or sets the skew angle along the X axis.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssskew-ax"/>
     [IdlMember("ax", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssskew-ax")]
     public CssNumericValue Ax
     {
@@ -393,6 +423,7 @@ public sealed class CssSkew : CssTransformComponent
     }
 
     /// <summary>Gets or sets the skew angle along the Y axis.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssskew-ay"/>
     [IdlMember("ay", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssskew-ay")]
     public CssNumericValue Ay
     {
@@ -410,12 +441,14 @@ public sealed class CssSkew : CssTransformComponent
 }
 
 /// <summary>skewX() (https://drafts.css-houdini.org/css-typed-om-1/#cssskewx).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssskewx"/>
 [IdlInterface("CSSSkewX", "https://drafts.css-houdini.org/css-typed-om-1/#cssskewx")]
 public sealed class CssSkewX : CssTransformComponent
 {
     private CssNumericValue _ax;
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssskewx-cssskewx</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssskewx-cssskewx"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssskewx-cssskewx")]
     public CssSkewX(CssNumericValue ax)
         : base(is2D: true)
@@ -424,6 +457,7 @@ public sealed class CssSkewX : CssTransformComponent
     }
 
     /// <summary>Gets or sets the skew angle along the X axis.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssskewx-ax"/>
     [IdlMember("ax", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssskewx-ax")]
     public CssNumericValue Ax
     {
@@ -441,12 +475,14 @@ public sealed class CssSkewX : CssTransformComponent
 }
 
 /// <summary>skewY() (https://drafts.css-houdini.org/css-typed-om-1/#cssskewy).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssskewy"/>
 [IdlInterface("CSSSkewY", "https://drafts.css-houdini.org/css-typed-om-1/#cssskewy")]
 public sealed class CssSkewY : CssTransformComponent
 {
     private CssNumericValue _ay;
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssskewy-cssskewy</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssskewy-cssskewy"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssskewy-cssskewy")]
     public CssSkewY(CssNumericValue ay)
         : base(is2D: true)
@@ -455,6 +491,7 @@ public sealed class CssSkewY : CssTransformComponent
     }
 
     /// <summary>Gets or sets the skew angle along the Y axis.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssskewy-ay"/>
     [IdlMember("ay", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssskewy-ay")]
     public CssNumericValue Ay
     {
@@ -526,12 +563,14 @@ public readonly struct CssPerspectiveValue : IUnionValue, IEquatable<CssPerspect
 }
 
 /// <summary>perspective() (https://drafts.css-houdini.org/css-typed-om-1/#cssperspective).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssperspective"/>
 [IdlInterface("CSSPerspective", "https://drafts.css-houdini.org/css-typed-om-1/#cssperspective")]
 public sealed class CssPerspective : CssTransformComponent
 {
     private CssStyleValue _length;
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssperspective-cssperspective</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssperspective-cssperspective"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssperspective-cssperspective")]
     public CssPerspective(CssPerspectiveValue length)
         : base(is2D: false)
@@ -540,6 +579,7 @@ public sealed class CssPerspective : CssTransformComponent
     }
 
     /// <summary>The length: a <see cref="CssNumericValue"/> or the keyword none (a <see cref="CssKeywordValue"/>).</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssperspective-length"/>
     [IdlMember("length", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssperspective-length")]
     public CssPerspectiveValue Length
     {
@@ -592,23 +632,27 @@ public sealed class CssPerspective : CssTransformComponent
 }
 
 /// <summary>The CSSMatrixComponentOptions dictionary (https://drafts.css-houdini.org/css-typed-om-1/#dictdef-cssmatrixcomponentoptions).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dictdef-cssmatrixcomponentoptions"/>
 [IdlInterface("CSSMatrixComponentOptions", "https://drafts.css-houdini.org/css-typed-om-1/#dictdef-cssmatrixcomponentoptions")]
 public sealed class CssMatrixComponentOptions
 {
     /// <summary>
     /// Gets a value indicating whether the matrix component is 2D (<c>matrix()</c>) or 3D (<c>matrix3d()</c>).
     /// </summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmatrixcomponentoptions-is2d"/>
     [IdlMember("is2D", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmatrixcomponentoptions-is2d")]
     public bool? Is2D { get; init; }
 }
 
 /// <summary>matrix() and matrix3d() (https://drafts.css-houdini.org/css-typed-om-1/#cssmatrixcomponent).</summary>
+/// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#cssmatrixcomponent"/>
 [IdlInterface("CSSMatrixComponent", "https://drafts.css-houdini.org/css-typed-om-1/#cssmatrixcomponent")]
 public sealed class CssMatrixComponent : CssTransformComponent
 {
     private DomMatrix _matrix;
 
     /// <summary>https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmatrixcomponent-cssmatrixcomponent</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmatrixcomponent-cssmatrixcomponent"/>
     [IdlMember("constructor", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmatrixcomponent-cssmatrixcomponent")]
     public CssMatrixComponent(DomMatrixReadOnly matrix, CssMatrixComponentOptions? options = null)
         : base(is2D: options?.Is2D ?? GetIs2D(matrix))
@@ -618,6 +662,7 @@ public sealed class CssMatrixComponent : CssTransformComponent
     }
 
     /// <summary>Gets or sets the matrix of the component.</summary>
+    /// <seealso href="https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmatrixcomponent-matrix"/>
     [IdlMember("matrix", "https://drafts.css-houdini.org/css-typed-om-1/#dom-cssmatrixcomponent-matrix")]
     public DomMatrix Matrix
     {

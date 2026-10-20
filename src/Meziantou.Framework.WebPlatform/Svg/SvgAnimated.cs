@@ -7,6 +7,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 // (https://svgwg.org/svg2-draft/types.html#InterfaceSVGAnimatedBoolean).
 
 /// <summary>https://svgwg.org/svg2-draft/types.html#InterfaceSVGAnimatedBoolean</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedBoolean"/>
 [IdlInterface("SVGAnimatedBoolean", "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedBoolean")]
 public sealed class SvgAnimatedBoolean
 {
@@ -20,6 +21,7 @@ public sealed class SvgAnimatedBoolean
     }
 
     /// <summary>Gets or sets the base value, which reflects the content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedBoolean__baseVal"/>
     [IdlMember("baseVal", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedBoolean__baseVal")]
     public bool BaseVal
     {
@@ -28,11 +30,13 @@ public sealed class SvgAnimatedBoolean
     }
 
     /// <summary>Gets the animated value: the value of the animations in effect, or the base value.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedBoolean__animVal"/>
     [IdlMember("animVal", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedBoolean__animVal")]
     public bool AnimVal => _element.GetSampledAnimatedAttributeValue(_name) is { } value && value.Trim(" \t\n\f\r".ToCharArray()) == "true";
 }
 
 /// <summary>https://svgwg.org/svg2-draft/types.html#InterfaceSVGAnimatedString</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedString"/>
 [IdlInterface("SVGAnimatedString", "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedString")]
 public sealed class SvgAnimatedString
 {
@@ -53,6 +57,7 @@ public sealed class SvgAnimatedString
     /// https://svgwg.org/svg2-draft/types.html#__svg__SVGAnimatedString__baseVal: the href attribute falls back to the
     /// deprecated xlink:href attribute (https://svgwg.org/svg2-draft/linking.html#XLinkRefAttrs).
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedString__baseVal"/>
     [IdlMember("baseVal", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedString__baseVal")]
     public string BaseVal
     {
@@ -78,6 +83,7 @@ public sealed class SvgAnimatedString
     /// (https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedString__baseVal): the value of the href attribute
     /// of a script element must be a <see cref="TrustedScriptUrl"/> when Trusted Types are enforced.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedString__baseVal"/>
     [IdlMember("baseVal", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedString__baseVal")]
     public void SetBaseVal(TrustedScriptUrl value)
     {
@@ -99,6 +105,7 @@ public sealed class SvgAnimatedString
     }
 
     /// <summary>Gets the animated value: the value of the animations in effect, or the base value.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedString__animVal"/>
     [IdlMember("animVal", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedString__animVal")]
     public string AnimVal
     {
@@ -117,6 +124,7 @@ public sealed class SvgAnimatedString
 }
 
 /// <summary>https://svgwg.org/svg2-draft/types.html#InterfaceSVGAnimatedEnumeration</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedEnumeration"/>
 [IdlInterface("SVGAnimatedEnumeration", "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedEnumeration")]
 public sealed class SvgAnimatedEnumeration
 {
@@ -132,6 +140,7 @@ public sealed class SvgAnimatedEnumeration
     }
 
     /// <summary>Gets or sets the base value, which reflects the content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedEnumeration__baseVal"/>
     [IdlMember("baseVal", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedEnumeration__baseVal")]
     public ushort BaseVal
     {
@@ -144,6 +153,7 @@ public sealed class SvgAnimatedEnumeration
     }
 
     /// <summary>Gets the animated value: the value of the animations in effect, or the base value.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedEnumeration__animVal"/>
     [IdlMember("animVal", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedEnumeration__animVal")]
     public ushort AnimVal => _enumeration.GetValue(_element.GetSampledAnimatedAttributeValue(_name));
 }
@@ -194,6 +204,7 @@ internal class SvgEnumeration(ushort defaultValue, params (string Keyword, ushor
 }
 
 /// <summary>https://svgwg.org/svg2-draft/types.html#InterfaceSVGAnimatedInteger</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedInteger"/>
 [IdlInterface("SVGAnimatedInteger", "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedInteger")]
 public sealed class SvgAnimatedInteger
 {
@@ -205,6 +216,7 @@ public sealed class SvgAnimatedInteger
     }
 
     /// <summary>Gets or sets the base value, which reflects the content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedInteger__baseVal"/>
     [IdlMember("baseVal", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedInteger__baseVal")]
     public int BaseVal
     {
@@ -213,11 +225,13 @@ public sealed class SvgAnimatedInteger
     }
 
     /// <summary>Gets the animated value: the value of the animations in effect, or the base value.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedInteger__animVal"/>
     [IdlMember("animVal", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedInteger__animVal")]
     public int AnimVal => (int)_pair.Get(animated: true);
 }
 
 /// <summary>https://svgwg.org/svg2-draft/types.html#InterfaceSVGAnimatedNumber</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedNumber"/>
 [IdlInterface("SVGAnimatedNumber", "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedNumber")]
 public sealed class SvgAnimatedNumber
 {
@@ -229,6 +243,7 @@ public sealed class SvgAnimatedNumber
     }
 
     /// <summary>Gets or sets the base value, which reflects the content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedNumber__baseVal"/>
     [IdlMember("baseVal", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedNumber__baseVal")]
     public float BaseVal
     {
@@ -237,6 +252,7 @@ public sealed class SvgAnimatedNumber
     }
 
     /// <summary>Gets the animated value: the value of the animations in effect, or the base value.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedNumber__animVal"/>
     [IdlMember("animVal", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedNumber__animVal")]
     public float AnimVal => _pair.Get(animated: true);
 }
@@ -326,6 +342,7 @@ internal sealed class SvgReflectedValue(SvgAttributeBinding binding, Func<string
 }
 
 /// <summary>https://svgwg.org/svg2-draft/types.html#InterfaceSVGAnimatedLength</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedLength"/>
 [IdlInterface("SVGAnimatedLength", "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedLength")]
 public sealed class SvgAnimatedLength
 {
@@ -357,17 +374,20 @@ public sealed class SvgAnimatedLength
     }
 
     /// <summary>Gets the base value, which reflects the content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedLength__baseVal"/>
     [IdlMember("baseVal", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedLength__baseVal")]
     public SvgLength BaseVal { get; }
 
     /// <summary>
     /// Gets the read-only animated value: the value of the animations in effect, or the base value.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedLength__animVal"/>
     [IdlMember("animVal", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedLength__animVal")]
     public SvgLength AnimVal { get; }
 }
 
 /// <summary>https://svgwg.org/svg2-draft/types.html#InterfaceSVGAnimatedAngle</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedAngle"/>
 [IdlInterface("SVGAnimatedAngle", "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedAngle")]
 public sealed class SvgAnimatedAngle
 {
@@ -397,17 +417,20 @@ public sealed class SvgAnimatedAngle
     }
 
     /// <summary>Gets the base value, which reflects the content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedAngle__baseVal"/>
     [IdlMember("baseVal", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedAngle__baseVal")]
     public SvgAngle BaseVal { get; }
 
     /// <summary>
     /// Gets the read-only animated value: the value of the animations in effect, or the base value.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedAngle__animVal"/>
     [IdlMember("animVal", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedAngle__animVal")]
     public SvgAngle AnimVal { get; }
 }
 
 /// <summary>https://svgwg.org/svg2-draft/coords.html#InterfaceSVGAnimatedPreserveAspectRatio</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#InterfaceSVGAnimatedPreserveAspectRatio"/>
 [IdlInterface("SVGAnimatedPreserveAspectRatio", "https://w3c.github.io/svgwg/svg2-draft/coords.html#InterfaceSVGAnimatedPreserveAspectRatio")]
 public sealed class SvgAnimatedPreserveAspectRatio
 {
@@ -434,17 +457,20 @@ public sealed class SvgAnimatedPreserveAspectRatio
     }
 
     /// <summary>Gets the base value, which reflects the content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGAnimatedPreserveAspectRatio__baseVal"/>
     [IdlMember("baseVal", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGAnimatedPreserveAspectRatio__baseVal")]
     public SvgPreserveAspectRatio BaseVal { get; }
 
     /// <summary>
     /// Gets the read-only animated value: the value of the animations in effect, or the base value.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGAnimatedPreserveAspectRatio__animVal"/>
     [IdlMember("animVal", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGAnimatedPreserveAspectRatio__animVal")]
     public SvgPreserveAspectRatio AnimVal { get; }
 }
 
 /// <summary>https://svgwg.org/svg2-draft/types.html#InterfaceSVGAnimatedRect</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedRect"/>
 [IdlInterface("SVGAnimatedRect", "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedRect")]
 public sealed class SvgAnimatedRect
 {
@@ -458,10 +484,12 @@ public sealed class SvgAnimatedRect
     }
 
     /// <summary>The rectangle (all zeros when the attribute is missing or invalid).</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedRect__baseVal"/>
     [IdlMember("baseVal", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedRect__baseVal")]
     public DomRect BaseVal => _baseVal.GetValue();
 
     /// <summary>Gets the animated value: the value of the animations in effect, or the base value.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedRect__animVal"/>
     [IdlMember("animVal", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedRect__animVal")]
     public DomRect AnimVal => _animVal.GetValue();
 
@@ -507,6 +535,7 @@ public sealed class SvgAnimatedRect
 }
 
 /// <summary>https://svgwg.org/svg2-draft/types.html#InterfaceSVGAnimatedNumberList</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedNumberList"/>
 [IdlInterface("SVGAnimatedNumberList", "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedNumberList")]
 public sealed class SvgAnimatedNumberList
 {
@@ -517,17 +546,20 @@ public sealed class SvgAnimatedNumberList
     }
 
     /// <summary>Gets the base value, which reflects the content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedNumberList__baseVal"/>
     [IdlMember("baseVal", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedNumberList__baseVal")]
     public SvgNumberList BaseVal { get; }
 
     /// <summary>
     /// Gets the read-only animated value: the value of the animations in effect, or the base value.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedNumberList__animVal"/>
     [IdlMember("animVal", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedNumberList__animVal")]
     public SvgNumberList AnimVal { get; }
 }
 
 /// <summary>https://svgwg.org/svg2-draft/types.html#InterfaceSVGAnimatedLengthList</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedLengthList"/>
 [IdlInterface("SVGAnimatedLengthList", "https://w3c.github.io/svgwg/svg2-draft/types.html#InterfaceSVGAnimatedLengthList")]
 public sealed class SvgAnimatedLengthList
 {
@@ -538,17 +570,20 @@ public sealed class SvgAnimatedLengthList
     }
 
     /// <summary>Gets the base value, which reflects the content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedLengthList__baseVal"/>
     [IdlMember("baseVal", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedLengthList__baseVal")]
     public SvgLengthList BaseVal { get; }
 
     /// <summary>
     /// Gets the read-only animated value: the value of the animations in effect, or the base value.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedLengthList__animVal"/>
     [IdlMember("animVal", "https://w3c.github.io/svgwg/svg2-draft/types.html#__svg__SVGAnimatedLengthList__animVal")]
     public SvgLengthList AnimVal { get; }
 }
 
 /// <summary>https://svgwg.org/svg2-draft/coords.html#InterfaceSVGAnimatedTransformList</summary>
+/// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#InterfaceSVGAnimatedTransformList"/>
 [IdlInterface("SVGAnimatedTransformList", "https://w3c.github.io/svgwg/svg2-draft/coords.html#InterfaceSVGAnimatedTransformList")]
 public sealed class SvgAnimatedTransformList
 {
@@ -559,12 +594,14 @@ public sealed class SvgAnimatedTransformList
     }
 
     /// <summary>Gets the base value, which reflects the content attribute.</summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGAnimatedTransformList__baseVal"/>
     [IdlMember("baseVal", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGAnimatedTransformList__baseVal")]
     public SvgTransformList BaseVal { get; }
 
     /// <summary>
     /// Gets the read-only animated value: the value of the animations in effect, or the base value.
     /// </summary>
+    /// <seealso href="https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGAnimatedTransformList__animVal"/>
     [IdlMember("animVal", "https://w3c.github.io/svgwg/svg2-draft/coords.html#__svg__SVGAnimatedTransformList__animVal")]
     public SvgTransformList AnimVal { get; }
 }

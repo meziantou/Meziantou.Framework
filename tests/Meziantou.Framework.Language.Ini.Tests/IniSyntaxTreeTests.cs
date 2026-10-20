@@ -723,7 +723,7 @@ key without separator
     [InlineData("# header\n", "# header\n[db]\na=1\n")]
     [InlineData("# header", "# header\n[db]\na=1\n")]
     [InlineData("# header\n\n  ", "# header\n\n[db]\na=1\n  ")]
-    [InlineData("﻿; header\r\n", "﻿; header\r\n[db]\r\na=1\r\n")]
+    [InlineData("\uFEFF; header\r\n", "\uFEFF; header\r\n[db]\r\na=1\r\n")]
     public void AddEntries_KeepsTheHeaderOfADocumentWithoutEntries(string text, string expected)
     {
         var root = IniSyntaxTree.ParseText(text).GetRoot();
@@ -777,10 +777,10 @@ key without separator
     [Fact]
     public void Whitespace_AcceptsTheByteOrderMarkTheParserReads()
     {
-        var root = IniSyntaxTree.ParseText("﻿  a=1\n").GetRoot();
+        var root = IniSyntaxTree.ParseText("\uFEFF  a=1\n").GetRoot();
         var trivia = root.DescendantTrivia().ToArray();
 
-        Assert.Equal("﻿", trivia[0].ToFullString());
+        Assert.Equal("\uFEFF", trivia[0].ToFullString());
         Assert.Equal("  ", trivia[1].ToFullString());
         Assert.Equal(root.ToFullString(), root.ReplaceTrivia(trivia, (original, _) => SyntaxFactory.Trivia(original.Kind(), original.ToFullString())).ToFullString());
     }
@@ -795,7 +795,7 @@ key without separator
     [InlineData("", "t", "b", "2", "[t]\nb=2\n")]
     [InlineData("", null, "b", "2", "b=2\n")]
     [InlineData("; cfg\n\n[s]\na=1\n", null, "k", "v", "; cfg\n\nk=v\n[s]\na=1\n")]
-    [InlineData("﻿[s]\n", null, "k", "v", "﻿k=v\n[s]\n")]
+    [InlineData("\uFEFF[s]\n", null, "k", "v", "\uFEFFk=v\n[s]\n")]
     [InlineData("g=1\n[s]\n", null, "k", "v", "g=1\nk=v\n[s]\n")]
     [InlineData("[S]\na=1\n", "s", "A", "2", "[S]\na=2\n")]
     [InlineData("[s]\na=1\n\n; [old]\n; x=1\n", "t", "b", "2", "[s]\na=1\n\n; [old]\n; x=1\n\n[t]\nb=2\n")]

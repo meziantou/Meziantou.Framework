@@ -3,18 +3,21 @@ using Meziantou.Framework.WebPlatform.Html;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://html.spec.whatwg.org/multipage/interaction.html#focusoptions</summary>
+/// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#focusoptions"/>
 [IdlInterface("FocusOptions", "https://html.spec.whatwg.org/multipage/interaction.html#focusoptions")]
 public sealed class FocusOptions
 {
     /// <summary>
     /// Gets a value indicating whether the user agent must not scroll the element into view when it is focused.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-focusoptions-preventscroll"/>
     [IdlMember("preventScroll", "https://html.spec.whatwg.org/multipage/interaction.html#dom-focusoptions-preventscroll")]
     public bool PreventScroll { get; init; }
 
     /// <summary>
     /// Gets a value indicating whether the focus indicator must be visible, or null to let the user agent decide.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-focusoptions-focusvisible"/>
     [IdlMember("focusVisible", "https://html.spec.whatwg.org/multipage/interaction.html#dom-focusoptions-focusvisible")]
     public bool? FocusVisible { get; init; }
 }
@@ -92,12 +95,14 @@ public partial class Element
 public partial class HtmlElement
 {
     /// <summary>Gets the <c>data-*</c> custom data attributes of the element as a string map.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-dataset"/>
     [IdlMember("dataset", "https://html.spec.whatwg.org/multipage/dom.html#dom-dataset")]
     public DomStringMap Dataset => GetDataset();
 
     /// <summary>
     /// Gets or sets the cryptographic nonce used by the Content Security Policy checks of the element.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/urls-and-fetching.html#dom-noncedelement-nonce"/>
     [IdlMember("nonce", "https://html.spec.whatwg.org/multipage/urls-and-fetching.html#dom-noncedelement-nonce")]
     public string Nonce
     {
@@ -109,10 +114,12 @@ public partial class HtmlElement
     /// https://html.spec.whatwg.org/multipage/interaction.html#dom-focus: runs the focusing steps for the element (see
     /// <see cref="Document.ActiveElement"/>). Nothing is scrolled.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-focus"/>
     [IdlMember("focus", "https://html.spec.whatwg.org/multipage/interaction.html#dom-focus")]
     public void Focus(FocusOptions? options = null) => FocusModel.FocusElement(this, options);
 
     /// <summary>https://html.spec.whatwg.org/multipage/interaction.html#dom-blur: runs the unfocusing steps for the element (the viewport is focused).</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-blur"/>
     [IdlMember("blur", "https://html.spec.whatwg.org/multipage/interaction.html#dom-blur")]
     public void Blur() => FocusModel.RunUnfocusingSteps(this);
 }
@@ -120,12 +127,14 @@ public partial class HtmlElement
 public partial class SvgElement
 {
     /// <summary>Gets the <c>data-*</c> custom data attributes of the element as a string map.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-dataset"/>
     [IdlMember("dataset", "https://html.spec.whatwg.org/multipage/dom.html#dom-dataset")]
     public DomStringMap Dataset => GetDataset();
 
     /// <summary>
     /// Gets or sets the cryptographic nonce used by the Content Security Policy checks of the element.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/urls-and-fetching.html#dom-noncedelement-nonce"/>
     [IdlMember("nonce", "https://html.spec.whatwg.org/multipage/urls-and-fetching.html#dom-noncedelement-nonce")]
     public string Nonce
     {
@@ -134,10 +143,12 @@ public partial class SvgElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/interaction.html#dom-focus: runs the focusing steps for the element.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-focus"/>
     [IdlMember("focus", "https://html.spec.whatwg.org/multipage/interaction.html#dom-focus")]
     public void Focus(FocusOptions? options = null) => FocusModel.FocusElement(this, options);
 
     /// <summary>https://html.spec.whatwg.org/multipage/interaction.html#dom-blur: runs the unfocusing steps for the element.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-blur"/>
     [IdlMember("blur", "https://html.spec.whatwg.org/multipage/interaction.html#dom-blur")]
     public void Blur() => FocusModel.RunUnfocusingSteps(this);
 }
@@ -145,12 +156,14 @@ public partial class SvgElement
 public partial class MathMLElement
 {
     /// <summary>Gets the <c>data-*</c> custom data attributes of the element as a string map.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#dom-dataset"/>
     [IdlMember("dataset", "https://html.spec.whatwg.org/multipage/dom.html#dom-dataset")]
     public DomStringMap Dataset => GetDataset();
 
     /// <summary>
     /// Gets or sets the cryptographic nonce used by the Content Security Policy checks of the element.
     /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/urls-and-fetching.html#dom-noncedelement-nonce"/>
     [IdlMember("nonce", "https://html.spec.whatwg.org/multipage/urls-and-fetching.html#dom-noncedelement-nonce")]
     public string Nonce
     {
@@ -159,10 +172,12 @@ public partial class MathMLElement
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/interaction.html#dom-focus: runs the focusing steps for the element.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-focus"/>
     [IdlMember("focus", "https://html.spec.whatwg.org/multipage/interaction.html#dom-focus")]
     public void Focus(FocusOptions? options = null) => FocusModel.FocusElement(this, options);
 
     /// <summary>https://html.spec.whatwg.org/multipage/interaction.html#dom-blur: runs the unfocusing steps for the element.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/interaction.html#dom-blur"/>
     [IdlMember("blur", "https://html.spec.whatwg.org/multipage/interaction.html#dom-blur")]
     public void Blur() => FocusModel.RunUnfocusingSteps(this);
 }

@@ -1,3 +1,6 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -67,5 +70,158 @@ internal static class PngInterlace
     {
         var size = BlockSizes.Slice((passCount - 1) * 2, 2);
         return (size[0], size[1]);
+    }
+
+    /// <summary>
+    /// Copies pixels between two strided sequences: pixel <c>i</c> of the source, <c>i * sourceStep</c> pixels from its
+    /// start, goes to pixel <c>i * destinationStep</c> of the destination (the scattering of a pass row into an image row,
+    /// or the gathering of the pixels of a pass). The usual pixel sizes are one typed load and store per pixel.
+    /// </summary>
+    /// <param name="source">The source pixels.</param>
+    /// <param name="sourceStep">The distance between two source pixels, in pixels.</param>
+    /// <param name="destination">The destination pixels.</param>
+    /// <param name="destinationStep">The distance between two destination pixels, in pixels.</param>
+    /// <param name="count">The number of pixels.</param>
+    /// <param name="bytesPerPixel">The size of a pixel, in bytes.</param>
+    public static void CopyPixels(ReadOnlySpan<byte> source, int sourceStep, Span<byte> destination, int destinationStep, int count, int bytesPerPixel)
+    {
+        if (count <= 0)
+            return;
+
+        // The last pixel of each sequence is within its span: every access of the loops is
+        source = source[..((((count - 1) * sourceStep) + 1) * bytesPerPixel)];
+        destination = destination[..((((count - 1) * destinationStep) + 1) * bytesPerPixel)];
+        if (sourceStep == 1 && destinationStep == 1)
+        {
+            // Contiguous pixels (the last pass of a row)
+            source.CopyTo(destination);
+            return;
+        }
+
+        ref var from = ref unsafe(MemoryMarshal.GetReference(source));
+        ref var to = ref unsafe(MemoryMarshal.GetReference(destination));
+        var sourceStride = (nint)sourceStep * bytesPerPixel;
+        var destinationStride = (nint)destinationStep * bytesPerPixel;
+        switch (bytesPerPixel)
+        {
+            case 1:
+                CopyPixels<byte>(ref from, sourceStride, ref to, destinationStride, count);
+                break;
+            case 2:
+                CopyPixels<ushort>(ref from, sourceStride, ref to, destinationStride, count);
+                break;
+            case 3:
+                CopyPixels3(ref from, sourceStride, ref to, destinationStride, count);
+                break;
+            case 4:
+                CopyPixels<uint>(ref from, sourceStride, ref to, destinationStride, count);
+                break;
+            case 6:
+                CopyPixels6(ref from, sourceStride, ref to, destinationStride, count);
+                break;
+            case 8:
+                CopyPixels<ulong>(ref from, sourceStride, ref to, destinationStride, count);
+                break;
+            default:
+                CopyPixelsScalar(source, sourceStep, destination, destinationStep, count, bytesPerPixel);
+                break;
+        }
+    }
+
+    /// <summary>The pixel-at-a-time reference of <see cref="CopyPixels"/>.</summary>
+    internal static void CopyPixelsScalar(ReadOnlySpan<byte> source, int sourceStep, Span<byte> destination, int destinationStep, int count, int bytesPerPixel)
+    {
+        for (var i = 0; i < count; i++)
+        {
+            source.Slice(i * sourceStep * bytesPerPixel, bytesPerPixel).CopyTo(destination[(i * destinationStep * bytesPerPixel)..]);
+        }
+    }
+
+    /// <summary>Copies one pixel: <paramref name="source"/> and <paramref name="destination"/> start at the pixel.</summary>
+    /// <param name="source">The source pixel and what follows it.</param>
+    /// <param name="destination">The destination pixel and what follows it.</param>
+    /// <param name="bytesPerPixel">The size of a pixel, in bytes.</param>
+    public static void CopyPixel(ReadOnlySpan<byte> source, Span<byte> destination, int bytesPerPixel)
+    {
+        source = source[..bytesPerPixel];
+        destination = destination[..bytesPerPixel];
+        ref var from = ref unsafe(MemoryMarshal.GetReference(source));
+        ref var to = ref unsafe(MemoryMarshal.GetReference(destination));
+        switch (bytesPerPixel)
+        {
+            case 1:
+                to = from;
+                break;
+            case 2:
+                unsafe { Unsafe.WriteUnaligned(ref to, Unsafe.ReadUnaligned<ushort>(ref from)); }
+                break;
+            case 3:
+                unsafe
+                {
+                    Unsafe.WriteUnaligned(ref to, Unsafe.ReadUnaligned<ushort>(ref from));
+                    Unsafe.Add(ref to, 2) = Unsafe.Add(ref from, 2);
+                }
+
+                break;
+            case 4:
+                unsafe { Unsafe.WriteUnaligned(ref to, Unsafe.ReadUnaligned<uint>(ref from)); }
+                break;
+            case 6:
+                unsafe
+                {
+                    Unsafe.WriteUnaligned(ref to, Unsafe.ReadUnaligned<uint>(ref from));
+                    Unsafe.WriteUnaligned(ref Unsafe.Add(ref to, 4), Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref from, 4)));
+                }
+
+                break;
+            case 8:
+                unsafe { Unsafe.WriteUnaligned(ref to, Unsafe.ReadUnaligned<ulong>(ref from)); }
+                break;
+            default:
+                source.CopyTo(destination);
+                break;
+        }
+    }
+
+    private static void CopyPixels<T>(ref byte source, nint sourceStride, ref byte destination, nint destinationStride, int count)
+        where T : unmanaged
+    {
+        for (var i = 0; i < count; i++)
+        {
+            unsafe
+            {
+                Unsafe.WriteUnaligned(ref destination, Unsafe.ReadUnaligned<T>(ref source));
+                source = ref Unsafe.Add(ref source, sourceStride);
+                destination = ref Unsafe.Add(ref destination, destinationStride);
+            }
+        }
+    }
+
+    private static void CopyPixels3(ref byte source, nint sourceStride, ref byte destination, nint destinationStride, int count)
+    {
+        for (var i = 0; i < count; i++)
+        {
+            unsafe
+            {
+                Unsafe.WriteUnaligned(ref destination, Unsafe.ReadUnaligned<ushort>(ref source));
+                Unsafe.Add(ref destination, 2) = Unsafe.Add(ref source, 2);
+                source = ref Unsafe.Add(ref source, sourceStride);
+                destination = ref Unsafe.Add(ref destination, destinationStride);
+            }
+        }
+    }
+
+    private static void CopyPixels6(ref byte source, nint sourceStride, ref byte destination, nint destinationStride, int count)
+    {
+        for (var i = 0; i < count; i++)
+        {
+            unsafe
+            {
+                Unsafe.WriteUnaligned(ref destination, Unsafe.ReadUnaligned<uint>(ref source));
+                Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 4), Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref source, 4)));
+                source = ref Unsafe.Add(ref source, sourceStride);
+                destination = ref Unsafe.Add(ref destination, destinationStride);
+            }
+        }
     }
 }

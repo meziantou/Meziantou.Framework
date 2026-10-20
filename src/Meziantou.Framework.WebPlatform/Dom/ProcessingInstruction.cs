@@ -4,6 +4,7 @@ using Meziantou.Framework.WebPlatform.Infra;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://dom.spec.whatwg.org/#interface-processinginstruction</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#processinginstruction"/>
 [IdlInterface("ProcessingInstruction", "https://dom.spec.whatwg.org/#processinginstruction")]
 public sealed partial class ProcessingInstruction : CharacterData
 {
@@ -11,6 +12,7 @@ public sealed partial class ProcessingInstruction : CharacterData
     private List<KeyValuePair<string, string>>? _attributes;
 
     /// <summary>Creates a processing instruction with the given target and data.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-processinginstruction-processinginstruction"/>
     [IdlMember("constructor", "https://dom.spec.whatwg.org/#dom-processinginstruction-processinginstruction")]
     public ProcessingInstruction(string target, string data)
         : this(Document.CurrentGlobalDocument, target, data, validate: true)
@@ -45,18 +47,22 @@ public sealed partial class ProcessingInstruction : CharacterData
     public override string NodeName => Target;
 
     /// <summary>Gets the target of the processing instruction.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-processinginstruction-target"/>
     [IdlMember("target", "https://dom.spec.whatwg.org/#dom-processinginstruction-target")]
     public string Target { get; }
 
     /// <summary>Returns whether the data contains at least one pseudo-attribute.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-processinginstruction-hasattributes"/>
     [IdlMember("hasAttributes", "https://dom.spec.whatwg.org/#dom-processinginstruction-hasattributes")]
     public bool HasAttributes() => _attributes is { Count: > 0 };
 
     /// <summary>Returns the names of the pseudo-attributes of the data, in order.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-processinginstruction-getattributenames"/>
     [IdlMember("getAttributeNames", "https://dom.spec.whatwg.org/#dom-processinginstruction-getattributenames")]
     public IReadOnlyList<string> GetAttributeNames() => _attributes is null ? [] : _attributes.Select(a => a.Key).ToArray();
 
     /// <summary>https://dom.spec.whatwg.org/#get-a-processing-instruction-attribute</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-processinginstruction-getattribute"/>
     [IdlMember("getAttribute", "https://dom.spec.whatwg.org/#dom-processinginstruction-getattribute")]
     public string? GetAttribute(string name)
     {
@@ -74,6 +80,7 @@ public sealed partial class ProcessingInstruction : CharacterData
     }
 
     /// <summary>Sets a pseudo-attribute and updates the data accordingly.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-processinginstruction-setattribute"/>
     [IdlMember("setAttribute", "https://dom.spec.whatwg.org/#dom-processinginstruction-setattribute")]
     public void SetAttribute(string name, string value)
     {
@@ -97,6 +104,7 @@ public sealed partial class ProcessingInstruction : CharacterData
     }
 
     /// <summary>Removes a pseudo-attribute and updates the data accordingly.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-processinginstruction-removeattribute"/>
     [IdlMember("removeAttribute", "https://dom.spec.whatwg.org/#dom-processinginstruction-removeattribute")]
     public void RemoveAttribute(string name)
     {
@@ -113,6 +121,7 @@ public sealed partial class ProcessingInstruction : CharacterData
     /// <summary>
     /// Adds or removes a pseudo-attribute, optionally forced, and returns whether it is present afterwards.
     /// </summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-processinginstruction-toggleattribute"/>
     [IdlMember("toggleAttribute", "https://dom.spec.whatwg.org/#dom-processinginstruction-toggleattribute")]
     public bool ToggleAttribute(string name, bool? force = null)
     {
@@ -141,6 +150,7 @@ public sealed partial class ProcessingInstruction : CharacterData
     }
 
     /// <summary>Returns whether the data contains the pseudo-attribute.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-processinginstruction-hasattribute"/>
     [IdlMember("hasAttribute", "https://dom.spec.whatwg.org/#dom-processinginstruction-hasattribute")]
     public bool HasAttribute(string name)
     {

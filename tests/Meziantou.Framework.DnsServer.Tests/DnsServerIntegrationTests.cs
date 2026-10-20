@@ -1143,6 +1143,23 @@ public sealed class DnsServerIntegrationTests
         }
     }
 
+    [Theory]
+    [InlineData(new byte[] { 2, (byte)'.', (byte)'a', 0 })] // the response used to fail to encode, so no response was sent
+    [InlineData(new byte[] { 8, (byte)'e', (byte)'v', (byte)'i', (byte)'l', (byte)'.', (byte)'c', (byte)'o', (byte)'m', 0 })] // the response used to echo the labels "evil" and "com"
+    public async Task RequestProcessor_QuestionLabelThatCannotBeRepresented_ReturnsFormatError(byte[] name)
+    {
+        var processor = new DnsRequestProcessor(new DnsRequestDelegateHolder(), new DnsServerOptions(), NullLogger<DnsRequestProcessor>.Instance);
+        byte[] query = [0x42, 0x42, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, .. name, 0x00, 0x01, 0x00, 0x01];
+
+        var responseBytes = await processor.ProcessAsync(query, DnsServerProtocol.Udp, new IPEndPoint(IPAddress.Loopback, 5353), 512, XunitCancellationToken);
+
+        Assert.NotNull(responseBytes);
+        var response = DnsMessageEncoder.DecodeQuery(responseBytes);
+        Assert.Equal(0x4242, response.Id);
+        Assert.Equal(DnsResponseCode.FormError, response.ResponseCode);
+        Assert.Empty(response.Questions);
+    }
+
     [Fact]
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Disposing the listener concurrently with StopAsync is what this test exercises")]
     public async Task UdpListener_ConcurrentStopAndDispose_IsSafe()

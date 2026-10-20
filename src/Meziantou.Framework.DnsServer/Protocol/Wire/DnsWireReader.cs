@@ -168,12 +168,19 @@ internal ref struct DnsWireReader
             if (encodedLength > MaxDomainNameLength)
                 throw new DnsProtocolException($"Domain name exceeds the maximum encoded length of {MaxDomainNameLength} bytes.");
 
+            // A name is its labels joined with dots, and the encoder only writes ASCII: a label holding a dot or a
+            // non-ASCII byte would be written back as other labels, or with '?' in place of the byte, so the handler
+            // would see, and the response would echo, another name than the one in the message.
+            var label = message.Slice(position, length);
+            if (label.Contains((byte)'.') || !Ascii.IsValid(label))
+                throw new DnsProtocolException("Domain name label contains a '.' or a non-ASCII byte, which cannot be represented.");
+
             if (sb.Length > 0)
             {
                 sb.Append('.');
             }
 
-            sb.Append(Encoding.ASCII.GetString(message.Slice(position, length)));
+            sb.Append(Encoding.ASCII.GetString(label));
             position += length;
         }
 

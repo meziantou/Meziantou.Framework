@@ -49,6 +49,8 @@ Set-StrictMode -Version Latest
 $PSStyle.OutputRendering = 'PlainText'
 
 $projectName = Split-Path -Leaf $Project
+# x64 or arm64: the libraries take other hardware intrinsics paths on each
+$architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant()
 $publishDirectory = Join-Path $OutputDirectory "publish/$projectName"
 $resultsDirectory = Join-Path $OutputDirectory 'results'
 $executable = Join-Path $publishDirectory $projectName
@@ -144,12 +146,13 @@ foreach ($target in $Targets) {
 
     $inputs = @(Get-ChildItem $targetDirectory -File | Where-Object { $_.Name -match '^(crash|timeout|oom|leak|slow-unit)-' })
     $result = [ordered]@{
-        project  = $projectName
-        target   = $target
-        exitCode = $exitCode
-        seconds  = $elapsed
-        failed   = $exitCode -ne 0 -or $inputs.Count -gt 0
-        inputs   = @($inputs | ForEach-Object Name)
+        project      = $projectName
+        target       = $target
+        architecture = $architecture
+        exitCode     = $exitCode
+        seconds      = $elapsed
+        failed       = $exitCode -ne 0 -or $inputs.Count -gt 0
+        inputs       = @($inputs | ForEach-Object Name)
     }
 
     if ($result.failed) {
@@ -160,7 +163,7 @@ foreach ($target in $Targets) {
         $lines = @(Get-Content $log | Where-Object { $_ -notmatch '^#\d+\s+(NEW|REDUCE|pulse|INITED|RELOAD)\b' })
         $tail = ($lines | Select-Object -Last 150) -join "`n"
         $body = [System.Text.StringBuilder]::new()
-        [void]$body.AppendLine("libFuzzer exit code: $exitCode, after $elapsed s")
+        [void]$body.AppendLine("libFuzzer exit code: $exitCode, after $elapsed s on $architecture")
         [void]$body.AppendLine()
         [void]$body.AppendLine('~~~~text')
         [void]$body.AppendLine($tail)
@@ -184,13 +187,13 @@ foreach ($target in $Targets) {
         [void]$body.AppendLine()
         $first = if ($inputs.Count -gt 0) { $inputs[0] } else { $null }
         if ($first -and $first.Length -le 16384) {
-            [void]$body.AppendLine('Run the target on the input, on any OS:')
+            [void]$body.AppendLine("Run the target on the input, on any OS (found on $architecture, a failure of a hardware intrinsics path only reproduces there):")
             [void]$body.AppendLine()
             [void]$body.AppendLine('```bash')
             [void]$body.AppendLine("echo '$([Convert]::ToBase64String([System.IO.File]::ReadAllBytes($first.FullName)))' | base64 --decode > $($first.Name)")
         }
         else {
-            [void]$body.AppendLine('Download the input from the artifacts of the run, then run the target on it, on any OS:')
+            [void]$body.AppendLine("Download the input from the artifacts of the run, then run the target on it, on any OS (found on $architecture, a failure of a hardware intrinsics path only reproduces there):")
             [void]$body.AppendLine()
             [void]$body.AppendLine('```bash')
         }

@@ -61,8 +61,17 @@ chmod +x libfuzzer-dotnet
 pwsh eng/run-fuzz.ps1 -Project fuzz/Meziantou.Framework.Yaml.Fuzz -DurationSeconds 60 -LibFuzzer ./libfuzzer-dotnet
 ```
 
-Use an x64 machine (or an `linux/amd64` container): on arm64, the trap that reports a failure to libFuzzer raises a
-signal libFuzzer does not handle, so it does not save the failing input.
+There is no arm64 release of libfuzzer-dotnet. On arm64, build it from source, with `abort()` instead of
+`__builtin_trap()`: the trap that reports a failure to libFuzzer raises a SIGTRAP there, which libFuzzer does not handle,
+so it would not save the failing input. The weekly workflow fuzzes on both architectures, so that the hardware
+intrinsics paths of both (SSE/AVX and AdvSimd) run.
+
+```bash
+sudo apt-get install -y --no-install-recommends clang libclang-rt-dev
+curl -L -o libfuzzer-dotnet.cc https://raw.githubusercontent.com/Metalnem/libfuzzer-dotnet/bd39d4e88d715ab460a929943645be2a186cde52/libfuzzer-dotnet.cc
+sed -i 's/__builtin_trap();/abort();/' libfuzzer-dotnet.cc
+clang -O2 -fsanitize=fuzzer libfuzzer-dotnet.cc -o libfuzzer-dotnet
+```
 
 Each target gets `artifacts/fuzz/results/<target>`: the libFuzzer log, the failing input (`crash-*`, `timeout-*`),
 and `failure.md`, the body of the issue the weekly workflow opens. The corpus is kept in `artifacts/fuzz-corpus`.

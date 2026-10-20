@@ -361,6 +361,8 @@ internal sealed partial class InlineLayoutAlgorithm
         _content = default;
         _deferredFloats.Clear();
         _initialLetterItem = -1;
+        _itemsData = null;
+        _hasPercentageEdges = false;
         _lineIsTrimmedAtStart = false;
         _lastBreakOptionsStyle = null;
         _lastMetricsStyle = null;

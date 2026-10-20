@@ -20,6 +20,126 @@ public sealed class FileLoggerProviderTests
     private static readonly DateTimeOffset StartDate = new(2024, 1, 2, 3, 4, 5, TimeSpan.Zero);
 
     [Fact]
+    public async Task ReadmeExample_Usage()
+    {
+        #region FileLogger_Usage
+        var logsDirectory = Directory.CreateTempSubdirectory("logs").FullName;
+        await using var provider = new FileLoggerProvider(logsDirectory);
+
+        using var loggerFactory = LoggerFactory.Create(builder => builder.AddProvider(provider));
+        var logger = loggerFactory.CreateLogger("Sample");
+
+        logger.LogInformation("Hello from file logger");
+
+        // Wait for the background thread to write the pending messages
+        await provider.FlushAsync();
+
+        var logFilePath = provider.LogFilePath;
+        Assert.NotNull(logFilePath);
+        Assert.StartsWith(logsDirectory, logFilePath);
+        #endregion
+
+        Assert.Contains("[INFO] [Sample] Hello from file logger", await ReadLogFileAsync(logFilePath));
+        await provider.DisposeAsync();
+        Directory.Delete(logsDirectory, recursive: true);
+    }
+
+    [Fact]
+    public async Task ReadmeExample_Append()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        var timeProvider = new FakeTimeProvider(StartDate);
+        var options = new FileLoggerOptions { Directory = tempDirectory.FullPath };
+
+        #region FileLogger_Append
+        options.Append = true;
+        options.RollInterval = RollInterval.Daily;
+        options.IncludeProcessIdInFileName = false; // Required to reuse the file after a restart
+        #endregion
+
+        for (var i = 0; i < 2; i++)
+        {
+            await using var provider = new FileLoggerProvider(options, timeProvider);
+            provider.CreateLogger("Test").LogInformation("Run {Index}", i);
+        }
+
+        Assert.Equal(["2024-01-02.log"], GetFileNames(tempDirectory));
+    }
+
+    [Fact]
+    public async Task ReadmeExample_Compression()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        var timeProvider = new FakeTimeProvider(StartDate);
+        var options = new FileLoggerOptions { Directory = tempDirectory.FullPath, RollInterval = RollInterval.Daily, IncludeProcessIdInFileName = false };
+
+        #region FileLogger_Compression
+        options.Compression = LogFileCompression.GZip;      // GZip, Brotli, or Zstandard (.NET 11+)
+        options.CompressionLevel = CompressionLevel.SmallestSize;
+        options.CompressionMode = LogFileCompressionMode.Continuous;
+        #endregion
+
+        await using (var provider = new FileLoggerProvider(options, timeProvider))
+        {
+            provider.CreateLogger("Test").LogInformation("Compressed message");
+        }
+
+        Assert.Equal(["2024-01-02.log.gz"], GetFileNames(tempDirectory));
+        var content = await ReadCompressedFileAsync(Path.Combine(tempDirectory.FullPath, "2024-01-02.log.gz"), LogFileCompression.GZip);
+        Assert.Contains("Compressed message", content);
+    }
+
+    [Fact]
+    public async Task ReadmeExample_UnixCreateMode()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        var options = new FileLoggerOptions { Directory = tempDirectory.FullPath };
+
+        #region FileLogger_UnixCreateMode
+        options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+        #endregion
+
+        await using var provider = new FileLoggerProvider(options);
+        provider.CreateLogger("Test").LogInformation("Sensitive message");
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+        Assert.NotNull(provider.LogFilePath);
+        if (!OperatingSystem.IsWindows())
+        {
+            Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(provider.LogFilePath));
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReadmeExample_UntrustedData(bool escapeControlCharacters)
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        await using var provider = new FileLoggerProvider(new FileLoggerOptions
+        {
+            Directory = tempDirectory.FullPath,
+            EscapeControlCharacters = escapeControlCharacters,
+        });
+        var logger = provider.CreateLogger("Sample");
+
+        #region FileLogger_UntrustedData
+        logger.LogInformation("User said: {Text}", "hello\n[2020-01-01 00:00:00.000] [CRIT] [Security] admin login succeeded");
+        #endregion
+
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+        var content = await ReadLogFileAsync(provider.LogFilePath);
+        if (escapeControlCharacters)
+        {
+            Assert.Contains("User said: hello\\n[2020-01-01 00:00:00.000] [CRIT] [Security] admin login succeeded", content);
+        }
+        else
+        {
+            Assert.Contains("User said: hello\n[2020-01-01 00:00:00.000] [CRIT] [Security] admin login succeeded", content);
+        }
+    }
+
+    [Fact]
     public async Task WritesLogToFile()
     {
         using var tempDirectory = TemporaryDirectory.Create();

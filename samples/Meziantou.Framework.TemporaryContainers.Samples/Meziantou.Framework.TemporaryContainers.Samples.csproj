@@ -1,0 +1,10 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- Compiles the readme examples, which start containers, so CI checks them without running them -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.TemporaryContainers\Meziantou.Framework.TemporaryContainers.csproj" />
+  </ItemGroup>
+</Project>

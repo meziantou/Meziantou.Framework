@@ -4,7 +4,10 @@ Manage temporary containers for integration tests by driving a container runtime
 
 Supported runtimes (auto-detected, or set `ContainerDefinition.Runtime`): the Docker Engine API, `docker`, `podman`, Apple's `container` (macOS), and `wslc` (Windows/WSL).
 
-```c#
+The types are in the `Meziantou.Framework.TemporaryContainers` namespace.
+
+<!-- ref:../../samples/Meziantou.Framework.TemporaryContainers.Samples/ReadmeExamples.cs;region=TemporaryContainers_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 var definition = new ContainerDefinition(ImageSource.FromRegistry("redis:8"));
 definition.Environment.Add("ALLOW_EMPTY_PASSWORD", "yes");
 definition.Ports.Add(new ContainerPort(6379));
@@ -16,6 +19,7 @@ await container.StartAsync();
 var hostPort = container.GetMappedPort(6379);
 // connect to 127.0.0.1:hostPort
 ```
+<!-- endref -->
 
 `StartAsync` creates the container, starts it, and runs the registered wait strategies before returning. A wait strategy only sees the logs of the current run (the entries the earlier runs left behind are counted and skipped), so a container that is stopped and started again is not reported ready by the message of its earlier run. When `ContainerDefinition.StartupTimeout` elapses, the `TimeoutException` names the strategy that did not complete, the state of the container, and the last lines it logged.
 The container is removed when disposed. Set `ContainerDefinition.ReuseId` to reuse an existing container across runs; reused containers are not removed on dispose.
@@ -24,15 +28,18 @@ The container is removed when disposed. Set `ContainerDefinition.ReuseId` to reu
 
 Ports are published on the loopback address (`127.0.0.1`), so a test database is not reachable from the network. Set `ContainerPort.HostIp` to publish a port on another address:
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.TemporaryContainers.Samples/ReadmeExamples.cs;region=TemporaryContainers_HostIp;format=md-fenced-code-block;dedent=true -->
+```csharp
 definition.Ports.Add(new ContainerPort(8080) with { HostIp = "0.0.0.0" }); // every interface
 ```
+<!-- endref -->
 
 Windows containers cannot bind a specific address and `wslc` publishes through the loopback forwarding of WSL, so the address is not passed to them.
 
 ## Building an image
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.TemporaryContainers.Samples/ReadmeExamples.cs;region=TemporaryContainers_BuildImage;format=md-fenced-code-block;dedent=true -->
+```csharp
 var definition = new ContainerDefinition(ImageSource.FromDockerfile("./Dockerfile", "."));
 definition.Ports.Add(new ContainerPort(8080));
 definition.WaitStrategies.Add(Wait.ForLogMessage("SERVER READY"));
@@ -40,21 +47,25 @@ definition.WaitStrategies.Add(Wait.ForLogMessage("SERVER READY"));
 await using var container = definition.CreateContainer();
 await container.StartAsync();
 ```
+<!-- endref -->
 
 The files of the build context keep their permissions, so a script stays executable in the image. The image is built for the container and removed with it (unless the container has a `ReuseId`); `wslc` does not label the images it builds, so they are left behind there.
 
 ## Volumes and mounts
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.TemporaryContainers.Samples/ReadmeExamples.cs;region=TemporaryContainers_Mounts;format=md-fenced-code-block;dedent=true -->
+```csharp
 var definition = new ContainerDefinition(ImageSource.FromRegistry("redis:8"));
 definition.Mounts.AddBindMount("/host/data", "/data", readOnly: true);
 definition.Mounts.AddVolume("existing-volume", "/var/lib/redis");
 definition.Mounts.AddTmpfs("/scratch");
 ```
+<!-- endref -->
 
 A `TemporaryVolume` creates the volume and removes it when disposed, so a test can share data between two containers without leaving anything behind:
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.TemporaryContainers.Samples/ReadmeExamples.cs;region=TemporaryContainers_TemporaryVolume;format=md-fenced-code-block;dedent=true -->
+```csharp
 await using var volume = new VolumeDefinition().CreateVolume();
 
 var definition = new ContainerDefinition(ImageSource.FromRegistry("redis:8"));
@@ -63,6 +74,7 @@ definition.Mounts.AddVolume(volume, "/data"); // add `readOnly: true` for a read
 await using var container = definition.CreateContainer();
 await container.StartAsync(); // creates the volume if needed, then the container
 ```
+<!-- endref -->
 
 Declare the volume before the containers that mount it, so it is disposed last: a runtime refuses to remove a volume a container still references.
 
@@ -74,16 +86,19 @@ Runtime differences: `wslc` has no volume commands; Apple's `container` has no v
 
 Every container, volume and built image the library creates is labelled with the run that created it, so a later run can tell its own leftovers from the resources it must not touch. Disposal already removes them; the labels are what makes a run that was interrupted (a debugger stopped, a killed test host) recoverable.
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.TemporaryContainers.Samples/ReadmeExamples.cs;region=TemporaryContainers_Cleanup;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Removes the containers, images and volumes whose creating process is gone. Nothing else is touched:
 // not the resources of a live process, not those created on another machine, not the reused ones.
 var result = await ContainerRuntime.Auto.CleanupAsync();
 Console.WriteLine($"{result.RemovedCount} leftovers removed");
 ```
+<!-- endref -->
 
 Call it once when a test run starts (an xUnit assembly fixture, a `[ModuleInitializer]`, a script). `ContainerCleanupOptions` widens or narrows what it removes:
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.TemporaryContainers.Samples/ReadmeExamples.cs;region=TemporaryContainers_CleanupOptions;format=md-fenced-code-block;dedent=true -->
+```csharp
 await ContainerRuntime.Docker.CleanupAsync(new ContainerCleanupOptions
 {
     Scope = ContainerCleanupScope.All,          // every resource of this library, not only the orphaned ones
@@ -93,6 +108,7 @@ await ContainerRuntime.Docker.CleanupAsync(new ContainerCleanupOptions
     IncludeReusedResources = true,              // ... including the containers kept alive by a ReuseId
 });
 ```
+<!-- endref -->
 
 The resources of the current process are never removed, whatever the scope, so a cleanup at the beginning of a run cannot take down the containers that run is about to use, nor its reaper. A process is identified by its machine, its process id, and its start time, which tells apart a process whose id was reused, and the processes of two containers of one machine. The runs of *other* processes are only spared by the default scope: `ContainerCleanupScope.All` removes the containers another run started against the same daemon while it is still using them, so keep it for a daemon nothing else is running against.
 
@@ -100,10 +116,12 @@ The resources of the current process are never removed, whatever the scope, so a
 
 A cleanup only runs when a later run calls it. To have the leftovers removed right away, even when the process is killed, start a reaper: a watchdog container that holds a connection to this process and removes what the process created once that connection is gone.
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.TemporaryContainers.Samples/ReadmeExamples.cs;region=TemporaryContainers_Reaper;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Keep it alive for as long as the containers it watches.
 await using var reaper = await ContainerRuntime.Docker.StartReaperAsync();
 ```
+<!-- endref -->
 
 It is opt-in: it starts a container of its own ([`testcontainers/ryuk`](https://github.com/testcontainers/moby-ryuk), configurable through `ContainerReaperOptions`) and mounts the daemon socket into it. It needs a docker-compatible socket, so it works with the Docker Engine API, `docker`, and `podman`, but not with Apple's `container` or `wslc`. The socket is the one the daemon sees: the one the runtime connects to on Linux (a rootless daemon included), the socket of the podman service, and `/var/run/docker.sock` inside the virtual machine of Docker Desktop, Colima and the like; set `ContainerReaperOptions.SocketPath` when it is elsewhere. Disposing it stops the watchdog without removing anything, so a run that ends normally disposes its containers itself.
 
@@ -115,13 +133,15 @@ The containers kept alive by a `ReuseId` are not part of a session: neither the 
 
 Set the same `ReuseId` in every process. The first one creates the container, the others adopt it, and it is not removed on dispose:
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.TemporaryContainers.Samples/ReadmeExamples.cs;region=TemporaryContainers_ReuseId;format=md-fenced-code-block;dedent=true -->
+```csharp
 var definition = ContainerDefinition.CreatePostgreSql();
 definition.ReuseId = "my-integration-tests";
 
 await using var container = definition.CreateContainer();
 await container.StartAsync(); // creates the container, or adopts the one another process created
 ```
+<!-- endref -->
 
 The container is named after the reuse identifier, so two processes that start at the same time cannot both create one: the runtime rejects the second name and that process adopts the container the first one created. An adopted container keeps the ports it was created with, so `GetMappedPort` reports the same host port in every process.
 
@@ -129,7 +149,8 @@ A container is only adopted by a definition equal to the one it was created from
 
 Nothing removes a reused container on its own. Remove it when it is no longer needed with `CleanupAsync` and `IncludeReusedResources`, for instance the ones that have been around for a day:
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.TemporaryContainers.Samples/ReadmeExamples.cs;region=TemporaryContainers_CleanupReused;format=md-fenced-code-block;dedent=true -->
+```csharp
 await ContainerRuntime.Auto.CleanupAsync(new ContainerCleanupOptions
 {
     Scope = ContainerCleanupScope.All,
@@ -137,12 +158,14 @@ await ContainerRuntime.Auto.CleanupAsync(new ContainerCleanupOptions
     MinimumAge = TimeSpan.FromDays(1),
 });
 ```
+<!-- endref -->
 
 ## Database helpers
 
 `CreateRedis`, `CreatePostgreSql`, `CreateMongoDb`, and `CreateSqlServer` return pre-configured definitions whose container exposes `GetConnectionString()`.
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.TemporaryContainers.Samples/ReadmeExamples.cs;region=TemporaryContainers_DatabaseHelpers;format=md-fenced-code-block;dedent=true -->
+```csharp
 await using var redis = ContainerDefinition.CreateRedis().CreateContainer();
 await redis.StartAsync();
 var redisConnectionString = redis.GetConnectionString(); // 127.0.0.1:<port>
@@ -166,10 +189,14 @@ await using var sqlServer = sqlDefinition.CreateContainer();
 await sqlServer.StartAsync();
 var sqlServerConnectionString = sqlServer.GetConnectionString(); // Server=127.0.0.1,<port>;Database=master;User Id=sa;Pwd=<password>;Encrypt=True;TrustServerCertificate=True;Connection Timeout=30
 ```
+<!-- endref -->
 
 ## Interacting with a container
 
-```c#
+`container` is a started `TemporaryContainer`:
+
+<!-- ref:../../samples/Meziantou.Framework.TemporaryContainers.Samples/ReadmeExamples.cs;region=TemporaryContainers_Interact;format=md-fenced-code-block;dedent=true -->
+```csharp
 var result = await container.ExecAsync(options =>
 {
     options.Command.Add("echo");
@@ -179,6 +206,7 @@ await using var stream = await container.OpenReadAsync("/etc/hostname");
 await foreach (var log in container.GetLogsAsync())
     Console.WriteLine(log.Message);
 ```
+<!-- endref -->
 
 Every runtime reports a failed operation with a `ContainerRuntimeException`: `Command`, `ExitCode`, `StandardOutput` and `StandardError` describe a command line that failed, and `StatusCode` a request the Docker Engine API refused.
 

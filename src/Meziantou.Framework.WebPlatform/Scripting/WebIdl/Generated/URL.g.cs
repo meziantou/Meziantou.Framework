@@ -63,7 +63,7 @@ internal static class Binding_URL<TAdapter, TValue> where TAdapter : struct, glo
     private static TValue Op_createObjectURL_Static(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         if (a.Length < 1) throw r.NotEnoughArguments("createObjectURL", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_81(r, a[0]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_c5a702b9(r, a[0]);
         if ((a0 is null or global::Meziantou.Framework.WebPlatform.Dom.FileApi.Blob)) { var result = global::Meziantou.Framework.WebPlatform.Dom.Url.CreateObjectUrl((global::Meziantou.Framework.WebPlatform.Dom.FileApi.Blob)a0!); return r.FromString(result); }
         if ((a0 is null or global::Meziantou.Framework.WebPlatform.Dom.MediaSource)) { var result = global::Meziantou.Framework.WebPlatform.Dom.Url.CreateObjectUrl((global::Meziantou.Framework.WebPlatform.Dom.MediaSource)a0!); return r.FromString(result); }
         throw r.CreateTypeError("Failed to execute 'createObjectURL': the arguments are not supported");

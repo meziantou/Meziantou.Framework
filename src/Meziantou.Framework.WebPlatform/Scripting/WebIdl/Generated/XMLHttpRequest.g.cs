@@ -74,7 +74,7 @@ internal static class Binding_XMLHttpRequest<TAdapter, TValue> where TAdapter : 
     private static TValue Op_send(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.XmlHttpRequest>(t, Binding);
-        var a0 = r.IsMissing(a, 0) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_90(r, a[0]);
+        var a0 = r.IsMissing(a, 0) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_6385e220(r, a[0]);
         o.Send(a0); return r.Adapter.Undefined;
     }
     private static TValue Op_abort(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)

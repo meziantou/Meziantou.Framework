@@ -23,11 +23,11 @@ internal static class Binding_CSSHWB<TAdapter, TValue> where TAdapter : struct, 
     private static TValue Get_h(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssHwb>(t, Binding); return r.Wrap(o.H); }
     private static void Set_h(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssHwb>(t, Binding); var x = r.ToInterface<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue>(v, "CSSNumericValue"); o.H = x; }
     private static TValue Get_w(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssHwb>(t, Binding); return r.ToJs((object?)o.W); }
-    private static void Set_w(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssHwb>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, v); o.W = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, x); }
+    private static void Set_w(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssHwb>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, v); o.W = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, x); }
     private static TValue Get_b(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssHwb>(t, Binding); return r.ToJs((object?)o.B); }
-    private static void Set_b(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssHwb>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, v); o.B = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, x); }
+    private static void Set_b(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssHwb>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, v); o.B = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, x); }
     private static TValue Get_alpha(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssHwb>(t, Binding); return r.ToJs((object?)o.Alpha); }
-    private static void Set_alpha(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssHwb>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, v); o.Alpha = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, x); }
+    private static void Set_alpha(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssHwb>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, v); o.Alpha = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, x); }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "h", Get_h, Set_h);
@@ -40,9 +40,9 @@ internal static class Binding_CSSHWB<TAdapter, TValue> where TAdapter : struct, 
     {
         if (a.Length < 3) throw r.NotEnoughArguments("CSSHWB", 3, a.Length);
         var a0 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue>(a[0], "CSSNumericValue");
-        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, a[1]);
-        var a2 = WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, a[2]);
-        var a3 = r.IsMissing(a, 3) ? (object?)(object)(1d) : WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, a[3]);
+        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, a[1]);
+        var a2 = WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, a[2]);
+        var a3 = r.IsMissing(a, 3) ? (object?)(object)(1d) : WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, a[3]);
         return new global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssHwb(a0, WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, a1), WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, a2), (a3 is null ? (global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumberish?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, a3)));
     }
 }

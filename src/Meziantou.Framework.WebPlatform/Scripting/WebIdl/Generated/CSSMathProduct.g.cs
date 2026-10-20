@@ -28,7 +28,7 @@ internal static class Binding_CSSMathProduct<TAdapter, TValue> where TAdapter : 
 
     private static object Construct(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::System.ReadOnlySpan<TValue> a)
     {
-        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, a[i])); }
+        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, a[i])); }
         return new global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssMathProduct(global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a0!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, e))).ToArray());
     }
 }

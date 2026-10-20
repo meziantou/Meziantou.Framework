@@ -31,7 +31,7 @@ internal static class Binding_File<TAdapter, TValue> where TAdapter : struct, gl
     private static object Construct(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::System.ReadOnlySpan<TValue> a)
     {
         if (a.Length < 2) throw r.NotEnoughArguments("File", 2, a.Length);
-        var a0 = r.ToSequence<object?>(a[0], static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_5(r, e));
+        var a0 = r.ToSequence<object?>(a[0], static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_beb33dfa(r, e));
         var a1 = r.ToUsvString(a[1]);
         var a2 = r.IsMissing(a, 2) ? (global::Meziantou.Framework.WebPlatform.Dom.FileApi.FilePropertyBag)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_FileApi_FilePropertyBag(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_FileApi_FilePropertyBag(r, a[2]);
         return new global::Meziantou.Framework.WebPlatform.Dom.FileApi.File(((global::System.Collections.Generic.IReadOnlyList<object>)a0!), a1, a2);

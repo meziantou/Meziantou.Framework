@@ -56,7 +56,7 @@ internal static class Binding_Blob<TAdapter, TValue> where TAdapter : struct, gl
 
     private static object Construct(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::System.ReadOnlySpan<TValue> a)
     {
-        var has0 = !r.IsMissing(a, 0); var a0 = has0 ? (global::System.Collections.Generic.List<object?>?)r.ToSequence<object?>(a[0], static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_5(r, e)) : default;
+        var has0 = !r.IsMissing(a, 0); var a0 = has0 ? (global::System.Collections.Generic.List<object?>?)r.ToSequence<object?>(a[0], static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_beb33dfa(r, e)) : default;
         var a1 = r.IsMissing(a, 1) ? (global::Meziantou.Framework.WebPlatform.Dom.FileApi.BlobPropertyBag)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_FileApi_BlobPropertyBag(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_FileApi_BlobPropertyBag(r, a[1]);
         return new global::Meziantou.Framework.WebPlatform.Dom.FileApi.Blob((has0 ? ((global::System.Collections.Generic.IReadOnlyList<object>)a0!) : (global::System.Collections.Generic.IReadOnlyList<object>?)null), a1);
     }

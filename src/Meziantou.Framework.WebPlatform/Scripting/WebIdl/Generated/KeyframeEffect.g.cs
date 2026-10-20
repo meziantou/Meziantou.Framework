@@ -60,7 +60,7 @@ internal static class Binding_KeyframeEffect<TAdapter, TValue> where TAdapter : 
                 if (a.Length < 2) throw r.NotEnoughArguments("KeyframeEffect", 2, a.Length);
                 var a0 = (r.IsNullOrUndefined(a[0]) ? (global::Meziantou.Framework.WebPlatform.Dom.Element?)null : r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.Element>(a[0], "Element"));
                 var a1 = (r.IsNullOrUndefined(a[1]) ? (TValue?)null : r.ToObject(a[1]));
-                var a2 = r.IsMissing(a, 2) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_62(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_62(r, a[2]);
+                var a2 = r.IsMissing(a, 2) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_0d1b20a9(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_0d1b20a9(r, a[2]);
                 if ((a2 is double)) { return new global::Meziantou.Framework.WebPlatform.Animations.KeyframeEffect(a0, r.ToKeyframes(a1), (double)a2!); }
                 if ((a2 is null or global::Meziantou.Framework.WebPlatform.Animations.KeyframeEffectOptions)) { return new global::Meziantou.Framework.WebPlatform.Animations.KeyframeEffect(a0, r.ToKeyframes(a1), (global::Meziantou.Framework.WebPlatform.Animations.KeyframeEffectOptions)a2!); }
                 throw r.CreateTypeError("Failed to execute 'constructor': the arguments are not supported");

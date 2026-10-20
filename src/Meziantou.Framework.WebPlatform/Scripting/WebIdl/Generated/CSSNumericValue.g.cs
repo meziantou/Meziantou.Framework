@@ -22,43 +22,43 @@ internal static class Binding_CSSNumericValue<TAdapter, TValue> where TAdapter :
     private static TValue Op_add(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue>(t, Binding);
-        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, a[i])); }
+        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, a[i])); }
         var result = o.Add(global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a0!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, e))).ToArray()); return r.Wrap(result);
     }
     private static TValue Op_sub(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue>(t, Binding);
-        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, a[i])); }
+        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, a[i])); }
         var result = o.Sub(global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a0!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, e))).ToArray()); return r.Wrap(result);
     }
     private static TValue Op_mul(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue>(t, Binding);
-        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, a[i])); }
+        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, a[i])); }
         var result = o.Mul(global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a0!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, e))).ToArray()); return r.Wrap(result);
     }
     private static TValue Op_div(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue>(t, Binding);
-        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, a[i])); }
+        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, a[i])); }
         var result = o.Div(global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a0!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, e))).ToArray()); return r.Wrap(result);
     }
     private static TValue Op_min(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue>(t, Binding);
-        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, a[i])); }
+        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, a[i])); }
         var result = o.Min(global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a0!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, e))).ToArray()); return r.Wrap(result);
     }
     private static TValue Op_max(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue>(t, Binding);
-        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, a[i])); }
+        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, a[i])); }
         var result = o.Max(global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a0!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, e))).ToArray()); return r.Wrap(result);
     }
     private static TValue Op_equals(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue>(t, Binding);
-        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, a[i])); }
+        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, a[i])); }
         var result = o.NumericEquals(global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a0!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, e))).ToArray()); return r.FromBoolean(result);
     }
     private static TValue Op_to(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)

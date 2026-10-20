@@ -36,7 +36,7 @@ internal static class Binding_HTMLSlotElement<TAdapter, TValue> where TAdapter :
     private static TValue Op_assign(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlSlotElement>(t, Binding);
-        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_56(r, a[i])); }
+        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_bc0bde80(r, a[i])); }
         o.Assign(global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a0!, e => (global::Meziantou.Framework.WebPlatform.Dom.Node)e!))); return r.Adapter.Undefined;
     }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)

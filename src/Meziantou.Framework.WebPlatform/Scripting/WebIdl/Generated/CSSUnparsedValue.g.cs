@@ -31,7 +31,7 @@ internal static class Binding_CSSUnparsedValue<TAdapter, TValue> where TAdapter 
     private static object Construct(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::System.ReadOnlySpan<TValue> a)
     {
         if (a.Length < 1) throw r.NotEnoughArguments("CSSUnparsedValue", 1, a.Length);
-        var a0 = r.ToSequence<object?>(a[0], static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_15(r, e));
+        var a0 = r.ToSequence<object?>(a[0], static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_501723c8(r, e));
         return new global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssUnparsedValue(global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a0!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssUnparsedSegment(r, e))));
     }
 
@@ -39,7 +39,7 @@ internal static class Binding_CSSUnparsedValue<TAdapter, TValue> where TAdapter 
     {
         Length = static o => (uint)((global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssUnparsedValue)o).Length,
         IndexedGetter = static (r, o, i) => r.ToJs((object?)((global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssUnparsedValue)o)[(uint)i]),
-        IndexedSetter = static (r, o, i, v) => { var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_15(r, v); ((global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssUnparsedValue)o)[(uint)i] = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssUnparsedSegment(r, x); },
+        IndexedSetter = static (r, o, i, v) => { var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_501723c8(r, v); ((global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssUnparsedValue)o)[(uint)i] = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssUnparsedSegment(r, x); },
     }
     ;
 }

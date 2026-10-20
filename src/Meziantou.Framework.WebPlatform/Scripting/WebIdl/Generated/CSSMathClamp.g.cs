@@ -33,9 +33,9 @@ internal static class Binding_CSSMathClamp<TAdapter, TValue> where TAdapter : st
     private static object Construct(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::System.ReadOnlySpan<TValue> a)
     {
         if (a.Length < 3) throw r.NotEnoughArguments("CSSMathClamp", 3, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, a[0]);
-        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, a[1]);
-        var a2 = WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, a[2]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, a[0]);
+        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, a[1]);
+        var a2 = WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, a[2]);
         return new global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssMathClamp(WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, a0), WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, a1), WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, a2));
     }
 }

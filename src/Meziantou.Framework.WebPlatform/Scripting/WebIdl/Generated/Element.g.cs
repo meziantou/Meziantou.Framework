@@ -53,9 +53,9 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
     private static TValue Get_onfullscreenerror(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "fullscreenerror");
     private static void Set_onfullscreenerror(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "fullscreenerror", v, isOnBeforeUnloadEventHandler: false);
     private static TValue Get_innerHTML(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding); return r.FromString(o.InnerHtml); }
-    private static void Set_innerHTML(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding); if (r.Unwrap(v) is global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml platformObject0) { o.SetInnerHtml(platformObject0); return; } var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_36(r, v); if (!(x is null or string)) throw r.CreateTypeError("Cannot convert the value to String"); o.InnerHtml = (string)x!; }
+    private static void Set_innerHTML(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding); if (r.Unwrap(v) is global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml platformObject0) { o.SetInnerHtml(platformObject0); return; } var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_3b9b89b1(r, v); if (!(x is null or string)) throw r.CreateTypeError("Cannot convert the value to String"); o.InnerHtml = (string)x!; }
     private static TValue Get_outerHTML(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding); return r.FromString(o.OuterHtml); }
-    private static void Set_outerHTML(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding); if (r.Unwrap(v) is global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml platformObject0) { o.SetOuterHtml(platformObject0); return; } var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_36(r, v); if (!(x is null or string)) throw r.CreateTypeError("Cannot convert the value to String"); o.OuterHtml = (string)x!; }
+    private static void Set_outerHTML(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding); if (r.Unwrap(v) is global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml platformObject0) { o.SetOuterHtml(platformObject0); return; } var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_3b9b89b1(r, v); if (!(x is null or string)) throw r.CreateTypeError("Cannot convert the value to String"); o.OuterHtml = (string)x!; }
     private static TValue Get_children(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding); return r.Wrap(o.Children); }
     private static TValue Get_firstElementChild(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding); return r.Wrap(o.FirstElementChild); }
     private static TValue Get_lastElementChild(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding); return r.Wrap(o.LastElementChild); }
@@ -197,7 +197,7 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
         if (a.Length < 2) throw r.NotEnoughArguments("setAttribute", 2, a.Length);
         var a0 = r.ToDomString(a[0]);
-        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_37(r, a[1]);
+        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_76bad453(r, a[1]);
         if ((a1 is null or string)) { o.SetAttribute(a0, (string)a1!); return r.Adapter.Undefined; }
         if ((a1 is null or global::Meziantou.Framework.WebPlatform.Dom.TrustedType)) { o.SetAttribute(a0, (global::Meziantou.Framework.WebPlatform.Dom.TrustedType)a1!); return r.Adapter.Undefined; }
         throw r.CreateTypeError("Failed to execute 'setAttribute': the arguments are not supported");
@@ -208,7 +208,7 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
         if (a.Length < 3) throw r.NotEnoughArguments("setAttributeNS", 3, a.Length);
         var a0 = (r.IsNullOrUndefined(a[0]) ? (string?)null : r.ToDomString(a[0]));
         var a1 = r.ToDomString(a[1]);
-        var a2 = WebIdlHelpers<TAdapter, TValue>.ToUnion_37(r, a[2]);
+        var a2 = WebIdlHelpers<TAdapter, TValue>.ToUnion_76bad453(r, a[2]);
         if ((a2 is null or string)) { o.SetAttributeNS(a0, a1, (string)a2!); return r.Adapter.Undefined; }
         if ((a2 is null or global::Meziantou.Framework.WebPlatform.Dom.TrustedType)) { o.SetAttributeNS(a0, a1, (global::Meziantou.Framework.WebPlatform.Dom.TrustedType)a2!); return r.Adapter.Undefined; }
         throw r.CreateTypeError("Failed to execute 'setAttributeNS': the arguments are not supported");
@@ -368,7 +368,7 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
     private static TValue Op_startViewTransition(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
-        var a0 = r.IsMissing(a, 0) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_33(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_33(r, a[0]);
+        var a0 = r.IsMissing(a, 0) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_7834526b(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_7834526b(r, a[0]);
         if ((a0 is global::Meziantou.Framework.WebPlatform.Scripting.JsFunctionValue<TValue>)) { var result = o.StartViewTransition(WebIdlHelpers<TAdapter, TValue>.ToDelegate_Dom_ViewTransitionUpdateCallback(r, ((global::Meziantou.Framework.WebPlatform.Scripting.JsFunctionValue<TValue>)a0!).Function)); return r.Wrap(result); }
         if ((a0 is null or global::Meziantou.Framework.WebPlatform.Dom.StartViewTransitionOptions)) { var result = o.StartViewTransition((global::Meziantou.Framework.WebPlatform.Dom.StartViewTransitionOptions)a0!); return r.Wrap(result); }
         throw r.CreateTypeError("Failed to execute 'startViewTransition': the arguments are not supported");
@@ -392,7 +392,7 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
     private static TValue Op_scrollIntoView(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
-        var a0 = r.IsMissing(a, 0) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_38(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_38(r, a[0]);
+        var a0 = r.IsMissing(a, 0) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_d8d0e767(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_d8d0e767(r, a[0]);
         if (r.IsMissing(a, 0)) { var result = o.ScrollIntoView(); return r.ToPromise(result); }
         if ((a0 is bool)) { var result = o.ScrollIntoView((bool)a0!); return r.ToPromise(result); }
         if ((a0 is null or global::Meziantou.Framework.WebPlatform.Dom.ScrollIntoViewOptions)) { var result = o.ScrollIntoView((global::Meziantou.Framework.WebPlatform.Dom.ScrollIntoViewOptions)a0!); return r.ToPromise(result); }
@@ -498,8 +498,8 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("setHTMLUnsafe", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_25(r, a[0]);
-        var a1 = r.IsMissing(a, 1) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_26(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_26(r, a[1]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_74895ea7(r, a[0]);
+        var a1 = r.IsMissing(a, 1) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_6113ec85(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_6113ec85(r, a[1]);
         if ((a0 is null or string)) { o.SetHtmlUnsafe((string)a0!, (a1 is null ? (global::Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions(r, a1))); return r.Adapter.Undefined; }
         if ((a0 is null or global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml)) { o.SetHtmlUnsafe((global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml)a0!, (a1 is null ? (global::Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions(r, a1))); return r.Adapter.Undefined; }
         throw r.CreateTypeError("Failed to execute 'setHTMLUnsafe': the arguments are not supported");
@@ -508,8 +508,8 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("appendHTMLUnsafe", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_25(r, a[0]);
-        var a1 = r.IsMissing(a, 1) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_26(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_26(r, a[1]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_74895ea7(r, a[0]);
+        var a1 = r.IsMissing(a, 1) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_6113ec85(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_6113ec85(r, a[1]);
         if ((a0 is null or string)) { o.AppendHtmlUnsafe((string)a0!, (a1 is null ? (global::Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions(r, a1))); return r.Adapter.Undefined; }
         if ((a0 is null or global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml)) { o.AppendHtmlUnsafe((global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml)a0!, (a1 is null ? (global::Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions(r, a1))); return r.Adapter.Undefined; }
         throw r.CreateTypeError("Failed to execute 'appendHTMLUnsafe': the arguments are not supported");
@@ -518,8 +518,8 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("prependHTMLUnsafe", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_25(r, a[0]);
-        var a1 = r.IsMissing(a, 1) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_26(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_26(r, a[1]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_74895ea7(r, a[0]);
+        var a1 = r.IsMissing(a, 1) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_6113ec85(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_6113ec85(r, a[1]);
         if ((a0 is null or string)) { o.PrependHtmlUnsafe((string)a0!, (a1 is null ? (global::Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions(r, a1))); return r.Adapter.Undefined; }
         if ((a0 is null or global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml)) { o.PrependHtmlUnsafe((global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml)a0!, (a1 is null ? (global::Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions(r, a1))); return r.Adapter.Undefined; }
         throw r.CreateTypeError("Failed to execute 'prependHTMLUnsafe': the arguments are not supported");
@@ -535,7 +535,7 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
         if (a.Length < 2) throw r.NotEnoughArguments("insertAdjacentHTML", 2, a.Length);
         var a0 = r.ToDomString(a[0]);
-        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_25(r, a[1]);
+        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_74895ea7(r, a[1]);
         if ((a1 is null or string)) { o.InsertAdjacentHtml(a0, (string)a1!); return r.Adapter.Undefined; }
         if ((a1 is null or global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml)) { o.InsertAdjacentHtml(a0, (global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml)a1!); return r.Adapter.Undefined; }
         throw r.CreateTypeError("Failed to execute 'insertAdjacentHTML': the arguments are not supported");
@@ -578,7 +578,7 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
         if (a.Length < 2) throw r.NotEnoughArguments("convertQuadFromNode", 2, a.Length);
         var a0 = WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DomQuadInit(r, a[0]);
-        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_13(r, a[1]);
+        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_4dee98ea(r, a[1]);
         var a2 = r.IsMissing(a, 2) ? (global::Meziantou.Framework.WebPlatform.Dom.ConvertCoordinateOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ConvertCoordinateOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ConvertCoordinateOptions(r, a[2]);
         var result = o.ConvertQuadFromNode(a0, WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_GeometryNode(r, a1), a2); return r.Wrap(result);
     }
@@ -587,7 +587,7 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
         if (a.Length < 2) throw r.NotEnoughArguments("convertRectFromNode", 2, a.Length);
         var a0 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.DomRectReadOnly>(a[0], "DOMRectReadOnly");
-        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_13(r, a[1]);
+        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_4dee98ea(r, a[1]);
         var a2 = r.IsMissing(a, 2) ? (global::Meziantou.Framework.WebPlatform.Dom.ConvertCoordinateOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ConvertCoordinateOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ConvertCoordinateOptions(r, a[2]);
         var result = o.ConvertRectFromNode(a0, WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_GeometryNode(r, a1), a2); return r.Wrap(result);
     }
@@ -596,26 +596,26 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
         if (a.Length < 2) throw r.NotEnoughArguments("convertPointFromNode", 2, a.Length);
         var a0 = WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DomPointInit(r, a[0]);
-        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_13(r, a[1]);
+        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_4dee98ea(r, a[1]);
         var a2 = r.IsMissing(a, 2) ? (global::Meziantou.Framework.WebPlatform.Dom.ConvertCoordinateOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ConvertCoordinateOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ConvertCoordinateOptions(r, a[2]);
         var result = o.ConvertPointFromNode(a0, WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_GeometryNode(r, a1), a2); return r.Wrap(result);
     }
     private static TValue Op_prepend(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
-        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_27(r, a[i])); }
+        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_456ed33c(r, a[i])); }
         o.Prepend(global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a0!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_NodeOrString(r, e))).ToArray()); return r.Adapter.Undefined;
     }
     private static TValue Op_append(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
-        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_27(r, a[i])); }
+        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_456ed33c(r, a[i])); }
         o.Append(global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a0!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_NodeOrString(r, e))).ToArray()); return r.Adapter.Undefined;
     }
     private static TValue Op_replaceChildren(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
-        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_27(r, a[i])); }
+        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_456ed33c(r, a[i])); }
         o.ReplaceChildren(global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a0!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_NodeOrString(r, e))).ToArray()); return r.Adapter.Undefined;
     }
     private static TValue Op_moveBefore(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
@@ -668,8 +668,8 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("beforeHTMLUnsafe", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_25(r, a[0]);
-        var a1 = r.IsMissing(a, 1) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_26(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_26(r, a[1]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_74895ea7(r, a[0]);
+        var a1 = r.IsMissing(a, 1) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_6113ec85(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_6113ec85(r, a[1]);
         if ((a0 is null or string)) { o.BeforeHtmlUnsafe((string)a0!, (a1 is null ? (global::Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions(r, a1))); return r.Adapter.Undefined; }
         if ((a0 is null or global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml)) { o.BeforeHtmlUnsafe((global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml)a0!, (a1 is null ? (global::Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions(r, a1))); return r.Adapter.Undefined; }
         throw r.CreateTypeError("Failed to execute 'beforeHTMLUnsafe': the arguments are not supported");
@@ -678,8 +678,8 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("afterHTMLUnsafe", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_25(r, a[0]);
-        var a1 = r.IsMissing(a, 1) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_26(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_26(r, a[1]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_74895ea7(r, a[0]);
+        var a1 = r.IsMissing(a, 1) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_6113ec85(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_6113ec85(r, a[1]);
         if ((a0 is null or string)) { o.AfterHtmlUnsafe((string)a0!, (a1 is null ? (global::Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions(r, a1))); return r.Adapter.Undefined; }
         if ((a0 is null or global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml)) { o.AfterHtmlUnsafe((global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml)a0!, (a1 is null ? (global::Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions(r, a1))); return r.Adapter.Undefined; }
         throw r.CreateTypeError("Failed to execute 'afterHTMLUnsafe': the arguments are not supported");
@@ -688,8 +688,8 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("replaceWithHTMLUnsafe", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_25(r, a[0]);
-        var a1 = r.IsMissing(a, 1) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_26(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_26(r, a[1]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_74895ea7(r, a[0]);
+        var a1 = r.IsMissing(a, 1) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_6113ec85(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_6113ec85(r, a[1]);
         if ((a0 is null or string)) { o.ReplaceWithHtmlUnsafe((string)a0!, (a1 is null ? (global::Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions(r, a1))); return r.Adapter.Undefined; }
         if ((a0 is null or global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml)) { o.ReplaceWithHtmlUnsafe((global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml)a0!, (a1 is null ? (global::Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions(r, a1))); return r.Adapter.Undefined; }
         throw r.CreateTypeError("Failed to execute 'replaceWithHTMLUnsafe': the arguments are not supported");
@@ -697,19 +697,19 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
     private static TValue Op_before(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
-        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_27(r, a[i])); }
+        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_456ed33c(r, a[i])); }
         o.Before(global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a0!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_NodeOrString(r, e))).ToArray()); return r.Adapter.Undefined;
     }
     private static TValue Op_after(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
-        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_27(r, a[i])); }
+        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_456ed33c(r, a[i])); }
         o.After(global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a0!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_NodeOrString(r, e))).ToArray()); return r.Adapter.Undefined;
     }
     private static TValue Op_replaceWith(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
-        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_27(r, a[i])); }
+        var a0 = new global::System.Collections.Generic.List<object?>(); for (var i = 0; i < a.Length; i++) { a0.Add(WebIdlHelpers<TAdapter, TValue>.ToUnion_456ed33c(r, a[i])); }
         o.ReplaceWith(global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a0!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_NodeOrString(r, e))).ToArray()); return r.Adapter.Undefined;
     }
     private static TValue Op_remove(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
@@ -722,7 +722,7 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("animate", 1, a.Length);
         var a0 = (r.IsNullOrUndefined(a[0]) ? (TValue?)null : r.ToObject(a[0]));
-        var a1 = r.IsMissing(a, 1) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_39(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_39(r, a[1]);
+        var a1 = r.IsMissing(a, 1) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_ab78efec(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_ab78efec(r, a[1]);
         if ((a1 is double)) { var result = o.Animate(r.ToKeyframes(a0), (double)a1!); return r.Wrap(result); }
         if ((a1 is null or global::Meziantou.Framework.WebPlatform.Dom.KeyframeAnimationOptions)) { var result = o.Animate(r.ToKeyframes(a0), (global::Meziantou.Framework.WebPlatform.Dom.KeyframeAnimationOptions)a1!); return r.Wrap(result); }
         throw r.CreateTypeError("Failed to execute 'animate': the arguments are not supported");

@@ -168,10 +168,10 @@ internal sealed partial class StyleEngine
             }
 
             // The styles before the change are kept for the transitions, and the invalidated styles are computed again at the
-            // next style read or animation frame (see EnsureUpToDate)
+            // next style read or animation frame (see InvalidationWork.Apply and RecalculateStyles)
             if (mayHaveTransitions)
             {
-                _fullRecalcPending = _document.BrowsingContext is not null;
+                ScheduleRecalculation(all: false);
             }
             else
             {
@@ -264,11 +264,11 @@ internal sealed partial class StyleEngine
         return false;
     }
 
-    /// <summary>Removes the styles of the pseudo-elements of an element.</summary>
-    private void DiscardPseudoElementStyles(Element element, bool keepBeforeChange)
+    /// <summary>Removes the styles of the pseudo-elements of an element; returns false when the element had none.</summary>
+    private bool DiscardPseudoElementStyles(Element element, bool keepBeforeChange)
     {
         if (!_pseudoElementStyleNames.Remove(element, out var names))
-            return;
+            return false;
 
         AddBoxTreeChange(element);
         foreach (var name in names)
@@ -278,6 +278,8 @@ internal sealed partial class StyleEngine
                 _beforeChangeStyles[(element, name)] = style;
             }
         }
+
+        return true;
     }
 
     /// <summary>
@@ -744,10 +746,16 @@ internal sealed partial class StyleEngine
             return result;
         }
 
-        /// <summary>Discards the styles of the removed nodes, then checks the styles of the affected elements.</summary>
+        /// <summary>
+        /// Discards the styles of the removed nodes, then checks the styles of the affected elements. When the styles may have
+        /// transitions, the discarded styles are kept as the before-change styles, and the elements whose styles were discarded
+        /// and the inserted elements are added to the styles computed again by the next style read (see <see cref="RecalculateStyles"/>).
+        /// </summary>
         public void Apply(bool mayHaveTransitions)
         {
-            // (a node inserted again, e.g. by moveBefore(), keeps its styles as the before-change styles)
+            // (a node inserted again, e.g. by moveBefore(), keeps its styles as the before-change styles; an inserted element
+            // without styles transitions from its starting style, and starts its animations: Discard adds it to the styles
+            // computed again)
             foreach (var node in _removed)
             {
                 if (node is Element element)
@@ -830,7 +838,11 @@ internal sealed partial class StyleEngine
                 return true;
             }
 
-            engine.DiscardPseudoElementStyles(element, mayHaveTransitions);
+            if (engine.DiscardPseudoElementStyles(element, mayHaveTransitions) && mayHaveTransitions)
+            {
+                engine.AddRecalculationRoot(element, subtree: false);
+            }
+
             return false;
         }
 
@@ -859,6 +871,11 @@ internal sealed partial class StyleEngine
         {
             // (the boxes of the descendants are built again with the boxes of the element)
             engine.AddBoxTreeChange(root);
+            if (keepBeforeChange && root.IsConnected)
+            {
+                engine.AddRecalculationRoot(root, subtree: true);
+            }
+
             var node = (Node?)root;
             while (node is not null)
             {

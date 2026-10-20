@@ -9,6 +9,28 @@ public sealed class TorrentFileTests
     private static readonly byte[] SingleFileInfo = Encoding.ASCII.GetBytes("d6:lengthi123e4:name8:file.txt12:piece lengthi16384e6:pieces20:01234567890123456789e");
 
     [Fact]
+    public async Task ReadmeExample_Torrent()
+    {
+        #region TorrentFile_ParseAndWrite
+        var content = "d8:announce14:https://t.test4:infod6:lengthi123e4:name8:file.txt12:piece lengthi16384e6:pieces20:01234567890123456789ee"u8.ToArray();
+
+        // Parse from a stream, such as File.OpenRead("file.torrent")
+        await using var input = new MemoryStream(content);
+        var torrent = await TorrentFile.ParseAsync(input);
+
+        Assert.Equal("https://t.test", torrent.Announce);
+        Assert.Equal("file.txt", torrent.Info.Name);
+        Assert.Equal("5A47092756A964C26715F69510A7B35B63B3B01C", Convert.ToHexString(torrent.GetInfoHashSha1()));
+
+        // Write to a stream, such as File.Create("copy.torrent")
+        await using var output = new MemoryStream();
+        await torrent.WriteToAsync(output, canonical: true);
+        #endregion
+
+        Assert.Equal(content, output.ToArray());
+    }
+
+    [Fact]
     public void Parse_SingleFileTorrent()
     {
         var torrent = TorrentFile.Parse(SingleFileTorrent);

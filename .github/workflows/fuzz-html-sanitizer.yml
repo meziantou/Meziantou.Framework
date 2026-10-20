@@ -1,0 +1,29 @@
+# Weekly coverage-guided fuzzing of fuzz/Meziantou.Framework.HtmlSanitizer.Fuzz (see fuzz-sharpfuzz.yml).
+# Two fuzz workflows run each night at 3:00: a new project takes a night with the fewest
+# (Meziantou.Framework.Fuzzing.Tests checks it).
+name: fuzz-html-sanitizer
+on:
+  workflow_dispatch:
+    inputs:
+      duration_seconds:
+        description: Time budget of each target, in seconds
+        type: number
+        default: 300
+        required: false
+  schedule:
+    - cron: '0 3 * * 1' # weekly, Monday 3:00 in Toronto (follows daylight saving time)
+      timezone: America/Toronto
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    uses: ./.github/workflows/fuzz-sharpfuzz.yml
+    permissions:
+      contents: read
+      issues: write
+    with:
+      project: Meziantou.Framework.HtmlSanitizer.Fuzz
+      component: html-sanitizer
+      duration_seconds: ${{ inputs.duration_seconds || 300 }}

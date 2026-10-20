@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Opens an issue for each target of a fuzz project that failed in the weekly fuzzing campaign (.github/workflows/fuzz.yml).
+Opens an issue for each target of a fuzz project that failed in its weekly fuzzing campaign (.github/workflows/fuzz-*.yml).
 
 .DESCRIPTION
 Reads the result.json and failure.md files that eng/run-fuzz.ps1 (SharpFuzz projects) and eng/run-imaging-fuzz.ps1
@@ -85,7 +85,7 @@ foreach ($group in $failures | Group-Object -CaseSensitive Title) {
 }
 
 # The jobs of a project always upload the results of the targets they fuzzed; none means they failed before
-# (FUZZ_JOB_RESULT is the result of all the jobs of the matrix, so it says that some project failed, not which one)
+# (FUZZ_JOB_RESULT is the result of the fuzz jobs of the project)
 if ($results.Count -eq 0 -and $env:FUZZ_JOB_RESULT -eq 'failure') {
     $body = "The weekly fuzzing campaign of ``fuzz/$Project`` failed without any target result: a build error, an error of the tools, or a job timeout. See the run: $RunUrl`n`n- Commit: $Commit"
     $issues.Add([pscustomobject]@{ Title = "Fuzzing: the campaign of $Project failed without a reported target failure"; Body = $body })

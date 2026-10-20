@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Globalization;
+using System.Text.RegularExpressions;
 using Meziantou.Framework.Fuzzing;
 
 namespace Meziantou.Framework.Fuzzing.Tests;
@@ -55,15 +57,35 @@ public sealed class FuzzTargetTests
         var projects = Directory.EnumerateDirectories(RepositoryRoot / "fuzz", "*.Fuzz").Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
         Assert.Equal(projects, FuzzProjects.All.Select(project => project.Project).Order(StringComparer.Ordinal).ToList());
 
-        // Each project is in the matrix of the fuzz job and in the matrix of the report job, which labels its issues
-        var workflow = File.ReadAllText(RepositoryRoot / ".github" / "workflows" / "fuzz.yml");
-        var entries = projects.Select(project => (Project: project, Entries: workflow.Split($"project: {project}, component: ").Length - 1)).ToList();
-        Assert.Equal(projects.Select(project => (Project: project, Entries: 2)).ToList(), entries);
+        // Each project has its own scheduled workflow, which calls the shared one with the component label of its issues
+        var workflows = GetFuzzWorkflows();
+        var entries = projects.Select(project => (Project: project, Workflows: workflows.Count(workflow => workflow.Text.Contains("uses: ./.github/workflows/fuzz-sharpfuzz.yml\n", StringComparison.Ordinal) && workflow.Text.Contains($"\n      project: {project}\n      component: ", StringComparison.Ordinal)))).ToList();
+        Assert.Equal(projects.Select(project => (Project: project, Workflows: 1)).ToList(), entries);
 
-        // The fuzz test projects have their own job, and a row in the matrix of the report job
+        // The fuzz test projects have their own workflow, which uploads their results and reports them
         var testProjects = Directory.EnumerateDirectories(RepositoryRoot / "fuzz", "*.FuzzTests").Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
         Assert.NotEmpty(testProjects);
-        var testEntries = testProjects.Select(project => (Project: project, Entries: workflow.Split($"project: {project}, component: ").Length - 1, Artifacts: workflow.Contains($"name: fuzz-results-{project}-", StringComparison.Ordinal))).ToList();
-        Assert.Equal(testProjects.Select(project => (Project: project, Entries: 1, Artifacts: true)).ToList(), testEntries);
+        var testEntries = testProjects.Select(project => (Project: project, Workflows: workflows.Count(workflow => workflow.Text.Contains($"name: fuzz-results-{project}-", StringComparison.Ordinal) && workflow.Text.Contains($"-Project {project} ", StringComparison.Ordinal)))).ToList();
+        Assert.Equal(testProjects.Select(project => (Project: project, Workflows: 1)).ToList(), testEntries);
+    }
+
+    [Fact]
+    public void FuzzWorkflowsAreSpreadOverTheWeek()
+    {
+        // Every fuzz workflow but the shared one runs weekly at night; the nights get the same number of workflows, give or
+        // take one, so that a new project takes a night with the fewest
+        var schedules = GetFuzzWorkflows()
+            .Where(workflow => workflow.Name is not "fuzz-sharpfuzz.yml")
+            .Select(workflow => (workflow.Name, Days: Regex.Matches(workflow.Text, @"^    - cron: '0 3 \* \* (?<day>[0-6])'[^\n]*\n      timezone: America/Toronto$", RegexOptions.Multiline, TimeSpan.FromSeconds(10)).Select(match => match.Groups["day"].Value).ToList()))
+            .ToList();
+        Assert.Equal(schedules.Select(schedule => (schedule.Name, Days: 1)).ToList(), schedules.Select(schedule => (schedule.Name, Days: schedule.Days.Count)).ToList());
+
+        var workflowsPerNight = Enumerable.Range(0, 7).Select(day => schedules.Count(schedule => schedule.Days[0] == day.ToString(CultureInfo.InvariantCulture))).ToList();
+        Assert.True(workflowsPerNight.Max() - workflowsPerNight.Min() <= 1, $"Fuzz workflows per night, from Sunday: {string.Join(", ", workflowsPerNight)}");
+    }
+
+    private static List<(string Name, string Text)> GetFuzzWorkflows()
+    {
+        return [.. Directory.EnumerateFiles(RepositoryRoot / ".github" / "workflows", "fuzz-*.yml").Order(StringComparer.Ordinal).Select(path => (Path.GetFileName(path), File.ReadAllText(path).ReplaceLineEndings("\n")))];
     }
 }

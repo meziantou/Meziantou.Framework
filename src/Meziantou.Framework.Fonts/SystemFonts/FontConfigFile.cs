@@ -37,7 +37,8 @@ internal static class FontConfigFile
         var configPath = getEnvironmentVariable("FONTCONFIG_PATH");
         if (!string.IsNullOrEmpty(configPath))
         {
-            foreach (var directory in configPath.Split(':', StringSplitOptions.RemoveEmptyEntries))
+            // A list of the platform: ':' on Unix, ';' on Windows, where a path has a drive letter
+            foreach (var directory in configPath.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
             {
                 if (Path.IsPathRooted(directory))
                 {

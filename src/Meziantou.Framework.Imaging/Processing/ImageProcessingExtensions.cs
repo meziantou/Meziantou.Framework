@@ -221,8 +221,10 @@ public static class ImageProcessingExtensions
     /// Colors are filtered premultiplied by alpha and unpremultiplied afterward; a pixel whose resulting alpha is zero is
     /// transparent black. A frame whose pixels read by the filter are all opaque is filtered as its colors alone and keeps
     /// the maximum alpha. Samples are filtered in double precision and written at the storage precision (16-bit samples
-    /// never go through 8 bits), rounded to nearest with ties upward and clamped. Nearest neighbor copies source pixels
-    /// exactly. The scratch storage is charged to the image allocation scope together with the original and replacement
+    /// never go through 8 bits), rounded to nearest with ties upward and clamped. 8-bit samples filtered as stored
+    /// (<see cref="ResizeWorkingSpace.Encoded"/>) without translucent pixels are filtered in fixed point (14-bit weights,
+    /// 16-bit intermediate rows): about 0.2% of them are one unit off the correctly rounded value, none more. Nearest
+    /// neighbor copies source pixels exactly. The scratch storage is charged to the image allocation scope together with the original and replacement
     /// storages.
     /// </para>
     /// <para>

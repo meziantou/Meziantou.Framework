@@ -49,6 +49,7 @@ internal static class Resampler
     private const int MaxRowsPerPass = 4;
 
     private static readonly AsyncLocal<bool> TestForceScalarValue = new();
+    private static readonly AsyncLocal<bool> TestDisableFixedPointValue = new();
     private static readonly AsyncLocal<Action<int, bool>?> TestBandObserverValue = new();
 
     /// <summary>
@@ -65,6 +66,16 @@ internal static class Resampler
     {
         get => TestForceScalarValue.Value;
         set => TestForceScalarValue.Value = value;
+    }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the resizes prepared on the current asynchronous flow keep the
+    /// double-precision path for 8-bit samples (tests compare the integer path with it).
+    /// </summary>
+    internal static bool TestDisableFixedPoint
+    {
+        get => TestDisableFixedPointValue.Value;
+        set => TestDisableFixedPointValue.Value = value;
     }
 
     /// <summary>Gets or sets a test hook called when a row band starts (<see langword="true"/>) and ends, on the worker thread.</summary>
@@ -153,6 +164,10 @@ internal static class Resampler
         if (plan.Filter == ResamplingFilter.NearestNeighbor)
         {
             Nearest<TPixel, TSample>(source, destination, plan, start, end, cancellationToken);
+        }
+        else if (plan.XFixed is not null && typeof(TSample) == typeof(byte) && alpha is WorkingAlpha.None or WorkingAlpha.Opaque)
+        {
+            FixedPointResampler.Gather(source, destination, plan, plan.GetScratch(band), start, end, cancellationToken);
         }
         else if (plan.Strategy == ResizeVerticalStrategy.Gather)
         {

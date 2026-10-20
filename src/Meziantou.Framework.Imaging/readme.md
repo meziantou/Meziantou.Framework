@@ -620,8 +620,13 @@ alpha: premultiplying by a constant alpha would only add roundings.
   ones are rejected. The name of the value is historical.
 
 A resize to the current size leaves the image unchanged. Sums are computed in double precision, every term added with a
-fused multiply-add (one rounding per term). Results do not depend on the worker count or on SIMD support: the vectorized
-and parallel kernels are bit-identical to the scalar reference.
+fused multiply-add (one rounding per term), and samples are correctly rounded, except for 8-bit images filtered in
+`Encoded` space whose pixels read are all opaque (or that have no alpha): those are filtered in fixed point, with
+weights of 14 fractional bits that add up to exactly 1, 16-bit intermediate rows and 32-bit sums, which is faster.
+About 0.2% of their samples are then one unit off the correctly rounded value, when the exact value is within 0.02 of a
+rounding boundary; none is off by more, and the headroom of the 16-bit rows is checked for the weights of every resize,
+which keeps double precision when it does not fit. Results do not depend on the worker count or on SIMD support: the
+vectorized and parallel kernels are bit-identical to the scalar reference.
 
 <!-- snippet: resize-animation -->
 ```csharp

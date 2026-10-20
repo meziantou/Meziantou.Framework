@@ -1833,6 +1833,126 @@ public sealed class VectorizedKernelTests
         Assert.True(fusedDiffers > 100, $"{fusedDiffers} sums differ from separate multiplications and additions");
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void FixedPointHorizontalPassMatchesTheScalarLoop(int channels)
+    {
+        // The windows of the 8-bit integer resize, padded with zero weights, over rows of every length (tails of the loads),
+        // with every intermediate precision the weights allow
+        var random = new Random(channels + 40);
+        var lanes = FixedPointResampler.GetLanes(channels);
+        (int Source, int Output)[] sizes = [(1, 1), (2, 5), (7, 3), (37, 11), (37, 80), (101, 100), (300, 7), (64, 129), (3, 30), (1000, 9), (5, 23)];
+        foreach (var filter in new[] { ResamplingFilter.Bilinear, ResamplingFilter.Bicubic, ResamplingFilter.Lanczos3 })
+        {
+            foreach (var (sourceLength, outputLength) in sizes)
+            {
+                var scope = AllocationScope.Create(configuration: null);
+                var axis = ResampleAxis.FullExtent(sourceLength, outputLength);
+                using var weights = ResampleWeights.Create(scope, axis, filter);
+                using var table = FixedPointWeights.Create(scope, weights, channels is 1 ? FixedPointResampler.GrayTapMultiple : FixedPointResampler.ColorTapMultiple)!;
+                using var vertical = FixedPointWeights.Create(scope, weights, tapMultiple: 0)!;
+                var precision = FixedPointResampler.GetPrecision(table, vertical);
+                Assert.InRange(precision, filter == ResamplingFilter.Bilinear ? 7 : 6, 7);
+
+                // 8-bit samples loaded from bytes, then padded windows reading whatever follows them (zero weights)
+                var bytes = new byte[(weights.Last - weights.First + 1) * channels];
+                random.NextBytes(bytes);
+                var working = new short[table.SourceLength * lanes];
+                for (var i = 0; i < working.Length; i++)
+                {
+                    working[i] = (short)random.Next(short.MinValue, short.MaxValue + 1);
+                }
+
+                var expectedWorking = working.ToArray();
+                Resampler.TestForceScalar = true;
+                try
+                {
+                    FixedPointResampler.LoadRow(bytes, channels, expectedWorking);
+                }
+                finally
+                {
+                    Resampler.TestForceScalar = false;
+                }
+
+                FixedPointResampler.LoadRow(bytes, channels, working);
+                Assert.Equal(expectedWorking, working);
+
+                // The output is followed by values that the loops must not overwrite
+                var shift = FixedPointWeights.FractionBits - precision;
+                var expected = new short[outputLength * lanes];
+                var actual = new short[(outputLength * lanes) + 8];
+                actual.AsSpan(expected.Length).Fill(-1);
+                FixedPointResampler.ResampleHorizontalScalar(working, expected, table, lanes, shift);
+                FixedPointResampler.ResampleHorizontal(working, actual.AsSpan(0, expected.Length), table, lanes, shift);
+                Assert.Equal(expected, actual[..expected.Length]);
+                Assert.All(actual[expected.Length..], value => Assert.Equal(-1, value));
+
+                // Each window adds up to exactly 1 in fixed point
+                for (var d = 0; d < outputLength; d++)
+                {
+                    Assert.Equal(FixedPointWeights.One, table.GetPaddedWeights(d).ToArray().Sum(weight => weight));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void FixedPointVerticalPassMatchesTheScalarLoop()
+    {
+        // Lengths that cover the 16- and 8-sample loops and every tail, odd and even numbers of taps (the pairs of pmaddwd),
+        // windows that wrap around the ring, negative weights, and sums that saturate below 0 and above 255
+        var random = new Random(77);
+        const int RingSize = 7;
+        for (var length = 0; length <= 70; length++)
+        {
+            var stride = length + random.Next(5);
+            var ring = new short[RingSize * Math.Max(stride, 1)];
+            for (var i = 0; i < ring.Length; i++)
+            {
+                ring[i] = (short)random.Next(-3000, 20000);
+            }
+
+            foreach (var count in new[] { 1, 2, 3, 6, 7 })
+            {
+                var weights = new short[count];
+                for (var k = 0; k < count; k++)
+                {
+                    weights[k] = (short)random.Next(-4000, 12000);
+                }
+
+                var firstSlot = random.Next(RingSize);
+                var shift = 20 - random.Next(3);
+                var expected = new byte[length + 4];
+                var actual = new byte[length + 4];
+                expected.AsSpan(length).Fill(0xA5);
+                actual.AsSpan(length).Fill(0xA5);
+                FixedPointResampler.ResampleVerticalScalar(ring, stride, firstSlot, RingSize, weights, expected.AsSpan(0, length), shift);
+                FixedPointResampler.ResampleVertical(ring, stride, firstSlot, RingSize, weights, actual.AsSpan(0, length), shift);
+                Assert.Equal(expected, actual);
+            }
+        }
+
+        // Packing 4-lane pixels into 3-sample pixels
+        for (var pixels = 0; pixels <= 21; pixels++)
+        {
+            var source = new byte[pixels * 4];
+            random.NextBytes(source);
+            var packed = new byte[(pixels * 3) + 4];
+            packed.AsSpan(pixels * 3).Fill(0xA5);
+            FixedPointResampler.PackRgb(source, packed.AsSpan(0, pixels * 3));
+            for (var p = 0; p < pixels; p++)
+            {
+                Assert.Equal(source.AsSpan(p * 4, 3).ToArray(), packed.AsSpan(p * 3, 3).ToArray());
+            }
+
+            Assert.All(packed[(pixels * 3)..], value => Assert.Equal(0xA5, value));
+        }
+    }
+
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void ResamplerRowAdditionsMatchTheScalarLoopsBitForBit()

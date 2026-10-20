@@ -351,22 +351,20 @@ public sealed class DrawingStrokeTests
     [Fact]
     public void AStrokeWiderThanTheCanvasCoversItWhateverTheTransformation()
     {
-        // The pieces of a stroke are tested against the canvas once they are transformed: a translation, a mirror (which
-        // reverses their orientation), a rotation, and a scale that makes a narrower pen as wide on the canvas
+        // A pen much wider than the canvas through a translation, a mirror (which reverses the orientation of the
+        // pieces), a turn and a scaling: a translucent paint shows that the many pieces of such a stroke are painted once
         var center = new PointD(2, 1.5);
-        (AffineTransform Transform, double Scale)[] placements =
+        AffineTransform[] transforms =
         [
-            (AffineTransform.CreateTranslation(2, 2), 1),
-            (AffineTransform.CreateScale(-1, 1, center), 1),
-            (AffineTransform.CreateRotation(30, center), 1),
-            (AffineTransform.CreateScale(100, 100, center), 100),
+            AffineTransform.CreateTranslation(2, 2),
+            AffineTransform.CreateScale(-1, 1, center),
+            AffineTransform.CreateRotation(30, center),
+            AffineTransform.CreateScale(100, 100, center),
         ];
-
-        // A translucent paint shows that the many pieces of such a stroke are painted once
         var paint = new SolidBrush(new Rgba32(255, 255, 255, 128));
         var curve = new VectorPathBuilder().MoveTo(-300, 2).CubicBezierTo(100, -4000, 3, 5000, 400, 3).QuadraticBezierTo(2, 2, 3, 3).AddCircle(new PointD(2, 2), 50).Build();
         (double Width, LineJoin Join, LineCap Cap)[] pens = [(1000, LineJoin.Miter, LineCap.Butt), (1000, LineJoin.Round, LineCap.Round), (100000, LineJoin.Bevel, LineCap.Square)];
-        foreach (var (transform, _) in placements)
+        foreach (var transform in transforms)
         {
             foreach (var (width, join, cap) in pens)
             {
@@ -376,16 +374,17 @@ public sealed class DrawingStrokeTests
             }
         }
 
-        // Dots 4 million pixels wide on the canvas, one every half pixel: the first one that covers the canvas ends the
-        // stroke. Tested before they are transformed only, the millions of dots that reach the canvas take minutes.
-        foreach (var (transform, scale) in placements)
+        // A pen narrower than the canvas that the transformation makes 5 million pixels wide, with a dot every 10
+        // pixels of the canvas: the first dot that covers the canvas ends the stroke. Compared to the canvas before it
+        // is scaled, the pen is too narrow to be tested, and the 256,000 dots that reach the canvas take minutes.
+        using (var image = NewBlack(512, 512))
         {
-            using var image = NewBlack(4, 3);
             using var budget = CancellationTokenSource.CreateLinkedTokenSource(Ct);
             budget.CancelAfter(TimeSpan.FromSeconds(60));
-            var pen = new Pen(White, 4000000 / scale) { DashPattern = [0, 0.5 / scale], LineCap = LineCap.Round };
-            image.Frames[0].Draw(canvas => canvas.Transform(transform, inner => inner.StrokeLine(pen, new PointD(-4000000 / scale, 1.5), center)), budget.Token);
-            AssertGray8(image, [[255, 255, 255, 255], [255, 255, 255, 255], [255, 255, 255, 255]]);
+            var pen = new Pen(White, 500) { DashPattern = [0, 1.0 / 1024], LineCap = LineCap.Round };
+            var middle = new PointD(256, 256);
+            image.Frames[0].Draw(canvas => canvas.Transform(AffineTransform.CreateScale(10000, 10000, middle), inner => inner.StrokeLine(pen, new PointD(-44, 256), middle)), budget.Token);
+            Assert.All(DrawingTestSupport.ReadSamples(image.Frames[0]), sample => Assert.Equal(255, sample));
         }
     }
 
@@ -707,6 +706,31 @@ public sealed class DrawingStrokeTests
             var pen = new Pen(White, 10) { DashPattern = [1.0 / 2048] };
             image.Frames[0].Draw(canvas => canvas.StrokeLine(pen, new PointD(-16777216, 100), new PointD(16777216, 100.5)), timeout.Token);
             AssertGray8(image, [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]);
+        }
+    }
+
+    [Fact]
+    public void AWidePenCoversTheCanvasWhateverTheTransformation()
+    {
+        // Dots 4 million pixels wide, one every half pixel, through a transformation: the image of a layer of a rectangle
+        // (a translation), a translation, a turn and a scaling, a mirror. The first dot that covers the canvas still ends
+        // the stroke: the millions of dots that reach it took minutes before (fuzzing, issue #3488).
+        var pen = new Pen(White, 4000000) { DashPattern = [0, 0.5], LineCap = LineCap.Round };
+        DrawingAction stroke = canvas => canvas.StrokeLine(pen, new PointD(-4000000, 1.5), new PointD(2, 1.5));
+        DrawingAction[] drawings =
+        [
+            canvas => canvas.Layer(new RectangleD(-1.5, -2, 9, 7), 1, stroke),
+            canvas => canvas.Transform(AffineTransform.CreateTranslation(0.25, 0.5), stroke),
+            canvas => canvas.Transform(AffineTransform.CreateRotation(30).Then(AffineTransform.CreateScale(0.5, 2)), stroke),
+            canvas => canvas.Transform(AffineTransform.CreateScale(-1, 1), stroke),
+        ];
+        foreach (var drawing in drawings)
+        {
+            using var budget = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+            budget.CancelAfter(TimeSpan.FromSeconds(60));
+            using var image = NewBlack(4, 3);
+            image.Frames[0].Draw(drawing, budget.Token);
+            AssertGray8(image, [[255, 255, 255, 255], [255, 255, 255, 255], [255, 255, 255, 255]]);
         }
     }
 

@@ -182,10 +182,26 @@ internal sealed class Mp3TagReader : IMediaTagReader
         return frame.IsMono ? 9 : 17;
     }
 
+    /// <summary>
+    /// Gets the offset of the audio, after every consecutive ID3v2 tag.
+    /// </summary>
+    /// <remarks>
+    /// Some taggers prepend a new tag without removing the old one. Only the first is read, but the audio starts
+    /// after all of them, as the writer assumes when it replaces them. Searching for the first frame from the end
+    /// of the first tag would find a false frame sync in the data of the next one, which a write then removes.
+    /// </remarks>
     private static long GetAudioStartOffset(Stream stream)
     {
-        stream.Position = 0;
-        return Id3v2Reader.GetTagSize(stream);
+        var offset = 0L;
+        while (true)
+        {
+            stream.Position = offset;
+            var tagSize = Id3v2Reader.GetTagSize(stream);
+            if (tagSize is 0)
+                return offset;
+
+            offset += tagSize;
+        }
     }
 
     private static long GetAudioEndOffset(Stream stream)

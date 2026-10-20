@@ -44,6 +44,35 @@ public class RoundtripRenderer : TextRendererBase<RoundtripRenderer>
         ObjectRenderers.Add(new RoundtripHtmlEntityInlineRenderer());
         ObjectRenderers.Add(new LinkInlineRenderer());
         ObjectRenderers.Add(new LiteralInlineRenderer());
+
+        // The extensions can replace the renderer of the document, so the NUL characters are written back around it
+        ObjectWriteBefore += OnObjectWriteBefore;
+        ObjectWriteAfter += OnObjectWriteAfter;
+    }
+
+    private void OnObjectWriteBefore(IMarkdownRenderer renderer, MarkdownObject obj)
+    {
+        if (obj is not MarkdownDocument document)
+            return;
+
+        // The writing of a previous document threw
+        if (Writer is NullCharacterWriter previousWriter)
+        {
+            ReplaceWriter(previousWriter.InnerWriter);
+        }
+
+        if (document.TextWithNullCharacters is { } text)
+        {
+            ReplaceWriter(new NullCharacterWriter(Writer, text));
+        }
+    }
+
+    private void OnObjectWriteAfter(IMarkdownRenderer renderer, MarkdownObject obj)
+    {
+        if (obj is MarkdownDocument && Writer is NullCharacterWriter writer)
+        {
+            ReplaceWriter(writer.InnerWriter);
+        }
     }
 
     /// <summary>

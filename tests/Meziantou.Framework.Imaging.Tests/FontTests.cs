@@ -96,6 +96,34 @@ public sealed class FontTests
     }
 
     [Fact]
+    public void ANameWhoseStringIsOutsideTheTableIsIgnored()
+    {
+        // The Windows name starts outside the table: the name of the Unicode platform is used instead.
+        var table = WriteNameTable((0, 3, 0, 1, "Unicode"), (3, 1, 0x0409, 1, "Windows"), (3, 1, 0x0409, 4, "Full"));
+        Assert.Equal("Windows", NameTable.Find(table, NameTable.FamilyName));
+        BinaryPrimitives.WriteUInt16BigEndian(table.AsSpan(6 + 12 + 10), 0xFFFF);
+        Assert.Equal("Unicode", NameTable.Find(table, NameTable.FamilyName));
+        var names = new List<string>();
+        NameTable.FindAll(table, NameTable.FamilyName, names);
+        Assert.Equal(["Unicode"], names);
+
+        // The only full name ends outside the table: the font has none.
+        BinaryPrimitives.WriteUInt16BigEndian(table.AsSpan(6 + 24 + 8), 0x0100);
+        Assert.Null(NameTable.Find(table, NameTable.FullName));
+        names.Clear();
+        NameTable.FindAll(table, NameTable.FullName, names);
+        Assert.Empty(names);
+
+        // Through a variable font (a fuzzing finding): the names of an axis, of an instance and of the family are
+        // outside the table. The font is still loaded, without these names.
+        var font = Font.Load(MoveNamesOutsideTheTable(FontSamples.Variable().Build(), "Weight", "Bold", "MeziantouVariable-Bold", "Meziantou Variable"));
+        Assert.Equal("", font.FamilyName);
+        Assert.Equal(["wght (wght): 100 to 900, 400 by default", "wdth (Width): 50 to 200, 100 by default"], font.VariationAxes.Select(axis => axis.ToString()));
+        Assert.Equal(["Light", "", "Wide"], font.NamedInstances.Select(instance => instance.Name));
+        Assert.All(font.NamedInstances, instance => Assert.Null(instance.PostScriptName));
+    }
+
+    [Fact]
     public void TheMetricsAreInFontUnitsAndScaleWithTheSize()
     {
         var font = FontTestSupport.Load(FontSamples.Boxes());
@@ -2399,6 +2427,39 @@ public sealed class FontTests
         }
 
         return [.. header, .. storage];
+    }
+
+    /// <summary>Moves the strings of the records of the <c>name</c> table of a font that have one of the values outside the table.</summary>
+    private static byte[] MoveNamesOutsideTheTable(byte[] font, params string[] values)
+    {
+        var result = (byte[])font.Clone();
+        var tableCount = BinaryPrimitives.ReadUInt16BigEndian(result.AsSpan(4));
+        for (var i = 0; i < tableCount; i++)
+        {
+            var directoryRecord = result.AsSpan(12 + (i * 16), 16);
+            if (!directoryRecord[..4].SequenceEqual("name"u8))
+                continue;
+
+            var table = result.AsSpan((int)BinaryPrimitives.ReadUInt32BigEndian(directoryRecord[8..]), (int)BinaryPrimitives.ReadUInt32BigEndian(directoryRecord[12..]));
+            var storage = BinaryPrimitives.ReadUInt16BigEndian(table[4..]);
+            var moved = 0;
+            for (var j = 0; j < BinaryPrimitives.ReadUInt16BigEndian(table[2..]); j++)
+            {
+                var record = table.Slice(6 + (j * 12), 12);
+                var data = table.Slice(storage + BinaryPrimitives.ReadUInt16BigEndian(record[10..]), BinaryPrimitives.ReadUInt16BigEndian(record[8..]));
+                var value = BinaryPrimitives.ReadUInt16BigEndian(record) == 1 ? Encoding.Latin1.GetString(data) : Encoding.BigEndianUnicode.GetString(data);
+                if (values.Contains(value, StringComparer.Ordinal))
+                {
+                    BinaryPrimitives.WriteUInt16BigEndian(record[10..], (ushort)(table.Length - storage));
+                    moved++;
+                }
+            }
+
+            Assert.Equal(values.Length, moved);
+            return result;
+        }
+
+        throw new ArgumentException("The font has no name table", nameof(font));
     }
 
     private sealed class TemporaryFontDirectory : IDisposable

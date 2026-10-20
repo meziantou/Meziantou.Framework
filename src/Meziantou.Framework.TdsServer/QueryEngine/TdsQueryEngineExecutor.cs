@@ -1915,7 +1915,10 @@ internal sealed class TdsQueryEngineExecutor
 
     private Expression BuildNullScalarFunction(SqlNullScalarExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
-        if (!TryGetFunctionCallText(function.Xml, out var functionName, out var argumentTexts))
+        // The parser does not model these functions (the node has no children), so the arguments are read from the SQL
+        // text of the node. Do not use SqlCodeObject.Xml: its XmlWriter rejects the characters XML does not allow (NUL,
+        // unpaired surrogates) and rewrites "--" in the text, while a string literal may contain them.
+        if (!TryGetFunctionCallText(function.Sql, out var functionName, out var argumentTexts))
         {
             throw new TdsQueryEngineException("Unsupported NULL/conditional scalar expression.");
         }
@@ -2644,11 +2647,12 @@ internal sealed class TdsQueryEngineExecutor
         };
     }
 
-    private static bool TryGetFunctionCallText(string xml, out string functionName, out IReadOnlyList<string> argumentTexts)
+    private static bool TryGetFunctionCallText(string? sql, out string functionName, out IReadOnlyList<string> argumentTexts)
     {
         functionName = string.Empty;
         argumentTexts = [];
-        if (!TryExtractExpressionComment(xml, out var invocation))
+        var invocation = sql?.Trim();
+        if (string.IsNullOrEmpty(invocation))
         {
             return false;
         }
@@ -2663,28 +2667,6 @@ internal sealed class TdsQueryEngineExecutor
         functionName = invocation[..startIndex].Trim();
         argumentTexts = SplitTopLevelArguments(invocation[(startIndex + 1)..endIndex]);
         return !string.IsNullOrWhiteSpace(functionName);
-    }
-
-    private static bool TryExtractExpressionComment(string xml, out string expressionText)
-    {
-        expressionText = string.Empty;
-        const string StartMarker = "<!--";
-        const string EndMarker = "-->";
-        var start = xml.IndexOf(StartMarker, StringComparison.Ordinal);
-        if (start < 0)
-        {
-            return false;
-        }
-
-        start += StartMarker.Length;
-        var end = xml.IndexOf(EndMarker, start, StringComparison.Ordinal);
-        if (end < 0)
-        {
-            return false;
-        }
-
-        expressionText = xml[start..end].Trim();
-        return expressionText.Length > 0;
     }
 
     private static IReadOnlyList<string> SplitTopLevelArguments(string argumentsText)

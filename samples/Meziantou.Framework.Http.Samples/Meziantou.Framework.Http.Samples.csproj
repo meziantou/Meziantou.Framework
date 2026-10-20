@@ -1,0 +1,13 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <!-- The readme examples of the Meziantou.Framework.Http.* packages that send real requests or read files that do not
+       exist. CI compiles them but does not run them. -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.Http.Recording/Meziantou.Framework.Http.Recording.csproj" />
+  </ItemGroup>
+
+</Project>

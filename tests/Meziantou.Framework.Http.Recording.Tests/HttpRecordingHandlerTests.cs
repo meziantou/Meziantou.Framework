@@ -24,6 +24,84 @@ public sealed class HttpRecordingHandlerTests
     }
 
     [Fact]
+    public void ReadmeExample_IgnoringRequestBody()
+    {
+        #region HttpRecordingOptions_IgnoringRequestBody
+        var options = new HttpRecordingOptions
+        {
+            RequestMatcher = DefaultHttpRequestMatcher.IgnoringRequestBody,
+        };
+        #endregion
+
+        Assert.Same(DefaultHttpRequestMatcher.IgnoringRequestBody, options.RequestMatcher);
+    }
+
+    [Fact]
+    public async Task ReadmeExample_AutoWithThrowOnMiss()
+    {
+        #region HttpRecordingOptions_AutoWithThrowOnMiss
+        var options = new HttpRecordingOptions
+        {
+            Mode = HttpRecordingMode.Auto,
+            MissBehavior = HttpRecordingMissBehavior.Throw,
+        };
+        #endregion
+
+        using var innerHandler = new FakeHttpHandler(HttpStatusCode.OK);
+        using var handler = CreateHandler(innerHandler, new InMemoryRecordingStore(), options);
+        using var client = CreateClient(handler);
+        await Assert.ThrowsAsync<HttpRecordingMissException>(() => client.GetAsync("/api/test"));
+        Assert.Equal(0, innerHandler.CallCount);
+    }
+
+    [Fact]
+    public async Task ReadmeExample_AutoSave()
+    {
+        using var innerHandler = new FakeHttpHandler(HttpStatusCode.OK, "hello");
+        var store = new InMemoryRecordingStore();
+        {
+            #region HttpRecordingOptions_AutoSave
+            var options = new HttpRecordingOptions { Mode = HttpRecordingMode.Auto, AutoSave = true };
+            await using var recordingHandler = new HttpRecordingHandler(innerHandler, store, options);
+            #endregion
+
+            using var client = CreateClient(recordingHandler);
+            using var response = await client.GetAsync("/api/test");
+        }
+
+        Assert.Single(store.SavedEntries);
+    }
+
+    [Fact]
+    public async Task ReadmeExample_Sanitizers()
+    {
+        #region HttpRecordingOptions_Sanitizers
+        var options = new HttpRecordingOptions
+        {
+            Sanitizers =
+            {
+                new HeaderRemovalSanitizer("Authorization", "Cookie"),
+                new UriQueryParameterSanitizer("api_key", "sig"),
+            },
+        };
+        #endregion
+
+        options.Mode = HttpRecordingMode.Record;
+        using var innerHandler = new FakeHttpHandler(HttpStatusCode.OK, "hello");
+        var store = new InMemoryRecordingStore();
+        using var handler = CreateHandler(innerHandler, store, options);
+        using var client = CreateClient(handler);
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/test?api_key=secret-key");
+        request.Headers.TryAddWithoutValidation("Authorization", "Bearer secret-token");
+        using var response = await client.SendAsync(request);
+        await handler.SaveAsync();
+
+        var entry = Assert.Single(store.SavedEntries);
+        Assert.DoesNotContain("secret-key", entry.RequestUri);
+        Assert.False(entry.RequestHeaders?.ContainsKey("Authorization") ?? false);
+    }
+
+    [Fact]
     public async Task RecordMode_CallsInnerHandler_AndRecordsEntry()
     {
         using var innerHandler = new FakeHttpHandler(HttpStatusCode.OK, "hello");

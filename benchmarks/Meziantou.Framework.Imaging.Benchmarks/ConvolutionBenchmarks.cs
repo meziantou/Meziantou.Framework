@@ -71,9 +71,27 @@ public class ConvolutionBenchmarks
     [Workload("1920x1080 Rgba64 3x3 box blur (9 weights)")]
     public int Box3Rgba64() => Convolve(_rgba64, new ConvolutionOptions(BoxKernel));
 
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 Gaussian blur, deviation 2 (13 weights per direction)")]
+    public int GaussianBlur2() => Blur(_rgba32, 2);
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 Gaussian blur, deviation 8 (49 weights per direction)")]
+    public int GaussianBlur8() => Blur(_rgba32, 8);
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba64 Gaussian blur, deviation 2 (13 weights per direction)")]
+    public int GaussianBlur2Rgba64() => Blur(_rgba64, 2);
+
     private static int Convolve(Image source, ConvolutionOptions options)
     {
         using var result = ImageWorkloads.ConvolveCopy(source, options);
+        return result.Width;
+    }
+
+    private static int Blur(Image source, double sigma)
+    {
+        using var result = ImageWorkloads.GaussianBlurCopy(source, sigma);
         return result.Width;
     }
 

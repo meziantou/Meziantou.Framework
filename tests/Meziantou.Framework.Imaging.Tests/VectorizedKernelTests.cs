@@ -2146,6 +2146,59 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    public static TheoryData<PixelFormat, ConvolutionEdgeMode, ConvolutionWorkingSpace> BlurCases()
+    {
+        var data = new TheoryData<PixelFormat, ConvolutionEdgeMode, ConvolutionWorkingSpace>();
+        foreach (var format in new[] { PixelFormat.Rgba32, PixelFormat.Bgra32, PixelFormat.Rgb24, PixelFormat.Gray8, PixelFormat.Rgba64, PixelFormat.Gray16 })
+        {
+            foreach (var mode in Enum.GetValues<ConvolutionEdgeMode>())
+            {
+                data.Add(format, mode, ConvolutionWorkingSpace.Encoded);
+            }
+
+            data.Add(format, ConvolutionEdgeMode.Clamp, ConvolutionWorkingSpace.LinearSrgb);
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(BlurCases))]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void GaussianBlurVectorizedRowsMatchTheScalarLoops(PixelFormat format, ConvolutionEdgeMode mode, ConvolutionWorkingSpace workingSpace)
+    {
+        // The rows filtered by the row weights then combined by the column: row lengths that are and are not multiples of the
+        // vector width, deviations wider than the image, and one of more row weights than are summed a block at a time
+        var random = new Random((int)format + 1);
+        (int Width, int Height, double Sigma)[] cases = [(37, 23, 0.7), (37, 23, 2.2), (5, 64, 3), (64, 5, 3), (1, 9, 1), (2, 2, 4), (101, 77, 1.5), (40, 30, 180)];
+        foreach (var (width, height, sigma) in cases)
+        {
+            var bytes = new byte[width * height * PixelFormats.GetBytesPerPixel(format)];
+            random.NextBytes(bytes);
+            var expected = Blur(bytes, forceScalar: true);
+            var actual = Blur(bytes, forceScalar: false);
+            Assert.Equal(expected, actual);
+
+            byte[] Blur(byte[] source, bool forceScalar)
+            {
+                using var image = ImportBytes(format, source, width, height);
+                Resampler.TestForceScalar = forceScalar;
+                try
+                {
+                    image.GaussianBlur(sigma, mode, workingSpace);
+                }
+                finally
+                {
+                    Resampler.TestForceScalar = false;
+                }
+
+                var result = new byte[source.Length];
+                image.Frames[0].CopyPixelBytesTo(result);
+                return result;
+            }
+        }
+    }
+
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void DrawingSourceOverOf8BitPixelsMatchesTheScalarReference()

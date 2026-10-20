@@ -112,6 +112,82 @@ public sealed class ConvolutionGoldenTests
         }
     }
 
+    public static TheoryData<string> BlurSources => [.. BlurInputs().Select(item => item.Name)];
+
+    /// <summary>
+    /// A Gaussian blur is the convolution by the matrix of the products of its weights, rounded once: the reference sums
+    /// that matrix directly, with weights computed from the exponential of the platform in <see cref="decimal"/> (they may
+    /// differ from those of the library by a unit in the last place of a double, far below the tie window). Rounding after
+    /// each direction (two convolutions) puts 5 to 9% of the samples of noise one unit off, and far more around
+    /// translucent pixels.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(BlurSources))]
+    public void GaussianBlursMatchTheIndependentReference(string name)
+    {
+        var source = BlurInputs().Single(item => item.Name == name).Buffer;
+        foreach (var sigma in new[] { 0.6, 1.5, 2.5 })
+        {
+            var radius = (int)Math.Ceiling(3 * sigma);
+            decimal[] row = [.. Enumerable.Range(-radius, (2 * radius) + 1).Select(i => (decimal)Math.Exp(-(i * i) / (2 * sigma * sigma)))];
+            var sum = row.Sum();
+            row = [.. row.Select(weight => weight / sum)];
+            decimal[] matrix = [.. row.SelectMany(vertical => row.Select(horizontal => vertical * horizontal))];
+            foreach (var mode in Enum.GetValues<ReferenceEdgeMode>())
+            {
+                foreach (var linear in new[] { false, true })
+                {
+                    if (linear && mode != ReferenceEdgeMode.Clamp)
+                        continue;
+
+                    var options = new ReferenceConvolutionOptions(row.Length, row.Length, matrix, mode, Linear: linear);
+                    var actual = source.Layout == RawPixelLayout.Rgba16Le ? Blur<Rgba64>(source, sigma, options) : Blur<Rgba32>(source, sigma, options);
+                    AssertMatches(ReferenceConvolver.Convolve(source, options), actual, string.Create(CultureInfo.InvariantCulture, $"{name}, blur {sigma}, {options}"));
+                }
+            }
+        }
+    }
+
+    /// <summary>The synthetic sources, and noise with and without translucent pixels.</summary>
+    private static IEnumerable<(string Name, RawPixelBuffer Buffer)> BlurInputs()
+    {
+        foreach (var item in ResizeGoldenTests.Synthetic())
+        {
+            yield return item;
+        }
+
+        foreach (var layout in new[] { RawPixelLayout.Rgba8, RawPixelLayout.Rgba16Le })
+        {
+            foreach (var opaque in new[] { false, true })
+            {
+                // Deterministic noise: the position and the channel hashed
+                var max = layout == RawPixelLayout.Rgba8 ? 255 : 65535;
+                var builder = new RawPixelBufferBuilder(23, 17, layout);
+                for (var y = 0; y < 17; y++)
+                {
+                    for (var x = 0; x < 23; x++)
+                    {
+                        for (var c = 0; c < 4; c++)
+                        {
+                            var hash = unchecked((uint)((x * 73856093) ^ (y * 19349663) ^ (c * 83492791)) * 2654435761u);
+                            builder.SetSample(x, y, c, c == 3 && opaque ? max : (int)((hash >> 8) % (uint)(max + 1)));
+                        }
+                    }
+                }
+
+                yield return (string.Create(CultureInfo.InvariantCulture, $"noise-{(max == 255 ? 8 : 16)}{(opaque ? "-opaque" : string.Empty)}"), builder.Build());
+            }
+        }
+    }
+
+    private static RawPixelBuffer Blur<TPixel>(RawPixelBuffer source, double sigma, ReferenceConvolutionOptions options)
+        where TPixel : unmanaged
+    {
+        using var image = Import<TPixel>(source, segmented: true);
+        image.GaussianBlur(sigma, ToLibrary(options).EdgeMode, options.Linear ? ConvolutionWorkingSpace.LinearSrgb : ConvolutionWorkingSpace.Encoded, TestContext.Current.CancellationToken);
+        return ImageSnapshots.CaptureFrameRows(image.Frames[0]);
+    }
+
     /// <summary>
     /// Linear-light convolution decodes the samples with the transfer function that the CICP color description of the
     /// image declares, against the <see cref="decimal"/> reference.

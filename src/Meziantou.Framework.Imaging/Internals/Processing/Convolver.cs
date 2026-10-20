@@ -23,6 +23,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// designates beyond the image) from halos loaded for every band before any row is written. Every output sample is
 /// therefore computed from original pixels by the same operations in the same order whatever the number of bands.
 /// </para>
+/// <para>
+/// A separable plan (the Gaussian blur) filters every row it loads by its row weights, with the same row additions, into
+/// the ring or the halo, and its kernel of one column combines those rows: the result is the two-dimensional sum
+/// <c>0 + v0 (0 + w0 x00 + w1 x01 + ...) + v1 (...) + ...</c>, without any rounding to the storage precision in between.
+/// </para>
 /// <para>Cancellation is observed between row bands; the rows already written stay written.</para>
 /// </remarks>
 internal static class Convolver
@@ -103,13 +108,13 @@ internal static class Convolver
             var above = plan.MapRow(start - centerY + i);
             if (above >= 0)
             {
-                LoadRow<TSample>(storage, above, plan, scratch.GetTopHalo(i));
+                LoadRow<TSample>(storage, above, plan, scratch, scratch.GetTopHaloOffset(i));
             }
 
             var below = plan.MapRow(end + i);
             if (below >= 0)
             {
-                LoadRow<TSample>(storage, below, plan, scratch.GetBottomHalo(i));
+                LoadRow<TSample>(storage, below, plan, scratch, scratch.GetBottomHaloOffset(i));
             }
         }
     }
@@ -147,7 +152,7 @@ internal static class Convolver
             var last = Math.Min(y + centerY, end - 1);
             for (; next <= last; next++)
             {
-                LoadRow<TSample>(storage, next, plan, scratch.GetRingRow(next));
+                LoadRow<TSample>(storage, next, plan, scratch, scratch.GetRingRowOffset(next));
             }
 
             // The taps of the row, in the order of the kernel: the position in the scratch of the row they read, shifted by
@@ -235,14 +240,63 @@ internal static class Convolver
     }
 
     /// <summary>
-    /// Loads image row <paramref name="y"/> as working samples in the middle of <paramref name="padded"/>, then fills the
-    /// pixels read left and right of the image according to the edge mode.
+    /// Loads image row <paramref name="y"/> into the ring or halo row at <paramref name="offset"/> in the scratch: padded
+    /// for the kernel or, for a separable plan, padded for the row weights in the input row, then filtered by them.
     /// </summary>
-    private static void LoadRow<TSample>(PixelStorage storage, int y, ConvolutionPlan plan, Span<double> padded)
+    private static void LoadRow<TSample>(PixelStorage storage, int y, ConvolutionPlan plan, ConvolutionScratch scratch, int offset)
+        where TSample : unmanaged
+    {
+        if (!plan.IsSeparable)
+        {
+            LoadPaddedRow<TSample>(storage, y, plan, scratch.Buffer.Slice(offset, (plan.Size.Width + plan.KernelWidth - 1) * plan.Channels), plan.CenterX);
+            return;
+        }
+
+        LoadPaddedRow<TSample>(storage, y, plan, scratch.InputRow, plan.RowCenterX);
+        FilterRow(plan, scratch, offset);
+    }
+
+    /// <summary>
+    /// Sets the row at <paramref name="offset"/> in the scratch to the input row filtered by the row weights of a separable
+    /// plan: <c>0 + w0 x0 + w1 x1 + ...</c> per sample, with the row additions of the kernel (all the taps read one row,
+    /// so they are summed a block of samples at a time in one pass when their list fits on the stack).
+    /// </summary>
+    private static void FilterRow(ConvolutionPlan plan, ConvolutionScratch scratch, int offset)
+    {
+        var weights = plan.RowWeights;
+        var channels = plan.Channels;
+        var length = plan.Size.Width * channels;
+        var buffer = scratch.Buffer;
+        var input = scratch.InputOffset;
+        if (!Resampler.TestForceScalar && Resampler.IsFmaAccelerated && (Vector128.IsHardwareAccelerated || Vector256.IsHardwareAccelerated) && weights.Length <= MaxBlockedTaps)
+        {
+            // A zero weight is not skipped: fma(0, x, s) is s, and fma(w, x, +0) is the 0 + w x of a first term
+            Span<int> offsets = stackalloc int[weights.Length];
+            for (var i = 0; i < offsets.Length; i++)
+            {
+                offsets[i] = input + (i * channels);
+            }
+
+            Resampler.SetWeightedSum(buffer, offset, length, offsets, weights, accumulate: false);
+            return;
+        }
+
+        var row = buffer.Slice(offset, length);
+        Resampler.SetScaled(row, buffer.Slice(input, length), weights[0]);
+        for (var i = 1; i < weights.Length; i++)
+        {
+            Resampler.AddScaled(row, buffer.Slice(input + (i * channels), length), weights[i]);
+        }
+    }
+
+    /// <summary>
+    /// Loads image row <paramref name="y"/> as working samples in the middle of <paramref name="padded"/>, then fills the
+    /// <paramref name="centerX"/> pixels read on each side of the image according to the edge mode.
+    /// </summary>
+    private static void LoadPaddedRow<TSample>(PixelStorage storage, int y, ConvolutionPlan plan, Span<double> padded, int centerX)
         where TSample : unmanaged
     {
         var channels = plan.Channels;
-        var centerX = plan.CenterX;
         var width = plan.Size.Width;
         WorkingSamples.Load<TSample>(GetSamples<TSample>(storage, y), padded.Slice(centerX * channels, width * channels), plan.Alpha, plan.Transfer);
         for (var i = 0; i < centerX; i++)

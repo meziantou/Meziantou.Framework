@@ -67,6 +67,44 @@ public sealed class ParallelConvolutionTests
     }
 
     [Theory]
+    [MemberData(nameof(Cases))]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void AGaussianBlurDoesNotDependOnTheWorkerCount(PixelFormat format, ConvolutionEdgeMode mode)
+    {
+        // The rows of a band are filtered horizontally into its ring, and those of its neighbors into its halos, before any
+        // row is rewritten; a deviation of 14 reads 42 rows on each side, more than a band of the 7-worker run
+        var random = new Random(12);
+        var (width, height) = (230, 260);
+        var bytes = new byte[width * height * PixelFormats.GetBytesPerPixel(format)];
+        random.NextBytes(bytes);
+        foreach (var sigma in new[] { 1.3, 14 })
+        {
+            var expected = Blur(bytes, workers: 1);
+            Assert.NotEqual(bytes, expected);
+            foreach (var workers in new[] { 2, 3, 4, 7 })
+            {
+                Assert.Equal(expected, Blur(bytes, workers));
+            }
+
+            byte[] Blur(byte[] source, int workers)
+            {
+                var configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers };
+                using var image = format switch
+                {
+                    PixelFormat.Rgba32 => (Image)Image.ImportPixelBytes<Rgba32>(source, width, height, configuration: configuration),
+                    PixelFormat.Rgb24 => Image.ImportPixelBytes<Rgb24>(source, width, height, configuration: configuration),
+                    PixelFormat.Gray8 => Image.ImportPixelBytes<Gray8>(source, width, height, configuration: configuration),
+                    PixelFormat.Rgba64 => Image.ImportPixelBytes<Rgba64>(source, width, height, configuration: configuration),
+                    _ => throw new ArgumentOutOfRangeException(nameof(format)),
+                };
+
+                image.GaussianBlur(sigma, mode, cancellationToken: Ct);
+                return CopyBytes(image);
+            }
+        }
+    }
+
+    [Theory]
     [InlineData(ConvolutionEdgeMode.Clamp)]
     [InlineData(ConvolutionEdgeMode.Mirror)]
     [InlineData(ConvolutionEdgeMode.Wrap)]

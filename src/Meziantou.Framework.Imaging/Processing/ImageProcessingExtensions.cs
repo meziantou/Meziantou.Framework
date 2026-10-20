@@ -559,18 +559,20 @@ public static class ImageProcessingExtensions
     /// is twice the deviation.
     /// </para>
     /// <para>
-    /// The blur is two convolutions (<see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/>), by a row of
-    /// <c>2 ceil(3 sigma) + 1</c> weights then by the same weights as a column: the time grows with the deviation, not
-    /// with its square. Each one follows the rules of a convolution (colors filtered premultiplied by alpha, samples
-    /// rounded to nearest at the storage precision, the same result whatever the number of workers); the weights are
-    /// computed without any function of the platform, and are the same everywhere. Without deviation, nothing changes.
+    /// The blur is one separable convolution (<see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/>): every
+    /// row is filtered by a row of <c>2 ceil(3 sigma) + 1</c> weights, then the filtered rows by the same weights as a
+    /// column, in double precision without rounding in between, so the result is the one of the two-dimensional matrix of
+    /// their products, and the time grows with the deviation, not with its square. It follows the rules of a convolution
+    /// (colors filtered premultiplied by alpha, samples rounded to nearest at the storage precision once, the same result
+    /// whatever the number of workers); the weights are computed without any function of the platform, and are the same
+    /// everywhere. Without deviation, nothing changes.
     /// </para>
     /// </remarks>
     /// <param name="image">The image to modify.</param>
     /// <param name="sigma">The standard deviation of the blur, in pixels. Must be between 0 and 10000.</param>
     /// <param name="edgeMode">The pixels the blur reads beyond the edges of the image.</param>
     /// <param name="workingSpace">The numeric space the samples are filtered in.</param>
-    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some frames or rows may already be blurred, in one direction or in both.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some frames or rows may already be blurred.</param>
     /// <exception cref="ArgumentException"><paramref name="sigma"/> is not a finite number.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="sigma"/> is negative or exceeds 10000, or <paramref name="edgeMode"/> or <paramref name="workingSpace"/> is not a defined value.</exception>
     /// <exception cref="UnsupportedImageFeatureException"><see cref="ConvolutionWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile. Nothing is changed.</exception>
@@ -599,7 +601,7 @@ public static class ImageProcessingExtensions
     /// <param name="sigma">The standard deviation of the blur, in pixels. Must be between 0 and 10000.</param>
     /// <param name="edgeMode">The pixels the blur reads beyond the edges of the frame.</param>
     /// <param name="workingSpace">The numeric space the samples are filtered in.</param>
-    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be blurred, in one direction or in both.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be blurred.</param>
     /// <exception cref="ArgumentException"><paramref name="sigma"/> is not a finite number.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="sigma"/> is negative or exceeds 10000, or <paramref name="edgeMode"/> or <paramref name="workingSpace"/> is not a defined value.</exception>
     /// <exception cref="UnsupportedImageFeatureException"><see cref="ConvolutionWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile. Nothing is changed.</exception>

@@ -658,9 +658,10 @@ of non-zero weights: there is no dedicated fast path for separable matrices such
 these.
 
 `GaussianBlur(sigma)` blurs an image or a frame with a bell curve of standard deviation `sigma` (the radius CSS
-gives to a blur is twice the deviation): two convolutions, by a row of `2 ceil(3 sigma) + 1` weights then by the same
-weights as a column, so that the time grows with the deviation and not with its square. It takes the edge mode and the
-working space of a convolution, and follows its rules; both passes are prepared before a pixel changes. The weights
+gives to a blur is twice the deviation): one separable convolution, each row filtered by a row of `2 ceil(3 sigma) + 1`
+weights and the filtered rows by the same weights as a column, so that the time grows with the deviation and not with
+its square. Nothing is rounded between the two directions: the result is the one of the matrix of the products of the
+weights, rounded once. It takes the edge mode and the working space of a convolution, and follows its rules. The weights
 `exp(-i^2 / (2 sigma^2))`, divided by their sum, are computed without any function of the platform.
 
 <!-- snippet: convolve -->

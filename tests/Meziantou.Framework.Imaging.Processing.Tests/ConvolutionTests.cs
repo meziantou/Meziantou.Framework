@@ -536,8 +536,9 @@ public sealed class ConvolutionTests
     public void AGaussianBlurSpreadsAPixelByTheWeightsOfABell()
     {
         // A deviation of 1: the weights exp(-i^2 / 2) of the 7 pixels within 3, divided by their sum 2.50593:
-        // 0.004433, 0.054006, 0.242036, 0.399050 and back. One pixel at 65535 becomes, in its row, 65535 times each
-        // weight (291, 3539, 15862, 26152), and each of these, in its column, as many times each weight
+        // 0.004433, 0.054006, 0.242036, 0.399050 and back. One pixel at 65535 becomes 65535 times the product of the
+        // weights of its row and of its column, rounded once: 65535 * 0.399050 * (0.004433, 0.054006, 0.242036, 0.399050)
+        // is 115.9, 1412.3, 6329.6, 10436.0 in the row and the column of the pixel
         using var image = new Image<Gray16>(9, 9);
         image.Frames[0][4, 4] = new Gray16(65535);
         image.GaussianBlur(1, cancellationToken: Ct);
@@ -548,47 +549,66 @@ public sealed class ConvolutionTests
             Assert.Equal(center[i], image.Frames[0][i, 4].Value);
         }
 
-        // 3539 * 0.242036 = 856.6, in the row two above and the column one right of the pixel; 291 * 0.004433 = 1.29
+        // 65535 * 0.054006 * 0.242036 = 856.6, in the row two above and the column one right of the pixel;
+        // 65535 * 0.004433 * 0.004433 = 1.29
         Assert.Equal(857, image.Frames[0][5, 2].Value);
         Assert.Equal(857, image.Frames[0][2, 5].Value);
         Assert.Equal(1, image.Frames[0][1, 1].Value);
         Assert.Equal(0, image.Frames[0][0, 0].Value);
 
-        // The same at 8 bits: 255 times each weight is 1, 14, 62, 102, then 102 times each weight 0, 6, 25, 41
+        // The same at 8 bits: 255 * 0.399050 * (0.004433, 0.054006, 0.242036, 0.399050) is 0.45, 5.50, 24.63, 40.61. Two
+        // convolutions would round 255 times each weight first (1, 14, 62, 102), then 102 times each weight: 0, 6, 25, 41
         using var small = new Image<Gray8>(7, 7);
         small.Frames[0][3, 3] = new Gray8(255);
         small.GaussianBlur(1, cancellationToken: Ct);
-        Assert.Equal([0, 6, 25, 41, 25, 6, 0], CopyRow(small.Frames[0], 3).Select(pixel => (int)pixel.Value));
+        Assert.Equal([0, 5, 25, 41, 25, 5, 0], CopyRow(small.Frames[0], 3).Select(pixel => (int)pixel.Value));
     }
 
     [Fact]
-    public void AGaussianBlurIsTwoConvolutionsByItsWeights()
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void AGaussianBlurIsOneConvolutionByTheProductsOfItsWeights()
     {
+        var random = new Random(42);
+        var noise = new Rgba32[23 * 17];
+        for (var i = 0; i < noise.Length; i++)
+        {
+            noise[i] = new Rgba32((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256), 255);
+        }
+
+        var twoPassDiffers = 0;
         foreach (var sigma in new[] { 0.4, 1, 2.5 })
         {
-            // The weights of the definition, from the exponential of the platform: a sample can differ by one where
-            // the two computations do not round the same way
+            // The weights of the definition, from the exponential of the platform, and the matrix of their products: the
+            // blur rounds the same sums once, in another order, so a sample can differ by one where the two computations do
+            // not round the same way. Two convolutions round after each direction: they differ more often
             var radius = (int)Math.Ceiling(3 * sigma);
             double[] weights = [.. Enumerable.Range(-radius, (2 * radius) + 1).Select(i => Math.Exp(-(i * i) / (2 * sigma * sigma)))];
             var sum = weights.Sum();
             weights = [.. weights.Select(weight => weight / sum)];
+            double[] matrix = [.. weights.SelectMany(vertical => weights.Select(horizontal => vertical * horizontal))];
             foreach (var mode in EdgeModes)
             {
-                using var blurred = BuildGradient(13, 11, layout: null);
-                using var convolved = BuildGradient(13, 11, layout: null);
+                using var blurred = Image.ImportPixelData<Rgba32>(noise, 23, 17);
+                using var convolved = Image.ImportPixelData<Rgba32>(noise, 23, 17);
+                using var twoPass = Image.ImportPixelData<Rgba32>(noise, 23, 17);
                 blurred.GaussianBlur(sigma, mode, cancellationToken: Ct);
-                convolved.Convolve(new ConvolutionOptions(Kernel(weights.Length, 1, weights)) { EdgeMode = mode }, Ct);
-                convolved.Convolve(new ConvolutionOptions(Kernel(1, weights.Length, weights)) { EdgeMode = mode }, Ct);
+                convolved.Convolve(new ConvolutionOptions(Kernel(weights.Length, weights.Length, matrix)) { EdgeMode = mode }, Ct);
+                twoPass.Convolve(new ConvolutionOptions(Kernel(weights.Length, 1, weights)) { EdgeMode = mode }, Ct);
+                twoPass.Convolve(new ConvolutionOptions(Kernel(1, weights.Length, weights)) { EdgeMode = mode }, Ct);
                 var expected = CopyAll(convolved.Frames[0]);
                 var actual = CopyAll(blurred.Frames[0]);
+                var rounded = CopyAll(twoPass.Frames[0]);
                 for (var i = 0; i < expected.Length; i++)
                 {
                     Assert.True(
                         Math.Abs(expected[i].R - actual[i].R) <= 1 && Math.Abs(expected[i].G - actual[i].G) <= 1 && Math.Abs(expected[i].B - actual[i].B) <= 1 && Math.Abs(expected[i].A - actual[i].A) <= 1,
                         $"sigma {sigma}, {mode}, pixel {i}: expected {expected[i]}, actual {actual[i]}");
+                    twoPassDiffers += rounded[i] == actual[i] ? 0 : 1;
                 }
             }
         }
+
+        Assert.True(twoPassDiffers > 100, $"{twoPassDiffers} pixels of two rounded convolutions differ from the blur");
 
         // The weights add up to 1: an image of one color keeps it, whatever the deviation
         using var flat = new Image<Rgba32>(20, 15, new Rgba32(12, 200, 99, 180));
@@ -630,10 +650,11 @@ public sealed class ConvolutionTests
         image.GaussianBlur(0, cancellationToken: Ct);
         image.Frames[1].GaussianBlur(0, cancellationToken: Ct);
         AssertGray8(image.Frames[1], [[178, 77, 15, 1, 0, 0, 0]]);
+        // Without pixels beyond the row, the column only has the middle weight: 255 * 0.399050 times each weight of the row
         Fill(image.Frames[1], [[0, 0, 0, 255, 0, 0, 0]]);
         image.Frames[1].GaussianBlur(1, ConvolutionEdgeMode.Zero, cancellationToken: Ct);
         AssertGray8(image.Frames[0], [[1, 14, 62, 102, 62, 14, 1]]);
-        AssertGray8(image.Frames[1], [[0, 6, 25, 41, 25, 6, 0]]);
+        AssertGray8(image.Frames[1], [[0, 5, 25, 41, 25, 5, 0]]);
         Assert.Equal(0, image.Owner.Scope.GetLiveBytes(AllocationKind.Temporary));
         Assert.Equal(0, image.Owner.ActiveLeaseCount);
     }

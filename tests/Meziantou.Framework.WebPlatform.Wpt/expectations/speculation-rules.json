@@ -18,6 +18,13 @@
   "speculation-rules/header-only-top-level.html": {
     "total": 1
   },
+  "speculation-rules/inline-speculation-rules-base-url-errors.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Base URL changes do not re-fire error events on invalid speculation rules": "TIMEOUT"
+    }
+  },
   "speculation-rules/inline-speculation-rules-errors.html": {
     "harness": "TIMEOUT",
     "total": 1,
@@ -63,6 +70,9 @@
   },
   "speculation-rules/prefetch/document-rules-details-element.https.html": {
     "total": 2
+  },
+  "speculation-rules/prefetch/document-rules-pending-stylesheet.https.html": {
+    "total": 1
   },
   "speculation-rules/prefetch/document-rules.https.html?include=and": {
     "total": 1
@@ -726,6 +736,12 @@
     "total": 1,
     "failures": {
       "when prerender-until-script action prerenders a page, the script on that page should always be executed after activation.": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prerender-until-script/pus-to-prerender-upgrade.https.html": {
+    "total": 1,
+    "failures": {
+      "Adding a prerender rule for a URL that already has a prerender-until-script rule upgrades the existing prerender-until-script host and resumes JavaScript execution during prerendering.": "FAIL"
     }
   },
   "speculation-rules/prerender/about-blank-iframes.https.html": {

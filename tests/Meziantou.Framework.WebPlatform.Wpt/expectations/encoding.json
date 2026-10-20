@@ -78,10 +78,10 @@
     "total": 57
   },
   "encoding/iso-2022-jp-decoder.any.js": {
-    "total": 34
+    "total": 38
   },
   "encoding/iso-2022-jp-decoder.any.js#dedicatedworker": {
-    "total": 34
+    "total": 38
   },
   "encoding/iso-2022-jp-encoder.html": {
     "total": 12
@@ -355,10 +355,10 @@
     "total": 222
   },
   "encoding/textdecoder-mistakes.any.js": {
-    "total": 87
+    "total": 108
   },
   "encoding/textdecoder-mistakes.any.js#dedicatedworker": {
-    "total": 87
+    "total": 108
   },
   "encoding/textdecoder-streaming.any.js": {
     "total": 32

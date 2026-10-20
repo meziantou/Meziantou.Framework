@@ -232,6 +232,9 @@
       "iframe is restored to JS-navigated URL when container traverses back": "FAIL"
     }
   },
+  "html/browsers/browsing-the-web/history-traversal/iframe-navigated-during-container-load.html": {
+    "total": 2
+  },
   "html/browsers/browsing-the-web/history-traversal/pagereveal/order-in-bfcache-restore-iframe.html": {
     "total": 1,
     "failures": {
@@ -732,6 +735,9 @@
   "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/a-click.html": {
     "total": 1
   },
+  "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/a-fragment-click-during-load.html": {
+    "total": 1
+  },
   "html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/a-user-click-during-load.html": {
     "total": 1
   },
@@ -1157,6 +1163,9 @@
   },
   "html/browsers/browsing-the-web/scroll-to-fragid/scroll-to-anchor-name.html": {
     "total": 1
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/scroll-to-fragid-from-link-is-synchronous.html": {
+    "total": 2
   },
   "html/browsers/browsing-the-web/scroll-to-fragid/scroll-to-id-top.html": {
     "total": 1
@@ -2181,8 +2190,14 @@
   "html/browsers/origin/origin-keyed-agent-clusters/2-iframes/parent-yes-child1-yes-subdomain-child2-yes-subdomainport.sub.https.html": {
     "total": 11
   },
+  "html/browsers/origin/origin-keyed-agent-clusters/about-blank-popup.https.sub.html": {
+    "total": 1
+  },
   "html/browsers/origin/origin-keyed-agent-clusters/about-blank.https.sub.html": {
     "total": 8
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/data-frame-child.https.sub.html": {
+    "total": 1
   },
   "html/browsers/origin/origin-keyed-agent-clusters/document-domain.sub.https.html": {
     "total": 3
@@ -2267,6 +2282,9 @@
   },
   "html/browsers/origin/origin-keyed-agent-clusters/insecure-http.sub.html": {
     "total": 3
+  },
+  "html/browsers/origin/origin-keyed-agent-clusters/no-content-response.sub.https.html": {
+    "total": 1
   },
   "html/browsers/origin/origin-keyed-agent-clusters/popups/opener-no-openee-yes-port.sub.https.html": {
     "total": 4

@@ -498,7 +498,7 @@
     "total": 25
   },
   "wasm/core/relaxed-simd/relaxed_dot_product.wast.js.html": {
-    "total": 45
+    "total": 49
   },
   "wasm/core/relaxed-simd/relaxed_laneselect.wast.js.html": {
     "total": 49
@@ -1858,11 +1858,20 @@
       "postMessaging a wasm module to a cross-origin iframe fails": "TIMEOUT"
     }
   },
+  "wasm/serialization/module/window-cross-origin-isolated.https.sub.html": {
+    "total": 3
+  },
+  "wasm/serialization/module/window-cross-site-failure.html": {
+    "total": 3
+  },
   "wasm/serialization/module/window-domain-success.sub.html": {
     "total": 1
   },
   "wasm/serialization/module/window-messagechannel-success.html": {
     "total": 1
+  },
+  "wasm/serialization/module/window-same-site-success.sub.html": {
+    "total": 2
   },
   "wasm/serialization/module/window-serviceworker-failure.https.html": {
     "total": 1

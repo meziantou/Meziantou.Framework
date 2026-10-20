@@ -928,6 +928,12 @@
   "css/css-pseudo/selection-textarea-011.html": {
     "reftest": "PASS"
   },
+  "css/css-pseudo/selection-transparent-text-author-background.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/selection-transparent-text-ua-background.html": {
+    "reftest": "PASS"
+  },
   "css/css-pseudo/selection-universal-shadow-dom.html": {
     "total": 1
   },

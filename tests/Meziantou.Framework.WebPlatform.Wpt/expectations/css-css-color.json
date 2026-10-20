@@ -552,7 +552,7 @@
     "reftest": "PASS"
   },
   "css/css-color/parsing/alpha-color-computed.html": {
-    "total": 29
+    "total": 33
   },
   "css/css-color/parsing/alpha-color-parsing-invalid.html": {
     "total": 23
@@ -591,9 +591,7 @@
     "total": 570,
     "failures": {
       "Property color value 'color-mix(in lch, oklch(0 0.2 0))'": "FAIL",
-      "Property color value 'color-mix(in oklch, color(display-p3 0.08610937692934956 0.08610188202042188 0.08610387292083356))'": "FAIL",
-      "Property color value 'color-mix(in oklch, lch(0 20 180))'": "FAIL",
-      "Property color value 'oklch(from color(display-p3 0.08610937692934956 0.08610188202042188 0.08610387292083356) l c h)'": "FAIL"
+      "Property color value 'color-mix(in oklch, lch(0 20 180))'": "FAIL"
     }
   },
   "css/css-color/parsing/color-computed-relative-color.html": {

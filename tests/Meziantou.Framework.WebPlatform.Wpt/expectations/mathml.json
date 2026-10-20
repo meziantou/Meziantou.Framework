@@ -1181,6 +1181,9 @@
   "mathml/relations/css-styling/padding-border-margin/padding-border-margin-007.html": {
     "reftest": "PASS"
   },
+  "mathml/relations/css-styling/padding-border-margin/padding-border-mpadded-baseline.html": {
+    "total": 3
+  },
   "mathml/relations/css-styling/parsing/math-depth-computed.html": {
     "total": 5
   },

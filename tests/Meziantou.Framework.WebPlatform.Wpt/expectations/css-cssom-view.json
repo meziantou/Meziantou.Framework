@@ -49,7 +49,7 @@
     "total": 1
   },
   "css/cssom-view/checkVisibility.html": {
-    "total": 15
+    "total": 17
   },
   "css/cssom-view/client-props-inline-list-item.html": {
     "total": 1
@@ -231,6 +231,15 @@
   },
   "css/cssom-view/elementFromPoint-mixed-font-sizes.html": {
     "total": 1
+  },
+  "css/cssom-view/elementFromPoint-negative-z-index-inline-overflow-clip.html": {
+    "total": 1
+  },
+  "css/cssom-view/elementFromPoint-negative-z-index-inline.html": {
+    "total": 8,
+    "failures": {
+      "A first-line background stays above negative z-index children": "FAIL"
+    }
   },
   "css/cssom-view/elementFromPoint-parameters.html": {
     "total": 4
@@ -540,6 +549,9 @@
     "total": 1
   },
   "css/cssom-view/scroll-overflow-clip-quirks-002.html": {
+    "total": 1
+  },
+  "css/cssom-view/scroll-position-root-child-ib-split-insertion.html": {
     "total": 1
   },
   "css/cssom-view/scroll-zoom.html": {

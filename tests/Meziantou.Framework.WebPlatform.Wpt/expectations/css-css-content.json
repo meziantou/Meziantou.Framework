@@ -83,6 +83,12 @@
   "css/css-content/parsing/content-valid.html": {
     "total": 64
   },
+  "css/css-content/pseudo-element-gradient.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-content/pseudo-element-image-set.html": {
+    "reftest": "FAIL"
+  },
   "css/css-content/pseudo-element-inline-box.html": {
     "reftest": "PASS"
   },

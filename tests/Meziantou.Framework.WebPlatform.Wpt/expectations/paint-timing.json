@@ -152,6 +152,9 @@
   "paint-timing/first-paint-only/first-paint-only.html": {
     "total": 1
   },
+  "paint-timing/first-paint-only/iframe-in-invisible-ancestor.html": {
+    "total": 1
+  },
   "paint-timing/first-paint-only/sibling-painting-first-image.html": {
     "total": 1
   },

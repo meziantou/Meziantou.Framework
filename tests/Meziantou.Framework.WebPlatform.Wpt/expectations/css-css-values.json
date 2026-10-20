@@ -1288,6 +1288,16 @@
   "css/css-values/tree-counting/trig-functions-with-runtime-angle-arguments.html": {
     "total": 4
   },
+  "css/css-values/typed-arithmetic-negated-product.html": {
+    "total": 6,
+    "failures": {
+      "calc((0px * 0px * 0px * 0px - 1px * 2px * 3px * 4px) / 1px / 1px / 1px) should be used-value-equivalent to -24px": "FAIL",
+      "calc((0px * 0px * 0px - 1px * 2px * 3px) / 1px / 1px) should be used-value-equivalent to -6px": "FAIL",
+      "calc((0px * 0px - 2em * 3px) / 1px) should be used-value-equivalent to -60px": "FAIL",
+      "calc((0px * 0px - 2px * 3px) / 1px) should be used-value-equivalent to -6px": "FAIL",
+      "calc((1px * 1px - 2px * 3px) / 1px) should be used-value-equivalent to -5px": "FAIL"
+    }
+  },
   "css/css-values/typed_arithmetic.html": {
     "total": 41,
     "failures": {

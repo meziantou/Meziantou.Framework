@@ -249,13 +249,13 @@
     "total": 5
   },
   "html/cross-origin-opener-policy/navigate-top-to-aboutblank.https.html": {
-    "total": 3,
-    "failures": {
-      "Navigate top to about:blank from iframe with opener COOP: |header(Cross-Origin-Opener-Policy,same-origin-allow-popups), iframe origin: https://www1.web-platform.test:8443": "FAIL"
-    }
+    "total": 3
   },
   "html/cross-origin-opener-policy/no-https.html": {
     "total": 2
+  },
+  "html/cross-origin-opener-policy/non-secure-to-secure-context-navigation.https.html": {
+    "total": 1
   },
   "html/cross-origin-opener-policy/popup-coop-by-sw.https.html?1-4": {
     "total": 4
@@ -609,6 +609,16 @@
     "total": 2,
     "failures": {
       "Open a popup to a document without COOP, then navigate it to a document with": "FAIL"
+    }
+  },
+  "html/cross-origin-opener-policy/reporting/navigation-reporting/reporting-popup-report-to-must-be-string.https.html": {
+    "total": 6,
+    "failures": {
+      "coop reporting test reporting with a report-to parameter that is not a string to CROSS_ORIGIN with , , same-origin; report-to=\"coop-popup-report-only-endpoint\", ": "FAIL",
+      "coop reporting test reporting with a report-to parameter that is not a string to CROSS_ORIGIN with , , same-origin; report-to=coop-popup-report-only-endpoint, ": "FAIL",
+      "coop reporting test reporting with a report-to parameter that is not a string to CROSS_ORIGIN with same-origin; report-to=\"coop-popup-report-endpoint\", , , ": "FAIL",
+      "coop reporting test reporting with a report-to parameter that is not a string to CROSS_ORIGIN with same-origin; report-to=:Y29vcC1wb3B1cC1yZXBvcnQtZW5kcG9pbnQ=:, , , ": "FAIL",
+      "coop reporting test reporting with a report-to parameter that is not a string to CROSS_ORIGIN with same-origin; report-to=coop-popup-report-endpoint, , , ": "FAIL"
     }
   },
   "html/cross-origin-opener-policy/reporting/navigation-reporting/reporting-popup-same-origin-allow-popups-report-to.https.html": {

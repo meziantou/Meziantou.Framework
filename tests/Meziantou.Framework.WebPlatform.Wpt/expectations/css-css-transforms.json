@@ -2622,6 +2622,9 @@
   "css/css-transforms/transformed-rotateY-1.html": {
     "reftest": "PASS"
   },
+  "css/css-transforms/transformed-table-section-containing-block.html": {
+    "total": 2
+  },
   "css/css-transforms/transforms-rotate-degree-45.html": {
     "reftest": "PASS"
   },

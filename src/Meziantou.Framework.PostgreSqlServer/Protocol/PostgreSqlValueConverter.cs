@@ -369,7 +369,9 @@ internal static class PostgreSqlValueConverter
             result *= 10000m;
         }
 
-        for (var i = 0; i > exponent; i--)
+        // The weight is client-supplied and goes down to -32768: once the power rounds to zero, it stays zero, so the
+        // loop stops instead of running for every digit of a long value, which made decoding quadratic.
+        for (var i = 0; i > exponent && result != 0; i--)
         {
             result /= 10000m;
         }

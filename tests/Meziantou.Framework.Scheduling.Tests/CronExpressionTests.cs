@@ -38,6 +38,14 @@ public sealed class CronExpressionTests
     [InlineData("0\u20030 * * * *")]
     [InlineData("@daily\n")]
     [InlineData("\v@daily")]
+
+    // int.TryParse accepts trailing null characters
+    [InlineData("0 0\0 * * *")]
+    [InlineData("*/5\0 * * * *")]
+    [InlineData("0 0 1\0W * *")]
+    [InlineData("0 0 L-1\0 * *")]
+    [InlineData("0 0 * * 1#1\0")]
+    [InlineData("0 0 0 1 1 * 2024\0")]
     public void CronExpression_Parse_InvalidExpression(string expression)
     {
         Assert.Throws<FormatException>(() => CronExpression.Parse(expression));

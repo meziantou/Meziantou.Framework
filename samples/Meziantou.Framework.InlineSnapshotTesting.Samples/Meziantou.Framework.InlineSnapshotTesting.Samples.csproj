@@ -1,0 +1,11 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.InlineSnapshotTesting\Meziantou.Framework.InlineSnapshotTesting.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.HumanReadableSerializer.Html\Meziantou.Framework.HumanReadableSerializer.Html.csproj" />
+  </ItemGroup>
+</Project>

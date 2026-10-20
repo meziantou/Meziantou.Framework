@@ -12,7 +12,8 @@ Blog post: [Inline Snapshot testing in .NET](https://www.meziantou.net/inline-sn
 
 First, you can write a test with the following code:
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.InlineSnapshotTesting.Samples/ReadmeSnippets.cs;region=InlineSnapshot_GettingStarted;format=md-fenced-code-block;dedent=true -->
+```csharp
 var data = new
 {
     FirstName = "Gérald",
@@ -22,23 +23,27 @@ var data = new
 
 // No need to write the expected value
 InlineSnapshot.Validate(data);
-````
+```
+<!-- endref -->
 
 Then, run the tests. By default, snapshot updates are disabled and the test fails when the snapshot doesn't match.
 This default is better for AI-assisted flows where automatic source updates can be unexpected.
 
 If you want to restore the previous behavior (open a merge tool and update snapshots), configure `SnapshotUpdateStrategy.MergeTool`:
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.InlineSnapshotTesting.Samples/ReadmeSnippets.cs;region=InlineSnapshot_UseMergeTool;format=md-fenced-code-block;dedent=true -->
+```csharp
 InlineSnapshotSettings.Default = InlineSnapshotSettings.Default with
 {
     SnapshotUpdateStrategy = SnapshotUpdateStrategy.MergeTool,
 };
-````
+```
+<!-- endref -->
 
 Once the snapshot is updated, the source code is changed:
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_GettingStartedUpdated;format=md-fenced-code-block;dedent=true -->
+```csharp
 var data = new
 {
     FirstName = "Gérald",
@@ -47,20 +52,22 @@ var data = new
 };
 
 InlineSnapshot.Validate(data, """
-    FirstName: Gérald,
-    LastName: Barré,
+    FirstName: Gérald
+    LastName: Barré
     NickName: meziantou
     """);
-````
+```
+<!-- endref -->
 
 # Documentation
 
 ## Configuration
 
-You can configure the default behavior of `Validate()` by settings `InlineSnapshotSettings.Default`. In the case of unit tests, you may want to update the configuration before running tests. You can use a `ModuleInitializer` to do so.
+You can configure the default behavior of `Validate()` by settings `InlineSnapshotSettings.Default`. In the case of unit tests, you may want to update the configuration before running tests. You can use a `ModuleInitializer` (from the `System.Runtime.CompilerServices` namespace) to do so.
 
-````c#
-static class AssemblyInitializer
+<!-- ref:../../samples/Meziantou.Framework.InlineSnapshotTesting.Samples/AssemblyInitializer.cs;region=InlineSnapshot_ModuleInitializer;format=md-fenced-code-block;dedent=true -->
+```csharp
+internal static class AssemblyInitializer
 {
     [ModuleInitializer]
     public static void Initialize()
@@ -72,64 +79,101 @@ static class AssemblyInitializer
         };
     }
 }
-````
+```
+<!-- endref -->
 
 You can also set the configuration per assert:
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_SettingsPerAssert;format=md-fenced-code-block;dedent=true -->
+```csharp
+var data = new { FirstName = "Gérald", LastName = "Barré" };
+
 // InlineSnapshotSettings is a record, so you can use the "with" keyword to create a new instance
 var settings = InlineSnapshotSettings.Default with
 {
     SnapshotUpdateStrategy = SnapshotUpdateStrategy.Overwrite,
 };
 
-InlineSnapshot.Validate(data, settings, "");
-````
+InlineSnapshot.Validate(data, settings, """
+    FirstName: Gérald
+    LastName: Barré
+    """);
+```
+<!-- endref -->
 
 If you prefer, you can use the builder syntax:
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_SettingsBuilder;format=md-fenced-code-block;dedent=true -->
+```csharp
 InlineSnapshot
     .WithSettings(settings)
-    .Validate(data, "");
-````
+    .Validate(data, """
+        FirstName: Gérald
+        LastName: Barré
+        """);
+```
+<!-- endref -->
 
 Or configure settings inline:
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_SettingsInline;format=md-fenced-code-block;dedent=true -->
+```csharp
 InlineSnapshot
     .WithSettings(settings => settings.SnapshotUpdateStrategy = SnapshotUpdateStrategy.Overwrite)
-    .Validate(data, "");
-````
+    .Validate(data, """
+        FirstName: Gérald
+        LastName: Barré
+        """);
+```
+<!-- endref -->
 
 When deterministic source paths are enabled, `CallerFilePath` values can be path-mapped (for example `/_/Program.cs`).
 `Meziantou.Framework.InlineSnapshotTesting` registers source roots automatically from NuGet build props, and you can also register them manually:
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.InlineSnapshotTesting.Samples/ReadmeSnippets.cs;region=InlineSnapshot_RegisterSourceRootMapping;format=md-fenced-code-block;dedent=true -->
+```csharp
 InlineSnapshot.RegisterSourceRootMapping("/_/", @"C:/agent/_work/1/s/");
-````
+```
+<!-- endref -->
 
 ## Serializer
 
-By default, `InlineSnapshot` uses the [`HumanReadableSerializer`](https://www.nuget.org/packages/Meziantou.Framework.HumanReadableSerializer) to serialize the object. This is the recommended serializer for most cases. However, you can provide your own serializer if needed.
+By default, `InlineSnapshot` uses the [`HumanReadableSerializer`](https://www.nuget.org/packages/Meziantou.Framework.HumanReadableSerializer) to serialize the object. This is the recommended serializer for most cases. However, you can provide your own serializer if needed. `JsonSnapshotSerializer` and `SnapshotSerializer` are in the `Meziantou.Framework.InlineSnapshotTesting.Serialization` namespace.
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_ConfigureSerializer;format=md-fenced-code-block;dedent=true -->
+```csharp
+var data = new { LastName = "Barré", FirstName = "Gérald" };
+
 // Configure the HumanReadableSerializer
 InlineSnapshot
     .WithSerializer(options => options.PropertyOrder = StringComparer.Ordinal)
-    .Validate(data);
-````
+    .Validate(data, """
+        FirstName: Gérald
+        LastName: Barré
+        """);
+```
+<!-- endref -->
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_JsonSerializer;format=md-fenced-code-block;dedent=true -->
+```csharp
+var data = new { FirstName = "Gérald", LastName = "Barré" };
+
 // Use System.Text.Json
 InlineSnapshot
     .WithSerializer(new JsonSnapshotSerializer())
-    .Validate(data);
-````
+    .Validate(data, """
+        {
+          "FirstName": "Gérald",
+          "LastName": "Barré"
+        }
+        """);
+```
+<!-- endref -->
 
 You can also create your own serializer by inheriting `SnapshotSerializer`:
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_CustomSerializer;format=md-fenced-code-block;dedent=true -->
+```csharp
 public sealed class MySnapshotSerializer : SnapshotSerializer
 {
     public override string? Serialize(object? value)
@@ -141,11 +185,18 @@ public sealed class MySnapshotSerializer : SnapshotSerializer
         };
     }
 }
+```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_CustomSerializerUsage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var data = new { FirstName = "Gérald", LastName = "Barré" };
 
 InlineSnapshot
     .WithSerializer(new MySnapshotSerializer())
-    .Validate(data);
-````
+    .Validate(data, "{ FirstName = Gérald, LastName = Barré }");
+```
+<!-- endref -->
 
 ### HumanReadableSerializer
 
@@ -153,19 +204,39 @@ The HumanReadableSerializer has many options to make the snapshot deterministic 
 
 - Ordering properties: Recent versions of .NET have a deterministic order of properties. However, .NET Framework does not have a deterministic order. You can use the `PropertyOrder` option to order the properties alphabetically:
 
-    ````c#
+    <!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_PropertyOrder;format=md-fenced-code-block;dedent=true -->
+    ```csharp
+    var data = new
+    {
+        Name = "meziantou",
+        Age = 42,
+        Links = new Dictionary<string, string> { ["web"] = "meziantou.net", ["code"] = "github.com/meziantou" },
+    };
+
     InlineSnapshot
         .WithSerializer(options =>
         {
             options.PropertyOrder = StringComparer.Ordinal;
             options.DictionaryKeyOrder = StringComparer.Ordinal;
         })
-        .Validate(...);
-    ````
+        .Validate(data, """
+            Age: 42
+            Links:
+              code: github.com/meziantou
+              web: meziantou.net
+            Name: meziantou
+            """);
+    ```
+    <!-- endref -->
 
-- Formatting content
+- Formatting content. The formatter options are in the `Meziantou.Framework.HumanReadable.ValueFormatters` namespace:
 
-    ````c#
+    <!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_Formatters;format=md-fenced-code-block;dedent=true -->
+    ```csharp
+    using var json = new StringContent("""{"b":1,"a":2}""", Encoding.UTF8, "application/json");
+    using var xml = new StringContent("""<root><item b="1" a="2" /></root>""", Encoding.UTF8, "application/xml");
+    using var form = new FormUrlEncodedContent([new("b", "1 2"), new("a", "3")]);
+
     InlineSnapshot
         .WithSerializer(options =>
         {
@@ -182,51 +253,102 @@ The HumanReadableSerializer has many options to make the snapshot deterministic 
                 WriteIndented = true,
             });
 
-            // Requires the Meziantou.Framework.HumanReadableSerializer.Html package
+            options.AddUrlEncodedFormFormatter(new UrlEncodedFormFormatterOptions
+            {
+                OrderProperties = true,
+                UnescapeValues = true,
+                PrettyFormat = true,
+            });
+        })
+        .Validate(new { Json = json, Xml = xml, Form = form }, """
+            Json:
+              Headers:
+                Content-Type: application/json; charset=utf-8
+              Value:
+                {
+                  "a": 2,
+                  "b": 1
+                }
+            Xml:
+              Headers:
+                Content-Type: application/xml; charset=utf-8
+              Value:
+                <root>
+                  <item a="2" b="1" />
+                </root>
+            Form:
+              Headers:
+                Content-Type: application/x-www-form-urlencoded
+              Value:
+                a: 3
+                b: 1 2
+            """);
+    ```
+    <!-- endref -->
+
+    HTML values are not formatted by default. `AddHtmlFormatter` is provided by the [`Meziantou.Framework.HumanReadableSerializer.Html`](https://www.nuget.org/packages/Meziantou.Framework.HumanReadableSerializer.Html) package, which parses the HTML and serializes it back as defined by the HTML specification.
+
+    <!-- ref:../../samples/Meziantou.Framework.InlineSnapshotTesting.Samples/ReadmeSnippets.cs;region=InlineSnapshot_HtmlFormatter;format=md-fenced-code-block;dedent=true -->
+    ```csharp
+    // Requires the Meziantou.Framework.HumanReadableSerializer.Html package
+    InlineSnapshot
+        .WithSerializer(options =>
+        {
             options.AddHtmlFormatter(new HtmlFormatterOptions
             {
                 OrderAttributes = true,
                 AttributeQuote = HtmlAttributeQuote.DoubleQuote,
                 RedactContentSecurityPolicyNonce = true,
             });
-
-            options.AddUrlEncodedFormFormatter(new UrlEncodedFormFormatterOptions
-            {
-                OrderProperties = true,
-                UnescapeValues = true,
-                PrettyFormat = true,
-
-            });
         })
-        .Validate(...);
-    ````
+        .Validate(response);
+    ```
+    <!-- endref -->
 
-    HTML values are not formatted by default. `AddHtmlFormatter` is provided by the [`Meziantou.Framework.HumanReadableSerializer.Html`](https://www.nuget.org/packages/Meziantou.Framework.HumanReadableSerializer.Html) package, which parses the HTML and serializes it back as defined by the HTML specification.
+- Ignore members, for instance of the following type:
 
-- Ignore members
+    <!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_IgnoreMembersType;format=md-fenced-code-block;dedent=true -->
+    ```csharp
+    public sealed class Person
+    {
+        public string FirstName { get; set; } = "Gérald";
+        public string LastName { get; set; } = "Barré";
+        public string? Email { get; set; } = "gerald@example.com";
+        public string? Phone { get; set; } = "555-0100";
+        public int Age { get; set; } = 42;
+        public Person Manager => throw new InvalidOperationException($"The manager of {FirstName} is not loaded");
+    }
+    ```
+    <!-- endref -->
 
-    ````c#
+    <!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_IgnoreMembers;format=md-fenced-code-block;dedent=true -->
+    ```csharp
     InlineSnapshot
         .WithSerializer(options =>
         {
-            options.IgnoreMember<TestClass>(x => x.Property);
-            options.IgnoreMember<TestClass>(x => new { x.Property1, x.Property2 });
+            options.IgnoreMember<Person>(x => x.LastName);
+            options.IgnoreMember<Person>(x => new { x.Email, x.Phone });
             options.IgnoreMembersWithType<int>(); // ignore all properties of type int
 
             // ignore properties that throw an exception when accessed
             options.IgnoreMembersThatThrow();
-            options.IgnoreMembersThatThrow<NotImplementedException>();
+            options.IgnoreMembersThatThrow<InvalidOperationException>();
         })
-        .Validate(...);
-    ````
+        .Validate(new Person(), "FirstName: Gérald");
+    ```
+    <!-- endref -->
 
 - Ignoring null/default values
 
-    ````c#
+    <!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_IgnoreDefaultValues;format=md-fenced-code-block;dedent=true -->
+    ```csharp
+    var data = new { Name = "meziantou", Email = (string?)null, Age = 0 };
+
     InlineSnapshot
         .WithSerializer(options => options.DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingDefault)
-        .Validate(...);
-    ````
+        .Validate(data, "Name: meziantou");
+    ```
+    <!-- endref -->
 
 ## Diff tool
 
@@ -251,24 +373,30 @@ The `cmd` of a git `mergetool.<tool>` or `difftool.<tool>` is run like git runs 
 
 If you want to use helper methods before calling `Validate()`, you need to decorate the methods with `[InlineSnapshotAssertion]` and use the `[CallerFilePath]` and `[CallerLineNumber]` attribute.
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_HelperMethod;format=md-fenced-code-block;dedent=true -->
+```csharp
 var instance = new { FirstName = "Gérald", LastName = "Barré" };
-Helper(instance, ""); // This string will be updated
+Helper(instance, """
+    FirstName: String_0
+    LastName: String_1
+    """); // This string is updated when the snapshot changes
 
 [InlineSnapshotAssertion(nameof(expected))] // name of the parameter that contains the snapshot
-static void Helper(object data, string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+static void Helper(object data, string expected, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
 {
     InlineSnapshot
         .WithSerializer(options => options.ScrubValue<string>())
         .Validate(data, expected, filePath, lineNumber);
 }
-````
+```
+<!-- endref -->
 
 ## Scrubbing
 
 Some data are not deterministic and should not be part of the snapshot. You can scrub the data at two locations. First, you can scrub the data during serialization. You have access to the actual values which can be useful. Second, you can scrub the data after serialization.
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_ScrubValue;format=md-fenced-code-block;dedent=true -->
+```csharp
 var data = new string[] { "a", "a", "b" };
 InlineSnapshot
     .WithSerializer(options => options.ScrubValue<string>())
@@ -276,10 +404,12 @@ InlineSnapshot
         - String_0
         - String_0
         - String_1
-    """);
-````
+        """);
+```
+<!-- endref -->
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_ScrubValueWithComparer;format=md-fenced-code-block;dedent=true -->
+```csharp
 var data = new string[] { "a", "A", "b" };
 InlineSnapshot
     .WithSerializer(options => options.ScrubValue<string>(StringComparer.OrdinalIgnoreCase))
@@ -287,10 +417,12 @@ InlineSnapshot
         - String_0
         - String_0
         - String_1
-    """);
-````
+        """);
+```
+<!-- endref -->
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_ScrubValueWithFormatter;format=md-fenced-code-block;dedent=true -->
+```csharp
 var data = new string[] { "a", "A", "b" };
 InlineSnapshot
     .WithSerializer(options => options.ScrubValue<string>((value, index) => $"{value}_{index}", StringComparer.OrdinalIgnoreCase))
@@ -298,10 +430,12 @@ InlineSnapshot
         - a_0
         - a_0
         - b_1
-    """);
-````
+        """);
+```
+<!-- endref -->
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_ScrubGuid;format=md-fenced-code-block;dedent=true -->
+```csharp
 var data = new Guid[] { Guid.NewGuid(), Guid.NewGuid(), Guid.Empty };
 InlineSnapshot
     .WithSerializer(options => options.ScrubGuid())
@@ -309,18 +443,22 @@ InlineSnapshot
         - 00000000-0000-0000-0000-000000000001
         - 00000000-0000-0000-0000-000000000002
         - 00000000-0000-0000-0000-000000000000
-    """);
-````
+        """);
+```
+<!-- endref -->
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_RelativeDateTime;format=md-fenced-code-block;dedent=true -->
+```csharp
 var now = DateTime.UtcNow;
 var data = now.AddSeconds(10);
 InlineSnapshot
     .WithSerializer(options => options.UseRelativeDateTime(now))
     .Validate(data, "00:00:10"); // TimeSpan relative to the now variable
-````
+```
+<!-- endref -->
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_ScrubJsonValue;format=md-fenced-code-block;dedent=true -->
+```csharp
 var data = JsonNode.Parse("""{ "prop": "value" }""");
 InlineSnapshot
     .WithSerializer(options => options.ScrubJsonValue("$.prop", node => "[redacted]"))
@@ -329,9 +467,11 @@ InlineSnapshot
           "prop": "[redacted]"
         }
         """);
-````
+```
+<!-- endref -->
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_ScrubXmlAttribute;format=md-fenced-code-block;dedent=true -->
+```csharp
 var data = XDocument.Parse("""
                 <root>
                   <item attr="1">test1</item>
@@ -344,78 +484,98 @@ InlineSnapshot
           <item attr="[redacted]">test1</item>
         </root>
         """);
-````
+```
+<!-- endref -->
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_ScrubLines;format=md-fenced-code-block;dedent=true -->
+```csharp
 InlineSnapshot
-    .WithSettings(settings => settings.ScrubLines(line => line.Contains("dummy")))
+    .WithSettings(settings => settings.ScrubLines(line => line.Contains("dummy", StringComparison.Ordinal)))
     .Validate("abc\ndummy", "abc");
-````
+```
+<!-- endref -->
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_ScrubLinesContaining;format=md-fenced-code-block;dedent=true -->
+```csharp
 InlineSnapshot
-    .WithSettings(settings => settings.ScrubLinesContaining("dummy"))
+    .WithSettings(settings => settings.ScrubLinesContaining(StringComparison.Ordinal, "dummy"))
     .Validate("abc\ndummy", "abc");
-````
+```
+<!-- endref -->
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_ScrubLinesMatching;format=md-fenced-code-block;dedent=true -->
+```csharp
 InlineSnapshot
     .WithSettings(settings => settings.ScrubLinesMatching("d.*y"))
     .Validate("abc\ndummy", "abc");
-````
+```
+<!-- endref -->
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_ScrubLinesWithReplace;format=md-fenced-code-block;dedent=true -->
+```csharp
 InlineSnapshot
-    .WithSettings(settings => settings.ScrubLinesWithReplace(line => line.Replace("abc", "123")))
+    .WithSettings(settings => settings.ScrubLinesWithReplace(line => line.Replace("abc", "123", StringComparison.Ordinal)))
     .Validate("abcdef", "123def");
-````
+```
+<!-- endref -->
 
 ## Invisible characters
 
 If spaces or new lines are important, you can display them as visible characters. Line endings are shown as control pictures (`␍`, `␊`), followed by a normalized line break. A space is only shown as `␠` at the start or the end of a line, and other space characters are shown as their code point (e.g. `<U+00A0>`).
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_InvisibleCharacters;format=md-fenced-code-block;dedent=true -->
+```csharp
 InlineSnapshot
     .WithSerializer(options => options.ShowInvisibleCharactersInValues = true)
     .Validate("line 1 \r\nline\t2", """
         line 1␠␍␊
         line␉2
         """);
-````
+```
+<!-- endref -->
 
 ## String formats
 
 By default, the snapshot can use string, verbatim string, or raw string. It uses the information from the PDB file to determine which C# features are available. You can override the default behavior by setting the `AllowedStringFormats` property.
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_AllowedStringFormats;format=md-fenced-code-block;dedent=true -->
+```csharp
 InlineSnapshot
     .WithSettings(settings => settings.AllowedStringFormats = CSharpStringFormats.Quoted | CSharpStringFormats.Verbatim | CSharpStringFormats.Raw)
-    .Validate(...);
-````
+    .Validate(new { Name = "meziantou" }, "Name: meziantou");
+```
+<!-- endref -->
 
 You can also change the indentation of raw strings:
 - `CSharpStringFormats.Raw`: Same indentation as the calling method
 - `CSharpStringFormats.LeftAlignedRaw`: Align the raw string to the left (first column)
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_RawString;format=md-fenced-code-block;dedent=true -->
+```csharp
 InlineSnapshot
     .WithSettings(settings => settings.AllowedStringFormats = CSharpStringFormats.Raw)
     .Validate(new object(), """
         {}
         """);
-````
+```
+<!-- endref -->
 
-````c#
-InlineSnapshot
-    .WithSettings(settings => settings.AllowedStringFormats = CSharpStringFormats.LeftAlignedRaw)
-    .Validate(new object(), """
+With `LeftAlignedRaw`, the content and the closing quotes of the snapshot start at the first column of the file, whatever the indentation of the calling code:
+
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_LeftAlignedRawString;format=md-fenced-code-block -->
+```csharp
+        InlineSnapshot
+            .WithSettings(settings => settings.AllowedStringFormats = CSharpStringFormats.LeftAlignedRaw)
+            .Validate(new object(), """
 {}
 """);
-````
+```
+<!-- endref -->
 
 You can also change the indentation, end of line, and the encoding of the file if the default behavior does not suit your needs.
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_FileFormat;format=md-fenced-code-block;dedent=true -->
+```csharp
 InlineSnapshot
     .WithSettings(settings =>
     {
@@ -423,8 +583,9 @@ InlineSnapshot
         settings.EndOfLine = "\r\n";
         settings.FileEncoding = Encoding.UTF8;
     })
-    .Validate(...);
-````
+    .Validate(new { Name = "meziantou" }, "Name: meziantou");
+```
+<!-- endref -->
 
 ## CI environment
 
@@ -432,19 +593,23 @@ When running in a CI environment, in a continuous testing runner (NCrunch, ReSha
 To detect CI environment, the library uses the environment variables created by the major CI tools (GitHub Actions, Azure Pipelines, TeamCity etc.). Containers and WSL are treated the same way, as no diff tool is expected to show up there.
 You can disable this behavior by setting the `INLINESNAPSHOTTESTING_AUTODETECT_CONTINUOUS_ENVIRONMENT` environment variable to `false`, or by setting `AutoDetectContinuousEnvironment` to `false`.
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_AutoDetectContinuousEnvironment;format=md-fenced-code-block;dedent=true -->
+```csharp
 InlineSnapshot
     .WithSettings(settings => settings.AutoDetectContinuousEnvironment = false)
-    .Validate(...);
-````
+    .Validate(new { Name = "meziantou" }, "Name: meziantou");
+```
+<!-- endref -->
 
 You can also set the strategy to `SnapshotUpdateStrategy.Disallow` to disable updating snapshots.
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_Disallow;format=md-fenced-code-block;dedent=true -->
+```csharp
 InlineSnapshot
     .WithSettings(settings => settings.SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow)
-    .Validate(...);
-````
+    .Validate(new { Name = "meziantou" }, "Name: meziantou");
+```
+<!-- endref -->
 
 ## Snapshot update strategies
 
@@ -461,13 +626,15 @@ The value is case-insensitive and must match one of the `SnapshotUpdateStrategy`
 
 You can force the update of all snapshots by setting the `InlineSnapshotSettings.ForceUpdateSnapshots` property to `true` and setting the update strategy to `OverwriteWithoutFailure`.
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.InlineSnapshotTesting.Samples/ReadmeSnippets.cs;region=InlineSnapshot_ForceUpdateSnapshots;format=md-fenced-code-block;dedent=true -->
+```csharp
 InlineSnapshotSettings.Default = InlineSnapshotSettings.Default with
 {
     ForceUpdateSnapshots = true, // Override the snapshot even if the value matches the expected value
     SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
 };
-````
+```
+<!-- endref -->
 
 # Examples
 
@@ -475,7 +642,6 @@ InlineSnapshotSettings.Default = InlineSnapshotSettings.Default with
 - [Configure allowed C# string formats](https://github.com/meziantou/Meziantou.Framework/blob/main/tests/Meziantou.Framework.InlineSnapshotTesting.Tests/samples/ConfigureCSharpStringFormat.cs)
 - [Indent Json snapshot](https://github.com/meziantou/Meziantou.Framework/blob/main/tests/Meziantou.Framework.InlineSnapshotTesting.Tests/samples/HttpContent_format_json_response.cs)
 - [Reorder Json properties](https://github.com/meziantou/Meziantou.Framework/blob/main/tests/Meziantou.Framework.InlineSnapshotTesting.Tests/samples/Json_reorder_properties.cs)
-- [Redact nonce in html response](https://github.com/meziantou/Meziantou.Framework/blob/main/tests/Meziantou.Framework.InlineSnapshotTesting.Tests/samples/HttpContent_redact_nonce.cs)
 - [Scrub guid](https://github.com/meziantou/Meziantou.Framework/blob/main/tests/Meziantou.Framework.InlineSnapshotTesting.Tests/samples/Scrub_guid.cs)
 - [Scrub lines containing a specific substring](https://github.com/meziantou/Meziantou.Framework/blob/main/tests/Meziantou.Framework.InlineSnapshotTesting.Tests/samples/Scrub_lines_containing_specific_text.cs)
 - [Scrub lines matching a predicate](https://github.com/meziantou/Meziantou.Framework/blob/main/tests/Meziantou.Framework.InlineSnapshotTesting.Tests/samples/Scrub_lines_matching_a_predicate.cs)
@@ -489,11 +655,13 @@ InlineSnapshotSettings.Default = InlineSnapshotSettings.Default with
 In v4, snapshot updates are disabled by default (`SnapshotUpdateStrategy.Disallow`).
 If you want to keep the v3 behavior (open a merge tool and let it update snapshots), explicitly set the update strategy:
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.InlineSnapshotTesting.Samples/ReadmeSnippets.cs;region=InlineSnapshot_UseMergeTool;format=md-fenced-code-block;dedent=true -->
+```csharp
 InlineSnapshotSettings.Default = InlineSnapshotSettings.Default with
 {
     SnapshotUpdateStrategy = SnapshotUpdateStrategy.MergeTool,
 };
-````
+```
+<!-- endref -->
 
 If you prefer waiting for the merge tool to close before continuing, use `SnapshotUpdateStrategy.MergeToolSync`.

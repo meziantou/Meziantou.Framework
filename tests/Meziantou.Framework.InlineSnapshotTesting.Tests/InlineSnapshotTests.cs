@@ -10,6 +10,7 @@ using System.Xml.Linq;
 using Meziantou.Framework.HumanReadable;
 using Meziantou.Framework.HumanReadable.Converters;
 using Meziantou.Framework.HumanReadable.ValueFormatters;
+using Meziantou.Framework.InlineSnapshotTesting.Serialization;
 using Microsoft.CodeAnalysis;
 using TestUtilities;
 
@@ -17,6 +18,483 @@ namespace Meziantou.Framework.InlineSnapshotTesting.Tests;
 
 public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
 {
+    [Fact]
+    public void ReadmeExample_GettingStarted()
+    {
+        #region InlineSnapshot_GettingStartedUpdated
+        var data = new
+        {
+            FirstName = "Gérald",
+            LastName = "Barré",
+            NickName = "meziantou",
+        };
+
+        InlineSnapshot.Validate(data, """
+            FirstName: Gérald
+            LastName: Barré
+            NickName: meziantou
+            """);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_SettingsPerAssert()
+    {
+        #region InlineSnapshot_SettingsPerAssert
+        var data = new { FirstName = "Gérald", LastName = "Barré" };
+
+        // InlineSnapshotSettings is a record, so you can use the "with" keyword to create a new instance
+        var settings = InlineSnapshotSettings.Default with
+        {
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.Overwrite,
+        };
+
+        InlineSnapshot.Validate(data, settings, """
+            FirstName: Gérald
+            LastName: Barré
+            """);
+        #endregion
+
+        #region InlineSnapshot_SettingsBuilder
+        InlineSnapshot
+            .WithSettings(settings)
+            .Validate(data, """
+                FirstName: Gérald
+                LastName: Barré
+                """);
+        #endregion
+
+        #region InlineSnapshot_SettingsInline
+        InlineSnapshot
+            .WithSettings(settings => settings.SnapshotUpdateStrategy = SnapshotUpdateStrategy.Overwrite)
+            .Validate(data, """
+                FirstName: Gérald
+                LastName: Barré
+                """);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ConfigureSerializer()
+    {
+        #region InlineSnapshot_ConfigureSerializer
+        var data = new { LastName = "Barré", FirstName = "Gérald" };
+
+        // Configure the HumanReadableSerializer
+        InlineSnapshot
+            .WithSerializer(options => options.PropertyOrder = StringComparer.Ordinal)
+            .Validate(data, """
+                FirstName: Gérald
+                LastName: Barré
+                """);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_JsonSerializer()
+    {
+        #region InlineSnapshot_JsonSerializer
+        var data = new { FirstName = "Gérald", LastName = "Barré" };
+
+        // Use System.Text.Json
+        InlineSnapshot
+            .WithSerializer(new JsonSnapshotSerializer())
+            .Validate(data, """
+                {
+                  "FirstName": "Gérald",
+                  "LastName": "Barré"
+                }
+                """);
+        #endregion
+    }
+
+    #region InlineSnapshot_CustomSerializer
+    public sealed class MySnapshotSerializer : SnapshotSerializer
+    {
+        public override string? Serialize(object? value)
+        {
+            return value switch
+            {
+                null => "<null>",
+                _ => value.ToString(),
+            };
+        }
+    }
+    #endregion
+
+    [Fact]
+    public void ReadmeExample_CustomSerializer()
+    {
+        #region InlineSnapshot_CustomSerializerUsage
+        var data = new { FirstName = "Gérald", LastName = "Barré" };
+
+        InlineSnapshot
+            .WithSerializer(new MySnapshotSerializer())
+            .Validate(data, "{ FirstName = Gérald, LastName = Barré }");
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_PropertyOrder()
+    {
+        #region InlineSnapshot_PropertyOrder
+        var data = new
+        {
+            Name = "meziantou",
+            Age = 42,
+            Links = new Dictionary<string, string> { ["web"] = "meziantou.net", ["code"] = "github.com/meziantou" },
+        };
+
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.PropertyOrder = StringComparer.Ordinal;
+                options.DictionaryKeyOrder = StringComparer.Ordinal;
+            })
+            .Validate(data, """
+                Age: 42
+                Links:
+                  code: github.com/meziantou
+                  web: meziantou.net
+                Name: meziantou
+                """);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Formatters()
+    {
+        #region InlineSnapshot_Formatters
+        using var json = new StringContent("""{"b":1,"a":2}""", Encoding.UTF8, "application/json");
+        using var xml = new StringContent("""<root><item b="1" a="2" /></root>""", Encoding.UTF8, "application/xml");
+        using var form = new FormUrlEncodedContent([new("b", "1 2"), new("a", "3")]);
+
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.AddJsonFormatter(new JsonFormatterOptions
+                {
+                    OrderProperties = true,
+                    WriteIndented = true,
+                    FormatAsStandardObject = false,
+                });
+
+                options.AddXmlFormatter(new XmlFormatterOptions
+                {
+                    OrderAttributes = true,
+                    WriteIndented = true,
+                });
+
+                options.AddUrlEncodedFormFormatter(new UrlEncodedFormFormatterOptions
+                {
+                    OrderProperties = true,
+                    UnescapeValues = true,
+                    PrettyFormat = true,
+                });
+            })
+            .Validate(new { Json = json, Xml = xml, Form = form }, """
+                Json:
+                  Headers:
+                    Content-Type: application/json; charset=utf-8
+                  Value:
+                    {
+                      "a": 2,
+                      "b": 1
+                    }
+                Xml:
+                  Headers:
+                    Content-Type: application/xml; charset=utf-8
+                  Value:
+                    <root>
+                      <item a="2" b="1" />
+                    </root>
+                Form:
+                  Headers:
+                    Content-Type: application/x-www-form-urlencoded
+                  Value:
+                    a: 3
+                    b: 1 2
+                """);
+        #endregion
+    }
+
+    #region InlineSnapshot_IgnoreMembersType
+    public sealed class Person
+    {
+        public string FirstName { get; set; } = "Gérald";
+        public string LastName { get; set; } = "Barré";
+        public string? Email { get; set; } = "gerald@example.com";
+        public string? Phone { get; set; } = "555-0100";
+        public int Age { get; set; } = 42;
+        public Person Manager => throw new InvalidOperationException($"The manager of {FirstName} is not loaded");
+    }
+    #endregion
+
+    [Fact]
+    public void ReadmeExample_IgnoreMembers()
+    {
+        #region InlineSnapshot_IgnoreMembers
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.IgnoreMember<Person>(x => x.LastName);
+                options.IgnoreMember<Person>(x => new { x.Email, x.Phone });
+                options.IgnoreMembersWithType<int>(); // ignore all properties of type int
+
+                // ignore properties that throw an exception when accessed
+                options.IgnoreMembersThatThrow();
+                options.IgnoreMembersThatThrow<InvalidOperationException>();
+            })
+            .Validate(new Person(), "FirstName: Gérald");
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_IgnoreDefaultValues()
+    {
+        #region InlineSnapshot_IgnoreDefaultValues
+        var data = new { Name = "meziantou", Email = (string?)null, Age = 0 };
+
+        InlineSnapshot
+            .WithSerializer(options => options.DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingDefault)
+            .Validate(data, "Name: meziantou");
+        #endregion
+    }
+
+    [Fact]
+    [SuppressMessage("Usage", "MA0002:IEqualityComparer<string> or IComparer<string> is missing", Justification = "The readme example uses the default comparer")]
+    public void ReadmeExample_HelperMethod()
+    {
+        #region InlineSnapshot_HelperMethod
+        var instance = new { FirstName = "Gérald", LastName = "Barré" };
+        Helper(instance, """
+            FirstName: String_0
+            LastName: String_1
+            """); // This string is updated when the snapshot changes
+
+        [InlineSnapshotAssertion(nameof(expected))] // name of the parameter that contains the snapshot
+        static void Helper(object data, string expected, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
+        {
+            InlineSnapshot
+                .WithSerializer(options => options.ScrubValue<string>())
+                .Validate(data, expected, filePath, lineNumber);
+        }
+        #endregion
+    }
+
+    [Fact]
+    [SuppressMessage("Usage", "MA0002:IEqualityComparer<string> or IComparer<string> is missing", Justification = "The readme example uses the default comparer")]
+    public void ReadmeExample_ScrubValue()
+    {
+        #region InlineSnapshot_ScrubValue
+        var data = new string[] { "a", "a", "b" };
+        InlineSnapshot
+            .WithSerializer(options => options.ScrubValue<string>())
+            .Validate(data, """
+                - String_0
+                - String_0
+                - String_1
+                """);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ScrubValueWithComparer()
+    {
+        #region InlineSnapshot_ScrubValueWithComparer
+        var data = new string[] { "a", "A", "b" };
+        InlineSnapshot
+            .WithSerializer(options => options.ScrubValue<string>(StringComparer.OrdinalIgnoreCase))
+            .Validate(data, """
+                - String_0
+                - String_0
+                - String_1
+                """);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ScrubValueWithFormatter()
+    {
+        #region InlineSnapshot_ScrubValueWithFormatter
+        var data = new string[] { "a", "A", "b" };
+        InlineSnapshot
+            .WithSerializer(options => options.ScrubValue<string>((value, index) => $"{value}_{index}", StringComparer.OrdinalIgnoreCase))
+            .Validate(data, """
+                - a_0
+                - a_0
+                - b_1
+                """);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ScrubGuid()
+    {
+        #region InlineSnapshot_ScrubGuid
+        var data = new Guid[] { Guid.NewGuid(), Guid.NewGuid(), Guid.Empty };
+        InlineSnapshot
+            .WithSerializer(options => options.ScrubGuid())
+            .Validate(data, """
+                - 00000000-0000-0000-0000-000000000001
+                - 00000000-0000-0000-0000-000000000002
+                - 00000000-0000-0000-0000-000000000000
+                """);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_RelativeDateTime()
+    {
+        #region InlineSnapshot_RelativeDateTime
+        var now = DateTime.UtcNow;
+        var data = now.AddSeconds(10);
+        InlineSnapshot
+            .WithSerializer(options => options.UseRelativeDateTime(now))
+            .Validate(data, "00:00:10"); // TimeSpan relative to the now variable
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ScrubJsonValue()
+    {
+        #region InlineSnapshot_ScrubJsonValue
+        var data = JsonNode.Parse("""{ "prop": "value" }""");
+        InlineSnapshot
+            .WithSerializer(options => options.ScrubJsonValue("$.prop", node => "[redacted]"))
+            .Validate(data, """
+                {
+                  "prop": "[redacted]"
+                }
+                """);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ScrubXmlAttribute()
+    {
+        #region InlineSnapshot_ScrubXmlAttribute
+        var data = XDocument.Parse("""
+                        <root>
+                          <item attr="1">test1</item>
+                        </root>
+                        """);
+        InlineSnapshot
+            .WithSerializer(options => options.ScrubXmlAttribute("//item/@attr", attribute => "[redacted]"))
+            .Validate(data, """
+                <root>
+                  <item attr="[redacted]">test1</item>
+                </root>
+                """);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ScrubLines()
+    {
+        #region InlineSnapshot_ScrubLines
+        InlineSnapshot
+            .WithSettings(settings => settings.ScrubLines(line => line.Contains("dummy", StringComparison.Ordinal)))
+            .Validate("abc\ndummy", "abc");
+        #endregion
+
+        #region InlineSnapshot_ScrubLinesContaining
+        InlineSnapshot
+            .WithSettings(settings => settings.ScrubLinesContaining(StringComparison.Ordinal, "dummy"))
+            .Validate("abc\ndummy", "abc");
+        #endregion
+
+        #region InlineSnapshot_ScrubLinesMatching
+        InlineSnapshot
+            .WithSettings(settings => settings.ScrubLinesMatching("d.*y"))
+            .Validate("abc\ndummy", "abc");
+        #endregion
+
+        #region InlineSnapshot_ScrubLinesWithReplace
+        InlineSnapshot
+            .WithSettings(settings => settings.ScrubLinesWithReplace(line => line.Replace("abc", "123", StringComparison.Ordinal)))
+            .Validate("abcdef", "123def");
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_InvisibleCharacters()
+    {
+        #region InlineSnapshot_InvisibleCharacters
+        InlineSnapshot
+            .WithSerializer(options => options.ShowInvisibleCharactersInValues = true)
+            .Validate("line 1 \r\nline\t2", """
+                line 1␠␍␊
+                line␉2
+                """);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_AllowedStringFormats()
+    {
+        #region InlineSnapshot_AllowedStringFormats
+        InlineSnapshot
+            .WithSettings(settings => settings.AllowedStringFormats = CSharpStringFormats.Quoted | CSharpStringFormats.Verbatim | CSharpStringFormats.Raw)
+            .Validate(new { Name = "meziantou" }, "Name: meziantou");
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_RawStringIndentation()
+    {
+        #region InlineSnapshot_RawString
+        InlineSnapshot
+            .WithSettings(settings => settings.AllowedStringFormats = CSharpStringFormats.Raw)
+            .Validate(new object(), """
+                {}
+                """);
+        #endregion
+
+        #region InlineSnapshot_LeftAlignedRawString
+        InlineSnapshot
+            .WithSettings(settings => settings.AllowedStringFormats = CSharpStringFormats.LeftAlignedRaw)
+            .Validate(new object(), """
+{}
+""");
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_FileFormat()
+    {
+        #region InlineSnapshot_FileFormat
+        InlineSnapshot
+            .WithSettings(settings =>
+            {
+                settings.Indentation = "    ";
+                settings.EndOfLine = "\r\n";
+                settings.FileEncoding = Encoding.UTF8;
+            })
+            .Validate(new { Name = "meziantou" }, "Name: meziantou");
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_AutoDetectContinuousEnvironment()
+    {
+        #region InlineSnapshot_AutoDetectContinuousEnvironment
+        InlineSnapshot
+            .WithSettings(settings => settings.AutoDetectContinuousEnvironment = false)
+            .Validate(new { Name = "meziantou" }, "Name: meziantou");
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Disallow()
+    {
+        #region InlineSnapshot_Disallow
+        InlineSnapshot
+            .WithSettings(settings => settings.SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow)
+            .Validate(new { Name = "meziantou" }, "Name: meziantou");
+        #endregion
+    }
+
     [Fact]
     public async Task WithSerializer()
     {

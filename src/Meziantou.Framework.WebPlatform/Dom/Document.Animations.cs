@@ -80,8 +80,9 @@ public partial class Document
 
     /// <summary>
     /// Updates the styles of the elements of the document, which creates, updates and cancels their CSS animations and
-    /// transitions (https://drafts.csswg.org/css-animations-1/#animations). Nothing is done when the styles did not change since
-    /// the last update, or when no style declares an animation or a transition.
+    /// transitions (https://drafts.csswg.org/css-animations-1/#animations): the styles discarded since the last update are
+    /// computed (see <see cref="Css.Cascade.StyleEngine.ComputeAnimationStyles"/>). Nothing is done when the styles did not change
+    /// since the last update, or when no style declares an animation or a transition.
     /// </summary>
     internal void FlushAnimationStyles()
     {
@@ -101,27 +102,8 @@ public partial class Document
             return;
         }
 
-        var pseudoElements = new List<string>(3);
-        foreach (var pseudoElement in (ReadOnlySpan<string>)["marker", "before", "after"])
-        {
-            if (engine.MayHavePseudoElementRules(pseudoElement))
-            {
-                pseudoElements.Add(pseudoElement);
-            }
-        }
-
-        foreach (var node in ShadowIncludingInclusiveDescendants())
-        {
-            if (node is not Element element)
-                continue;
-
-            engine.GetStyle(element);
-            foreach (var pseudoElement in pseudoElements)
-            {
-                engine.GetStyle(element, pseudoElement);
-            }
-        }
-
+        // The styles that changed since the last update are computed (the styles of all the elements the first time)
+        engine.ComputeAnimationStyles();
         ComputeViewTransitionPseudoElementStyles();
         _animations?.CancelDisconnectedDeclarativeAnimations();
         _animations?.UpdateCssNamedTimelines(engine);

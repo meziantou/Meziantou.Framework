@@ -6,7 +6,7 @@ using Meziantou.Framework.WebPlatform.Benchmarks;
 //   dotnet run -c Release -- [BenchmarkDotNet arguments]                          runs the benchmarks
 //   dotnet run -c Release -- memory                                                 bytes per node of the parsed documents
 //   dotnet run -c Release -- compare <base> <head> [<time> <allocations>]           compares two BenchmarkDotNet JSON reports
-//   dotnet run -c Release -- invalidation <class|row|offset|frame> <count>           runs a scenario of InvalidationBenchmarks in a loop (profiling)
+//   dotnet run -c Release -- invalidation <class|row|offset|frame|transition-frame> <count> runs a scenario of InvalidationBenchmarks in a loop (profiling)
 //   dotnet run -c Release -- style <wikipedia-styled|small-bootstrap> <count>       runs StyleBenchmarks in a loop (profiling)
 return args switch
 {

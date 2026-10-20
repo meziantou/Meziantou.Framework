@@ -1114,7 +1114,13 @@ public sealed partial class SerializerTests : SerializerTestsBase
     public void MethodInfo_ByRefParameters() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.ByRefParameters))!, "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.ByRefParameters(ref System.Int32 a,out System.Collections.Generic.List<System.Int32>[] b,ref dynamic c)");
 
     [Fact]
-    public void Type_AnonymType() => AssertSerialization(new { }.GetType(), "<>f__AnonymousType4, Meziantou.Framework.HumanReadableSerializer.Tests");
+    public void Type_AnonymType()
+    {
+        // The compiler numbers anonymous types across the whole assembly, so the suffix changes when another test adds one
+        var type = new { }.GetType();
+        Assert.StartsWith("<>f__AnonymousType", type.Name);
+        AssertSerialization(type, type.Name + ", Meziantou.Framework.HumanReadableSerializer.Tests");
+    }
 
     [Fact]
     public void MethodInfo() => AssertSerialization(typeof(object).GetMethod("ToString")!, "System.Object.ToString()");

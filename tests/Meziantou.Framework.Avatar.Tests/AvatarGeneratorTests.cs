@@ -198,7 +198,7 @@ public class AvatarGeneratorTests
 
         var svg = AvatarGenerator.CreateSvg("John Doe", options);
 
-        Assert.Contains("<circle cx=\"32\" cy=\"32\" r=\"32\" fill=\"#CFDADE\"/>", svg);
+        Assert.Contains("<circle cx=\"32\" cy=\"32\" r=\"32\" fill=\"#cfdade\"/>", svg);
         Assert.DoesNotContain("<rect", svg);
     }
 

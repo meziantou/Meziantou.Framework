@@ -72,9 +72,10 @@ Java, Python, and RE2/Go are not dialects.
 
 ## Parsing
 
-```csharp
-using Meziantou.Framework.Language.Regex;
+The types are in the `Meziantou.Framework.Language.Regex` namespace, and the shared ones (`SyntaxAnnotation`, `TextChange`, …) in `Meziantou.Framework.Language`.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxTreeTests.cs;region=RegexSyntaxTree_Parsing;format=md-fenced-code-block;dedent=true -->
+```csharp
 const string Pattern = """
     (?x)                                   # free-spacing mode
     ^
@@ -86,38 +87,50 @@ const string Pattern = """
 var tree = RegexSyntaxTree.ParseText(Pattern, RegexDialect.Net);
 
 // Nothing is lost: the tree reproduces the input character for character.
-Console.WriteLine(tree.GetRoot().ToFullString() == Pattern);   // True
+Assert.Equal(Pattern, tree.GetRoot().ToFullString());
+Assert.Empty(tree.GetDiagnostics());
 
 // Invalid input produces diagnostics instead of exceptions.
-foreach (var diagnostic in tree.GetDiagnostics())
-{
-    Console.WriteLine($"{diagnostic.Id} at {diagnostic.Location}: {diagnostic.Message}");
-}
+var invalid = RegexSyntaxTree.ParseText("(a", RegexDialect.Net);
+var diagnostic = Assert.Single(invalid.GetDiagnostics());
+Assert.Equal("REGEX0002 at (0,0)-(0,2): Unterminated group: expected ')'.", $"{diagnostic.Id} at {diagnostic.Location}: {diagnostic.Message}");
 ```
+<!-- endref -->
 
 A pattern has one root production, so there is no separate entry point for a group, a class, or an atom. Reach them
 through the tree instead:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxTreeTests.cs;region=RegexSyntaxTree_DescendantNodes;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var tree = RegexSyntaxTree.ParseText(@"(?<year>\d{4})-[01]\d-[0-3]\d", RegexDialect.Net);
+
 var classes = tree.GetRoot().DescendantNodes().OfType<RegexCharacterClassSyntax>();
 var groups = tree.GetRoot().DescendantNodes().OfType<RegexGroupSyntax>();
+
+Assert.Equal(["[01]", "[0-3]"], classes.Select(node => node.ToString()));
+Assert.Equal([@"(?<year>\d{4})"], groups.Select(node => node.ToString()));
 ```
+<!-- endref -->
 
 To read a JavaScript literal rather than a bare pattern, delimiters and flags included:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxTreeTests.cs;region=RegexSyntaxTree_JavaScriptLiteral;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var tree = RegexSyntaxTree.ParseJavaScriptLiteral("/a+b/giu");
 
-Console.WriteLine(tree.GetRoot().FlagsToken.Text);   // giu
-Console.WriteLine(tree.PatternOptions);             // IgnoreCase, Unicode, Global
-Console.WriteLine(tree.GetRoot().ToFullString());   // /a+b/giu
+Assert.Equal("giu", tree.GetRoot().FlagsToken.Text);
+Assert.Equal(RegexPatternOptions.IgnoreCase | RegexPatternOptions.Unicode | RegexPatternOptions.Global, tree.PatternOptions);
+Assert.Equal("/a+b/giu", tree.GetRoot().ToFullString());
 ```
+<!-- endref -->
 
 ## Options
 
 The options an engine is given alongside a pattern change how it is read, so they are part of parsing:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxTreeTests.cs;region=RegexSyntaxTree_ParseOptions;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var pattern = "a b # comment";
 var options = new RegexParseOptions(RegexDialect.Net)
 {
     PatternOptions = RegexPatternOptions.IgnorePatternWhitespace,
@@ -125,15 +138,21 @@ var options = new RegexParseOptions(RegexDialect.Net)
 };
 
 var tree = RegexSyntaxTree.ParseText(pattern, options);
+
+// In extended mode, the whitespace and the comment are trivia
+Assert.HasCount(2, tree.GetRoot().DescendantNodes().OfType<RegexLiteralSyntax>());
 ```
+<!-- endref -->
 
 `RegexOptionsInterop` converts to and from `System.Text.RegularExpressions.RegexOptions`, keeping only the options that
 affect parsing:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxTreeTests.cs;region=RegexSyntaxTree_RegexOptionsInterop;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var patternOptions = RegexOptionsInterop.ToPatternOptions(RegexOptions.IgnoreCase | RegexOptions.Compiled);
-Console.WriteLine(patternOptions);   // IgnoreCase
+Assert.Equal(RegexPatternOptions.IgnoreCase, patternOptions);
 ```
+<!-- endref -->
 
 `MaxRecursionDepth` bounds how deeply the parser descends. Input that nests beyond it reports `REGEX0200`, and the
 remainder is kept as skipped text — which usually means a second diagnostic for the groups that never got closed — so
@@ -151,15 +170,17 @@ uniform means a consumer never has to handle two spellings of the same thing.
 **The bars belong to the list, not to the branches around them.** `Branches` is a separated list: the branches and the
 `|` between them share one sequence, so `Count` counts branches and `SeparatorCount` counts bars.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxTreeTests.cs;region=RegexSyntaxTree_Branches;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var tree = RegexSyntaxTree.ParseText("ab|c", RegexDialect.Net);
 var branches = tree.GetRoot().Alternation.Branches;
 
-Console.WriteLine(branches.Count);            // 2
-Console.WriteLine(branches.SeparatorCount);   // 1
-Console.WriteLine(branches[0].Terms.Count);   // 2
-Console.WriteLine(branches.GetSeparator(0));  // |
+Assert.Equal(2, branches.Count);
+Assert.Equal(1, branches.SeparatorCount);
+Assert.Equal(2, branches[0].Terms.Count);
+Assert.Equal("|", branches.GetSeparator(0).ToString());
 ```
+<!-- endref -->
 
 A literal is one atom per UTF-16 code unit, and a quantifier binds the atom in front of it. That matches the engine: in
 `"😀*"` the quantifier applies to the low surrogate alone. Under the JavaScript `u` flag a pattern is a sequence of code
@@ -168,42 +189,56 @@ points instead, so the pair is one atom and `RegexLiteralSyntax.CodePoint` repor
 `Options` records what was in effect at each node's first character, which is what makes an inline option setter
 readable after the fact:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxTreeTests.cs;region=RegexSyntaxTree_NodeOptions;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var tree = RegexSyntaxTree.ParseText("a(?i)b", RegexDialect.Net);
 var literals = tree.GetRoot().DescendantNodes().OfType<RegexLiteralSyntax>().ToArray();
 
-Console.WriteLine(literals[0].Options);   // None
-Console.WriteLine(literals[1].Options);   // IgnoreCase
+Assert.Equal(RegexPatternOptions.None, literals[0].Options);
+Assert.Equal(RegexPatternOptions.IgnoreCase, literals[1].Options);
 ```
+<!-- endref -->
 
 Capture groups are numbered the way the engine numbers them. In .NET that is not the order they are written in: named
 groups take the first free numbers after every explicitly numbered one. JavaScript and PCRE number every group where it
 stands, and a PCRE branch reset group gives each of its branches the same numbers.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxTreeTests.cs;region=RegexSyntaxTree_Captures;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var tree = RegexSyntaxTree.ParseText("(a)(?<x>b)(c)", RegexDialect.Net);
 
+var captures = new List<string>();
 foreach (var capture in tree.Captures)
 {
-    Console.WriteLine($"{capture.Number}: {capture.Name}");   // 1: 1 / 2: 2 / 3: x
+    captures.Add($"{capture.Number}: {capture.Name}");
 }
 
-// The same pattern in JavaScript or PCRE: 1: 1 / 2: x / 3: 3
+Assert.Equal(["1: 1", "2: 2", "3: x"], captures);
+
+// The same pattern in JavaScript or PCRE
+var javaScriptTree = RegexSyntaxTree.ParseText("(a)(?<x>b)(c)", RegexDialect.JavaScript);
+Assert.Equal(["1: 1", "2: x", "3: 3"], javaScriptTree.Captures.Select(capture => $"{capture.Number}: {capture.Name}"));
 ```
+<!-- endref -->
 
 ## Trivia
 
 A pattern has no trivia unless extended mode is in effect, which `(?x)` can switch on and off part-way through. A
 `(?#…)` comment is trivia in every mode.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxTreeTests.cs;region=RegexSyntaxTree_Comments;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var tree = RegexSyntaxTree.ParseText("a(?#note)b", RegexDialect.Net);
 
+var comments = new List<string>();
 foreach (var comment in tree.GetRoot().DescendantComments())
 {
-    Console.WriteLine($"{comment.Span.Start}: {comment}");   // 1: (?#note)
+    comments.Add($"{comment.Span.Start}: {comment}");
 }
+
+Assert.Equal(["1: (?#note)"], comments);
 ```
+<!-- endref -->
 
 Inside a character class, whitespace and `#` stay literal even under `(?x)`.
 
@@ -215,28 +250,30 @@ rest of the pattern is untouched — and the result is the same type you started
 Nothing is carried over onto the replacement, including the trivia in front of the node being replaced. Ask for it
 with `WithTriviaFrom` when you want it:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxTreeTests.cs;region=RegexSyntaxTree_ReplaceNode;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var options = new RegexParseOptions(RegexDialect.Net) { PatternOptions = RegexPatternOptions.IgnorePatternWhitespace };
 var tree = RegexSyntaxTree.ParseText("a   b # keep this\n", options);
 var second = tree.GetRoot().DescendantNodes().OfType<RegexLiteralSyntax>().Last();
 var replacement = SyntaxFactory.Literal('z', RegexDialect.Net);
 
-Console.WriteLine(tree.GetRoot().ReplaceNode(second, replacement).ToFullString());
-// az # keep this
+Assert.Equal("az # keep this\n", tree.GetRoot().ReplaceNode(second, replacement).ToFullString());
 
-Console.WriteLine(tree.GetRoot().ReplaceNode(second, replacement.WithTriviaFrom(second)).ToFullString());
-// a   z # keep this
+Assert.Equal("a   z # keep this\n", tree.GetRoot().ReplaceNode(second, replacement.WithTriviaFrom(second)).ToFullString());
 ```
+<!-- endref -->
 
 `ReplaceToken`, `ReplaceTrivia`, `RemoveNode` and the `WithX` method on every slot of every node work the same way.
 For text-based edits, use `WithChanges`, which reparses:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxTreeTests.cs;region=RegexSyntaxTree_WithChanges;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var tree = RegexSyntaxTree.ParseText("ab+c", RegexDialect.Net);
 var updated = tree.WithChanges(new TextChange(new TextSpan(2, 1), "*"));
 
-Console.WriteLine(updated.GetText().Text);   // ab*c
+Assert.Equal("ab*c", updated.GetText().Text);
 ```
+<!-- endref -->
 
 An edit to a tree from `ParseJavaScriptLiteral` stays a literal: the delimiters and flags are preserved rather than
 becoming ordinary characters.
@@ -246,18 +283,21 @@ becoming ordinary characters.
 equivalent. Trees parsed with different dialects, or with different options, are never equivalent — the same characters
 read with and without extended mode are genuinely different trees:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxTreeTests.cs;region=RegexSyntaxTree_IsEquivalentTo;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var options = new RegexParseOptions(RegexDialect.Net) { PatternOptions = RegexPatternOptions.IgnorePatternWhitespace };
 var spaced = RegexSyntaxTree.ParseText("a  b   # note\n", options);
 var tight = RegexSyntaxTree.ParseText("ab", options);
 
-Console.WriteLine(spaced.IsEquivalentTo(tight));   // True
+Assert.True(spaced.IsEquivalentTo(tight));
 ```
+<!-- endref -->
 
 ## Finding a node again after an edit
 
 An annotation is a marker you attach to a node and find again in the tree an edit produced, wherever it ended up:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxTreeTests.cs;region=RegexSyntaxTree_Annotations;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var tree = RegexSyntaxTree.ParseText("a|b", RegexDialect.Net);
 var marker = new SyntaxAnnotation();
@@ -267,21 +307,24 @@ var marked = tree.GetRoot().ReplaceNode(branch, branch.WithAdditionalAnnotations
 var edited = marked.ReplaceNode(marked.Alternation.Branches[0], SyntaxFactory.LiteralText("xy", RegexDialect.Net));
 
 var found = edited.GetAnnotatedNodes(marker).Single();
-Console.WriteLine(found.ToFullString());   // b
+Assert.Equal("b", found.ToFullString());
 ```
+<!-- endref -->
 
 ## Building trees
 
 `SyntaxFactory` creates nodes programmatically and escapes for the target dialect only when needed:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxTreeTests.cs;region=RegexSyntaxTree_SyntaxFactory;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var pattern = SyntaxFactory.Sequence(
     SyntaxFactory.Anchor(RegexAnchorKind.Caret),
     SyntaxFactory.Quantified(SyntaxFactory.ClassEscape('d'), min: 1, max: 3),
     SyntaxFactory.Literal('.', RegexDialect.Net));
 
-Console.WriteLine(pattern.ToFullString());   // ^\d{1,3}\.
+Assert.Equal(@"^\d{1,3}\.", pattern.ToFullString());
 ```
+<!-- endref -->
 
 ## Visitors and rewriters
 
@@ -289,13 +332,16 @@ Console.WriteLine(pattern.ToFullString());   // ^\d{1,3}\.
 so one walker handles any tree. A rewriter descends into every node whatever its type, returns the original instance
 when nothing changed, and keeps the exact text of everything it did not touch:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxTreeTests.cs;region=RegexSyntaxTree_Rewriter;format=md-fenced-code-block;dedent=true -->
 ```csharp
-sealed class RenameGroup(string oldName, string newName) : RegexSyntaxRewriter
+private sealed class RenameGroup(string oldName, string newName) : RegexSyntaxRewriter
 {
     public override SyntaxNode? VisitNamedGroup(RegexNamedGroupSyntax node)
     {
         if (node.Name != oldName)
+        {
             return base.VisitNamedGroup(node);
+        }
 
         // WithTriviaFrom keeps whatever stood in front of the old name.
         var renamed = SyntaxFactory.Token(SyntaxKind.NameToken, newName).WithTriviaFrom(node.NameToken);
@@ -304,6 +350,17 @@ sealed class RenameGroup(string oldName, string newName) : RegexSyntaxRewriter
     }
 }
 ```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxTreeTests.cs;region=RegexSyntaxTree_RewriterUsage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var tree = RegexSyntaxTree.ParseText(@"(?<year>\d{4})-(?<month>\d{2})", RegexDialect.Net);
+
+var updated = new RenameGroup("year", "y").Visit(tree.GetRoot());
+
+Assert.Equal(@"(?<y>\d{4})-(?<month>\d{2})", updated?.ToFullString());
+```
+<!-- endref -->
 
 `rewriter.Visit(tree.GetRoot())` returns a new `RegexPatternSyntax`; visiting a node further down scopes the rewrite to
 that subtree. `RegexSyntaxWalker` visits a node and everything below it without producing anything, and

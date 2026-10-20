@@ -57,32 +57,6 @@ jobs:
         uses: $/.github/actions/setup-dotnet
       - name: Validate generated files and test project TFMs
         run: dotnet run ./eng/update-all.cs
-      - name: Validate the public suffix list of Meziantou.Framework.Uri
-        run: |
-          dotnet run --project tools/Meziantou.Framework.Uri.PublicSuffix.Generator -- --check
-          if ($LASTEXITCODE -ne 0) { throw "The public suffix list of Meziantou.Framework.Uri is not generated from tests/Meziantou.Framework.WebPlatform.SpecData/publicsuffix/public_suffix_list.dat" }
-
-  # Meziantou.FileReferencer copies the code examples of the XML documentation and of the readme files from tests
-  # and samples, and some files from their source (e.g. .editorconfig). This job checks every tracked file, except the
-  # ones listed in eng/file-references-exclusions.txt, so it runs on its own to keep the other jobs fast.
-  validate_file_references:
-    if: github.event_name != 'schedule'
-    runs-on: ubuntu-26.04
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Setup .NET
-        uses: $/.github/actions/setup-dotnet
-      - name: Restore .NET tools
-        run: |
-          dotnet tool restore
-          if ($LASTEXITCODE -ne 0) { throw "dotnet tool restore failed with exit code $LASTEXITCODE" }
-      - name: Validate file references
-        run: |
-          $excludeArguments = Get-Content eng/file-references-exclusions.txt | Where-Object { $_ -and -not $_.StartsWith('#') } | ForEach-Object { '--exclude', $_ }
-
-          dotnet tool run Meziantou.FileReferencer -- . --git-tracked-only --check @excludeArguments
-          if ($LASTEXITCODE -ne 0) { throw "File references are out of date or invalid. Run 'dotnet run ./eng/update-all.cs', or 'dotnet tool run Meziantou.FileReferencer -- <path>' for the files reported above, and commit the changes." }
 
   run_analyzers:
     if: github.event_name != 'schedule'
@@ -833,7 +807,7 @@ jobs:
   final_status_check:
     runs-on: ubuntu-slim
     if: always()
-    needs: [ build_eng_scripts, validate_generated_files, validate_file_references, run_analyzers, compute_test_matrix, build_and_test, test_trimming, test_trimming_wpf, test_aot, merge_coverage, webplatform ]
+    needs: [ build_eng_scripts, validate_generated_files, run_analyzers, compute_test_matrix, build_and_test, test_trimming, test_trimming_wpf, test_aot, merge_coverage, webplatform ]
     steps:
       - name: Check previous jobs status
         env:

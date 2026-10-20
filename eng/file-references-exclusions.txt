@@ -1,5 +1,5 @@
 # Paths that Meziantou.FileReferencer skips, in the .gitignore syntax, relative to the repository root. Used by the
-# snippets step of eng/update-all.cs and by the validate_file_references job of .github/workflows/ci.yml.
+# snippets step of eng/update-all.cs.
 #
 # Vendored files are copies of upstream data: they contain no file references, but some of their comments look like
 # references (e.g. "// Reference: ..." in public_suffix_list.dat).

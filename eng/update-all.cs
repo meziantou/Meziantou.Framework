@@ -18,10 +18,11 @@ const string StepSlnx = "slnx";
 const string StepTemplates = "templates";
 const string StepBom = "bom";
 const string StepSnippets = "snippets";
+const string StepPublicSuffix = "public-suffix";
 const string StepValidateTestProjects = "validate-testprojects";
 const string AnalyzerRulesSectionMarker = "<!-- analyzer-rules -->";
-string[] defaultSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepSnippets, StepBom];
-string[] knownSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepSnippets, StepBom, StepValidateTestProjects];
+string[] defaultSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepSnippets, StepPublicSuffix, StepBom];
+string[] knownSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepSnippets, StepPublicSuffix, StepBom, StepValidateTestProjects];
 var updatedFiles = new ConcurrentQueue<string>();
 var outputPath = "slnx";
 var selectedSteps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -34,8 +35,8 @@ for (var i = 0; i < args.Length; i++)
             Console.WriteLine("Usage: dotnet run ./eng/update-all.cs [-- --step <name>] [--output-path <path>]");
             Console.WriteLine("Runs source generation/update steps.");
             Console.WriteLine("Available step names:");
-            Console.WriteLine("  readme, trimmable, slnx, templates, snippets, bom, validate-testprojects, all");
-            Console.WriteLine("Default order: readme -> trimmable -> slnx -> templates -> snippets -> bom");
+            Console.WriteLine("  readme, trimmable, slnx, templates, snippets, public-suffix, bom, validate-testprojects, all");
+            Console.WriteLine("Default order: readme -> trimmable -> slnx -> templates -> snippets -> public-suffix -> bom");
             return 0;
 
         case "--output-path" when i + 1 < args.Length:
@@ -98,6 +99,14 @@ if (ShouldRunStep(StepSnippets))
 }
 
 await Task.WhenAll(tasks);
+
+// Builds projects that the parallel steps also build, which would fail with file locks (MSB3026) if run at the same time
+if (ShouldRunStep(StepPublicSuffix))
+{
+    Console.WriteLine("[update-all] Running public-suffix");
+    RunValidatePublicSuffixListStep(rootPath);
+}
+
 if (ShouldRunStep(StepBom))
 {
     Console.WriteLine("[update-all] Running bom");
@@ -187,8 +196,7 @@ void RunTemplateStep(FullPath rootPath)
 }
 
 // Fills the code examples of the XML documentation and of the readme files from regions of tests and samples, and
-// the other file references of the repository, using Meziantou.FileReferencer. The validate_file_references CI job runs
-// the same command with --check.
+// the other file references of the repository, using Meziantou.FileReferencer
 void RunUpdateSnippetsStep(FullPath rootPath)
 {
     TimeSpan[] retryDelays = [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(15)];
@@ -239,6 +247,21 @@ void RunUpdateSnippetsStep(FullPath rootPath)
     {
         Console.WriteLine("ERROR: Some file references are invalid, see the errors above");
         updatedFiles.Enqueue("(invalid file references)");
+    }
+}
+
+// Checks that the rules embedded in Meziantou.Framework.Uri are generated from the public suffix list shared with
+// Meziantou.Framework.WebPlatform. Regenerating them needs the network and bumps the package version, so this step only checks.
+void RunValidatePublicSuffixListStep(FullPath rootPath)
+{
+    var latestTargetFramework = GetLatestTargetFramework(rootPath);
+    var csprojPath = rootPath / "tools" / "Meziantou.Framework.Uri.PublicSuffix.Generator" / "Meziantou.Framework.Uri.PublicSuffix.Generator.csproj";
+    BuildToolProjectWithRetry(csprojPath, latestTargetFramework);
+    var exitCode = RunProcessAndReturnExitCode(rootPath, "dotnet", ["run", "--project", csprojPath, "--no-build", "--framework", latestTargetFramework, "--", "--check"]);
+    if (exitCode is not 0)
+    {
+        Console.WriteLine("ERROR: The public suffix list of Meziantou.Framework.Uri is out of date. Run 'dotnet run --project tools/Meziantou.Framework.Uri.PublicSuffix.Generator'");
+        updatedFiles.Enqueue("src/Meziantou.Framework.Uri/PublicSuffix/PublicSuffixList.g.cs");
     }
 }
 

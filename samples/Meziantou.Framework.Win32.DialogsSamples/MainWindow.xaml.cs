@@ -14,11 +14,26 @@ public partial class MainWindow : Window
     [SupportedOSPlatform("windows6.0.6000")]
     private void ButtonOpenFolder_Click(object sender, RoutedEventArgs e)
     {
+        #region OpenFolderDialog_Owner
         var dialog = new OpenFolderDialog
         {
             Title = "Sample Open Folder dialog",
-            OkButtonLabel = "Test OK",
+            OkButtonLabel = "Select Folder",
         };
-        dialog.ShowDialog();
+
+        var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        var result = dialog.ShowDialog(hwnd);
+        #endregion
+
+        if (result == Win32.DialogResult.OK)
+        {
+            MessageBox.Show(this, dialog.SelectedPath, "Selected folder");
+        }
     }
+
+    [SupportedOSPlatform("windows6.0.6000")]
+    private void ButtonBasicUsage_Click(object sender, RoutedEventArgs e) => ReadmeExamples.BasicUsage();
+
+    [SupportedOSPlatform("windows6.0.6000")]
+    private void ButtonAdvancedUsage_Click(object sender, RoutedEventArgs e) => ReadmeExamples.AdvancedUsage();
 }

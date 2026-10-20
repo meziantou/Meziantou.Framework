@@ -8,5 +8,7 @@
         Title="MainWindow" Height="450" Width="800">
     <StackPanel Orientation="Vertical">
         <Button Click="ButtonOpenFolder_Click">Open Folder</Button>
+        <Button Click="ButtonBasicUsage_Click">Open Folder (no owner)</Button>
+        <Button Click="ButtonAdvancedUsage_Click">Open Folder (all options)</Button>
     </StackPanel>
 </Window>

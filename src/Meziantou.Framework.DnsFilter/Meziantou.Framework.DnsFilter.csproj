@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.DnsFilter.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Dns.Fuzz" />
   </ItemGroup>
 
 </Project>

@@ -20,6 +20,7 @@ on:
           - codeowners
           - csv
           - dependency-scanning
+          - dns
           - globbing
           - html-sanitizer
           - jsonpath
@@ -80,6 +81,7 @@ env:
       { "project": "Meziantou.Framework.CodeOwners.Fuzz",          "component": "codeowners",            "day": 1 },
       { "project": "Meziantou.Framework.Csv.Fuzz",                 "component": "csv",                   "day": 3 },
       { "project": "Meziantou.Framework.DependencyScanning.Fuzz",  "component": "dependency-scanning",   "day": 0 },
+      { "project": "Meziantou.Framework.Dns.Fuzz",                 "component": "dns",                   "day": 0 },
       { "project": "Meziantou.Framework.Globbing.Fuzz",            "component": "globbing",              "day": 0 },
       { "project": "Meziantou.Framework.HtmlSanitizer.Fuzz",       "component": "html-sanitizer",        "day": 1 },
       { "project": "Meziantou.Framework.JsonPath.Fuzz",            "component": "jsonpath",              "day": 1 },

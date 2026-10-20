@@ -1446,6 +1446,44 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegXlSrgbTransferMatchesTheScalarReferenceBitForBit()
+    {
+        var random = new Random(186);
+        for (var round = 0; round < 2000; round++)
+        {
+            var length = round < 100 ? round : random.Next(1, 300);
+            var samples = new float[length];
+            for (var i = 0; i < length; i++)
+            {
+                // Linear samples of both segments and of both signs, with zeros, the limit of the segments, values far out
+                // of range, infinities and subnormal values
+                samples[i] = (round % 6) switch
+                {
+                    0 => random.Next(4) switch
+                    {
+                        0 => 0f,
+                        1 => -0f,
+                        2 => float.PositiveInfinity,
+                        _ => float.NegativeInfinity,
+                    },
+                    1 => (float)((random.NextDouble() - 0.5) * 1e30),
+                    2 => (float)random.NextDouble() * 1e-40f,
+                    3 => BitConverter.Int32BitsToSingle(BitConverter.SingleToInt32Bits(0.0031308f) + random.Next(-3, 4)),
+                    4 => (float)((random.NextDouble() - 0.5) * 0.01),
+                    _ => (float)((random.NextDouble() * 1.4) - 0.2),
+                };
+            }
+
+            var expected = samples.ToArray();
+            var actual = samples.ToArray();
+            JpegXlColorTransform.LinearToSrgbScalar(expected);
+            JpegXlColorTransform.LinearToSrgb(actual);
+            Assert.Equal(Array.ConvertAll(expected, BitConverter.SingleToInt32Bits), Array.ConvertAll(actual, BitConverter.SingleToInt32Bits));
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegXlGaborishRowsMatchTheScalarReferenceBitForBit()
     {
         var random = new Random(184);

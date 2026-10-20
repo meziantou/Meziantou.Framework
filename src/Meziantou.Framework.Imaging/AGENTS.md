@@ -272,7 +272,10 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   to hide a file that is read in two ways. The integer path (`JpegXlDecoder.WriteFrame`) is only taken by frames that
   are shown as they are stored; everything else goes through `JpegXlFrameRenderer`, in floating point, where 1 is the
   largest integer sample. The render order is the one of libjxl: restoration filters, patches, splines, upsampling,
-  noise, color transform, blending.
+  noise, color transform, blending. The sRGB curve of the XYB output computes its power with two polynomials
+  (`JpegXlColorTransform.PowerFiveTwelfths`, 3e-7 relative, against 1.1e-7 for `MathF.Pow`), in the vector paths and
+  their scalar reference alike: it was 27 % of the instructions of a lossy decoding. The other transfer functions (BT.709,
+  PQ, HLG, gamma) still call `MathF.Pow` per sample: no workload reaches them.
 - **JPEG XL encoder** (`JpegXlEncoderCodec`, `Internals/Codecs/JpegXl/Encoding`). The headers are written, then parsed
   back by the readers of the decoder: the geometry of a frame is never derived twice. The lossy encoder
   (`JpegXlVarDctEncoder`) mirrors `JpegXlVarDctDecoder`: its forward transforms and its color matrix are measured on, or

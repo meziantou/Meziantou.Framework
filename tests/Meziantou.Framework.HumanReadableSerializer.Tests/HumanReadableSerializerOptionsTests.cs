@@ -5,6 +5,58 @@ namespace Meziantou.Framework.HumanReadable.Tests;
 public sealed class HumanReadableSerializerOptionsTests
 {
     [Fact]
+    public void ReadmeExample_Serialize()
+    {
+        #region HumanReadableSerializer_Serialize
+        var obj = new { Name = "Gérald Barré", Nickname = "meziantou", Age = 32, MultiLineString = "line1\nline2" };
+        var output = HumanReadableSerializer.Serialize(obj);
+        #endregion
+
+        Assert.Equal("Name: Gérald Barré\nNickname: meziantou\nAge: 32\nMultiLineString:\n  line1\n  line2", output);
+    }
+
+    [Fact]
+    public void ReadmeExample_Options()
+    {
+        var obj = new { Name = "Gérald Barré", Nickname = (string?)null };
+
+        #region HumanReadableSerializer_Options
+        var options = new HumanReadableSerializerOptions()
+        {
+            IncludeFields = true,
+            DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingNull,
+        };
+        HumanReadableSerializer.Serialize(obj, options);
+        #endregion
+
+        Assert.Equal("Name: Gérald Barré", HumanReadableSerializer.Serialize(obj, options));
+    }
+
+    [Fact]
+    public void ReadmeExample_TypeYouDoNotOwn()
+    {
+        #region HumanReadableSerializer_TypeYouDoNotOwn
+        var options = new HumanReadableSerializerOptions();
+
+        // Add the HumanReadableIgnoreAttribute to the User.DisplayName property
+        options.AddAttribute(typeof(User), "DisplayName", new HumanReadableIgnoreAttribute());
+
+        options.IgnoreMember<User>(x => x.DisplayName);
+        options.IgnoreMember<User>(x => new { x.DisplayName, x.CreatedAt });
+        #endregion
+
+        var user = new User { Name = "meziantou", DisplayName = "Gérald Barré", CreatedAt = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc) };
+        Assert.Equal("Name: meziantou", HumanReadableSerializer.Serialize(user, options));
+    }
+
+    private sealed class User
+    {
+        public string Name { get; set; } = "";
+        public string DisplayName { get; set; } = "";
+        public DateTime CreatedAt { get; set; }
+    }
+
+    [Fact]
     public void CloneShouldCopyAllSettableProperties()
     {
         var properties = GetSettableProperties();

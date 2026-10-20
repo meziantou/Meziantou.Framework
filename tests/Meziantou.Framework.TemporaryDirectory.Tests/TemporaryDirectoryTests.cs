@@ -3,6 +3,38 @@ namespace Meziantou.Framework.Tests;
 public class TemporaryDirectoryTests
 {
     [Fact]
+    public void ReadmeExample_TemporaryDirectory()
+    {
+        #region TemporaryDirectory_Create
+        using var temporaryDirectory = TemporaryDirectory.Create();
+        temporaryDirectory.CreateEmptyFile("test/demo.txt");
+        File.WriteAllText(temporaryDirectory.GetFullPath("foo.txt"), "bar");
+        #endregion
+
+        Assert.True(File.Exists(temporaryDirectory.GetFullPath("test/demo.txt")));
+        Assert.Equal("bar", File.ReadAllText(temporaryDirectory.GetFullPath("foo.txt")));
+    }
+
+    [Fact]
+    public void ReadmeExample_TemporaryFile()
+    {
+        #region TemporaryFile_Create
+        // Generated name under the system temp folder
+        using var temporaryFile = TemporaryFile.Create();
+        File.WriteAllText(temporaryFile.FullPath, "content");
+
+        // Choose the file name; a unique parent folder is created for it
+        using var namedFile = TemporaryFile.Create("custom.txt");
+
+        // Choose the full path. The file must not already exist.
+        using var atPath = TemporaryFile.Create(FullPath.Combine(Path.GetTempPath(), $"custom-{Guid.NewGuid():N}.txt"));
+        #endregion
+
+        Assert.Equal("content", File.ReadAllText(temporaryFile.FullPath));
+        Assert.Equal("custom.txt", namedFile.FullPath.Name);
+    }
+
+    [Fact]
     public void CreateInParallel()
     {
         const int Iterations = 400;

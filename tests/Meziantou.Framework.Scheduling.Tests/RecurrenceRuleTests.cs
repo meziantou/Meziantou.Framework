@@ -17,6 +17,127 @@ public partial class RecurrenceRuleTests
             new DateTime(1997, 11, 30, 09, 00, 00));
     }
 
+    [Fact]
+    public void DocumentationExample()
+    {
+        #region RecurrenceRule_Example
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20000131T140000Z;BYMONTH=1");
+        var dtStart = new DateTime(2000, 01, 01, 09, 00, 00);
+        var occurrences = rrule.GetNextOccurrences(dtStart).Take(50).ToArray();
+
+        // Every day of January 2000, until the UNTIL date
+        Assert.HasCount(31, occurrences);
+        Assert.Equal(new DateTime(2000, 01, 01, 09, 00, 00), occurrences[0]);
+        Assert.Equal(new DateTime(2000, 01, 31, 09, 00, 00), occurrences[30]);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Secondly()
+    {
+        #region SecondlyRecurrenceRule_Example
+        // Every 30 seconds, 10 times
+        var rrule = RecurrenceRule.Parse("FREQ=SECONDLY;INTERVAL=30;COUNT=10");
+        var nextOccurrences = rrule.GetNextOccurrences(new DateTime(2024, 01, 01, 09, 00, 00)).ToArray();
+
+        Assert.HasCount(10, nextOccurrences);
+        Assert.Equal(new DateTime(2024, 01, 01, 09, 00, 30), nextOccurrences[1]);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Minutely()
+    {
+        #region MinutelyRecurrenceRule_Example
+        // Every 15 minutes, 10 times
+        var rrule = RecurrenceRule.Parse("FREQ=MINUTELY;INTERVAL=15;COUNT=10");
+        var nextOccurrences = rrule.GetNextOccurrences(new DateTime(2024, 01, 01, 09, 00, 00)).ToArray();
+
+        Assert.HasCount(10, nextOccurrences);
+        Assert.Equal(new DateTime(2024, 01, 01, 09, 15, 00), nextOccurrences[1]);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Hourly()
+    {
+        #region HourlyRecurrenceRule_Example
+        // Every 2 hours, 10 times
+        var rrule = RecurrenceRule.Parse("FREQ=HOURLY;INTERVAL=2;COUNT=10");
+        var nextOccurrences = rrule.GetNextOccurrences(new DateTime(2024, 01, 01, 09, 00, 00)).ToArray();
+
+        Assert.HasCount(10, nextOccurrences);
+        Assert.Equal(new DateTime(2024, 01, 01, 11, 00, 00), nextOccurrences[1]);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Daily()
+    {
+        #region DailyRecurrenceRule_Example
+        // Every 2 days, 10 times
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;INTERVAL=2;COUNT=10");
+        var nextOccurrences = rrule.GetNextOccurrences(new DateTime(2024, 01, 01, 09, 00, 00)).ToArray();
+
+        Assert.HasCount(10, nextOccurrences);
+        Assert.Equal(new DateTime(2024, 01, 03, 09, 00, 00), nextOccurrences[1]);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Weekly()
+    {
+        #region WeeklyRecurrenceRule_Example
+        // Monday and Wednesday, every 2 weeks
+        var rrule = RecurrenceRule.Parse("FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE");
+        var nextOccurrences = rrule.GetNextOccurrences(new DateTime(2024, 01, 01, 09, 00, 00)).Take(4).ToArray();
+
+        Assert.Equal(
+            [
+                new DateTime(2024, 01, 01, 09, 00, 00),
+                new DateTime(2024, 01, 03, 09, 00, 00),
+                new DateTime(2024, 01, 15, 09, 00, 00),
+                new DateTime(2024, 01, 17, 09, 00, 00),
+            ],
+            nextOccurrences);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Monthly()
+    {
+        #region MonthlyRecurrenceRule_Example
+        // Last day of each month
+        var rrule = RecurrenceRule.Parse("FREQ=MONTHLY;BYMONTHDAY=-1");
+        var nextOccurrences = rrule.GetNextOccurrences(new DateTime(2024, 01, 15, 09, 00, 00)).Take(3).ToArray();
+
+        Assert.Equal(
+            [
+                new DateTime(2024, 01, 31, 09, 00, 00),
+                new DateTime(2024, 02, 29, 09, 00, 00),
+                new DateTime(2024, 03, 31, 09, 00, 00),
+            ],
+            nextOccurrences);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Yearly()
+    {
+        #region YearlyRecurrenceRule_Example
+        // Every January 1st
+        var rrule = RecurrenceRule.Parse("FREQ=YEARLY;BYMONTH=1;BYMONTHDAY=1");
+        var nextOccurrences = rrule.GetNextOccurrences(new DateTime(2024, 06, 01, 09, 00, 00)).Take(2).ToArray();
+
+        Assert.Equal(
+            [
+                new DateTime(2025, 01, 01, 09, 00, 00),
+                new DateTime(2026, 01, 01, 09, 00, 00),
+            ],
+            nextOccurrences);
+        #endregion
+    }
+
     [Theory]
     [InlineData("FREQ=DAILY")]
     [InlineData("FREQ=WEEKLY;BYDAY=MO")]

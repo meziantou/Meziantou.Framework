@@ -2,9 +2,19 @@ namespace Meziantou.Framework.Scheduling;
 
 /// <summary>Represents a weekly recurrence rule.</summary>
 /// <example>
-/// <code>
-/// var rrule = new WeeklyRecurrenceRule { Interval = 2, ByWeekDays = { DayOfWeek.Monday, DayOfWeek.Wednesday } };
-/// var nextOccurrences = rrule.GetNextOccurrences(DateTime.Now).ToArray();
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Scheduling.Tests/RecurrenceRuleTests.cs" ref:region="WeeklyRecurrenceRule_Example" ref:dedent="true">
+/// // Monday and Wednesday, every 2 weeks
+/// var rrule = RecurrenceRule.Parse("FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE");
+/// var nextOccurrences = rrule.GetNextOccurrences(new DateTime(2024, 01, 01, 09, 00, 00)).Take(4).ToArray();
+///
+/// Assert.Equal(
+///     [
+///         new DateTime(2024, 01, 01, 09, 00, 00),
+///         new DateTime(2024, 01, 03, 09, 00, 00),
+///         new DateTime(2024, 01, 15, 09, 00, 00),
+///         new DateTime(2024, 01, 17, 09, 00, 00),
+///     ],
+///     nextOccurrences);
 /// </code>
 /// </example>
 internal sealed class WeeklyRecurrenceRule : RecurrenceRule

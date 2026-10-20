@@ -4,7 +4,9 @@ namespace Meziantou.Framework.ChromiumTracing;
 
 /// <summary>Represents a complete event that tracks an operation with a start time and duration in a single event.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.ChromiumTracing.Tests/WriterTests.cs" ref:region="ChromiumTracingCompleteEvent_Example" ref:dedent="true">
+/// await using var writer = ChromiumTracingWriter.Create("trace.json");
+/// var startTime = DateTimeOffset.UtcNow;
 /// await writer.WriteEventAsync(new ChromiumTracingCompleteEvent
 /// {
 ///     Name = "Processing",
@@ -12,7 +14,7 @@ namespace Meziantou.Framework.ChromiumTracing;
 ///     Timestamp = startTime,
 ///     Duration = TimeSpan.FromMilliseconds(200),
 ///     ProcessId = Environment.ProcessId,
-///     ThreadId = Environment.CurrentManagedThreadId
+///     ThreadId = Environment.CurrentManagedThreadId,
 /// });
 /// </code>
 /// </example>

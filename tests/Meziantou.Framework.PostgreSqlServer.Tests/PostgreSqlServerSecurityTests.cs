@@ -198,6 +198,32 @@ public sealed class PostgreSqlServerSecurityTests
         Assert.Contains(afterRecovery, message => message.Type == (byte)'D');
     }
 
+    [Theory]
+    [InlineData(new byte[] { 0x00 }, "Unsupported frontend message 0x00.")]
+    [InlineData(new byte[] { (byte)'D', 0x00, 0x00 }, "Invalid Describe target 0x00.")]
+    [InlineData(new byte[] { (byte)'C', 0x0A, 0x00 }, "Invalid Close target 0x0A.")]
+    [InlineData(new byte[] { (byte)'D', (byte)'x', 0x00 }, "Invalid Describe target 'x'.")]
+    public async Task ATagByteInAnErrorMessage_DoesNotEndTheMessageEarly(byte[] message, string expectedMessage)
+    {
+        using var server = CreateServer();
+        await server.StartAsync();
+
+        using var client = await RawPostgreSqlClient.ConnectAsync(server.Ports[0]);
+        await client.AuthenticateClearTextAsync();
+
+        await client.SendMessageAsync(message[0], message.AsMemory(1));
+        await client.SendSyncAsync();
+        var messages = await client.ReadUntilReadyForQueryAsync();
+        Assert.Equal([(byte)'E', (byte)'Z'], messages.Select(response => response.Type));
+
+        // The fields are the severity (twice), the code and the message, then the terminator
+        var fields = messages[0].ErrorFields();
+        Assert.Equal(["C", "M", "S", "V"], fields.Keys.Select(key => key.ToString()).Order(StringComparer.Ordinal));
+        Assert.Equal(expectedMessage, fields['M']);
+        Assert.Equal((byte)0, messages[0].Payload[^1]);
+        Assert.Equal((byte)0, messages[0].Payload[^2]);
+    }
+
     [Fact]
     public async Task BindToAnUnknownStatement_ReportsAnErrorAndSkipsUntilSync()
     {

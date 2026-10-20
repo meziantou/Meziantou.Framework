@@ -219,7 +219,7 @@ internal sealed class PostgreSqlConnectionProcessor
                 await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
                 break;
             default:
-                throw new InvalidDataException($"Unsupported frontend message '{(char)message.Type}'.");
+                throw new InvalidDataException($"Unsupported frontend message {FormatTag(message.Type)}.");
         }
     }
 
@@ -622,7 +622,7 @@ internal sealed class PostgreSqlConnectionProcessor
         }
         else
         {
-            throw new InvalidDataException($"Invalid Describe target '{(char)describeType}'.");
+            throw new InvalidDataException($"Invalid Describe target {FormatTag(describeType)}.");
         }
 
         // The result shape is the callback's to decide; guessing it from the SQL text produced wrong
@@ -925,8 +925,15 @@ internal sealed class PostgreSqlConnectionProcessor
         }
         else
         {
-            throw new InvalidDataException($"Invalid Close target '{(char)closeType}'.");
+            throw new InvalidDataException($"Invalid Close target {FormatTag(closeType)}.");
         }
+    }
+
+    /// <summary>Formats a tag byte sent by the client for an error message.</summary>
+    /// <remarks>The message is a null-terminated string of the ErrorResponse, so a zero byte copied as is would end it early.</remarks>
+    private static string FormatTag(byte value)
+    {
+        return value is >= 0x20 and < 0x7F ? $"'{(char)value}'" : string.Create(CultureInfo.InvariantCulture, $"0x{value:X2}");
     }
 
     private static List<int> ReadFormatCodes(ReadOnlySpan<byte> payload, ref int index)

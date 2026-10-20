@@ -282,33 +282,17 @@ internal sealed class CssScrollTimelines
             }
 
             children.Clear();
-            if (element.AttachedShadowRoot is { } shadowRoot)
+            foreach (var node in HtmlElement.GetFlatTreeChildren(element))
             {
-                AddElements(children, shadowRoot.ChildNodes);
-            }
-            else if (element is HtmlSlotElement { AssignedNodesList.Count: > 0 } slot)
-            {
-                AddElements(children, slot.AssignedNodesList);
-            }
-            else
-            {
-                AddElements(children, element.ChildNodes);
+                if (node is Element child)
+                {
+                    children.Add(child);
+                }
             }
 
             for (var i = children.Count - 1; i >= 0; i--)
             {
                 stack.Push(children[i]);
-            }
-        }
-    }
-
-    private static void AddElements(List<Element> elements, IEnumerable<Node> nodes)
-    {
-        foreach (var node in nodes)
-        {
-            if (node is Element element)
-            {
-                elements.Add(element);
             }
         }
     }

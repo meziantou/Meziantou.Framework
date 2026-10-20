@@ -113,8 +113,6 @@ public abstract partial class Node : EventTarget
     private Node? _firstChild;
     private Node? _lastChild;
     private int _childCount;
-    private int _childrenVersion;
-    private NodeRareData? _rareData;
     private bool _isConnected;
 
     /// <summary>Whether the root of the connected node is a shadow root (maintained with the connected flag).</summary>
@@ -135,8 +133,11 @@ public abstract partial class Node : EventTarget
 
     internal int ChildCount => _childCount;
 
-    /// <summary>Incremented whenever the children of this node change (used by live collection caches).</summary>
-    internal int ChildrenVersion => _childrenVersion;
+    /// <summary>
+    /// Incremented whenever the children of this node change (used by live collection caches). The version is stored in the
+    /// rare data, which is created when the version is requested: the children of the nodes without rare data are not compared.
+    /// </summary>
+    internal int ChildrenVersion => RareData.ChildrenVersion;
 
     /// <summary>Gets the type of the node, one of the node type constants.</summary>
     /// <seealso href="https://dom.spec.whatwg.org/#dom-node-nodetype"/>
@@ -228,10 +229,13 @@ public abstract partial class Node : EventTarget
     [IdlMember("childNodes", "https://dom.spec.whatwg.org/#dom-node-childnodes")]
     public NodeList ChildNodes => RareData.ChildNodes ??= new ChildNodeList(this);
 
-    /// <summary>The data that most nodes do not need, allocated on first use to keep nodes small.</summary>
-    internal NodeRareData RareData => _rareData ??= CreateRareData();
+    /// <summary>Enumerates the children of the node: unlike <see cref="ChildNodes"/>, it allocates neither the rare data nor an enumerator.</summary>
+    internal NodeEnumerable EnumerateChildNodes() => new(_firstChild);
 
-    internal NodeRareData? RareDataOrNull => _rareData;
+    /// <summary>The data that most nodes do not need, allocated on first use to keep nodes small.</summary>
+    internal NodeRareData RareData => (NodeRareData)(ListenersOrRareData ??= CreateRareData());
+
+    internal NodeRareData? RareDataOrNull => (NodeRareData?)ListenersOrRareData;
 
     private protected virtual NodeRareData CreateRareData() => new();
 
@@ -965,4 +969,56 @@ public sealed class GetRootNodeOptions
     /// <seealso href="https://dom.spec.whatwg.org/#dom-getrootnodeoptions-composed"/>
     [IdlMember("composed", "https://dom.spec.whatwg.org/#dom-getrootnodeoptions-composed")]
     public bool Composed { get; init; }
+}
+
+/// <summary>
+/// The children of a node, enumerated through their siblings, or a list of nodes (e.g. the assigned nodes of a slot), without
+/// allocation.
+/// </summary>
+internal readonly struct NodeEnumerable
+{
+    private readonly Node? _firstChild;
+    private readonly List<Node>? _list;
+
+    public NodeEnumerable(Node? firstChild) => _firstChild = firstChild;
+
+    public NodeEnumerable(List<Node> list) => _list = list;
+
+    public Enumerator GetEnumerator() => new(_firstChild, _list);
+
+    public struct Enumerator
+    {
+        private readonly List<Node>? _list;
+        private Node? _next;
+        private int _index;
+
+        internal Enumerator(Node? firstChild, List<Node>? list)
+        {
+            _next = firstChild;
+            _list = list;
+            Current = null!;
+        }
+
+        public Node Current { get; private set; }
+
+        public bool MoveNext()
+        {
+            if (_list is not null)
+            {
+                if (_index >= _list.Count)
+                    return false;
+
+                Current = _list[_index++];
+                return true;
+            }
+
+            if (_next is null)
+                return false;
+
+            // The next sibling is read before the current node is returned, so the enumeration continues when it is removed
+            Current = _next;
+            _next = _next.NextSibling;
+            return true;
+        }
+    }
 }

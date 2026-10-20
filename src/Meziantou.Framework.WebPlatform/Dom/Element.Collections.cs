@@ -15,7 +15,6 @@ public partial class Element
     [IdlMember("attributes", "https://dom.spec.whatwg.org/#dom-element-attributes")]
     public NamedNodeMap Attributes => ElementRareData.AttributeMap ??= new NamedNodeMap(this);
 
-    /// <summary>Returns the classes of the element (https://dom.spec.whatwg.org/#concept-class), cached until the attribute changes.</summary>
     /// <summary>
     /// Returns the classes of the element for the selectors: the animated value of the class attribute when a SMIL animation
     /// animates it (https://svgwg.org/specs/animations/#TermAnimatedValue), as in the browsers.
@@ -28,15 +27,29 @@ public partial class Element
         return GetClassNames();
     }
 
+    /// <summary>Returns the classes of the element (https://dom.spec.whatwg.org/#concept-class), cached until the attribute changes.</summary>
     internal ClassNames GetClassNames()
     {
-        var value = GetAttributeValue("class");
-        if (value is null)
+        var index = FindAttribute(null, "class");
+        if (index < 0)
             return default;
 
-        // A single class (the most common case) is the value of the attribute: it is neither parsed nor cached in the rare data
+        // A single class (the most common case) is the value of the attribute: it is neither parsed nor cached
+        ref var slot = ref _attributes![index];
+        var value = slot.Value;
         if (value.Length > 0 && value.AsSpan().IndexOfAny(" \t\n\f\r") < 0)
             return new ClassNames(value);
+
+        // The classes are cached in the attribute until its value changes, unless it has an Attr node (it is rarely created)
+        if (slot.Extra is List<string> cached)
+            return new ClassNames(cached);
+
+        if (slot.Extra is null)
+        {
+            var classNames = OrderedSets.Parse(value);
+            slot.Extra = classNames;
+            return new ClassNames(classNames);
+        }
 
         var rareData = ElementRareData;
         if (rareData.ClassNames is null || !ReferenceEquals(value, rareData.ClassNamesSource))

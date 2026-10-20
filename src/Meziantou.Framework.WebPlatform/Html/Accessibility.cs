@@ -257,7 +257,16 @@ internal static class Accessibility
         _ => "",
     };
 
-    private static bool HasSvgTitle(Element element) => element.ChildNodes.OfType<Element>().Any(e => ReferenceEquals(e.NamespaceUri, Namespaces.Svg) && e.LocalName == "title" && !string.IsNullOrWhiteSpace(e.TextContent));
+    private static bool HasSvgTitle(Element element)
+    {
+        for (var child = element.FirstElementChild; child is not null; child = child.NextElementSibling)
+        {
+            if (ReferenceEquals(child.NamespaceUri, Namespaces.Svg) && child.LocalName == "title" && !string.IsNullOrWhiteSpace(child.TextContent))
+                return true;
+        }
+
+        return false;
+    }
 
     private static string GetInputRole(Element element)
     {
@@ -312,7 +321,13 @@ internal static class Accessibility
             return "columnheader";
 
         // A header cell in a row of data cells is a row header
-        return element.ParentElement?.ChildNodes.OfType<Element>().Any(e => e.IsHtml(TagId.Td)) == true ? "rowheader" : "columnheader";
+        for (var cell = element.ParentElement?.FirstElementChild; cell is not null; cell = cell.NextElementSibling)
+        {
+            if (cell.IsHtml(TagId.Td))
+                return "rowheader";
+        }
+
+        return "columnheader";
     }
 
     /// <summary>Whether the element is a descendant of sectioning content (article, aside, nav, section) or main (https://w3c.github.io/html-aam/#el-header).</summary>
@@ -758,7 +773,7 @@ internal static class Accessibility
 
         private static string? GetSvgTitle(Element element)
         {
-            foreach (var child in element.ChildNodes.OfType<Element>())
+            for (var child = element.FirstElementChild; child is not null; child = child.NextElementSibling)
             {
                 if (ReferenceEquals(child.NamespaceUri, Namespaces.Svg) && child.LocalName == "title")
                     return child.TextContent;
@@ -767,7 +782,16 @@ internal static class Accessibility
             return element.LocalName == "a" ? element.GetAttribute("xlink:title") : null;
         }
 
-        private static Element? FirstVisibleChild(Element element, TagId tagId, Traversal traversal) => element.ChildNodes.OfType<Element>().FirstOrDefault(e => e.IsHtml(tagId) && (traversal.InHiddenRoot || !IsHidden(e)));
+        private static Element? FirstVisibleChild(Element element, TagId tagId, Traversal traversal)
+        {
+            for (var child = element.FirstElementChild; child is not null; child = child.NextElementSibling)
+            {
+                if (child.IsHtml(tagId) && (traversal.InHiddenRoot || !IsHidden(child)))
+                    return child;
+            }
+
+            return null;
+        }
 
         /// <summary>The text of a text node, with the text-transform of its parent (https://w3c.github.io/accname/#comp_text_node).</summary>
         private static string TransformText(Text text)
@@ -798,15 +822,7 @@ internal static class Accessibility
         }
 
         /// <summary>The children of the element in the accessibility tree: its flat tree children, without the elements owned by another element, then the elements it owns (aria-owns).</summary>
-        private IEnumerable<Node> GetChildren(Element element)
-        {
-            var children = GetFlatTreeChildren(element);
-            if (!Owns.HasOwnedElements)
-                return children;
-
-            var result = children.Where(child => child is not Element childElement || Owns.GetOwner(childElement) is not { } owner || ReferenceEquals(owner, element));
-            return Owns.GetOwnedElements(element) is { } owned ? result.Where(child => child is not Element e || !owned.Contains(e)).Concat(owned) : result;
-        }
+        private AccessibleChildren GetChildren(Element element) => new(element, HtmlElement.GetFlatTreeChildren(element), Owns.HasOwnedElements ? Owns : null);
 
         /// <summary>Whether the element is hidden, its parent being its owner (aria-owns) when it is owned: an owned element is not hidden by the aria-hidden of its DOM ancestors.</summary>
         private bool IsHiddenInTree(Element? element)
@@ -826,17 +842,6 @@ internal static class Accessibility
             return IsNotRendered(element);
         }
 
-        /// <summary>The children of the element in the flat tree: the shadow tree of a shadow host, the assigned nodes of a slot (or its fallback content).</summary>
-        private static IEnumerable<Node> GetFlatTreeChildren(Element element)
-        {
-            if (element.AttachedShadowRoot is { } shadowRoot)
-                return shadowRoot.ChildNodes;
-
-            if (element is HtmlSlotElement slot && slot.AssignedNodesList.Count > 0)
-                return slot.AssignedNodesList;
-
-            return element.ChildNodes;
-        }
     }
 
     private static bool HasStyle(Element element) => ComputedStyleDeclarations.IsRendered(element);
@@ -1001,6 +1006,49 @@ internal static class Accessibility
             }
 
             return false;
+        }
+    }
+
+    /// <summary>
+    /// The children of an element in the accessibility tree: its flat tree children, without the elements owned by another
+    /// element, then the elements it owns (aria-owns), enumerated without allocation.
+    /// </summary>
+    private readonly struct AccessibleChildren(Element element, NodeEnumerable children, AriaOwns? owns)
+    {
+        public Enumerator GetEnumerator() => new(element, children.GetEnumerator(), owns, owns?.GetOwnedElements(element));
+
+        public struct Enumerator(Element element, NodeEnumerable.Enumerator children, AriaOwns? owns, List<Element>? owned)
+        {
+            private NodeEnumerable.Enumerator _children = children;
+
+            /// <summary>The index of the next owned element, or -1 while the flat tree children are enumerated.</summary>
+            private int _ownedIndex = -1;
+
+            public Node Current { get; private set; } = null!;
+
+            public bool MoveNext()
+            {
+                if (_ownedIndex < 0)
+                {
+                    while (_children.MoveNext())
+                    {
+                        var child = _children.Current;
+                        if (owns is not null && child is Element childElement && ((owns.GetOwner(childElement) is { } owner && !ReferenceEquals(owner, element)) || owned?.Contains(childElement) == true))
+                            continue;
+
+                        Current = child;
+                        return true;
+                    }
+
+                    _ownedIndex = 0;
+                }
+
+                if (owned is null || _ownedIndex >= owned.Count)
+                    return false;
+
+                Current = owned[_ownedIndex++];
+                return true;
+            }
         }
     }
 }

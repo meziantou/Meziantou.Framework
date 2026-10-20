@@ -50,7 +50,7 @@ internal static class ScrollContainers
 
     private static bool IsFirstBodyChild(Element root, Element body)
     {
-        foreach (var child in root.ChildNodes)
+        foreach (var child in root.EnumerateChildNodes())
         {
             if (child is HtmlBodyElement)
                 return ReferenceEquals(child, body);
@@ -163,7 +163,7 @@ internal static class ScrollContainers
         if (rootLayout.OverflowX != OverflowKind.Visible || rootLayout.OverflowY != OverflowKind.Visible || rootBox.Element is not { } root || !root.IsHtml(TagId.Html) || HasContainment(rootLayout))
             return (rootLayout, rootLayout);
 
-        foreach (var child in root.ChildNodes)
+        foreach (var child in root.EnumerateChildNodes())
         {
             if (child is HtmlBodyElement body)
             {
@@ -213,7 +213,7 @@ internal static class ScrollContainers
         var overflowLayout = rootLayout;
         if (rootLayout.OverflowX == OverflowKind.Visible && rootLayout.OverflowY == OverflowKind.Visible && root.IsHtml(TagId.Html) && !HasContainment(rootLayout))
         {
-            foreach (var child in root.ChildNodes)
+            foreach (var child in root.EnumerateChildNodes())
             {
                 if (child is HtmlBodyElement body)
                 {

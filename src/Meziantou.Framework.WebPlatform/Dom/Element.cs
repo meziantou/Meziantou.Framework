@@ -10,14 +10,70 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 [IdlInterface("Element", "https://dom.spec.whatwg.org/#element")]
 public partial class Element : Node
 {
-    /// <summary>An attribute of the element. The <see cref="Attr"/> node is only created when requested.</summary>
+    /// <summary>
+    /// An attribute of the element. Most attributes have no namespace, no prefix and no <see cref="Attr"/> node (it is only
+    /// created when requested): <see cref="Extra"/> holds the data of the other attributes.
+    /// </summary>
     private struct AttributeSlot
     {
         public string LocalName;
-        public string? Namespace;
-        public string? Prefix;
         public string Value;
-        public Attr? Node;
+
+        /// <summary>
+        /// The <see cref="Attr"/> node (which has the namespace and the prefix), an <see cref="AttributeNamespace"/>, the
+        /// classes of the class attribute parsed from <see cref="Value"/> (see <see cref="GetClassNames"/>), or null.
+        /// </summary>
+        public object? Extra;
+
+        public readonly string? Namespace => Extra switch
+        {
+            Attr attr => attr.NamespaceUri,
+            AttributeNamespace name => name.Namespace,
+            _ => null,
+        };
+
+        public readonly string? Prefix => Extra switch
+        {
+            Attr attr => attr.Prefix,
+            AttributeNamespace name => name.Prefix,
+            _ => null,
+        };
+
+        public readonly Attr? Node => Extra as Attr;
+
+        public static object? CreateExtra(string? @namespace, string? prefix, Attr? node)
+        {
+            if (node is not null)
+                return node;
+
+            if (@namespace is null && prefix is null)
+                return null;
+
+            return AttributeNamespace.Get(@namespace, prefix);
+        }
+    }
+
+    /// <summary>The namespace and the prefix of an attribute that has no <see cref="Attr"/> node.</summary>
+    private sealed class AttributeNamespace(string? @namespace, string? prefix)
+    {
+        private static readonly AttributeNamespace XLink = new(Namespaces.XLink, "xlink");
+        private static readonly AttributeNamespace Xml = new(Namespaces.Xml, "xml");
+        private static readonly AttributeNamespace Xmlns = new(Namespaces.Xmlns, "xmlns");
+        private static readonly AttributeNamespace XmlnsDefault = new(Namespaces.Xmlns, prefix: null);
+
+        public string? Namespace { get; } = @namespace;
+
+        public string? Prefix { get; } = prefix;
+
+        /// <summary>Returns the namespace and the prefix: the ones of the attributes of the foreign elements (xlink:href, xml:lang, xmlns...) are shared.</summary>
+        public static AttributeNamespace Get(string? @namespace, string? prefix) => (@namespace, prefix) switch
+        {
+            (Namespaces.XLink, "xlink") => XLink,
+            (Namespaces.Xml, "xml") => Xml,
+            (Namespaces.Xmlns, "xmlns") => Xmlns,
+            (Namespaces.Xmlns, null) => XmlnsDefault,
+            _ => new AttributeNamespace(@namespace, prefix),
+        };
     }
 
     private AttributeSlot[]? _attributes;
@@ -377,12 +433,12 @@ public partial class Element : Node
     internal Attr GetAttributeNodeAt(int index)
     {
         ref var slot = ref _attributes![index];
-        if (slot.Node is null)
-        {
-            slot.Node = new Attr(NodeDocument, slot.LocalName, slot.Namespace, slot.Prefix, slot.Value) { OwnerElement = this };
-        }
+        if (slot.Node is { } node)
+            return node;
 
-        return slot.Node;
+        node = new Attr(NodeDocument, slot.LocalName, slot.Namespace, slot.Prefix, slot.Value) { OwnerElement = this };
+        slot.Extra = node;
+        return node;
     }
 
     internal IEnumerable<Attr> GetAttributeNodesForComparison()
@@ -408,7 +464,7 @@ public partial class Element : Node
             Array.Resize(ref _attributes, _attributes.Length * 2);
         }
 
-        _attributes[_attributeCount++] = new AttributeSlot { LocalName = localName, Namespace = @namespace, Prefix = prefix, Value = value, Node = node };
+        _attributes[_attributeCount++] = new AttributeSlot { LocalName = localName, Value = value, Extra = AttributeSlot.CreateExtra(@namespace, prefix, node) };
         if (node is not null)
         {
             node.OwnerElement = this;
@@ -439,6 +495,12 @@ public partial class Element : Node
         ref var slot = ref _attributes![index];
         var oldValue = slot.Value;
         slot.Value = value;
+        if (slot.Extra is List<string>)
+        {
+            // The classes parsed from the old value
+            slot.Extra = null;
+        }
+
         HandleAttributeChanges(slot.LocalName, slot.Namespace, oldValue, value);
     }
 
@@ -937,8 +999,7 @@ public partial class Element : Node
             ref var slot = ref _attributes![index];
             var oldValue = slot.Value;
             slot.Value = attr.DetachedValue;
-            slot.Node = attr;
-            slot.Prefix = attr.Prefix;
+            slot.Extra = attr;
             attr.OwnerElement = this;
             oldAttr.DetachedValue = oldValue;
             oldAttr.OwnerElement = null;

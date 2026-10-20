@@ -957,12 +957,19 @@ internal static class SelectorMatcher
         return count;
     }
 
+    /// <summary>The number of children (of any type) from which the indexes of the element children are cached (see <see cref="GetElementIndex"/>).</summary>
+    private const int MinCachedElementIndexChildCount = 32;
+
     /// <summary>
     /// Returns the index of the element among the element children of its parent: the indexes of all the children are
     /// computed together, and cached in the elements until the children of the parent change.
     /// </summary>
     private static int GetElementIndex(Element element, Node parent)
     {
+        // Counting the siblings in a small parent is cheap, and reading the version of its children allocates its rare data
+        if (parent.ChildCount < MinCachedElementIndexChildCount)
+            return CountPreviousElementSiblings(element);
+
         var stamp = unchecked(parent.ChildrenVersion + 1);
         if (stamp == 0)
             return CountPreviousElementSiblings(element);

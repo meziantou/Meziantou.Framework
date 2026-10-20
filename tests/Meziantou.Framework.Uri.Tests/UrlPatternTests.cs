@@ -1812,6 +1812,18 @@ public sealed class UrlPatternTests
         Assert.Throws<UrlPatternException>(() => UrlPattern.Create(pattern));
     }
 
+    [Theory]
+    // The URL parser rejects an empty host, which is what is left of these values
+    [InlineData("\t")]
+    [InlineData("\r\n")]
+    [InlineData("/")]
+    [InlineData("#a")]
+    public void Create_HostnameThatIsEmptyOnceParsed_Throws(string hostname)
+    {
+        Assert.Throws<UrlPatternException>(() => UrlPattern.Create(new UrlPatternInit { Hostname = "a{" + hostname + "}?" }));
+        Assert.False(UrlPattern.Create(new UrlPatternInit()).IsMatch(new UrlPatternInit { Hostname = hostname }));
+    }
+
     [Fact]
     public void IsMatch_IPv6HostnameOfAnInit_IsSerialized()
     {

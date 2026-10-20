@@ -1,32 +1,39 @@
 # Meziantou.Framework.AnsiFormatting
 
-`Meziantou.Framework.AnsiFormatting` provides helpers to detect, remove, and parse ANSI escape sequences.
+`Meziantou.Framework.AnsiFormatting` provides helpers to detect, remove, and parse ANSI escape sequences. `AnsiTextProcessor` is in the `Meziantou.Framework` namespace.
 
 ## Remove ANSI sequences
 
-```c#
-using Meziantou.Framework;
-
+<!-- ref:../../tests/Meziantou.Framework.AnsiFormatting.Tests/AnsiTextProcessorTests.cs;region=AnsiTextProcessor_RemoveAnsiSequences;format=md-fenced-code-block;dedent=true -->
+```csharp
 var input = "\x1b[1;31mError:\x1b[0m Something went wrong";
 var cleanText = AnsiTextProcessor.RemoveAnsiSequences(input);
 var containsAnsi = AnsiTextProcessor.ContainsAnsiSequences(input);
+
+Assert.Equal("Error: Something went wrong", cleanText);
+Assert.True(containsAnsi);
 ```
+<!-- endref -->
 
 ## Parse text with styles
 
-```c#
-using Meziantou.Framework;
-
+<!-- ref:../../tests/Meziantou.Framework.AnsiFormatting.Tests/AnsiTextProcessorTests.cs;region=AnsiTextProcessor_ParseTextWithAnsiStyles;format=md-fenced-code-block;dedent=true -->
+```csharp
 var text = "\x1b[1;38;5;208mWarning\x1b[0m and \x1b[4;34mInfo\x1b[0m";
 var parsed = AnsiTextProcessor.ParseTextWithAnsiStyles(text);
 
-Console.WriteLine(parsed.Text); // Warning and Info
+Assert.Equal("Warning and Info", parsed.Text);
 
-foreach (var run in parsed.Runs)
-{
-    Console.WriteLine($"{run.Start}-{run.End}: Bold={run.Style.Bold}, Underline={run.Style.Underline}");
-}
+var runs = parsed.Runs.Select(run => $"{run.Start}-{run.End}: Bold={run.Style.Bold}, Underline={run.Style.Underline}");
+Assert.Equal(
+    [
+        "0-7: Bold=True, Underline=False",
+        "7-12: Bold=False, Underline=False",
+        "12-16: Bold=False, Underline=True",
+    ],
+    runs);
 ```
+<!-- endref -->
 
 ## Supported sequences
 

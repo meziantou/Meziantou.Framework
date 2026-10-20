@@ -5,6 +5,20 @@ namespace Meziantou.Framework.Tests;
 public class ValueStopwatchTest
 {
     [Fact]
+    public void ReadmeExample_Usage()
+    {
+        #region ValueStopwatch_Usage
+        // Start a new stopwatch
+        ValueStopwatch stopwatch = ValueStopwatch.StartNew();
+
+        // Get elapsed time
+        TimeSpan elapsedTime = stopwatch.GetElapsedTime();
+        #endregion
+
+        Assert.True(elapsedTime >= TimeSpan.Zero);
+    }
+
+    [Fact]
     public void IsActiveIsFalseForDefaultValueStopwatch()
     {
         Assert.False(default(ValueStopwatch).IsActive);

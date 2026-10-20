@@ -2,6 +2,39 @@ namespace Meziantou.Framework.Tests;
 
 public class AnsiTextProcessorTests
 {
+    [Fact]
+    public void ReadmeExample_RemoveAnsiSequences()
+    {
+        #region AnsiTextProcessor_RemoveAnsiSequences
+        var input = "\x1b[1;31mError:\x1b[0m Something went wrong";
+        var cleanText = AnsiTextProcessor.RemoveAnsiSequences(input);
+        var containsAnsi = AnsiTextProcessor.ContainsAnsiSequences(input);
+
+        Assert.Equal("Error: Something went wrong", cleanText);
+        Assert.True(containsAnsi);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ParseTextWithAnsiStyles()
+    {
+        #region AnsiTextProcessor_ParseTextWithAnsiStyles
+        var text = "\x1b[1;38;5;208mWarning\x1b[0m and \x1b[4;34mInfo\x1b[0m";
+        var parsed = AnsiTextProcessor.ParseTextWithAnsiStyles(text);
+
+        Assert.Equal("Warning and Info", parsed.Text);
+
+        var runs = parsed.Runs.Select(run => $"{run.Start}-{run.End}: Bold={run.Style.Bold}, Underline={run.Style.Underline}");
+        Assert.Equal(
+            [
+                "0-7: Bold=True, Underline=False",
+                "7-12: Bold=False, Underline=False",
+                "12-16: Bold=False, Underline=True",
+            ],
+            runs);
+        #endregion
+    }
+
     [Theory]
     [InlineData("", "")]
     [InlineData("Hello World", "Hello World")]

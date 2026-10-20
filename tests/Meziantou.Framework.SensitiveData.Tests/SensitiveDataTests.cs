@@ -8,6 +8,34 @@ namespace Meziantou.Framework.Tests;
 
 public sealed class SensitiveDataTests
 {
+    [Fact]
+    public void ReadmeExample_Usage()
+    {
+        #region SensitiveData_Usage
+        // Create sensitive data from a string
+        using var secret = SensitiveData.Create("secret");
+
+        // Reveal the data
+        string str = secret.RevealToString();
+        char[] chars = secret.RevealToArray();
+        Assert.Equal("secret", str);
+        Assert.Equal("secret".ToCharArray(), chars);
+
+        var buffer = new char[secret.GetLength()];
+        secret.RevealInto(buffer);
+
+        // Or use it without keeping a copy of your own
+        var lengths = new List<int>();
+        secret.RevealAndUse(arg: lengths, static (span, list) => list.Add(span.Length));
+        Assert.Equal([6], lengths);
+
+        // Create sensitive data from a buffer of any unmanaged type
+        using var key = SensitiveData.Create(new byte[] { 1, 2, 3, 4, 5 });
+        byte[] revealedKey = key.RevealToArray();
+        Assert.Equal(new byte[] { 1, 2, 3, 4, 5 }, revealedKey);
+        #endregion
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(1)]

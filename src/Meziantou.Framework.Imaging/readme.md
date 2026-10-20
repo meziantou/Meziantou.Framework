@@ -604,7 +604,8 @@ are computed with exact rational arithmetic, rounded to nearest (ties up), and a
 neighbor, bilinear, bicubic Catmull-Rom (default) and Lanczos3, sampled at pixel centers with clamped edges, normalized
 weights, and a support widened when downsampling. Colors are filtered premultiplied by alpha, so hidden colors of
 transparent pixels never bleed (zero alpha becomes transparent black), and 16-bit images are filtered with 16-bit
-precision.
+precision. A frame whose pixels read by the filter are all opaque is filtered as its colors alone and keeps the maximum
+alpha: premultiplying by a constant alpha would only add roundings.
 
 - `ResizeWorkingSpace.Encoded` (default) filters the stored sample values directly, like most image tools.
 - `ResizeWorkingSpace.LinearSrgb` converts the samples to linear light before filtering and back afterward (more
@@ -661,8 +662,10 @@ these.
 gives to a blur is twice the deviation): one separable convolution, each row filtered by a row of `2 ceil(3 sigma) + 1`
 weights and the filtered rows by the same weights as a column, so that the time grows with the deviation and not with
 its square. Nothing is rounded between the two directions: the result is the one of the matrix of the products of the
-weights, rounded once. It takes the edge mode and the working space of a convolution, and follows its rules. The weights
-`exp(-i^2 / (2 sigma^2))`, divided by their sum, are computed without any function of the platform.
+weights, rounded once. It takes the edge mode and the working space of a convolution, and follows its rules; an opaque
+frame is blurred as its colors alone and keeps the maximum alpha, except with the `Zero` edge mode, which reads
+transparent pixels beyond the image. The weights `exp(-i^2 / (2 sigma^2))`, divided by their sum, are computed without
+any function of the platform.
 
 <!-- snippet: convolve -->
 ```csharp

@@ -630,6 +630,68 @@ public sealed class ConvolutionTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void AGaussianBlurOfAnOpaqueFrameFiltersItsColorsAndKeepsTheMaximumAlpha()
+    {
+        // The weights add up to 1: an opaque frame is blurred as its colors, each like a gray image of that color, bit for
+        // bit, and alpha stays the maximum
+        var random = new Random(8);
+        var pixels = new Rgba32[23 * 17];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            pixels[i] = new Rgba32((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256), 255);
+        }
+
+        foreach (var mode in new[] { ConvolutionEdgeMode.Clamp, ConvolutionEdgeMode.Mirror, ConvolutionEdgeMode.Wrap })
+        {
+            foreach (var sigma in new[] { 0.8, 2.5 })
+            {
+                using var rgba = Image.ImportPixelData<Rgba32>(pixels, 23, 17);
+                rgba.GaussianBlur(sigma, mode, cancellationToken: Ct);
+                var result = CopyAll(rgba.Frames[0]);
+                Assert.All(result, pixel => Assert.Equal(255, pixel.A));
+                for (var c = 0; c < 3; c++)
+                {
+                    using var gray = Image.ImportPixelData<Gray8>([.. pixels.Select(pixel => new Gray8(Channel(pixel, c)))], 23, 17);
+                    gray.GaussianBlur(sigma, mode, cancellationToken: Ct);
+                    Assert.Equal(CopyAll(gray.Frames[0]).Select(pixel => (int)pixel.Value), result.Select(pixel => (int)Channel(pixel, c)));
+                }
+            }
+        }
+
+        // Beyond the image, the zero edge mode reads transparent pixels: the corners lose alpha
+        using (var zero = Image.ImportPixelData<Rgba32>(pixels, 23, 17))
+        {
+            zero.GaussianBlur(1, ConvolutionEdgeMode.Zero, cancellationToken: Ct);
+            Assert.True(zero.Frames[0][0, 0].A < 255);
+        }
+
+        // One transparent pixel: the frame is filtered premultiplied, alpha drops around it and its hidden color does not bleed
+        pixels[(8 * 23) + 11] = new Rgba32(255, 0, 255, 0);
+        using var red = Image.ImportPixelData<Rgba32>(pixels, 23, 17);
+        pixels[(8 * 23) + 11] = new Rgba32(0, 255, 0, 0);
+        using var green = Image.ImportPixelData<Rgba32>(pixels, 23, 17);
+        red.GaussianBlur(1.5, cancellationToken: Ct);
+        green.GaussianBlur(1.5, cancellationToken: Ct);
+        Assert.Equal(CopyAll(red.Frames[0]), CopyAll(green.Frames[0]));
+        Assert.True(red.Frames[0][11, 8].A < 255);
+
+        // Only the blur takes this path: a matrix may not add up to 1, and the zero edge mode reads beyond the image
+        using var opaque = new Image<Rgba32>(4, 4, new Rgba32(1, 2, 3, 255));
+        double[] weights = [0.25, 0.5, 0.25];
+        using var blur = new ConvolutionPlan(Kernel(1, 3, weights), ConvolutionEdgeMode.Clamp, preserveAlpha: false, linear: false, PixelFormat.Rgba32, new Size(4, 4), rowWeights: weights);
+        using var zeroBlur = new ConvolutionPlan(Kernel(1, 3, weights), ConvolutionEdgeMode.Zero, preserveAlpha: false, linear: false, PixelFormat.Rgba32, new Size(4, 4), rowWeights: weights);
+        using var matrix = new ConvolutionPlan(Kernel(3, 1, weights), ConvolutionEdgeMode.Clamp, preserveAlpha: false, linear: false, PixelFormat.Rgba32, new Size(4, 4));
+        Assert.Equal(WorkingAlpha.Opaque, Convolver.GetWorkingAlpha<Rgba32>(opaque.Frames[0].Storage, blur));
+        Assert.Equal(WorkingAlpha.Premultiplied, Convolver.GetWorkingAlpha<Rgba32>(opaque.Frames[0].Storage, zeroBlur));
+        Assert.Equal(WorkingAlpha.Premultiplied, Convolver.GetWorkingAlpha<Rgba32>(opaque.Frames[0].Storage, matrix));
+        opaque.Frames[0][3, 3] = new Rgba32(1, 2, 3, 254);
+        Assert.Equal(WorkingAlpha.Premultiplied, Convolver.GetWorkingAlpha<Rgba32>(opaque.Frames[0].Storage, blur));
+
+        static byte Channel(Rgba32 pixel, int c) => c switch { 0 => pixel.R, 1 => pixel.G, _ => pixel.B };
+    }
+
+    [Fact]
     public void AGaussianBlurAppliesToEveryFrameOrToOne()
     {
         using var image = BuildGray8([[0, 0, 0, 255, 0, 0, 0]]);

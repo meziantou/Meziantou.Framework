@@ -375,6 +375,95 @@ public sealed class ResizeTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void OpaqueFramesAreFilteredAsTheirColorsAndKeepTheMaximumAlpha()
+    {
+        // Premultiplying by a constant alpha, then dividing by the filtered alpha, only adds roundings: when every pixel read
+        // is opaque, each color is filtered like a gray image of that color, bit for bit, and alpha stays the maximum
+        var random = new Random(5);
+        var pixels8 = new Rgba32[29 * 19];
+        var pixels16 = new Rgba64[29 * 19];
+        for (var i = 0; i < pixels8.Length; i++)
+        {
+            pixels8[i] = new Rgba32((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256), 255);
+            pixels16[i] = new Rgba64((ushort)random.Next(65536), (ushort)random.Next(65536), (ushort)random.Next(65536), 65535);
+        }
+
+        foreach (var filter in new[] { ResamplingFilter.Bilinear, ResamplingFilter.Bicubic, ResamplingFilter.Lanczos3 })
+        {
+            foreach (var (width, height) in new[] { (11, 7), (64, 45) })
+            {
+                var options = new ResizeOptions(width, height) { Mode = ResizeMode.Stretch, Filter = filter, AllowUpscaling = true };
+                using var rgba32 = Image.ImportPixelData<Rgba32>(pixels8, 29, 19);
+                using var rgba64 = Image.ImportPixelData<Rgba64>(pixels16, 29, 19);
+                rgba32.Resize(options, Ct);
+                rgba64.Resize(options, Ct);
+                var result8 = CopyAll(rgba32.Frames[0]);
+                var result16 = CopyAll(rgba64.Frames[0]);
+                Assert.All(result8, pixel => Assert.Equal(255, pixel.A));
+                Assert.All(result16, pixel => Assert.Equal(65535, pixel.A));
+                for (var c = 0; c < 3; c++)
+                {
+                    using var gray8 = Image.ImportPixelData<Gray8>([.. pixels8.Select(pixel => new Gray8(Channel(pixel.R, pixel.G, pixel.B, c)))], 29, 19);
+                    using var gray16 = Image.ImportPixelData<Gray16>([.. pixels16.Select(pixel => new Gray16(Channel(pixel.R, pixel.G, pixel.B, c)))], 29, 19);
+                    gray8.Resize(options, Ct);
+                    gray16.Resize(options, Ct);
+                    Assert.Equal(CopyAll(gray8.Frames[0]).Select(pixel => (int)pixel.Value), result8.Select(pixel => (int)Channel(pixel.R, pixel.G, pixel.B, c)));
+                    Assert.Equal(CopyAll(gray16.Frames[0]).Select(pixel => (int)pixel.Value), result16.Select(pixel => (int)Channel(pixel.R, pixel.G, pixel.B, c)));
+                }
+            }
+        }
+
+        // One transparent pixel read: the frame is filtered premultiplied, alpha drops around it and its hidden color does
+        // not bleed
+        var lanczos = new ResizeOptions(11, 7) { Mode = ResizeMode.Stretch, Filter = ResamplingFilter.Lanczos3 };
+        pixels8[(9 * 29) + 14] = new Rgba32(255, 0, 255, 0);
+        using var red = Image.ImportPixelData<Rgba32>(pixels8, 29, 19);
+        pixels8[(9 * 29) + 14] = new Rgba32(0, 255, 0, 0);
+        using var green = Image.ImportPixelData<Rgba32>(pixels8, 29, 19);
+        red.Resize(lanczos, Ct);
+        green.Resize(lanczos, Ct);
+        Assert.Equal(CopyAll(red.Frames[0]), CopyAll(green.Frames[0]));
+        Assert.Contains(CopyAll(red.Frames[0]), pixel => pixel.A < 255);
+
+        static T Channel<T>(T r, T g, T b, int c) => c switch { 0 => r, 1 => g, _ => b };
+    }
+
+    [Fact]
+    public void OnlyThePixelsReadDecideWhetherAFrameIsFilteredAsOpaque()
+    {
+        // A 10x4 source covered to 4x4 keeps columns 3 to 6 at scale 1: bilinear reads one source column per output column,
+        // Lanczos3 two more on each side
+        using var image = new Image<Rgba32>(10, 4, new Rgba32(10, 20, 30, 255));
+        var storage = image.Frames[0].Storage;
+        using var bilinear = Plan(ResamplingFilter.Bilinear);
+        using var lanczos = Plan(ResamplingFilter.Lanczos3);
+        using var nearest = Plan(ResamplingFilter.NearestNeighbor);
+        Assert.Equal(WorkingAlpha.Opaque, Resampler.GetWorkingAlpha<Rgba32>(storage, bilinear));
+        Assert.Equal(WorkingAlpha.Opaque, Resampler.GetWorkingAlpha<Rgba32>(storage, lanczos));
+
+        image.Frames[0][1, 2] = new Rgba32(10, 20, 30, 254);
+        Assert.Equal(WorkingAlpha.Opaque, Resampler.GetWorkingAlpha<Rgba32>(storage, bilinear));
+        Assert.Equal(WorkingAlpha.Premultiplied, Resampler.GetWorkingAlpha<Rgba32>(storage, lanczos));
+
+        image.Frames[0][1, 2] = new Rgba32(10, 20, 30, 255);
+        image.Frames[0][6, 3] = new Rgba32(10, 20, 30, 0);
+        Assert.Equal(WorkingAlpha.Premultiplied, Resampler.GetWorkingAlpha<Rgba32>(storage, bilinear));
+
+        // Nearest neighbor copies pixels: it never filters
+        image.Frames[0][6, 3] = new Rgba32(10, 20, 30, 255);
+        Assert.Equal(WorkingAlpha.Premultiplied, Resampler.GetWorkingAlpha<Rgba32>(storage, nearest));
+
+        ResizePlan Plan(ResamplingFilter filter)
+        {
+            var options = new ResizeOptions(4, 4) { Mode = ResizeMode.Cover, Filter = filter };
+            var plan = new ResizePlan(ResizeGeometry.Compute(new Size(10, 4), options), filter, ResizeWorkingSpace.Encoded, PixelFormat.Rgba32);
+            plan.Prepare(image.Owner.Scope);
+            return plan;
+        }
+    }
+
+    [Fact]
     public void NearestNeighborCopiesPixelsExactlyAndClearsTransparentOnes()
     {
         using var image = new Image<Rgba64>(2, 1);

@@ -219,7 +219,8 @@ public static class ImageProcessingExtensions
     /// </para>
     /// <para>
     /// Colors are filtered premultiplied by alpha and unpremultiplied afterward; a pixel whose resulting alpha is zero is
-    /// transparent black. Samples are filtered in double precision and written at the storage precision (16-bit samples
+    /// transparent black. A frame whose pixels read by the filter are all opaque is filtered as its colors alone and keeps
+    /// the maximum alpha. Samples are filtered in double precision and written at the storage precision (16-bit samples
     /// never go through 8 bits), rounded to nearest with ties upward and clamped. Nearest neighbor copies source pixels
     /// exactly. The scratch storage is charged to the image allocation scope together with the original and replacement
     /// storages.
@@ -564,8 +565,9 @@ public static class ImageProcessingExtensions
     /// column, in double precision without rounding in between, so the result is the one of the two-dimensional matrix of
     /// their products, and the time grows with the deviation, not with its square. It follows the rules of a convolution
     /// (colors filtered premultiplied by alpha, samples rounded to nearest at the storage precision once, the same result
-    /// whatever the number of workers); the weights are computed without any function of the platform, and are the same
-    /// everywhere. Without deviation, nothing changes.
+    /// whatever the number of workers); an opaque frame is blurred as its colors alone and keeps the maximum alpha, except
+    /// with <see cref="ConvolutionEdgeMode.Zero"/>, which reads transparent pixels beyond the frame. The weights are
+    /// computed without any function of the platform, and are the same everywhere. Without deviation, nothing changes.
     /// </para>
     /// </remarks>
     /// <param name="image">The image to modify.</param>

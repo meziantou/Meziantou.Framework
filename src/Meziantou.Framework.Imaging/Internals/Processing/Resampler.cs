@@ -21,6 +21,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </para>
 /// <para>Cancellation is observed between row bands; the destination is a replacement storage, so a partial result is never visible.</para>
 /// <para>
+/// A frame whose pixels read by the filter (<see cref="ResampleWeights.First"/> to <see cref="ResampleWeights.Last"/> on
+/// both axes) all have the maximum alpha is filtered as three colors per pixel, straight (<see cref="WorkingAlpha.Opaque"/>),
+/// and every output alpha is the maximum: premultiplying by a constant alpha, then dividing by the filtered alpha (that
+/// constant times weights that add up to 1), would only add roundings. Any other frame is filtered premultiplied.
+/// </para>
+/// <para>
 /// With hardware vector support, the horizontal pass of 3- and 4-sample pixels accumulates the samples of one pixel in the
 /// lanes of one 256-bit vector (two 128-bit vectors), and that of 1-sample pixels one sample of 4 (2) pixels, over windows
 /// padded with zero weights (<see cref="ResampleWeights.CreatePadded"/>, which leave the sums unchanged); the vertical pass
@@ -100,17 +106,44 @@ internal static class Resampler
     {
         var observer = TestBandObserver;
         var workers = plan.Workers;
+        var alpha = GetWorkingAlpha<TPixel>(source, plan);
         if (workers == 1)
         {
-            ResizeBand<TPixel, TSample>(source, destination, plan, 0, observer, cancellationToken);
+            ResizeBand<TPixel, TSample>(source, destination, plan, alpha, 0, observer, cancellationToken);
             return;
         }
 
         // Bounded parallelism: one band per worker, at most `workers` bands running at once (the calling thread included)
-        RowBands.RunParallel(workers, band => ResizeBand<TPixel, TSample>(source, destination, plan, band, observer, cancellationToken));
+        RowBands.RunParallel(workers, band => ResizeBand<TPixel, TSample>(source, destination, plan, alpha, band, observer, cancellationToken));
     }
 
-    private static void ResizeBand<TPixel, TSample>(PixelStorage source, PixelStorage destination, ResizePlan plan, int band, Action<int, bool>? observer, CancellationToken cancellationToken)
+    /// <summary>
+    /// Gets how alpha takes part in the working samples of a frame: <see cref="WorkingAlpha.Opaque"/> when the resize is
+    /// filtered and every source pixel its weights read has the maximum alpha, otherwise <see cref="ResizePlan.Alpha"/>.
+    /// </summary>
+    internal static WorkingAlpha GetWorkingAlpha<TPixel>(PixelStorage source, ResizePlan plan)
+        where TPixel : unmanaged
+        => plan.Filter != ResamplingFilter.NearestNeighbor && plan.HasAlpha && IsOpaque<TPixel>(source, plan) ? WorkingAlpha.Opaque : plan.Alpha;
+
+    /// <summary>Gets a value indicating whether every source pixel that the weights of a filtered resize read has the maximum alpha.</summary>
+    private static bool IsOpaque<TPixel>(PixelStorage source, ResizePlan plan)
+        where TPixel : unmanaged
+    {
+        var xWeights = plan.XWeights!;
+        var yWeights = plan.YWeights!;
+        for (var y = yWeights.First; y <= yWeights.Last; y++)
+        {
+            if (PixelConverter.IndexOfNonOpaque<TPixel>(GetRow<TPixel>(source, y).Slice(xWeights.First, xWeights.Last - xWeights.First + 1)) >= 0)
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>Gets the number of working samples per pixel: the colors only for <see cref="WorkingAlpha.Opaque"/>.</summary>
+    private static int GetChannels(ResizePlan plan, WorkingAlpha alpha) => alpha == WorkingAlpha.Opaque ? 3 : plan.Channels;
+
+    private static void ResizeBand<TPixel, TSample>(PixelStorage source, PixelStorage destination, ResizePlan plan, WorkingAlpha alpha, int band, Action<int, bool>? observer, CancellationToken cancellationToken)
         where TPixel : unmanaged
         where TSample : unmanaged
     {
@@ -123,11 +156,11 @@ internal static class Resampler
         }
         else if (plan.Strategy == ResizeVerticalStrategy.Gather)
         {
-            Gather<TPixel, TSample>(source, destination, plan, plan.GetScratch(band), start, end, cancellationToken);
+            Gather<TPixel, TSample>(source, destination, plan, alpha, plan.GetScratch(band), start, end, cancellationToken);
         }
         else
         {
-            Scatter<TPixel, TSample>(source, destination, plan, plan.GetScratch(band), start, end, cancellationToken);
+            Scatter<TPixel, TSample>(source, destination, plan, alpha, plan.GetScratch(band), start, end, cancellationToken);
         }
 
         observer?.Invoke(band, false);
@@ -180,13 +213,16 @@ internal static class Resampler
     }
 
     /// <summary>Output rows <paramref name="start"/> to <paramref name="end"/> - 1, gathering each from a ring of horizontally resampled source rows.</summary>
-    private static void Gather<TPixel, TSample>(PixelStorage source, PixelStorage destination, ResizePlan plan, ResizeScratch scratch, int start, int end, CancellationToken cancellationToken)
+    private static void Gather<TPixel, TSample>(PixelStorage source, PixelStorage destination, ResizePlan plan, WorkingAlpha alpha, ResizeScratch scratch, int start, int end, CancellationToken cancellationToken)
         where TPixel : unmanaged
         where TSample : unmanaged
     {
         var yWeights = plan.YWeights!;
         var ringSize = scratch.RowCount;
-        var accumulator = scratch.ExtraRow;
+
+        // The rows of the scratch are sized for every sample of a pixel; colors only use the start of each one
+        var length = plan.Geometry.OutputSize.Width * GetChannels(plan, alpha);
+        var accumulator = scratch.ExtraRow[..length];
         var next = yWeights.GetStart(start);
 
         // The taps are summed a block of samples at a time (SetWeightedSum) by groups that read at most MaxRowsPerPass ring
@@ -208,7 +244,7 @@ internal static class Resampler
             var last = first + weights.Length - 1;
             while (next <= last)
             {
-                LoadAndResampleRow<TPixel, TSample>(source, next, plan, scratch, scratch.GetSlot(next % ringSize));
+                LoadAndResampleRow<TPixel, TSample>(source, next, plan, alpha, scratch, scratch.GetSlot(next % ringSize)[..length]);
                 next++;
             }
 
@@ -225,30 +261,31 @@ internal static class Resampler
                         offsets[t] = (((first + k + t) % ringSize) + 1) * rowLength;
                     }
 
-                    SetWeightedSum(rows, 0, rowLength, offsets[..count], weights.Slice(k, count), accumulate: k is not 0);
+                    SetWeightedSum(rows, 0, length, offsets[..count], weights.Slice(k, count), accumulate: k is not 0);
                 }
             }
             else
             {
-                SetScaled(accumulator, scratch.GetSlot(first % ringSize), weights[0]);
+                SetScaled(accumulator, scratch.GetSlot(first % ringSize)[..length], weights[0]);
                 for (var k = 1; k < weights.Length; k++)
                 {
-                    AddScaled(accumulator, scratch.GetSlot((first + k) % ringSize), weights[k]);
+                    AddScaled(accumulator, scratch.GetSlot((first + k) % ringSize)[..length], weights[k]);
                 }
             }
 
-            WorkingSamples.Store(accumulator, unsafe(MemoryMarshal.Cast<TPixel, TSample>(GetRow<TPixel>(destination, dy))), plan.Alpha, plan.Transfer, plan.MaxValue);
+            WorkingSamples.Store(accumulator, unsafe(MemoryMarshal.Cast<TPixel, TSample>(GetRow<TPixel>(destination, dy))), alpha, plan.Transfer, plan.MaxValue);
         }
     }
 
     /// <summary>Output rows <paramref name="start"/> to <paramref name="end"/> - 1, scattering each source row of their windows into per-output accumulators.</summary>
-    private static void Scatter<TPixel, TSample>(PixelStorage source, PixelStorage destination, ResizePlan plan, ResizeScratch scratch, int start, int end, CancellationToken cancellationToken)
+    private static void Scatter<TPixel, TSample>(PixelStorage source, PixelStorage destination, ResizePlan plan, WorkingAlpha alpha, ResizeScratch scratch, int start, int end, CancellationToken cancellationToken)
         where TPixel : unmanaged
         where TSample : unmanaged
     {
         var yWeights = plan.YWeights!;
         var slots = scratch.RowCount;
-        var row = scratch.ExtraRow;
+        var length = plan.Geometry.OutputSize.Width * GetChannels(plan, alpha);
+        var row = scratch.ExtraRow[..length];
         var first = start; // the oldest output row still accumulating
         var next = start;  // the next output row to start
         var lastSource = yWeights.GetStart(end - 1) + yWeights.GetCount(end - 1) - 1;
@@ -267,23 +304,23 @@ internal static class Resampler
             }
 
             // The first source row of an output row sets its accumulator to 0 + w0 H0 (no separate clearing pass)
-            LoadAndResampleRow<TPixel, TSample>(source, sy, plan, scratch, row);
+            LoadAndResampleRow<TPixel, TSample>(source, sy, plan, alpha, scratch, row);
             for (var dy = first; dy < next; dy++)
             {
                 var windowStart = yWeights.GetStart(dy);
                 if (sy == windowStart)
                 {
-                    SetScaled(scratch.GetSlot(dy % slots), row, yWeights.GetWeights(dy)[0]);
+                    SetScaled(scratch.GetSlot(dy % slots)[..length], row, yWeights.GetWeights(dy)[0]);
                 }
                 else
                 {
-                    AddScaled(scratch.GetSlot(dy % slots), row, yWeights.GetWeights(dy)[sy - windowStart]);
+                    AddScaled(scratch.GetSlot(dy % slots)[..length], row, yWeights.GetWeights(dy)[sy - windowStart]);
                 }
             }
 
             while (first < next && yWeights.GetStart(first) + yWeights.GetCount(first) - 1 == sy)
             {
-                WorkingSamples.Store(scratch.GetSlot(first % slots), unsafe(MemoryMarshal.Cast<TPixel, TSample>(GetRow<TPixel>(destination, first))), plan.Alpha, plan.Transfer, plan.MaxValue);
+                WorkingSamples.Store(scratch.GetSlot(first % slots)[..length], unsafe(MemoryMarshal.Cast<TPixel, TSample>(GetRow<TPixel>(destination, first))), alpha, plan.Transfer, plan.MaxValue);
                 first++;
             }
         }
@@ -292,19 +329,18 @@ internal static class Resampler
     }
 
     /// <summary>Loads the used columns of source row <paramref name="y"/> as working samples and resamples them horizontally into <paramref name="output"/>.</summary>
-    private static void LoadAndResampleRow<TPixel, TSample>(PixelStorage source, int y, ResizePlan plan, ResizeScratch scratch, Span<double> output)
+    private static void LoadAndResampleRow<TPixel, TSample>(PixelStorage source, int y, ResizePlan plan, WorkingAlpha alpha, ResizeScratch scratch, Span<double> output)
         where TPixel : unmanaged
         where TSample : unmanaged
     {
         var xWeights = plan.XWeights!;
-        var channels = plan.Channels;
         var first = xWeights.First;
         var working = scratch.SourceRow;
-        var used = (xWeights.Last - first + 1) * channels;
-        var samples = unsafe(MemoryMarshal.Cast<TPixel, TSample>(GetRow<TPixel>(source, y))).Slice(first * channels, used);
-        WorkingSamples.Load(samples, working[..used], plan.Alpha, plan.Transfer);
+        var used = (xWeights.Last - first + 1) * plan.Channels;
+        var samples = unsafe(MemoryMarshal.Cast<TPixel, TSample>(GetRow<TPixel>(source, y))).Slice(first * plan.Channels, used);
+        WorkingSamples.Load(samples, working[..WorkingSamples.GetWorkingLength(used, alpha)], alpha, plan.Transfer);
 
-        ResampleHorizontal(working, output, xWeights, channels);
+        ResampleHorizontal(working, output, xWeights, GetChannels(plan, alpha));
     }
 
     /// <summary>

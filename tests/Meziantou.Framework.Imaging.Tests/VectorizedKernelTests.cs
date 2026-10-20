@@ -1729,6 +1729,12 @@ public sealed class VectorizedKernelTests
             var actual = Resize(bytes, forceScalar: false);
             Assert.Equal(expected, actual);
 
+            // Opaque pixels are filtered as their colors
+            if (MakeOpaque(format, bytes))
+            {
+                Assert.Equal(Resize(bytes, forceScalar: true), Resize(bytes, forceScalar: false));
+            }
+
             byte[] Resize(byte[] source, bool forceScalar)
             {
                 using var image = ImportBytes(format, source, width, height);
@@ -1915,6 +1921,7 @@ public sealed class VectorizedKernelTests
     [InlineData((int)WorkingAlpha.None)]
     [InlineData((int)WorkingAlpha.Premultiplied)]
     [InlineData((int)WorkingAlpha.Preserved)]
+    [InlineData((int)WorkingAlpha.Opaque)]
     public void WorkingSampleConversionsMatchTheScalarReference(int alphaMode)
     {
         CheckWorkingSamples<byte>((WorkingAlpha)alphaMode, byte.MaxValue);
@@ -1940,11 +1947,15 @@ public sealed class VectorizedKernelTests
                     samples[i] = typeof(TSample) == typeof(byte) ? (TSample)(object)(byte)value : (TSample)(object)(ushort)value;
                 }
 
-                var expected = new double[samples.Length];
-                var actual = new double[samples.Length];
+                // Opaque pixels give their 3 colors: nothing is written after them
+                var workingLength = WorkingSamples.GetWorkingLength(samples.Length, alpha);
+                var expected = new double[workingLength];
+                var actual = new double[workingLength + 4];
+                actual.AsSpan(workingLength).Fill(-7);
                 WorkingSamples.LoadScalar<TSample>(samples, expected, alpha, transfer: 0);
-                WorkingSamples.Load<TSample>(samples, actual, alpha, transfer: 0);
-                Assert.Equal(expected.Select(BitConverter.DoubleToInt64Bits), actual.Select(BitConverter.DoubleToInt64Bits));
+                WorkingSamples.Load<TSample>(samples, actual.AsSpan(0, workingLength), alpha, transfer: 0);
+                Assert.Equal(expected.Select(BitConverter.DoubleToInt64Bits), actual.Take(workingLength).Select(BitConverter.DoubleToInt64Bits));
+                Assert.All(actual[workingLength..], value => Assert.Equal(-7, value));
 
                 // Filtered values: out of range, negative, around the rounding boundaries (k + 0.5 - 2^-20), and alphas
                 // that round to zero or not
@@ -1971,8 +1982,9 @@ public sealed class VectorizedKernelTests
                     if (alpha != WorkingAlpha.None && count % 4 != 0)
                         continue;
 
-                    WorkingSamples.StoreScalar<TSample>(filtered.AsSpan(0, count), expectedSamples.AsSpan(0, count), alpha, transfer: 0, max);
-                    WorkingSamples.Store<TSample>(filtered.AsSpan(0, count), actualSamples.AsSpan(0, count), alpha, transfer: 0, max);
+                    var values = filtered.AsSpan(0, WorkingSamples.GetWorkingLength(count, alpha));
+                    WorkingSamples.StoreScalar<TSample>(values, expectedSamples.AsSpan(0, count), alpha, transfer: 0, max);
+                    WorkingSamples.Store<TSample>(values, actualSamples.AsSpan(0, count), alpha, transfer: 0, max);
                     Assert.Equal(expectedSamples, actualSamples);
                 }
             }
@@ -2178,6 +2190,12 @@ public sealed class VectorizedKernelTests
             var expected = Blur(bytes, forceScalar: true);
             var actual = Blur(bytes, forceScalar: false);
             Assert.Equal(expected, actual);
+
+            // Opaque pixels are filtered as their colors
+            if (MakeOpaque(format, bytes))
+            {
+                Assert.Equal(Blur(bytes, forceScalar: true), Blur(bytes, forceScalar: false));
+            }
 
             byte[] Blur(byte[] source, bool forceScalar)
             {
@@ -5325,6 +5343,22 @@ public sealed class VectorizedKernelTests
         {
             Assert.Equal(expected, Adler32.UpdateAvx2(adler, data));
         }
+    }
+
+    /// <summary>Sets the alpha of every pixel to the maximum; returns <see langword="false"/> for a format without alpha.</summary>
+    private static bool MakeOpaque(PixelFormat format, byte[] bytes)
+    {
+        if (!PixelFormats.HasAlpha(format))
+            return false;
+
+        var size = PixelFormats.GetBytesPerPixel(format);
+        var alphaBytes = PixelFormats.GetBitsPerComponent(format) / 8;
+        for (var i = 0; i < bytes.Length; i += size)
+        {
+            bytes.AsSpan(i + size - alphaBytes, alphaBytes).Fill(0xFF);
+        }
+
+        return true;
     }
 
     private static Image ImportBytes(PixelFormat format, byte[] bytes, int width, int height) => format switch

@@ -19,6 +19,7 @@ public class ConvolutionBenchmarks
 
     private Image<Rgba32> _rgba32 = null!;
     private Image<Rgba64> _rgba64 = null!;
+    private Image<Rgba32> _opaque32 = null!;
 
     /// <summary>Gets or sets <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> (1 is the default configuration).</summary>
     [Params(1, 2, 4)]
@@ -30,6 +31,7 @@ public class ConvolutionBenchmarks
         var configuration = new ImageConfiguration { MaxDegreeOfParallelism = Workers };
         _rgba32 = Image.ImportPixelData<Rgba32>(BenchmarkInputs.ResizeRgba32Source, BenchmarkInputs.ResizeWidth, BenchmarkInputs.ResizeHeight, configuration: configuration);
         _rgba64 = Image.ImportPixelData<Rgba64>(BenchmarkInputs.ResizeRgba64Source, BenchmarkInputs.ResizeWidth, BenchmarkInputs.ResizeHeight, configuration: configuration);
+        _opaque32 = Image.ImportPixelData<Rgba32>(BenchmarkInputs.ResizeRgba32OpaqueSource, BenchmarkInputs.ResizeWidth, BenchmarkInputs.ResizeHeight, configuration: configuration);
     }
 
     [GlobalCleanup]
@@ -37,6 +39,7 @@ public class ConvolutionBenchmarks
     {
         _rgba32?.Dispose();
         _rgba64?.Dispose();
+        _opaque32?.Dispose();
     }
 
     [Benchmark(Baseline = true)]
@@ -78,6 +81,10 @@ public class ConvolutionBenchmarks
     [Benchmark]
     [Workload("1920x1080 Rgba32 Gaussian blur, deviation 8 (49 weights per direction)")]
     public int GaussianBlur8() => Blur(_rgba32, 8);
+
+    [Benchmark]
+    [Workload("1920x1080 opaque Rgba32 Gaussian blur, deviation 2 (13 weights per direction)")]
+    public int GaussianBlur2Opaque() => Blur(_opaque32, 2);
 
     [Benchmark]
     [Workload("1920x1080 Rgba64 Gaussian blur, deviation 2 (13 weights per direction)")]

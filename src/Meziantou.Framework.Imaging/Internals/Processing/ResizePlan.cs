@@ -75,7 +75,10 @@ internal sealed class ResizePlan : IDisposable
     /// <summary>Gets a value indicating whether the last sample of each pixel is a straight alpha.</summary>
     public bool HasAlpha { get; }
 
-    /// <summary>Gets how alpha takes part in the working samples: premultiplied when the format has alpha.</summary>
+    /// <summary>
+    /// Gets how alpha takes part in the working samples: premultiplied when the format has alpha, except in a frame whose
+    /// pixels read are all opaque (<see cref="WorkingAlpha.Opaque"/>, decided by <see cref="Resampler"/> for each frame).
+    /// </summary>
     public WorkingAlpha Alpha => HasAlpha ? WorkingAlpha.Premultiplied : WorkingAlpha.None;
 
     /// <summary>Gets the maximum sample value (255 or 65,535).</summary>
@@ -143,9 +146,9 @@ internal sealed class ResizePlan : IDisposable
         YWeights = ResampleWeights.Create(scope, Geometry.Y, Filter);
         var rowLength = (long)output.Width * Channels;
 
-        // The working row covers the padded windows, whose samples after the used columns stay zero (the buffer is cleared
-        // when rented, and only the used columns are loaded), and has one extra element for 3-sample pixels: the vectorized
-        // horizontal pass loads 4 samples per pixel
+        // The working row covers the padded windows, whose samples after the used columns stay finite (the buffer is cleared
+        // when rented, and only working samples are written to it), and has one extra element for 3-sample pixels: the
+        // vectorized horizontal pass loads 4 samples per pixel. The colors of opaque 4-sample pixels (3 per pixel) fit in it.
         var sourceLength = group is 0 ? XWeights.Last - XWeights.First + 1 : XWeights.PaddedSourceLength;
         var workingLength = ((long)sourceLength * Channels) + (Channels == 3 ? 1 : 0);
         Strategy = TestStrategyOverride ?? SelectStrategy(scope, YWeights, workingLength, rowLength);

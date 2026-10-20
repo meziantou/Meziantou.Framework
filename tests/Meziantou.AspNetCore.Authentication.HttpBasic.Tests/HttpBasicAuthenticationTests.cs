@@ -21,6 +21,34 @@ namespace Meziantou.AspNetCore.Authentication.HttpBasic.Tests;
 public sealed class HttpBasicAuthenticationTests
 {
     [Fact]
+    public async Task ReadmeExample_IdentityAuthenticationType()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Services.AddSingleton<IUserStore<IdentityUser>>(_ => new InMemoryIdentityUserStore([CreateIdentityUser(id: "user-id", username: "myName", password: "myPassword")]));
+        builder.Services.AddIdentityCore<IdentityUser>()
+                        .AddSignInManager();
+        builder.Services
+            .AddAuthentication(HttpBasicAuthenticationDefaults.AuthenticationScheme)
+            .AddHttpBasicIdentity<IdentityUser>(options => options.Realm = "My application");
+
+        await using var app = builder.Build();
+        app.UseAuthentication();
+
+        #region HttpBasicIdentity_AuthenticationType
+        app.MapGet("/", (ClaimsPrincipal user) => user.Identity?.AuthenticationType);
+        // => "Identity.Application"
+        #endregion
+
+        await app.StartAsync(XunitCancellationToken);
+        using var client = app.GetTestClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/");
+        request.Headers.Authorization = new AuthenticationHeaderValue(HttpBasicAuthenticationDefaults.AuthenticationScheme, Convert.ToBase64String(Encoding.UTF8.GetBytes("myName:myPassword")));
+        using var response = await client.SendAsync(request, XunitCancellationToken);
+        Assert.Equal("Identity.Application", await response.Content.ReadAsStringAsync(XunitCancellationToken));
+    }
+
+    [Fact]
     public async Task PlainTextPassword_IsAccepted()
     {
         await using var application = await TestApplication.CreateAsync("myName", "myPassword");

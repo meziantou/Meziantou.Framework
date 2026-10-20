@@ -10,6 +10,7 @@ Responses use the same encoding as the request.
 Compressed requests are handled by the ASP.NET Core request decompression middleware, so any encoding it supports
 (`gzip`, `br`, `deflate`, or a custom provider) works:
 
+<!-- ref:../../tests/Meziantou.Framework.OpenTelemetry.Tests/OpenTelemetryReceiverTests.cs;region=OpenTelemetryCollector_RequestDecompression;format=md-fenced-code-block;dedent=true -->
 ```csharp
 builder.Services.AddRequestDecompression();
 
@@ -17,11 +18,15 @@ var app = builder.Build();
 app.UseRequestDecompression();
 app.MapOpenTelemetryReceiverEndpoints();
 ```
+<!-- endref -->
 
-The receiver API is abstract, so you can implement custom handling logic and register one or multiple receivers.
+The receiver API is abstract, so you can implement custom handling logic and register one or multiple receivers. A receiver
+derives from `OpenTelemetryHandler` (`Meziantou.Framework.OpenTelemetryCollector` namespace) and overrides
+`HandleLogsAsync`, `HandleTracesAsync` and `HandleMetricsAsync`.
 
 For an in-memory implementation, use the `Meziantou.Framework.OpenTelemetryCollector.InMemory` package.
 
+<!-- ref:../../samples/Meziantou.AspNetCore.Samples/OpenTelemetryCollectorExamples.cs;region=OpenTelemetryCollector_CustomReceiver;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenTelemetryReceiver<MyReceiver>();
@@ -31,6 +36,7 @@ app.MapOpenTelemetryReceiverEndpoints();
 
 app.Run();
 ```
+<!-- endref -->
 
 ### Securing the endpoints
 
@@ -38,16 +44,19 @@ app.Run();
 every mapped endpoint, HTTP and gRPC alike. An OTLP receiver is an unauthenticated write endpoint, so restrict it unless
 it is only reachable from a trusted network:
 
+<!-- ref:../../samples/Meziantou.AspNetCore.Samples/OpenTelemetryCollectorExamples.cs;region=OpenTelemetryCollector_SecureEndpoints;format=md-fenced-code-block;dedent=true -->
 ```csharp
 app.MapOpenTelemetryReceiverEndpoints()
    .RequireAuthorization()
    .RequireRateLimiting("otlp");
 ```
+<!-- endref -->
 
 ### Request sampling
 
 Use request samplers to drop logs, traces, or metrics before they are dispatched to handlers:
 
+<!-- ref:../../tests/Meziantou.Framework.OpenTelemetry.Tests/OpenTelemetryReceiverTests.cs;region=OpenTelemetryCollector_KeepOnlyNonEmptyRequestsSampler;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public sealed class KeepOnlyNonEmptyRequestsSampler : OpenTelemetrySampler
 {
@@ -60,12 +69,19 @@ public sealed class KeepOnlyNonEmptyRequestsSampler : OpenTelemetrySampler
     public override ValueTask<bool> ShouldSampleMetricsAsync(OpenTelemetryHandlerContext context, ExportMetricsServiceRequest request, CancellationToken cancellationToken)
         => ValueTask.FromResult(request.ResourceMetrics.Count > 0);
 }
+```
+<!-- endref -->
 
+Then add the sampler to the options of the receiver:
+
+<!-- ref:../../tests/Meziantou.Framework.OpenTelemetry.Tests/OpenTelemetryReceiverTests.cs;region=OpenTelemetryCollector_RegisterSampler;format=md-fenced-code-block;dedent=true -->
+```csharp
 builder.Services.AddOpenTelemetryReceiver<MyReceiver>(options =>
 {
     options.Samplers.Add(new KeepOnlyNonEmptyRequestsSampler());
 });
 ```
+<!-- endref -->
 
 ### Trace tail filtering
 
@@ -74,6 +90,7 @@ Use tail sampling for traces when child spans can arrive before the root span. T
 - the root span is observed
 - or `MaxTraceDuration` is reached
 
+<!-- ref:../../tests/Meziantou.Framework.OpenTelemetry.Tests/OpenTelemetryReceiverTests.cs;region=OpenTelemetryCollector_TailSampling;format=md-fenced-code-block;dedent=true -->
 ```csharp
 builder.Services.AddOpenTelemetryReceiver<MyReceiver>(options =>
 {
@@ -88,6 +105,7 @@ builder.Services.AddOpenTelemetryReceiver<MyReceiver>(options =>
     });
 });
 ```
+<!-- endref -->
 
 Traces that never receive their root span are evaluated by a background sweep, so they are released even when no other
 trace is received. The sweep runs every `SweepInterval`, which defaults to a quarter of `MaxTraceDuration`.
@@ -122,9 +140,12 @@ stops the remaining traces from being dispatched.
 Samplers and handlers can report the records they could not accept. They are sent back to the client in the OTLP
 `partial_success` response field:
 
+<!-- ref:../../tests/Meziantou.Framework.OpenTelemetry.Tests/OpenTelemetryReceiverTests.cs;region=OpenTelemetryCollector_DropOversizedLogsHandler;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public sealed class DropOversizedLogsHandler : OpenTelemetryHandler
 {
+    private const int MaxLogRecordsPerRequest = 100;
+
     public override ValueTask HandleLogsAsync(OpenTelemetryHandlerContext context, ExportLogsServiceRequest request, CancellationToken cancellationToken)
     {
         var rejected = Store(request);
@@ -135,7 +156,21 @@ public sealed class DropOversizedLogsHandler : OpenTelemetryHandler
 
         return ValueTask.CompletedTask;
     }
+
+    public override ValueTask HandleTracesAsync(OpenTelemetryHandlerContext context, ExportTraceServiceRequest request, CancellationToken cancellationToken)
+        => ValueTask.CompletedTask;
+
+    public override ValueTask HandleMetricsAsync(OpenTelemetryHandlerContext context, ExportMetricsServiceRequest request, CancellationToken cancellationToken)
+        => ValueTask.CompletedTask;
+
+    // Stores the log records that fit in the quota, and returns the number of the other ones
+    private static int Store(ExportLogsServiceRequest request)
+    {
+        var count = request.ResourceLogs.Sum(resourceLogs => resourceLogs.ScopeLogs.Sum(scopeLogs => scopeLogs.LogRecords.Count));
+        return Math.Max(0, count - MaxLogRecordsPerRequest);
+    }
 }
 ```
+<!-- endref -->
 
 Spans dropped by `OpenTelemetryTailSampler` because a buffer limit is reached are reported the same way.

@@ -56,7 +56,7 @@ internal sealed class TextShapeCache
     /// <summary>Returns a cached shaped text, and the text of the entry (<paramref name="key"/>): it can be kept instead of a copy of <paramref name="text"/>.</summary>
     public bool TryGetShapedText(ReadOnlySpan<char> text, in TextShapingOptions options, [NotNullWhen(true)] out ShapedText? result, [NotNullWhen(true)] out string? key)
     {
-        if (_entries.TryGetValue(options, out var entries) && entries.Shaped is { } shaped)
+        if (FindEntries(options) is { Shaped: { } shaped })
             return shaped.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(text, out key, out result);
 
         key = null;

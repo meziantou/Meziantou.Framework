@@ -1,2 +1,0 @@
-annexB/built-ins/RegExp/RegExp-leading-escape-BMP.js:sloppy
-annexB/built-ins/RegExp/RegExp-trailing-escape-BMP.js:sloppy

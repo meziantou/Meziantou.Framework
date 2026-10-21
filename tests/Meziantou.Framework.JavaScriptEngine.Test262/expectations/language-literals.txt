@@ -1,4 +1,0 @@
-language/literals/regexp/S7.8.5_A1.1_T2.js:sloppy
-language/literals/regexp/S7.8.5_A1.4_T2.js:sloppy
-language/literals/regexp/S7.8.5_A2.1_T2.js:sloppy
-language/literals/regexp/S7.8.5_A2.4_T2.js:sloppy

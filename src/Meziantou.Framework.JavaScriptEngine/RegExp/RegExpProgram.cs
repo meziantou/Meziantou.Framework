@@ -12,6 +12,9 @@ internal sealed class RegExpProgram
 
     private static readonly ConcurrentDictionary<(string Pattern, RegExpFlags Flags), RegExpProgram> Cache = new();
 
+    // ConcurrentDictionary.Count takes all the locks of the dictionary: the number of entries is tracked separately
+    private static int s_cacheCount;
+
     internal RegExpProgram(
         string source,
         RegExpFlags flags,
@@ -95,8 +98,9 @@ internal sealed class RegExpProgram
         program = Compile(pattern, key.Item2, out error);
         if (program is not null)
         {
-            if (Cache.Count >= MaxCacheSize)
+            if (Interlocked.Increment(ref s_cacheCount) > MaxCacheSize)
             {
+                Interlocked.Exchange(ref s_cacheCount, 0);
                 Cache.Clear();
             }
 

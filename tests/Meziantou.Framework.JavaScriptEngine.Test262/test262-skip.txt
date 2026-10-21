@@ -6,6 +6,3 @@ intl402/
 language/
 staging/
 
-# The parser tests: tc39/test262-parser-tests, and every test262 file parsed without running it
-parser-tests/
-parse-only/

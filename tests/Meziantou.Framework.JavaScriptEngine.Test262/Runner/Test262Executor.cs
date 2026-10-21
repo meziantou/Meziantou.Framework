@@ -53,9 +53,13 @@ internal static class Test262Executor
             TimeZone = "UTC",
         });
 
+        // [[CanBlock]]: the tests flagged CanBlockIsFalse expect Atomics.wait to throw in the main agent
+        engine.CanBlock = !metadata.HasFlag("CanBlockIsFalse");
+        using var agents = new Test262Agents(cancellation.Token);
         var output = new StringBuilder();
         var realm = engine.CreateRealm();
-        Test262Host.Install(realm, output);
+        Test262Host.Install(realm, output, agents);
+        agents.InstallSetTimeout(realm);
         try
         {
             if (!metadata.IsRaw)
@@ -68,7 +72,7 @@ internal static class Test262Executor
 
             var code = mode == Test262Mode.Strict ? "\"use strict\";\n" + source : source;
             realm.Execute(code, test.Id);
-            engine.RunJobs();
+            agents.RunJobs(engine);
         }
         catch (JsException ex)
         {
@@ -83,6 +87,9 @@ internal static class Test262Executor
 
             return "Uncaught exception: " + ex.Message;
         }
+
+        if (agents.GetError() is { } agentError)
+            return agentError;
 
         if (metadata.NegativePhase is not null)
             return $"Expected a {metadata.NegativeType} ({metadata.NegativePhase}), but no exception was thrown";

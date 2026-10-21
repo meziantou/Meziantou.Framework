@@ -1,9 +1,3 @@
-built-ins/TypedArray/prototype/copyWithin/coerced-target-start-end-shrink.js:sloppy
-built-ins/TypedArray/prototype/copyWithin/coerced-target-start-end-shrink.js:strict
-built-ins/TypedArray/prototype/entries/BigInt/iter-prototype.js:sloppy
-built-ins/TypedArray/prototype/entries/BigInt/iter-prototype.js:strict
-built-ins/TypedArray/prototype/entries/iter-prototype.js:sloppy
-built-ins/TypedArray/prototype/entries/iter-prototype.js:strict
 built-ins/TypedArray/prototype/find/BigInt/predicate-is-not-callable-throws.js:sloppy
 built-ins/TypedArray/prototype/find/BigInt/predicate-is-not-callable-throws.js:strict
 built-ins/TypedArray/prototype/find/predicate-is-not-callable-throws.js:sloppy
@@ -20,17 +14,9 @@ built-ins/TypedArray/prototype/findLastIndex/BigInt/predicate-is-not-callable-th
 built-ins/TypedArray/prototype/findLastIndex/BigInt/predicate-is-not-callable-throws.js:strict
 built-ins/TypedArray/prototype/findLastIndex/predicate-is-not-callable-throws.js:sloppy
 built-ins/TypedArray/prototype/findLastIndex/predicate-is-not-callable-throws.js:strict
-built-ins/TypedArray/prototype/keys/BigInt/iter-prototype.js:sloppy
-built-ins/TypedArray/prototype/keys/BigInt/iter-prototype.js:strict
-built-ins/TypedArray/prototype/keys/iter-prototype.js:sloppy
-built-ins/TypedArray/prototype/keys/iter-prototype.js:strict
 built-ins/TypedArray/prototype/sort/BigInt/comparefn-nonfunction-call-throws.js:sloppy
 built-ins/TypedArray/prototype/sort/BigInt/comparefn-nonfunction-call-throws.js:strict
 built-ins/TypedArray/prototype/sort/comparefn-nonfunction-call-throws.js:sloppy
 built-ins/TypedArray/prototype/sort/comparefn-nonfunction-call-throws.js:strict
 built-ins/TypedArray/prototype/toSorted/comparefn-not-a-function.js:sloppy
 built-ins/TypedArray/prototype/toSorted/comparefn-not-a-function.js:strict
-built-ins/TypedArray/prototype/values/BigInt/iter-prototype.js:sloppy
-built-ins/TypedArray/prototype/values/BigInt/iter-prototype.js:strict
-built-ins/TypedArray/prototype/values/iter-prototype.js:sloppy
-built-ins/TypedArray/prototype/values/iter-prototype.js:strict

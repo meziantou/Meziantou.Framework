@@ -411,7 +411,7 @@ internal sealed class DateIntervalPatterns
             var c = intervalPattern[i];
             if (c != previous && count > 0)
             {
-                if (!seen.Add(previous))
+                if (!seen.Add(DateIntervalFormatter.GetFieldKey(previous)))
                 {
                     foundRepetition = true;
                     break;
@@ -438,7 +438,7 @@ internal sealed class DateIntervalPatterns
             }
         }
 
-        if (count > 0 && !foundRepetition && !seen.Contains(previous))
+        if (count > 0 && !foundRepetition && !seen.Contains(DateIntervalFormatter.GetFieldKey(previous)))
         {
             count = 0;
         }
@@ -822,7 +822,7 @@ internal static class DateIntervalFormatter
     }
 
     // The fields that are the same calendar field (e.g. M and L)
-    private static char GetFieldKey(char symbol) => symbol switch
+    internal static char GetFieldKey(char symbol) => symbol switch
     {
         'L' => 'M',
         'c' or 'e' => 'E',

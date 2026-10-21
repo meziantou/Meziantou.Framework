@@ -265,7 +265,9 @@ namespace Meziantou.Framework.JavaScriptEngine
         public Meziantou.Framework.JavaScriptEngine.JsValue GetProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, Meziantou.Framework.JavaScriptEngine.JsValue receiver) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsObject? GetPrototype() => throw null;
         public bool HasInternalSlot(Meziantou.Framework.JavaScriptEngine.JsInternalSlot slot) => throw null;
+        public void MakePrototypeImmutable() { }
         public bool PreventObjectExtensions() => throw null;
+        public void ReserveProperties(int count) { }
         public bool SetProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
         public bool SetProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, Meziantou.Framework.JavaScriptEngine.JsValue value, Meziantou.Framework.JavaScriptEngine.JsValue receiver) => throw null;
         public bool SetPrototype(Meziantou.Framework.JavaScriptEngine.JsObject? prototype) => throw null;

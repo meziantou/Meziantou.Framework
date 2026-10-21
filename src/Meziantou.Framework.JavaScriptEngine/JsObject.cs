@@ -10,7 +10,11 @@ public partial class JsObject : JsCell
 {
     // Elements in which a hole is an absent property: the dense storage of the array indices (attributes: W/E/C)
     private JsValue[]? _elements;
-    private PropertyTable? _properties;
+
+    // The named properties (and the array indices that are not in the elements): a shape shared with other objects and the
+    // values in its slots, or a property table of the object (dictionary mode, _slots is null). Null: no properties yet.
+    private PropertyMap? _map;
+    private JsValue[]? _slots;
     private JsObject? _prototype;
 
     internal JsObject(JsObject? prototype, ObjectClass objectClass = ObjectClass.Object)
@@ -127,11 +131,16 @@ public partial class JsObject : JsCell
         }
 
         _prototype = prototype;
+        OnStructureChanged();
         return true;
     }
 
     /// <summary>Sets the prototype without any check (for the objects being created).</summary>
-    internal void SetPrototypeDirect(JsObject? prototype) => _prototype = prototype;
+    internal void SetPrototypeDirect(JsObject? prototype)
+    {
+        _prototype = prototype;
+        OnStructureChanged();
+    }
 
     internal bool OrdinaryGetOwnProperty(in PropertyKey key, out PropertyDescriptor descriptor)
     {
@@ -145,7 +154,27 @@ public partial class JsObject : JsCell
             }
         }
 
-        if (_properties is { } properties && (!key.IsArrayIndex || (Flags & ObjectFlags.IndexedProperties) != 0))
+        if (_map is Shape shape)
+        {
+            var slot = shape.Find(key);
+            if (slot >= 0)
+            {
+                var flags = shape.GetFlags(slot);
+                var value = _slots![slot];
+                if ((flags & PropertyFlags.Accessor) != 0)
+                {
+                    var pair = (AccessorPair)value.Cell!;
+                    descriptor = PropertyDescriptor.Accessor(pair.Getter, pair.Setter, flags);
+                }
+                else
+                {
+                    descriptor = PropertyDescriptor.Data(value, flags);
+                }
+
+                return true;
+            }
+        }
+        else if (_map is PropertyTable properties && (!key.IsArrayIndex || (Flags & ObjectFlags.IndexedProperties) != 0))
         {
             var position = properties.Find(key);
             if (position >= 0)
@@ -159,7 +188,7 @@ public partial class JsObject : JsCell
         return false;
     }
 
-    private static PropertyDescriptor GetDescriptor(PropertyTable properties, int position)
+    private PropertyDescriptor GetDescriptor(PropertyTable properties, int position)
     {
         var flags = properties.GetFlags(position);
         ref var value = ref properties.GetValue(position);
@@ -174,6 +203,7 @@ public partial class JsObject : JsCell
             value = ((LazyValue)value.Cell!).Evaluate();
             flags &= ~PropertyFlags.Lazy;
             properties.GetFlags(position) = flags;
+            OnStructureChanged();
         }
 
         return PropertyDescriptor.Data(value, flags);
@@ -193,7 +223,18 @@ public partial class JsObject : JsCell
             }
         }
 
-        if (_properties is { } properties && (!key.IsArrayIndex || (Flags & ObjectFlags.IndexedProperties) != 0))
+        var map = _map;
+        if (map is Shape shape)
+        {
+            var slot = shape.Find(key);
+            if (slot >= 0)
+            {
+                flags = shape.GetFlags(slot);
+                value = _slots![slot];
+                return true;
+            }
+        }
+        else if (map is PropertyTable properties && (!key.IsArrayIndex || (Flags & ObjectFlags.IndexedProperties) != 0))
         {
             var position = properties.Find(key);
             if (position >= 0)
@@ -344,30 +385,141 @@ public partial class JsObject : JsCell
                 elements[index] = JsValue.Hole;
             }
 
-            if (_properties is { } table && (Flags & ObjectFlags.IndexedProperties) != 0)
+            // The array indices that are not in the elements are in a property table
+            var indexTable = GetPropertyTable();
+            if ((Flags & ObjectFlags.IndexedProperties) != 0)
             {
-                var existing = table.Find(key);
+                var existing = indexTable.Find(key);
                 if (existing >= 0)
                 {
-                    table.GetValue(existing) = value;
-                    table.GetFlags(existing) = flags;
+                    SetTableEntry(indexTable, existing, value, flags);
                     return;
                 }
             }
 
             Flags |= ObjectFlags.IndexedProperties;
+            indexTable.Add(key, value, flags);
+            OnStructureChanged();
+            return;
         }
 
-        var properties = _properties ??= new PropertyTable();
-        var position = properties.Find(key);
-        if (position >= 0)
+        if (_map is PropertyTable properties)
         {
-            properties.GetValue(position) = value;
-            properties.GetFlags(position) = flags;
+            var position = properties.Find(key);
+            if (position >= 0)
+            {
+                SetTableEntry(properties, position, value, flags);
+            }
+            else
+            {
+                properties.Add(key, value, flags);
+                OnStructureChanged();
+            }
+
+            return;
+        }
+
+        var shape = (Shape?)_map;
+        var slot = shape is null ? -1 : shape.Find(key);
+        if (slot < 0)
+        {
+            AddProperty(key, value, flags);
+        }
+        else if (shape!.GetFlags(slot) == flags)
+        {
+            _slots![slot] = value;
         }
         else
         {
-            properties.Add(key, value, flags);
+            // A reconfigured property: the object leaves the shared shapes
+            var table = GetPropertyTable();
+            SetTableEntry(table, table.Find(key), value, flags);
+        }
+    }
+
+    private void SetTableEntry(PropertyTable table, int position, JsValue value, PropertyFlags flags)
+    {
+        table.GetValue(position) = value;
+        ref var currentFlags = ref table.GetFlags(position);
+        if (currentFlags != flags)
+        {
+            currentFlags = flags;
+            OnStructureChanged();
+        }
+    }
+
+    /// <summary>Adds a named property that does not exist: in the next shape, or in the property table.</summary>
+    private void AddProperty(in PropertyKey key, JsValue value, PropertyFlags flags)
+    {
+        if (_map is not PropertyTable && (flags & PropertyFlags.Lazy) == 0)
+        {
+            var shape = (Shape?)_map ?? GetEmptyShape();
+            if (shape?.AddProperty(key, flags) is { } next)
+            {
+                var slot = shape.Count;
+                var slots = _slots;
+                if (slots is null)
+                {
+                    _slots = slots = new JsValue[4];
+                }
+                else if (slot >= slots.Length)
+                {
+                    Array.Resize(ref _slots, slots.Length * 2);
+                    slots = _slots;
+                }
+
+                slots[slot] = value;
+                _map = next;
+                OnStructureChanged();
+                return;
+            }
+        }
+
+        GetPropertyTable().Add(key, value, flags);
+        OnStructureChanged();
+    }
+
+    /// <summary>Gets the empty shape of the kind of the object, or null when its named properties are exotic (it uses a property table).</summary>
+    private Shape? GetEmptyShape()
+    {
+        if (!IsExotic)
+            return Shape.EmptyOrdinary;
+
+        return this switch
+        {
+            JsArray => Shape.EmptyArray,
+            JsStringObject or Interpreter.JsArgumentsObject => Shape.EmptyIndexedExotic,
+            _ => null,
+        };
+    }
+
+    /// <summary>Gets the property table of the object: the properties of its shape move to a table of its own (dictionary mode).</summary>
+    private PropertyTable GetPropertyTable()
+    {
+        if (_map is PropertyTable existing)
+            return existing;
+
+        var shape = (Shape?)_map;
+        var count = shape?.Count ?? 0;
+        var table = new PropertyTable(Math.Max(4, count));
+        for (var i = 0; i < count; i++)
+        {
+            table.Add(shape!.GetKey(i), _slots![i], shape.GetFlags(i));
+        }
+
+        _map = table;
+        _slots = null;
+        OnStructureChanged();
+        return table;
+    }
+
+    /// <summary>Invalidates the inline caches when the object is a holder or a prototype they depend on (its properties or its prototype changed).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void OnStructureChanged()
+    {
+        if ((Flags & ObjectFlags.InlineCacheDependency) != 0)
+        {
+            InlineCache.Invalidate();
         }
     }
 
@@ -431,12 +583,30 @@ public partial class JsObject : JsCell
             return;
         }
 
-        if (_properties is { } properties)
+        if (_map is Shape shape)
         {
+            var slot = shape.Find(key);
+            if (slot < 0)
+                return;
+
+            if (slot == shape.Count - 1 && shape.Parent is { } parent)
+            {
+                // The last property: back to the parent shape
+                _slots![slot] = default;
+                _map = parent;
+                OnStructureChanged();
+                return;
+            }
+        }
+
+        if (_map is not null)
+        {
+            var properties = GetPropertyTable();
             var position = properties.Find(key);
             if (position >= 0)
             {
                 properties.Remove(position);
+                OnStructureChanged();
             }
         }
     }
@@ -599,7 +769,36 @@ public partial class JsObject : JsCell
             }
         }
 
-        if (_properties is { } properties)
+        if (_map is Shape shape)
+        {
+            // No array index in a shape: the strings, then the symbols, in insertion order
+            var hasSymbols = false;
+            for (var i = 0; i < shape.Count; i++)
+            {
+                var key = shape.GetKey(i);
+                if (key.IsSymbol)
+                {
+                    hasSymbols = true;
+                }
+                else
+                {
+                    keys.Add(key);
+                }
+            }
+
+            if (hasSymbols)
+            {
+                for (var i = 0; i < shape.Count; i++)
+                {
+                    var key = shape.GetKey(i);
+                    if (key.IsSymbol)
+                    {
+                        keys.Add(key);
+                    }
+                }
+            }
+        }
+        else if (_map is PropertyTable properties)
         {
             if ((Flags & ObjectFlags.IndexedProperties) != 0)
             {
@@ -664,20 +863,37 @@ public partial class JsObject : JsCell
         // Fast path: a new or configurable data property of an ordinary extensible object (e.g. an object literal)
         if (!IsExotic && !key.IsArrayIndex && IsExtensibleSlot)
         {
-            var properties = _properties ??= new PropertyTable();
-            var position = properties.Find(key);
-            if (position < 0)
+            if (_map is PropertyTable properties)
             {
-                properties.Add(key, value, PropertyFlags.Default);
-                return true;
-            }
+                var position = properties.Find(key);
+                if (position < 0)
+                {
+                    properties.Add(key, value, PropertyFlags.Default);
+                    OnStructureChanged();
+                    return true;
+                }
 
-            ref var flags = ref properties.GetFlags(position);
-            if ((flags & PropertyFlags.Configurable) != 0)
+                if ((properties.GetFlags(position) & PropertyFlags.Configurable) != 0)
+                {
+                    SetTableEntry(properties, position, value, PropertyFlags.Default);
+                    return true;
+                }
+            }
+            else
             {
-                properties.GetValue(position) = value;
-                flags = PropertyFlags.Default;
-                return true;
+                var shape = (Shape?)_map;
+                var slot = shape is null ? -1 : shape.Find(key);
+                if (slot < 0)
+                {
+                    AddProperty(key, value, PropertyFlags.Default);
+                    return true;
+                }
+
+                if ((shape!.GetFlags(slot) & PropertyFlags.Configurable) != 0)
+                {
+                    SetOwnSlot(key, value, PropertyFlags.Default);
+                    return true;
+                }
             }
         }
 
@@ -747,7 +963,7 @@ public partial class JsObject : JsCell
     /// <summary>Gets the own property keys that are array indices and are in the property table.</summary>
     internal IEnumerable<PropertyKey> GetIndexedTableKeys()
     {
-        if (_properties is not { } properties || (Flags & ObjectFlags.IndexedProperties) == 0)
+        if (_map is not PropertyTable properties || (Flags & ObjectFlags.IndexedProperties) == 0)
             yield break;
 
         for (var i = 0; i < properties.Capacity; i++)

@@ -35,6 +35,9 @@ public sealed partial class JsEngine : IDisposable
     /// <summary>Gets the free frames of the ordinary calls.</summary>
     internal Interpreter.FramePool FramePool { get; } = new();
 
+    /// <summary>Gets the roots of the shapes of the objects of the engine.</summary>
+    internal ShapeRoots ShapeRoots { get; } = new();
+
     /// <summary>[[ModuleAsyncEvaluationCount]] of the agent.</summary>
     internal long ModuleAsyncEvaluationCount { get; set; }
 

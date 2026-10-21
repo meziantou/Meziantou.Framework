@@ -67,6 +67,21 @@ if (args is ["quick", ..])
         Console.WriteLine($"{name,-14} {mine,10:F3} ms  Jint {theirs,10:F3} ms  ratio {mine / theirs,6:F2}");
     }
 
+    // The fixed costs: an engine and a realm that runs a tiny script, and the parsing of a large script
+    if (filter is null or "CreateRealm")
+    {
+        var mine = Measure(() => { using var engine = new JsEngine(); engine.CreateRealm().Execute("1 + 1"); }, iterations);
+        var theirs = Measure(() => { using var engine = new Jint.Engine(); engine.Evaluate("1 + 1"); }, iterations);
+        Console.WriteLine($"{"CreateRealm",-14} {mine,10:F3} ms  Jint {theirs,10:F3} ms  ratio {mine / theirs,6:F2}");
+    }
+
+    if (filter is null or "Parse")
+    {
+        var mine = Measure(() => JsPreparedScript.Parse(Workloads.LargeScript), iterations);
+        var theirs = Measure(() => Jint.Engine.PrepareScript(Workloads.LargeScript), iterations);
+        Console.WriteLine($"{"Parse",-14} {mine,10:F3} ms  Jint {theirs,10:F3} ms  ratio {mine / theirs,6:F2}");
+    }
+
     return 0;
 }
 

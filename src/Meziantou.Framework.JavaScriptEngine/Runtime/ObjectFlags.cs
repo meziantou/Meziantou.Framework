@@ -28,4 +28,7 @@ internal enum ObjectFlags
 
     /// <summary>The object is a class constructor (calling it throws a TypeError).</summary>
     ClassConstructor = 1 << 7,
+
+    /// <summary>An inline cache depends on the properties or the prototype of the object (a holder or a prototype): a change invalidates the inline caches.</summary>
+    InlineCacheDependency = 1 << 8,
 }

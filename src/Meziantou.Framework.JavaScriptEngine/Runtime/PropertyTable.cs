@@ -6,7 +6,7 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// The own properties of an object, in insertion order, stored in one array of entries. Small tables are searched
 /// linearly; larger ones have a hash index. A deleted entry leaves a tombstone, removed when the table is compacted.
 /// </summary>
-internal sealed class PropertyTable
+internal sealed class PropertyTable : PropertyMap
 {
     private const int IndexThreshold = 8;
 

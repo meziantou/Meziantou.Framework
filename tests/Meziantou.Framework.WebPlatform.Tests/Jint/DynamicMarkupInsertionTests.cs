@@ -50,6 +50,13 @@ public sealed class DynamicMarkupInsertionTests : IDisposable
     }
 
     [Fact]
+    public void Write_LineFeedAfterACarriageReturnOfAnotherCall_IsIgnored()
+    {
+        var document = Load("<body><script>document.write('<pre id=p>\\r'); document.write('\\nx\\r'); document.write('\\nA</pre>');</script>");
+        Assert.Equal("x\nA", document.GetElementById("p")!.TextContent);
+    }
+
+    [Fact]
     public void Write_TheCharactersAreInsertedImmediately()
     {
         var document = Load("<body><script>document.write('abc<b>d'); document.title = document.body.textContent;</script>");

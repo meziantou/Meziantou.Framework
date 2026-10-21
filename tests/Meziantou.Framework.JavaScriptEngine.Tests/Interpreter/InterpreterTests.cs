@@ -55,6 +55,9 @@ public sealed class InterpreterTests
     [InlineData("function f() { var r = typeof arguments; var arguments; return r + typeof arguments; } f()", "objectobject")]
     [InlineData("function f() { { function arguments() { } } return String(arguments); } f()", "[object Arguments]")]
     [InlineData("var obj = { x: 1 }; with (obj) { var x = delete obj.x; } [obj.x, x].join()", "true,")]
+    [InlineData("var f = (p = eval('var y = 1'), q = () => y) => y + q(); [f(), typeof y].join()", "2,undefined")]
+    [InlineData("function f(p = eval('var y = 1')) { return y; } [f(), typeof y].join()", "1,undefined")]
+    [InlineData("var f = (p = eval('var y = 1'), y) => { }; var r; try { f(); } catch (e) { r = e.constructor.name; } [r, typeof y].join()", "SyntaxError,undefined")]
     public void Evaluate(string code, string expected)
     {
         Assert.Equal(expected, Run(code));

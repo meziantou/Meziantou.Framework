@@ -38,6 +38,13 @@ internal sealed class Scope
     /// <summary>Gets or sets whether sloppy direct eval code can add var bindings to this (var) scope.</summary>
     public bool HasSloppyEvalVars { get; set; }
 
+    /// <summary>
+    /// Gets or sets whether sloppy direct eval code of the parameters adds var bindings to this parameter scope (of a function
+    /// whose parameters have expressions). The spec puts them in an environment outside the parameters: they cannot redeclare
+    /// a parameter.
+    /// </summary>
+    public bool HasParameterEvalVars { get; set; }
+
     /// <summary>Gets or sets whether the scope has an environment at runtime.</summary>
     public bool NeedsContext { get; set; }
 

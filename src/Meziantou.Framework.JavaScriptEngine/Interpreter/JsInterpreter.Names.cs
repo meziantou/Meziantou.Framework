@@ -416,8 +416,10 @@ internal static partial class JsInterpreter
             }
         }
 
-        // A var of the eval code cannot be declared over a lexical binding of the scopes between the eval and its variable environment
-        for (var environment = frame.Environment; environment is not null && environment != varEnvironment; environment = environment.Outer)
+        // A var of the eval code cannot be declared over a lexical binding of the scopes between the eval and its variable
+        // environment (the variable environment of the eval code of parameters is outside the parameters)
+        var lastEnvironment = varEnvironment is DeclarativeEnvironment { Info.IsParameterVarScope: true } ? varEnvironment.Outer : varEnvironment;
+        for (var environment = frame.Environment; environment is not null && environment != lastEnvironment; environment = environment.Outer)
         {
             if (environment is DeclarativeEnvironment declarative && declarative.Info.Kind is not ScopeKind.Eval and not ScopeKind.Catch)
             {

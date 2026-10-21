@@ -7,6 +7,7 @@ internal static class IteratorOperations
     private static readonly PropertyKey DoneKey = new("done");
     private static readonly PropertyKey ValueKey = new("value");
     private static readonly PropertyKey ReturnKey = new("return");
+    private static readonly PropertyKey IteratorKey = new(WellKnownSymbols.Iterator);
 
     /// <summary>GetIteratorFromMethod(obj, method)</summary>
     public static IteratorRecord GetIteratorFromMethod(JsValue value, JsValue method)
@@ -22,6 +23,13 @@ internal static class IteratorOperations
     /// <summary>GetIterator(obj, sync)</summary>
     public static IteratorRecord GetIterator(JsValue value)
     {
+        // An array whose iteration is not observable: no iterator object (it is created if it is needed)
+        if (value.Cell is JsArray array && JsEngine.Current?.CurrentRealm is { } realm && ReferenceEquals(array.PrototypeSlot, realm.Intrinsics.ArrayPrototype)
+            && !array.TryFindOwnForCache(IteratorKey, out _, out _) && realm.Intrinsics.IsArrayIterationIntact())
+        {
+            return new IteratorRecord(array, realm);
+        }
+
         var method = JsOperations.GetMethod(value, new PropertyKey(WellKnownSymbols.Iterator));
         if (method is null)
             return ThrowHelper.ThrowTypeError<IteratorRecord>($"{JsOperations.DescribeForError(value)} is not iterable");
@@ -64,6 +72,27 @@ internal static class IteratorOperations
     /// <summary>IteratorStepValue(iteratorRecord): the next value, or false when the iterator is done.</summary>
     public static bool IteratorStepValue(IteratorRecord record, out JsValue value)
     {
+        if (record.IsArrayIteration)
+        {
+            bool hasElement;
+            try
+            {
+                hasElement = record.StepArray(out value);
+            }
+            catch (JsException)
+            {
+                record.Done = true;
+                throw;
+            }
+
+            if (!hasElement)
+            {
+                record.Done = true;
+            }
+
+            return hasElement;
+        }
+
         if (record.NextMethod.Cell is JsBuiltinFunction { IteratorStep: not null } nativeNext)
         {
             // A built-in iterator (arrays, maps, sets): the step without the result object
@@ -121,6 +150,10 @@ internal static class IteratorOperations
     /// <summary>IteratorClose(iteratorRecord, completion) for a normal completion: errors of return() are thrown.</summary>
     public static void IteratorClose(IteratorRecord record)
     {
+        // The array iterators have no return method
+        if (record.IsArrayIteration && record.ArrayRealm!.Intrinsics.IsArrayIterationIntact())
+            return;
+
         var returnMethod = JsOperations.GetMethod(record.Iterator, ReturnKey);
         if (returnMethod is null)
             return;
@@ -135,6 +168,9 @@ internal static class IteratorOperations
     /// <summary>IteratorClose(iteratorRecord, completion) for a throw completion: the errors of return() are ignored.</summary>
     public static void IteratorCloseOnThrow(IteratorRecord record)
     {
+        if (record.IsArrayIteration && record.ArrayRealm!.Intrinsics.IsArrayIterationIntact())
+            return;
+
         try
         {
             var returnMethod = JsOperations.GetMethod(record.Iterator, ReturnKey);

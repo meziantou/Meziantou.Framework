@@ -104,7 +104,14 @@ if (args is ["quick", ..])
 {
     var filter = args.Length > 1 ? args[1] : null;
     var iterations = args.Length > 2 ? int.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 20;
-    foreach (var (name, code) in Workloads.All)
+    // A file name instead of a workload name: the script of the file (it defines run())
+    var workloads = filter is not null && File.Exists(filter) ? new Dictionary<string, string>(StringComparer.Ordinal) { [Path.GetFileNameWithoutExtension(filter)] = File.ReadAllText(filter) } : Workloads.All;
+    if (!ReferenceEquals(workloads, Workloads.All))
+    {
+        filter = null;
+    }
+
+    foreach (var (name, code) in workloads)
     {
         if (filter is not null && !name.Contains(filter, StringComparison.OrdinalIgnoreCase))
             continue;
@@ -127,14 +134,14 @@ if (args is ["quick", ..])
     }
 
     // The fixed costs: an engine and a realm that runs a tiny script, and the parsing of a large script
-    if (filter is null or "CreateRealm")
+    if (ReferenceEquals(workloads, Workloads.All) && filter is null or "CreateRealm")
     {
         var mine = Measure(() => { using var engine = new JsEngine(); engine.CreateRealm().Execute("1 + 1"); }, iterations);
         var theirs = Measure(() => { using var engine = new Jint.Engine(); engine.Evaluate("1 + 1"); }, iterations);
         Console.WriteLine($"{"CreateRealm",-14} {mine,10:F3} ms  Jint {theirs,10:F3} ms  ratio {mine / theirs,6:F2}");
     }
 
-    if (filter is null or "Parse")
+    if (ReferenceEquals(workloads, Workloads.All) && filter is null or "Parse")
     {
         var mine = Measure(() => JsPreparedScript.Parse(Workloads.LargeScript), iterations);
         var theirs = Measure(() => Jint.Engine.PrepareScript(Workloads.LargeScript), iterations);

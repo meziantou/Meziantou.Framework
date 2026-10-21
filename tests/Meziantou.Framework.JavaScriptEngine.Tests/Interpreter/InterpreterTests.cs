@@ -95,6 +95,21 @@ public sealed class InterpreterTests
         Assert.Equal(expected, Run(code));
     }
 
+    // The iteration of the arrays without an iterator object: the observable changes disable it
+    [Theory]
+    [InlineData("var a = [1, 2]; var r = []; for (var x of a) r.push(x); Array.prototype[Symbol.iterator] = function* () { yield 9; }; for (var x of a) r.push(x); r.join()", "1,2,9")]
+    [InlineData("var a = [1, 2, 3]; var proto = Object.getPrototypeOf([][Symbol.iterator]()); var next = proto.next; var r = []; proto.next = function () { var v = next.call(this); if (!v.done) v.value *= 10; return v; }; for (var x of a) r.push(x); r.join()", "10,20,30")]
+    [InlineData("var log = []; Object.prototype.return = function () { log.push('return'); return {}; }; var [x] = [1, 2]; delete Object.prototype.return; var [y] = [3, 4]; log.join() + x + y", "return13")]
+    [InlineData("var log = ''; Object.defineProperty(Array.prototype, 1, { get() { Object.getPrototypeOf([][Symbol.iterator]()).return = function () { log += 'return,'; return {}; }; return 0; }, configurable: true }); var [x, , y] = [5, , 7, 8]; delete Array.prototype[1]; log + x + ',' + y", "return,5,7")]
+    [InlineData("var a = [1, 2]; a[Symbol.iterator] = function* () { yield 'own'; }; [...a].join()", "own")]
+    [InlineData("function* g() { yield* [1, 2]; } [...g()].join()", "1,2")]
+    [InlineData("var it = Iterator.from([1, 2, 3]); it.next(); [...it].join()", "2,3")]
+    [InlineData("var a = [1, 2]; var r = []; for (var x of a) { r.push(x); if (x === 1) a.push(3); } r.join()", "1,2,3")]
+    public void Evaluate_ArrayIteration(string code, string expected)
+    {
+        Assert.Equal(expected, Run(code));
+    }
+
     [Fact]
     public void InlineCaches_GlobalLexicalDeclarationShadowsAGlobalProperty()
     {

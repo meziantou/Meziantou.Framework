@@ -6,7 +6,7 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// string keys are the elements of the buffer, never ordinary properties. A length-tracking typed array (its
 /// [[ArrayLength]] is auto) follows the byte length of a resizable buffer.
 /// </summary>
-internal sealed class JsTypedArray : JsObject
+internal sealed class JsTypedArray : JsObject, IArrayIteratorSource
 {
     private const int Auto = -1;
 

@@ -13,12 +13,15 @@ public partial class JsObject
         // double[]: numbers only, 8 bytes per element. A hole is a NaN with a payload that no stored number has.
         Number,
 
-        // JsCell?[]: the values that are not numbers, 8 bytes per element. A hole is HoleCell.Instance.
+        // CellSlot[]: the values that are not numbers, 8 bytes per element. A hole is HoleCell.Instance.
         Reference,
 
         // JsValue[]: any value, 16 bytes per element.
         Mixed,
     }
+
+    // A reference without the covariance checks of JsCell?[] (reads and writes of the elements stay cheap)
+    private readonly record struct CellSlot(JsCell? Cell);
 
     private const long NumberHoleBits = 0x7FF8_DEAD_BEEF_0001;
 
@@ -38,7 +41,7 @@ public partial class JsObject
                 case ElementKind.Number:
                     return ((double[])_elements!).Length;
                 case ElementKind.Reference:
-                    return ((JsCell?[])_elements!).Length;
+                    return ((CellSlot[])_elements!).Length;
                 case ElementKind.Mixed:
                     return ((JsValue[])_elements!).Length;
                 default:
@@ -71,10 +74,10 @@ public partial class JsObject
 
             case ElementKind.Reference:
                 {
-                    var cells = ((JsCell?[])_elements!);
+                    var cells = ((CellSlot[])_elements!);
                     if (index < (uint)cells.Length)
                     {
-                        var cell = cells[index];
+                        var cell = cells[index].Cell;
                         if (!ReferenceEquals(cell, HoleCell.Instance))
                         {
                             value = new JsValue(cell);
@@ -111,7 +114,7 @@ public partial class JsObject
         return _elementKind switch
         {
             ElementKind.Number => BitConverter.DoubleToInt64Bits(((double[])_elements!)[index]) == NumberHoleBits,
-            ElementKind.Reference => ReferenceEquals(((JsCell?[])_elements!)[index], HoleCell.Instance),
+            ElementKind.Reference => ReferenceEquals(((CellSlot[])_elements!)[index].Cell, HoleCell.Instance),
             ElementKind.Mixed => ((JsValue[])_elements!)[index].IsHole,
             _ => true,
         };
@@ -146,7 +149,7 @@ public partial class JsObject
                 }
 
             case ElementKind.Reference when !value.IsNumber:
-                ((JsCell?[])_elements!)[index] = value.Cell;
+                ((CellSlot[])_elements!)[index] = new CellSlot(value.Cell);
                 return;
 
             case ElementKind.Mixed:
@@ -178,10 +181,10 @@ public partial class JsObject
 
             case ElementKind.Reference:
                 {
-                    var cells = ((JsCell?[])_elements!);
+                    var cells = ((CellSlot[])_elements!);
                     for (var i = 0; i < cells.Length; i++)
                     {
-                        mixed[i] = new JsValue(cells[i]);
+                        mixed[i] = new JsValue(cells[i].Cell);
                     }
 
                     break;
@@ -206,7 +209,7 @@ public partial class JsObject
                 ((double[])_elements!)[index] = NumberHole;
                 break;
             case ElementKind.Reference:
-                ((JsCell?[])_elements!)[index] = HoleCell.Instance;
+                ((CellSlot[])_elements!)[index] = new CellSlot(HoleCell.Instance);
                 break;
             case ElementKind.Mixed:
                 ((JsValue[])_elements!)[index] = JsValue.Hole;
@@ -222,7 +225,7 @@ public partial class JsObject
                 ((double[])_elements!).AsSpan(start, count).Fill(NumberHole);
                 break;
             case ElementKind.Reference:
-                ((JsCell?[])_elements!).AsSpan(start, count).Fill(HoleCell.Instance);
+                ((CellSlot[])_elements!).AsSpan(start, count).Fill(new CellSlot(HoleCell.Instance));
                 break;
             case ElementKind.Mixed:
                 ((JsValue[])_elements!).AsSpan(start, count).Fill(JsValue.Hole);
@@ -292,7 +295,7 @@ public partial class JsObject
                 ((double[])_elements!).AsSpan(0, length).Reverse();
                 break;
             case ElementKind.Reference:
-                ((JsCell?[])_elements!).AsSpan(0, length).Reverse();
+                ((CellSlot[])_elements!).AsSpan(0, length).Reverse();
                 break;
             case ElementKind.Mixed:
                 ((JsValue[])_elements!).AsSpan(0, length).Reverse();
@@ -309,7 +312,7 @@ public partial class JsObject
                 Array.Copy(((double[])_elements!), source, ((double[])_elements!), destination, count);
                 break;
             case ElementKind.Reference:
-                Array.Copy(((JsCell?[])_elements!), source, ((JsCell?[])_elements!), destination, count);
+                Array.Copy(((CellSlot[])_elements!), source, ((CellSlot[])_elements!), destination, count);
                 break;
             case ElementKind.Mixed:
                 Array.Copy(((JsValue[])_elements!), source, ((JsValue[])_elements!), destination, count);
@@ -326,7 +329,7 @@ public partial class JsObject
                 ((double[])_elements!).AsSpan(start, count).Clear();
                 break;
             case ElementKind.Reference:
-                ((JsCell?[])_elements!).AsSpan(start, count).Clear();
+                ((CellSlot[])_elements!).AsSpan(start, count).Clear();
                 break;
             case ElementKind.Mixed:
                 ((JsValue[])_elements!).AsSpan(start, count).Fill(JsValue.Undefined);
@@ -365,7 +368,7 @@ public partial class JsObject
             }
             else
             {
-                _elements = new JsCell?[newLength];
+                _elements = new CellSlot[newLength];
                 _elementKind = ElementKind.Reference;
             }
 
@@ -389,7 +392,7 @@ public partial class JsObject
 
                 case ElementKind.Reference:
                     {
-                        var cells = ((JsCell?[])_elements!);
+                        var cells = ((CellSlot[])_elements!);
                         Array.Resize(ref cells, newLength);
                         _elements = cells;
                         break;

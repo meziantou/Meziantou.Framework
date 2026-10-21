@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 3,034 | 3,139 | 1 | 97% |
+| [Stable](#stable-tests) | 3,034 | 3,139 | 0 | 97% |
 | [Tentative](#tentative-tests) | 7 | 245 | 0 | 3% |
 | [Reftests](#reftests) | 205 | 531 | 0 | 39% |
-| **All** | **3,246** | **3,915** | **1** | **83%** |
+| **All** | **3,246** | **3,915** | **0** | **83%** |
 
 ## Stable tests
 
@@ -2187,7 +2187,7 @@
 | [`offscreen/manual/the-offscreen-canvas/offscreencanvas.transfer.lowlatency.nocrash.html`](https://wpt.fyi/results/html/canvas/offscreen/manual/the-offscreen-canvas/offscreencanvas.transfer.lowlatency.nocrash.html) | Pass | 1 / 1 |  |  |
 | [`offscreen/manual/the-offscreen-canvas/offscreencanvas.transfer.to.imagebitmap.html`](https://wpt.fyi/results/html/canvas/offscreen/manual/the-offscreen-canvas/offscreencanvas.transfer.to.imagebitmap.html) | Fail | 5 / 6 | NOT IMPLEMENTED | WebGL (`getContext("webgl")` returns null) |
 | [`offscreen/manual/the-offscreen-canvas/offscreencanvas.transfer.to.imagebitmap.nocrash.html`](https://wpt.fyi/results/html/canvas/offscreen/manual/the-offscreen-canvas/offscreencanvas.transfer.to.imagebitmap.nocrash.html) | Pass | 1 / 1 |  |  |
-| [`offscreen/manual/the-offscreen-canvas/offscreencanvas.transfer.to.imagebitmap.w.html`](https://wpt.fyi/results/html/canvas/offscreen/manual/the-offscreen-canvas/offscreencanvas.transfer.to.imagebitmap.w.html) | Disabled | – | FLAKY | The harness status is ERROR or OK depending on the timing: the WebGL subtest of the worker throws (WebGL is not implemented, `getContext("webgl")` returns null) and the error is reported before or after the end of the tests |
+| [`offscreen/manual/the-offscreen-canvas/offscreencanvas.transfer.to.imagebitmap.w.html`](https://wpt.fyi/results/html/canvas/offscreen/manual/the-offscreen-canvas/offscreencanvas.transfer.to.imagebitmap.w.html) | Error | 7 / 8 | NOT IMPLEMENTED | WebGL (`getContext("webgl")` returns null) |
 | [`offscreen/manual/the-offscreen-canvas/offscreencanvas.transfercontrol.to.offscreen.html`](https://wpt.fyi/results/html/canvas/offscreen/manual/the-offscreen-canvas/offscreencanvas.transfercontrol.to.offscreen.html) | Pass | 3 / 3 |  |  |
 | [`offscreen/manual/the-offscreen-canvas/offscreencanvas.transfercontrol.to.offscreen.w.html`](https://wpt.fyi/results/html/canvas/offscreen/manual/the-offscreen-canvas/offscreencanvas.transfercontrol.to.offscreen.w.html) | Pass | 4 / 4 |  |  |
 | [`offscreen/manual/the-offscreen-canvas/offscreencanvas.transferrable.html`](https://wpt.fyi/results/html/canvas/offscreen/manual/the-offscreen-canvas/offscreencanvas.transferrable.html) | Pass | 5 / 5 |  |  |

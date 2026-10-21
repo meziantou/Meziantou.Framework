@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Meziantou.Framework.WebPlatform.Dom;
-using Meziantou.Framework.WebPlatform.Jint;
+using Meziantou.Framework.WebPlatform.Scripting;
+using Meziantou.Framework.WebPlatform.Tests.Scripting;
 using Meziantou.Framework.WebPlatform.Urls;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Dom;
@@ -11,14 +12,14 @@ public sealed class PermissionsPolicyTests : IDisposable
     private const string PageUrl = "https://example.com/page.html";
 
     private readonly BrowsingContextScope _contexts = new();
-    private readonly JintScriptEngine _engine = new();
+    private readonly ScriptEngine _engine = TestScriptEngines.Create();
     private readonly Dictionary<string, DocumentResource> _resources = new(StringComparer.Ordinal);
     private readonly List<DocumentRequest> _requests = [];
 
     public void Dispose()
     {
         _contexts.Dispose();
-        _engine.Dispose();
+        TestScriptEngines.Dispose(_engine);
     }
 
     private static OriginRecord Origin(string url) => OriginRecord.FromUrl(UrlParser.Parse(url, baseUrl: null)!);

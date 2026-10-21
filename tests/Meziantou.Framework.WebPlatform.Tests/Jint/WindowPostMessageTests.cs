@@ -1,6 +1,6 @@
 using Meziantou.Framework.WebPlatform.Dom;
-using Meziantou.Framework.WebPlatform.Jint;
 using Meziantou.Framework.WebPlatform.Scripting;
+using Meziantou.Framework.WebPlatform.Tests.Scripting;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Jint;
 
@@ -9,12 +9,12 @@ public sealed class WindowPostMessageTests : IDisposable
 {
     private readonly BrowsingContextScope _contexts = new();
     private readonly List<ScriptError> _errors = [];
-    private readonly JintScriptEngine _engine = new();
+    private readonly ScriptEngine _engine = TestScriptEngines.Create();
 
     public void Dispose()
     {
         _contexts.Dispose();
-        _engine.Dispose();
+        TestScriptEngines.Dispose(_engine);
     }
 
     private Document Load(string html, Func<Url, string>? loader = null)

@@ -1,6 +1,7 @@
 using Meziantou.Framework.WebPlatform.Dom;
-using Meziantou.Framework.WebPlatform.Jint;
 using Meziantou.Framework.Imaging;
+using Meziantou.Framework.WebPlatform.Scripting;
+using Meziantou.Framework.WebPlatform.Tests.Scripting;
 
 namespace Meziantou.Framework.WebPlatform.Imaging.Tests;
 
@@ -8,13 +9,13 @@ namespace Meziantou.Framework.WebPlatform.Imaging.Tests;
 public sealed class PaintWorkletTests : IDisposable
 {
     private readonly TestPages _pages = new();
-    private readonly JintScriptEngine _engine = new();
+    private readonly ScriptEngine _engine = TestScriptEngines.Create();
     private readonly List<string> _messages = [];
 
     public void Dispose()
     {
         _pages.Dispose();
-        _engine.Dispose();
+        TestScriptEngines.Dispose(_engine);
     }
 
     private BrowsingContext Load(string html, string worklet, double width = 200, double height = 100, double devicePixelRatio = 1, RenderingBackendKind backend = RenderingBackendKind.Imaging)

@@ -42,10 +42,11 @@ public class CSharpCodeGeneratorTests
         var generatedCode = unit.ToCsharpString();
         #endregion
 
-        // The readme shows this output after the example. The generator writes no line break between the last using
-        // directive and the first namespace.
+        // The readme shows this output after the example.
         Assert.Equal("""
-            using System;namespace Demo
+            using System;
+
+            namespace Demo
             {
                 public class Greeter
                 {

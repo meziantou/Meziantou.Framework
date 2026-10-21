@@ -1,6 +1,6 @@
 using Meziantou.Framework.WebPlatform.Dom;
-using Meziantou.Framework.WebPlatform.Jint;
 using Meziantou.Framework.WebPlatform.Scripting;
+using Meziantou.Framework.WebPlatform.Tests.Scripting;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Html;
 
@@ -14,7 +14,7 @@ public sealed class LinkPreloadTests : IDisposable
     private static readonly byte[] Png = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52, 0, 0, 0, 2, 0, 0, 0, 3, 8, 6, 0, 0, 0];
 
     private readonly BrowsingContextScope _contexts = new();
-    private readonly JintScriptEngine _engine = new();
+    private readonly ScriptEngine _engine = TestScriptEngines.Create();
     private readonly List<ScriptError> _errors = [];
     private readonly List<DocumentRequest> _requests = [];
     private readonly Dictionary<string, TaskCompletionSource<DocumentResource?>> _pending = new(StringComparer.Ordinal);
@@ -22,7 +22,7 @@ public sealed class LinkPreloadTests : IDisposable
     public void Dispose()
     {
         _contexts.Dispose();
-        _engine.Dispose();
+        TestScriptEngines.Dispose(_engine);
     }
 
     private Document Load(string html, IReadOnlyList<KeyValuePair<string, string>>? headers = null)
@@ -124,10 +124,10 @@ public sealed class LinkPreloadTests : IDisposable
             """);
 
         // The load event of the window does not wait for the preload
-        Assert.Equal("load,", _engine.Evaluate(document.DefaultView!, "window.log")?.ToString());
+        Assert.Equal("load,", TestScriptEngines.Evaluate(_engine, document.DefaultView!, "window.log"));
 
         // A script that requests the resource waits for the response of the preload
-        _engine.Evaluate(document.DefaultView!, "const script = document.createElement('script'); script.src = 'slow.js'; script.onload = () => document.title = window.log; document.body.append(script);");
+        TestScriptEngines.Evaluate(_engine, document.DefaultView!, "const script = document.createElement('script'); script.src = 'slow.js'; script.onload = () => document.title = window.log; document.body.append(script);");
         _contexts.EventLoop.RunUntilIdle();
         Assert.Equal(["Script NoCors slow.js"], Requests);
 
@@ -135,7 +135,7 @@ public sealed class LinkPreloadTests : IDisposable
         await _contexts.EventLoop.RunUntilIdleAsync(TestContext.Current.CancellationToken);
         // The response is given to the fetch that consumed the preload, then the load event of the link is fired
         Assert.Equal("load,script,", document.Title);
-        Assert.Equal("load,script,preloaded,", _engine.Evaluate(document.DefaultView!, "window.log")?.ToString());
+        Assert.Equal("load,script,preloaded,", TestScriptEngines.Evaluate(_engine, document.DefaultView!, "window.log"));
         Assert.Equal(["Script NoCors slow.js"], Requests);
     }
 
@@ -273,12 +273,12 @@ public sealed class LinkPreloadTests : IDisposable
         await _contexts.EventLoop.RunUntilIdleAsync(TestContext.Current.CancellationToken);
         Assert.Equal(["error as,", "error json,", "error,", "load,"], document.Title.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(part => part + ",").Order(StringComparer.Ordinal));
         Assert.Equal(["Script Cors a.mjs", "Script Cors missing.mjs", "Json Cors c.json"], Requests);
-        Assert.Equal("undefined", _engine.Evaluate(document.DefaultView!, "String(window.log)")?.ToString());
+        Assert.Equal("undefined", TestScriptEngines.Evaluate(_engine, document.DefaultView!, "String(window.log)"));
 
         // The module script uses the module of the module map
-        _engine.Evaluate(document.DefaultView!, "const script = document.createElement('script'); script.type = 'module'; script.src = 'a.mjs'; document.body.append(script);");
+        TestScriptEngines.Evaluate(_engine, document.DefaultView!, "const script = document.createElement('script'); script.type = 'module'; script.src = 'a.mjs'; document.body.append(script);");
         await _contexts.EventLoop.RunUntilIdleAsync(TestContext.Current.CancellationToken);
-        Assert.Equal("module,", _engine.Evaluate(document.DefaultView!, "window.log")?.ToString());
+        Assert.Equal("module,", TestScriptEngines.Evaluate(_engine, document.DefaultView!, "window.log"));
         Assert.Equal(3, Requests.Count);
     }
 

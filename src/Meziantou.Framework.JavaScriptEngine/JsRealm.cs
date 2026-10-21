@@ -244,11 +244,12 @@ public sealed partial class JsRealm
         return function;
     }
 
-    /// <summary>Defines a built-in accessor property; the getter is named "get name" and the setter "set name".</summary>
+    /// <summary>
+    /// Defines a built-in accessor property; the getter is named "get name" and the setter "set name". The functions are
+    /// created on first access (<see cref="LazyBuiltinAccessorPair"/>).
+    /// </summary>
     internal void DefineAccessor(JsObject target, PropertyKey name, BuiltinFunctionCallback? getter, BuiltinFunctionCallback? setter, PropertyFlags flags = PropertyFlags.Configurable)
     {
-        var getterFunction = getter is null ? null : CreateBuiltinFunction(name, 0, getter, prefix: "get");
-        var setterFunction = setter is null ? null : CreateBuiltinFunction(name, 1, setter, prefix: "set");
-        target.DefineBuiltInAccessor(name, getterFunction, setterFunction, flags);
+        target.DefineBuiltInAccessor(name, new LazyBuiltinAccessorPair(this, name, getter, setter), flags);
     }
 }

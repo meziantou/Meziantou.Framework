@@ -108,7 +108,7 @@ public partial class JsObject
             return;
         }
 
-        SetOwnSlot(key.Key, new JsValue(new AccessorPair(getterFactory, getterState, setterFactory, setterState)), flags | PropertyFlags.Accessor);
+        SetOwnSlot(key.Key, new JsValue(new LazyAccessorPair(getterFactory, getterState, setterFactory, setterState)), flags | PropertyFlags.Accessor);
     }
 
     /// <summary>Defines an accessor property whose functions are created on first access; <paramref name="setterFactory"/> is null when the property has no setter.</summary>
@@ -122,7 +122,7 @@ public partial class JsObject
             return;
         }
 
-        SetOwnSlot(key.Key, new JsValue(new AccessorPair(getterFactory, setterFactory)), flags | PropertyFlags.Accessor);
+        SetOwnSlot(key.Key, new JsValue(new LazyAccessorPair(getterFactory, setterFactory)), flags | PropertyFlags.Accessor);
     }
 
     /// <summary>Gets whether the object has an internal slot of the built-in objects, without running code.</summary>

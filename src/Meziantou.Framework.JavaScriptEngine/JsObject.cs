@@ -995,7 +995,13 @@ public partial class JsObject : JsCell
     /// <summary>Defines a built-in accessor property without any check.</summary>
     internal void DefineBuiltInAccessor(in PropertyKey key, JsObject? getter, JsObject? setter, PropertyFlags flags = PropertyFlags.Configurable)
     {
-        SetOwnSlot(key, new JsValue(new AccessorPair(getter is null ? default : new JsValue(getter), setter is null ? default : new JsValue(setter))), (flags & (PropertyFlags.Enumerable | PropertyFlags.Configurable)) | PropertyFlags.Accessor);
+        DefineBuiltInAccessor(key, new AccessorPair(getter is null ? default : new JsValue(getter), setter is null ? default : new JsValue(setter)), flags);
+    }
+
+    /// <summary>Defines a built-in accessor property (e.g. a lazy accessor) without any check.</summary>
+    internal void DefineBuiltInAccessor(in PropertyKey key, AccessorPair accessor, PropertyFlags flags = PropertyFlags.Configurable)
+    {
+        SetOwnSlot(key, new JsValue(accessor), (flags & (PropertyFlags.Enumerable | PropertyFlags.Configurable)) | PropertyFlags.Accessor);
     }
 
     /// <summary>Defines a data property whose value is computed the first time it is read.</summary>

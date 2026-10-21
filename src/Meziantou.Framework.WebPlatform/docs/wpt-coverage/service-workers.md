@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 223 | 283 | 4 | 80% |
+| [Stable](#stable-tests) | 224 | 283 | 4 | 80% |
 | [Tentative](#tentative-tests) | 0 | 11 | 0 | 0% |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
-| **All** | **224** | **295** | **4** | **77%** |
+| **All** | **225** | **295** | **4** | **77%** |
 
 ## Stable tests
 
@@ -42,7 +42,7 @@
 | [`service-worker/ServiceWorkerGlobalScope/message-event-ports.https.html`](https://wpt.fyi/results/service-workers/service-worker/ServiceWorkerGlobalScope/message-event-ports.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/ServiceWorkerGlobalScope/postmessage.https.html`](https://wpt.fyi/results/service-workers/service-worker/ServiceWorkerGlobalScope/postmessage.https.html) | Pass | 2 / 2 |  |  |
 | [`service-worker/ServiceWorkerGlobalScope/registration-attribute.https.html`](https://wpt.fyi/results/service-workers/service-worker/ServiceWorkerGlobalScope/registration-attribute.https.html) | Pass | 2 / 2 |  |  |
-| [`service-worker/ServiceWorkerGlobalScope/service-worker-error-event.https.html`](https://wpt.fyi/results/service-workers/service-worker/ServiceWorkerGlobalScope/service-worker-error-event.https.html) | Fail | 0 / 1 | JINT | the column number of the error is the position of the expression that throws (9) instead of the statement (3) |
+| [`service-worker/ServiceWorkerGlobalScope/service-worker-error-event.https.html`](https://wpt.fyi/results/service-workers/service-worker/ServiceWorkerGlobalScope/service-worker-error-event.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/ServiceWorkerGlobalScope/unregister.https.html`](https://wpt.fyi/results/service-workers/service-worker/ServiceWorkerGlobalScope/unregister.https.html) | Pass | 4 / 4 |  |  |
 | [`service-worker/ServiceWorkerGlobalScope/update.https.html`](https://wpt.fyi/results/service-workers/service-worker/ServiceWorkerGlobalScope/update.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/about-blank-replacement.https.html`](https://wpt.fyi/results/service-workers/service-worker/about-blank-replacement.https.html) | Fail | 4 / 7 | BUG | the document that replaces the initial about:blank document of an iframe or a popup reuses its Window, but its client has the id of the reserved client of the navigation instead of the id of the environment of the initial document (Chrome and Safari fail the same three subtests); the other subtests pass |
@@ -113,7 +113,7 @@
 | [`service-worker/fetch-event-respond-with-partial-stream.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-respond-with-partial-stream.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the bodies are not streamed: the body of the response of `respondWith()` is read before it is given to the client |
 | [`service-worker/fetch-event-respond-with-readable-stream-chunk.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-respond-with-readable-stream-chunk.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/fetch-event-respond-with-readable-stream.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-respond-with-readable-stream.https.html) | Timeout | 6 / 10 | NOT IMPLEMENTED | the bodies are not streamed: the cancellation of the body in the page is not observed by the service worker |
-| [`service-worker/fetch-event-respond-with-response-body-with-invalid-chunk.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-respond-with-response-body-with-invalid-chunk.https.html) | Error | 0 / 1 | NOT IMPLEMENTED | the bodies are not streamed: an invalid chunk makes the fetch fail instead of erroring the body |
+| [`service-worker/fetch-event-respond-with-response-body-with-invalid-chunk.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-respond-with-response-body-with-invalid-chunk.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the bodies are not streamed: an invalid chunk makes the fetch fail instead of erroring the body |
 | [`service-worker/fetch-event-respond-with-stops-propagation.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-respond-with-stops-propagation.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/fetch-event-throws-after-respond-with.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-throws-after-respond-with.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/fetch-event-within-sw.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-within-sw.https.html) | Pass | 2 / 2 |  |  |
@@ -206,7 +206,7 @@
 | [`service-worker/referer.https.html`](https://wpt.fyi/results/service-workers/service-worker/referer.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/referrer-policy-header.https.html`](https://wpt.fyi/results/service-workers/service-worker/referrer-policy-header.https.html) | Pass | 3 / 3 |  |  |
 | [`service-worker/referrer-toplevel-script-fetch.https.html`](https://wpt.fyi/results/service-workers/service-worker/referrer-toplevel-script-fetch.https.html) | Pass | 2 / 2 |  |  |
-| [`service-worker/register-closed-window.https.html`](https://wpt.fyi/results/service-workers/service-worker/register-closed-window.https.html) | Error | 1 / 1 | JINT | `register()` is rejected (an InvalidStateError) in the closed window and the subtest passes, but the iframe of the test does not handle the rejection and its `unhandledrejection` event is fired at the window of the test (a harness error) instead of the iframe: Jint does not give the realm of the script that runs a promise job, the rejection tracker uses the current realm of the engine |
+| [`service-worker/register-closed-window.https.html`](https://wpt.fyi/results/service-workers/service-worker/register-closed-window.https.html) | Error | 1 / 1 | BUG | `register()` is rejected (an InvalidStateError) in the closed window and the subtest passes, but the iframe of the test does not handle the rejection and its `unhandledrejection` event is fired at the window of the test (a harness error) instead of the iframe |
 | [`service-worker/register-default-scope.https.html`](https://wpt.fyi/results/service-workers/service-worker/register-default-scope.https.html) | Pass | 3 / 3 |  |  |
 | [`service-worker/register-same-scope-different-script-url.https.html`](https://wpt.fyi/results/service-workers/service-worker/register-same-scope-different-script-url.https.html) | Pass | 5 / 5 |  |  |
 | [`service-worker/register-wait-forever-in-install-worker.https.html`](https://wpt.fyi/results/service-workers/service-worker/register-wait-forever-in-install-worker.https.html) | Pass | 1 / 1 |  |  |

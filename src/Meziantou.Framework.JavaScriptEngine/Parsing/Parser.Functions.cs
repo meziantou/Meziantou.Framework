@@ -239,12 +239,21 @@ internal sealed partial class Parser
 
     private void CheckParams(FunctionNode function, bool allowDuplicates)
     {
-        var names = allowDuplicates ? null : new HashSet<string>(StringComparer.Ordinal);
+        // The parameters are checked after they are parsed: the set is never used by two functions at the same time
+        HashSet<string>? names = null;
+        if (!allowDuplicates && function.Params.Count > 0)
+        {
+            names = _parameterNames;
+            names.Clear();
+        }
+
         foreach (var parameter in function.Params)
         {
             CheckLValInnerPattern(parameter, BindingKind.Var, names);
         }
     }
+
+    private readonly HashSet<string> _parameterNames = new(StringComparer.Ordinal);
 
     private void ParseBindingList<T>(List<T> elements, TokenKind close, bool allowEmpty, bool allowTrailingComma)
         where T : Node?

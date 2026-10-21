@@ -154,8 +154,14 @@ internal readonly struct JavaScriptAdapter(JavaScriptAdapterState state) : IJsAd
 
     public bool IsRevokedProxy(object value, out object? objectPrototype)
     {
+        if (value is JsProxy { IsRevoked: true } proxy)
+        {
+            objectPrototype = proxy.CreationRealm?.ObjectPrototype;
+            return true;
+        }
+
         objectPrototype = null;
-        return value is JsProxy { IsRevoked: true };
+        return false;
     }
 
     public bool SetPrototypeOf(object obj, object prototype)

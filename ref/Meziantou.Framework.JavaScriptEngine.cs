@@ -348,6 +348,7 @@ namespace Meziantou.Framework.JavaScriptEngine
 
     public sealed class JsProxy : Meziantou.Framework.JavaScriptEngine.JsObject
     {
+        public Meziantou.Framework.JavaScriptEngine.JsRealm? CreationRealm { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsObject? Handler { get => throw null; }
         public bool IsRevoked { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsObject? Target { get => throw null; }

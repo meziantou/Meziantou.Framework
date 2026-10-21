@@ -237,11 +237,7 @@
     "total": 1
   },
   "dom/events/EventListener-handleEvent-cross-realm.html": {
-    "total": 5,
-    "failures": {
-      "EventListener is cross-realm callable revoked Proxy": "FAIL",
-      "EventListener is cross-realm non-callable revoked Proxy": "FAIL"
-    }
+    "total": 5
   },
   "dom/events/EventListener-handleEvent.html": {
     "total": 6
@@ -3349,11 +3345,7 @@
     "total": 1
   },
   "dom/traversal/TreeWalker-acceptNode-filter-cross-realm.html": {
-    "total": 5,
-    "failures": {
-      "NodeFilter is cross-realm callable revoked Proxy": "FAIL",
-      "NodeFilter is cross-realm non-callable revoked Proxy": "FAIL"
-    }
+    "total": 5
   },
   "dom/traversal/TreeWalker-acceptNode-filter.html": {
     "total": 12

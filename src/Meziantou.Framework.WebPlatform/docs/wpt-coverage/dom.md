@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 649 | 683 | 6 | 96% |
+| [Stable](#stable-tests) | 651 | 683 | 6 | 96% |
 | [Tentative](#tentative-tests) | 3 | 55 | 2 | 6% |
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
-| **All** | **656** | **742** | **8** | **89%** |
+| **All** | **658** | **742** | **8** | **90%** |
 
 ## Stable tests
 
@@ -83,7 +83,7 @@
 | [`events/Event-type-empty.html`](https://wpt.fyi/results/dom/events/Event-type-empty.html) | Pass | 2 / 2 |  |  |
 | [`events/Event-type.html`](https://wpt.fyi/results/dom/events/Event-type.html) | Pass | 3 / 3 |  |  |
 | [`events/EventListener-addEventListener.sub.window.js`](https://wpt.fyi/results/dom/events/EventListener-addEventListener.sub.window.js) | Pass | 1 / 1 |  |  |
-| [`events/EventListener-handleEvent-cross-realm.html`](https://wpt.fyi/results/dom/events/EventListener-handleEvent-cross-realm.html) | Fail | 3 / 5 | JS ENGINE | a revoked Proxy of another realm used as a callback interface: the TypeError thrown by the call is not reported to the window of the realm of the callback (2 subtests of 5) |
+| [`events/EventListener-handleEvent-cross-realm.html`](https://wpt.fyi/results/dom/events/EventListener-handleEvent-cross-realm.html) | Pass | 5 / 5 |  |  |
 | [`events/EventListener-handleEvent.html`](https://wpt.fyi/results/dom/events/EventListener-handleEvent.html) | Pass | 6 / 6 |  |  |
 | [`events/EventListener-incumbent-global-1.sub.html`](https://wpt.fyi/results/dom/events/EventListener-incumbent-global-1.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the incumbent settings object of callbacks (the callback context recorded by `addEventListener()`), so `postMessage()` from a listener reports the wrong source origin |
 | [`events/EventListener-incumbent-global-2.sub.html`](https://wpt.fyi/results/dom/events/EventListener-incumbent-global-2.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the incumbent settings object of callbacks (the callback context recorded by `addEventListener()`), so `postMessage()` from a listener reports the wrong source origin |
@@ -682,7 +682,7 @@
 | [`traversal/NodeIterator-removal.html`](https://wpt.fyi/results/dom/traversal/NodeIterator-removal.html) | Pass | 25 / 25 |  |  |
 | [`traversal/NodeIterator.html`](https://wpt.fyi/results/dom/traversal/NodeIterator.html) | Pass | 766 / 766 |  |  |
 | [`traversal/TreeWalker-acceptNode-filter-cross-realm-null-browsing-context.html`](https://wpt.fyi/results/dom/traversal/TreeWalker-acceptNode-filter-cross-realm-null-browsing-context.html) | Pass | 1 / 1 |  |  |
-| [`traversal/TreeWalker-acceptNode-filter-cross-realm.html`](https://wpt.fyi/results/dom/traversal/TreeWalker-acceptNode-filter-cross-realm.html) | Fail | 3 / 5 | JS ENGINE | a revoked Proxy of another realm used as a callback interface: the TypeError thrown by the call is created in the current realm instead of the realm of the callback (2 subtests) |
+| [`traversal/TreeWalker-acceptNode-filter-cross-realm.html`](https://wpt.fyi/results/dom/traversal/TreeWalker-acceptNode-filter-cross-realm.html) | Pass | 5 / 5 |  |  |
 | [`traversal/TreeWalker-acceptNode-filter.html`](https://wpt.fyi/results/dom/traversal/TreeWalker-acceptNode-filter.html) | Pass | 12 / 12 |  |  |
 | [`traversal/TreeWalker-basic.html`](https://wpt.fyi/results/dom/traversal/TreeWalker-basic.html) | Pass | 6 / 6 |  |  |
 | [`traversal/TreeWalker-currentNode.html`](https://wpt.fyi/results/dom/traversal/TreeWalker-currentNode.html) | Pass | 4 / 4 |  |  |

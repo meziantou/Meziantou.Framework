@@ -160,6 +160,31 @@ the original completion stands. For `await using`, the interpreter drives an `As
 `SetAwaitResult(thrownOrNull)`; at the end `Completion` is the resulting completion. Built-in code uses
 `DisposeResourcesAsync`, which drives it with promise continuations and returns a promise.
 
+## Intl (ECMA-402)
+
+`Intl/` has the services of ECMA-402, installed by `Runtime/Intrinsics.Intl.cs`. Every locale data comes from the
+embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalization of .NET. The default locale is
+`JsEngineOptions.DefaultLocale` ("en-US").
+
+- `Intl/Locale/LanguageTag.cs`: the parser of the Unicode BCP 47 locale identifiers (IsStructurallyValidLanguageTag)
+  and `Canonicalize()` (CanonicalizeUnicodeLocaleId, with the alias rules of `LocaleCanonicalizer`).
+  `LocaleCanonicalizer.CanonicalizeUnicodeValue(key, value)` is CanonicalizeUValue.
+- `Intl/IntlOperations.cs`: CanonicalizeLocaleList, ResolveLocale (the lookup matcher for both matchers; a service gives
+  the supported values of its relevant extension keys with a `LocaleKeyData` delegate, and optionally its own
+  [[AvailableLocales]]), SupportedLocales, GetOptionsObject, CoerceOptionsToObject, GetOption (`GetStringOption`,
+  `GetBooleanOption`), GetNumberOption, DefaultNumberOption.
+- `Intl/Locale/LocaleInfo.cs`: the available calendars, collations, currencies, numbering systems and units
+  (Intl.supportedValuesOf), and the regional preferences of a locale (calendars, hour cycles, week, time zones).
+- `Intl/NumberFormat/IntlDecimal.cs`: the Intl mathematical values (exact decimal values, with negative zero, NaN and
+  the infinities): from a Number (its exact binary value), a BigInt, or a string (ToIntlMathematicalValue).
+  `DigitOptions` is SetNumberFormatDigitOptions and FormatNumericToString (ToRawPrecision, ToRawFixed, the rounding
+  modes, increments and priorities): Intl.PluralRules and Intl.NumberFormat share it, and so can the other services
+  that format numbers.
+- `Intl/NumberFormat/NumberFormatter.cs`: PartitionNumberPattern, from the CLDR number patterns (`NumberPattern`),
+  the symbols of the numbering system and the compact, unit and currency patterns; the parts are grouped as the
+  modifiers of ICU (outer, middle, inner) for the collapsing of the ranges (PartitionNumberRangePattern). Where ECMA-402
+  leaves the output to the implementation, it follows ICU (Node.js is a convenient oracle to compare with).
+
 ## Tests
 
 - `tests/Meziantou.Framework.JavaScriptEngine.Tests`: unit tests (xUnit, the repo's `Assert`).

@@ -157,9 +157,19 @@ public partial class CSharpCodeGenerator
         WriteBeforeComments(writer, unit);
         WriteNullableContextBefore(writer, unit);
         Write(writer, unit.Usings, writer.NewLine);
+        WriteSeparatorAfterUsings(writer, unit.Usings, unit.Namespaces.Count > 0 || unit.Types.Count > 0);
         Write(writer, unit.Namespaces, writer.NewLine);
         Write(writer, unit.Types, writer.NewLine);
         WriteAfterComments(writer, unit);
+    }
+
+    private static void WriteSeparatorAfterUsings(IndentedTextWriter writer, CodeObjectCollection<UsingDirective> usings, bool hasFollowingContent)
+    {
+        if (usings.Count > 0 && hasFollowingContent)
+        {
+            writer.WriteLine();
+            writer.WriteLine();
+        }
     }
 
     protected virtual void WriteNamespaceDeclaration(IndentedTextWriter writer, NamespaceDeclaration ns)
@@ -171,6 +181,7 @@ public partial class CSharpCodeGenerator
         writer.WriteLine("{");
         writer.Indent++;
         Write(writer, ns.Usings, writer.NewLine);
+        WriteSeparatorAfterUsings(writer, ns.Usings, ns.Types.Count > 0 || ns.Namespaces.Count > 0);
         Write(writer, ns.Types, writer.NewLine);
         Write(writer, ns.Namespaces, writer.NewLine);
         writer.Indent--;
@@ -1421,7 +1432,11 @@ public partial class CSharpCodeGenerator
         if (type is null)
             return;
 
-        if (PredefinedTypes.TryGetValue(type.ClrFullTypeNameWithoutArray, out var keyword))
+        if (type.IsTypeParameter)
+        {
+            writer.Write(type.TypeName);
+        }
+        else if (PredefinedTypes.TryGetValue(type.ClrFullTypeNameWithoutArray, out var keyword))
         {
             writer.Write(keyword);
         }

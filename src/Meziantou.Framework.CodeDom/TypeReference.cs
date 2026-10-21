@@ -119,7 +119,7 @@ public class TypeReference
                 if (_typeDeclarationParameters is null)
                 {
                     var collection = new List<TypeReference>();
-                    collection.AddRange(typeParameter.Parameters.Select(p => new TypeReference(p.Name ?? throw new InvalidOperationException("TypeReference has no name"))));
+                    collection.AddRange(typeParameter.Parameters.Select(p => new TypeReference(p)));
                     _typeDeclarationParameters = collection;
                 }
 
@@ -129,6 +129,8 @@ public class TypeReference
             return _parameters ??= [];
         }
     }
+
+    internal bool IsTypeParameter => _typeParameter is not null;
 
     /// <summary>Gets the fully qualified name of the referenced type.</summary>
     public string? TypeName

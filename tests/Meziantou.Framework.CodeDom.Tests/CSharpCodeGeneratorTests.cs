@@ -1986,4 +1986,120 @@ null
         AssertCsharp(variable, @"global::A.B.C.D demo;
 ");
     }
+
+    [Fact]
+    public void CSharpCodeGenerator_CompilationUnit_UsingsFollowedByNamespace()
+    {
+        var unit = new CompilationUnit();
+        unit.Usings.Add(new UsingDirective("System"));
+        unit.Usings.Add(new UsingDirective("System.IO"));
+        unit.AddNamespace("MyNamespace");
+
+        AssertCsharp(unit, @"using System;
+using System.IO;
+
+namespace MyNamespace
+{
+}
+");
+    }
+
+    [Fact]
+    public void CSharpCodeGenerator_CompilationUnit_UsingsFollowedByType()
+    {
+        var unit = new CompilationUnit();
+        unit.Usings.Add(new UsingDirective("System"));
+        unit.AddType(new ClassDeclaration("MyClass"));
+
+        AssertCsharp(unit, @"using System;
+
+class MyClass
+{
+}
+");
+    }
+
+    [Fact]
+    public void CSharpCodeGenerator_CompilationUnit_UsingsOnly()
+    {
+        var unit = new CompilationUnit();
+        unit.Usings.Add(new UsingDirective("System"));
+
+        AssertCsharp(unit, "using System;");
+    }
+
+    [Fact]
+    public void CSharpCodeGenerator_NamespaceDeclaration_UsingsFollowedByType()
+    {
+        var ns = new NamespaceDeclaration("MyNamespace");
+        ns.Usings.Add(new UsingDirective("System"));
+        ns.AddType(new ClassDeclaration("MyClass"));
+
+        AssertCsharp(ns, @"namespace MyNamespace
+{
+    using System;
+
+    class MyClass
+    {
+    }
+}
+");
+    }
+
+    [Fact]
+    public void CSharpCodeGenerator_NamespaceDeclaration_UsingsFollowedByNamespace()
+    {
+        var ns = new NamespaceDeclaration("MyNamespace");
+        ns.Usings.Add(new UsingDirective("System"));
+        ns.AddNamespace("Inner");
+
+        AssertCsharp(ns, @"namespace MyNamespace
+{
+    using System;
+
+    namespace Inner
+    {
+    }
+}
+");
+    }
+
+    [Fact]
+    public void CSharpCodeGenerator_TypeReference_TypeParameter()
+    {
+        var type = new InterfaceDeclaration("IRepository");
+        var typeParameter = new TypeParameter("T");
+        type.Parameters.Add(typeParameter);
+        var method = type.AddMember(new MethodDeclaration("Get") { ReturnType = typeParameter });
+        method.AddArgument("items", new TypeReference(typeParameter).MakeArray(1));
+        method.AddArgument("defaultValue", new TypeReference(typeParameter).MakeNullable());
+
+        AssertCsharp(type, @"interface IRepository<T>
+{
+    T Get(T[] items, T? defaultValue);
+}
+");
+    }
+
+    [Fact]
+    public void CSharpCodeGenerator_TypeReference_TypeParameterAsGenericArgument()
+    {
+        var typeParameter = new TypeParameter("T");
+        var variable = new VariableDeclarationStatement("demo", new TypeReference(typeof(List<>)).MakeGeneric(typeParameter));
+
+        AssertCsharp(variable, @"global::System.Collections.Generic.List<T> demo;
+");
+    }
+
+    [Fact]
+    public void CSharpCodeGenerator_TypeReference_GenericTypeDeclaration()
+    {
+        var type = new ClassDeclaration("MyClass");
+        type.Parameters.Add(new TypeParameter("T"));
+        _ = new NamespaceDeclaration("MyNamespace") { Types = { type } };
+
+        var variable = new VariableDeclarationStatement("demo", new TypeReference(type));
+        AssertCsharp(variable, @"global::MyNamespace.MyClass<T> demo;
+");
+    }
 }

@@ -30,6 +30,9 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     // Creates an interface object (https://webidl.spec.whatwg.org/#interface-object): a constructor calling construct(NewTarget, args)
     private const string MakeInterfaceScript = """
             (function (name, length, construct, parent, prototype, htmlConstructor, classString) {
+              // Strict: the function has no own caller and arguments properties (an extension of the engines for the
+              // sloppy functions), as the built-in function objects
+              'use strict';
               let f = function (...args) { return construct(new.target, args); };
               Object.defineProperty(f, 'length', { value: length });
               Object.defineProperty(f, 'name', { value: name });
@@ -1890,6 +1893,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             });
             var constructor = EvaluateBuiltIn("""
                 (function (name, factory, prototype) {
+                  'use strict';
                   let f;
                   f = { [name]: function (...args) {
                     if (new.target === undefined) throw new TypeError("Failed to construct '" + name + "': Please use the 'new' operator");

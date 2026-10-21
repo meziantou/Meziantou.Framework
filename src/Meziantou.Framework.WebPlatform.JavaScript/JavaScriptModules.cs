@@ -270,7 +270,9 @@ internal sealed class JavaScriptModuleLoader(JavaScriptScriptEngine owner) : JsM
     /// <summary>HostLoadImportedModule (https://html.spec.whatwg.org/multipage/webappapis.html#hostloadimportedmodule).</summary>
     protected override void LoadImportedModule(JsModuleLoadRequest request)
     {
-        var realm = owner.Agent.GetRealm(request.Realm);
+        // The module map is the one of the current realm (the code of another window evaluated by its eval imports the
+        // modules of that window), the base URL is the one of the referencing script
+        var realm = owner.Agent.GetRealm(request.CurrentRealm) ?? owner.Agent.GetRealm(request.Realm);
         if (realm is null)
         {
             request.Fail("Module scripts need a global object");
@@ -278,6 +280,7 @@ internal sealed class JavaScriptModuleLoader(JavaScriptScriptEngine owner) : JsM
         }
 
         var window = realm.GlobalScope;
+        var errorRealm = (JsRealm)realm.EngineRealm;
         JsException? failure = null;
         string? url = null;
         var type = ModuleType.JavaScript;
@@ -290,13 +293,13 @@ internal sealed class JavaScriptModuleLoader(JavaScriptScriptEngine owner) : JsM
             // static imports of a module service worker are resolved while its module graph is fetched)
             if (request.IsDynamicImport && window is WorkletGlobalScope)
             {
-                failure = request.Realm.CreateException(JsErrorType.TypeError, "import() is not allowed in a worklet");
+                failure = errorRealm.CreateException(JsErrorType.TypeError, "import() is not allowed in a worklet");
                 return 0;
             }
 
             if (request.IsDynamicImport && window is ServiceWorkerGlobalScope { IsFetchingModuleScriptGraph: false })
             {
-                failure = request.Realm.CreateException(JsErrorType.TypeError, "import() is not allowed in a service worker");
+                failure = errorRealm.CreateException(JsErrorType.TypeError, "import() is not allowed in a service worker");
                 return 0;
             }
 
@@ -305,7 +308,7 @@ internal sealed class JavaScriptModuleLoader(JavaScriptScriptEngine owner) : JsM
             {
                 if (attribute.Key != "type")
                 {
-                    failure = request.Realm.CreateException(JsErrorType.SyntaxError, $"The import attribute '{attribute.Key}' is not supported");
+                    failure = errorRealm.CreateException(JsErrorType.SyntaxError, $"The import attribute '{attribute.Key}' is not supported");
                     return 0;
                 }
             }
@@ -325,10 +328,10 @@ internal sealed class JavaScriptModuleLoader(JavaScriptScriptEngine owner) : JsM
                     type = ModuleType.Text;
                     break;
                 case "javascript-or-wasm":
-                    failure = request.Realm.CreateException(JsErrorType.TypeError, "The module type 'javascript-or-wasm' cannot be imported explicitly");
+                    failure = errorRealm.CreateException(JsErrorType.TypeError, "The module type 'javascript-or-wasm' cannot be imported explicitly");
                     return 0;
                 default:
-                    failure = request.Realm.CreateException(JsErrorType.TypeError, $"The module type '{request.Type}' is not supported");
+                    failure = errorRealm.CreateException(JsErrorType.TypeError, $"The module type '{request.Type}' is not supported");
                     return 0;
             }
 
@@ -352,7 +355,7 @@ internal sealed class JavaScriptModuleLoader(JavaScriptScriptEngine owner) : JsM
             }
             catch (TypeErrorException ex)
             {
-                failure = request.Realm.CreateException(JsErrorType.TypeError, ex.Message);
+                failure = errorRealm.CreateException(JsErrorType.TypeError, ex.Message);
             }
 
             return 0;

@@ -40,6 +40,37 @@ internal sealed class JavaScriptHost(JavaScriptScriptEngine owner) : JsHost
         owner.EnsureCanCompileStrings(realm, parameterStrings, bodyString, codeString, compilationType, parameterArgs, bodyArg);
     }
 
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/webappapis.html#hostmakejobcallback: the incumbent global object and the
+    /// active script, restored when the callback is called.
+    /// </summary>
+    public override JsJobCallback MakeJobCallback(JsEngine engine, JsObject callback) => new(callback, new JobCallbackState(owner.GetIncumbentGlobal(), engine.GetActiveScriptOrModule()));
+
+    /// <summary>https://html.spec.whatwg.org/multipage/webappapis.html#hostcalljobcallback</summary>
+    public override JsValue CallJobCallback(JsEngine engine, in JsJobCallback jobCallback, JsValue thisValue, ReadOnlySpan<JsValue> arguments)
+    {
+        if (jobCallback.HostDefined is not JobCallbackState state)
+            return base.CallJobCallback(engine, jobCallback, thisValue, arguments);
+
+        // Prepare to run a callback with the incumbent settings object (the backup incumbent settings object stack), and
+        // push the script execution context of the active script
+        owner.BackupIncumbentGlobals.Push(state.Incumbent);
+        try
+        {
+            if (state.ActiveScript is null)
+                return base.CallJobCallback(engine, jobCallback, thisValue, arguments);
+
+            using var scriptContext = engine.EnterActiveScriptOrModule(state.ActiveScript);
+            return base.CallJobCallback(engine, jobCallback, thisValue, arguments);
+        }
+        finally
+        {
+            owner.BackupIncumbentGlobals.Pop();
+        }
+    }
+
+    private sealed record JobCallbackState(GlobalScope? Incumbent, JsScriptOrModule? ActiveScript);
+
     /// <summary>The exception thrown by a microtask queued by the host is reported to the global object of the current realm.</summary>
     public override void ReportJobException(JsEngine engine, JsException exception) => owner.ReportException(realm: null, exception);
 }

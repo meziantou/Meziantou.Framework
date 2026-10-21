@@ -255,8 +255,31 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
     /// </summary>
     internal ConcurrentDictionary<string, bool> MutedScriptLocations { get; } = new(StringComparer.Ordinal);
 
-    /// <inheritdoc/>
-    protected internal override GlobalScope? GetCurrentGlobal() => IsScriptRunning ? Agent.CurrentRealm?.GlobalScope : null;
+    /// <summary>
+    /// The incumbent global object while a script runs (https://html.spec.whatwg.org/multipage/webappapis.html#incumbent):
+    /// the global object of the realm of the code that calls the platform (e.g. the source of the messages of
+    /// <c>postMessage()</c>), the code of the bindings runs in the realm of its caller.
+    /// </summary>
+    protected internal override GlobalScope? GetCurrentGlobal() => IsScriptRunning ? GetIncumbentGlobal() : null;
+
+    /// <summary>The incumbent global objects of the job callbacks being called (the backup incumbent settings object stack).</summary>
+    internal Stack<GlobalScope?> BackupIncumbentGlobals { get; } = new();
+
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/webappapis.html#incumbent: the global object of the realm of the topmost
+    /// script-having execution context (the active script), else of the backup incumbent settings object stack, else of
+    /// the current realm.
+    /// </summary>
+    internal GlobalScope? GetIncumbentGlobal()
+    {
+        if (Engine.GetActiveScriptOrModule() is { } script && Agent.GetRealm(script.Realm) is { } realm)
+            return realm.GlobalScope;
+
+        if (BackupIncumbentGlobals.TryPeek(out var incumbent) && incumbent is not null)
+            return incumbent;
+
+        return Agent.CurrentRealm?.GlobalScope;
+    }
 
     /// <summary>
     /// The [[HostDefined]] of the active script (https://html.spec.whatwg.org/multipage/webappapis.html#active-script): the

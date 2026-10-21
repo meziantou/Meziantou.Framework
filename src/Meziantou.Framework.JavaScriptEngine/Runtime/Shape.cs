@@ -76,6 +76,21 @@ internal sealed class Shape : PropertyMap
     /// <summary>Gets the attributes of a property.</summary>
     public PropertyFlags GetFlags(int slot) => _table!.Flags[slot];
 
+    /// <summary>Gets the key of a property whose key is a string, as a string value (cached: a for-in loop returns the same values each time).</summary>
+    public JsString GetKeyString(int slot)
+    {
+        var table = _table!;
+        var strings = table.KeyStrings;
+        if (strings is null || strings.Length <= slot)
+        {
+            var resized = new JsString?[table.Keys.Length];
+            strings?.CopyTo(resized, 0);
+            table.KeyStrings = strings = resized;
+        }
+
+        return strings[slot] ??= JsString.Create(table.Keys[slot].AsString());
+    }
+
     /// <summary>Gets the slot of a property, or -1.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int Find(in PropertyKey key)
@@ -156,6 +171,9 @@ internal sealed class Shape : PropertyMap
         public PropertyFlags[] Flags = [];
         public int Count;
         public Dictionary<PropertyKey, int>? Index;
+
+        // The string values of the keys (for-in), created when they are requested
+        public JsString?[]? KeyStrings;
 
         /// <summary>Adds a property to the table of a shape whose count is <paramref name="count"/>: in place when the shape is the last owner of the table, in a copy otherwise.</summary>
         public static ShapeTable Append(ShapeTable? table, int count, in PropertyKey key, PropertyFlags flags)

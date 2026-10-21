@@ -112,6 +112,20 @@ public sealed class InterpreterTests
         Assert.Equal(expected, Run(code));
     }
 
+    // for-in: the keys of the shape, the prototypes without enumerable keys, the names hidden by the visited objects
+    [Theory]
+    [InlineData("var o = { a: 1, b: 2, c: 3 }; var r = []; for (var k in o) { r.push(k); if (k === 'a') delete o.b; } r.join()", "a,c")]
+    [InlineData("var o = { a: 1, b: 2 }; var r = []; for (var k in o) { r.push(k); if (k === 'a') { o.z = 1; Object.defineProperty(o, 'b', { enumerable: false }); } } r.join()", "a")]
+    [InlineData("var p = { x: 1, y: 2 }; var o = Object.create(p); o.a = 1; Object.defineProperty(o, 'x', { value: 0, enumerable: false }); var r = []; for (var k in o) r.push(k); r.join()", "a,y")]
+    [InlineData("var q = { deep: 1 }; var p = Object.create(q); Object.defineProperty(p, 'deep', { value: 0, enumerable: false }); var o = Object.create(p); o.own = 1; var r = []; for (var k in o) r.push(k); r.join()", "own")]
+    [InlineData("var o = { 2: 'c', 0: 'a', b: 1, [Symbol.iterator]: 0 }; var r = []; for (var k in o) r.push(k); r.join()", "0,2,b")]
+    [InlineData("Object.prototype.extra = 1; var r = []; for (var k in { a: 1 }) r.push(k); delete Object.prototype.extra; for (var k in { b: 1 }) r.push(k); r.join()", "a,extra,b")]
+    [InlineData("var o = {}; for (var i = 0; i < 100; i++) o['k' + i] = i; delete o.k1; var n = 0; for (var k in o) n++; n", "99")]
+    public void Evaluate_ForIn(string code, string expected)
+    {
+        Assert.Equal(expected, Run(code));
+    }
+
     [Fact]
     public void InlineCaches_GlobalLexicalDeclarationShadowsAGlobalProperty()
     {

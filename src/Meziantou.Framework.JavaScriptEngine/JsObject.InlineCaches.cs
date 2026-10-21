@@ -104,6 +104,38 @@ public partial class JsObject
         return shape;
     }
 
+    /// <summary>Gets whether an ordinary object may have an enumerable own property whose key is a string (no list is built).</summary>
+    internal bool MayHaveEnumerableStringKeys()
+    {
+        if (_elements is { } elements)
+        {
+            foreach (var element in elements)
+            {
+                if (!element.IsHole)
+                    return true;
+            }
+        }
+
+        if (_map is Shape shape)
+        {
+            for (var i = 0; i < shape.Count; i++)
+            {
+                if ((shape.GetFlags(i) & PropertyFlags.Enumerable) != 0 && shape.GetKey(i).IsString)
+                    return true;
+            }
+        }
+        else if (_map is PropertyTable table)
+        {
+            for (var i = 0; i < table.Capacity; i++)
+            {
+                if (!table.IsDeleted(i) && (table.GetFlags(i) & PropertyFlags.Enumerable) != 0 && table.GetKey(i).IsString)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>Marks the object as a dependency of an inline cache: a change of its properties or of its prototype invalidates the caches.</summary>
     internal void MarkInlineCacheDependency() => Flags |= ObjectFlags.InlineCacheDependency;
 

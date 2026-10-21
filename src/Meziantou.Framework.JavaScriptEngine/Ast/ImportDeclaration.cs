@@ -10,5 +10,8 @@ internal sealed class ImportDeclaration : Node
 
     public List<ImportAttribute> Attributes { get; set; } = [];
 
+    /// <summary>Gets or sets whether the declaration is <c>import defer * as ns from</c> (https://tc39.es/proposal-defer-import-eval/).</summary>
+    public bool IsDefer { get; set; }
+
     public override NodeType Type => NodeType.ImportDeclaration;
 }

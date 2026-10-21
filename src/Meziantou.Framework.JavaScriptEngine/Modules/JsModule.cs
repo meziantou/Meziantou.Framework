@@ -32,6 +32,9 @@ public abstract class JsModule : JsScriptOrModule
     /// <summary>Gets the namespace object ([[Namespace]]), created on first use.</summary>
     internal JsObject? Namespace { get; set; }
 
+    /// <summary>Gets the deferred namespace object ([[DeferredNamespace]], <c>import defer</c>), created on first use.</summary>
+    internal JsObject? DeferredNamespace { get; set; }
+
     /// <summary>Loads the dependencies of the module, recursively (LoadRequestedModules).</summary>
     /// <param name="hostDefined">A value given to the module loader for each module it loads.</param>
     /// <returns>A promise fulfilled when the whole graph is loaded, rejected when a module cannot be loaded.</returns>

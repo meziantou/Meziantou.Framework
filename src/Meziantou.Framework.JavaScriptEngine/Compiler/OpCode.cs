@@ -434,6 +434,9 @@ internal enum OpCode
     /// <summary>specifier options -> promise: import()</summary>
     ImportCall,
 
+    /// <summary>specifier options -> promise: import.defer()</summary>
+    ImportDeferCall,
+
     // ---- Functions and classes ---------------------------------------------------------------------------------------
 
     /// <summary>(template) -> function: creates a closure in the current environment</summary>

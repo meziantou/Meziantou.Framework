@@ -15,6 +15,19 @@ internal sealed partial class Parser
         {
             node.Source = ParseModuleSpecifier();
         }
+        else if (_token.Kind == TokenKind.Identifier && _token.Value == "defer" && !_token.IsEscaped && PeekToken().Kind == TokenKind.Star)
+        {
+            // import defer * as ns from '...' (https://tc39.es/proposal-defer-import-eval/): only a namespace import can be deferred
+            Next();
+            var specifierStart = _token.Start;
+            Next();
+            ExpectContextual("as");
+            var local = ParseImportedBinding();
+            node.Specifiers.Add(Finish(new ImportNamespaceSpecifier { Local = local }, specifierStart));
+            node.IsDefer = true;
+            ExpectContextual("from");
+            node.Source = ParseModuleSpecifier();
+        }
         else
         {
             var needsNamedImports = true;

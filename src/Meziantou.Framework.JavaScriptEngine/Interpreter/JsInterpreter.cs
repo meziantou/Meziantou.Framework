@@ -1275,6 +1275,15 @@ internal static partial class JsInterpreter
                         break;
                     }
 
+                case OpCode.ImportDeferCall:
+                    {
+                        var options = values[--sp];
+                        var specifier = values[--sp];
+                        frame.Sp = sp;
+                        values[sp++] = ImportCall(frame, specifier, options, isDefer: true);
+                        break;
+                    }
+
                 // ---- Functions and classes ------------------------------------------------------------------------
                 case OpCode.CreateClosure:
                     values[sp++] = CreateClosure(frame, (FunctionTemplate)objects[code[pc++]]);

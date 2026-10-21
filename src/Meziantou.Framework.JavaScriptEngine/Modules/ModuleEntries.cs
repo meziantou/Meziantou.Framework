@@ -25,8 +25,11 @@ internal enum ExportImportKind
 /// <summary>An ExportEntry Record (https://tc39.es/ecma262/#exportentry-record).</summary>
 internal sealed record ExportEntry(string? ExportName, ModuleRequest? ModuleRequest, ExportImportKind ImportKind, string? ImportName, string? LocalName);
 
-/// <summary>A ResolvedBinding Record: a binding of a module; a null binding name is the namespace object of the module.</summary>
-internal sealed class ResolvedBinding(JsModule module, string? bindingName)
+/// <summary>
+/// A ResolvedBinding Record: a binding of a module; a null binding name is the namespace object of the module (deferred
+/// when <see cref="NamespacePhase"/> is <see cref="ModulePhase.Defer"/>).
+/// </summary>
+internal sealed class ResolvedBinding(JsModule module, string? bindingName, ModulePhase namespacePhase = ModulePhase.Evaluation)
 {
     /// <summary>The result of ResolveExport when the name is exported by several star exports.</summary>
     public static ResolvedBinding Ambiguous { get; } = new(module: null!, bindingName: null);
@@ -36,4 +39,7 @@ internal sealed class ResolvedBinding(JsModule module, string? bindingName)
     public string? BindingName { get; } = bindingName;
 
     public bool IsNamespace => BindingName is null;
+
+    /// <summary>Gets the phase of the namespace object, when <see cref="IsNamespace"/> is true.</summary>
+    public ModulePhase NamespacePhase { get; } = namespacePhase;
 }

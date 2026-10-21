@@ -1,0 +1,7 @@
+# The tests that are not run yet: a path, a directory (ending with '/'), or a pattern ('*' matches within a segment,
+# '**' across segments). Each milestone of the engine removes the entries of the areas it implements.
+annexB/
+built-ins/
+intl402/
+language/
+staging/

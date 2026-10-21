@@ -216,6 +216,8 @@ jobs:
             "tests/Meziantou.Framework.Diagnostics.MemoryDump.Tests/Meziantou.Framework.Diagnostics.MemoryDump.Tests.csproj"
             # Runs the web-platform-tests: tens of thousands of pages, rendered with a script engine
             "tests/Meziantou.Framework.WebPlatform.Wpt/Meziantou.Framework.WebPlatform.Wpt.csproj"
+            # Runs test262: about 100,000 scripts, each in its own engine
+            "tests/Meziantou.Framework.JavaScriptEngine.Test262/Meziantou.Framework.JavaScriptEngine.Test262.csproj"
           )
 
           # The DNS suites bind sockets, so they run in their own job instead of competing with the
@@ -552,6 +554,20 @@ jobs:
         run: dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate --configuration Release -- fetch-tests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # The test262 tests read test262 and test262-parser-tests at the commits pinned in
+      # tests/Meziantou.Framework.JavaScriptEngine.Test262/test262.json: they are fetched, not committed
+      - name: Restore the test262 test suites
+        if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.JavaScriptEngine.Test262')
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: tests/Meziantou.Framework.JavaScriptEngine.External
+          key: javascriptengine-external-tests-${{ hashFiles('tests/Meziantou.Framework.JavaScriptEngine.Test262/test262.json') }}
+          restore-keys: javascriptengine-external-tests-
+
+      - name: Fetch the test262 test suites
+        if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.JavaScriptEngine.Test262')
+        run: dotnet run eng/javascriptengine/fetch-tests.cs
 
       - name: Build
         if: steps.build-project.outputs.has-project == 'true'

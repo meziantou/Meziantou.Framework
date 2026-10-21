@@ -1,0 +1,17 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.JavaScriptEngine</RootNamespace>
+    <Description>An ECMAScript engine written in .NET: a parser, a bytecode compiler and an interpreter, validated by test262.</Description>
+    <PackageTags>javascript, ecmascript, js, engine, interpreter</PackageTags>
+    <Version>1.0.0</Version>
+    <IsTrimmable>true</IsTrimmable>
+    <IsAotCompatible>true</IsAotCompatible>
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.JavaScriptEngine.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.JavaScriptEngine.Test262" />
+    <InternalsVisibleTo Include="Meziantou.Framework.JavaScriptEngine.Benchmarks" />
+  </ItemGroup>
+</Project>

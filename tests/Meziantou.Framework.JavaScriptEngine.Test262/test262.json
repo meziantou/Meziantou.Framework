@@ -1,0 +1,12 @@
+{
+  "test262": {
+    "repository": "tc39/test262",
+    "commit": "d53ebc8b1931d9f1541e43d59650776e4b766248",
+    "paths": ["LICENSE", "features.txt", "harness", "test"]
+  },
+  "test262-parser-tests": {
+    "repository": "tc39/test262-parser-tests",
+    "commit": "0e808c74fbec780646434cad17bb22dc52461003",
+    "paths": ["licenses.md", "pass", "pass-explicit", "fail", "early"]
+  }
+}

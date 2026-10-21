@@ -4,7 +4,7 @@ using Meziantou.Framework.JavaScriptEngine.Ast;
 namespace Meziantou.Framework.JavaScriptEngine.Compiler;
 
 /// <summary>A scope of the code (compile time): the bindings it declares, and where they are stored.</summary>
-[DebuggerDisplay("{Kind} ({Variables.Count} variables)")]
+[DebuggerDisplay("{Kind} ({OrderedVariables.Count} variables)")]
 internal sealed class Scope
 {
     public Scope(ScopeKind kind, Scope? parent, FunctionInfo function, Node? node)
@@ -24,9 +24,12 @@ internal sealed class Scope
 
     public Node? Node { get; }
 
-    /// <summary>Gets the declared bindings, in declaration order.</summary>
-    public Dictionary<string, Variable> Variables { get; } = new(StringComparer.Ordinal);
+    // The scopes have few bindings: they are searched linearly (the names are interned by the parser), and indexed by name
+    // when there are many of them
+    private const int IndexThreshold = 8;
+    private Dictionary<string, Variable>? _index;
 
+    /// <summary>Gets the declared bindings, in declaration order (a redeclared name hides the previous binding).</summary>
     public List<Variable> OrderedVariables { get; } = [];
 
     /// <summary>Gets whether this scope is the variable environment of its function (var declarations, sloppy eval vars).</summary>
@@ -56,10 +59,36 @@ internal sealed class Scope
     public Variable Declare(string name, VariableKind kind)
     {
         var variable = new Variable(name, kind, this);
-        Variables[name] = variable;
         OrderedVariables.Add(variable);
+        if (_index is not null)
+        {
+            _index[name] = variable;
+        }
+        else if (OrderedVariables.Count > IndexThreshold)
+        {
+            _index = new Dictionary<string, Variable>(OrderedVariables.Count * 2, StringComparer.Ordinal);
+            foreach (var declared in OrderedVariables)
+            {
+                _index[declared.Name] = declared;
+            }
+        }
+
         return variable;
     }
 
-    public Variable? Find(string name) => Variables.GetValueOrDefault(name);
+    /// <summary>Gets the binding of a name (the last declared one), or null.</summary>
+    public Variable? Find(string name)
+    {
+        if (_index is not null)
+            return _index.GetValueOrDefault(name);
+
+        var variables = OrderedVariables;
+        for (var i = variables.Count - 1; i >= 0; i--)
+        {
+            if (string.Equals(variables[i].Name, name, StringComparison.Ordinal))
+                return variables[i];
+        }
+
+        return null;
+    }
 }

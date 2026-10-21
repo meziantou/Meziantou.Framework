@@ -21,6 +21,10 @@ internal static class NumberFormatting
         if (value >= 0 && value < SmallIntegers.Length && value == Math.Floor(value))
             return SmallIntegers[(int)value];
 
+        // The integers that are exactly representable are formatted as integers (no shortest digits search)
+        if (value is > -9007199254740992 and < 9007199254740992 && value == Math.Truncate(value))
+            return ((long)value).ToString(CultureInfo.InvariantCulture);
+
         if (double.IsInfinity(value))
             return value > 0 ? "Infinity" : "-Infinity";
 

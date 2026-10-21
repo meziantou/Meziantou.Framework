@@ -3,26 +3,21 @@ using System.Runtime.CompilerServices;
 namespace Meziantou.Framework.JavaScriptEngine;
 
 /// <summary>
-/// The own properties of an object, in insertion order. Small tables are searched linearly; larger ones have a hash
-/// index. A deleted entry leaves a tombstone, removed when the table is compacted.
+/// The own properties of an object, in insertion order, stored in one array of entries. Small tables are searched
+/// linearly; larger ones have a hash index. A deleted entry leaves a tombstone, removed when the table is compacted.
 /// </summary>
 internal sealed class PropertyTable
 {
     private const int IndexThreshold = 8;
 
-    private PropertyKey[] _keys;
-    private JsValue[] _values;
-    private PropertyFlags[] _flags;
-    private bool[]? _deleted;
+    private Entry[] _entries;
     private Dictionary<PropertyKey, int>? _index;
     private int _count;
     private int _deletedCount;
 
     public PropertyTable(int capacity = 4)
     {
-        _keys = new PropertyKey[capacity];
-        _values = new JsValue[capacity];
-        _flags = new PropertyFlags[capacity];
+        _entries = new Entry[capacity];
     }
 
     /// <summary>Gets the number of properties.</summary>
@@ -35,52 +30,49 @@ internal sealed class PropertyTable
         if (_index is not null)
             return _index.TryGetValue(key, out var position) ? position : -1;
 
+        var entries = _entries;
         for (var i = 0; i < _count; i++)
         {
-            if (_keys[i].Equals(key) && (_deleted is null || !_deleted[i]))
+            ref var entry = ref entries[i];
+            if (entry.Key.Equals(key) && !entry.IsDeleted)
                 return i;
         }
 
         return -1;
     }
 
-    public PropertyKey GetKey(int position) => _keys[position];
+    public PropertyKey GetKey(int position) => _entries[position].Key;
 
-    public ref JsValue GetValue(int position) => ref _values[position];
+    public ref JsValue GetValue(int position) => ref _entries[position].Value;
 
-    public ref PropertyFlags GetFlags(int position) => ref _flags[position];
+    public ref PropertyFlags GetFlags(int position) => ref _entries[position].Flags;
 
-    public bool IsDeleted(int position) => _deleted is not null && _deleted[position];
+    public bool IsDeleted(int position) => _entries[position].IsDeleted;
 
     /// <summary>Gets the number of positions to enumerate (including the deleted ones: check <see cref="IsDeleted"/>).</summary>
     public int Capacity => _count;
 
     public int Add(in PropertyKey key, JsValue value, PropertyFlags flags)
     {
-        if (_count == _keys.Length)
+        if (_count == _entries.Length)
         {
             if (_deletedCount > _count / 2)
             {
                 Compact();
             }
 
-            if (_count == _keys.Length)
+            if (_count == _entries.Length)
             {
-                var newSize = _keys.Length * 2;
-                Array.Resize(ref _keys, newSize);
-                Array.Resize(ref _values, newSize);
-                Array.Resize(ref _flags, newSize);
-                if (_deleted is not null)
-                {
-                    Array.Resize(ref _deleted, newSize);
-                }
+                Array.Resize(ref _entries, _entries.Length * 2);
             }
         }
 
         var position = _count++;
-        _keys[position] = key;
-        _values[position] = value;
-        _flags[position] = flags;
+        ref var entry = ref _entries[position];
+        entry.Key = key;
+        entry.Value = value;
+        entry.Flags = flags;
+        entry.IsDeleted = false;
         if (_index is not null)
         {
             _index[key] = position;
@@ -95,18 +87,17 @@ internal sealed class PropertyTable
 
     public void Remove(int position)
     {
-        _deleted ??= new bool[_keys.Length];
-        _deleted[position] = true;
-        _values[position] = default;
+        ref var entry = ref _entries[position];
+        entry.IsDeleted = true;
+        entry.Value = default;
         _deletedCount++;
-        _index?.Remove(_keys[position]);
+        _index?.Remove(entry.Key);
         if (_deletedCount == _count)
         {
             // The table is empty: start again (keeps the enumeration cheap after many deletions)
-            Array.Clear(_keys, 0, _count);
+            Array.Clear(_entries, 0, _count);
             _count = 0;
             _deletedCount = 0;
-            _deleted = null;
             _index = null;
         }
     }
@@ -116,20 +107,16 @@ internal sealed class PropertyTable
         var target = 0;
         for (var i = 0; i < _count; i++)
         {
-            if (_deleted![i])
+            if (_entries[i].IsDeleted)
                 continue;
 
-            _keys[target] = _keys[i];
-            _values[target] = _values[i];
-            _flags[target] = _flags[i];
+            _entries[target] = _entries[i];
             target++;
         }
 
-        Array.Clear(_keys, target, _count - target);
-        Array.Clear(_values, target, _count - target);
+        Array.Clear(_entries, target, _count - target);
         _count = target;
         _deletedCount = 0;
-        _deleted = null;
         _index = null;
         if (_count > IndexThreshold)
         {
@@ -142,10 +129,18 @@ internal sealed class PropertyTable
         _index = new Dictionary<PropertyKey, int>(_count * 2);
         for (var i = 0; i < _count; i++)
         {
-            if (_deleted is null || !_deleted[i])
+            if (!_entries[i].IsDeleted)
             {
-                _index[_keys[i]] = i;
+                _index[_entries[i].Key] = i;
             }
         }
+    }
+
+    private struct Entry
+    {
+        public PropertyKey Key;
+        public JsValue Value;
+        public PropertyFlags Flags;
+        public bool IsDeleted;
     }
 }

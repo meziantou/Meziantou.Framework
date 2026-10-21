@@ -635,7 +635,30 @@ public partial class JsObject : JsCell
     }
 
     /// <summary>CreateDataProperty(O, P, V)</summary>
-    internal bool CreateDataProperty(in PropertyKey key, JsValue value) => DefineOwnProperty(key, PropertyDescriptor.Data(value));
+    internal bool CreateDataProperty(in PropertyKey key, JsValue value)
+    {
+        // Fast path: a new or configurable data property of an ordinary extensible object (e.g. an object literal)
+        if (!IsExotic && !key.IsArrayIndex && IsExtensibleSlot)
+        {
+            var properties = _properties ??= new PropertyTable();
+            var position = properties.Find(key);
+            if (position < 0)
+            {
+                properties.Add(key, value, PropertyFlags.Default);
+                return true;
+            }
+
+            ref var flags = ref properties.GetFlags(position);
+            if ((flags & PropertyFlags.Configurable) != 0)
+            {
+                properties.GetValue(position) = value;
+                flags = PropertyFlags.Default;
+                return true;
+            }
+        }
+
+        return DefineOwnProperty(key, PropertyDescriptor.Data(value));
+    }
 
     /// <summary>CreateDataPropertyOrThrow(O, P, V)</summary>
     internal void CreateDataPropertyOrThrow(in PropertyKey key, JsValue value)

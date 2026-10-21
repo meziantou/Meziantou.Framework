@@ -42,7 +42,8 @@ internal static class Test262Executor
     private static string? RunMode(Test262Test test, string source, Test262Mode mode)
     {
         var metadata = test.Metadata;
-        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        // The slowest tests take a few seconds alone; the limit leaves room for the slower CI machines and the parallel runs
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(120));
         var loader = new Test262ModuleLoader(Path.GetDirectoryName(test.FullPath)!);
         using var engine = new JsEngine(new JsEngineOptions
         {

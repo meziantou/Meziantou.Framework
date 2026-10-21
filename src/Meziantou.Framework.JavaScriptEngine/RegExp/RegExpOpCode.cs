@@ -78,6 +78,12 @@ internal static class RegExpOpCode
     /// <summary><c>StarLazy min max next</c> followed by a single-character matcher.</summary>
     public const int StarLazy = 66;
 
+    /// <summary>
+    /// <c>StarPossessive min max next</c> followed by a single-character matcher: a greedy quantifier of one character
+    /// that never gives a character back, because what follows it cannot start with one of its characters.
+    /// </summary>
+    public const int StarPossessive = 67;
+
     /// <summary><c>LookStart index</c></summary>
     public const int LookStart = 70;
 
@@ -102,7 +108,7 @@ internal static class RegExpOpCode
             RepeatBranch => 6,
             RepeatIteration => 4,
             RepeatEnd => 5,
-            StarGreedy or StarLazy => 4,
+            StarGreedy or StarLazy or StarPossessive => 4,
             _ => throw new ArgumentOutOfRangeException(nameof(opCode)),
         };
     }

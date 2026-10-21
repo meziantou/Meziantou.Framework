@@ -8,7 +8,7 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// </summary>
 internal sealed class RegExpSearchInfo
 {
-    private RegExpSearchInfo(string? prefix, RegExpCharClass? firstCharacters, bool anchoredAtStart)
+    public RegExpSearchInfo(string? prefix, RegExpCharClass? firstCharacters, bool anchoredAtStart)
     {
         Prefix = prefix;
         FirstCharacters = firstCharacters;
@@ -23,6 +23,13 @@ internal sealed class RegExpSearchInfo
 
     /// <summary>Gets whether a match can only start at the start of the input (<c>^</c> without the multiline flag).</summary>
     public bool AnchoredAtStart { get; }
+
+    /// <summary>
+    /// Gets whether the program starts with an unbounded loop of one character that never gives a character back, and
+    /// has no backreference: when the match fails at a position, it fails at every position of the run of characters
+    /// the loop consumed, and at the end of that run, as what follows the loop sees the same state.
+    /// </summary>
+    public bool SkipLeadingRun { get; init; }
 
     public static RegExpSearchInfo Create(RegExpNode root, bool unicode)
     {
@@ -80,7 +87,7 @@ internal sealed class RegExpSearchInfo
     }
 
     /// <summary>Gets the first code units of the matches of a node (null for any), and whether the node can match the empty string.</summary>
-    private static (CodePointSet? Set, bool CanBeEmpty) GetFirstCharacters(RegExpNode node, bool unicode, int depth)
+    public static (CodePointSet? Set, bool CanBeEmpty) GetFirstCharacters(RegExpNode node, bool unicode, int depth)
     {
         if (depth > 64)
             return (null, true);
@@ -165,7 +172,7 @@ internal sealed class RegExpSearchInfo
     }
 
     /// <summary>Replaces the supplementary code points of a set by their high surrogates.</summary>
-    private static CodePointSet ToCodeUnits(CodePointSet set)
+    public static CodePointSet ToCodeUnits(CodePointSet set)
     {
         var count = set.RangeCount;
         if (count == 0 || set.GetRangeEnd(count - 1) <= 0xFFFF)

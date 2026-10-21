@@ -22,7 +22,7 @@ internal sealed class RegExpRunner
     private const int TagLookDone = 7; // captures..., pos, index
 
     [ThreadStatic]
-    private static RegExpRunner? t_cached;
+    private static RegExpRunner? s_cached;
 
     private int[] _stack = new int[256];
     private int _sp;
@@ -35,11 +35,11 @@ internal sealed class RegExpRunner
 
     public static RegExpRunner Rent()
     {
-        var runner = t_cached;
+        var runner = s_cached;
         if (runner is null)
             return new RegExpRunner();
 
-        t_cached = null;
+        s_cached = null;
         return runner;
     }
 
@@ -48,7 +48,7 @@ internal sealed class RegExpRunner
         runner._program = null!;
         runner._input = "";
         runner._engine = null;
-        t_cached = runner;
+        s_cached = runner;
     }
 
     public int[]? Exec(RegExpProgram program, string input, int lastIndex, bool sticky, JsEngine? engine)
@@ -132,6 +132,16 @@ internal sealed class RegExpRunner
 
             if (sticky)
                 return null;
+
+            if (search.SkipLeadingRun)
+            {
+                var end = start;
+                ConsumeGreedy(program.Code, 4, ref end, int.MaxValue, 0, out _);
+                if (end > index)
+                {
+                    index = end;
+                }
+            }
 
             index = Advance(input, index, unicode);
             first = false;
@@ -367,26 +377,16 @@ internal sealed class RegExpRunner
                     }
 
                 case RegExpOpCode.StarGreedy:
+                case RegExpOpCode.StarPossessive:
                     {
                         var min = code[pc + 1];
-                        var max = code[pc + 2];
                         var characterPc = pc + 4;
-                        var minPos = pos;
-                        var count = 0;
-                        while (count < max && TryStep(code, characterPc, ref pos))
-                        {
-                            count++;
-                            if (count == min)
-                            {
-                                minPos = pos;
-                            }
-                        }
-
+                        var count = ConsumeGreedy(code, characterPc, ref pos, code[pc + 2], min, out var minPos);
                         _budget -= count;
                         if (count < min)
                             break;
 
-                        if (count > min)
+                        if (count > min && opCode == RegExpOpCode.StarGreedy)
                         {
                             Push(code[pc + 3], minPos, pos, (code[characterPc] & 1) != 0 ? TagStarBackward : TagStarForward);
                         }
@@ -636,6 +636,83 @@ internal sealed class RegExpRunner
                     throw new InvalidOperationException("Invalid backtracking record");
             }
         }
+    }
+
+    /// <summary>Matches a single-character instruction as many times as possible, at most <paramref name="max"/> times.</summary>
+    /// <returns>The number of characters matched.</returns>
+    private int ConsumeGreedy(int[] code, int pc, ref int pos, int max, int min, out int minPos)
+    {
+        var input = _input;
+        var start = pos;
+        var available = input.Length - pos;
+        int count;
+        switch (code[pc])
+        {
+            // The forward matchers of code units: a tight loop, and the position after min characters is known
+            case RegExpOpCode.Char:
+                {
+                    var c = (char)code[pc + 1];
+                    var limit = (int)Math.Min((uint)max, (uint)available);
+                    var span = input.AsSpan(pos, limit);
+                    count = span.IndexOfAnyExcept(c);
+                    if (count < 0)
+                    {
+                        count = limit;
+                    }
+
+                    break;
+                }
+
+            case RegExpOpCode.Class:
+                {
+                    var characterClass = _program.Classes[code[pc + 1]];
+                    var limit = (int)Math.Min((uint)max, (uint)available);
+                    count = 0;
+                    while (count < limit && characterClass.Contains(input[pos + count]))
+                    {
+                        count++;
+                    }
+
+                    break;
+                }
+
+            case RegExpOpCode.Dot:
+                {
+                    var limit = (int)Math.Min((uint)max, (uint)available);
+                    count = input.AsSpan(pos, limit).IndexOfAny("\n\r\u2028\u2029");
+                    if (count < 0)
+                    {
+                        count = limit;
+                    }
+
+                    break;
+                }
+
+            case RegExpOpCode.Any:
+                count = (int)Math.Min((uint)max, (uint)available);
+                break;
+
+            default:
+                {
+                    // Code points, backward matching: one character at a time
+                    minPos = pos;
+                    count = 0;
+                    while (count < max && TryStep(code, pc, ref pos))
+                    {
+                        count++;
+                        if (count == min)
+                        {
+                            minPos = pos;
+                        }
+                    }
+
+                    return count;
+                }
+        }
+
+        pos = start + count;
+        minPos = start + Math.Min(min, count);
+        return count;
     }
 
     /// <summary>Matches a single-character instruction at <paramref name="pc"/>.</summary>

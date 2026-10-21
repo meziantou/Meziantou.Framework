@@ -26,6 +26,12 @@ internal sealed class RegExpCodeGenerator
         generator._code.Add(RegExpOpCode.Match);
 
         var search = RegExpSearchInfo.Create(parsed.Root, unicode);
+        var code = generator._code;
+        if (code[0] == RegExpOpCode.StarPossessive && code[2] == RegExpQuantifierNode.Infinite && (code[4] & 1) == 0 && generator._backreferences.Count == 0)
+        {
+            search = new RegExpSearchInfo(search.Prefix, search.FirstCharacters, search.AnchoredAtStart) { SkipLeadingRun = true };
+        }
+
         return new RegExpProgram(
             source,
             flags,
@@ -147,8 +153,66 @@ internal sealed class RegExpCodeGenerator
                 continue;
             }
 
+            if (!backward && i + 1 < count && items[i] is RegExpQuantifierNode { Greedy: true } quantifier && IsSingleCharacterNode(quantifier.Body) && CannotStartWith(items[i + 1], quantifier.Body))
+            {
+                EmitStar(quantifier, RegExpOpCode.StarPossessive, backward);
+                continue;
+            }
+
             Emit(items[index], backward);
         }
+    }
+
+    /// <summary>
+    /// Gets whether a match of <paramref name="node"/> cannot start with a character of <paramref name="character"/>:
+    /// a greedy loop of that character before the node never has to give a character back.
+    /// </summary>
+    private bool CannotStartWith(RegExpNode node, RegExpNode character)
+    {
+        var (follow, canBeEmpty) = RegExpSearchInfo.GetFirstCharacters(node, _unicode, depth: 0);
+        if (follow is null || canBeEmpty)
+            return false;
+
+        CodePointSet? loop = character switch
+        {
+            RegExpCharNode c => c.IgnoreCase ? RegExpCaseFolding.AddCaseEquivalents(CodePointSet.Single(c.Value), _unicode) : CodePointSet.Single(c.Value),
+            RegExpSetNode set => GetMatchSet(set),
+            RegExpDotNode { DotAll: false } => CreateLineTerminators().Complement(_unicode ? CodePointSet.MaxCodePoint : 0xFFFF),
+            _ => null,
+        };
+
+        return loop is not null && CodePointSet.Intersect(RegExpSearchInfo.ToCodeUnits(loop), follow).IsEmpty;
+
+        static CodePointSet CreateLineTerminators()
+        {
+            var set = new CodePointSet();
+            set.Add('\n');
+            set.Add('\r');
+            set.AddRange(0x2028, 0x2029);
+            return set;
+        }
+    }
+
+    private CodePointSet GetMatchSet(RegExpSetNode set)
+    {
+        var matchSet = set.IgnoreCase ? RegExpCaseFolding.AddCaseEquivalents(set.Set, _unicode) : set.Set;
+        if (set.Invert)
+        {
+            matchSet = matchSet.Complement(_unicode ? CodePointSet.MaxCodePoint : 0xFFFF);
+        }
+
+        return matchSet;
+    }
+
+    private void EmitStar(RegExpQuantifierNode quantifier, int opCode, bool backward)
+    {
+        _code.Add(opCode);
+        _code.Add(quantifier.Min);
+        _code.Add(quantifier.Max);
+        var patch = Position;
+        _code.Add(0);
+        EmitSingleCharacter(quantifier.Body, backward);
+        _code[patch] = Position;
     }
 
     /// <summary>Gets the value of a case-sensitive character that can be part of a string literal, or -1.</summary>
@@ -199,11 +263,7 @@ internal sealed class RegExpCodeGenerator
 
             case RegExpSetNode set:
                 {
-                    var matchSet = set.IgnoreCase ? RegExpCaseFolding.AddCaseEquivalents(set.Set, _unicode) : set.Set;
-                    if (set.Invert)
-                    {
-                        matchSet = matchSet.Complement(_unicode ? CodePointSet.MaxCodePoint : 0xFFFF);
-                    }
+                    var matchSet = GetMatchSet(set);
 
                     // A set without surrogates and supplementary characters matches the same code units in both modes
                     var codePoints = _unicode && matchSet.RangeCount > 0 && matchSet.GetRangeEnd(matchSet.RangeCount - 1) >= 0xD800 && !IsOnlyBmpWithoutSurrogates(matchSet);
@@ -301,13 +361,7 @@ internal sealed class RegExpCodeGenerator
 
         if (IsSingleCharacterNode(body))
         {
-            _code.Add(quantifier.Greedy ? RegExpOpCode.StarGreedy : RegExpOpCode.StarLazy);
-            _code.Add(min);
-            _code.Add(max);
-            var patch = Position;
-            _code.Add(0);
-            EmitSingleCharacter(body, backward);
-            _code[patch] = Position;
+            EmitStar(quantifier, quantifier.Greedy ? RegExpOpCode.StarGreedy : RegExpOpCode.StarLazy, backward);
             return;
         }
 

@@ -15,7 +15,6 @@ internal sealed class RegExpParser
 
     private static CodePointSet? s_unicodeSetsIgnoreCaseAllCharacters;
 
-    private readonly RegExpFlags _flags;
     private readonly bool _unicode;
     private readonly bool _unicodeSets;
     private readonly Dictionary<string, List<int>> _namedGroups = new(StringComparer.Ordinal);
@@ -24,7 +23,6 @@ internal sealed class RegExpParser
 
     private RegExpParser(RegExpFlags flags)
     {
-        _flags = flags;
         _unicode = flags.HasEitherUnicodeFlag();
         _unicodeSets = (flags & RegExpFlags.UnicodeSets) != 0;
     }

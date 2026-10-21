@@ -585,6 +585,25 @@ public sealed class RegExpMatcherTests
         return builder.ToString();
     }
 
+    [Theory]
+    [InlineData("a+b", "", "aaac aab", 5, "aab")]
+    [InlineData("[\\w.-]+@[\\w-]+\\.\\w+", "", "foo bar.baz@example.com", 4, "bar.baz@example.com")]
+    [InlineData("\\d+px", "", "12em 34px", 5, "34px")]
+    [InlineData("a*b", "", "aac ab", 4, "ab")]
+    [InlineData("a*b", "", "aac b", 4, "b")]
+    [InlineData("[^,]+,x", "", "ab,cd,x", 3, "cd,x")]
+    [InlineData("\\u{1F600}+x", "u", "\uD83D\uDE00\uD83D\uDE00y\uD83D\uDE00x", 5, "\uD83D\uDE00x")]
+    [InlineData("a{2,}b", "", "ab aaab", 3, "aaab")]
+    [InlineData("a{0,2}b", "", "aaab", 1, "aab")]
+    [InlineData("\\s+x", "", "  y  x", 3, "  x")]
+    [InlineData(".+;", "", "ab\ncd;", 3, "cd;")]
+    [InlineData("[a-c]+(?=d)", "", "abce abcd", 5, "abc")]
+    public void Exec_GreedyLoopsThatDoNotBacktrack(string pattern, string flags, string input, int expectedIndex, string expected)
+    {
+        Assert.Equal(expectedIndex, Index(pattern, flags, input));
+        Assert.Equal(expected, Exec(pattern, flags, input)?[0]);
+    }
+
     [Fact]
     public void Exec_StringsAndPrefixes()
     {

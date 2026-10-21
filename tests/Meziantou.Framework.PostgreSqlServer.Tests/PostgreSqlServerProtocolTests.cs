@@ -311,6 +311,7 @@ public sealed class PostgreSqlServerProtocolTests
         Assert.Equal(PostgreSqlColumnType.Int32, parameter.Type);
         Assert.Same(DBNull.Value, parameter.Value);
         Assert.True(parameter.IsNull);
+        Assert.Null(parameter.RawValue);
         Assert.Null(parameter.AsString());
         Assert.Null(parameter.AsInt32());
         Assert.Null(parameter.AsInt64());

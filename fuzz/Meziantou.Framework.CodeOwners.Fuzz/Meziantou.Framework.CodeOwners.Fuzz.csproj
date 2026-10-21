@@ -1,0 +1,18 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.CodeOwners. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The CODEOWNERS files of the unit tests are the seeds -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.CodeOwners.Tests\CodeOwnersParserTests.cs" LogicalName="CodeOwnersParserTests.cs" Link="Seeds\CodeOwnersParserTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.CodeOwners\Meziantou.Framework.CodeOwners.csproj" />
+  </ItemGroup>
+</Project>

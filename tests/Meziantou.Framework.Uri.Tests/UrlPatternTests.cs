@@ -1663,6 +1663,19 @@ public sealed class UrlPatternTests
         Assert.Equal(expected, pattern.Pathname);
     }
 
+    [Theory]
+    // A relative pathname is canonicalized behind a "/-" prefix, and a ".." segment can remove the "-" segment
+    [InlineData("a/..")]
+    [InlineData("a/../..")]
+    [InlineData("a/b/../../..")]
+    public void Create_RelativePathnameThatClimbsAboveItsStart_IsEmpty(string pathname)
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = pathname });
+
+        Assert.Equal("", pattern.Pathname);
+        Assert.True(pattern.IsMatch(new UrlPatternInit { Pathname = pathname }));
+    }
+
     [Fact]
     public void Create_PathnameLiteralAfterAGroup_DoesNotGainASeparator()
     {
@@ -1806,6 +1819,37 @@ public sealed class UrlPatternTests
     public void Create_IPv6HostnameWithAnInvalidCodePoint_Throws()
     {
         Assert.Throws<UrlPatternException>(() => UrlPattern.Create(new UrlPatternInit { Hostname = "[zz]" }));
+    }
+
+    [Theory]
+    // A literal part of a hostname that starts with '[' is parsed as an IPv6 address
+    [InlineData("http://[/")]
+    [InlineData("http://*[1]/")]
+    [InlineData("http://*[1:2]/")]
+    public void Create_HostnameLiteralThatIsNotAnIPv6Address_Throws(string pattern)
+    {
+        Assert.Throws<UrlPatternException>(() => UrlPattern.Create(pattern));
+    }
+
+    [Theory]
+    // The URL parser rejects an empty host, which is what is left of these values
+    [InlineData("\t")]
+    [InlineData("\r\n")]
+    [InlineData("/")]
+    [InlineData("#a")]
+    public void Create_HostnameThatIsEmptyOnceParsed_Throws(string hostname)
+    {
+        Assert.Throws<UrlPatternException>(() => UrlPattern.Create(new UrlPatternInit { Hostname = "a{" + hostname + "}?" }));
+        Assert.False(UrlPattern.Create(new UrlPatternInit()).IsMatch(new UrlPatternInit { Hostname = hostname }));
+    }
+
+    [Fact]
+    public void IsMatch_IPv6HostnameOfAnInit_IsSerialized()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit { Hostname = @"[\:\:ab]" });
+
+        Assert.True(pattern.IsMatch(new UrlPatternInit { Hostname = "[0:0:0:0:0:0:0:AB]" }));
+        Assert.False(pattern.IsMatch(new UrlPatternInit { Hostname = "[0:0:0:0:0:0:0:AB" }));
     }
 
     [Theory]

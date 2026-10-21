@@ -478,4 +478,53 @@ public sealed class UnsafeMethodInvalidationTests
               Value: content-new
             """);
     }
+
+    [Fact]
+    public async Task WhenLocationCannotBeResolvedThenContentLocationIsStillInvalidated()
+    {
+        var storeErrors = new List<Exception>();
+        await using var context = new HttpTestContext(new HttpCachingOptions { OnStoreError = storeErrors.Add });
+        context.AddResponse(HttpStatusCode.OK, "content-cached", ("Cache-Control", "max-age=3600"));
+        context.AddResponse(HttpStatusCode.Created, "result",
+            ("Location", "//example.com:invalid-port/"),
+            ("Content-Location", "http://example.com/content"));
+        context.AddResponse(HttpStatusCode.OK, "content-new", ("Cache-Control", "max-age=3600"));
+
+        await context.SnapshotResponse("http://example.com/content", """
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 14
+                Content-Type: text/plain; charset=utf-8
+              Value: content-cached
+            """);
+
+        await context.SnapshotResponse(HttpMethod.Post, "http://example.com/target", """
+            StatusCode: 201 (Created)
+            Headers:
+              Location: //example.com:invalid-port/
+            Content:
+              Headers:
+                Content-Length: 6
+                Content-Location: http://example.com/content
+                Content-Type: text/plain; charset=utf-8
+              Value: result
+            """);
+
+        await context.SnapshotResponse("http://example.com/content", """
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 11
+                Content-Type: text/plain; charset=utf-8
+              Value: content-new
+            """);
+
+        // A Location the cache cannot resolve is not a failure of the store
+        Assert.Empty(storeErrors);
+    }
 }

@@ -14,4 +14,8 @@
     <PackageReference Include="System.Memory" Version="4.6.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Scheduling.Fuzz" />
+  </ItemGroup>
+
 </Project>

@@ -191,6 +191,7 @@ public class CsvReader
                         if (next == Quote)
                         {
                             await ReadCharAsync().ConfigureAwait(false);
+                            ColumnNumber++;
                             hasPendingValue = true;
                             value.Append(Quote.Value);
                         }

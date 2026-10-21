@@ -144,6 +144,34 @@ public sealed class RobotsFileTests
     }
 
     [Fact]
+    public void Parse_CommentOnlyLines_DoNotEndTheGroup()
+    {
+        var robots = RobotsFile.Parse("""
+            User-agent: *
+            # Directories
+            Disallow: /core/
+              # Files
+            Disallow: /README.md
+            """);
+
+        var group = Assert.Single(robots.Groups);
+        Assert.Equal(["/core/", "/README.md"], group.Rules.Select(rule => rule.Value));
+        Assert.Empty(robots.ParseErrors);
+        Assert.False(robots.IsAllowed("Bot", "/core/install.php"));
+        Assert.False(robots.IsAllowed("Bot", "/README.md"));
+    }
+
+    [Fact]
+    public void Parse_CommentOnlyLineBetweenUserAgents_DoesNotSplitTheGroup()
+    {
+        var robots = RobotsFile.Parse("User-agent: A\n# B is blocked too\nUser-agent: B\nDisallow: /\n");
+
+        var group = Assert.Single(robots.Groups);
+        Assert.Equal(["A", "B"], group.UserAgents);
+        Assert.False(robots.IsAllowed("A", "/x"));
+    }
+
+    [Fact]
     public void Parse_UnknownDirectivesIgnored()
     {
         var robots = RobotsFile.Parse("""

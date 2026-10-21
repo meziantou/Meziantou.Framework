@@ -8,4 +8,8 @@
     <PackageTags>http, caching, http-cache, rfc7234, httpclient</PackageTags>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Http.Caching.Fuzz" />
+  </ItemGroup>
+
 </Project>

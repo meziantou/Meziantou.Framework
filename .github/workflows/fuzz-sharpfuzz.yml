@@ -16,17 +16,29 @@ on:
         default: all
         options:
           - all
+          - bencode
+          - codeowners
+          - csv
           - dependency-scanning
+          - dns
           - globbing
           - html-sanitizer
+          - http-caching
+          - htpasswd
           - jsonpath
           - language
           - markdown
           - media-tags
+          - postgresql-server
+          - robots-txt
+          - scheduling
+          - simple-query-language
           - syntax-highlighting
           - tds-server
           - toml
           - unicode
+          - uri
+          - versioning
           - webplatform
           - yaml
       duration_seconds:
@@ -69,19 +81,31 @@ env:
   # with the fewest, and gets an option of the component input (Meziantou.Framework.Fuzzing.Tests checks both).
   FUZZ_PROJECTS: |
     [
-      { "project": "Meziantou.Framework.DependencyScanning.Fuzz", "component": "dependency-scanning", "day": 0 },
-      { "project": "Meziantou.Framework.Globbing.Fuzz",           "component": "globbing",            "day": 0 },
-      { "project": "Meziantou.Framework.HtmlSanitizer.Fuzz",      "component": "html-sanitizer",      "day": 1 },
-      { "project": "Meziantou.Framework.JsonPath.Fuzz",           "component": "jsonpath",            "day": 1 },
-      { "project": "Meziantou.Framework.Language.Fuzz",           "component": "language",            "day": 2 },
-      { "project": "Meziantou.Framework.Markdown.Fuzz",           "component": "markdown",            "day": 2 },
-      { "project": "Meziantou.Framework.MediaTags.Fuzz",          "component": "media-tags",          "day": 3 },
-      { "project": "Meziantou.Framework.SyntaxHighlighting.Fuzz", "component": "syntax-highlighting", "day": 3 },
-      { "project": "Meziantou.Framework.TdsServer.Fuzz",          "component": "tds-server",          "day": 4 },
-      { "project": "Meziantou.Framework.Toml.Fuzz",               "component": "toml",                "day": 4 },
-      { "project": "Meziantou.Framework.Unicode.Fuzz",            "component": "unicode",             "day": 5 },
-      { "project": "Meziantou.Framework.WebPlatform.Fuzz",        "component": "webplatform",         "day": 5 },
-      { "project": "Meziantou.Framework.Yaml.Fuzz",               "component": "yaml",                "day": 6 }
+      { "project": "Meziantou.Framework.Bencode.Fuzz",             "component": "bencode",               "day": 2 },
+      { "project": "Meziantou.Framework.CodeOwners.Fuzz",          "component": "codeowners",            "day": 1 },
+      { "project": "Meziantou.Framework.Csv.Fuzz",                 "component": "csv",                   "day": 3 },
+      { "project": "Meziantou.Framework.DependencyScanning.Fuzz",  "component": "dependency-scanning",   "day": 0 },
+      { "project": "Meziantou.Framework.Dns.Fuzz",                 "component": "dns",                   "day": 0 },
+      { "project": "Meziantou.Framework.Globbing.Fuzz",            "component": "globbing",              "day": 0 },
+      { "project": "Meziantou.Framework.HtmlSanitizer.Fuzz",       "component": "html-sanitizer",        "day": 1 },
+      { "project": "Meziantou.Framework.Http.Caching.Fuzz",        "component": "http-caching",          "day": 2 },
+      { "project": "Meziantou.Framework.Http.Htpasswd.Fuzz",       "component": "htpasswd",              "day": 1 },
+      { "project": "Meziantou.Framework.JsonPath.Fuzz",            "component": "jsonpath",              "day": 1 },
+      { "project": "Meziantou.Framework.Language.Fuzz",            "component": "language",              "day": 2 },
+      { "project": "Meziantou.Framework.Markdown.Fuzz",            "component": "markdown",              "day": 2 },
+      { "project": "Meziantou.Framework.MediaTags.Fuzz",           "component": "media-tags",            "day": 3 },
+      { "project": "Meziantou.Framework.PostgreSqlServer.Fuzz",    "component": "postgresql-server",     "day": 6 },
+      { "project": "Meziantou.Framework.RobotsTxt.Fuzz",           "component": "robots-txt",            "day": 0 },
+      { "project": "Meziantou.Framework.Scheduling.Fuzz",          "component": "scheduling",            "day": 3 },
+      { "project": "Meziantou.Framework.SimpleQueryLanguage.Fuzz", "component": "simple-query-language", "day": 5 },
+      { "project": "Meziantou.Framework.SyntaxHighlighting.Fuzz",  "component": "syntax-highlighting",   "day": 3 },
+      { "project": "Meziantou.Framework.TdsServer.Fuzz",           "component": "tds-server",            "day": 4 },
+      { "project": "Meziantou.Framework.Toml.Fuzz",                "component": "toml",                  "day": 4 },
+      { "project": "Meziantou.Framework.Unicode.Fuzz",             "component": "unicode",               "day": 5 },
+      { "project": "Meziantou.Framework.Uri.Fuzz",                 "component": "uri",                   "day": 4 },
+      { "project": "Meziantou.Framework.Versioning.Fuzz",          "component": "versioning",            "day": 4 },
+      { "project": "Meziantou.Framework.WebPlatform.Fuzz",         "component": "webplatform",           "day": 5 },
+      { "project": "Meziantou.Framework.Yaml.Fuzz",                "component": "yaml",                  "day": 6 }
     ]
 
 defaults:

@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Net;
 using Meziantou.Framework.PostgreSql.Handler;
 using Meziantou.Xunit;
@@ -197,6 +198,32 @@ public sealed class PostgreSqlServerSecurityTests
         Assert.Contains(afterRecovery, message => message.Type == (byte)'D');
     }
 
+    [Theory]
+    [InlineData(new byte[] { 0x00 }, "Unsupported frontend message 0x00.")]
+    [InlineData(new byte[] { (byte)'D', 0x00, 0x00 }, "Invalid Describe target 0x00.")]
+    [InlineData(new byte[] { (byte)'C', 0x0A, 0x00 }, "Invalid Close target 0x0A.")]
+    [InlineData(new byte[] { (byte)'D', (byte)'x', 0x00 }, "Invalid Describe target 'x'.")]
+    public async Task ATagByteInAnErrorMessage_DoesNotEndTheMessageEarly(byte[] message, string expectedMessage)
+    {
+        using var server = CreateServer();
+        await server.StartAsync();
+
+        using var client = await RawPostgreSqlClient.ConnectAsync(server.Ports[0]);
+        await client.AuthenticateClearTextAsync();
+
+        await client.SendMessageAsync(message[0], message.AsMemory(1));
+        await client.SendSyncAsync();
+        var messages = await client.ReadUntilReadyForQueryAsync();
+        Assert.Equal([(byte)'E', (byte)'Z'], messages.Select(response => response.Type));
+
+        // The fields are the severity (twice), the code and the message, then the terminator
+        var fields = messages[0].ErrorFields();
+        Assert.Equal(["C", "M", "S", "V"], fields.Keys.Select(key => key.ToString()).Order(StringComparer.Ordinal));
+        Assert.Equal(expectedMessage, fields['M']);
+        Assert.Equal((byte)0, messages[0].Payload[^1]);
+        Assert.Equal((byte)0, messages[0].Payload[^2]);
+    }
+
     [Fact]
     public async Task BindToAnUnknownStatement_ReportsAnErrorAndSkipsUntilSync()
     {
@@ -220,6 +247,69 @@ public sealed class PostgreSqlServerSecurityTests
         await client.SendSimpleQueryAsync("SELECT 1");
         var afterRecovery = await client.ReadUntilReadyForQueryAsync();
         Assert.Contains(afterRecovery, message => message.Type == (byte)'D');
+    }
+
+    [Fact]
+    public async Task BindParameterLengthNearInt32MaxValue_ReportsAnErrorAndTheConnectionSurvives()
+    {
+        using var server = CreateServer();
+        await server.StartAsync();
+
+        using var client = await RawPostgreSqlClient.ConnectAsync(server.Ports[0]);
+        await client.AuthenticateClearTextAsync();
+        await client.SendParseAsync("s1", "SELECT $1");
+
+        // Portal "", statement "s1", no format code, one parameter whose length is int.MaxValue but has no value
+        await client.SendMessageAsync((byte)'B', new byte[] { 0, (byte)'s', (byte)'1', 0, 0, 0, 0, 1, 0x7F, 0xFF, 0xFF, 0xFF });
+        await client.SendSyncAsync();
+
+        var messages = await client.ReadUntilReadyForQueryAsync();
+        Assert.Equal([(byte)'1', (byte)'E', (byte)'Z'], messages.Select(message => message.Type));
+        Assert.Equal("08P01", messages[1].ErrorFields()['C']);
+
+        await client.SendSimpleQueryAsync("SELECT 1");
+        var afterRecovery = await client.ReadUntilReadyForQueryAsync();
+        Assert.Contains(afterRecovery, message => message.Type == (byte)'D');
+    }
+
+    // Decoding these parameters took one division per digit and per unit of weight, minutes of CPU for this message
+    [Fact(Timeout = 30_000)]
+    public async Task BinaryNumericWithManyDigitsAndAVeryNegativeWeight_IsDecodedQuickly()
+    {
+        using var server = CreateServer();
+        await server.StartAsync();
+
+        using var client = await RawPostgreSqlClient.ConnectAsync(server.Ports[0]);
+        await client.AuthenticateClearTextAsync();
+        // 64 binary numeric parameters of 32767 digits each, with the weight -32768: every digit is far below 1e-28
+        const int ParameterCount = 64;
+        const int DigitCount = short.MaxValue;
+        await client.SendParseAsync("s1", "SELECT 1", [.. Enumerable.Repeat(1700u, ParameterCount)]);
+
+        var payload = new List<byte> { 0, (byte)'s', (byte)'1', 0, 0, 1, 0, 1, 0, ParameterCount };
+        for (var i = 0; i < ParameterCount; i++)
+        {
+            var value = new byte[8 + (DigitCount * 2)];
+            BinaryPrimitives.WriteInt16BigEndian(value, DigitCount);
+            BinaryPrimitives.WriteInt16BigEndian(value.AsSpan(2), short.MinValue);
+            for (var digit = 0; digit < DigitCount; digit++)
+            {
+                BinaryPrimitives.WriteInt16BigEndian(value.AsSpan(8 + (digit * 2)), 9999);
+            }
+
+            var length = new byte[4];
+            BinaryPrimitives.WriteInt32BigEndian(length, value.Length);
+            payload.AddRange(length);
+            payload.AddRange(value);
+        }
+
+        payload.AddRange([0, 0]);
+        await client.SendMessageAsync((byte)'B', payload.ToArray());
+        await client.SendExecuteAsync("", maxRows: 0);
+        await client.SendSyncAsync();
+
+        var messages = await client.ReadUntilReadyForQueryAsync().WaitAsync(TestContext.Current.CancellationToken);
+        Assert.Equal([(byte)'1', (byte)'2', (byte)'D', (byte)'C', (byte)'Z'], messages.Select(message => message.Type));
     }
 
     [Fact]

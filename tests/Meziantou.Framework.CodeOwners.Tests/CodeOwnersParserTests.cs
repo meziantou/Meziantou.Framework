@@ -78,6 +78,19 @@ public sealed class CodeOwnersParserTests
         Assert.Equal(expected, actual);
     }
 
+    [Theory]
+    [InlineData("docs\\\n*.js @user1", CodeOwnersDialect.GitHub)]
+    [InlineData("docs\\\r\n*.js @user1", CodeOwnersDialect.GitHub)]
+    [InlineData("docs\\\r*.js @user1", CodeOwnersDialect.GitHub)]
+    [InlineData("docs\\\n*.js @user1", CodeOwnersDialect.GitLab)]
+    public void ParseBackslashAtTheEndOfALineDoesNotEscapeTheLineBreak(string content, CodeOwnersDialect dialect)
+    {
+        var actual = CodeOwnersFile.Parse(content, dialect).Entries;
+
+        var expected = new[] { Entry("docs"), Entry("*.js", User("user1")) };
+        Assert.Equal(expected, actual);
+    }
+
     [Fact]
     public void ParseSingleLineCodeOwnersWithSection()
     {

@@ -83,9 +83,11 @@ internal static class UrlCanonicalizer
         if (value.Length == 0)
             return value;
 
+        // The URL parser fails on a special URL whose host is empty, which is what is left of a value made only of
+        // tabs and newlines, or that starts with what starts the next component
         value = RemoveTabsAndNewlines(value);
         if (value.Length == 0)
-            return value;
+            throw new UrlPatternException("Invalid hostname: the hostname is empty");
 
         // Hostname state stops at whatever would start the next component, and rejects a port
         var insideBrackets = false;
@@ -112,10 +114,17 @@ internal static class UrlCanonicalizer
         }
 
         if (value.Length == 0)
-            return value;
+            throw new UrlPatternException("Invalid hostname: the hostname is empty");
 
+        // The host parser reads a value that starts with '[' as an IPv6 address, which must be valid and is serialized
+        // in its compressed form, such as "[::1]" for "[0:0:0:0:0:0:0:1]"
         if (value[0] is '[')
-            return CanonicalizeIPv6Hostname(value);
+        {
+            if (!HostParser.TryParse(value, isOpaque: false, out var host))
+                throw new UrlPatternException($"Invalid hostname: '{value}' is not a valid IPv6 address");
+
+            return host;
+        }
 
         var domain = PercentEncoding.Decode(value);
         if (!HostParser.TryDomainToAscii(domain, out var asciiDomain))
@@ -201,7 +210,11 @@ internal static class UrlCanonicalizer
 
         var result = SerializePath(ParsePath(modifiedValue));
 
-        return leadingSlash ? result : result[2..];
+        // The "-" segment of the prefix is gone when a ".." segment removed it ("a/../.." is "/"), which leaves nothing
+        if (leadingSlash)
+            return result;
+
+        return result.Length > 2 ? result[2..] : "";
     }
 
     /// <summary>Canonicalizes the pathname of a URL whose scheme is not a special scheme.</summary>

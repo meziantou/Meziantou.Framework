@@ -97,6 +97,15 @@ internal static class VTimeZoneWriter
             return Math.Min(lastRuleYear + 1 + OngoingPatternVerificationYears, MaxYear);
         }
 
+        if (lastRuleYear >= MaxYear)
+        {
+            // The rules reach the last covered year, as those VTimeZoneReader expands an open-ended recurrence into, so the
+            // pattern reaching it goes on: a recurrence ending in that year would read back as a bounded one, which the reader
+            // only expands for a limited number of onsets.
+            ongoingFromYear = MaxYear;
+            return MaxYear;
+        }
+
         ongoingFromYear = null;
         return Math.Min(lastRuleYear + 1, MaxYear);
     }

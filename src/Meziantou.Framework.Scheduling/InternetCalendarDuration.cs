@@ -131,7 +131,9 @@ internal sealed class InternetCalendarDuration
     public bool TryGetEnd(DateTime start, bool isAllDay, TimeZoneInfo? timeZone, out DateTime end)
     {
         end = default;
-        if (Days > (DateTime.MaxValue - start).TotalDays)
+
+        // Compared in ticks: TotalDays is a double, which rounds the days left up to a whole day when the start is a midnight.
+        if (Days > (DateTime.MaxValue.Ticks - start.Ticks) / TimeSpan.TicksPerDay)
             return false;
 
         var wallClock = start.AddDays(Days);

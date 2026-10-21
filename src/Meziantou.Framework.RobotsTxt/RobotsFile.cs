@@ -303,11 +303,16 @@ public sealed class RobotsFile
                 line = line[1..];
 
             // Strip inline comments and trim whitespace.
-            var trimmed = StripComment(line).Trim();
+            var withoutComment = StripComment(line);
+            var trimmed = withoutComment.Trim();
 
             if (trimmed.IsEmpty)
             {
-                FlushGroup();
+                // Only a blank line ends the group. A comment-only line is ignored, so a comment
+                // between a User-agent line and its rules does not orphan the rules.
+                if (withoutComment.Length == line.Length)
+                    FlushGroup();
+
                 return;
             }
 

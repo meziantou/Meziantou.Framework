@@ -147,9 +147,13 @@ public sealed class TemporalBuiltinsTests
     [InlineData("ethioaa", "2024-03-15", "aa 7516 7516 M07 6")]
     [InlineData("indian", "2024-03-15", "shaka 1945 1945 M12 25")]
     [InlineData("persian", "2024-03-15", "ap 1402 1402 M12 25")]
+    [InlineData("hebrew", "2024-03-15", "am 5784 5784 M06 5")]
+    [InlineData("hebrew", "2024-02-10", "am 5784 5784 M05L 1")]
     [InlineData("islamic-umalqura", "2024-03-15", "ah 1445 1445 M09 5")]
     [InlineData("islamic-civil", "0622-07-19", "ah 1 1 M01 1")]
     [InlineData("islamic-tbla", "0622-07-18", "ah 1 1 M01 1")]
+    [InlineData("chinese", "2024-03-15", "  2024 M02 6")]
+    [InlineData("dangi", "2024-02-10", "  2024 M01 1")]
     public void Calendars_IsoToCalendarDate(string calendar, string isoDate, string expected)
     {
         Assert.Equal(expected, Evaluate($"const d = Temporal.PlainDate.from('{isoDate}').withCalendar('{calendar}'); [d.era, d.eraYear, d.year, d.monthCode, d.day].join(' ')"));
@@ -166,12 +170,30 @@ public sealed class TemporalBuiltinsTests
         Assert.Equal("1972-02-29[u-ca=gregory]", Evaluate("Temporal.PlainMonthDay.from({ calendar: 'gregory', monthCode: 'M02', day: 30 }).toString()"));
     }
 
+    [Fact]
+    public void Calendars_LeapMonths()
+    {
+        // 5784 is a leap year of the Hebrew calendar: Adar I (M05L) is the 6th month
+        Assert.Equal("13 6 M05L", Evaluate("const d = Temporal.PlainDate.from({ calendar: 'hebrew', year: 5784, monthCode: 'M05L', day: 1 }); [d.monthsInYear, d.month, d.monthCode].join(' ')"));
+        Assert.Equal("M06", Evaluate("Temporal.PlainDate.from({ calendar: 'hebrew', year: 5785, monthCode: 'M05L', day: 1 }).monthCode"));
+        Assert.Equal("RangeError", ErrorName("Temporal.PlainDate.from({ calendar: 'hebrew', year: 5785, monthCode: 'M05L', day: 1 }, { overflow: 'reject' })"));
+        Assert.Equal("1970-02-07[u-ca=hebrew]", Evaluate("Temporal.PlainMonthDay.from({ calendar: 'hebrew', monthCode: 'M05L', day: 1 }).toString()"));
+
+        // 2023 has a leap month after the 2nd month in the Chinese calendar
+        Assert.Equal("13 3 M02L", Evaluate("const d = Temporal.PlainDate.from({ calendar: 'chinese', year: 2023, monthCode: 'M02L', day: 1 }); [d.monthsInYear, d.month, d.monthCode].join(' ')"));
+        Assert.Equal("P1Y", Evaluate("Temporal.PlainDate.from({ calendar: 'chinese', year: 2023, monthCode: 'M02', day: 1 }).until(Temporal.PlainDate.from({ calendar: 'chinese', year: 2024, monthCode: 'M02', day: 1 }), { largestUnit: 'years' }).toString()"));
+        Assert.Equal("P13M", Evaluate("Temporal.PlainDate.from({ calendar: 'chinese', year: 2023, monthCode: 'M02', day: 1 }).until(Temporal.PlainDate.from({ calendar: 'chinese', year: 2024, monthCode: 'M02', day: 1 }), { largestUnit: 'months' }).toString()"));
+    }
+
     [Theory]
     [InlineData("buddhist")]
+    [InlineData("chinese")]
     [InlineData("coptic")]
+    [InlineData("dangi")]
     [InlineData("ethioaa")]
     [InlineData("ethiopic")]
     [InlineData("gregory")]
+    [InlineData("hebrew")]
     [InlineData("indian")]
     [InlineData("islamic-civil")]
     [InlineData("islamic-tbla")]

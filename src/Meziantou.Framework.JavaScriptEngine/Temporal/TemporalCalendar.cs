@@ -109,10 +109,13 @@ internal static class TemporalCalendars
     private static ITemporalCalendar? Create(int index) => index switch
     {
         0 => GregorianBasedTemporalCalendar.CreateBuddhist(),
+        1 => EastAsianTemporalCalendar.CreateChinese(),
         2 => CopticBasedTemporalCalendar.CreateCoptic(),
+        3 => EastAsianTemporalCalendar.CreateDangi(),
         4 => CopticBasedTemporalCalendar.CreateEthioaa(),
         5 => CopticBasedTemporalCalendar.CreateEthiopic(),
         6 => GregorianBasedTemporalCalendar.CreateGregorian(),
+        7 => new HebrewTemporalCalendar(),
         8 => new IndianTemporalCalendar(),
         9 => IslamicTemporalCalendar.CreateCivil(),
         10 => IslamicTemporalCalendar.CreateTbla(),

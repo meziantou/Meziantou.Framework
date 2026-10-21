@@ -13,22 +13,22 @@ internal sealed partial class Intrinsics
     private JsNumberFormatObject? _defaultNumberFormat;
 
     /// <summary>%Intl%</summary>
-    public JsObject Intl => _intl!;
+    public JsObject Intl => EnsureIntl()._intl!;
 
     /// <summary>%Intl.Locale.prototype%</summary>
-    public JsObject IntlLocalePrototype => _intlLocalePrototype!;
+    public JsObject IntlLocalePrototype => EnsureIntl()._intlLocalePrototype!;
 
     /// <summary>%Intl.Locale%</summary>
-    public JsFunction IntlLocale => _intlLocale!;
+    public JsFunction IntlLocale => EnsureIntl()._intlLocale!;
 
     /// <summary>%Intl.PluralRules.prototype%</summary>
-    public JsObject IntlPluralRulesPrototype => _intlPluralRulesPrototype!;
+    public JsObject IntlPluralRulesPrototype => EnsureIntl()._intlPluralRulesPrototype!;
 
     /// <summary>%Intl.NumberFormat.prototype%</summary>
-    public JsObject IntlNumberFormatPrototype => _intlNumberFormatPrototype!;
+    public JsObject IntlNumberFormatPrototype => EnsureIntl()._intlNumberFormatPrototype!;
 
     /// <summary>%Intl.NumberFormat%</summary>
-    public JsFunction IntlNumberFormat => _intlNumberFormat!;
+    public JsFunction IntlNumberFormat => EnsureIntl()._intlNumberFormat!;
 
     /// <summary>%Intl%.[[FallbackSymbol]]: the symbol of the objects initialized by the legacy constructor mode of Intl.NumberFormat and Intl.DateTimeFormat.</summary>
     public JsSymbol IntlFallbackSymbol { get; } = new("IntlLegacyConstructedSymbol");
@@ -36,7 +36,32 @@ internal sealed partial class Intrinsics
     /// <summary>Gets the NumberFormat of the default locale and options, used by Number.prototype.toLocaleString without arguments.</summary>
     public JsNumberFormatObject DefaultNumberFormat => _defaultNumberFormat ??= NumberFormatBuiltins.CreateDefault(this);
 
+    // The Intl object and its constructors are created when the global Intl is read or a locale-sensitive method needs
+    // them (most scripts do not use them: the creation of a realm is cheaper); the locale-sensitive methods of the other
+    // built-ins are defined with the realm
+    private bool _isIntlInitializing;
+
     partial void InitializeIntl()
+    {
+        AddLazyGlobal("Intl", () => EnsureIntl()._intl!);
+        CollatorBuiltins.InitializeLocaleCompare(this);
+        DateTimeFormatLocaleSensitiveBuiltins.Initialize(this);
+        LocaleSensitiveBuiltins.Initialize(this);
+    }
+
+    /// <summary>Creates the Intl object and its constructors, if they are not created yet.</summary>
+    private Intrinsics EnsureIntl()
+    {
+        if (_intl is null && !_isIntlInitializing)
+        {
+            _isIntlInitializing = true;
+            InitializeIntlObjects();
+        }
+
+        return this;
+    }
+
+    private void InitializeIntlObjects()
     {
         _intl = IntlBuiltins.Initialize(this);
         _intlLocalePrototype = new JsObject(ObjectPrototype);
@@ -52,6 +77,5 @@ internal sealed partial class Intrinsics
         InitializeIntlDisplayNames(_intl);
         InitializeIntlSegmenter(_intl);
         InitializeIntlDurationFormat(_intl);
-        LocaleSensitiveBuiltins.Initialize(this);
     }
 }

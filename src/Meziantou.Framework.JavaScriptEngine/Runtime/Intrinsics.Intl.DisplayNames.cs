@@ -7,7 +7,7 @@ internal sealed partial class Intrinsics
     private JsObject? _intlDisplayNamesPrototype;
 
     /// <summary>%Intl.DisplayNames.prototype%</summary>
-    public JsObject IntlDisplayNamesPrototype => _intlDisplayNamesPrototype!;
+    public JsObject IntlDisplayNamesPrototype => EnsureIntl()._intlDisplayNamesPrototype!;
 
     private void InitializeIntlDisplayNames(JsObject intl)
     {

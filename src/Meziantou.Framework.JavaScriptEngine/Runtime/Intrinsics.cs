@@ -165,6 +165,9 @@ internal sealed partial class Intrinsics
     /// <summary>Adds a property of the global object (SetDefaultGlobalBindings).</summary>
     public void AddGlobal(PropertyKey name, JsValue value, PropertyFlags flags = PropertyFlags.BuiltIn) => _globals.Add((name, value, flags));
 
+    /// <summary>Adds a global data property whose value is created the first time it is read.</summary>
+    public void AddLazyGlobal(PropertyKey name, Func<JsValue> factory, PropertyFlags flags = PropertyFlags.BuiltIn) => _globals.Add((name, new JsValue(new LazyValue(factory)), (flags & PropertyFlags.Default) | PropertyFlags.Lazy));
+
     public void DefineGlobalBindings(JsObject globalObject)
     {
         foreach (var (name, value, flags) in _globals)

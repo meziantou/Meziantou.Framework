@@ -11,6 +11,17 @@ public sealed class IntlTests
         return JsOperations.ToString(result);
     }
 
+    // The Intl object is created when it is first needed: by the global, or by a locale-sensitive method
+    [Theory]
+    [InlineData("(1234.5).toLocaleString('en') + '|' + typeof Intl.NumberFormat", "1,234.5|function")]
+    [InlineData("'a'.localeCompare('b') + '|' + new Date(0).toLocaleDateString('en', { timeZone: 'UTC' })", "-1|1/1/1970")]
+    [InlineData("var d = Object.getOwnPropertyDescriptor(globalThis, 'Intl'); [typeof d.value, d.writable, d.enumerable, d.configurable, Object.prototype.toString.call(Intl)].join()", "object,true,false,true,[object Intl]")]
+    [InlineData("var names = Object.getOwnPropertyNames(globalThis); names.indexOf('Intl') > names.indexOf('Temporal') && Intl.Collator.name === 'Collator'", "true")]
+    public void LazyIntl(string code, string expected)
+    {
+        Assert.Equal(expected, Evaluate(code));
+    }
+
     [Theory]
     [InlineData("EN-us", "en-US")]
     [InlineData("cmn-hans-cn-u-ca-t-ca-x-t-u", "zh-Hans-CN-t-ca-u-ca-x-t-u")]

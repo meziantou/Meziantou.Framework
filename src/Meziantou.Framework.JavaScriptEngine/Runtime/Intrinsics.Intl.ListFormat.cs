@@ -7,7 +7,7 @@ internal sealed partial class Intrinsics
     private JsObject? _intlListFormatPrototype;
 
     /// <summary>%Intl.ListFormat.prototype%</summary>
-    public JsObject IntlListFormatPrototype => _intlListFormatPrototype!;
+    public JsObject IntlListFormatPrototype => EnsureIntl()._intlListFormatPrototype!;
 
     private void InitializeIntlListFormat(JsObject intl)
     {

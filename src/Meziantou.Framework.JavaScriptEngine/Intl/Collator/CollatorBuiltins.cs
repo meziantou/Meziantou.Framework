@@ -50,10 +50,11 @@ internal static class CollatorBuiltins
         realm.DefineAccessor(prototype, "compare", GetCompare, setter: null);
         realm.DefineMethod(prototype, "resolvedOptions", 0, ResolvedOptions);
         intl.DefineBuiltIn("Collator", constructor);
-
-        realm.DefineMethod(intrinsics.StringPrototype, "localeCompare", 1, LocaleCompare);
         return constructor;
     }
+
+    /// <summary>Defines String.prototype.localeCompare (with the realm: Intl.Collator is created when it is needed).</summary>
+    public static void InitializeLocaleCompare(Intrinsics intrinsics) => intrinsics.Realm.DefineMethod(intrinsics.StringPrototype, "localeCompare", 1, LocaleCompare);
 
     /// <summary>[[AvailableLocales]] of Collator: the locales of the data and the locales that have collation tailorings (e.g. bs-Cyrl).</summary>
     private static bool IsAvailable(string locale)

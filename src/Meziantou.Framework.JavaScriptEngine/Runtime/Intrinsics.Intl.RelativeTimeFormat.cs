@@ -7,7 +7,7 @@ internal sealed partial class Intrinsics
     private JsObject? _intlRelativeTimeFormatPrototype;
 
     /// <summary>%Intl.RelativeTimeFormat.prototype%</summary>
-    public JsObject IntlRelativeTimeFormatPrototype => _intlRelativeTimeFormatPrototype!;
+    public JsObject IntlRelativeTimeFormatPrototype => EnsureIntl()._intlRelativeTimeFormatPrototype!;
 
     private void InitializeIntlRelativeTimeFormat(JsObject intl)
     {

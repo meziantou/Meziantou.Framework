@@ -10,10 +10,10 @@ internal sealed partial class Intrinsics
     private Dictionary<string, JsCollatorObject>? _localeCompareCollators;
 
     /// <summary>%Intl.Collator.prototype%</summary>
-    public JsObject IntlCollatorPrototype => _intlCollatorPrototype!;
+    public JsObject IntlCollatorPrototype => EnsureIntl()._intlCollatorPrototype!;
 
     /// <summary>%Intl.Collator%</summary>
-    public JsFunction IntlCollator => _intlCollator!;
+    public JsFunction IntlCollator => EnsureIntl()._intlCollator!;
 
     /// <summary>Gets the Collator of the default locale and options, used by String.prototype.localeCompare without arguments.</summary>
     public JsCollatorObject DefaultCollator => _defaultCollator ??= CollatorBuiltins.CreateDefault(this);

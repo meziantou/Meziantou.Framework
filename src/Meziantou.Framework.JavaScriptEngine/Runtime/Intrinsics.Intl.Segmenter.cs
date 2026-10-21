@@ -9,13 +9,13 @@ internal sealed partial class Intrinsics
     private JsObject? _intlSegmentIteratorPrototype;
 
     /// <summary>%Intl.Segmenter.prototype%</summary>
-    public JsObject IntlSegmenterPrototype => _intlSegmenterPrototype!;
+    public JsObject IntlSegmenterPrototype => EnsureIntl()._intlSegmenterPrototype!;
 
     /// <summary>%IntlSegmentsPrototype%</summary>
-    public JsObject IntlSegmentsPrototype => _intlSegmentsPrototype!;
+    public JsObject IntlSegmentsPrototype => EnsureIntl()._intlSegmentsPrototype!;
 
     /// <summary>%IntlSegmentIteratorPrototype%</summary>
-    public JsObject IntlSegmentIteratorPrototype => _intlSegmentIteratorPrototype!;
+    public JsObject IntlSegmentIteratorPrototype => EnsureIntl()._intlSegmentIteratorPrototype!;
 
     private void InitializeIntlSegmenter(JsObject intl)
     {

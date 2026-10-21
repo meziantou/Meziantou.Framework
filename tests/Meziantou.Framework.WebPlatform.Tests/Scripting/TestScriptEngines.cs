@@ -1,5 +1,7 @@
 using global::Jint;
+using Meziantou.Framework.JavaScriptEngine;
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.JavaScript;
 using Meziantou.Framework.WebPlatform.Jint;
 using Meziantou.Framework.WebPlatform.Scripting;
 
@@ -7,7 +9,7 @@ namespace Meziantou.Framework.WebPlatform.Tests.Scripting;
 
 /// <summary>
 /// Creates the script engine of the tests. The engine is selected by the <c>WEBPLATFORM_SCRIPT_ENGINE</c> environment
-/// variable (the default is <c>jint</c>), so that the same tests can run against each engine. The helpers hide the values of
+/// variable (<c>jint</c>, the default, or <c>javascript</c>), so that the same tests can run against each engine. The helpers hide the values of
 /// the engine: the tests only use the strings and the numbers they return.
 /// </summary>
 /// <remarks>This file is linked into the other test projects that run scripts.</remarks>
@@ -32,7 +34,12 @@ internal static class TestScriptEngines
                 return "jint";
             }
 
-            throw new InvalidOperationException($"The script engine '{name}' set in the environment variable {EnvironmentVariableName} is not supported. The supported values are: jint.");
+            if (name.Trim().Equals("javascript", StringComparison.OrdinalIgnoreCase))
+            {
+                return "javascript";
+            }
+
+            throw new InvalidOperationException($"The script engine '{name}' set in the environment variable {EnvironmentVariableName} is not supported. The supported values are: jint, javascript.");
         }
     }
 
@@ -43,6 +50,7 @@ internal static class TestScriptEngines
         return EngineName switch
         {
             "jint" => new JintScriptEngine(ToJintOptions(options)),
+            "javascript" => new JavaScriptScriptEngine(ToJavaScriptOptions(options)),
             _ => throw new InvalidOperationException("Unreachable"),
         };
     }
@@ -61,6 +69,18 @@ internal static class TestScriptEngines
     /// <returns>The result converted to a string, or null when the result is <c>undefined</c> or <c>null</c>.</returns>
     public static string? Evaluate(ScriptEngine engine, Window window, string code)
     {
+        if (engine is JavaScriptScriptEngine javaScriptEngine)
+        {
+            var result = javaScriptEngine.Evaluate(window, code);
+            if (result.IsNullOrUndefined)
+            {
+                return null;
+            }
+
+            using var scope = javaScriptEngine.Engine.Enter();
+            return javaScriptEngine.Engine.ToString(result);
+        }
+
         var value = ((JintScriptEngine)engine).Evaluate(window, code);
         if (value.IsUndefined() || value.IsNull())
         {
@@ -73,13 +93,40 @@ internal static class TestScriptEngines
     /// <summary>Evaluates code in the realm of a window and returns the result, that must be a number.</summary>
     public static double EvaluateNumber(ScriptEngine engine, Window window, string code)
     {
+        if (engine is JavaScriptScriptEngine javaScriptEngine)
+        {
+            return javaScriptEngine.Evaluate(window, code).AsNumber();
+        }
+
         return ((JintScriptEngine)engine).Evaluate(window, code).AsNumber();
     }
 
     /// <summary>Gets the <c>name</c> of the exception value of a script error (<c>SyntaxError</c>, <c>TypeError</c>...).</summary>
     public static string GetErrorName(ScriptError error)
     {
+        if (error.Error is JsObject errorObject)
+        {
+            return errorObject.GetProperty("name").ToString();
+        }
+
         return ((global::Jint.Native.JsValue)error.Error!).Get("name").ToString();
+    }
+
+    private static JavaScriptScriptEngineOptions ToJavaScriptOptions(TestScriptEngineOptions? options)
+    {
+        var defaults = new JavaScriptScriptEngineOptions();
+        if (options is null)
+        {
+            return defaults;
+        }
+
+        return new JavaScriptScriptEngineOptions
+        {
+            Timeout = options.Timeout ?? defaults.Timeout,
+            MemoryLimit = options.MemoryLimit ?? defaults.MemoryLimit,
+            MaxStatements = options.MaxStatements ?? defaults.MaxStatements,
+            RecursionLimit = options.RecursionLimit ?? defaults.RecursionLimit,
+        };
     }
 
     private static JintScriptEngineOptions ToJintOptions(TestScriptEngineOptions? options)

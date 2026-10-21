@@ -42,10 +42,13 @@ internal static partial class JsInterpreter
 
                     return result;
                 }
-                catch (JsException ex)
+                catch (JsException ex) when (HandleException(ref frame, entry, engine, ex.Value, isFaultingFrame: true))
                 {
-                    if (!HandleException(ref frame, entry, engine, ex.Value, isFaultingFrame: true))
-                        throw;
+                    // The exception is handled by a frame of the run (an exception filter: an exception that leaves the
+                    // run is not caught and rethrown, which would nest the exception dispatch in each .NET level of a deep
+                    // recursion through host functions and overflow the stack). The finally blocks of the native calls
+                    // ran after the filter: the current realm is the one of the frame of the handler.
+                    engine.CurrentRealm = frame.Realm;
                 }
             }
         }
@@ -714,7 +717,7 @@ internal static partial class JsInterpreter
                         var target = code[pc];
                         if (target < pc)
                         {
-                            engine.CheckInterrupt();
+                            engine.CountInterruptPoint();
                         }
 
                         pc = target;

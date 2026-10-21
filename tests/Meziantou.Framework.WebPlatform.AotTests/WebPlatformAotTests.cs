@@ -2,6 +2,7 @@ using System.Globalization;
 using Meziantou.Framework.WebPlatform.Css.Om;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Formatting;
+using Meziantou.Framework.WebPlatform.JavaScript;
 using Meziantou.Framework.WebPlatform.Jint;
 using Meziantou.Framework.WebPlatform.Urls;
 using Meziantou.Framework.WebPlatform.XPath;
@@ -95,5 +96,29 @@ public sealed class WebPlatformAotTests
         Assert.Equal("2-4-6", page.GetElementById("from-script")?.TextContent);
         Assert.Equal("timer", page.Title);
         Assert.Equal("function:https://example.com/x", Convert.ToString(engine.Evaluate(context.Window, "typeof document.createElement('canvas').getContext + ':' + new URL('x', location.href).href"), CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public async Task BrowsingContextWithScripts_JavaScriptEngine()
+    {
+        using var engine = new JavaScriptScriptEngine(new JavaScriptScriptEngineOptions { Timeout = TimeSpan.FromSeconds(10) });
+        using var context = new BrowsingContext(new BrowsingContextOptions { ScriptEngine = engine });
+        var page = await context.NavigateAsync("https://example.com/", _ => Html + """
+            <script>
+              document.querySelector('ul').insertAdjacentHTML('beforeend', '<li id=from-script>' + [1, 2, 3].map(x => x * 2).join('-'));
+              setTimeout(() => document.title = 'timer', 10);
+              Promise.resolve().then(() => document.body.dataset.microtask = /m(.)c/.exec('micro')[1]);
+            </script>
+            """);
+        do
+        {
+            await context.EventLoop.RunUntilIdleAsync();
+        }
+        while (await context.EventLoop.WaitForNextTimerAsync());
+
+        Assert.Equal("2-4-6", page.GetElementById("from-script")?.TextContent);
+        Assert.Equal("timer", page.Title);
+        Assert.Equal("i", page.Body?.GetAttribute("data-microtask"));
+        Assert.Equal("function:https://example.com/x", engine.Evaluate(context.Window, "typeof document.createElement('canvas').getContext + ':' + new URL('x', location.href).href").AsString());
     }
 }

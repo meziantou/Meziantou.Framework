@@ -54,7 +54,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue> : IIndexedDBValueOpera
     bool IIndexedDBValueOperations.IsNullOrUndefined(object? value) => value switch
     {
         null or NullValue => true,
-        TValue jsValue => IsNullOrUndefined(jsValue),
+        TValue jsValue when Adapter.IsValue(jsValue) => IsNullOrUndefined(jsValue),
         _ => false,
     };
 
@@ -63,7 +63,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue> : IIndexedDBValueOpera
         if (value is string)
             return true;
 
-        if (value is not TValue input)
+        if (!TryAsValue(value, out var input))
             return false;
 
         var adapter = Adapter;
@@ -130,7 +130,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue> : IIndexedDBValueOpera
     private TValue ToJsAny(object? value) => value switch
     {
         null => Adapter.Undefined,
-        TValue jsValue => jsValue,
+        TValue jsValue when Adapter.IsValue(jsValue) => jsValue,
         _ => ToJs(value),
     };
 

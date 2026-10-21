@@ -23,6 +23,9 @@ public abstract class JsModule : JsScriptOrModule
     /// <summary>Gets whether the evaluation of the module threw an error.</summary>
     public bool HasEvaluationError { get; internal set; }
 
+    /// <summary>Gets the position of the code that threw <see cref="EvaluationError"/>, when the error was thrown synchronously by the evaluation of a module of the graph.</summary>
+    public JsSourceLocation? EvaluationErrorLocation { get; internal set; }
+
     /// <summary>Gets the module environment ([[Environment]]), created when the module is linked.</summary>
     internal DeclarativeEnvironment? Environment { get; set; }
 

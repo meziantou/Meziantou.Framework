@@ -1172,7 +1172,7 @@ internal sealed partial class CodeGenerator
             }
         }
 
-        _builder.SetPosition(call.Start);
+        _builder.SetPosition(GetCallPosition(call.Callee, call.Start));
         _builder.AddCallSite(call.Callee.Start, call.Callee.End);
         if (isDirectEval)
         {
@@ -1248,13 +1248,24 @@ internal sealed partial class CodeGenerator
         }
     }
 
+    /// <summary>
+    /// The source position of a call or a construction (its errors, stack frames and the location of the code it calls):
+    /// the name of the method of a method call, else the callee, as in the browsers (e.g. "b" in "a.b()", "F" in "new F()").
+    /// </summary>
+    private static int GetCallPosition(Node callee, int expressionStart) => callee switch
+    {
+        MemberExpression { Computed: false } member => member.Property.Start,
+        Identifier identifier => identifier.Start,
+        _ => expressionStart,
+    };
+
     private void EmitNew(NewExpression newExpression)
     {
         EmitExpression(newExpression.Callee);
         if (newExpression.Arguments.Exists(a => a is SpreadElement))
         {
             EmitArgumentsArray(newExpression.Arguments);
-            _builder.SetPosition(newExpression.Start);
+            _builder.SetPosition(GetCallPosition(newExpression.Callee, newExpression.Start));
             _builder.AddCallSite(newExpression.Callee.Start, newExpression.Callee.End);
             _builder.Emit(OpCode.NewSpread);
             return;
@@ -1265,7 +1276,7 @@ internal sealed partial class CodeGenerator
             EmitExpression(argument);
         }
 
-        _builder.SetPosition(newExpression.Start);
+        _builder.SetPosition(GetCallPosition(newExpression.Callee, newExpression.Start));
         _builder.AddCallSite(newExpression.Callee.Start, newExpression.Callee.End);
         _builder.Emit(OpCode.New, newExpression.Arguments.Count);
     }

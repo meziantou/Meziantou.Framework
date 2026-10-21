@@ -110,7 +110,7 @@ internal sealed class JsWorkletClassConstructor<TAdapter, TValue>(WebIdlRealm<TA
 
     internal override WorkletPromise? ObservePromise(object? value)
     {
-        if (value is not TValue jsValue || !realm.Adapter.IsObject(jsValue))
+        if (!realm.TryAsValue(value, out var jsValue) || !realm.Adapter.IsObject(jsValue))
             return null;
 
         // Promise.prototype.then throws a TypeError when its this value is not a promise (https://tc39.es/ecma262/#sec-ispromise)
@@ -134,13 +134,13 @@ internal sealed class JsWorkletClassConstructor<TAdapter, TValue>(WebIdlRealm<TA
     }
 
     internal override object? AsPlatformObject(object? value)
-        => value is TValue jsValue && realm.Adapter.IsObject(jsValue) && realm.Adapter.TryGetPlatformObject(jsValue, out var target) ? target : null;
+        => realm.TryAsValue(value, out var jsValue) && realm.Adapter.IsObject(jsValue) && realm.Adapter.TryGetPlatformObject(jsValue, out var target) ? target : null;
 
-    internal override bool IsUndefined(object? value) => value is TValue jsValue && realm.Adapter.IsUndefined(jsValue);
+    internal override bool IsUndefined(object? value) => realm.TryAsValue(value, out var jsValue) && realm.Adapter.IsUndefined(jsValue);
 
     internal override T ConvertToDictionary<T>(object? value)
     {
-        var jsValue = value as TValue ?? realm.Adapter.Undefined;
+        var jsValue = realm.TryAsValue(value, out var v) ? v : realm.Adapter.Undefined;
         return realm.Run(() =>
         {
             if (typeof(T) == typeof(IntrinsicSizesResultOptions))
@@ -164,7 +164,7 @@ internal sealed class JsWorkletClassConstructor<TAdapter, TValue>(WebIdlRealm<TA
     }
 
     internal override void ReportRejection(object? reason)
-        => realm.Agent.Host.ReportException(realm.GlobalScope, realm.Adapter.CreateException(reason as TValue ?? realm.Adapter.Undefined));
+        => realm.Agent.Host.ReportException(realm.GlobalScope, realm.Adapter.CreateException(realm.TryAsValue(reason, out var value) ? value : realm.Adapter.Undefined));
 
     internal override void ReportException(Exception exception) => realm.Agent.Host.ReportException(realm.GlobalScope, exception);
 }

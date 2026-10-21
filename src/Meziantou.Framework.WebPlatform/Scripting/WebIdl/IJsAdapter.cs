@@ -91,6 +91,14 @@ public interface IJsAdapter<TValue>
     /// <summary>Gets whether the value is a Date object.</summary>
     bool IsDate(TValue value);
 
+    /// <summary>
+    /// Returns whether a .NET object is a value of the engine, and not another .NET object given to the bindings (e.g. a
+    /// platform object or a list, which the bindings convert). The default implementation tests whether it is a
+    /// <typeparamref name="TValue"/>: an adapter whose values have no specific type (e.g. <typeparamref name="TValue"/> is
+    /// <see cref="object"/>) overrides it.
+    /// </summary>
+    bool IsValue(object value) => value is TValue;
+
     /// <summary>Returns the value of a boolean.</summary>
     bool AsBoolean(TValue value);
 
@@ -328,6 +336,14 @@ public interface IJsAdapter<TValue>
     /// <see cref="GetSharedDataBlock"/>. Returns false when it is not supported. The default implementation returns false.
     /// </summary>
     bool SetSharedDataBlock(TValue sharedArrayBuffer, object dataBlock) => false;
+
+    /// <summary>
+    /// Creates a <c>SharedArrayBuffer</c> in the current realm whose data block is a data block returned by
+    /// <see cref="GetSharedDataBlock"/> (of any engine instance of the adapter), so that the buffers share their memory.
+    /// Returns null when it is not supported (the bindings then use <see cref="SetSharedDataBlock"/>). The default
+    /// implementation returns null.
+    /// </summary>
+    TValue? CreateSharedArrayBuffer(object dataBlock) => null;
 
     /// <summary>
     /// Creates an <c>ArrayBuffer</c> containing a copy of <paramref name="bytes"/> in the current realm. The default

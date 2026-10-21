@@ -71,7 +71,7 @@ public sealed class JsSourceTextModule : JsModule
         }
         catch (JsSyntaxErrorException ex)
         {
-            throw ThrowHelper.CreateException(ErrorType.SyntaxError, ex.Message);
+            throw ThrowHelper.CreateSyntaxErrorException(ex);
         }
 
         var code = CodeGenerator.CompileModule(program, source);

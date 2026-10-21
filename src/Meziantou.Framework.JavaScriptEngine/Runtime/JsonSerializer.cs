@@ -7,8 +7,15 @@ internal sealed class JsonSerializer
 {
     private static readonly PropertyKey ToJsonKey = new("toJSON");
 
+    // The builder of the last serialization of the thread, reused by the next one (the chunks of a large text are not
+    // allocated again); a nested serialization (a toJSON method that calls JSON.stringify) gets a new one
+    [ThreadStatic]
+    private static StringBuilder? s_cachedBuilder;
+
+    private const int MaxCachedBuilderCapacity = 1024 * 1024;
+
     private readonly JsEngine _engine;
-    private readonly StringBuilder _builder = new();
+    private readonly StringBuilder _builder = Interlocked.Exchange(ref s_cachedBuilder, null) ?? new();
     private readonly HashSet<JsObject> _stack = new(ReferenceEqualityComparer.Instance);
     private readonly JsObject? _replacerFunction;
     private readonly List<PropertyKey>? _propertyList;
@@ -26,10 +33,21 @@ internal sealed class JsonSerializer
     /// <summary>SerializeJSONProperty(state, "", wrapper): the JSON text, or null for undefined.</summary>
     public string? Serialize(JsObject wrapper)
     {
-        if (!SerializeProperty(new PropertyKey(""), wrapper))
-            return null;
+        try
+        {
+            if (!SerializeProperty(new PropertyKey(""), wrapper))
+                return null;
 
-        return _builder.ToString();
+            return _builder.ToString();
+        }
+        finally
+        {
+            if (_builder.Capacity <= MaxCachedBuilderCapacity)
+            {
+                _builder.Clear();
+                s_cachedBuilder = _builder;
+            }
+        }
     }
 
     /// <summary>SerializeJSONProperty(state, key, holder): appends the JSON text of the property; false when the result is undefined.</summary>
@@ -101,7 +119,16 @@ internal sealed class JsonSerializer
         if (value.IsNumber)
         {
             var number = value.NumberValue;
-            _builder.Append(double.IsFinite(number) ? NumberFormatting.ToString(number) : "null");
+            if (number is >= 0 and <= int.MaxValue && number == Math.Floor(number))
+            {
+                // A non-negative integer (or -0, also "0"): the digits are appended without a string
+                _builder.Append((int)number);
+            }
+            else
+            {
+                _builder.Append(double.IsFinite(number) ? NumberFormatting.ToString(number) : "null");
+            }
+
             return true;
         }
 
@@ -114,36 +141,25 @@ internal sealed class JsonSerializer
         Enter(value);
         var stepback = _indent;
         _indent += _gap;
-        var keys = _propertyList ?? JsonBuiltins.EnumerableOwnPropertyKeys(value);
         _builder.Append('{');
         var empty = true;
-        foreach (var key in keys)
+        if (_propertyList is null && value.GetOrdinaryShapeForEnumeration() is { } shape)
         {
-            var mark = _builder.Length;
-            if (!empty)
+            // An ordinary object whose properties are all in its shape: the shape (immutable) is the list of its keys
+            for (var i = 0; i < shape.Count; i++)
             {
-                _builder.Append(',');
+                var key = shape.GetKey(i);
+                if (key.IsString && (shape.GetFlags(i) & PropertyFlags.Enumerable) != 0)
+                {
+                    SerializeObjectProperty(value, key, ref empty);
+                }
             }
-
-            if (_gap.Length > 0)
+        }
+        else
+        {
+            foreach (var key in _propertyList ?? JsonBuiltins.EnumerableOwnPropertyKeys(value))
             {
-                _builder.Append('\n').Append(_indent);
-            }
-
-            QuoteJsonString(_builder, key.AsString());
-            _builder.Append(':');
-            if (_gap.Length > 0)
-            {
-                _builder.Append(' ');
-            }
-
-            if (SerializeProperty(key, value))
-            {
-                empty = false;
-            }
-            else
-            {
-                _builder.Length = mark;
+                SerializeObjectProperty(value, key, ref empty);
             }
         }
 
@@ -155,6 +171,36 @@ internal sealed class JsonSerializer
         _builder.Append('}');
         _stack.Remove(value);
         _indent = stepback;
+    }
+
+    private void SerializeObjectProperty(JsObject value, in PropertyKey key, ref bool empty)
+    {
+        var mark = _builder.Length;
+        if (!empty)
+        {
+            _builder.Append(',');
+        }
+
+        if (_gap.Length > 0)
+        {
+            _builder.Append('\n').Append(_indent);
+        }
+
+        QuoteJsonString(_builder, key.AsString());
+        _builder.Append(':');
+        if (_gap.Length > 0)
+        {
+            _builder.Append(' ');
+        }
+
+        if (SerializeProperty(key, value))
+        {
+            empty = false;
+        }
+        else
+        {
+            _builder.Length = mark;
+        }
     }
 
     /// <summary>SerializeJSONArray(state, value)</summary>

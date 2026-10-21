@@ -83,6 +83,27 @@ public partial class JsObject
         return false;
     }
 
+    /// <summary>
+    /// Gets the shape of an ordinary object whose own properties are all in its shape (no element), or null: the keys of
+    /// the shape are then the own property keys of the object, in order.
+    /// </summary>
+    internal Shape? GetOrdinaryShapeForEnumeration()
+    {
+        if (IsExotic || _map is not Shape shape)
+            return null;
+
+        if (_elements is { } elements)
+        {
+            foreach (var element in elements)
+            {
+                if (!element.IsHole)
+                    return null;
+            }
+        }
+
+        return shape;
+    }
+
     /// <summary>Marks the object as a dependency of an inline cache: a change of its properties or of its prototype invalidates the caches.</summary>
     internal void MarkInlineCacheDependency() => Flags |= ObjectFlags.InlineCacheDependency;
 

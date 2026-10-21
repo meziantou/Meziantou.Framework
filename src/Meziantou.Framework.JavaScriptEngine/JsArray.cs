@@ -33,6 +33,24 @@ public sealed class JsArray : JsObject
         return array;
     }
 
+    /// <summary>
+    /// CreateDataProperty(A, index, value) when the array is extensible and all its indices are in the dense elements
+    /// (they are writable, enumerable and configurable): false when the general algorithm must be used.
+    /// </summary>
+    internal bool TryCreateDenseElement(long index, JsValue value)
+    {
+        if ((ulong)index >= uint.MaxValue || !IsExtensibleSlot || !HasOnlyDenseElements || (index >= _length && !_lengthWritable))
+            return false;
+
+        SetOwnSlot(new PropertyKey((uint)index), value, PropertyFlags.Default);
+        if (index >= _length)
+        {
+            _length = (uint)index + 1;
+        }
+
+        return true;
+    }
+
     /// <summary>Appends a value at the end of the array, as CreateDataProperty(A, length, value) does on a fresh array.</summary>
     internal void Push(JsValue value)
     {

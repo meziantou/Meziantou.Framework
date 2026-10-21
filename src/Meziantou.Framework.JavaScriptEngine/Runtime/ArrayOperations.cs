@@ -118,7 +118,14 @@ internal static class ArrayOperations
     public static void DeleteElement(JsObject obj, long index) => obj.DeletePropertyOrThrow(Key(index));
 
     /// <summary>CreateDataPropertyOrThrow(O, index, value)</summary>
-    public static void CreateElement(JsObject obj, long index, JsValue value) => obj.CreateDataPropertyOrThrow(Key(index), value);
+    public static void CreateElement(JsObject obj, long index, JsValue value)
+    {
+        // An extensible array whose indices are all in the dense elements: the element is an ordinary data property
+        if (obj is JsArray array && array.TryCreateDenseElement(index, value))
+            return;
+
+        obj.CreateDataPropertyOrThrow(Key(index), value);
+    }
 
     /// <summary>Set(O, "length", length, true)</summary>
     public static void SetLength(JsObject obj, double length) => obj.Set(LengthKey, length, throwOnFailure: true);

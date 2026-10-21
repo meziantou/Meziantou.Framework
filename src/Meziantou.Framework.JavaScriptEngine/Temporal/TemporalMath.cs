@@ -217,7 +217,7 @@ internal static class TemporalMath
     }
 
     /// <summary>Converts an integral Number to an integer (the value must be finite and integral).</summary>
-    public static Int128 ToInt128(double value) => (Int128)(BigInteger)value;
+    public static Int128 ToInt128(double value) => Math.Abs(value) < 9e18 ? (long)value : (Int128)(BigInteger)value;
 
     /// <summary>Gets the Number value closest to the rational numerator / denominator (round half to even).</summary>
     public static double RationalToDouble(BigInteger numerator, BigInteger denominator)
@@ -250,5 +250,5 @@ internal static class TemporalMath
     }
 
     /// <summary>Formats an integral Number as a decimal integer (no exponent).</summary>
-    public static string FormatInteger(double value) => ((BigInteger)value).ToString(System.Globalization.CultureInfo.InvariantCulture);
+    public static string FormatInteger(double value) => Math.Abs(value) < 9e18 ? ((long)value).ToString(System.Globalization.CultureInfo.InvariantCulture) : ((BigInteger)value).ToString(System.Globalization.CultureInfo.InvariantCulture);
 }

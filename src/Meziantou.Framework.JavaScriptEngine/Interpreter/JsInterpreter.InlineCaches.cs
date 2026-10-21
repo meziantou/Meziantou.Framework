@@ -248,7 +248,7 @@ internal static partial class JsInterpreter
                 case PropertyCacheKind.OwnSlot:
                     obj.Slots![entry.Position] = value;
                     return;
-                case PropertyCacheKind.Add when ReferenceEquals(obj.PrototypeSlot, entry.Prototype) && entry.Epoch == InlineCache.Epoch && obj.IsExtensibleSlot:
+                case PropertyCacheKind.Add when ReferenceEquals(obj.PrototypeSlot, entry.Prototype) && entry.Epoch == InlineCache.Epoch && obj.IsExtensibleSlot && ReferenceEquals(entry.Engine, frame.Realm.Engine):
                     obj.AddPropertyForCache(entry.NextShape!, value);
                     return;
                 case PropertyCacheKind.OwnTable when entry.Epoch == InlineCache.Epoch:
@@ -315,7 +315,7 @@ internal static partial class JsInterpreter
             return null;
 
         MarkPrototypes(obj, map, last);
-        return new PropertyCacheEntry { Map = map, Kind = PropertyCacheKind.Add, Prototype = obj.PrototypeSlot, NextShape = next, Epoch = InlineCache.Epoch };
+        return new PropertyCacheEntry { Map = map, Kind = PropertyCacheKind.Add, Prototype = obj.PrototypeSlot, NextShape = next, Epoch = InlineCache.Epoch, Engine = JsEngine.Current };
     }
 
     // ------------------------------------------------------------------------------------------------------------------
@@ -326,7 +326,7 @@ internal static partial class JsInterpreter
     private static void DefineField(Frame frame, int name, int cache, JsValue target, JsValue value)
     {
         var obj = (JsObject)target.Cell!;
-        if (frame.Code.Caches[cache] is { } entry && ReferenceEquals(obj.Map, entry.Map) && obj.IsExtensibleSlot)
+        if (frame.Code.Caches[cache] is { } entry && ReferenceEquals(obj.Map, entry.Map) && obj.IsExtensibleSlot && ReferenceEquals(entry.Engine, frame.Realm.Engine))
         {
             obj.AddPropertyForCache(entry.NextShape!, value);
             return;
@@ -342,7 +342,7 @@ internal static partial class JsInterpreter
         if (!obj.IsExotic && !IsMegamorphic(frame, cache) && obj.GetMapForCache(key) is Shape shape && shape.Find(key) < 0 && shape.AddProperty(key, PropertyFlags.Default) is { } next)
         {
             // CreateDataProperty does not look at the prototypes: the shape is enough
-            StoreCacheEntry(frame, cache, new PropertyCacheEntry { Map = shape, Kind = PropertyCacheKind.Add, NextShape = next });
+            StoreCacheEntry(frame, cache, new PropertyCacheEntry { Map = shape, Kind = PropertyCacheKind.Add, NextShape = next, Engine = frame.Realm.Engine });
         }
 
         obj.CreateDataPropertyOrThrow(key, value);

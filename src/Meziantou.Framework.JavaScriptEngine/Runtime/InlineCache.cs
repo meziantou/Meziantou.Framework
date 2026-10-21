@@ -98,6 +98,13 @@ internal sealed class PropertyCacheEntry
     /// <summary>Gets or initializes the shape after the transition (<see cref="PropertyCacheKind.Add"/>).</summary>
     public Shape? NextShape { get; init; }
 
+    /// <summary>
+    /// Gets or initializes the engine of a transition: the shapes with properties belong to an engine, and the static empty
+    /// shapes are shared by all of them (an object of another engine must not get a shape of this one: the shapes are not
+    /// thread-safe).
+    /// </summary>
+    public JsEngine? Engine { get; init; }
+
     /// <summary>Gets or initializes the binding of a global lexical declaration.</summary>
     public Interpreter.GlobalLexicalBinding? Binding { get; init; }
 

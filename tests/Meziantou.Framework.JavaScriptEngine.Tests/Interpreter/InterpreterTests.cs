@@ -139,6 +139,32 @@ public sealed class InterpreterTests
     }
 
     [Fact]
+    public void InlineCaches_TransitionsAreNotSharedByEngines()
+    {
+        // The objects of an engine get the shapes of their engine (the shapes are not thread-safe), even when the cached
+        // transition of the compiled code starts from a static empty shape
+        var script = JsPreparedScript.Parse("function make() { var o = {}; o.a = 1; return { b: 2 }; } make(); var o1 = {}; o1.a = 1; [o1, make()]");
+        using var engine1 = new JsEngine();
+        using var engine2 = new JsEngine();
+        var result1 = engine1.CreateRealm().Execute(script);
+        var result2 = engine2.CreateRealm().Execute(script);
+        using (engine1.Enter())
+        {
+            using (engine2.Enter())
+            {
+                var array1 = result1.AsObject();
+                var array2 = result2.AsObject();
+                for (var i = 0u; i < 2; i++)
+                {
+                    var map1 = array1.Get(new PropertyKey(i)).AsObject().Map;
+                    var map2 = array2.Get(new PropertyKey(i)).AsObject().Map;
+                    Assert.NotSame(map1, map2);
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void InlineCaches_PreparedScriptSharedByEngines()
     {
         // The caches are in the compiled code: an entry of one engine must not apply to the objects of another one

@@ -46,10 +46,19 @@ internal static partial class JsInterpreter
         }
 
         if (target.IsNullOrUndefined)
-            return ThrowHelper.ThrowTypeError<JsValue>($"Cannot read properties of {target} (reading '{JsOperations.ToPropertyKey(keyValue)}')");
+            return ThrowHelper.ThrowTypeError<JsValue>($"Cannot read properties of {target}{DescribeKeyForError(keyValue, "reading")}");
 
         var key = keyValue.IsNumber ? PropertyKey.FromDouble(keyValue.NumberValue) : JsOperations.ToPropertyKey(keyValue);
         return GetPropertyOfPrimitive(realm, target, key);
+    }
+
+    /// <summary>The key of an element access in an error message: " (reading 'key')". An object key is not converted (ToObject of the base precedes ToPropertyKey: no user code may run).</summary>
+    private static string DescribeKeyForError(JsValue keyValue, string verb)
+    {
+        if (keyValue.IsObject)
+            return "";
+
+        return $" ({verb} '{JsOperations.ToPropertyKey(keyValue)}')";
     }
 
     /// <summary>PutValue of a property reference.</summary>

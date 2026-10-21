@@ -845,7 +845,7 @@ internal static partial class JsInterpreter
                         var target = values[sp - 1];
                         if (target.IsNullOrUndefined)
                         {
-                            ThrowHelper.ThrowTypeError($"Cannot set properties of {target} (setting '{JsOperations.ToPropertyKey(keyValue)}')");
+                            ThrowHelper.ThrowTypeError($"Cannot set properties of {target}{DescribeKeyForError(keyValue, "setting")}");
                         }
 
                         var key = keyValue.IsNumber ? PropertyKey.FromDouble(keyValue.NumberValue) : JsOperations.ToPropertyKey(keyValue);

@@ -59,6 +59,7 @@ public sealed class InterpreterTests
     [InlineData("function f(p = eval('var y = 1')) { return y; } [f(), typeof y].join()", "1,undefined")]
     [InlineData("var f = (p = eval('var y = 1'), y) => { }; var r; try { f(); } catch (e) { r = e.constructor.name; } [r, typeof y].join()", "SyntaxError,undefined")]
     [InlineData("var o = { undefined: 40 }; var n = 0; [o?.[undefined], (void 0)?.[n++], n].join()", "40,,0")]
+    [InlineData("var key = { toString() { throw new Error('key'); } }; var r = []; for (var base of [null, undefined]) { try { base[key]; } catch (e) { r.push(e.constructor.name); } try { base[key] = 1; } catch (e) { r.push(e.constructor.name); } } r.join()", "TypeError,TypeError,TypeError,TypeError")]
     public void Evaluate(string code, string expected)
     {
         Assert.Equal(expected, Run(code));

@@ -7,8 +7,6 @@ language/expressions/class/subclass-builtins/subclass-RegExp.js:strict
 language/expressions/delete/11.4.1-5-a-28-s.js:sloppy
 language/expressions/delete/11.4.1-5-a-28-s.js:strict
 language/expressions/delete/S11.4.1_A5.js:strict
-language/expressions/member-expression/computed-reference-null-or-undefined.js:sloppy
-language/expressions/member-expression/computed-reference-null-or-undefined.js:strict
 language/expressions/optional-chaining/member-expression.js:sloppy
 language/expressions/optional-chaining/member-expression.js:strict
 language/expressions/property-accessors/S11.2.1_A4_T5.js:sloppy

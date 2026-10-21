@@ -97,8 +97,10 @@ internal sealed partial class CodeGenerator
             target = assignment.Left;
         }
 
-        // In an assignment, a reference target is evaluated before the value
-        if (isAssignment && target is not ObjectPattern and not ArrayPattern && (target is not Identifier identifierTarget || _analysis.References[identifierTarget].IsDynamic))
+        // In an assignment, a reference target is evaluated before the value; so is the binding of a var resolved at runtime
+        // (KeyedBindingInitialization: ResolveBinding precedes GetV)
+        if ((isAssignment && target is not ObjectPattern and not ArrayPattern && (target is not Identifier identifierTarget || _analysis.References[identifierTarget].IsDynamic))
+            || (!isAssignment && !isDeclaration && target is Identifier varTarget && _analysis.References[varTarget].IsDynamic))
         {
             var kind = EmitReferenceBase(target);
             emitValue();

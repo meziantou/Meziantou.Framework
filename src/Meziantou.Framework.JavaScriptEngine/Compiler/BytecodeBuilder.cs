@@ -15,6 +15,7 @@ internal sealed class BytecodeBuilder
     private readonly List<ExceptionHandler> _handlers = [];
     private readonly List<int> _positions = [];
     private readonly List<int> _labelPositions = [];
+    private readonly List<int> _callSites = [];
     private readonly List<int> _labelDepths = [];
     private readonly List<(int Position, int Label)> _fixups = [];
     private int _lastPositionOffset = -1;
@@ -287,6 +288,17 @@ internal sealed class BytecodeBuilder
         }
     }
 
+    /// <summary>Records the source range of the callee of the next instruction (a call or a new), for the error messages.</summary>
+    public void AddCallSite(int calleeStart, int calleeEnd)
+    {
+        _callSites.Add(_code.Count);
+        _callSites.Add(calleeStart);
+        _callSites.Add(calleeEnd);
+    }
+
+    /// <summary>Gets the triples (pc, callee start, callee end) of the calls, sorted by pc.</summary>
+    public int[] GetCallSites() => [.. _callSites];
+
     // ------------------------------------------------------------------------------------------------------------------
     // Result
     // ------------------------------------------------------------------------------------------------------------------
@@ -373,7 +385,8 @@ internal sealed class BytecodeBuilder
             OpCode.Pop => -1,
             OpCode.Dup => 1,
             OpCode.Dup2 => 2,
-            OpCode.Swap or OpCode.Rot3 or OpCode.Rot3Reverse or OpCode.Rot4 => 0,
+            OpCode.Dup3 => 3,
+            OpCode.Swap or OpCode.Rot3 or OpCode.Rot3Reverse or OpCode.Rot4 or OpCode.Rot5 => 0,
             OpCode.LoadLocal or OpCode.LoadLocalChecked or OpCode.LoadContext or OpCode.LoadContextChecked or OpCode.LoadImport => 1,
             OpCode.StoreLocal or OpCode.StoreLocalChecked or OpCode.StoreContext or OpCode.StoreContextChecked => -1,
             OpCode.ThrowConstAssignLocal or OpCode.ThrowConstAssignContext => 0,
@@ -412,10 +425,11 @@ internal sealed class BytecodeBuilder
             OpCode.DefineMethod => -2,
             OpCode.SetPrototypeLiteral or OpCode.CopyDataProperties => -1,
             OpCode.CopyDataPropertiesExcluding => -firstOperand,
-            OpCode.GetSuperProperty => 0,
-            OpCode.GetSuperElement => -1,
-            OpCode.SetSuperProperty => -1,
-            OpCode.SetSuperElement => -2,
+            OpCode.LoadSuperBase => 0,
+            OpCode.GetSuperProperty => -1,
+            OpCode.GetSuperElement => -2,
+            OpCode.SetSuperProperty => -2,
+            OpCode.SetSuperElement => -3,
             OpCode.GetPrivate => 0,
             OpCode.SetPrivate => -1,
             OpCode.Call or OpCode.CallEval => -(firstOperand + 1),

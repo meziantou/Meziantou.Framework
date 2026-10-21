@@ -43,6 +43,32 @@ public sealed class InterpreterTests
     [InlineData("label: for (var i = 0; i < 3; i++) { for (var j = 0; j < 3; j++) { if (j === 1) continue label; if (i === 2) break label; } } i", "2")]
     [InlineData("new Function('a', 'b', 'return a + b')(1, 2)", "3")]
     [InlineData("var r = 0; Promise.resolve(5).then(v => { globalThis.r = v; }); r", "0")]
+    [InlineData("var x = []; for (var k = 0; k <= 32; k++) x[Math.pow(2, k) - 2] = k; x.length + ',' + x[4294967294] + ',' + x[2147483646]", "4294967295,32,31")]
+    [InlineData("var n = 0; function f() { n++; } var r = []; for (var code of ['f() = 1', 'f() += 1', 'f()++', '--f()', 'for (f() in [1]) {}', 'for (f() of [1]) {}']) { try { eval(code); } catch (e) { r.push(e.constructor.name); } } r.length + ',' + r[0] + ',' + n", "6,ReferenceError,6")]
+    [InlineData("class C extends Object { constructor() { super(); try { return 0; } catch (e) { return; } } } var r; try { new C(); } catch (e) { r = e.constructor.name; } r", "TypeError")]
+    [InlineData("class C extends Object { constructor() { try { return; } catch (e) { super(); } } } var r; try { new C(); } catch (e) { r = e.constructor.name; } r", "ReferenceError")]
+    [InlineData("class C extends class { } { constructor() { try { throw null; } catch (e) { return; } finally { super(); } } } typeof new C()", "object")]
+    [InlineData("class C extends class { } { constructor() { var f = () => super(); try { return; } finally { f(); } } } typeof new C()", "object")]
+    [InlineData("var iter = { [Symbol.iterator]() { return this; }, next() { return { done: false }; }, return() { this.f(); return { done: true }; } }; class C extends class { } { constructor() { iter.f = () => super(); for (var k of iter) { return; } } } typeof new C()", "object")]
+    [InlineData("var r; (function () { eval('let f = 123; { function f() { } } r = f;'); })(); r", "123")]
+    [InlineData("var r; (function () { eval('{ function f() { } } r = typeof f;'); })(); r", "function")]
+    [InlineData("function f() { var r = typeof arguments; var arguments; return r + typeof arguments; } f()", "objectobject")]
+    [InlineData("function f() { { function arguments() { } } return String(arguments); } f()", "[object Arguments]")]
+    [InlineData("var obj = { x: 1 }; with (obj) { var x = delete obj.x; } [obj.x, x].join()", "true,")]
+    [InlineData("var f = (p = eval('var y = 1'), q = () => y) => y + q(); [f(), typeof y].join()", "2,undefined")]
+    [InlineData("function f(p = eval('var y = 1')) { return y; } [f(), typeof y].join()", "1,undefined")]
+    [InlineData("var f = (p = eval('var y = 1'), y) => { }; var r; try { f(); } catch (e) { r = e.constructor.name; } [r, typeof y].join()", "SyntaxError,undefined")]
+    [InlineData("var o = { undefined: 40 }; var n = 0; [o?.[undefined], (void 0)?.[n++], n].join()", "40,,0")]
+    [InlineData("var key = { toString() { throw new Error('key'); } }; var r = []; for (var base of [null, undefined]) { try { base[key]; } catch (e) { r.push(e.constructor.name); } try { base[key] = 1; } catch (e) { r.push(e.constructor.name); } } r.join()", "TypeError,TypeError,TypeError,TypeError")]
+    [InlineData("var proto = { p: 1 }; var proto2 = { p: -1 }; var obj = { __proto__: proto, m() { return ++super[key]; }, n() { super[key] += 5; return obj.p; }, g() { return super[key]; } }; var key = { toString() { Object.setPrototypeOf(obj, proto2); return 'p'; } }; var r = [obj.m()]; Object.setPrototypeOf(obj, proto); delete obj.p; r.push(obj.n()); Object.setPrototypeOf(obj, proto); r.push(obj.g()); r.join()", "2,6,1")]
+    [InlineData("var obj = { m() { super.x = 8; Object.freeze(obj); super.y = 9; super['z'] = 10; return Object.keys(obj).join(); } }; obj.m()", "m,x")]
+    [InlineData("var r; class C extends class { } { m() { super[(() => { throw new RangeError(); })()] = (() => { throw new Error(); })(); } } try { new C().m(); } catch (e) { r = e.constructor.name; } r", "RangeError")]
+    [InlineData("var str = 'abc'; var r; try { str.slice(0, 1).foo(''); } catch (e) { r = e.message; } r", "str.slice(...).foo is not a function")]
+    [InlineData("var o = { f() { return []; } }; var r; try { (o.f(')')[0])(); } catch (e) { r = e.message; } r", "o.f(...)[0] is not a function")]
+    [InlineData("var o = { a: {} }; var r; try { new o.a(1); } catch (e) { r = e.message; } r", "o.a is not a constructor")]
+    [InlineData("var r; try { (1 + 2).foo(); } catch (e) { r = e.message; } r", "(1 + 2).foo is not a function")]
+    [InlineData("var fn, g, h; (fn) = function () { }; g = function () { }; (h) ??= () => { }; JSON.stringify([fn.name, g.name, h.name])", "[\"\",\"g\",\"\"]")]
+    [InlineData("var log = []; var source = { get p() { log.push('get'); } }; var env = new Proxy({}, { has(t, key) { log.push('has ' + String(key)); return false; } }); var target; with (env) { var { p: target = 0 } = source; } log.join()", "has source,has target,get")]
     public void Evaluate(string code, string expected)
     {
         Assert.Equal(expected, Run(code));
@@ -57,6 +83,63 @@ public sealed class InterpreterTests
         engine.RunJobs();
         using var scope = engine.Enter();
         Assert.Equal("1,0,2,3", realm.Execute("log.join()").AsString());
+    }
+
+    [Fact]
+    public void Realms_ErrorsOfClassConstructors()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var other = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            realm.GlobalObject.CreateDataProperty(new PropertyKey("other"), new JsValue(other.GlobalObject));
+        }
+
+        // Calling a class constructor: the TypeError of the realm of the class
+        Assert.Equal("true", realm.Execute("var C = other.eval('(class {})'); var r; try { C(); } catch (e) { r = e.constructor === other.TypeError; } r").ToString());
+
+        // The result of a derived constructor: the errors of the realm of the caller
+        Assert.Equal("true", realm.Execute("var C = other.eval('0, class extends Object { constructor() { return null; } }'); var r; try { new C(); } catch (e) { r = e.constructor === TypeError; } r").ToString());
+        Assert.Equal("true", realm.Execute("var C = other.eval('0, class extends Object { constructor() { } }'); var r; try { new C(); } catch (e) { r = e.constructor === ReferenceError; } r").ToString());
+        Assert.Equal("true", realm.Execute("var C = other.eval('0, class extends Object { constructor() { return null; } }'); var r; try { Reflect.construct(C, []); } catch (e) { r = e.constructor === TypeError; } r").ToString());
+    }
+
+    [Fact]
+    public void Scripts_LexicalDeclarationOverVarOfEval()
+    {
+        // The vars created by eval code are configurable: a later script can declare a lexical binding of the same name
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        realm.Execute("eval('var x = 1; if (true) { function f() { } }')");
+        Assert.Equal("2,3", realm.Execute("let x = 2; let f = 3; x + ',' + f").AsString());
+        realm.Execute("var y;");
+        var exception = Assert.Throws<JsException>(() => realm.Execute("let y;"));
+        Assert.StartsWith("SyntaxError:", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AsyncGenerator_YieldStarAwaitsTheReturnValue()
+    {
+        // AsyncGeneratorUnwrapYieldResumption: the value of a return resumption is awaited before the inner return method is looked up
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        realm.Execute("""
+            var log = [];
+            var inner = { [Symbol.asyncIterator]() { return this; }, next() { return { done: false }; }, get return() { log.push('get return'); } };
+            async function* f() { yield* inner; }
+            var it = f();
+            it.next();
+            it.return({ get then() { log.push('get then'); } });
+            var rejected = { [Symbol.asyncIterator]() { return this; }, next() { return { done: false }; }, throw(e) { log.push('throw ' + e); return { done: true, value: 'caught' }; } };
+            async function* g() { return yield* rejected; }
+            var it2 = g();
+            it2.next();
+            it2.return(Promise.reject('error')).then(r => log.push(r.value));
+            """);
+        engine.RunJobs();
+        using var scope = engine.Enter();
+        Assert.Equal("get then,get return,get then,throw error,caught", realm.Execute("log.join()").AsString());
     }
 
     [Fact]

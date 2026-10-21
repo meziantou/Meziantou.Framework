@@ -206,7 +206,7 @@ internal sealed partial class ScopeAnalyzer
             }
 
             // Sloppy eval code may add a var of the same name to this variable environment at runtime
-            if (scope.IsVarScope && scope.HasSloppyEvalVars)
+            if ((scope.IsVarScope && scope.HasSloppyEvalVars) || scope.HasParameterEvalVars)
             {
                 dynamic = true;
             }
@@ -268,7 +268,7 @@ internal sealed partial class ScopeAnalyzer
             }
 
             scope.ContextSlotCount = slots;
-            if (slots > 0 || scope.Kind == ScopeKind.With || isModule || (scope.IsVarScope && scope.HasSloppyEvalVars && !isGlobalCode))
+            if (slots > 0 || scope.Kind == ScopeKind.With || isModule || (scope.IsVarScope && scope.HasSloppyEvalVars && !isGlobalCode) || scope.HasParameterEvalVars)
             {
                 scope.NeedsContext = true;
             }
@@ -320,6 +320,6 @@ internal sealed partial class ScopeAnalyzer
             flags[variable.Index] = slotFlags;
         }
 
-        return new ScopeInfo(scope.Kind, names, flags, scope.IsVarScope);
+        return new ScopeInfo(scope.Kind, names, flags, scope.IsVarScope || scope.HasParameterEvalVars, scope.HasParameterEvalVars);
     }
 }

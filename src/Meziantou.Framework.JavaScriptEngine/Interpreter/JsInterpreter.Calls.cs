@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.JavaScriptEngine.Compiler;
 
 namespace Meziantou.Framework.JavaScriptEngine.Interpreter;
@@ -80,22 +81,41 @@ internal static partial class JsInterpreter
         return frame;
     }
 
-    /// <summary>The result of a [[Construct]]: the returned object, or this.</summary>
-    private static JsValue GetConstructResult(Frame frame, JsValue result)
+    /// <summary>
+    /// The result of a [[Construct]]: the returned object, or this. The errors are created in the realm of the caller, and
+    /// thrown as if by the caller (the handlers of the constructor are skipped).
+    /// </summary>
+    private static JsValue GetConstructResult(Frame frame, JsValue result, JsRealm callerRealm)
     {
         if (result.IsObject)
             return result;
 
-        if (frame.Function!.IsDerivedConstructor)
-        {
-            if (!result.IsUndefined)
-                return ThrowHelper.ThrowTypeError<JsValue>("Derived constructors may only return object or undefined");
+        if (!frame.Function!.IsDerivedConstructor)
+            return frame.This;
 
-            if (frame.This.IsHole)
-                return ThrowHelper.ThrowTypeError<JsValue>("Must call super constructor in derived class before accessing 'this' or returning from derived constructor");
+        if (result.IsUndefined)
+        {
+            // The this binding is in the frame (or, when it is in the environment, the compiler has replaced undefined by it)
+            result = frame.This;
+        }
+        else if (!result.IsHole)
+        {
+            ThrowFromCaller(frame, callerRealm, ErrorType.TypeError, "Derived constructors may only return object or undefined");
         }
 
-        return frame.This;
+        if (result.IsHole)
+        {
+            ThrowFromCaller(frame, callerRealm, ErrorType.ReferenceError, "Must call super constructor in derived class before accessing 'this' or returning from derived constructor");
+        }
+
+        return result;
+
+        [DoesNotReturn]
+        static void ThrowFromCaller(Frame frame, JsRealm callerRealm, ErrorType type, string message)
+        {
+            frame.Pc = -1;
+            throw new JsException(new JsValue(callerRealm.CreateError(type, message)));
+        }
     }
 
     /// <summary>[[Call]] of a closure from .NET (a built-in calls a callback...).</summary>
@@ -156,8 +176,11 @@ internal static partial class JsInterpreter
     /// <summary>Describes the callee of the current call for the error messages (the source text of the call, e.g. "obj.method").</summary>
     private static string DescribeCallee(Frame frame)
     {
-        var offset = frame.Code.GetSourceOffset(frame.Pc);
         var text = frame.Code.Source.Text;
+        if (frame.Code.TryGetCallSite(frame.Pc, out var calleeStart, out var calleeEnd) && calleeStart >= 0 && calleeEnd <= text.Length && calleeStart < calleeEnd)
+            return DescribeCallee(text.AsSpan(calleeStart, calleeEnd - calleeStart));
+
+        var offset = frame.Code.GetSourceOffset(frame.Pc);
         if (offset < 0 || offset >= text.Length)
             return "expression";
 
@@ -192,6 +215,81 @@ internal static partial class JsInterpreter
         }
 
         return description.Length is > 0 and < 100 ? description : "expression";
+    }
+
+    /// <summary>The source text of a callee, with the arguments of the calls it contains replaced by "(...)" (e.g. "a.b(...).c").</summary>
+    private static string DescribeCallee(ReadOnlySpan<char> callee)
+    {
+        var builder = new StringBuilder(callee.Length);
+        for (var i = 0; i < callee.Length; i++)
+        {
+            var c = callee[i];
+            // The arguments of a call (a parenthesized expression is kept)
+            if (c == '(' && IsEndOfCallee(builder))
+            {
+                i = SkipBalanced(callee, i);
+                builder.Append("(...)");
+                continue;
+            }
+
+            if (c is '\r' or '\n' or '\t')
+            {
+                c = ' ';
+            }
+
+            builder.Append(c);
+        }
+
+        var description = builder.ToString().Trim();
+        return description.Length is > 0 and < 100 ? description : "expression";
+
+        static bool IsEndOfCallee(StringBuilder builder)
+        {
+            for (var i = builder.Length - 1; i >= 0; i--)
+            {
+                var c = builder[i];
+                if (c == ' ')
+                    continue;
+
+                return c is ')' or ']' or '_' or '$' || char.IsAsciiLetterOrDigit(c) || c > '\u007F';
+            }
+
+            return false;
+        }
+
+        // The index of the parenthesis that closes the one at start (strings and templates are skipped)
+        static int SkipBalanced(ReadOnlySpan<char> text, int start)
+        {
+            var depth = 0;
+            for (var i = start; i < text.Length; i++)
+            {
+                switch (text[i])
+                {
+                    case '(':
+                        depth++;
+                        break;
+                    case ')':
+                        depth--;
+                        if (depth == 0)
+                            return i;
+
+                        break;
+                    case '\'' or '"' or '`':
+                        var quote = text[i];
+                        for (i++; i < text.Length && text[i] != quote; i++)
+                        {
+                            if (text[i] == '\\')
+                            {
+                                i++;
+                            }
+                        }
+
+                        break;
+                }
+            }
+
+            return text.Length - 1;
+        }
     }
 
     private static JsValue[] GetSpreadArguments(JsValue array)
@@ -230,20 +328,18 @@ internal static partial class JsInterpreter
         return superConstructor.Construct(arguments, newTarget.AsObject());
     }
 
-    /// <summary>The object on which super.x is looked up: the prototype of the home object.</summary>
-    private static JsObject GetSuperBase(JsValue home)
+    /// <summary>The object on which super.x is looked up (the prototype of the home object): ToObject of the base of the reference.</summary>
+    private static JsObject ToSuperBaseObject(JsValue superBase)
     {
-        var baseObject = home.AsObject().GetPrototypeOf();
-        if (baseObject is null)
+        if (superBase.Cell is not JsObject baseObject)
             return ThrowHelper.ThrowTypeError<JsObject>("Cannot read properties of null (super)");
 
         return baseObject;
     }
 
-    private static void SetSuper(JsValue home, in PropertyKey key, JsValue value, JsValue thisValue)
+    private static void SetSuper(JsObject superBase, in PropertyKey key, JsValue value, JsValue thisValue, bool strict)
     {
-        var baseObject = GetSuperBase(home);
-        if (!baseObject.Set(key, value, thisValue))
+        if (!superBase.Set(key, value, thisValue) && strict)
         {
             ThrowHelper.ThrowTypeError($"Cannot assign to read only property '{key}' of object");
         }

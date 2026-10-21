@@ -1,6 +1,0 @@
-built-ins/Function/internals/Call/class-ctor-realm.js:sloppy
-built-ins/Function/internals/Call/class-ctor-realm.js:strict
-built-ins/Function/internals/Construct/derived-return-val-realm.js:sloppy
-built-ins/Function/internals/Construct/derived-return-val-realm.js:strict
-built-ins/Function/internals/Construct/derived-this-uninitialized-realm.js:sloppy
-built-ins/Function/internals/Construct/derived-this-uninitialized-realm.js:strict

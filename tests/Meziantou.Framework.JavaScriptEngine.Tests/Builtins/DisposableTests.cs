@@ -398,8 +398,7 @@ public sealed class DisposableTests
         iterator.CreateDataPropertyOrThrow(new PropertyKey("return"), test.CreateFunction((thisValue, arguments) =>
         {
             Assert.Same(iterator, thisValue.AsObject());
-            Assert.Single(arguments);
-            Assert.True(arguments[0].IsUndefined);
+            Assert.Empty(arguments);
             calls++;
             return test.Call("Promise.resolve", 42);
         }));

@@ -382,10 +382,18 @@ public partial class JsObject : JsCell
         }
 
         var currentLength = elements?.Length ?? 0;
-        if (index > (uint)currentLength + 1024 && index > (uint)currentLength * 2)
+        if (index >= (uint)Array.MaxLength / 2)
             return false;
 
-        var newLength = Math.Max(Math.Max(currentLength * 2, (int)index + 1), 4);
+        // Close to the end: grow. Further away (up to twice the current length): grow only when the current storage is
+        // at least half full, so that a sequence of writes at exponentially increasing indices stays sparse.
+        if (index > (uint)currentLength + 1024)
+        {
+            if (index > (uint)currentLength * 2 || !IsMostlyFilled(elements))
+                return false;
+        }
+
+        var newLength = (int)Math.Min(Math.Max(Math.Max((long)currentLength * 2, (long)index + 1), 4), Array.MaxLength);
         var newElements = new JsValue[newLength];
         if (elements is not null)
         {
@@ -396,6 +404,22 @@ public partial class JsObject : JsCell
         newElements[index] = value;
         _elements = newElements;
         return true;
+
+        static bool IsMostlyFilled(JsValue[]? elements)
+        {
+            if (elements is null)
+                return false;
+
+            var holes = 0;
+            var maxHoles = elements.Length / 2;
+            foreach (var element in elements)
+            {
+                if (element.IsHole && ++holes > maxHoles)
+                    return false;
+            }
+
+            return true;
+        }
     }
 
     /// <summary>Removes an own property (no check).</summary>

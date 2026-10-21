@@ -148,6 +148,7 @@ internal sealed partial class CodeGenerator
             MaxStack = _builder.MaxStack + 1,
             Handlers = handlers,
             Positions = positions,
+            CallSites = _builder.GetCallSites(),
             Source = _source,
             SourceStart = sourceStart,
             SourceEnd = sourceEnd,
@@ -241,15 +242,8 @@ internal sealed partial class CodeGenerator
 
     private void EmitImplicitReturn()
     {
-        if (_function.Kind == FunctionInfoKind.ClassConstructor && _function.FunctionNode!.IsDerivedConstructor)
-        {
-            EmitLoadThis(_function.Node, checkInitialized: true);
-        }
-        else
-        {
-            _builder.Emit(OpCode.PushUndefined);
-        }
-
+        _builder.Emit(OpCode.PushUndefined);
+        EmitDerivedConstructorReturnValue();
         _builder.Emit(OpCode.Return);
     }
 
@@ -389,6 +383,10 @@ internal sealed partial class CodeGenerator
                 continue;
 
             if (variable.Location is VariableLocation.Dynamic or VariableLocation.GlobalObject or VariableLocation.GlobalLexical)
+                continue;
+
+            // "var arguments" does not reset the arguments object (it is one of the instantiated names)
+            if (parameterScope is null && ReferenceEquals(variable, _function.ArgumentsVariable) && (variable.IsReferenced || _function.HasDirectEval))
                 continue;
 
             if (parameterScope?.Find(variable.Name) is { Kind: VariableKind.Parameter or VariableKind.Arguments } parameter)

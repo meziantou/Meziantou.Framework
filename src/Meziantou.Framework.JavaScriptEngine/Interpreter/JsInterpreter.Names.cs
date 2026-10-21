@@ -81,7 +81,6 @@ internal static partial class JsInterpreter
             : PropertyDescriptor.ValueOnly(value);
         global.DefinePropertyOrThrow(key, descriptor);
         global.Set(key, value, throwOnFailure: true);
-        realm.GlobalEnvironment.VarNames.Add(key.AsString());
     }
 
     /// <summary>GlobalDeclarationInstantiation(script, env) (https://tc39.es/ecma262/#sec-globaldeclarationinstantiation).</summary>
@@ -91,7 +90,7 @@ internal static partial class JsInterpreter
         var global = realm.GlobalObject;
         foreach (var (name, _) in declarations.LexicalNames)
         {
-            if (environment.VarNames.Contains(name) || environment.LexicalBindings.ContainsKey(name))
+            if (environment.LexicalBindings.ContainsKey(name))
             {
                 ThrowHelper.ThrowSyntaxError($"Identifier '{name}' has already been declared");
             }
@@ -159,8 +158,6 @@ internal static partial class JsInterpreter
         {
             global.DefinePropertyOrThrow(name, PropertyDescriptor.Data(JsValue.Undefined, deletable ? PropertyFlags.Default : PropertyFlags.Writable | PropertyFlags.Enumerable));
         }
-
-        realm.GlobalEnvironment.VarNames.Add(name);
     }
 
     // ------------------------------------------------------------------------------------------------------------------
@@ -344,15 +341,7 @@ internal static partial class JsInterpreter
                         return JsValue.False;
 
                     if (global.GlobalObject.HasOwnProperty(key))
-                    {
-                        var deleted = global.GlobalObject.Delete(key);
-                        if (deleted)
-                        {
-                            global.VarNames.Remove(name);
-                        }
-
-                        return JsValue.FromBoolean(deleted);
-                    }
+                        return JsValue.FromBoolean(global.GlobalObject.Delete(key));
 
                     return JsValue.True;
             }
@@ -427,8 +416,10 @@ internal static partial class JsInterpreter
             }
         }
 
-        // A var of the eval code cannot be declared over a lexical binding of the scopes between the eval and its variable environment
-        for (var environment = frame.Environment; environment is not null && environment != varEnvironment; environment = environment.Outer)
+        // A var of the eval code cannot be declared over a lexical binding of the scopes between the eval and its variable
+        // environment (the variable environment of the eval code of parameters is outside the parameters)
+        var lastEnvironment = varEnvironment is DeclarativeEnvironment { Info.IsParameterVarScope: true } ? varEnvironment.Outer : varEnvironment;
+        for (var environment = frame.Environment; environment is not null && environment != lastEnvironment; environment = environment.Outer)
         {
             if (environment is DeclarativeEnvironment declarative && declarative.Info.Kind is not ScopeKind.Eval and not ScopeKind.Catch)
             {

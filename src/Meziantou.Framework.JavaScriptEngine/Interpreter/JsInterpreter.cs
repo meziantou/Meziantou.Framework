@@ -32,7 +32,15 @@ internal static partial class JsInterpreter
             {
                 try
                 {
-                    return Execute(ref frame, entry, engine);
+                    var result = Execute(ref frame, entry, engine);
+                    if (entry.IsConstruct && entry.State == FrameState.Completed)
+                    {
+                        // The checks of the result of [[Construct]] are done once the function has been left: no handler
+                        // of the function can catch them, and the errors are created in the realm of the caller
+                        result = GetConstructResult(entry, result, previousRealm ?? entry.Realm);
+                    }
+
+                    return result;
                 }
                 catch (JsException ex)
                 {
@@ -202,6 +210,24 @@ internal static partial class JsInterpreter
                         values[sp - 2] = values[sp - 3];
                         values[sp - 3] = values[sp - 4];
                         values[sp - 4] = d;
+                        break;
+                    }
+
+                case OpCode.Dup3:
+                    values[sp] = values[sp - 3];
+                    values[sp + 1] = values[sp - 2];
+                    values[sp + 2] = values[sp - 1];
+                    sp += 3;
+                    break;
+                case OpCode.Rot5:
+                    {
+                        // a b c d e -> e a b c d
+                        var e = values[sp - 1];
+                        values[sp - 1] = values[sp - 2];
+                        values[sp - 2] = values[sp - 3];
+                        values[sp - 3] = values[sp - 4];
+                        values[sp - 4] = values[sp - 5];
+                        values[sp - 5] = e;
                         break;
                     }
 
@@ -816,9 +842,9 @@ internal static partial class JsInterpreter
                 case OpCode.Return:
                     {
                         var result = values[--sp];
-                        if (frame.IsConstruct)
+                        if (frame.IsConstruct && !ReferenceEquals(frame, entry))
                         {
-                            result = GetConstructResult(frame, result);
+                            result = GetConstructResult(frame, result, frame.Parent!.Realm);
                         }
 
                         frame.State = FrameState.Completed;
@@ -909,7 +935,7 @@ internal static partial class JsInterpreter
                         var target = values[sp - 1];
                         if (target.IsNullOrUndefined)
                         {
-                            ThrowHelper.ThrowTypeError($"Cannot set properties of {target} (setting '{JsOperations.ToPropertyKey(keyValue)}')");
+                            ThrowHelper.ThrowTypeError($"Cannot set properties of {target}{DescribeKeyForError(keyValue, "setting")}");
                         }
 
                         var key = keyValue.IsNumber ? PropertyKey.FromDouble(keyValue.NumberValue) : JsOperations.ToPropertyKey(keyValue);
@@ -1002,42 +1028,45 @@ internal static partial class JsInterpreter
                         break;
                     }
 
+                case OpCode.LoadSuperBase:
+                    values[sp - 1] = values[sp - 1].AsObject().GetPrototypeOf() is { } superPrototype ? new JsValue(superPrototype) : JsValue.Null;
+                    break;
                 case OpCode.GetSuperProperty:
                     {
                         var key = keys[code[pc++]];
-                        var home = values[--sp];
+                        var superBase = ToSuperBaseObject(values[--sp]);
                         var thisValue = values[sp - 1];
-                        values[sp - 1] = GetSuperBase(home).Get(key, thisValue);
+                        values[sp - 1] = superBase.Get(key, thisValue);
                         break;
                     }
 
                 case OpCode.GetSuperElement:
                     {
-                        var home = values[--sp];
+                        var superBase = ToSuperBaseObject(values[--sp]);
                         var key = JsOperations.ToPropertyKey(values[--sp]);
                         var thisValue = values[sp - 1];
-                        values[sp - 1] = GetSuperBase(home).Get(key, thisValue);
+                        values[sp - 1] = superBase.Get(key, thisValue);
                         break;
                     }
 
                 case OpCode.SetSuperProperty:
                     {
                         var key = keys[code[pc++]];
-                        var home = values[--sp];
                         var value = values[--sp];
+                        var superBase = ToSuperBaseObject(values[--sp]);
                         var thisValue = values[sp - 1];
-                        SetSuper(home, key, value, thisValue);
+                        SetSuper(superBase, key, value, thisValue, strict);
                         values[sp - 1] = value;
                         break;
                     }
 
                 case OpCode.SetSuperElement:
                     {
-                        var home = values[--sp];
                         var value = values[--sp];
+                        var superBase = ToSuperBaseObject(values[--sp]);
                         var key = JsOperations.ToPropertyKey(values[--sp]);
                         var thisValue = values[sp - 1];
-                        SetSuper(home, key, value, thisValue);
+                        SetSuper(superBase, key, value, thisValue, strict);
                         values[sp - 1] = value;
                         break;
                     }

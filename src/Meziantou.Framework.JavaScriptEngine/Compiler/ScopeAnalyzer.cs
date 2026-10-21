@@ -603,8 +603,16 @@ internal sealed partial class ScopeAnalyzer
             }
         }
 
+        // The variable environment can also hold the lexical declarations (eval code, scripts)
+        if (varScope.Find(name) is { Kind: VariableKind.Let or VariableKind.Const or VariableKind.Class })
+            return;
+
         // F is not a parameter name (B.3.2.1)
         if (function.Kind != FunctionInfoKind.Script && function.Kind != FunctionInfoKind.Eval && function.Scope.Find(name) is { Kind: VariableKind.Parameter })
+            return;
+
+        // "arguments" is one of the parameter names when the function has an arguments object
+        if (name == "arguments" && function.ArgumentsVariable is not null)
             return;
 
         if (varScope.Find(name) is null)
@@ -1200,11 +1208,30 @@ internal sealed partial class ScopeAnalyzer
             current.ContainsDirectEval = true;
         }
 
-        // Sloppy eval code adds its vars to the variable environment of the function (not in the parameters: their eval code has its own)
+        // Sloppy eval code adds its vars to the variable environment of the function. When the parameters have expressions,
+        // the eval code of the parameters adds them to an environment outside the parameters (the parameter scope is used)
         if (!function.IsStrict)
         {
-            var varScope = function.BodyVarScope ?? function.Scope;
-            varScope.HasSloppyEvalVars = true;
+            if (function.BodyVarScope is { } bodyVarScope && !IsInScope(scope, bodyVarScope))
+            {
+                function.Scope.HasParameterEvalVars = true;
+            }
+            else
+            {
+                var varScope = function.BodyVarScope ?? function.Scope;
+                varScope.HasSloppyEvalVars = true;
+            }
+        }
+
+        static bool IsInScope(Scope scope, Scope ancestor)
+        {
+            for (var current = scope; current is not null && current.Function == ancestor.Function; current = current.Parent)
+            {
+                if (current == ancestor)
+                    return true;
+            }
+
+            return false;
         }
     }
 

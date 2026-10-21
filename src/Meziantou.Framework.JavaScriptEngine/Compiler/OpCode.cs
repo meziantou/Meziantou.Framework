@@ -52,6 +52,12 @@ internal enum OpCode
     /// <summary>a b c d -> d a b c</summary>
     Rot4,
 
+    /// <summary>a b c -> a b c a b c</summary>
+    Dup3,
+
+    /// <summary>a b c d e -> e a b c d</summary>
+    Rot5,
+
     // ---- Registers and environments ---------------------------------------------------------------------------------
 
     /// <summary>(register) -> value</summary>
@@ -375,16 +381,19 @@ internal enum OpCode
     /// <summary>(count) source excludedKey1..N -> object: CopyDataProperties into a new object (object rest)</summary>
     CopyDataPropertiesExcluding,
 
-    /// <summary>(key) thisValue -> value: super.key</summary>
+    /// <summary>homeObject -> base: GetSuperBase (the prototype of the home object, or null)</summary>
+    LoadSuperBase,
+
+    /// <summary>(key) thisValue base -> value: super.key</summary>
     GetSuperProperty,
 
-    /// <summary>thisValue key -> value: super[key]</summary>
+    /// <summary>thisValue key base -> value: super[key]</summary>
     GetSuperElement,
 
-    /// <summary>(key) thisValue value -> value</summary>
+    /// <summary>(key) thisValue base value -> value</summary>
     SetSuperProperty,
 
-    /// <summary>thisValue key value -> value</summary>
+    /// <summary>thisValue key base value -> value</summary>
     SetSuperElement,
 
     /// <summary>(depth, slot) object -> value: object.#name</summary>

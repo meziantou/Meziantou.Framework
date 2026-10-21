@@ -609,6 +609,9 @@ internal sealed partial class CodeGenerator
         SuperProperty,
         SuperElement,
         Private,
+
+        /// <summary>A call in sloppy code (web compatibility): the call is evaluated, then a ReferenceError is thrown.</summary>
+        InvalidCall,
     }
 
     /// <summary>Evaluates the base (and the key) of a reference: the values a get and a put need (e.g. object, or object key).</summary>
@@ -622,14 +625,16 @@ internal sealed partial class CodeGenerator
             case Identifier:
                 return TargetKind.Identifier;
             case MemberExpression { Object: Super } superMember:
+                // this [key] base: the key is evaluated before GetSuperBase, and converted (ToPropertyKey) by the get or the put
                 EmitLoadSpecial(superMember, VariableKind.This, checkInitialized: true);
                 if (superMember.Computed)
                 {
                     EmitExpression(superMember.Property);
-                    _builder.Emit(OpCode.ToPropertyKey);
+                    EmitLoadSuperBase(superMember);
                     return TargetKind.SuperElement;
                 }
 
+                EmitLoadSuperBase(superMember);
                 return TargetKind.SuperProperty;
             case MemberExpression { Property: PrivateIdentifier } privateMember:
                 EmitExpression(privateMember.Object);
@@ -643,6 +648,12 @@ internal sealed partial class CodeGenerator
                 }
 
                 return TargetKind.Property;
+            case CallExpression call:
+                EmitExpression(call);
+                _builder.Emit(OpCode.Pop);
+                _builder.SetPosition(call.Start);
+                _builder.Emit(OpCode.ThrowError, (int)ErrorType.ReferenceError, _builder.AddConstant("Invalid left-hand side in assignment"));
+                return TargetKind.InvalidCall;
             default:
                 throw new InvalidOperationException("Invalid assignment target: " + target.Type);
         }
@@ -667,15 +678,17 @@ internal sealed partial class CodeGenerator
                 _builder.Emit(OpCode.GetElement);
                 break;
             case TargetKind.SuperProperty:
-                EmitLoadHomeObjectFor(target);
                 _builder.Emit(OpCode.GetSuperProperty, _builder.AddKey(GetPropertyKey(((MemberExpression)target).Property)));
                 break;
             case TargetKind.SuperElement:
-                EmitLoadHomeObjectFor(target);
                 _builder.Emit(OpCode.GetSuperElement);
                 break;
             case TargetKind.Private:
                 EmitPrivateOperation(OpCode.GetPrivate, (PrivateIdentifier)((MemberExpression)target).Property);
+                break;
+            case TargetKind.InvalidCall:
+                // Unreachable: the base has thrown
+                _builder.Emit(OpCode.PushUndefined);
                 break;
         }
     }
@@ -700,15 +713,36 @@ internal sealed partial class CodeGenerator
                 _builder.Emit(OpCode.SetElement);
                 break;
             case TargetKind.SuperProperty:
-                EmitLoadHomeObjectFor(target);
                 _builder.Emit(OpCode.SetSuperProperty, _builder.AddKey(GetPropertyKey(((MemberExpression)target).Property)));
                 break;
             case TargetKind.SuperElement:
-                EmitLoadHomeObjectFor(target);
                 _builder.Emit(OpCode.SetSuperElement);
                 break;
             case TargetKind.Private:
                 EmitPrivateOperation(OpCode.SetPrivate, (PrivateIdentifier)((MemberExpression)target).Property);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Converts the key of a computed reference whose value is read then written (compound assignments, updates): GetValue
+    /// converts it (after ToObject of the base), so that PutValue does not convert it again.
+    /// </summary>
+    private void EmitConvertReferenceKey(TargetKind kind)
+    {
+        switch (kind)
+        {
+            case TargetKind.Element:
+                // object key
+                _builder.Emit(OpCode.RequireObjectCoercibleBase);
+                _builder.Emit(OpCode.ToPropertyKey);
+                break;
+            case TargetKind.SuperElement:
+                // this key base
+                _builder.Emit(OpCode.Swap);
+                _builder.Emit(OpCode.RequireObjectCoercibleBase);
+                _builder.Emit(OpCode.ToPropertyKey);
+                _builder.Emit(OpCode.Swap);
                 break;
         }
     }
@@ -718,8 +752,9 @@ internal sealed partial class CodeGenerator
     {
         return kind switch
         {
-            TargetKind.Identifier => 0,
-            TargetKind.Property or TargetKind.SuperProperty or TargetKind.Private or TargetKind.DynamicIdentifier => 1,
+            TargetKind.Identifier or TargetKind.InvalidCall => 0,
+            TargetKind.Property or TargetKind.Private or TargetKind.DynamicIdentifier => 1,
+            TargetKind.SuperElement => 3,
             _ => 2,
         };
     }
@@ -735,6 +770,9 @@ internal sealed partial class CodeGenerator
             case 2:
                 _builder.Emit(OpCode.Dup2);
                 break;
+            case 3:
+                _builder.Emit(OpCode.Dup3);
+                break;
         }
     }
 
@@ -749,14 +787,17 @@ internal sealed partial class CodeGenerator
             case 2:
                 _builder.Emit(OpCode.Rot4);
                 break;
+            case 3:
+                _builder.Emit(OpCode.Rot5);
+                break;
         }
     }
 
-    /// <summary>The super operations take the home object: it is pushed after the this value (and the key).</summary>
-    private void EmitLoadHomeObjectFor(Node target)
+    /// <summary>Pushes the base of a super reference (GetSuperBase: the prototype of the home object).</summary>
+    private void EmitLoadSuperBase(MemberExpression member)
     {
-        var member = (MemberExpression)target;
         EmitLoadSpecial(member.Object, VariableKind.HomeObject, checkInitialized: false);
+        _builder.Emit(OpCode.LoadSuperBase);
     }
 
     private void EmitPrivateOperation(OpCode op, PrivateIdentifier name)
@@ -775,6 +816,16 @@ internal sealed partial class CodeGenerator
 
     private void EmitMember(MemberExpression member)
     {
+        // a?.[key]: the object is checked before the key is evaluated
+        if (member is { Optional: true, Computed: true })
+        {
+            EmitExpression(member.Object);
+            EmitOptionalCheck(0);
+            EmitExpression(member.Property);
+            EmitGetReference(member, TargetKind.Element);
+            return;
+        }
+
         var kind = EmitReferenceBase(member);
         if (member.Optional)
         {
@@ -901,7 +952,7 @@ internal sealed partial class CodeGenerator
             }
 
             var kind = EmitReferenceBase(left);
-            EmitNamedEvaluation(assignment.Right, left);
+            EmitNamedEvaluation(assignment.Right, GetNamedEvaluationTarget(assignment));
             EmitPutReference(left, kind);
             return;
         }
@@ -914,11 +965,7 @@ internal sealed partial class CodeGenerator
 
         // Compound assignment: base, get, operator, put
         var targetKind = EmitReferenceBase(left);
-        if (targetKind == TargetKind.Element)
-        {
-            _builder.Emit(OpCode.RequireObjectCoercibleBase);
-            _builder.Emit(OpCode.ToPropertyKey);
-        }
+        EmitConvertReferenceKey(targetKind);
 
         EmitDuplicateBase(targetKind);
         EmitGetReference(left, targetKind);
@@ -928,15 +975,14 @@ internal sealed partial class CodeGenerator
         EmitPutReference(left, targetKind);
     }
 
+    /// <summary>The target that names an anonymous function of the right side: none when the left side is parenthesized (IsIdentifierRef of a CoverParenthesizedExpression is false).</summary>
+    private static Node? GetNamedEvaluationTarget(AssignmentExpression assignment) => assignment.Left.Start == assignment.Start ? assignment.Left : null;
+
     private void EmitLogicalAssignment(AssignmentExpression assignment)
     {
         var left = assignment.Left;
         var kind = EmitReferenceBase(left);
-        if (kind == TargetKind.Element)
-        {
-            _builder.Emit(OpCode.RequireObjectCoercibleBase);
-            _builder.Emit(OpCode.ToPropertyKey);
-        }
+        EmitConvertReferenceKey(kind);
 
         EmitDuplicateBase(kind);
         EmitGetReference(left, kind);
@@ -949,7 +995,7 @@ internal sealed partial class CodeGenerator
             _ => OpCode.JumpIfNotNullishKeep,
         }, shortCircuit);
         _builder.Emit(OpCode.Pop);
-        EmitNamedEvaluation(assignment.Right, left);
+        EmitNamedEvaluation(assignment.Right, GetNamedEvaluationTarget(assignment));
         EmitPutReference(left, kind);
         _builder.EmitJump(OpCode.Jump, endLabel);
 
@@ -968,11 +1014,7 @@ internal sealed partial class CodeGenerator
     {
         var target = update.Argument;
         var kind = EmitReferenceBase(target);
-        if (kind == TargetKind.Element)
-        {
-            _builder.Emit(OpCode.RequireObjectCoercibleBase);
-            _builder.Emit(OpCode.ToPropertyKey);
-        }
+        EmitConvertReferenceKey(kind);
 
         EmitDuplicateBase(kind);
         EmitGetReference(target, kind);
@@ -1008,13 +1050,12 @@ internal sealed partial class CodeGenerator
                 if (superMember.Computed)
                 {
                     EmitExpression(superMember.Property);
-                    _builder.Emit(OpCode.ToPropertyKey);
-                    EmitLoadHomeObjectFor(superMember);
+                    EmitLoadSuperBase(superMember);
                     _builder.Emit(OpCode.GetSuperElement);
                 }
                 else
                 {
-                    EmitLoadHomeObjectFor(superMember);
+                    EmitLoadSuperBase(superMember);
                     _builder.Emit(OpCode.GetSuperProperty, _builder.AddKey(GetPropertyKey(superMember.Property)));
                 }
 
@@ -1132,6 +1173,7 @@ internal sealed partial class CodeGenerator
         }
 
         _builder.SetPosition(call.Start);
+        _builder.AddCallSite(call.Callee.Start, call.Callee.End);
         if (isDirectEval)
         {
             var context = _builder.AddObject(CreateEvalContext());
@@ -1213,6 +1255,7 @@ internal sealed partial class CodeGenerator
         {
             EmitArgumentsArray(newExpression.Arguments);
             _builder.SetPosition(newExpression.Start);
+            _builder.AddCallSite(newExpression.Callee.Start, newExpression.Callee.End);
             _builder.Emit(OpCode.NewSpread);
             return;
         }
@@ -1223,6 +1266,7 @@ internal sealed partial class CodeGenerator
         }
 
         _builder.SetPosition(newExpression.Start);
+        _builder.AddCallSite(newExpression.Callee.Start, newExpression.Callee.End);
         _builder.Emit(OpCode.New, newExpression.Arguments.Count);
     }
 
@@ -1381,6 +1425,31 @@ internal sealed partial class CodeGenerator
         _builder.Emit(OpCode.Yield);
         _builder.Emit(OpCode.StoreLocal, kind);
         _builder.Emit(OpCode.StoreLocal, received);
+        if (isAsync)
+        {
+            // AsyncGeneratorUnwrapYieldResumption: the value of a return resumption is awaited; when the await throws, the
+            // resumption is a throw completion
+            var depth = _builder.StackDepth;
+            _builder.Emit(OpCode.LoadLocal, kind);
+            _builder.EmitPushNumber(2);
+            _builder.Emit(OpCode.StrictEqual);
+            _builder.EmitJump(OpCode.JumpIfFalse, loopLabel);
+            var regionStart = _builder.Position;
+            _builder.Emit(OpCode.LoadLocal, received);
+            _builder.Emit(OpCode.Await);
+            _builder.Emit(OpCode.StoreLocal, received);
+            var regionEnd = _builder.Position;
+            _builder.EmitJump(OpCode.Jump, loopLabel);
+
+            var awaitThrew = _builder.DefineLabel();
+            _builder.SetLabelDepth(awaitThrew, depth + 1);
+            _builder.MarkLabel(awaitThrew);
+            _builder.AddHandler(regionStart, regionEnd, awaitThrew, depth, environmentRegister: -1);
+            _builder.Emit(OpCode.StoreLocal, received);
+            _builder.EmitPushNumber(1);
+            _builder.Emit(OpCode.StoreLocal, kind);
+        }
+
         _builder.EmitJump(OpCode.Jump, loopLabel);
 
         // A return resumption without a return method returns the received value

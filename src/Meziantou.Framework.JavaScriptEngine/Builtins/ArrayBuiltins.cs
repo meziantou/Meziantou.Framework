@@ -839,7 +839,7 @@ internal static class ArrayBuiltins
         var length = JsOperations.LengthOfArrayLike(obj);
         if (ArrayOperations.IsPackedArray(obj, length, out var packed))
         {
-            packed.DenseElements.AsSpan(0, (int)length).Reverse();
+            packed.ReverseDenseElements((int)length);
             return obj;
         }
 
@@ -1019,16 +1019,12 @@ internal static class ArrayBuiltins
                 // Grow the storage, then move the tail to the right
                 packed.SetOwnSlot(new PropertyKey((uint)(newLength - 1)), JsValue.Undefined, PropertyFlags.Default);
                 ArrayOperations.SetLength(packed, newLength);
-                var elements = packed.DenseElements!;
-                var tail = elements.AsSpan((int)(actualStart + actualDeleteCount), (int)(length - actualStart - actualDeleteCount));
-                tail.CopyTo(elements.AsSpan((int)(actualStart + itemCount)));
-                elements.AsSpan((int)actualStart, (int)itemCount).Fill(JsValue.Undefined);
+                packed.MoveDenseElements((int)(actualStart + actualDeleteCount), (int)(actualStart + itemCount), (int)(length - actualStart - actualDeleteCount));
+                packed.FillDensePlaceholder((int)actualStart, (int)itemCount);
             }
             else
             {
-                var elements = packed.DenseElements!;
-                var tail = elements.AsSpan((int)(actualStart + actualDeleteCount), (int)(length - actualStart - actualDeleteCount));
-                tail.CopyTo(elements.AsSpan((int)(actualStart + itemCount)));
+                packed.MoveDenseElements((int)(actualStart + actualDeleteCount), (int)(actualStart + itemCount), (int)(length - actualStart - actualDeleteCount));
                 ArrayOperations.SetLength(packed, newLength);
             }
 

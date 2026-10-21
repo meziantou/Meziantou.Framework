@@ -8,9 +8,6 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// </summary>
 public partial class JsObject : JsCell
 {
-    // Elements in which a hole is an absent property: the dense storage of the array indices (attributes: W/E/C)
-    private JsValue[]? _elements;
-
     // The named properties (and the array indices that are not in the elements): a shape shared with other objects and the
     // values in its slots, or a property table of the object (dictionary mode, _slots is null). Null: an exotic object
     // without properties yet (its named properties may not be ordinary).
@@ -160,14 +157,10 @@ public partial class JsObject : JsCell
 
     internal bool OrdinaryGetOwnProperty(in PropertyKey key, out PropertyDescriptor descriptor)
     {
-        if (key.IsArrayIndex && _elements is { } elements && key.ArrayIndex < (uint)elements.Length)
+        if (key.IsArrayIndex && TryGetDenseElement(key.ArrayIndex, out var element))
         {
-            ref var value = ref elements[key.ArrayIndex];
-            if (!value.IsHole)
-            {
-                descriptor = PropertyDescriptor.Data(value);
-                return true;
-            }
+            descriptor = PropertyDescriptor.Data(element);
+            return true;
         }
 
         if (_map is Shape shape)
@@ -244,14 +237,10 @@ public partial class JsObject : JsCell
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool TryGetOwnSlot(in PropertyKey key, out JsValue value, out PropertyFlags flags)
     {
-        if (key.IsArrayIndex && _elements is { } elements && key.ArrayIndex < (uint)elements.Length)
+        if (key.IsArrayIndex && TryGetDenseElement(key.ArrayIndex, out value))
         {
-            value = elements[key.ArrayIndex];
-            if (!value.IsHole)
-            {
-                flags = PropertyFlags.Default;
-                return true;
-            }
+            flags = PropertyFlags.Default;
+            return true;
         }
 
         var map = _map;
@@ -410,10 +399,10 @@ public partial class JsObject : JsCell
                 if (TrySetElement(index, value))
                     return;
             }
-            else if (_elements is { } elements && index < (uint)elements.Length && !elements[index].IsHole)
+            else if (HasDenseElement(index))
             {
                 // The property moves from the dense elements to the property table
-                elements[index] = JsValue.Hole;
+                RemoveDenseElement((int)index);
             }
 
             // The array indices that are not in the elements are in a property table
@@ -582,63 +571,12 @@ public partial class JsObject : JsCell
         }
     }
 
-    /// <summary>Stores an element in the dense storage, growing it when the index is close to the end; false when it is too sparse.</summary>
-    private bool TrySetElement(uint index, JsValue value)
-    {
-        var elements = _elements;
-        if (elements is not null && index < (uint)elements.Length)
-        {
-            elements[index] = value;
-            return true;
-        }
-
-        var currentLength = elements?.Length ?? 0;
-        if (index >= (uint)Array.MaxLength / 2)
-            return false;
-
-        // Close to the end: grow. Further away (up to twice the current length): grow only when the current storage is
-        // at least half full, so that a sequence of writes at exponentially increasing indices stays sparse.
-        if (index > (uint)currentLength + 1024)
-        {
-            if (index > (uint)currentLength * 2 || !IsMostlyFilled(elements))
-                return false;
-        }
-
-        var newLength = (int)Math.Min(Math.Max(Math.Max((long)currentLength * 2, (long)index + 1), 4), Array.MaxLength);
-        var newElements = new JsValue[newLength];
-        if (elements is not null)
-        {
-            Array.Copy(elements, newElements, currentLength);
-        }
-
-        newElements.AsSpan(currentLength).Fill(JsValue.Hole);
-        newElements[index] = value;
-        _elements = newElements;
-        return true;
-
-        static bool IsMostlyFilled(JsValue[]? elements)
-        {
-            if (elements is null)
-                return false;
-
-            var holes = 0;
-            var maxHoles = elements.Length / 2;
-            foreach (var element in elements)
-            {
-                if (element.IsHole && ++holes > maxHoles)
-                    return false;
-            }
-
-            return true;
-        }
-    }
-
     /// <summary>Removes an own property (no check).</summary>
     internal void RemoveOwnSlot(in PropertyKey key)
     {
-        if (key.IsArrayIndex && _elements is { } elements && key.ArrayIndex < (uint)elements.Length && !elements[key.ArrayIndex].IsHole)
+        if (key.IsArrayIndex && HasDenseElement(key.ArrayIndex))
         {
-            elements[key.ArrayIndex] = JsValue.Hole;
+            RemoveDenseElement((int)key.ArrayIndex);
             return;
         }
 
@@ -817,15 +755,9 @@ public partial class JsObject : JsCell
     internal List<PropertyKey> OrdinaryOwnPropertyKeys()
     {
         var keys = new List<PropertyKey>();
-        if (_elements is { } elements)
+        for (var i = NextDenseElement(0, int.MaxValue); i >= 0; i = NextDenseElement(i + 1, int.MaxValue))
         {
-            for (var i = 0; i < elements.Length; i++)
-            {
-                if (!elements[i].IsHole)
-                {
-                    keys.Add(new PropertyKey((uint)i));
-                }
-            }
+            keys.Add(new PropertyKey((uint)i));
         }
 
         if (_map is Shape shape)
@@ -1015,20 +947,8 @@ public partial class JsObject : JsCell
         SetOwnSlot(key, new JsValue(value), (flags & PropertyFlags.Default) | PropertyFlags.Lazy);
     }
 
-    /// <summary>Gets the dense elements (the array fast paths); the holes are absent properties.</summary>
-    internal JsValue[]? DenseElements => _elements;
-
     /// <summary>Gets whether the array indices of the object are all in the dense elements.</summary>
     internal bool HasOnlyDenseElements => (Flags & ObjectFlags.IndexedProperties) == 0;
-
-    /// <summary>Truncates the dense elements (the length of an array decreased).</summary>
-    internal void TruncateElements(uint length)
-    {
-        if (_elements is { } elements && length < (uint)elements.Length)
-        {
-            elements.AsSpan((int)length).Fill(JsValue.Hole);
-        }
-    }
 
     /// <summary>Gets the own property keys that are array indices and are in the property table.</summary>
     internal IEnumerable<PropertyKey> GetIndexedTableKeys()

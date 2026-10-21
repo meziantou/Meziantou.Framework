@@ -69,11 +69,8 @@ internal static class ArrayOperations
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool TryGetDenseElement(JsObject obj, long index, out JsValue value)
     {
-        if (obj.DenseElements is { } elements && (ulong)index < (ulong)elements.Length && (obj is JsArray || !obj.IsExotic))
-        {
-            value = elements[index];
-            return !value.IsHole;
-        }
+        if ((ulong)index <= uint.MaxValue && (obj is JsArray || !obj.IsExotic))
+            return obj.TryGetDenseElement((uint)index, out value);
 
         value = default;
         return false;
@@ -144,14 +141,8 @@ internal static class ArrayOperations
             if (!prototype.HasOnlyDenseElements)
                 return false;
 
-            if (prototype.DenseElements is { } elements)
-            {
-                foreach (var element in elements)
-                {
-                    if (!element.IsHole)
-                        return false;
-                }
-            }
+            if (prototype.HasAnyDenseElement())
+                return false;
         }
 
         return true;
@@ -172,17 +163,10 @@ internal static class ArrayOperations
 
         // The indices greater than 2^32-2 are not array indices: they are not tracked
         var next = Math.Min(length, uint.MaxValue);
-        if (obj.DenseElements is { } elements)
+        var nextDense = obj.NextDenseElement(k, next);
+        if (nextDense >= 0)
         {
-            var end = Math.Min(elements.Length, next);
-            for (var i = k; i < end; i++)
-            {
-                if (!elements[i].IsHole)
-                {
-                    next = i;
-                    break;
-                }
-            }
+            next = nextDense;
         }
 
         if (!obj.HasOnlyDenseElements)
@@ -208,18 +192,7 @@ internal static class ArrayOperations
         if (k >= uint.MaxValue || (obj is not JsArray && obj.IsExotic) || !PrototypesHaveNoElements(obj))
             return k;
 
-        long previous = -1;
-        if (obj.DenseElements is { } elements)
-        {
-            for (var i = Math.Min(k, elements.Length - 1); i >= 0; i--)
-            {
-                if (!elements[i].IsHole)
-                {
-                    previous = i;
-                    break;
-                }
-            }
-        }
+        var previous = obj.PreviousDenseElement(k);
 
         if (!obj.HasOnlyDenseElements)
         {
@@ -245,17 +218,8 @@ internal static class ArrayOperations
         if (obj is not JsArray candidate || !candidate.HasOnlyDenseElements || !candidate.IsLengthWritable || !candidate.IsExtensibleSlot || candidate.Length != length)
             return false;
 
-        if (length > 0)
-        {
-            if (candidate.DenseElements is not { } elements || elements.Length < length)
-                return false;
-
-            foreach (var element in elements.AsSpan(0, (int)length))
-            {
-                if (element.IsHole)
-                    return false;
-            }
-        }
+        if (length > 0 && !candidate.IsDensePacked(length))
+            return false;
 
         if (!PrototypesHaveNoElements(candidate))
             return false;

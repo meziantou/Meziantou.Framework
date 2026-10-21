@@ -114,6 +114,23 @@ public sealed class InterpreterTests
         Assert.Equal(expected, Run(code));
     }
 
+    // The dense elements are stored by kind (numbers, references, mixed): the transitions keep the values and the holes
+    [Theory]
+    [InlineData("var a = [1, 2.5, NaN]; a.push('s'); a.push(undefined); a.join() + a.length", "1,2.5,NaN,s,5")]
+    [InlineData("var a = ['a', null, undefined]; a.push(3); a[1] + ',' + a[2] + ',' + a[3] + ',' + a.length", "null,undefined,3,4")]
+    [InlineData("var a = [1, , 3]; a.push('x'); (1 in a) + ',' + a.length + ',' + a[2] + a[3]", "false,4,3x")]
+    [InlineData("var a = ['a', , 'c']; a[0] = 1; (1 in a) + ',' + a[0] + ',' + a[2]", "false,1,c")]
+    [InlineData("var a = [1, 2, 3]; a[1] = 'x'; delete a[0]; (0 in a) + ',' + a.join()", "false,,x,3")]
+    [InlineData("var a = [1, 2, 3, 4]; a.splice(1, 0, 9, 8); a.reverse().join()", "4,3,2,8,9,1")]
+    [InlineData("var a = ['a', 'b', 'c']; a.splice(0, 1, 'x', 'y'); a.reverse().join()", "c,b,y,x")]
+    [InlineData("var a = [1, 2, 3]; a.length = 1; a.push(5); a.join() + (2 in a)", "1,5false")]
+    [InlineData("var f = new Float64Array(new BigUint64Array([0x7FF8DEADBEEF0001n]).buffer); var a = [1, 2]; a[1] = f[0]; (1 in a) + ',' + a[1] + ',' + a.length", "true,NaN,2")]
+    [InlineData("var a = []; a[3] = 1.5; a[1] = 2; (0 in a) + ',' + a[3] + a[1] + ',' + Object.keys(a).join()", "false,1.52,1,3")]
+    public void Evaluate_ElementKinds(string code, string expected)
+    {
+        Assert.Equal(expected, Run(code));
+    }
+
     // for-in: the keys of the shape, the prototypes without enumerable keys, the names hidden by the visited objects
     [Theory]
     [InlineData("var o = { a: 1, b: 2, c: 3 }; var r = []; for (var k in o) { r.push(k); if (k === 'a') delete o.b; } r.join()", "a,c")]

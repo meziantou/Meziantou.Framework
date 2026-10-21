@@ -10,6 +10,7 @@
     <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.Language.Regex/Meziantou.Framework.Language.Regex.csproj" />
     <ProjectReference Include="../Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
   </ItemGroup>
   <ItemGroup>

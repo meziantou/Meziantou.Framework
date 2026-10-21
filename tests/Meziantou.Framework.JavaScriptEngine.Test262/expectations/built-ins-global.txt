@@ -1,8 +1,0 @@
-built-ins/global/S10.2.3_A1.1_T3.js:sloppy
-built-ins/global/S10.2.3_A1.1_T3.js:strict
-built-ins/global/S10.2.3_A1.2_T3.js:sloppy
-built-ins/global/S10.2.3_A1.2_T3.js:strict
-built-ins/global/S10.2.3_A1.3_T3.js:sloppy
-built-ins/global/S10.2.3_A1.3_T3.js:strict
-built-ins/global/global-object.js:sloppy
-built-ins/global/global-object.js:strict

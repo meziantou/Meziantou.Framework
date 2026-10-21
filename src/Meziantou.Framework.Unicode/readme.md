@@ -74,6 +74,10 @@ Span<UnicodeScript> scripts = stackalloc UnicodeScript[UnicodeScripts.MaxScriptE
 var count = UnicodeScripts.GetScriptExtensions(0x30FC, scripts);
 Assert.Equal<UnicodeScript>([UnicodeScript.Hiragana, UnicodeScript.Katakana], scripts[..count]);
 Assert.True(UnicodeScripts.HasScriptExtension(0x30FC, UnicodeScript.Katakana));
+
+// The names of PropertyValueAliases.txt
+Assert.True(UnicodeScripts.TryParseScript("Grek", out var script));
+Assert.Equal(UnicodeScript.Greek, script);
 ```
 <!-- endref -->
 
@@ -102,6 +106,9 @@ Assert.True(UnicodeProperties.IsIdStart('a')); // UAX #31
 Assert.True(UnicodeProperties.IsIdContinue('0'));
 Assert.Equal('a', UnicodeProperties.ToSimpleLowercase('A'));
 Assert.Equal(0x01C5, UnicodeProperties.ToSimpleTitlecase(0x01C6)); // 'ǆ' to 'ǅ'
+Assert.Equal('k', UnicodeProperties.ToSimpleCaseFold(0x212A)); // the Kelvin sign
+Assert.True(UnicodeProperties.HasBinaryProperty(0x00E9, UnicodeBinaryProperty.Alphabetic));
+Assert.Equal([new UnicodeRange('0', '9'), new UnicodeRange('A', 'F'), new UnicodeRange('a', 'f')], UnicodeProperties.GetBinaryPropertyRanges(UnicodeBinaryProperty.ASCIIHexDigit));
 ```
 <!-- endref -->
 
@@ -128,6 +135,11 @@ Assert.Equal<int>(['i', 0x0307], mapping[..length]);
 - The values are those of one version of the Unicode Standard, `UnicodeProperties.UnicodeVersion` (18.0.0), whatever
   the version the runtime implements. The results are the same on every platform and every framework version, and
   do not need ICU.
+- `HasBinaryProperty` and `GetBinaryPropertyRanges` give the binary properties of the Unicode Character Database
+  (`Alphabetic`, `White_Space`, `Changes_When_Casefolded`, the emoji properties...), except the contributory
+  `Other_*` properties. `ToSimpleCaseFold` is the simple case folding of `CaseFolding.txt` (statuses `C` and `S`).
+- `UnicodeEmoji.GetSequences` lists the emoji sequences of the properties of strings of
+  [UTS #51](https://www.unicode.org/reports/tr51/), such as `RGI_Emoji_Flag_Sequence`.
 - An unassigned code point has the default value the standard gives to its range, for instance `RightToLeft` in the
   Hebrew block. An integer that is not a code point has the default value of the property.
 - The numeric values of the enumerations (`UnicodeScript`, `UnicodeLineBreakClass`, ...) never change: a later

@@ -18,4 +18,22 @@ public sealed class JsSymbol : JsCell
 
     /// <summary>Returns <c>Symbol(description)</c> (SymbolDescriptiveString).</summary>
     public override string ToString() => "Symbol(" + Description + ")";
+
+    /// <summary>Gets the well-known symbol <c>Symbol.iterator</c>.</summary>
+    public static JsSymbol Iterator => WellKnownSymbols.Iterator;
+
+    /// <summary>Gets the well-known symbol <c>Symbol.asyncIterator</c>.</summary>
+    public static JsSymbol AsyncIterator => WellKnownSymbols.AsyncIterator;
+
+    /// <summary>Gets the well-known symbol <c>Symbol.toStringTag</c>.</summary>
+    public static JsSymbol ToStringTag => WellKnownSymbols.ToStringTag;
+
+    /// <summary>Gets the well-known symbol <c>Symbol.unscopables</c>.</summary>
+    public static JsSymbol Unscopables => WellKnownSymbols.Unscopables;
+
+    /// <summary>Gets the well-known symbol <c>Symbol.toPrimitive</c>.</summary>
+    public static JsSymbol ToPrimitive => WellKnownSymbols.ToPrimitive;
+
+    /// <summary>Gets the well-known symbol <c>Symbol.hasInstance</c>.</summary>
+    public static JsSymbol HasInstance => WellKnownSymbols.HasInstance;
 }

@@ -4,7 +4,7 @@ namespace Meziantou.Framework.JavaScriptEngine.Tests.Builtins;
 internal sealed class BuiltinsTestContext : IDisposable
 {
     private readonly JsEngine _engine;
-    private readonly JsEngine.EngineScope _scope;
+    private readonly JsEngineScope _scope;
 
     public BuiltinsTestContext()
     {

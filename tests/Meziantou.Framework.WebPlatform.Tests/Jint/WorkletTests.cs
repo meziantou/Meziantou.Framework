@@ -1,5 +1,4 @@
 using Meziantou.Framework.WebPlatform.Dom;
-using Meziantou.Framework.WebPlatform.Jint;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
 
@@ -15,12 +14,12 @@ public sealed class WorkletTests : IDisposable
     private readonly List<ScriptError> _errors = [];
     private readonly List<(GlobalScope Global, string Text)> _messages = [];
     private readonly RecordingLoader _loader = new();
-    private readonly JintScriptEngine _engine = new();
+    private readonly ScriptEngine _engine = TestScriptEngines.Create();
 
     public void Dispose()
     {
         _contexts.Dispose();
-        _engine.Dispose();
+        TestScriptEngines.Dispose(_engine);
     }
 
     private Document Load(string html, WebPlatformFeatures? features = null)

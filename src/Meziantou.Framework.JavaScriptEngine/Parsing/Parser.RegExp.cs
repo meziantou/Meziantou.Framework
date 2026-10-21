@@ -9,6 +9,7 @@ internal sealed partial class Parser
 {
     // The result of the validation of the patterns (null: valid), shared by the parsers: the same scripts are parsed on every page load
     private static readonly ConcurrentDictionary<(string Pattern, string Flags), string?> RegExpValidationCache = new();
+    private static int s_validationCacheCount;
 
     private RegExpLiteral ParseRegularExpressionLiteral()
     {
@@ -75,8 +76,10 @@ internal sealed partial class Parser
             }
         }
 
-        if (RegExpValidationCache.Count > 10_000)
+        // ConcurrentDictionary.Count takes all the locks of the dictionary: the number of entries is tracked separately
+        if (Interlocked.Increment(ref s_validationCacheCount) > 10_000)
         {
+            Interlocked.Exchange(ref s_validationCacheCount, 0);
             RegExpValidationCache.Clear();
         }
 

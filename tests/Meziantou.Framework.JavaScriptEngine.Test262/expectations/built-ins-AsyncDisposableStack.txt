@@ -1,4 +1,0 @@
-built-ins/AsyncDisposableStack/prototype/move/returns-new-asyncdisposablestack-that-contains-moved-resources.js:sloppy
-built-ins/AsyncDisposableStack/prototype/move/returns-new-asyncdisposablestack-that-contains-moved-resources.js:strict
-built-ins/AsyncDisposableStack/prototype/use/gets-value-Symbol.dispose-property-after-trying-Symbol.asyncDispose.js:sloppy
-built-ins/AsyncDisposableStack/prototype/use/gets-value-Symbol.dispose-property-after-trying-Symbol.asyncDispose.js:strict

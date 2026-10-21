@@ -1,6 +1,6 @@
 using Meziantou.Framework.WebPlatform.Dom;
-using Meziantou.Framework.WebPlatform.Jint;
 using Meziantou.Framework.WebPlatform.Scripting;
+using Meziantou.Framework.WebPlatform.Tests.Scripting;
 using Meziantou.Framework.WebPlatform.Wasmtime;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Jint;
@@ -12,22 +12,22 @@ public sealed class WebAssemblyTests : IDisposable
 
     private readonly BrowsingContextScope _contexts = new();
     private readonly List<ScriptError> _errors = [];
-    private readonly JintScriptEngine _engine;
+    private readonly ScriptEngine _engine;
 
     public WebAssemblyTests()
         : this(options: null)
     {
     }
 
-    private WebAssemblyTests(JintScriptEngineOptions? options)
+    private WebAssemblyTests(TestScriptEngineOptions? options)
     {
-        _engine = new JintScriptEngine(options);
+        _engine = TestScriptEngines.Create(options);
     }
 
     public void Dispose()
     {
         _contexts.Dispose();
-        _engine.Dispose();
+        TestScriptEngines.Dispose(_engine);
     }
 
     /// <summary>The bytes of a module in the text format, as a JavaScript array literal.</summary>
@@ -356,7 +356,7 @@ public sealed class WebAssemblyTests : IDisposable
     public async Task Timeout_InterruptsAnInfiniteLoop()
     {
         var bytes = Wasm("""(module (func (export "loop") (loop $l (br $l))))""");
-        using var test = new WebAssemblyTests(new JintScriptEngineOptions { Timeout = TimeSpan.FromMilliseconds(500) });
+        using var test = new WebAssemblyTests(new TestScriptEngineOptions { Timeout = TimeSpan.FromMilliseconds(500) });
         var context = test._contexts.Create(new BrowsingContextOptions
         {
             ScriptEngine = test._engine,

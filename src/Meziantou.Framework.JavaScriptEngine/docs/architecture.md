@@ -134,10 +134,10 @@ internal static class MapBuiltins
 
 The job queue of the agent is in `JsEngine.Jobs.cs`. A job is a `JsJob`: a static `JsJobAction(state, argument)` (no
 closure), its state and argument, and the realm it runs in. `engine.EnqueuePromiseJob` / `EnqueueGenericJob` (callable
-from any thread) / `EnqueueTimeoutJob` go through the host hooks (`JsHostHooks`, `engine.HostHooks`), whose default
+from any thread) / `EnqueueTimeoutJob` go through the host hooks (`JsHost`, `engine.HostHooks`), whose default
 implementations queue the jobs in the engine. `engine.RunJobs()` runs the promise jobs first, then the generic jobs and
 the due timeout jobs (on the `TimeProvider` of the options), until the queue is empty; it clears the WeakRef kept
-objects after each job. A job exception goes to `JsHostHooks.ReportJobException` (default: rethrown by `RunJobs`).
+objects after each job. A job exception goes to `JsHost.ReportJobException` (default: rethrown by `RunJobs`).
 `EnterNestedJobQueue()` redirects the new jobs to a separate queue until it is disposed. The other hooks:
 HostPromiseRejectionTracker, HostMakeJobCallback / HostCallJobCallback (a host state captured by `then` and restored when
 the reaction runs).

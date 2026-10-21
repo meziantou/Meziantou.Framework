@@ -122,6 +122,18 @@ internal sealed class JsArrayBuffer : JsObject
         return _external.Span[.._byteLength];
     }
 
+    /// <summary>Gets the bytes of the buffer as a <see cref="Memory{T}"/> (see <see cref="GetSpan"/>).</summary>
+    public Memory<byte> GetMemory()
+    {
+        if (_array is { } array)
+            return array.AsMemory(0, _byteLength);
+
+        if (SharedBlock is { } block)
+            return block.GetMemory();
+
+        return _external[.._byteLength];
+    }
+
     /// <summary>Gets whether two buffers have the same [[ArrayBufferData]] (two SharedArrayBuffers can share a Shared Data Block).</summary>
     public bool HasSameData(JsArrayBuffer other)
     {

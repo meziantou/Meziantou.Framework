@@ -1,2 +1,0 @@
-built-ins/DisposableStack/prototype/move/returns-new-disposablestack-that-contains-moved-resources.js:sloppy
-built-ins/DisposableStack/prototype/move/returns-new-disposablestack-that-contains-moved-resources.js:strict

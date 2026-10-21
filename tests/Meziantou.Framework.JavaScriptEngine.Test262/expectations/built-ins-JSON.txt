@@ -1,4 +1,0 @@
-built-ins/JSON/stringify/value-string-escape-ascii.js:sloppy
-built-ins/JSON/stringify/value-string-escape-ascii.js:strict
-built-ins/JSON/stringify/value-tojson-not-function.js:sloppy
-built-ins/JSON/stringify/value-tojson-not-function.js:strict

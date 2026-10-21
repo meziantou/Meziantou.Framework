@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.JavaScriptEngine;
@@ -9,7 +10,7 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// for the maximum byte length: a growable block never moves, its byte length grows atomically. The memory is freed by
 /// the finalizer, once no SharedArrayBuffer references the block.
 /// </summary>
-internal sealed class JsSharedDataBlock
+public sealed class JsSharedDataBlock
 {
     private const nuint Alignment = 16;
 
@@ -107,6 +108,37 @@ internal sealed class JsSharedDataBlock
             _memory.AddMemoryPressure(newByteLength - current);
             Volatile.Write(ref _byteLength, newByteLength);
             return true;
+        }
+    }
+
+    /// <summary>Gets the bytes of the block (its current byte length) as a <see cref="Memory{T}"/>, which keeps the block alive.</summary>
+    public Memory<byte> GetMemory() => new BlockMemoryManager(this, ByteLength).Memory;
+
+    /// <summary>A memory manager over the native memory of a block.</summary>
+    private sealed class BlockMemoryManager(JsSharedDataBlock block, int length) : MemoryManager<byte>
+    {
+        public override Span<byte> GetSpan()
+        {
+            unsafe
+            {
+                return new Span<byte>((void*)block._pointer, length);
+            }
+        }
+
+        public override MemoryHandle Pin(int elementIndex = 0)
+        {
+            unsafe
+            {
+                return new MemoryHandle((byte*)block._pointer + elementIndex);
+            }
+        }
+
+        public override void Unpin()
+        {
+        }
+
+        protected override void Dispose(bool disposing)
+        {
         }
     }
 

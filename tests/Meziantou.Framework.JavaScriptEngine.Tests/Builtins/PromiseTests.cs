@@ -431,10 +431,10 @@ public sealed class PromiseTests
         var hooks = new RecordingHostHooks();
         test.Engine.HostHooks = hooks;
         var rejected = Rejected(test, 1);
-        Assert.Equal([(rejected, PromiseRejectionOperation.Reject)], hooks.Rejections);
+        Assert.Equal([(rejected, JsPromiseRejectionOperation.Reject)], hooks.Rejections);
 
         Then(rejected, JsValue.Undefined, test.Function((_, _) => default));
-        Assert.Equal([(rejected, PromiseRejectionOperation.Reject), (rejected, PromiseRejectionOperation.Handle)], hooks.Rejections);
+        Assert.Equal([(rejected, JsPromiseRejectionOperation.Reject), (rejected, JsPromiseRejectionOperation.Handle)], hooks.Rejections);
 
         // A second handler is not reported; a handled promise rejected later is not reported
         Then(rejected, JsValue.Undefined, test.Function((_, _) => default));
@@ -608,19 +608,19 @@ public sealed class PromiseTests
         Assert.Same(test.Realm, test.Engine.CurrentRealm);
     }
 
-    private sealed class RecordingHostHooks : JsHostHooks
+    private sealed class RecordingHostHooks : JsHost
     {
-        public List<(JsPromise Promise, PromiseRejectionOperation Operation)> Rejections { get; } = [];
+        public List<(JsObject Promise, JsPromiseRejectionOperation Operation)> Rejections { get; } = [];
 
         public List<JsException> Exceptions { get; } = [];
 
         public string? CurrentState { get; set; }
 
-        public override void PromiseRejectionTracker(JsEngine engine, JsPromise promise, PromiseRejectionOperation operation) => Rejections.Add((promise, operation));
+        public override void PromiseRejectionTracker(JsEngine engine, JsObject promise, JsPromiseRejectionOperation operation) => Rejections.Add((promise, operation));
 
-        public override JobCallback MakeJobCallback(JsEngine engine, JsObject callback) => new(callback, CurrentState);
+        public override JsJobCallback MakeJobCallback(JsEngine engine, JsObject callback) => new(callback, CurrentState);
 
-        public override JsValue CallJobCallback(JsEngine engine, in JobCallback jobCallback, JsValue thisValue, ReadOnlySpan<JsValue> arguments)
+        public override JsValue CallJobCallback(JsEngine engine, in JsJobCallback jobCallback, JsValue thisValue, ReadOnlySpan<JsValue> arguments)
         {
             var previous = CurrentState;
             CurrentState = (string?)jobCallback.HostDefined;

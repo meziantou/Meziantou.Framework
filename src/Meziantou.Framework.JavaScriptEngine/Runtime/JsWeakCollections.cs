@@ -59,7 +59,7 @@ internal sealed class JsFinalizationRegistry : JsObject
     private readonly ConcurrentQueue<FinalizationRegistryCell> _collectedCells = new();
     private int _cleanupScheduled;
 
-    public JsFinalizationRegistry(JsObject prototype, JsRealm realm, JobCallback cleanupCallback)
+    public JsFinalizationRegistry(JsObject prototype, JsRealm realm, JsJobCallback cleanupCallback)
         : base(prototype, ObjectClass.FinalizationRegistry)
     {
         Realm = realm;
@@ -70,7 +70,7 @@ internal sealed class JsFinalizationRegistry : JsObject
     public JsRealm Realm { get; }
 
     /// <summary>[[CleanupCallback]]</summary>
-    public JobCallback CleanupCallback { get; }
+    public JsJobCallback CleanupCallback { get; }
 
     /// <summary>Gets the number of cells (the targets not yet cleaned up nor unregistered).</summary>
     public int CellCount => _cells.Count;

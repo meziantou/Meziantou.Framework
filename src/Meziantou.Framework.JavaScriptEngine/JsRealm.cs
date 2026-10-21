@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.JavaScriptEngine;
 
 /// <summary>A realm (https://tc39.es/ecma262/#sec-code-realms): a global object, its global environment and the intrinsics.</summary>
-public sealed class JsRealm
+public sealed partial class JsRealm
 {
     internal JsRealm(JsEngine engine)
     {
@@ -48,8 +48,24 @@ public sealed class JsRealm
     {
         using var scope = Engine.Enter();
         var source = new Text.SourceText(code, url);
-        var template = Compile(source);
-        var script = new Interpreter.ScriptRecord(this, source, hostDefined: null, mutedErrors: false);
+        return Run(source, Compile(source), hostDefined: null, mutedErrors: false);
+    }
+
+    /// <summary>Runs a prepared script in this realm (ScriptEvaluation) and returns its completion value.</summary>
+    /// <param name="script">The script.</param>
+    /// <param name="hostDefined">The data of the host associated with the script ([[HostDefined]]).</param>
+    /// <param name="mutedErrors">Whether the errors of the script are muted (a cross-origin script fetched without CORS).</param>
+    /// <exception cref="JsException">The script threw an exception.</exception>
+    public JsValue Execute(JsPreparedScript script, object? hostDefined = null, bool mutedErrors = false)
+    {
+        ArgumentNullException.ThrowIfNull(script);
+        using var scope = Engine.Enter();
+        return Run(script.Source, script.Template, hostDefined, mutedErrors);
+    }
+
+    private JsValue Run(Text.SourceText source, Compiler.FunctionTemplate template, object? hostDefined, bool mutedErrors)
+    {
+        var script = new JsScript(this, source, hostDefined, mutedErrors);
         var frame = new Interpreter.Frame(template, this, GlobalEnvironment, [])
         {
             Script = script,

@@ -17,6 +17,7 @@ public sealed partial class JsEngine : IDisposable
     public JsEngine(JsEngineOptions? options = null)
     {
         Options = options ?? new JsEngineOptions();
+        HostHooks = Options.Host ?? JsHost.Default;
     }
 
     /// <summary>Gets the options of the engine.</summary>
@@ -26,7 +27,7 @@ public sealed partial class JsEngine : IDisposable
     internal static JsEngine? Current => s_current;
 
     /// <summary>Gets the realm of the running execution context (the current realm).</summary>
-    internal JsRealm? CurrentRealm { get; set; }
+    public JsRealm? CurrentRealm { get; internal set; }
 
     /// <summary>Gets the depth of the running calls.</summary>
     internal int CallDepth { get; set; }
@@ -46,12 +47,15 @@ public sealed partial class JsEngine : IDisposable
         return realm;
     }
 
-    /// <summary>Makes the engine the engine of the current thread until the returned scope is disposed.</summary>
-    internal EngineScope Enter()
+    /// <summary>
+    /// Makes the engine the engine of the current thread until the returned scope is disposed. The methods of the objects
+    /// (<see cref="JsObject.GetProperty(JsPropertyKey)"/>...) need it when they are not called by the engine (a callback).
+    /// </summary>
+    public JsEngineScope Enter()
     {
         var previous = s_current;
         s_current = this;
-        return new EngineScope(previous);
+        return new JsEngineScope(previous);
     }
 
     /// <summary>Enters a call: checks the recursion limit and makes the realm of the callee current; returns the previous realm.</summary>
@@ -90,8 +94,5 @@ public sealed partial class JsEngine : IDisposable
     {
     }
 
-    internal readonly struct EngineScope(JsEngine? previous) : IDisposable
-    {
-        public void Dispose() => s_current = previous;
-    }
+    internal static void RestoreCurrent(JsEngine? previous) => s_current = previous;
 }

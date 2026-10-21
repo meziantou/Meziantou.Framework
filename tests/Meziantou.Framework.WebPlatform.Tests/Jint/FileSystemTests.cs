@@ -1,6 +1,5 @@
 using System.Text;
 using Meziantou.Framework.WebPlatform.Dom;
-using Meziantou.Framework.WebPlatform.Jint;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
 
@@ -14,12 +13,12 @@ public sealed class FileSystemTests : IDisposable
     private readonly BrowsingContextScope _contexts = new();
     private readonly List<ScriptError> _errors = [];
     private readonly RecordingLoader _loader = new();
-    private readonly JintScriptEngine _engine = new();
+    private readonly ScriptEngine _engine = TestScriptEngines.Create();
 
     public void Dispose()
     {
         _contexts.Dispose();
-        _engine.Dispose();
+        TestScriptEngines.Dispose(_engine);
     }
 
     private Document Load(string html, string url = "https://example.com/dir/page.html", bool scripting = true, FileSystemBackend? fileSystem = null, StorageOptions? storage = null, WebPlatformFeatures? features = null)

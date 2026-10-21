@@ -3,7 +3,7 @@ namespace Meziantou.Framework.JavaScriptEngine.Tests.Builtins;
 /// <summary>An engine, a realm and the engine scope, with helpers to call the built-ins from C# (the interpreter is not available yet).</summary>
 internal sealed class CollectionsTestEngine : IDisposable
 {
-    private readonly JsEngine.EngineScope _scope;
+    private readonly JsEngineScope _scope;
 
     public CollectionsTestEngine(JsEngineOptions? options = null)
     {

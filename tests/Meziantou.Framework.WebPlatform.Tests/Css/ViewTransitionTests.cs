@@ -1,5 +1,6 @@
 using Meziantou.Framework.WebPlatform.Dom;
-using Meziantou.Framework.WebPlatform.Jint;
+using Meziantou.Framework.WebPlatform.Scripting;
+using Meziantou.Framework.WebPlatform.Tests.Scripting;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Css;
@@ -349,7 +350,7 @@ public sealed class ViewTransitionTests : IDisposable
     [Fact]
     public void CrossDocumentTransition_PageSwapAndPageReveal()
     {
-        using var engine = new JintScriptEngine();
+        using var engine = TestScriptEngines.CreateDisposable();
         var pages = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["https://example.com/old"] = """
@@ -393,7 +394,7 @@ public sealed class ViewTransitionTests : IDisposable
     [Fact]
     public void Script_StartViewTransitionAndPromises()
     {
-        using var engine = new JintScriptEngine();
+        using var engine = TestScriptEngines.CreateDisposable();
         var document = Load(Page + """
             <script>
               const log = [];
@@ -625,7 +626,7 @@ public sealed class ViewTransitionTests : IDisposable
     [Fact]
     public void Scoped_Script_ElementStartViewTransition()
     {
-        using var engine = new JintScriptEngine();
+        using var engine = TestScriptEngines.CreateDisposable();
         var document = Load(ScopedPage + """
             <script>
               const log = [];

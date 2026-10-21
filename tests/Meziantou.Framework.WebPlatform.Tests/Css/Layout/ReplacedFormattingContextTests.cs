@@ -1,6 +1,8 @@
 using System.Globalization;
 using Meziantou.Framework.WebPlatform.Css.Layout;
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.Scripting;
+using Meziantou.Framework.WebPlatform.Tests.Scripting;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Css.Layout;
@@ -252,7 +254,7 @@ public sealed class ReplacedFormattingContextTests : IDisposable
     public void Canvas_NaturalSize(string html, double width, double height)
     {
         // The canvas is a replaced element when scripting is enabled
-        using var engine = new Meziantou.Framework.WebPlatform.Jint.JintScriptEngine();
+        using var engine = TestScriptEngines.CreateDisposable();
         var context = _contexts.Create(new BrowsingContextOptions { TimeProvider = _clock, ScriptEngine = engine, Viewport = new ViewportOptions { Width = 800, Height = 600 } });
         var document = context.Navigate("https://example.com/", _ => "<!DOCTYPE html><style>body { margin: 0 }</style>" + html);
         _contexts.EventLoop.RunUntilIdle();

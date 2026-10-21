@@ -3,7 +3,7 @@ namespace Meziantou.Framework.JavaScriptEngine.Tests.Builtins;
 /// <summary>An engine and a realm entered on the current thread, to call the built-ins directly.</summary>
 internal sealed class TestRealm : IDisposable
 {
-    private readonly JsEngine.EngineScope _scope;
+    private readonly JsEngineScope _scope;
 
     public TestRealm()
     {

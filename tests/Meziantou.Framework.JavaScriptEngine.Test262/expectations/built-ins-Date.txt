@@ -1,11 +1,3 @@
-built-ins/Date/prototype/toDateString/format.js:sloppy
-built-ins/Date/prototype/toDateString/format.js:strict
-built-ins/Date/prototype/toDateString/negative-year.js:sloppy
-built-ins/Date/prototype/toDateString/negative-year.js:strict
-built-ins/Date/prototype/toString/format.js:sloppy
-built-ins/Date/prototype/toString/format.js:strict
-built-ins/Date/prototype/toString/negative-year.js:sloppy
-built-ins/Date/prototype/toString/negative-year.js:strict
 built-ins/Date/prototype/toTemporalInstant/length.js:sloppy
 built-ins/Date/prototype/toTemporalInstant/length.js:strict
 built-ins/Date/prototype/toTemporalInstant/name.js:sloppy
@@ -22,9 +14,3 @@ built-ins/Date/prototype/toTemporalInstant/this-value-non-object.js:sloppy
 built-ins/Date/prototype/toTemporalInstant/this-value-non-object.js:strict
 built-ins/Date/prototype/toTemporalInstant/this-value-valid-date.js:sloppy
 built-ins/Date/prototype/toTemporalInstant/this-value-valid-date.js:strict
-built-ins/Date/prototype/toTimeString/format.js:sloppy
-built-ins/Date/prototype/toTimeString/format.js:strict
-built-ins/Date/prototype/toUTCString/format.js:sloppy
-built-ins/Date/prototype/toUTCString/format.js:strict
-built-ins/Date/prototype/toUTCString/negative-year.js:sloppy
-built-ins/Date/prototype/toUTCString/negative-year.js:strict

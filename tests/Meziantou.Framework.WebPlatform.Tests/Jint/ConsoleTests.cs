@@ -1,5 +1,4 @@
 using Meziantou.Framework.WebPlatform.Dom;
-using Meziantou.Framework.WebPlatform.Jint;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
 using Microsoft.Extensions.Time.Testing;
@@ -13,12 +12,12 @@ public sealed class ConsoleTests : IDisposable
     private readonly FakeTimeProvider _clock = new();
     private readonly List<ScriptError> _errors = [];
     private readonly List<ConsoleMessage> _messages = [];
-    private readonly JintScriptEngine _engine = new();
+    private readonly ScriptEngine _engine = TestScriptEngines.Create();
 
     public void Dispose()
     {
         _contexts.Dispose();
-        _engine.Dispose();
+        TestScriptEngines.Dispose(_engine);
     }
 
     private Document Run(string script, bool handleMessages = true)

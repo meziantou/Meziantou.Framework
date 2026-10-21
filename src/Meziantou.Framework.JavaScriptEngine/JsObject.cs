@@ -6,7 +6,7 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// A JavaScript object. The internal methods (https://tc39.es/ecma262/#sec-object-internal-methods-and-internal-slots)
 /// implement the ordinary object behavior; the exotic objects (arrays, proxies, arguments, typed arrays...) override them.
 /// </summary>
-public class JsObject : JsCell
+public partial class JsObject : JsCell
 {
     // Elements in which a hole is an absent property: the dense storage of the array indices (attributes: W/E/C)
     private JsValue[]? _elements;

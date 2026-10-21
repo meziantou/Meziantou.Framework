@@ -94,6 +94,16 @@ internal static partial class JsInterpreter
         }
     }
 
+    /// <summary>Gets the source position of the instruction before the position of a frame (the running instruction, or the call of a caller frame).</summary>
+    internal static JsSourceLocation GetLocation(Frame frame) => GetLocation(frame.Code, frame.Pc);
+
+    private static JsSourceLocation GetLocation(FunctionTemplate code, int pc)
+    {
+        var offset = code.GetSourceOffset(Math.Max(0, pc - 1));
+        var (line, column) = code.Source.GetLineAndColumn(Math.Max(0, offset));
+        return new JsSourceLocation(code.Source.Url, line, column);
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ThrowTdz(PropertyKey name) => ThrowHelper.ThrowReferenceError($"Cannot access '{name}' before initialization");
 
@@ -718,8 +728,9 @@ internal static partial class JsInterpreter
                     {
                         var exception = values[--sp];
                         frame.Sp = sp;
+                        var location = GetLocation(frame.Code, pc);
                         if (!HandleException(ref frame, entry, engine, exception, isFaultingFrame: true))
-                            throw new JsException(exception);
+                            throw new JsException(exception, location);
 
                         template = frame.Code;
                         code = template.Code;

@@ -52,9 +52,13 @@ internal static class Test262Executor
             ModuleLoader = loader,
         });
 
+        // [[CanBlock]]: the tests flagged CanBlockIsFalse expect Atomics.wait to throw in the main agent
+        engine.CanBlock = !metadata.HasFlag("CanBlockIsFalse");
+        using var agents = new Test262Agents(cancellation.Token);
         var output = new StringBuilder();
         var realm = engine.CreateRealm();
-        Test262Host.Install(realm, output);
+        Test262Host.Install(realm, output, agents);
+        agents.InstallSetTimeout(realm);
         try
         {
             if (!metadata.IsRaw)
@@ -67,13 +71,13 @@ internal static class Test262Executor
 
             if (mode == Test262Mode.Module)
             {
-                RunModule(engine, realm, loader, test, source);
+                RunModule(engine, realm, loader, agents, test, source);
             }
             else
             {
                 var code = mode == Test262Mode.Strict ? "\"use strict\";\n" + source : source;
                 realm.Execute(code, test.FullPath);
-                engine.RunJobs();
+                agents.RunJobs(engine);
             }
         }
         catch (JsException ex)
@@ -89,6 +93,9 @@ internal static class Test262Executor
 
             return "Uncaught exception: " + ex.Message;
         }
+
+        if (agents.GetError() is { } agentError)
+            return agentError;
 
         if (metadata.NegativePhase is not null)
             return $"Expected a {metadata.NegativeType} ({metadata.NegativePhase}), but no exception was thrown";
@@ -107,16 +114,16 @@ internal static class Test262Executor
     }
 
     /// <summary>Loads, links and evaluates the module of a test; an error of a phase is thrown.</summary>
-    private static void RunModule(JsEngine engine, JsRealm realm, Test262ModuleLoader loader, Test262Test test, string source)
+    private static void RunModule(JsEngine engine, JsRealm realm, Test262ModuleLoader loader, Test262Agents agents, Test262Test test, string source)
     {
         var module = realm.ParseModule(source, test.FullPath);
         loader.Register(realm, test.FullPath, module);
         var loading = module.LoadRequestedModules();
-        engine.RunJobs();
+        agents.RunJobs(engine);
         ThrowIfRejected(loading);
         module.Link();
         var evaluation = module.Evaluate();
-        engine.RunJobs();
+        agents.RunJobs(engine);
         ThrowIfRejected(evaluation);
     }
 

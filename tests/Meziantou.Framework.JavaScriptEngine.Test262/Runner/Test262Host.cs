@@ -5,7 +5,8 @@ namespace Meziantou.Framework.JavaScriptEngine.Test262.Runner;
 /// <summary>The host-defined functions of test262: <c>print</c> and the <c>$262</c> object.</summary>
 internal static class Test262Host
 {
-    public static JsObject Install(JsRealm realm, StringBuilder output)
+    /// <summary>Defines <c>print</c> and <c>$262</c>; with <paramref name="agents"/>, <c>$262.agent</c> is the agent object of the main agent.</summary>
+    public static JsObject Install(JsRealm realm, StringBuilder output, Test262Agents? agents = null)
     {
         var global = realm.GlobalObject;
         realm.DefineMethod(global, "print", 1, (_, _, arguments, _) =>
@@ -22,7 +23,7 @@ internal static class Test262Host
         realm.DefineMethod(host, "createRealm", 0, (_, _, _, _) =>
         {
             var newRealm = realm.Engine.CreateRealm();
-            return Install(newRealm, output);
+            return Install(newRealm, output, agents);
         });
 
         realm.DefineMethod(host, "evalScript", 1, (_, _, arguments, _) =>
@@ -54,6 +55,7 @@ internal static class Test262Host
         htmlDda.Flags |= ObjectFlags.IsHtmlDda;
         host.DefineBuiltIn("IsHTMLDDA", htmlDda);
 
+        agents?.InstallMainAgent(realm, host);
         global.DefineBuiltIn("$262", host);
         return host;
     }

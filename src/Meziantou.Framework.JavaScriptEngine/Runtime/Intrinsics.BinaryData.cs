@@ -32,29 +32,11 @@ internal sealed partial class Intrinsics
     /// <summary>%Atomics%</summary>
     public JsObject Atomics { get; private set; } = null!;
 
-    /// <summary>
-    /// The prototype of the iterators of the TypedArrays until %ArrayIteratorPrototype% exists (TEMPORARY: the Array
-    /// built-ins create %ArrayIteratorPrototype%; the TypedArray iterators must use it).
-    /// </summary>
-    public JsObject TypedArrayIteratorPrototype { get; private set; } = null!;
-
     /// <summary>Gets the constructor of the element type (e.g. %Int8Array%).</summary>
     public JsFunction GetTypedArrayConstructor(TypedArrayElementType type) => _typedArrayConstructors[(int)type];
 
     /// <summary>Gets the prototype of the element type (e.g. %Int8Array.prototype%).</summary>
     public JsObject GetTypedArrayPrototype(TypedArrayElementType type) => _typedArrayPrototypes[(int)type];
-
-    /// <summary>Gets %Promise% (Atomics.waitAsync), or null when the Promise built-ins are not initialized.</summary>
-    public JsObject? GetPromiseConstructorForAtomics()
-    {
-        foreach (var (name, value, _) in _globals)
-        {
-            if (name == new PropertyKey("Promise") && value.Cell is JsObject promise)
-                return promise;
-        }
-
-        return null;
-    }
 
     partial void InitializeBinaryData()
     {
@@ -62,7 +44,6 @@ internal sealed partial class Intrinsics
         SharedArrayBufferPrototype = new JsObject(ObjectPrototype);
         DataViewPrototype = new JsObject(ObjectPrototype);
         TypedArrayPrototype = new JsObject(ObjectPrototype);
-        TypedArrayIteratorPrototype = new JsObject(IteratorPrototype);
         foreach (var type in Enum.GetValues<TypedArrayElementType>())
         {
             _typedArrayPrototypes[(int)type] = new JsObject(TypedArrayPrototype);

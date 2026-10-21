@@ -746,42 +746,37 @@ public sealed class BinaryDataTests
     public void Atomics_WaitAsync()
     {
         using var context = new FundamentalsTestContext();
-
-        // A minimal Promise constructor: the executor receives a resolve function that records the value
-        var resolved = new List<string>();
-        var promiseConstructor = context.Function((_, args, _) =>
-        {
-            var resolve = context.Function((_, values) =>
-            {
-                resolved.Add(values[0].AsString());
-                return JsValue.Undefined;
-            });
-            args[0].AsObject().Call(JsValue.Undefined, [resolve, context.Function((_, _) => JsValue.Undefined)]);
-            return context.NewObject();
-        }, "Promise", 1, isConstructor: true);
-        context.Intrinsics.AddGlobal("Promise", promiseConstructor);
-
         var shared = New(context, "Int32Array", New(context, "SharedArrayBuffer", 8));
         var result = context.CallStatic("Atomics", "waitAsync", shared, 0, 0);
         Assert.True(Get(result, "async").AsBoolean());
-        Assert.True(Get(result, "value").IsObject);
+        var promise = (JsPromise)Get(result, "value").AsObject();
         Assert.Equal(1, context.Engine.PendingAtomicsWaitAsyncCount);
         Assert.Equal(1, context.CallStatic("Atomics", "notify", shared, 0).AsNumber());
-        Assert.True(context.Engine.RunAtomicsJobs());
-        Assert.Equal(["ok"], resolved);
+        context.Engine.RunJobsAndWaitForAtomicsWaiters();
+        Assert.Equal(PromiseState.Fulfilled, promise.State);
+        Assert.Equal("ok", promise.Result.AsString());
 
         result = context.CallStatic("Atomics", "waitAsync", shared, 1, 0, 1);
-        Assert.True(Get(result, "async").AsBoolean());
-        var deadline = DateTime.UtcNow.AddSeconds(30);
-        while (!context.Engine.HasPendingAtomicsJobs && DateTime.UtcNow < deadline)
-        {
-            Thread.Sleep(1);
-        }
-
-        Assert.True(context.Engine.RunAtomicsJobs());
-        Assert.Equal(["ok", "timed-out"], resolved);
+        promise = (JsPromise)Get(result, "value").AsObject();
+        context.Engine.RunJobsAndWaitForAtomicsWaiters();
+        Assert.Equal("timed-out", promise.Result.AsString());
         Assert.Equal(0, context.Engine.PendingAtomicsWaitAsyncCount);
         Assert.Equal(0, context.CallStatic("Atomics", "notify", shared, 1).AsNumber());
+
+        // A notification from another thread
+        result = context.CallStatic("Atomics", "waitAsync", shared, 1, 0);
+        promise = (JsPromise)Get(result, "value").AsObject();
+        var block = ((JsTypedArray)shared).ViewedArrayBuffer.SharedBlock!;
+        var thread = new Thread(() =>
+        {
+            using var other = new FundamentalsTestContext();
+            var otherView = New(other, "Int32Array", JsArrayBuffer.CreateShared(other.Realm, block));
+            other.CallStatic("Atomics", "notify", otherView, 1);
+        });
+        thread.Start();
+        context.Engine.RunJobsAndWaitForAtomicsWaiters();
+        thread.Join();
+        Assert.Equal("ok", promise.Result.AsString());
     }
 
     // ------------------------------------------------------------------------------------------------------------------

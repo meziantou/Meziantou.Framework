@@ -14,9 +14,6 @@ internal sealed class AtomicsWaiter
 
     /// <summary>Gets the callback of an asynchronous waiter: called (in the critical section, on any thread) with true when notified, false when timed out.</summary>
     public Action<bool>? OnResolved { get; init; }
-
-    /// <summary>Gets or sets the timer of the timeout of an asynchronous waiter.</summary>
-    public Timer? Timer { get; set; }
 }
 
 /// <summary>
@@ -82,7 +79,6 @@ internal static class AtomicsWaiterList
             }
             else
             {
-                waiter.Timer?.Dispose();
                 waiter.OnResolved?.Invoke(true);
             }
         }

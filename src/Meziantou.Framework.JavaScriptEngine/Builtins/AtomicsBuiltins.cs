@@ -459,7 +459,7 @@ internal static class AtomicsBuiltins
 
         var byteIndexInBuffer = ValidateAtomicAccess(typedArray, length, Arg(arguments, 1));
         var isBigInt = typedArray.ElementType == TypedArrayElementType.BigInt64;
-        var value = isBigInt ? BinaryDataOperations.ToBigInt64(Arg(arguments, 2)) : JsOperations.ToInt32(Arg(arguments, 2));
+        var value = isBigInt ? BigIntOperations.ToBigInt64(Arg(arguments, 2)) : JsOperations.ToInt32(Arg(arguments, 2));
         var q = JsOperations.ToNumber(Arg(arguments, 3));
         var timeout = double.IsNaN(q) || double.IsPositiveInfinity(q) ? double.PositiveInfinity : double.IsNegativeInfinity(q) ? 0 : Math.Max(q, 0);
         var engine = realm.Engine;
@@ -467,16 +467,7 @@ internal static class AtomicsBuiltins
             return ThrowHelper.ThrowTypeError<JsValue>("Atomics.wait cannot be called in this context");
 
         var size = typedArray.ElementSize;
-        JsObject? promise = null;
-        var resolve = JsValue.Undefined;
-        if (isAsync)
-        {
-            (promise, resolve) = NewPromiseCapability(realm);
-        }
-
-        // The promise is needed only when the agent waits (the Promise built-ins may not be initialized)
-        var promiseUnavailable = isAsync && promise is null;
-
+        var capability = isAsync ? PromiseCapability.CreateIntrinsic(realm) : null;
         AtomicsWaiter waiter;
         using (AtomicsWaiterList.Enter())
         {
@@ -488,35 +479,21 @@ internal static class AtomicsBuiltins
             if (isAsync && timeout == 0)
                 return CreateWaitAsyncResult(realm, isAsync: false, "timed-out");
 
-            if (promiseUnavailable)
-            {
-                waiter = null!;
-            }
-            else if (isAsync)
+            if (capability is not null)
             {
                 engine.IncrementPendingAtomicsWaitAsync();
+
+                // NotifyWaiter of an asynchronous waiter: EnqueueResolveInAgentJob (from any thread)
                 waiter = new AtomicsWaiter
                 {
-                    OnResolved = notified => engine.EnqueueAtomicsJob(() =>
-                    {
-                        engine.DecrementPendingAtomicsWaitAsync();
-                        var previousRealm = engine.CurrentRealm;
-                        engine.CurrentRealm = realm;
-                        try
-                        {
-                            JsOperations.Call(resolve, JsValue.Undefined, [notified ? "ok" : "timed-out"]);
-                        }
-                        finally
-                        {
-                            engine.CurrentRealm = previousRealm;
-                        }
-                    }),
+                    OnResolved = notified => engine.EnqueueAtomicsWaitAsyncResolution(ResolveWaitAsync, capability, notified ? "ok" : "timed-out", realm),
                 };
 
                 AtomicsWaiterList.AddWaiter(block, byteIndexInBuffer, waiter);
                 if (!double.IsPositiveInfinity(timeout))
                 {
-                    waiter.Timer = new Timer(_ => TimeOut(block, byteIndexInBuffer, waiter), state: null, ToTimeSpan(timeout), Timeout.InfiniteTimeSpan);
+                    // EnqueueAtomicsWaitAsyncTimeoutJob(WL, waiterRecord)
+                    engine.EnqueueTimeoutJob(TimeOutWaitAsync, new WaitAsyncTimeout(block, byteIndexInBuffer, waiter), default, realm, ToTimeSpan(timeout));
                 }
             }
             else
@@ -526,28 +503,35 @@ internal static class AtomicsBuiltins
             }
         }
 
-        if (promiseUnavailable)
-            return ThrowHelper.ThrowTypeError<JsValue>("Atomics.waitAsync requires Promise");
-
-        if (isAsync)
-            return CreateWaitAsyncResult(realm, isAsync: true, promise!);
+        if (capability is not null)
+            return CreateWaitAsyncResult(realm, isAsync: true, capability.Promise);
 
         return SuspendThisAgent(engine, block, byteIndexInBuffer, waiter, timeout);
     }
 
-    /// <summary>The timeout of a waiter of Atomics.waitAsync (the job of EnqueueAtomicsWaitAsyncTimeoutJob).</summary>
-    private static void TimeOut(JsSharedDataBlock block, int byteIndex, AtomicsWaiter waiter)
+    /// <summary>The job resolving the promise of Atomics.waitAsync, on the thread of the waiting agent.</summary>
+    private static void ResolveWaitAsync(object? state, JsValue argument)
     {
+        var capability = (PromiseCapability)state!;
+        JsEngine.Current!.DecrementPendingAtomicsWaitAsync();
+        capability.Resolve(argument);
+    }
+
+    /// <summary>The job of EnqueueAtomicsWaitAsyncTimeoutJob: the waiter times out when it is still in its list.</summary>
+    private static void TimeOutWaitAsync(object? state, JsValue argument)
+    {
+        var (block, byteIndex, waiter) = (WaitAsyncTimeout)state!;
         using (AtomicsWaiterList.Enter())
         {
             if (!waiter.IsInList)
                 return;
 
             AtomicsWaiterList.RemoveWaiter(block, byteIndex, waiter);
-            waiter.Timer?.Dispose();
             waiter.OnResolved?.Invoke(false);
         }
     }
+
+    private sealed record WaitAsyncTimeout(JsSharedDataBlock Block, int ByteIndex, AtomicsWaiter Waiter);
 
     /// <summary>SuspendThisAgent(WL, waiterRecord): blocks the thread until the waiter is notified or the timeout elapses.</summary>
     private static string SuspendThisAgent(JsEngine engine, JsSharedDataBlock block, int byteIndex, AtomicsWaiter waiter, double timeout)
@@ -563,11 +547,12 @@ internal static class AtomicsBuiltins
             }
             else
             {
-                var deadline = Environment.TickCount64 + (long)Math.Min(Math.Ceiling(timeout), long.MaxValue / 4);
+                // The deadline is measured with the high-resolution clock: the waiter never wakes before the timeout
+                var start = System.Diagnostics.Stopwatch.GetTimestamp();
                 while (true)
                 {
-                    var remaining = deadline - Environment.TickCount64;
-                    if (remaining <= 0 || waitEvent.Wait((int)Math.Min(remaining, int.MaxValue), cancellationToken))
+                    var remaining = timeout - System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+                    if (remaining <= 0 || waitEvent.Wait((int)Math.Min(Math.Ceiling(remaining), int.MaxValue), cancellationToken))
                         break;
                 }
             }
@@ -602,22 +587,5 @@ internal static class AtomicsBuiltins
         result.CreateDataPropertyOrThrow(AsyncKey, isAsync);
         result.CreateDataPropertyOrThrow(ValueKey, value);
         return result;
-    }
-
-    /// <summary>NewPromiseCapability(%Promise%): the promise and its resolve function (TEMPORARY: null when the Promise built-ins are not initialized).</summary>
-    private static (JsObject? Promise, JsValue Resolve) NewPromiseCapability(JsRealm realm)
-    {
-        var promiseConstructor = realm.Intrinsics.GetPromiseConstructorForAtomics();
-        if (promiseConstructor is null)
-            return (null, JsValue.Undefined);
-
-        var resolve = JsValue.Undefined;
-        var executor = realm.CreateBuiltinFunction("", 2, (_, _, arguments, _) =>
-        {
-            resolve = Arg(arguments, 0);
-            return JsValue.Undefined;
-        });
-        var promise = JsOperations.Construct(promiseConstructor, [executor]).AsObject();
-        return (promise, resolve);
     }
 }

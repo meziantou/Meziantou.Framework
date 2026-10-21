@@ -1,5 +1,6 @@
 using Meziantou.Framework.WebPlatform.Dom;
-using Meziantou.Framework.WebPlatform.Jint;
+using Meziantou.Framework.WebPlatform.Scripting;
+using Meziantou.Framework.WebPlatform.Tests.Scripting;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Html;
 
@@ -7,13 +8,13 @@ namespace Meziantou.Framework.WebPlatform.Tests.Html;
 public sealed class SpeculativeParsingTests : IDisposable
 {
     private readonly BrowsingContextScope _contexts = new();
-    private readonly JintScriptEngine _engine = new();
+    private readonly ScriptEngine _engine = TestScriptEngines.Create();
     private readonly RecordingLoader _loader = new();
 
     public void Dispose()
     {
         _contexts.Dispose();
-        _engine.Dispose();
+        TestScriptEngines.Dispose(_engine);
     }
 
     /// <summary>Navigates to a document whose first script (<c>block.js</c>) is pending until <see cref="RecordingLoader.CompleteBlockingScript"/> is called.</summary>

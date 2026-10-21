@@ -24,10 +24,7 @@
     "total": 1
   },
   "fullscreen/api/document-fullscreen-element.html": {
-    "total": 1,
-    "failures": {
-      "Document#fullscreenElement": "FAIL"
-    }
+    "total": 1
   },
   "fullscreen/api/document-fullscreen-enabled-active-document.html": {
     "total": 1
@@ -96,10 +93,7 @@
     "total": 1
   },
   "fullscreen/api/element-ready-check-not-allowed-cross-origin.sub.html": {
-    "total": 1,
-    "failures": {
-      "Cross-origin element ready check with no allowfullscreen or allow attribute": "FAIL"
-    }
+    "total": 1
   },
   "fullscreen/api/element-ready-check-not-in-document.html": {
     "total": 1
@@ -216,11 +210,7 @@
     "total": 85
   },
   "fullscreen/api/keyboard-lock-cross-origin-iframe.sub.html": {
-    "total": 2,
-    "failures": {
-      "Cross-origin iframe fullscreen with keyboardLock:browser — hold Escape exits": "FAIL",
-      "Nested fullscreen: top-level keyboardLock:none then cross-origin iframe keyboardLock:browser — hold Escape exits iframe fullscreen": "FAIL"
-    }
+    "total": 2
   },
   "fullscreen/api/navigate-iframe.sub.html": {
     "total": 5,
@@ -312,16 +302,10 @@
     "total": 1
   },
   "fullscreen/rendering/fullscreen-root-block-scroll.html": {
-    "total": 1,
-    "failures": {
-      "fullscreen root block scrolling": "FAIL"
-    }
+    "total": 1
   },
   "fullscreen/rendering/fullscreen-root-block-size.html": {
-    "total": 1,
-    "failures": {
-      "fullscreen root block sizing": "FAIL"
-    }
+    "total": 1
   },
   "fullscreen/rendering/fullscreen-root-fills-page.html": {
     "reftest": "PASS"

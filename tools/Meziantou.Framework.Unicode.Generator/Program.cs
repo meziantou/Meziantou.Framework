@@ -57,6 +57,12 @@ await WriteUnicodeScriptsFile();
 if (await PropertyTablesWriter.WriteAsync(outputPath))
     outputUpdated = true;
 
+if (await BinaryPropertiesWriter.WriteAsync(outputPath))
+    outputUpdated = true;
+
+if (await EmojiSequencesWriter.WriteAsync(outputPath))
+    outputUpdated = true;
+
 if (await NormalizationWriter.WriteAsync(outputPath))
     outputUpdated = true;
 
@@ -563,6 +569,17 @@ async Task WriteUnicodeScriptsFile()
         codeArms.Append(CultureInfo.InvariantCulture, $"            UnicodeScript.{ToScriptIdentifier(name)} => \"{EscapeStringLiteral(code)}\",\n");
     }
 
+    // The names of the values of the Script property: the long name, the short name and the other aliases
+    var aliasArms = new StringBuilder();
+    foreach (var (longName, names) in await LoadScriptAliases())
+    {
+        if (!scriptIds.ContainsKey(longName))
+            throw new InvalidOperationException("The script alias is not a script: " + longName);
+
+        var patterns = string.Join(" or ", names.Select(name => "\"" + EscapeStringLiteral(name) + "\""));
+        aliasArms.Append(CultureInfo.InvariantCulture, $"            {patterns} => UnicodeScript.{ToScriptIdentifier(longName)},\n");
+    }
+
     var extensionRanges = await LoadScriptExtensionRanges(longNames, scriptIds);
     var extensionSets = new List<List<int>>();
     var extensionSetIndex = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -693,6 +710,16 @@ async Task WriteUnicodeScriptsFile()
                     _ => null,
                 };
             }
+
+            /// <summary>Gets the script whose name or alias (PropertyValueAliases.txt) is the value, compared exactly.</summary>
+            private static UnicodeScript? ParseScriptCore(ReadOnlySpan<char> name)
+            {
+                return name switch
+                {
+        {{aliasArms.ToString().TrimEnd()}}
+                    _ => null,
+                };
+            }
         }
         """);
 
@@ -722,6 +749,34 @@ async Task<Dictionary<string, string>> LoadScriptLongNames()
     }
 
     Console.WriteLine($"  Loaded {result.Count} script aliases");
+    return result;
+}
+
+async Task<List<(string LongName, List<string> Names)>> LoadScriptAliases()
+{
+    var result = new List<(string LongName, List<string> Names)>();
+    var content = await Ucd.DownloadAsync("ucd/PropertyValueAliases.txt");
+    foreach (var rawLine in content.Split('\n'))
+    {
+        var line = rawLine.Trim();
+        var commentIndex = line.IndexOf('#', StringComparison.Ordinal);
+        if (commentIndex >= 0)
+        {
+            line = line[..commentIndex].Trim();
+        }
+
+        if (!line.StartsWith("sc ;", StringComparison.Ordinal))
+            continue;
+
+        // sc ; short name ; long name ; other aliases
+        var parts = line.Split(';', StringSplitOptions.TrimEntries);
+        if (parts.Length < 3)
+            continue;
+
+        List<string> names = [parts[2], parts[1], .. parts[3..]];
+        result.Add((parts[2], names.Distinct(StringComparer.Ordinal).ToList()));
+    }
+
     return result;
 }
 

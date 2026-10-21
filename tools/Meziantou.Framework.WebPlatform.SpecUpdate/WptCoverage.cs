@@ -224,7 +224,7 @@ internal static partial class WptCoverage
     [
         ("BUG", "the implementation is broken"),
         ("TEST BUG", "the test is wrong: it does not match the specification"),
-        ("JINT", "the JavaScript engine (Jint) does not support a feature that the test uses"),
+        ("JS ENGINE", "a limitation of the JavaScript engine (Meziantou.Framework.JavaScriptEngine) or of its integration with the library"),
         ("NOT IMPLEMENTED", "the feature is not implemented yet"),
         (RequiresKind, "the feature cannot be implemented, or the test cannot pass, until other features are implemented (listed in parentheses)"),
         ("TEST RUNNER", "the WPT runner cannot run the test: a `.py` handler of the WPT server is not emulated, or the directory is not fetched"),
@@ -366,7 +366,7 @@ internal static partial class WptCoverage
                 "a `.any.js` test passes when it passes in all its globals, a reftest when all its variants pass). " +
                 "Visual tests, crash tests, manual tests, WebDriver tests, the tests that only run in a ShadowRealm, and the tests outside of `service-workers` that only run in service workers are not counted: " +
                 "the library has no ShadowRealm, and the runner only runs the service worker variants of the tests of the service workers.");
-            Line("- **Passing**: the testharness.js tests whose harness status is `OK` and whose subtests all pass with the Jint engine, and the reftests whose rendering matches their references (`expectations/*.json`).");
+            Line("- **Passing**: the testharness.js tests whose harness status is `OK` and whose subtests all pass with the JavaScript engine (Meziantou.Framework.JavaScriptEngine), and the reftests whose rendering matches their references (`expectations/*.json`).");
             Line("- **Disabled**: the tests that are not run: listed in `wpt-skip.json`, not fetched (`tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) or not part of a test group (`WptTests.cs`).");
             Line("- **Pass rate**: the passing tests among the tests that are run (the tests that are not disabled).");
             Line();

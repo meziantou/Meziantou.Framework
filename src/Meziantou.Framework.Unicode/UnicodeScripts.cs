@@ -68,4 +68,24 @@ public static partial class UnicodeScripts
     /// <param name="script">The script.</param>
     /// <returns>The code; <c>Zzzz</c> for <see cref="UnicodeScript.Unknown"/> and for a value that is not defined.</returns>
     public static string GetIso15924Code(UnicodeScript script) => GetIso15924CodeCore(script) ?? "Zzzz";
+
+    /// <summary>Gets the script that a name of the Script property designates, such as <c>Latin</c> or <c>Latn</c>.</summary>
+    /// <param name="name">The long name, the short name (the ISO 15924 code) or another alias of the script, as listed in <c>PropertyValueAliases.txt</c>.</param>
+    /// <param name="script">The script, when the method returns <see langword="true"/>.</param>
+    /// <returns><see langword="true"/> when the name is a name of a script.</returns>
+    /// <remarks>
+    /// The comparison is ordinal: the loose matching of UAX #44 (ignoring case, spaces, hyphens and underscores) is not
+    /// applied. <c>Unknown</c> and <c>Zzzz</c> designate <see cref="UnicodeScript.Unknown"/>.
+    /// </remarks>
+    public static bool TryParseScript(ReadOnlySpan<char> name, out UnicodeScript script)
+    {
+        if (ParseScriptCore(name) is { } value)
+        {
+            script = value;
+            return true;
+        }
+
+        script = UnicodeScript.Unknown;
+        return false;
+    }
 }

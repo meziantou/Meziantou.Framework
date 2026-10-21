@@ -30,6 +30,9 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     // Creates an interface object (https://webidl.spec.whatwg.org/#interface-object): a constructor calling construct(NewTarget, args)
     private const string MakeInterfaceScript = """
             (function (name, length, construct, parent, prototype, htmlConstructor, classString) {
+              // Strict: the function has no own caller and arguments properties (an extension of the engines for the
+              // sloppy functions), as the built-in function objects
+              'use strict';
               let f = function (...args) { return construct(new.target, args); };
               Object.defineProperty(f, 'length', { value: length });
               Object.defineProperty(f, 'name', { value: name });
@@ -160,6 +163,9 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             DefineContinuationStatePropagation();
         }
 
+        // The global object gets an interface object per exposed interface, and the members of its interface
+        Adapter.ReserveProperties(Global, WebIdlBindings<TAdapter, TValue>.Interfaces.Count + 256);
+
         var isSecureContext = IsSecureContext;
         foreach (var binding in WebIdlBindings<TAdapter, TValue>.Interfaces.Values)
         {
@@ -236,7 +242,8 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     /// <summary>
     /// https://webidl.spec.whatwg.org/#es-immutable-prototype: the global object of a [Global] interface, its interface
     /// prototype object and the interface prototype objects of its inherited interfaces are immutable prototype exotic
-    /// objects. The engines do not let the host define the [[SetPrototypeOf]] internal method of these objects, so the
+    /// objects. An engine that supports them marks the objects (<see cref="IJsAdapter{TValue}.TryMakePrototypeImmutable"/>).
+    /// The other engines do not let the host define the [[SetPrototypeOf]] internal method of these objects, so the
     /// built-in functions that call it (<c>Object.setPrototypeOf()</c>, <c>Reflect.setPrototypeOf()</c> and the setter of
     /// <c>Object.prototype.__proto__</c>) are replaced in the realm by functions that implement SetImmutablePrototype
     /// (https://tc39.es/ecma262/#sec-set-immutable-prototype) for the objects of the prototype chains of the global objects
@@ -244,6 +251,18 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     /// </summary>
     private void DefineImmutablePrototypes()
     {
+        // An engine that supports the immutable prototype exotic objects marks the objects of the prototype chain (the
+        // named properties object is a proxy whose setPrototypeOf trap implements SetImmutablePrototype)
+        if (Adapter.TryMakePrototypeImmutable(Global))
+        {
+            for (var prototype = Adapter.GetPrototypeOf(Global); !Adapter.IsNull(prototype); prototype = Adapter.GetPrototypeOf(prototype))
+            {
+                Adapter.TryMakePrototypeImmutable(prototype);
+            }
+
+            return;
+        }
+
         var adapter = Adapter;
         var objects = Agent.ImmutablePrototypeObjects ??= EvaluateBuiltIn("new WeakSet()");
         var support = Adapter.Call(EvaluateBuiltIn("""
@@ -401,7 +420,13 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
     private void DefineLazyGlobal(string name, InterfaceBinding<TAdapter, TValue> binding)
     {
-        Adapter.DefineLazyDataProperty(Global, Key(name), () => EnsureInterfaceObject(binding).InterfaceObject, writable: true, enumerable: false, configurable: true);
+        Adapter.DefineLazyDataProperty(Global, Key(name), new LazyInterfaceObject(this, binding), writable: true, enumerable: false, configurable: true);
+    }
+
+    /// <summary>The interface object of a global property, created on first access (a realm has hundreds of them).</summary>
+    private sealed class LazyInterfaceObject(WebIdlRealm<TAdapter, TValue> realm, InterfaceBinding<TAdapter, TValue> binding) : IJsLazyValue<TValue>
+    {
+        public TValue CreateValue() => realm.EnsureInterfaceObject(binding).InterfaceObject;
     }
 
     /// <summary>Returns the interface prototype object of an interface, creating it in this realm.</summary>
@@ -575,19 +600,32 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             }
         }
 
+        // Most attributes are never used: their functions are created on first access, in this realm
+        Adapter.DefineLazyAccessorProperty(target, Key(name), new LazyAttribute(this, name, getter, setter, returnsPromise), hasSetter: setter is not null, enumerable, configurable);
+    }
+
+    /// <summary>The functions of an attribute, created on first access in the realm (one object per attribute, instead of closures).</summary>
+    private sealed class LazyAttribute(WebIdlRealm<TAdapter, TValue> realm, string name, Getter getter, Setter? setter, bool returnsPromise) : IJsLazyAccessor<TValue>
+    {
+        public TValue CreateGetter() => realm.Adapter.RunInRealm(realm.EngineRealm, CreateGetterInRealm);
+
+        public TValue CreateSetter() => realm.Adapter.RunInRealm(realm.EngineRealm, CreateSetterInRealm);
+
         // https://webidl.spec.whatwg.org/#dfn-attribute-getter: the getter of a promise attribute returns a rejected promise
         // instead of throwing (e.g. when this is not a platform object)
-        TValue CreateGetter() => returnsPromise
-            ? Adapter.CreateFunction("get " + name, 0, (thisValue, _) => InvokePromiseGetter(getter, thisValue))
-            : Adapter.CreateFunction("get " + name, 0, (thisValue, _) => InvokeGetter(getter, thisValue));
-        TValue CreateSetter() => Adapter.CreateFunction("set " + name, 1, (thisValue, arguments) =>
-        {
-            InvokeSetter(setter, thisValue, arguments.Length > 0 ? arguments[0] : Adapter.Undefined);
-            return Adapter.Undefined;
-        });
+        private TValue CreateGetterInRealm() => returnsPromise
+            ? realm.Adapter.CreateFunction("get " + name, 0, (thisValue, _) => realm.InvokePromiseGetter(getter, thisValue))
+            : realm.Adapter.CreateFunction("get " + name, 0, (thisValue, _) => realm.InvokeGetter(getter, thisValue));
 
-        // Most attributes are never used: their functions are created on first access, in this realm
-        Adapter.DefineLazyAccessorProperty(target, Key(name), () => Adapter.RunInRealm(EngineRealm, CreateGetter), setter is null ? null : () => Adapter.RunInRealm(EngineRealm, CreateSetter), enumerable, configurable);
+        private TValue CreateSetterInRealm()
+        {
+            var attributeSetter = setter!;
+            return realm.Adapter.CreateFunction("set " + name, 1, (thisValue, arguments) =>
+            {
+                realm.InvokeSetter(attributeSetter, thisValue, arguments.Length > 0 ? arguments[0] : realm.Adapter.Undefined);
+                return realm.Adapter.Undefined;
+            });
+        }
     }
 
     /// <summary>A readonly attribute with [PutForwards] (https://webidl.spec.whatwg.org/#PutForwards).</summary>
@@ -664,12 +702,18 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             };
         }
 
-        TValue CreateOperation() => returnsPromise
-            ? Adapter.CreateFunction(name, length, (thisValue, arguments) => InvokePromiseOperation(operation, thisValue, arguments, ceReactions))
-            : Adapter.CreateFunction(name, length, (thisValue, arguments) => InvokeOperation(operation, thisValue, arguments, ceReactions));
-
         // Most operations are never used: their functions are created on first access, in this realm
-        Adapter.DefineLazyDataProperty(target, Key(name), () => Adapter.RunInRealm(EngineRealm, CreateOperation), writable: configurable, enumerable, configurable);
+        Adapter.DefineLazyDataProperty(target, Key(name), new LazyOperation(this, name, length, operation, ceReactions, returnsPromise), writable: configurable, enumerable, configurable);
+    }
+
+    /// <summary>The function of an operation, created on first access in the realm (one object per operation, instead of closures).</summary>
+    private sealed class LazyOperation(WebIdlRealm<TAdapter, TValue> realm, string name, int length, Operation operation, bool ceReactions, bool returnsPromise) : IJsLazyValue<TValue>
+    {
+        public TValue CreateValue() => realm.Adapter.RunInRealm(realm.EngineRealm, CreateOperation);
+
+        private TValue CreateOperation() => returnsPromise
+            ? realm.Adapter.CreateFunction(name, length, (thisValue, arguments) => realm.InvokePromiseOperation(operation, thisValue, arguments, ceReactions))
+            : realm.Adapter.CreateFunction(name, length, (thisValue, arguments) => realm.InvokeOperation(operation, thisValue, arguments, ceReactions));
     }
 
     /// <summary>Defines a data property whose value is a function (e.g. the methods of the iterators).</summary>
@@ -1312,6 +1356,19 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         return proxy;
     }
 
+    /// <summary>Returns whether a .NET object is a value of the engine (see <see cref="IJsAdapter{TValue}.IsValue"/>).</summary>
+    internal bool TryAsValue(object? value, [NotNullWhen(true)] out TValue? jsValue)
+    {
+        if (value is TValue candidate && Adapter.IsValue(candidate))
+        {
+            jsValue = candidate;
+            return true;
+        }
+
+        jsValue = null;
+        return false;
+    }
+
     /// <summary>Returns the .NET object of a JavaScript platform object (or the window of a global object), or null.</summary>
     public object? Unwrap(TValue value)
     {
@@ -1604,7 +1661,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
         // A JavaScript value stored by the DOM (e.g. CustomEvent.detail). It is tested after the .NET types, because the
         // values of an engine may be .NET objects (e.g. an engine whose strings are .NET strings)
-        if (value is TValue jsValue)
+        if (TryAsValue(value, out var jsValue))
             return jsValue;
 
         if (value is IEnumerable enumerable)
@@ -1814,7 +1871,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             }
             else
             {
-                items[i] = values[i] is TValue value ? value : ToJs(values[i]);
+                items[i] = TryAsValue(values[i], out var value) ? value : ToJs(values[i]);
                 rejected[i] = Adapter.FromBoolean(false);
             }
         }
@@ -1877,6 +1934,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             });
             var constructor = EvaluateBuiltIn("""
                 (function (name, factory, prototype) {
+                  'use strict';
                   let f;
                   f = { [name]: function (...args) {
                     if (new.target === undefined) throw new TypeError("Failed to construct '" + name + "': Please use the 'new' operator");

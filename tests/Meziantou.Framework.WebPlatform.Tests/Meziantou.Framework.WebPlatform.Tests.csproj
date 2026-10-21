@@ -14,7 +14,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
-    <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.Jint\Meziantou.Framework.WebPlatform.Jint.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.JavaScript\Meziantou.Framework.WebPlatform.JavaScript.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.Wasmtime\Meziantou.Framework.WebPlatform.Wasmtime.csproj" />
     <ProjectReference Include="..\..\tools\Meziantou.Framework.WebPlatform.Analyzers\Meziantou.Framework.WebPlatform.Analyzers.csproj" />
   </ItemGroup>

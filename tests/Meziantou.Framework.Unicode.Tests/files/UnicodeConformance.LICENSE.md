@@ -8,6 +8,7 @@ and of Unicode IDNA Compatibility Processing 18.0.0, the version the tables of
 | --- | --- | --- | --- |
 | `GraphemeBreakTest.txt.gz` | <https://www.unicode.org/Public/18.0.0/ucd/auxiliary/GraphemeBreakTest.txt> | 137,090 | `b0cf047ee94485bbdc846de2b902f5f8a815f6b674f9d04223cddadd91c9df31` |
 | `WordBreakTest.txt.gz` | <https://www.unicode.org/Public/18.0.0/ucd/auxiliary/WordBreakTest.txt> | 322,136 | `3dd70c071781276067c680d87303f60434adce7b067bd063194af374edad86a5` |
+| `SentenceBreakTest.txt.gz` | <https://www.unicode.org/Public/18.0.0/ucd/auxiliary/SentenceBreakTest.txt> | 87,946 | `84ca7516e7bd1203ab7e8d888ae77f0a0af0a254d10e09a2847000588848885c` |
 | `LineBreakTest.txt.gz` | <https://www.unicode.org/Public/18.0.0/ucd/auxiliary/LineBreakTest.txt> | 3,178,750 | `fd9ff9eca411080085b41471bba79ae19d9db2e16924f9770b8509f1affd3f95` |
 | `BidiTest.txt.gz` | <https://www.unicode.org/Public/18.0.0/ucd/BidiTest.txt> | 7,959,988 | `9af2f882a4ab50912e388f069a673b94eacd82fa6d07d20a3ff7f3c759e905aa` |
 | `BidiCharacterTest.txt.gz` | <https://www.unicode.org/Public/18.0.0/ucd/BidiCharacterTest.txt> | 6,880,771 | `045b24d2c8ab066951bd32fe8c6b4de34647f72b5b1c7df0265f24ab53573e01` |

@@ -75,14 +75,7 @@
     "total": 1
   },
   "domxpath/resolver-callback-interface-cross-realm.tentative.html": {
-    "total": 5,
-    "failures": {
-      "XPathNSResolver is cross-realm callable revoked Proxy": "FAIL",
-      "XPathNSResolver is cross-realm non-callable revoked Proxy": "FAIL",
-      "XPathNSResolver is cross-realm plain object with non-callable 'lookupNamespaceURI' property": "FAIL",
-      "XPathNSResolver is cross-realm plain object with revoked Proxy as 'lookupNamespaceURI' property": "FAIL",
-      "XPathNSResolver is cross-realm plain object without 'lookupNamespaceURI' property": "FAIL"
-    }
+    "total": 5
   },
   "domxpath/resolver-callback-interface.html": {
     "total": 10

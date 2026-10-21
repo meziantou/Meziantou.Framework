@@ -26,7 +26,7 @@
     <!-- The fuzzing targets of the internal readers (e.g. the font reader) -->
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Fuzz" />
     <!-- The script engine packages of this repository use the internal hosting primitives, and depend on the exact version of the core -->
-    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Jint" />
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.JavaScript" />
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Wasmtime" />
     <!-- The rendering backend packages implement the internal rasterization services (the display list, the surfaces, the images) -->
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Imaging" />

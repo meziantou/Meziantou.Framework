@@ -1,8 +1,8 @@
+using Meziantou.Framework.WebPlatform.Tests.Scripting;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using Meziantou.Framework.WebPlatform.Dom;
-using Meziantou.Framework.WebPlatform.Jint;
 using Meziantou.Framework.WebPlatform.Scripting;
 using NetWebSocket = System.Net.WebSockets.WebSocket;
 using WebSocketCloseStatus = System.Net.WebSockets.WebSocketCloseStatus;
@@ -15,12 +15,12 @@ public sealed class WebSocketTests : IDisposable
 {
     private readonly BrowsingContextScope _contexts = new();
     private readonly List<ScriptError> _errors = [];
-    private readonly JintScriptEngine _engine = new();
+    private readonly ScriptEngine _engine = TestScriptEngines.Create();
 
     public void Dispose()
     {
         _contexts.Dispose();
-        _engine.Dispose();
+        TestScriptEngines.Dispose(_engine);
     }
 
     private BrowsingContext CreateContext(DocumentLoader loader, CookieJar? cookieJar = null) => _contexts.Create(new BrowsingContextOptions

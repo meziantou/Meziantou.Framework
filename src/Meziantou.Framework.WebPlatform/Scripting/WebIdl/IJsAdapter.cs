@@ -9,7 +9,7 @@ namespace Meziantou.Framework.WebPlatform.Scripting;
 /// (<c>where TAdapter : struct, IJsAdapter&lt;TValue&gt;</c>), so the JIT specializes them for each engine (no boxing, no
 /// interface dispatch).
 /// </summary>
-/// <typeparam name="TValue">The type of the JavaScript values of the engine (e.g. <c>JsValue</c> for Jint).</typeparam>
+/// <typeparam name="TValue">The type of the JavaScript values of the engine (e.g. <c>object</c> for Meziantou.Framework.JavaScriptEngine).</typeparam>
 /// <remarks>
 /// <para>
 /// The operations that can run JavaScript code (<see cref="ToNumber"/>, <see cref="Get"/>, <see cref="Call"/>...) throw the
@@ -85,11 +85,19 @@ public interface IJsAdapter<TValue>
     /// <summary>Gets whether the value is a constructor (https://tc39.es/ecma262/#sec-isconstructor).</summary>
     bool IsConstructor(TValue value);
 
-    /// <summary>Gets whether the value is an ECMAScript array (https://tc39.es/ecma262/#sec-isarray).</summary>
+    /// <summary>Gets whether the value is an Array exotic object (https://tc39.es/ecma262/#sec-array-exotic-objects), not a Proxy of an array.</summary>
     bool IsArray(TValue value);
 
     /// <summary>Gets whether the value is a Date object.</summary>
     bool IsDate(TValue value);
+
+    /// <summary>
+    /// Returns whether a .NET object is a value of the engine, and not another .NET object given to the bindings (e.g. a
+    /// platform object or a list, which the bindings convert). The default implementation tests whether it is a
+    /// <typeparamref name="TValue"/>: an adapter whose values have no specific type (e.g. <typeparamref name="TValue"/> is
+    /// <see cref="object"/>) overrides it.
+    /// </summary>
+    bool IsValue(object value) => value is TValue;
 
     /// <summary>Returns the value of a boolean.</summary>
     bool AsBoolean(TValue value);
@@ -286,6 +294,46 @@ public interface IJsAdapter<TValue>
     }
 
     /// <summary>
+    /// Defines a data property whose value is created on first access by <paramref name="factory"/> (one object per property
+    /// instead of a closure: the interface objects of a realm are defined this way). The default implementation calls
+    /// <see cref="DefineLazyDataProperty(TValue, TValue, Func{TValue}, bool, bool, bool)"/>.
+    /// </summary>
+    void DefineLazyDataProperty(TValue obj, TValue key, IJsLazyValue<TValue> factory, bool writable, bool enumerable, bool configurable)
+    {
+        ArgumentNullException.ThrowIfNull(factory);
+        DefineLazyDataProperty(obj, key, factory.CreateValue, writable, enumerable, configurable);
+    }
+
+    /// <summary>
+    /// Defines an accessor property whose functions are created on first access by <paramref name="factory"/> (one object per
+    /// property instead of closures: the attributes of the interfaces are defined this way). The default implementation calls
+    /// <see cref="DefineLazyAccessorProperty(TValue, TValue, Func{TValue}, Func{TValue}?, bool, bool)"/>.
+    /// </summary>
+    void DefineLazyAccessorProperty(TValue obj, TValue key, IJsLazyAccessor<TValue> factory, bool hasSetter, bool enumerable, bool configurable)
+    {
+        ArgumentNullException.ThrowIfNull(factory);
+        DefineLazyAccessorProperty(obj, key, factory.CreateGetter, hasSetter ? factory.CreateSetter : null, enumerable, configurable);
+    }
+
+    /// <summary>
+    /// Prepares an object for <paramref name="count"/> more properties (e.g. the interface objects of a global object), so
+    /// that an engine can allocate their storage once. It does not change the behavior of the object. The default
+    /// implementation does nothing.
+    /// </summary>
+    void ReserveProperties(TValue obj, int count)
+    {
+    }
+
+    /// <summary>
+    /// Makes an object an immutable prototype exotic object (https://tc39.es/ecma262/#sec-immutable-prototype-exotic-objects),
+    /// if the engine supports it: its [[SetPrototypeOf]] only accepts its current prototype. A proxy is left unchanged (its
+    /// handler defines its [[SetPrototypeOf]]). Returns false when the engine does not support it: the bindings then replace
+    /// the built-in functions that change prototypes (see <see cref="WebIdlRealm{TAdapter, TValue}"/>). The default
+    /// implementation returns false.
+    /// </summary>
+    bool TryMakePrototypeImmutable(TValue obj) => false;
+
+    /// <summary>
     /// Sets the [[Stack]] internal slot of an error (https://tc39.es/proposal-error-stack-accessor/), read by the
     /// <c>Error.prototype.stack</c> accessor: the stack of a deserialized error
     /// (https://html.spec.whatwg.org/multipage/structured-data.html#structureddeserialize). Returns false when the engine
@@ -328,6 +376,14 @@ public interface IJsAdapter<TValue>
     /// <see cref="GetSharedDataBlock"/>. Returns false when it is not supported. The default implementation returns false.
     /// </summary>
     bool SetSharedDataBlock(TValue sharedArrayBuffer, object dataBlock) => false;
+
+    /// <summary>
+    /// Creates a <c>SharedArrayBuffer</c> in the current realm whose data block is a data block returned by
+    /// <see cref="GetSharedDataBlock"/> (of any engine instance of the adapter), so that the buffers share their memory.
+    /// Returns null when it is not supported (the bindings then use <see cref="SetSharedDataBlock"/>). The default
+    /// implementation returns null.
+    /// </summary>
+    TValue? CreateSharedArrayBuffer(object dataBlock) => null;
 
     /// <summary>
     /// Creates an <c>ArrayBuffer</c> containing a copy of <paramref name="bytes"/> in the current realm. The default

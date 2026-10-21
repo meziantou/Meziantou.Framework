@@ -55,6 +55,33 @@ public static class UnicodeProperties
         return (UnicodeTables.GeneralTuples[UnicodeTables.GetGeneral(codePoint) * 2] & 0x80) != 0;
     }
 
+    /// <summary>Determines whether a code point has the Cased property: whether it is an uppercase, a lowercase or a titlecase character.</summary>
+    /// <param name="codePoint">The code point.</param>
+    /// <returns><see langword="true"/> when the code point is a letter that has a case, or another character with the Lowercase or Uppercase property such as U+2160 ROMAN NUMERAL ONE.</returns>
+    /// <remarks>The property defines the context of the final sigma (The Unicode Standard, section 3.13).</remarks>
+    public static bool IsCased(int codePoint)
+    {
+        return (UnicodeTables.GeneralTuples[(UnicodeTables.GetGeneral(codePoint) * 2) + 1] & 0x40) != 0;
+    }
+
+    /// <summary>Determines whether a code point has the Case_Ignorable property: whether the case mappings skip it when they look at the context.</summary>
+    /// <param name="codePoint">The code point.</param>
+    /// <returns><see langword="true"/> for the combining marks, the format characters, the modifier letters and symbols, and a few punctuation marks such as the apostrophe and the full stop.</returns>
+    /// <remarks>The property defines the context of the final sigma (The Unicode Standard, section 3.13).</remarks>
+    public static bool IsCaseIgnorable(int codePoint)
+    {
+        return (UnicodeTables.GeneralTuples[(UnicodeTables.GetGeneral(codePoint) * 2) + 1] & 0x80) != 0;
+    }
+
+    /// <summary>Determines whether a code point has the Soft_Dotted property: whether its dot disappears when an accent is placed above it, as for <c>i</c> and <c>j</c>.</summary>
+    /// <param name="codePoint">The code point.</param>
+    /// <returns><see langword="true"/> when the code point is a soft-dotted letter.</returns>
+    /// <remarks>The property defines a context of the Lithuanian case mappings (The Unicode Standard, section 3.13).</remarks>
+    public static bool IsSoftDotted(int codePoint)
+    {
+        return codePoint >= 'i' && UnicodeTableReader.FindRecord(UnicodeTables.SoftDottedCodePoints, 3, codePoint) >= 0;
+    }
+
     /// <summary>Gets the Canonical_Combining_Class of a code point.</summary>
     /// <param name="codePoint">The code point.</param>
     /// <returns>The combining class; 0 for a starter.</returns>
@@ -169,6 +196,15 @@ public static class UnicodeProperties
         return (UnicodeWordBreak)UnicodeTables.SegmentationTuples[(UnicodeTables.GetSegmentation(codePoint) * 2) + 1];
     }
 
+    /// <summary>Gets the Sentence_Break property of a code point.</summary>
+    /// <param name="codePoint">The code point.</param>
+    /// <returns>The class used by the sentence boundary rules.</returns>
+    /// <seealso href="https://www.unicode.org/reports/tr29/" />
+    public static UnicodeSentenceBreak GetSentenceBreak(int codePoint)
+    {
+        return (UnicodeSentenceBreak)(UnicodeTables.GetSentenceBreak(codePoint) & 0xF);
+    }
+
     /// <summary>Gets the Joining_Type property of a code point.</summary>
     /// <param name="codePoint">The code point.</param>
     /// <returns>How the code point joins its neighbors in a cursive script such as Arabic.</returns>
@@ -205,13 +241,13 @@ public static class UnicodeProperties
     /// <param name="codePoint">The code point.</param>
     /// <returns>The lowercase code point, or <paramref name="codePoint"/> when it has no mapping.</returns>
     /// <remarks>The mapping is the one-to-one, culture-independent mapping of the Unicode Character Database.</remarks>
-    public static int ToSimpleLowercase(int codePoint) => codePoint + UnicodeTableReader.ReadInt32(UnicodeTables.CaseTuples, UnicodeTables.GetCase(codePoint) * 12);
+    public static int ToSimpleLowercase(int codePoint) => codePoint + UnicodeTableReader.ReadInt32(UnicodeTables.CaseTuples, UnicodeTables.GetCase(codePoint) * 16);
 
     /// <summary>Gets the Simple_Uppercase_Mapping of a code point.</summary>
     /// <param name="codePoint">The code point.</param>
     /// <returns>The uppercase code point, or <paramref name="codePoint"/> when it has no mapping.</returns>
     /// <remarks>The mapping is the one-to-one, culture-independent mapping of the Unicode Character Database.</remarks>
-    public static int ToSimpleUppercase(int codePoint) => codePoint + UnicodeTableReader.ReadInt32(UnicodeTables.CaseTuples, (UnicodeTables.GetCase(codePoint) * 12) + 4);
+    public static int ToSimpleUppercase(int codePoint) => codePoint + UnicodeTableReader.ReadInt32(UnicodeTables.CaseTuples, (UnicodeTables.GetCase(codePoint) * 16) + 4);
 
     /// <summary>Gets the Simple_Titlecase_Mapping of a code point: the form of the code point at the start of a word.</summary>
     /// <param name="codePoint">The code point.</param>
@@ -221,7 +257,79 @@ public static class UnicodeProperties
     /// (<c>ǆ</c> → <c>ǅ</c>) and the Georgian Mkhedruli letters.
     /// </returns>
     /// <remarks>The mapping is the one-to-one, culture-independent mapping of the Unicode Character Database.</remarks>
-    public static int ToSimpleTitlecase(int codePoint) => codePoint + UnicodeTableReader.ReadInt32(UnicodeTables.CaseTuples, (UnicodeTables.GetCase(codePoint) * 12) + 8);
+    public static int ToSimpleTitlecase(int codePoint) => codePoint + UnicodeTableReader.ReadInt32(UnicodeTables.CaseTuples, (UnicodeTables.GetCase(codePoint) * 16) + 8);
+
+    /// <summary>Gets the Simple_Case_Folding of a code point: the mappings of <c>CaseFolding.txt</c> whose status is <c>C</c> or <c>S</c>.</summary>
+    /// <param name="codePoint">The code point.</param>
+    /// <returns>The folded code point, or <paramref name="codePoint"/> when it has no mapping.</returns>
+    /// <remarks>
+    /// Two strings that differ only by case have the same simple case folding when their characters fold one to one;
+    /// the full case folding (status <c>F</c>), which can map a code point to several ones (U+00DF to <c>ss</c>), is not
+    /// applied. The Turkic mappings (status <c>T</c>) are not applied either.
+    /// </remarks>
+    public static int ToSimpleCaseFold(int codePoint) => codePoint + UnicodeTableReader.ReadInt32(UnicodeTables.CaseTuples, (UnicodeTables.GetCase(codePoint) * 16) + 12);
+
+    /// <summary>Determines whether a code point has a binary property.</summary>
+    /// <param name="codePoint">The code point.</param>
+    /// <param name="property">The property.</param>
+    /// <returns><see langword="true"/> when the code point has the property; <see langword="false"/> otherwise, and for an integer that is not a code point.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="property"/> is not a value of <see cref="UnicodeBinaryProperty"/>.</exception>
+    public static bool HasBinaryProperty(int codePoint, UnicodeBinaryProperty property)
+    {
+        var (first, count) = GetBinaryPropertyRangeIndexes(property);
+        var ranges = UnicodeBinaryPropertyTables.Ranges;
+        var low = first;
+        var high = first + count - 1;
+        while (low <= high)
+        {
+            var middle = (int)(((uint)low + (uint)high) / 2);
+            var offset = middle * 6;
+            if (codePoint < UnicodeTableReader.ReadUInt24(ranges, offset))
+            {
+                high = middle - 1;
+            }
+            else if (codePoint > UnicodeTableReader.ReadUInt24(ranges, offset + 3))
+            {
+                low = middle + 1;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>Gets the code points that have a binary property.</summary>
+    /// <param name="property">The property.</param>
+    /// <returns>The ranges of the code points that have the property, in increasing order. The ranges neither overlap nor touch.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="property"/> is not a value of <see cref="UnicodeBinaryProperty"/>.</exception>
+    /// <remarks>Each call returns a new array.</remarks>
+    public static UnicodeRange[] GetBinaryPropertyRanges(UnicodeBinaryProperty property)
+    {
+        var (first, count) = GetBinaryPropertyRangeIndexes(property);
+        var ranges = UnicodeBinaryPropertyTables.Ranges;
+        var result = new UnicodeRange[count];
+        for (var i = 0; i < count; i++)
+        {
+            var offset = (first + i) * 6;
+            result[i] = new UnicodeRange(UnicodeTableReader.ReadUInt24(ranges, offset), UnicodeTableReader.ReadUInt24(ranges, offset + 3));
+        }
+
+        return result;
+    }
+
+    private static (int First, int Count) GetBinaryPropertyRangeIndexes(UnicodeBinaryProperty property)
+    {
+        if ((uint)property >= UnicodeBinaryPropertyTables.PropertyCount)
+            throw new ArgumentOutOfRangeException(nameof(property), property, "The value is not a binary property");
+
+        var offsets = UnicodeBinaryPropertyTables.RangeOffsets;
+        var first = UnicodeTableReader.ReadUInt24(offsets, (int)property * 3);
+        var next = UnicodeTableReader.ReadUInt24(offsets, ((int)property + 1) * 3);
+        return (first, next - first);
+    }
 
     /// <summary>Gets the greatest number of code points a full case mapping writes for a code point.</summary>
     /// <seealso cref="GetLowercaseMapping(int, Span{int})"/>
@@ -237,7 +345,8 @@ public static class UnicodeProperties
     /// <remarks>
     /// The mapping is the default case conversion of the Unicode Standard (section 3.13) without its conditional
     /// mappings: the unconditional mappings of SpecialCasing.txt, else the simple mapping. The mappings that depend on
-    /// the language (Turkish, Lithuanian) or on the context (the final sigma) are not applied.
+    /// the language (Turkish, Lithuanian) or on the context (the final sigma) are not applied:
+    /// <see cref="UnicodeCaseMapping"/> applies them to a text.
     /// </remarks>
     public static int GetLowercaseMapping(int codePoint, Span<int> destination) => GetCaseMapping(codePoint, destination, CaseMappingKind.Lowercase);
 
@@ -249,7 +358,8 @@ public static class UnicodeProperties
     /// <remarks>
     /// The mapping is the default case conversion of the Unicode Standard (section 3.13) without its conditional
     /// mappings: the unconditional mappings of SpecialCasing.txt, else the simple mapping. The mappings that depend on
-    /// the language (Turkish, Lithuanian) or on the context (the final sigma) are not applied.
+    /// the language (Turkish, Lithuanian) or on the context (the final sigma) are not applied:
+    /// <see cref="UnicodeCaseMapping"/> applies them to a text.
     /// </remarks>
     public static int GetUppercaseMapping(int codePoint, Span<int> destination) => GetCaseMapping(codePoint, destination, CaseMappingKind.Uppercase);
 
@@ -261,13 +371,20 @@ public static class UnicodeProperties
     /// <remarks>
     /// The mapping is the default case conversion of the Unicode Standard (section 3.13) without its conditional
     /// mappings: the unconditional mappings of SpecialCasing.txt, else the simple mapping. The mappings that depend on
-    /// the language (Turkish, Lithuanian) or on the context (the final sigma) are not applied.
+    /// the language (Turkish, Lithuanian) or on the context (the final sigma) are not applied:
+    /// <see cref="UnicodeCaseMapping"/> applies them to a text.
     /// </remarks>
     public static int GetTitlecaseMapping(int codePoint, Span<int> destination) => GetCaseMapping(codePoint, destination, CaseMappingKind.Titlecase);
 
+    /// <summary>The kind of a word segment that ends with a code point: see <see cref="UnicodeWordKind"/>.</summary>
+    internal static UnicodeWordKind GetWordKind(int codePoint)
+    {
+        return (UnicodeWordKind)((UnicodeTables.GetSentenceBreak(codePoint) >> 4) & 0x7);
+    }
+
     internal static EmojiProperties GetEmojiProperties(int codePoint)
     {
-        return (EmojiProperties)UnicodeTables.GeneralTuples[(UnicodeTables.GetGeneral(codePoint) * 2) + 1];
+        return (EmojiProperties)(UnicodeTables.GeneralTuples[(UnicodeTables.GetGeneral(codePoint) * 2) + 1] & 0x3F);
     }
 
     /// <summary>The flags that the line breaking rules read with the class: see <c>UnicodeTables.GetLineBreak</c>.</summary>

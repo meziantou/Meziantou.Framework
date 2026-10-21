@@ -856,12 +856,7 @@
     "total": 2
   },
   "html/webappapis/scripting/processing-model-2/integration-with-the-javascript-agent-formalism/atomics-wait-async.https.any.js": {
-    "harness": "TIMEOUT",
-    "total": 2,
-    "failures": {
-      "Atomics.waitAsync notification in a Window": "NOTRUN",
-      "Atomics.waitAsync timeout in a Window": "TIMEOUT"
-    }
+    "total": 2
   },
   "html/webappapis/scripting/processing-model-2/integration-with-the-javascript-agent-formalism/atomics-wait-async.https.any.js#dedicatedworker": {
     "harness": "TIMEOUT",
@@ -907,14 +902,7 @@
     }
   },
   "html/webappapis/scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-incumbent.html": {
-    "total": 11,
-    "failures": {
-      "Fulfillment handler on fulfilled promise, using backup incumbent settings object stack": "FAIL",
-      "Fulfillment handler on pending-then-fulfilled promise, using backup incumbent settings object stack": "FAIL",
-      "Rejection handler on pending-then-rejected promise, using backup incumbent settings object stack": "FAIL",
-      "Rejection handler on rejected promise, using backup incumbent settings object stack": "FAIL",
-      "Thenable resolution, using backup incumbent settings object stack": "FAIL"
-    }
+    "total": 11
   },
   "html/webappapis/scripting/processing-model-2/runtime-error-cross-origin-setInterval.html": {
     "total": 1
@@ -978,12 +966,7 @@
     "total": 1
   },
   "html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events-iframe.html": {
-    "harness": "TIMEOUT",
-    "total": 3,
-    "failures": {
-      "delayed handling: promise is created in iframe and being rejected elsewhere": "TIMEOUT",
-      "unhandledrejection: promise is created in iframe and being rejected elsewhere": "TIMEOUT"
-    }
+    "total": 3
   },
   "html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events-many-promises.dedicatedworker.html": {
     "total": 6

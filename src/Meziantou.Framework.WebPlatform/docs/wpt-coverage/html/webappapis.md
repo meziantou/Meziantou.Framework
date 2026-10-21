@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 304 | 337 | 1 | 90% |
+| [Stable](#stable-tests) | 306 | 337 | 1 | 91% |
 | [Tentative](#tentative-tests) | 2 | 6 | 0 | 33% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **306** | **343** | **1** | **89%** |
+| **All** | **308** | **343** | **1** | **90%** |
 
 ## Stable tests
 
@@ -270,13 +270,13 @@
 | [`scripting/processing-model-2/compile-error-same-origin-with-hash.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/compile-error-same-origin-with-hash.html) | Pass | 2 / 2 |  |  |
 | [`scripting/processing-model-2/compile-error-same-origin.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/compile-error-same-origin.html) | Pass | 2 / 2 |  |  |
 | [`scripting/processing-model-2/compile-error.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/compile-error.html) | Pass | 2 / 2 |  |  |
-| [`scripting/processing-model-2/integration-with-the-javascript-agent-formalism/atomics-wait-async.https.any.js`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/integration-with-the-javascript-agent-formalism/atomics-wait-async.https.any.js) | Timeout | 0 / 4 | JINT | `Atomics.waitAsync()` with a timeout never resolves its promise |
+| [`scripting/processing-model-2/integration-with-the-javascript-agent-formalism/atomics-wait-async.https.any.js`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/integration-with-the-javascript-agent-formalism/atomics-wait-async.https.any.js) | Timeout | 2 / 4 | JS ENGINE | `Atomics.waitAsync()` in a dedicated worker: the timeout never resolves the promise (the window variant passes) |
 | [`scripting/processing-model-2/integration-with-the-javascript-agent-formalism/requires-failure.https.any.js`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/integration-with-the-javascript-agent-formalism/requires-failure.https.any.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the Window agent's [[CanBlock]] is not false, so `Atomics.wait()` does not throw a `TypeError` on the main thread |
 | [`scripting/processing-model-2/integration-with-the-javascript-agent-formalism/requires-success.any.js`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/integration-with-the-javascript-agent-formalism/requires-success.any.js) | Pass | 2 / 2 |  |  |
 | [`scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-detached-iframe.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-detached-iframe.html) | Pass | 14 / 14 |  |  |
 | [`scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-entry-different-function-realm.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-entry-different-function-realm.html) | Fail | 0 / 5 | NOT IMPLEMENTED | the entry settings object of promise jobs, so `window.open()` URLs in promise reactions are resolved against the wrong document |
 | [`scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-entry.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-entry.html) | Fail | 1 / 6 | NOT IMPLEMENTED | the entry settings object of promise jobs, so `window.open()` URLs in promise reactions are resolved against the wrong document |
-| [`scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-incumbent.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-incumbent.html) | Fail | 6 / 11 | NOT IMPLEMENTED | the incumbent settings object: `postMessage()` called through another realm's function does not deliver the expected message/`source`, so even the sanity check never completes |
+| [`scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-incumbent.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-incumbent.html) | Pass | 11 / 11 |  |  |
 | [`scripting/processing-model-2/runtime-error-cross-origin-setInterval.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/runtime-error-cross-origin-setInterval.html) | Pass | 1 / 1 |  |  |
 | [`scripting/processing-model-2/runtime-error-cross-origin-setTimeout.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/runtime-error-cross-origin-setTimeout.html) | Pass | 1 / 1 |  |  |
 | [`scripting/processing-model-2/runtime-error-cross-origin.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/runtime-error-cross-origin.html) | Pass | 2 / 2 |  |  |
@@ -294,7 +294,7 @@
 | [`scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-event-constructor.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-event-constructor.html) | Pass | 1 / 1 |  |  |
 | [`scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-event-during-parse.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-event-during-parse.html) | Pass | 1 / 1 |  |  |
 | [`scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events-attached-in-event.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events-attached-in-event.html) | Pass | 1 / 1 |  |  |
-| [`scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events-iframe.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events-iframe.html) | Timeout | 1 / 3 | BUG | `unhandledrejection` is not fired at the iframe's window for a promise created in the iframe's realm and rejected from the parent |
+| [`scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events-iframe.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events-iframe.html) | Pass | 3 / 3 |  |  |
 | [`scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events-many-promises.dedicatedworker.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events-many-promises.dedicatedworker.html) | Pass | 6 / 6 |  |  |
 | [`scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events-many-promises.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events-many-promises.html) | Pass | 6 / 6 |  |  |
 | [`scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events-onerror.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events-onerror.html) | Pass | 1 / 1 |  |  |

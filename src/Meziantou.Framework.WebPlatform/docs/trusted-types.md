@@ -143,7 +143,7 @@ The sinks of the global objects, in the windows and in the workers:
 | Sink | Type | Name of the sink |
 |---|---|---|
 | The string handlers of `setTimeout()` and `setInterval()` | `TrustedScript` | `Window setTimeout`, `Window setInterval`, `WorkerGlobalScope setTimeout`, `WorkerGlobalScope setInterval` |
-| `eval()` and the `Function` constructors (Jint only) | `TrustedScript` | `eval`, `Function` |
+| `eval()` and the `Function` constructors | `TrustedScript` | `eval`, `Function` |
 | `importScripts()` (each URL, before the first script is fetched) | `TrustedScriptURL` | `WorkerGlobalScope importScripts` |
 | `new Worker()`, `new SharedWorker()` | `TrustedScriptURL` | `Worker constructor`, `SharedWorker constructor` |
 | `navigator.serviceWorker.register()` (the promise is rejected) | `TrustedScriptURL` | `ServiceWorkerContainer register` |
@@ -153,9 +153,10 @@ The string handlers of the timers are checked when the timer is created, as in t
 timer (https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#timer-initialisation-steps), where the
 exception would only be reported.
 
-With the Jint engine, `eval()` and the `Function` constructors check their code
-(https://w3c.github.io/webappsec-csp/#can-compile-strings): the code is trusted when it is a `TrustedScript` (all the
-arguments of a `Function` constructor), else the default policy is called with the `eval` or `Function` sink, and the
-compilation throws an `EvalError` when it is rejected or changed. `eval()` evaluates the data of a `TrustedScript`
-(HostGetCodeForEval), also without policy.
+`eval()` and the `Function` constructors check their code from the HostEnsureCanCompileStrings hook of the script engine
+(https://w3c.github.io/webappsec-csp/#can-compile-strings), before it is parsed: the code is trusted when it is a
+`TrustedScript` (all the arguments of a `Function` constructor), else the default policy is called with the code (the
+source text of the function for a constructor) and the `eval` or `Function` sink, and the compilation throws an
+`EvalError` when it is rejected or changed. `eval()` evaluates the data of a `TrustedScript` (HostGetCodeForEval), also
+without policy; another object is returned unchanged.
 `TrustedHTML.fromLiteral()` is not implemented (it is not part of the IDL of the specification).

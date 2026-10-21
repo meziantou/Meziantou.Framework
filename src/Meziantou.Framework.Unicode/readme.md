@@ -1,8 +1,9 @@
 # Meziantou.Framework.Unicode
 
 This package provides Unicode text algorithms and data that do not depend on the Unicode version of the runtime or on
-ICU: character properties, case mappings, grapheme, word and line segmentation, normalization, the bidirectional
-algorithm, script runs, internationalized domain names (IDNA), and confusable detection. The data is the one of Unicode 18.0.0.
+ICU: character properties, case mappings, grapheme, word, sentence and line segmentation, normalization, the
+bidirectional algorithm, script runs, internationalized domain names (IDNA), and confusable detection. The data is the
+one of Unicode 18.0.0.
 The types are in the `Meziantou.Framework` namespace.
 
 <!-- ref:../../tests/Meziantou.Framework.Unicode.Tests/UnicodeTests.cs;region=Unicode_ReplaceConfusablesCharacters;format=md-fenced-code-block;dedent=true -->
@@ -73,6 +74,10 @@ Span<UnicodeScript> scripts = stackalloc UnicodeScript[UnicodeScripts.MaxScriptE
 var count = UnicodeScripts.GetScriptExtensions(0x30FC, scripts);
 Assert.Equal<UnicodeScript>([UnicodeScript.Hiragana, UnicodeScript.Katakana], scripts[..count]);
 Assert.True(UnicodeScripts.HasScriptExtension(0x30FC, UnicodeScript.Katakana));
+
+// The names of PropertyValueAliases.txt
+Assert.True(UnicodeScripts.TryParseScript("Grek", out var script));
+Assert.Equal(UnicodeScript.Greek, script);
 ```
 <!-- endref -->
 
@@ -101,12 +106,16 @@ Assert.True(UnicodeProperties.IsIdStart('a')); // UAX #31
 Assert.True(UnicodeProperties.IsIdContinue('0'));
 Assert.Equal('a', UnicodeProperties.ToSimpleLowercase('A'));
 Assert.Equal(0x01C5, UnicodeProperties.ToSimpleTitlecase(0x01C6)); // 'ǆ' to 'ǅ'
+Assert.Equal('k', UnicodeProperties.ToSimpleCaseFold(0x212A)); // the Kelvin sign
+Assert.True(UnicodeProperties.HasBinaryProperty(0x00E9, UnicodeBinaryProperty.Alphabetic));
+Assert.Equal([new UnicodeRange('0', '9'), new UnicodeRange('A', 'F'), new UnicodeRange('a', 'f')], UnicodeProperties.GetBinaryPropertyRanges(UnicodeBinaryProperty.ASCIIHexDigit));
 ```
 <!-- endref -->
 
 The full case mappings can map a code point to several ones. They are the unconditional mappings of
 `SpecialCasing.txt`, else the simple mappings: the mappings that depend on the language (Turkish, Lithuanian) or on
-the context (the final sigma) are not applied.
+the context (the final sigma) are not applied to a code point: `UnicodeCaseMapping` applies them to a text (see
+[Case conversion](#case-conversion)).
 
 <!-- ref:../../tests/Meziantou.Framework.Unicode.Tests/UnicodeTests.cs;region=Unicode_CaseMappings;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -126,10 +135,45 @@ Assert.Equal<int>(['i', 0x0307], mapping[..length]);
 - The values are those of one version of the Unicode Standard, `UnicodeProperties.UnicodeVersion` (18.0.0), whatever
   the version the runtime implements. The results are the same on every platform and every framework version, and
   do not need ICU.
+- `HasBinaryProperty` and `GetBinaryPropertyRanges` give the binary properties of the Unicode Character Database
+  (`Alphabetic`, `White_Space`, `Changes_When_Casefolded`, the emoji properties...), except the contributory
+  `Other_*` properties. `ToSimpleCaseFold` is the simple case folding of `CaseFolding.txt` (statuses `C` and `S`).
+- `UnicodeEmoji.GetSequences` lists the emoji sequences of the properties of strings of
+  [UTS #51](https://www.unicode.org/reports/tr51/), such as `RGI_Emoji_Flag_Sequence`.
 - An unassigned code point has the default value the standard gives to its range, for instance `RightToLeft` in the
   Hebrew block. An integer that is not a code point has the default value of the property.
 - The numeric values of the enumerations (`UnicodeScript`, `UnicodeLineBreakClass`, ...) never change: a later
   version of the standard only appends values.
+
+## Case conversion
+
+`UnicodeCaseMapping` converts a text to uppercase or to lowercase with the full case mappings, and applies the
+mappings of `SpecialCasing.txt` that depend on the context and on the language: the final sigma of Greek in every
+language, the dotted and dotless I of Turkish and Azerbaijani (`tr`, `az`), and the dot that the Lithuanian `i` keeps
+under an accent (`lt`). The language is a BCP 47 language tag, of which only the language subtag is read; `null`
+selects the mappings that do not depend on the language, those of `String.prototype.toUpperCase` in JavaScript.
+
+<!-- ref:../../tests/Meziantou.Framework.Unicode.Tests/UnicodeTests.cs;region=Unicode_CaseMappingOfText;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The mappings that do not depend on the language, with the final sigma of Greek
+Assert.Equal("STRASSE", UnicodeCaseMapping.ToUpper("Stra\u00DFe"));
+Assert.Equal("\u03BF\u03B4\u03CC\u03C2", UnicodeCaseMapping.ToLower("\u039F\u0394\u038C\u03A3"));
+
+// Turkish and Azerbaijani: the dotless and the dotted I
+Assert.Equal("\u0131i", UnicodeCaseMapping.ToLower("I\u0130", "tr"));
+Assert.Equal("\u0130I", UnicodeCaseMapping.ToUpper("i\u0131", "tr-TR"));
+
+// Lithuanian: the i keeps its dot under an accent
+Assert.Equal("i\u0307\u0300", UnicodeCaseMapping.ToLower("\u00CC", "lt"));
+```
+<!-- endref -->
+
+- Unlike `string.ToUpper(CultureInfo)`, the conversion does not depend on ICU: the results are the same on every
+  platform and in globalization-invariant mode.
+- A character that is both cased and case-ignorable, such as the modifier letter U+02B0, is ignored when looking for
+  the cased letters around a sigma, as ICU does.
+- The tailorings of the Common Locale Data Repository that are not in `SpecialCasing.txt`, such as the removal of the
+  Greek accents when uppercasing, are not applied.
 
 ## Text segmentation
 
@@ -159,6 +203,30 @@ foreach (Range segment in Unicode.EnumerateWordBoundaries(text))
 
 Assert.Equal(["Hello", ",", " ", "world", "!"], segments);
 
+// The kind of each segment: whether it is a word (isWordLike in Intl.Segmenter)
+text = "I have 2 cats.";
+var words = new List<string>();
+var enumerator = Unicode.EnumerateWordBoundaries(text);
+while (enumerator.MoveNext())
+{
+    if (enumerator.CurrentKind is not UnicodeWordKind.None) // Number, Letter, Kana or Ideographic
+    {
+        words.Add(text[enumerator.Current]);
+    }
+}
+
+Assert.Equal(["I", "have", "2", "cats"], words);
+
+// Sentences: the spaces after the terminal punctuation belong to the sentence
+text = "It costs $3.50, i.e. not much. Really? Yes!";
+var sentences = new List<string>();
+foreach (Range sentence in Unicode.EnumerateSentenceBoundaries(text))
+{
+    sentences.Add(text[sentence]);
+}
+
+Assert.Equal(["It costs $3.50, i.e. not much. ", "Really? ", "Yes!"], sentences);
+
 // Line break opportunities
 text = "A long line\nof text";
 var lines = new List<string>();
@@ -174,6 +242,14 @@ foreach (UnicodeLineBreak lineBreak in Unicode.EnumerateLineBreaks(text))
 Assert.Equal(["A ", "long ", "line\n (mandatory)", "of ", "text (mandatory)"], lines);
 ```
 <!-- endref -->
+
+`UnicodeWordEnumerator.CurrentKind` tells whether a segment is a word, as the rule status of ICU does for the
+`isWordLike` property of `Intl.Segmenter`: `None` for spaces, punctuation, symbols and emoji, else `Number`, `Letter`,
+`Kana` or `Ideographic`, from the last character of the segment that is not a combining mark or a format character. A
+low line takes the kind of the character before it (`a_` is a letter word, `1_` a number).
+
+`EnumerateSentenceBoundaries` applies the default rules, without a list of abbreviations: `Mr. Smith` is two
+sentences, while `e.g. the` (a full stop before a lowercase word), `U.S.A.` and `3.14` are not broken.
 
 `EnumerateLineBreaks` takes two optional tailorings, which match the CSS properties `line-break` and `word-break`:
 

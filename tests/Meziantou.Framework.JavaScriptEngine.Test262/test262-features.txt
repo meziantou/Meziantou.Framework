@@ -1,0 +1,19 @@
+# The test262 features (the 'features' of the frontmatter) that the engine does not implement on purpose: the tests
+# that use one of them are not run, and are counted as excluded in summary.md.
+
+# Proposals below stage 4 (see test262's features.txt). The stage-3 proposals that are implemented anyway are not listed:
+# Intl.Era-monthcode, Intl.Locale-info, Intl.NumberFormat-v3, legacy-regexp, error-stack-accessor (used by
+# Meziantou.Framework.WebPlatform), Iterator.prototype.join, import-defer and source-phase-imports (the source of a
+# module is not available: source-phase-imports-module-source is excluded).
+ShadowRealm
+decorators
+source-phase-imports-module-source
+export-defer
+import-text
+import-bytes
+immutable-arraybuffer
+nonextensible-applies-to-private
+await-dictionary
+
+# Proper tail calls are in the specification, but no shipping engine except JavaScriptCore implements them
+tail-call-optimization

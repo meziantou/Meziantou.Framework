@@ -12,6 +12,11 @@ using SpecUpdate;
 //   SpecUpdate update        Resolve the latest revision of every source (or of the given sources, --except to exclude some), download spec data and rewrite tests/Meziantou.Framework.WebPlatform.SpecData/versions.json
 //   SpecUpdate fetch-tests   Materialize tests/Meziantou.Framework.WebPlatform.External/* at the revisions pinned in tests/Meziantou.Framework.WebPlatform.SpecData/versions.json and the paths of tests/Meziantou.Framework.WebPlatform.SpecData/sources.json
 //   SpecUpdate verify        Check that tests/Meziantou.Framework.WebPlatform.SpecData/ matches the checksums recorded in tests/Meziantou.Framework.WebPlatform.SpecData/versions.json
+//   SpecUpdate wpt-compare <baseline.jsonl> <candidate.jsonl> [--allowed <file>]
+//                            Compare two WPT_REPORT files (e.g. of two commits): the regressions,
+//                            the improvements and the duration ratio; fails on a regression not listed in the allowed file
+//                            (one test id per line, a trailing * matches a prefix, # starts a comment; or a JSON object
+//                            whose keys are the test ids and whose values are the reasons, e.g. engine-parity-exceptions.json)
 //   SpecUpdate wpt-coverage  Generate src/Meziantou.Framework.WebPlatform/docs/wpt-coverage.md and src/Meziantou.Framework.WebPlatform/docs/wpt-coverage/ from the WPT manifest, the expectations and the reasons (--check: fail if they are outdated or a reason is missing)
 
 var root = FindRepositoryRoot();
@@ -35,8 +40,15 @@ switch (command)
         return Verify() ? 0 : 1;
     case "wpt-coverage":
         return await GenerateWptCoverageAsync(check: args.Contains("--check", StringComparer.Ordinal)) ? 0 : 1;
+    case "wpt-compare" when args.Length >= 3:
+    {
+        var allowedIndex = Array.IndexOf(args, "--allowed");
+        var allowed = allowedIndex > 0 && allowedIndex + 1 < args.Length ? WptCompare.ReadAllowedRegressions(args[allowedIndex + 1]) : [];
+        return WptCompare.Compare(args[1], args[2], allowed, Console.Out) ? 0 : 1;
+    }
+
     default:
-        Console.WriteLine("Usage: SpecUpdate <update [source...] [--except source...]|fetch-tests|verify|wpt-coverage [--check]>");
+        Console.WriteLine("Usage: SpecUpdate <update [source...] [--except source...]|fetch-tests|verify|wpt-compare <baseline.jsonl> <candidate.jsonl> [--allowed <file>]|wpt-coverage [--check]>");
         return command == "help" ? 0 : 1;
 }
 

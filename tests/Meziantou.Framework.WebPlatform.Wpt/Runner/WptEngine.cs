@@ -1,31 +1,22 @@
-using Jint.Native;
-using Jint.Runtime;
+using Meziantou.Framework.JavaScriptEngine;
 using Meziantou.Framework.WebPlatform.Dom;
-using Meziantou.Framework.WebPlatform.Jint;
+using Meziantou.Framework.WebPlatform.JavaScript;
+using EngineObject = Meziantou.Framework.JavaScriptEngine.JsObject;
 using Meziantou.Framework.WebPlatform.Scripting;
 
 namespace Meziantou.Framework.WebPlatform.Wpt.Runner;
 
 /// <summary>
-/// The JavaScript engine that runs a test. The engine is Jint, the engine of the expectations (WPT_ENGINE=jint, the
-/// default).
+/// The JavaScript engine that runs a test: Meziantou.Framework.JavaScriptEngine (<see cref="JavaScriptWptEngine"/>), whose
+/// results are the expectations.
 /// </summary>
 internal abstract class WptEngine : IDisposable
 {
-    /// <summary>Gets whether the tests run with the engine of the expectations (Jint).</summary>
-    public static bool IsDefault => Environment.GetEnvironmentVariable("WPT_ENGINE") is null or "" or "jint";
-
     public abstract ScriptEngine ScriptEngine { get; }
 
     /// <param name="runner">The runner of the test.</param>
-    /// <param name="recursionLimit">The maximum depth of the calls of the scripts (a deeper call aborts the page), or null for no limit.</param>
-    public static WptEngine Create(WptTestRunner runner, int? recursionLimit = null)
-    {
-        if (IsDefault)
-            return new JintWptEngine(runner, recursionLimit);
-
-        throw new InvalidOperationException("Unknown WPT_ENGINE: " + Environment.GetEnvironmentVariable("WPT_ENGINE"));
-    }
+    /// <param name="recursionLimit">The maximum depth of the calls of the scripts (a deeper call aborts the page), or null for the limit of the engine.</param>
+    public static WptEngine Create(WptTestRunner runner, int? recursionLimit = null) => new JavaScriptWptEngine(runner, recursionLimit);
 
     /// <summary>Whether the exception is thrown by the engine when a script exceeds its time or resources.</summary>
     public abstract bool IsTimeout(Exception exception);
@@ -39,53 +30,49 @@ internal abstract class WptEngine : IDisposable
     public abstract void Dispose();
 }
 
-internal sealed class JintWptEngine : WptEngine
+internal sealed class JavaScriptWptEngine : WptEngine
 {
-    private readonly WptJintScriptEngine _engine;
+    private readonly WptJavaScriptScriptEngine _engine;
 
-    public JintWptEngine(WptTestRunner runner, int? recursionLimit)
+    public JavaScriptWptEngine(WptTestRunner runner, int? recursionLimit)
     {
-        _engine = new WptJintScriptEngine(runner, new JintScriptEngineOptions
+        _engine = new WptJavaScriptScriptEngine(runner, new JavaScriptScriptEngineOptions
         {
             Timeout = WptTestRunner.MaxDuration,
             MemoryLimit = null,
             RecursionLimit = recursionLimit,
             RegexTimeout = null,
 
-            ConfigureEngine = options =>
-            {
-                // Date uses the virtual clock of the runner, as performance.now() and the timers
-                options.TimeSystem = new WptTimeSystem(runner.Clock);
-
-                // An unbounded recursion throws a RangeError instead of ending the process (e.g. the harness of the WebAssembly
-                // core tests gets the class of the exception of a stack overflow from a recursion)
-                options.Constraints.StackOverflowGuard = true;
-            },
+            // Date uses the virtual clock of the runner, as performance.now() and the timers
+            TimeProvider = new WptDateTimeProvider(runner.Clock),
         });
     }
 
     public override ScriptEngine ScriptEngine => _engine;
 
-    public override bool IsTimeout(Exception exception) => exception is StatementsCountOverflowException or ExecutionCanceledException or MemoryLimitExceededException or RecursionDepthOverflowException;
+    public override bool IsTimeout(Exception exception) => exception is JsTerminationException;
 
-    public override void ResetConstraints() => _engine.Engine.Constraints.Reset();
+    // The limits of the engine apply to each entry into JavaScript
+    public override void ResetConstraints()
+    {
+    }
 
     public override string? DescribeError(object? error)
     {
-        if (error is not JsValue value)
-            return null;
+        if (error is not EngineObject value)
+            return error?.ToString();
 
         try
         {
             // The stack accessor of Error.prototype does not support platform objects (e.g. DOMException)
-            if (value is JintPlatformObject { Target: DomException exception })
+            if (value is JsHostObject { Target: DomException exception })
                 return exception.Name + ": " + exception.Message;
 
-            return value.IsObject() && TypeConverter.ToString(value.AsObject().Get("stack")) is { Length: > 0 } stack && stack != "undefined" ? stack : value.ToString();
+            using var scope = _engine.Engine.Enter();
+            var stack = value.GetErrorStack() ?? (value.GetProperty("stack") is { IsString: true } stackValue ? stackValue.AsString() : null);
+            return stack is { Length: > 0 } ? stack : _engine.Engine.ToString(value);
         }
-#pragma warning disable CA1031 // The description is only logged
         catch (Exception)
-#pragma warning restore CA1031
         {
             return value.ToString();
         }
@@ -94,24 +81,24 @@ internal sealed class JintWptEngine : WptEngine
     public override void Dispose() => _engine.Dispose();
 
     /// <summary>The script engine of the tests: the harness functions of the realms, and the document of the test page.</summary>
-    private sealed class WptJintScriptEngine : JintScriptEngine
+    private sealed class WptJavaScriptScriptEngine : JavaScriptScriptEngine
     {
         private readonly WptTestRunner _runner;
 
-        public WptJintScriptEngine(WptTestRunner runner, JintScriptEngineOptions options)
+        public WptJavaScriptScriptEngine(WptTestRunner runner, JavaScriptScriptEngineOptions options)
             : base(options)
         {
             _runner = runner;
         }
 
-        private WptJintScriptEngine(WptTestRunner runner, JintScriptEngineOptions options, CancellationToken terminationToken)
+        private WptJavaScriptScriptEngine(WptTestRunner runner, JavaScriptScriptEngineOptions options, CancellationToken terminationToken)
             : base(options, terminationToken)
         {
             _runner = runner;
         }
 
         /// <summary>The engines of the workers parse the scripts of the harness once, as the engine of the test page.</summary>
-        protected internal override ScriptEngine? CreateWorkerScriptEngine(CancellationToken terminationToken) => new WptJintScriptEngine(_runner, Options, terminationToken);
+        protected internal override ScriptEngine? CreateWorkerScriptEngine(CancellationToken terminationToken) => new WptJavaScriptScriptEngine(_runner, Options, terminationToken);
 
         protected internal override void OnDocumentActivated(Document document)
         {
@@ -119,7 +106,7 @@ internal sealed class JintWptEngine : WptEngine
             base.OnDocumentActivated(document);
         }
 
-        internal override void InitializeRealm(WebIdlRealm<JintAdapter, JsValue> realm) => _runner.SetupGlobals(realm);
+        internal override void InitializeRealm(WebIdlRealm<JavaScriptAdapter, object> realm) => _runner.SetupGlobals(realm);
 
         /// <summary>
         /// The scripts of the harness are parsed once for all the tests: the external scripts of <c>/resources/</c>, not the
@@ -130,17 +117,21 @@ internal sealed class JintWptEngine : WptEngine
     }
 }
 
-/// <summary>The time system of Jint (Date.now(), new Date()): the virtual clock of the runner, in its time zone (UTC), as document.lastModified.</summary>
-internal sealed class WptTimeSystem(TimeProvider clock) : global::Jint.Runtime.ITimeSystem
+/// <summary>
+/// The clock of Date.now() and new Date(): the virtual clock of the runner, in its time zone (UTC), as document.lastModified.
+/// Date.now() has a resolution of 1 ms: each read advances the virtual clock by 1 ms (instead of the 100 µs of a read of
+/// performance.now()), so that two reads return different values, as in a browser where time passes between them (e.g.
+/// the unique URLs made of Date.now() of module/dynamic-import/microtasks/basic.any.js).
+/// </summary>
+internal sealed class WptDateTimeProvider(TimeProvider clock) : TimeProvider
 {
-    private readonly global::Jint.Runtime.DefaultTimeSystem _default = new(clock.LocalTimeZone, System.Globalization.CultureInfo.CurrentCulture);
+    public override TimeZoneInfo LocalTimeZone => clock.LocalTimeZone;
 
-    public TimeZoneInfo DefaultTimeZone => _default.DefaultTimeZone;
+    public override long TimestampFrequency => clock.TimestampFrequency;
 
-    // Date.now() has a resolution of 1 ms: each read advances the virtual clock by 1 ms (instead of the 100 µs of a read of
-    // performance.now()), so that two reads return different values, as in a browser where time passes between them (e.g.
-    // the unique URLs made of Date.now() of module/dynamic-import/microtasks/basic.any.js)
-    public DateTimeOffset GetUtcNow()
+    public override long GetTimestamp() => clock.GetTimestamp();
+
+    public override DateTimeOffset GetUtcNow()
     {
         var now = clock.GetUtcNow();
         if (clock is Microsoft.Extensions.Time.Testing.FakeTimeProvider fake && fake.AutoAdvanceAmount < TimeSpan.FromMilliseconds(1))
@@ -150,8 +141,4 @@ internal sealed class WptTimeSystem(TimeProvider clock) : global::Jint.Runtime.I
 
         return now;
     }
-
-    public TimeSpan GetUtcOffset(long epochMilliseconds) => _default.GetUtcOffset(epochMilliseconds);
-
-    public bool TryParse(string date, out long epochMilliseconds) => _default.TryParse(date, out epochMilliseconds);
 }

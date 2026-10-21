@@ -1573,8 +1573,9 @@ when several policies are violated, each one reports its violation (in the order
   delivered, `statusCode` is the status of the response of the document (`200` for a worker), and `sample` is the sample
   of the violation (the first 40 UTF-16 code units, or 41 when the 40th one starts a surrogate pair, as in Firefox).
 - `sourceFile`, `lineNumber` and `columnNumber` are the location of the script that is running when the violation is
-  found, given by the script engine (`ScriptEngine.GetCurrentScriptLocation()`; the Jint engine gives the location of the
-  name of the called method, e.g. `createPolicy` in `trustedTypes.createPolicy()`). A request that is fetched after the
+  found, given by the script engine (`ScriptEngine.GetCurrentScriptLocation()`; `JavaScriptScriptEngine` gives the
+  position of the running instruction, as the top frame of its stack traces, e.g. the call of
+  `trustedTypes.createPolicy()`). A request that is fetched after the
   script that started it (e.g. the image of an `img` element, fetched in a microtask) has the location of the code
   running at that time.
 - The `report-uri` directive sends the deprecated JSON report (`{"csp-report": {...}}`, `application/csp-report`) to each
@@ -1617,11 +1618,11 @@ allows `'unsafe-eval'`, or `'trusted-types-eval'` when Trusted Types are enforce
 - A worker applies the policies of its own global object (the ones of its script response, or the ones of its creator
   for a `data:` or `blob:` worker).
 
-The Jint engine does not give the code to its HostEnsureCanCompileStrings hook: once a realm of an engine has a CSP list
-(or uses Trusted Types), the `eval` and `Function` properties of its realms (and the `constructor` of the prototypes of
-the other kinds of functions) are replaced by functions that check the code, then call the intrinsics of Jint. The
-replaced `eval` detects the direct calls (its callee is the identifier `eval`) and evaluates the code in the scope of the
-caller; an optional call (`eval?.(x)`) is a direct eval. The engines whose realms have no policy are not changed.
+The engine of `Meziantou.Framework.WebPlatform.JavaScript` calls the HostEnsureCanCompileStrings hook of the HTML
+Standard before it parses the code, with the realm of `eval` or of the constructor, the parameter strings, the body, the
+code (the source text of the function for the constructors) and the original arguments (the `TrustedScript` objects,
+whose data HostGetCodeForEval gives to `eval`). The intrinsics are not replaced: the direct and the indirect calls of
+`eval` are the ones of the engine. A realm whose global object has no CSP list pays a null check.
 
 ### Upgrade Insecure Requests
 
@@ -2128,13 +2129,16 @@ context.EventLoop.RunUntilIdle();
   The state is the one of the scheduler that posted the task: a task of another window that calls `yield()` of this
   window inherits nothing.
 - **Propagation of the scheduling state.** The specification attaches the state to the promise reactions when they are
-  created (HostMakeJobCallback) and restores it when they run. Jint does not expose these hooks, so: the state of a task is set while its callback and the microtasks of its microtask checkpoint
+  created (HostMakeJobCallback) and restores it when they run (HostCallJobCallback). The script engine implements these
+  hooks for the incumbent settings object and the active script, but the scheduling state of a task is not attached to
+  the job callbacks yet, so: the state of a task is set while its callback and the microtasks of its microtask checkpoint
   run; the microtasks of `queueMicrotask()` and the reactions created with `then()` (and `catch()`, `finally()`,
   `Promise.all()`...: a built-in function replaces `Promise.prototype.then`, once a scheduler was used in the event
   loop) restore the state they were created with; a continuation of `yield()` restores the state that `yield()`
   inherited. The reactions of `await` are created by the engine: an `await` of a promise that another task settles
   (a timer, a fetch) continues with the state of that task, i.e. without state in most cases, and the `yield()` that
-  follows has the default priority and no abort source.
+  follows has the default priority and no abort source
+  (`scheduler/tentative/yield/yield-inherit-across-promises.any.js` fails).
 - **Documents that are not fully active.** The tasks of the scheduler of a document that is no longer fully active
   (e.g. its `iframe` was removed) never run, and `postTask()` and `yield()` reject with a `NotSupportedError`, as in the
   browsers.
@@ -2936,7 +2940,7 @@ the clipboard of the operating system.
 var clipboard = new SystemClipboard();
 var context = new BrowsingContext(new BrowsingContextOptions
 {
-    ScriptEngine = new JintScriptEngine(),
+    ScriptEngine = new JavaScriptScriptEngine(),
     Clipboard = clipboard,
     ClipboardPermission = (document, access) => access == ClipboardAccess.Write, // the pages cannot read the clipboard
 });
@@ -3001,7 +3005,7 @@ The dedicated workers (`Worker`) and the shared workers (`SharedWorker`) are imp
 
 - Each worker is a new agent: its `DedicatedWorkerGlobalScope` or `SharedWorkerGlobalScope` runs its own event loop on
   its own thread, and its scripts run in the realm of its own script engine, created by
-  `ScriptEngine.CreateWorkerScriptEngine()` (`JintScriptEngine` creates a new Jint engine with the same options). The
+  `ScriptEngine.CreateWorkerScriptEngine()` (`JavaScriptScriptEngine` creates a new engine with the same options). The
   members of a worker global scope must be used on the thread of the worker. The callbacks of the options
   (`UnhandledScriptError`, `ConsoleMessage`) receive the `GlobalScope` and are invoked on the thread of the worker.
 - The script of a worker is fetched with the environment of its creator (classic scripts with the `same-origin` mode,

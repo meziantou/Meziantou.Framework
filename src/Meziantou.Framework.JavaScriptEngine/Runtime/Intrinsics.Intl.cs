@@ -48,6 +48,7 @@ internal sealed partial class Intrinsics
         InitializeIntlRelativeTimeFormat(_intl);
         InitializeIntlListFormat(_intl);
         InitializeIntlDisplayNames(_intl);
+        InitializeIntlSegmenter(_intl);
         LocaleSensitiveBuiltins.Initialize(this);
     }
 }

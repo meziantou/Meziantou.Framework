@@ -279,6 +279,26 @@ public sealed class IntlTests
         Assert.Equal("RangeError", Evaluate($"try {{ new Intl.DisplayNames('en', {{ type: '{type}' }}).of('{code}'); 'none' }} catch (e) {{ e.name }}"));
     }
 
+    [Theory]
+    [InlineData("grapheme", "e\u0301\U0001F1EB\U0001F1F7a", "e\u0301|\U0001F1EB\U0001F1F7|a")]
+    [InlineData("word", "Hello, world! 3.14", "Hello*|,| |world*|!| |3.14*")]
+    [InlineData("word", "\u65E5\u672C", "\u65E5*|\u672C*")]
+    [InlineData("sentence", "It costs $3.50. Really? Yes!", "It costs $3.50. |Really? |Yes!")]
+    public void Segmenter(string granularity, string text, string expected)
+    {
+        Assert.Equal(expected, Evaluate($"Array.from(new Intl.Segmenter('en', {{ granularity: '{granularity}' }}).segment('{text}'), s => s.segment + (s.isWordLike ? '*' : '')).join('|')"));
+    }
+
+    [Fact]
+    public void Segmenter_Containing()
+    {
+        Assert.Equal("world|6|true||[object Segmenter String Iterator]", Evaluate("""
+            const segments = new Intl.Segmenter('en', { granularity: 'word' }).segment('Hello world');
+            const segment = segments.containing(8);
+            [segment.segment, segment.index, segment.isWordLike, segments.containing(11), Object.prototype.toString.call(segments[Symbol.iterator]())].join('|')
+            """));
+    }
+
     [Fact]
     public void DefaultLocale()
     {

@@ -92,14 +92,8 @@ public partial class JsObject
         if (IsExotic || _map is not Shape shape)
             return null;
 
-        if (_elements is { } elements)
-        {
-            foreach (var element in elements)
-            {
-                if (!element.IsHole)
-                    return null;
-            }
-        }
+        if (HasAnyDenseElement())
+            return null;
 
         return shape;
     }
@@ -107,14 +101,8 @@ public partial class JsObject
     /// <summary>Gets whether an ordinary object may have an enumerable own property whose key is a string (no list is built).</summary>
     internal bool MayHaveEnumerableStringKeys()
     {
-        if (_elements is { } elements)
-        {
-            foreach (var element in elements)
-            {
-                if (!element.IsHole)
-                    return true;
-            }
-        }
+        if (HasAnyDenseElement())
+            return true;
 
         if (_map is Shape shape)
         {

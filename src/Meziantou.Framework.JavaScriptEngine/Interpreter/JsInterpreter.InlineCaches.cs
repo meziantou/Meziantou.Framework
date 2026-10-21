@@ -43,7 +43,82 @@ internal static partial class JsInterpreter
             return GetPropertyMiss(frame, name, cache, obj, target);
         }
 
-        return GetPropertyOfPrimitive(frame.Realm, target, frame.Code.Keys[name]);
+        // A primitive value: the length of a string, or a property of the prototype of the primitive (a method)
+        if (frame.Code.Caches[cache] is { } primitiveEntry)
+        {
+            if (primitiveEntry.Kind == PropertyCacheKind.StringLength)
+            {
+                if (target.Cell is JsString str)
+                    return str.Length;
+            }
+            else if (primitiveEntry.Kind == PropertyCacheKind.PrimitivePrototype && primitiveEntry.Epoch == InlineCache.Epoch
+                && ReferenceEquals(GetPrimitivePrototypeOrNull(frame.Realm, target), primitiveEntry.Prototype))
+            {
+                return primitiveEntry.Holder!.GetValueForCache(primitiveEntry.Position, primitiveEntry.InTable);
+            }
+        }
+
+        return GetPrimitivePropertyMiss(frame, name, cache, target);
+    }
+
+    /// <summary>Gets the prototype of a primitive value (the object of its wrapper), or null for undefined and null.</summary>
+    private static JsObject? GetPrimitivePrototypeOrNull(JsRealm realm, JsValue value)
+    {
+        return value.Cell switch
+        {
+            JsString => realm.Intrinsics.StringPrototype,
+            NumberCell => realm.Intrinsics.NumberPrototype,
+            BooleanCell => realm.Intrinsics.BooleanPrototype,
+            JsSymbol => realm.Intrinsics.SymbolPrototype,
+            JsBigInt => realm.Intrinsics.BigIntPrototype,
+            _ => null,
+        };
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static JsValue GetPrimitivePropertyMiss(Frame frame, int name, int cache, JsValue target)
+    {
+        ref readonly var key = ref frame.Code.Keys[name];
+        if (target.Cell is JsString && key.Equals(LengthKey))
+        {
+            frame.Code.Caches[cache] = new PropertyCacheEntry { Kind = PropertyCacheKind.StringLength };
+        }
+        else if (GetPrimitivePrototypeOrNull(frame.Realm, target) is { } prototype && !key.IsArrayIndex)
+        {
+            // A data property of the prototype chain of the primitive (an accessor needs the primitive as this: not cached)
+            for (var holder = prototype; holder is not null; holder = holder.PrototypeSlot)
+            {
+                if (holder.GetMapForCache(key) is not { } holderMap)
+                    break;
+
+                if (holder.TryFindOwnForCache(key, out var position, out var flags))
+                {
+                    if ((flags & PropertyFlags.Accessor) == 0)
+                    {
+                        for (var dependency = prototype; dependency is not null; dependency = dependency.PrototypeSlot)
+                        {
+                            dependency.MarkInlineCacheDependency();
+                            if (ReferenceEquals(dependency, holder))
+                                break;
+                        }
+
+                        frame.Code.Caches[cache] = new PropertyCacheEntry
+                        {
+                            Kind = PropertyCacheKind.PrimitivePrototype,
+                            Prototype = prototype,
+                            Holder = holder,
+                            Position = position,
+                            InTable = holderMap is PropertyTable,
+                            Epoch = InlineCache.Epoch,
+                        };
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        return GetPropertyOfPrimitive(frame.Realm, target, key);
     }
 
     private static JsValue CallGetter(JsValue accessor, JsValue receiver)

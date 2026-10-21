@@ -90,6 +90,8 @@ public sealed class InterpreterTests
     [InlineData("function get(o) { return o.x; } var o = {}; for (var i = 0; i < 100; i++) o['k' + i] = i; o.x = 'big'; var r = [get(o), get(o)]; delete o.k5; o.x = 'changed'; r.push(get(o)); r.join()", "big,big,changed")]
     [InlineData("function get(o) { return o.toString === Object.prototype.toString; } var r = [get({}), get({})]; Object.prototype.toString = function () { }; r.push(get({}), get(Object.create(null))); r.join()", "true,true,true,false")]
     [InlineData("var x = 1; function f() { return x; } var r = [f(), f()]; x = 2; r.push(f()); r.join()", "1,1,2")]
+    [InlineData("function up(s) { return s.toUpperCase(); } var r = [up('a'), up('b')]; String.prototype.toUpperCase = function () { return 'X'; }; r.push(up('c')); delete String.prototype.toUpperCase; r.push(typeof 'd'.toUpperCase); r.join()", "A,B,X,undefined")]
+    [InlineData("function len(s) { return s.length; } function fix(n) { return n.toFixed; } [len('ab'), len('abc'), len([1]), typeof fix(1), typeof fix(true), typeof fix(2)].join()", "2,3,1,function,undefined,function")]
     public void Evaluate_InlineCaches(string code, string expected)
     {
         Assert.Equal(expected, Run(code));

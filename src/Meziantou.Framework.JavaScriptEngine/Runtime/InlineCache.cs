@@ -51,6 +51,12 @@ internal enum PropertyCacheKind : byte
 
     /// <summary>A global lexical binding (let, const, class of a script).</summary>
     GlobalLexical,
+
+    /// <summary>The length of a string.</summary>
+    StringLength,
+
+    /// <summary>A data property of the prototype chain of a primitive value (the prototype of its wrapper is <see cref="PropertyCacheEntry.Prototype"/>).</summary>
+    PrimitivePrototype,
 }
 
 /// <summary>An entry of an inline cache (immutable).</summary>

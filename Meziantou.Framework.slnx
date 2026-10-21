@@ -409,6 +409,7 @@
     <Project Path="tools/Meziantou.Framework.Http.Hsts.Generator/Meziantou.Framework.Http.Hsts.Generator.csproj" />
     <Project Path="tools/Meziantou.Framework.Imaging.Av1TableExtractor/Meziantou.Framework.Imaging.Av1TableExtractor.csproj" />
     <Project Path="tools/Meziantou.Framework.Imaging.CorpusGenerator/Meziantou.Framework.Imaging.CorpusGenerator.csproj" />
+    <Project Path="tools/Meziantou.Framework.JavaScriptEngine.Data.Generator/Meziantou.Framework.JavaScriptEngine.Data.Generator.csproj" />
     <Project Path="tools/Meziantou.Framework.Markdown.Specs.Generator/Meziantou.Framework.Markdown.Specs.Generator.csproj" />
     <Project Path="tools/Meziantou.Framework.Unicode.Generator/Meziantou.Framework.Unicode.Generator.csproj" />
     <Project Path="tools/Meziantou.Framework.Uri.PublicSuffix.Generator/Meziantou.Framework.Uri.PublicSuffix.Generator.csproj" />

@@ -82,11 +82,20 @@ public sealed class JsArray : JsObject
 
     internal override bool Set(in PropertyKey key, JsValue value, JsValue receiver)
     {
-        // Fast path: an existing element of the dense storage
-        if (key.IsArrayIndex && receiver.Cell == this && DenseElements is { } elements && key.ArrayIndex < (uint)elements.Length && !elements[key.ArrayIndex].IsHole)
+        if (key.IsArrayIndex && receiver.Cell == this)
         {
-            elements[key.ArrayIndex] = value;
-            return true;
+            // Fast path: an existing element of the dense storage
+            var index = key.ArrayIndex;
+            if (DenseElements is { } elements && index < (uint)elements.Length && !elements[index].IsHole)
+            {
+                elements[index] = value;
+                return true;
+            }
+
+            // A hole or a new element (a[a.length] = x, fill): when no prototype has an element (no setter, no read-only
+            // element), [[Set]] creates an ordinary data property
+            if (ArrayOperations.PrototypesHaveNoElements(this) && TryCreateDenseElement(index, value))
+                return true;
         }
 
         return OrdinarySet(key, value, receiver);

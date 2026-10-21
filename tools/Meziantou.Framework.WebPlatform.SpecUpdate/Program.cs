@@ -15,7 +15,8 @@ using SpecUpdate;
 //   SpecUpdate wpt-compare <baseline.jsonl> <candidate.jsonl> [--allowed <file>]
 //                            Compare two WPT_REPORT files (e.g. WPT_ENGINE=jint and WPT_ENGINE=javascript): the regressions,
 //                            the improvements and the duration ratio; fails on a regression not listed in the allowed file
-//                            (one test id per line, a trailing * matches a prefix, # starts a comment)
+//                            (one test id per line, a trailing * matches a prefix, # starts a comment; or a JSON object
+//                            whose keys are the test ids and whose values are the reasons, e.g. engine-parity-exceptions.json)
 //   SpecUpdate wpt-coverage  Generate src/Meziantou.Framework.WebPlatform/docs/wpt-coverage.md and src/Meziantou.Framework.WebPlatform/docs/wpt-coverage/ from the WPT manifest, the expectations and the reasons (--check: fail if they are outdated or a reason is missing)
 
 var root = FindRepositoryRoot();
@@ -42,9 +43,7 @@ switch (command)
     case "wpt-compare" when args.Length >= 3:
     {
         var allowedIndex = Array.IndexOf(args, "--allowed");
-        var allowed = allowedIndex > 0 && allowedIndex + 1 < args.Length
-            ? File.ReadLines(args[allowedIndex + 1]).Select(line => line.Trim()).Where(line => line.Length > 0 && !line.StartsWith('#', StringComparison.Ordinal)).ToArray()
-            : [];
+        var allowed = allowedIndex > 0 && allowedIndex + 1 < args.Length ? WptCompare.ReadAllowedRegressions(args[allowedIndex + 1]) : [];
         return WptCompare.Compare(args[1], args[2], allowed, Console.Out) ? 0 : 1;
     }
 

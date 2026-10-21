@@ -49,6 +49,13 @@ namespace Meziantou.Framework.JavaScriptEngine
         public bool IsConstructor { get => throw null; }
     }
 
+    public sealed class JsProxy : Meziantou.Framework.JavaScriptEngine.JsObject
+    {
+        public Meziantou.Framework.JavaScriptEngine.JsObject? Handler { get => throw null; }
+        public bool IsRevoked { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsObject? Target { get => throw null; }
+    }
+
     public sealed class JsRealm
     {
         public Meziantou.Framework.JavaScriptEngine.JsEngine Engine { get => throw null; }

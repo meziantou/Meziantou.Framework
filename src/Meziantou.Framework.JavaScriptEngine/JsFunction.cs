@@ -13,6 +13,12 @@ public abstract class JsFunction : JsObject
     /// <summary>Gets the realm of the function ([[Realm]]).</summary>
     public JsRealm Realm { get; }
 
+    /// <summary>Gets the name given by SetFunctionName ([[InitialName]]), used by <c>Function.prototype.toString</c>.</summary>
+    internal string? InitialName { get; private set; }
+
+    /// <summary>Gets the source text of the function ([[SourceText]]), or null for a function without source text (built-in functions).</summary>
+    internal virtual string? GetSourceText() => null;
+
     /// <summary>Defines the <c>length</c> property (SetFunctionLength).</summary>
     internal void SetFunctionLength(double length) => DefineBuiltIn("length", length, PropertyFlags.Configurable);
 
@@ -35,6 +41,7 @@ public abstract class JsFunction : JsObject
             value = prefix + " " + value;
         }
 
+        InitialName = value;
         DefineBuiltIn("name", value, PropertyFlags.Configurable);
     }
 }

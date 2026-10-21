@@ -84,8 +84,6 @@ built-ins/Object/defineProperty/15.2.3.6-4-585.js:sloppy
 built-ins/Object/defineProperty/15.2.3.6-4-585.js:strict
 built-ins/Object/freeze/15.2.3.9-2-d-7.js:sloppy
 built-ins/Object/freeze/15.2.3.9-2-d-7.js:strict
-built-ins/Object/freeze/typedarray-backed-by-resizable-buffer.js:sloppy
-built-ins/Object/freeze/typedarray-backed-by-resizable-buffer.js:strict
 built-ins/Object/getOwnPropertyDescriptor/15.2.3.3-4-163.js:sloppy
 built-ins/Object/getOwnPropertyDescriptor/15.2.3.3-4-163.js:strict
 built-ins/Object/getOwnPropertyDescriptor/15.2.3.3-4-165.js:sloppy

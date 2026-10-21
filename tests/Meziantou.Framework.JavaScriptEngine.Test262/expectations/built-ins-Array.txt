@@ -20,8 +20,6 @@ built-ins/Array/isArray/15.4.3.2-1-10.js:sloppy
 built-ins/Array/isArray/15.4.3.2-1-10.js:strict
 built-ins/Array/prototype/concat/Array.prototype.concat_spreadable-reg-exp.js:sloppy
 built-ins/Array/prototype/concat/Array.prototype.concat_spreadable-reg-exp.js:strict
-built-ins/Array/prototype/entries/resizable-buffer.js:sloppy
-built-ins/Array/prototype/entries/resizable-buffer.js:strict
 built-ins/Array/prototype/every/15.4.4.16-1-12.js:sloppy
 built-ins/Array/prototype/every/15.4.4.16-1-12.js:strict
 built-ins/Array/prototype/every/15.4.4.16-5-16.js:sloppy
@@ -48,10 +46,6 @@ built-ins/Array/prototype/forEach/15.4.4.18-5-16.js:sloppy
 built-ins/Array/prototype/forEach/15.4.4.18-5-16.js:strict
 built-ins/Array/prototype/indexOf/15.4.4.14-1-12.js:sloppy
 built-ins/Array/prototype/indexOf/15.4.4.14-1-12.js:strict
-built-ins/Array/prototype/keys/resizable-buffer-shrink-mid-iteration.js:sloppy
-built-ins/Array/prototype/keys/resizable-buffer-shrink-mid-iteration.js:strict
-built-ins/Array/prototype/keys/resizable-buffer.js:sloppy
-built-ins/Array/prototype/keys/resizable-buffer.js:strict
 built-ins/Array/prototype/lastIndexOf/15.4.4.15-1-12.js:sloppy
 built-ins/Array/prototype/lastIndexOf/15.4.4.15-1-12.js:strict
 built-ins/Array/prototype/lastIndexOf/15.4.4.15-5-21.js:sloppy
@@ -80,7 +74,3 @@ built-ins/Array/prototype/toSorted/comparefn-not-a-function.js:sloppy
 built-ins/Array/prototype/toSorted/comparefn-not-a-function.js:strict
 built-ins/Array/prototype/toString/non-callable-join-string-tag.js:sloppy
 built-ins/Array/prototype/toString/non-callable-join-string-tag.js:strict
-built-ins/Array/prototype/values/resizable-buffer-shrink-mid-iteration.js:sloppy
-built-ins/Array/prototype/values/resizable-buffer-shrink-mid-iteration.js:strict
-built-ins/Array/prototype/values/resizable-buffer.js:sloppy
-built-ins/Array/prototype/values/resizable-buffer.js:strict

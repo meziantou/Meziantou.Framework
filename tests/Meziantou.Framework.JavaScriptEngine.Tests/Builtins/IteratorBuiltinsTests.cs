@@ -303,4 +303,68 @@ public sealed class IteratorBuiltinsTests
         Assert.True(dispose.Call(source.Object, []).IsUndefined);
         Assert.Equal(1, source.ReturnCalls);
     }
+
+    [Theory]
+    [InlineData("JSON.stringify([1, 2, 3, 4, 5].values().chunks(2).toArray())", "[[1,2],[3,4],[5]]")]
+    [InlineData("JSON.stringify([1, 2, 3, 4].values().windows(3).toArray())", "[[1,2,3],[2,3,4]]")]
+    [InlineData("JSON.stringify([1, 2].values().windows(3).toArray())", "[]")]
+    [InlineData("JSON.stringify([1, 2].values().windows(3, 'allow-partial').toArray())", "[[1,2]]")]
+    [InlineData("[4, 5, NaN].values().includes(NaN) + ',' + [4, 5].values().includes(4, 1) + ',' + [4, 5].values().includes(5, 1)", "true,false,true")]
+    [InlineData("JSON.stringify(Iterator.zip([[1, 2, 3], ['a', 'b']]).toArray())", "[[1,\"a\"],[2,\"b\"]]")]
+    [InlineData("JSON.stringify(Iterator.zip([[1, 2, 3], ['a']], { mode: 'longest', padding: [0, 'z'] }).toArray())", "[[1,\"a\"],[2,\"z\"],[3,\"z\"]]")]
+    [InlineData("try { Iterator.zip([[1, 2], [1]], { mode: 'strict' }).toArray(); 'no error' } catch (e) { e.constructor.name }", "TypeError")]
+    [InlineData("JSON.stringify(Iterator.zipKeyed({ a: [1, 2], b: [3] }).toArray())", "[{\"a\":1,\"b\":3}]")]
+    [InlineData("Object.getPrototypeOf(Iterator.zipKeyed({ a: [1] }).next().value)", "null")]
+    public void Proposals(string code, string expected)
+    {
+        using var context = new BuiltinsTestContext();
+        Assert.Equal(expected, context.Realm.Evaluate(code).ToString());
+    }
+
+    [Fact]
+    public void Proposals_ValidationClosesTheReceiver()
+    {
+        using var context = new BuiltinsTestContext();
+        var source = CreateIterator(context, 1, 2);
+        context.AssertThrows("RangeError", () => BuiltinsTestContext.Invoke(source.Object, "chunks", 0));
+        context.AssertThrows("TypeError", () => BuiltinsTestContext.Invoke(source.Object, "windows", 1.5));
+        context.AssertThrows("TypeError", () => BuiltinsTestContext.Invoke(source.Object, "windows", 1, "partial"));
+        context.AssertThrows("TypeError", () => BuiltinsTestContext.Invoke(source.Object, "includes", 1, "1"));
+        context.AssertThrows("RangeError", () => BuiltinsTestContext.Invoke(source.Object, "includes", 1, -1));
+        Assert.Equal(5, source.ReturnCalls);
+        Assert.Equal(0, source.NextCalls);
+    }
+
+    [Fact]
+    public void Chunks_ReturnAfterTheLastPartialChunkDoesNotClose()
+    {
+        using var context = new BuiltinsTestContext();
+        var source = CreateIterator(context, 1, 2, 3);
+        var chunks = BuiltinsTestContext.Invoke(source.Object, "chunks", 2);
+        Assert.Equal("1,2", BuiltinsTestContext.Format(ValueOf(Next(chunks))));
+        Assert.Equal("3", BuiltinsTestContext.Format(ValueOf(Next(chunks))));
+        BuiltinsTestContext.Invoke(chunks, "return");
+        Assert.Equal(0, source.ReturnCalls);
+    }
+
+    [Fact]
+    public void Zip_ReturnClosesAllTheOpenIterators()
+    {
+        using var context = new BuiltinsTestContext();
+        var first = CreateIterator(context, 1, 2);
+        var second = CreateIterator(context, 3, 4);
+        var zip = context.CallStatic("Iterator", "zip", context.Array(first.Object, second.Object));
+        Assert.Equal("1,3", BuiltinsTestContext.Format(ValueOf(Next(zip))));
+        BuiltinsTestContext.Invoke(zip, "return");
+        Assert.Equal(1, first.ReturnCalls);
+        Assert.Equal(1, second.ReturnCalls);
+
+        // The shortest mode closes the other iterators when one is done
+        var short1 = CreateIterator(context, 1);
+        var short2 = CreateIterator(context, 3, 4);
+        var zip2 = context.CallStatic("Iterator", "zip", context.Array(short1.Object, short2.Object));
+        BuiltinsTestContext.Iterate(zip2);
+        Assert.Equal(0, short1.ReturnCalls);
+        Assert.Equal(1, short2.ReturnCalls);
+    }
 }

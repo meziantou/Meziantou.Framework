@@ -6,7 +6,7 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// The Iterator constructor, %Iterator.prototype% and its helpers, %IteratorHelperPrototype% and
 /// %WrapForValidIteratorPrototype% (https://tc39.es/ecma262/#sec-iteration).
 /// </summary>
-internal static class IteratorBuiltins
+internal static partial class IteratorBuiltins
 {
     private const double MaxSafeInteger = 9007199254740991;
 
@@ -38,6 +38,7 @@ internal static class IteratorBuiltins
         realm.DefineMethod(prototype, "toArray", 0, ToArray);
         realm.DefineMethod(prototype, WellKnownSymbols.Iterator, 0, (_, thisValue, _, _) => thisValue);
         realm.DefineMethod(prototype, WellKnownSymbols.Dispose, 0, Dispose);
+        InitializeProposals(realm, constructor, prototype);
 
         var helperPrototype = intrinsics.IteratorHelperPrototype;
         realm.DefineMethod(helperPrototype, "next", 0, HelperNext);

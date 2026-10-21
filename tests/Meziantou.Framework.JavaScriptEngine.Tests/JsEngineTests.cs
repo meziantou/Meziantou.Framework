@@ -245,6 +245,21 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void HostCodeForEval_IsUsedByEvalAndTheFunctionConstructor()
+    {
+        using var engine = new JsEngine(new JsEngineOptions { Host = new TrustedCodeHost() });
+        var realm = engine.CreateRealm();
+
+        // The code of a trusted object is its code, not the result of its toString method
+        Assert.Equal("15,4,0", realm.Execute("""
+            let calls = 0;
+            const trusted = code => ({ trustedCode: code, toString() { calls++; return 'forged'; } });
+            const f = new Function(trusted('a'), trusted('b'), trusted('return a * b'));
+            [f(3, 5), eval(trusted('2 + 2')), calls].join()
+            """).AsString());
+    }
+
+    [Fact]
     public void ActiveScriptOrModule()
     {
         using var engine = new JsEngine();
@@ -260,7 +275,15 @@ public sealed class JsEngineTests
         }));
         realm.Execute("\n  probe();", "active.js");
         Assert.Equal("active.js", url);
-        Assert.Equal(2, location?.Line);
+        Assert.Equal(new JsSourceLocation("active.js", 2, 3), location);
+
+        // The location of a call in the concise body of an arrow function is the location of the call
+        realm.Execute("[0].forEach(_ =>\n    probe());", "arrow.js");
+        Assert.Equal(new JsSourceLocation("arrow.js", 2, 5), location);
+
+        // The location of a method call is the location of the name of the method
+        realm.Execute("var o = { m: probe };\no.\n  m();", "method.js");
+        Assert.Equal(new JsSourceLocation("method.js", 3, 3), location);
         Assert.Null(engine.GetActiveScriptOrModule());
     }
 
@@ -312,6 +335,21 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void DeepRecursionThroughHostFunctionsThrowsARangeError()
+    {
+        // Without a recursion limit, the .NET stack is the limit: the recursion through host functions and conversions
+        // throws a RangeError instead of overflowing the stack of the thread
+        using var engine = new JsEngine(new JsEngineOptions { RecursionLimit = int.MaxValue });
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        realm.GlobalObject.SetProperty("convert", realm.CreateFunction("convert", 1, (_, arguments) => engine.ToString(arguments[0])));
+        Assert.Equal("RangeError", realm.Execute("""
+            const value = { toString() { return convert(value); } };
+            try { convert(value); } catch (e) { e.name }
+            """).AsString());
+    }
+
+    [Fact]
     public void SyntaxErrorsHaveTheirLocation()
     {
         using var engine = new JsEngine();
@@ -357,6 +395,17 @@ public sealed class JsEngineTests
             }
 
             return base.GetOwnPropertyCore(key, out descriptor);
+        }
+    }
+
+    private sealed class TrustedCodeHost : JsHost
+    {
+        public override string? GetCodeForEval(JsEngine engine, JsValue argument)
+        {
+            if (argument.TryGetObject() is { } obj && obj.TryGetOwnProperty("trustedCode", out var descriptor))
+                return descriptor.Value.AsString();
+
+            return base.GetCodeForEval(engine, argument);
         }
     }
 

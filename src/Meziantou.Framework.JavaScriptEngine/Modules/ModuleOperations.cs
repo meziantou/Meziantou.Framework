@@ -58,7 +58,7 @@ internal static class ModuleOperations
                 }
                 else
                 {
-                    HostLoadImportedModule(cyclic.Realm, cyclic, request, state.HostDefined, state);
+                    HostLoadImportedModule(cyclic.Realm, cyclic.Realm, cyclic, request, state.HostDefined, state);
                 }
 
                 if (!state.IsLoading)
@@ -123,9 +123,9 @@ internal static class ModuleOperations
     }
 
     /// <summary>HostLoadImportedModule(referrer, moduleRequest, hostDefined, payload)</summary>
-    private static void HostLoadImportedModule(JsRealm realm, IScriptOrModule? referrer, ModuleRequest request, object? hostDefined, object payload)
+    private static void HostLoadImportedModule(JsRealm realm, JsRealm currentRealm, IScriptOrModule? referrer, ModuleRequest request, object? hostDefined, object payload)
     {
-        var loadRequest = new JsModuleLoadRequest(realm, referrer, request, hostDefined, payload);
+        var loadRequest = new JsModuleLoadRequest(realm, currentRealm, referrer, request, hostDefined, payload);
         if (realm.Engine.Options.ModuleLoader is not { } loader)
         {
             loadRequest.Fail("Cannot load the module '" + request.Specifier + "': the engine has no module loader");
@@ -594,7 +594,7 @@ internal static class ModuleOperations
             return capability.Promise;
         }
 
-        HostLoadImportedModule(referrer?.Realm ?? realm, referrer, request, hostDefined: null, capability);
+        HostLoadImportedModule(referrer?.Realm ?? realm, realm, referrer, request, hostDefined: null, capability);
         return capability.Promise;
     }
 

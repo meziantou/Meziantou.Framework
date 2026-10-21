@@ -28,12 +28,12 @@ internal static class DynamicFunctions
     public static JsObject CreateDynamicFunction(JsBuiltinFunction constructor, JsObject? newTarget, DynamicFunctionKind kind, ReadOnlySpan<JsValue> arguments)
     {
         newTarget ??= constructor;
-        var source = GetSource(kind, arguments);
+        var source = GetSource(constructor.Realm.Engine, kind, arguments);
         return Interpreter.JsInterpreter.CreateDynamicFunction(constructor, newTarget, kind, source, arguments);
     }
 
     /// <summary>Converts the arguments to strings (the parameters, then the body) and assembles the source text of the function.</summary>
-    public static DynamicFunctionSource GetSource(DynamicFunctionKind kind, ReadOnlySpan<JsValue> arguments)
+    public static DynamicFunctionSource GetSource(JsEngine engine, DynamicFunctionKind kind, ReadOnlySpan<JsValue> arguments)
     {
         var prefix = kind switch
         {
@@ -55,13 +55,19 @@ internal static class DynamicFunctions
             }
 
             // Each argument is converted once (the strings are given to HostEnsureCanCompileStrings)
-            parameterStrings[i] = JsOperations.ToString(arguments[i]);
+            parameterStrings[i] = GetCode(engine, arguments[i]);
             parameters.Append(parameterStrings[i]);
         }
 
-        var body = arguments.Length == 0 ? "" : JsOperations.ToString(arguments[^1]);
+        var body = arguments.Length == 0 ? "" : GetCode(engine, arguments[^1]);
         var parametersString = parameters.ToString();
         var sourceText = prefix + " anonymous(" + parametersString + "\n) {\n" + body + "\n}";
         return new DynamicFunctionSource(parametersString, parameterStrings, body, sourceText);
     }
+
+    /// <summary>
+    /// The code of an argument (https://tc39.es/proposal-dynamic-code-brand-checks/#sec-createdynamicfunction): the code
+    /// of the host (HostGetCodeForEval, e.g. the data of a TrustedScript, whose toString is not called), else ToString.
+    /// </summary>
+    private static string GetCode(JsEngine engine, JsValue argument) => argument.IsString ? argument.AsString() : engine.HostGetCodeForEval(argument) ?? JsOperations.ToString(argument);
 }

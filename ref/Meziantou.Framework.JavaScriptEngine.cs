@@ -61,6 +61,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public void Dispose() { }
         public void EnqueueJob(System.Action job, Meziantou.Framework.JavaScriptEngine.JsRealm? realm = null) { }
         public Meziantou.Framework.JavaScriptEngine.JsEngineScope Enter() => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsScriptContextScope EnterActiveScriptOrModule(Meziantou.Framework.JavaScriptEngine.JsScriptOrModule? scriptOrModule) => throw null;
         public System.IDisposable EnterNestedJobQueue() => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsScriptOrModule? GetActiveScriptOrModule() => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsSourceLocation? GetCurrentLocation() => throw null;
@@ -208,6 +209,7 @@ namespace Meziantou.Framework.JavaScriptEngine
     public sealed class JsModuleLoadRequest
     {
         public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, string>> Attributes { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsRealm CurrentRealm { get => throw null; }
         public object? HostDefined { get => throw null; }
         public bool IsDynamicImport { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsRealm Realm { get => throw null; }
@@ -380,6 +382,16 @@ namespace Meziantou.Framework.JavaScriptEngine
     public sealed class JsScript : Meziantou.Framework.JavaScriptEngine.JsScriptOrModule
     {
         public bool MutedErrors { get => throw null; }
+    }
+
+    public readonly struct JsScriptContextScope : System.IDisposable, System.IEquatable<Meziantou.Framework.JavaScriptEngine.JsScriptContextScope>
+    {
+        public void Dispose() { }
+        public bool Equals(Meziantou.Framework.JavaScriptEngine.JsScriptContextScope other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.JavaScriptEngine.JsScriptContextScope left, Meziantou.Framework.JavaScriptEngine.JsScriptContextScope right) => throw null;
+        public static bool operator !=(Meziantou.Framework.JavaScriptEngine.JsScriptContextScope left, Meziantou.Framework.JavaScriptEngine.JsScriptContextScope right) => throw null;
     }
 
     public abstract class JsScriptOrModule

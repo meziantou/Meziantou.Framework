@@ -11,6 +11,9 @@ public sealed partial class JsEngine
     private const long InterruptCheckInterval = 1024;
 
     private readonly List<Frame> _frames = [];
+
+    // The script execution contexts pushed by the host (EnterActiveScriptOrModule), with the number of frames when they were pushed
+    private readonly List<(int FrameCount, JsScriptOrModule? Script)> _scriptContexts = [];
     private long _interruptCounter;
     private long _nextInterruptCheck = InterruptCheckInterval;
     private long _executionStart;
@@ -37,6 +40,53 @@ public sealed partial class JsEngine
 
     /// <summary>Gets the frames of the running code, the innermost last.</summary>
     internal IReadOnlyList<Frame> Frames => _frames;
+
+    /// <summary>
+    /// Pushes an execution context whose ScriptOrModule is <paramref name="scriptOrModule"/> until the returned scope is
+    /// disposed: it is the active script or module (<see cref="GetActiveScriptOrModule"/>) of the code it runs, until code
+    /// that has its own script or module runs (e.g. HostCallJobCallback restores the active script captured by
+    /// HostMakeJobCallback, so that the code compiled by an <c>eval</c> called by a promise job resolves its imports against it).
+    /// </summary>
+    /// <param name="scriptOrModule">The script or module, or null for an execution context without script or module.</param>
+    public JsScriptContextScope EnterActiveScriptOrModule(JsScriptOrModule? scriptOrModule)
+    {
+        _scriptContexts.Add((_frames.Count, scriptOrModule));
+        return new JsScriptContextScope(this, _scriptContexts.Count);
+    }
+
+    internal void ExitActiveScriptOrModule(int count)
+    {
+        if (_scriptContexts.Count != count)
+            throw new InvalidOperationException("The script contexts must be exited in the reverse order they were entered");
+
+        _scriptContexts.RemoveAt(count - 1);
+    }
+
+    /// <summary>GetActiveScriptOrModule(): the script or module of the innermost frame or script context of the host that has one.</summary>
+    internal Interpreter.IScriptOrModule? FindActiveScriptOrModule()
+    {
+        var contextIndex = _scriptContexts.Count - 1;
+        for (var i = _frames.Count - 1; i >= 0; i--)
+        {
+            // The contexts pushed after the frame was pushed are above it
+            for (; contextIndex >= 0 && _scriptContexts[contextIndex].FrameCount > i; contextIndex--)
+            {
+                if (_scriptContexts[contextIndex].Script is { } contextScript)
+                    return contextScript;
+            }
+
+            if (_frames[i].Script is { } script)
+                return script;
+        }
+
+        for (; contextIndex >= 0; contextIndex--)
+        {
+            if (_scriptContexts[contextIndex].Script is { } contextScript)
+                return contextScript;
+        }
+
+        return null;
+    }
 
     /// <summary>Starts an entry into JavaScript: the limits of <see cref="JsEngineOptions"/> apply to each entry.</summary>
     private void StartExecution()

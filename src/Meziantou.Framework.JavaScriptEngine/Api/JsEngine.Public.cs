@@ -124,7 +124,17 @@ public sealed partial class JsEngine
     // ------------------------------------------------------------------------------------------------------------------
 
     /// <summary>Gets the position of the running JavaScript code (the call of the running .NET callback), or null when no script runs.</summary>
-    public JsSourceLocation? GetCurrentLocation() => CurrentFrame is { } frame ? JsInterpreter.GetLocation(frame) : null;
+    public JsSourceLocation? GetCurrentLocation()
+    {
+        if (CurrentFrame is not { } frame)
+            return null;
+
+        // The running frame is at the start of its current instruction (e.g. the call of the .NET callback), as the top
+        // frame of the stack traces
+        var offset = frame.Code.GetSourceOffset(frame.Pc);
+        var (line, column) = frame.Code.Source.GetLineAndColumn(Math.Max(0, offset));
+        return new JsSourceLocation(frame.Code.Source.Url, line, column);
+    }
 
     /// <summary>GetActiveScriptOrModule(): the script or the module of the innermost running code that has one, or null.</summary>
     public JsScriptOrModule? GetActiveScriptOrModule() => JsInterpreter.GetActiveScriptOrModule(CurrentFrame) as JsScriptOrModule;

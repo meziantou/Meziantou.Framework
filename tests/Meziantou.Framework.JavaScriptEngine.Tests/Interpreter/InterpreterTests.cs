@@ -44,6 +44,7 @@ public sealed class InterpreterTests
     [InlineData("new Function('a', 'b', 'return a + b')(1, 2)", "3")]
     [InlineData("var r = 0; Promise.resolve(5).then(v => { globalThis.r = v; }); r", "0")]
     [InlineData("var x = []; for (var k = 0; k <= 32; k++) x[Math.pow(2, k) - 2] = k; x.length + ',' + x[4294967294] + ',' + x[2147483646]", "4294967295,32,31")]
+    [InlineData("var n = 0; function f() { n++; } var r = []; for (var code of ['f() = 1', 'f() += 1', 'f()++', '--f()', 'for (f() in [1]) {}', 'for (f() of [1]) {}']) { try { eval(code); } catch (e) { r.push(e.constructor.name); } } r.length + ',' + r[0] + ',' + n", "6,ReferenceError,6")]
     public void Evaluate(string code, string expected)
     {
         Assert.Equal(expected, Run(code));

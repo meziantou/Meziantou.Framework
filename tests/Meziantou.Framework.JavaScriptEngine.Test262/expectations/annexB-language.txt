@@ -23,13 +23,6 @@ annexB/language/eval-code/indirect/global-if-decl-no-else-eval-global-skip-early
 annexB/language/eval-code/indirect/global-if-stmt-else-decl-eval-global-skip-early-err.js:sloppy
 annexB/language/eval-code/indirect/global-switch-case-eval-global-skip-early-err.js:sloppy
 annexB/language/eval-code/indirect/global-switch-dflt-eval-global-skip-early-err.js:sloppy
-annexB/language/expressions/assignmenttargettype/callexpression-as-for-in-lhs.js:sloppy
-annexB/language/expressions/assignmenttargettype/callexpression-as-for-of-lhs.js:sloppy
-annexB/language/expressions/assignmenttargettype/callexpression-in-compound-assignment.js:sloppy
-annexB/language/expressions/assignmenttargettype/callexpression-in-postfix-update.js:sloppy
-annexB/language/expressions/assignmenttargettype/callexpression-in-prefix-update.js:sloppy
-annexB/language/expressions/assignmenttargettype/callexpression.js:sloppy
-annexB/language/expressions/assignmenttargettype/cover-callexpression-and-asyncarrowhead.js:sloppy
 annexB/language/function-code/block-decl-func-skip-arguments.js:sloppy
 annexB/language/literals/regexp/class-escape.js:sloppy
 annexB/language/literals/regexp/class-escape.js:strict

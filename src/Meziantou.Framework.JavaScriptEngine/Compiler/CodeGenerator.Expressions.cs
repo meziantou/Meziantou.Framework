@@ -609,6 +609,9 @@ internal sealed partial class CodeGenerator
         SuperProperty,
         SuperElement,
         Private,
+
+        /// <summary>A call in sloppy code (web compatibility): the call is evaluated, then a ReferenceError is thrown.</summary>
+        InvalidCall,
     }
 
     /// <summary>Evaluates the base (and the key) of a reference: the values a get and a put need (e.g. object, or object key).</summary>
@@ -643,6 +646,12 @@ internal sealed partial class CodeGenerator
                 }
 
                 return TargetKind.Property;
+            case CallExpression call:
+                EmitExpression(call);
+                _builder.Emit(OpCode.Pop);
+                _builder.SetPosition(call.Start);
+                _builder.Emit(OpCode.ThrowError, (int)ErrorType.ReferenceError, _builder.AddConstant("Invalid left-hand side in assignment"));
+                return TargetKind.InvalidCall;
             default:
                 throw new InvalidOperationException("Invalid assignment target: " + target.Type);
         }
@@ -676,6 +685,10 @@ internal sealed partial class CodeGenerator
                 break;
             case TargetKind.Private:
                 EmitPrivateOperation(OpCode.GetPrivate, (PrivateIdentifier)((MemberExpression)target).Property);
+                break;
+            case TargetKind.InvalidCall:
+                // Unreachable: the base has thrown
+                _builder.Emit(OpCode.PushUndefined);
                 break;
         }
     }
@@ -718,7 +731,7 @@ internal sealed partial class CodeGenerator
     {
         return kind switch
         {
-            TargetKind.Identifier => 0,
+            TargetKind.Identifier or TargetKind.InvalidCall => 0,
             TargetKind.Property or TargetKind.SuperProperty or TargetKind.Private or TargetKind.DynamicIdentifier => 1,
             _ => 2,
         };

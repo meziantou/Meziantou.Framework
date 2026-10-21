@@ -114,7 +114,9 @@ internal sealed class WavReader : IMediaTagReader
     {
         foreach (var chunk in chunks)
         {
-            if (chunk.Data is null)
+            // A chunk identifier is four printable characters. Anything else comes from a misaligned parse, and
+            // cannot be stored back as a custom field name.
+            if (chunk.Data is null || !IsValidInfoId(chunk.Id))
                 continue;
 
             var value = ReadInfoString(chunk.Data);
@@ -154,6 +156,17 @@ internal sealed class WavReader : IMediaTagReader
                     break;
             }
         }
+    }
+
+    private static bool IsValidInfoId(string id)
+    {
+        foreach (var c in id)
+        {
+            if (c is < ' ' or > '~')
+                return false;
+        }
+
+        return true;
     }
 
     private static string ReadInfoString(byte[] data)

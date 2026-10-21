@@ -90,6 +90,12 @@ internal static class Id3v2Writer
         // Custom fields as TXXX
         foreach (var (key, value) in tags.CustomFields)
         {
+            if (key.Contains('\0', StringComparison.Ordinal))
+            {
+                errorMessage = "A custom field name cannot contain a null character in an ID3v2 tag.";
+                return false;
+            }
+
             AddUserDefinedTextFrame(frames, key, value);
         }
 

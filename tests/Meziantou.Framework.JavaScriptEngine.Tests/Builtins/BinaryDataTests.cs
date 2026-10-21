@@ -33,6 +33,22 @@ public sealed class BinaryDataTests
         return options;
     }
 
+    // The binary data built-ins are created when they are first needed: by a global, or by another built-in
+    [Theory]
+    [InlineData("var d = Object.getOwnPropertyDescriptor(globalThis, 'Uint8Array'); [typeof d.value, d.writable, d.enumerable, d.configurable, d.value.name].join()", "function,true,false,true,Uint8Array")]
+    [InlineData("var names = Object.getOwnPropertyNames(globalThis); [names.indexOf('ArrayBuffer') < names.indexOf('SharedArrayBuffer'), names.indexOf('DataView') < names.indexOf('Int8Array'), names.indexOf('Float64Array') < names.indexOf('Atomics'), names.indexOf('Atomics') > 0].join()", "true,true,true,true")]
+    [InlineData("delete globalThis.ArrayBuffer; new Uint8Array(2).buffer.constructor.name", "ArrayBuffer")]
+    [InlineData("Object.getPrototypeOf(Float64Array) === Object.getPrototypeOf(Int8Array) && Object.getPrototypeOf(Int8Array.prototype) === Object.getPrototypeOf(Float64Array.prototype)", "true")]
+    [InlineData("typeof Atomics.add + '|' + new DataView(new ArrayBuffer(4)).byteLength", "function|4")]
+    public void LazyBinaryData(string code, string expected)
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var result = realm.Execute(code);
+        using var scope = engine.Enter();
+        Assert.Equal(expected, JsOperations.ToString(result));
+    }
+
     // ------------------------------------------------------------------------------------------------------------------
     // ArrayBuffer
     // ------------------------------------------------------------------------------------------------------------------

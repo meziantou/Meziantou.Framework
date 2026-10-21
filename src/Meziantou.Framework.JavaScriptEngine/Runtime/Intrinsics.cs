@@ -7,7 +7,8 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// </summary>
 internal sealed partial class Intrinsics
 {
-    private readonly List<(PropertyKey Name, JsValue Value, Func<Intrinsics, JsValue>? Factory, PropertyFlags Flags)> _globals = [];
+    private readonly List<(PropertyKey Name, JsValue Value, Func<Intrinsics, JsValue>? Factory, PropertyFlags Flags)> _globals = new(capacity: 96);
+    private bool _globalBindingsDefined;
     private readonly JsObject[] _errorPrototypes = new JsObject[Enum.GetValues<ErrorType>().Length];
     private readonly JsObject[] _errorConstructors = new JsObject[Enum.GetValues<ErrorType>().Length];
 
@@ -162,14 +163,24 @@ internal sealed partial class Intrinsics
 
     partial void InitializeIntl();
 
-    /// <summary>Adds a property of the global object (SetDefaultGlobalBindings).</summary>
-    public void AddGlobal(PropertyKey name, JsValue value, PropertyFlags flags = PropertyFlags.BuiltIn) => _globals.Add((name, value, Factory: null, flags));
+    /// <summary>
+    /// Adds a property of the global object (SetDefaultGlobalBindings). It is ignored once the global bindings are defined:
+    /// a built-in created on first use has a lazy global property (<see cref="AddLazyGlobal"/>).
+    /// </summary>
+    public void AddGlobal(PropertyKey name, JsValue value, PropertyFlags flags = PropertyFlags.BuiltIn)
+    {
+        if (!_globalBindingsDefined)
+        {
+            _globals.Add((name, value, Factory: null, flags));
+        }
+    }
 
     /// <summary>Adds a property of the global object whose value is created on first use (a built-in that is rarely used, e.g. %Temporal%).</summary>
     public void AddLazyGlobal(PropertyKey name, Func<Intrinsics, JsValue> factory, PropertyFlags flags = PropertyFlags.BuiltIn) => _globals.Add((name, default, factory, flags));
 
     public void DefineGlobalBindings(JsObject globalObject)
     {
+        _globalBindingsDefined = true;
         foreach (var (name, value, factory, flags) in _globals)
         {
             if (factory is null)

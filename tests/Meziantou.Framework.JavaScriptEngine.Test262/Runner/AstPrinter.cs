@@ -80,10 +80,10 @@ internal static class AstPrinter
                 builder.Append("(BlockStatement");
                 AppendList(builder, "Body", n.Body);
                 break;
-            case EmptyStatement n:
+            case EmptyStatement:
                 builder.Append("(EmptyStatement");
                 break;
-            case DebuggerStatement n:
+            case DebuggerStatement:
                 builder.Append("(DebuggerStatement");
                 break;
             case WithStatement n:
@@ -291,7 +291,7 @@ internal static class AstPrinter
                 builder.Append("(PrivateIdentifier");
                 AppendString(builder, "Name", n.Name);
                 break;
-            case NullLiteral n:
+            case NullLiteral:
                 builder.Append("(NullLiteral");
                 break;
             case BooleanLiteral n:
@@ -333,10 +333,10 @@ internal static class AstPrinter
                 builder.Append(" Quasi=");
                 Print(builder, n.Quasi);
                 break;
-            case ThisExpression n:
+            case ThisExpression:
                 builder.Append("(ThisExpression");
                 break;
-            case Super n:
+            case Super:
                 builder.Append("(Super");
                 break;
             case ArrayExpression n:

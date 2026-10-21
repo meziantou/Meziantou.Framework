@@ -186,6 +186,16 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
   the symbols of the numbering system and the compact, unit and currency patterns; the parts are grouped as the
   modifiers of ICU (outer, middle, inner) for the collapsing of the ranges (PartitionNumberRangePattern). Where ECMA-402
   leaves the output to the implementation, it follows ICU (Node.js is a convenient oracle to compare with).
+- `Intl/DateTimeFormat/`: Intl.DateTimeFormat with the amendments of Temporal (the formats of the Temporal types,
+  `DateTimeFormatBuiltins`) and the toLocaleString methods of Date and of the Temporal types. A format is a UTS 35
+  pattern (`DateTimeFormatRecord`); the components that resolvedOptions reports are read from the pattern. The patterns
+  come from `DateTimePatternGenerator`, a port of ICU's DateTimePatternGenerator (the skeleton of the options matched
+  against the CLDR availableFormats, the field widths adjusted, the date and the time combined with dateTimeFormats,
+  the appendItems), so the formats are the ones of V8 and SpiderMonkey; "basic" uses it too. The hour fields use the
+  [[HourCycle]] (V8's ReplaceHourCycleInPattern). `DateIntervalFormatter` is ICU's DateIntervalFormat (the CLDR
+  intervalFormats and the fallbacks). `DateTimeLocalTimeCalculator` computes ToLocalTime with the calendars of Temporal
+  (`TemporalCalendars`), `TimeZoneNameFormatter` the time zone names (metazones, generic and location formats, localized
+  GMT, as ICU's TimeZoneFormat). The narrow no-break spaces of CLDR are spaces, as in the browsers.
 
 ## Tests
 

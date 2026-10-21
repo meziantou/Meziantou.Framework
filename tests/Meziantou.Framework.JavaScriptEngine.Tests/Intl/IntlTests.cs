@@ -212,4 +212,92 @@ public sealed class IntlTests
             ].join("|")
             """));
     }
+
+    private static readonly JsEngineOptions UtcOptions = new() { TimeZone = "UTC" };
+
+    [Theory]
+    [InlineData("en", "{}", "10/21/2026")]
+    [InlineData("en", "{ dateStyle: 'full', timeStyle: 'short' }", "Wednesday, October 21, 2026 at 3:04 PM")]
+    [InlineData("en", "{ hour: 'numeric', minute: 'numeric', hourCycle: 'h23' }", "15:04")]
+    [InlineData("en", "{ hour: '2-digit', minute: '2-digit' }", "03:04 PM")]
+    [InlineData("en", "{ year: 'numeric', day: 'numeric' }", "2026 (day: 21)")]
+    [InlineData("en", "{ minute: 'numeric', fractionalSecondDigits: 2 }", "04:05.12")]
+    [InlineData("en", "{ dayPeriod: 'long', hour: 'numeric' }", "3 in the afternoon")]
+    [InlineData("en", "{ era: 'short' }", "10/21/2026 AD")]
+    [InlineData("fr", "{ weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }", "mercredi 21 octobre 2026 \u00E0 15:04")]
+    [InlineData("de", "{ hour: 'numeric' }", "15 Uhr")]
+    [InlineData("ja", "{ dateStyle: 'long', calendar: 'japanese' }", "\u4EE4\u548C8\u5E7410\u670821\u65E5")]
+    [InlineData("en", "{ dateStyle: 'full', calendar: 'hebrew' }", "Wednesday, 10 Heshvan 5787")]
+    [InlineData("en", "{ dateStyle: 'full', calendar: 'chinese' }", "Wednesday, Ninth Month 12, 2026(bing-wu)")]
+    [InlineData("ar-EG", "{ hour: 'numeric', minute: 'numeric' }", "\u0663:\u0660\u0664 \u0645")]
+    [InlineData("en", "{ timeZone: 'America/New_York', timeZoneName: 'short', hour: 'numeric' }", "11 AM EDT")]
+    [InlineData("en", "{ timeZone: 'Europe/Paris', timeZoneName: 'shortGeneric', hour: 'numeric' }", "5 PM France Time")]
+    [InlineData("en", "{ timeZone: '+05:30', timeZoneName: 'longOffset', hour: 'numeric' }", "8 PM GMT+05:30")]
+    public void DateTimeFormat_Format(string locale, string options, string expected)
+    {
+        Assert.Equal(expected, Evaluate($"new Intl.DateTimeFormat('{locale}', {options}).format(Date.UTC(2026, 9, 21, 15, 4, 5, 123))", UtcOptions));
+    }
+
+    [Fact]
+    public void DateTimeFormat_FormatToParts()
+    {
+        Assert.Equal("month:Oct|literal: |day:21|literal:, |year:2026|literal:, |hour:3|literal::|minute:04|literal: |dayPeriod:PM", Evaluate("""
+            new Intl.DateTimeFormat("en", { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+                .formatToParts(Date.UTC(2026, 9, 21, 15, 4)).map(p => p.type + ":" + p.value).join("|")
+            """, UtcOptions));
+    }
+
+    [Fact]
+    public void DateTimeFormat_FormatRange()
+    {
+        Assert.Equal("Jan 3 \u2013 5, 2019|Jan 3, 2019, 10:00 \u2013 11:00 AM|1/3/2019, 10:00:00 AM \u2013 10:00:05 AM|Jan 3, 2019", Evaluate("""
+            [
+                new Intl.DateTimeFormat("en", { year: "numeric", month: "short", day: "numeric" }).formatRange(Date.UTC(2019, 0, 3), Date.UTC(2019, 0, 5)),
+                new Intl.DateTimeFormat("en", { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "numeric" }).formatRange(Date.UTC(2019, 0, 3, 10), Date.UTC(2019, 0, 3, 11)),
+                new Intl.DateTimeFormat("en", { year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" }).formatRange(Date.UTC(2019, 0, 3, 10), Date.UTC(2019, 0, 3, 10, 0, 5)),
+                new Intl.DateTimeFormat("en", { year: "numeric", month: "short", day: "numeric" }).formatRange(Date.UTC(2019, 0, 3, 10), Date.UTC(2019, 0, 3, 11)),
+            ].join("|")
+            """, UtcOptions).Replace('\u2009', ' '));
+        Assert.Equal("month:Jan:shared|literal: :shared|day:3:startRange|literal: \u2013 :shared|day:5:endRange|literal:, :shared|year:2019:shared", Evaluate("""
+            new Intl.DateTimeFormat("en", { year: "numeric", month: "short", day: "numeric" })
+                .formatRangeToParts(Date.UTC(2019, 0, 3), Date.UTC(2019, 0, 5)).map(p => p.type + ":" + p.value + ":" + p.source).join("|")
+            """, UtcOptions).Replace('\u2009', ' '));
+    }
+
+    [Fact]
+    public void DateTimeFormat_ResolvedOptions()
+    {
+        Assert.Equal("""{"locale":"ja-u-hc-h11","calendar":"gregory","numberingSystem":"latn","timeZone":"Asia/Calcutta","hourCycle":"h11","hour12":true,"hour":"numeric","minute":"2-digit"}""", Evaluate("""
+            JSON.stringify(new Intl.DateTimeFormat("ja-u-hc-h11", { hour: "numeric", minute: "numeric", timeZone: "asia/calcutta" }).resolvedOptions())
+            """, UtcOptions));
+        Assert.Equal("""{"locale":"en","calendar":"gregory","numberingSystem":"latn","timeZone":"UTC","dateStyle":"medium"}""", Evaluate("""
+            JSON.stringify(new Intl.DateTimeFormat("en", { dateStyle: "medium", hour12: true }).resolvedOptions())
+            """, UtcOptions));
+    }
+
+    [Fact]
+    public void DateTimeFormat_ToLocaleString()
+    {
+        Assert.Equal("10/21/2026, 3:04:05 PM|10/21/2026|3:04:05 PM|Invalid Date", Evaluate("""
+            const date = new Date(Date.UTC(2026, 9, 21, 15, 4, 5));
+            [date.toLocaleString("en"), date.toLocaleDateString("en"), date.toLocaleTimeString("en"), new Date(NaN).toLocaleString()].join("|")
+            """, UtcOptions));
+        Assert.Equal("10/21/2026|3:04:05 PM|10/21/2026, 3:04:05 PM|10/2026|10/21|10/21/2026, 3:04:05 PM|10/21/2026, 5:04:05 PM GMT+2", Evaluate("""
+            [
+                new Temporal.PlainDate(2026, 10, 21).toLocaleString("en"),
+                new Temporal.PlainTime(15, 4, 5).toLocaleString("en"),
+                new Temporal.PlainDateTime(2026, 10, 21, 15, 4, 5).toLocaleString("en"),
+                new Temporal.PlainYearMonth(2026, 10, "gregory").toLocaleString("en", { calendar: "gregory" }),
+                new Temporal.PlainMonthDay(10, 21, "gregory").toLocaleString("en", { calendar: "gregory" }),
+                Temporal.Instant.from("2026-10-21T15:04:05Z").toLocaleString("en"),
+                Temporal.ZonedDateTime.from("2026-10-21T15:04:05Z[Europe/Paris]").toLocaleString("en"),
+            ].join("|")
+            """, UtcOptions));
+        Assert.Equal("RangeError|TypeError", Evaluate("""
+            [
+                (() => { try { new Temporal.PlainYearMonth(2026, 10).toLocaleString("en"); return "none"; } catch (e) { return e.name; } })(),
+                (() => { try { Temporal.ZonedDateTime.from("2026-10-21T15:04:05Z[UTC]").toLocaleString("en", { timeZone: "UTC" }); return "none"; } catch (e) { return e.name; } })(),
+            ].join("|")
+            """, UtcOptions));
+    }
 }

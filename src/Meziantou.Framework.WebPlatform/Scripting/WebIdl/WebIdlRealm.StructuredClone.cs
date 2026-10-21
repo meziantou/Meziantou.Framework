@@ -341,14 +341,14 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         var jsValue = value switch
         {
             null => Adapter.Undefined,
-            TValue v when WebIdlBindings<TAdapter, TValue>.GetInterface(v.GetType()) is null => v,
+            TValue v when Adapter.IsValue(v) && WebIdlBindings<TAdapter, TValue>.GetInterface(v.GetType()) is null => v,
             _ => ToJs(value),
         };
 
         var transfer = new TValue[transferList?.Count ?? 0];
         for (var i = 0; i < transfer.Length; i++)
         {
-            transfer[i] = transferList![i] is TValue v ? v : ToJs(transferList[i]);
+            transfer[i] = TryAsValue(transferList![i], out var v) ? v : ToJs(transferList[i]);
         }
 
         var (serialize, _) = GetStructuredCloneHelper();
@@ -634,6 +634,9 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             if (serialized.AgentCluster is null || !ReferenceEquals(serialized.AgentCluster, GlobalScope.AgentClusterKey))
                 throw adapter.CreateException(ToJsError(new DomException("A SharedArrayBuffer cannot be deserialized in another agent cluster", "DataCloneError")));
 
+            if (serialized.DataBlock is { } sharedDataBlock && adapter.CreateSharedArrayBuffer(sharedDataBlock) is { } sharedBuffer)
+                return sharedBuffer;
+
             if (serialized.DataBlock is { } dataBlock && SharedArrayBufferConstructor is { } constructor)
             {
                 TValue[] arguments = [args[1]];
@@ -650,7 +653,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             }
 
             // The engines that cannot share the data block of a buffer: the buffer itself, in the same engine instance
-            if (ReferenceEquals(serialized.Agent, Agent) && serialized.Value is TValue sameBuffer)
+            if (ReferenceEquals(serialized.Agent, Agent) && TryAsValue(serialized.Value, out var sameBuffer))
                 return sameBuffer;
 
             throw adapter.CreateException(ToJsError(new DomException("A SharedArrayBuffer could not be sent to another agent", "DataCloneError")));

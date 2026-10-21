@@ -31,6 +31,7 @@ internal sealed class RegExpRunner
     private int[] _registers = [];
     private int _budget = StepsBetweenBudgetChecks;
     private JsEngine? _engine;
+    private long _matchStart;
     private RegExpProgram _program = null!;
     private string _input = "";
 
@@ -63,6 +64,7 @@ internal sealed class RegExpRunner
         _program = program;
         _input = input;
         _engine = engine;
+        _matchStart = engine?.Options.RegExpTimeout is null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
         var slotCount = (program.GroupCount + 1) * 2;
         if (_captures.Length < slotCount)
         {
@@ -1100,7 +1102,7 @@ internal sealed class RegExpRunner
     private void CheckBudget()
     {
         _budget = StepsBetweenBudgetChecks;
-        _engine?.CheckRegExpBudget();
+        _engine?.CheckRegExpBudget(_matchStart);
     }
 
     private static void ThrowStackOverflow()

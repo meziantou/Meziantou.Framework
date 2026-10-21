@@ -30,11 +30,11 @@ public sealed class FunctionBuiltinsTests
     public void Constructor()
     {
         using var context = new FundamentalsTestContext();
-        var source = DynamicFunctions.GetSource(DynamicFunctionKind.Normal, ["a", "b", "return a + b"]);
+        var source = DynamicFunctions.GetSource(context.Engine, DynamicFunctionKind.Normal, ["a", "b", "return a + b"]);
         Assert.Equal("a,b", source.Parameters);
         Assert.Equal("return a + b", source.Body);
         Assert.Equal("function anonymous(a,b\n) {\nreturn a + b\n}", source.SourceText);
-        Assert.Equal("async function* anonymous(\n) {\n\n}", DynamicFunctions.GetSource(DynamicFunctionKind.AsyncGenerator, []).SourceText);
+        Assert.Equal("async function* anonymous(\n) {\n\n}", DynamicFunctions.GetSource(context.Engine, DynamicFunctionKind.AsyncGenerator, []).SourceText);
 
         var add = context.Global("Function").Call(JsValue.Undefined, ["a", "b", "return a + b"]).AsObject();
         Assert.Equal(3, add.Call(JsValue.Undefined, [1, 2]).AsNumber());

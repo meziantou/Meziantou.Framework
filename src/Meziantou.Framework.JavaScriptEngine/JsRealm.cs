@@ -88,7 +88,7 @@ public sealed partial class JsRealm
             }
             catch (JsSyntaxErrorException ex)
             {
-                throw ThrowHelper.CreateException(ErrorType.SyntaxError, ex.Message);
+                throw ThrowHelper.CreateSyntaxErrorException(ex);
             }
 
             return Compiler.CodeGenerator.CompileProgram(program, source, Compiler.ProgramKind.Script, isStrict: false);
@@ -104,14 +104,24 @@ public sealed partial class JsRealm
     /// <param name="url">The URL (or file name) of the module, used to resolve its imports and in the stack traces.</param>
     /// <param name="hostDefined">The data of the host associated with the module.</param>
     /// <exception cref="JsException">The module is not valid (a SyntaxError).</exception>
-    public JsSourceTextModule ParseModule(string code, string? url = null, object? hostDefined = null)
+    public JsSourceTextModule ParseModule(string code, string? url = null, object? hostDefined = null) => ParseModule(code, url, hostDefined, lineOffset: 0, columnOffset: 0);
+
+    /// <summary>Parses a module (ParseModule) whose source text is a part of a document (e.g. an inline module script of an HTML document).</summary>
+    /// <param name="code">The source text of the module.</param>
+    /// <param name="url">The URL (or file name) of the module, used to resolve its imports and in the stack traces.</param>
+    /// <param name="hostDefined">The data of the host associated with the module.</param>
+    /// <param name="lineOffset">The number of lines before the code in its document.</param>
+    /// <param name="columnOffset">The column of the code in the first line of its document (0-based).</param>
+    /// <exception cref="JsException">The module is not valid (a SyntaxError, located at the error).</exception>
+    public JsSourceTextModule ParseModule(string code, string? url, object? hostDefined, int lineOffset, int columnOffset)
     {
+        ArgumentNullException.ThrowIfNull(code);
         using var scope = Engine.Enter();
         var previousRealm = Engine.CurrentRealm;
         Engine.CurrentRealm = this;
         try
         {
-            return JsSourceTextModule.Parse(this, new Text.SourceText(code, url), hostDefined);
+            return JsSourceTextModule.Parse(this, new Text.SourceText(code, url, lineOffset, columnOffset), hostDefined);
         }
         finally
         {

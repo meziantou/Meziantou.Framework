@@ -29,9 +29,10 @@ public sealed class JsModuleLoadRequest
     private readonly object _payload;
     private bool _completed;
 
-    internal JsModuleLoadRequest(JsRealm realm, IScriptOrModule? referrer, ModuleRequest request, object? hostDefined, object payload)
+    internal JsModuleLoadRequest(JsRealm realm, JsRealm currentRealm, IScriptOrModule? referrer, ModuleRequest request, object? hostDefined, object payload)
     {
         Realm = realm;
+        CurrentRealm = currentRealm;
         _referrer = referrer;
         Request = request;
         HostDefined = hostDefined;
@@ -42,6 +43,13 @@ public sealed class JsModuleLoadRequest
 
     /// <summary>Gets the realm of the referrer: the realm of the module to create.</summary>
     public JsRealm Realm { get; }
+
+    /// <summary>
+    /// Gets the current realm when the module is requested: the realm of the code that calls <c>import()</c>, which is not
+    /// the realm of the referrer when the code runs in another realm (e.g. the code of another window evaluated by its
+    /// <c>eval</c>); the realm of the importing module for a static import.
+    /// </summary>
+    public JsRealm CurrentRealm { get; }
 
     /// <summary>Gets the module that imports the module, if the referrer is a module.</summary>
     public JsModule? ReferrerModule => _referrer as JsModule;

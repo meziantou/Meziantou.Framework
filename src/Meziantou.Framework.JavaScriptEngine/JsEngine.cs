@@ -90,6 +90,9 @@ public sealed partial class JsEngine : IDisposable
         {
             ThrowStackOverflow();
         }
+
+        // A deep recursion without loops (e.g. a naive Fibonacci) must also check the limits
+        CountInterruptPoint();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

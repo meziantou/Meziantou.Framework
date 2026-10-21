@@ -245,6 +245,15 @@ internal static class TemporalZonedDateTimeBuiltins
             var dateEnd = AddDaysToIsoDate(dateStart, 1);
             var startNs = GetStartOfDay(timeZone, dateStart);
             var endNs = GetStartOfDay(timeZone, dateEnd);
+
+            // When a transition after midnight falls back before midnight, the pieces of two days are interleaved: an
+            // instant in the second piece of the first day is after the start of the next day, and is rounded as its
+            // last instant (https://github.com/tc39/proposal-temporal/issues/3312)
+            if (thisNs >= endNs)
+            {
+                thisNs = endNs - 1;
+            }
+
             var dayLengthNs = endNs - startNs;
             var dayProgressNs = thisNs - startNs;
             var roundedDayNs = TemporalMath.RoundNumberToIncrement(dayProgressNs, dayLengthNs, roundingMode);

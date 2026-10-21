@@ -20,11 +20,25 @@ public sealed partial class JsRealm
     public JsArray CreateArray(ReadOnlySpan<JsValue> items) => JsArray.Create(this, items);
 
     /// <summary>Creates a built-in function (CreateBuiltinFunction): its <c>name</c> and <c>length</c> are set; it is not a constructor.</summary>
-    public JsFunction CreateFunction(string name, int length, JsNativeFunction function)
+    public JsFunction CreateFunction(string name, int length, JsNativeFunction function) => CreateFunction(name, length, function, runInCallerRealm: false);
+
+    /// <summary>Creates a built-in function (CreateBuiltinFunction): its <c>name</c> and <c>length</c> are set; it is not a constructor.</summary>
+    /// <param name="name">The name of the function.</param>
+    /// <param name="length">The number of parameters of the function.</param>
+    /// <param name="function">The implementation of the function.</param>
+    /// <param name="runInCallerRealm">
+    /// Whether the current realm while the function runs is the realm of its caller instead of the realm of the function
+    /// (<see cref="JsEngine.CurrentRealm"/>, the realm of the objects created by the built-ins and the API): e.g. a function
+    /// that implements an internal method of an exotic object (the traps of a proxy), which runs in the realm of the code
+    /// that uses the object, or the functions of a host whose objects are created in the realm of the calling code.
+    /// </param>
+    public JsFunction CreateFunction(string name, int length, JsNativeFunction function, bool runInCallerRealm)
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(function);
-        return CreateBuiltinFunction(name, length, (_, thisValue, arguments, _) => function(thisValue, arguments));
+        var result = CreateBuiltinFunction(name, length, (_, thisValue, arguments, _) => function(thisValue, arguments));
+        result.RunsInCallerRealm = runInCallerRealm;
+        return result;
     }
 
     /// <summary>Creates a built-in function that is a constructor; its <c>prototype</c> property is not defined.</summary>

@@ -94,6 +94,21 @@ A document may be untrusted: its scripts run in the process.
   loader of `DocumentLoader.Create()` requests any URL: do not use it with untrusted documents when the requests can reach
   private resources (server-side request forgery). Use a loader that filters the destinations.
 
+## Opt-in with Meziantou.Framework.JavaScriptEngine
+
+The `Meziantou.Framework.WebPlatform.JavaScript` package runs the scripts with
+[Meziantou.Framework.JavaScriptEngine](../../Meziantou.Framework.JavaScriptEngine/readme.md), the ECMAScript engine of
+this repository: `JavaScriptScriptEngine` has the same shape as `JintScriptEngine` (the options `Timeout`, `MemoryLimit`,
+`MaxStatements`, `RecursionLimit` and `RegexTimeout`, plus `TimeProvider`; `Evaluate(window, code)`; `OnRealmCreated`), so
+moving from Jint is a rename (see [its readme](../../Meziantou.Framework.WebPlatform.JavaScript/readme.md)). Its adapter
+uses the public embedding API of the engine only (no reflection), and the engine implements the host hooks of the HTML
+Standard: the code and the original arguments of `eval` and of the `Function` constructors for the content security
+policies and Trusted Types (`HostEnsureCanCompileStrings`, `HostGetCodeForEval`), the incumbent settings object and the
+active script of the promise jobs (`HostMakeJobCallback`, `HostCallJobCallback`), the rejection tracking, the module
+loading and `import.meta`. The functions of the WebIDL bindings run in the realm of their caller, as with Jint. The tests
+of the library run with it when `WEBPLATFORM_SCRIPT_ENGINE=javascript`, and the web-platform-tests when
+`WPT_ENGINE=javascript` (Jint stays the engine of the expectations).
+
 ## Opt-in with another engine
 
 Any implementation of `ScriptEngine` can be set as `BrowsingContextOptions.ScriptEngine`:

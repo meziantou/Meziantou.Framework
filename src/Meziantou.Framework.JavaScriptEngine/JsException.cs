@@ -26,7 +26,11 @@ public sealed class JsException : Exception
     {
     }
 
-    internal JsException(JsValue value, JsSourceLocation? location)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="JsException"/> class with the thrown value and the position of the code
+    /// that threw it (e.g. the position of a syntax error).
+    /// </summary>
+    public JsException(JsValue value, JsSourceLocation? location)
         : base(ErrorFormatting.GetDescription(value))
     {
         Value = value;

@@ -503,6 +503,7 @@ reflect the current state.
 | `WPT_UPDATE_EXPECTATIONS=1` | Rewrite the expectations from the current results |
 | `WPT_FILTER=dom/nodes/Node-append` | Only run the tests whose id contains the value (or one of the values separated by `\|`, e.g. `dom/nodes\|html/canvas`) |
 | `WPT_REPORT=/path/report.jsonl` | Write the detailed results (including the failure messages) as JSON lines |
+| `WPT_ENGINE=javascript` | Run the scripts with Meziantou.Framework.JavaScriptEngine instead of Jint (`jint`, the default): the expectations are not checked, use `WPT_REPORT` |
 | `WPT_REFTESTS=0` | Do not run the reftests |
 | `WPT_REFTEST_IMAGES=/path` | Save the images of the failing reftests (test, reference, differences) |
 | `WPT_TIMEOUT_MULTIPLIER=3` | Multiply the longest duration of a test (60 s, `MaxDuration`), as the `--timeout-multiplier` option of wptrunner; 3 by default on a CI agent (`CI=true`), whose shared cores make the heaviest tests 5 to 8 times slower |
@@ -562,6 +563,11 @@ The expectations are the results of Jint, with the WebAssembly runtime of `Mezia
 (`BrowsingContextOptions.WebAssemblyRuntime`) and Jint's stack overflow guard (an unbounded recursion throws a
 `RangeError`, as the WebAssembly core tests expect, instead of ending the process). `WptEngine` abstracts the engine, so
 that the adapter of another engine can be validated by the same tests (use `WPT_REPORT` to compare its results).
+`WPT_ENGINE=javascript` runs them with Meziantou.Framework.JavaScriptEngine (`JavaScriptWptEngine`, whose `Date` uses
+the virtual clock of the runner through its `TimeProvider`); compare two reports with
+`dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate -- wpt-compare <jint.jsonl> <javascript.jsonl> [--allowed <file>]`,
+which lists the regressions and the improvements and the ratio of the durations, and fails on a regression that the
+allowed file (one test id per line, a trailing `*` matches a prefix) does not list.
 
 ## Unexpected results
 

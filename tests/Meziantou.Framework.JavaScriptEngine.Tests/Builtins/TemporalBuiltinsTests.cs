@@ -68,6 +68,14 @@ public sealed class TemporalBuiltinsTests
     }
 
     [Fact]
+    public void ZonedDateTime_RoundToDayWhenMidnightOccursTwice()
+    {
+        // Casey moved from +11 to +08 at 2010-03-05T02:00: 23:10+08:00 is in the second piece of March 4
+        Assert.Equal("2010-03-04T00:00:00+11:00[Antarctica/Casey]", Evaluate("Temporal.ZonedDateTime.from('2010-03-04T23:10:00+08:00[Antarctica/Casey]').round({ smallestUnit: 'day', roundingMode: 'floor' }).toString()"));
+        Assert.Equal("2010-03-05T00:00:00+11:00[Antarctica/Casey]", Evaluate("Temporal.ZonedDateTime.from('2010-03-04T23:10:00+08:00[Antarctica/Casey]').round({ smallestUnit: 'day', roundingMode: 'ceil' }).toString()"));
+    }
+
+    [Fact]
     public void Parsing_RejectsHour24AndUnknownCriticalAnnotations()
     {
         Assert.Equal("RangeError", ErrorName("Temporal.PlainDateTime.from('2024-01-01T24:00')"));
@@ -75,7 +83,7 @@ public sealed class TemporalBuiltinsTests
         Assert.Equal("RangeError", ErrorName("Temporal.PlainDate.from('2024-01-01[!foo=bar]')"));
         Assert.Equal("RangeError", ErrorName("Temporal.PlainDate.from('2024-01-01T00:00Z')"));
         Assert.Equal("RangeError", ErrorName("Temporal.PlainDate.from('2023-02-29')"));
-        Assert.Equal("RangeError", ErrorName("Temporal.PlainDate.from('2024-01-01[u-ca=gregory]')"));
+        Assert.Equal("RangeError", ErrorName("Temporal.PlainDate.from('2024-01-01[u-ca=unknown]')"));
         Assert.Equal("2024-01-01", Evaluate("Temporal.PlainDate.from('2024-01-01[foo=bar][u-ca=iso8601]').toString()"));
         Assert.Equal("23:59:59", Evaluate("Temporal.PlainTime.from('23:59:60').toString()"));
         Assert.Equal("12:34:56.123456789", Evaluate("Temporal.PlainTime.from('T123456,123456789').toString()"));
@@ -122,6 +130,111 @@ public sealed class TemporalBuiltinsTests
     public void ToStringTags()
     {
         Assert.Equal("[object Temporal],[object Temporal.Now],[object Temporal.Duration],[object Temporal.PlainDate]", Evaluate("[Temporal, Temporal.Now, new Temporal.Duration(), new Temporal.PlainDate(2024, 1, 1)].map(o => Object.prototype.toString.call(o)).join()"));
+    }
+
+    [Fact]
+    public void Calendars_IdentifiersAreCanonicalized()
+    {
+        Assert.Equal("gregory,japanese,islamic-civil,ethioaa", Evaluate("['GREGORY', 'Japanese', 'islamicc', 'ethiopic-amete-alem'].map(c => new Temporal.PlainDate(2024, 1, 1, c).calendarId).join()"));
+        Assert.Equal("RangeError", ErrorName("new Temporal.PlainDate(2024, 1, 1, 'islamic')"));
+        Assert.Equal("2024-01-01[u-ca=gregory]", Evaluate("Temporal.PlainDate.from('2024-01-01[u-ca=gregory]').toString()"));
+    }
+
+    [Theory]
+    [InlineData("gregory", "2024-03-15", "ce 2024 2024 M03 15")]
+    [InlineData("gregory", "-000043-03-15", "bce 44 -43 M03 15")]
+    [InlineData("buddhist", "2024-03-15", "be 2567 2567 M03 15")]
+    [InlineData("roc", "2024-03-15", "roc 113 113 M03 15")]
+    [InlineData("roc", "1911-03-15", "broc 1 0 M03 15")]
+    [InlineData("japanese", "2019-04-30", "heisei 31 2019 M04 30")]
+    [InlineData("japanese", "2019-05-01", "reiwa 1 2019 M05 1")]
+    [InlineData("japanese", "1872-12-31", "ce 1872 1872 M12 31")]
+    [InlineData("japanese", "1873-01-01", "meiji 6 1873 M01 1")]
+    [InlineData("coptic", "2024-03-15", "am 1740 1740 M07 6")]
+    [InlineData("ethiopic", "2024-03-15", "am 2016 2016 M07 6")]
+    [InlineData("ethioaa", "2024-03-15", "aa 7516 7516 M07 6")]
+    [InlineData("indian", "2024-03-15", "shaka 1945 1945 M12 25")]
+    [InlineData("persian", "2024-03-15", "ap 1402 1402 M12 25")]
+    [InlineData("hebrew", "2024-03-15", "am 5784 5784 M06 5")]
+    [InlineData("hebrew", "2024-02-10", "am 5784 5784 M05L 1")]
+    [InlineData("islamic-umalqura", "2024-03-15", "ah 1445 1445 M09 5")]
+    [InlineData("islamic-civil", "0622-07-19", "ah 1 1 M01 1")]
+    [InlineData("islamic-tbla", "0622-07-18", "ah 1 1 M01 1")]
+    [InlineData("chinese", "2024-03-15", "  2024 M02 6")]
+    [InlineData("dangi", "2024-02-10", "  2024 M01 1")]
+    public void Calendars_IsoToCalendarDate(string calendar, string isoDate, string expected)
+    {
+        Assert.Equal(expected, Evaluate($"const d = Temporal.PlainDate.from('{isoDate}').withCalendar('{calendar}'); [d.era, d.eraYear, d.year, d.monthCode, d.day].join(' ')"));
+    }
+
+    [Fact]
+    public void Calendars_EraFieldsAndArithmetic()
+    {
+        Assert.Equal("2018-04-25[u-ca=japanese]", Evaluate("Temporal.PlainDate.from({ calendar: 'japanese', era: 'reiwa', eraYear: 0, monthCode: 'M04', day: 25 }).toString()"));
+        Assert.Equal("RangeError", ErrorName("Temporal.PlainDate.from({ calendar: 'gregory', era: 'xx', eraYear: 1, month: 1, day: 1 })"));
+        Assert.Equal("TypeError", ErrorName("Temporal.PlainDate.from({ calendar: 'gregory', era: 'ce', month: 1, day: 1 })"));
+        Assert.Equal("P1Y1M1D", Evaluate("Temporal.PlainDate.from({ calendar: 'gregory', year: 2024, month: 1, day: 31 }).until(Temporal.PlainDate.from({ calendar: 'gregory', year: 2025, month: 3, day: 1 }), { largestUnit: 'years' }).toString()"));
+        Assert.Equal("2024-02-29[u-ca=buddhist]", Evaluate("Temporal.PlainDate.from({ calendar: 'buddhist', year: 2567, month: 1, day: 31 }).add({ months: 1 }).toString()"));
+        Assert.Equal("1972-02-29[u-ca=gregory]", Evaluate("Temporal.PlainMonthDay.from({ calendar: 'gregory', monthCode: 'M02', day: 30 }).toString()"));
+    }
+
+    [Fact]
+    public void Calendars_LeapMonths()
+    {
+        // 5784 is a leap year of the Hebrew calendar: Adar I (M05L) is the 6th month
+        Assert.Equal("13 6 M05L", Evaluate("const d = Temporal.PlainDate.from({ calendar: 'hebrew', year: 5784, monthCode: 'M05L', day: 1 }); [d.monthsInYear, d.month, d.monthCode].join(' ')"));
+        Assert.Equal("M06", Evaluate("Temporal.PlainDate.from({ calendar: 'hebrew', year: 5785, monthCode: 'M05L', day: 1 }).monthCode"));
+        Assert.Equal("RangeError", ErrorName("Temporal.PlainDate.from({ calendar: 'hebrew', year: 5785, monthCode: 'M05L', day: 1 }, { overflow: 'reject' })"));
+        Assert.Equal("1970-02-07[u-ca=hebrew]", Evaluate("Temporal.PlainMonthDay.from({ calendar: 'hebrew', monthCode: 'M05L', day: 1 }).toString()"));
+
+        // 2023 has a leap month after the 2nd month in the Chinese calendar
+        Assert.Equal("13 3 M02L", Evaluate("const d = Temporal.PlainDate.from({ calendar: 'chinese', year: 2023, monthCode: 'M02L', day: 1 }); [d.monthsInYear, d.month, d.monthCode].join(' ')"));
+        Assert.Equal("P1Y", Evaluate("Temporal.PlainDate.from({ calendar: 'chinese', year: 2023, monthCode: 'M02', day: 1 }).until(Temporal.PlainDate.from({ calendar: 'chinese', year: 2024, monthCode: 'M02', day: 1 }), { largestUnit: 'years' }).toString()"));
+        Assert.Equal("P13M", Evaluate("Temporal.PlainDate.from({ calendar: 'chinese', year: 2023, monthCode: 'M02', day: 1 }).until(Temporal.PlainDate.from({ calendar: 'chinese', year: 2024, monthCode: 'M02', day: 1 }), { largestUnit: 'months' }).toString()"));
+    }
+
+    [Theory]
+    [InlineData("buddhist")]
+    [InlineData("chinese")]
+    [InlineData("coptic")]
+    [InlineData("dangi")]
+    [InlineData("ethioaa")]
+    [InlineData("ethiopic")]
+    [InlineData("gregory")]
+    [InlineData("hebrew")]
+    [InlineData("indian")]
+    [InlineData("islamic-civil")]
+    [InlineData("islamic-tbla")]
+    [InlineData("islamic-umalqura")]
+    [InlineData("japanese")]
+    [InlineData("persian")]
+    [InlineData("roc")]
+    public void Calendars_RoundTripAndArithmetic(string calendar)
+    {
+        // Every day of a few years converts to the calendar and back, and adding the months one by one is the same as
+        // adding them at once
+        var code = $$"""
+            let errors = [];
+            let date = Temporal.PlainDate.from('2019-01-01').withCalendar('{{calendar}}');
+            const start = date;
+            for (let i = 0; i < 2000; i++) {
+                const copy = Temporal.PlainDate.from({ calendar: '{{calendar}}', year: date.year, monthCode: date.monthCode, day: date.day });
+                if (!copy.equals(date)) errors.push(date.toString());
+                const next = date.add({ days: 1 });
+                if (next.day !== 1 && (next.day !== date.day + 1 || next.month !== date.month)) errors.push('next ' + date.toString());
+                if (next.day === 1 && date.day !== date.daysInMonth) errors.push('end ' + date.toString());
+                date = next;
+            }
+
+            const months = start.until(date, { largestUnit: 'months' });
+            if (!start.add(months).equals(date)) errors.push('months ' + months);
+            const years = start.until(date, { largestUnit: 'years' });
+            if (!start.add(years).equals(date)) errors.push('years ' + years);
+            const backwards = date.until(start, { largestUnit: 'years' });
+            if (!date.add(backwards).equals(start)) errors.push('backwards ' + backwards);
+            errors.join()
+            """;
+        Assert.Equal("", Evaluate(code));
     }
 
     private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider

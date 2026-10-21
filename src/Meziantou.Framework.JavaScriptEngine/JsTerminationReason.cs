@@ -9,9 +9,9 @@ public enum JsTerminationReason
     /// <summary>The script ran longer than <see cref="JsEngineOptions.Timeout"/>.</summary>
     Timeout,
 
-    /// <summary>The script allocated more than the memory limit of the engine.</summary>
+    /// <summary>The script allocated more than <see cref="JsEngineOptions.MemoryLimit"/>.</summary>
     MemoryLimit,
 
-    /// <summary>The script executed more statements than the statement limit of the engine.</summary>
+    /// <summary>The script executed more statements than <see cref="JsEngineOptions.MaxStatements"/>.</summary>
     StatementLimit,
 }

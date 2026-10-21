@@ -39,10 +39,18 @@ internal sealed class JsBuiltinFunction : JsFunction
         }
     }
 
+    /// <summary>Gets or sets whether the current realm while the function runs is the realm of its caller (see <see cref="JsRealm.CreateFunction(string, int, JsNativeFunction, bool)"/>).</summary>
+    public bool RunsInCallerRealm { get; set; }
+
     internal override JsValue Call(JsValue thisValue, ReadOnlySpan<JsValue> arguments)
     {
         var engine = Realm.Engine;
         var previousRealm = engine.EnterNativeCall(Realm);
+        if (RunsInCallerRealm && previousRealm is not null)
+        {
+            engine.CurrentRealm = previousRealm;
+        }
+
         try
         {
             return _callback(this, thisValue, arguments, newTarget: null);
@@ -57,6 +65,11 @@ internal sealed class JsBuiltinFunction : JsFunction
     {
         var engine = Realm.Engine;
         var previousRealm = engine.EnterNativeCall(Realm);
+        if (RunsInCallerRealm && previousRealm is not null)
+        {
+            engine.CurrentRealm = previousRealm;
+        }
+
         try
         {
             return _callback(this, JsValue.Undefined, arguments, newTarget);

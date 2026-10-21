@@ -75,17 +75,7 @@ internal static partial class JsInterpreter
         if (frame?.Script is { } script)
             return script;
 
-        var frames = (frame?.Realm.Engine ?? JsEngine.Current)?.Frames;
-        if (frames is not null)
-        {
-            for (var i = frames.Count - 1; i >= 0; i--)
-            {
-                if (frames[i].Script is { } other)
-                    return other;
-            }
-        }
-
-        return null;
+        return (frame?.Realm.Engine ?? JsEngine.Current)?.FindActiveScriptOrModule();
     }
 
     /// <summary>Runs a generator frame suspended at its start.</summary>

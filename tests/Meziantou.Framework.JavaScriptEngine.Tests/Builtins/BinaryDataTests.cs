@@ -158,6 +158,11 @@ public sealed class BinaryDataTests
         view.Set(new PropertyKey(0u), 42, throwOnFailure: true);
         Assert.Equal(42, memory[0]);
         Assert.HasCount(4, buffer.GetSpan().ToArray());
+        Assert.True(BinaryDataOperations.TryGetBufferSourceSpan(New(context, "DataView", buffer, 1, 2), out var bytes));
+        Assert.Equal([2, 3], bytes.ToArray());
+        Assert.True(BinaryDataOperations.TryGetBufferSourceSpan(Call(view, "subarray", 3), out bytes));
+        Assert.Equal([4], bytes.ToArray());
+        Assert.False(BinaryDataOperations.TryGetBufferSourceSpan(context.NewObject(), out _));
         context.AssertThrows(ErrorType.TypeError, () => Call(buffer, "transfer"));
         buffer.Detach(key);
         Assert.Equal(0, Get(view, "length").AsNumber());

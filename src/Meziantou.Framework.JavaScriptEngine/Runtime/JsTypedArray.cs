@@ -162,6 +162,9 @@ internal sealed class JsTypedArray : JsObject
         return true;
     }
 
+    /// <summary>IsValidIntegerIndex(O, index) for an array index.</summary>
+    public bool IsValidIntegerIndex(uint index) => TryGetLength(out var length) && index < (uint)length;
+
     /// <summary>Reads the element at a valid index (GetValueFromBuffer with the byte order of the agent).</summary>
     public JsValue GetElement(int index)
     {
@@ -245,6 +248,18 @@ internal sealed class JsTypedArray : JsObject
 
     internal override bool GetOwnProperty(in PropertyKey key, out PropertyDescriptor descriptor)
     {
+        if (key.IsArrayIndex)
+        {
+            if (IsValidIntegerIndex(key.ArrayIndex))
+            {
+                descriptor = PropertyDescriptor.Data(GetElement((int)key.ArrayIndex), PropertyFlags.Default);
+                return true;
+            }
+
+            descriptor = default;
+            return false;
+        }
+
         if (TryGetNumericIndex(key, out var index))
         {
             if (IsValidIntegerIndex(index, out var validIndex))
@@ -300,6 +315,9 @@ internal sealed class JsTypedArray : JsObject
 
     internal override JsValue Get(in PropertyKey key, JsValue receiver)
     {
+        if (key.IsArrayIndex)
+            return IsValidIntegerIndex(key.ArrayIndex) ? GetElement((int)key.ArrayIndex) : JsValue.Undefined;
+
         if (TryGetNumericIndex(key, out var index))
             return GetElementOrUndefined(index);
 
@@ -308,6 +326,17 @@ internal sealed class JsTypedArray : JsObject
 
     internal override bool Set(in PropertyKey key, JsValue value, JsValue receiver)
     {
+        if (key.IsArrayIndex && ReferenceEquals(receiver.Cell, this))
+        {
+            var numericValue = BinaryDataOperations.ToNumericForElementType(ElementType, value);
+            if (IsValidIntegerIndex(key.ArrayIndex))
+            {
+                SetElement((int)key.ArrayIndex, numericValue);
+            }
+
+            return true;
+        }
+
         if (TryGetNumericIndex(key, out var index))
         {
             if (ReferenceEquals(receiver.Cell, this))

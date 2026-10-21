@@ -283,8 +283,29 @@ internal static class BinaryDataOperations
         NumericToRawBytes(type, value, buffer.GetSpan()[byteIndex..], isLittleEndian);
     }
 
-    /// <summary>ToIndex(value), as a double (the integer is at most 2^53-1).</summary>
-    public static double ToIndex(JsValue value) => JsOperations.ToIndex(value);
+    /// <summary>
+    /// Gets the bytes of a BufferSource (an ArrayBuffer, a SharedArrayBuffer, a TypedArray or a DataView) without
+    /// running JavaScript code: false when the value is not a BufferSource. The span is empty when the buffer is
+    /// detached or the view is out of bounds.
+    /// </summary>
+    public static bool TryGetBufferSourceSpan(JsValue value, out Span<byte> bytes)
+    {
+        switch (value.Cell)
+        {
+            case JsArrayBuffer buffer:
+                bytes = buffer.GetSpan();
+                return true;
+            case JsTypedArray typedArray:
+                bytes = typedArray.GetSpan();
+                return true;
+            case JsDataView view:
+                bytes = view.GetSpan();
+                return true;
+            default:
+                bytes = default;
+                return false;
+        }
+    }
 
     /// <summary>Clamps a relative index (the result of ToIntegerOrInfinity) to [0, length] (the start and end arguments of slice, fill, copyWithin...).</summary>
     public static long ClampRelativeIndex(double relative, long length)

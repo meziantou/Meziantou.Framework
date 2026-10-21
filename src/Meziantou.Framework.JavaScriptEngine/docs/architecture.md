@@ -149,6 +149,17 @@ until they are needed), `capability.Resolve(value)` / `Reject(reason)`, `JsPromi
 `JsPromise.PromiseResolve(realm, value)` and `JsPromise.PerformPromiseThen(promise, PromiseContinuation, PromiseContinuation, state)`
 (.NET continuations: no function object is created).
 
+## Explicit resource management
+
+`Runtime/DisposableOperations.cs` has the operations of `using` / `await using`: `NewDisposeCapability()`,
+`AddDisposableResource(capability, value, hint)` (hint `DisposeHint.SyncDispose` / `AsyncDispose`), `GetDisposeMethod`,
+and `DisposeResources(capability, completion)`, where a completion is the thrown value of a throw completion or null
+(any other completion): it returns the thrown value of the resulting completion (SuppressedError chaining), or null when
+the original completion stands. For `await using`, the interpreter drives an `AsyncDisposeResourcesOperation`: while
+`MoveNext(out value)` returns true, it performs `Await(value)` like the `await` operator, then calls
+`SetAwaitResult(thrownOrNull)`; at the end `Completion` is the resulting completion. Built-in code uses
+`DisposeResourcesAsync`, which drives it with promise continuations and returns a promise.
+
 ## Tests
 
 - `tests/Meziantou.Framework.JavaScriptEngine.Tests`: unit tests (xUnit, the repo's `Assert`).

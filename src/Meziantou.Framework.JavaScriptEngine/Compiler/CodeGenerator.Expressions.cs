@@ -952,7 +952,7 @@ internal sealed partial class CodeGenerator
             }
 
             var kind = EmitReferenceBase(left);
-            EmitNamedEvaluation(assignment.Right, left);
+            EmitNamedEvaluation(assignment.Right, GetNamedEvaluationTarget(assignment));
             EmitPutReference(left, kind);
             return;
         }
@@ -975,6 +975,9 @@ internal sealed partial class CodeGenerator
         EmitPutReference(left, targetKind);
     }
 
+    /// <summary>The target that names an anonymous function of the right side: none when the left side is parenthesized (IsIdentifierRef of a CoverParenthesizedExpression is false).</summary>
+    private static Node? GetNamedEvaluationTarget(AssignmentExpression assignment) => assignment.Left.Start == assignment.Start ? assignment.Left : null;
+
     private void EmitLogicalAssignment(AssignmentExpression assignment)
     {
         var left = assignment.Left;
@@ -992,7 +995,7 @@ internal sealed partial class CodeGenerator
             _ => OpCode.JumpIfNotNullishKeep,
         }, shortCircuit);
         _builder.Emit(OpCode.Pop);
-        EmitNamedEvaluation(assignment.Right, left);
+        EmitNamedEvaluation(assignment.Right, GetNamedEvaluationTarget(assignment));
         EmitPutReference(left, kind);
         _builder.EmitJump(OpCode.Jump, endLabel);
 

@@ -1,0 +1,6 @@
+intl402/Number/prototype/toLocaleString/default-options-object-prototype.js:sloppy
+intl402/Number/prototype/toLocaleString/default-options-object-prototype.js:strict
+intl402/Number/prototype/toLocaleString/returns-same-results-as-NumberFormat.js:sloppy
+intl402/Number/prototype/toLocaleString/returns-same-results-as-NumberFormat.js:strict
+intl402/Number/prototype/toLocaleString/throws-same-exceptions-as-NumberFormat.js:sloppy
+intl402/Number/prototype/toLocaleString/throws-same-exceptions-as-NumberFormat.js:strict

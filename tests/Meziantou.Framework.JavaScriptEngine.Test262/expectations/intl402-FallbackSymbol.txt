@@ -1,0 +1,4 @@
+intl402/FallbackSymbol/description.js:sloppy
+intl402/FallbackSymbol/description.js:strict
+intl402/FallbackSymbol/per-realm.js:sloppy
+intl402/FallbackSymbol/per-realm.js:strict

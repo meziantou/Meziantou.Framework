@@ -23,6 +23,13 @@ public sealed class JsEngineOptions
     /// </summary>
     public string? TimeZone { get; set; }
 
+    /// <summary>
+    /// Gets or sets the default locale of Intl (ECMA-402 DefaultLocale), a BCP 47 language tag such as "fr-FR". The
+    /// engine uses its own copy of the CLDR data, so the results do not depend on the operating system; a tag that is not
+    /// valid or that matches no locale of the data is replaced by "en-US".
+    /// </summary>
+    public string DefaultLocale { get; set; } = "en-US";
+
     /// <summary>Gets or sets the loader of the modules imported by the scripts and the modules, or null when the scripts cannot import modules.</summary>
     public JsModuleLoader? ModuleLoader { get; set; }
 

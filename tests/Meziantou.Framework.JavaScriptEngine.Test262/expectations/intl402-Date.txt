@@ -1,0 +1,6 @@
+intl402/Date/prototype/returns-same-results-as-DateTimeFormat.js:sloppy
+intl402/Date/prototype/returns-same-results-as-DateTimeFormat.js:strict
+intl402/Date/prototype/throws-same-exceptions-as-DateTimeFormat.js:sloppy
+intl402/Date/prototype/throws-same-exceptions-as-DateTimeFormat.js:strict
+intl402/Date/prototype/toLocaleString/default-options-object-prototype.js:sloppy
+intl402/Date/prototype/toLocaleString/default-options-object-prototype.js:strict

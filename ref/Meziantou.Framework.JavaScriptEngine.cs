@@ -78,6 +78,7 @@ namespace Meziantou.Framework.JavaScriptEngine
     public sealed class JsEngineOptions
     {
         public System.Threading.CancellationToken CancellationToken { get => throw null; set { } }
+        public string DefaultLocale { get => throw null; set { } }
         public Meziantou.Framework.JavaScriptEngine.JsHost? Host { get => throw null; set { } }
         public Meziantou.Framework.JavaScriptEngine.JsModuleLoader? ModuleLoader { get => throw null; set { } }
         public int RecursionLimit { get => throw null; set { } }

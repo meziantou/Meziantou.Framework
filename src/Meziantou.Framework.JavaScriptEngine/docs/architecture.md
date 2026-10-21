@@ -57,8 +57,11 @@ reads) are disabled for it. `ObjectFlags.Callable`/`Constructor` give `IsCallabl
 `JsObject.Class` (`ObjectClass`) identifies the internal slots of the built-in objects (e.g. `ObjectClass.Map` for
 [[MapData]]): test it instead of the .NET type when the spec says "has a [[XxxData]] internal slot".
 
-Storage: the properties are in a `PropertyTable` (insertion order); the array indices with the default attributes are
-in a dense `JsValue[]` (holes are `JsValue.Hole`). `SetOwnSlot`/`RemoveOwnSlot` write the storage without any check
+Storage: the named properties are in a `PropertyMap`: a `Shape` shared with the objects that got the same properties in
+the same order (the keys and the attributes; the values are in the slots of the object), or a `PropertyTable` of the
+object (dictionary mode: after a deletion other than the last property, a reconfiguration, a lazy property, an array
+index outside the elements, more than 64 properties). The array indices with the default attributes are in a dense
+`JsValue[]` (holes are `JsValue.Hole`). See "Performance" below. `SetOwnSlot`/`RemoveOwnSlot` write the storage without any check
 (use them only on objects being created, or after the spec checks). `DefineBuiltIn(key, value, flags)` defines a
 built-in property (default: writable, configurable, not enumerable), `DefineBuiltInAccessor`, `DefineLazy` (computed on
 first read).
@@ -208,6 +211,43 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
   intervalFormats and the fallbacks). `DateTimeLocalTimeCalculator` computes ToLocalTime with the calendars of Temporal
   (`TemporalCalendars`), `TimeZoneNameFormatter` the time zone names (metazones, generic and location formats, localized
   GMT, as ICU's TimeZoneFormat). The narrow no-break spaces of CLDR are spaces, as in the browsers.
+
+## Performance
+
+- Interpreter (`JsInterpreter.Execute`): the dispatch loop only has the frequent instructions; the others are one small
+  method each (`JsInterpreter.Instructions.cs`, reached through `ExecuteCold`: `frame.Pc` is the position of the
+  instruction, they return the new stack pointer). Keep the loop small: a big method makes the JIT spill `pc`/`sp`,
+  zero a large frame and stop inlining. The slow paths are calls that take values (no `ref` to the locals of the loop).
+  `JsValue.Store`/`StoreNumber` skip the write barrier when a number overwrites a number.
+- Frames: the ordinary calls rent their `Frame` from `engine.FramePool` (the arguments are copied after the registers in
+  `Frame.Values`); generators, async functions, scripts, modules and eval code have frames of their own. Nothing may keep
+  a reference to a pooled frame after its call.
+- Bytecode: comparisons and logical nots followed by a conditional jump are fused (`JumpIfLessThan`...), loops test their
+  condition at the end, updates whose value is not used are prefix updates (`IncrementLocal` on a register), method calls
+  use `GetMethod`. A backward jump counts an interrupt point.
+- Shapes (`Runtime/Shape.cs`): the empty shapes are static (`Shape.EmptyOrdinary`, `EmptyArray`, `EmptyIndexedExotic`);
+  the shapes with properties belong to an engine (`engine.ShapeRoots`) and are not thread-safe. The exotic objects whose
+  named properties are not ordinary (proxies, typed arrays, namespaces, host objects that override their internal
+  methods) never get a shape.
+- Inline caches (`Runtime/InlineCache.cs`, `Interpreter/JsInterpreter.InlineCaches.cs`): GetProperty, GetMethod,
+  SetProperty, DefineField, LoadGlobal and LoadGlobalOrUndefined have the index of their cache as last operand
+  (`FunctionTemplate.Caches`, shared by the engines that run the code: an entry is immutable, and the entries that apply
+  to the static empty shapes check their engine). The entries that depend on other objects check the epoch of
+  `InlineCache`: the objects are flagged `InlineCacheHolder` (the positions of their properties are remembered: a
+  removal, a reconfiguration or a compaction increments the epoch) or `InlineCachePrototype` (the absence of a property
+  is remembered: any change does). The global lexical declarations increment `GlobalEnvironment.LexicalVersion`. A site
+  that missed 16 times becomes megamorphic (not cached).
+- Iteration: `IteratorStepValue` calls the native step of the built-in next methods (`JsBuiltinFunction.IteratorStep`:
+  no result object), and `GetIterator` of an array iterates the array without an iterator object while
+  `Intrinsics.IsArrayIterationIntact()` (the iterator object is created if something needs it). for-in enumerates the
+  shapes (`ForInEnumerator`).
+- Realms: the Intl object and its constructors are created on first use (a lazy global, `Intrinsics.EnsureIntl`).
+- Host objects: `JsHostObject(prototype, target, hasOrdinaryInternalMethods: true)` creates a host object that uses the
+  fast paths (it must not override the methods that read or write properties).
+- Benchmarks (`benchmarks/Meziantou.Framework.JavaScriptEngine.Benchmarks`, net10.0): `quick [workload|file.js]` (vs Jint),
+  `profile <workload|file.js|Parse|CreateRealm> <seconds>` (allocations, GC, CPU time per run), `harness <testharness.js>`,
+  `dump <workload|file.js>` (the bytecode), and BenchmarkDotNet (`EngineBenchmarks`, `ParseBenchmarks`). Run them with
+  `DOTNET_TieredCompilation=0` for steady-state timings of short runs.
 
 ## Tests
 

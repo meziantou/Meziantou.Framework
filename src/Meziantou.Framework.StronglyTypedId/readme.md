@@ -153,7 +153,7 @@ You can configure the code generation using the `[StronglyTypedIdAttribute]` att
                  generateMongoDBBsonSerialization: true,
                  addCodeGeneratedAttribute: true
                  )]
-public partial struct OrderId { }
+public partial struct ShipmentId { }
 ```
 <!-- endref -->
 
@@ -184,7 +184,7 @@ public partial struct ExternalId { } // No New() method is generated
 
 You can configure the default value of the options for all the types of an assembly using the `[assembly: StronglyTypedIdDefaults]` attribute. Options set on `[StronglyTypedId]` take precedence over the assembly-level defaults:
 
-<!-- ref:../../samples/Meziantou.Framework.StronglyTypedId.Samples/AssemblyDefaults.cs;region=StronglyTypedId_AssemblyDefaults;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../samples/Meziantou.Framework.StronglyTypedId.AssemblyDefaults.Samples/AssemblyDefaults.cs;region=StronglyTypedId_AssemblyDefaults;format=md-fenced-code-block;dedent=true -->
 ```csharp
 [assembly: StronglyTypedIdDefaults(GuidGenerationStrategy = GuidGenerationStrategy.Version7,
                                    GenerateNewtonsoftJsonConverter = false,
@@ -195,7 +195,7 @@ You can configure the default value of the options for all the types of an assem
                                    StringComparison = StringComparison.Ordinal,
                                    GenerateToStringAsRecord = true)]
 
-namespace Meziantou.Framework.StronglyTypedId.Samples;
+namespace Meziantou.Framework.StronglyTypedId.AssemblyDefaults.Samples;
 
 [StronglyTypedId<Guid>]
 public partial struct ProjectId { } // New() uses Guid.CreateVersion7()

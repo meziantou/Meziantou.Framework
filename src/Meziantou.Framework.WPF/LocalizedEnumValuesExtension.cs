@@ -6,8 +6,14 @@ namespace Meziantou.Framework.WPF;
 /// XAML markup extension that provides localized enum values with display names from <see cref="System.ComponentModel.DataAnnotations.DisplayAttribute"/>.
 /// </summary>
 /// <example>
-/// <code>
-/// &lt;ComboBox ItemsSource="{wpf:LocalizedEnumValues {x:Type MyEnum}}" DisplayMemberPath="Name" SelectedValuePath="Value" /&gt;
+/// <code language="xml" xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/Meziantou.Framework.WPF.EnumComboBox/Examples/LocalizedEnumValuesExample.xaml">
+/// &lt;UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+///              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+///              xmlns:wpf="clr-namespace:Meziantou.Framework.WPF;assembly=Meziantou.Framework.WPF"
+///              xmlns:local="clr-namespace:Meziantou.Framework.WPF.EnumComboBox"&gt;
+///     &lt;!-- Displays the names from the [Display] attributes of the enum members --&gt;
+///     &lt;ComboBox ItemsSource="{wpf:LocalizedEnumValues {x:Type local:Week}}" DisplayMemberPath="Name" SelectedValuePath="Value" /&gt;
+/// &lt;/UserControl&gt;
 /// </code>
 /// </example>
 [MarkupExtensionReturnType(typeof(IEnumerable<LocalizedEnumValue>))]

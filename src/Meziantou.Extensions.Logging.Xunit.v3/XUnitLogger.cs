@@ -7,8 +7,8 @@ namespace Meziantou.Extensions.Logging.Xunit.v3;
 
 /// <summary>Provides an implementation of <see cref="ILogger"/> that writes logs to xUnit.net's <see cref="ITestOutputHelper"/>.</summary>
 /// <example>
-/// <code>
-/// public class MyTests(ITestOutputHelper testOutputHelper)
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Extensions.Logging.Xunit.v3.Tests/XunitLoggerTests.cs" ref:region="XUnitLogger_Example" ref:dedent="true">
+/// public sealed class MyTests(ITestOutputHelper testOutputHelper)
 /// {
 ///     [Fact]
 ///     public void MyTest()

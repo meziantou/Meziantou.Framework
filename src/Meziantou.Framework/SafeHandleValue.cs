@@ -7,10 +7,13 @@ namespace Meziantou.Framework;
 /// Automatically increments the reference count on creation and decrements it on disposal.
 /// </summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Tests/SafeHandleExtensionsTests.cs" ref:region="SafeHandle_CreateHandleScope" ref:dedent="true">
+/// using var safeHandle = File.OpenHandle(Path.GetTempFileName(), FileMode.Open, FileAccess.Read, FileShare.None, FileOptions.DeleteOnClose);
+///
+/// // The SafeHandle cannot be released while the scope is alive
 /// using var scope = safeHandle.CreateHandleScope();
 /// nint handle = scope.Value;
-/// // Use handle safely
+/// Assert.NotEqual(0, handle); // Use handle safely, for instance in a P/Invoke call
 /// </code>
 /// </example>
 #if PUBLIC_SAFEHANDLEVALUE

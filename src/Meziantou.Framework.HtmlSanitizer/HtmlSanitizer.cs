@@ -6,10 +6,10 @@ namespace Meziantou.Framework.Sanitizers;
 /// <summary>Sanitizes HTML fragments to prevent XSS attacks by removing dangerous elements, attributes, and URLs while preserving safe HTML structure.</summary>
 /// <example>
 /// Basic HTML sanitization:
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.HtmlSanitizer.Tests/HtmlSanitizerTests.cs" ref:region="HtmlSanitizer_SanitizeHtmlFragment" ref:dedent="true">
 /// var sanitizer = new HtmlSanitizer();
 /// var safeHtml = sanitizer.SanitizeHtmlFragment("&lt;p&gt;Hello &lt;script&gt;alert('xss')&lt;/script&gt;World&lt;/p&gt;");
-/// // Result: "&lt;p&gt;Hello World&lt;/p&gt;"
+/// Assert.Equal("&lt;p&gt;Hello World&lt;/p&gt;", safeHtml);
 /// </code>
 /// </example>
 public sealed class HtmlSanitizer

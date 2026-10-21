@@ -16,6 +16,24 @@ public sealed partial class NodeJsHostTests
     private static readonly TimeSpan HangTimeout = TimeSpan.FromMinutes(2);
 
     [Fact]
+    public async Task DocumentationExample_NodeJsHost()
+    {
+        SkipIfNodeIsNotInstalled();
+
+        #region NodeJsHost_Example
+        await using var node = await NodeJsHost.StartAsync();
+
+        // Evaluate code as the body of an async function
+        var sum = await node.EvaluateAsync("return 1 + 2;");
+        Assert.Equal(3, sum.GetInt32());
+
+        // Call a function exported by a module: a file, a package, or a built-in module
+        var text = await node.InvokeAsync("node:util", "format", ["%s has %d items", "cart", 3]);
+        Assert.Equal("cart has 3 items", text.GetString());
+        #endregion
+    }
+
+    [Fact]
     public async Task Evaluate_ReturnsValue()
     {
         await using var node = await StartNodeAsync();
@@ -818,6 +836,23 @@ public sealed partial class NodeJsHostTests
     }
 
     [Fact]
+    public async Task DocumentationExample_NodeJsHostPool()
+    {
+        SkipIfNodeIsNotInstalled();
+
+        #region NodeJsHostPool_Example
+        string[] documents = ["# Title", "Some *text*"];
+
+        await using var pool = await NodeJsHostPool.StartAsync(Environment.ProcessorCount);
+
+        // Each call runs on the host with the fewest calls in progress, so the calls run in parallel
+        var results = await Task.WhenAll(documents.Select(document => pool.EvaluateAsync("return args[0].length;", [document])));
+
+        Assert.Equal([7, 11], results.Select(result => result.GetInt32()));
+        #endregion
+    }
+
+    [Fact]
     public async Task Pool_RunsCpuBoundCallsInParallel()
     {
         SkipIfNodeIsNotInstalled();
@@ -954,6 +989,24 @@ public sealed partial class NodeJsHostTests
         await using var temporaryDirectory = TemporaryDirectory.Create();
 
         await Assert.ThrowsAsync<NodeJsException>(() => NodeJsHostPool.StartAsync(2, new NodeJsHostOptions { NodeExecutablePath = temporaryDirectory.GetFullPath("node-does-not-exist") }, XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task DocumentationExample_JSValue()
+    {
+        SkipIfNodeIsNotInstalled();
+
+        #region JSValue_Example
+        await using var node = await NodeJsHost.StartAsync();
+
+        var types = await node.EvaluateAsync(
+            "return [typeof args[0], typeof args[1], args[2].date instanceof Date];",
+            [JSValue.Undefined, JSValue.BigInt(long.MaxValue), new JsonObject { ["date"] = JSValue.Date(DateTimeOffset.UtcNow) }]);
+
+        Assert.Equal("undefined", types[0].GetString());
+        Assert.Equal("bigint", types[1].GetString());
+        Assert.True(types[2].GetBoolean());
+        #endregion
     }
 
     [Fact]
@@ -1116,6 +1169,26 @@ public sealed partial class NodeJsHostTests
         var exception = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateVoidAsync("throw new RangeError('void error');", XunitCancellationToken));
 
         Assert.Equal("RangeError: void error", exception.Message);
+    }
+
+    [Fact]
+    public async Task DocumentationExample_JSReference()
+    {
+        SkipIfNodeIsNotInstalled();
+
+        #region JSReference_Example
+        await using var node = await NodeJsHost.StartAsync();
+
+        // A Hash object cannot be serialized as JSON, so it stays in the Node.js process
+        await using var hash = await node.InvokeReferenceAsync("node:crypto", "createHash", ["sha256"]);
+        await hash.InvokeVoidAsync("update", ["hello"]);
+
+        // A function receives the referenced value
+        await node.EvaluateVoidAsync("args[0].update(' world');", [hash]);
+
+        var digest = await hash.InvokeAsync("digest", ["hex"]);
+        Assert.Equal("b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9", digest.GetString());
+        #endregion
     }
 
     [Fact]

@@ -23,6 +23,30 @@ public sealed class QueryBuilderTests
     }
 
     [Fact]
+    public void Query_DocumentationExample()
+    {
+        #region Query_Evaluate
+        var queryBuilder = new QueryBuilder<Person>();
+        queryBuilder.AddHandler<string>("name", (obj, value) => obj.FullName.Contains(value, StringComparison.OrdinalIgnoreCase));
+        var query = queryBuilder.Build("name:john");
+        Assert.True(query.Evaluate(new Person("John Doe", new DateTime(2000, 1, 1))));
+        #endregion
+    }
+
+    [Fact]
+    public void QueryBuilder_DocumentationExample()
+    {
+        #region QueryBuilder_Build
+        var queryBuilder = new QueryBuilder<Person>();
+        queryBuilder.AddHandler<string>("name", (obj, value) => obj.FullName.Contains(value, StringComparison.OrdinalIgnoreCase));
+        queryBuilder.AddRangeHandler<int>("age", (obj, range) => range.IsInRange((int)(DateTime.UtcNow - obj.DateOfBirth).TotalDays / 365));
+        var query = queryBuilder.Build("name:john AND age>=21");
+        Assert.True(query.Evaluate(new Person("John Doe", new DateTime(2000, 1, 1))));
+        Assert.False(query.Evaluate(new Person("Jane Doe", new DateTime(2000, 1, 1))));
+        #endregion
+    }
+
+    [Fact]
     public void FieldEquals_Byte()
     {
         var queryBuilder = new QueryBuilder<Sample>();

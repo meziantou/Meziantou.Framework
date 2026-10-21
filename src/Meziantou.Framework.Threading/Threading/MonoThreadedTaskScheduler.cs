@@ -4,15 +4,15 @@ namespace Meziantou.Framework.Threading;
 
 /// <summary>Provides a task scheduler that executes tasks on a single dedicated thread.</summary>
 /// <example>
-/// <code><![CDATA[
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Threading.Tests/MonoThreadedTaskSchedulerTests.cs" ref:region="MonoThreadedTaskScheduler_Usage" ref:dedent="true">
 /// using var scheduler = new MonoThreadedTaskScheduler("MyWorkerThread");
-/// var task = Task.Factory.StartNew(
-///     () => Console.WriteLine($"Running on thread: {Thread.CurrentThread.Name}"),
+/// var threadName = await Task.Factory.StartNew(
+///     () =&gt; Thread.CurrentThread.Name,
 ///     CancellationToken.None,
 ///     TaskCreationOptions.None,
 ///     scheduler);
-/// await task;
-/// ]]></code>
+/// Assert.Equal("MyWorkerThread", threadName);
+/// </code>
 /// </example>
 public sealed class MonoThreadedTaskScheduler : TaskScheduler, IDisposable
 {

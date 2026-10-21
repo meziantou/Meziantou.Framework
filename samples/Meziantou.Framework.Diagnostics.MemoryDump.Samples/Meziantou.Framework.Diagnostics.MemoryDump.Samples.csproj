@@ -1,10 +1,12 @@
 <Project Sdk="Meziantou.NET.Sdk">
-  <!-- Compiles the readme examples, which write dumps of the current process, so CI checks them without running them -->
+
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFramework)</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Meziantou.Framework.Diagnostics.MemoryDump\Meziantou.Framework.Diagnostics.MemoryDump.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Diagnostics.MemoryDump/Meziantou.Framework.Diagnostics.MemoryDump.csproj" />
   </ItemGroup>
+
 </Project>

@@ -6,12 +6,12 @@ namespace Meziantou.Framework.DependencyScanning;
 /// <summary>
 /// Provides configuration options for dependency scanning operations.
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/DependencyScannerSample/DocumentationExamples.cs" ref:region="ScannerOptions_Example" ref:dedent="true">
 /// var options = new ScannerOptions
 /// {
 ///     DegreeOfParallelism = 8,
 ///     RecurseSubdirectories = true,
-///     IncludedDependencyTypes = [DependencyType.NuGet, DependencyType.Npm]
+///     IncludedDependencyTypes = [DependencyType.NuGet, DependencyType.Npm],
 /// };
 /// var dependencies = await DependencyScanner.ScanDirectoryAsync("C:\\MyProject", options, cancellationToken);
 /// </code>

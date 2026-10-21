@@ -8,10 +8,10 @@ namespace Meziantou.Framework.InlineSnapshotTesting;
 
 /// <summary>Provides methods for validating objects against inline snapshots in test code.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs" ref:region="InlineSnapshot_Validate" ref:dedent="true">
 /// var data = new { FirstName = "John", LastName = "Doe" };
 /// InlineSnapshot.Validate(data, """
-///     FirstName: John,
+///     FirstName: John
 ///     LastName: Doe
 ///     """);
 /// </code>

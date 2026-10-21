@@ -6,15 +6,21 @@ namespace Meziantou.Extensions.Logging.InMemory;
 
 /// <summary>Represents a thread-safe collection of log entries captured by in-memory loggers.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Extensions.Logging.InMemory.Tests/InMemoryLoggerTests.cs" ref:region="InMemoryLogCollection_Example" ref:dedent="true">
 /// var logger = InMemoryLogger.CreateLogger("sample");
-/// 
+/// logger.LogInformation("Application started");
+/// logger.LogError("Error while processing the request");
+///
 /// // Filter by log level
 /// var errors = logger.Logs.Errors;
 /// var infos = logger.Logs.Informations;
-/// 
+/// Assert.Single(errors);
+/// Assert.Single(infos);
+///
 /// // Search for specific entries
-/// var entry = logger.Logs.Find(log => log.Message.Contains("Error"));
+/// var entry = logger.Logs.Find(log =&gt; log.Message.StartsWith("Error", StringComparison.Ordinal));
+/// Assert.NotNull(entry);
+/// Assert.Equal(LogLevel.Error, entry.LogLevel);
 /// </code>
 /// </example>
 public sealed class InMemoryLogCollection : IEnumerable<InMemoryLogEntry>

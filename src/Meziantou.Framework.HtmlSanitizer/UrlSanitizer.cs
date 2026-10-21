@@ -5,9 +5,9 @@ namespace Meziantou.Framework.Sanitizers;
 /// <summary>Validates URLs to prevent XSS attacks by checking for dangerous protocols and patterns.</summary>
 /// <example>
 /// Check if a URL is safe:
-/// <code>
-/// bool isSafe = UrlSanitizer.IsSafeUrl("https://example.com"); // true
-/// bool isUnsafe = UrlSanitizer.IsSafeUrl("javascript:alert('xss')"); // false
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.HtmlSanitizer.Tests/UrlSanitizerTests.cs" ref:region="UrlSanitizer_IsSafeUrl" ref:dedent="true">
+/// Assert.True(UrlSanitizer.IsSafeUrl("https://example.com"));
+/// Assert.False(UrlSanitizer.IsSafeUrl("javascript:alert('xss')"));
 /// </code>
 /// </example>
 public static partial class UrlSanitizer

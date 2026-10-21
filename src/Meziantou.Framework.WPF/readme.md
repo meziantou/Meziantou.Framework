@@ -21,7 +21,7 @@ dotnet add package Meziantou.Framework.WPF
 
 The types are in the `Meziantou.Framework.WPF` namespace.
 
-<!-- ref:../../tests/Meziantou.Framework.WPF.Tests/DelegateCommandTests.cs;region=DelegateCommand_ViewModel;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../tests/Meziantou.Framework.WPF.Tests/DelegateCommandTests.cs;region=DelegateCommand_SampleViewModel;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public sealed class SampleViewModel
 {

@@ -4,14 +4,14 @@ namespace Meziantou.Extensions.Logging.InMemory;
 
 /// <summary>Provides an in-memory logger implementation that captures log entries for testing purposes.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Extensions.Logging.InMemory.Tests/InMemoryLoggerTests.cs" ref:region="InMemoryLogger_Example" ref:dedent="true">
 /// // Create a logger directly
 /// var logger = InMemoryLogger.CreateLogger("MyCategory");
 /// logger.LogInformation("Test message");
-/// 
+///
 /// // Access captured logs
 /// Assert.Single(logger.Logs.Informations);
-/// Assert.Contains(logger.Logs, log => log.Message == "Test message");
+/// Assert.Contains(logger.Logs, log =&gt; log.Message == "Test message");
 /// </code>
 /// </example>
 public class InMemoryLogger : IInMemoryLogger

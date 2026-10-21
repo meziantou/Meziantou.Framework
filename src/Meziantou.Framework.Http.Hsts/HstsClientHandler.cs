@@ -24,7 +24,7 @@ namespace Meziantou.Framework.Http;
 /// </para>
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/Meziantou.Framework.Http.HstsSample/Examples.cs" ref:region="HstsClientHandler_Example" ref:dedent="true">
 /// var policies = new HstsDomainPolicyCollection(includePreloadDomains: true);
 /// using var client = new HttpClient(new HstsClientHandler(new SocketsHttpHandler(), policies), disposeHandler: true);
 ///

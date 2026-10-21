@@ -13,7 +13,7 @@ Create a context per application and scan content with it (the types are in the 
 namespace). The examples scan the EICAR test string, which antimalware products
 detect as malware:
 
-<!-- ref:../../tests/Meziantou.Framework.Win32.AmsiTests/AmsiContextTests.cs;region=AmsiContext_IsMalware;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../tests/Meziantou.Framework.Win32.AmsiTests/AmsiContextTests.cs;region=AmsiContext_IsMalwareString;format=md-fenced-code-block;dedent=true -->
 ```csharp
 using var context = AmsiContext.Create("MyApplication");
 

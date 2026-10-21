@@ -4,13 +4,13 @@ namespace Meziantou.AspNetCore.Mvc.TagHelpers;
 
 /// <summary>A TagHelper that defers rendering of content until after the page has loaded, improving perceived performance.</summary>
 /// <example>
-/// <code language="razor">
-/// &lt;!-- Defer loading of non-critical stylesheet --&gt;
+/// <code language="razor" xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../samples/Meziantou.AspNetCore.Mvc.Samples/Views/Examples/RenderOnPageLoad.cshtml">
+/// @* Defer loading of non-critical stylesheet *@
 /// &lt;render-on-page-load&gt;
 ///     &lt;link rel="stylesheet" href="/css/non-critical.css" /&gt;
 /// &lt;/render-on-page-load&gt;
 ///
-/// &lt;!-- Defer loading with custom ID --&gt;
+/// @* Defer loading with custom ID *@
 /// &lt;render-on-page-load id="analytics-scripts"&gt;
 ///     &lt;script src="/js/analytics.js"&gt;&lt;/script&gt;
 /// &lt;/render-on-page-load&gt;

@@ -4,11 +4,16 @@ namespace Meziantou.Framework.Language.Shell;
 
 /// <summary>The base of every node in a shell tree.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxVisitorTests.cs" ref:region="ShellSyntaxNode_DescendantNodes" ref:dedent="true">
+/// var tree = ShellSyntaxTree.ParseText("ls -l", ShellDialect.Bash);
+///
+/// var kinds = new List&lt;SyntaxKind&gt;();
 /// foreach (var node in tree.GetRoot().DescendantNodes())
 /// {
-///     _ = node.Kind();
+///     kinds.Add(node.Kind());
 /// }
+///
+/// Assert.Equal([SyntaxKind.StatementList, SyntaxKind.Command, SyntaxKind.Word, SyntaxKind.LiteralWordPart, SyntaxKind.Word, SyntaxKind.LiteralWordPart], kinds);
 /// </code>
 /// </example>
 public abstract class ShellSyntaxNode : SyntaxNode

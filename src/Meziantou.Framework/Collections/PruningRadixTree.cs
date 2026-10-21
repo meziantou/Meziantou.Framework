@@ -13,14 +13,14 @@ namespace Meziantou.Framework.Collections;
 /// <para>Typical use cases include search-box suggestions, query completion, and dictionary-backed command palettes.</para>
 /// <para>The structure is case-sensitive. If you need case-insensitive behavior, normalize input before adding or querying.</para>
 /// <para>Example:</para>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Tests/Collections/PruningRadixTreeTests.cs" ref:region="PruningRadixTree_GetTopTermsByPrefix" ref:dedent="true">
 /// var tree = new PruningRadixTree();
 /// tree.Add("car", 10);
 /// tree.Add("cart", 5);
 /// tree.Add("cat", 7);
 ///
 /// var suggestions = tree.GetTopTermsByPrefix("ca", topK: 2, out _);
-/// // suggestions: [("car", 10), ("cat", 7)]
+/// Assert.Equal([KeyValuePair.Create("car", 10L), KeyValuePair.Create("cat", 7L)], suggestions);
 /// </code>
 /// </remarks>
 public sealed class PruningRadixTree : IEnumerable<KeyValuePair<string, long>>

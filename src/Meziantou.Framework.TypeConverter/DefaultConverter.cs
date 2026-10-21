@@ -5,26 +5,29 @@ namespace Meziantou.Framework;
 
 /// <summary>
 /// Provides a powerful type converter that extends the capabilities of System.Convert with support for culture-specific formatting, byte arrays, enums, nullable types, and custom TypeConverters.
+/// </summary>
 /// <example>
-/// <code><![CDATA[
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.TypeConverter.Tests/DefaultConverterTests_ConversionType.cs" ref:region="DefaultConverter_Example" ref:dedent="true">
 /// var converter = new DefaultConverter();
 ///
 /// // Convert string to int
-/// converter.TryChangeType("42", typeof(int), null, out var result);
+/// Assert.True(converter.TryChangeType("42", typeof(int), CultureInfo.InvariantCulture, out var result));
+/// Assert.Equal(42, result);
 ///
 /// // Convert byte array to hex string
 /// converter.ByteArrayToStringFormat = ByteArrayToStringFormat.Base16Prefixed;
-/// converter.TryChangeType(new byte[] { 1, 2, 3, 4 }, typeof(string), null, out var hex);
-/// Console.WriteLine(hex); // "0x01020304"
+/// Assert.True(converter.TryChangeType(new byte[] { 1, 2, 3, 4 }, typeof(string), CultureInfo.InvariantCulture, out var hex));
+/// Assert.Equal("0x01020304", hex);
 ///
 /// // Convert hex string to byte array
-/// converter.TryChangeType("0x01020304", typeof(byte[]), null, out var bytes);
+/// Assert.True(converter.TryChangeType("0x01020304", typeof(byte[]), CultureInfo.InvariantCulture, out var bytes));
+/// Assert.Equal(new byte[] { 1, 2, 3, 4 }, (byte[]?)bytes);
 ///
 /// // Parse enum with flags
-/// converter.TryChangeType("Option1, Option2", typeof(MyEnum), null, out var enumValue);
-/// ]]></code>
+/// Assert.True(converter.TryChangeType("ReadOnly, Hidden", typeof(FileAttributes), CultureInfo.InvariantCulture, out var enumValue));
+/// Assert.Equal(FileAttributes.ReadOnly | FileAttributes.Hidden, enumValue);
+/// </code>
 /// </example>
-/// </summary>
 public class DefaultConverter : IConverter
 {
     /// <summary>Gets or sets the format to use when converting byte arrays to strings.</summary>

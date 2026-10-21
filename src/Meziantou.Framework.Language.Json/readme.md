@@ -226,7 +226,7 @@ rest of the document under others:
 `JsonSyntaxWalker` visits a node and everything below it; `JsonSyntaxVisitor` dispatches on kind without recursing;
 `JsonSyntaxRewriter` builds a new tree from an old one.
 
-<!-- ref:../../tests/Meziantou.Framework.Language.Json.Tests/JsonSyntaxTreeTests.cs;region=JsonSyntaxTree_Walker;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../tests/Meziantou.Framework.Language.Json.Tests/JsonSyntaxTreeTests.cs;region=JsonSyntaxWalker_StringCounter;format=md-fenced-code-block;dedent=true -->
 ```csharp
 private sealed class StringCounter : JsonSyntaxWalker
 {

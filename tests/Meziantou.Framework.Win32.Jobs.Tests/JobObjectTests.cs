@@ -114,6 +114,41 @@ public class JobObjectTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void JobObject_DocumentationExample()
+    {
+        #region JobObject_KillOnJobClose
+        using var job = new JobObject();
+        job.SetLimits(new JobObjectLimits
+        {
+            Flags = JobObjectLimitFlags.KillOnJobClose,
+        });
+
+        // Start a child process and assign it to the job
+        using var childProcess = Process.Start(new ProcessStartInfo("ping", "127.0.0.1 -n 100") { CreateNoWindow = true })!;
+        job.AssignProcess(childProcess);
+
+        // Disposing the job terminates the child process
+        job.Dispose();
+        childProcess.WaitForExit();
+        #endregion
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void JobObjectLimits_DocumentationExample()
+    {
+        #region JobObjectLimits_SetLimits
+        using var job = new JobObject();
+        var limits = new JobObjectLimits
+        {
+            Flags = JobObjectLimitFlags.KillOnJobClose,
+            ActiveProcessLimit = 10,
+            ProcessMemoryLimit = 100 * 1024 * 1024, // 100 MB
+        };
+        job.SetLimits(limits);
+        #endregion
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void Flags_AreReplacedNotAccumulated()
     {
         var limits = new JobObjectLimits { Flags = JobObjectLimitFlags.KillOnJobClose };
@@ -359,6 +394,21 @@ public class JobObjectTests
             MaxIops = 100,
             ReservationIops = 100,
         });
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void SetIoRateLimits_DocumentationExample()
+    {
+        #region JobIoRateLimits_SetIoLimits
+        using var job = new JobObject();
+        var limits = new JobIoRateLimits
+        {
+            ControlFlags = JobIoRateFlags.Enable,
+            MaxBandwidth = 1024 * 1024, // 1 MB/s
+            MaxIops = 1000,
+        };
+        job.SetIoLimits(limits);
+        #endregion
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]

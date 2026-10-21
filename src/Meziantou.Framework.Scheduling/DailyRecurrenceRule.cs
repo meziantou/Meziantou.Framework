@@ -2,9 +2,13 @@ namespace Meziantou.Framework.Scheduling;
 
 /// <summary>Represents a daily recurrence rule.</summary>
 /// <example>
-/// <code>
-/// var rrule = new DailyRecurrenceRule { Interval = 2, Occurrences = 10 };
-/// var nextOccurrences = rrule.GetNextOccurrences(DateTime.Now).ToArray();
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Scheduling.Tests/RecurrenceRuleTests.cs" ref:region="DailyRecurrenceRule_Example" ref:dedent="true">
+/// // Every 2 days, 10 times
+/// var rrule = RecurrenceRule.Parse("FREQ=DAILY;INTERVAL=2;COUNT=10");
+/// var nextOccurrences = rrule.GetNextOccurrences(new DateTime(2024, 01, 01, 09, 00, 00)).ToArray();
+///
+/// Assert.HasCount(10, nextOccurrences);
+/// Assert.Equal(new DateTime(2024, 01, 03, 09, 00, 00), nextOccurrences[1]);
 /// </code>
 /// </example>
 internal sealed class DailyRecurrenceRule : RecurrenceRule

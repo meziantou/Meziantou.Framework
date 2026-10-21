@@ -1,0 +1,14 @@
+@inject TimeZoneService TimeZoneService
+
+<button @onclick="ConvertToLocalTime">Show the local time</button>
+<p>@localTime</p>
+
+@code {
+    private DateTimeOffset? localTime;
+
+    private async Task ConvertToLocalTime()
+    {
+        var utcTime = DateTimeOffset.UtcNow;
+        localTime = await TimeZoneService.GetLocalDateTimeAsync(utcTime);
+    }
+}

@@ -11,24 +11,22 @@ namespace Meziantou.Framework.Collections.Concurrent;
 /// <see cref="Execute{TResult}(Func{List{T}, TResult})"/> to run several operations as a single atomic unit.
 /// </remarks>
 /// <example>
-/// <code><![CDATA[
-/// var list = new SynchronizedList<int>();
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../../tests/Meziantou.Framework.Threading.Tests/SynchronizedListTests.cs" ref:region="SynchronizedList_Usage" ref:dedent="true">
+/// var list = new SynchronizedList&lt;int&gt;();
 /// list.Add(1);
 /// list.Add(2);
-/// foreach (var item in list)
-/// {
-///     Console.WriteLine(item);
-/// }
+/// Assert.Equal([1, 2], list); // Enumerating the list enumerates a snapshot
 ///
 /// // Multiple operations as a single atomic unit
-/// list.Execute(items =>
+/// list.Execute(items =&gt;
 /// {
 ///     if (!items.Contains(3))
 ///     {
 ///         items.Add(3);
 ///     }
 /// });
-/// ]]></code>
+/// Assert.Equal([1, 2, 3], list);
+/// </code>
 /// </example>
 public sealed class SynchronizedList<T> : IList<T>, IReadOnlyList<T>, ICollection
 {

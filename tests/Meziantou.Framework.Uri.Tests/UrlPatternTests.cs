@@ -59,6 +59,25 @@ public sealed class UrlPatternTests
         #endregion
     }
 
+    [Fact]
+    public void UrlPattern_Example()
+    {
+        #region UrlPattern_Example
+        // Create a pattern and test if a URL matches
+        var pattern = UrlPattern.Create("https://example.com/users/:id");
+        Assert.True(pattern.IsMatch("https://example.com/users/123"));
+
+        // Extract captured groups from a URL
+        var result = pattern.Match("https://example.com/users/456");
+        Assert.NotNull(result);
+        Assert.Equal("456", result.Pathname.Groups["id"]);
+
+        // Use wildcards to match any value
+        var wildcardPattern = UrlPattern.Create("https://*.example.com/*");
+        Assert.True(wildcardPattern.IsMatch("https://api.example.com/data"));
+        #endregion
+    }
+
     // https://urlpattern.spec.whatwg.org/#example-1
     [Fact]
     public void Create_WithPatternStringAndBaseUrl_ShouldWork()

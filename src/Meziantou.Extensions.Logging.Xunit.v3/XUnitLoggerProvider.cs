@@ -8,17 +8,18 @@ namespace Meziantou.Extensions.Logging.Xunit.v3;
 
 /// <summary>Provides an implementation of <see cref="ILoggerProvider"/> that creates loggers writing to xUnit.net's <see cref="ITestOutputHelper"/>.</summary>
 /// <example>
-/// <code>
-/// using Microsoft.Extensions.Hosting;
-/// using Microsoft.Extensions.Logging;
-///
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Extensions.Logging.Xunit.v3.Tests/XunitLoggerTests.cs" ref:region="XUnitLoggerProvider_Example" ref:dedent="true">
+/// var testOutputHelper = TestContext.Current.TestOutputHelper;
 /// using var provider = new XUnitLoggerProvider(testOutputHelper);
-/// var host = new HostBuilder()
-///     .ConfigureLogging(builder =>
+/// using var host = new HostBuilder()
+///     .ConfigureLogging(builder =&gt;
 ///     {
 ///         builder.Services.AddSingleton&lt;ILoggerProvider&gt;(provider);
 ///     })
 ///     .Build();
+///
+/// var logger = host.Services.GetRequiredService&lt;ILoggerFactory&gt;().CreateLogger("MyCategory");
+/// logger.LogInformation("This message will appear in the test output");
 /// </code>
 /// </example>
 [ProviderAlias("XUnit")]

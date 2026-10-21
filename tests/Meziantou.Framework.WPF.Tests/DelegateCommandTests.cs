@@ -13,12 +13,43 @@ public sealed class DelegateCommandTests
         viewModel.SaveCommand.Execute(parameter: null);
     }
 
-    #region DelegateCommand_ViewModel
+    #region DelegateCommand_SampleViewModel
     public sealed class SampleViewModel
     {
         public IDelegateCommand SaveCommand { get; } = DelegateCommand.Create(
             execute: () => Console.WriteLine("Saved"),
             canExecute: () => true);
+    }
+    #endregion
+
+    [Fact]
+    public void DocumentationExample()
+    {
+        var viewModel = new MyViewModel();
+
+        Assert.True(viewModel.SaveCommand.CanExecute(parameter: null));
+        viewModel.SaveCommand.Execute(parameter: null);
+    }
+
+    #region DelegateCommand_ViewModel
+    public class MyViewModel
+    {
+        public IDelegateCommand SaveCommand { get; }
+
+        public MyViewModel()
+        {
+            SaveCommand = DelegateCommand.Create(Save, CanSave);
+        }
+
+        private void Save()
+        {
+            // Save logic
+        }
+
+        private bool CanSave()
+        {
+            return true;
+        }
     }
     #endregion
 

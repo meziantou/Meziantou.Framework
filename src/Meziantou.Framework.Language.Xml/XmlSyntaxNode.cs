@@ -6,11 +6,16 @@ namespace Meziantou.Framework.Language.Xml;
 
 /// <summary>The base of every node in an XML tree.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs" ref:region="XmlSyntaxNode_DescendantNodes" ref:dedent="true">
+/// var tree = XmlSyntaxTree.ParseText("&lt;root&gt;&lt;item /&gt;&lt;/root&gt;");
+///
+/// var kinds = new List&lt;SyntaxKind&gt;();
 /// foreach (var node in tree.GetRoot().DescendantNodes())
 /// {
-///     _ = node.Kind();
+///     kinds.Add(node.Kind());
 /// }
+///
+/// Assert.Equal([SyntaxKind.XmlElement, SyntaxKind.XmlElementStartTag, SyntaxKind.XmlEmptyElement, SyntaxKind.XmlElementEndTag], kinds);
 /// </code>
 /// </example>
 public abstract class XmlSyntaxNode : SyntaxNode

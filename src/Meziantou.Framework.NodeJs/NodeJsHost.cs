@@ -20,10 +20,16 @@ namespace Meziantou.Framework.NodeJs;
 /// <para>Calls can run concurrently. They run on the main thread of the process, or on worker threads when <see cref="NodeJsHostOptions.WorkerThreads"/> is set, so CPU-bound calls run in parallel. The Node.js process exits when the host is disposed, or when the connection with the .NET process is closed (e.g. when the .NET process exits) unless its event loop is blocked. Its standard input is closed, and its standard output and error are only passed to <see cref="NodeJsHostOptions.StandardOutputReceived"/> and <see cref="NodeJsHostOptions.StandardErrorReceived"/>.</para>
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.NodeJs.Tests/NodeJsHostTests.cs" ref:region="NodeJsHost_Example" ref:dedent="true">
 /// await using var node = await NodeJsHost.StartAsync();
+///
+/// // Evaluate code as the body of an async function
 /// var sum = await node.EvaluateAsync("return 1 + 2;");
-/// var html = await node.InvokeAsync("marked", "parse", ["# Hello"]);
+/// Assert.Equal(3, sum.GetInt32());
+///
+/// // Call a function exported by a module: a file, a package, or a built-in module
+/// var text = await node.InvokeAsync("node:util", "format", ["%s has %d items", "cart", 3]);
+/// Assert.Equal("cart has 3 items", text.GetString());
 /// </code>
 /// </example>
 public sealed class NodeJsHost : IAsyncDisposable

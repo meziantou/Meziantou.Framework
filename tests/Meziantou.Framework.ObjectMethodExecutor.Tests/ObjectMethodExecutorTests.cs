@@ -42,6 +42,35 @@ public sealed class ObjectMethodExecutorTests
     #endregion
 
     [Fact]
+    public async Task Documentation_Example()
+    {
+        #region ObjectMethodExecutor_Example
+        // Synchronous method
+        var replaceMethod = typeof(string).GetMethod(nameof(string.Replace), [typeof(string), typeof(string)])!;
+        var replaceExecutor = ObjectMethodExecutor.Create(replaceMethod);
+        Assert.Equal("Hello Universe", await InvokeAsync(replaceExecutor, "Hello World", ["World", "Universe"]));
+
+        // Asynchronous method
+        var readToEndMethod = typeof(StringReader).GetMethod(nameof(StringReader.ReadToEndAsync), Type.EmptyTypes)!;
+        var readToEndExecutor = ObjectMethodExecutor.Create(readToEndMethod);
+        using var reader = new StringReader("Hello");
+        Assert.Equal("Hello", await InvokeAsync(readToEndExecutor, reader, []));
+
+        static async Task<object?> InvokeAsync(ObjectMethodExecutor executor, object instance, object?[] parameters)
+        {
+            if (executor.IsMethodAsync)
+            {
+                return await executor.ExecuteAsync(instance, parameters);
+            }
+            else
+            {
+                return executor.Execute(instance, parameters);
+            }
+        }
+        #endregion
+    }
+
+    [Fact]
     public void StaticSyncVoidTest()
     {
         var validator = new Validator();

@@ -25,6 +25,27 @@ public sealed class LsaPrivateDataTests
     }
 
     [Fact, RunIf(WindowsGroups.Administrator)]
+    public void LsaPrivateData_DocumentationExample()
+    {
+        WithLsaLock(() =>
+        {
+            #region LsaPrivateData_SetGetRemove
+            // Store a secret value (requires administrator privileges)
+            LsaPrivateData.SetValue("L$MySecretKey", "MySecretValue");
+
+            // Retrieve the value
+            string? value = LsaPrivateData.GetValue("L$MySecretKey");
+            Assert.Equal("MySecretValue", value);
+
+            // Remove the value (requires administrator privileges)
+            LsaPrivateData.RemoveValue("L$MySecretKey");
+            #endregion
+
+            Assert.Null(LsaPrivateData.GetValue("L$MySecretKey"));
+        });
+    }
+
+    [Fact, RunIf(WindowsGroups.Administrator)]
     public void LsaPrivateData_GetUnsetValue()
     {
         // Get

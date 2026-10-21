@@ -2,15 +2,15 @@ namespace Meziantou.Framework.Win32;
 
 /// <summary>Provides constants for Windows privilege names that can be enabled or disabled on access tokens.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/Meziantou.Framework.Win32.AccessTokenConsole/AccessTokenExamples.cs" ref:region="Privileges_EnableAndDisable" ref:dedent="true">
 /// using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.AdjustPrivileges | TokenAccessLevels.Query);
-/// 
+///
 /// // Enable debug privilege to access other processes
 /// token.EnablePrivilege(Privileges.SE_DEBUG_NAME);
-/// 
+///
 /// // Enable backup privilege to bypass file security checks
 /// token.EnablePrivilege(Privileges.SE_BACKUP_NAME);
-/// 
+///
 /// // Disable a privilege
 /// token.DisablePrivilege(Privileges.SE_SHUTDOWN_NAME);
 /// </code>

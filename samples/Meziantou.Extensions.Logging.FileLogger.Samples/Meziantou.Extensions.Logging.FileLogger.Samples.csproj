@@ -1,5 +1,4 @@
 <Project Sdk="Meziantou.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
@@ -10,7 +9,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Extensions.Logging.FileLogger/Meziantou.Extensions.Logging.FileLogger.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Extensions.Logging.FileLogger\Meziantou.Extensions.Logging.FileLogger.csproj" />
   </ItemGroup>
-
 </Project>

@@ -1,6 +1,6 @@
 <Project Sdk="Meziantou.NET.Sdk">
-  <!-- Compiles the readme examples, which start containers, so CI checks them without running them -->
   <PropertyGroup>
+    <OutputType>Exe</OutputType>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
   </PropertyGroup>
 

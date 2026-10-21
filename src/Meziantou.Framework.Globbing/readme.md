@@ -34,7 +34,7 @@ dotnet package add Meziantou.Framework.Globbing
 
 - `IsMatch` tests whether a file matches the glob pattern
 
-    <!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs;region=Glob_IsMatch;format=md-fenced-code-block;dedent=true -->
+    <!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs;region=Glob_IsMatchIgnoreCase;format=md-fenced-code-block;dedent=true -->
     ```csharp
     Glob glob = Glob.Parse("src/**/*.txt", GlobDialect.Standard, GlobOptions.IgnoreCase);
     Assert.True(glob.IsMatch("src/abc.txt"));

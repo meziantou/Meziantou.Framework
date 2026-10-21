@@ -33,6 +33,17 @@ public sealed class TextSpanTests
     }
 
     [Fact]
+    public void DocumentationExample()
+    {
+        #region TextSpan_Create
+        var span = new TextSpan(start: 5, length: 3);
+        var sameSpan = TextSpan.FromBounds(5, 8);
+        Assert.Equal(span, sameSpan);
+        Assert.Equal(8, span.End);
+        #endregion
+    }
+
+    [Fact]
     public void FromBounds_RejectsANegativeStartOrAnEndBeforeTheStart()
     {
         Assert.Equal("start", Assert.Throws<ArgumentOutOfRangeException>(() => TextSpan.FromBounds(-1, 0)).ParamName);

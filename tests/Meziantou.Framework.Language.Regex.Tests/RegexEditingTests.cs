@@ -111,6 +111,23 @@ public sealed class RegexEditingTests
         Assert.Same(tree.GetRoot(), rewritten);
     }
 
+    [Fact]
+    public void Rewriter_DocumentationExample()
+    {
+        var tree = RegexSyntaxTree.ParseText("a.b", RegexDialect.Net);
+
+        var rewritten = new DotToWord().Visit(tree.GetRoot());
+
+        Assert.Equal(@"a\wb", rewritten!.ToFullString());
+    }
+
+    #region RegexSyntaxRewriter_DotToWord
+    private sealed class DotToWord : RegexSyntaxRewriter
+    {
+        public override SyntaxNode? VisitAnyCharacter(RegexAnyCharacterSyntax node) => SyntaxFactory.ClassEscape('w');
+    }
+    #endregion
+
     private sealed class LiteralRenamer(char from, char to) : RegexSyntaxRewriter
     {
         public override SyntaxNode? VisitLiteral(RegexLiteralSyntax node)

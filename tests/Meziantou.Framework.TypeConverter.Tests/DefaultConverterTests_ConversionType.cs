@@ -2,6 +2,31 @@ namespace Meziantou.Framework.Tests;
 
 public sealed class DefaultConverterTests_ConversionType
 {
+    [Fact]
+    public void Documentation_Example()
+    {
+        #region DefaultConverter_Example
+        var converter = new DefaultConverter();
+
+        // Convert string to int
+        Assert.True(converter.TryChangeType("42", typeof(int), CultureInfo.InvariantCulture, out var result));
+        Assert.Equal(42, result);
+
+        // Convert byte array to hex string
+        converter.ByteArrayToStringFormat = ByteArrayToStringFormat.Base16Prefixed;
+        Assert.True(converter.TryChangeType(new byte[] { 1, 2, 3, 4 }, typeof(string), CultureInfo.InvariantCulture, out var hex));
+        Assert.Equal("0x01020304", hex);
+
+        // Convert hex string to byte array
+        Assert.True(converter.TryChangeType("0x01020304", typeof(byte[]), CultureInfo.InvariantCulture, out var bytes));
+        Assert.Equal(new byte[] { 1, 2, 3, 4 }, (byte[]?)bytes);
+
+        // Parse enum with flags
+        Assert.True(converter.TryChangeType("ReadOnly, Hidden", typeof(FileAttributes), CultureInfo.InvariantCulture, out var enumValue));
+        Assert.Equal(FileAttributes.ReadOnly | FileAttributes.Hidden, enumValue);
+        #endregion
+    }
+
     public static TheoryData<Type> NonInstantiableTypes() => new()
     {
         typeof(void),

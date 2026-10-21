@@ -17,11 +17,13 @@ namespace Meziantou.Framework;
 /// </remarks>
 /// <example>
 /// Create a mock server with a simple endpoint:
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.HttpClientMock.Tests/MockTests.cs" ref:region="HttpClientMock_Example" ref:dedent="true">
 /// await using var mock = new HttpClientMock();
-/// mock.MapGet("/api/users", () => Results.Ok(new { name = "John" }));
+/// mock.MapGet("/api/users", () =&gt; Results.Ok(new { name = "John" }));
 /// using var httpClient = mock.CreateHttpClient();
-/// var response = await httpClient.GetAsync("/api/users");
+/// using var response = await httpClient.GetAsync(new Uri("/api/users", UriKind.Relative));
+/// Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+/// Assert.Equal("""{"name":"John"}""", await response.Content.ReadAsStringAsync());
 /// </code>
 /// </example>
 public sealed partial class HttpClientMock : IAsyncDisposable

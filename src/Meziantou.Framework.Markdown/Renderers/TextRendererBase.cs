@@ -48,6 +48,9 @@ public abstract class TextRendererBase : RendererBase
         }
     }
 
+    // Replaces the writer while a document is written, without changing its new line
+    internal void ReplaceWriter(TextWriter writer) => _writer = writer;
+
     /// <summary>
     /// Renders the specified markdown object (returns the <see cref="Writer"/> as a render object).
     /// </summary>

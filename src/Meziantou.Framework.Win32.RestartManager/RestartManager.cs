@@ -10,28 +10,33 @@ namespace Meziantou.Framework.Win32;
 
 /// <summary>Provides a wrapper around the Windows Restart Manager API to detect which processes are locking files and manage application restarts.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Win32.RestartManager.Tests/RestartManagerTests.cs" ref:region="RestartManager_Usage" ref:dedent="true">
+/// var path = Path.GetTempFileName();
+///
+/// // The file is locked while this stream is open
+/// using var stream = File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+///
 /// // Check if a file is locked
-/// if (RestartManager.IsFileLocked(@"C:\path\to\file.txt"))
-/// {
-///     Console.WriteLine("File is locked");
-/// }
+/// Assert.True(RestartManager.IsFileLocked(path));
 ///
 /// // Get processes locking a file. The caller owns the returned Process instances.
-/// var processes = RestartManager.GetProcessesLockingFile(@"C:\path\to\file.txt");
+/// var processes = RestartManager.GetProcessesLockingFile(path);
 /// foreach (var process in processes)
 /// {
-///     Console.WriteLine($"{process.ProcessName} (PID: {process.Id})");
+///     Assert.Equal(Environment.ProcessId, process.Id);
 ///     process.Dispose();
 /// }
 ///
 /// // Manual session management
 /// using var session = RestartManager.CreateSession();
-/// session.RegisterFile(@"C:\path\to\file.txt");
+/// session.RegisterFile(path);
 /// if (session.IsResourcesLocked())
 /// {
-///     var lockingProcesses = session.GetProcessesLockingResources();
-///     // Handle locked resources
+///     foreach (var process in session.GetProcessesLockingResources())
+///     {
+///         // Handle locked resources
+///         process.Dispose();
+///     }
 /// }
 /// </code>
 /// </example>

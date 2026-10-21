@@ -2,10 +2,15 @@ namespace Meziantou.Framework.Scheduling;
 
 /// <summary>Represents a recurrence rule as defined in RFC 5545 for recurring events.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Scheduling.Tests/RecurrenceRuleTests.cs" ref:region="RecurrenceRule_Example" ref:dedent="true">
 /// var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20000131T140000Z;BYMONTH=1");
 /// var dtStart = new DateTime(2000, 01, 01, 09, 00, 00);
 /// var occurrences = rrule.GetNextOccurrences(dtStart).Take(50).ToArray();
+///
+/// // Every day of January 2000, until the UNTIL date
+/// Assert.HasCount(31, occurrences);
+/// Assert.Equal(new DateTime(2000, 01, 01, 09, 00, 00), occurrences[0]);
+/// Assert.Equal(new DateTime(2000, 01, 31, 09, 00, 00), occurrences[30]);
 /// </code>
 /// </example>
 /// <remarks>

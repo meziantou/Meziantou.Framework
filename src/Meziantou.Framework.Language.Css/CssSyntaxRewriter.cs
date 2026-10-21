@@ -8,11 +8,11 @@ namespace Meziantou.Framework.Language.Css;
 /// costs nothing and keeps every node.
 /// </remarks>
 /// <example>
-/// <code>
-/// sealed class RenameClass : CssSyntaxRewriter
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Css.Tests/CssSyntaxTreeTests.cs" ref:region="CssSyntaxRewriter_RenameClass" ref:dedent="true">
+/// private sealed class RenameClass : CssSyntaxRewriter
 /// {
 ///     public override SyntaxNode? VisitClassSelector(CssClassSelectorSyntax node)
-///         => node.Name == "old" ? node.WithNameToken(SyntaxFactory.Identifier("new")) : base.VisitClassSelector(node);
+///         =&gt; node.Name == "old" ? node.WithNameToken(SyntaxFactory.Identifier("new").WithTriviaFrom(node.NameToken)) : base.VisitClassSelector(node);
 /// }
 /// </code>
 /// </example>

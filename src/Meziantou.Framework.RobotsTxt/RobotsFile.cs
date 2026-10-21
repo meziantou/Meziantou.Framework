@@ -20,7 +20,7 @@ namespace Meziantou.Framework.RobotsTxt;
 /// </para>
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.RobotsTxt.Tests/RobotsFileTests.cs" ref:region="RobotsFile_Example" ref:dedent="true">
 /// var robots = RobotsFile.Parse("""
 ///     User-agent: *
 ///     Disallow: /private/
@@ -29,10 +29,12 @@ namespace Meziantou.Framework.RobotsTxt;
 ///     Sitemap: https://example.com/sitemap.xml
 ///     """);
 ///
-/// bool allowed = robots.IsAllowed("Googlebot", "/public/page");
+/// Assert.True(robots.IsAllowed("Googlebot", "/public/page"));
+/// Assert.False(robots.IsAllowed("Googlebot", "/private/page"));
+/// Assert.Equal(["https://example.com/sitemap.xml"], robots.Sitemaps);
 ///
-/// foreach (var error in robots.ParseErrors)
-///     Console.WriteLine(error);
+/// // Invalid lines are reported instead of throwing
+/// Assert.Empty(robots.ParseErrors);
 /// </code>
 /// </example>
 public sealed class RobotsFile

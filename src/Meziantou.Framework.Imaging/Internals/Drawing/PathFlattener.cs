@@ -29,7 +29,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// needs at most <see cref="ProjectedSegmentCount"/> chords for the factor on its own control points, then cut at
 /// uniform parameters; an arc is halved while its chord is further from it than the tolerance over the factor on the
 /// triangle that contains it. A part of the plane that is not seen is cut with few chords, which stay in the convex
-/// hull of its control points.
+/// hull of its control points. The factor of a part that holds an end of the curve is the one around its end, where a
+/// miter can reach further (<see cref="PathSink.GetEndScale"/>); a closed ellipse has no end.
 /// </para>
 /// <para>Only additions, multiplications, divisions and square roots are used: the vertices do not depend on the platform.</para>
 /// </remarks>
@@ -123,7 +124,7 @@ internal static class PathFlattener
         if (sink.Projection is not null)
         {
             var started = false;
-            ProjectedQuadratic(sink, x0, y0, x1, y1, x2, y2, depth: 0, ref started);
+            ProjectedQuadratic(sink, x0, y0, x1, y1, x2, y2, CurveEnds.Both, depth: 0, ref started);
             return;
         }
 
@@ -147,7 +148,7 @@ internal static class PathFlattener
         if (sink.Projection is not null)
         {
             var started = false;
-            ProjectedCubic(sink, x0, y0, x1, y1, x2, y2, x3, y3, depth: 0, ref started);
+            ProjectedCubic(sink, x0, y0, x1, y1, x2, y2, x3, y3, CurveEnds.Both, depth: 0, ref started);
             return;
         }
 
@@ -227,7 +228,7 @@ internal static class PathFlattener
         var smooth = piece.IsContinuation;
         if (sink.Projection is not null)
         {
-            ProjectedArcInterior(sink, piece.CenterX, piece.CenterY, piece.Ux, piece.Uy, piece.Vx, piece.Vy, piece.Ax, piece.Ay, piece.Bx, piece.By, depth: 0, ref smooth);
+            ProjectedArcInterior(sink, piece.CenterX, piece.CenterY, piece.Ux, piece.Uy, piece.Vx, piece.Vy, piece.Ax, piece.Ay, piece.Bx, piece.By, CurveEnds.Both, depth: 0, ref smooth);
         }
         else
         {
@@ -243,9 +244,9 @@ internal static class PathFlattener
     /// chords would be more than a few is cut in two halves (de Casteljau), each cut for the factor of the
     /// transformation on its own control points, so that only what is seen enlarged is cut finely.
     /// </summary>
-    private static void ProjectedQuadratic(PathSink sink, double x0, double y0, double x1, double y1, double x2, double y2, int depth, ref bool started)
+    private static void ProjectedQuadratic(PathSink sink, double x0, double y0, double x1, double y1, double x2, double y2, CurveEnds ends, int depth, ref bool started)
     {
-        var scale = sink.GetScale(Math.Min(x0, Math.Min(x1, x2)), Math.Min(y0, Math.Min(y1, y2)), Math.Max(x0, Math.Max(x1, x2)), Math.Max(y0, Math.Max(y1, y2)));
+        var scale = GetScale(sink, ends, Math.Min(x0, Math.Min(x1, x2)), Math.Min(y0, Math.Min(y1, y2)), Math.Max(x0, Math.Max(x1, x2)), Math.Max(y0, Math.Max(y1, y2)));
         var count = GetSegmentCount(Length(x0 - (2 * x1) + x2, y0 - (2 * y1) + y2) * scale / (4 * sink.Tolerance));
         if (count > ProjectedSegmentCount && depth < MaxArcDepth)
         {
@@ -255,8 +256,8 @@ internal static class PathFlattener
             var by = (y1 + y2) / 2;
             var mx = (ax + bx) / 2;
             var my = (ay + by) / 2;
-            ProjectedQuadratic(sink, x0, y0, ax, ay, mx, my, depth + 1, ref started);
-            ProjectedQuadratic(sink, mx, my, bx, by, x2, y2, depth + 1, ref started);
+            ProjectedQuadratic(sink, x0, y0, ax, ay, mx, my, ends & CurveEnds.Start, depth + 1, ref started);
+            ProjectedQuadratic(sink, mx, my, bx, by, x2, y2, ends & CurveEnds.End, depth + 1, ref started);
             return;
         }
 
@@ -273,10 +274,10 @@ internal static class PathFlattener
     }
 
     /// <summary>Sends the chords of a cubic curve drawn through a projective transformation: see <see cref="ProjectedQuadratic"/>.</summary>
-    private static void ProjectedCubic(PathSink sink, double x0, double y0, double x1, double y1, double x2, double y2, double x3, double y3, int depth, ref bool started)
+    private static void ProjectedCubic(PathSink sink, double x0, double y0, double x1, double y1, double x2, double y2, double x3, double y3, CurveEnds ends, int depth, ref bool started)
     {
         var deviation = Math.Max(Length(x0 - (2 * x1) + x2, y0 - (2 * y1) + y2), Length(x1 - (2 * x2) + x3, y1 - (2 * y2) + y3));
-        var scale = sink.GetScale(Math.Min(Math.Min(x0, x1), Math.Min(x2, x3)), Math.Min(Math.Min(y0, y1), Math.Min(y2, y3)), Math.Max(Math.Max(x0, x1), Math.Max(x2, x3)), Math.Max(Math.Max(y0, y1), Math.Max(y2, y3)));
+        var scale = GetScale(sink, ends, Math.Min(Math.Min(x0, x1), Math.Min(x2, x3)), Math.Min(Math.Min(y0, y1), Math.Min(y2, y3)), Math.Max(Math.Max(x0, x1), Math.Max(x2, x3)), Math.Max(Math.Max(y0, y1), Math.Max(y2, y3)));
         var count = GetSegmentCount(3 * deviation * scale / (4 * sink.Tolerance));
         if (count > ProjectedSegmentCount && depth < MaxArcDepth)
         {
@@ -292,8 +293,8 @@ internal static class PathFlattener
             var ey = (by + cy) / 2;
             var mx = (dx + ex) / 2;
             var my = (dy + ey) / 2;
-            ProjectedCubic(sink, x0, y0, ax, ay, dx, dy, mx, my, depth + 1, ref started);
-            ProjectedCubic(sink, mx, my, ex, ey, cx, cy, x3, y3, depth + 1, ref started);
+            ProjectedCubic(sink, x0, y0, ax, ay, dx, dy, mx, my, ends & CurveEnds.Start, depth + 1, ref started);
+            ProjectedCubic(sink, mx, my, ex, ey, cx, cy, x3, y3, ends & CurveEnds.End, depth + 1, ref started);
             return;
         }
 
@@ -324,7 +325,7 @@ internal static class PathFlattener
                 2 => (-1d, 0d, 0d, -1d),
                 _ => (0d, -1d, 1d, 0d),
             };
-            ProjectedArcInterior(sink, centerX, centerY, ux, uy, vx, vy, ax, ay, bx, by, depth: 0, ref smooth);
+            ProjectedArcInterior(sink, centerX, centerY, ux, uy, vx, vy, ax, ay, bx, by, CurveEnds.None, depth: 0, ref smooth);
             sink.LineTo(centerX + ((ux * bx) + (vx * by)), centerY + ((uy * bx) + (vy * by)), smooth: true);
         }
 
@@ -337,7 +338,7 @@ internal static class PathFlattener
     /// its chord is further from it than the tolerance divided by the factor of the transformation on the triangle of
     /// its ends and of the meeting point of its tangents, which contains it.
     /// </summary>
-    private static void ProjectedArcInterior(PathSink sink, double centerX, double centerY, double ux, double uy, double vx, double vy, double ax, double ay, double bx, double by, int depth, ref bool smooth)
+    private static void ProjectedArcInterior(PathSink sink, double centerX, double centerY, double ux, double uy, double vx, double vy, double ax, double ay, double bx, double by, CurveEnds ends, int depth, ref bool smooth)
     {
         var mx = ax + bx;
         var my = ay + by;
@@ -353,17 +354,21 @@ internal static class PathFlattener
         var y1 = centerY + ((uy * bx) + (vy * by));
         var tx = centerX + (((ux * mx) + (vx * my)) * toTangents);
         var ty = centerY + (((uy * mx) + (vy * my)) * toTangents);
-        var scale = sink.GetScale(Math.Min(x0, Math.Min(x1, tx)), Math.Min(y0, Math.Min(y1, ty)), Math.Max(x0, Math.Max(x1, tx)), Math.Max(y0, Math.Max(y1, ty)));
+        var scale = GetScale(sink, ends, Math.Min(x0, Math.Min(x1, tx)), Math.Min(y0, Math.Min(y1, ty)), Math.Max(x0, Math.Max(x1, tx)), Math.Max(y0, Math.Max(y1, ty)));
         if (!(GetLargestRadius(ux, uy, vx, vy) * scale * (1 - (length / 2)) > sink.Tolerance))
             return;
 
         mx /= length;
         my /= length;
-        ProjectedArcInterior(sink, centerX, centerY, ux, uy, vx, vy, ax, ay, mx, my, depth + 1, ref smooth);
+        ProjectedArcInterior(sink, centerX, centerY, ux, uy, vx, vy, ax, ay, mx, my, ends & CurveEnds.Start, depth + 1, ref smooth);
         sink.LineTo(centerX + ((ux * mx) + (vx * my)), centerY + ((uy * mx) + (vy * my)), smooth);
         smooth = true;
-        ProjectedArcInterior(sink, centerX, centerY, ux, uy, vx, vy, mx, my, bx, by, depth + 1, ref smooth);
+        ProjectedArcInterior(sink, centerX, centerY, ux, uy, vx, vy, mx, my, bx, by, ends & CurveEnds.End, depth + 1, ref smooth);
     }
+
+    /// <summary>Gets the factor of the transformation on the box of a part of a curve: the one around an end of the curve when the part holds it.</summary>
+    private static double GetScale(PathSink sink, CurveEnds ends, double minX, double minY, double maxX, double maxY)
+        => ends == CurveEnds.None ? sink.GetScale(minX, minY, maxX, maxY) : sink.GetEndScale(minX, minY, maxX, maxY);
 
     /// <summary>
     /// Gets the largest distance from the center of the ellipse of two conjugate half-diameters to one of its points: the
@@ -473,5 +478,15 @@ internal static class PathFlattener
         my /= length;
         EllipseArc(sink, centerX, centerY, ax, ay, bx, by, quadrant, ux, uy, mx, my, depth - 1);
         EllipseArc(sink, centerX, centerY, ax, ay, bx, by, quadrant, mx, my, vx, vy, depth - 1);
+    }
+
+    /// <summary>The ends of a curve a part of it holds.</summary>
+    [Flags]
+    private enum CurveEnds
+    {
+        None = 0,
+        Start = 1,
+        End = 2,
+        Both = Start | End,
     }
 }

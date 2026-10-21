@@ -3,11 +3,11 @@ namespace Meziantou.Framework.SimpleQueryLanguage;
 /// <summary>Represents a compiled query that can be evaluated against objects.</summary>
 /// <typeparam name="T">The type of object to query against.</typeparam>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.SimpleQueryLanguage.Tests/QueryBuilderTests.cs" ref:region="Query_Evaluate" ref:dedent="true">
 /// var queryBuilder = new QueryBuilder&lt;Person&gt;();
-/// queryBuilder.AddHandler&lt;string&gt;("name", (obj, value) => obj.FullName.Contains(value));
+/// queryBuilder.AddHandler&lt;string&gt;("name", (obj, value) =&gt; obj.FullName.Contains(value, StringComparison.OrdinalIgnoreCase));
 /// var query = queryBuilder.Build("name:john");
-/// bool matches = query.Evaluate(new Person("John Doe", DateTime.Now));
+/// Assert.True(query.Evaluate(new Person("John Doe", new DateTime(2000, 1, 1))));
 /// </code>
 /// </example>
 public sealed class Query<T>

@@ -9,7 +9,7 @@ namespace Meziantou.Extensions.Logging;
 /// A logger provider that writes all log messages to a file on disk.
 /// </summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/Meziantou.Extensions.Logging.FileLogger.Samples/Examples.cs" ref:region="FileLoggerProvider_Create" ref:dedent="true">
 /// using var provider = new FileLoggerProvider(new FileLoggerOptions
 /// {
 ///     Directory = "logs",
@@ -17,7 +17,7 @@ namespace Meziantou.Extensions.Logging;
 ///     MaxRetainedFiles = 7,
 /// });
 ///
-/// using var loggerFactory = LoggerFactory.Create(builder => builder.AddProvider(provider));
+/// using var loggerFactory = LoggerFactory.Create(builder =&gt; builder.AddProvider(provider));
 /// </code>
 /// </example>
 [ProviderAlias("File")]

@@ -2,21 +2,21 @@ namespace Meziantou.Framework.WPF;
 
 /// <summary>Factory class for creating command instances that can be used with WPF data binding.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.WPF.Tests/DelegateCommandTests.cs" ref:region="DelegateCommand_ViewModel" ref:dedent="true">
 /// public class MyViewModel
 /// {
 ///     public IDelegateCommand SaveCommand { get; }
-///     
+///
 ///     public MyViewModel()
 ///     {
 ///         SaveCommand = DelegateCommand.Create(Save, CanSave);
 ///     }
-///     
+///
 ///     private void Save()
 ///     {
 ///         // Save logic
 ///     }
-///     
+///
 ///     private bool CanSave()
 ///     {
 ///         return true;

@@ -7,7 +7,7 @@ public class PerceivedTests
     [Fact, RunIf(TestOperatingSystems.Windows)]
     public void ReadmeExample_GetPerceivedType()
     {
-        #region Perceived_GetPerceivedType
+        #region Perceived_GetPerceivedTypes
         // Get perceived type for a file extension
         var perceived = Perceived.GetPerceivedType(".txt");
         Assert.Equal(PerceivedType.Text, perceived.PerceivedType);
@@ -35,6 +35,25 @@ public class PerceivedTests
 
         // Add default perceived types for common extensions
         Perceived.AddDefaultPerceivedTypes();
+        #endregion
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void DocumentationExample()
+    {
+        #region Perceived_GetPerceivedType
+        // Get perceived type for a file
+        var perceived = Perceived.GetPerceivedType(".txt");
+        Assert.Equal(PerceivedType.Text, perceived.PerceivedType);
+        Assert.NotEqual(PerceivedTypeSource.Undefined, perceived.PerceivedTypeSource); // e.g. SoftCoded, NativeSupport
+
+        // Add custom perceived types
+        Perceived.AddPerceived(".myext", PerceivedType.Text);
+        Assert.Equal(PerceivedType.Text, Perceived.GetPerceivedType("file.myext").PerceivedType);
+
+        // Add default perceived types for common development file extensions
+        Perceived.AddDefaultPerceivedTypes();
+        Assert.Equal(PerceivedType.Text, Perceived.GetPerceivedType("Program.cs").PerceivedType);
         #endregion
     }
 

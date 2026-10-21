@@ -10,11 +10,15 @@ namespace Meziantou.Framework.Language;
 /// instance.
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs" ref:region="SyntaxAnnotation_FindAnnotatedNode" ref:dedent="true">
+/// var root = XmlSyntaxTree.ParseText("&lt;root&gt;&lt;item&gt;1&lt;/item&gt;&lt;/root&gt;").GetRoot();
+/// var node = root.DescendantNodes().OfType&lt;XmlElementSyntax&gt;().Single(element =&gt; element.Name == "item");
+///
 /// var marker = new SyntaxAnnotation();
 /// var annotated = node.WithAdditionalAnnotations(marker);
 /// var updated = root.ReplaceNode(node, annotated);
 /// var found = updated.GetAnnotatedNodes(marker).Single();
+/// Assert.Equal("&lt;item&gt;1&lt;/item&gt;", found.ToFullString());
 /// </code>
 /// </example>
 public sealed class SyntaxAnnotation : IEquatable<SyntaxAnnotation?>

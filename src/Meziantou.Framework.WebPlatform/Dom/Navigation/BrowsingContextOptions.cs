@@ -781,9 +781,16 @@ public enum RequestMode
 /// bytes of its body, its status and its headers.
 /// </summary>
 /// <example>
-/// <code>
-/// new DocumentResource("&lt;p&gt;Hello&lt;/p&gt;");
-/// new DocumentResource(bytes) { Headers = [new("Content-Type", "text/javascript; charset=utf-8")] };
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/ResponseHeadersTests.cs" ref:region="DocumentResource_Example" ref:dedent="true">
+/// // A resource created from its decoded content
+/// var page = new DocumentResource("&lt;p&gt;Hello&lt;/p&gt;");
+/// Assert.Equal("&lt;p&gt;Hello&lt;/p&gt;", page.Content);
+///
+/// // A resource created from its bytes, decoded using the charset of the Content-Type header
+/// var bytes = "console.log('Hello');"u8.ToArray();
+/// var script = new DocumentResource(bytes) { Headers = [new("Content-Type", "text/javascript; charset=utf-8")] };
+/// Assert.Null(script.Content);
+/// Assert.Equal(bytes, script.ContentBytes?.ToArray());
 /// </code>
 /// </example>
 public sealed class DocumentResource

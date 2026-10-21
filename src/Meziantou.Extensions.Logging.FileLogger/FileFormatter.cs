@@ -5,7 +5,7 @@ namespace Meziantou.Extensions.Logging;
 
 /// <summary>Allows custom log messages formatting for the <see cref="FileLoggerProvider"/>.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Extensions.Logging.FileLogger.Tests/FileLoggerProviderTests.cs" ref:region="FileFormatter_Example" ref:dedent="true">
 /// internal sealed class CsvFileFormatter() : FileFormatter("csv")
 /// {
 ///     public override void Write&lt;TState&gt;(in LogEntry&lt;TState&gt; logEntry, DateTimeOffset timestamp, FileLoggerOptions options, IExternalScopeProvider? scopeProvider, TextWriter textWriter)

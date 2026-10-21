@@ -27,6 +27,19 @@ public sealed class SafeHandleExtensionsTests
     }
 
     [Fact]
+    public void CreateHandleScope_Example()
+    {
+        #region SafeHandle_CreateHandleScope
+        using var safeHandle = File.OpenHandle(Path.GetTempFileName(), FileMode.Open, FileAccess.Read, FileShare.None, FileOptions.DeleteOnClose);
+
+        // The SafeHandle cannot be released while the scope is alive
+        using var scope = safeHandle.CreateHandleScope();
+        nint handle = scope.Value;
+        Assert.NotEqual(0, handle); // Use handle safely, for instance in a P/Invoke call
+        #endregion
+    }
+
+    [Fact]
     public void UseAfterDisposeScope()
     {
         using var handle = new TestSafeHandle(42);

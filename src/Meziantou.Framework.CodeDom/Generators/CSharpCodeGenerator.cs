@@ -2,10 +2,22 @@ namespace Meziantou.Framework.CodeDom;
 
 /// <summary>Generates C# code from a CodeDOM tree.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs" ref:region="CSharpCodeGenerator_Example" ref:dedent="true">
 /// var unit = new CompilationUnit();
+/// unit.AddNamespace("MyNamespace").AddType(new ClassDeclaration("MyClass"));
+///
 /// var generator = new CSharpCodeGenerator();
 /// string code = generator.Write(unit);
+///
+/// Assert.Equal("""
+///     namespace MyNamespace
+///     {
+///         class MyClass
+///         {
+///         }
+///     }
+///
+///     """, code);
 /// </code>
 /// </example>
 public partial class CSharpCodeGenerator

@@ -9,17 +9,9 @@ namespace Meziantou.AspNetCore.Mvc.TagHelpers;
 /// A TagHelper that inlines JavaScript files into &lt;script&gt; elements to reduce HTTP requests.
 /// </summary>
 /// <example>
-/// <code language="razor">
-/// &lt;!-- Input --&gt;
+/// <code language="razor" xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../samples/Meziantou.AspNetCore.Mvc.Samples/Views/Examples/InlineScript.cshtml">
 /// &lt;inline-script src="app.js" /&gt;
-///
-/// &lt;!-- Output --&gt;
-/// &lt;script&gt;
-/// function init() {
-///     console.log('App initialized');
-/// }
-/// /* ... JavaScript content ... */
-/// &lt;/script&gt;
+/// @* Rendered as &lt;script&gt;/* content of wwwroot/app.js */&lt;/script&gt; *@
 /// </code>
 /// </example>
 /// <remarks>

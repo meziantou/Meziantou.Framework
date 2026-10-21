@@ -3,8 +3,20 @@ using System.Diagnostics;
 namespace Meziantou.Framework.JavaScriptEngine.Compiler;
 
 /// <summary>Builds the bytecode of a function: the instructions, the constants, the labels, the try regions and the positions.</summary>
+/// <remarks>
+/// The builders are reused (<see cref="Rent"/>, <see cref="Return"/>): a script has many small functions, and the lists
+/// and dictionaries of a builder would be allocated and grown again for each of them.
+/// </remarks>
 internal sealed class BytecodeBuilder
 {
+    // The builders of the functions being compiled on the thread are rented (nested functions are compiled while their
+    // parent is compiled); a builder whose code grew beyond this size is not kept
+    private const int MaxPooledCodeCapacity = 16 * 1024;
+    private const int MaxPooledBuilders = 16;
+
+    [ThreadStatic]
+    private static Stack<BytecodeBuilder>? s_pool;
+
     private readonly List<int> _code = [];
     private readonly List<JsValue> _constants = [];
     private readonly Dictionary<double, int> _numberConstants = [];
@@ -36,6 +48,51 @@ internal sealed class BytecodeBuilder
 
     /// <summary>Gets whether the code contains an await (the top-level await of a module).</summary>
     public bool ContainsAwait { get; private set; }
+
+    /// <summary>Gets a builder (from the pool of the thread, or a new one).</summary>
+    public static BytecodeBuilder Rent()
+    {
+        if (s_pool is { Count: > 0 } pool)
+            return pool.Pop();
+
+        return new BytecodeBuilder();
+    }
+
+    /// <summary>Returns a builder to the pool once its code is built.</summary>
+    public void Return()
+    {
+        if (_code.Capacity > MaxPooledCodeCapacity)
+            return;
+
+        var pool = s_pool ??= new Stack<BytecodeBuilder>();
+        if (pool.Count >= MaxPooledBuilders)
+            return;
+
+        _code.Clear();
+        _constants.Clear();
+        _numberConstants.Clear();
+        _stringConstants.Clear();
+        _keys.Clear();
+        _keyIndices.Clear();
+        _objects.Clear();
+        _handlers.Clear();
+        _positions.Clear();
+        _labelPositions.Clear();
+        _callSites.Clear();
+        _labelDepths.Clear();
+        _fixups.Clear();
+        _lastPositionOffset = -1;
+        _cacheCount = 0;
+        _instruction1 = -1;
+        _instruction2 = -1;
+        _instruction3 = -1;
+        _lastLabelPosition = -1;
+        StackDepth = 0;
+        MaxStack = 0;
+        ContainsAwait = false;
+        IsUnreachable = false;
+        pool.Push(this);
+    }
 
     /// <summary>Gets the position of the next instruction.</summary>
     public int Position => _code.Count;

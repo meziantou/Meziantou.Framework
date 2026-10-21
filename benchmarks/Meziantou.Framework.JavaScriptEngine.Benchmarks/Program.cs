@@ -14,6 +14,57 @@ if (args is ["dump", var dumpWorkload])
     return 0;
 }
 
+if (args is ["profile", "Parse" or "CreateRealm", var fixedCostSeconds])
+{
+    // The fixed costs: the parsing of a large script, or the creation of an engine and a realm
+    var isParse = args[1] == "Parse";
+    var fixedCostEnd = Stopwatch.GetTimestamp() + (long)(double.Parse(fixedCostSeconds, System.Globalization.CultureInfo.InvariantCulture) * Stopwatch.Frequency);
+    var fixedCostCount = 0;
+    var fixedCostAllocated = GC.GetAllocatedBytesForCurrentThread();
+    var fixedCostStart = Stopwatch.GetTimestamp();
+    var fixedCostCpu = Process.GetCurrentProcess().TotalProcessorTime;
+    while (Stopwatch.GetTimestamp() < fixedCostEnd)
+    {
+        if (isParse)
+        {
+            JsPreparedScript.Parse(Workloads.LargeScript);
+        }
+        else
+        {
+            using var realmEngine = new JsEngine();
+            realmEngine.CreateRealm().Execute("1 + 1");
+        }
+
+        fixedCostCount++;
+    }
+
+    Console.WriteLine($"{fixedCostCount} runs (mean {Stopwatch.GetElapsedTime(fixedCostStart).TotalMilliseconds / fixedCostCount:F3} ms, CPU {(Process.GetCurrentProcess().TotalProcessorTime - fixedCostCpu).TotalMilliseconds / fixedCostCount:F3} ms), {(GC.GetAllocatedBytesForCurrentThread() - fixedCostAllocated) / fixedCostCount} bytes/run");
+    if (isParse)
+    {
+        // The stages: parsing, scope analysis, bytecode generation
+        var stages = new double[3];
+        for (var i = 0; i < 20; i++)
+        {
+            var source = new Meziantou.Framework.JavaScriptEngine.Text.SourceText(Workloads.LargeScript, url: null, 0, 0);
+            var stageStart = Stopwatch.GetTimestamp();
+            var program = Meziantou.Framework.JavaScriptEngine.Parsing.JsParser.ParseScript(source, Meziantou.Framework.JavaScriptEngine.Parsing.ParserOptions.Script);
+            stages[0] += Stopwatch.GetElapsedTime(stageStart).TotalMilliseconds;
+            stageStart = Stopwatch.GetTimestamp();
+            var analysis = Meziantou.Framework.JavaScriptEngine.Compiler.ScopeAnalyzer.Analyze(program, Meziantou.Framework.JavaScriptEngine.Compiler.ProgramKind.Script, isStrict: false);
+            stages[1] += Stopwatch.GetElapsedTime(stageStart).TotalMilliseconds;
+            GC.KeepAlive(analysis);
+            program = Meziantou.Framework.JavaScriptEngine.Parsing.JsParser.ParseScript(source, Meziantou.Framework.JavaScriptEngine.Parsing.ParserOptions.Script);
+            stageStart = Stopwatch.GetTimestamp();
+            Meziantou.Framework.JavaScriptEngine.Compiler.CodeGenerator.CompileProgram(program, source, Meziantou.Framework.JavaScriptEngine.Compiler.ProgramKind.Script, isStrict: false);
+            stages[2] += Stopwatch.GetElapsedTime(stageStart).TotalMilliseconds;
+        }
+
+        Console.WriteLine($"parse {stages[0] / 20:F3} ms, analyze {stages[1] / 20:F3} ms, generate {(stages[2] - stages[1]) / 20:F3} ms");
+    }
+
+    return 0;
+}
+
 if (args is ["profile", var workload, var seconds])
 {
     using var engine = new JsEngine();
@@ -25,19 +76,27 @@ if (args is ["profile", var workload, var seconds])
         run = realm.GlobalObject.GetProperty("run");
     }
 
+
     var end = Stopwatch.GetTimestamp() + (long)(double.Parse(seconds, System.Globalization.CultureInfo.InvariantCulture) * Stopwatch.Frequency);
     var count = 0;
     var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
     var gcBefore = (GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2));
     var pauseBefore = GC.GetTotalPauseDuration();
+    var start = Stopwatch.GetTimestamp();
+    var startCpu = Process.GetCurrentProcess().TotalProcessorTime;
+    var best = double.MaxValue;
     while (Stopwatch.GetTimestamp() < end)
     {
+        var runStart = Stopwatch.GetTimestamp();
         engine.Call(run, JsValue.Undefined);
+        best = Math.Min(best, Stopwatch.GetElapsedTime(runStart).TotalMilliseconds);
         count++;
     }
 
+    var mean = Stopwatch.GetElapsedTime(start).TotalMilliseconds / Math.Max(count, 1);
+    var cpu = (Process.GetCurrentProcess().TotalProcessorTime - startCpu).TotalMilliseconds / Math.Max(count, 1);
     var allocated = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
-    Console.WriteLine($"{count} runs, {allocated / Math.Max(count, 1)} bytes/run, GC gen0 {GC.CollectionCount(0) - gcBefore.Item1} gen1 {GC.CollectionCount(1) - gcBefore.Item2} gen2 {GC.CollectionCount(2) - gcBefore.Item3}, pauses {(GC.GetTotalPauseDuration() - pauseBefore).TotalMilliseconds:F0} ms");
+    Console.WriteLine($"{count} runs (mean {mean:F3} ms, best {best:F3} ms, CPU {cpu:F3} ms), {allocated / Math.Max(count, 1)} bytes/run, GC gen0 {GC.CollectionCount(0) - gcBefore.Item1} gen1 {GC.CollectionCount(1) - gcBefore.Item2} gen2 {GC.CollectionCount(2) - gcBefore.Item3}, pauses {(GC.GetTotalPauseDuration() - pauseBefore).TotalMilliseconds:F0} ms");
     return 0;
 }
 

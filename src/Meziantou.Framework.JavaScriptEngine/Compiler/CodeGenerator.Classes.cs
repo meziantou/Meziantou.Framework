@@ -106,7 +106,7 @@ internal sealed partial class CodeGenerator
     /// </summary>
     private FunctionTemplate CreateDefaultConstructor(string name, bool isDerived, ClassNode node)
     {
-        var builder = new BytecodeBuilder();
+        var builder = BytecodeBuilder.Rent();
         var flags = FunctionTemplateFlags.Strict | FunctionTemplateFlags.ClassConstructor | FunctionTemplateFlags.Constructor | FunctionTemplateFlags.Method | FunctionTemplateFlags.DefaultConstructor;
         if (isDerived)
         {
@@ -128,7 +128,7 @@ internal sealed partial class CodeGenerator
 
         builder.Emit(OpCode.Return);
         var (code, constants, keys, objects, handlers, positions) = builder.Build();
-        return new FunctionTemplate
+        var template = new FunctionTemplate
         {
             Name = name,
             Length = 0,
@@ -146,6 +146,9 @@ internal sealed partial class CodeGenerator
             SourceStart = node.Start,
             SourceEnd = node.End,
         };
+
+        builder.Return();
+        return template;
     }
 
     /// <summary>Defines a method, a getter or a setter of a class (public or private).</summary>

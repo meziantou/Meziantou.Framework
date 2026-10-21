@@ -62,6 +62,7 @@ internal sealed partial class ScopeAnalyzer
             SpecialReferences[(node, kind)] = ResolveSpecial(scope, kind);
         }
 
+        References.EnsureCapacity(References.Count + _pending.Count);
         foreach (var pending in _pending)
         {
             References[pending.Node] = Resolve(pending);

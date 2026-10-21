@@ -9,7 +9,7 @@ internal sealed partial class CodeGenerator
     private readonly ScopeAnalyzer _analysis;
     private readonly SourceText _source;
     private readonly FunctionInfo _function;
-    private readonly BytecodeBuilder _builder = new();
+    private readonly BytecodeBuilder _builder = BytecodeBuilder.Rent();
     private Scope _scope;
     private ControlScope? _control;
     private int _completionRegister = -1;
@@ -135,7 +135,7 @@ internal sealed partial class CodeGenerator
     private FunctionTemplate Build(string name, int length, FunctionTemplateFlags flags, int sourceStart, int sourceEnd, ScopeInfo? nameScope)
     {
         var (code, constants, keys, objects, handlers, positions) = _builder.Build();
-        return new FunctionTemplate
+        var template = new FunctionTemplate
         {
             Name = name,
             Length = length,
@@ -157,6 +157,10 @@ internal sealed partial class CodeGenerator
             CompletionRegister = _completionRegister,
             ParameterNames = _function.UsesMappedArguments && _function.FunctionNode is { } functionNode ? [.. functionNode.Params.OfType<Identifier>().Select(p => p.Name)] : null,
         };
+
+        // The generator is done: its builder is reused by the next function
+        _builder.Return();
+        return template;
     }
 
     // ------------------------------------------------------------------------------------------------------------------

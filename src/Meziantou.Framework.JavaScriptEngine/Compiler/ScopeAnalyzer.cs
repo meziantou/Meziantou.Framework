@@ -19,26 +19,29 @@ internal sealed partial class ScopeAnalyzer
     }
 
     /// <summary>Gets the scope created for a node (a function, a block, a loop, a catch clause, a switch, a class, a with statement).</summary>
-    public Dictionary<Node, Scope> Scopes { get; } = new(ReferenceEqualityComparer.Instance);
+    public Dictionary<Node, Scope> Scopes { get; } = [];
 
     /// <summary>Gets the scope of the iteration bindings of a for-in/of statement during the evaluation of its expression (TDZ).</summary>
-    public Dictionary<Node, Scope> TdzScopes { get; } = new(ReferenceEqualityComparer.Instance);
+    public Dictionary<Node, Scope> TdzScopes { get; } = [];
 
-    public Dictionary<Node, FunctionInfo> Functions { get; } = new(ReferenceEqualityComparer.Instance);
+    public Dictionary<Node, FunctionInfo> Functions { get; } = [];
 
     /// <summary>Gets the resolution of the identifiers (and of this, new.target, super, private names).</summary>
-    public Dictionary<Node, Reference> References { get; } = new(ReferenceEqualityComparer.Instance);
+    public Dictionary<Node, Reference> References { get; } = [];
 
     public FunctionInfo Root { get; private set; } = null!;
 
     public static ScopeAnalyzer Analyze(Program program, ProgramKind kind, bool isStrict)
     {
         var analyzer = new ScopeAnalyzer(kind);
+
+        // About one reference per 10 characters of source: the lists do not grow from scratch
+        analyzer._pending.EnsureCapacity(Math.Max(16, (program.End - program.Start) / 10));
         analyzer.AnalyzeProgram(program, isStrict);
         return analyzer;
     }
 
-    private sealed record PendingReference(Node Node, string Name, Scope Scope, ReferenceKind Kind);
+    private readonly record struct PendingReference(Node Node, string Name, Scope Scope, ReferenceKind Kind);
 
     // ------------------------------------------------------------------------------------------------------------------
     // Pass 1: scopes and declarations
@@ -411,8 +414,8 @@ internal sealed partial class ScopeAnalyzer
         return info;
     }
 
-    private readonly Dictionary<FunctionNode, Scope> _functionNameScopes = new(ReferenceEqualityComparer.Instance);
-    private readonly HashSet<FunctionNode> _functionExpressions = new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<FunctionNode, Scope> _functionNameScopes = [];
+    private readonly HashSet<FunctionNode> _functionExpressions = [];
 
     /// <summary>Gets the scope of the name of a named function expression, if any.</summary>
     public Scope? GetFunctionNameScope(FunctionNode function) => _functionNameScopes.GetValueOrDefault(function);
@@ -533,7 +536,7 @@ internal sealed partial class ScopeAnalyzer
         }
     }
 
-    private readonly Dictionary<PropertyDefinition, Variable> _computedFieldKeys = new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<PropertyDefinition, Variable> _computedFieldKeys = [];
     private readonly Dictionary<(ClassNode Class, bool Static), FunctionInfo> _classInitializers = [];
 
     /// <summary>Gets the hidden binding that holds the computed key of a field.</summary>
@@ -886,7 +889,7 @@ internal sealed partial class ScopeAnalyzer
         VisitStatement(statement, scope);
     }
 
-    private readonly Dictionary<FunctionDeclaration, Scope> _implicitBlockScopes = new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<FunctionDeclaration, Scope> _implicitBlockScopes = [];
 
     /// <summary>Gets the implicit block scope of a function declaration that is the statement of an if or a label (Annex B.3.3).</summary>
     public Scope? GetImplicitBlockScope(FunctionDeclaration declaration) => _implicitBlockScopes.GetValueOrDefault(declaration);

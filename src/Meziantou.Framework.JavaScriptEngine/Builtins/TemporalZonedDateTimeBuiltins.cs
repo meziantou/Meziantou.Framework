@@ -25,8 +25,8 @@ internal static class TemporalZonedDateTimeBuiltins
             var zonedDateTime = ThisZonedDateTime(value);
             return (zonedDateTime.Calendar, GetIsoDateTime(zonedDateTime).Date);
         };
-        TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "era", getDate, _ => JsValue.Undefined);
-        TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "eraYear", getDate, _ => JsValue.Undefined);
+        TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "era", getDate, d => d.Era is { } era ? era : JsValue.Undefined);
+        TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "eraYear", getDate, d => d.EraYear is { } eraYear ? (double)eraYear : JsValue.Undefined);
         TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "year", getDate, d => d.Year);
         TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "month", getDate, d => d.Month);
         TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "monthCode", getDate, d => d.MonthCode);
@@ -36,8 +36,8 @@ internal static class TemporalZonedDateTimeBuiltins
         realm.DefineAccessor(prototype, "epochNanoseconds", (_, thisValue, _, _) => TemporalBuiltinHelpers.BigInt(ThisZonedDateTime(thisValue).EpochNanoseconds), setter: null);
         TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "dayOfWeek", getDate, d => d.DayOfWeek);
         TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "dayOfYear", getDate, d => d.DayOfYear);
-        TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "weekOfYear", getDate, d => d.WeekOfYear);
-        TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "yearOfWeek", getDate, d => d.YearOfWeek);
+        TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "weekOfYear", getDate, d => d.WeekOfYear is { } week ? week : JsValue.Undefined);
+        TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "yearOfWeek", getDate, d => d.YearOfWeek is { } yearOfWeek ? (double)yearOfWeek : JsValue.Undefined);
         realm.DefineAccessor(prototype, "hoursInDay", HoursInDay, setter: null);
         TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "daysInWeek", getDate, d => d.DaysInWeek);
         TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "daysInMonth", getDate, d => d.DaysInMonth);

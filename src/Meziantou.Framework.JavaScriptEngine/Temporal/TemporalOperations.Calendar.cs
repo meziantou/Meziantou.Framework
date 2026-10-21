@@ -105,7 +105,7 @@ internal static partial class TemporalOperations
     }
 
     /// <summary>RegulateISODate for the values of a Calendar Fields Record (any integral Number): the year is returned as is.</summary>
-    private static (double Year, int Month, int Day) RegulateIsoDateFields(double year, double month, double day, TemporalOverflow overflow)
+    internal static (double Year, int Month, int Day) RegulateIsoDateFields(double year, double month, double day, TemporalOverflow overflow)
     {
         if (overflow == TemporalOverflow.Constrain)
         {
@@ -121,7 +121,7 @@ internal static partial class TemporalOperations
     }
 
     /// <summary>Creates an ISO Date Record from a regulated date whose year may be too large for the ISO Date Records of Temporal: a RangeError.</summary>
-    private static IsoDate CreateIsoDateFromRegulated(double year, int month, int day)
+    internal static IsoDate CreateIsoDateFromRegulated(double year, int month, int day)
     {
         // Such a date is outside the limits of every Temporal type: the caller would throw a RangeError anyway
         if (Math.Abs(year) > 1_000_000_000)
@@ -181,13 +181,13 @@ internal static partial class TemporalOperations
     // Calendar types
     // ------------------------------------------------------------------------------------------------------------------
 
-    /// <summary>CanonicalizeCalendar(id): only the ISO 8601 calendar is available.</summary>
+    /// <summary>CanonicalizeCalendar(id)</summary>
     public static string CanonicalizeCalendar(string id)
     {
-        if (!string.Equals(id, IsoCalendar, StringComparison.OrdinalIgnoreCase))
+        if (!TemporalCalendars.TryGet(id, out var calendar))
             return ThrowHelper.ThrowRangeError<string>("The calendar '" + id + "' is not supported");
 
-        return IsoCalendar;
+        return calendar.Id;
     }
 
     /// <summary>ToTemporalCalendarIdentifier(temporalCalendarLike)</summary>
@@ -282,25 +282,7 @@ internal static partial class TemporalOperations
     }
 
     /// <summary>CalendarISOToDate(calendar, isoDate)</summary>
-    public static CalendarDate CalendarIsoToDate(string calendar, IsoDate date)
-    {
-        _ = calendar;
-        var (week, yearOfWeek) = IsoWeekOfYear(date);
-        return new CalendarDate(
-            date.Year,
-            date.Month,
-            CreateMonthCode(date.Month),
-            date.Day,
-            IsoDayOfWeek(date),
-            IsoDayOfYear(date),
-            week,
-            yearOfWeek,
-            DaysInWeek: 7,
-            IsoDaysInMonth(date.Year, date.Month),
-            IsoDaysInYear(date.Year),
-            MonthsInYear: 12,
-            IsLeapYear(date.Year));
-    }
+    public static CalendarDate CalendarIsoToDate(string calendar, IsoDate date) => TemporalCalendars.Get(calendar).IsoToDate(date);
 
     // ------------------------------------------------------------------------------------------------------------------
     // Calendar Fields Records
@@ -309,16 +291,16 @@ internal static partial class TemporalOperations
     /// <summary>ISODateToFields(calendar, isoDate, type)</summary>
     public static CalendarFields IsoDateToFields(string calendar, IsoDate date, CalendarFieldsType type)
     {
-        _ = calendar;
-        var fields = new CalendarFields { MonthCode = CreateMonthCode(date.Month) };
+        var calendarDate = CalendarIsoToDate(calendar, date);
+        var fields = new CalendarFields { MonthCode = calendarDate.MonthCode };
         if (type is CalendarFieldsType.MonthDay or CalendarFieldsType.Date)
         {
-            fields.Day = date.Day;
+            fields.Day = calendarDate.Day;
         }
 
         if (type is CalendarFieldsType.YearMonth or CalendarFieldsType.Date)
         {
-            fields.Year = date.Year;
+            fields.Year = calendarDate.Year;
         }
 
         return fields;
@@ -330,8 +312,7 @@ internal static partial class TemporalOperations
     /// </summary>
     public static CalendarFields PrepareCalendarFields(string calendar, JsObject fields, CalendarFieldNames fieldNames, CalendarFieldNames requiredFieldNames, bool partial)
     {
-        // CalendarExtraFields is empty for the ISO 8601 calendar
-        _ = calendar;
+        fieldNames |= TemporalCalendars.Get(calendar).ExtraFields(fieldNames & CalendarFieldNames.YearMonthDay);
         var result = new CalendarFields();
         var any = false;
 
@@ -513,119 +494,127 @@ internal static partial class TemporalOperations
         return isLeapMonth ? "M" + numberPart + "L" : "M" + numberPart;
     }
 
+    /// <summary>CalendarFieldKeysPresent(fields)</summary>
+    private static CalendarFieldNames CalendarFieldKeysPresent(CalendarFields fields)
+    {
+        var result = CalendarFieldNames.None;
+        if (fields.Era is not null)
+        {
+            result |= CalendarFieldNames.Era;
+        }
+
+        if (fields.EraYear is not null)
+        {
+            result |= CalendarFieldNames.EraYear;
+        }
+
+        if (fields.Year is not null)
+        {
+            result |= CalendarFieldNames.Year;
+        }
+
+        if (fields.Month is not null)
+        {
+            result |= CalendarFieldNames.Month;
+        }
+
+        if (fields.MonthCode is not null)
+        {
+            result |= CalendarFieldNames.MonthCode;
+        }
+
+        if (fields.Day is not null)
+        {
+            result |= CalendarFieldNames.Day;
+        }
+
+        if (fields.Hour is not null)
+        {
+            result |= CalendarFieldNames.Hour;
+        }
+
+        if (fields.Minute is not null)
+        {
+            result |= CalendarFieldNames.Minute;
+        }
+
+        if (fields.Second is not null)
+        {
+            result |= CalendarFieldNames.Second;
+        }
+
+        if (fields.Millisecond is not null)
+        {
+            result |= CalendarFieldNames.Millisecond;
+        }
+
+        if (fields.Microsecond is not null)
+        {
+            result |= CalendarFieldNames.Microsecond;
+        }
+
+        if (fields.Nanosecond is not null)
+        {
+            result |= CalendarFieldNames.Nanosecond;
+        }
+
+        if (fields.OffsetString is not null)
+        {
+            result |= CalendarFieldNames.Offset;
+        }
+
+        if (fields.TimeZone is not null)
+        {
+            result |= CalendarFieldNames.TimeZone;
+        }
+
+        return result;
+    }
+
     /// <summary>CalendarMergeFields(calendar, fields, additionalFields)</summary>
     public static CalendarFields CalendarMergeFields(string calendar, CalendarFields fields, CalendarFields additionalFields)
     {
-        _ = calendar;
-        var merged = fields.Clone();
+        var additionalKeys = CalendarFieldKeysPresent(additionalFields);
+        var overriddenKeys = TemporalCalendars.Get(calendar).FieldKeysToIgnore(additionalKeys);
 
-        // CalendarFieldKeysToIgnore: a key present in additionalFields replaces the field (month and monthCode exclude each other)
-        var monthOverridden = additionalFields.Month is not null || additionalFields.MonthCode is not null;
-        if (monthOverridden)
+        // The fields of fields that are not overridden, then the fields of additionalFields
+        var merged = new CalendarFields
         {
-            merged.Month = additionalFields.Month;
-            merged.MonthCode = additionalFields.MonthCode;
-        }
-
-        if (additionalFields.Era is not null)
-        {
-            merged.Era = additionalFields.Era;
-        }
-
-        if (additionalFields.EraYear is not null)
-        {
-            merged.EraYear = additionalFields.EraYear;
-        }
-
-        if (additionalFields.Year is not null)
-        {
-            merged.Year = additionalFields.Year;
-        }
-
-        if (additionalFields.Day is not null)
-        {
-            merged.Day = additionalFields.Day;
-        }
-
-        if (additionalFields.Hour is not null)
-        {
-            merged.Hour = additionalFields.Hour;
-        }
-
-        if (additionalFields.Minute is not null)
-        {
-            merged.Minute = additionalFields.Minute;
-        }
-
-        if (additionalFields.Second is not null)
-        {
-            merged.Second = additionalFields.Second;
-        }
-
-        if (additionalFields.Millisecond is not null)
-        {
-            merged.Millisecond = additionalFields.Millisecond;
-        }
-
-        if (additionalFields.Microsecond is not null)
-        {
-            merged.Microsecond = additionalFields.Microsecond;
-        }
-
-        if (additionalFields.Nanosecond is not null)
-        {
-            merged.Nanosecond = additionalFields.Nanosecond;
-        }
-
-        if (additionalFields.OffsetString is not null)
-        {
-            merged.OffsetString = additionalFields.OffsetString;
-        }
-
-        if (additionalFields.TimeZone is not null)
-        {
-            merged.TimeZone = additionalFields.TimeZone;
-        }
-
+            Era = Pick(CalendarFieldNames.Era, fields.Era, additionalFields.Era),
+            EraYear = Pick(CalendarFieldNames.EraYear, fields.EraYear, additionalFields.EraYear),
+            Year = Pick(CalendarFieldNames.Year, fields.Year, additionalFields.Year),
+            Month = Pick(CalendarFieldNames.Month, fields.Month, additionalFields.Month),
+            MonthCode = Pick(CalendarFieldNames.MonthCode, fields.MonthCode, additionalFields.MonthCode),
+            Day = Pick(CalendarFieldNames.Day, fields.Day, additionalFields.Day),
+            Hour = Pick(CalendarFieldNames.Hour, fields.Hour, additionalFields.Hour),
+            Minute = Pick(CalendarFieldNames.Minute, fields.Minute, additionalFields.Minute),
+            Second = Pick(CalendarFieldNames.Second, fields.Second, additionalFields.Second),
+            Millisecond = Pick(CalendarFieldNames.Millisecond, fields.Millisecond, additionalFields.Millisecond),
+            Microsecond = Pick(CalendarFieldNames.Microsecond, fields.Microsecond, additionalFields.Microsecond),
+            Nanosecond = Pick(CalendarFieldNames.Nanosecond, fields.Nanosecond, additionalFields.Nanosecond),
+            OffsetString = Pick(CalendarFieldNames.Offset, fields.OffsetString, additionalFields.OffsetString),
+            TimeZone = Pick(CalendarFieldNames.TimeZone, fields.TimeZone, additionalFields.TimeZone),
+        };
         return merged;
+
+        T? Pick<T>(CalendarFieldNames key, T? value, T? additionalValue)
+        {
+            if ((additionalKeys & key) != 0)
+                return additionalValue;
+
+            return (overriddenKeys & key) != 0 ? default : value;
+        }
     }
 
     /// <summary>CalendarResolveFields(calendar, fields, type)</summary>
-    public static void CalendarResolveFields(string calendar, CalendarFields fields, CalendarFieldsType type)
-    {
-        _ = calendar;
-        var needsYear = type is CalendarFieldsType.Date or CalendarFieldsType.YearMonth;
-        var needsDay = type is CalendarFieldsType.Date or CalendarFieldsType.MonthDay;
-        if (needsYear && fields.Year is null)
-            ThrowHelper.ThrowTypeError("The property 'year' is required");
-
-        if (needsDay && fields.Day is null)
-            ThrowHelper.ThrowTypeError("The property 'day' is required");
-
-        if (fields.Month is null && fields.MonthCode is null)
-            ThrowHelper.ThrowTypeError("The property 'month' or 'monthCode' is required");
-
-        if (fields.MonthCode is { } monthCode)
-        {
-            if (!TemporalParser.TryParseMonthCode(monthCode, out var month, out var isLeapMonth) || isLeapMonth)
-                ThrowHelper.ThrowRangeError("The month code '" + monthCode + "' is not valid in the ISO 8601 calendar");
-
-            if (month > 12)
-                ThrowHelper.ThrowRangeError("The month code '" + monthCode + "' is not valid in the ISO 8601 calendar");
-
-            if (fields.Month is { } fieldMonth && fieldMonth != month)
-                ThrowHelper.ThrowRangeError("The month " + NumberFormatting.ToString(fieldMonth) + " does not match the month code '" + monthCode + "'");
-
-            fields.Month = month;
-        }
-    }
+    public static void CalendarResolveFields(string calendar, CalendarFields fields, CalendarFieldsType type) => TemporalCalendars.Get(calendar).ResolveFields(fields, type);
 
     /// <summary>CalendarDateFromFields(calendar, fields, overflow)</summary>
     public static IsoDate CalendarDateFromFields(string calendar, CalendarFields fields, TemporalOverflow overflow)
     {
-        CalendarResolveFields(calendar, fields, CalendarFieldsType.Date);
-        var (year, month, day) = RegulateIsoDateFields(fields.Year!.Value, fields.Month!.Value, fields.Day!.Value, overflow);
-        var result = CreateIsoDateFromRegulated(year, month, day);
+        var temporalCalendar = TemporalCalendars.Get(calendar);
+        temporalCalendar.ResolveFields(fields, CalendarFieldsType.Date);
+        var result = temporalCalendar.DateToIso(fields, overflow);
         if (!IsoDateWithinLimits(result))
             return ThrowHelper.ThrowRangeError<IsoDate>("The date is outside the range of Temporal.PlainDate");
 
@@ -635,10 +624,10 @@ internal static partial class TemporalOperations
     /// <summary>CalendarYearMonthFromFields(calendar, fields, overflow)</summary>
     public static IsoDate CalendarYearMonthFromFields(string calendar, CalendarFields fields, TemporalOverflow overflow)
     {
+        var temporalCalendar = TemporalCalendars.Get(calendar);
         fields.Day = 1;
-        CalendarResolveFields(calendar, fields, CalendarFieldsType.YearMonth);
-        var (year, month, day) = RegulateIsoDateFields(fields.Year!.Value, fields.Month!.Value, fields.Day!.Value, overflow);
-        var result = CreateIsoDateFromRegulated(year, month, day);
+        temporalCalendar.ResolveFields(fields, CalendarFieldsType.YearMonth);
+        var result = temporalCalendar.DateToIso(fields, overflow);
         if (!IsoYearMonthWithinLimits(result))
             return ThrowHelper.ThrowRangeError<IsoDate>("The date is outside the range of Temporal.PlainYearMonth");
 
@@ -648,23 +637,15 @@ internal static partial class TemporalOperations
     /// <summary>CalendarMonthDayFromFields(calendar, fields, overflow)</summary>
     public static IsoDate CalendarMonthDayFromFields(string calendar, CalendarFields fields, TemporalOverflow overflow)
     {
-        CalendarResolveFields(calendar, fields, CalendarFieldsType.MonthDay);
-
-        // CalendarMonthDayToISOReferenceDate
-        const int ReferenceIsoYear = 1972;
-        var year = fields.Year ?? ReferenceIsoYear;
-        var (_, month, day) = RegulateIsoDateFields(year, fields.Month!.Value, fields.Day!.Value, overflow);
-        return new IsoDate(ReferenceIsoYear, month, day);
+        var temporalCalendar = TemporalCalendars.Get(calendar);
+        temporalCalendar.ResolveFields(fields, CalendarFieldsType.MonthDay);
+        return temporalCalendar.MonthDayToIsoReferenceDate(fields, overflow);
     }
 
     /// <summary>CalendarDateAdd(calendar, isoDate, duration, overflow)</summary>
     public static IsoDate CalendarDateAdd(string calendar, IsoDate date, DateDuration duration, TemporalOverflow overflow)
     {
-        _ = calendar;
-        var (year, month) = BalanceIsoYearMonth(date.Year + duration.Years, date.Month + duration.Months);
-        var intermediate = RegulateIsoDate(year, month, date.Day, overflow);
-        var days = duration.Days + (7 * duration.Weeks);
-        var result = AddDaysToIsoDate(intermediate, days);
+        var result = TemporalCalendars.Get(calendar).DateAdd(date, duration, overflow);
         if (!IsoDateWithinLimits(result))
             return ThrowHelper.ThrowRangeError<IsoDate>("The date is outside the range of Temporal");
 
@@ -713,12 +694,16 @@ internal static partial class TemporalOperations
     /// </summary>
     public static DateDuration CalendarDateUntil(string calendar, IsoDate one, IsoDate two, TemporalUnit largestUnit)
     {
-        _ = calendar;
-        var sign = CompareIsoDate(one, two);
-        if (sign == 0)
+        if (CompareIsoDate(one, two) == 0)
             return default;
 
-        sign = -sign;
+        return TemporalCalendars.Get(calendar).DateUntil(one, two, largestUnit);
+    }
+
+    /// <summary>The steps of CalendarDateUntil for the ISO 8601 calendar (the dates are different).</summary>
+    public static DateDuration IsoDateUntil(IsoDate one, IsoDate two, TemporalUnit largestUnit)
+    {
+        var sign = -CompareIsoDate(one, two);
         long years = 0;
         if (largestUnit == TemporalUnit.Year)
         {

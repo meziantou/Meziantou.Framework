@@ -322,9 +322,9 @@ internal readonly record struct TimeZoneIdentifierParseResult(string? Name, int 
     public bool IsOffset => Name is null;
 }
 
-/// <summary>A Calendar Date Record (Table 18), for the ISO 8601 calendar.</summary>
+/// <summary>A Calendar Date Record (Table 18): null is undefined.</summary>
 [StructLayout(LayoutKind.Auto)]
-internal readonly record struct CalendarDate(long Year, int Month, string MonthCode, int Day, int DayOfWeek, int DayOfYear, int WeekOfYear, long YearOfWeek, int DaysInWeek, int DaysInMonth, int DaysInYear, int MonthsInYear, bool InLeapYear);
+internal readonly record struct CalendarDate(string? Era, long? EraYear, long Year, int Month, string MonthCode, int Day, int DayOfWeek, int DayOfYear, int? WeekOfYear, long? YearOfWeek, int DaysInWeek, int DaysInMonth, int DaysInYear, int MonthsInYear, bool InLeapYear);
 
 /// <summary>The relativeTo option (GetTemporalRelativeToOption).</summary>
 [StructLayout(LayoutKind.Auto)]

@@ -34,16 +34,16 @@ internal static class TemporalBuiltinHelpers
     public static void DefineDateGetters(JsRealm realm, JsObject prototype, Func<JsValue, (string Calendar, IsoDate Date)> getDate)
     {
         realm.DefineAccessor(prototype, "calendarId", (_, thisValue, _, _) => getDate(thisValue).Calendar, setter: null);
-        DefineCalendarGetter(realm, prototype, "era", getDate, _ => JsValue.Undefined);
-        DefineCalendarGetter(realm, prototype, "eraYear", getDate, _ => JsValue.Undefined);
+        DefineCalendarGetter(realm, prototype, "era", getDate, d => d.Era is { } era ? era : JsValue.Undefined);
+        DefineCalendarGetter(realm, prototype, "eraYear", getDate, d => d.EraYear is { } eraYear ? (double)eraYear : JsValue.Undefined);
         DefineCalendarGetter(realm, prototype, "year", getDate, d => d.Year);
         DefineCalendarGetter(realm, prototype, "month", getDate, d => d.Month);
         DefineCalendarGetter(realm, prototype, "monthCode", getDate, d => d.MonthCode);
         DefineCalendarGetter(realm, prototype, "day", getDate, d => d.Day);
         DefineCalendarGetter(realm, prototype, "dayOfWeek", getDate, d => d.DayOfWeek);
         DefineCalendarGetter(realm, prototype, "dayOfYear", getDate, d => d.DayOfYear);
-        DefineCalendarGetter(realm, prototype, "weekOfYear", getDate, d => d.WeekOfYear);
-        DefineCalendarGetter(realm, prototype, "yearOfWeek", getDate, d => d.YearOfWeek);
+        DefineCalendarGetter(realm, prototype, "weekOfYear", getDate, d => d.WeekOfYear is { } week ? week : JsValue.Undefined);
+        DefineCalendarGetter(realm, prototype, "yearOfWeek", getDate, d => d.YearOfWeek is { } yearOfWeek ? (double)yearOfWeek : JsValue.Undefined);
         DefineCalendarGetter(realm, prototype, "daysInWeek", getDate, d => d.DaysInWeek);
         DefineCalendarGetter(realm, prototype, "daysInMonth", getDate, d => d.DaysInMonth);
         DefineCalendarGetter(realm, prototype, "daysInYear", getDate, d => d.DaysInYear);

@@ -24,8 +24,8 @@ internal static class TemporalPlainYearMonthBuiltins
             return (yearMonth.Calendar, yearMonth.IsoDate);
         };
         realm.DefineAccessor(prototype, "calendarId", (_, thisValue, _, _) => ThisPlainYearMonth(thisValue).Calendar, setter: null);
-        TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "era", getDate, _ => JsValue.Undefined);
-        TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "eraYear", getDate, _ => JsValue.Undefined);
+        TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "era", getDate, d => d.Era is { } era ? era : JsValue.Undefined);
+        TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "eraYear", getDate, d => d.EraYear is { } eraYear ? (double)eraYear : JsValue.Undefined);
         TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "year", getDate, d => d.Year);
         TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "month", getDate, d => d.Month);
         TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "monthCode", getDate, d => d.MonthCode);

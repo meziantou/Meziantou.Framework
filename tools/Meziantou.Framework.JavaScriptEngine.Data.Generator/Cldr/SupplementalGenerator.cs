@@ -25,6 +25,7 @@ internal static class SupplementalGenerator
             ["dayPeriods"] = Read(source, "dayPeriods.json", "dayPeriodRuleSet"),
             ["primaryZones"] = Read(source, "primaryZones.json", "primaryZones"),
             ["bcp47"] = Bcp47(source),
+            ["scriptMetadata"] = ScriptMetadata(source),
         };
 
         var keys = new HashSet<string>(StringComparer.Ordinal);
@@ -142,6 +143,22 @@ internal static class SupplementalGenerator
             var date = DateTimeOffset.ParseExact(value, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
             return date.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
         }
+    }
+
+    // scriptMetadata/Arab/{ rtl: "YES", ... } -> Arab = "YES" (the "rtl" field: YES, NO or UNKNOWN)
+    private static TreeTable ScriptMetadata(CldrJsonSource source)
+    {
+        using var document = source.Read("cldr-core/scriptMetadata.json");
+        var result = new TreeTable();
+        foreach (var property in document.RootElement.GetProperty("scriptMetadata").EnumerateObject())
+        {
+            if (property.Value.TryGetProperty("rtl", out var rtl))
+            {
+                result[property.Name] = rtl.GetString()!;
+            }
+        }
+
+        return result;
     }
 
     // keyword/u/ca/{ _alias, buddhist: { _description }, ethioaa: { _alias } } -> u/ca/{ _alias, buddhist: {}, ethioaa: { _alias } }

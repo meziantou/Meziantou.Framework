@@ -39,7 +39,7 @@ internal static class BigIntBuiltins
     }
 
     /// <summary>ThisBigIntValue(value)</summary>
-    private static BigInteger ThisBigIntValue(JsValue value, string methodName)
+    internal static BigInteger ThisBigIntValue(JsValue value, string methodName)
     {
         if (value.Cell is JsBigInt bigint)
             return bigint.Value;

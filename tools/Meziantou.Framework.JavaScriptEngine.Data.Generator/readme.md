@@ -55,7 +55,10 @@ file), in which identical strings and identical tables are stored once.
   names of the American metazones of `en`). One chunk per category and language. The paths and keys are the ones of
   cldr-json, except: the units are limited to the ones of ECMA-402 and keyed by their identifier (`kilometer`), and a
   pattern with attributes (`{ "_value": "d/M/yy", "_numbers": "M=romanlow" }`) becomes two strings (`short` and
-  `short-numbers`). Subdivisions, measurement system names, minimal pairs, annotations, person names, RBNF and
+  `short-numbers`). The units also include the compound units of two units of ECMA-402 that CLDR has
+  (`kilometer-per-hour`). cldr-json has only the `latn` numbers data for the root: the symbols and the patterns of the
+  other numbering systems of `common/main/root.xml` that are not aliases (`arab`, `arabext`) are added to it, and every
+  locale inherits them. Subdivisions, measurement system names, minimal pairs, annotations, person names, RBNF and
   segmentation suppressions are not included.
 - **Supplemental** (`supplemental.bin`): one chunk per section (likelySubtags, aliases, plurals, ordinals,
   pluralRanges, currencyData, timeData, weekData, calendarPreferenceData, calendarData, numberingSystems, metaZones,
@@ -67,7 +70,11 @@ file), in which identical strings and identical tables are stored once.
   of `FractionalUCA.txt`) and of the Unified_Ideograph code points (`PropList.txt`). The tailorings of
   `common/collation/*.xml` of the languages of the embedded locales are stored as rules (one tree per locale: type =
   rules, `_default` = the default type), with the imports inlined and the comments removed; the generator checks that
-  the parser of the engine (`CollationTailoring.Parse`) accepts them. The collator applies them to the root table.
+  the parser of the engine (`CollationTailoring.Parse`) accepts them. The collator applies them to the root table. As
+  ICU, the collations marked `draft="unconfirmed"` or `"provisional"` and the `alt="proposed"` ones are not included.
+  The collations inherit by truncation (`zh-Hant` -> `zh`, as ICU); the parents of the index are the parentLocales of
+  the "collations" component and the main parentLocales to a locale other than the root of the locales without a script
+  subtag (`nb` -> `no`).
 
 Before writing the files, the generator reads the resolved value of every path of every locale back through the
 runtime (`CldrLocale`) and compares it with cldr-json; any difference fails the run (exit code 3).

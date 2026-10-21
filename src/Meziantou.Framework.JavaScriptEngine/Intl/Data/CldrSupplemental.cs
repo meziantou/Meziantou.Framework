@@ -50,7 +50,8 @@ internal enum LocaleAliasType
 /// <item>metaZones: zones = { "Europe" = { "Paris" = { "0" = { mzone, from, to } } } } (from and to in seconds since the epoch), mapZones = { metazone = { territory = zone } }</item>
 /// <item>dayPeriods: language = { period = { _at | _from, _before } }</item>
 /// <item>primaryZones: region = zone</item>
-/// <item>bcp47: key (e.g. "ca", "co", "nu", "tz") = { _alias, type = { _alias, _preferred, _deprecated } }</item>
+/// <item>bcp47: u or t = { key (e.g. "ca", "co", "nu", "tz") = { _alias, type = { _alias, _preferred, _deprecated, _region } } }</item>
+/// <item>scriptMetadata: script = the "rtl" field of scriptMetadata.json ("YES", "NO" or "UNKNOWN")</item>
 /// </list>
 /// </summary>
 internal sealed class CldrSupplemental

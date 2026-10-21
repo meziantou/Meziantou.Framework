@@ -162,6 +162,53 @@ the original completion stands. For `await using`, the interpreter drives an `As
 `SetAwaitResult(thrownOrNull)`; at the end `Completion` is the resulting completion. Built-in code uses
 `DisposeResourcesAsync`, which drives it with promise continuations and returns a promise.
 
+## Intl (ECMA-402)
+
+`Intl/` has the services of ECMA-402, installed by `Runtime/Intrinsics.Intl.cs`. Every locale data comes from the
+embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalization of .NET. The default locale is
+`JsEngineOptions.DefaultLocale` ("en-US").
+
+- `Intl/Locale/LanguageTag.cs`: the parser of the Unicode BCP 47 locale identifiers (IsStructurallyValidLanguageTag)
+  and `Canonicalize()` (CanonicalizeUnicodeLocaleId, with the alias rules of `LocaleCanonicalizer`).
+  `LocaleCanonicalizer.CanonicalizeUnicodeValue(key, value)` is CanonicalizeUValue.
+- `Intl/IntlOperations.cs`: CanonicalizeLocaleList, ResolveLocale (the lookup matcher for both matchers; a service gives
+  the supported values of its relevant extension keys with a `LocaleKeyData` delegate, and optionally its own
+  [[AvailableLocales]]), SupportedLocales, GetOptionsObject, CoerceOptionsToObject, GetOption (`GetStringOption`,
+  `GetBooleanOption`), GetNumberOption, DefaultNumberOption.
+- `Intl/Locale/LocaleInfo.cs`: the available calendars, collations, currencies, numbering systems and units
+  (Intl.supportedValuesOf), and the regional preferences of a locale (calendars, hour cycles, week, time zones).
+- `Intl/NumberFormat/IntlDecimal.cs`: the Intl mathematical values (exact decimal values, with negative zero, NaN and
+  the infinities): from a Number (its exact binary value), a BigInt, or a string (ToIntlMathematicalValue).
+  `DigitOptions` is SetNumberFormatDigitOptions and FormatNumericToString (ToRawPrecision, ToRawFixed, the rounding
+  modes, increments and priorities): Intl.PluralRules and Intl.NumberFormat share it, and so can the other services
+  that format numbers.
+- `Intl/NumberFormat/NumberFormatter.cs`: PartitionNumberPattern, from the CLDR number patterns (`NumberPattern`),
+  the symbols of the numbering system and the compact, unit and currency patterns; the parts are grouped as the
+  modifiers of ICU (outer, middle, inner) for the collapsing of the ranges (PartitionNumberRangePattern). Where ECMA-402
+  leaves the output to the implementation, it follows ICU (Node.js is a convenient oracle to compare with).
+- `Intl/Collator/`: Intl.Collator and String.prototype.localeCompare, a UCA collator over the CLDR root collation.
+  `RootCollation` converts allkeys_CLDR.txt to 64-bit CEs (`CollationWeights`: 32-bit primaries, a root primary `p` is
+  `p << 16` so that a tailoring can insert weights after it; the implicit pairs are single primaries) and derives the
+  sorted root weights, the variable range and the script groups of `[reorder]`. `CollationBuilder` applies the rules of
+  a tailoring as ICU's CollationBuilder (lists of nodes after the root primaries, then consecutive weights in the gaps):
+  resets, `[before n]`, the special positions, prefixes, extensions, contractions, `[suppressContractions]`.
+  `CollationTable` computes the CEs of a string in NFD (prefix mappings, contiguous and discontiguous contractions,
+  implicit weights, numeric collation). `TailoredCollation` caches the table of each tailoring (the rules are the key)
+  and `StringCollator` compares two strings with the settings (strength, case level, case first, shifted, numeric,
+  backwards secondary, reordering): it skips the common prefix up to a safe boundary, compares the characters below
+  U+0300 with precomputed CEs and an early exit on the first primary difference, and decomposes the other strings in
+  thread-static buffers (no allocation). Node.js (ICU) is the oracle: the orders of every tailoring match it.
+- `Intl/DateTimeFormat/`: Intl.DateTimeFormat with the amendments of Temporal (the formats of the Temporal types,
+  `DateTimeFormatBuiltins`) and the toLocaleString methods of Date and of the Temporal types. A format is a UTS 35
+  pattern (`DateTimeFormatRecord`); the components that resolvedOptions reports are read from the pattern. The patterns
+  come from `DateTimePatternGenerator`, a port of ICU's DateTimePatternGenerator (the skeleton of the options matched
+  against the CLDR availableFormats, the field widths adjusted, the date and the time combined with dateTimeFormats,
+  the appendItems), so the formats are the ones of V8 and SpiderMonkey; "basic" uses it too. The hour fields use the
+  [[HourCycle]] (V8's ReplaceHourCycleInPattern). `DateIntervalFormatter` is ICU's DateIntervalFormat (the CLDR
+  intervalFormats and the fallbacks). `DateTimeLocalTimeCalculator` computes ToLocalTime with the calendars of Temporal
+  (`TemporalCalendars`), `TimeZoneNameFormatter` the time zone names (metazones, generic and location formats, localized
+  GMT, as ICU's TimeZoneFormat). The narrow no-break spaces of CLDR are spaces, as in the browsers.
+
 ## Tests
 
 - `tests/Meziantou.Framework.JavaScriptEngine.Tests`: unit tests (xUnit, the repo's `Assert`).

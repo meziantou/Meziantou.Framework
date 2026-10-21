@@ -12790,7 +12790,9 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         TValue CreateObject(TValue prototype);
         TValue CreatePlatformObject(TValue prototype, object target, Meziantou.Framework.WebPlatform.Scripting.IJsHostObjectHandler<TValue>? handler);
         public TValue? CreateSharedArrayBuffer(object dataBlock) => throw null;
+        public void DefineLazyAccessorProperty(TValue obj, TValue key, Meziantou.Framework.WebPlatform.Scripting.IJsLazyAccessor<TValue> factory, bool hasSetter, bool enumerable, bool configurable) { }
         public void DefineLazyAccessorProperty(TValue obj, TValue key, System.Func<TValue> getterFactory, System.Func<TValue>? setterFactory, bool enumerable, bool configurable) { }
+        public void DefineLazyDataProperty(TValue obj, TValue key, Meziantou.Framework.WebPlatform.Scripting.IJsLazyValue<TValue> factory, bool writable, bool enumerable, bool configurable) { }
         public void DefineLazyDataProperty(TValue obj, TValue key, System.Func<TValue> factory, bool writable, bool enumerable, bool configurable) { }
         bool DefineOwnProperty(TValue obj, TValue key, in Meziantou.Framework.WebPlatform.Scripting.JsPropertyDescriptor<TValue> descriptor);
         bool Delete(TValue obj, TValue key);
@@ -12831,6 +12833,7 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         bool OrdinaryGetOwnProperty(TValue obj, TValue key, out Meziantou.Framework.WebPlatform.Scripting.JsPropertyDescriptor<TValue> descriptor);
         System.Collections.Generic.IReadOnlyList<TValue> OrdinaryOwnKeys(TValue obj);
         System.Collections.Generic.IReadOnlyList<TValue> OwnKeys(TValue obj);
+        public void ReserveProperties(TValue obj, int count) { }
         TResult RunInRealm<TResult>(object realm, System.Func<TResult> action);
         void Set(TValue obj, TValue key, TValue value);
         bool SetPrototypeOf(TValue obj, TValue prototype);
@@ -12842,6 +12845,7 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         public bool TryGetBufferSource(TValue value, out Meziantou.Framework.WebPlatform.Scripting.JsBufferKind kind, out bool isShared, out System.Memory<byte> bytes) => throw null;
         bool TryGetPlatformObject(TValue value, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out object? target);
         bool TryGetThrownValue(System.Exception exception, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out TValue? value);
+        public bool TryMakePrototypeImmutable(TValue obj) => throw null;
         [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0011", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public bool TrySetErrorStack(TValue error, string stack) => throw null;
     }
@@ -12854,6 +12858,17 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         bool TryGetOwnProperty(TValue obj, TValue key, out Meziantou.Framework.WebPlatform.Scripting.JsPropertyDescriptor<TValue> descriptor);
         bool TrySet(TValue obj, TValue key, TValue value, out bool result);
         bool TrySet(TValue obj, TValue key, TValue value, TValue receiver, out bool result);
+    }
+
+    public interface IJsLazyAccessor<TValue> where TValue : class
+    {
+        TValue CreateGetter();
+        TValue CreateSetter();
+    }
+
+    public interface IJsLazyValue<TValue> where TValue : class
+    {
+        TValue CreateValue();
     }
 
     public interface IWebIdlHost

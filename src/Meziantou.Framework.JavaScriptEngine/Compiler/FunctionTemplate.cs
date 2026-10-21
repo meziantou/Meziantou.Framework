@@ -32,6 +32,9 @@ internal sealed class FunctionTemplate
     /// <summary>Gets the pairs (pc, source offset) of the instructions, sorted by pc.</summary>
     public required int[] Positions { get; init; }
 
+    /// <summary>Gets the triples (pc, callee start, callee end) of the calls, sorted by pc (the callee of the error messages).</summary>
+    public int[] CallSites { get; init; } = [];
+
     public required SourceText Source { get; init; }
 
     /// <summary>Gets the start of the source text of the function (Function.prototype.toString).</summary>
@@ -61,6 +64,38 @@ internal sealed class FunctionTemplate
     public bool IsDerivedConstructor => (Flags & FunctionTemplateFlags.DerivedConstructor) != 0;
 
     public string GetSourceText() => Source.Text[SourceStart..SourceEnd];
+
+    /// <summary>Gets the source range of the callee of a call instruction; false when it is unknown.</summary>
+    public bool TryGetCallSite(int pc, out int calleeStart, out int calleeEnd)
+    {
+        var callSites = CallSites;
+        var low = 0;
+        var high = (callSites.Length / 3) - 1;
+        while (low <= high)
+        {
+            var middle = (low + high) / 2;
+            var sitePc = callSites[middle * 3];
+            if (sitePc == pc)
+            {
+                calleeStart = callSites[(middle * 3) + 1];
+                calleeEnd = callSites[(middle * 3) + 2];
+                return true;
+            }
+
+            if (sitePc < pc)
+            {
+                low = middle + 1;
+            }
+            else
+            {
+                high = middle - 1;
+            }
+        }
+
+        calleeStart = -1;
+        calleeEnd = -1;
+        return false;
+    }
 
     /// <summary>Gets the source offset of an instruction.</summary>
     public int GetSourceOffset(int pc)

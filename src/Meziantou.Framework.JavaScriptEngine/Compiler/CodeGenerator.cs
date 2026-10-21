@@ -148,6 +148,7 @@ internal sealed partial class CodeGenerator
             MaxStack = _builder.MaxStack + 1,
             Handlers = handlers,
             Positions = positions,
+            CallSites = _builder.GetCallSites(),
             Source = _source,
             SourceStart = sourceStart,
             SourceEnd = sourceEnd,

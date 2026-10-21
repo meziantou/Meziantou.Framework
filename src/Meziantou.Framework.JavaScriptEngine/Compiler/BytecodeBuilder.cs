@@ -15,6 +15,7 @@ internal sealed class BytecodeBuilder
     private readonly List<ExceptionHandler> _handlers = [];
     private readonly List<int> _positions = [];
     private readonly List<int> _labelPositions = [];
+    private readonly List<int> _callSites = [];
     private readonly List<int> _labelDepths = [];
     private readonly List<(int Position, int Label)> _fixups = [];
     private int _lastPositionOffset = -1;
@@ -229,6 +230,17 @@ internal sealed class BytecodeBuilder
             _positions.Add(sourceOffset);
         }
     }
+
+    /// <summary>Records the source range of the callee of the next instruction (a call or a new), for the error messages.</summary>
+    public void AddCallSite(int calleeStart, int calleeEnd)
+    {
+        _callSites.Add(_code.Count);
+        _callSites.Add(calleeStart);
+        _callSites.Add(calleeEnd);
+    }
+
+    /// <summary>Gets the triples (pc, callee start, callee end) of the calls, sorted by pc.</summary>
+    public int[] GetCallSites() => [.. _callSites];
 
     // ------------------------------------------------------------------------------------------------------------------
     // Result

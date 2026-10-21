@@ -1170,6 +1170,7 @@ internal sealed partial class CodeGenerator
         }
 
         _builder.SetPosition(call.Start);
+        _builder.AddCallSite(call.Callee.Start, call.Callee.End);
         if (isDirectEval)
         {
             var context = _builder.AddObject(CreateEvalContext());
@@ -1251,6 +1252,7 @@ internal sealed partial class CodeGenerator
         {
             EmitArgumentsArray(newExpression.Arguments);
             _builder.SetPosition(newExpression.Start);
+            _builder.AddCallSite(newExpression.Callee.Start, newExpression.Callee.End);
             _builder.Emit(OpCode.NewSpread);
             return;
         }
@@ -1261,6 +1263,7 @@ internal sealed partial class CodeGenerator
         }
 
         _builder.SetPosition(newExpression.Start);
+        _builder.AddCallSite(newExpression.Callee.Start, newExpression.Callee.End);
         _builder.Emit(OpCode.New, newExpression.Arguments.Count);
     }
 

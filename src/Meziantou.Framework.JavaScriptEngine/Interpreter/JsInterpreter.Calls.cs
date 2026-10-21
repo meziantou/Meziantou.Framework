@@ -176,8 +176,11 @@ internal static partial class JsInterpreter
     /// <summary>Describes the callee of the current call for the error messages (the source text of the call, e.g. "obj.method").</summary>
     private static string DescribeCallee(Frame frame)
     {
-        var offset = frame.Code.GetSourceOffset(frame.Pc);
         var text = frame.Code.Source.Text;
+        if (frame.Code.TryGetCallSite(frame.Pc, out var calleeStart, out var calleeEnd) && calleeStart >= 0 && calleeEnd <= text.Length && calleeStart < calleeEnd)
+            return DescribeCallee(text.AsSpan(calleeStart, calleeEnd - calleeStart));
+
+        var offset = frame.Code.GetSourceOffset(frame.Pc);
         if (offset < 0 || offset >= text.Length)
             return "expression";
 
@@ -212,6 +215,66 @@ internal static partial class JsInterpreter
         }
 
         return description.Length is > 0 and < 100 ? description : "expression";
+    }
+
+    /// <summary>The source text of a callee, with the arguments of the calls it contains replaced by "(...)" (e.g. "a.b(...).c").</summary>
+    private static string DescribeCallee(ReadOnlySpan<char> callee)
+    {
+        var builder = new StringBuilder(callee.Length);
+        for (var i = 0; i < callee.Length; i++)
+        {
+            var c = callee[i];
+            if (c == '(')
+            {
+                i = SkipBalanced(callee, i);
+                builder.Append("(...)");
+                continue;
+            }
+
+            if (c is '\r' or '\n' or '\t')
+            {
+                c = ' ';
+            }
+
+            builder.Append(c);
+        }
+
+        var description = builder.ToString().Trim();
+        return description.Length is > 0 and < 100 ? description : "expression";
+
+        // The index of the parenthesis that closes the one at start (strings and templates are skipped)
+        static int SkipBalanced(ReadOnlySpan<char> text, int start)
+        {
+            var depth = 0;
+            for (var i = start; i < text.Length; i++)
+            {
+                switch (text[i])
+                {
+                    case '(':
+                        depth++;
+                        break;
+                    case ')':
+                        depth--;
+                        if (depth == 0)
+                            return i;
+
+                        break;
+                    case '\'' or '"' or '`':
+                        var quote = text[i];
+                        for (i++; i < text.Length && text[i] != quote; i++)
+                        {
+                            if (text[i] == '\\')
+                            {
+                                i++;
+                            }
+                        }
+
+                        break;
+                }
+            }
+
+            return text.Length - 1;
+        }
     }
 
     private static JsValue[] GetSpreadArguments(JsValue array)

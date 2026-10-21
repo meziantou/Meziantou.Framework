@@ -63,6 +63,9 @@ public sealed class InterpreterTests
     [InlineData("var proto = { p: 1 }; var proto2 = { p: -1 }; var obj = { __proto__: proto, m() { return ++super[key]; }, n() { super[key] += 5; return obj.p; }, g() { return super[key]; } }; var key = { toString() { Object.setPrototypeOf(obj, proto2); return 'p'; } }; var r = [obj.m()]; Object.setPrototypeOf(obj, proto); delete obj.p; r.push(obj.n()); Object.setPrototypeOf(obj, proto); r.push(obj.g()); r.join()", "2,6,1")]
     [InlineData("var obj = { m() { super.x = 8; Object.freeze(obj); super.y = 9; super['z'] = 10; return Object.keys(obj).join(); } }; obj.m()", "m,x")]
     [InlineData("var r; class C extends class { } { m() { super[(() => { throw new RangeError(); })()] = (() => { throw new Error(); })(); } } try { new C().m(); } catch (e) { r = e.constructor.name; } r", "RangeError")]
+    [InlineData("var str = 'abc'; var r; try { str.slice(0, 1).foo(''); } catch (e) { r = e.message; } r", "str.slice(...).foo is not a function")]
+    [InlineData("var o = { f() { return []; } }; var r; try { (o.f(')')[0])(); } catch (e) { r = e.message; } r", "o.f(...)[0] is not a function")]
+    [InlineData("var o = { a: {} }; var r; try { new o.a(1); } catch (e) { r = e.message; } r", "o.a is not a constructor")]
     public void Evaluate(string code, string expected)
     {
         Assert.Equal(expected, Run(code));

@@ -1,0 +1,18 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.JavaScriptEngine. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The patterns and inputs of the V8 regular expression corpus are the seeds of the RegExp target -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.JavaScriptEngine.Tests\Corpus\RegExpV8.jsonl" LogicalName="RegExpV8.jsonl" Link="Seeds\RegExpV8.jsonl" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.JavaScriptEngine\Meziantou.Framework.JavaScriptEngine.csproj" />
+  </ItemGroup>
+</Project>

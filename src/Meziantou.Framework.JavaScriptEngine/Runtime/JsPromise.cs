@@ -60,7 +60,7 @@ internal sealed class JsPromise : JsObject
         State = PromiseState.Rejected;
         if (!IsHandled)
         {
-            JsEngine.Current!.TrackPromiseRejection(this, PromiseRejectionOperation.Reject);
+            JsEngine.Current!.TrackPromiseRejection(this, JsPromiseRejectionOperation.Reject);
         }
 
         TriggerPromiseReactions(first, others, reason, fulfill: false);
@@ -190,7 +190,7 @@ internal sealed class JsPromise : JsObject
             default:
                 if (!IsHandled)
                 {
-                    engine.TrackPromiseRejection(this, PromiseRejectionOperation.Handle);
+                    engine.TrackPromiseRejection(this, JsPromiseRejectionOperation.Handle);
                 }
 
                 EnqueueReactionJob(engine, reaction, Result, fulfill: false);
@@ -308,11 +308,11 @@ internal sealed class JsPromise : JsObject
         }
     }
 
-    private sealed class ResolveThenableJobState(JsPromise promise, JobCallback then)
+    private sealed class ResolveThenableJobState(JsPromise promise, JsJobCallback then)
     {
         public JsPromise Promise { get; } = promise;
 
-        public JobCallback Then { get; } = then;
+        public JsJobCallback Then { get; } = then;
     }
 }
 
@@ -323,10 +323,10 @@ internal sealed class PromiseReaction
     public PromiseCapability? Capability { get; init; }
 
     /// <summary>[[Handler]] of the fulfill reaction (null: empty).</summary>
-    public JobCallback? OnFulfilled { get; init; }
+    public JsJobCallback? OnFulfilled { get; init; }
 
     /// <summary>[[Handler]] of the reject reaction (null: empty).</summary>
-    public JobCallback? OnRejected { get; init; }
+    public JsJobCallback? OnRejected { get; init; }
 
     public PromiseContinuation? NativeOnFulfilled { get; init; }
 

@@ -14,7 +14,7 @@ public sealed partial class JsEngine
     private List<JsCell>? _keptAlive;
 
     /// <summary>Gets or sets the host-defined operations (job scheduling, rejection tracking, job callbacks, error reporting).</summary>
-    internal JsHostHooks HostHooks { get; set; } = JsHostHooks.Default;
+    internal JsHost HostHooks { get; set; }
 
     /// <summary>Gets whether a job is ready to run (a promise job, or a generic job); the timeout jobs whose delay has not elapsed are not counted.</summary>
     internal bool HasPendingJobs => _jobQueue.PromiseJobs.Count > 0 || _jobQueue.Tasks.Count > 0 || !_genericJobInbox.IsEmpty;
@@ -91,13 +91,13 @@ public sealed partial class JsEngine
     }
 
     /// <summary>HostMakeJobCallback(callback)</summary>
-    internal JobCallback MakeJobCallback(JsObject callback) => HostHooks.MakeJobCallback(this, callback);
+    internal JsJobCallback MakeJobCallback(JsObject callback) => HostHooks.MakeJobCallback(this, callback);
 
     /// <summary>HostCallJobCallback(jobCallback, V, argumentsList)</summary>
-    internal JsValue CallJobCallback(in JobCallback jobCallback, JsValue thisValue, ReadOnlySpan<JsValue> arguments) => HostHooks.CallJobCallback(this, jobCallback, thisValue, arguments);
+    internal JsValue CallJobCallback(in JsJobCallback jobCallback, JsValue thisValue, ReadOnlySpan<JsValue> arguments) => HostHooks.CallJobCallback(this, jobCallback, thisValue, arguments);
 
     /// <summary>HostPromiseRejectionTracker(promise, operation)</summary>
-    internal void TrackPromiseRejection(JsPromise promise, PromiseRejectionOperation operation) => HostHooks.PromiseRejectionTracker(this, promise, operation);
+    internal void TrackPromiseRejection(JsPromise promise, JsPromiseRejectionOperation operation) => HostHooks.PromiseRejectionTracker(this, promise, operation);
 
     /// <summary>AddToKeptObjects(value): keeps the target of a WeakRef alive until <see cref="ClearKeptObjects"/>.</summary>
     internal void AddToKeptObjects(JsCell value) => (_keptAlive ??= []).Add(value);

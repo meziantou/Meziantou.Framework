@@ -17,6 +17,7 @@ public sealed partial class JsEngine : IDisposable
     public JsEngine(JsEngineOptions? options = null)
     {
         Options = options ?? new JsEngineOptions();
+        HostHooks = Options.Host ?? JsHost.Default;
     }
 
     /// <summary>Gets the options of the engine.</summary>

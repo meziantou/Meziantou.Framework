@@ -90,4 +90,101 @@ public partial class JsObject
 
         SetOwnSlot(key.Key, new JsValue(new AccessorPair(getterFactory, setterFactory)), flags | PropertyFlags.Accessor);
     }
+
+    /// <summary>Gets whether the object has an internal slot of the built-in objects, without running code.</summary>
+    public bool HasInternalSlot(JsInternalSlot slot) => slot switch
+    {
+        JsInternalSlot.BooleanData => Class == ObjectClass.Boolean,
+        JsInternalSlot.NumberData => Class == ObjectClass.Number,
+        JsInternalSlot.BigIntData => Class == ObjectClass.BigInt,
+        JsInternalSlot.StringData => Class == ObjectClass.String,
+        JsInternalSlot.SymbolData => Class == ObjectClass.Symbol,
+        JsInternalSlot.DateValue => this is JsDateObject,
+        JsInternalSlot.ErrorData => this is JsErrorObject,
+        JsInternalSlot.RegExpMatcher => this is JsRegExpObject,
+        JsInternalSlot.ArrayBufferData => this is JsArrayBuffer { IsShared: false },
+        JsInternalSlot.SharedArrayBufferData => this is JsArrayBuffer { IsShared: true },
+        JsInternalSlot.DataView => this is JsDataView,
+        JsInternalSlot.TypedArrayName => this is JsTypedArray,
+        JsInternalSlot.MapData => this is JsMap,
+        JsInternalSlot.SetData => this is JsSet,
+        JsInternalSlot.WeakMapData => this is JsWeakMap,
+        JsInternalSlot.WeakSetData => this is JsWeakSet,
+        JsInternalSlot.PromiseState => this is JsPromise,
+        JsInternalSlot.ProxyHandler => this is JsProxy,
+        _ => false,
+    };
+
+    /// <summary>Gets the [[DateValue]] of a Date object (milliseconds since the Unix epoch, or NaN).</summary>
+    public bool TryGetDateValue(out double timeValue)
+    {
+        if (this is JsDateObject date)
+        {
+            timeValue = date.DateValue;
+            return true;
+        }
+
+        timeValue = default;
+        return false;
+    }
+
+    /// <summary>Gets the primitive value of a Boolean, Number, BigInt, String or Symbol object ([[BooleanData]]...).</summary>
+    public bool TryGetPrimitiveValue(out JsValue value)
+    {
+        switch (this)
+        {
+            case JsPrimitiveObject primitive:
+                value = primitive.PrimitiveValue;
+                return true;
+            case JsStringObject stringObject:
+                value = new JsValue(stringObject.StringData);
+                return true;
+        }
+
+        value = default;
+        return false;
+    }
+
+    /// <summary>Gets the stack trace of an error object (its [[Stack]] internal slot, read by the <c>stack</c> accessor).</summary>
+    public string? GetErrorStack() => (this as JsErrorObject)?.StackTrace;
+
+    /// <summary>Sets the stack trace of an error object (e.g. a deserialized error); returns false when the object is not an error.</summary>
+    public bool TrySetErrorStack(string stack)
+    {
+        if (this is not JsErrorObject error)
+            return false;
+
+        error.StackTrace = stack;
+        return true;
+    }
+
+    /// <summary>Gets the state of a promise ([[PromiseState]], [[PromiseResult]] and [[PromiseIsHandled]]); returns false when the object is not a promise.</summary>
+    public bool TryGetPromiseState(out JsPromiseState state, out JsValue result, out bool isHandled)
+    {
+        if (this is JsPromise promise)
+        {
+            state = (JsPromiseState)promise.State;
+            result = promise.Result;
+            isHandled = promise.IsHandled;
+            return true;
+        }
+
+        state = default;
+        result = default;
+        isHandled = false;
+        return false;
+    }
+}
+
+/// <summary>The state of a promise ([[PromiseState]]).</summary>
+public enum JsPromiseState
+{
+    /// <summary>The promise is pending.</summary>
+    Pending,
+
+    /// <summary>The promise is fulfilled.</summary>
+    Fulfilled,
+
+    /// <summary>The promise is rejected.</summary>
+    Rejected,
 }

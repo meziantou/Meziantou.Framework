@@ -274,6 +274,12 @@ public static class UnicodeProperties
     /// </remarks>
     public static int GetTitlecaseMapping(int codePoint, Span<int> destination) => GetCaseMapping(codePoint, destination, CaseMappingKind.Titlecase);
 
+    /// <summary>The kind of a word segment that ends with a code point: see <see cref="UnicodeWordKind"/>.</summary>
+    internal static UnicodeWordKind GetWordKind(int codePoint)
+    {
+        return (UnicodeWordKind)((UnicodeTables.GetSentenceBreak(codePoint) >> 4) & 0x7);
+    }
+
     internal static EmojiProperties GetEmojiProperties(int codePoint)
     {
         return (EmojiProperties)UnicodeTables.GeneralTuples[(UnicodeTables.GetGeneral(codePoint) * 2) + 1];

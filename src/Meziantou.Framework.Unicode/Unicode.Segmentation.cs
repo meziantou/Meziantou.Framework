@@ -360,6 +360,50 @@ public static partial class Unicode
         return index;
     }
 
+    /// <summary>Gets the kind of a segment delimited by word boundaries: see <see cref="UnicodeWordKind"/>.</summary>
+    internal static UnicodeWordKind GetWordKind(ReadOnlySpan<char> segment)
+    {
+        var index = FindLastWordBase(segment, segment.Length, out var codePoint, out var wordBreak);
+        if (index < 0)
+            return UnicodeWordKind.None;
+
+        switch (wordBreak)
+        {
+            case WordBreak.ExtendNumLet:
+                // ICU (rules 13a and 13b): the kind of the character before it, a letter after another ExtendNumLet, not
+                // a word on its own.
+                if (FindLastWordBase(segment, index, out codePoint, out wordBreak) < 0)
+                    return UnicodeWordKind.None;
+
+                return wordBreak is WordBreak.ExtendNumLet ? UnicodeWordKind.Letter : UnicodeProperties.GetWordKind(codePoint);
+
+            case WordBreak.SingleQuote:
+                // ICU (rule 7a): a Hebrew letter and a single quote are a word.
+                return FindLastWordBase(segment, index, out _, out wordBreak) >= 0 && wordBreak is WordBreak.HebrewLetter ? UnicodeWordKind.Letter : UnicodeWordKind.None;
+
+            default:
+                return UnicodeProperties.GetWordKind(codePoint);
+        }
+    }
+
+    /// <summary>Finds the last code point before an index that rule WB4 does not ignore.</summary>
+    /// <returns>The index of the code point, or -1 when there is none.</returns>
+    private static int FindLastWordBase(ReadOnlySpan<char> segment, int index, out int codePoint, out WordBreak wordBreak)
+    {
+        while (index > 0)
+        {
+            codePoint = DecodeBefore(segment, index, out var length);
+            index -= length;
+            wordBreak = UnicodeProperties.GetWordBreak(codePoint);
+            if (wordBreak is not (WordBreak.Extend or WordBreak.Format or WordBreak.ZWJ))
+                return index;
+        }
+
+        codePoint = 0;
+        wordBreak = WordBreak.Other;
+        return -1;
+    }
+
     private static bool IsAsciiWordCharacter(char value) => char.IsAsciiLetterOrDigit(value) || value == '_';
 
     // Not inlined: it would make the loop of GetWordSegmentLength slower for the text it does not apply to. The runs

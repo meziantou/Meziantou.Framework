@@ -1229,7 +1229,17 @@ namespace Meziantou.Framework
     public ref struct UnicodeWordEnumerator
     {
         public readonly System.Range Current { get => throw null; }
+        public readonly Meziantou.Framework.UnicodeWordKind CurrentKind { get => throw null; }
         public readonly Meziantou.Framework.UnicodeWordEnumerator GetEnumerator() => throw null;
         public bool MoveNext() => throw null;
+    }
+
+    public enum UnicodeWordKind
+    {
+        None = 0,
+        Number = 1,
+        Letter = 2,
+        Kana = 3,
+        Ideographic = 4,
     }
 }

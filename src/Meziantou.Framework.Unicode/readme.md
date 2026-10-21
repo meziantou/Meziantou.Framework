@@ -160,6 +160,20 @@ foreach (Range segment in Unicode.EnumerateWordBoundaries(text))
 
 Assert.Equal(["Hello", ",", " ", "world", "!"], segments);
 
+// The kind of each segment: whether it is a word (isWordLike in Intl.Segmenter)
+text = "I have 2 cats.";
+var words = new List<string>();
+var enumerator = Unicode.EnumerateWordBoundaries(text);
+while (enumerator.MoveNext())
+{
+    if (enumerator.CurrentKind is not UnicodeWordKind.None) // Number, Letter, Kana or Ideographic
+    {
+        words.Add(text[enumerator.Current]);
+    }
+}
+
+Assert.Equal(["I", "have", "2", "cats"], words);
+
 // Sentences: the spaces after the terminal punctuation belong to the sentence
 text = "It costs $3.50, i.e. not much. Really? Yes!";
 var sentences = new List<string>();
@@ -185,6 +199,11 @@ foreach (UnicodeLineBreak lineBreak in Unicode.EnumerateLineBreaks(text))
 Assert.Equal(["A ", "long ", "line\n (mandatory)", "of ", "text (mandatory)"], lines);
 ```
 <!-- endref -->
+
+`UnicodeWordEnumerator.CurrentKind` tells whether a segment is a word, as the rule status of ICU does for the
+`isWordLike` property of `Intl.Segmenter`: `None` for spaces, punctuation, symbols and emoji, else `Number`, `Letter`,
+`Kana` or `Ideographic`, from the last character of the segment that is not a combining mark or a format character. A
+low line takes the kind of the character before it (`a_` is a letter word, `1_` a number).
 
 `EnumerateSentenceBoundaries` applies the default rules, without a list of abbreviations: `Mr. Smith` is two
 sentences, while `e.g. the` (a full stop before a lowercase word), `U.S.A.` and `3.14` are not broken.

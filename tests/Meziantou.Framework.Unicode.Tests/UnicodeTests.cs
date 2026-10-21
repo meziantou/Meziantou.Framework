@@ -126,6 +126,20 @@ public sealed class UnicodeTests
 
         Assert.Equal(["Hello", ",", " ", "world", "!"], segments);
 
+        // The kind of each segment: whether it is a word (isWordLike in Intl.Segmenter)
+        text = "I have 2 cats.";
+        var words = new List<string>();
+        var enumerator = Unicode.EnumerateWordBoundaries(text);
+        while (enumerator.MoveNext())
+        {
+            if (enumerator.CurrentKind is not UnicodeWordKind.None) // Number, Letter, Kana or Ideographic
+            {
+                words.Add(text[enumerator.Current]);
+            }
+        }
+
+        Assert.Equal(["I", "have", "2", "cats"], words);
+
         // Sentences: the spaces after the terminal punctuation belong to the sentence
         text = "It costs $3.50, i.e. not much. Really? Yes!";
         var sentences = new List<string>();
@@ -1637,6 +1651,43 @@ public sealed class UnicodeTests
         }
 
         Assert.Equal(expected, segments.ToArray());
+    }
+
+    [Theory]
+    [InlineData("Hello, world!", new[] { "Hello", ",", " ", "world", "!" }, new[] { UnicodeWordKind.Letter, UnicodeWordKind.None, UnicodeWordKind.None, UnicodeWordKind.Letter, UnicodeWordKind.None })]
+    [InlineData("3.14 or 1,000", new[] { "3.14", " ", "or", " ", "1,000" }, new[] { UnicodeWordKind.Number, UnicodeWordKind.None, UnicodeWordKind.Letter, UnicodeWordKind.None, UnicodeWordKind.Number })]
+    // The kind is the one of the last character.
+    [InlineData("a1 1a can't", new[] { "a1", " ", "1a", " ", "can't" }, new[] { UnicodeWordKind.Number, UnicodeWordKind.None, UnicodeWordKind.Letter, UnicodeWordKind.None, UnicodeWordKind.Letter })]
+    [InlineData("snake_case42", new[] { "snake_case42" }, new[] { UnicodeWordKind.Number })]
+    // A low line takes the kind of the character before it, and is not a word on its own.
+    [InlineData("a_ 1_ _ __", new[] { "a_", " ", "1_", " ", "_", " ", "__" }, new[] { UnicodeWordKind.Letter, UnicodeWordKind.None, UnicodeWordKind.Number, UnicodeWordKind.None, UnicodeWordKind.None, UnicodeWordKind.None, UnicodeWordKind.Letter })]
+    [InlineData("\u30AB_", new[] { "\u30AB_" }, new[] { UnicodeWordKind.Kana })]
+    // Hebrew letters, and a Hebrew letter with a single quote (WB7a).
+    [InlineData("\u05D0\u05D1 \u05D2'", new[] { "\u05D0\u05D1", " ", "\u05D2'" }, new[] { UnicodeWordKind.Letter, UnicodeWordKind.None, UnicodeWordKind.Letter })]
+    // Kana, ideographs and Hangul.
+    [InlineData("\u30AB\u30BF\u30AB\u30CA", new[] { "\u30AB\u30BF\u30AB\u30CA" }, new[] { UnicodeWordKind.Kana })]
+    [InlineData("\u3053\u65E5\u3005", new[] { "\u3053", "\u65E5", "\u3005" }, new[] { UnicodeWordKind.Kana, UnicodeWordKind.Ideographic, UnicodeWordKind.Ideographic })]
+    [InlineData("\uD55C\uAD6D", new[] { "\uD55C\uAD6D" }, new[] { UnicodeWordKind.Letter })]
+    // A script written without spaces between words is a letter word, even without a dictionary.
+    [InlineData("\u0E20\u0E32", new[] { "\u0E20", "\u0E32" }, new[] { UnicodeWordKind.Letter, UnicodeWordKind.Letter })]
+    // The trailing marks are ignored (WB4), and a mark on its own is not a word.
+    [InlineData("e\u0301 \u0301", new[] { "e\u0301", " \u0301" }, new[] { UnicodeWordKind.Letter, UnicodeWordKind.None })]
+    [InlineData("\u0301e", new[] { "\u0301", "e" }, new[] { UnicodeWordKind.None, UnicodeWordKind.Letter })]
+    [InlineData("\U0001F600\U0001F1EB\U0001F1F7\r\n\u20AC", new[] { "\U0001F600", "\U0001F1EB\U0001F1F7", "\r\n", "\u20AC" }, new[] { UnicodeWordKind.None, UnicodeWordKind.None, UnicodeWordKind.None, UnicodeWordKind.None })]
+    public void EnumerateWordBoundaries_ReturnsTheKindOfEachSegment(string text, string[] expectedSegments, UnicodeWordKind[] expectedKinds)
+    {
+        var segments = new List<string>();
+        var kinds = new List<UnicodeWordKind>();
+        var enumerator = Unicode.EnumerateWordBoundaries(text);
+        Assert.Equal(UnicodeWordKind.None, enumerator.CurrentKind);
+        while (enumerator.MoveNext())
+        {
+            segments.Add(text[enumerator.Current]);
+            kinds.Add(enumerator.CurrentKind);
+        }
+
+        Assert.Equal(expectedSegments, segments.ToArray());
+        Assert.Equal(expectedKinds, kinds.ToArray());
     }
 
     [Theory]

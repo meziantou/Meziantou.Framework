@@ -45,6 +45,8 @@ internal static class PropertyTablesWriter
         var conjunct = await LoadEnumAsync("ucd/DerivedCoreProperties.txt", aliases, conjunctEnum, filter: "InCB");
         var word = await LoadEnumAsync("ucd/auxiliary/WordBreakProperty.txt", aliases, wordEnum, filter: null);
         var sentence = await LoadEnumAsync("ucd/auxiliary/SentenceBreakProperty.txt", aliases, sentenceEnum, filter: null);
+        var ideographic = await LoadBinaryAsync("ucd/PropList.txt", "Ideographic");
+        var (han, hiragana) = await LoadHanAndHiraganaAsync();
         var joiningType = await LoadEnumAsync("ucd/extracted/DerivedJoiningType.txt", aliases, joiningTypeEnum, filter: null);
         var joiningGroup = await LoadEnumAsync("ucd/extracted/DerivedJoiningGroup.txt", aliases, joiningGroupEnum, filter: null);
         var syllabic = await LoadEnumAsync("ucd/IndicSyllabicCategory.txt", aliases, syllabicEnum, filter: null);
@@ -142,8 +144,19 @@ internal static class PropertyTablesWriter
             (a UnicodeWordBreak).
             """);
         AppendBytes(tables, sizes, "SegmentationTuples", segmentationTuples.Bytes);
-        AppendTrie(tables, sizes, "SentenceBreak", sentence, """
-            Sentence_Break (bits 0-3, a UnicodeSentenceBreak); the other bits are 0.
+        var sentenceWord = new byte[ValueCount];
+        var wordNames = GetLongNamesByValue(wordEnum);
+        var lineBreakNames = GetLongNamesByValue(lineBreakEnum);
+        var graphemeNames = GetLongNamesByValue(graphemeEnum);
+        for (var i = 0; i < ValueCount; i++)
+        {
+            var kind = GetWordKind(i, (UnicodeCategory)generalCategory[i], wordNames[word[i]], lineBreakNames[lineBreak[i]], graphemeNames[grapheme[i]], ideographic[i], han[i], hiragana[i]);
+            sentenceWord[i] = (byte)(sentence[i] | ((int)kind << 4));
+        }
+
+        AppendTrie(tables, sizes, "SentenceBreak", sentenceWord, """
+            Sentence_Break (bits 0-3, a UnicodeSentenceBreak), then the UnicodeWordKind of a word that ends with the code
+            point (bits 4-6).
             """);
         AppendTrie(tables, sizes, "Joining", joining, """
             Index of a 2-byte entry of JoiningTuples: Joining_Type (a UnicodeJoiningType), then Joining_Group
@@ -411,6 +424,72 @@ internal static class PropertyTablesWriter
         }
 
         return sb.ToString();
+    }
+
+    /// <summary>Gets the kind of a word segment that ends with a code point, as the rule status values of ICU give it.</summary>
+    /// <remarks>
+    /// The classes are those of the rules of ICU (icu4c/source/data/brkitr/rules/word.txt), where the status of a word
+    /// is the one of its last character: <c>$Numeric</c> is a number (100), <c>$ALetterPlus</c>, <c>$Hebrew_Letter</c>
+    /// and <c>$HangulSyllable</c> are letters (200), <c>$Katakana</c>, <c>$Hiragana</c> and <c>$Ideographic</c>
+    /// are kana and ideographs (400), and a code point that is in several classes takes the greatest status.
+    /// <c>$ALetterPlus</c> is ALetter without the Han, Hiragana, Katakana and Hangul syllables, with the Complex_Context
+    /// characters that are not Extend or Control. The letters of the Han script that are not ideographs, such as the
+    /// iteration mark U+3005, are ideographs too: ICU groups them with the ideographs by its dictionary.
+    /// </remarks>
+    private static UnicodeWordKind GetWordKind(int codePoint, UnicodeCategory category, string wordBreak, string lineBreak, string grapheme, bool ideographic, bool han, bool hiragana)
+    {
+        if (wordBreak is "Katakana" || hiragana)
+            return UnicodeWordKind.Kana;
+
+        var isLetter = category is UnicodeCategory.UppercaseLetter or UnicodeCategory.LowercaseLetter or UnicodeCategory.TitlecaseLetter or UnicodeCategory.ModifierLetter or UnicodeCategory.OtherLetter;
+        if (ideographic || (han && isLetter))
+            return UnicodeWordKind.Ideographic;
+
+        if (codePoint is >= 0xAC00 and <= 0xD7A3)
+            return UnicodeWordKind.Letter;
+
+        if (wordBreak is "ALetter" or "Hebrew_Letter" && !han)
+            return UnicodeWordKind.Letter;
+
+        if (lineBreak is "Complex_Context" && wordBreak is not "Extend" && grapheme is not "Control")
+            return UnicodeWordKind.Letter;
+
+        if (wordBreak is "Numeric")
+            return UnicodeWordKind.Number;
+
+        return UnicodeWordKind.None;
+    }
+
+    private static string[] GetLongNamesByValue(GeneratedEnum target)
+    {
+        var result = new string[target.Members.Max(member => member.Value) + 1];
+        foreach (var member in target.Members)
+        {
+            result[member.Value] = member.LongName;
+        }
+
+        return result;
+    }
+
+    private static async Task<(bool[] Han, bool[] Hiragana)> LoadHanAndHiraganaAsync()
+    {
+        var han = new bool[ValueCount];
+        var hiragana = new bool[ValueCount];
+        foreach (var line in Ucd.ParseLines(await Ucd.DownloadAsync("ucd/Scripts.txt")))
+        {
+            if (line.IsMissing)
+                continue;
+
+            var target = line.Fields[0] switch
+            {
+                "Han" => han,
+                "Hiragana" => hiragana,
+                _ => null,
+            };
+            target?.AsSpan(line.Start, line.End - line.Start + 1).Fill(value: true);
+        }
+
+        return (han, hiragana);
     }
 
     private static void RequireBelow(byte[] values, int limit, string property)

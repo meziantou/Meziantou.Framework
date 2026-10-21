@@ -57,7 +57,7 @@ internal static class NumberFormatting
     }
 
     /// <summary>
-    /// Gets the shortest decimal digits that round-trip a positive finite number: value = digits \u00D7 10^(n \u2212 digits.Length),
+    /// Gets the shortest decimal digits that round-trip a positive finite number: value = digits x 10^(n \u2212 digits.Length),
     /// with no leading nor trailing zero in the digits.
     /// </summary>
     public static void GetShortestDigits(double value, out string digits, out int n)
@@ -75,7 +75,7 @@ internal static class NumberFormatting
         var integerDigits = pointIndex >= 0 ? pointIndex : text.Length;
         var allDigits = pointIndex >= 0 ? string.Concat(text.AsSpan(0, pointIndex), text.AsSpan(pointIndex + 1)) : text;
 
-        // value = 0.allDigits \u00D7 10^(integerDigits + exponent)
+        // value = 0.allDigits x 10^(integerDigits + exponent)
         var leadingZeros = 0;
         while (leadingZeros < allDigits.Length - 1 && allDigits[leadingZeros] == '0')
         {

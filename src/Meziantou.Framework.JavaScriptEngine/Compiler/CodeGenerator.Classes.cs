@@ -4,7 +4,7 @@ namespace Meziantou.Framework.JavaScriptEngine.Compiler;
 
 internal sealed partial class CodeGenerator
 {
-    /// <summary>ClassDefinitionEvaluation: \u2192 constructor (https://tc39.es/ecma262/#sec-runtime-semantics-classdefinitionevaluation).</summary>
+    /// <summary>ClassDefinitionEvaluation: -> constructor (https://tc39.es/ecma262/#sec-runtime-semantics-classdefinitionevaluation).</summary>
     private void EmitClass(ClassNode node, string name)
     {
         _builder.SetPosition(node.Start);

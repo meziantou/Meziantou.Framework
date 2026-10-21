@@ -66,7 +66,7 @@ internal sealed partial class CodeGenerator
         _builder.Emit(OpCode.Pop);
     }
 
-    /// <summary>Evaluates the base of a reference while the value is on the stack: value \u2192 base value.</summary>
+    /// <summary>Evaluates the base of a reference while the value is on the stack: value -> base value.</summary>
     private TargetKind EmitReferenceBaseAbove(Node target)
     {
         var value = _function.AllocateRegister();
@@ -76,7 +76,7 @@ internal sealed partial class CodeGenerator
         return kind;
     }
 
-    /// <summary>value \u2192 value or default: evaluates the default when the value is undefined.</summary>
+    /// <summary>value -> value or default: evaluates the default when the value is undefined.</summary>
     private void EmitDefaultValue(AssignmentPattern assignment)
     {
         var hasValue = _builder.DefineLabel();
@@ -262,13 +262,13 @@ internal sealed partial class CodeGenerator
     // Explicit resource management and async iterators (completed by the corresponding milestones)
     // ------------------------------------------------------------------------------------------------------------------
 
-    /// <summary>AddDisposableResource for a using declaration: value \u2192 value.</summary>
+    /// <summary>AddDisposableResource for a using declaration: value -> value.</summary>
     private void EmitAddDisposableResource(bool isAsync)
     {
         _builder.Emit(OpCode.AddDisposableResource, isAsync ? 1 : 0);
     }
 
-    /// <summary>AsyncIteratorClose for a normal completion: iteratorRecord \u2192.</summary>
+    /// <summary>AsyncIteratorClose for a normal completion: iteratorRecord ->.</summary>
     private void EmitAsyncIteratorClose()
     {
         // return() is called and awaited, its result must be an object
@@ -281,7 +281,7 @@ internal sealed partial class CodeGenerator
         _builder.MarkLabel(done);
     }
 
-    /// <summary>AsyncIteratorClose for a throw completion: iteratorRecord \u2192 (the errors are ignored; the caller rethrows).</summary>
+    /// <summary>AsyncIteratorClose for a throw completion: iteratorRecord -> (the errors are ignored; the caller rethrows).</summary>
     private void EmitAsyncIteratorCloseOnThrow()
     {
         var done = _builder.DefineLabel();

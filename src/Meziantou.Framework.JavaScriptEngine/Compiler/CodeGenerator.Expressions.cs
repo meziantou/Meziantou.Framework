@@ -213,7 +213,7 @@ internal sealed partial class CodeGenerator
         }
     }
 
-    /// <summary>Evaluates an anonymous function definition whose name is the property key on the stack (computed keys): key \u2192 key function.</summary>
+    /// <summary>Evaluates an anonymous function definition whose name is the property key on the stack (computed keys): key -> key function.</summary>
     private void EmitNamedEvaluationWithKeyOnStack(Node expression, int prefix)
     {
         EmitNamedEvaluation(expression, "");
@@ -341,7 +341,7 @@ internal sealed partial class CodeGenerator
         }
     }
 
-    /// <summary>A method, getter or setter of an object literal: object \u2192 object.</summary>
+    /// <summary>A method, getter or setter of an object literal: object -> object.</summary>
     private void EmitMethodDefinition(Property property)
     {
         var function = ((FunctionExpression)property.Value).Function;
@@ -671,7 +671,7 @@ internal sealed partial class CodeGenerator
         }
     }
 
-    /// <summary>Puts the value on the stack in a reference whose base is below it (base value \u2192 value).</summary>
+    /// <summary>Puts the value on the stack in a reference whose base is below it (base value -> value).</summary>
     private void EmitPutReference(Node target, TargetKind kind)
     {
         _builder.SetPosition(target.Start);
@@ -1343,7 +1343,7 @@ internal sealed partial class CodeGenerator
         _builder.Emit(OpCode.LoadLocal, received);
         _builder.Emit(OpCode.LoadLocal, kind);
 
-        // (iterator, received, kind) \u2192 result, or undefined when a return resumption finds no return method
+        // (iterator, received, kind) -> result, or undefined when a return resumption finds no return method
         _builder.Emit(OpCode.IteratorDelegateStep, isAsync ? 1 : 0);
         if (isAsync)
         {

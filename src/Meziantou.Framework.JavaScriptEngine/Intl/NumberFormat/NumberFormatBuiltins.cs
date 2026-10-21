@@ -77,7 +77,7 @@ internal static class NumberFormatBuiltins
     }
 
     /// <summary>InitializeNumberFormat(numberFormat, locales, options)</summary>
-    private static void Initialize(JsNumberFormatObject numberFormat, JsValue locales, JsValue optionsValue)
+    internal static void Initialize(JsNumberFormatObject numberFormat, JsValue locales, JsValue optionsValue)
     {
         var requestedLocales = IntlOperations.CanonicalizeLocaleList(locales);
         var options = IntlOperations.CoerceOptionsToObject(optionsValue);

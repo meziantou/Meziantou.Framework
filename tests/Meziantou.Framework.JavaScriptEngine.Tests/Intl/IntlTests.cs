@@ -194,6 +194,26 @@ public sealed class IntlTests
             """));
     }
 
+    [Theory]
+    [InlineData("en", "{}", -1, "day", "1 day ago")]
+    [InlineData("en", "{ numeric: 'auto' }", -1, "day", "yesterday")]
+    [InlineData("en", "{ numeric: 'auto' }", -0, "days", "today")]
+    [InlineData("en", "{ numeric: 'auto', style: 'short' }", 1, "quarter", "next qtr.")]
+    [InlineData("es", "{ numeric: 'auto' }", -2, "day", "anteayer")]
+    [InlineData("en", "{}", 1234.5, "seconds", "in 1,234.5 seconds")]
+    [InlineData("pl", "{}", 5, "year", "za 5 lat")]
+    [InlineData("en-u-nu-arab", "{ style: 'narrow' }", 2, "hour", "in \u0662h")]
+    public void RelativeTimeFormat(string locale, string options, double value, string unit, string expected)
+    {
+        Assert.Equal(expected, Evaluate($"new Intl.RelativeTimeFormat('{locale}', {options}).format({value.ToString(System.Globalization.CultureInfo.InvariantCulture)}, '{unit}')"));
+    }
+
+    [Fact]
+    public void RelativeTimeFormat_FormatToParts()
+    {
+        Assert.Equal("integer:1:day|group:,:day|integer:234:day|literal: days ago:", Evaluate("new Intl.RelativeTimeFormat('en').formatToParts(-1234, 'day').map(p => p.type + ':' + p.value + ':' + (p.unit ?? '')).join('|')"));
+    }
+
     [Fact]
     public void DefaultLocale()
     {

@@ -325,6 +325,15 @@ public interface IJsAdapter<TValue>
     }
 
     /// <summary>
+    /// Makes an object an immutable prototype exotic object (https://tc39.es/ecma262/#sec-immutable-prototype-exotic-objects),
+    /// if the engine supports it: its [[SetPrototypeOf]] only accepts its current prototype. A proxy is left unchanged (its
+    /// handler defines its [[SetPrototypeOf]]). Returns false when the engine does not support it: the bindings then replace
+    /// the built-in functions that change prototypes (see <see cref="WebIdlRealm{TAdapter, TValue}"/>). The default
+    /// implementation returns false.
+    /// </summary>
+    bool TryMakePrototypeImmutable(TValue obj) => false;
+
+    /// <summary>
     /// Sets the [[Stack]] internal slot of an error (https://tc39.es/proposal-error-stack-accessor/), read by the
     /// <c>Error.prototype.stack</c> accessor: the stack of a deserialized error
     /// (https://html.spec.whatwg.org/multipage/structured-data.html#structureddeserialize). Returns false when the engine

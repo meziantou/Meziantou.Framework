@@ -242,7 +242,8 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     /// <summary>
     /// https://webidl.spec.whatwg.org/#es-immutable-prototype: the global object of a [Global] interface, its interface
     /// prototype object and the interface prototype objects of its inherited interfaces are immutable prototype exotic
-    /// objects. The engines do not let the host define the [[SetPrototypeOf]] internal method of these objects, so the
+    /// objects. An engine that supports them marks the objects (<see cref="IJsAdapter{TValue}.TryMakePrototypeImmutable"/>).
+    /// The other engines do not let the host define the [[SetPrototypeOf]] internal method of these objects, so the
     /// built-in functions that call it (<c>Object.setPrototypeOf()</c>, <c>Reflect.setPrototypeOf()</c> and the setter of
     /// <c>Object.prototype.__proto__</c>) are replaced in the realm by functions that implement SetImmutablePrototype
     /// (https://tc39.es/ecma262/#sec-set-immutable-prototype) for the objects of the prototype chains of the global objects
@@ -250,6 +251,18 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     /// </summary>
     private void DefineImmutablePrototypes()
     {
+        // An engine that supports the immutable prototype exotic objects marks the objects of the prototype chain (the
+        // named properties object is a proxy whose setPrototypeOf trap implements SetImmutablePrototype)
+        if (Adapter.TryMakePrototypeImmutable(Global))
+        {
+            for (var prototype = Adapter.GetPrototypeOf(Global); !Adapter.IsNull(prototype); prototype = Adapter.GetPrototypeOf(prototype))
+            {
+                Adapter.TryMakePrototypeImmutable(prototype);
+            }
+
+            return;
+        }
+
         var adapter = Adapter;
         var objects = Agent.ImmutablePrototypeObjects ??= EvaluateBuiltIn("new WeakSet()");
         var support = Adapter.Call(EvaluateBuiltIn("""

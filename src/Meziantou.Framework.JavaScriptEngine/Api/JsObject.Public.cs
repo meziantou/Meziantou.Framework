@@ -57,6 +57,20 @@ public partial class JsObject
     /// <summary>[[SetPrototypeOf]]: returns false when the prototype cannot be changed.</summary>
     public bool SetPrototype(JsObject? prototype) => SetPrototypeOf(prototype);
 
+    /// <summary>
+    /// Makes the object an immutable prototype exotic object (https://tc39.es/ecma262/#sec-immutable-prototype-exotic-objects):
+    /// its [[SetPrototypeOf]] is SetImmutablePrototype, which only accepts the current prototype (e.g. the global object of
+    /// a window and its prototype chain).
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The object is a proxy: its handler defines its [[SetPrototypeOf]].</exception>
+    public void MakePrototypeImmutable()
+    {
+        if (this is JsProxy)
+            throw new InvalidOperationException("The [[SetPrototypeOf]] of a proxy is defined by its handler");
+
+        Flags |= ObjectFlags.ImmutablePrototype;
+    }
+
     /// <summary>[[IsExtensible]]</summary>
     public bool GetIsExtensible() => IsExtensible();
 

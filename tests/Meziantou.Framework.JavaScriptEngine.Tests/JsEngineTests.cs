@@ -70,6 +70,28 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void MakePrototypeImmutable()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        var prototype = realm.CreateObject();
+        var obj = realm.CreateObject();
+        Assert.True(obj.SetPrototype(prototype));
+        obj.MakePrototypeImmutable();
+        Assert.True(obj.SetPrototype(prototype));
+        Assert.False(obj.SetPrototype(null));
+        Assert.Same(prototype, obj.GetPrototype());
+        realm.GlobalObject.SetProperty("obj", obj);
+        Assert.Equal("TypeError,false,true", realm.Execute("""
+            var results = [];
+            try { Object.setPrototypeOf(obj, {}); } catch (e) { results.push(e.name); }
+            results.push(Reflect.setPrototypeOf(obj, null), Reflect.setPrototypeOf(obj, Object.getPrototypeOf(obj)));
+            results.join()
+            """).AsString());
+    }
+
+    [Fact]
     public void ReserveProperties()
     {
         using var engine = new JsEngine();

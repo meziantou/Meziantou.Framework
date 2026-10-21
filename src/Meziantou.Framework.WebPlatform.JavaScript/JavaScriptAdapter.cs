@@ -423,6 +423,16 @@ internal readonly struct JavaScriptAdapter(JavaScriptAdapterState state) : IJsAd
 
     public void ReserveProperties(object obj, int count) => ((JsObject)obj).ReserveProperties(count);
 
+    public bool TryMakePrototypeImmutable(object obj)
+    {
+        if (obj is not JsProxy)
+        {
+            ((JsObject)obj).MakePrototypeImmutable();
+        }
+
+        return true;
+    }
+
     public void DefineLazyAccessorProperty(object obj, object key, IJsLazyAccessor<object> factory, bool hasSetter, bool enumerable, bool configurable)
     {
         ArgumentNullException.ThrowIfNull(factory);

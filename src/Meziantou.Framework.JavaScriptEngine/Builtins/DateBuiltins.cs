@@ -53,6 +53,7 @@ internal static class DateBuiltins
         realm.DefineMethod(prototype, "toDateString", 0, ToDateString);
         realm.DefineMethod(prototype, "toISOString", 0, ToIsoString);
         realm.DefineMethod(prototype, "toJSON", 1, ToJson);
+        realm.DefineMethod(prototype, "toTemporalInstant", 0, ToTemporalInstant);
 
         // Without Intl, the locale-sensitive methods use the formats of toString (ECMA-402 replaces them)
         realm.DefineMethod(prototype, "toLocaleDateString", 0, ToDateString);
@@ -87,6 +88,14 @@ internal static class DateBuiltins
     }
 
     private static double ThisTimeValue(JsValue value) => ThisDateObject(value).DateValue;
+
+    /// <summary>Date.prototype.toTemporalInstant()</summary>
+    private static JsValue ToTemporalInstant(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
+    {
+        var t = ThisTimeValue(thisValue);
+        var ns = BigIntOperations.NumberToBigInt(t) * 1_000_000;
+        return TemporalOperations.CreateTemporalInstant((Int128)ns);
+    }
 
     /// <summary>Date(...values)</summary>
     private static JsValue Construct(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)

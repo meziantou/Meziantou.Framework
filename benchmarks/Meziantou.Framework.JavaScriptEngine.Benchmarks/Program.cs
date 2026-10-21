@@ -7,6 +7,13 @@ using Meziantou.Framework.JavaScriptEngine.Benchmarks;
 //   dotnet run -c Release -f net10.0 -- [BenchmarkDotNet arguments]   runs the benchmarks
 //   dotnet run -c Release -f net10.0 -- quick [workload] [iterations]  times the workloads with both engines (a quick, noisy comparison)
 //   dotnet run -c Release -f net10.0 -- profile <workload> <seconds>   runs a workload in a loop (to attach a profiler)
+//   dotnet run -c Release -f net10.0 -- dump <workload or file>         prints the bytecode of a workload
+if (args is ["dump", var dumpWorkload])
+{
+    Console.WriteLine(Disassembler.Disassemble(Workloads.All.TryGetValue(dumpWorkload, out var dumpCode) ? dumpCode : File.ReadAllText(dumpWorkload)));
+    return 0;
+}
+
 if (args is ["profile", var workload, var seconds])
 {
     using var engine = new JsEngine();

@@ -742,6 +742,48 @@ public sealed class BinaryDataTests
         Assert.Equal("ok", result);
     }
 
+    [Fact]
+    public void Atomics_WaitAsync()
+    {
+        using var context = new FundamentalsTestContext();
+
+        // A minimal Promise constructor: the executor receives a resolve function that records the value
+        var resolved = new List<string>();
+        var promiseConstructor = context.Function((_, args, _) =>
+        {
+            var resolve = context.Function((_, values) =>
+            {
+                resolved.Add(values[0].AsString());
+                return JsValue.Undefined;
+            });
+            args[0].AsObject().Call(JsValue.Undefined, [resolve, context.Function((_, _) => JsValue.Undefined)]);
+            return context.NewObject();
+        }, "Promise", 1, isConstructor: true);
+        context.Intrinsics.AddGlobal("Promise", promiseConstructor);
+
+        var shared = New(context, "Int32Array", New(context, "SharedArrayBuffer", 8));
+        var result = context.CallStatic("Atomics", "waitAsync", shared, 0, 0);
+        Assert.True(Get(result, "async").AsBoolean());
+        Assert.True(Get(result, "value").IsObject);
+        Assert.Equal(1, context.Engine.PendingAtomicsWaitAsyncCount);
+        Assert.Equal(1, context.CallStatic("Atomics", "notify", shared, 0).AsNumber());
+        Assert.True(context.Engine.RunAtomicsJobs());
+        Assert.Equal(["ok"], resolved);
+
+        result = context.CallStatic("Atomics", "waitAsync", shared, 1, 0, 1);
+        Assert.True(Get(result, "async").AsBoolean());
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (!context.Engine.HasPendingAtomicsJobs && DateTime.UtcNow < deadline)
+        {
+            Thread.Sleep(1);
+        }
+
+        Assert.True(context.Engine.RunAtomicsJobs());
+        Assert.Equal(["ok", "timed-out"], resolved);
+        Assert.Equal(0, context.Engine.PendingAtomicsWaitAsyncCount);
+        Assert.Equal(0, context.CallStatic("Atomics", "notify", shared, 1).AsNumber());
+    }
+
     // ------------------------------------------------------------------------------------------------------------------
     // Uint8Array base64 and hex
     // ------------------------------------------------------------------------------------------------------------------

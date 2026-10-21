@@ -355,9 +355,21 @@ public sealed class JsParserTests
     [InlineData("a, a", "'use strict';")]
     [InlineData("a = 1", "'use strict';")]
     [InlineData("", "super.x")]
+    [InlineData("-->", "")]
     public void DynamicFunction_Errors(string parameters, string body)
     {
         Assert.Throws<JsSyntaxErrorException>(() => JsParser.ParseDynamicFunction(parameters, body, isAsync: false, isGenerator: false));
+    }
+
+    [Theory]
+    [InlineData("\n-->", "")]
+    [InlineData("<!--", "")]
+    [InlineData("", "-->")]
+    [InlineData("a, a", "")]
+    [InlineData("a,", "return a;")]
+    public void DynamicFunction_Valid(string parameters, string body)
+    {
+        JsParser.ParseDynamicFunction(parameters, body, isAsync: false, isGenerator: false);
     }
 
     [Fact]

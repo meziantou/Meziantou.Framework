@@ -63,10 +63,11 @@ internal sealed partial class Parser
             return cached;
 
         string? result = null;
-        var tree = RegexSyntaxTree.ParseText(pattern, new RegexParseOptions(RegexDialect.JavaScript) { PatternOptions = options, MaxRecursionDepth = 512 });
+        var tree = RegexSyntaxTree.ParseText(pattern, new RegexParseOptions(RegexDialect.JavaScript) { PatternOptions = options });
         foreach (var diagnostic in tree.GetDiagnostics())
         {
-            // REGEX0200: the pattern is nested too deeply to be checked (the rest is not validated)
+            // REGEX0200: the pattern is nested too deeply to be checked on the stack of the parser (the rest is not
+            // validated here: the RegExp constructor reports the error at runtime)
             if (diagnostic.Severity == DiagnosticSeverity.Error && diagnostic.Id != "REGEX0200")
             {
                 result = diagnostic.Message;

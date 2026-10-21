@@ -1425,6 +1425,31 @@ internal sealed partial class CodeGenerator
         _builder.Emit(OpCode.Yield);
         _builder.Emit(OpCode.StoreLocal, kind);
         _builder.Emit(OpCode.StoreLocal, received);
+        if (isAsync)
+        {
+            // AsyncGeneratorUnwrapYieldResumption: the value of a return resumption is awaited; when the await throws, the
+            // resumption is a throw completion
+            var depth = _builder.StackDepth;
+            _builder.Emit(OpCode.LoadLocal, kind);
+            _builder.EmitPushNumber(2);
+            _builder.Emit(OpCode.StrictEqual);
+            _builder.EmitJump(OpCode.JumpIfFalse, loopLabel);
+            var regionStart = _builder.Position;
+            _builder.Emit(OpCode.LoadLocal, received);
+            _builder.Emit(OpCode.Await);
+            _builder.Emit(OpCode.StoreLocal, received);
+            var regionEnd = _builder.Position;
+            _builder.EmitJump(OpCode.Jump, loopLabel);
+
+            var awaitThrew = _builder.DefineLabel();
+            _builder.SetLabelDepth(awaitThrew, depth + 1);
+            _builder.MarkLabel(awaitThrew);
+            _builder.AddHandler(regionStart, regionEnd, awaitThrew, depth, environmentRegister: -1);
+            _builder.Emit(OpCode.StoreLocal, received);
+            _builder.EmitPushNumber(1);
+            _builder.Emit(OpCode.StoreLocal, kind);
+        }
+
         _builder.EmitJump(OpCode.Jump, loopLabel);
 
         // A return resumption without a return method returns the received value

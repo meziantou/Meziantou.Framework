@@ -118,6 +118,30 @@ public sealed class InterpreterTests
     }
 
     [Fact]
+    public void AsyncGenerator_YieldStarAwaitsTheReturnValue()
+    {
+        // AsyncGeneratorUnwrapYieldResumption: the value of a return resumption is awaited before the inner return method is looked up
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        realm.Execute("""
+            var log = [];
+            var inner = { [Symbol.asyncIterator]() { return this; }, next() { return { done: false }; }, get return() { log.push('get return'); } };
+            async function* f() { yield* inner; }
+            var it = f();
+            it.next();
+            it.return({ get then() { log.push('get then'); } });
+            var rejected = { [Symbol.asyncIterator]() { return this; }, next() { return { done: false }; }, throw(e) { log.push('throw ' + e); return { done: true, value: 'caught' }; } };
+            async function* g() { return yield* rejected; }
+            var it2 = g();
+            it2.next();
+            it2.return(Promise.reject('error')).then(r => log.push(r.value));
+            """);
+        engine.RunJobs();
+        using var scope = engine.Enter();
+        Assert.Equal("get then,get return,get then,throw error,caught", realm.Execute("log.join()").AsString());
+    }
+
+    [Fact]
     public void ThrowFromScript()
     {
         using var engine = new JsEngine();

@@ -1,5 +1,3 @@
-language/statements/async-generator/yield-star-return-then-getter-ticks.js:sloppy
-language/statements/async-generator/yield-star-return-then-getter-ticks.js:strict
 language/statements/await-using/gets-initializer-Symbol.dispose-after-Symbol.asyncDispose-is-null.js:sloppy
 language/statements/await-using/gets-initializer-Symbol.dispose-after-Symbol.asyncDispose-is-null.js:strict
 language/statements/await-using/gets-initializer-Symbol.dispose-after-Symbol.asyncDispose-is-undefined.js:sloppy

@@ -5,6 +5,8 @@
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="Corpus/*.jsonl" />
+    <!-- Test data of CLDR (common/testData and common/uca of the CLDR release) -->
+    <EmbeddedResource Include="Intl/TestData/*.gz" LogicalName="Intl.TestData.%(Filename)%(Extension)" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.JavaScriptEngine/Meziantou.Framework.JavaScriptEngine.csproj" />

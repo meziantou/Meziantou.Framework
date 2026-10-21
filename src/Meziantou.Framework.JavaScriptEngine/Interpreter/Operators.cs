@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Meziantou.Framework.JavaScriptEngine.Compiler;
 
 namespace Meziantou.Framework.JavaScriptEngine.Interpreter;
@@ -89,7 +90,7 @@ internal static class Operators
             OpCode.Subtract => left - right,
             OpCode.Multiply => left * right,
             OpCode.Divide => left / right,
-            OpCode.Modulo => left % right,
+            OpCode.Modulo => Modulo(left, right),
             OpCode.Exponentiate => Exponentiate(left, right),
             OpCode.LeftShift => JsOperations.DoubleToInt32(left) << (int)((uint)JsOperations.DoubleToInt32(right) & 0x1F),
             OpCode.RightShift => JsOperations.DoubleToInt32(left) >> (int)((uint)JsOperations.DoubleToInt32(right) & 0x1F),
@@ -186,6 +187,22 @@ internal static class Operators
 
         // >> rounds towards negative infinity (BigInteger >> does it for the negative values)
         return value >> (int)right;
+    }
+
+    /// <summary>The remainder of two numbers (the integer remainder when both are positive 32-bit integers: the floating-point one is a call to fmod).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static double Modulo(double left, double right)
+    {
+        // A positive dividend: the result is not negative (a negative dividend or -0 may give -0)
+        if (left > 0 && right > 0 && left <= int.MaxValue && right <= int.MaxValue)
+        {
+            var leftInteger = (int)left;
+            var rightInteger = (int)right;
+            if (leftInteger == left && rightInteger == right)
+                return leftInteger % rightInteger;
+        }
+
+        return left % right;
     }
 
     public static JsValue Negate(JsValue value)

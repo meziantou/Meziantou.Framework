@@ -409,7 +409,7 @@ internal static partial class JsInterpreter
                         sp--;
                         if (left.IsNumber && right.IsNumber)
                         {
-                            JsValue.StoreNumber(ref values[sp - 1], left.NumberValue % right.NumberValue);
+                            JsValue.StoreNumber(ref values[sp - 1], Operators.Modulo(left.NumberValue, right.NumberValue));
                         }
                         else
                         {

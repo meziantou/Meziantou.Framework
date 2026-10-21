@@ -1,0 +1,15 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <NoWarn>$(NoWarn);CA1515;CA1822;CA1001;CA2007;CA1303;CA5394</NoWarn>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+    <PackageReference Include="Jint" Version="4.16.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.JavaScriptEngine\Meziantou.Framework.JavaScriptEngine.csproj" />
+  </ItemGroup>
+</Project>

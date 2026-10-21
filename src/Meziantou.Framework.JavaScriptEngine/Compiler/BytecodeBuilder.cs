@@ -19,6 +19,12 @@ internal sealed class BytecodeBuilder
     private readonly List<(int Position, int Label)> _fixups = [];
     private int _lastPositionOffset = -1;
 
+    // The starts of the last three instructions (the last one first) and the position of the last marked label, for the peephole optimizations
+    private int _instruction1 = -1;
+    private int _instruction2 = -1;
+    private int _instruction3 = -1;
+    private int _lastLabelPosition = -1;
+
     public int StackDepth { get; set; }
 
     public int MaxStack { get; private set; }
@@ -86,8 +92,55 @@ internal sealed class BytecodeBuilder
     public void Emit(OpCode op)
     {
         Debug.Assert(GetOperandCount(op) == 0, $"{op} has operands");
+        if (op == OpCode.Pop && TryRemoveDiscardedValue())
+            return;
+
         EmitCore(op, 0);
     }
+
+    /// <summary>
+    /// The value of an assignment or an update whose result is discarded (an expression statement, the update of a for
+    /// statement) is not duplicated: <c>Dup; Store; Pop</c> is <c>Store</c>, and <c>Dup; Increment; Store; Pop</c> (a postfix
+    /// update) is <c>Increment; Store</c>. No jump targets the removed instructions.
+    /// </summary>
+    private bool TryRemoveDiscardedValue()
+    {
+        if (_instruction1 < 0 || _instruction2 < 0 || _lastLabelPosition > _instruction2 || !IsSimpleStore((OpCode)_code[_instruction1]))
+            return false;
+
+        int dupPosition;
+        if ((OpCode)_code[_instruction2] == OpCode.Dup)
+        {
+            dupPosition = _instruction2;
+            _instruction2 = _instruction3;
+        }
+        else if ((OpCode)_code[_instruction2] is OpCode.Increment or OpCode.Decrement && _instruction3 >= 0 && (OpCode)_code[_instruction3] == OpCode.Dup && _lastLabelPosition <= _instruction3)
+        {
+            dupPosition = _instruction3;
+        }
+        else
+        {
+            return false;
+        }
+
+        _code.RemoveAt(dupPosition);
+        _instruction1--;
+        if (_instruction2 > dupPosition)
+        {
+            _instruction2--;
+        }
+
+        _instruction3 = -1;
+        for (var i = _positions.Count - 2; i >= 0 && _positions[i] > dupPosition; i -= 2)
+        {
+            _positions[i]--;
+        }
+
+        StackDepth--;
+        return true;
+    }
+
+    private static bool IsSimpleStore(OpCode op) => op is OpCode.StoreLocal or OpCode.StoreLocalChecked or OpCode.StoreContext or OpCode.StoreContextChecked;
 
     public void Emit(OpCode op, int operand)
     {
@@ -115,6 +168,9 @@ internal sealed class BytecodeBuilder
 
     private void EmitCore(OpCode op, int firstOperand)
     {
+        _instruction3 = _instruction2;
+        _instruction2 = _instruction1;
+        _instruction1 = _code.Count;
         _code.Add((int)op);
         StackDepth += GetStackEffect(op, firstOperand);
         Debug.Assert(StackDepth >= 0, $"Negative stack depth after {op}");
@@ -159,6 +215,7 @@ internal sealed class BytecodeBuilder
     public void MarkLabel(Label label)
     {
         _labelPositions[label.Id] = _code.Count;
+        _lastLabelPosition = _code.Count;
         var depth = _labelDepths[label.Id];
         if (IsUnreachable && depth >= 0)
         {

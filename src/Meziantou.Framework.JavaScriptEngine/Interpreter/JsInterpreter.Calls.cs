@@ -489,10 +489,11 @@ internal static partial class JsInterpreter
         elements.AddField(name, value);
     }
 
-    private static PrivateName GetPrivateName(Frame frame, JsValue[] values, ref int sp, int depth, int slot)
+    /// <summary>Gets a private name: from the top of the stack when the depth is negative (the caller pops it), else from an environment slot.</summary>
+    private static PrivateName GetPrivateName(Frame frame, JsValue[] values, int sp, int depth, int slot)
     {
         if (depth < 0)
-            return ((PrivateNameCell)values[--sp].Cell!).Name;
+            return ((PrivateNameCell)values[sp - 1].Cell!).Name;
 
         return ((PrivateNameCell)GetEnvironment(frame.Environment, depth).Slots[slot].Cell!).Name;
     }

@@ -454,9 +454,33 @@ internal static partial class JsInterpreter
                     }
 
                 case OpCode.Subtract:
+                    {
+                        sp--;
+                        ref var left = ref values[sp - 1];
+                        var right = values[sp];
+                        left = left.IsNumber && right.IsNumber ? new JsValue(left.NumberValue - right.NumberValue) : Operators.Binary(op, left, right);
+                        break;
+                    }
+
                 case OpCode.Multiply:
-                case OpCode.Divide:
+                    {
+                        sp--;
+                        ref var left = ref values[sp - 1];
+                        var right = values[sp];
+                        left = left.IsNumber && right.IsNumber ? new JsValue(left.NumberValue * right.NumberValue) : Operators.Binary(op, left, right);
+                        break;
+                    }
+
                 case OpCode.Modulo:
+                    {
+                        sp--;
+                        ref var left = ref values[sp - 1];
+                        var right = values[sp];
+                        left = left.IsNumber && right.IsNumber ? new JsValue(left.NumberValue % right.NumberValue) : Operators.Binary(op, left, right);
+                        break;
+                    }
+
+                case OpCode.Divide:
                 case OpCode.Exponentiate:
                 case OpCode.LeftShift:
                 case OpCode.RightShift:
@@ -489,21 +513,48 @@ internal static partial class JsInterpreter
                     values[sp - 1] = JsValue.FromBoolean(!JsOperations.IsStrictlyEqual(values[sp - 1], values[sp]));
                     break;
                 case OpCode.LessThan:
-                    sp--;
-                    values[sp - 1] = Operators.LessThan(values[sp - 1], values[sp], leftFirst: true) is true ? JsValue.True : JsValue.False;
-                    break;
+                    {
+                        sp--;
+                        ref var left = ref values[sp - 1];
+                        var right = values[sp];
+                        left = left.IsNumber && right.IsNumber
+                            ? (left.NumberValue < right.NumberValue ? JsValue.True : JsValue.False)
+                            : (Operators.LessThan(left, right, leftFirst: true) is true ? JsValue.True : JsValue.False);
+                        break;
+                    }
+
                 case OpCode.GreaterThan:
-                    sp--;
-                    values[sp - 1] = Operators.LessThan(values[sp], values[sp - 1], leftFirst: false) is true ? JsValue.True : JsValue.False;
-                    break;
+                    {
+                        sp--;
+                        ref var left = ref values[sp - 1];
+                        var right = values[sp];
+                        left = left.IsNumber && right.IsNumber
+                            ? (left.NumberValue > right.NumberValue ? JsValue.True : JsValue.False)
+                            : (Operators.LessThan(right, left, leftFirst: false) is true ? JsValue.True : JsValue.False);
+                        break;
+                    }
+
                 case OpCode.LessThanOrEqual:
-                    sp--;
-                    values[sp - 1] = Operators.LessThan(values[sp], values[sp - 1], leftFirst: false) is false ? JsValue.True : JsValue.False;
-                    break;
+                    {
+                        sp--;
+                        ref var left = ref values[sp - 1];
+                        var right = values[sp];
+                        left = left.IsNumber && right.IsNumber
+                            ? (left.NumberValue <= right.NumberValue ? JsValue.True : JsValue.False)
+                            : (Operators.LessThan(right, left, leftFirst: false) is false ? JsValue.True : JsValue.False);
+                        break;
+                    }
+
                 case OpCode.GreaterThanOrEqual:
-                    sp--;
-                    values[sp - 1] = Operators.LessThan(values[sp - 1], values[sp], leftFirst: true) is false ? JsValue.True : JsValue.False;
-                    break;
+                    {
+                        sp--;
+                        ref var left = ref values[sp - 1];
+                        var right = values[sp];
+                        left = left.IsNumber && right.IsNumber
+                            ? (left.NumberValue >= right.NumberValue ? JsValue.True : JsValue.False)
+                            : (Operators.LessThan(left, right, leftFirst: true) is false ? JsValue.True : JsValue.False);
+                        break;
+                    }
                 case OpCode.InstanceOf:
                     sp--;
                     values[sp - 1] = JsValue.FromBoolean(ObjectOperations.InstanceOf(values[sp - 1], values[sp]));
@@ -526,7 +577,12 @@ internal static partial class JsInterpreter
                     {
                         var depth = code[pc++];
                         var slot = code[pc++];
-                        var privateName = GetPrivateName(frame, values, ref sp, depth, slot);
+                        var privateName = GetPrivateName(frame, values, sp, depth, slot);
+                        if (depth < 0)
+                        {
+                            sp--;
+                        }
+
                         var target = values[sp - 1];
                         if (target.Cell is not JsObject targetObject)
                         {
@@ -549,7 +605,11 @@ internal static partial class JsInterpreter
                     values[sp - 1] = new JsValue(JsOperations.ToNumber(values[sp - 1]));
                     break;
                 case OpCode.ToNumeric:
-                    values[sp - 1] = JsOperations.ToNumeric(values[sp - 1]);
+                    if (!values[sp - 1].IsNumber)
+                    {
+                        values[sp - 1] = JsOperations.ToNumeric(values[sp - 1]);
+                    }
+
                     break;
                 case OpCode.BitwiseNot:
                     values[sp - 1] = Operators.BitwiseNot(values[sp - 1]);
@@ -649,7 +709,8 @@ internal static partial class JsInterpreter
                 case OpCode.JumpIfFalse:
                     {
                         var target = code[pc++];
-                        if (!JsOperations.ToBoolean(values[--sp]))
+                        var condition = values[--sp];
+                        if (!(ReferenceEquals(condition.Cell, BooleanCell.True) || (!ReferenceEquals(condition.Cell, BooleanCell.False) && JsOperations.ToBoolean(condition))))
                         {
                             pc = target;
                         }
@@ -985,7 +1046,12 @@ internal static partial class JsInterpreter
                     {
                         var depth = code[pc++];
                         var slot = code[pc++];
-                        var privateName = GetPrivateName(frame, values, ref sp, depth, slot);
+                        var privateName = GetPrivateName(frame, values, sp, depth, slot);
+                        if (depth < 0)
+                        {
+                            sp--;
+                        }
+
                         values[sp - 1] = PrivateGet(values[sp - 1], privateName);
                         break;
                     }
@@ -994,7 +1060,12 @@ internal static partial class JsInterpreter
                     {
                         var depth = code[pc++];
                         var slot = code[pc++];
-                        var privateName = GetPrivateName(frame, values, ref sp, depth, slot);
+                        var privateName = GetPrivateName(frame, values, sp, depth, slot);
+                        if (depth < 0)
+                        {
+                            sp--;
+                        }
+
                         var value = values[--sp];
                         PrivateSet(values[sp - 1], privateName, value);
                         values[sp - 1] = value;

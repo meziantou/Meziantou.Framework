@@ -379,6 +379,36 @@ public sealed class ArrayBuiltinsTests
         Assert.Equal("last", array.Get(new PropertyKey(1)).AsString());
         Assert.False(array.HasProperty(new PropertyKey(4294967294)));
 
+        var spliced = context.Array();
+        spliced.CreateDataPropertyOrThrow(new PropertyKey(4294967294), "last");
+        spliced.CreateDataPropertyOrThrow(new PropertyKey(7), "seven");
+        var deleted = CallArray(context, "splice", spliced, 1).AsObject();
+        Assert.Equal(1u, spliced.Length);
+        Assert.Equal(4294967294u, ((JsArray)deleted).Length);
+        Assert.Equal("seven", deleted.Get(new PropertyKey(6)).AsString());
+        Assert.Equal("last", deleted.Get(new PropertyKey(4294967293)).AsString());
+
+        var shifted = context.Array();
+        shifted.CreateDataPropertyOrThrow(new PropertyKey(5), "five");
+        shifted.CreateDataPropertyOrThrow(new PropertyKey(4294967294), "last");
+        Assert.True(CallArray(context, "shift", shifted).IsUndefined);
+        Assert.Equal(4294967294u, shifted.Length);
+        Assert.Equal("five", shifted.Get(new PropertyKey(4)).AsString());
+        Assert.Equal("last", shifted.Get(new PropertyKey(4294967293)).AsString());
+        Assert.False(shifted.HasProperty(new PropertyKey(5)));
+
+        CallArray(context, "splice", shifted, 1, 1);
+        Assert.Equal(4294967293u, shifted.Length);
+        Assert.Equal("five", shifted.Get(new PropertyKey(3)).AsString());
+        Assert.Equal("last", shifted.Get(new PropertyKey(4294967292)).AsString());
+
+        CallArray(context, "unshift", shifted, "first");
+        Assert.Equal(4294967294u, shifted.Length);
+        Assert.Equal("first", shifted.Get(new PropertyKey(0)).AsString());
+        Assert.Equal("five", shifted.Get(new PropertyKey(4)).AsString());
+        Assert.Equal("last", shifted.Get(new PropertyKey(4294967293)).AsString());
+        Assert.False(shifted.HasProperty(new PropertyKey(3)));
+
         var arrayLike = context.Object();
         arrayLike.CreateDataPropertyOrThrow("length", 9007199254740991);
         arrayLike.CreateDataPropertyOrThrow("9007199254740990", "x");

@@ -861,30 +861,8 @@ internal static class ArrayBuiltins
             return JsValue.Undefined;
         }
 
-        if (ArrayOperations.IsPackedArray(obj, length, out var packed))
-        {
-            var elements = packed.DenseElements.AsSpan(0, (int)length);
-            var firstElement = elements[0];
-            elements[1..].CopyTo(elements);
-            elements[^1] = JsValue.Hole;
-            ArrayOperations.SetLength(packed, length - 1);
-            return firstElement;
-        }
-
         var first = ArrayOperations.GetElement(obj, 0);
-        for (long k = 1; k < length; k++)
-        {
-            if (ArrayOperations.TryGetElement(obj, k, out var fromValue))
-            {
-                ArrayOperations.SetElement(obj, k - 1, fromValue);
-            }
-            else
-            {
-                ArrayOperations.DeleteElement(obj, k - 1);
-            }
-        }
-
-        ArrayOperations.DeleteElement(obj, length - 1);
+        MoveElements(obj, length, actualStart: 0, actualDeleteCount: 1, itemCount: 0);
         ArrayOperations.SetLength(obj, length - 1);
         return first;
     }
@@ -985,6 +963,10 @@ internal static class ArrayBuiltins
         var array = ArrayOperations.ArraySpeciesCreate(obj, actualDeleteCount);
         for (long k = 0; k < actualDeleteCount; k++)
         {
+            k = ArrayOperations.SkipHoles(obj, actualStart + k, actualStart + actualDeleteCount) - actualStart;
+            if (k >= actualDeleteCount)
+                break;
+
             if (ArrayOperations.TryGetElement(obj, actualStart + k, out var fromValue))
             {
                 ArrayOperations.CreateElement(array, k, fromValue);
@@ -1036,8 +1018,16 @@ internal static class ArrayBuiltins
 
         if (itemCount < actualDeleteCount)
         {
-            for (var k = actualStart; k < length - actualDeleteCount; k++)
+            var end = length - actualDeleteCount;
+            for (var k = actualStart; k < end; k++)
             {
+                // Skip the indices whose source and target are both holes (when that is not observable)
+                var nextSource = ArrayOperations.SkipHoles(obj, k + actualDeleteCount, length) - actualDeleteCount;
+                var nextTarget = ArrayOperations.SkipHoles(obj, k + itemCount, end + itemCount) - itemCount;
+                k = Math.Min(nextSource, nextTarget);
+                if (k >= end)
+                    break;
+
                 if (ArrayOperations.TryGetElement(obj, k + actualDeleteCount, out var fromValue))
                 {
                     ArrayOperations.SetElement(obj, k + itemCount, fromValue);
@@ -1048,8 +1038,14 @@ internal static class ArrayBuiltins
                 }
             }
 
-            for (var k = length; k > length - actualDeleteCount + itemCount; k--)
+            var newLength = length - actualDeleteCount + itemCount;
+            for (var k = length; k > newLength; k--)
             {
+                // Deleting a hole is not observable when reading it is not
+                k = ArrayOperations.SkipHolesBackward(obj, k - 1) + 1;
+                if (k <= newLength)
+                    break;
+
                 ArrayOperations.DeleteElement(obj, k - 1);
             }
         }
@@ -1057,6 +1053,12 @@ internal static class ArrayBuiltins
         {
             for (var k = length - actualDeleteCount; k > actualStart; k--)
             {
+                var previousSource = ArrayOperations.SkipHolesBackward(obj, k + actualDeleteCount - 1) - actualDeleteCount + 1;
+                var previousTarget = ArrayOperations.SkipHolesBackward(obj, k + itemCount - 1) - itemCount + 1;
+                k = Math.Max(previousSource, previousTarget);
+                if (k <= actualStart)
+                    break;
+
                 if (ArrayOperations.TryGetElement(obj, k + actualDeleteCount - 1, out var fromValue))
                 {
                     ArrayOperations.SetElement(obj, k + itemCount - 1, fromValue);
@@ -1226,28 +1228,7 @@ internal static class ArrayBuiltins
                 ThrowTooLong();
             }
 
-            if (length + argCount < int.MaxValue && ArrayOperations.IsPackedArray(obj, length, out var packed))
-            {
-                var newLength = length + argCount;
-                packed.SetOwnSlot(new PropertyKey((uint)(newLength - 1)), JsValue.Undefined, PropertyFlags.Default);
-                ArrayOperations.SetLength(packed, newLength);
-                var elements = packed.DenseElements!;
-                elements.AsSpan(0, (int)length).CopyTo(elements.AsSpan(argCount));
-                arguments.CopyTo(elements);
-                return newLength;
-            }
-
-            for (var k = length; k > 0; k--)
-            {
-                if (ArrayOperations.TryGetElement(obj, k - 1, out var fromValue))
-                {
-                    ArrayOperations.SetElement(obj, k + argCount - 1, fromValue);
-                }
-                else
-                {
-                    ArrayOperations.DeleteElement(obj, k + argCount - 1);
-                }
-            }
+            MoveElements(obj, length, actualStart: 0, actualDeleteCount: 0, itemCount: argCount);
 
             for (var j = 0; j < argCount; j++)
             {

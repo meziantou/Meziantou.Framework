@@ -1,4 +1,5 @@
 using System.Xml;
+using System.Xml.Linq;
 using System.Xml.XPath;
 
 namespace Meziantou.Framework.Language.Xml.Tests;
@@ -371,6 +372,40 @@ public sealed class XmlSyntaxTreeTests
     public void Formatter_KeepsWhitespaceThatCanBeSignificant(string text, string expected)
     {
         Assert.Equal(expected, FormatText(text, XmlFormattingOptions.Default));
+    }
+
+    [Theory]
+    [InlineData("<a x='l1&#10;l2'/>", "<a x=\"l1&#xA;l2\" />", "l1\nl2")]
+    [InlineData("<a x='l1&#13;l2'/>", "<a x=\"l1&#xD;l2\" />", "l1\rl2")]
+    [InlineData("<a x='l1&#9;l2'/>", "<a x=\"l1&#x9;l2\" />", "l1\tl2")]
+    [InlineData("<a x='&#13;&#10;' y='l1\nl2\tl3'/>", "<a x=\"&#xD;&#xA;\" y=\"l1 l2 l3\" />", "\r\n")]
+    public void Formatter_KeepsTheTabsAndLineBreaksOfAttributeValues(string text, string expected, string expectedValue)
+    {
+        var formatted = FormatText(text, XmlFormattingOptions.Default);
+
+        Assert.Equal(expected, formatted);
+        Assert.Equal(expectedValue, XDocument.Parse(formatted).Root!.Attribute("x")!.Value);
+        Assert.Equal(formatted, FormatText(formatted, XmlFormattingOptions.Default));
+    }
+
+    [Fact]
+    public void Formatter_KeepsTheLineBreaksOfAttributeValuesWithTheOtherOptions()
+    {
+        var options = new XmlFormattingOptions { NewLine = "\r\n", AttributeWrapping = true, SpaceAroundEquals = true };
+        const string Text = "<root x='l1&#10;l2'><a y='&#13;' z='&#9;'/><b>t1\nt2</b></root>";
+
+        var formatted = FormatText(Text, options);
+
+        Assert.Equal("<root x = \"l1&#xA;l2\">\r\n  <a\r\n    y = \"&#xD;\"\r\n    z = \"&#x9;\" />\r\n  <b>t1\nt2</b>\r\n</root>", formatted);
+        Assert.Equal(formatted, FormatText(formatted, options));
+    }
+
+    [Fact]
+    public void Formatter_KeepsTheLineBreaksOfTextNextToAnAttributeWithALineBreak()
+    {
+        var formatted = FormatText("<root x='&#10;'>\n<a>l1\nl2</a>\n</root>", new XmlFormattingOptions { NewLine = "\r\n" });
+
+        Assert.Equal("<root x=\"&#xA;\">\r\n  <a>l1\nl2</a>\r\n</root>", formatted);
     }
 
     private static string FormatText(string text, XmlFormattingOptions options) => Formatter.Format(XmlSyntaxTree.ParseText(text).GetRoot(), options).ToFullString();

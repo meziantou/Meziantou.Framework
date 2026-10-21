@@ -67,7 +67,7 @@ public static class Formatter
             }
 
             var formatted = XmlSyntaxTree.ParseText(writer.ToString()).GetRoot();
-            if (options.SpaceAroundEquals || !options.SpaceBeforeSelfClosingSlash || options.AttributeWrapping)
+            if (options.SpaceAroundEquals || !options.SpaceBeforeSelfClosingSlash || options.AttributeWrapping || HasAttributeValueToEscape(source))
             {
                 formatted = FormatTags(formatted, options, layout.GetAttributeIndentations(source));
             }
@@ -132,7 +132,39 @@ public static class Formatter
         return result;
     }
 
-    /// <summary>Rewrites every tag for the options XmlWriter has no setting for.</summary>
+    // NewLineHandling.None writes a tab or a line break of an attribute value as it is, and reading it back turns it into
+    // a space. The other modes would also change the line breaks of the text content and of the indentation.
+    private static bool HasAttributeValueToEscape(XDocument document)
+    {
+        foreach (var element in document.Descendants())
+        {
+            foreach (var attribute in element.Attributes())
+            {
+                if (attribute.Value.AsSpan().ContainsAny('\t', '\r', '\n'))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    // A tab or a line break written as it is in an attribute value can only come from a character reference, as the
+    // parser turns the other ones into spaces. Writing the reference again keeps the value.
+    private static void AppendAttributeValue(StringBuilder result, string value)
+    {
+        foreach (var c in value)
+        {
+            _ = c switch
+            {
+                '\t' => result.Append("&#x9;"),
+                '\n' => result.Append("&#xA;"),
+                '\r' => result.Append("&#xD;"),
+                _ => result.Append(c),
+            };
+        }
+    }
+
+    /// <summary>Rewrites every tag for the options XmlWriter has no setting for, and writes the tabs and line breaks of attribute values as character references.</summary>
     /// <param name="document">A document XmlWriter wrote, so each tag is written as <c>&lt;name a="v" b="v"&gt;</c> or <c>&lt;name a="v" /&gt;</c>.</param>
     /// <param name="attributeIndentations">For each element in document order, the indentation of its attributes when they go on their own line, or <see langword="null"/>.</param>
     private static XmlDocumentSyntax FormatTags(XmlDocumentSyntax document, XmlFormattingOptions options, List<string?> attributeIndentations)
@@ -172,9 +204,9 @@ public static class Formatter
 
                 result.Append(attribute.NameToken.Text)
                     .Append(options.SpaceAroundEquals ? " = " : "=")
-                    .Append(attribute.StartQuoteToken.Text)
-                    .Append(attribute.ValueToken.Text)
-                    .Append(attribute.EndQuoteToken.Text);
+                    .Append(attribute.StartQuoteToken.Text);
+                AppendAttributeValue(result, attribute.ValueToken.Text);
+                result.Append(attribute.EndQuoteToken.Text);
             }
 
             result.Append(isEmpty ? (options.SpaceBeforeSelfClosingSlash ? " />" : "/>") : ">");

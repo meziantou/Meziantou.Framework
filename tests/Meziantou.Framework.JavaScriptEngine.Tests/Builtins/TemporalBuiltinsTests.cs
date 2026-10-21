@@ -75,7 +75,7 @@ public sealed class TemporalBuiltinsTests
         Assert.Equal("RangeError", ErrorName("Temporal.PlainDate.from('2024-01-01[!foo=bar]')"));
         Assert.Equal("RangeError", ErrorName("Temporal.PlainDate.from('2024-01-01T00:00Z')"));
         Assert.Equal("RangeError", ErrorName("Temporal.PlainDate.from('2023-02-29')"));
-        Assert.Equal("RangeError", ErrorName("Temporal.PlainDate.from('2024-01-01[u-ca=gregory]')"));
+        Assert.Equal("RangeError", ErrorName("Temporal.PlainDate.from('2024-01-01[u-ca=unknown]')"));
         Assert.Equal("2024-01-01", Evaluate("Temporal.PlainDate.from('2024-01-01[foo=bar][u-ca=iso8601]').toString()"));
         Assert.Equal("23:59:59", Evaluate("Temporal.PlainTime.from('23:59:60').toString()"));
         Assert.Equal("12:34:56.123456789", Evaluate("Temporal.PlainTime.from('T123456,123456789').toString()"));
@@ -122,6 +122,40 @@ public sealed class TemporalBuiltinsTests
     public void ToStringTags()
     {
         Assert.Equal("[object Temporal],[object Temporal.Now],[object Temporal.Duration],[object Temporal.PlainDate]", Evaluate("[Temporal, Temporal.Now, new Temporal.Duration(), new Temporal.PlainDate(2024, 1, 1)].map(o => Object.prototype.toString.call(o)).join()"));
+    }
+
+    [Fact]
+    public void Calendars_IdentifiersAreCanonicalized()
+    {
+        Assert.Equal("gregory,japanese", Evaluate("['GREGORY', 'Japanese'].map(c => new Temporal.PlainDate(2024, 1, 1, c).calendarId).join()"));
+        Assert.Equal("RangeError", ErrorName("new Temporal.PlainDate(2024, 1, 1, 'islamic')"));
+        Assert.Equal("2024-01-01[u-ca=gregory]", Evaluate("Temporal.PlainDate.from('2024-01-01[u-ca=gregory]').toString()"));
+    }
+
+    [Theory]
+    [InlineData("gregory", "2024-03-15", "ce 2024 2024 M03 15")]
+    [InlineData("gregory", "-000043-03-15", "bce 44 -43 M03 15")]
+    [InlineData("buddhist", "2024-03-15", "be 2567 2567 M03 15")]
+    [InlineData("roc", "2024-03-15", "roc 113 113 M03 15")]
+    [InlineData("roc", "1911-03-15", "broc 1 0 M03 15")]
+    [InlineData("japanese", "2019-04-30", "heisei 31 2019 M04 30")]
+    [InlineData("japanese", "2019-05-01", "reiwa 1 2019 M05 1")]
+    [InlineData("japanese", "1872-12-31", "ce 1872 1872 M12 31")]
+    [InlineData("japanese", "1873-01-01", "meiji 6 1873 M01 1")]
+    public void Calendars_IsoToCalendarDate(string calendar, string isoDate, string expected)
+    {
+        Assert.Equal(expected, Evaluate($"const d = Temporal.PlainDate.from('{isoDate}').withCalendar('{calendar}'); [d.era, d.eraYear, d.year, d.monthCode, d.day].join(' ')"));
+    }
+
+    [Fact]
+    public void Calendars_EraFieldsAndArithmetic()
+    {
+        Assert.Equal("2018-04-25[u-ca=japanese]", Evaluate("Temporal.PlainDate.from({ calendar: 'japanese', era: 'reiwa', eraYear: 0, monthCode: 'M04', day: 25 }).toString()"));
+        Assert.Equal("RangeError", ErrorName("Temporal.PlainDate.from({ calendar: 'gregory', era: 'xx', eraYear: 1, month: 1, day: 1 })"));
+        Assert.Equal("TypeError", ErrorName("Temporal.PlainDate.from({ calendar: 'gregory', era: 'ce', month: 1, day: 1 })"));
+        Assert.Equal("P1Y1M1D", Evaluate("Temporal.PlainDate.from({ calendar: 'gregory', year: 2024, month: 1, day: 31 }).until(Temporal.PlainDate.from({ calendar: 'gregory', year: 2025, month: 3, day: 1 }), { largestUnit: 'years' }).toString()"));
+        Assert.Equal("2024-02-29[u-ca=buddhist]", Evaluate("Temporal.PlainDate.from({ calendar: 'buddhist', year: 2567, month: 1, day: 31 }).add({ months: 1 }).toString()"));
+        Assert.Equal("1972-02-29[u-ca=gregory]", Evaluate("Temporal.PlainMonthDay.from({ calendar: 'gregory', monthCode: 'M02', day: 30 }).toString()"));
     }
 
     private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider

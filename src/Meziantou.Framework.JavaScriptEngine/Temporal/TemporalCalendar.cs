@@ -36,18 +36,46 @@ internal interface ITemporalCalendar
     IsoDate MonthDayToIsoReferenceDate(CalendarFields fields, TemporalOverflow overflow);
 }
 
-/// <summary>The available calendars (AvailableCalendars): only the ISO 8601 calendar for now.</summary>
+/// <summary>The available calendars (AvailableCalendars of ECMA-402) and their aliases.</summary>
 internal static class TemporalCalendars
 {
+    // The calendar types and the aliases, with the index of their calendar in s_calendars
+    private static readonly (string Id, int Index)[] CalendarTypes =
+    [
+        ("buddhist", 0),
+        ("chinese", 1),
+        ("coptic", 2),
+        ("dangi", 3),
+        ("ethioaa", 4),
+        ("ethiopic", 5),
+        ("ethiopic-amete-alem", 4),
+        ("gregory", 6),
+        ("hebrew", 7),
+        ("indian", 8),
+        ("islamic-civil", 9),
+        ("islamic-tbla", 10),
+        ("islamic-umalqura", 11),
+        ("islamicc", 9),
+        ("iso8601", 12),
+        ("japanese", 13),
+        ("persian", 14),
+        ("roc", 15),
+    ];
+
+    private static readonly ITemporalCalendar?[] s_calendars = new ITemporalCalendar?[16];
+
     public static ITemporalCalendar Iso { get; } = new IsoTemporalCalendar();
 
-    /// <summary>Finds a calendar by its calendar type, ignoring the ASCII case.</summary>
+    /// <summary>Finds a calendar by its calendar type or an alias, ignoring the ASCII case (the calendar types are ASCII).</summary>
     public static bool TryGet(string id, [NotNullWhen(true)] out ITemporalCalendar? calendar)
     {
-        if (string.Equals(id, TemporalOperations.IsoCalendar, StringComparison.OrdinalIgnoreCase))
+        foreach (var (calendarType, index) in CalendarTypes)
         {
-            calendar = Iso;
-            return true;
+            if (string.Equals(id, calendarType, StringComparison.OrdinalIgnoreCase))
+            {
+                calendar = GetCalendar(index);
+                return calendar is not null;
+            }
         }
 
         calendar = null;
@@ -62,6 +90,31 @@ internal static class TemporalCalendars
 
         return TryGet(id, out var calendar) ? calendar : Iso;
     }
+
+    private static ITemporalCalendar? GetCalendar(int index)
+    {
+        var calendar = Volatile.Read(ref s_calendars[index]);
+        if (calendar is null)
+        {
+            calendar = Create(index);
+            if (calendar is null)
+                return null;
+
+            calendar = Interlocked.CompareExchange(ref s_calendars[index], calendar, comparand: null) ?? calendar;
+        }
+
+        return calendar;
+    }
+
+    private static ITemporalCalendar? Create(int index) => index switch
+    {
+        0 => GregorianBasedTemporalCalendar.CreateBuddhist(),
+        6 => GregorianBasedTemporalCalendar.CreateGregorian(),
+        12 => Iso,
+        13 => new JapaneseTemporalCalendar(),
+        15 => GregorianBasedTemporalCalendar.CreateRoc(),
+        _ => null,
+    };
 }
 
 /// <summary>The ISO 8601 calendar ("iso8601").</summary>

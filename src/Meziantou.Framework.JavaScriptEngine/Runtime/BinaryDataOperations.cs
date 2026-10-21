@@ -63,36 +63,8 @@ internal static class BinaryDataOperations
     // Conversions
     // ------------------------------------------------------------------------------------------------------------------
 
-    /// <summary>ToBigInt(argument) (https://tc39.es/ecma262/#sec-tobigint)</summary>
-    public static BigInteger ToBigInt(JsValue value)
-    {
-        var primitive = JsOperations.ToPrimitive(value, JsOperations.PreferredType.Number);
-        switch (primitive.Cell)
-        {
-            case JsBigInt bigint:
-                return bigint.Value;
-            case BooleanCell boolean:
-                return boolean.Value ? BigInteger.One : BigInteger.Zero;
-            case JsString str:
-                var result = JsOperations.StringToBigInt(str.ToString());
-                if (result is null)
-                {
-                    ThrowHelper.ThrowSyntaxError($"Cannot convert {str} to a BigInt");
-                }
-
-                return result.Value;
-            case JsSymbol:
-                return ThrowHelper.ThrowTypeError<BigInteger>("Cannot convert a Symbol value to a BigInt");
-            default:
-                return ThrowHelper.ThrowTypeError<BigInteger>($"Cannot convert {primitive} to a BigInt");
-        }
-    }
-
     /// <summary>The BigInt value of ToBigInt(argument).</summary>
-    public static JsValue ToBigIntValue(JsValue value) => value.Cell is JsBigInt ? value : JsValue.FromBigInt(ToBigInt(value));
-
-    /// <summary>ToBigInt64(argument)</summary>
-    public static long ToBigInt64(JsValue value) => BigIntToInt64(ToBigInt(value));
+    public static JsValue ToBigIntValue(JsValue value) => value.Cell is JsBigInt ? value : JsValue.FromBigInt(BigIntOperations.ToBigInt(value));
 
     /// <summary>The integer modulo 2^64, as a signed integer (BigInt.asIntN(64, n)).</summary>
     public static long BigIntToInt64(BigInteger value) => unchecked((long)BigIntToUInt64(value));

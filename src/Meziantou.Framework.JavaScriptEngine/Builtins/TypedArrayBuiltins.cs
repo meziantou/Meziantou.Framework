@@ -10,11 +10,6 @@ namespace Meziantou.Framework.JavaScriptEngine;
 internal static class TypedArrayBuiltins
 {
     private static readonly PropertyKey ToLocaleStringKey = new("toLocaleString");
-    private static readonly PropertyKey JoinKey = new("join");
-
-    private const int IterationKindKeys = 0;
-    private const int IterationKindValues = 1;
-    private const int IterationKindEntries = 2;
 
     public static JsBuiltinFunction Initialize(Intrinsics intrinsics, JsFunction[] constructors)
     {
@@ -61,23 +56,12 @@ internal static class TypedArrayBuiltins
         realm.DefineMethod(prototype, "toSorted", 1, ToSorted);
 
         // %TypedArray%.prototype.toString is %Array.prototype.toString%
-        if (intrinsics.ArrayPrototype.GetOwnProperty("toString", out var toString) && toString.IsDataDescriptor && toString.Value.IsCallable)
-        {
-            prototype.DefineBuiltIn("toString", toString.Value);
-        }
-        else
-        {
-            realm.DefineMethod(prototype, "toString", 0, ArrayToStringFallback);
-        }
+        prototype.DefineBuiltIn("toString", intrinsics.ArrayPrototypeToString);
 
         var values = realm.DefineMethod(prototype, "values", 0, Values);
         realm.DefineMethod(prototype, "with", 2, With);
         prototype.DefineBuiltIn(WellKnownSymbols.Iterator, values);
         realm.DefineAccessor(prototype, WellKnownSymbols.ToStringTag, GetToStringTag, setter: null);
-
-        var iteratorPrototype = intrinsics.TypedArrayIteratorPrototype;
-        realm.DefineMethod(iteratorPrototype, "next", 0, IteratorNext);
-        iteratorPrototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Array Iterator", PropertyFlags.Configurable);
 
         foreach (var type in Enum.GetValues<TypedArrayElementType>())
         {
@@ -538,28 +522,14 @@ internal static class TypedArrayBuiltins
             if (!typedArray.TryGetLength(out length))
                 return ThrowHelper.ThrowTypeError<JsValue>("Cannot perform %TypedArray%.prototype.copyWithin on a detached or out-of-bounds TypedArray");
 
-            var elementSize = typedArray.ElementSize;
-            var byteOffset = typedArray.ByteOffset;
-            var bufferByteLimit = ((long)length * elementSize) + byteOffset;
-            var toByteIndex = (targetIndex * elementSize) + byteOffset;
-            var fromByteIndex = (startIndex * elementSize) + byteOffset;
-            var countBytes = count * elementSize;
-            var span = typedArray.ViewedArrayBuffer.GetSpan();
-            if (fromByteIndex < toByteIndex && toByteIndex < fromByteIndex + countBytes)
+            // The arguments may have shrunk the buffer: the copy is truncated to the current length
+            count = Math.Min(count, Math.Min(length - startIndex, length - targetIndex));
+            if (count > 0)
             {
-                // Backward copy: nothing is copied when the last byte is beyond the limit
-                if (fromByteIndex + countBytes - 1 < bufferByteLimit && toByteIndex + countBytes - 1 < bufferByteLimit)
-                {
-                    span.Slice((int)fromByteIndex, (int)countBytes).CopyTo(span[(int)toByteIndex..]);
-                }
-            }
-            else
-            {
-                countBytes = Math.Min(countBytes, Math.Min(bufferByteLimit - fromByteIndex, bufferByteLimit - toByteIndex));
-                if (countBytes > 0)
-                {
-                    span.Slice((int)fromByteIndex, (int)countBytes).CopyTo(span[(int)toByteIndex..]);
-                }
+                var elementSize = typedArray.ElementSize;
+                var byteOffset = typedArray.ByteOffset;
+                var span = typedArray.ViewedArrayBuffer.GetSpan();
+                span.Slice((int)((startIndex * elementSize) + byteOffset), (int)(count * elementSize)).CopyTo(span[(int)((targetIndex * elementSize) + byteOffset)..]);
             }
         }
 
@@ -570,21 +540,21 @@ internal static class TypedArrayBuiltins
     private static JsValue Entries(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
         var typedArray = ValidateTypedArray(thisValue, "entries", out _);
-        return CreateArrayIterator(function.Realm, typedArray, IterationKindEntries);
+        return JsArrayIterator.Create(function.Realm, typedArray, ArrayIteratorKind.Entries);
     }
 
     /// <summary>%TypedArray%.prototype.keys()</summary>
     private static JsValue Keys(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
         var typedArray = ValidateTypedArray(thisValue, "keys", out _);
-        return CreateArrayIterator(function.Realm, typedArray, IterationKindKeys);
+        return JsArrayIterator.Create(function.Realm, typedArray, ArrayIteratorKind.Keys);
     }
 
     /// <summary>%TypedArray%.prototype.values() and %TypedArray%.prototype[%Symbol.iterator%]()</summary>
     private static JsValue Values(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
         var typedArray = ValidateTypedArray(thisValue, "values", out _);
-        return CreateArrayIterator(function.Realm, typedArray, IterationKindValues);
+        return JsArrayIterator.Create(function.Realm, typedArray, ArrayIteratorKind.Values);
     }
 
     /// <summary>%TypedArray%.prototype.every(callback [, thisArg])</summary>
@@ -1374,63 +1344,5 @@ internal static class TypedArrayBuiltins
         }
 
         return result;
-    }
-
-    /// <summary>Array.prototype.toString, until the Array built-ins define it.</summary>
-    private static JsValue ArrayToStringFallback(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
-    {
-        var array = JsOperations.ToObject(thisValue);
-        var join = array.Get(JoinKey);
-        if (!join.IsCallable)
-        {
-            join = function.Realm.Intrinsics.ObjectPrototype.Get("toString");
-        }
-
-        return JsOperations.Call(join, array, []);
-    }
-
-    // ------------------------------------------------------------------------------------------------------------------
-    // Iterators (TEMPORARY: replace with CreateArrayIterator and %ArrayIteratorPrototype% of the Array built-ins)
-    // ------------------------------------------------------------------------------------------------------------------
-
-    /// <summary>CreateArrayIterator(array, kind) for a typed array.</summary>
-    private static TypedArrayIterator CreateArrayIterator(JsRealm realm, JsTypedArray typedArray, int kind) => new TypedArrayIterator(realm.Intrinsics.TypedArrayIteratorPrototype, typedArray, kind);
-
-    /// <summary>%ArrayIteratorPrototype%.next() for the iterators of the typed arrays.</summary>
-    private static JsValue IteratorNext(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
-    {
-        if (thisValue.Cell is not TypedArrayIterator iterator)
-            return ThrowHelper.ThrowTypeError<JsValue>("%ArrayIteratorPrototype%.next requires that 'this' be an Array Iterator");
-
-        var realm = function.Realm;
-        if (iterator.TypedArray is not { } typedArray)
-            return IteratorOperations.CreateIteratorResultObject(realm, JsValue.Undefined, done: true);
-
-        var length = typedArray.GetIteratorLength();
-        var index = iterator.NextIndex;
-        if (index >= length)
-        {
-            iterator.TypedArray = null;
-            return IteratorOperations.CreateIteratorResultObject(realm, JsValue.Undefined, done: true);
-        }
-
-        iterator.NextIndex = index + 1;
-        JsValue result = iterator.IterationKind switch
-        {
-            IterationKindKeys => index,
-            IterationKindValues => GetElement(typedArray, index),
-            _ => JsArray.Create(realm, [index, GetElement(typedArray, index)]),
-        };
-
-        return IteratorOperations.CreateIteratorResultObject(realm, result, done: false);
-    }
-
-    private sealed class TypedArrayIterator(JsObject prototype, JsTypedArray typedArray, int kind) : JsObject(prototype, ObjectClass.Iterator)
-    {
-        public JsTypedArray? TypedArray { get; set; } = typedArray;
-
-        public int IterationKind { get; } = kind;
-
-        public long NextIndex { get; set; }
     }
 }

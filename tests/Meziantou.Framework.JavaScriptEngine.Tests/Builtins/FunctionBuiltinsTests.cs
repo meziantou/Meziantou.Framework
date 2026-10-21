@@ -27,7 +27,7 @@ public sealed class FunctionBuiltinsTests
     }
 
     [Fact]
-    public void Constructor_NeedsTheCompiler()
+    public void Constructor()
     {
         using var context = new FundamentalsTestContext();
         var source = DynamicFunctions.GetSource(DynamicFunctionKind.Normal, ["a", "b", "return a + b"]);
@@ -36,7 +36,10 @@ public sealed class FunctionBuiltinsTests
         Assert.Equal("function anonymous(a,b\n) {\nreturn a + b\n}", source.SourceText);
         Assert.Equal("async function* anonymous(\n) {\n\n}", DynamicFunctions.GetSource(DynamicFunctionKind.AsyncGenerator, []).SourceText);
 
-        Assert.Throws<NotSupportedException>(() => context.Global("Function").Call(JsValue.Undefined, ["return 1"]));
+        var add = context.Global("Function").Call(JsValue.Undefined, ["a", "b", "return a + b"]).AsObject();
+        Assert.Equal(3, add.Call(JsValue.Undefined, [1, 2]).AsNumber());
+        Assert.Equal(source.SourceText, context.CallPrototypeMethod("Function", "toString", add).AsString());
+        context.AssertThrows(ErrorType.SyntaxError, () => context.Global("Function").Call(JsValue.Undefined, ["}"]));
     }
 
     [Fact]

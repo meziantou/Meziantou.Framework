@@ -254,7 +254,7 @@ internal static class Binding_DOMMatrixReadOnly<TAdapter, TValue> where TAdapter
 
     private static object Construct(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::System.ReadOnlySpan<TValue> a)
     {
-        var has0 = !r.IsMissing(a, 0); var a0 = has0 ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_29(r, a[0]) : default;
+        var has0 = !r.IsMissing(a, 0); var a0 = has0 ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_fc46e747(r, a[0]) : default;
         if (!has0) { return new global::Meziantou.Framework.WebPlatform.Dom.DomMatrixReadOnly(); }
         if ((a0 is null or string) && has0) { return new global::Meziantou.Framework.WebPlatform.Dom.DomMatrixReadOnly((string)a0!); }
         if ((a0 is null or global::System.Collections.Generic.IReadOnlyList<double>) && has0) { return new global::Meziantou.Framework.WebPlatform.Dom.DomMatrixReadOnly((global::System.Collections.Generic.IReadOnlyList<double>)a0!); }

@@ -29,7 +29,7 @@ internal static class Binding_CSSMathInvert<TAdapter, TValue> where TAdapter : s
     private static object Construct(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::System.ReadOnlySpan<TValue> a)
     {
         if (a.Length < 1) throw r.NotEnoughArguments("CSSMathInvert", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, a[0]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, a[0]);
         return new global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssMathInvert(WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, a0));
     }
 }

@@ -30,9 +30,9 @@ internal sealed partial class WebIdlBindingsGenerator
     private readonly Dictionary<Type, string> _delegateConverters = [];
     private readonly Dictionary<Type, string> _unionConverters = [];
     private readonly Dictionary<string, string> _unionNaturals = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> _unionNaturalKeys = new(StringComparer.Ordinal);
     private readonly HashSet<Type> _taskResultTypes = [];
     private readonly List<string> _errors = [];
-    private int _uniqueId;
 
     private WebIdlBindingsGenerator(GeneratorContext context, BindingModel model)
     {
@@ -183,8 +183,6 @@ internal sealed partial class WebIdlBindingsGenerator
 
     private static bool IsNumeric(Type type) => type == typeof(byte) || type == typeof(sbyte) || type == typeof(short) || type == typeof(ushort) || type == typeof(int)
         || type == typeof(uint) || type == typeof(long) || type == typeof(ulong) || type == typeof(float) || type == typeof(double);
-
-    private string NewId(string prefix) => prefix + (++_uniqueId).ToString(CultureInfo.InvariantCulture);
 
     private static string SafeName(string name)
     {

@@ -21,7 +21,7 @@ internal static class Binding_CSSPerspective<TAdapter, TValue> where TAdapter : 
     };
 
     private static TValue Get_length(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssPerspective>(t, Binding); return r.ToJs((object?)o.Length); }
-    private static void Set_length(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssPerspective>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_12(r, v); o.Length = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssPerspectiveValue(r, x); }
+    private static void Set_length(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssPerspective>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_72d087f4(r, v); o.Length = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssPerspectiveValue(r, x); }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "length", Get_length, Set_length);
@@ -30,7 +30,7 @@ internal static class Binding_CSSPerspective<TAdapter, TValue> where TAdapter : 
     private static object Construct(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::System.ReadOnlySpan<TValue> a)
     {
         if (a.Length < 1) throw r.NotEnoughArguments("CSSPerspective", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_12(r, a[0]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_72d087f4(r, a[0]);
         return new global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssPerspective(WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssPerspectiveValue(r, a0));
     }
 }

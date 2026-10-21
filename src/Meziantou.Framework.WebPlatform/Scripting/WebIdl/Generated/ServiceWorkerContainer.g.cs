@@ -31,7 +31,7 @@ internal static class Binding_ServiceWorkerContainer<TAdapter, TValue> where TAd
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.ServiceWorkerContainer>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("register", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_72(r, a[0]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_ce1bca79(r, a[0]);
         var a1 = r.IsMissing(a, 1) ? (global::Meziantou.Framework.WebPlatform.Dom.RegistrationOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_RegistrationOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_RegistrationOptions(r, a[1]);
         if ((a0 is null or string)) { var result = o.Register((string)a0!, a1); return r.ToPromise(result, static (r, value) => r.Wrap(value)); }
         if ((a0 is null or global::Meziantou.Framework.WebPlatform.Dom.TrustedScriptUrl)) { var result = o.Register((global::Meziantou.Framework.WebPlatform.Dom.TrustedScriptUrl)a0!, a1); return r.ToPromise(result, static (r, value) => r.Wrap(value)); }

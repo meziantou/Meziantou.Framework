@@ -373,7 +373,7 @@ internal sealed partial class WebIdlBindingsGenerator
                     if (!natural.CSharpType.EndsWith('?', StringComparison.Ordinal))
                         return $"{GetDelegateConverter(target)}(r, {expression})";
 
-                    var variable = NewId("function");
+                    var variable = SafeName(expression) + "Function";
                     return $"({expression} is {{ }} {variable} ? {GetDelegateConverter(target)}(r, {variable}) : null)";
                 }
 

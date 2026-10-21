@@ -34,7 +34,7 @@ internal static class Binding_CSSParserDeclaration<TAdapter, TValue> where TAdap
     {
         if (a.Length < 1) throw r.NotEnoughArguments("CSSParserDeclaration", 1, a.Length);
         var a0 = r.ToDomString(a[0]);
-        var has1 = !r.IsMissing(a, 1); var a1 = has1 ? (global::System.Collections.Generic.List<object?>?)r.ToSequence<object?>(a[1], static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_11(r, e)) : default;
+        var has1 = !r.IsMissing(a, 1); var a1 = has1 ? (global::System.Collections.Generic.List<object?>?)r.ToSequence<object?>(a[1], static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_c19d9aba(r, e)) : default;
         return new global::Meziantou.Framework.WebPlatform.Css.ParserApi.CssParserDeclaration(a0, (has1 ? global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a1!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_ParserApi_CssParserToken(r, e))) : (global::System.Collections.Generic.IEnumerable<global::Meziantou.Framework.WebPlatform.Css.ParserApi.CssParserToken>?)null));
     }
 }

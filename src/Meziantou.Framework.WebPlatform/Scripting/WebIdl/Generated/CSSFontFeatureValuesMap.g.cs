@@ -23,7 +23,7 @@ internal static class Binding_CSSFontFeatureValuesMap<TAdapter, TValue> where TA
         var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.CssFontFeatureValuesMap>(t, Binding);
         if (a.Length < 2) throw r.NotEnoughArguments("set", 2, a.Length);
         var a0 = r.ToDomString(a[0]);
-        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_10(r, a[1]);
+        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_4bfa8986(r, a[1]);
         if ((a1 is uint)) { o.Set(a0, (uint)a1!); return r.Adapter.Undefined; }
         if ((a1 is null or global::System.Collections.Generic.IReadOnlyList<uint>)) { o.Set(a0, (global::System.Collections.Generic.IReadOnlyList<uint>)a1!); return r.Adapter.Undefined; }
         throw r.CreateTypeError("Failed to execute 'set': the arguments are not supported");

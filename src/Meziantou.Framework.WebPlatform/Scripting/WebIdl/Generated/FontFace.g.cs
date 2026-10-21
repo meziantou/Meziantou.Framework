@@ -73,7 +73,7 @@ internal static class Binding_FontFace<TAdapter, TValue> where TAdapter : struct
     {
         if (a.Length < 2) throw r.NotEnoughArguments("FontFace", 2, a.Length);
         var a0 = r.ToDomString(a[0]);
-        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_45(r, a[1]);
+        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_0bd70388(r, a[1]);
         var a2 = r.IsMissing(a, 2) ? (global::Meziantou.Framework.WebPlatform.Css.Om.FontFaceDescriptors)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Css_Om_FontFaceDescriptors(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Css_Om_FontFaceDescriptors(r, a[2]);
         if ((a1 is null or string)) { return new global::Meziantou.Framework.WebPlatform.Css.Om.FontFace(a0, (string)a1!, a2); }
         return new global::Meziantou.Framework.WebPlatform.Css.Om.FontFace(a0, WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_System_ReadOnlySpan_byte_(r, a1), a2);

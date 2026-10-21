@@ -33,7 +33,7 @@ internal static class Binding_CSSParserQualifiedRule<TAdapter, TValue> where TAd
     private static object Construct(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::System.ReadOnlySpan<TValue> a)
     {
         if (a.Length < 1) throw r.NotEnoughArguments("CSSParserQualifiedRule", 1, a.Length);
-        var a0 = r.ToSequence<object?>(a[0], static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_11(r, e));
+        var a0 = r.ToSequence<object?>(a[0], static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_c19d9aba(r, e));
         var has1 = !r.IsMissing(a, 1); var a1 = has1 ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Css.ParserApi.CssParserRule>?)(r.IsNullOrUndefined(a[1]) ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Css.ParserApi.CssParserRule>?)null : r.ToSequence<global::Meziantou.Framework.WebPlatform.Css.ParserApi.CssParserRule>(a[1], static (r, e) => r.ToInterface<global::Meziantou.Framework.WebPlatform.Css.ParserApi.CssParserRule>(e, "CSSParserRule"))) : default;
         return new global::Meziantou.Framework.WebPlatform.Css.ParserApi.CssParserQualifiedRule(global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a0!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_ParserApi_CssParserToken(r, e))), (has1 ? a1 : (global::System.Collections.Generic.IEnumerable<global::Meziantou.Framework.WebPlatform.Css.ParserApi.CssParserRule>?)null));
     }

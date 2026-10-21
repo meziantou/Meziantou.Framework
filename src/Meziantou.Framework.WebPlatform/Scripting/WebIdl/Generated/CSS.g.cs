@@ -53,7 +53,7 @@ internal static class Binding_CSS<TAdapter, TValue> where TAdapter : struct, glo
     private static TValue Op_parseStylesheet_Static(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         if (a.Length < 1) throw r.NotEnoughArguments("parseStylesheet", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_6(r, a[0]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_269d0be7(r, a[0]);
         var a1 = r.IsMissing(a, 1) ? (global::Meziantou.Framework.WebPlatform.Css.ParserApi.CssParserOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Css_ParserApi_CssParserOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Css_ParserApi_CssParserOptions(r, a[1]);
         if ((a0 is null or string)) { var result = global::Meziantou.Framework.WebPlatform.Css.Om.Css.ParseStylesheet((string)a0!, a1); return r.ToPromise(result, static (r, value) => r.FromSequence(value, static (r, e) => r.Wrap(e))); }
         throw r.CreateTypeError("Failed to execute 'parseStylesheet': the arguments are not supported");
@@ -61,7 +61,7 @@ internal static class Binding_CSS<TAdapter, TValue> where TAdapter : struct, glo
     private static TValue Op_parseRuleList_Static(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         if (a.Length < 1) throw r.NotEnoughArguments("parseRuleList", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_6(r, a[0]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_269d0be7(r, a[0]);
         var a1 = r.IsMissing(a, 1) ? (global::Meziantou.Framework.WebPlatform.Css.ParserApi.CssParserOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Css_ParserApi_CssParserOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Css_ParserApi_CssParserOptions(r, a[1]);
         if ((a0 is null or string)) { var result = global::Meziantou.Framework.WebPlatform.Css.Om.Css.ParseRuleList((string)a0!, a1); return r.ToPromise(result, static (r, value) => r.FromSequence(value, static (r, e) => r.Wrap(e))); }
         throw r.CreateTypeError("Failed to execute 'parseRuleList': the arguments are not supported");
@@ -69,7 +69,7 @@ internal static class Binding_CSS<TAdapter, TValue> where TAdapter : struct, glo
     private static TValue Op_parseRule_Static(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         if (a.Length < 1) throw r.NotEnoughArguments("parseRule", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_6(r, a[0]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_269d0be7(r, a[0]);
         var a1 = r.IsMissing(a, 1) ? (global::Meziantou.Framework.WebPlatform.Css.ParserApi.CssParserOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Css_ParserApi_CssParserOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Css_ParserApi_CssParserOptions(r, a[1]);
         if ((a0 is null or string)) { var result = global::Meziantou.Framework.WebPlatform.Css.Om.Css.ParseRule((string)a0!, a1); return r.ToPromise(result, static (r, value) => r.Wrap(value)); }
         throw r.CreateTypeError("Failed to execute 'parseRule': the arguments are not supported");
@@ -77,7 +77,7 @@ internal static class Binding_CSS<TAdapter, TValue> where TAdapter : struct, glo
     private static TValue Op_parseDeclarationList_Static(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         if (a.Length < 1) throw r.NotEnoughArguments("parseDeclarationList", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_6(r, a[0]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_269d0be7(r, a[0]);
         var a1 = r.IsMissing(a, 1) ? (global::Meziantou.Framework.WebPlatform.Css.ParserApi.CssParserOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Css_ParserApi_CssParserOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Css_ParserApi_CssParserOptions(r, a[1]);
         if ((a0 is null or string)) { var result = global::Meziantou.Framework.WebPlatform.Css.Om.Css.ParseDeclarationList((string)a0!, a1); return r.ToPromise(result, static (r, value) => r.FromSequence(value, static (r, e) => r.Wrap(e))); }
         throw r.CreateTypeError("Failed to execute 'parseDeclarationList': the arguments are not supported");

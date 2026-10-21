@@ -25,7 +25,7 @@ internal static class Binding_DataTransferItem<TAdapter, TValue> where TAdapter 
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.DataTransferItem>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("getAsString", 1, a.Length);
         var a0 = (r.IsNullOrUndefined(a[0]) ? null : r.ToCallbackFunction(a[0], "FunctionStringCallback", false));
-        o.GetAsString((a0 is { } function30 ? WebIdlHelpers<TAdapter, TValue>.ToDelegate_Dom_FunctionStringCallback(r, function30) : null)); return r.Adapter.Undefined;
+        o.GetAsString((a0 is { } a0Function ? WebIdlHelpers<TAdapter, TValue>.ToDelegate_Dom_FunctionStringCallback(r, a0Function) : null)); return r.Adapter.Undefined;
     }
     private static TValue Op_getAsFile(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {

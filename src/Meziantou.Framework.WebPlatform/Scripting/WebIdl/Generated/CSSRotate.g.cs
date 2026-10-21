@@ -21,11 +21,11 @@ internal static class Binding_CSSRotate<TAdapter, TValue> where TAdapter : struc
     };
 
     private static TValue Get_x(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRotate>(t, Binding); return r.ToJs((object?)o.X); }
-    private static void Set_x(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRotate>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, v); o.X = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, x); }
+    private static void Set_x(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRotate>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, v); o.X = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, x); }
     private static TValue Get_y(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRotate>(t, Binding); return r.ToJs((object?)o.Y); }
-    private static void Set_y(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRotate>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, v); o.Y = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, x); }
+    private static void Set_y(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRotate>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, v); o.Y = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, x); }
     private static TValue Get_z(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRotate>(t, Binding); return r.ToJs((object?)o.Z); }
-    private static void Set_z(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRotate>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, v); o.Z = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, x); }
+    private static void Set_z(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRotate>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, v); o.Z = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, x); }
     private static TValue Get_angle(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRotate>(t, Binding); return r.Wrap(o.Angle); }
     private static void Set_angle(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRotate>(t, Binding); var x = r.ToInterface<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue>(v, "CSSNumericValue"); o.Angle = x; }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
@@ -50,9 +50,9 @@ internal static class Binding_CSSRotate<TAdapter, TValue> where TAdapter : struc
             case 1:
             {
                 if (a.Length < 4) throw r.NotEnoughArguments("CSSRotate", 4, a.Length);
-                var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, a[0]);
-                var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, a[1]);
-                var a2 = WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, a[2]);
+                var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, a[0]);
+                var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, a[1]);
+                var a2 = WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, a[2]);
                 var a3 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue>(a[3], "CSSNumericValue");
                 return new global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRotate(WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, a0), WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, a1), WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, a2), a3);
             }

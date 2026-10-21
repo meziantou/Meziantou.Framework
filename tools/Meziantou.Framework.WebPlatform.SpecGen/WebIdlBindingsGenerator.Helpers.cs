@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Globalization;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using Meziantou.Framework.WebPlatform;
 using Meziantou.Framework.WebPlatform.Dom;
@@ -520,6 +521,9 @@ internal sealed partial class WebIdlBindingsGenerator
         return prefix + name + (type.Nullable ? "?" : "");
     }
 
+    /// <summary>Returns a name that depends only on the union, so adding a union does not rename the others.</summary>
+    private static string GetUnionNaturalName(string key) => "ToUnion_" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(key)))[..8];
+
     /// <summary>Returns the helper that converts a JavaScript value to the natural value of a union type (boxed).</summary>
     private string GetUnionNatural(IdlType type, IReadOnlyList<IdlExtendedAttribute>? extAttrs)
     {
@@ -527,7 +531,10 @@ internal sealed partial class WebIdlBindingsGenerator
         if (_unionNaturals.TryGetValue(key, out var name))
             return name;
 
-        name = "ToUnion_" + (++_uniqueId).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        name = GetUnionNaturalName(key);
+        if (!_unionNaturalKeys.TryAdd(name, key))
+            throw new InvalidOperationException($"The unions '{_unionNaturalKeys[name]}' and '{key}' have the same helper name '{name}'");
+
         _unionNaturals[key] = HelpersClass + "." + name;
         var types = FlattenUnion(type).ToList();
         var code = new StringBuilder();

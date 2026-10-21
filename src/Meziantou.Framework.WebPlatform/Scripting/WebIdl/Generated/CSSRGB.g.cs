@@ -21,13 +21,13 @@ internal static class Binding_CSSRGB<TAdapter, TValue> where TAdapter : struct, 
     };
 
     private static TValue Get_r(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRgb>(t, Binding); return r.ToJs((object?)o.R); }
-    private static void Set_r(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRgb>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_8(r, v); o.R = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssColorChannel(r, x); }
+    private static void Set_r(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRgb>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_da028f64(r, v); o.R = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssColorChannel(r, x); }
     private static TValue Get_g(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRgb>(t, Binding); return r.ToJs((object?)o.G); }
-    private static void Set_g(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRgb>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_8(r, v); o.G = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssColorChannel(r, x); }
+    private static void Set_g(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRgb>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_da028f64(r, v); o.G = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssColorChannel(r, x); }
     private static TValue Get_b(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRgb>(t, Binding); return r.ToJs((object?)o.B); }
-    private static void Set_b(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRgb>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_8(r, v); o.B = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssColorChannel(r, x); }
+    private static void Set_b(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRgb>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_da028f64(r, v); o.B = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssColorChannel(r, x); }
     private static TValue Get_alpha(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRgb>(t, Binding); return r.ToJs((object?)o.Alpha); }
-    private static void Set_alpha(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRgb>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_8(r, v); o.Alpha = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssColorChannel(r, x); }
+    private static void Set_alpha(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRgb>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_da028f64(r, v); o.Alpha = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssColorChannel(r, x); }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "r", Get_r, Set_r);
@@ -39,10 +39,10 @@ internal static class Binding_CSSRGB<TAdapter, TValue> where TAdapter : struct, 
     private static object Construct(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::System.ReadOnlySpan<TValue> a)
     {
         if (a.Length < 3) throw r.NotEnoughArguments("CSSRGB", 3, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_8(r, a[0]);
-        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_8(r, a[1]);
-        var a2 = WebIdlHelpers<TAdapter, TValue>.ToUnion_8(r, a[2]);
-        var a3 = r.IsMissing(a, 3) ? (object?)(object)(1d) : WebIdlHelpers<TAdapter, TValue>.ToUnion_8(r, a[3]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_da028f64(r, a[0]);
+        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_da028f64(r, a[1]);
+        var a2 = WebIdlHelpers<TAdapter, TValue>.ToUnion_da028f64(r, a[2]);
+        var a3 = r.IsMissing(a, 3) ? (object?)(object)(1d) : WebIdlHelpers<TAdapter, TValue>.ToUnion_da028f64(r, a[3]);
         return new global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssRgb(WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssColorChannel(r, a0), WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssColorChannel(r, a1), WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssColorChannel(r, a2), (a3 is null ? (global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssColorChannel?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssColorChannel(r, a3)));
     }
 }

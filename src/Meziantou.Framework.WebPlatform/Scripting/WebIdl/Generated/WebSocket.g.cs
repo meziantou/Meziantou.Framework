@@ -46,7 +46,7 @@ internal static class Binding_WebSocket<TAdapter, TValue> where TAdapter : struc
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WebSocket>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("send", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_5(r, a[0]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_beb33dfa(r, a[0]);
         o.Send(a0); return r.Adapter.Undefined;
     }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
@@ -73,7 +73,7 @@ internal static class Binding_WebSocket<TAdapter, TValue> where TAdapter : struc
     {
         if (a.Length < 1) throw r.NotEnoughArguments("WebSocket", 1, a.Length);
         var a0 = r.ToUsvString(a[0]);
-        var a1 = r.IsMissing(a, 1) ? (object?)(object)new global::System.Collections.Generic.List<object?>() : WebIdlHelpers<TAdapter, TValue>.ToUnion_58(r, a[1]);
+        var a1 = r.IsMissing(a, 1) ? (object?)(object)new global::System.Collections.Generic.List<object?>() : WebIdlHelpers<TAdapter, TValue>.ToUnion_1d13fa2b(r, a[1]);
         return new global::Meziantou.Framework.WebPlatform.Dom.WebSocket(a0, a1);
     }
 }

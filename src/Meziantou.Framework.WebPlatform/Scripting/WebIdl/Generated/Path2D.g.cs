@@ -99,7 +99,7 @@ internal static class Binding_Path2D<TAdapter, TValue> where TAdapter : struct, 
         var a1 = r.ToDouble(a[1], restricted: false);
         var a2 = r.ToDouble(a[2], restricted: false);
         var a3 = r.ToDouble(a[3], restricted: false);
-        var a4 = r.IsMissing(a, 4) ? (object?)(object)(0d) : WebIdlHelpers<TAdapter, TValue>.ToUnion_18(r, a[4]);
+        var a4 = r.IsMissing(a, 4) ? (object?)(object)(0d) : WebIdlHelpers<TAdapter, TValue>.ToUnion_1d89567d(r, a[4]);
         o.RoundRect(a0, a1, a2, a3, a4); return r.Adapter.Undefined;
     }
     private static TValue Op_arc(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
@@ -145,7 +145,7 @@ internal static class Binding_Path2D<TAdapter, TValue> where TAdapter : struct, 
 
     private static object Construct(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::System.ReadOnlySpan<TValue> a)
     {
-        var has0 = !r.IsMissing(a, 0); var a0 = has0 ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_67(r, a[0]) : default;
+        var has0 = !r.IsMissing(a, 0); var a0 = has0 ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_d79b3836(r, a[0]) : default;
         if (!has0) { return new global::Meziantou.Framework.WebPlatform.Dom.Path2D(); }
         if (has0) { return new global::Meziantou.Framework.WebPlatform.Dom.Path2D(a0); }
         throw r.CreateTypeError("Failed to execute 'constructor': the arguments are not supported");

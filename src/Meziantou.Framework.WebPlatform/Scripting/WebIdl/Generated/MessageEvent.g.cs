@@ -35,7 +35,7 @@ internal static class Binding_MessageEvent<TAdapter, TValue> where TAdapter : st
         var a3 = r.IsMissing(a, 3) ? (object?)(object?)null : r.ToAny(a[3]);
         var a4 = r.IsMissing(a, 4) ? (string)"" : r.ToUsvString(a[4]);
         var a5 = r.IsMissing(a, 5) ? (string)"" : r.ToDomString(a[5]);
-        var a6 = r.IsMissing(a, 6) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_63(r, a[6]);
+        var a6 = r.IsMissing(a, 6) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_45a0a843(r, a[6]);
         var a7 = r.IsMissing(a, 7) ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.MessagePort>)new global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.MessagePort>() : r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.MessagePort>(a[7], static (r, e) => r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.MessagePort>(e, "MessagePort"));
         o.InitMessageEvent(a0, a1, a2, a3, a4, a5, (global::Meziantou.Framework.WebPlatform.Dom.EventTarget)a6!, a7); return r.Adapter.Undefined;
     }

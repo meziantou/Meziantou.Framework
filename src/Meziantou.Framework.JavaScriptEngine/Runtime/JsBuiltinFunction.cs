@@ -21,6 +21,24 @@ internal sealed class JsBuiltinFunction : JsFunction
     /// <summary>Gets or sets a second value associated with the function.</summary>
     public object? State2 { get; set; }
 
+    /// <summary>Gets or sets the step of the function when it is the next method of a built-in iterator (no result object).</summary>
+    public NativeIteratorStep? IteratorStep { get; set; }
+
+    /// <summary>Calls <see cref="IteratorStep"/> as a call of the function (in its realm).</summary>
+    internal bool CallIteratorStep(JsValue thisValue, out JsValue value)
+    {
+        var engine = Realm.Engine;
+        var previousRealm = engine.EnterNativeCall(Realm);
+        try
+        {
+            return IteratorStep!(this, thisValue, out value);
+        }
+        finally
+        {
+            engine.ExitNativeCall(previousRealm);
+        }
+    }
+
     internal override JsValue Call(JsValue thisValue, ReadOnlySpan<JsValue> arguments)
     {
         var engine = Realm.Engine;

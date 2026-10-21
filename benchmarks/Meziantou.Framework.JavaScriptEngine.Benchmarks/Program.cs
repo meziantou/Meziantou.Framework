@@ -6,7 +6,7 @@ using Meziantou.Framework.JavaScriptEngine.Benchmarks;
 // Usage:
 //   dotnet run -c Release -f net10.0 -- [BenchmarkDotNet arguments]   runs the benchmarks
 //   dotnet run -c Release -f net10.0 -- quick [workload] [iterations]  times the workloads with both engines (a quick, noisy comparison)
-//   dotnet run -c Release -f net10.0 -- profile <workload> <seconds>   runs a workload in a loop (to attach a profiler)
+//   dotnet run -c Release -f net10.0 -- profile <workload or file> <seconds>   runs a workload (a script that defines run()) in a loop (to attach a profiler)
 //   dotnet run -c Release -f net10.0 -- dump <workload or file>         prints the bytecode of a workload
 if (args is ["dump", var dumpWorkload])
 {
@@ -18,7 +18,7 @@ if (args is ["profile", var workload, var seconds])
 {
     using var engine = new JsEngine();
     var realm = engine.CreateRealm();
-    realm.Execute(Workloads.All[workload]);
+    realm.Execute(Workloads.All.TryGetValue(workload, out var profileCode) ? profileCode : File.ReadAllText(workload));
     JsValue run;
     using (engine.Enter())
     {

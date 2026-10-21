@@ -33,7 +33,7 @@ internal static class MapBuiltins
         prototype.DefineBuiltIn(WellKnownSymbols.Iterator, entries);
         prototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Map", PropertyFlags.Configurable);
 
-        realm.DefineMethod(iteratorPrototype, "next", 0, static (_, thisValue, _, _) => CollectionIteratorNext(thisValue, isMapIterator: true));
+        realm.DefineMethod(iteratorPrototype, "next", 0, static (_, thisValue, _, _) => CollectionIteratorNext(thisValue, isMapIterator: true)).IteratorStep = static (_, thisValue, out value) => CollectionIteratorStep(thisValue, isMapIterator: true, out value);
         iteratorPrototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Map Iterator", PropertyFlags.Configurable);
 
         intrinsics.AddGlobal("Map", constructor);
@@ -268,20 +268,33 @@ internal static class MapBuiltins
     /// <summary>%MapIteratorPrototype%.next() and %SetIteratorPrototype%.next(): GeneratorResume(this value, empty, brand)</summary>
     internal static JsValue CollectionIteratorNext(JsValue thisValue, bool isMapIterator)
     {
+        var hasValue = CollectionIteratorStep(thisValue, isMapIterator, out var result);
+        return IteratorOperations.CreateIteratorResultObject(JsEngine.Current!.CurrentRealm!, result, done: !hasValue);
+    }
+
+    /// <summary>The step of %MapIteratorPrototype%.next() and %SetIteratorPrototype%.next(): false when the iterator is done.</summary>
+    internal static bool CollectionIteratorStep(JsValue thisValue, bool isMapIterator, out JsValue result)
+    {
         if (thisValue.Cell is not JsCollectionIterator iterator || iterator.IsMapIterator != isMapIterator)
-            return ThrowHelper.ThrowTypeError<JsValue>($"next method called on incompatible receiver {JsOperations.DescribeForError(thisValue)}");
+        {
+            ThrowHelper.ThrowTypeError($"next method called on incompatible receiver {JsOperations.DescribeForError(thisValue)}");
+            result = default;
+            return false;
+        }
 
-        var realm = JsEngine.Current!.CurrentRealm!;
         if (!iterator.MoveNext(out var key, out var value))
-            return IteratorOperations.CreateIteratorResultObject(realm, JsValue.Undefined, done: true);
+        {
+            result = default;
+            return false;
+        }
 
-        var result = iterator.IterationKind switch
+        result = iterator.IterationKind switch
         {
             CollectionIteratorKind.Keys => key,
             CollectionIteratorKind.Values => value,
-            _ => JsArray.Create(realm, [key, value]),
+            _ => JsArray.Create(JsEngine.Current!.CurrentRealm!, [key, value]),
         };
 
-        return IteratorOperations.CreateIteratorResultObject(realm, result, done: false);
+        return true;
     }
 }

@@ -64,6 +64,28 @@ internal static class IteratorOperations
     /// <summary>IteratorStepValue(iteratorRecord): the next value, or false when the iterator is done.</summary>
     public static bool IteratorStepValue(IteratorRecord record, out JsValue value)
     {
+        if (record.NextMethod.Cell is JsBuiltinFunction { IteratorStep: not null } nativeNext)
+        {
+            // A built-in iterator (arrays, maps, sets): the step without the result object
+            bool hasValue;
+            try
+            {
+                hasValue = nativeNext.CallIteratorStep(record.Iterator, out value);
+            }
+            catch (JsException)
+            {
+                record.Done = true;
+                throw;
+            }
+
+            if (!hasValue)
+            {
+                record.Done = true;
+            }
+
+            return hasValue;
+        }
+
         var result = IteratorNext(record);
         bool done;
         try

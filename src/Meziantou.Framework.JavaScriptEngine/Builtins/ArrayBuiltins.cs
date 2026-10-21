@@ -71,7 +71,7 @@ internal static class ArrayBuiltins
         }
 
         var iteratorPrototype = intrinsics.ArrayIteratorPrototype;
-        realm.DefineMethod(iteratorPrototype, "next", 0, IteratorNext);
+        realm.DefineMethod(iteratorPrototype, "next", 0, IteratorNext).IteratorStep = IteratorStep;
         iteratorPrototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Array Iterator", PropertyFlags.Configurable);
 
         intrinsics.AddGlobal("Array", constructor);
@@ -1268,39 +1268,61 @@ internal static class ArrayBuiltins
     /// <summary>%ArrayIteratorPrototype%.next()</summary>
     private static JsValue IteratorNext(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
-        if (thisValue.Cell is not JsArrayIterator iterator)
-            return ThrowHelper.ThrowTypeError<JsValue>("%ArrayIteratorPrototype%.next requires that 'this' be an Array Iterator");
+        var hasValue = IteratorStep(function, thisValue, out var value);
+        return IteratorOperations.CreateIteratorResultObject(function.Realm, value, done: !hasValue);
+    }
 
-        var realm = function.Realm;
+    /// <summary>The step of %ArrayIteratorPrototype%.next(): false when the iterator is done.</summary>
+    private static bool IteratorStep(JsBuiltinFunction function, JsValue thisValue, out JsValue value)
+    {
+        if (thisValue.Cell is not JsArrayIterator iterator)
+        {
+            ThrowHelper.ThrowTypeError("%ArrayIteratorPrototype%.next requires that 'this' be an Array Iterator");
+            value = default;
+            return false;
+        }
+
+        value = default;
         if (iterator.Iterated is not { } array)
-            return IteratorOperations.CreateIteratorResultObject(realm, JsValue.Undefined, done: true);
+            return false;
 
         if (iterator.IsExecuting)
-            return ThrowHelper.ThrowTypeError<JsValue>("Generator is already running");
+        {
+            ThrowHelper.ThrowTypeError("Generator is already running");
+            return false;
+        }
 
         iterator.IsExecuting = true;
         var completed = true;
         try
         {
-            var length = array is IArrayIteratorSource source ? source.GetIteratorLength() : JsOperations.LengthOfArrayLike(array);
+            long length;
+            if (array is JsArray jsArray)
+            {
+                length = jsArray.Length;
+            }
+            else
+            {
+                length = array is IArrayIteratorSource source ? source.GetIteratorLength() : JsOperations.LengthOfArrayLike(array);
+            }
+
             var index = iterator.NextIndex;
             if (index >= length)
-                return IteratorOperations.CreateIteratorResultObject(realm, JsValue.Undefined, done: true);
+                return false;
 
-            JsValue result;
             if (iterator.IterationKind == ArrayIteratorKind.Keys)
             {
-                result = index;
+                value = index;
             }
             else
             {
                 var elementValue = ArrayOperations.GetElement(array, index);
-                result = iterator.IterationKind == ArrayIteratorKind.Values ? elementValue : JsArray.Create(realm, [index, elementValue]);
+                value = iterator.IterationKind == ArrayIteratorKind.Values ? elementValue : JsArray.Create(function.Realm, [index, elementValue]);
             }
 
             iterator.NextIndex = index + 1;
             completed = false;
-            return IteratorOperations.CreateIteratorResultObject(realm, result, done: false);
+            return true;
         }
         finally
         {

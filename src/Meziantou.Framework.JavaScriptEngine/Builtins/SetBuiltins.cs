@@ -36,7 +36,7 @@ internal static class SetBuiltins
         prototype.DefineBuiltIn(WellKnownSymbols.Iterator, values);
         prototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Set", PropertyFlags.Configurable);
 
-        realm.DefineMethod(iteratorPrototype, "next", 0, static (_, thisValue, _, _) => MapBuiltins.CollectionIteratorNext(thisValue, isMapIterator: false));
+        realm.DefineMethod(iteratorPrototype, "next", 0, static (_, thisValue, _, _) => MapBuiltins.CollectionIteratorNext(thisValue, isMapIterator: false)).IteratorStep = static (_, thisValue, out value) => MapBuiltins.CollectionIteratorStep(thisValue, isMapIterator: false, out value);
         iteratorPrototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Set Iterator", PropertyFlags.Configurable);
 
         intrinsics.AddGlobal("Set", constructor);

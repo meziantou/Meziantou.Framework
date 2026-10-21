@@ -250,20 +250,18 @@ internal static partial class JsInterpreter
         return superConstructor.Construct(arguments, newTarget.AsObject());
     }
 
-    /// <summary>The object on which super.x is looked up: the prototype of the home object.</summary>
-    private static JsObject GetSuperBase(JsValue home)
+    /// <summary>The object on which super.x is looked up (the prototype of the home object): ToObject of the base of the reference.</summary>
+    private static JsObject ToSuperBaseObject(JsValue superBase)
     {
-        var baseObject = home.AsObject().GetPrototypeOf();
-        if (baseObject is null)
+        if (superBase.Cell is not JsObject baseObject)
             return ThrowHelper.ThrowTypeError<JsObject>("Cannot read properties of null (super)");
 
         return baseObject;
     }
 
-    private static void SetSuper(JsValue home, in PropertyKey key, JsValue value, JsValue thisValue)
+    private static void SetSuper(JsObject superBase, in PropertyKey key, JsValue value, JsValue thisValue, bool strict)
     {
-        var baseObject = GetSuperBase(home);
-        if (!baseObject.Set(key, value, thisValue))
+        if (!superBase.Set(key, value, thisValue) && strict)
         {
             ThrowHelper.ThrowTypeError($"Cannot assign to read only property '{key}' of object");
         }

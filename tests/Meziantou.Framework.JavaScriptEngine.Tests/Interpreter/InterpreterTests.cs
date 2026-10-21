@@ -60,6 +60,9 @@ public sealed class InterpreterTests
     [InlineData("var f = (p = eval('var y = 1'), y) => { }; var r; try { f(); } catch (e) { r = e.constructor.name; } [r, typeof y].join()", "SyntaxError,undefined")]
     [InlineData("var o = { undefined: 40 }; var n = 0; [o?.[undefined], (void 0)?.[n++], n].join()", "40,,0")]
     [InlineData("var key = { toString() { throw new Error('key'); } }; var r = []; for (var base of [null, undefined]) { try { base[key]; } catch (e) { r.push(e.constructor.name); } try { base[key] = 1; } catch (e) { r.push(e.constructor.name); } } r.join()", "TypeError,TypeError,TypeError,TypeError")]
+    [InlineData("var proto = { p: 1 }; var proto2 = { p: -1 }; var obj = { __proto__: proto, m() { return ++super[key]; }, n() { super[key] += 5; return obj.p; }, g() { return super[key]; } }; var key = { toString() { Object.setPrototypeOf(obj, proto2); return 'p'; } }; var r = [obj.m()]; Object.setPrototypeOf(obj, proto); delete obj.p; r.push(obj.n()); Object.setPrototypeOf(obj, proto); r.push(obj.g()); r.join()", "2,6,1")]
+    [InlineData("var obj = { m() { super.x = 8; Object.freeze(obj); super.y = 9; super['z'] = 10; return Object.keys(obj).join(); } }; obj.m()", "m,x")]
+    [InlineData("var r; class C extends class { } { m() { super[(() => { throw new RangeError(); })()] = (() => { throw new Error(); })(); } } try { new C().m(); } catch (e) { r = e.constructor.name; } r", "RangeError")]
     public void Evaluate(string code, string expected)
     {
         Assert.Equal(expected, Run(code));

@@ -1,7 +1,5 @@
 language/expressions/assignment/fn-name-lhs-cover.js:sloppy
 language/expressions/assignment/fn-name-lhs-cover.js:strict
-language/expressions/assignment/target-super-computed-reference.js:sloppy
-language/expressions/assignment/target-super-computed-reference.js:strict
 language/expressions/class/subclass-builtins/subclass-RegExp.js:sloppy
 language/expressions/class/subclass-builtins/subclass-RegExp.js:strict
 language/expressions/delete/11.4.1-5-a-28-s.js:sloppy
@@ -11,16 +9,6 @@ language/expressions/optional-chaining/member-expression.js:sloppy
 language/expressions/optional-chaining/member-expression.js:strict
 language/expressions/property-accessors/S11.2.1_A4_T5.js:sloppy
 language/expressions/property-accessors/S11.2.1_A4_T5.js:strict
-language/expressions/super/prop-dot-obj-ref-non-strict.js:sloppy
-language/expressions/super/prop-expr-getsuperbase-before-topropertykey-getvalue.js:sloppy
-language/expressions/super/prop-expr-getsuperbase-before-topropertykey-getvalue.js:strict
-language/expressions/super/prop-expr-getsuperbase-before-topropertykey-putvalue-compound-assign.js:sloppy
-language/expressions/super/prop-expr-getsuperbase-before-topropertykey-putvalue-compound-assign.js:strict
-language/expressions/super/prop-expr-getsuperbase-before-topropertykey-putvalue-increment.js:sloppy
-language/expressions/super/prop-expr-getsuperbase-before-topropertykey-putvalue-increment.js:strict
-language/expressions/super/prop-expr-getsuperbase-before-topropertykey-putvalue.js:sloppy
-language/expressions/super/prop-expr-getsuperbase-before-topropertykey-putvalue.js:strict
-language/expressions/super/prop-expr-obj-ref-non-strict.js:sloppy
 language/expressions/typeof/built-in-exotic-objects-no-call.js:sloppy
 language/expressions/typeof/built-in-exotic-objects-no-call.js:strict
 language/expressions/typeof/native-call.js:sloppy

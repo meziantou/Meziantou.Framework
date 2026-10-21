@@ -625,14 +625,16 @@ internal sealed partial class CodeGenerator
             case Identifier:
                 return TargetKind.Identifier;
             case MemberExpression { Object: Super } superMember:
+                // this [key] base: the key is evaluated before GetSuperBase, and converted (ToPropertyKey) by the get or the put
                 EmitLoadSpecial(superMember, VariableKind.This, checkInitialized: true);
                 if (superMember.Computed)
                 {
                     EmitExpression(superMember.Property);
-                    _builder.Emit(OpCode.ToPropertyKey);
+                    EmitLoadSuperBase(superMember);
                     return TargetKind.SuperElement;
                 }
 
+                EmitLoadSuperBase(superMember);
                 return TargetKind.SuperProperty;
             case MemberExpression { Property: PrivateIdentifier } privateMember:
                 EmitExpression(privateMember.Object);
@@ -676,11 +678,9 @@ internal sealed partial class CodeGenerator
                 _builder.Emit(OpCode.GetElement);
                 break;
             case TargetKind.SuperProperty:
-                EmitLoadHomeObjectFor(target);
                 _builder.Emit(OpCode.GetSuperProperty, _builder.AddKey(GetPropertyKey(((MemberExpression)target).Property)));
                 break;
             case TargetKind.SuperElement:
-                EmitLoadHomeObjectFor(target);
                 _builder.Emit(OpCode.GetSuperElement);
                 break;
             case TargetKind.Private:
@@ -713,15 +713,36 @@ internal sealed partial class CodeGenerator
                 _builder.Emit(OpCode.SetElement);
                 break;
             case TargetKind.SuperProperty:
-                EmitLoadHomeObjectFor(target);
                 _builder.Emit(OpCode.SetSuperProperty, _builder.AddKey(GetPropertyKey(((MemberExpression)target).Property)));
                 break;
             case TargetKind.SuperElement:
-                EmitLoadHomeObjectFor(target);
                 _builder.Emit(OpCode.SetSuperElement);
                 break;
             case TargetKind.Private:
                 EmitPrivateOperation(OpCode.SetPrivate, (PrivateIdentifier)((MemberExpression)target).Property);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Converts the key of a computed reference whose value is read then written (compound assignments, updates): GetValue
+    /// converts it (after ToObject of the base), so that PutValue does not convert it again.
+    /// </summary>
+    private void EmitConvertReferenceKey(TargetKind kind)
+    {
+        switch (kind)
+        {
+            case TargetKind.Element:
+                // object key
+                _builder.Emit(OpCode.RequireObjectCoercibleBase);
+                _builder.Emit(OpCode.ToPropertyKey);
+                break;
+            case TargetKind.SuperElement:
+                // this key base
+                _builder.Emit(OpCode.Swap);
+                _builder.Emit(OpCode.RequireObjectCoercibleBase);
+                _builder.Emit(OpCode.ToPropertyKey);
+                _builder.Emit(OpCode.Swap);
                 break;
         }
     }
@@ -732,7 +753,8 @@ internal sealed partial class CodeGenerator
         return kind switch
         {
             TargetKind.Identifier or TargetKind.InvalidCall => 0,
-            TargetKind.Property or TargetKind.SuperProperty or TargetKind.Private or TargetKind.DynamicIdentifier => 1,
+            TargetKind.Property or TargetKind.Private or TargetKind.DynamicIdentifier => 1,
+            TargetKind.SuperElement => 3,
             _ => 2,
         };
     }
@@ -748,6 +770,9 @@ internal sealed partial class CodeGenerator
             case 2:
                 _builder.Emit(OpCode.Dup2);
                 break;
+            case 3:
+                _builder.Emit(OpCode.Dup3);
+                break;
         }
     }
 
@@ -762,14 +787,17 @@ internal sealed partial class CodeGenerator
             case 2:
                 _builder.Emit(OpCode.Rot4);
                 break;
+            case 3:
+                _builder.Emit(OpCode.Rot5);
+                break;
         }
     }
 
-    /// <summary>The super operations take the home object: it is pushed after the this value (and the key).</summary>
-    private void EmitLoadHomeObjectFor(Node target)
+    /// <summary>Pushes the base of a super reference (GetSuperBase: the prototype of the home object).</summary>
+    private void EmitLoadSuperBase(MemberExpression member)
     {
-        var member = (MemberExpression)target;
         EmitLoadSpecial(member.Object, VariableKind.HomeObject, checkInitialized: false);
+        _builder.Emit(OpCode.LoadSuperBase);
     }
 
     private void EmitPrivateOperation(OpCode op, PrivateIdentifier name)
@@ -937,11 +965,7 @@ internal sealed partial class CodeGenerator
 
         // Compound assignment: base, get, operator, put
         var targetKind = EmitReferenceBase(left);
-        if (targetKind == TargetKind.Element)
-        {
-            _builder.Emit(OpCode.RequireObjectCoercibleBase);
-            _builder.Emit(OpCode.ToPropertyKey);
-        }
+        EmitConvertReferenceKey(targetKind);
 
         EmitDuplicateBase(targetKind);
         EmitGetReference(left, targetKind);
@@ -955,11 +979,7 @@ internal sealed partial class CodeGenerator
     {
         var left = assignment.Left;
         var kind = EmitReferenceBase(left);
-        if (kind == TargetKind.Element)
-        {
-            _builder.Emit(OpCode.RequireObjectCoercibleBase);
-            _builder.Emit(OpCode.ToPropertyKey);
-        }
+        EmitConvertReferenceKey(kind);
 
         EmitDuplicateBase(kind);
         EmitGetReference(left, kind);
@@ -991,11 +1011,7 @@ internal sealed partial class CodeGenerator
     {
         var target = update.Argument;
         var kind = EmitReferenceBase(target);
-        if (kind == TargetKind.Element)
-        {
-            _builder.Emit(OpCode.RequireObjectCoercibleBase);
-            _builder.Emit(OpCode.ToPropertyKey);
-        }
+        EmitConvertReferenceKey(kind);
 
         EmitDuplicateBase(kind);
         EmitGetReference(target, kind);
@@ -1031,13 +1047,12 @@ internal sealed partial class CodeGenerator
                 if (superMember.Computed)
                 {
                     EmitExpression(superMember.Property);
-                    _builder.Emit(OpCode.ToPropertyKey);
-                    EmitLoadHomeObjectFor(superMember);
+                    EmitLoadSuperBase(superMember);
                     _builder.Emit(OpCode.GetSuperElement);
                 }
                 else
                 {
-                    EmitLoadHomeObjectFor(superMember);
+                    EmitLoadSuperBase(superMember);
                     _builder.Emit(OpCode.GetSuperProperty, _builder.AddKey(GetPropertyKey(superMember.Property)));
                 }
 

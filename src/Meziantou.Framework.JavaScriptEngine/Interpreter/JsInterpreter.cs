@@ -203,6 +203,24 @@ internal static partial class JsInterpreter
                         break;
                     }
 
+                case OpCode.Dup3:
+                    values[sp] = values[sp - 3];
+                    values[sp + 1] = values[sp - 2];
+                    values[sp + 2] = values[sp - 1];
+                    sp += 3;
+                    break;
+                case OpCode.Rot5:
+                    {
+                        // a b c d e -> e a b c d
+                        var e = values[sp - 1];
+                        values[sp - 1] = values[sp - 2];
+                        values[sp - 2] = values[sp - 3];
+                        values[sp - 3] = values[sp - 4];
+                        values[sp - 4] = values[sp - 5];
+                        values[sp - 5] = e;
+                        break;
+                    }
+
                 // ---- Registers and environments -------------------------------------------------------------------
                 case OpCode.LoadLocal:
                     values[sp++] = values[code[pc++]];
@@ -938,42 +956,45 @@ internal static partial class JsInterpreter
                         break;
                     }
 
+                case OpCode.LoadSuperBase:
+                    values[sp - 1] = values[sp - 1].AsObject().GetPrototypeOf() is { } superPrototype ? new JsValue(superPrototype) : JsValue.Null;
+                    break;
                 case OpCode.GetSuperProperty:
                     {
                         var key = keys[code[pc++]];
-                        var home = values[--sp];
+                        var superBase = ToSuperBaseObject(values[--sp]);
                         var thisValue = values[sp - 1];
-                        values[sp - 1] = GetSuperBase(home).Get(key, thisValue);
+                        values[sp - 1] = superBase.Get(key, thisValue);
                         break;
                     }
 
                 case OpCode.GetSuperElement:
                     {
-                        var home = values[--sp];
+                        var superBase = ToSuperBaseObject(values[--sp]);
                         var key = JsOperations.ToPropertyKey(values[--sp]);
                         var thisValue = values[sp - 1];
-                        values[sp - 1] = GetSuperBase(home).Get(key, thisValue);
+                        values[sp - 1] = superBase.Get(key, thisValue);
                         break;
                     }
 
                 case OpCode.SetSuperProperty:
                     {
                         var key = keys[code[pc++]];
-                        var home = values[--sp];
                         var value = values[--sp];
+                        var superBase = ToSuperBaseObject(values[--sp]);
                         var thisValue = values[sp - 1];
-                        SetSuper(home, key, value, thisValue);
+                        SetSuper(superBase, key, value, thisValue, strict);
                         values[sp - 1] = value;
                         break;
                     }
 
                 case OpCode.SetSuperElement:
                     {
-                        var home = values[--sp];
                         var value = values[--sp];
+                        var superBase = ToSuperBaseObject(values[--sp]);
                         var key = JsOperations.ToPropertyKey(values[--sp]);
                         var thisValue = values[sp - 1];
-                        SetSuper(home, key, value, thisValue);
+                        SetSuper(superBase, key, value, thisValue, strict);
                         values[sp - 1] = value;
                         break;
                     }

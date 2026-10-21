@@ -1,5 +1,4 @@
 using Meziantou.Framework.WebPlatform.Dom;
-using Meziantou.Framework.WebPlatform.Jint;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
 
@@ -15,12 +14,12 @@ public sealed class LayoutWorkletTests : IDisposable
     private readonly List<ScriptError> _errors = [];
     private readonly List<(GlobalScope Global, string Text)> _messages = [];
     private readonly RecordingLoader _loader = new();
-    private readonly JintScriptEngine _engine = new();
+    private readonly ScriptEngine _engine = TestScriptEngines.Create();
 
     public void Dispose()
     {
         _contexts.Dispose();
-        _engine.Dispose();
+        TestScriptEngines.Dispose(_engine);
     }
 
     /// <summary>Loads a document whose layout worklet runs a module, added before the load event.</summary>
@@ -255,7 +254,7 @@ public sealed class LayoutWorkletTests : IDisposable
             """);
 
         Assert.Equal("added", document.Title);
-        _engine.Evaluate(document.DefaultView!, "let resolved = false; Promise.resolve().then(() => resolved = true); document.body.dataset.result = document.getElementById('box').offsetHeight + ' ' + resolved;");
+        TestScriptEngines.Evaluate(_engine, document.DefaultView!, "let resolved = false; Promise.resolve().then(() => resolved = true); document.body.dataset.result = document.getElementById('box').offsetHeight + ' ' + resolved;");
         Assert.Equal("20 false", document.Body!.GetAttribute("data-result"));
         Assert.Empty(_errors);
     }

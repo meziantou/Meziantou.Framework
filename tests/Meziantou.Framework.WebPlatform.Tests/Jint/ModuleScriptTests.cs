@@ -1,5 +1,4 @@
 using Meziantou.Framework.WebPlatform.Dom;
-using Meziantou.Framework.WebPlatform.Jint;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
 
@@ -11,12 +10,12 @@ public sealed class ModuleScriptTests : IDisposable
     private readonly BrowsingContextScope _contexts = new();
     private readonly List<ScriptError> _errors = [];
     private readonly RecordingLoader _loader = new();
-    private readonly JintScriptEngine _engine = new();
+    private readonly ScriptEngine _engine = TestScriptEngines.Create();
 
     public void Dispose()
     {
         _contexts.Dispose();
-        _engine.Dispose();
+        TestScriptEngines.Dispose(_engine);
     }
 
     private Document Load(string html)
@@ -216,7 +215,7 @@ public sealed class ModuleScriptTests : IDisposable
 
         Assert.Equal("error", document.Title);
         var error = Assert.Single(_errors);
-        Assert.Equal("SyntaxError", ((global::Jint.Native.JsValue)error.Error!).Get("name").ToString());
+        Assert.Equal("SyntaxError", TestScriptEngines.GetErrorName(error));
         Assert.Equal("https://example.com/dir/invalid.js", error.Filename);
     }
 
@@ -247,7 +246,7 @@ public sealed class ModuleScriptTests : IDisposable
             """);
 
         var error = Assert.Single(_errors);
-        Assert.Equal("SyntaxError", ((global::Jint.Native.JsValue)error.Error!).Get("name").ToString());
+        Assert.Equal("SyntaxError", TestScriptEngines.GetErrorName(error));
     }
 
     [Fact]
@@ -259,7 +258,7 @@ public sealed class ModuleScriptTests : IDisposable
             """);
 
         var error = Assert.Single(_errors);
-        Assert.Equal("SyntaxError", ((global::Jint.Native.JsValue)error.Error!).Get("name").ToString());
+        Assert.Equal("SyntaxError", TestScriptEngines.GetErrorName(error));
         Assert.Equal("https://example.com/dir/data.json", error.Filename);
     }
 
@@ -306,7 +305,7 @@ public sealed class ModuleScriptTests : IDisposable
 
         Assert.Equal("TypeError", document.Title);
         AddScript("https://example.com/dir/later.js", "export const value = 'fetched again';");
-        _engine.Evaluate(document.DefaultView!, "retry()");
+        TestScriptEngines.Evaluate(_engine, document.DefaultView!, "retry()");
         _contexts.EventLoop.RunUntilIdle();
         Assert.Equal("fetched again", document.Title);
     }

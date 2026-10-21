@@ -1,6 +1,7 @@
 using Meziantou.Framework.WebPlatform.Css.Om;
 using Meziantou.Framework.WebPlatform.Dom;
-using Meziantou.Framework.WebPlatform.Jint;
+using Meziantou.Framework.WebPlatform.Scripting;
+using Meziantou.Framework.WebPlatform.Tests.Scripting;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Css;
 
@@ -71,7 +72,7 @@ public sealed class HighlightTests : IDisposable
     [Fact]
     public void CssHighlights_IsTheRegistryOfTheDocumentOfTheWindow()
     {
-        using var engine = new JintScriptEngine();
+        using var engine = TestScriptEngines.CreateDisposable();
         var context = _contexts.Create(new BrowsingContextOptions { ScriptEngine = engine });
         var document = context.Navigate("https://example.com/", _ => """
             <p id=p>text</p>

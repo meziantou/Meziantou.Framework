@@ -1,5 +1,6 @@
 using Meziantou.Framework.WebPlatform.Dom;
-using Meziantou.Framework.WebPlatform.Jint;
+using Meziantou.Framework.WebPlatform.Scripting;
+using Meziantou.Framework.WebPlatform.Tests.Scripting;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Dom;
@@ -27,7 +28,7 @@ public sealed class ClientHintsTests : IDisposable
     };
 
     private readonly BrowsingContextScope _contexts = new();
-    private readonly JintScriptEngine _engine = new();
+    private readonly ScriptEngine _engine = TestScriptEngines.Create();
     private readonly Dictionary<string, DocumentResource> _resources = new(StringComparer.Ordinal);
     private readonly List<DocumentRequest> _requests = [];
     private Action? _onRequest;
@@ -35,7 +36,7 @@ public sealed class ClientHintsTests : IDisposable
     public void Dispose()
     {
         _contexts.Dispose();
-        _engine.Dispose();
+        TestScriptEngines.Dispose(_engine);
     }
 
     private void AddPage(string url, string html, params KeyValuePair<string, string>[] headers)
@@ -511,15 +512,15 @@ public sealed class ClientHintsTests : IDisposable
         var brands = """[{"brand":"Test \"Browser\"","version":"12"},{"brand":"Engine","version":"3"}]""";
         Assert.Equal(
             $$"""[{{brands}},false,"Linux",{"brands":{{brands}},"mobile":false,"platform":"Linux"},{"architecture":"arm","bitness":"64","brands":{{brands}},"formFactors":["Tablet","Desktop"],"fullVersionList":[{"brand":"Engine","version":"3.1.4"}],"mobile":false,"model":"Model X","platform":"Linux","platformVersion":"6.1.0","uaFullVersion":"12.0.1","wow64":false},true]""",
-            _engine.Evaluate(document.DefaultView!, "window.result").ToString());
+            TestScriptEngines.Evaluate(_engine, document.DefaultView!, "window.result"));
 
         // A document that is not allowed to use ch-ua-high-entropy-values only gets the low-entropy values
         var frame = ((HtmlIFrameElement)document.QuerySelector("iframe")!).ContentNavigable!.Document;
-        Assert.Equal($$"""{"brands":{{brands}},"mobile":false,"platform":"Linux"}""", _engine.Evaluate(frame.DefaultView!, "window.result").ToString());
+        Assert.Equal($$"""{"brands":{{brands}},"mobile":false,"platform":"Linux"}""", TestScriptEngines.Evaluate(_engine, frame.DefaultView!, "window.result"));
 
         // The API is only exposed in the secure contexts
         document = Load(context, "http://example.com/insecure.html");
-        Assert.Equal("undefinedfunction", _engine.Evaluate(document.DefaultView!, "window.result").ToString());
+        Assert.Equal("undefinedfunction", TestScriptEngines.Evaluate(_engine, document.DefaultView!, "window.result"));
 
         // The .NET API
         var data = Load(context).DefaultView!.Navigator.UserAgentData;

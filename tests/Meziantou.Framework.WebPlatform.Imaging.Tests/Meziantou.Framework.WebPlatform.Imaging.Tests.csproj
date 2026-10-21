@@ -18,6 +18,10 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.Jint\Meziantou.Framework.WebPlatform.Jint.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <!-- The helper that creates the script engine of the tests -->
+    <Compile Include="..\Meziantou.Framework.WebPlatform.Tests\Scripting\TestScriptEngines.cs" Link="TestScriptEngines.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 </Project>

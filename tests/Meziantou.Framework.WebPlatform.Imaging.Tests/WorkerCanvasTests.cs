@@ -1,5 +1,6 @@
 using Meziantou.Framework.WebPlatform.Dom;
-using Meziantou.Framework.WebPlatform.Jint;
+using Meziantou.Framework.WebPlatform.Scripting;
+using Meziantou.Framework.WebPlatform.Tests.Scripting;
 
 namespace Meziantou.Framework.WebPlatform.Imaging.Tests;
 
@@ -9,12 +10,12 @@ public sealed class WorkerCanvasTests : IDisposable
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(30);
 
     private readonly TestPages _pages = new();
-    private readonly JintScriptEngine _engine = new();
+    private readonly ScriptEngine _engine = TestScriptEngines.Create();
 
     public void Dispose()
     {
         _pages.Dispose();
-        _engine.Dispose();
+        TestScriptEngines.Dispose(_engine);
     }
 
     /// <summary>Runs a worker and returns the message it posts (the worker runs on its own thread).</summary>

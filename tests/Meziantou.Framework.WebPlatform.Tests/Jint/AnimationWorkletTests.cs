@@ -1,7 +1,5 @@
-using global::Jint;
 using Meziantou.Framework.WebPlatform.Animations;
 using Meziantou.Framework.WebPlatform.Dom;
-using Meziantou.Framework.WebPlatform.Jint;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
 using Microsoft.Extensions.Time.Testing;
@@ -18,13 +16,13 @@ public sealed class AnimationWorkletTests : IDisposable
     private readonly List<ScriptError> _errors = [];
     private readonly List<(GlobalScope Global, string Text)> _messages = [];
     private readonly RecordingLoader _loader = new();
-    private readonly JintScriptEngine _engine = new();
+    private readonly ScriptEngine _engine = TestScriptEngines.Create();
     private readonly FakeTimeProvider _clock = new();
 
     public void Dispose()
     {
         _contexts.Dispose();
-        _engine.Dispose();
+        TestScriptEngines.Dispose(_engine);
     }
 
     /// <summary>Loads a document whose animation worklet runs a module; the script of the document runs once the module is added.</summary>
@@ -88,9 +86,9 @@ public sealed class AnimationWorkletTests : IDisposable
 
         // The local time is the one the animator set once the animation is finished, and the effect is removed when it is canceled
         Advance(2000);
-        Assert.Equal("finished", _engine.Evaluate(document.DefaultView!, "animation.playState").ToString());
+        Assert.Equal("finished", TestScriptEngines.Evaluate(_engine, document.DefaultView!, "animation.playState"));
         Assert.Equal("0.25", Opacity(document));
-        _engine.Evaluate(document.DefaultView!, "animation.cancel()");
+        TestScriptEngines.Evaluate(_engine, document.DefaultView!, "animation.cancel()");
         Assert.Equal("1", Opacity(document));
     }
 
@@ -167,8 +165,8 @@ public sealed class AnimationWorkletTests : IDisposable
         Assert.Equal("added", document.Title);
         Advance(1000);
         Assert.Empty(_errors);
-        var stateful = _engine.Evaluate(document.DefaultView!, "stateful.effect.getComputedTiming().localTime").AsNumber();
-        var stateless = _engine.Evaluate(document.DefaultView!, "stateless.effect.getComputedTiming().localTime").AsNumber();
+        var stateful = TestScriptEngines.EvaluateNumber(_engine, document.DefaultView!, "stateful.effect.getComputedTiming().localTime");
+        var stateless = TestScriptEngines.EvaluateNumber(_engine, document.DefaultView!, "stateless.effect.getComputedTiming().localTime");
         Assert.InRange(stateful, 50, 70);
         Assert.InRange(stateless, 1, 12);
         Assert.True(WorkletMessages.Count(message => message == "new instance") >= 3);

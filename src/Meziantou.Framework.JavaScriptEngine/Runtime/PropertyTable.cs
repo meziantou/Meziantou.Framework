@@ -4,8 +4,10 @@ namespace Meziantou.Framework.JavaScriptEngine;
 
 /// <summary>
 /// The own properties of an object, in insertion order, stored in one array of entries. Small tables are searched
-/// linearly; larger ones have a hash index (open addressing over the positions of the entries: the hash code is stored in
-/// the entry, in its padding). A deleted entry leaves a tombstone, removed when the table is compacted.
+/// linearly; larger ones have a hash index (open addressing over the positions of the entries). A deleted entry leaves a
+/// tombstone, removed when the table is compacted. An entry is 32 bytes: the fields of its key are stored without the
+/// padding of <see cref="PropertyKey"/>, and the hash codes are not stored (the keys are mostly the same string
+/// instances, compared by reference first).
 /// </summary>
 internal sealed class PropertyTable : PropertyMap
 {
@@ -14,7 +16,7 @@ internal sealed class PropertyTable : PropertyMap
     private Entry[] _entries;
 
     // The index: the position of an entry + 1 (0: an empty slot), at the slot of its hash code (linear probing). Its length
-    // is a power of 2, at least twice the number of entries (the tombstones stay in the probe sequences).
+    // is a power of 2, and it is rebuilt when it is two-thirds full (the tombstones stay in the probe sequences).
     private int[]? _index;
     private int _count;
     private int _deletedCount;
@@ -41,7 +43,7 @@ internal sealed class PropertyTable : PropertyMap
         for (var i = 0; i < _count; i++)
         {
             ref var entry = ref entries[i];
-            if (entry.Key.Equals(key) && !entry.IsDeleted)
+            if (key.EqualsRaw(entry.KeyValue, entry.KeyIndex) && !entry.IsDeleted)
                 return i;
         }
 
@@ -50,21 +52,24 @@ internal sealed class PropertyTable : PropertyMap
 
     private static int FindIndexed(int[] index, Entry[] entries, in PropertyKey key)
     {
-        var hash = key.GetHashCode();
         var mask = index.Length - 1;
-        for (var i = hash & mask; ; i = (i + 1) & mask)
+        for (var i = key.GetHashCode() & mask; ; i = (i + 1) & mask)
         {
             var slot = index[i];
             if (slot == 0)
                 return -1;
 
             ref var entry = ref entries[slot - 1];
-            if (entry.Hash == hash && !entry.IsDeleted && entry.Key.Equals(key))
+            if (key.EqualsRaw(entry.KeyValue, entry.KeyIndex) && !entry.IsDeleted)
                 return slot - 1;
         }
     }
 
-    public PropertyKey GetKey(int position) => _entries[position].Key;
+    public PropertyKey GetKey(int position)
+    {
+        ref var entry = ref _entries[position];
+        return PropertyKey.FromRaw(entry.KeyValue, entry.KeyIndex);
+    }
 
     public ref JsValue GetValue(int position) => ref _entries[position].Value;
 
@@ -93,20 +98,20 @@ internal sealed class PropertyTable : PropertyMap
 
         var position = _count++;
         ref var entry = ref _entries[position];
-        entry.Key = key;
+        entry.KeyValue = key.RawValue;
+        entry.KeyIndex = key.RawIndex;
         entry.Value = value;
         entry.Flags = flags;
         entry.IsDeleted = false;
         if (_index is not null)
         {
-            entry.Hash = key.GetHashCode();
-            if (_count * 2 > _index.Length)
+            if (_count * 3 > _index.Length * 2)
             {
                 BuildIndex();
             }
             else
             {
-                Insert(_index, entry.Hash, position);
+                Insert(_index, key.GetHashCode(), position);
             }
         }
         else if (_count > IndexThreshold)
@@ -157,8 +162,9 @@ internal sealed class PropertyTable : PropertyMap
 
     private void BuildIndex()
     {
+        // At most half full after a rebuild
         var length = 16;
-        while (length < _count * 4)
+        while (length < _count * 2)
         {
             length *= 2;
         }
@@ -169,8 +175,7 @@ internal sealed class PropertyTable : PropertyMap
             ref var entry = ref _entries[i];
             if (!entry.IsDeleted)
             {
-                entry.Hash = entry.Key.GetHashCode();
-                Insert(index, entry.Hash, i);
+                Insert(index, PropertyKey.FromRaw(entry.KeyValue, entry.KeyIndex).GetHashCode(), i);
             }
         }
 
@@ -191,10 +196,10 @@ internal sealed class PropertyTable : PropertyMap
 
     private struct Entry
     {
-        public PropertyKey Key;
-        public JsValue Value;
-        public int Hash;
+        public object? KeyValue;
+        public uint KeyIndex;
         public PropertyFlags Flags;
         public bool IsDeleted;
+        public JsValue Value;
     }
 }

@@ -92,6 +92,8 @@ internal static class ScriptProfile
         }
 
         var allocated = GC.GetAllocatedBytesForCurrentThread();
+        var collections = (GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2));
+        var pauses = GC.GetTotalPauseDuration();
         var start = System.Diagnostics.Stopwatch.GetTimestamp();
         for (var i = 0; i < count; i++)
         {
@@ -99,7 +101,9 @@ internal static class ScriptProfile
         }
 
         var elapsed = System.Diagnostics.Stopwatch.GetElapsedTime(start);
-        Console.WriteLine($"{scenario}: {elapsed.TotalMilliseconds * 1000 / count:F1} us, {(GC.GetAllocatedBytesForCurrentThread() - allocated) / count / 1024.0:F1} KB per operation");
+        Console.WriteLine($"{scenario}: {elapsed.TotalMilliseconds * 1000 / count:F1} us, {(GC.GetAllocatedBytesForCurrentThread() - allocated) / count / 1024.0:F1} KB per operation, " +
+            $"GC gen0 {GC.CollectionCount(0) - collections.Item1} gen1 {GC.CollectionCount(1) - collections.Item2} gen2 {GC.CollectionCount(2) - collections.Item3}, " +
+            $"pauses {(GC.GetTotalPauseDuration() - pauses).TotalMilliseconds * 1000 / count:F1} us per operation");
         return 0;
     }
 }

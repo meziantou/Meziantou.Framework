@@ -46,6 +46,7 @@ internal sealed partial class Intrinsics
         _intlNumberFormatPrototype = new JsObject(ObjectPrototype);
         _intlNumberFormat = NumberFormatBuiltins.Initialize(this, _intl);
         InitializeIntlRelativeTimeFormat(_intl);
+        InitializeIntlListFormat(_intl);
         LocaleSensitiveBuiltins.Initialize(this);
     }
 }

@@ -214,6 +214,32 @@ public sealed class IntlTests
         Assert.Equal("integer:1:day|group:,:day|integer:234:day|literal: days ago:", Evaluate("new Intl.RelativeTimeFormat('en').formatToParts(-1234, 'day').map(p => p.type + ':' + p.value + ':' + (p.unit ?? '')).join('|')"));
     }
 
+    [Theory]
+    [InlineData("en", "{}", "['a', 'b', 'c']", "a, b, and c")]
+    [InlineData("en", "{ type: 'disjunction' }", "['a', 'b']", "a or b")]
+    [InlineData("en", "{ type: 'unit', style: 'narrow' }", "['1h', '2m', '3s']", "1h 2m 3s")]
+    [InlineData("es", "{}", "['agua', 'hielo', 'hilo']", "agua, hielo e hilo")]
+    [InlineData("es", "{ type: 'disjunction' }", "['siete', '8']", "siete u 8")]
+    [InlineData("es", "{ type: 'disjunction' }", "['siete', '110']", "siete o 110")]
+    [InlineData("he", "{}", "['\u05D0', 'b']", "\u05D0 \u05D5-b")]
+    [InlineData("he", "{}", "['\u05D0', '\u05D1']", "\u05D0 \u05D5\u05D1")]
+    [InlineData("en", "{}", "[]", "")]
+    public void ListFormat(string locale, string options, string list, string expected)
+    {
+        Assert.Equal(expected, Evaluate($"new Intl.ListFormat('{locale}', {options}).format({list})"));
+    }
+
+    [Fact]
+    public void ListFormat_FormatToParts()
+    {
+        Assert.Equal("element:a|literal:, |element:b|literal:, and |element:c|TypeError", Evaluate("""
+            [
+                ...new Intl.ListFormat('en').formatToParts(['a', 'b', 'c']).map(p => p.type + ':' + p.value),
+                (() => { try { new Intl.ListFormat().format(['a', 1]); } catch (e) { return e.name; } })(),
+            ].join('|')
+            """));
+    }
+
     [Fact]
     public void DefaultLocale()
     {

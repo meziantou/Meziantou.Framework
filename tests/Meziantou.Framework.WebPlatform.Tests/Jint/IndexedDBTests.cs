@@ -68,6 +68,18 @@ public sealed class IndexedDBTests : IDisposable
     }
 
     [Fact]
+    public void Key_AProxyOfAnArrayIsNotAValidKey()
+    {
+        var document = Load("""
+            <script>
+              document.title = [indexedDB.cmp([1], [1]), (() => { try { indexedDB.cmp(new Proxy([1], {}), [1]); return 'valid'; } catch (e) { return e.name; } })()].join();
+            </script>
+            """);
+
+        Assert.Equal("0,DataError", document.Title);
+    }
+
+    [Fact]
     public void CreateIndex_IndexesTheExistingRecords()
     {
         var document = Load("""

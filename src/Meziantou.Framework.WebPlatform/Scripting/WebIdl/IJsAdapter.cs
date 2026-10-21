@@ -85,7 +85,7 @@ public interface IJsAdapter<TValue>
     /// <summary>Gets whether the value is a constructor (https://tc39.es/ecma262/#sec-isconstructor).</summary>
     bool IsConstructor(TValue value);
 
-    /// <summary>Gets whether the value is an ECMAScript array (https://tc39.es/ecma262/#sec-isarray).</summary>
+    /// <summary>Gets whether the value is an Array exotic object (https://tc39.es/ecma262/#sec-array-exotic-objects), not a Proxy of an array.</summary>
     bool IsArray(TValue value);
 
     /// <summary>Gets whether the value is a Date object.</summary>

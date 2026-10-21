@@ -73,7 +73,8 @@ internal readonly struct JavaScriptAdapter(JavaScriptAdapterState state) : IJsAd
 
     public bool IsConstructor(object value) => value is JsObject { IsConstructor: true };
 
-    public bool IsArray(object value) => value is JsObject obj && Engine.IsArray(obj);
+    // An Array exotic object: a Proxy of an array is not one (e.g. it is not a valid key of IndexedDB)
+    public bool IsArray(object value) => value is JsArray;
 
     public bool IsDate(object value) => value is JsObject obj && obj.HasInternalSlot(EngineInternalSlot.DateValue);
 

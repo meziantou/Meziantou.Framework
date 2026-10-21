@@ -4,7 +4,7 @@
     <IsTrimmable>true</IsTrimmable>
     <Description>A high-performance .NET TOML 1.1 parser, round-trippable syntax tree, and System.Text.Json-style object serializer, NativeAOT ready.</Description>
     <PackageTags>toml, parser, serialization, deserialization, nativeaot</PackageTags>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
   </PropertyGroup>
 
   <ItemGroup>

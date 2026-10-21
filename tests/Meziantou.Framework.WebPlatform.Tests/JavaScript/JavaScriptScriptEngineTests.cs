@@ -70,6 +70,15 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
     }
 
     [Fact]
+    public void RecursionLimit_Null_UnboundedRecursionThrowsARangeError()
+    {
+        using var engine = new JavaScriptScriptEngine(new JavaScriptScriptEngineOptions { RecursionLimit = null, MemoryLimit = null });
+        var document = Load("<script>try { (function f() { 1 + f(); })(); } catch (e) { document.title = e.constructor.name; }</script>", engine);
+        Assert.Equal("RangeError", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
     public void Evaluate_RunsCodeInTheRealmOfAWindow()
     {
         var document = Load("<script>var x = 40;</script>");

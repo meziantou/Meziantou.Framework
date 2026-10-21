@@ -52,7 +52,9 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
             MemoryLimit = options.MemoryLimit,
             MaxStatements = options.MaxStatements,
             RegExpTimeout = options.RegexTimeout,
-            RecursionLimit = options.RecursionLimit ?? int.MaxValue,
+            // The frames of the engine are not on the .NET stack: without a limit, an unbounded recursion would use all the
+            // memory instead of throwing a RangeError, so null is the limit of the engine (as in the browsers)
+            RecursionLimit = options.RecursionLimit ?? new JsEngineOptions().RecursionLimit,
             CancellationToken = terminationToken,
             TimeProvider = options.TimeProvider ?? TimeProvider.System,
         };

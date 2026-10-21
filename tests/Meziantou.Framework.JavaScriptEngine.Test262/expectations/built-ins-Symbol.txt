@@ -1,5 +1,3 @@
-built-ins/Symbol/prototype/Symbol.toPrimitive/removed-symbol-wrapper-ordinary-toprimitive.js:sloppy
-built-ins/Symbol/prototype/Symbol.toPrimitive/removed-symbol-wrapper-ordinary-toprimitive.js:strict
 built-ins/Symbol/species/builtin-getter-name.js:sloppy
 built-ins/Symbol/species/builtin-getter-name.js:strict
 built-ins/Symbol/species/subclassing.js:sloppy

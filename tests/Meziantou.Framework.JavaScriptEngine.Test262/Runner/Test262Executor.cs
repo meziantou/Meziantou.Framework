@@ -50,6 +50,7 @@ internal static class Test262Executor
         {
             CancellationToken = cancellation.Token,
             RecursionLimit = 1_000,
+            TimeZone = "UTC",
         });
 
         var output = new StringBuilder();

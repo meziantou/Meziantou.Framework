@@ -1,4 +1,0 @@
-built-ins/Reflect/construct/newtarget-is-not-constructor-throws.js:sloppy
-built-ins/Reflect/construct/newtarget-is-not-constructor-throws.js:strict
-built-ins/Reflect/construct/target-is-not-constructor-throws.js:sloppy
-built-ins/Reflect/construct/target-is-not-constructor-throws.js:strict

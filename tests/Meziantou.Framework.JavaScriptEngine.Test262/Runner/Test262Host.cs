@@ -39,7 +39,14 @@ internal static class Test262Host
             return default;
         });
 
-        realm.DefineMethod(host, "detachArrayBuffer", 1, (_, _, _, _) => throw ThrowHelper.CreateException(ErrorType.TypeError, "detachArrayBuffer is not supported yet"));
+        realm.DefineMethod(host, "detachArrayBuffer", 1, (_, _, arguments, _) =>
+        {
+            if (arguments.Length == 0 || arguments[0].Cell is not JsArrayBuffer buffer)
+                throw ThrowHelper.CreateException(ErrorType.TypeError, "detachArrayBuffer expects an ArrayBuffer");
+
+            buffer.Detach(buffer.DetachKey);
+            return default;
+        });
         host.DefineBuiltIn("global", global);
 
         // [[IsHTMLDDA]]: typeof is "undefined", ToBoolean is false, == null, and calling it returns null

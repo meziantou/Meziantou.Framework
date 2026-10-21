@@ -1,6 +1,0 @@
-built-ins/Boolean/S9.2_A6_T1.js:sloppy
-built-ins/Boolean/S9.2_A6_T1.js:strict
-built-ins/Boolean/prototype/toString/S15.6.4.2_A2_T3.js:sloppy
-built-ins/Boolean/prototype/toString/S15.6.4.2_A2_T3.js:strict
-built-ins/Boolean/prototype/valueOf/S15.6.4.3_A2_T3.js:sloppy
-built-ins/Boolean/prototype/valueOf/S15.6.4.3_A2_T3.js:strict

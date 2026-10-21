@@ -146,10 +146,13 @@ internal sealed class Shape : PropertyMap
             (_transitions ??= []).Add(transitionKey, child);
         }
 
-        // The objects that reach a shape usually get as many properties as the objects that reached it before
-        for (var shape = this; shape is not null && shape.ExpectedSlotCount < child.Count; shape = shape.Parent)
+        // The objects that reach a shape usually get as many properties as the objects that reached it before. Only the
+        // first counts matter (GetSlotsLength allocates at most 4 slots at once): the walk stops early, it would be
+        // quadratic in the number of properties of an object.
+        var expected = Math.Min(child.Count, 4);
+        for (var shape = this; shape is not null && shape.ExpectedSlotCount < expected; shape = shape.Parent)
         {
-            shape.ExpectedSlotCount = child.Count;
+            shape.ExpectedSlotCount = expected;
         }
 
         return child;
@@ -157,7 +160,7 @@ internal sealed class Shape : PropertyMap
 
     /// <summary>
     /// Gets the number of slots to allocate for an object that reaches the shape: the largest number of properties of the
-    /// shapes that descend from it (the objects of a constructor or of an object literal get their slots at once).
+    /// shapes that descend from it, at most 4 (the objects of a constructor or of an object literal get their slots at once).
     /// </summary>
     public int ExpectedSlotCount { get; private set; }
 

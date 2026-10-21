@@ -181,6 +181,9 @@ internal sealed partial class Intrinsics
     public void DefineGlobalBindings(JsObject globalObject)
     {
         _globalBindingsDefined = true;
+
+        // The global object has many (lazy) properties, and a host usually adds more: a table, not a chain of shapes
+        globalObject.UsePropertyTable(_globals.Count);
         foreach (var (name, value, factory, flags) in _globals)
         {
             if (factory is null)

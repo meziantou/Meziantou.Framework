@@ -108,6 +108,8 @@ public partial class JsObject
             return;
         }
 
+        // The objects that get lazy properties (prototypes, global objects) get many of them: a table, not a chain of shapes
+        GetPropertyTable();
         SetOwnSlot(key.Key, new JsValue(new LazyAccessorPair(getterFactory, getterState, setterFactory, setterState)), flags | PropertyFlags.Accessor);
     }
 
@@ -122,7 +124,28 @@ public partial class JsObject
             return;
         }
 
+        GetPropertyTable();
         SetOwnSlot(key.Key, new JsValue(new LazyAccessorPair(getterFactory, setterFactory)), flags | PropertyFlags.Accessor);
+    }
+
+    /// <summary>
+    /// Prepares the object for <paramref name="count"/> more properties (e.g. a host that defines hundreds of properties on a
+    /// global object): their storage is allocated once. It does not change the behavior of the object.
+    /// </summary>
+    public void ReserveProperties(int count)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        if (IsExotic)
+            return;
+
+        var current = _map switch
+        {
+            PropertyTable table => table.Count,
+            Shape shape => shape.Count,
+            _ => 0,
+        };
+
+        UsePropertyTable(current + count);
     }
 
     /// <summary>Gets whether the object has an internal slot of the built-in objects, without running code.</summary>

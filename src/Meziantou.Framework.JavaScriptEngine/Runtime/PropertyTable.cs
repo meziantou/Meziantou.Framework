@@ -80,6 +80,20 @@ internal sealed class PropertyTable : PropertyMap
     /// <summary>Gets the number of positions to enumerate (including the deleted ones: check <see cref="IsDeleted"/>).</summary>
     public int Capacity => _count;
 
+    /// <summary>Makes room for <paramref name="capacity"/> properties (the entries and the index are allocated once).</summary>
+    public void EnsureCapacity(int capacity)
+    {
+        if (capacity > _entries.Length)
+        {
+            Array.Resize(ref _entries, capacity);
+        }
+
+        if (capacity > IndexThreshold && (_index is null || _index.Length < capacity * 2))
+        {
+            BuildIndex(capacity);
+        }
+    }
+
     public int Add(in PropertyKey key, JsValue value, PropertyFlags flags)
     {
         if (_count == _entries.Length)
@@ -160,11 +174,11 @@ internal sealed class PropertyTable : PropertyMap
         }
     }
 
-    private void BuildIndex()
+    private void BuildIndex(int capacity = 0)
     {
-        // At most half full after a rebuild
+        // At most half full after a rebuild (or when the table has the expected number of entries)
         var length = 16;
-        while (length < _count * 2)
+        while (length < Math.Max(_count, capacity) * 2)
         {
             length *= 2;
         }

@@ -529,14 +529,15 @@ public partial class JsObject : JsCell
     }
 
     /// <summary>Gets the property table of the object: the properties of its shape move to a table of its own (dictionary mode).</summary>
-    private PropertyTable GetPropertyTable()
+    private PropertyTable GetPropertyTable(int capacity = 0)
     {
         if (_map is PropertyTable existing)
             return existing;
 
+        // The object usually gets more properties (a table replaces the shapes of an object that has many properties)
         var shape = (Shape?)_map;
         var count = shape?.Count ?? 0;
-        var table = new PropertyTable(Math.Max(4, count));
+        var table = new PropertyTable(Math.Max(Math.Max(4, count * 2), capacity));
         for (var i = 0; i < count; i++)
         {
             table.Add(shape!.GetKey(i), _slots![i], shape.GetFlags(i));

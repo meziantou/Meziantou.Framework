@@ -149,6 +149,15 @@ public partial class JsObject
         }
     }
 
+    /// <summary>
+    /// Moves the object to a property table that has room for <paramref name="capacity"/> properties (e.g. a global object
+    /// or a prototype that gets many properties from the host): no shape is created for its properties.
+    /// </summary>
+    internal void UsePropertyTable(int capacity)
+    {
+        GetPropertyTable(capacity).EnsureCapacity(capacity);
+    }
+
     /// <summary>Allocates the slots of an object that has no property yet and will get <paramref name="count"/> properties (e.g. the length and the name of a built-in function).</summary>
     internal void ReserveSlots(int count)
     {

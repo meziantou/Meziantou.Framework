@@ -100,6 +100,39 @@ if (args is ["profile", var workload, var seconds])
     return 0;
 }
 
+if (args is ["harness", var harnessPath, ..])
+{
+    // A test of the web-platform-tests without a DOM: a new engine and realm, the prepared testharness.js, a test file of
+    // 20 tests, and the jobs (testharness.js runs in its shell environment)
+    var harnessCode = File.ReadAllText(harnessPath);
+    var iterations = args.Length > 2 ? int.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 50;
+    var prepared = JsPreparedScript.Parse(harnessCode);
+    var jintPrepared = Jint.Engine.PrepareScript(harnessCode);
+    var mine = Measure(() =>
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        realm.Execute("globalThis.self = globalThis;");
+        realm.Execute(prepared);
+        realm.Execute(Workloads.HarnessTests);
+        engine.RunJobs();
+        if (realm.Execute("globalThis.passed").AsNumber() != 40)
+            throw new InvalidOperationException("The tests did not pass");
+    }, iterations);
+    var theirs = Measure(() =>
+    {
+        using var engine = new Jint.Engine();
+        engine.Execute("globalThis.self = globalThis;");
+        engine.Execute(jintPrepared);
+        engine.Execute(Workloads.HarnessTests);
+        engine.Advanced.ProcessTasks();
+        if (Jint.JsValueExtensions.AsNumber(engine.Evaluate("globalThis.passed")) != 40)
+            throw new InvalidOperationException("The tests did not pass with Jint");
+    }, iterations);
+    Console.WriteLine($"{"Harness",-14} {mine,10:F3} ms  Jint {theirs,10:F3} ms  ratio {mine / theirs,6:F2}");
+    return 0;
+}
+
 if (args is ["quick", ..])
 {
     var filter = args.Length > 1 ? args[1] : null;

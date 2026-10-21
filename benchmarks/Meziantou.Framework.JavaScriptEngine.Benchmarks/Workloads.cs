@@ -50,6 +50,27 @@ internal static class Workloads
             """,
     };
 
+    /// <summary>A test file of the web-platform-tests style, run after testharness.js (the harness command).</summary>
+    public static string HarnessTests { get; } = """
+        setup({ explicit_done: true });
+        add_completion_callback(tests => { globalThis.passed = tests.filter(t => t.status === 0).length; });
+        for (let i = 0; i < 20; i++) {
+          test(() => {
+            const items = Array.from({ length: 20 }, (_, j) => ({ id: j, name: 'item ' + j }));
+            assert_equals(items.length, 20, 'length');
+            assert_array_equals(items.map(x => x.id).slice(0, 3), [0, 1, 2]);
+            assert_true(items.every(x => typeof x.name === 'string'), 'names');
+            assert_throws_js(TypeError, () => { null.foo; });
+            assert_object_equals({ a: i, b: [1, 2] }, { a: i, b: [1, 2] });
+          }, 'test ' + i);
+          promise_test(async () => {
+            const value = await Promise.resolve(i);
+            assert_equals(value, i);
+          }, 'promise test ' + i);
+        }
+        done();
+        """;
+
     /// <summary>A script of about 100 KB to measure the parser and the compiler.</summary>
     public static string LargeScript { get; } = string.Concat(Enumerable.Range(0, 400).Select(i => $$"""
         function f{{i}}(a, b, ...rest) {

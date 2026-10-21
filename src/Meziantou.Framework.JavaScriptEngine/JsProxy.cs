@@ -73,7 +73,7 @@ public sealed class JsProxy : JsObject, IProxyTarget
     JsObject IProxyTarget.GetProxyTargetOrThrow()
     {
         if (_target is null)
-            return ThrowRevoked<JsObject>("IsArray");
+            return ThrowHelper.ThrowTypeError<JsObject>("Cannot perform the operation on a proxy that has been revoked");
 
         return _target;
     }

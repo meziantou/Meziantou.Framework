@@ -39,8 +39,18 @@ internal static class Operators
     /// <summary>ApplyStringOrNumericBinaryOperator for +.</summary>
     public static JsValue Add(JsValue left, JsValue right)
     {
-        if (left.Cell is JsString leftString && right.Cell is JsString rightString)
-            return Concat(leftString, rightString);
+        if (left.Cell is JsString leftString)
+        {
+            if (right.Cell is JsString rightString)
+                return Concat(leftString, rightString);
+
+            if (right.IsNumber && TryConcatInteger(leftString, right.NumberValue, integerFirst: false, out var result))
+                return result;
+        }
+        else if (right.Cell is JsString rightString && left.IsNumber && TryConcatInteger(rightString, left.NumberValue, integerFirst: true, out var result))
+        {
+            return result;
+        }
 
         var leftPrimitive = JsOperations.ToPrimitive(left);
         var rightPrimitive = JsOperations.ToPrimitive(right);
@@ -56,6 +66,27 @@ internal static class Operators
             return JsValue.FromBigInt(leftNumeric.AsBigInt() + rightNumeric.AsBigInt());
 
         return ThrowHelper.ThrowTypeError<JsValue>("Cannot mix BigInt and other types, use explicit conversions");
+    }
+
+    /// <summary>
+    /// A short string concatenated with an integer ('item' + i): the digits are written in the result (no string for the
+    /// number, no intermediate string value). ToString of an integer is its decimal digits (-0 is "0").
+    /// </summary>
+    private static bool TryConcatInteger(JsString str, double number, bool integerFirst, out JsValue result)
+    {
+        if (str.Length > 32 || number is < int.MinValue or > int.MaxValue || number != Math.Floor(number))
+        {
+            result = default;
+            return false;
+        }
+
+        var integer = (int)number;
+        Span<char> digits = stackalloc char[11];
+        integer.TryFormat(digits, out var digitCount, provider: System.Globalization.CultureInfo.InvariantCulture);
+        var text = str.ToString();
+        var concatenated = integerFirst ? string.Concat(digits[..digitCount], text) : string.Concat(text, digits[..digitCount]);
+        result = JsValue.FromJsString(JsString.Create(concatenated));
+        return true;
     }
 
     private static JsValue Concat(JsString left, JsString right)

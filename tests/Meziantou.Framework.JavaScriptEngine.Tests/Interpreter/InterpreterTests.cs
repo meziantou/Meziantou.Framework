@@ -89,6 +89,19 @@ public sealed class InterpreterTests
     }
 
     [Fact]
+    public void Scripts_LexicalDeclarationOverVarOfEval()
+    {
+        // The vars created by eval code are configurable: a later script can declare a lexical binding of the same name
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        realm.Execute("eval('var x = 1; if (true) { function f() { } }')");
+        Assert.Equal("2,3", realm.Execute("let x = 2; let f = 3; x + ',' + f").AsString());
+        realm.Execute("var y;");
+        var exception = Assert.Throws<JsException>(() => realm.Execute("let y;"));
+        Assert.StartsWith("SyntaxError:", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ThrowFromScript()
     {
         using var engine = new JsEngine();

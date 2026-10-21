@@ -107,6 +107,8 @@ internal static class DateTimeFormatBuiltins
     ];
 
     private static readonly ConcurrentDictionary<(DateTimeLocaleData Data, string Key), DateTimeFormatRecord> Formats = new();
+    private static readonly ConcurrentDictionary<(string Locale, string Key), IReadOnlyList<string?>> LocaleData = new();
+    private static readonly string?[] HourCycleLocaleData = [null, "h11", "h12", "h23", "h24"];
 
     public static JsFunction Initialize(Intrinsics intrinsics, JsObject intl)
     {
@@ -151,30 +153,27 @@ internal static class DateTimeFormatBuiltins
     /// <summary>The locale data of the relevant extension keys.</summary>
     private static IReadOnlyList<string?> GetLocaleData(string locale, string key)
     {
-        switch (key)
+        if (key is "hc")
+            return HourCycleLocaleData;
+
+        return LocaleData.GetOrAdd((locale, key), static key =>
         {
-            case "ca":
+            if (key.Key is "nu")
+                return NumberFormatBuiltins.GetNumberingSystemLocaleData(key.Locale);
+
+            var tag = LanguageTag.Parse(key.Locale) ?? LanguageTag.Parse("und")!;
+            var preferred = LocaleInfo.GetCalendars(tag);
+            var result = new List<string?>(LocaleInfo.AvailableCalendars.Length + 1) { preferred[0] };
+            foreach (var calendar in LocaleInfo.AvailableCalendars)
+            {
+                if (calendar != preferred[0])
                 {
-                    var tag = LanguageTag.Parse(locale) ?? LanguageTag.Parse("und")!;
-                    var preferred = LocaleInfo.GetCalendars(tag);
-                    var result = new List<string?>(LocaleInfo.AvailableCalendars.Length + 1) { preferred[0] };
-                    foreach (var calendar in LocaleInfo.AvailableCalendars)
-                    {
-                        if (calendar != preferred[0])
-                        {
-                            result.Add(calendar);
-                        }
-                    }
-
-                    return result;
+                    result.Add(calendar);
                 }
+            }
 
-            case "hc":
-                return [null, "h11", "h12", "h23", "h24"];
-
-            default:
-                return NumberFormatBuiltins.GetNumberingSystemLocaleData(locale);
-        }
+            return result;
+        });
     }
 
     /// <summary>CreateDateTimeFormat(newTarget, locales, options, required, defaults [, toLocaleStringTimeZone])</summary>

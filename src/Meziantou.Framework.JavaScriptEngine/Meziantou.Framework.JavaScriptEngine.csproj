@@ -12,6 +12,10 @@
     <NoWarn>$(NoWarn);MA0182</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.Language.Regex/Meziantou.Framework.Language.Regex.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.JavaScriptEngine.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.JavaScriptEngine.Test262" />
     <InternalsVisibleTo Include="Meziantou.Framework.JavaScriptEngine.Benchmarks" />

@@ -352,6 +352,15 @@ internal sealed class JsTypedArray : JsObject
         return OrdinarySet(key, value, receiver);
     }
 
+    /// <summary>[[PreventExtensions]]: a typed array whose length can change (IsTypedArrayFixedLength is false) stays extensible.</summary>
+    internal override bool PreventExtensions()
+    {
+        if (IsLengthTracking || (!ViewedArrayBuffer.IsFixedLength && !ViewedArrayBuffer.IsShared))
+            return false;
+
+        return base.PreventExtensions();
+    }
+
     internal override bool Delete(in PropertyKey key)
     {
         if (TryGetNumericIndex(key, out var index))

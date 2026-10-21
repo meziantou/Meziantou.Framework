@@ -1,0 +1,6 @@
+built-ins/Number/prototype/toPrecision/exponential.js:sloppy
+built-ins/Number/prototype/toPrecision/exponential.js:strict
+built-ins/Number/prototype/toString/S15.7.4.2_A4_T03.js:sloppy
+built-ins/Number/prototype/toString/S15.7.4.2_A4_T03.js:strict
+built-ins/Number/prototype/valueOf/S15.7.4.4_A2_T03.js:sloppy
+built-ins/Number/prototype/valueOf/S15.7.4.4_A2_T03.js:strict

@@ -1,0 +1,2 @@
+built-ins/Map/valid-keys.js:sloppy
+built-ins/Map/valid-keys.js:strict

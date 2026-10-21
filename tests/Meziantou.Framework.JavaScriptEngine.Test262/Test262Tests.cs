@@ -90,6 +90,7 @@ public sealed class Test262Tests
     {
         var test = Test262Discovery.Discover(directory, excludedDirectories).ById[id];
         var results = Test262Executor.Run(test);
+        Test262Report.Write(test, results);
         Test262Expectations.Check(test, results);
     }
 }

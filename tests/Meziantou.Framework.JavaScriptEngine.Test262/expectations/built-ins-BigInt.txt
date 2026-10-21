@@ -1,0 +1,2 @@
+built-ins/BigInt/wrapper-object-ordinary-toprimitive.js:sloppy
+built-ins/BigInt/wrapper-object-ordinary-toprimitive.js:strict

@@ -1,0 +1,2 @@
+built-ins/Set/valid-values.js:sloppy
+built-ins/Set/valid-values.js:strict

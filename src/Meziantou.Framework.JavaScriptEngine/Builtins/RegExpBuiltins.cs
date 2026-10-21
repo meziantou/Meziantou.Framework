@@ -334,7 +334,13 @@ internal static class RegExpBuiltins
             regexp.Set(LastIndexKey, captures[1], throwOnFailure: true);
         }
 
-        // The legacy static properties of %RegExp% follow the matches of the regular expressions of its realm
+        UpdateLegacyStaticProperties(currentRealm, regexp, input, captures);
+        return captures;
+    }
+
+    /// <summary>The legacy static properties of %RegExp% follow the successful matches of the regular expressions of its realm.</summary>
+    private static void UpdateLegacyStaticProperties(JsRealm currentRealm, JsRegExpObject regexp, string input, int[] captures)
+    {
         if (ReferenceEquals(currentRealm, regexp.Realm))
         {
             if (regexp.LegacyFeaturesEnabled)
@@ -346,8 +352,6 @@ internal static class RegExpBuiltins
                 currentRealm.Intrinsics.RegExpLegacyStatics.Invalidate();
             }
         }
-
-        return captures;
     }
 
     /// <summary>The Array RegExpBuiltinExec returns: the captures, index, input, groups and indices.</summary>
@@ -1085,19 +1089,41 @@ internal static class RegExpBuiltins
             return array;
         }
 
+        // When the splitter is a RegExp of this realm that runs the intrinsic exec, nothing observes the sticky attempts
+        // at each position: a single search finds the next position where a sticky match succeeds
+        JsRegExpObject? builtinSplitter = null;
+        if (ReferenceEquals(constructor, realm.Intrinsics.RegExp) && TryGetBuiltinExec(splitter, out var candidate))
+        {
+            builtinSplitter = candidate;
+        }
+
         var lastMatchEnd = 0;
         var searchIndex = 0;
         while (searchIndex < size)
         {
-            splitter.Set(LastIndexKey, searchIndex, throwOnFailure: true);
-            var (captures, result) = RegExpExecRaw(splitter, input);
-            if (captures is null && result.IsNull)
+            int[]? captures;
+            JsValue result = default;
+            if (builtinSplitter is not null)
             {
-                searchIndex = (int)AdvanceStringIndex(input, searchIndex, unicodeMatching);
-                continue;
+                captures = builtinSplitter.Matcher!.Exec(input, searchIndex, sticky: false, JsEngine.Current);
+                if (captures is null || captures[0] >= size)
+                    break;
+
+                searchIndex = captures[0];
+                UpdateLegacyStaticProperties(builtinSplitter.Realm, builtinSplitter, input, captures);
+            }
+            else
+            {
+                splitter.Set(LastIndexKey, searchIndex, throwOnFailure: true);
+                (captures, result) = RegExpExecRaw(splitter, input);
+                if (captures is null && result.IsNull)
+                {
+                    searchIndex = (int)AdvanceStringIndex(input, searchIndex, unicodeMatching);
+                    continue;
+                }
             }
 
-            var matchEnd = captures is not null ? captures[1] : (int)Math.Min(JsOperations.ToLength(splitter.Get(LastIndexKey)), size);
+            var matchEnd = captures is not null ? Math.Min(captures[1], size) : (int)Math.Min(JsOperations.ToLength(splitter.Get(LastIndexKey)), size);
             if (matchEnd == lastMatchEnd)
             {
                 searchIndex = (int)AdvanceStringIndex(input, searchIndex, unicodeMatching);

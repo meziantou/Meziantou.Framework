@@ -326,6 +326,11 @@ public sealed class RegExpBuiltinsTests
         Assert.Equal(["a", "b"], ToStrings(context.StringMethod("abc", "split", "", 2)));
         Assert.Equal(["abc"], ToStrings(context.StringMethod("abc", "split")));
         Assert.Equal([""], ToStrings(context.StringMethod("", "split", ",")));
+
+        // The legacy static properties follow the matches of the splitter
+        Assert.Equal(["a", "1", "b", "2", "c"], ToStrings(context.StringMethod("a1b2c", "split", context.NewRegExp("(\\d)"))));
+        Assert.Equal("2", context.RegExp.Get(new PropertyKey("$1")).AsString());
+        Assert.Equal("a1b", context.RegExp.Get(new PropertyKey("leftContext")).AsString());
     }
 
     [Fact]

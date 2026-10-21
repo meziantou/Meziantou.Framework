@@ -460,7 +460,7 @@ internal sealed class RegExpParser
     public static bool IsBasicWordCharacter(int c) => c is (>= 'a' and <= 'z') or (>= 'A' and <= 'Z') or (>= '0' and <= '9') or '_';
 
     /// <summary>The characters of WhiteSpace and LineTerminator (a shared set: it must not be modified).</summary>
-    public static CodePointSet CreateWhiteSpaceSet() => s_whiteSpace ??= CreateWhiteSpaceSetCore();
+    public static CodePointSet CreateWhiteSpaceSet() => Volatile.Read(ref s_whiteSpace) ?? CreateWhiteSpaceSetCore();
 
     private static CodePointSet CreateWhiteSpaceSetCore()
     {
@@ -486,6 +486,7 @@ internal sealed class RegExpParser
         }
 
         _ = set.RangeCount;
+        Volatile.Write(ref s_whiteSpace, set);
         return set;
     }
 

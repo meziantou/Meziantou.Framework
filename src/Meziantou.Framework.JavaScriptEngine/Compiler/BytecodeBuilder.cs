@@ -19,6 +19,7 @@ internal sealed class BytecodeBuilder
     private readonly List<int> _labelDepths = [];
     private readonly List<(int Position, int Label)> _fixups = [];
     private int _lastPositionOffset = -1;
+    private int _cacheCount;
 
     // The starts of the last three instructions (the last one first) and the position of the last marked label, for the peephole optimizations
     private int _instruction1 = -1;
@@ -29,6 +30,9 @@ internal sealed class BytecodeBuilder
     public int StackDepth { get; set; }
 
     public int MaxStack { get; private set; }
+
+    /// <summary>Gets the number of inline caches of the instructions (<see cref="FunctionTemplate.Caches"/>).</summary>
+    public int CacheCount => _cacheCount;
 
     /// <summary>Gets whether the code contains an await (the top-level await of a module).</summary>
     public bool ContainsAwait { get; private set; }
@@ -145,6 +149,13 @@ internal sealed class BytecodeBuilder
 
     public void Emit(OpCode op, int operand)
     {
+        if (HasInlineCache(op))
+        {
+            // The second operand is the index of the inline cache of the instruction
+            Emit(op, operand, _cacheCount++);
+            return;
+        }
+
         Debug.Assert(GetOperandCount(op) == 1, $"{op} does not have 1 operand");
         EmitCore(op, operand);
         _code.Add(operand);
@@ -330,19 +341,20 @@ internal sealed class BytecodeBuilder
     // Instruction table
     // ------------------------------------------------------------------------------------------------------------------
 
+    /// <summary>Gets whether an instruction has an inline cache (its last operand is the index of the cache).</summary>
+    public static bool HasInlineCache(OpCode op) => op is OpCode.GetProperty or OpCode.SetProperty or OpCode.DefineField or OpCode.LoadGlobal or OpCode.LoadGlobalOrUndefined;
+
     public static int GetOperandCount(OpCode op)
     {
         return op switch
         {
             OpCode.PushInt or OpCode.PushConst
                 or OpCode.LoadLocal or OpCode.StoreLocal
-                or OpCode.LoadGlobal or OpCode.LoadGlobalOrUndefined
                 or OpCode.LoadName or OpCode.LoadNameOrUndefined or OpCode.LoadNameForCall or OpCode.DeleteName or OpCode.InitializeName
                 or OpCode.PushScope
                 or OpCode.LoadArgument or OpCode.LoadRestArguments or OpCode.CreateArguments
                 or OpCode.Jump or OpCode.JumpIfTrue or OpCode.JumpIfFalse or OpCode.JumpIfTrueKeep or OpCode.JumpIfFalseKeep
                 or OpCode.JumpIfNullishKeep or OpCode.JumpIfNotNullishKeep or OpCode.JumpIfNotUndefinedKeep
-                or OpCode.GetProperty or OpCode.SetProperty or OpCode.DefineField
                 or OpCode.DeleteElement
                 or OpCode.CopyDataPropertiesExcluding
                 or OpCode.GetSuperProperty or OpCode.SetSuperProperty
@@ -359,6 +371,7 @@ internal sealed class BytecodeBuilder
                 or OpCode.ResolveName or OpCode.LoadResolved or OpCode.SetVarBinding or OpCode.AsyncDisposeNext
                 => 1,
             OpCode.LoadLocalChecked or OpCode.StoreLocalChecked or OpCode.ThrowConstAssignLocal
+                or OpCode.GetProperty or OpCode.SetProperty or OpCode.DefineField or OpCode.LoadGlobal or OpCode.LoadGlobalOrUndefined
                 or OpCode.LoadContext or OpCode.StoreContext
                 or OpCode.StoreGlobal or OpCode.StoreName
                 or OpCode.DeleteProperty

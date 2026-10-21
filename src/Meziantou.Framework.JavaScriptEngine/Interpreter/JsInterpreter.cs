@@ -268,7 +268,8 @@ internal static partial class JsInterpreter
                     }
 
                 case OpCode.LoadGlobal:
-                    values[sp++] = LoadGlobal(frame, code[pc++]);
+                    values[sp++] = LoadGlobal(frame, code[pc], code[pc + 1]);
+                    pc += 2;
                     break;
                 case OpCode.PushScope:
                     frame.Environment = new DeclarativeEnvironment((ScopeInfo)frame.Code.Objects[code[pc++]], frame.Environment);
@@ -563,12 +564,14 @@ internal static partial class JsInterpreter
                     ArrayAppend(values[sp - 1], values[sp]);
                     break;
                 case OpCode.GetProperty:
-                    values[sp - 1] = GetProperty(frame, code[pc++], values[sp - 1]);
+                    values[sp - 1] = GetProperty(frame, code[pc], code[pc + 1], values[sp - 1]);
+                    pc += 2;
                     break;
                 case OpCode.SetProperty:
                     sp--;
-                    SetProperty(frame, code[pc++], values[sp - 1], values[sp]);
+                    SetProperty(frame, code[pc], code[pc + 1], values[sp - 1], values[sp]);
                     values[sp - 1] = values[sp];
+                    pc += 2;
                     break;
                 case OpCode.GetElement:
                     sp--;
@@ -581,7 +584,8 @@ internal static partial class JsInterpreter
                     break;
                 case OpCode.DefineField:
                     sp--;
-                    DefineField(frame, code[pc++], values[sp - 1], values[sp]);
+                    DefineField(frame, code[pc], code[pc + 1], values[sp - 1], values[sp]);
+                    pc += 2;
                     break;
 
                 // ---- Calls ----------------------------------------------------------------------------------------

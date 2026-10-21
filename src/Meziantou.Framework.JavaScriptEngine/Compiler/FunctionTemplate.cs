@@ -27,6 +27,9 @@ internal sealed class FunctionTemplate
 
     public required int MaxStack { get; init; }
 
+    /// <summary>Gets the inline caches of the property accesses of the code (the last operand of these instructions is the index of their cache).</summary>
+    public PropertyCacheEntry?[] Caches { get; init; } = [];
+
     public required ExceptionHandler[] Handlers { get; init; }
 
     /// <summary>Gets the pairs (pc, source offset) of the instructions, sorted by pc.</summary>

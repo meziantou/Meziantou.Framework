@@ -74,6 +74,51 @@ public sealed class InterpreterTests
         Assert.Equal(expected, Run(code));
     }
 
+    // The inline caches of the property accesses: each script fills the cache of an access, then changes the objects
+    [Theory]
+    [InlineData("function get(o) { return o.x; } var p = { x: 1 }; var o = Object.create(p); var r = [get(o), get(o)]; o.x = 2; r.push(get(o)); delete o.x; r.push(get(o)); p.x = 3; r.push(get(o)); r.join()", "1,1,2,1,3")]
+    [InlineData("function get(o) { return o.x; } var p = { x: 1 }; var q = { x: 2 }; var o = Object.create(p); var r = [get(o), get(o)]; Object.setPrototypeOf(o, q); r.push(get(o)); Object.setPrototypeOf(q, p); delete q.x; r.push(get(o)); r.join()", "1,1,2,1")]
+    [InlineData("function get(o) { return o.x; } var p = { x: 1 }; var m = {}; Object.setPrototypeOf(m, p); var o = Object.create(m); var r = [get(o), get(o)]; m.x = 5; r.push(get(o)); Object.defineProperty(m, 'x', { get() { return 6; } }); r.push(get(o)); r.join()", "1,1,5,6")]
+    [InlineData("function get(o) { return o.x; } var o = { get x() { return 1; } }; var r = [get(o), get(o)]; Object.defineProperty(o, 'x', { get() { return 2; } }); r.push(get(o)); Object.defineProperty(o, 'x', { value: 3 }); r.push(get(o)); r.join()", "1,1,2,3")]
+    [InlineData("function get(o) { return o.x; } var a = { x: 1, y: 2 }; var b = { x: 3, y: 4 }; var c = { y: 5, x: 6 }; [get(a), get(b), get(c), get(a), get({}), get([])].join()", "1,3,6,1,,")]
+    [InlineData("function set(o, v) { 'use strict'; o.x = v; } var o = { x: 1 }; set(o, 2); set(o, 3); Object.freeze(o); var r; try { set(o, 4); } catch (e) { r = e.constructor.name; } [o.x, r].join()", "3,TypeError")]
+    [InlineData("function set(o) { o.x = 1; } var p = {}; var a = Object.create(p); var b = Object.create(p); set(a); var log = []; Object.defineProperty(p, 'x', { set(v) { log.push(v); } }); set(b); [a.x, Object.hasOwn(b, 'x'), log.join()].join()", "1,false,1")]
+    [InlineData("function set(o) { 'use strict'; o.x = 1; } var p = {}; set(Object.create(p)); Object.defineProperty(p, 'x', { value: 0, writable: false }); var r; try { set(Object.create(p)); } catch (e) { r = e.constructor.name; } r", "TypeError")]
+    [InlineData("function set(o) { 'use strict'; o.y = 1; } var a = { x: 0 }; var b = { x: 0 }; set(a); Object.preventExtensions(b); var r; try { set(b); } catch (e) { r = e.constructor.name; } [a.y, b.y, r].join()", "1,,TypeError")]
+    [InlineData("function make(v) { return { a: v, b: v + 1 }; } var x = make(1); var y = make(2); Object.keys(y).join() + ',' + y.a + ',' + y.b + ',' + x.b", "a,b,2,3,2")]
+    [InlineData("function len(a) { return a.length; } var r = [len([1, 2]), len([1, 2, 3]), len({ length: 7 }), len('abcd'), len([])]; r.join()", "2,3,7,4,0")]
+    [InlineData("function get(o) { return o.x; } var o = {}; for (var i = 0; i < 100; i++) o['k' + i] = i; o.x = 'big'; var r = [get(o), get(o)]; delete o.k5; o.x = 'changed'; r.push(get(o)); r.join()", "big,big,changed")]
+    [InlineData("function get(o) { return o.toString === Object.prototype.toString; } var r = [get({}), get({})]; Object.prototype.toString = function () { }; r.push(get({}), get(Object.create(null))); r.join()", "true,true,true,false")]
+    [InlineData("var x = 1; function f() { return x; } var r = [f(), f()]; x = 2; r.push(f()); r.join()", "1,1,2")]
+    public void Evaluate_InlineCaches(string code, string expected)
+    {
+        Assert.Equal(expected, Run(code));
+    }
+
+    [Fact]
+    public void InlineCaches_GlobalLexicalDeclarationShadowsAGlobalProperty()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        realm.Execute("x = 1; function f() { return x; } f(); f();");
+        realm.Execute("let x = 2;");
+        Assert.Equal(2, realm.Execute("f()").AsNumber());
+    }
+
+    [Fact]
+    public void InlineCaches_PreparedScriptSharedByEngines()
+    {
+        // The caches are in the compiled code: an entry of one engine must not apply to the objects of another one
+        var script = JsPreparedScript.Parse("function get(o) { return o.x; } var a = { x: 1 }; var b = Object.create({ x: 2 }); get(a) + get(a) + get(b) + get(b)");
+        using var engine1 = new JsEngine();
+        using var engine2 = new JsEngine();
+        var realm1 = engine1.CreateRealm();
+        var realm2 = engine2.CreateRealm();
+        Assert.Equal(6, realm1.Execute(script).AsNumber());
+        Assert.Equal(6, realm2.Execute(script).AsNumber());
+        Assert.Equal(6, realm1.Execute(script).AsNumber());
+    }
+
     [Fact]
     public void AsyncFunction()
     {

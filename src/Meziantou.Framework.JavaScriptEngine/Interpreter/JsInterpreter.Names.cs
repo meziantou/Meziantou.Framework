@@ -131,6 +131,12 @@ internal static partial class JsInterpreter
             environment.LexicalBindings[name] = new GlobalLexicalBinding { IsConstant = isConstant };
         }
 
+        if (declarations.LexicalNames.Length > 0)
+        {
+            // A lexical binding shadows the property of the global object that an inline cache may have remembered
+            InlineCache.Invalidate();
+        }
+
         foreach (var name in declarations.VarNames)
         {
             CreateGlobalVarBinding(realm, name, deletable: false);

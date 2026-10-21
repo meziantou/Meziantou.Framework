@@ -139,6 +139,7 @@ internal sealed partial class CodeGenerator
             Objects = objects,
             RegisterCount = 0,
             MaxStack = builder.MaxStack + 1,
+            Caches = new PropertyCacheEntry?[builder.CacheCount],
             Handlers = handlers,
             Positions = positions,
             Source = _source,

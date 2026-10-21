@@ -21,18 +21,6 @@ internal static partial class JsInterpreter
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ThrowThisNotInitialized() => ThrowHelper.ThrowReferenceError("Must call super constructor in derived class before accessing 'this' or returning from derived constructor");
 
-    private static JsValue LoadGlobal(Frame frame, int name) => LoadGlobal(frame.Realm, frame.Code.Keys[name], throwIfMissing: true);
-
-    private static JsValue GetProperty(Frame frame, int name, JsValue target)
-    {
-        ref readonly var key = ref frame.Code.Keys[name];
-        return target.Cell is JsObject targetObject ? targetObject.Get(key, target) : GetPropertyOfPrimitive(frame.Realm, target, key);
-    }
-
-    private static void SetProperty(Frame frame, int name, JsValue target, JsValue value)
-    {
-        SetPropertyOfValue(target, frame.Code.Keys[name], value, frame.Code.IsStrict);
-    }
 
     private static void SetElement(Frame frame, JsValue target, JsValue keyValue, JsValue value)
     {
@@ -45,10 +33,6 @@ internal static partial class JsInterpreter
         SetPropertyOfValue(target, key, value, frame.Code.IsStrict);
     }
 
-    private static void DefineField(Frame frame, int name, JsValue target, JsValue value)
-    {
-        ((JsObject)target.Cell!).CreateDataPropertyOrThrow(frame.Code.Keys[name], value);
-    }
 
     private static void ArrayAppend(JsValue target, JsValue value)
     {
@@ -184,7 +168,8 @@ internal static partial class JsInterpreter
         var values = frame.Values;
         var code = frame.Code.Code;
         var pc = frame.Pc + 1;
-        values[sp++] = LoadGlobal(frame.Realm, frame.Code.Keys[code[pc++]], throwIfMissing: false);
+        values[sp++] = LoadGlobal(frame.Realm, frame.Code.Keys[code[pc]], throwIfMissing: false);
+        pc += 2;
         frame.Pc = pc;
         return sp;
     }

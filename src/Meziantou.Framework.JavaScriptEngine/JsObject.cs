@@ -12,9 +12,11 @@ public partial class JsObject : JsCell
     private JsValue[]? _elements;
 
     // The named properties (and the array indices that are not in the elements): a shape shared with other objects and the
-    // values in its slots, or a property table of the object (dictionary mode, _slots is null). Null: no properties yet.
+    // values in its slots, or a property table of the object (dictionary mode, _slots is null). Null: an exotic object
+    // without properties yet (its named properties may not be ordinary).
     private PropertyMap? _map;
     private JsValue[]? _slots;
+    private ObjectFlags _flags;
     private JsObject? _prototype;
 
     internal JsObject(JsObject? prototype, ObjectClass objectClass = ObjectClass.Object)
@@ -22,10 +24,24 @@ public partial class JsObject : JsCell
     {
         _prototype = prototype;
         Class = objectClass;
-        Flags = ObjectFlags.Extensible;
+        _flags = ObjectFlags.Extensible;
+        _map = Shape.EmptyOrdinary;
     }
 
-    internal ObjectFlags Flags { get; set; }
+    internal ObjectFlags Flags
+    {
+        get => _flags;
+        set
+        {
+            _flags = value;
+
+            // An exotic object does not share the shapes of the ordinary objects: the inline caches would skip its internal methods
+            if ((value & ObjectFlags.Exotic) != 0 && ReferenceEquals(_map, Shape.EmptyOrdinary))
+            {
+                _map = GetEmptyShape();
+            }
+        }
+    }
 
     internal ObjectClass Class { get; set; }
 

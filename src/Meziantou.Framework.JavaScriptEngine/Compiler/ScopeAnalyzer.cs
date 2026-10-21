@@ -603,6 +603,10 @@ internal sealed partial class ScopeAnalyzer
             }
         }
 
+        // The variable environment can also hold the lexical declarations (eval code, scripts)
+        if (varScope.Find(name) is { Kind: VariableKind.Let or VariableKind.Const or VariableKind.Class })
+            return;
+
         // F is not a parameter name (B.3.2.1)
         if (function.Kind != FunctionInfoKind.Script && function.Kind != FunctionInfoKind.Eval && function.Scope.Find(name) is { Kind: VariableKind.Parameter })
             return;

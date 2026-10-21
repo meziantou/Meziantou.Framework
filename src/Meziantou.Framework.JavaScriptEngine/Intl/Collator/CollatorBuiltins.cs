@@ -136,7 +136,7 @@ internal static class CollatorBuiltins
         {
             "co" => isSearch ? SearchCollations : GetLocaleData(locale).Collations,
             "kn" => NumericValues,
-            _ => GetLocaleData(locale).CaseFirst,
+            _ => isSearch ? GetLocaleData(locale).SearchCaseFirst : GetLocaleData(locale).CaseFirst,
         };
     }
 
@@ -153,22 +153,24 @@ internal static class CollatorBuiltins
 
             var type = IntlOperations.Data.Collation.GetDefaultCollation(LanguageId.Parse(locale));
             var defaultCollation = TailoredCollation.Get(locale, type) ?? TailoredCollation.Get(locale, "standard") ?? TailoredCollation.Root;
-            string?[] caseFirst = defaultCollation.CaseFirst switch
-            {
-                CollationCaseFirst.Upper => ["upper", "false", "lower"],
-                CollationCaseFirst.Lower => ["lower", "false", "upper"],
-                _ => ["false", "lower", "upper"],
-            };
-
-            return new CollatorLocaleData(co, caseFirst, defaultCollation);
+            var searchCollation = TailoredCollation.Get(locale, "search") ?? defaultCollation;
+            return new CollatorLocaleData(co, GetCaseFirstValues(defaultCollation), GetCaseFirstValues(searchCollation), defaultCollation, searchCollation);
         });
+
+        // The default value of kf is the setting of the tailoring ([caseFirst upper] in Danish, but not for search)
+        static string?[] GetCaseFirstValues(TailoredCollation collation) => collation.CaseFirst switch
+        {
+            CollationCaseFirst.Upper => ["upper", "false", "lower"],
+            CollationCaseFirst.Lower => ["lower", "false", "upper"],
+            _ => ["false", "lower", "upper"],
+        };
     }
 
     /// <summary>Gets the default collation of a locale (e.g. pinyin for zh).</summary>
     private static TailoredCollation GetDefaultCollation(string locale) => GetLocaleData(locale).DefaultCollation;
 
-    /// <summary>The locale data of a locale: the values of "co" and "kf" (the default first) and the default collation.</summary>
-    private sealed record CollatorLocaleData(string?[] Collations, string?[] CaseFirst, TailoredCollation DefaultCollation);
+    /// <summary>The locale data of a locale: the values of "co" and "kf" (the default first), the default and the search collations.</summary>
+    private sealed record CollatorLocaleData(string?[] Collations, string?[] CaseFirst, string?[] SearchCaseFirst, TailoredCollation DefaultCollation, TailoredCollation SearchCollation);
 
     /// <summary>Gets the collation of a locale for "default", "search", or a BCP 47 collation type.</summary>
     private static TailoredCollation GetCollation(string locale, string collation)
@@ -177,7 +179,7 @@ internal static class CollatorBuiltins
             return GetDefaultCollation(locale);
 
         if (collation is "search")
-            return TailoredCollation.Get(locale, "search") ?? GetDefaultCollation(locale);
+            return GetLocaleData(locale).SearchCollation;
 
         foreach (var type in IntlOperations.Data.Collation.GetCollationTypes(LanguageId.Parse(locale)))
         {

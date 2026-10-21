@@ -669,17 +669,19 @@ internal sealed class StringCollator
         return 0;
     }
 
+    // The tertiary weight, with the case bits as its most significant bits when the case is first (as ICU: upper first
+    // flips the case bits of the CEs with a primary weight, and puts the other CEs after them)
     private uint GetTertiary(ulong ce)
     {
         var tertiary = (uint)ce & CollationWeights.TertiaryMask;
         if (tertiary == 0 || _settings.CaseLevel || _settings.CaseFirst == CollationCaseFirst.Off)
             return tertiary;
 
-        if (CollationWeights.Primary(ce) == 0)
-            return tertiary;
-
         var withCase = (uint)ce & 0xFFFF;
-        return _settings.CaseFirst == CollationCaseFirst.Upper ? withCase ^ 0xC000 : withCase;
+        if (_settings.CaseFirst == CollationCaseFirst.Lower)
+            return withCase;
+
+        return CollationWeights.Primary(ce) != 0 ? withCase ^ 0xC000 : withCase + 0x4000;
     }
 
     private static int CompareSecondaries(ReadOnlySpan<ulong> x, ReadOnlySpan<ulong> y)

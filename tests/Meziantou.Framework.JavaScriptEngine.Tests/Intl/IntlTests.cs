@@ -245,7 +245,7 @@ public sealed class IntlTests
                 new Intl.Collator("en").compare("\u00C5", "A\u030A"),
             ].join("|")
             """));
-        Assert.Equal("1|0|-1|1|1|pinyin,stroke|true", Evaluate("""
+        Assert.Equal("1|0|-1|1|1|pinyin,stroke|true|false|-1", Evaluate("""
             [
                 new Intl.Collator("en", { sensitivity: "case" }).compare("A", "a"),
                 new Intl.Collator("en", { sensitivity: "case" }).compare("a", "\u00E1"),
@@ -254,6 +254,8 @@ public sealed class IntlTests
                 new Intl.Collator("de", { collation: "phonebk" }).compare("\u00C4", "AE"),
                 new Intl.Locale("zh-Hant").getCollations().filter(c => c === "pinyin" || c === "stroke").join(),
                 Intl.Collator.supportedLocalesOf(["bs-Cyrl"]).length === 1,
+                new Intl.Collator("da", { usage: "search" }).resolvedOptions().caseFirst,
+                new Intl.Collator("ar", { caseFirst: "upper" }).compare("8", "\u064E8"),
             ].join("|")
             """));
     }

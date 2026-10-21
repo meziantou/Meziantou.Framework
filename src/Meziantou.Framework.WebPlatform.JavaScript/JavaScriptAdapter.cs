@@ -399,7 +399,8 @@ internal readonly struct JavaScriptAdapter(JavaScriptAdapterState state) : IJsAd
 }
 
 /// <summary>The JavaScript object of a .NET platform object (https://webidl.spec.whatwg.org/#dfn-platform-object).</summary>
-internal class JavaScriptPlatformObject(JsObject? prototype, object target) : JsHostObject(prototype, target)
+/// <remarks>Its internal methods are the ordinary ones (the engine uses its fast paths), except for a legacy platform object.</remarks>
+internal class JavaScriptPlatformObject(JsObject? prototype, object target, bool hasOrdinaryInternalMethods = true) : JsHostObject(prototype, target, hasOrdinaryInternalMethods)
 {
     /// <summary>Gets the .NET platform object.</summary>
     public new object Target { get; } = target;
@@ -409,7 +410,7 @@ internal class JavaScriptPlatformObject(JsObject? prototype, object target) : Js
 /// The JavaScript object of a legacy platform object (https://webidl.spec.whatwg.org/#es-legacy-platform-objects): a host
 /// exotic object whose internal methods call the handler first.
 /// </summary>
-internal sealed class JavaScriptLegacyPlatformObject(JsObject? prototype, object target, IJsHostObjectHandler<object> handler) : JavaScriptPlatformObject(prototype, target)
+internal sealed class JavaScriptLegacyPlatformObject(JsObject? prototype, object target, IJsHostObjectHandler<object> handler) : JavaScriptPlatformObject(prototype, target, hasOrdinaryInternalMethods: false)
 {
     protected override bool GetOwnPropertyCore(JsPropertyKey key, out JsPropertyDescriptor descriptor)
     {

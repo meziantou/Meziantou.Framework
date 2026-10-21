@@ -144,6 +144,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public bool IsHtmlDdaObject { get => throw null; set { } }
         public object? Target { get => throw null; }
         public JsHostObject(Meziantou.Framework.JavaScriptEngine.JsObject? prototype, object? target = null) { }
+        protected JsHostObject(Meziantou.Framework.JavaScriptEngine.JsObject? prototype, object? target, bool hasOrdinaryInternalMethods) { }
         protected virtual bool DefineOwnPropertyCore(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, in Meziantou.Framework.JavaScriptEngine.JsPropertyDescriptor descriptor) => throw null;
         protected virtual bool DeleteCore(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key) => throw null;
         protected virtual Meziantou.Framework.JavaScriptEngine.JsValue GetCore(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, Meziantou.Framework.JavaScriptEngine.JsValue receiver) => throw null;

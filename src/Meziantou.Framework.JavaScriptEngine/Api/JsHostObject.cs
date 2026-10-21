@@ -11,10 +11,28 @@ public class JsHostObject : JsObject
     /// <param name="prototype">The prototype of the object, or null.</param>
     /// <param name="target">A .NET object associated with the JavaScript object (e.g. the platform object it exposes).</param>
     public JsHostObject(JsObject? prototype, object? target = null)
+        : this(prototype, target, hasOrdinaryInternalMethods: false)
+    {
+    }
+
+    /// <summary>Creates a host object, telling whether its internal methods are the ordinary ones.</summary>
+    /// <param name="prototype">The prototype of the object, or null.</param>
+    /// <param name="target">A .NET object associated with the JavaScript object (e.g. the platform object it exposes).</param>
+    /// <param name="hasOrdinaryInternalMethods">
+    /// <see langword="true"/> when the type of the object does not override the methods that read or write properties
+    /// (<see cref="GetOwnPropertyCore"/>, <see cref="DefineOwnPropertyCore"/>, <see cref="HasPropertyCore"/>,
+    /// <see cref="GetCore"/>, <see cref="SetCore"/>, <see cref="DeleteCore"/>, <see cref="OwnPropertyKeysCore"/>,
+    /// <see cref="GetPrototypeOfCore"/>): the engine then reads and writes its properties with the fast paths of the
+    /// ordinary objects (shapes and inline caches) instead of calling these methods.
+    /// </param>
+    protected JsHostObject(JsObject? prototype, object? target, bool hasOrdinaryInternalMethods)
         : base(prototype, ObjectClass.Object)
     {
         Target = target;
-        Flags |= ObjectFlags.Exotic;
+        if (!hasOrdinaryInternalMethods)
+        {
+            Flags |= ObjectFlags.Exotic;
+        }
     }
 
     /// <summary>Gets the .NET object associated with the JavaScript object.</summary>

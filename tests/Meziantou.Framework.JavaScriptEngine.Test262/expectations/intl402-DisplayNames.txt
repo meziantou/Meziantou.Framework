@@ -1,2 +1,0 @@
-intl402/DisplayNames/prototype/resolvedOptions/this-object-lacks-internal-throws.js:sloppy
-intl402/DisplayNames/prototype/resolvedOptions/this-object-lacks-internal-throws.js:strict

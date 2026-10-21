@@ -1,2 +1,0 @@
-intl402/DurationFormat/prototype/formatToParts/length.js:sloppy
-intl402/DurationFormat/prototype/formatToParts/length.js:strict

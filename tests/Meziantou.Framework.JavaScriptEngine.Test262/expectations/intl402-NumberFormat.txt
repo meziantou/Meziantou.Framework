@@ -1,4 +1,2 @@
-intl402/NumberFormat/prototype/format/units.js:sloppy
-intl402/NumberFormat/prototype/format/units.js:strict
 intl402/NumberFormat/this-value-ignored.js:sloppy
 intl402/NumberFormat/this-value-ignored.js:strict

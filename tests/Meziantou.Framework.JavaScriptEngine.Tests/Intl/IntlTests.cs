@@ -167,9 +167,22 @@ public sealed class IntlTests
     }
 
     [Fact]
+    public void ToLocaleString()
+    {
+        Assert.Equal("1,234.5|1.234,5|1,234|1,234.5,x", Evaluate("""
+            [
+                (1234.5).toLocaleString(),
+                (1234.5).toLocaleString("de"),
+                (1234n).toLocaleString(),
+                [1234.5, "x", null].toLocaleString().slice(0, -1),
+            ].join("|")
+            """));
+    }
+
+    [Fact]
     public void DefaultLocale()
     {
-        Assert.Equal("fr|1\u202F234,5", Evaluate("[new Intl.NumberFormat().resolvedOptions().locale, new Intl.NumberFormat().format(1234.5)].join('|')", new JsEngineOptions { DefaultLocale = "fr" }));
+        Assert.Equal("fr|1\u202F234,5", Evaluate("[new Intl.NumberFormat().resolvedOptions().locale, (1234.5).toLocaleString()].join('|')", new JsEngineOptions { DefaultLocale = "fr" }));
         Assert.Equal("en-US", Evaluate("new Intl.NumberFormat().resolvedOptions().locale", new JsEngineOptions { DefaultLocale = "zz-invalid-" }));
     }
 

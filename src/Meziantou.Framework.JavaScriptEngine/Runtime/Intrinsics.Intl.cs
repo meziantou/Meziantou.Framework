@@ -45,5 +45,6 @@ internal sealed partial class Intrinsics
         PluralRulesBuiltins.Initialize(this, _intl);
         _intlNumberFormatPrototype = new JsObject(ObjectPrototype);
         _intlNumberFormat = NumberFormatBuiltins.Initialize(this, _intl);
+        LocaleSensitiveBuiltins.Initialize(this);
     }
 }

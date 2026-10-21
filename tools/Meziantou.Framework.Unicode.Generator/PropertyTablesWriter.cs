@@ -39,6 +39,9 @@ internal static class PropertyTablesWriter
         var idStart = await LoadBinaryAsync("ucd/DerivedCoreProperties.txt", "ID_Start");
         var idContinue = await LoadBinaryAsync("ucd/DerivedCoreProperties.txt", "ID_Continue");
         var emoji = await LoadEmojiAsync();
+        var cased = await LoadBinaryAsync("ucd/DerivedCoreProperties.txt", "Cased");
+        var caseIgnorable = await LoadBinaryAsync("ucd/DerivedCoreProperties.txt", "Case_Ignorable");
+        var softDotted = await LoadBinaryAsync("ucd/PropList.txt", "Soft_Dotted");
         var lineBreak = await LoadEnumAsync("ucd/LineBreak.txt", aliases, lineBreakEnum, filter: null);
         var width = await LoadEnumAsync("ucd/EastAsianWidth.txt", aliases, widthEnum, filter: null);
         var grapheme = await LoadEnumAsync("ucd/auxiliary/GraphemeBreakProperty.txt", aliases, graphemeEnum, filter: null);
@@ -65,6 +68,7 @@ internal static class PropertyTablesWriter
         RequireBelow(conjunct, 4, "Indic_Conjunct_Break");
         RequireBelow(sentence, 16, "Sentence_Break");
         RequireBelow(generalCategory, 32, "General_Category");
+        RequireBelow(emoji, 64, "the emoji properties");
 
         var generalTuples = new TupleTable(width: 2);
         var general = new byte[ValueCount];
@@ -92,7 +96,7 @@ internal static class PropertyTablesWriter
                 | (defaultIgnorable[i] ? 0x20 : 0)
                 | (idStart[i] ? 0x40 : 0)
                 | (idContinue[i] ? 0x80 : 0);
-            general[i] = generalTuples.GetIndex((byte)generalFlags, emoji[i]);
+            general[i] = generalTuples.GetIndex((byte)generalFlags, (byte)(emoji[i] | (cased[i] ? 0x40 : 0) | (caseIgnorable[i] ? 0x80 : 0)));
             bidi[i] = (byte)(bidiClass[i] | (bracketType[i] << 5) | (mirrored[i] ? 0x80 : 0));
 
             var lineBreakFlags = width[i]
@@ -125,7 +129,8 @@ internal static class PropertyTablesWriter
         var sizes = new List<(string Name, int Bytes)>();
         AppendTrie(tables, sizes, "General", general, """
             Index of a 2-byte entry of GeneralTuples: General_Category (bits 0-4, a System.Globalization.UnicodeCategory),
-            Default_Ignorable_Code_Point (bit 5), ID_Start (bit 6) and ID_Continue (bit 7), then the EmojiProperties flags.
+            Default_Ignorable_Code_Point (bit 5), ID_Start (bit 6) and ID_Continue (bit 7), then the EmojiProperties flags
+            (bits 0-5), Cased (bit 6) and Case_Ignorable (bit 7).
             """);
         AppendBytes(tables, sizes, "GeneralTuples", generalTuples.Bytes);
         AppendTrie(tables, sizes, "Bidi", bidi, """
@@ -187,6 +192,7 @@ internal static class PropertyTablesWriter
         AppendBytes(tables, sizes, "SpecialCasingMappings", specialCasingRecords, "The unconditional full case mappings of SpecialCasing.txt: 6-byte entries sorted by code point: the code point (3 bytes), the offset of its mappings in SpecialCasingPool (2 bytes), then the lengths of its lowercase (bits 0-1), titlecase (bits 2-3) and uppercase (bits 4-5) mappings, little-endian.");
         AppendSpecialCasingFilter(tables, specialCasingRecords);
         AppendBytes(tables, sizes, "SpecialCasingPool", EncodeUInt24(specialCasingPool), "The code points of the full case mappings, 3 bytes each, little-endian: the lowercase, the titlecase then the uppercase mapping of each entry of SpecialCasingMappings.");
+        AppendBytes(tables, sizes, "SoftDottedCodePoints", EncodeUInt24(Enumerable.Range(0, Trie.CodePointCount).Where(codePoint => softDotted[codePoint])), "Soft_Dotted: the code points, sorted, 3 bytes each, little-endian.");
         AppendBytes(tables, sizes, "BidiMirroringPairs", EncodeUInt24(mirroringPairs), "Bidi_Mirroring_Glyph: 6-byte entries sorted by code point: the code point then its mirrored code point, 3 bytes each, little-endian.");
         AppendBytes(tables, sizes, "BidiBracketPairs", EncodeUInt24(bracketPairs), "Bidi_Paired_Bracket: 6-byte entries sorted by code point: the code point then its paired bracket, 3 bytes each, little-endian.");
 
@@ -696,17 +702,52 @@ internal static class PropertyTablesWriter
     }
 
     /// <summary>
+    /// The conditional mappings of SpecialCasing.txt, as <c>code; lower; title; upper; conditions</c>. They are
+    /// implemented by hand in <c>src/Meziantou.Framework.Unicode/UnicodeCaseMapping.cs</c>: the generator fails when
+    /// a version of the standard changes them, so that the code is updated with the data.
+    /// </summary>
+    private static readonly string[] ConditionalMappings =
+    [
+        "03A3; 03C2; 03A3; 03A3; Final_Sigma",
+        "0307; 0307; ; ; lt After_Soft_Dotted",
+        "0049; 0069 0307; 0049; 0049; lt More_Above",
+        "004A; 006A 0307; 004A; 004A; lt More_Above",
+        "012E; 012F 0307; 012E; 012E; lt More_Above",
+        "00CC; 0069 0307 0300; 00CC; 00CC; lt",
+        "00CD; 0069 0307 0301; 00CD; 00CD; lt",
+        "0128; 0069 0307 0303; 0128; 0128; lt",
+        "0130; 0069; 0130; 0130; tr",
+        "0130; 0069; 0130; 0130; az",
+        "0307; ; 0307; 0307; tr After_I",
+        "0307; ; 0307; 0307; az After_I",
+        "0049; 0131; 0049; 0049; tr Not_Before_Dot",
+        "0049; 0131; 0049; 0049; az Not_Before_Dot",
+        "0069; 0069; 0130; 0130; tr",
+        "0069; 0069; 0130; 0130; az",
+    ];
+
+    /// <summary>
     /// Loads the unconditional mappings of SpecialCasing.txt: the full case mappings of the code points whose mapping is
     /// not their simple mapping. The mappings that depend on the language or on the context (a condition list) are not
-    /// included.
+    /// included: they are checked against <see cref="ConditionalMappings"/>.
     /// </summary>
     private static async Task<(byte[] Records, List<int> Pool)> LoadSpecialCasingAsync()
     {
         var mappings = new SortedDictionary<int, (int[] Lower, int[] Title, int[] Upper)>();
+        var conditionalMappings = new List<string>();
         foreach (var line in Ucd.ParseLines(await Ucd.DownloadAsync("ucd/SpecialCasing.txt")))
         {
+            if (line.IsMissing)
+                continue;
+
             // code; lower; title; upper; (condition_list;)? (the fields after the code point)
-            if (line.IsMissing || line.Start != line.End || (line.Fields.Length > 3 && line.Fields[3].Length > 0))
+            if (line.Fields.Length > 3 && line.Fields[3].Length > 0)
+            {
+                conditionalMappings.Add(string.Create(CultureInfo.InvariantCulture, $"{line.Start:X4}; {line.Fields[0]}; {line.Fields[1]}; {line.Fields[2]}; {line.Fields[3]}"));
+                continue;
+            }
+
+            if (line.Start != line.End)
                 continue;
 
             mappings.Add(line.Start, (ParseCodePoints(line.Fields[0]), ParseCodePoints(line.Fields[1]), ParseCodePoints(line.Fields[2])));
@@ -714,6 +755,9 @@ internal static class PropertyTablesWriter
 
         if (mappings.Count == 0)
             throw new InvalidOperationException("No unconditional mapping in SpecialCasing.txt");
+
+        if (!conditionalMappings.SequenceEqual(ConditionalMappings, StringComparer.Ordinal))
+            throw new InvalidOperationException("The conditional mappings of SpecialCasing.txt changed: update UnicodeCaseMapping.cs and ConditionalMappings. The mappings are:\n" + string.Join('\n', conditionalMappings));
 
         var records = new List<byte>();
         var pool = new List<int>();

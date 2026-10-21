@@ -500,6 +500,12 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.UnicodeBlock GetBlock(int codePoint) => throw null;
     }
 
+    public static class UnicodeCaseMapping
+    {
+        public static string ToLower(string value, string? language = null) => throw null;
+        public static string ToUpper(string value, string? language = null) => throw null;
+    }
+
     public readonly struct UnicodeCharacterInfo : System.IEquatable<Meziantou.Framework.UnicodeCharacterInfo>
     {
         public Meziantou.Framework.UnicodeBidirectionalCategory BidiCategory { get => throw null; }
@@ -920,9 +926,12 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.UnicodeVerticalOrientation GetVerticalOrientation(int codePoint) => throw null;
         public static Meziantou.Framework.UnicodeWordBreak GetWordBreak(int codePoint) => throw null;
         public static bool IsBidiMirrored(int codePoint) => throw null;
+        public static bool IsCaseIgnorable(int codePoint) => throw null;
+        public static bool IsCased(int codePoint) => throw null;
         public static bool IsDefaultIgnorable(int codePoint) => throw null;
         public static bool IsIdContinue(int codePoint) => throw null;
         public static bool IsIdStart(int codePoint) => throw null;
+        public static bool IsSoftDotted(int codePoint) => throw null;
         public static int ToSimpleLowercase(int codePoint) => throw null;
         public static int ToSimpleTitlecase(int codePoint) => throw null;
         public static int ToSimpleUppercase(int codePoint) => throw null;

@@ -103,6 +103,193 @@ public sealed class UnicodeTests
     }
 
     [Fact]
+    public void ReadmeExample_CaseMappingOfText()
+    {
+        #region Unicode_CaseMappingOfText
+        // The mappings that do not depend on the language, with the final sigma of Greek
+        Assert.Equal("STRASSE", UnicodeCaseMapping.ToUpper("Stra\u00DFe"));
+        Assert.Equal("\u03BF\u03B4\u03CC\u03C2", UnicodeCaseMapping.ToLower("\u039F\u0394\u038C\u03A3"));
+
+        // Turkish and Azerbaijani: the dotless and the dotted I
+        Assert.Equal("\u0131i", UnicodeCaseMapping.ToLower("I\u0130", "tr"));
+        Assert.Equal("\u0130I", UnicodeCaseMapping.ToUpper("i\u0131", "tr-TR"));
+
+        // Lithuanian: the i keeps its dot under an accent
+        Assert.Equal("i\u0307\u0300", UnicodeCaseMapping.ToLower("\u00CC", "lt"));
+        #endregion
+    }
+
+    [Theory]
+    // Turkish and Azerbaijani (SpecialCasing.txt)
+    [InlineData("I", "tr", "\u0131")]
+    [InlineData("\u0130", "tr", "i")]
+    [InlineData("I\u0307", "tr", "i")]
+    [InlineData("I\u0316\u0307", "tr", "i\u0316")] // a mark below does not separate the I from the dot above
+    [InlineData("I\u0301\u0307", "tr", "\u0131\u0301\u0307")] // a mark above does
+    [InlineData("a\u0307", "tr", "a\u0307")]
+    [InlineData("ISTANBUL \u0130ZM\u0130R", "tr", "\u0131stanbul izmir")]
+    [InlineData("I\u0130", "az", "\u0131i")]
+    [InlineData("I\u0130", "TR-tr", "\u0131i")]
+    [InlineData("I\u0130", "tur", "\u0131i")]
+    [InlineData("I\u0130", "az_Latn_AZ", "\u0131i")]
+    [InlineData("I\u0130", null, "ii\u0307")]
+    [InlineData("I\u0130", "en", "ii\u0307")]
+    [InlineData("I\u0130", "", "ii\u0307")]
+    [InlineData("I\u0130", "trx", "ii\u0307")]
+    // Lithuanian (SpecialCasing.txt)
+    [InlineData("\u00CC\u00CD\u0128", "lt", "i\u0307\u0300i\u0307\u0301i\u0307\u0303")]
+    [InlineData("I\u0300", "lt", "i\u0307\u0300")]
+    [InlineData("J\u0301", "lt", "j\u0307\u0301")]
+    [InlineData("\u012E\u0301", "lt", "\u012F\u0307\u0301")]
+    [InlineData("I\u0328\u0301", "lt", "i\u0307\u0328\u0301")] // the ogonek (230 is not its class) does not separate them
+    [InlineData("IJ\u012E", "lt", "ij\u012F")]
+    [InlineData("\u00CC", "lit-LT", "i\u0307\u0300")]
+    [InlineData("\u00CC", null, "\u00EC")]
+    [InlineData("I\u0300", null, "i\u0300")]
+    // The final sigma, in every language (The Unicode Standard, section 3.13)
+    [InlineData("\u039F\u0394\u039F\u03A3", null, "\u03BF\u03B4\u03BF\u03C2")]
+    [InlineData("\u039F\u0394\u039F\u03A3", "tr", "\u03BF\u03B4\u03BF\u03C2")]
+    [InlineData("\u03A3", null, "\u03C3")]
+    [InlineData("\u03A3\u0391", null, "\u03C3\u03B1")]
+    [InlineData("\u0391\u03A3\u0391", null, "\u03B1\u03C3\u03B1")]
+    [InlineData("\u0391\u03A3 \u0391\u03A3", null, "\u03B1\u03C2 \u03B1\u03C2")]
+    [InlineData("\u0391\u03A3.", null, "\u03B1\u03C2.")] // the full stop is case-ignorable
+    [InlineData("\u0391.\u03A3", null, "\u03B1.\u03C2")]
+    [InlineData("\u0391\u03A3\u0301", null, "\u03B1\u03C2\u0301")]
+    [InlineData("\u0391\u03A3\u0301\u0391", null, "\u03B1\u03C3\u0301\u03B1")]
+    [InlineData("\u0391\u03A3\u03A3", null, "\u03B1\u03C3\u03C2")]
+    [InlineData("1\u03A3", null, "1\u03C3")]
+    [InlineData("\U00010400\u03A3", null, "\U00010428\u03C2")] // a cased letter outside the BMP
+    [InlineData(" \u02B0\u03A3", null, " \u02B0\u03C3")] // a modifier letter is cased and case-ignorable: it is ignored, as in ICU
+    public void ToLower_AppliesTheConditionalMappings(string value, string? language, string expected)
+    {
+        Assert.Equal(expected, UnicodeCaseMapping.ToLower(value, language));
+    }
+
+    [Theory]
+    [InlineData("i", "tr", "\u0130")]
+    [InlineData("\u0131", "tr", "I")]
+    [InlineData("istanbul izmir", "tr", "\u0130STANBUL \u0130ZM\u0130R")]
+    [InlineData("i", "az", "\u0130")]
+    [InlineData("i", null, "I")]
+    [InlineData("i", "lt", "I")]
+    // Lithuanian: the dot above after a soft-dotted letter is removed
+    [InlineData("i\u0307", "lt", "I")]
+    [InlineData("i\u0307\u0300", "lt", "I\u0300")]
+    [InlineData("j\u0307", "lt", "J")]
+    [InlineData("\u012F\u0307", "lt", "\u012E")]
+    [InlineData("i\u0328\u0307", "lt", "I\u0328")]
+    [InlineData("i\u0300\u0307", "lt", "I\u0300\u0307")] // a mark above separates them
+    [InlineData("a\u0307", "lt", "A\u0307")]
+    [InlineData("\u0307", "lt", "\u0307")]
+    [InlineData("i\u0307", null, "I\u0307")]
+    [InlineData("i\u0307", "tr", "\u0130\u0307")]
+    // The full mappings
+    [InlineData("Stra\u00DFe", null, "STRASSE")]
+    [InlineData("\uFB01", null, "FI")]
+    [InlineData("\u03C2", null, "\u03A3")]
+    [InlineData("\U00010428", null, "\U00010400")]
+    public void ToUpper_AppliesTheConditionalMappings(string value, string? language, string expected)
+    {
+        Assert.Equal(expected, UnicodeCaseMapping.ToUpper(value, language));
+    }
+
+    [Fact]
+    public void CaseMapping_OfOneCodePoint_IsTheFullMapping()
+    {
+        // Without context and without language, the conversion of one code point is its full case mapping.
+        Span<int> mapping = stackalloc int[UnicodeProperties.MaxCaseMappingLength];
+        for (var codePoint = 0; codePoint <= 0x10FFFF; codePoint++)
+        {
+            if (codePoint is >= 0xD800 and <= 0xDFFF)
+            {
+                var surrogate = ((char)codePoint).ToString();
+                Assert.Same(surrogate, UnicodeCaseMapping.ToUpper(surrogate));
+                Assert.Same(surrogate, UnicodeCaseMapping.ToLower(surrogate));
+                continue;
+            }
+
+            var text = char.ConvertFromUtf32(codePoint);
+            var length = UnicodeProperties.GetUppercaseMapping(codePoint, mapping);
+            Assert.Equal(ToString(mapping[..length]), UnicodeCaseMapping.ToUpper(text));
+
+            length = UnicodeProperties.GetLowercaseMapping(codePoint, mapping);
+            Assert.Equal(ToString(mapping[..length]), UnicodeCaseMapping.ToLower(text));
+        }
+    }
+
+    [Fact]
+    public void CaseMapping_ReturnsTheSameInstanceWhenNothingChanges()
+    {
+        var text = new string(['a', 'b', 'c', ' ', '1', '\u00E9', (char)0xD800]);
+        Assert.Same(text, UnicodeCaseMapping.ToLower(text));
+        Assert.Same(text, UnicodeCaseMapping.ToLower(text, "tr"));
+
+        text = new string(['A', 'B', 'C', ' ', '1', '\u00C9', (char)0xDC00]);
+        Assert.Same(text, UnicodeCaseMapping.ToUpper(text));
+        Assert.Same(text, UnicodeCaseMapping.ToUpper(text, "lt"));
+
+        Assert.Same(string.Empty, UnicodeCaseMapping.ToUpper(string.Empty));
+        Assert.Equal("ABC\u00C9" + (char)0xD800, UnicodeCaseMapping.ToUpper("abc\u00E9" + (char)0xD800));
+    }
+
+    [Fact]
+    public void CaseMapping_ThrowsForANullText()
+    {
+        Assert.Throws<ArgumentNullException>("value", () => UnicodeCaseMapping.ToUpper(null!));
+        Assert.Throws<ArgumentNullException>("value", () => UnicodeCaseMapping.ToLower(null!, "tr"));
+    }
+
+    [Theory]
+    [InlineData('A', true, false)]
+    [InlineData('a', true, false)]
+    [InlineData(0x01C5, true, false)] // a titlecase letter
+    [InlineData(0x2160, true, false)] // Other_Uppercase
+    [InlineData(0x02B0, true, true)] // a modifier letter with Other_Lowercase
+    [InlineData(0x0301, false, true)]
+    [InlineData(0x00AD, false, true)]
+    [InlineData('\'', false, true)]
+    [InlineData('.', false, true)]
+    [InlineData(':', false, true)]
+    [InlineData('1', false, false)]
+    [InlineData(' ', false, false)]
+    [InlineData(0x05D0, false, false)]
+    [InlineData(0x4E00, false, false)]
+    [InlineData(-1, false, false)]
+    [InlineData(0x110000, false, false)]
+    public void IsCased_IsCaseIgnorable_ReturnTheProperties(int codePoint, bool cased, bool caseIgnorable)
+    {
+        Assert.Equal(cased, UnicodeProperties.IsCased(codePoint));
+        Assert.Equal(caseIgnorable, UnicodeProperties.IsCaseIgnorable(codePoint));
+    }
+
+    [Theory]
+    [InlineData('i', true)]
+    [InlineData('j', true)]
+    [InlineData(0x012F, true)]
+    [InlineData(0x0456, true)]
+    [InlineData(0x1D422, true)]
+    [InlineData(0x1E068, true)]
+    [InlineData('I', false)]
+    [InlineData('k', false)]
+    [InlineData(0x0131, false)]
+    [InlineData(-1, false)]
+    [InlineData(0x110000, false)]
+    public void IsSoftDotted_ReturnsTheProperty(int codePoint, bool expected)
+    {
+        Assert.Equal(expected, UnicodeProperties.IsSoftDotted(codePoint));
+    }
+
+    [Fact]
+    public void EmojiProperties_AreNotChangedByTheCaseFlags()
+    {
+        // The case flags share their byte with the emoji properties.
+        Assert.True(UnicodeEmoji.IsEmoji(0x1F600));
+        Assert.False(UnicodeEmoji.IsEmoji('a'));
+        Assert.Equal(EmojiProperties.None, UnicodeProperties.GetEmojiProperties(0x02B0));
+    }
+
+    [Fact]
     public void ReadmeExample_Segmentation()
     {
         #region Unicode_Segmentation

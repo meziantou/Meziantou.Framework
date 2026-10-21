@@ -107,7 +107,8 @@ Assert.Equal(0x01C5, UnicodeProperties.ToSimpleTitlecase(0x01C6)); // 'Ç†' to 'Ç
 
 The full case mappings can map a code point to several ones. They are the unconditional mappings of
 `SpecialCasing.txt`, else the simple mappings: the mappings that depend on the language (Turkish, Lithuanian) or on
-the context (the final sigma) are not applied.
+the context (the final sigma) are not applied to a code point: `UnicodeCaseMapping` applies them to a text (see
+[Case conversion](#case-conversion)).
 
 <!-- ref:../../tests/Meziantou.Framework.Unicode.Tests/UnicodeTests.cs;region=Unicode_CaseMappings;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -131,6 +132,36 @@ Assert.Equal<int>(['i', 0x0307], mapping[..length]);
   Hebrew block. An integer that is not a code point has the default value of the property.
 - The numeric values of the enumerations (`UnicodeScript`, `UnicodeLineBreakClass`, ...) never change: a later
   version of the standard only appends values.
+
+## Case conversion
+
+`UnicodeCaseMapping` converts a text to uppercase or to lowercase with the full case mappings, and applies the
+mappings of `SpecialCasing.txt` that depend on the context and on the language: the final sigma of Greek in every
+language, the dotted and dotless I of Turkish and Azerbaijani (`tr`, `az`), and the dot that the Lithuanian `i` keeps
+under an accent (`lt`). The language is a BCP 47 language tag, of which only the language subtag is read; `null`
+selects the mappings that do not depend on the language, those of `String.prototype.toUpperCase` in JavaScript.
+
+<!-- ref:../../tests/Meziantou.Framework.Unicode.Tests/UnicodeTests.cs;region=Unicode_CaseMappingOfText;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The mappings that do not depend on the language, with the final sigma of Greek
+Assert.Equal("STRASSE", UnicodeCaseMapping.ToUpper("Stra\u00DFe"));
+Assert.Equal("\u03BF\u03B4\u03CC\u03C2", UnicodeCaseMapping.ToLower("\u039F\u0394\u038C\u03A3"));
+
+// Turkish and Azerbaijani: the dotless and the dotted I
+Assert.Equal("\u0131i", UnicodeCaseMapping.ToLower("I\u0130", "tr"));
+Assert.Equal("\u0130I", UnicodeCaseMapping.ToUpper("i\u0131", "tr-TR"));
+
+// Lithuanian: the i keeps its dot under an accent
+Assert.Equal("i\u0307\u0300", UnicodeCaseMapping.ToLower("\u00CC", "lt"));
+```
+<!-- endref -->
+
+- Unlike `string.ToUpper(CultureInfo)`, the conversion does not depend on ICU: the results are the same on every
+  platform and in globalization-invariant mode.
+- A character that is both cased and case-ignorable, such as the modifier letter U+02B0, is ignored when looking for
+  the cased letters around a sigma, as ICU does.
+- The tailorings of the Common Locale Data Repository that are not in `SpecialCasing.txt`, such as the removal of the
+  Greek accents when uppercasing, are not applied.
 
 ## Text segmentation
 

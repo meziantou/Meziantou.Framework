@@ -696,6 +696,22 @@ public sealed class WebSocket : EventTarget
     {
         while (!_isSending && !_isConnectionClosed && _connection is { } connection && _sendQueue.TryDequeue(out var message))
         {
+            // bufferedAmount is the amount that was not transmitted as of the last time the event loop reached step 1: it decreases
+            // in a task, queued before the message is handed to the connection. The task of a message received in reply (e.g.
+            // the echo of the message) is queued after it, whichever thread observes the end of the transmission or the reply first.
+            var length = (ulong)message.Data.Length;
+            var handedToConnection = true;
+            if (length > 0)
+            {
+                _eventLoop!.QueueTask(() =>
+                {
+                    if (handedToConnection)
+                    {
+                        BufferedAmount -= length;
+                    }
+                });
+            }
+
             ValueTask transmission;
             try
             {
@@ -718,13 +734,14 @@ public sealed class WebSocket : EventTarget
             catch (Exception)
 #pragma warning restore CA1031
             {
+                handedToConnection = false;
                 Fail();
                 return;
             }
 
             if (transmission.IsCompleted)
             {
-                OnMessageTransmitted(connection, message, transmission.IsCompletedSuccessfully, inTask: false);
+                OnMessageTransmitted(connection, message, transmission.IsCompletedSuccessfully);
                 continue;
             }
 
@@ -751,7 +768,7 @@ public sealed class WebSocket : EventTarget
         _eventLoop!.QueueTask(() =>
         {
             _isSending = false;
-            OnMessageTransmitted(connection, message, succeeded, inTask: true);
+            OnMessageTransmitted(connection, message, succeeded);
             SendQueuedMessages();
             UpdateOperation();
         });
@@ -760,10 +777,7 @@ public sealed class WebSocket : EventTarget
     /// <param name="connection">The connection that transmitted the message.</param>
     /// <param name="message">The message.</param>
     /// <param name="succeeded">Whether the transmission succeeded.</param>
-    /// <param name="inTask">
-    /// Whether the method runs in a task of its own (the transmission completed asynchronously), else in <c>send()</c>.
-    /// </param>
-    private void OnMessageTransmitted(NetWebSocket connection, OutgoingMessage message, bool succeeded, bool inTask)
+    private void OnMessageTransmitted(NetWebSocket connection, OutgoingMessage message, bool succeeded)
     {
         if (!ReferenceEquals(connection, _connection) || _isConnectionClosed)
             return;
@@ -778,23 +792,6 @@ public sealed class WebSocket : EventTarget
         {
             _closeFrameSent = true;
             CompleteClosingHandshake();
-            return;
-        }
-
-        // bufferedAmount is the amount that was not transmitted as of the last time the event loop reached step 1: it decreases
-        // in a task. The task of an asynchronous transmission decreases it directly: another task would run after the message
-        // event of a reply received in the meantime (e.g. the echo of the message), which would still count the message.
-        var length = (ulong)message.Data.Length;
-        if (length > 0)
-        {
-            if (inTask)
-            {
-                BufferedAmount -= length;
-            }
-            else
-            {
-                _eventLoop!.QueueTask(() => BufferedAmount -= length);
-            }
         }
     }
 

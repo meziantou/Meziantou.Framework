@@ -48,10 +48,10 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 24,423 | 29,245 | 2,991 | 93% |
+| [Stable](#stable-tests) | 24,422 | 29,245 | 2,992 | 93% |
 | [Tentative](#tentative-tests) | 1,093 | 2,996 | 830 | 50% |
 | [Reftests](#reftests) | 27,175 | 28,735 | 231 | 95% |
-| **All** | **52,691** | **60,976** | **4,052** | **93%** |
+| **All** | **52,690** | **60,976** | **4,053** | **93%** |
 
 ## Stable tests
 
@@ -337,7 +337,7 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`shadow-dom`](wpt-coverage/shadow-dom.md) | 192 | 200 | 0 | 96% |
 | [`shape-detection`](wpt-coverage/shape-detection.md) | 0 | 24 | 24 | – |
 | [`soft-navigation-heuristics`](wpt-coverage/soft-navigation-heuristics.md) | 0 | 1 | 1 | – |
-| [`speculation-rules`](wpt-coverage/speculation-rules.md) | 122 | 181 | 0 | 67% |
+| [`speculation-rules`](wpt-coverage/speculation-rules.md) | 121 | 181 | 1 | 67% |
 | [`speech-api`](wpt-coverage/speech-api.md) | 0 | 16 | 16 | – |
 | [`storage`](wpt-coverage/storage.md) | 10 | 14 | 0 | 71% |
 | [`storage-access-api`](wpt-coverage/storage-access-api.md) | 0 | 37 | 37 | – |
@@ -400,7 +400,7 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`x-frame-options`](wpt-coverage/x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](wpt-coverage/xhr.md) | 316 | 328 | 0 | 96% |
 | [`xml`](wpt-coverage/xml.md) | 0 | 11 | 11 | – |
-| **Total (343 sections)** | **24,423** | **29,245** | **2,991** | **93%** |
+| **Total (343 sections)** | **24,422** | **29,245** | **2,992** | **93%** |
 
 ## Tentative tests
 

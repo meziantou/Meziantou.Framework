@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 122 | 181 | 0 | 67% |
+| [Stable](#stable-tests) | 121 | 181 | 1 | 67% |
 | [Tentative](#tentative-tests) | 5 | 25 | 0 | 20% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **127** | **206** | **0** | **62%** |
+| **All** | **126** | **206** | **1** | **61%** |
 
 ## Stable tests
 
@@ -171,7 +171,7 @@
 | [`prerender/sandbox-iframe.https.html`](https://wpt.fyi/results/speculation-rules/prerender/sandbox-iframe.https.html) | Pass | 1 / 1 |  |  |
 | [`prerender/scroll-into-view-cross-origin-iframe.https.html`](https://wpt.fyi/results/speculation-rules/prerender/scroll-into-view-cross-origin-iframe.https.html) | Fail | 2 / 6 | BUG | `focus()` of an element of a cross-origin iframe of a prerendering page does not update `document.activeElement` of the iframe; the test also times out in Chromium |
 | [`prerender/send-beacon.https.html`](https://wpt.fyi/results/speculation-rules/prerender/send-beacon.https.html) | Pass | 2 / 2 |  |  |
-| [`prerender/service-workers.https.html`](https://wpt.fyi/results/speculation-rules/prerender/service-workers.https.html) | Pass | 5 / 5 |  |  |
+| [`prerender/service-workers.https.html`](https://wpt.fyi/results/speculation-rules/prerender/service-workers.https.html) | Disabled | – | FLAKY | Two subtests register a service worker and create the prerendered page without waiting for the worker to be activated: a navigation is only controlled by an active worker, so when the activation is slower than the prerendering (on the loaded CI agents), the prerendered page is not controlled and its fetch of ping gets 404 Not Found instead of pong |
 | [`prerender/session-history-activation.https.html`](https://wpt.fyi/results/speculation-rules/prerender/session-history-activation.https.html) | Pass | 1 / 1 |  |  |
 | [`prerender/session-history-location.https.html`](https://wpt.fyi/results/speculation-rules/prerender/session-history-location.https.html) | Pass | 3 / 3 |  |  |
 | [`prerender/session-history-navigation.https.html`](https://wpt.fyi/results/speculation-rules/prerender/session-history-navigation.https.html) | Pass | 1 / 1 |  |  |

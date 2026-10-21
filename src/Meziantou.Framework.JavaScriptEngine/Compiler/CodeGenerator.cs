@@ -384,6 +384,10 @@ internal sealed partial class CodeGenerator
             if (variable.Location is VariableLocation.Dynamic or VariableLocation.GlobalObject or VariableLocation.GlobalLexical)
                 continue;
 
+            // "var arguments" does not reset the arguments object (it is one of the instantiated names)
+            if (parameterScope is null && ReferenceEquals(variable, _function.ArgumentsVariable) && (variable.IsReferenced || _function.HasDirectEval))
+                continue;
+
             if (parameterScope?.Find(variable.Name) is { Kind: VariableKind.Parameter or VariableKind.Arguments } parameter)
             {
                 EmitLoadVariable(parameter, checkTdz: false);

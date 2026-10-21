@@ -1,4 +1,3 @@
-annexB/language/function-code/block-decl-func-skip-arguments.js:sloppy
 annexB/language/literals/regexp/class-escape.js:sloppy
 annexB/language/literals/regexp/class-escape.js:strict
 annexB/language/literals/regexp/extended-pattern-char.js:sloppy

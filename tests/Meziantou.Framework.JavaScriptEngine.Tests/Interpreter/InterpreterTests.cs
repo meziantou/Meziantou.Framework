@@ -52,6 +52,8 @@ public sealed class InterpreterTests
     [InlineData("var iter = { [Symbol.iterator]() { return this; }, next() { return { done: false }; }, return() { this.f(); return { done: true }; } }; class C extends class { } { constructor() { iter.f = () => super(); for (var k of iter) { return; } } } typeof new C()", "object")]
     [InlineData("var r; (function () { eval('let f = 123; { function f() { } } r = f;'); })(); r", "123")]
     [InlineData("var r; (function () { eval('{ function f() { } } r = typeof f;'); })(); r", "function")]
+    [InlineData("function f() { var r = typeof arguments; var arguments; return r + typeof arguments; } f()", "objectobject")]
+    [InlineData("function f() { { function arguments() { } } return String(arguments); } f()", "[object Arguments]")]
     public void Evaluate(string code, string expected)
     {
         Assert.Equal(expected, Run(code));

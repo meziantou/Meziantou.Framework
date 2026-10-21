@@ -611,6 +611,10 @@ internal sealed partial class ScopeAnalyzer
         if (function.Kind != FunctionInfoKind.Script && function.Kind != FunctionInfoKind.Eval && function.Scope.Find(name) is { Kind: VariableKind.Parameter })
             return;
 
+        // "arguments" is one of the parameter names when the function has an arguments object
+        if (name == "arguments" && function.ArgumentsVariable is not null)
+            return;
+
         if (varScope.Find(name) is null)
         {
             var variable = varScope.Declare(name, VariableKind.Var);

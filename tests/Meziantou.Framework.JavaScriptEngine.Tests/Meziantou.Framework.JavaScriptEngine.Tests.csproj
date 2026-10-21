@@ -4,6 +4,9 @@
     <RootNamespace>Meziantou.Framework.JavaScriptEngine.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Corpus/*.jsonl" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.JavaScriptEngine/Meziantou.Framework.JavaScriptEngine.csproj" />
   </ItemGroup>
 </Project>

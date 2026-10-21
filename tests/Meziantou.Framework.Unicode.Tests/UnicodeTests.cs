@@ -58,6 +58,10 @@ public sealed class UnicodeTests
         var count = UnicodeScripts.GetScriptExtensions(0x30FC, scripts);
         Assert.Equal<UnicodeScript>([UnicodeScript.Hiragana, UnicodeScript.Katakana], scripts[..count]);
         Assert.True(UnicodeScripts.HasScriptExtension(0x30FC, UnicodeScript.Katakana));
+
+        // The names of PropertyValueAliases.txt
+        Assert.True(UnicodeScripts.TryParseScript("Grek", out var script));
+        Assert.Equal(UnicodeScript.Greek, script);
         #endregion
     }
 
@@ -82,6 +86,9 @@ public sealed class UnicodeTests
         Assert.True(UnicodeProperties.IsIdContinue('0'));
         Assert.Equal('a', UnicodeProperties.ToSimpleLowercase('A'));
         Assert.Equal(0x01C5, UnicodeProperties.ToSimpleTitlecase(0x01C6)); // 'ǆ' to 'ǅ'
+        Assert.Equal('k', UnicodeProperties.ToSimpleCaseFold(0x212A)); // the Kelvin sign
+        Assert.True(UnicodeProperties.HasBinaryProperty(0x00E9, UnicodeBinaryProperty.Alphabetic));
+        Assert.Equal([new UnicodeRange('0', '9'), new UnicodeRange('A', 'F'), new UnicodeRange('a', 'f')], UnicodeProperties.GetBinaryPropertyRanges(UnicodeBinaryProperty.ASCIIHexDigit));
         #endregion
     }
 
@@ -3632,6 +3639,193 @@ public sealed class UnicodeTests
     {
         Assert.Throws<ArgumentNullException>("domainName", () => UnicodeIdna.TryToAscii(null!, out _));
         Assert.Throws<ArgumentNullException>("domainName", () => UnicodeIdna.ToUnicode(null!, out _));
+    }
+
+    [Theory]
+    [InlineData('A', 'a')]
+    [InlineData('a', 'a')]
+    [InlineData(0x00DF, 0x00DF)] // the full folding of U+00DF is "ss": it has no simple folding
+    [InlineData(0x1E9E, 0x00DF)] // capital sharp s
+    [InlineData(0x017F, 's')] // long s
+    [InlineData(0x03C2, 0x03C3)] // final sigma
+    [InlineData(0x03A3, 0x03C3)]
+    [InlineData(0x0130, 0x0130)] // only a full (F) and a Turkic (T) mapping
+    [InlineData(0x13F8, 0x13F0)] // Cherokee small letters fold to the capital ones
+    [InlineData(0xAB70, 0x13A0)]
+    [InlineData(0x10400, 0x10428)] // Deseret
+    [InlineData(0x1F600, 0x1F600)]
+    [InlineData(-1, -1)]
+    [InlineData(0x110000, 0x110000)]
+    public void ToSimpleCaseFold(int codePoint, int expected)
+    {
+        Assert.Equal(expected, UnicodeProperties.ToSimpleCaseFold(codePoint));
+    }
+
+    [Fact]
+    public void ToSimpleCaseFold_IsIdempotent()
+    {
+        for (var codePoint = 0; codePoint <= 0x10FFFF; codePoint++)
+        {
+            var folded = UnicodeProperties.ToSimpleCaseFold(codePoint);
+            if (UnicodeProperties.ToSimpleCaseFold(folded) != folded)
+                Assert.Fail($"U+{codePoint:X4}");
+        }
+    }
+
+    [Theory]
+    [InlineData(' ', UnicodeBinaryProperty.WhiteSpace, true)]
+    [InlineData(0x3000, UnicodeBinaryProperty.WhiteSpace, true)]
+    [InlineData('a', UnicodeBinaryProperty.WhiteSpace, false)]
+    [InlineData(0x0345, UnicodeBinaryProperty.Alphabetic, true)] // through Other_Alphabetic
+    [InlineData(0x0345, UnicodeBinaryProperty.Lowercase, true)]
+    [InlineData(0x0345, UnicodeBinaryProperty.ChangesWhenCasefolded, true)]
+    [InlineData('A', UnicodeBinaryProperty.ChangesWhenLowercased, true)]
+    [InlineData('a', UnicodeBinaryProperty.ChangesWhenLowercased, false)]
+    [InlineData('a', UnicodeBinaryProperty.ChangesWhenUppercased, true)]
+    [InlineData(0x00AD, UnicodeBinaryProperty.ChangesWhenNFKCCasefolded, true)]
+    [InlineData('\'', UnicodeBinaryProperty.CaseIgnorable, true)]
+    [InlineData(0x1F600, UnicodeBinaryProperty.Emoji, true)]
+    [InlineData(0x1F600, UnicodeBinaryProperty.EmojiPresentation, true)]
+    [InlineData(0x1F3FB, UnicodeBinaryProperty.EmojiModifier, true)]
+    [InlineData(0x261D, UnicodeBinaryProperty.EmojiModifierBase, true)]
+    [InlineData('#', UnicodeBinaryProperty.EmojiComponent, true)]
+    [InlineData(0x00A9, UnicodeBinaryProperty.ExtendedPictographic, true)]
+    [InlineData('(', UnicodeBinaryProperty.BidiMirrored, true)]
+    [InlineData(0x200E, UnicodeBinaryProperty.BidiControl, true)]
+    [InlineData(0x4E00, UnicodeBinaryProperty.UnifiedIdeograph, true)]
+    [InlineData(0x4E00, UnicodeBinaryProperty.Ideographic, true)]
+    [InlineData(0xFDD0, UnicodeBinaryProperty.NoncharacterCodePoint, true)]
+    [InlineData(0x10FFFF, UnicodeBinaryProperty.NoncharacterCodePoint, true)]
+    [InlineData(0x1F1E6, UnicodeBinaryProperty.RegionalIndicator, true)]
+    [InlineData('x', UnicodeBinaryProperty.XIDStart, true)]
+    [InlineData(0x2E2F, UnicodeBinaryProperty.IDStart, false)]
+    [InlineData(0x0340, UnicodeBinaryProperty.FullCompositionExclusion, true)]
+    [InlineData(-1, UnicodeBinaryProperty.Alphabetic, false)]
+    [InlineData(0x110000, UnicodeBinaryProperty.NoncharacterCodePoint, false)]
+    public void HasBinaryProperty(int codePoint, UnicodeBinaryProperty property, bool expected)
+    {
+        Assert.Equal(expected, UnicodeProperties.HasBinaryProperty(codePoint, property));
+    }
+
+    [Fact]
+    public void HasBinaryProperty_MatchesTheOtherAccessors()
+    {
+        for (var codePoint = 0; codePoint <= 0x10FFFF; codePoint++)
+        {
+            if (UnicodeProperties.HasBinaryProperty(codePoint, UnicodeBinaryProperty.IDStart) != UnicodeProperties.IsIdStart(codePoint)
+                || UnicodeProperties.HasBinaryProperty(codePoint, UnicodeBinaryProperty.IDContinue) != UnicodeProperties.IsIdContinue(codePoint)
+                || UnicodeProperties.HasBinaryProperty(codePoint, UnicodeBinaryProperty.DefaultIgnorableCodePoint) != UnicodeProperties.IsDefaultIgnorable(codePoint)
+                || UnicodeProperties.HasBinaryProperty(codePoint, UnicodeBinaryProperty.BidiMirrored) != UnicodeProperties.IsBidiMirrored(codePoint)
+                || UnicodeProperties.HasBinaryProperty(codePoint, UnicodeBinaryProperty.Emoji) != UnicodeEmoji.IsEmoji(codePoint)
+                || UnicodeProperties.HasBinaryProperty(codePoint, UnicodeBinaryProperty.ExtendedPictographic) != UnicodeEmoji.IsExtendedPictographic(codePoint))
+            {
+                Assert.Fail($"U+{codePoint:X4}");
+            }
+        }
+    }
+
+    [Fact]
+    public void GetBinaryPropertyRanges_AreSortedAndMatchHasBinaryProperty()
+    {
+        foreach (var property in Enum.GetValues<UnicodeBinaryProperty>())
+        {
+            var ranges = UnicodeProperties.GetBinaryPropertyRanges(property);
+            Assert.NotEmpty(ranges);
+            for (var i = 1; i < ranges.Length; i++)
+            {
+                Assert.True(ranges[i].Start > ranges[i - 1].End + 1, $"{property}: {ranges[i - 1]} {ranges[i]}");
+            }
+
+            foreach (var range in ranges)
+            {
+                Assert.True(UnicodeProperties.HasBinaryProperty(range.Start, property));
+                Assert.True(UnicodeProperties.HasBinaryProperty(range.End, property));
+                if (range.Start > 0)
+                {
+                    Assert.False(UnicodeProperties.HasBinaryProperty(range.Start - 1, property));
+                }
+
+                if (range.End < 0x10FFFF)
+                {
+                    Assert.False(UnicodeProperties.HasBinaryProperty(range.End + 1, property));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void BinaryProperty_ThrowsOnUndefinedValue()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>("property", () => UnicodeProperties.HasBinaryProperty('a', (UnicodeBinaryProperty)255));
+        Assert.Throws<ArgumentOutOfRangeException>("property", () => UnicodeProperties.GetBinaryPropertyRanges((UnicodeBinaryProperty)255));
+    }
+
+    [Theory]
+    [InlineData("Latin", UnicodeScript.Latin)]
+    [InlineData("Latn", UnicodeScript.Latin)]
+    [InlineData("Old_Italic", UnicodeScript.OldItalic)]
+    [InlineData("Ital", UnicodeScript.OldItalic)]
+    [InlineData("Qaac", UnicodeScript.Coptic)]
+    [InlineData("Coptic", UnicodeScript.Coptic)]
+    [InlineData("Qaai", UnicodeScript.Inherited)]
+    [InlineData("Zinh", UnicodeScript.Inherited)]
+    [InlineData("Zyyy", UnicodeScript.Common)]
+    [InlineData("Unknown", UnicodeScript.Unknown)]
+    [InlineData("Zzzz", UnicodeScript.Unknown)]
+    public void TryParseScript(string name, UnicodeScript expected)
+    {
+        Assert.True(UnicodeScripts.TryParseScript(name, out var script));
+        Assert.Equal(expected, script);
+    }
+
+    [Theory]
+    [InlineData("latin")]
+    [InlineData("Old Italic")]
+    [InlineData("OldItalic")]
+    [InlineData("")]
+    public void TryParseScript_ComparesExactly(string name)
+    {
+        Assert.False(UnicodeScripts.TryParseScript(name, out var script));
+        Assert.Equal(UnicodeScript.Unknown, script);
+    }
+
+    [Fact]
+    public void TryParseScript_KnowsTheIso15924CodeOfEveryScript()
+    {
+        foreach (var script in Enum.GetValues<UnicodeScript>())
+        {
+            Assert.True(UnicodeScripts.TryParseScript(UnicodeScripts.GetIso15924Code(script), out var parsed));
+            Assert.Equal(script, parsed);
+        }
+    }
+
+    [Fact]
+    public void GetSequences()
+    {
+        Assert.Contains("⌚", UnicodeEmoji.GetSequences(UnicodeEmojiSequenceProperty.BasicEmoji));
+        Assert.Contains("©️", UnicodeEmoji.GetSequences(UnicodeEmojiSequenceProperty.BasicEmoji));
+        Assert.Contains("#️⃣", UnicodeEmoji.GetSequences(UnicodeEmojiSequenceProperty.EmojiKeycapSequence));
+        Assert.Equal(12, UnicodeEmoji.GetSequences(UnicodeEmojiSequenceProperty.EmojiKeycapSequence).Count);
+        Assert.Contains("\U0001F1EB\U0001F1F7", UnicodeEmoji.GetSequences(UnicodeEmojiSequenceProperty.RgiEmojiFlagSequence));
+        Assert.Contains("☝\U0001F3FB", UnicodeEmoji.GetSequences(UnicodeEmojiSequenceProperty.RgiEmojiModifierSequence));
+        Assert.Contains("\U0001F3F4\U000E0067\U000E0062\U000E0065\U000E006E\U000E0067\U000E007F", UnicodeEmoji.GetSequences(UnicodeEmojiSequenceProperty.RgiEmojiTagSequence));
+        Assert.Contains("\U0001F468‍❤️‍\U0001F468", UnicodeEmoji.GetSequences(UnicodeEmojiSequenceProperty.RgiEmojiZwjSequence));
+        Assert.Same(UnicodeEmoji.GetSequences(UnicodeEmojiSequenceProperty.BasicEmoji), UnicodeEmoji.GetSequences(UnicodeEmojiSequenceProperty.BasicEmoji));
+        Assert.Throws<ArgumentOutOfRangeException>("property", () => UnicodeEmoji.GetSequences((UnicodeEmojiSequenceProperty)6));
+    }
+
+    [Fact]
+    public void GetSequences_AreDistinct()
+    {
+        var all = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var property in Enum.GetValues<UnicodeEmojiSequenceProperty>())
+        {
+            foreach (var sequence in UnicodeEmoji.GetSequences(property))
+            {
+                Assert.NotEmpty(sequence);
+                Assert.True(all.Add(sequence), sequence);
+            }
+        }
     }
 
     private static string ToString(ReadOnlySpan<int> codePoints)

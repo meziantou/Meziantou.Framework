@@ -118,9 +118,5 @@ internal static partial class JsInterpreter
         return template;
     }
 
-    private static JsValue CreateRegExp(JsRealm realm, string pattern, string flags)
-    {
-        var factory = realm.Intrinsics.RegExpFactory ?? throw ThrowHelper.CreateException(ErrorType.SyntaxError, "Regular expressions are not supported yet");
-        return factory(realm, pattern, flags);
-    }
+    private static JsValue CreateRegExp(JsRealm realm, string pattern, string flags) => RegExpBuiltins.RegExpCreate(realm, pattern, flags);
 }

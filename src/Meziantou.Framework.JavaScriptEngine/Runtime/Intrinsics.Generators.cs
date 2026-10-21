@@ -34,9 +34,6 @@ internal sealed partial class Intrinsics
     /// <summary>%eval%</summary>
     public JsFunction Eval => _eval!;
 
-    /// <summary>Gets or sets the factory of the RegExp objects of the regular expression literals (set by the RegExp built-in).</summary>
-    public Func<JsRealm, string, string, JsValue>? RegExpFactory { get; set; }
-
     partial void InitializeGenerators()
     {
         var realm = Realm;

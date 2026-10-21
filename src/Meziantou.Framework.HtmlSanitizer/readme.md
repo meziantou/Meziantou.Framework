@@ -13,61 +13,69 @@ serialization algorithm: attribute values are written between double quotes, and
 
 ### Basic Sanitization
 
-```csharp
-using Meziantou.Framework.Sanitizers;
+`HtmlSanitizer` and `UrlSanitizer` are in the `Meziantou.Framework.Sanitizers` namespace.
 
+<!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/HtmlSanitizerTests.cs;region=HtmlSanitizer_Basic;format=md-fenced-code-block;dedent=true -->
+```csharp
 var sanitizer = new HtmlSanitizer();
 var safeHtml = sanitizer.SanitizeHtmlFragment("<p>Hello <script>alert('xss')</script>World</p>");
-// Result: "<p>Hello World</p>"
+Assert.Equal("<p>Hello World</p>", safeHtml);
 ```
+<!-- endref -->
 
 ### Remove Dangerous Attributes
 
 The sanitizer removes potentially dangerous attributes like `style`, `id`, and event handlers:
 
+<!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/HtmlSanitizerTests.cs;region=HtmlSanitizer_RemoveAttributes;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var sanitizer = new HtmlSanitizer();
 
 // Removes style attributes
-var result = sanitizer.SanitizeHtmlFragment("<p style='color:red'>test</p>");
-// Result: "<p>test</p>"
+var result1 = sanitizer.SanitizeHtmlFragment("<p style='color:red'>test</p>");
+Assert.Equal("<p>test</p>", result1);
 
 // Removes id attributes (not in allowed list)
-var result = sanitizer.SanitizeHtmlFragment("<p id='test'>test</p>");
-// Result: "<p>test</p>"
+var result2 = sanitizer.SanitizeHtmlFragment("<p id='test'>test</p>");
+Assert.Equal("<p>test</p>", result2);
 ```
+<!-- endref -->
 
 ### Sanitize URLs
 
 The sanitizer validates URLs in attributes like `href` and `src` to prevent javascript: and other dangerous protocols:
 
+<!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/HtmlSanitizerTests.cs;region=HtmlSanitizer_Urls;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var sanitizer = new HtmlSanitizer();
 
 // Blocks javascript: URLs
-var result = sanitizer.SanitizeHtmlFragment("<a href='javascript:alert(\"xss\")'>click</a>");
-// Result: "<a href="">click</a>"
+var result1 = sanitizer.SanitizeHtmlFragment("<a href='javascript:alert(\"xss\")'>click</a>");
+Assert.Equal("<a href=\"\">click</a>", result1);
 
 // Allows safe URLs
-var result = sanitizer.SanitizeHtmlFragment("<a href='https://example.com'>click</a>");
-// Result: "<a href="https://example.com">click</a>"
+var result2 = sanitizer.SanitizeHtmlFragment("<a href='https://example.com'>click</a>");
+Assert.Equal("<a href=\"https://example.com\">click</a>", result2);
 ```
+<!-- endref -->
 
 ### Sanitize Srcset Attributes
 
 The sanitizer also validates `srcset` attributes used for responsive images:
 
+<!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/HtmlSanitizerTests.cs;region=HtmlSanitizer_Srcset;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var sanitizer = new HtmlSanitizer();
 
 // Blocks srcset with dangerous URLs
-var result = sanitizer.SanitizeHtmlFragment("<img srcset='javascript:alert() 300w, https://example.com 600w'>");
-// Result: "<img srcset="">"
+var result1 = sanitizer.SanitizeHtmlFragment("<img srcset='javascript:alert() 300w, https://example.com 600w'>");
+Assert.Equal("<img srcset=\"\">", result1);
 
 // Allows safe srcset
-var result = sanitizer.SanitizeHtmlFragment("<img srcset='https://example.com/img1.jpg 300w, https://example.com/img2.jpg 600w'>");
-// Result: "<img srcset="https://example.com/img1.jpg 300w, https://example.com/img2.jpg 600w">"
+var result2 = sanitizer.SanitizeHtmlFragment("<img srcset='https://example.com/img1.jpg 300w, https://example.com/img2.jpg 600w'>");
+Assert.Equal("<img srcset=\"https://example.com/img1.jpg 300w, https://example.com/img2.jpg 600w\">", result2);
 ```
+<!-- endref -->
 
 ### Text
 
@@ -75,34 +83,34 @@ Text and attribute values are decoded by the parser and encoded again when the r
 encoded markup stays encoded. The markup is read as a browser reads it: an unterminated `<!--` is a comment that
 runs to the end of the fragment, and `<![CDATA[`, `<?` or `</0` start a bogus comment that ends at the first `>`.
 
+<!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/HtmlSanitizerTests.cs;region=HtmlSanitizer_Text;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var sanitizer = new HtmlSanitizer();
 
-sanitizer.SanitizeHtmlFragment("<p>&lt;script&gt;</p>");
-// Result: "<p>&lt;script&gt;</p>"
-
-sanitizer.SanitizeHtmlFragment("<p>a < b & c</p>");
-// Result: "<p>a &lt; b &amp; c</p>"
-
-sanitizer.SanitizeHtmlFragment("<b><!--");
-// Result: "<b></b>"
+Assert.Equal("<p>&lt;script&gt;</p>", sanitizer.SanitizeHtmlFragment("<p>&lt;script&gt;</p>"));
+Assert.Equal("<p>a &lt; b &amp; c</p>", sanitizer.SanitizeHtmlFragment("<p>a < b & c</p>"));
+Assert.Equal("<b></b>", sanitizer.SanitizeHtmlFragment("<b><!--"));
 ```
+<!-- endref -->
 
 ### Keeping Comments
 
 Comments are removed by default: downlevel-hidden conditional comments (`<!--[if IE]><script>...</script><![endif]-->`)
 are executed by legacy browsers. Set `AllowComments` to keep them:
 
+<!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/HtmlSanitizerTests.cs;region=HtmlSanitizer_AllowComments;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var sanitizer = new HtmlSanitizer { AllowComments = true };
 var result = sanitizer.SanitizeHtmlFragment("<p>a<!-- comment -->b</p>");
-// Result: "<p>a<!-- comment -->b</p>"
+Assert.Equal("<p>a<!-- comment -->b</p>", result);
 ```
+<!-- endref -->
 
 ### Customizing Allowed Elements
 
 You can customize which elements are allowed:
 
+<!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/HtmlSanitizerTests.cs;region=HtmlSanitizer_CustomElements;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var sanitizer = new HtmlSanitizer();
 
@@ -118,12 +126,17 @@ sanitizer.ValidElements.Remove("img");
 
 // Add elements to blocked list (will be removed entirely)
 sanitizer.BlockedElements.Add("iframe");
+
+var result = sanitizer.SanitizeHtmlFragment("<custom-element>a</custom-element><iframe>b</iframe><img src='c.png'>");
+Assert.Equal("<custom-element>a</custom-element>", result);
 ```
+<!-- endref -->
 
 ### Customizing Allowed Attributes
 
 You can customize which attributes are allowed:
 
+<!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/HtmlSanitizerTests.cs;region=HtmlSanitizer_CustomAttributes;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var sanitizer = new HtmlSanitizer();
 
@@ -135,10 +148,15 @@ sanitizer.ValidAttributes.Remove("target");
 
 // Add attributes that should be URL-validated
 sanitizer.UriAttributes.Add("data-url");
+
+var result = sanitizer.SanitizeHtmlFragment("<a data-custom='value' target='_blank' href='https://example.com'>link</a>");
+Assert.Equal("<a data-custom=\"value\" href=\"https://example.com\">link</a>", result);
 ```
+<!-- endref -->
 
 Attributes can also be allowed by prefix with `ValidAttributePrefixes`. It contains `aria-` by default:
 
+<!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/HtmlSanitizerTests.cs;region=HtmlSanitizer_AttributePrefixes;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var sanitizer = new HtmlSanitizer();
 
@@ -147,7 +165,11 @@ sanitizer.ValidAttributePrefixes.Add("data-");
 
 // Remove the ARIA attributes
 sanitizer.ValidAttributePrefixes.Remove("aria-");
+
+var result = sanitizer.SanitizeHtmlFragment("<p data-id='1' aria-label='text'>test</p>");
+Assert.Equal("<p data-id=\"1\">test</p>", result);
 ```
+<!-- endref -->
 
 An attribute allowed by a prefix is URL-validated only when it is in `UriAttributes`. Frameworks such as htmx or
 Knockout run the value of some `data-*` attributes (`data-hx-on:click`, `data-bind`), so only allow `data-` when
@@ -160,17 +182,18 @@ page that has this name.
 `ValidAttributes` and `UriAttributes` are separate sets, and only `UriAttributes` triggers URL validation.
 Adding an attribute to `ValidAttributes` alone lets any value through unchecked:
 
+<!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/HtmlSanitizerTests.cs;region=HtmlSanitizer_UriAttributes;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var sanitizer = new HtmlSanitizer();
 sanitizer.ValidAttributes.Add("data-url");
 
-sanitizer.SanitizeHtmlFragment("<p data-url='javascript:alert(1)'>test</p>");
-// Result: "<p data-url="javascript:alert(1)">test</p>"   (the value is not validated)
+// The value is not validated
+Assert.Equal("<p data-url=\"javascript:alert(1)\">test</p>", sanitizer.SanitizeHtmlFragment("<p data-url='javascript:alert(1)'>test</p>"));
 
 sanitizer.UriAttributes.Add("data-url");
-sanitizer.SanitizeHtmlFragment("<p data-url='javascript:alert(1)'>test</p>");
-// Result: "<p data-url="">test</p>"
+Assert.Equal("<p data-url=\"\">test</p>", sanitizer.SanitizeHtmlFragment("<p data-url='javascript:alert(1)'>test</p>"));
 ```
+<!-- endref -->
 
 Add any attribute that a browser resolves as a URL to both sets — `action`, `formaction`, `poster`, `data`,
 `srcdoc`, `dynsrc` and `lowsrc` among them. The same applies in reverse: removing an attribute from
@@ -197,17 +220,17 @@ An element is handled in one of three ways:
   is unwrapped as well. The parser only builds them when an element separates them, such as `object` or `template`;
   once that element is unwrapped (`<a><object><a>`), a browser would not read the markup back as the same elements.
 
+<!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/HtmlSanitizerTests.cs;region=HtmlSanitizer_ElementHandling;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var sanitizer = new HtmlSanitizer();
 
 // script is blocked, so its content is removed too
-sanitizer.SanitizeHtmlFragment("<p>Hello <script>alert('xss')</script>World</p>");
-// Result: "<p>Hello World</p>"
+Assert.Equal("<p>Hello World</p>", sanitizer.SanitizeHtmlFragment("<p>Hello <script>alert('xss')</script>World</p>"));
 
 // form is not allowed, but its content is kept
-sanitizer.SanitizeHtmlFragment("<form><p>Hello</p></form>");
-// Result: "<p>Hello</p>"
+Assert.Equal("<p>Hello</p>", sanitizer.SanitizeHtmlFragment("<form><p>Hello</p></form>"));
 ```
+<!-- endref -->
 
 ### Blocked Elements
 
@@ -230,16 +253,16 @@ The general attributes other than `class` are shared with the generic attributes
 
 The library includes a `UrlSanitizer` class that validates URLs:
 
+<!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/UrlSanitizerTests.cs;region=UrlSanitizer_IsSafeUrlAndSrcset;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Sanitizers;
-
 // Check if a URL is safe
-bool isSafe = UrlSanitizer.IsSafeUrl("https://example.com"); // true
-bool isUnsafe = UrlSanitizer.IsSafeUrl("javascript:alert('xss')"); // false
+Assert.True(UrlSanitizer.IsSafeUrl("https://example.com"));
+Assert.False(UrlSanitizer.IsSafeUrl("javascript:alert('xss')"));
 
 // Check if a srcset value is safe
-bool isSafeSrcset = UrlSanitizer.IsSafeSrcset("https://example.com/img1.jpg 300w, https://example.com/img2.jpg 600w"); // true
+Assert.True(UrlSanitizer.IsSafeSrcset("https://example.com/img1.jpg 300w, https://example.com/img2.jpg 600w"));
 ```
+<!-- endref -->
 
 ### Allowed URL Protocols
 

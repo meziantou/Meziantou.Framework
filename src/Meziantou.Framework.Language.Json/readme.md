@@ -10,10 +10,10 @@ annotations.
 Parsing never throws and never gives up. Whatever the text says, the tree reproduces it exactly, and anything wrong
 with it is reported through `GetDiagnostics()`.
 
-```csharp
-using Meziantou.Framework.Language;
-using Meziantou.Framework.Language.Json;
+The types are in the `Meziantou.Framework.Language.Json` namespace, and the shared ones (`SyntaxAnnotation`, `TextChange`, …) in `Meziantou.Framework.Language`.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Json.Tests/JsonSyntaxTreeTests.cs;region=JsonSyntaxTree_Overview;format=md-fenced-code-block;dedent=true -->
+```csharp
 var tree = JsonSyntaxTree.ParseText("""
 {
   // the name of the thing
@@ -23,11 +23,12 @@ var tree = JsonSyntaxTree.ParseText("""
 """);
 
 // Comments and trailing commas are accepted, so there is nothing to report here.
-Console.WriteLine(tree.GetDiagnostics().Count); // 0
+Assert.Empty(tree.GetDiagnostics());
 
 // And the text comes back exactly as it went in.
-Console.WriteLine(tree.GetRoot().ToFullString() == tree.GetText().Text); // True
+Assert.Equal(tree.GetText().Text, tree.GetRoot().ToFullString());
 ```
+<!-- endref -->
 
 ## The shape of a tree
 
@@ -49,15 +50,17 @@ A value is a `JsonObjectSyntax`, `JsonArraySyntax`, `JsonStringSyntax`, `JsonNum
 are separated lists: the elements and the commas between them share one sequence. `Count` counts elements and
 `SeparatorCount` counts commas, so a trailing comma is simply a list where the two are equal:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Json.Tests/JsonSyntaxTreeTests.cs;region=JsonSyntaxTree_SeparatedList;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var elements = ((JsonArraySyntax)JsonSyntaxTree.ParseText("[1, 2,]").GetRoot().Value!).Elements;
 
-elements.Count;                // 2
-elements.SeparatorCount;       // 2
-elements.HasTrailingSeparator; // true
-elements[0];                   // the JsonNumberSyntax for 1 -- the element itself, not a wrapper
-elements.GetSeparator(1);      // the trailing comma
+Assert.Equal(2, elements.Count);
+Assert.Equal(2, elements.SeparatorCount);
+Assert.True(elements.HasTrailingSeparator);
+Assert.IsType<JsonNumberSyntax>(elements[0]); // the element itself, not a wrapper
+Assert.Equal(",", elements.GetSeparator(1).Text); // the trailing comma
 ```
+<!-- endref -->
 
 ## Which trivia belongs to which token
 
@@ -65,6 +68,7 @@ Whitespace and comments up to and including the end of a line belong to the toke
 after belongs to the token that *follows*. That is what makes a comment on its own line attach to the thing it
 describes rather than to the thing above it:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Json.Tests/JsonSyntaxTreeTests.cs;region=JsonSyntaxTree_Trivia;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var tree = JsonSyntaxTree.ParseText("""
 {
@@ -75,23 +79,26 @@ var tree = JsonSyntaxTree.ParseText("""
 
 var obj = (JsonObjectSyntax)tree.GetRoot().Value!;
 
-obj.OpenBraceToken.TrailingTrivia.ToFullString();   // "\n"
-obj.Members[0].NameToken.LeadingTrivia.ToFullString(); // "  // the name of the thing\n  "
+Assert.Equal("\n", obj.OpenBraceToken.TrailingTrivia.ToFullString());
+Assert.Equal("  // the name of the thing\n  ", obj.Members[0].NameToken.LeadingTrivia.ToFullString());
 ```
+<!-- endref -->
 
 ## Editing without reformatting
 
 An edit rebuilds only the path from the changed node up to the root. Everything else is carried over as-is, so the
 rest of the document is untouched — and the result is the same type you started with, so no cast is needed.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Json.Tests/JsonSyntaxTreeTests.cs;region=JsonSyntaxTree_Editing;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var tree = JsonSyntaxTree.ParseText("""{ "version": "1.0.0", "other": 1 }""");
 var version = ((JsonObjectSyntax)tree.GetRoot().Value!).GetMember("version")!;
 
 JsonDocumentSyntax updated = tree.GetRoot().ReplaceNode(version.Value, SyntaxFactory.JsonString("2.0.0"));
 
-Console.WriteLine(updated.ToFullString()); // { "version": "2.0.0", "other": 1 }
+Assert.Equal("""{ "version": "2.0.0", "other": 1 }""", updated.ToFullString());
 ```
+<!-- endref -->
 
 There are `WithX` methods on every node too, and `SyntaxFactory` to build nodes from scratch.
 
@@ -100,6 +107,7 @@ There are `WithX` methods on every node too, and `SyntaxFactory` to build nodes 
 Removing an element takes its comma with it. What to do with the trivia around it is a choice you have to make,
 because the default quietly throws away any comment describing it:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Json.Tests/JsonSyntaxTreeTests.cs;region=JsonSyntaxTree_RemoveNode;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var tree = JsonSyntaxTree.ParseText("""
 {
@@ -110,17 +118,22 @@ var tree = JsonSyntaxTree.ParseText("""
 """);
 var members = ((JsonObjectSyntax)tree.GetRoot().Value!).Members;
 
-tree.GetRoot().RemoveNode(members[0], SyntaxRemoveOptions.KeepNoTrivia);
-// {
-//   "b": 2
-// }
+var withoutTrivia = tree.GetRoot().RemoveNode(members[0], SyntaxRemoveOptions.KeepNoTrivia);
+Assert.Equal("""
+{
+  "b": 2
+}
+""", withoutTrivia!.ToFullString());
 
-tree.GetRoot().RemoveNode(members[0], SyntaxRemoveOptions.KeepLeadingTrivia);
-// {
-//   // the one that matters
-//     "b": 2
-// }
+var withLeadingTrivia = tree.GetRoot().RemoveNode(members[0], SyntaxRemoveOptions.KeepLeadingTrivia);
+Assert.Equal("""
+{
+  // the one that matters
+    "b": 2
+}
+""", withLeadingTrivia!.ToFullString());
 ```
+<!-- endref -->
 
 Anything kept moves onto whatever now stands where the node was — the thing after it, or the thing before it when
 nothing follows. It is preserved, not tidied up: nothing here reformats.
@@ -133,29 +146,41 @@ naming both a node and something inside it removes the node, once.
 
 An annotation is a marker you attach to a node and find again in the tree an edit produced, wherever it ended up:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Json.Tests/JsonSyntaxTreeTests.cs;region=JsonSyntaxTree_Annotations;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var tree = JsonSyntaxTree.ParseText("""{ "a": 1, "b": 2 }""");
 var marker = new SyntaxAnnotation();
 var root = tree.GetRoot();
 var member = ((JsonObjectSyntax)root.Value!).Members[0];
 
 var marked = root.ReplaceNode(member, member.WithAdditionalAnnotations(marker));
-var edited = marked.ReplaceNode(/* something else entirely */);
+
+// Something else entirely: replace the value of "b", which rebuilds the path from it up to the root
+var b = ((JsonObjectSyntax)marked.Value!).GetMember("b")!;
+var edited = marked.ReplaceNode(b.Value, SyntaxFactory.JsonString("two"));
 
 var found = edited.GetAnnotatedNodes(marker).Single();
+Assert.Equal("\"a\": 1", found.ToString());
 ```
+<!-- endref -->
 
 ## Diagnostics
 
 Nothing is thrown for bad input; it is reported instead, with a location you can turn into line and character
 positions.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Json.Tests/JsonSyntaxTreeTests.cs;region=JsonSyntaxTree_Diagnostics;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var messages = new List<string>();
 foreach (var diagnostic in JsonSyntaxTree.ParseText("{\"a\": }").GetDiagnostics())
 {
     var line = diagnostic.Location.GetLineSpan().Start;
-    Console.WriteLine($"{diagnostic.Id} ({line.Line},{line.Character}): {diagnostic.Message}");
+    messages.Add($"{diagnostic.Id} ({line.Line},{line.Character}): {diagnostic.Message}");
 }
+
+Assert.Equal(["JSON0007 (0,6): Expected a JSON value."], messages);
 ```
+<!-- endref -->
 
 | Id | Reported for |
 | --- | --- |
@@ -201,6 +226,7 @@ rest of the document under others:
 `JsonSyntaxWalker` visits a node and everything below it; `JsonSyntaxVisitor` dispatches on kind without recursing;
 `JsonSyntaxRewriter` builds a new tree from an old one.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Json.Tests/JsonSyntaxTreeTests.cs;region=JsonSyntaxWalker_StringCounter;format=md-fenced-code-block;dedent=true -->
 ```csharp
 private sealed class StringCounter : JsonSyntaxWalker
 {
@@ -213,26 +239,44 @@ private sealed class StringCounter : JsonSyntaxWalker
     }
 }
 ```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Json.Tests/JsonSyntaxTreeTests.cs;region=JsonSyntaxTree_WalkerUsage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var counter = new StringCounter();
+counter.Visit(JsonSyntaxTree.ParseText("""{ "a": "x", "b": ["y", 1, "z"] }""").GetRoot());
+
+// Member names are tokens of a JsonMemberSyntax, not JsonStringSyntax values
+Assert.Equal(3, counter.Count);
+```
+<!-- endref -->
 
 Or, without a visitor: `root.DescendantNodes()`, `DescendantTokens()`, `DescendantTrivia()`, `FindToken(position)`,
 `FindNode(span)`.
 
 ## JSONPath
 
+`JsonPath` comes from [`Meziantou.Framework.JsonPath`](https://www.nuget.org/packages/Meziantou.Framework.JsonPath/), in the `Meziantou.Framework.Json` namespace.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Json.Tests/JsonSyntaxTreeTests.cs;region=JsonSyntaxTree_JsonPath;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Json;
+var tree = JsonSyntaxTree.ParseText("""{ "items": [1, 2, 3] }""");
 
 var value = JsonPath.Parse("$.items[1]").EvaluateValue(tree);
+Assert.Equal("2", value?.ToString());
 ```
+<!-- endref -->
 
 ## Editing by text
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Json.Tests/JsonSyntaxTreeTests.cs;region=JsonSyntaxTree_EditingByText;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var tree = JsonSyntaxTree.ParseText("""{"a":1}""");
 var updated = tree.WithChanges(new TextChange(new TextSpan(5, 1), "2"));
 
-Console.WriteLine(updated.GetRoot().ToFullString()); // {"a":2}
+Assert.Equal("""{"a":2}""", updated.GetRoot().ToFullString());
 ```
+<!-- endref -->
 
 ## Coming from version 3
 

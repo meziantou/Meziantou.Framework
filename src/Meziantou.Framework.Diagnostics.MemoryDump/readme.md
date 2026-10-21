@@ -4,26 +4,30 @@ Create a memory dump of the current process on Windows, Linux, and macOS, withou
 
 ## Usage
 
-```c#
-using Meziantou.Framework.Diagnostics;
+`MemoryDump` is in the `Meziantou.Framework.Diagnostics` namespace.
 
+<!-- ref:../../samples/Meziantou.Framework.Diagnostics.MemoryDump.Samples/ReadmeExamples.cs;region=MemoryDump_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Full dump (default)
 MemoryDump.Write("app.dmp");
 
 // Smaller dump containing the managed heap
 await MemoryDump.WriteAsync("app.dmp", MemoryDumpType.WithHeap, cancellationToken);
 ```
+<!-- endref -->
 
 You can open the dump with Visual Studio, WinDbg, `dotnet-dump analyze`, or `lldb` with the SOS extension.
 
 A typical use is to dump the process when it detects a problem it cannot explain, such as thread pool starvation or a request that never completes:
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.Diagnostics.MemoryDump.Samples/ReadmeExamples.cs;region=MemoryDump_DumpOnProblem;format=md-fenced-code-block;dedent=true -->
+```csharp
 if (queueDelay > TimeSpan.FromSeconds(5))
 {
     MemoryDump.Write(Path.Combine(dumpDirectory, $"starvation-{DateTime.UtcNow:yyyyMMddHHmmss}.dmp"));
 }
 ```
+<!-- endref -->
 
 ## Dump types
 

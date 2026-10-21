@@ -2,21 +2,27 @@
 
 Helpers to hash and verify passwords using BCrypt.
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.Bcrypt.Tests/BcryptTests.cs;region=Bcrypt_HashPassword;format=md-fenced-code-block;dedent=true -->
+```csharp
 var hash = Bcrypt.HashPassword("my password");
 var ok = Bcrypt.Verify("my password", hash);
-````
+Assert.True(ok);
+```
+<!-- endref -->
 
 You can select the BCrypt revision and cost (work factor):
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.Bcrypt.Tests/BcryptTests.cs;region=Bcrypt_RevisionAndWorkFactor;format=md-fenced-code-block;dedent=true -->
+```csharp
 var hash = Bcrypt.HashPassword(
     password: "my password",
     workFactor: 12,
     version: BcryptVersion.Revision2B);
 
 var shouldRehash = Bcrypt.NeedsRehash(hash, workFactor: 13, version: BcryptVersion.Revision2B);
-````
+Assert.True(shouldRehash);
+```
+<!-- endref -->
 
 Supported revisions are:
 

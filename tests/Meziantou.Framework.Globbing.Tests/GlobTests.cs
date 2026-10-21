@@ -4,6 +4,38 @@ namespace Meziantou.Framework.Globbing.Tests;
 
 public class GlobTests
 {
+    [Fact]
+    public void ReadmeExample_IsMatch()
+    {
+        #region Glob_IsMatchIgnoreCase
+        Glob glob = Glob.Parse("src/**/*.txt", GlobDialect.Standard, GlobOptions.IgnoreCase);
+        Assert.True(glob.IsMatch("src/abc.txt"));
+        Assert.True(glob.IsMatch("SRC/a/b/abc.TXT"));
+        Assert.False(glob.IsMatch("src/abc.png"));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_EnumerateFiles()
+    {
+        #region Glob_EnumerateFiles
+        using var rootDirectory = TemporaryDirectory.Create();
+        rootDirectory.CreateEmptyFile("src/a/abc.txt");
+        rootDirectory.CreateEmptyFile("src/a/abc.png");
+        rootDirectory.CreateEmptyFile("docs/readme.txt");
+
+        // Enumerate files that match the glob in the folder rootDirectory
+        Glob glob = Glob.Parse("src/**/*.txt", GlobDialect.Standard);
+        var files = new List<string>();
+        foreach (var file in glob.EnumerateFiles(rootDirectory.FullPath))
+        {
+            files.Add(file);
+        }
+
+        Assert.Equal([Path.Combine(rootDirectory.FullPath, "src", "a", "abc.txt")], files);
+        #endregion
+    }
+
     [Theory]
     [InlineData("")] // Empty is not valid
     [InlineData("../*.txt")] // Cannot start with '..'

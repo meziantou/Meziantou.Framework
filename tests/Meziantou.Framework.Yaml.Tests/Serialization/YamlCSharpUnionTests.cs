@@ -7,6 +7,56 @@ namespace Meziantou.Framework.Yaml.Tests.Serialization;
 #if NET11_0_OR_GREATER
 public sealed class YamlCSharpUnionTests
 {
+    [Fact]
+    public void ReadmeExample_SerializeUnion()
+    {
+        #region YamlUnion_Serialize
+        var yaml = YamlSerializer.Serialize(new Setting(42));
+        Assert.Equal("42\n", yaml);
+        #endregion
+    }
+
+    #region YamlUnion_Setting
+    internal union Setting(bool, int, string);
+    #endregion
+
+    [Fact]
+    public void ReadmeExample_StructuralClassifier()
+    {
+        #region YamlUnionTypeStructuralClassifier_Usage
+        var options = new YamlSerializerOptions
+        {
+            TypeClassifiers = [new YamlUnionTypeStructuralClassifier()],
+        };
+
+        var shape = YamlSerializer.Deserialize<Shape>("Radius: 3", options);
+        Assert.Equal(3, Assert.IsType<Circle>(shape.Value).Radius);
+        #endregion
+
+        Assert.Equal(2, Assert.IsType<Rectangle>(YamlSerializer.Deserialize<Shape>("Width: 2\nHeight: 1", options).Value).Width);
+    }
+
+    #region YamlUnionTypeStructuralClassifier_Shape
+    internal union Shape(Circle, Rectangle);
+    internal sealed class Circle { public int Radius { get; set; } }
+    internal sealed class Rectangle { public int Width { get; set; } public int Height { get; set; } }
+    #endregion
+
+    [Fact]
+    public void ReadmeExample_NumberHandling()
+    {
+        #region YamlUnion_NumberHandling_Deserialize
+        Assert.Equal("alice", YamlSerializer.Deserialize<IdOrName>("\"alice\"").Value);
+        Assert.Equal(42, YamlSerializer.Deserialize<IdOrName>("42").Value);
+        Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<IdOrName>("\"42\"")); // both cases match
+        #endregion
+    }
+
+    #region YamlUnion_NumberHandling
+    [YamlNumberHandling(YamlNumberHandling.AllowReadingFromString)]
+    internal union IdOrName(int, string);
+    #endregion
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

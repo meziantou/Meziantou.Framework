@@ -2,11 +2,10 @@
 
 High-performance in-memory Bloom filters and counting Bloom filters for .NET.
 
-Use `BloomFilter` when you need fast membership checks (`Add` + `MayContain`) and can tolerate false positives.
+Use `BloomFilter` when you need fast membership checks (`Add` + `MayContain`) and can tolerate false positives. The types are in the `Meziantou.Framework.BloomFilters` namespace.
 
-````c#
-using Meziantou.Framework.BloomFilters;
-
+<!-- ref:../../tests/Meziantou.Framework.BloomFilters.Tests/BloomFilterTests.cs;region=BloomFilter_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Configure the filter for ~1,000 items and 1% false positive probability
 var size = BloomFilterSize.CreateOptimalSize(expectedItemCount: 1000, falsePositiveProbability: 0.01);
 var filter = BloomFilter.CreateXXHash3(size);
@@ -14,31 +13,32 @@ var filter = BloomFilter.CreateXXHash3(size);
 filter.Add("alice@example.com");
 filter.Add("bob@example.com");
 
-if (filter.MayContain("alice@example.com"))
-{
-    // Item may exist (no false negatives)
-}
+// Item may exist (no false negatives)
+Assert.True(filter.MayContain("alice@example.com"));
 
 // Approximate number of inserted items
 var estimatedItemCount = filter.GetEstimateCount();
-````
+Assert.Equal(2, estimatedItemCount, tolerance: 0.1);
+```
+<!-- endref -->
 
 Use `CountingBloomFilter` when you need to remove values or estimate per-value occurrences.
 
-````c#
-using Meziantou.Framework.BloomFilters;
-
+<!-- ref:../../tests/Meziantou.Framework.BloomFilters.Tests/BloomFilterTests.cs;region=CountingBloomFilter_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 var size = CountingBloomFilterSize.CreateOptimalSize(expectedItemCount: 1000, falsePositiveProbability: 0.01);
 var filter = CountingBloomFilter.CreateXXHash3(size);
 
 filter.Add("alice@example.com");
 filter.Add("alice@example.com");
 
-var mayContainAlice = filter.MayContain("alice@example.com"); // true
-var estimatedCount = filter.GetEstimatedCount("alice@example.com"); // >= 2
+Assert.True(filter.MayContain("alice@example.com"));
+var estimatedCount = filter.GetEstimatedCount("alice@example.com");
+Assert.True(estimatedCount >= 2);
 
 filter.Remove("alice@example.com");
-````
+```
+<!-- endref -->
 
 Counters are 8-bit. A counter that reaches 255 saturates and is never decremented again, so `GetEstimatedCount` returns at most 255, and a value whose counters all saturated can no longer be removed (it may keep being reported as present, but is never reported as absent).
 

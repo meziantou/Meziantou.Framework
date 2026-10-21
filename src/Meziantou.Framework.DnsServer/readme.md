@@ -13,11 +13,11 @@ A DNS server library supporting multiple transport protocols with ASP.NET Core h
 
 ## Usage
 
-```c#
-using Meziantou.Framework.DnsServer.Hosting;
-using Meziantou.Framework.DnsServer.Protocol;
-using Meziantou.Framework.DnsServer.Protocol.Records;
+The examples import the `Meziantou.Framework.DnsServer.Hosting`, `Meziantou.Framework.DnsServer.Protocol` and
+`Meziantou.Framework.DnsServer.Protocol.Records` namespaces. The handler returns a `ValueTask<DnsMessage>`.
 
+<!-- ref:../../samples/Meziantou.Framework.DnsServer.Samples/ReadmeExamples.cs;region=DnsServer_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 var builder = WebApplication.CreateBuilder(args);
 builder.AddDnsServer(options =>
 {
@@ -26,7 +26,7 @@ builder.AddDnsServer(options =>
 });
 
 var app = builder.Build();
-app.MapDnsHandler(async (context, cancellationToken) =>
+app.MapDnsHandler((context, cancellationToken) =>
 {
     var response = context.CreateResponse();
     response.ResponseCode = DnsResponseCode.NoError;
@@ -46,52 +46,60 @@ app.MapDnsHandler(async (context, cancellationToken) =>
         }
     }
 
-    return response;
+    return ValueTask.FromResult(response);
 });
 
 app.Run();
 ```
+<!-- endref -->
 
 ### DNS over HTTPS
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.DnsServer.Samples/ReadmeExamples.cs;region=DnsServer_DnsOverHttps;format=md-fenced-code-block;dedent=true -->
+```csharp
 builder.AddDnsServer(options =>
 {
     options.AddTcpListener(port: 5053);
 });
 
 var app = builder.Build();
-app.MapDnsHandler(async (context, ct) => context.CreateResponse());
+app.MapDnsHandler((context, ct) => ValueTask.FromResult(context.CreateResponse()));
 app.MapDnsOverHttps("/dns-query");
 
 app.Run();
 ```
+<!-- endref -->
 
 ### DNS over TLS
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.DnsServer.Samples/ReadmeExamples.cs;region=DnsServer_DnsOverTls;format=md-fenced-code-block;dedent=true -->
+```csharp
 var certificate = X509Certificate2.CreateFromPemFile("cert.pem", "key.pem");
 builder.AddDnsServer(options =>
 {
     options.AddTlsListener(port: 8853, certificate);
 });
 ```
+<!-- endref -->
 
 ### DNS over QUIC
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.DnsServer.Samples/ReadmeExamples.cs;region=DnsServer_DnsOverQuic;format=md-fenced-code-block;dedent=true -->
+```csharp
 var certificate = X509Certificate2.CreateFromPemFile("cert.pem", "key.pem");
 builder.AddDnsServer(options =>
 {
     options.AddQuicListener(port: 8853, certificate);
 });
 ```
+<!-- endref -->
 
 ## Limits and hardening
 
 The server enforces the following limits. All of them are set on `DnsServerOptions`.
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.DnsServer.Samples/ReadmeExamples.cs;region=DnsServer_Limits;format=md-fenced-code-block;dedent=true -->
+```csharp
 builder.AddDnsServer(options =>
 {
     options.AddUdpListener(port: 5053);
@@ -112,13 +120,16 @@ builder.AddDnsServer(options =>
     options.MaxConcurrentQueriesPerConnection = 16;
 });
 ```
+<!-- endref -->
 
 To cap the number of simultaneous connections, set Kestrel's own limit, which also covers any HTTP
 endpoints the application exposes:
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.DnsServer.Samples/ReadmeExamples.cs;region=DnsServer_KestrelLimits;format=md-fenced-code-block;dedent=true -->
+```csharp
 builder.WebHost.ConfigureKestrel(kestrel => kestrel.Limits.MaxConcurrentConnections = 1000);
 ```
+<!-- endref -->
 
 Beyond those settings the server:
 

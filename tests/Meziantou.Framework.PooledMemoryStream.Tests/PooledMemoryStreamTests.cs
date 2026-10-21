@@ -30,6 +30,61 @@ public sealed class PooledMemoryStreamTests
         BufferSizes = [16, 64, 256],
     };
 
+    [Fact]
+    public void ReadmeExample_BasicUsage()
+    {
+        #region PooledMemoryStream_BasicUsage
+        using var stream = new PooledMemoryStream();
+        stream.Write("Hello, "u8);
+        stream.Write("World!"u8);
+
+        stream.Position = 0;
+        using var reader = new StreamReader(stream);
+        Assert.Equal("Hello, World!", reader.ReadToEnd());
+
+        // The pooled buffers are returned to the shared pool when the stream is disposed.
+        #endregion
+    }
+
+    [Fact]
+    public async Task ReadmeExample_BufferWriter()
+    {
+        #region PooledMemoryStream_BufferWriter
+        using var stream = new PooledMemoryStream();
+
+        // PooledMemoryStream implements IBufferWriter<byte> (explicit), so it can be passed where one is expected.
+        IBufferWriter<byte> writer = stream;
+        await using (var json = new Utf8JsonWriter(writer))
+        {
+            json.WriteStartObject();
+            json.WriteString("message", "hello");
+            json.WriteEndObject();
+        }
+
+        var bytes = stream.ToArray();
+        Assert.Equal("""{"message":"hello"}"""u8.ToArray(), bytes);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Options()
+    {
+        #region PooledMemoryStream_Options
+        var options = new PooledMemoryStreamOptions
+        {
+            // Any number of strictly ascending tiers (bytes). Small streams use the smallest size and
+            // grow through the larger ones; buffers bigger than the largest tier round up to a multiple of it.
+            BufferSizes = [4 * 1024, 128 * 1024, 1024 * 1024, 10 * 1024 * 1024], // 4 KiB / 128 KiB / 1 MiB / 10 MiB
+            MaxRetainedBytesPerBucket = 64L * 1024 * 1024,
+            ClearOnReturn = false,
+        };
+
+        using var stream = new PooledMemoryStream(options);
+        #endregion
+
+        Assert.Equal(0, stream.Length);
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(1)]

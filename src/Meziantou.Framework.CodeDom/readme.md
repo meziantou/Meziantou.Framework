@@ -4,9 +4,10 @@
 
 ## Usage
 
-```csharp
-using Meziantou.Framework.CodeDom;
+The types are in the `Meziantou.Framework.CodeDom` namespace.
 
+<!-- ref:../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs;region=CodeDom_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 var unit = new CompilationUnit();
 unit.AddUsing("System");
 
@@ -26,15 +27,13 @@ var nameArgument = method.AddArgument("name", typeof(string));
 method.Statements = new ReturnStatement(Expression.Add("Hello ", nameArgument, "!"));
 
 var generatedCode = unit.ToCsharpString();
-Console.WriteLine(generatedCode);
 ```
+<!-- endref -->
 
-Generated code:
+`generatedCode` contains:
 
 ```csharp
-using System;
-
-namespace Demo
+using System;namespace Demo
 {
     public class Greeter
     {

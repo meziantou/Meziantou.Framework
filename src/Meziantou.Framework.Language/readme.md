@@ -29,14 +29,22 @@ created on demand as a tree is walked.
 
 That split is what makes editing cheap and honest. Replacing a node rebuilds only the path
 from it up to the root; every other subtree is carried over by reference, so the parts that
-did not change stay the very same nodes:
+did not change stay the very same nodes. For example, with `Meziantou.Framework.Language.Xml`:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs;region=XmlSyntaxTree_Editing;format=md-fenced-code-block;dedent=true -->
 ```csharp
-var updated = root.ReplaceNode(oldNode, newNode);
+var tree = XmlSyntaxTree.ParseText("<root><a>1</a><b>2</b></root>");
+var root = (XmlElementSyntax)tree.GetRoot().Nodes[0];
+var b = root.Content.OfType<XmlElementSyntax>().Single(element => element.Name == "b");
 
-// The sibling was not touched, so it was not rebuilt.
-untouchedSibling.IsIncrementallyIdenticalTo(updatedSibling); // true
+XmlDocumentSyntax updated = tree.GetRoot().ReplaceNode(b, b.WithInnerText("two"));
+
+Assert.Equal("<root><a>1</a><b>two</b></root>", updated.ToFullString());
+
+// <a> was not touched, so it is the very same node.
+Assert.True(root.Content[0].IsIncrementallyIdenticalTo(((XmlElementSyntax)updated.Nodes[0]).Content[0]));
 ```
+<!-- endref -->
 
 `ReplaceNode` returns the type it was given, so editing a document gives back a document. `RemoveNode` does too, and
 takes `SyntaxRemoveOptions` saying what to do with the trivia around what it takes out — the comment in front of a
@@ -55,39 +63,41 @@ keeps its own green layer to itself.
 ## Diagnostics and locations
 
 A diagnostic carries a `Location`, which pairs the character range with the text it indexes
-into, so it can report line and character positions:
+into, so it can report line and character positions (here with `Meziantou.Framework.Language.Xml`):
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs;region=Language_Diagnostics;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Language;
-using Meziantou.Framework.Language.Xml;
-
 var tree = XmlSyntaxTree.ParseText("<root>\n  <item>\n</root>");
 
-foreach (var diagnostic in tree.Diagnostics)
-{
-    Console.WriteLine($"{diagnostic.Id} at {diagnostic.Location}: {diagnostic.Message}");
+var diagnostic = Assert.Single(tree.GetDiagnostics());
+Assert.Equal("XML0001 at (1,2)-(1,8): Missing end tag for 'item'.", $"{diagnostic.Id} at {diagnostic.Location}: {diagnostic.Message}");
 
-    var lineSpan = diagnostic.Location.GetLineSpan();
-    Console.WriteLine(lineSpan.Start.Line);      // zero-based
-    Console.WriteLine(lineSpan.Start.Character); // zero-based
-}
+var lineSpan = diagnostic.Location.GetLineSpan();
+Assert.Equal(1, lineSpan.Start.Line);      // zero-based
+Assert.Equal(2, lineSpan.Start.Character); // zero-based
+
+// The location is bound to the tree's own text
+Assert.Same(tree.GetText(), diagnostic.Location.SourceText);
 ```
+<!-- endref -->
 
 A diagnostic produced by a parser is always bound to the tree's own text, so
-`diagnostic.Location.SourceText` is the same instance as `tree.SourceText`. A `Location`
+`diagnostic.Location.SourceText` is the same instance as `tree.GetText()`. A `Location`
 you build yourself may leave the text out, in which case `GetLineSpan()` returns `default`.
 
 ## Source text and edits
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Tests/SourceTextTests.cs;region=Language_SourceTextAndEdits;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var source = SourceText.From("<root/>");
 
 var updated = source.WithChanges([new TextChange(new TextSpan(1, 4), "item")]);
-Console.WriteLine(updated.Text); // <item/>
+Assert.Equal("<item/>", updated.Text);
 
 var line = source.GetLine(position: 3);
-Console.WriteLine(line.LineNumber);
+Assert.Equal(0, line.LineNumber);
 ```
+<!-- endref -->
 
 `WithChanges` applies changes from the end of the text backwards, so the spans of the
 changes that come earlier in the text stay valid regardless of the order they are passed

@@ -6,22 +6,24 @@ A .NET library to convert HTML fragments to Markdown.
 
 ### Basic conversion
 
-```csharp
-using Meziantou.Framework;
+`HtmlToMarkdown` and its options are in the `Meziantou.Framework` namespace.
 
+<!-- ref:../../tests/Meziantou.Framework.HtmlToMarkdown.Tests/HtmlToMarkdownConverterTests.cs;region=HtmlToMarkdown_Convert;format=md-fenced-code-block;dedent=true -->
+```csharp
 var html = "<h1>Title</h1><p>Hello <strong>world</strong></p>";
 var markdown = HtmlToMarkdown.Convert(html);
+Assert.Equal("""
+    # Title
 
-// # Title
-//
-// Hello **world**
+    Hello **world**
+    """, markdown);
 ```
+<!-- endref -->
 
 ### Configure conversion options
 
+<!-- ref:../../tests/Meziantou.Framework.HtmlToMarkdown.Tests/HtmlToMarkdownConverterTests.cs;region=HtmlToMarkdown_Options;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework;
-
 var html = "<h1>Title</h1><p>Line 1<br>Line 2</p>";
 
 var markdown = HtmlToMarkdown.Convert(html, new HtmlToMarkdownOptions
@@ -37,33 +39,48 @@ var markdown = HtmlToMarkdown.Convert(html, new HtmlToMarkdownOptions
     EmojiShortcodeMode = EmojiShortcodeMode.GitHub,
     UnknownElementHandling = UnknownElementHandling.StripKeepContent,
 });
+Assert.Equal("""
+    Title
+    =====
+
+    Line 1\
+    Line 2
+    """, markdown);
 ```
+<!-- endref -->
 
 ### Replace SmartyPants punctuation with simple ASCII
 
 You can opt in to convert smart punctuation in regular text nodes:
 
+<!-- ref:../../tests/Meziantou.Framework.HtmlToMarkdown.Tests/HtmlToMarkdownConverterTests.cs;region=HtmlToMarkdown_SimplePunctuation;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var markdown = HtmlToMarkdown.Convert(
     "<p>“Hello” ‘Hello’ — – … « »</p>",
     new HtmlToMarkdownOptions { UseSimplePunctuation = true });
-
-// "Hello" 'Hello' \-\-\- \-\- ... \<\< \>\>
+Assert.Equal("""
+    "Hello" 'Hello' \-\-\- \-\- ... \<\< \>\>
+    """, markdown);
 ```
+<!-- endref -->
 
 ### Emoji shortcode replacement
 
+<!-- ref:../../tests/Meziantou.Framework.HtmlToMarkdown.Tests/HtmlToMarkdownConverterTests.cs;region=HtmlToMarkdown_EmojiShortcodes;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var markdown = HtmlToMarkdown.Convert("<p>I ❤️ Markdown</p>", new HtmlToMarkdownOptions
 {
-    EmojiShortcodeMode = EmojiShortcodeMode.GitHub, // => I :heart: Markdown
+    EmojiShortcodeMode = EmojiShortcodeMode.GitHub,
 });
+Assert.Equal("I :heart: Markdown", markdown);
 
 var unicodeMarkdown = HtmlToMarkdown.Convert("<p>I ❤️ Markdown</p>", new HtmlToMarkdownOptions
 {
-    EmojiShortcodeMode = EmojiShortcodeMode.Unicode, // => I :red_heart: Markdown
+    EmojiShortcodeMode = EmojiShortcodeMode.Unicode,
 });
+Assert.Equal("I :red_heart: Markdown", unicodeMarkdown);
 ```
+<!-- endref -->
 
 ## Supported HTML elements
 

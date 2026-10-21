@@ -5,6 +5,31 @@ namespace Meziantou.Framework.Http.Tests;
 public sealed class HtpasswdFileTests
 {
     [Fact]
+    public void ReadmeExample_VerifyCredentials()
+    {
+        #region HtpasswdFile_VerifyCredentials
+        var htpasswd = HtpasswdFile.Parse("""
+                alice:$2y$10$bXuOalpYagnenorrJU65m.z5VzYstr4rBZl2WUHNwhGjItODNoDrG
+                bob:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=
+                """);
+
+        var isAliceValid = htpasswd.VerifyCredentials("alice", "password");
+        var isBobValid = htpasswd.VerifyCredentials("bob", "password");
+        Assert.True(isAliceValid);
+        Assert.True(isBobValid);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_PlaintextPasswords()
+    {
+        #region HtpasswdFile_PlaintextPasswords
+        var htpasswd = HtpasswdFile.Parse("alice:password", allowPlaintextPasswords: true);
+        Assert.True(htpasswd.VerifyCredentials("alice", "password"));
+        #endregion
+    }
+
+    [Fact]
     public void Parse_String_ShouldPopulateEntries()
     {
         const string Content = """

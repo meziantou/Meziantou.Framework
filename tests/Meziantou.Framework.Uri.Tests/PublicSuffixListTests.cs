@@ -35,6 +35,44 @@ public sealed class PublicSuffixListTests
     }
 
     [Fact]
+    public void ReadmeExample_Usage()
+    {
+        #region PublicSuffixList_Usage
+        // Get the registrable domain (eTLD+1)
+        Assert.Equal("example.co.uk", PublicSuffixList.GetRegistrableDomain("www.example.co.uk"));
+        Assert.Null(PublicSuffixList.GetRegistrableDomain("co.uk"));
+
+        // Get the public suffix (eTLD)
+        Assert.Equal("co.uk", PublicSuffixList.GetPublicSuffix("www.example.co.uk"));
+
+        // Test if a domain is a public suffix
+        Assert.True(PublicSuffixList.IsPublicSuffix("co.uk"));
+        Assert.False(PublicSuffixList.IsPublicSuffix("example.com"));
+
+        // Decompose a domain name
+        Assert.True(PublicSuffixList.TryGetDomainInfo("www.a.example.co.uk", out DomainInfo info));
+        Assert.Equal("co.uk", info.PublicSuffix);
+        Assert.Equal("example.co.uk", info.RegistrableDomain);
+        Assert.Equal("www.a", info.Subdomain);
+        Assert.Equal(PublicSuffixRuleSources.Icann, info.Source);
+        Assert.True(info.IsKnownPublicSuffix);
+
+        // A Uri can be used directly
+        Assert.True(PublicSuffixList.TryGetDomainInfo(new System.Uri("https://www.example.co.uk/path"), out _));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_RuleSources()
+    {
+        #region PublicSuffixList_RuleSources
+        // blogspot.com is a private rule
+        Assert.Equal("foo.blogspot.com", PublicSuffixList.GetRegistrableDomain("foo.blogspot.com"));
+        Assert.Equal("blogspot.com", PublicSuffixList.GetRegistrableDomain("foo.blogspot.com", PublicSuffixRuleSources.Icann));
+        #endregion
+    }
+
+    [Fact]
     public void GetPublicSuffix_MultiLabelSuffix()
     {
         Assert.Equal("co.uk", PublicSuffixList.GetPublicSuffix("www.example.co.uk"));

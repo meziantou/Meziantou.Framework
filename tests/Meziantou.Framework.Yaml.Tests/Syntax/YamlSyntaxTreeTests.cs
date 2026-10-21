@@ -3,6 +3,43 @@ using Meziantou.Framework.Yaml.Syntax;
 namespace Meziantou.Framework.Yaml.Tests.Syntax;
 public class YamlSyntaxTreeTests
 {
+    [Fact]
+    public void ReadmeExample_Parse()
+    {
+        #region YamlSyntaxTree_Parse
+        var yaml = """
+            # deployment settings
+            replicas: 3 # keep in sync with the chart
+            """;
+
+        var tree = YamlSyntaxTree.Parse(yaml, new YamlSyntaxOptions { IncludeTrivia = true });
+
+        var tokens = new List<string>();
+        foreach (var token in tree.Tokens)
+        {
+            tokens.Add($"{token.Kind} {token.Span} {token.Text}");
+        }
+
+        Assert.Equal(
+        [
+            "StreamStart 0:0 ",
+            "CommentTrivia 0:21 # deployment settings",
+            "NewLineTrivia 21:22 \n",
+            "BlockMappingStart 22:22 ",
+            "Key 22:22 ",
+            "Scalar 22:30 replicas",
+            "Value 30:31 :",
+            "WhitespaceTrivia 31:32  ",
+            "Scalar 32:33 3",
+            "WhitespaceTrivia 33:34  ",
+            "CommentTrivia 34:63 # keep in sync with the chart",
+            "BlockEnd 63:63 ",
+            "StreamEnd 63:63 ",
+        ], tokens);
+        Assert.Equal(yaml, tree.ToFullString());
+        #endregion
+    }
+
     public static TheoryData<string> RoundTripCases { get; } =
     [
         "# comment\nroot:\n  key: value\n\nlist:\n  - a\n  - b\n",

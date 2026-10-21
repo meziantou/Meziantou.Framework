@@ -4,13 +4,12 @@
 
 ## Setup
 
-Call `AddImaging()` on your `SnapshotSettings` to register the image serializer and comparer:
+Call `AddImaging()` on your `SnapshotSettings` to register the image serializer and comparer, for instance in a module
+initializer (`ModuleInitializer` is in the `System.Runtime.CompilerServices` namespace, `SnapshotSettings` in
+`Meziantou.Framework.SnapshotTesting` and `AddImaging` in `Meziantou.Framework.SnapshotTesting.Imaging`):
 
+<!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Imaging.Tests/SnapshotConfiguration.cs;region=SnapshotTestingImaging_Setup;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using System.Runtime.CompilerServices;
-using Meziantou.Framework.SnapshotTesting;
-using Meziantou.Framework.SnapshotTesting.Imaging;
-
 internal static class SnapshotConfiguration
 {
     [ModuleInitializer]
@@ -20,9 +19,11 @@ internal static class SnapshotConfiguration
     }
 }
 ```
+<!-- endref -->
 
-Then validate images from your tests:
+Then validate images from your tests (`Image` is in the `Meziantou.Framework.Imaging` namespace):
 
+<!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Imaging.Tests/SampleTests.cs;region=SnapshotTestingImaging_Validate;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public sealed class SampleTests
 {
@@ -41,6 +42,7 @@ public sealed class SampleTests
     }
 }
 ```
+<!-- endref -->
 
 `AddImaging()` registers:
 
@@ -48,11 +50,16 @@ public sealed class SampleTests
 - the `ImageComparer` for every format `Meziantou.Framework.Imaging` decodes, under each of its file extensions: PNG and APNG, JPEG, GIF, WebP, BMP, TIFF, ICO, CUR, ANI, QOI, TGA, PNM (PBM, PGM, PPM and PAM), AVIF, HEIC, JPEG XL and JPEG 2000 (`SnapshotType.Avif`, `Heic`, `JpegXl` and `Jpeg2000`);
 - a converter that writes `Rgba32` colors as `#RRGGBBAA` in human-readable snapshots.
 
-To compare image snapshots by pixels without the serializer, register the comparer alone:
+To compare image snapshots by pixels without the serializer, register the comparer alone (on `SnapshotSettings.Default`
+in the module initializer, or on a copy of the settings):
 
+<!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Imaging.Tests/ImageSnapshotTests.cs;region=SnapshotTestingImaging_AddImageComparer;format=md-fenced-code-block;dedent=true -->
 ```csharp
-SnapshotSettings.Default.Comparers.AddImageComparer();
+var settings = new SnapshotSettings(); // SnapshotSettings.Default in the module initializer
+settings.Comparers.AddImageComparer();
+Assert.IsType<ImageComparer>(settings.Comparers.Get(SnapshotType.Png));
 ```
+<!-- endref -->
 
 > [!IMPORTANT]
 > Register once for the whole test assembly, not inside a test method. `SnapshotSettings.Default` is
@@ -64,15 +71,19 @@ SnapshotSettings.Default.Comparers.AddImageComparer();
 
 The bytes of a GIF or ICO file can be stored as one PNG snapshot per frame (GIF) or per representation (ICO), so that a change shows which frame differs:
 
+<!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Imaging.Tests/ImageSnapshotTests.cs;region=SnapshotTestingImaging_GifAndIcoFrames;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var settings = SnapshotSettings.Default with { };
 settings.Serializers.AddGifSerializer();
 settings.Serializers.AddIcoSerializer();
 settings.Comparers.AddImageComparer();
 
+var gifBytes = File.ReadAllBytes("animation.gif");
+var icoBytes = File.ReadAllBytes("favicon.ico");
 Snapshot.Validate(gifBytes, SnapshotType.Gif, settings);
 Snapshot.Validate(icoBytes, SnapshotType.Ico, settings);
 ```
+<!-- endref -->
 
 Register a comparer for `SnapshotType.Png` (`AddImageComparer` or `AddImaging`) so that the frames are compared by pixels: the compressed bytes of a PNG file depend on the zlib of the runtime, so a runtime update could otherwise make every frame differ. Data that is not a GIF or ICO file is left to the next serializer.
 
@@ -82,17 +93,20 @@ Register a comparer for `SnapshotType.Png` (`AddImageComparer` or `AddImaging`) 
 
 By default, images are compared pixel by pixel (exact comparison). Fully transparent pixels are equal whatever color they hide. Images with samples of more than 8 bits, such as 16-bit PNG files, are compared on 16 bits: an 8-bit sample `v` equals the 16-bit sample `v × 257`.
 
-To allow minor rendering differences, configure thresholds:
+To allow minor rendering differences, configure thresholds (on `SnapshotSettings.Default` in the module initializer
+shown above):
 
+<!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Imaging.Tests/ImageSnapshotTests.cs;region=SnapshotTestingImaging_Thresholds;format=md-fenced-code-block;dedent=true -->
 ```csharp
-// In the module initializer shown above
-SnapshotSettings.Default.AddImaging(new ImageComparisonSettings
+var settings = new SnapshotSettings(); // SnapshotSettings.Default in the module initializer
+settings.AddImaging(new ImageComparisonSettings
 {
     SimilarityThreshold = 0.99f, // SSIM: 0.0 = completely different, 1.0 = identical
     DHashThreshold = 4,          // dHash distance: 0 = same structure, up to 64
     PHashThreshold = 4,          // pHash distance: 0 = same structure, up to 64
 });
 ```
+<!-- endref -->
 
 Every configured check must pass for every frame, and the assertion message reports all the checks that failed. The measures are those of `ImageSimilarity` in `Meziantou.Framework.Imaging`; samples of more than 8 bits are rounded to 8 bits.
 

@@ -6,6 +6,53 @@ namespace Meziantou.Framework.Bencode.Tests;
 public sealed class BencodeDocumentTests
 {
     [Fact]
+    public async Task ReadmeExample_ParseAndWrite()
+    {
+        #region BencodeDocument_ParseAndWrite
+        var data = "d3:cow3:moo4:spam4:eggse"u8.ToArray();
+        var document = BencodeDocument.Parse(data);
+
+        // Parse from a stream, such as File.OpenRead("input.bencode")
+        await using var input = new MemoryStream(data);
+        var pipeReader = PipeReader.Create(input);
+        var streamedDocument = await BencodeDocument.ParseAsync(pipeReader);
+        await pipeReader.CompleteAsync();
+        Assert.IsType<BencodeDictionary>(streamedDocument.Root);
+
+        var dictionary = (BencodeDictionary)document.Root;
+        var cow = (BencodeString)dictionary[new BencodeString("cow"u8.ToArray())];
+        Assert.Equal("moo", cow.ToUtf8String());
+
+        var encoded = dictionary.ToUtf8ByteArray();
+        Assert.Equal("d3:cow3:moo4:spam4:eggse"u8.ToArray(), encoded);
+
+        // Write to a stream, such as File.Create("output.bencode")
+        await using var stream = new MemoryStream();
+        await dictionary.WriteToAsync(stream);
+        #endregion
+
+        Assert.Equal(data, stream.ToArray());
+    }
+
+    [Fact]
+    public void ReadmeExample_Writer()
+    {
+        #region BencodeWriter_Write
+        var buffer = new ArrayBufferWriter<byte>();
+        var writer = new BencodeWriter(buffer);
+
+        writer.WriteStartDictionary();
+        writer.WriteUtf8Key("cow");
+        writer.WriteUtf8String("moo");
+        writer.WriteEndDictionary();
+        writer.Complete();
+
+        var data = buffer.WrittenSpan.ToArray();
+        Assert.Equal("d3:cow3:mooe"u8.ToArray(), data);
+        #endregion
+    }
+
+    [Fact]
     public void Parse_Dictionary()
     {
         var data = Encoding.ASCII.GetBytes("d3:cow3:moo4:spam4:eggse");

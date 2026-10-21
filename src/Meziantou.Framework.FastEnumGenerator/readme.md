@@ -1,29 +1,32 @@
 # Meziantou.Framework.FastEnumGenerator
 
-The source generator generates specialized enum helpers for selected enum types.
+The source generator generates specialized enum helpers for selected enum types. `FastEnumAttribute` is in the `Meziantou.Framework.Annotations` namespace.
 
-````csharp
+<!-- ref:../../samples/Meziantou.Framework.FastEnumGenerator.Samples/Color.cs;region=FastEnumGenerator_Declaration;format=md-fenced-code-block;dedent=true -->
+```csharp
 [assembly: FastEnumAttribute(typeof(Sample.Color), IsPublic = true, ExtensionMethodNamespace = "Sample.Extensions")]
 
-namespace Sample
+namespace Sample;
+
+public enum Color
 {
-    public enum Color
-    {
-        Blue,
-        Red,
-        Green,
-    }
+    Blue,
+    Red,
+    Green,
 }
-````
+```
+<!-- endref -->
 
 The generated class is emitted in the enum's namespace, or in `ExtensionMethodNamespace` when that is set.
 Call sites must have that namespace in scope:
 
-````csharp
+<!-- ref:../../samples/Meziantou.Framework.FastEnumGenerator.Samples/Program.cs;region=FastEnumGenerator_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 using Sample.Extensions; // only needed when ExtensionMethodNamespace is used
 
 var name = Color.Blue.ToStringFast();
-````
+```
+<!-- endref -->
 
 ## Generated methods
 

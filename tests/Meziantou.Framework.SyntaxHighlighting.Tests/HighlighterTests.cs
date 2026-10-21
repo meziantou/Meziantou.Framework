@@ -1,10 +1,73 @@
-﻿using Meziantou.Framework.SyntaxHighlighting.Engine;
+﻿using System.Net;
+using Meziantou.Framework.SyntaxHighlighting.Engine;
 using Meziantou.Framework.SyntaxHighlighting.Languages;
 
 namespace Meziantou.Framework.SyntaxHighlighting.Tests;
 
 public class HighlighterTests
 {
+    [Fact]
+    public void ReadmeExample_Highlight()
+    {
+        #region SyntaxHighlighter_Highlight
+        var html = SyntaxHighlighter.Highlight(
+            "public class MyClass { }",
+            "csharp");
+
+        Assert.Equal("""<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">MyClass</span> { }""", html);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ClassPrefix()
+    {
+        #region SyntaxHighlighter_ClassPrefix
+        var html = SyntaxHighlighter.Highlight(
+            "public class MyClass { }",
+            "csharp",
+            new HighlightOptions { ClassPrefix = "syntax-" });
+
+        Assert.Equal("""<span class="syntax-keyword">public</span> <span class="syntax-keyword">class</span> <span class="syntax-title">MyClass</span> { }""", html);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_IgnoreIllegals()
+    {
+        #region SyntaxHighlighter_IgnoreIllegals
+        var code = """{"a": 1};""";
+        var html = SyntaxHighlighter.Highlight(code, "json", new HighlightOptions { IgnoreIllegals = false });
+        Assert.Equal("{&quot;a&quot;: 1};", html);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_MatchTimeout()
+    {
+        #region SyntaxHighlighter_MatchTimeout
+        var code = "public class MyClass { }";
+        var language = "csharp";
+        var html = SyntaxHighlighter.Highlight(code, language, new HighlightOptions { MatchTimeout = TimeSpan.FromSeconds(1) });
+        #endregion
+
+        Assert.Equal(SyntaxHighlighter.Highlight(code, language), html);
+    }
+
+    [Fact]
+    public void ReadmeExample_TryHighlight()
+    {
+        #region SyntaxHighlighter_TryHighlight
+        var code = "<b>Hello</b>";
+        var language = "not-a-language";
+        if (!SyntaxHighlighter.TryHighlight(code, language, out var html))
+        {
+            html = WebUtility.HtmlEncode(code); // render it as plain text
+        }
+
+        Assert.Equal("&lt;b&gt;Hello&lt;/b&gt;", html);
+        #endregion
+    }
+
     [Fact]
     public void Highlight()
     {

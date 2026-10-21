@@ -10,10 +10,10 @@ annotations.
 Parsing never throws and never gives up. Whatever the text says, the tree reproduces it exactly, and anything wrong
 with it is reported through `GetDiagnostics()`.
 
-```csharp
-using Meziantou.Framework.Language;
-using Meziantou.Framework.Language.Ini;
+The types are in the `Meziantou.Framework.Language.Ini` namespace.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Ini.Tests/IniSyntaxTreeTests.cs;region=IniSyntaxTree_Overview;format=md-fenced-code-block;dedent=true -->
+```csharp
 var tree = IniSyntaxTree.ParseText("""
 ; comment
 [database]
@@ -21,9 +21,10 @@ server=localhost
 port: 5432
 """);
 
-Console.WriteLine(tree.GetDiagnostics().Count); // 0
-Console.WriteLine(tree.GetRoot().ToFullString() == tree.GetText().Text); // True
+Assert.Empty(tree.GetDiagnostics());
+Assert.Equal(tree.GetText().Text, tree.GetRoot().ToFullString());
 ```
+<!-- endref -->
 
 ## The shape of a tree
 
@@ -41,11 +42,13 @@ use. Every entry is one line, except a property whose value continues on the lin
 The entries are flat, as they are in the text: a section header is followed by the properties under it, not their
 parent. `IniSectionSyntax.Properties` and `IniDocumentSyntax.GlobalProperties` group them, and `GetValue` looks one up:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Ini.Tests/IniSyntaxTreeTests.cs;region=IniSyntaxTree_GetValue;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var root = IniSyntaxTree.ParseText("[database]\nport=5432\n").GetRoot();
 
-Console.WriteLine(root.GetValue("database", "port")); // 5432
+Assert.Equal("5432", root.GetValue("database", "port"));
 ```
+<!-- endref -->
 
 Section names and keys are compared with the `NameComparer` the document was parsed with, case-insensitively by default,
 unless you pass a comparer. When a key is there more than once, `GetValue` returns the last one; `GetProperties` returns
@@ -81,6 +84,7 @@ parses the text of the root again, so the tree reads its text as those options s
 
 For Python's `configparser`, whose defaults are whole-line comments only, unquoted values, and multiline values:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Ini.Tests/IniSyntaxTreeTests.cs;region=IniSyntaxTree_PythonOptions;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var python = new IniParseOptions
 {
@@ -88,25 +92,39 @@ var python = new IniParseOptions
     AllowQuotedValues = false,
     AllowMultilineValues = true,
 };
-```
 
-```csharp
-var tree = IniSyntaxTree.ParseText(text, new IniParseOptions { AllowKeysWithoutValue = true });
+var root = IniSyntaxTree.ParseText("[paths]\nhome = \"/home/user\" ; not a comment\nlist = a\n  b\n", python).GetRoot();
+Assert.Equal("\"/home/user\" ; not a comment", root.GetValue("paths", "home"));
+Assert.Equal("a\nb", root.GetValue("paths", "list"));
 ```
+<!-- endref -->
+
+Other options are set the same way, for example to accept a key without a value:
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Ini.Tests/IniSyntaxTreeTests.cs;region=IniSyntaxTree_KeysWithoutValue;format=md-fenced-code-block;dedent=true -->
+```csharp
+var text = "[mysqld]\nskip-networking\n";
+var tree = IniSyntaxTree.ParseText(text, new IniParseOptions { AllowKeysWithoutValue = true });
+
+Assert.Empty(tree.GetDiagnostics());
+```
+<!-- endref -->
 
 ## Editing without reformatting
 
 An edit rebuilds only the path from the changed node up to the root. Everything else is carried over as-is, so the
 rest of the document is untouched — and the result is the same type you started with, so no cast is needed.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Ini.Tests/IniSyntaxTreeTests.cs;region=IniSyntaxTree_Editing;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var tree = IniSyntaxTree.ParseText("name=old");
 var property = (IniPropertySyntax)tree.GetRoot().Entries[0];
 
 IniDocumentSyntax updated = tree.GetRoot().ReplaceNode(property, property.WithValue("new"));
 
-Console.WriteLine(updated.ToFullString()); // name=new
+Assert.Equal("name=new", updated.ToFullString());
 ```
+<!-- endref -->
 
 `WithValue` writes the value so that the document reads it back the same with its own options, and quotes it only when
 they require it: when a `;` or `#` would start a comment, when it has whitespace around it, or when it starts with a
@@ -138,13 +156,18 @@ has nothing else.
 
 For the common edits, the document does the work, writing new properties like the ones around them:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Ini.Tests/IniSyntaxTreeTests.cs;region=IniSyntaxTree_CommonEdits;format=md-fenced-code-block;dedent=true -->
 ```csharp
-var root = IniSyntaxTree.ParseText("[database]\n  port = 5432\n").GetRoot();
+var root = IniSyntaxTree.ParseText("[database]\n  port = 5432\n[legacy]\nold = 1\n").GetRoot();
 
 root = root.SetValue("database", "host", "localhost"); // adds "  host = localhost" under port
+Assert.Equal("[database]\n  port = 5432\n  host = localhost\n[legacy]\nold = 1\n", root.ToFullString());
+
 root = root.RemoveProperties("database", "port");      // removes every "port" in the section, and its comments
 root = root.RemoveSections("legacy");                  // removes the headers and everything under them
+Assert.Equal("[database]\n  host = localhost\n", root.ToFullString());
 ```
+<!-- endref -->
 
 A new section goes at the end of the document, after the comments that end it. The comment lines right above a removed
 property or section go with it; comment lines that a blank line separates from it head a group of entries, and stay.
@@ -152,9 +175,14 @@ property or section go with it; comment lines that a blank line separates from i
 Every edit of an immutable document rebuilds it, so setting many properties one at a time costs as much as the document
 for each of them. `SetValues` sets every property the document already has in one edit:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Ini.Tests/IniSyntaxTreeTests.cs;region=IniSyntaxTree_SetValues;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var root = IniSyntaxTree.ParseText("[database]\nhost = localhost\nport = 5432\n").GetRoot();
+
 root = root.SetValues([("database", "host", "db1"), ("database", "port", "5433")]);
+Assert.Equal("[database]\nhost = db1\nport = 5433\n", root.ToFullString());
 ```
+<!-- endref -->
 
 ## Limitations
 

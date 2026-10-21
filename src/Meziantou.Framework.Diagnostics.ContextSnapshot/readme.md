@@ -1,13 +1,17 @@
 # Meziantou.Framework.Diagnostics.ContextSnapshot
 
-Get the current execution context for diagnostic purposes.
+Get the current execution context for diagnostic purposes (`JsonSerializer` and `JsonStringEnumConverter` are in the
+`System.Text.Json` and `System.Text.Json.Serialization` namespaces).
 
-```c#
-var context = new ContextSnapshotBuilder().AddDefault().Build();
+<!-- ref:../../tests/Meziantou.Framework.Diagnostics.ContextSnapshot.Tests/SnapshotTests.cs;region=ContextSnapshot_Serialize;format=md-fenced-code-block;dedent=true -->
+```csharp
+var snapshot = new ContextSnapshotBuilder().AddDefault().BuildSnapshot();
 
 // You can serialize the context
-JsonSerializer.Serialize(snapshot, new JsonSerializerOptions
+var json = JsonSerializer.Serialize(snapshot, new JsonSerializerOptions
 {
+    RespectNullableAnnotations = true,
+    RespectRequiredConstructorParameters = true,
     WriteIndented = true,
     Converters =
     {
@@ -15,3 +19,4 @@ JsonSerializer.Serialize(snapshot, new JsonSerializerOptions
     },
 });
 ```
+<!-- endref -->

@@ -2,6 +2,107 @@ namespace Meziantou.Framework.Language.Toml.Tests;
 
 public sealed class TomlSyntaxTreeTests
 {
+    [Fact]
+    public void ReadmeExample_Parse()
+    {
+        #region TomlSyntaxTree_Parse
+        var tree = TomlSyntaxTree.ParseText("""
+            # The server
+            [server]
+            host = "localhost"
+            ports = [ 8000, 8001 ]
+            """);
+
+        Assert.Empty(tree.GetDiagnostics());
+
+        var server = tree.GetRoot().Tables.Single();
+        var ports = (TomlArraySyntax)server.Properties[1].Value;
+        Assert.Equal(8000L, ((TomlIntegerSyntax)ports.Elements[0]).Value);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ReadValuesByKey()
+    {
+        #region TomlSyntaxTree_ReadValuesByKey
+        var root = TomlSyntaxTree.ParseText("""
+            [dependencies]
+            serde = { version = "1.0" }
+
+            [dependencies.tokio]
+            version = "1.2"
+            """).GetRoot();
+
+        var tokio = (TomlStringSyntax)root.GetValue("dependencies", "tokio", "version")!;
+        Assert.Equal("1.2", tokio.Value);
+
+        var keys = new List<string>();
+        foreach (var pair in root.GetKeyValues())
+        {
+            keys.Add(string.Join('.', pair.Names));
+        }
+
+        Assert.Equal(["dependencies.serde", "dependencies.serde.version", "dependencies.tokio.version"], keys);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Edit()
+    {
+        #region TomlSyntaxTree_Edit
+        var root = TomlSyntaxTree.ParseText("port = 8080 # the port\n").GetRoot();
+        var port = (TomlIntegerSyntax)root.RootProperties[0].Value;
+
+        var updated = root.ReplaceNode(port, port.WithValue(9090));
+        Assert.Equal("port = 9090 # the port\n", updated.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_SyntaxFactory()
+    {
+        #region TomlSyntaxTree_SyntaxFactory
+        var document = SyntaxFactory.TomlDocument(
+            SyntaxFactory.TomlTable("server"),
+            SyntaxFactory.TomlProperty("host name", SyntaxFactory.TomlString("localhost")),
+            SyntaxFactory.TomlProperty(SyntaxFactory.Key("limits", "max"), SyntaxFactory.TomlFloat(1)));
+
+        Assert.Equal("""
+            [server]
+            "host name" = "localhost"
+            limits.max = 1.0
+
+            """, document.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Diagnostics()
+    {
+        #region TomlSyntaxTree_Diagnostics
+        var messages = new List<string>();
+        foreach (var diagnostic in TomlSyntaxTree.ParseText("a = 1\na = 2\n").GetDiagnostics())
+        {
+            var line = diagnostic.Location.GetLineSpan().Start;
+            messages.Add($"{diagnostic.Id} ({line.Line},{line.Character}): {diagnostic.Message}");
+        }
+
+        Assert.Equal(["TOML0020 (1,0): The key 'a' is already defined."], messages);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Version()
+    {
+        #region TomlSyntaxTree_Version
+        // A time without seconds is a TOML 1.1 feature
+        var text = "start = 07:32\n";
+
+        var tree = TomlSyntaxTree.ParseText(text, new TomlParseOptions { Version = TomlVersion.V1_0 });
+        Assert.Equal("TOML0013", tree.GetDiagnostics().Single().Id);
+        #endregion
+    }
+
     public static TheoryData<string> RoundTripSamples => new()
     {
         "title = \"TOML Example\"\n[owner]\nname = \"Tom\"\nports = [8000, 8001]\n# comment\n",

@@ -8,6 +8,24 @@ namespace Meziantou.Framework.Tests;
 
 public class RelativeDateTests
 {
+#if !INVARIANT_GLOBALIZATION_MODE_ENABLED
+    [Fact]
+    public void ReadmeExample_Usage()
+    {
+        #region RelativeDate_Usage
+        DateTime dateTime = DateTime.UtcNow.AddMinutes(-5);
+        var relativeDate = RelativeDate.Get(dateTime).ToString(); // Uses the current UI culture
+        var relativeDateInEnglish = RelativeDate.Get(dateTime).ToString(format: null, CultureInfo.GetCultureInfo("en-US"));
+        var relativeDateInFrench = RelativeDate.Get(dateTime).ToString(format: null, CultureInfo.GetCultureInfo("fr-FR"));
+
+        Assert.Equal("5 minutes ago", relativeDateInEnglish);
+        Assert.Equal("il y a 5 minutes", relativeDateInFrench);
+        #endregion
+
+        Assert.NotEmpty(relativeDate);
+    }
+#endif
+
     [Fact]
     public void DefaultDate_ToString()
     {

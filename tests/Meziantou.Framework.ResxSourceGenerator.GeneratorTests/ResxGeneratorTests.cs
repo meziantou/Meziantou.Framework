@@ -6,6 +6,15 @@ namespace Meziantou.Framework.ResxSourceGenerator.GeneratorTests;
 
 public class ResxGeneratorTests
 {
+    [Fact]
+    public void ReadmeExample_Format()
+    {
+        #region ResxSourceGenerator_Format
+        Assert.Equal("Hello {0}!", Sample.Hello);
+        Assert.Equal("Hello meziantou!", Sample.FormatHello("meziantou"));
+        #endregion
+    }
+
     // Ambient UI culture is restored in a finally block, but a leak would be observed by anything running beside this test
     [Fact(DisableParallelization = true), RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void FormatString()

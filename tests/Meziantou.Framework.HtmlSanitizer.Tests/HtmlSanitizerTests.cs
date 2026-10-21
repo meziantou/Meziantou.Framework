@@ -4,6 +4,176 @@ namespace Meziantou.Framework.Sanitizers.Tests;
 
 public class HtmlSanitizerTests
 {
+    [Fact]
+    public void ReadmeExample_Basic()
+    {
+        #region HtmlSanitizer_Basic
+        var sanitizer = new HtmlSanitizer();
+        var safeHtml = sanitizer.SanitizeHtmlFragment("<p>Hello <script>alert('xss')</script>World</p>");
+        Assert.Equal("<p>Hello World</p>", safeHtml);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_RemoveAttributes()
+    {
+        #region HtmlSanitizer_RemoveAttributes
+        var sanitizer = new HtmlSanitizer();
+
+        // Removes style attributes
+        var result1 = sanitizer.SanitizeHtmlFragment("<p style='color:red'>test</p>");
+        Assert.Equal("<p>test</p>", result1);
+
+        // Removes id attributes (not in allowed list)
+        var result2 = sanitizer.SanitizeHtmlFragment("<p id='test'>test</p>");
+        Assert.Equal("<p>test</p>", result2);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Urls()
+    {
+        #region HtmlSanitizer_Urls
+        var sanitizer = new HtmlSanitizer();
+
+        // Blocks javascript: URLs
+        var result1 = sanitizer.SanitizeHtmlFragment("<a href='javascript:alert(\"xss\")'>click</a>");
+        Assert.Equal("<a href=\"\">click</a>", result1);
+
+        // Allows safe URLs
+        var result2 = sanitizer.SanitizeHtmlFragment("<a href='https://example.com'>click</a>");
+        Assert.Equal("<a href=\"https://example.com\">click</a>", result2);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Srcset()
+    {
+        #region HtmlSanitizer_Srcset
+        var sanitizer = new HtmlSanitizer();
+
+        // Blocks srcset with dangerous URLs
+        var result1 = sanitizer.SanitizeHtmlFragment("<img srcset='javascript:alert() 300w, https://example.com 600w'>");
+        Assert.Equal("<img srcset=\"\">", result1);
+
+        // Allows safe srcset
+        var result2 = sanitizer.SanitizeHtmlFragment("<img srcset='https://example.com/img1.jpg 300w, https://example.com/img2.jpg 600w'>");
+        Assert.Equal("<img srcset=\"https://example.com/img1.jpg 300w, https://example.com/img2.jpg 600w\">", result2);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Text()
+    {
+        #region HtmlSanitizer_Text
+        var sanitizer = new HtmlSanitizer();
+
+        Assert.Equal("<p>&lt;script&gt;</p>", sanitizer.SanitizeHtmlFragment("<p>&lt;script&gt;</p>"));
+        Assert.Equal("<p>a &lt; b &amp; c</p>", sanitizer.SanitizeHtmlFragment("<p>a < b & c</p>"));
+        Assert.Equal("<b></b>", sanitizer.SanitizeHtmlFragment("<b><!--"));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_AllowComments()
+    {
+        #region HtmlSanitizer_AllowComments
+        var sanitizer = new HtmlSanitizer { AllowComments = true };
+        var result = sanitizer.SanitizeHtmlFragment("<p>a<!-- comment -->b</p>");
+        Assert.Equal("<p>a<!-- comment -->b</p>", result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_CustomElements()
+    {
+        #region HtmlSanitizer_CustomElements
+        var sanitizer = new HtmlSanitizer();
+
+        // Add custom elements
+        sanitizer.ValidElements.Add("custom-element");
+
+        // Has no effect: the content of a raw text element is not markup, so the element is
+        // removed with its content whether or not it is in ValidElements
+        sanitizer.ValidElements.Add("iframe");
+
+        // Remove elements from allowed list
+        sanitizer.ValidElements.Remove("img");
+
+        // Add elements to blocked list (will be removed entirely)
+        sanitizer.BlockedElements.Add("iframe");
+
+        var result = sanitizer.SanitizeHtmlFragment("<custom-element>a</custom-element><iframe>b</iframe><img src='c.png'>");
+        Assert.Equal("<custom-element>a</custom-element>", result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_CustomAttributes()
+    {
+        #region HtmlSanitizer_CustomAttributes
+        var sanitizer = new HtmlSanitizer();
+
+        // Add custom attributes
+        sanitizer.ValidAttributes.Add("data-custom");
+
+        // Remove attributes from allowed list
+        sanitizer.ValidAttributes.Remove("target");
+
+        // Add attributes that should be URL-validated
+        sanitizer.UriAttributes.Add("data-url");
+
+        var result = sanitizer.SanitizeHtmlFragment("<a data-custom='value' target='_blank' href='https://example.com'>link</a>");
+        Assert.Equal("<a data-custom=\"value\" href=\"https://example.com\">link</a>", result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_AttributePrefixes()
+    {
+        #region HtmlSanitizer_AttributePrefixes
+        var sanitizer = new HtmlSanitizer();
+
+        // Allow every data-* attribute
+        sanitizer.ValidAttributePrefixes.Add("data-");
+
+        // Remove the ARIA attributes
+        sanitizer.ValidAttributePrefixes.Remove("aria-");
+
+        var result = sanitizer.SanitizeHtmlFragment("<p data-id='1' aria-label='text'>test</p>");
+        Assert.Equal("<p data-id=\"1\">test</p>", result);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_UriAttributes()
+    {
+        #region HtmlSanitizer_UriAttributes
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.ValidAttributes.Add("data-url");
+
+        // The value is not validated
+        Assert.Equal("<p data-url=\"javascript:alert(1)\">test</p>", sanitizer.SanitizeHtmlFragment("<p data-url='javascript:alert(1)'>test</p>"));
+
+        sanitizer.UriAttributes.Add("data-url");
+        Assert.Equal("<p data-url=\"\">test</p>", sanitizer.SanitizeHtmlFragment("<p data-url='javascript:alert(1)'>test</p>"));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ElementHandling()
+    {
+        #region HtmlSanitizer_ElementHandling
+        var sanitizer = new HtmlSanitizer();
+
+        // script is blocked, so its content is removed too
+        Assert.Equal("<p>Hello World</p>", sanitizer.SanitizeHtmlFragment("<p>Hello <script>alert('xss')</script>World</p>"));
+
+        // form is not allowed, but its content is kept
+        Assert.Equal("<p>Hello</p>", sanitizer.SanitizeHtmlFragment("<form><p>Hello</p></form>"));
+        #endregion
+    }
+
     [Theory]
     [InlineData("", "")]
     [InlineData("test", "test")]

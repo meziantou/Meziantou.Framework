@@ -13,9 +13,10 @@ Helpers for ASP.NET Core middleware diagnostics and response cache-control behav
 
 ### Middleware pipeline debugging
 
-```csharp
-using Meziantou.AspNetCore.Diagnostics;
+The diagnostics extension methods are in the `Meziantou.AspNetCore.Diagnostics` namespace.
 
+<!-- ref:../../samples/Meziantou.AspNetCore.Samples/AspNetCoreExamples.cs;region=MiddlewarePipelineDebugging_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddMiddlewarePipelineDebugging(); // must run before builder.Build()
 
@@ -35,6 +36,7 @@ app.MapGet("/pipeline.txt", () =>
 
 app.Run();
 ```
+<!-- endref -->
 
 The default route is `/_debug/pipeline`; pass a different `pattern` to change it.
 
@@ -63,19 +65,22 @@ web host. Read the snapshot after the host has started.
 The endpoint is **not authenticated**. It discloses every registered route, the middleware order and implementation
 type names. The default (`developmentOnly: true`) responds only in Development. To expose it elsewhere, gate it:
 
+<!-- ref:../../samples/Meziantou.AspNetCore.Samples/AspNetCoreExamples.cs;region=MiddlewarePipelineDebugging_SecureEndpoint;format=md-fenced-code-block;dedent=true -->
 ```csharp
 app.MapMiddlewarePipelineDebugEndpoint(developmentOnly: false)
    .RequireAuthorization("DiagnosticsPolicy");
 ```
+<!-- endref -->
 
 Note that `MiddlewarePipelineDebugEndpoint.Endpoint` is excluded from serialization, so it is `null` on a snapshot
 deserialized from the endpoint's JSON. It is only populated on a snapshot created in-process.
 
 ### Default no-cache response header
 
-```csharp
-using Meziantou.AspNetCore;
+`UseNoCache` is in the `Meziantou.AspNetCore` namespace.
 
+<!-- ref:../../samples/Meziantou.AspNetCore.Samples/AspNetCoreExamples.cs;region=NoCacheMiddleware_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
@@ -85,6 +90,7 @@ app.MapGet("/", static () => "Hello World!");
 
 app.Run();
 ```
+<!-- endref -->
 
 `UseNoCache` sets `Cache-Control: no-cache,no-store,must-revalidate` only when the response does not already define
 `Cache-Control` (an empty value counts as not defined). Responses that set their own `Cache-Control` are never

@@ -4,6 +4,26 @@ namespace Meziantou.Framework.Tests;
 
 public sealed class ConvertUtilitiesTests
 {
+    // The example parses a number with the French culture
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void ReadmeExample_BasicConversions()
+    {
+        #region TypeConverter_BasicConversions
+        // Using TryChangeType (recommended)
+        Assert.True(ConvertUtilities.TryChangeType("42", CultureInfo.InvariantCulture, out int value));
+        Assert.Equal(42, value);
+
+        // Using ChangeType with default value
+        var result = ConvertUtilities.ChangeType<int>("invalid", defaultValue: 0, provider: CultureInfo.InvariantCulture);
+        Assert.Equal(0, result);
+
+        // Convert with culture-specific formatting
+        var cultureInfo = CultureInfo.GetCultureInfo("fr-FR");
+        var number = ConvertUtilities.ChangeType<decimal>("1234,56", defaultValue: 0m, provider: cultureInfo);
+        Assert.Equal(1234.56m, number);
+        #endregion
+    }
+
     // IConverter is public, so a third party can report a failure with a value of any type
     private sealed class MismatchedFailureConverter : IConverter
     {

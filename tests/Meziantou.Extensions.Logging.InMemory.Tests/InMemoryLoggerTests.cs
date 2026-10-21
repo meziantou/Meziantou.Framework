@@ -9,6 +9,31 @@ public sealed partial class InMemoryLoggerTests
     private static readonly Action<ILogger, int, Exception?> SampleMessage = LoggerMessage.Define<int>(LogLevel.Information, new EventId(1, "Sample Event Id"), "Test {Number}");
 
     [Fact]
+    public void ReadmeExample_Usage()
+    {
+        #region InMemoryLogger_Usage
+        using var loggerProvider = new InMemoryLoggerProvider();
+        var logger = loggerProvider.CreateLogger("sample");
+        var typedLogger = loggerProvider.CreateLogger<Sample>();
+
+        // Short version if you need a single logger instance:
+        var singleLogger = InMemoryLogger.CreateLogger("sample");
+        var singleTypedLogger = InMemoryLogger.CreateLogger<Sample>();
+
+        // do stuff with the logger
+        logger.LogInformation(new EventId(1), "This is a test");
+        typedLogger.LogWarning("Something to check");
+        singleLogger.LogInformation("Only in the logs of singleLogger");
+
+        Assert.Empty(loggerProvider.Logs.Errors);
+        Assert.Single(loggerProvider.Logs, log => log.Message.Contains("test", StringComparison.Ordinal) && log.EventId.Id == 1);
+        Assert.Single(loggerProvider.Logs.Warnings);
+        Assert.Single(singleLogger.Logs);
+        Assert.Empty(singleTypedLogger.Logs);
+        #endregion
+    }
+
+    [Fact]
     public void CreateLogger()
     {
         var logger = InMemoryLogger.CreateLogger("sample");
@@ -589,3 +614,5 @@ public sealed partial class InMemoryLoggerTests
         public override DateTimeOffset GetUtcNow() => new(2000, 1, 1, 0, 0, 0, TimeSpan.Zero);
     }
 }
+
+file sealed class Sample;

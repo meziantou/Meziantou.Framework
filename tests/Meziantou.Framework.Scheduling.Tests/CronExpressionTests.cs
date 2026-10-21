@@ -2,6 +2,39 @@ namespace Meziantou.Framework.Scheduling.Tests;
 
 public sealed class CronExpressionTests
 {
+    [Fact]
+    public void ReadmeExample_Parse()
+    {
+        #region CronExpression_Parse
+        var cron = CronExpression.Parse("0 */15 * * * *");
+        var startDate = new DateTime(2024, 01, 01, 10, 05, 00); // DateTime.Now
+        var occurrences = cron.GetNextOccurrences(startDate).Take(10).ToArray();
+
+        Assert.HasCount(10, occurrences);
+        Assert.Equal(new DateTime(2024, 01, 01, 10, 15, 00), occurrences[0]);
+        Assert.Equal(new DateTime(2024, 01, 01, 10, 30, 00), occurrences[1]);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_NextOccurrence()
+    {
+        #region CronExpression_NextOccurrence
+        var cron = CronExpression.Parse("0 */15 * * * *");
+        var now = new DateTime(2024, 01, 01, 10, 05, 00, DateTimeKind.Utc); // DateTime.UtcNow
+
+        var next = cron.GetNextOccurrence(now);
+        Assert.NotNull(next);
+        Assert.Equal(new DateTime(2024, 01, 01, 10, 15, 00, DateTimeKind.Utc), next.Value);
+
+        // next matches the expression, so starting from it returns it again
+        Assert.Equal(next, cron.GetNextOccurrence(next.Value));
+
+        var following = cron.GetNextOccurrence(next.Value.AddSeconds(1));
+        Assert.Equal(new DateTime(2024, 01, 01, 10, 30, 00, DateTimeKind.Utc), following);
+        #endregion
+    }
+
     [Theory]
     [InlineData("invalid")]
     [InlineData("")]

@@ -59,17 +59,33 @@ attributes, such as `[JsonPropertyName]`, are not recognized.
 
 ## Serialize and deserialize objects
 
+`TomlSerializer` is in the `Meziantou.Framework.Toml` namespace. Given this model:
+
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlSerializer_Person;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Toml;
-
-var toml = TomlSerializer.Serialize(new Person("Ada", 37));
-var person = TomlSerializer.Deserialize<Person>(toml);
-
 public sealed record Person(string Name, int Age);
 ```
+<!-- endref -->
+
+`Serialize` writes it as TOML, and `Deserialize` reads it back:
+
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlSerializer_SerializeAndDeserialize;format=md-fenced-code-block;dedent=true -->
+```csharp
+var toml = TomlSerializer.Serialize(new Person("Ada", 37));
+Assert.Equal("""
+    Name = "Ada"
+    Age = 37
+
+    """, toml);
+
+var person = TomlSerializer.Deserialize<Person>(toml);
+Assert.Equal(new Person("Ada", 37), person);
+```
+<!-- endref -->
 
 `TomlSerializer` provides overloads for `string`, `Stream` (UTF-8), `TextReader`, and `TextWriter`:
 
+<!-- ref:../../samples/Meziantou.Framework.Toml.Samples/ReadmeSnippets.cs;region=TomlSerializer_Files;format=md-fenced-code-block;dedent=true -->
 ```csharp
 using var stream = File.OpenRead("config.toml");
 var config = TomlSerializer.Deserialize<ServerConfig>(stream);
@@ -77,14 +93,17 @@ var config = TomlSerializer.Deserialize<ServerConfig>(stream);
 using var writer = new StreamWriter("output.toml");
 TomlSerializer.Serialize(writer, config);
 ```
+<!-- endref -->
 
 `DeserializeAsync` and `SerializeAsync` read and write a `Stream` asynchronously, for example an ASP.NET Core request or
 response body, which rejects synchronous I/O. The document is still parsed and formatted in memory:
 
+<!-- ref:../../samples/Meziantou.Framework.Toml.Samples/ReadmeSnippets.cs;region=TomlSerializer_Async;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var config = await TomlSerializer.DeserializeAsync<ServerConfig>(request.Body, cancellationToken: cancellationToken);
 await TomlSerializer.SerializeAsync(response.Body, config, cancellationToken: cancellationToken);
 ```
+<!-- endref -->
 
 Set `MaxInputLength` to reject a document that is too long before it is loaded, for example one sent by a user.
 
@@ -93,12 +112,15 @@ available for every input type and metadata style. An exception thrown by the mo
 deserialization callback that validates a value, is not caught, like in `System.Text.Json`; a constructor that throws is
 reported as a `TomlException`:
 
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlSerializer_TryDeserialize;format=md-fenced-code-block;dedent=true -->
 ```csharp
-if (!TomlSerializer.TryDeserialize<ServerConfig>(toml, out var config))
-{
-    // Invalid input
-}
+var toml = "Port = \"not a number\"";
+
+var success = TomlSerializer.TryDeserialize<ServerConfig>(toml, out var config);
+Assert.False(success); // Invalid input
+Assert.Null(config);
 ```
+<!-- endref -->
 
 The metadata used to map objects comes from one of two sources:
 
@@ -134,6 +156,7 @@ container (`TomlTable`, `TomlArray`, or `TomlTableArray`).
 
 Collections of objects are written as arrays of tables:
 
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlSerializer_ArrayOfTables;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public sealed class Config
 {
@@ -145,10 +168,12 @@ public sealed class Package
     public string Name { get; set; } = "";
 }
 ```
+<!-- endref -->
 
 ```toml
 [[Package]]
 Name = "core"
+
 [[Package]]
 Name = "tools"
 ```
@@ -160,9 +185,8 @@ empty array of tables.
 
 `TomlSerializerOptions` is an immutable record. It caches metadata on first use, so create an instance once and reuse it.
 
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlSerializerOptions_Create;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Toml;
-
 var options = new TomlSerializerOptions
 {
     PropertyNamingPolicy = TomlNamingPolicy.SnakeCaseLower,
@@ -173,8 +197,15 @@ var options = new TomlSerializerOptions
     DefaultIgnoreCondition = TomlIgnoreCondition.WhenWritingNull,
 };
 
+var config = new ServerConfig { Host = "example.com" };
 var toml = TomlSerializer.Serialize(config, options);
+Assert.Equal("""
+    host = "example.com"
+    port = 8080
+
+    """, toml);
 ```
+<!-- endref -->
 
 | Option | Default | Description |
 | --- | --- | --- |
@@ -218,6 +249,7 @@ leaves read-only members untouched. `Populate` reuses the existing object and co
 appended to, not cleared. It can be enabled globally with `PreferredObjectCreationHandling`, on a type, or on a member
 with `[TomlObjectCreationHandling]`:
 
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlObjectCreationHandling_Populate;format=md-fenced-code-block;dedent=true -->
 ```csharp
 [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
 public sealed class ReleaserConfiguration
@@ -225,6 +257,7 @@ public sealed class ReleaserConfiguration
     public List<string> Channels { get; } = ["stable"];
 }
 ```
+<!-- endref -->
 
 A member-level `Populate` on a member that cannot be populated (for example a struct without a setter) throws. Type-level
 and global preferences are best-effort and leave such members unchanged. Populate does not apply to types deserialized
@@ -234,6 +267,7 @@ through a parameterized constructor.
 
 `[TomlSingleOrArray]` lets a collection member accept either a single value or an array:
 
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlSingleOrArray_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public sealed class PackagingConfiguration
 {
@@ -242,6 +276,7 @@ public sealed class PackagingConfiguration
     public List<string> RuntimeIdentifiers { get; } = [];
 }
 ```
+<!-- endref -->
 
 Both `rid = "win-x64"` and `rid = ["win-x64", "linux-x64"]` are accepted. Without the attribute, a collection member
 requires an array.
@@ -250,6 +285,7 @@ requires an array.
 
 Formatting options can be overridden for a member or a type. These attributes only affect how values are written:
 
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlFormattingAttributes_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 [TomlMappingOrder(TomlMappingOrderPolicy.Alphabetical)]
 [TomlDottedKeyHandling(TomlDottedKeyHandling.Expand)]
@@ -264,7 +300,13 @@ public sealed class FormattedConfig
     [TomlStringStyle(TomlStringStyle.Literal, PreferLiteralWhenNoEscapes = TomlBooleanPreference.True)]
     public string Description { get; set; } = "plain text";
 }
+
+public sealed class Owner
+{
+    public string Name { get; set; } = "";
+}
 ```
+<!-- endref -->
 
 | Attribute | Target | Overrides |
 | --- | --- | --- |
@@ -293,6 +335,7 @@ public sealed class FormattedConfig
 | `[TomlSingleOrArray]` | Accepts a single value for a collection member. |
 | `[TomlStringEnumMemberName]` | Sets the name `TomlStringEnumConverter` uses for an enum value. |
 
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlAttributes_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public sealed class DatabaseConfig
 {
@@ -319,6 +362,7 @@ public sealed class Endpoint
     public int Port { get; }
 }
 ```
+<!-- endref -->
 
 ## Lifecycle callbacks
 
@@ -331,6 +375,7 @@ Implement the callback interfaces to run code around serialization:
 | `ITomlOnDeserializing` | When the instance is created, before its members are set. The constructor arguments are set before. So are the `required` members the source generator sets in an object initializer: those of a struct, of a generic type, or of a type created with a constructor that has parameters. |
 | `ITomlOnDeserialized` | After the members are read. |
 
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlLifecycleCallbacks_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public sealed class ValidatedConfig : ITomlOnDeserialized
 {
@@ -343,14 +388,15 @@ public sealed class ValidatedConfig : ITomlOnDeserialized
     }
 }
 ```
+<!-- endref -->
 
 ## Custom converters
 
-Derive from `TomlConverter<T>`, or from `TomlConverterFactory` for open generic types or types chosen at runtime:
+Derive from `TomlConverter<T>`, or from `TomlConverterFactory` for open generic types or types chosen at runtime. The
+converter types are in the `Meziantou.Framework.Toml.Serialization` namespace:
 
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlConverter_Create;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Toml.Serialization;
-
 public sealed class UpperCaseStringConverter : TomlConverter<string>
 {
     public override string Read(TomlReader reader) => reader.GetString().ToUpperInvariant();
@@ -358,17 +404,27 @@ public sealed class UpperCaseStringConverter : TomlConverter<string>
     public override void Write(TomlWriter writer, string value) => writer.WriteStringValue(value.ToUpperInvariant());
 }
 ```
+<!-- endref -->
 
 Register it in the options, with `[TomlConverter]` on a type or member, or on a source-generated context. Like
 `System.Text.Json`, a converter for `T` on a member also converts a `T?` member:
 
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlConverter_Register;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var options = new TomlSerializerOptions { Converters = [new UpperCaseStringConverter()] };
 
+var toml = TomlSerializer.Serialize(new ServerConfig(), options);
+Assert.Equal("Host = \"LOCALHOST\"\nPort = 8080\n", toml);
+```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlConverter_Context;format=md-fenced-code-block;dedent=true -->
+```csharp
 [TomlSourceGenerationOptions(Converters = [typeof(UpperCaseStringConverter)])]
 [TomlSerializable(typeof(ServerConfig))]
-internal partial class ConverterContext : TomlSerializerContext;
+internal sealed partial class ConverterContext : TomlSerializerContext;
 ```
+<!-- endref -->
 
 `TomlReader` exposes `Read`, `Skip`, `GetString`, `GetInt64`, `GetDouble`, `GetDecimal`, `GetBoolean`,
 `GetTomlDateTime`, `GetRawText`, and `PropertyNameEquals`. `TomlWriter` exposes `WritePropertyName`, the
@@ -391,6 +447,7 @@ or numbers. Apply it to an enum or a member with `[TomlConverter]`, or add it to
 source-generated context to apply it to every enum. `[TomlStringEnumMemberName]` sets the name of a value, and a flags
 value is written as a comma-separated list:
 
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlStringEnumConverter_Enum;format=md-fenced-code-block;dedent=true -->
 ```csharp
 [TomlConverter(typeof(TomlStringEnumConverter))]
 public enum LogLevel
@@ -399,9 +456,14 @@ public enum LogLevel
     [TomlStringEnumMemberName("warn")]
     Warning,
 }
+```
+<!-- endref -->
 
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlStringEnumConverter_Options;format=md-fenced-code-block;dedent=true -->
+```csharp
 var options = new TomlSerializerOptions { Converters = [new TomlStringEnumConverter()] };
 ```
+<!-- endref -->
 
 A name set with `[TomlStringEnumMemberName]` is the one written, and the one read first: an exact match wins over a match in
 another case. The C# name of a renamed value is read too. Only a flags enum reads a comma-separated list.
@@ -411,6 +473,7 @@ another case. The C# name of a renamed value is read too. Only a flags enum read
 `[TomlExtensionData]` collects the keys that do not match a member. The member must be a
 dictionary with `string` keys, such as `IDictionary<string, object?>` or `TomlTable`:
 
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlExtensionData_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public sealed class ExtensibleConfig
 {
@@ -420,11 +483,13 @@ public sealed class ExtensibleConfig
     public IDictionary<string, object?>? Extra { get; set; }
 }
 ```
+<!-- endref -->
 
 ## Polymorphism
 
 Polymorphism uses a discriminator key, `$type` by default:
 
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlPolymorphism_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 [TomlPolymorphic(TypeDiscriminatorPropertyName = "kind")]
 [TomlDerivedType(typeof(Cat), "cat")]
@@ -444,6 +509,7 @@ public sealed class Dog : Animal
     public string Breed { get; set; } = "";
 }
 ```
+<!-- endref -->
 
 ```toml
 [[animals]]
@@ -469,6 +535,7 @@ Breed = "Labrador"
 When the base type cannot reference its derived types, for example because they live in another project, register them
 in the options (reflection) or on the context (source generation):
 
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/CrossProjectPolymorphismTests.cs;region=TomlPolymorphismOptions_DerivedTypeMappings;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var options = new TomlSerializerOptions
 {
@@ -481,12 +548,17 @@ var options = new TomlSerializerOptions
         },
     },
 };
+```
+<!-- endref -->
 
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/CrossProjectPolymorphismTests.cs;region=TomlDerivedTypeMapping_Context;format=md-fenced-code-block;dedent=true -->
+```csharp
 [TomlSerializable(typeof(Animal))]
 [TomlDerivedTypeMapping(typeof(Animal), typeof(Cat), "cat")]
 [TomlDerivedTypeMapping(typeof(Animal), typeof(Dog), "dog")]
-internal partial class AnimalContext : TomlSerializerContext;
+internal sealed partial class AnimalContext : TomlSerializerContext;
 ```
+<!-- endref -->
 
 Registrations are merged. `[TomlDerivedType]` on the base type wins over the context mappings, then over the options
 mappings.
@@ -494,28 +566,37 @@ mappings.
 ## Source generation
 
 Declare a `partial` class deriving from `TomlSerializerContext`, with a `[TomlSerializable]` attribute for each root
-type. Types reachable from a root are discovered automatically.
+type. Types reachable from a root are discovered automatically. The attributes and `TomlSerializerContext` are in the
+`Meziantou.Framework.Toml.Serialization` namespace.
 
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlSerializerContext_Declare;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Toml;
-using Meziantou.Framework.Toml.Serialization;
-
 [TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.SnakeCaseLower)]
 [TomlSerializable(typeof(ServerConfig))]
-internal partial class ServerContext : TomlSerializerContext;
+internal sealed partial class ServerContext : TomlSerializerContext;
 
 public sealed class ServerConfig
 {
     public string Host { get; set; } = "localhost";
     public int Port { get; set; } = 8080;
 }
+```
+<!-- endref -->
 
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlSerializerContext_Use;format=md-fenced-code-block;dedent=true -->
+```csharp
+var config = new ServerConfig { Port = 443 };
 var toml = TomlSerializer.Serialize(config, ServerContext.Default.ServerConfig);
+Assert.Equal("host = \"localhost\"\nport = 443\n", toml);
+
 var roundTrip = TomlSerializer.Deserialize(toml, ServerContext.Default.ServerConfig);
+Assert.Equal(443, roundTrip!.Port);
 
 // APIs taking a Type accept a context
 var value = TomlSerializer.Deserialize(toml, typeof(ServerConfig), ServerContext.Default);
+Assert.IsType<ServerConfig>(value);
 ```
+<!-- endref -->
 
 - The generator creates a `Default` instance and one `TomlTypeInfo<T>` property per root.
   `[TomlSerializable(typeof(T), TypeInfoPropertyName = "...")]` renames the property. When two types have the same
@@ -582,12 +663,11 @@ deserialization. Built-in scalar types and the Document Object Model keep workin
 ## Document Object Model
 
 Deserialize to `TomlTable` to read a document without a model. Tables implement `IDictionary<string, object>`, arrays
-implement `IList<object?>`, and scalar values are `string`, `long`, `double`, `bool`, or `TomlDateTime`:
+implement `IList<object?>`, and scalar values are `string`, `long`, `double`, `bool`, or `TomlDateTime`. The model types
+are in the `Meziantou.Framework.Toml.Model` namespace:
 
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlTable_Read;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Toml;
-using Meziantou.Framework.Toml.Model;
-
 var table = TomlSerializer.Deserialize<TomlTable>("""
     title = "My App"
 
@@ -599,10 +679,15 @@ var table = TomlSerializer.Deserialize<TomlTable>("""
 var title = (string)table["title"];
 var database = (TomlTable)table["database"];
 var firstPort = (long)((TomlArray)database["ports"])[0]!;
+
+Assert.Equal("My App", title);
+Assert.Equal(8000L, firstPort);
 ```
+<!-- endref -->
 
 Build a document and serialize it:
 
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlTable_Build;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var document = new TomlTable
 {
@@ -620,7 +705,20 @@ var document = new TomlTable
 };
 
 var toml = TomlSerializer.Serialize(document);
+Assert.Equal("""
+    title = "My App"
+    owner = {name = "Ada"}
+    [database]
+    ports = [8000, 8001]
+    [[servers]]
+    name = "alpha"
+
+    [[servers]]
+    name = "beta"
+
+    """, toml);
 ```
+<!-- endref -->
 
 `TomlDateTime` keeps the kind of TOML date and time (`OffsetDateTimeByZ`, `OffsetDateTimeByNumber`, `LocalDateTime`,
 `LocalDate`, or `LocalTime`) and the precision of the fractional seconds.
@@ -629,16 +727,24 @@ var toml = TomlSerializer.Serialize(document);
 
 A metadata store captures comments, source locations, and how each value was written, without changing the model types:
 
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlMetadataStore_Read;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var toml = """
+    # The name of the application
+    title = 'My App' # shown in the title bar
+    """;
+
 var store = new TomlMetadataStore();
 var options = new TomlSerializerOptions { MetadataStore = store };
 var model = TomlSerializer.Deserialize<TomlTable>(toml, options)!;
 
-if (store.TryGetProperties(model, out var metadata) && metadata.TryGetProperty("title", out var property))
-{
-    // property.LeadingTrivia, property.TrailingTrivia, property.Span, property.DisplayKind
-}
+Assert.True(store.TryGetProperties(model, out var metadata));
+Assert.True(metadata.TryGetProperty("title", out var property));
+Assert.Equal("# The name of the application", property.LeadingTrivia![0].Text);
+Assert.Equal("# shown in the title bar", property.TrailingTrivia![1].Text);
+Assert.Equal(TomlPropertyDisplayKind.StringLiteral, property.DisplayKind);
 ```
+<!-- endref -->
 
 ## Syntax tree
 
@@ -647,27 +753,27 @@ if (store.TryGetProperties(model, out var metadata) && metadata.TryGetProperty("
 trivia is an object with its own position, so the tree uses up to about 550 bytes of memory per input character; arrays of
 inline tables and of small values are the worst cases. `Diagnostics` keeps every error, so a document with many errors
 uses more. To read
-large or untrusted input, prefer `TomlSerializer` or `TomlParser`:
+large or untrusted input, prefer `TomlSerializer` or `TomlParser`. `SyntaxParser` is in the
+`Meziantou.Framework.Toml.Parsing` namespace, and the nodes in `Meziantou.Framework.Toml.Syntax`:
 
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=SyntaxParser_Parse;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Toml.Parsing;
-using Meziantou.Framework.Toml.Syntax;
+var input = "# config\nname = \"Ada\"\n";
+var document = SyntaxParser.Parse(input, sourceName: "config.toml");
+Assert.False(document.HasErrors);
 
-var document = SyntaxParser.Parse("# config\nname = \"Ada\"\n", sourceName: "config.toml");
-if (document.HasErrors)
-{
-    foreach (var diagnostic in document.Diagnostics)
-        Console.WriteLine(diagnostic);
-}
+Assert.Equal(input, document.ToString()); // Same text as the input
 
-Console.WriteLine(document.ToString()); // Same text as the input
-
+var values = new List<string?>();
 foreach (var node in document.Descendants())
 {
     if (node is StringValueSyntax value)
-        Console.WriteLine(value.Value);
+        values.Add(value.Value);
 }
+
+Assert.Equal(["Ada"], values);
 ```
+<!-- endref -->
 
 `SyntaxParser.Parse` collects errors in `Diagnostics`, including when `MaxDepth` is exceeded, while
 `SyntaxParser.ParseStrict` throws a `TomlException`. The tree of an invalid document still keeps every character: the
@@ -680,24 +786,50 @@ contains the root `KeyValues` and the `Tables`. Every node has `LeadingTrivia` a
 
 `TomlLexer` produces tokens, and `TomlParser` produces parse events without building a tree. Both avoid allocations
 where possible. `TomlParser` emits the events in document order, so a table defined in several places produces
-several `PropertyName`/`StartTable` fragments with the same name:
+several `PropertyName`/`StartTable` fragments with the same name. Both are in the `Meziantou.Framework.Toml.Parsing`
+namespace:
 
+<!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlLexer_TomlParser;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Toml.Parsing;
-
+var tokens = new List<string>();
 var lexer = TomlLexer.Create("name = \"Ada\"", sourceName: "config.toml");
 while (lexer.MoveNext())
 {
-    Console.WriteLine($"{lexer.Current.Kind} {lexer.CurrentSpan}");
+    tokens.Add($"{lexer.Current.Kind} {lexer.CurrentSpan}");
 }
 
+Assert.Equal(
+[
+    "BasicKey config.toml(1,1)-(1,4)",
+    "Whitespaces config.toml(1,5)-(1,5)",
+    "Equal config.toml(1,6)-(1,6)",
+    "Whitespaces config.toml(1,7)-(1,7)",
+    "String config.toml(1,8)-(1,12)",
+    "Eof config.toml(1,13)-(1,13)",
+], tokens);
+
+var events = new List<string>();
 var parser = TomlParser.Create("[server]\nport = 8080", new TomlParserOptions { Mode = TomlParserMode.Tolerant });
 while (parser.MoveNext())
 {
     var kind = parser.Current.Kind;
-    Console.WriteLine(kind == TomlParseEventKind.PropertyName ? $"{kind} {parser.GetPropertyName()}" : kind.ToString());
+    events.Add(kind == TomlParseEventKind.PropertyName ? $"{kind} {parser.GetPropertyName()}" : kind.ToString());
 }
+
+Assert.Equal(
+[
+    "StartDocument",
+    "StartTable",
+    "PropertyName server",
+    "StartTable",
+    "PropertyName port",
+    "Integer",
+    "EndTable",
+    "EndTable",
+    "EndDocument",
+], events);
 ```
+<!-- endref -->
 
 `TomlParserOptions` controls the error mode (`Strict` throws on the first error, `Tolerant` collects diagnostics),
 whether escape sequences are decoded, whether trivia is reported, and whether string values are materialized eagerly.

@@ -6,6 +6,25 @@ namespace Meziantou.Framework.Yaml.Tests.Serialization;
 public sealed class YamlExtensionDataTests
 {
     [Fact]
+    public void ReadmeExample_ExtensionData()
+    {
+        var product = YamlSerializer.Deserialize<Product>("Id: 1\nColor: red\n");
+
+        Assert.Equal(1, product!.Id);
+        Assert.Equal("red", product.Extra!["Color"]);
+    }
+
+    #region YamlExtensionDataAttribute_Usage
+    internal sealed class Product
+    {
+        public int Id { get; set; }
+
+        [YamlExtensionData]
+        public IReadOnlyDictionary<string, object?>? Extra { get; set; }
+    }
+    #endregion
+
+    [Fact]
     public void Deserialize_CapturesUnknownKeysIntoDictionary()
     {
         var value = YamlSerializer.Deserialize<DictionaryExtensionDataModel>("A: 1\nB: 2\nC: test\n")!;

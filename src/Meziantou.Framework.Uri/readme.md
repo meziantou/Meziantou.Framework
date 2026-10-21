@@ -6,7 +6,8 @@
 
 Implementation of the [WHATWG URL Pattern API](https://urlpattern.spec.whatwg.org/) for matching URLs against patterns.
 
-```c#
+<!-- ref:../../tests/Meziantou.Framework.Uri.Tests/UrlPatternTests.cs;region=UrlPattern_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Create a pattern from a URL pattern init
 var pattern = UrlPattern.Create(new UrlPatternInit
 {
@@ -16,31 +17,32 @@ var pattern = UrlPattern.Create(new UrlPatternInit
 });
 
 // Test if a URL matches the pattern
-bool matches = pattern.IsMatch("https://example.com/books/123"); // true
+Assert.True(pattern.IsMatch("https://example.com/books/123"));
 
 // Create a pattern from a pattern string
 var pattern2 = UrlPattern.Create("https://example.com/api/:version/*");
+Assert.True(pattern2.IsMatch("https://example.com/api/v1/users"));
 
 // Use wildcards
 var wildcardPattern = UrlPattern.Create(new UrlPatternInit
 {
     Pathname = "/files/*",
 });
-wildcardPattern.IsMatch("https://example.com/files/a/b/c"); // true
+Assert.True(wildcardPattern.IsMatch("https://example.com/files/a/b/c"));
 
 // Use modifiers (optional, one-or-more, zero-or-more)
 var optionalPattern = UrlPattern.Create(new UrlPatternInit
 {
     Pathname = "/items{/:category}?",
 });
-optionalPattern.IsMatch("https://example.com/items"); // true
-optionalPattern.IsMatch("https://example.com/items/books"); // true
+Assert.True(optionalPattern.IsMatch("https://example.com/items"));
+Assert.True(optionalPattern.IsMatch("https://example.com/items/books"));
 
 // Case-insensitive matching
 var caseInsensitivePattern = UrlPattern.Create(
     new UrlPatternInit { Pathname = "/Books/:id" },
     new UrlPatternOptions { IgnoreCase = true });
-caseInsensitivePattern.IsMatch("https://example.com/BOOKS/123"); // true
+Assert.True(caseInsensitivePattern.IsMatch("https://example.com/BOOKS/123"));
 
 // Execute pattern and capture groups
 var pattern3 = UrlPattern.Create(new UrlPatternInit
@@ -48,29 +50,31 @@ var pattern3 = UrlPattern.Create(new UrlPatternInit
     Pathname = "/users/:userId/posts/:postId",
 });
 UrlPatternResult? result = pattern3.Match("https://example.com/users/42/posts/99");
-if (result != null)
-{
-    string? userId = result.Pathname.Groups["userId"]; // "42"
-    string? postId = result.Pathname.Groups["postId"]; // "99"
-}
+Assert.NotNull(result);
+Assert.Equal("42", result.Pathname.Groups["userId"]);
+Assert.Equal("99", result.Pathname.Groups["postId"]);
 ```
+<!-- endref -->
 
 ### UrlPatternCollection
 
 Match URLs against multiple patterns:
 
-```c#
+<!-- ref:../../tests/Meziantou.Framework.Uri.Tests/UrlPatternCollectionTests.cs;region=UrlPatternCollection_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var docsPattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/docs/*" });
 var collection = new UrlPatternCollection
 {
     UrlPattern.Create(new UrlPatternInit { Pathname = "/api/*" }),
-    UrlPattern.Create(new UrlPatternInit { Pathname = "/docs/*" }),
+    docsPattern,
 };
 
 // Test if any pattern matches
-bool anyMatch = collection.IsMatch("https://example.com/api/users"); // true
+Assert.True(collection.IsMatch("https://example.com/api/users"));
 
 // Get the first matching pattern
-UrlPattern? match = collection.FindPattern("https://example.com/docs/guide"); // returns the /docs/* pattern
+UrlPattern? match = collection.FindPattern("https://example.com/docs/guide");
+Assert.Same(docsPattern, match);
 
 // Match and capture groups from the first matching pattern
 var apiCollection = new UrlPatternCollection
@@ -78,65 +82,71 @@ var apiCollection = new UrlPatternCollection
     UrlPattern.Create(new UrlPatternInit { Pathname = "/api/:version/*" }),
 };
 UrlPatternResult? apiResult = apiCollection.Match("https://example.com/api/v2/users");
-if (apiResult != null)
-{
-    string? version = apiResult.Pathname.Groups["version"]; // "v2"
-}
+Assert.NotNull(apiResult);
+Assert.Equal("v2", apiResult.Pathname.Groups["version"]);
 ```
+<!-- endref -->
 
 ## Query String Utilities
 
 Parse and edit query strings
 
-````c#
-var uri = "https://www.meziantou.net";
-var query = QueryStringUtilities.ParseQueryString(uri);
-var author = query["author"];
+<!-- ref:../../tests/Meziantou.Framework.Uri.Tests/QueryStringUtilitiesTests.cs;region=QueryStringUtilities_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var query = QueryStringUtilities.ParseQuery("?author=meziantou&tag=dotnet&tag=csharp");
+Assert.Equal("meziantou", query["author"].ToString());
+Assert.Equal(["dotnet", "csharp"], query["tag"].ToArray());
 
-_ = QueryStringUtilities.AddQueryString(uri, "name", "value");
-_ = QueryStringUtilities.AddOrReplaceQueryString(uri, "name", "value");
-_ = QueryStringUtilities.SetQueryString(uri, "name", "value");
+var uri = "https://www.meziantou.net/?author=meziantou";
+Assert.Equal("https://www.meziantou.net/?author=meziantou&name=value", QueryStringUtilities.AddQueryString(uri, "name", "value"));
+Assert.Equal("https://www.meziantou.net/?author=john", QueryStringUtilities.AddOrReplaceQueryString(uri, "author", "john"));
+
+// Replace the whole query string
+Assert.Equal("https://www.meziantou.net/?name=value", QueryStringUtilities.SetQueryString(uri, [KeyValuePair.Create("name", (string?)"value")]));
 
 // Remove a query string parameter
-_ = QueryStringUtilities.AddQueryString(uri, "name", null);
-````
+Assert.Equal("https://www.meziantou.net/", QueryStringUtilities.RemoveQueryString(uri, "author"));
+```
+<!-- endref -->
 
 ## Public Suffix List
 
 A snapshot of the [Public Suffix List](https://publicsuffix.org/list/) is compiled into the assembly and used to find the public suffix (eTLD) and the registrable domain (eTLD+1) of a domain name. No network access is performed; the list is refreshed when a new version of the package is released.
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.Uri.Tests/PublicSuffixListTests.cs;region=PublicSuffixList_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Get the registrable domain (eTLD+1)
-_ = PublicSuffixList.GetRegistrableDomain("www.example.co.uk"); // example.co.uk
-_ = PublicSuffixList.GetRegistrableDomain("co.uk");             // null
+Assert.Equal("example.co.uk", PublicSuffixList.GetRegistrableDomain("www.example.co.uk"));
+Assert.Null(PublicSuffixList.GetRegistrableDomain("co.uk"));
 
 // Get the public suffix (eTLD)
-_ = PublicSuffixList.GetPublicSuffix("www.example.co.uk"); // co.uk
+Assert.Equal("co.uk", PublicSuffixList.GetPublicSuffix("www.example.co.uk"));
 
 // Test if a domain is a public suffix
-_ = PublicSuffixList.IsPublicSuffix("co.uk");       // true
-_ = PublicSuffixList.IsPublicSuffix("example.com"); // false
+Assert.True(PublicSuffixList.IsPublicSuffix("co.uk"));
+Assert.False(PublicSuffixList.IsPublicSuffix("example.com"));
 
 // Decompose a domain name
-if (PublicSuffixList.TryGetDomainInfo("www.a.example.co.uk", out DomainInfo info))
-{
-    _ = info.PublicSuffix;         // co.uk
-    _ = info.RegistrableDomain;    // example.co.uk
-    _ = info.Subdomain;            // www.a
-    _ = info.Source;               // PublicSuffixRuleSources.Icann
-    _ = info.IsKnownPublicSuffix;  // true
-}
+Assert.True(PublicSuffixList.TryGetDomainInfo("www.a.example.co.uk", out DomainInfo info));
+Assert.Equal("co.uk", info.PublicSuffix);
+Assert.Equal("example.co.uk", info.RegistrableDomain);
+Assert.Equal("www.a", info.Subdomain);
+Assert.Equal(PublicSuffixRuleSources.Icann, info.Source);
+Assert.True(info.IsKnownPublicSuffix);
 
 // A Uri can be used directly
-_ = PublicSuffixList.TryGetDomainInfo(new Uri("https://www.example.co.uk/path"), out _);
-````
+Assert.True(PublicSuffixList.TryGetDomainInfo(new System.Uri("https://www.example.co.uk/path"), out _));
+```
+<!-- endref -->
 
 The list has two sections: the suffixes delegated by ICANN, and the suffixes submitted by domain holders such as `blogspot.com`. Both are used by default; the matching can be restricted to one of them.
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.Uri.Tests/PublicSuffixListTests.cs;region=PublicSuffixList_RuleSources;format=md-fenced-code-block;dedent=true -->
+```csharp
 // blogspot.com is a private rule
-_ = PublicSuffixList.GetRegistrableDomain("foo.blogspot.com");                                   // foo.blogspot.com
-_ = PublicSuffixList.GetRegistrableDomain("foo.blogspot.com", PublicSuffixRuleSources.Icann);    // blogspot.com
-````
+Assert.Equal("foo.blogspot.com", PublicSuffixList.GetRegistrableDomain("foo.blogspot.com"));
+Assert.Equal("blogspot.com", PublicSuffixList.GetRegistrableDomain("foo.blogspot.com", PublicSuffixRuleSources.Icann));
+```
+<!-- endref -->
 
 When a domain matches no rule of the list, the implicit `*` rule applies and the top-level domain is the public suffix. `DomainInfo.IsKnownPublicSuffix` reports whether an actual rule matched.

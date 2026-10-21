@@ -14,6 +14,94 @@ public sealed class UndoRedoManagerTests
     }
 
     [Fact]
+    public async Task ReadmeExample_RecordUndoRedo()
+    {
+        #region UndoRedoManager_RecordUndoRedo
+        var manager = new UndoRedoManager();
+        var list = new List<int>();
+
+        await manager.RecordActionAsync(
+            execute: () => list.Add(1),
+            unexecute: () => list.RemoveAt(list.Count - 1));
+        Assert.Equal([1], list);
+
+        await manager.UndoAsync();
+        Assert.Empty(list);
+
+        await manager.RedoAsync();
+        Assert.Equal([1], list);
+        #endregion
+    }
+
+    [Fact]
+    public async Task ReadmeExample_DelegateAction()
+    {
+        #region UndoRedoManager_DelegateAction
+        var manager = new UndoRedoManager();
+        var items = new List<string>();
+
+        // Asynchronous execute, synchronous unexecute
+        var action = new UndoRedoDelegateAction(
+            execute: async cancellationToken =>
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(1), cancellationToken);
+                items.Add("item");
+            },
+            unexecute: () => items.Remove("item"));
+
+        await manager.RecordActionAsync(action);
+        Assert.Equal(["item"], items);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_MaxHistoryDepth()
+    {
+        #region UndoRedoManager_MaxHistoryDepth
+        var manager = new UndoRedoManager(maxHistoryDepth: 100);
+        #endregion
+
+        Assert.Equal(100, manager.MaxHistoryDepth);
+    }
+
+    [Fact]
+    public async Task ReadmeExample_CustomAction()
+    {
+        var manager = new UndoRedoManager();
+        var list = new List<int>();
+
+        #region UndoRedoManager_RecordCustomAction
+        await manager.RecordActionAsync(new AddItemAction(list, 42));
+        #endregion
+
+        Assert.Equal([42], list);
+        await manager.UndoAsync(CancellationToken);
+        Assert.Empty(list);
+    }
+
+    [Fact]
+    public async Task ReadmeExample_Transaction()
+    {
+        #region UndoRedoManager_Transaction
+        var manager = new UndoRedoManager();
+        var list = new List<int>();
+
+        await using (var transaction = manager.CreateTransaction())
+        {
+            await manager.RecordActionAsync(() => list.Add(1), () => list.Remove(1));
+            await manager.RecordActionAsync(() => list.Add(2), () => list.Remove(2));
+            await transaction.CommitAsync();
+        }
+
+        Assert.Equal([1, 2], list);
+
+        // A single UndoAsync reverts both actions
+        await manager.UndoAsync();
+        Assert.Empty(list);
+        #endregion
+    }
+
+    [Fact]
     public async Task UndoRedoManager_Example()
     {
         #region UndoRedoManager_Usage
@@ -1099,4 +1187,21 @@ public sealed class UndoRedoManagerTests
             return false;
         }
     }
+
+    #region UndoRedoActionBase_CustomAction
+    internal sealed class AddItemAction(IList<int> list, int value) : UndoRedoActionBase
+    {
+        protected override ValueTask ExecuteCoreAsync(CancellationToken cancellationToken)
+        {
+            list.Add(value);
+            return ValueTask.CompletedTask;
+        }
+
+        protected override ValueTask UnExecuteCoreAsync(CancellationToken cancellationToken)
+        {
+            list.Remove(value);
+            return ValueTask.CompletedTask;
+        }
+    }
+    #endregion
 }

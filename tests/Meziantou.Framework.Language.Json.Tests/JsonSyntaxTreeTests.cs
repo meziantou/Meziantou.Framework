@@ -4,6 +4,170 @@ namespace Meziantou.Framework.Language.Json.Tests;
 
 public sealed class JsonSyntaxTreeTests
 {
+    [Fact]
+    public void ReadmeExample_Overview()
+    {
+        #region JsonSyntaxTree_Overview
+        var tree = JsonSyntaxTree.ParseText("""
+        {
+          // the name of the thing
+          "name": "value",
+          "items": [1, 2,],
+        }
+        """);
+
+        // Comments and trailing commas are accepted, so there is nothing to report here.
+        Assert.Empty(tree.GetDiagnostics());
+
+        // And the text comes back exactly as it went in.
+        Assert.Equal(tree.GetText().Text, tree.GetRoot().ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_SeparatedList()
+    {
+        #region JsonSyntaxTree_SeparatedList
+        var elements = ((JsonArraySyntax)JsonSyntaxTree.ParseText("[1, 2,]").GetRoot().Value!).Elements;
+
+        Assert.Equal(2, elements.Count);
+        Assert.Equal(2, elements.SeparatorCount);
+        Assert.True(elements.HasTrailingSeparator);
+        Assert.IsType<JsonNumberSyntax>(elements[0]); // the element itself, not a wrapper
+        Assert.Equal(",", elements.GetSeparator(1).Text); // the trailing comma
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Trivia()
+    {
+        #region JsonSyntaxTree_Trivia
+        var tree = JsonSyntaxTree.ParseText("""
+        {
+          // the name of the thing
+          "name": "value"
+        }
+        """);
+
+        var obj = (JsonObjectSyntax)tree.GetRoot().Value!;
+
+        Assert.Equal("\n", obj.OpenBraceToken.TrailingTrivia.ToFullString());
+        Assert.Equal("  // the name of the thing\n  ", obj.Members[0].NameToken.LeadingTrivia.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Editing()
+    {
+        #region JsonSyntaxTree_Editing
+        var tree = JsonSyntaxTree.ParseText("""{ "version": "1.0.0", "other": 1 }""");
+        var version = ((JsonObjectSyntax)tree.GetRoot().Value!).GetMember("version")!;
+
+        JsonDocumentSyntax updated = tree.GetRoot().ReplaceNode(version.Value, SyntaxFactory.JsonString("2.0.0"));
+
+        Assert.Equal("""{ "version": "2.0.0", "other": 1 }""", updated.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_RemoveNode()
+    {
+        #region JsonSyntaxTree_RemoveNode
+        var tree = JsonSyntaxTree.ParseText("""
+        {
+          // the one that matters
+          "a": 1,
+          "b": 2
+        }
+        """);
+        var members = ((JsonObjectSyntax)tree.GetRoot().Value!).Members;
+
+        var withoutTrivia = tree.GetRoot().RemoveNode(members[0], SyntaxRemoveOptions.KeepNoTrivia);
+        Assert.Equal("""
+        {
+          "b": 2
+        }
+        """, withoutTrivia!.ToFullString());
+
+        var withLeadingTrivia = tree.GetRoot().RemoveNode(members[0], SyntaxRemoveOptions.KeepLeadingTrivia);
+        Assert.Equal("""
+        {
+          // the one that matters
+            "b": 2
+        }
+        """, withLeadingTrivia!.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Annotations()
+    {
+        #region JsonSyntaxTree_Annotations
+        var tree = JsonSyntaxTree.ParseText("""{ "a": 1, "b": 2 }""");
+        var marker = new SyntaxAnnotation();
+        var root = tree.GetRoot();
+        var member = ((JsonObjectSyntax)root.Value!).Members[0];
+
+        var marked = root.ReplaceNode(member, member.WithAdditionalAnnotations(marker));
+
+        // Something else entirely: replace the value of "b", which rebuilds the path from it up to the root
+        var b = ((JsonObjectSyntax)marked.Value!).GetMember("b")!;
+        var edited = marked.ReplaceNode(b.Value, SyntaxFactory.JsonString("two"));
+
+        var found = edited.GetAnnotatedNodes(marker).Single();
+        Assert.Equal("\"a\": 1", found.ToString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Diagnostics()
+    {
+        #region JsonSyntaxTree_Diagnostics
+        var messages = new List<string>();
+        foreach (var diagnostic in JsonSyntaxTree.ParseText("{\"a\": }").GetDiagnostics())
+        {
+            var line = diagnostic.Location.GetLineSpan().Start;
+            messages.Add($"{diagnostic.Id} ({line.Line},{line.Character}): {diagnostic.Message}");
+        }
+
+        Assert.Equal(["JSON0007 (0,6): Expected a JSON value."], messages);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Walker()
+    {
+        #region JsonSyntaxTree_WalkerUsage
+        var counter = new StringCounter();
+        counter.Visit(JsonSyntaxTree.ParseText("""{ "a": "x", "b": ["y", 1, "z"] }""").GetRoot());
+
+        // Member names are tokens of a JsonMemberSyntax, not JsonStringSyntax values
+        Assert.Equal(3, counter.Count);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_JsonPath()
+    {
+        #region JsonSyntaxTree_JsonPath
+        var tree = JsonSyntaxTree.ParseText("""{ "items": [1, 2, 3] }""");
+
+        var value = JsonPath.Parse("$.items[1]").EvaluateValue(tree);
+        Assert.Equal("2", value?.ToString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_EditingByText()
+    {
+        #region JsonSyntaxTree_EditingByText
+        var tree = JsonSyntaxTree.ParseText("""{"a":1}""");
+        var updated = tree.WithChanges(new TextChange(new TextSpan(5, 1), "2"));
+
+        Assert.Equal("""{"a":2}""", updated.GetRoot().ToFullString());
+        #endregion
+    }
+
     public static TheoryData<string> RoundTripSamples => new()
     {
         """{"name":"value","enabled":true,"items":[1,false,null]}""",

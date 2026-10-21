@@ -10,25 +10,35 @@ dotnet package add Meziantou.Framework.TextDiff
 
 ## Basic usage
 
-````csharp
+<!-- ref:../../tests/Meziantou.Framework.TextDiff.Tests/TextDiffTests.cs;region=TextDiff_BasicUsage;format=md-fenced-code-block;dedent=true -->
+```csharp
 var oldText = "line1\nline2\nline3";
 var newText = "line1\nline2 updated\nline3";
 
 var result = TextDiff.ComputeDiff(oldText, newText);
 
-foreach (var entry in result.Entries)
-{
-    Console.WriteLine($"{entry.Operation}: {entry.Text}");
-}
-````
+Assert.True(result.HasDifferences);
+Assert.Equal(
+    [
+        new TextDiffEntry(TextDiffOperation.Equal, "line1\n"),
+        new TextDiffEntry(TextDiffOperation.Delete, "line2\n"),
+        new TextDiffEntry(TextDiffOperation.Insert, "line2 updated\n"),
+        new TextDiffEntry(TextDiffOperation.Equal, "line3"),
+    ],
+    result.Entries);
+```
+<!-- endref -->
 
 ## Rebuild either side of the diff
 
 `Text` is the chunk from the old text (from the new text for an `Insert`). When a comparison
 option such as `IgnoreCase` makes two *different* chunks compare equal, `OldText` and
-`NewText` give the exact chunk from each side:
+`NewText` give the exact chunk from each side, so both texts can be rebuilt exactly:
 
-````csharp
+<!-- ref:../../tests/Meziantou.Framework.TextDiff.Tests/TextDiffTests.cs;region=TextDiff_RebuildSides;format=md-fenced-code-block;dedent=true -->
+```csharp
+var result = TextDiff.ComputeDiff("Hello\nWorld\n", "hello\nWORLD\nagain\n", new TextDiffOptions { IgnoreCase = true });
+
 var oldText = string.Concat(result.Entries
     .Where(e => e.Operation is TextDiffOperation.Equal or TextDiffOperation.Delete)
     .Select(e => e.OldText));
@@ -36,11 +46,16 @@ var oldText = string.Concat(result.Entries
 var newText = string.Concat(result.Entries
     .Where(e => e.Operation is TextDiffOperation.Equal or TextDiffOperation.Insert)
     .Select(e => e.NewText));
-````
+
+Assert.Equal("Hello\nWorld\n", oldText);
+Assert.Equal("hello\nWORLD\nagain\n", newText);
+```
+<!-- endref -->
 
 ## Configure chunking and comparison
 
-````csharp
+<!-- ref:../../tests/Meziantou.Framework.TextDiff.Tests/TextDiffTests.cs;region=TextDiff_ChunkingAndComparison;format=md-fenced-code-block;dedent=true -->
+```csharp
 var options = new TextDiffOptions
 {
     Chunker = TextChunker.Words,        // Lines (default), Words, Characters, or custom chunker
@@ -50,8 +65,9 @@ var options = new TextDiffOptions
 };
 
 var result = TextDiff.ComputeDiff("Hello   world\r\n", "hello world\n", options);
-// result.HasDifferences == false
-````
+Assert.False(result.HasDifferences);
+```
+<!-- endref -->
 
 `IgnoreWhitespace` trims the **edges** of each chunk; whitespace inside a chunk stays
 significant. `Chunker = TextChunker.Words` is what makes the two texts above compare equal:
@@ -64,35 +80,53 @@ result carry `\n` rather than the original `\r\n`.
 
 ## Compute a hierarchical diff with multiple chunking levels
 
-````csharp
+<!-- ref:../../tests/Meziantou.Framework.TextDiff.Tests/TextDiffTests.cs;region=TextDiff_HierarchyDiff;format=md-fenced-code-block;dedent=true -->
+```csharp
 var result = TextDiff.ComputeHierarchyDiff(
     oldText: "line1\nhello world\nline3",
     newText: "line1\nhello brave world\nline3",
     chunkers: [TextChunker.Lines, TextChunker.Words, TextChunker.Characters]);
 
-foreach (var entry in result.Entries)
-{
-    Console.WriteLine($"{entry.Operation}: old={entry.OldText} new={entry.NewText}");
+// Only the second line changed. The Words chunker refines it into words, without going further
+// down to characters since every word is either equal or inserted.
+Assert.HasCount(3, result.Entries);
+var changedLine = result.Entries[1];
+Assert.Equal(TextDiffHierarchyOperation.Replace, changedLine.Operation);
+Assert.Equal("hello world\n", changedLine.OldText);
+Assert.Equal("hello brave world\n", changedLine.NewText);
 
-    foreach (var child in entry.Children)
-    {
-        Console.WriteLine($"  {child.Operation}: old={child.OldText} new={child.NewText}");
-    }
-}
-````
+var insertedWords = changedLine.Children
+    .Where(child => child.Operation is TextDiffHierarchyOperation.Insert)
+    .Select(child => child.NewText)
+    .ToArray();
+Assert.Equal(["brave", " "], insertedWords);
+```
+<!-- endref -->
 
 The hierarchy API lets you refine changed chunks progressively (`Lines -> Words -> Characters`, `Words -> Characters`, etc.).
 
 ## Choose a diff algorithm
 
-````csharp
+<!-- ref:../../tests/Meziantou.Framework.TextDiff.Tests/TextDiffTests.cs;region=TextDiff_Algorithm;format=md-fenced-code-block;dedent=true -->
+```csharp
 var options = new TextDiffOptions
 {
     Algorithm = TextDiffAlgorithm.Patience,
 };
 
-var result = TextDiff.ComputeDiff(oldText, newText, options);
-````
+var result = TextDiff.ComputeDiff("A\nB\nA\nC", "A\nA\nB\nC", options);
+
+Assert.Equal(
+    [
+        new TextDiffEntry(TextDiffOperation.Equal, "A\n"),
+        new TextDiffEntry(TextDiffOperation.Delete, "B\n"),
+        new TextDiffEntry(TextDiffOperation.Equal, "A\n"),
+        new TextDiffEntry(TextDiffOperation.Insert, "B\n"),
+        new TextDiffEntry(TextDiffOperation.Equal, "C"),
+    ],
+    result.Entries);
+```
+<!-- endref -->
 
 Available algorithms:
 

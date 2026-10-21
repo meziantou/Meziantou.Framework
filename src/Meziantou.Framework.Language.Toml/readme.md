@@ -10,12 +10,11 @@ It is modelled on Roslyn. If you have used `Microsoft.CodeAnalysis`, everything 
 annotations.
 
 Parsing never throws and never gives up. Whatever the text says, the tree reproduces it exactly, and anything wrong
-with it is reported through `GetDiagnostics()`: a missing bracket as much as a key defined twice.
+with it is reported through `GetDiagnostics()`: a missing bracket as much as a key defined twice. The types are in
+the `Meziantou.Framework.Language` and `Meziantou.Framework.Language.Toml` namespaces.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Toml.Tests/TomlSyntaxTreeTests.cs;region=TomlSyntaxTree_Parse;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Language;
-using Meziantou.Framework.Language.Toml;
-
 var tree = TomlSyntaxTree.ParseText("""
     # The server
     [server]
@@ -23,12 +22,13 @@ var tree = TomlSyntaxTree.ParseText("""
     ports = [ 8000, 8001 ]
     """);
 
-Console.WriteLine(tree.GetDiagnostics().Count); // 0
+Assert.Empty(tree.GetDiagnostics());
 
 var server = tree.GetRoot().Tables.Single();
 var ports = (TomlArraySyntax)server.Properties[1].Value;
-Console.WriteLine(((TomlIntegerSyntax)ports.Elements[0]).Value); // 8000
+Assert.Equal(8000L, ((TomlIntegerSyntax)ports.Elements[0]).Value);
 ```
+<!-- endref -->
 
 ## The shape of a tree
 
@@ -77,6 +77,7 @@ A table can be written with a header, with dotted keys, or as an inline table, a
 `GetKeyValues()` reads every key/value pair of a document with the full key it defines, whichever way it is written, and
 `GetValue` finds the value of one key:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Toml.Tests/TomlSyntaxTreeTests.cs;region=TomlSyntaxTree_ReadValuesByKey;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var root = TomlSyntaxTree.ParseText("""
     [dependencies]
@@ -87,13 +88,17 @@ var root = TomlSyntaxTree.ParseText("""
     """).GetRoot();
 
 var tokio = (TomlStringSyntax)root.GetValue("dependencies", "tokio", "version")!;
-Console.WriteLine(tokio.Value); // 1.2
+Assert.Equal("1.2", tokio.Value);
 
+var keys = new List<string>();
 foreach (var pair in root.GetKeyValues())
 {
-    Console.WriteLine(string.Join('.', pair.Names)); // dependencies.serde, dependencies.serde.version, dependencies.tokio.version
+    keys.Add(string.Join('.', pair.Names));
 }
+
+Assert.Equal(["dependencies.serde", "dependencies.serde.version", "dependencies.tokio.version"], keys);
 ```
+<!-- endref -->
 
 A pair whose value is an inline table comes before the pairs of that table. `Parts` gives the token that writes each
 name, and `Table` the header the pair is under, which tells apart the tables of an array of tables. Values in arrays
@@ -103,28 +108,34 @@ are not visited, as they have no key of their own.
 
 Nodes are immutable: every change returns a new node, and everything you did not change keeps its text.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Toml.Tests/TomlSyntaxTreeTests.cs;region=TomlSyntaxTree_Edit;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var root = TomlSyntaxTree.ParseText("port = 8080 # the port\n").GetRoot();
 var port = (TomlIntegerSyntax)root.RootProperties[0].Value;
 
 var updated = root.ReplaceNode(port, port.WithValue(9090));
-Console.WriteLine(updated.ToFullString()); // port = 9090 # the port
+Assert.Equal("port = 9090 # the port\n", updated.ToFullString());
 ```
+<!-- endref -->
 
 `SyntaxFactory` builds new nodes. The methods that take .NET values write them the way TOML requires: keys are quoted
 when they cannot be bare, strings are escaped, and floats always read back as floats.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Toml.Tests/TomlSyntaxTreeTests.cs;region=TomlSyntaxTree_SyntaxFactory;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var document = SyntaxFactory.TomlDocument(
     SyntaxFactory.TomlTable("server"),
     SyntaxFactory.TomlProperty("host name", SyntaxFactory.TomlString("localhost")),
     SyntaxFactory.TomlProperty(SyntaxFactory.Key("limits", "max"), SyntaxFactory.TomlFloat(1)));
 
-Console.WriteLine(document.ToFullString());
-// [server]
-// "host name" = "localhost"
-// limits.max = 1.0
+Assert.Equal("""
+    [server]
+    "host name" = "localhost"
+    limits.max = 1.0
+
+    """, document.ToFullString());
 ```
+<!-- endref -->
 
 Every entry of a document has to end its line, so `TomlDocument` and `AddEntries` add a line feed to an entry that does
 not already end with one. So does any edit that puts an entry in front of another: `ReplaceNode`, `InsertNodesAfter`,
@@ -147,14 +158,18 @@ value starts with a line break or a comment.
 Nothing is thrown for bad input; it is reported instead, with a location you can turn into line and character
 positions.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Toml.Tests/TomlSyntaxTreeTests.cs;region=TomlSyntaxTree_Diagnostics;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var messages = new List<string>();
 foreach (var diagnostic in TomlSyntaxTree.ParseText("a = 1\na = 2\n").GetDiagnostics())
 {
     var line = diagnostic.Location.GetLineSpan().Start;
-    Console.WriteLine($"{diagnostic.Id} ({line.Line},{line.Character}): {diagnostic.Message}");
-    // TOML0020 (1,0): The key 'a' is already defined.
+    messages.Add($"{diagnostic.Id} ({line.Line},{line.Character}): {diagnostic.Message}");
 }
+
+Assert.Equal(["TOML0020 (1,0): The key 'a' is already defined."], messages);
 ```
+<!-- endref -->
 
 | Id | Reported for |
 | --- | --- |
@@ -197,9 +212,15 @@ repeating one cannot make its diagnostics take more memory than the text.
 trailing comma in inline tables, the `\e` and `\xHH` escape sequences, and times written without seconds. Parsing as
 TOML 1.0 reports each of them as `TOML0013` and otherwise reads them the same way.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Toml.Tests/TomlSyntaxTreeTests.cs;region=TomlSyntaxTree_Version;format=md-fenced-code-block;dedent=true -->
 ```csharp
+// A time without seconds is a TOML 1.1 feature
+var text = "start = 07:32\n";
+
 var tree = TomlSyntaxTree.ParseText(text, new TomlParseOptions { Version = TomlVersion.V1_0 });
+Assert.Equal("TOML0013", tree.GetDiagnostics().Single().Id);
 ```
+<!-- endref -->
 
 ### Recovering from mistakes
 
@@ -237,12 +258,14 @@ closing quote: check `ContainsDiagnostics` before relying on it.
 and trivium too. `TomlSyntaxRewriter` builds a new tree from the nodes you return; a node whose parts all come back
 unchanged is returned as it was.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Toml.Tests/TomlSyntaxTreeTests.cs;region=TomlSyntaxRewriter_DoubleIntegers;format=md-fenced-code-block;dedent=true -->
 ```csharp
 private sealed class DoubleIntegers : TomlSyntaxRewriter
 {
     public override SyntaxNode? VisitTomlInteger(TomlIntegerSyntax node) => node.WithValue(node.Value * 2);
 }
 ```
+<!-- endref -->
 
 ## Coming from version 1
 

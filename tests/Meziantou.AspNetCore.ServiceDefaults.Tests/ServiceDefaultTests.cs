@@ -11,6 +11,19 @@ namespace Meziantou.AspNetCore.ServiceDefaults.Tests;
 public sealed class ServiceDefaultTests
 {
     [Fact]
+    public void ReadmeExample_TryPattern()
+    {
+        var builder = WebApplication.CreateBuilder();
+
+        #region ServiceDefaults_TryPattern
+        builder.UseMeziantouConventions();
+        builder.TryUseMeziantouConventions(); // Will not register again
+        #endregion
+
+        Assert.Single(builder.Services, service => service.ServiceType == typeof(MeziantouServiceDefaultsOptions));
+    }
+
+    [Fact]
     public async Task HasDefaultHealthChecks()
     {
         var builder = WebApplication.CreateBuilder();

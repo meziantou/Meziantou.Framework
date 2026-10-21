@@ -221,6 +221,44 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
     }
 
     [Fact]
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The HttpClient disposes the handlers")]
+    public async Task ReadmeExample_CatchRejection()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var options = new ServerSideRequestForgeryOptions();
+        using var httpClient = new HttpClient(new ServerSideRequestForgeryClientHandler(new SocketsHttpHandler { UseProxy = false }, options), disposeHandler: true);
+
+        #region ServerSideRequestForgery_CatchRejection
+        ServerSideRequestForgeryException? rejection = null;
+        try
+        {
+            // 127.0.0.1 is in the default UnsafeIpNetworks
+            using var response = await httpClient.GetAsync(new Uri("https://127.0.0.1/"), cancellationToken);
+        }
+        catch (HttpRequestException ex) when (ex.InnerException is ServerSideRequestForgeryException ssrf)
+        {
+            rejection = ssrf;
+        }
+
+        Assert.NotNull(rejection);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ConfigureSsrf()
+    {
+        var options = new ServerSideRequestForgeryOptions();
+
+        #region ServerSideRequestForgery_ConfigureSsrf
+        var handler = new SocketsHttpHandler { UseProxy = false };
+        handler.ConfigureSsrf(options);
+        #endregion
+
+        Assert.NotNull(handler.ConnectCallback);
+        handler.Dispose();
+    }
+
+    [Fact]
     public async Task ConnectCallback_SurfacesRejectionAsInnerExceptionOfHttpRequestException()
     {
         var options = new ServerSideRequestForgeryOptions();

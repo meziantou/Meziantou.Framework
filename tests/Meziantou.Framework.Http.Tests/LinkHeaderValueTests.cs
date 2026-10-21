@@ -6,6 +6,39 @@ namespace Meziantou.Framework.Tests.Http;
 public sealed class LinkHeaderValueTests
 {
     [Fact]
+    public void ReadmeExample_Parse()
+    {
+        #region LinkHeaderValue_Parse
+        var links = LinkHeaderValue.Parse("</style.css>; rel=preload; as=style; fetchpriority=\"high\"");
+        var link = links.GetLink("preload");
+        Assert.Equal("style", link?.GetParameterValue("as"));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_EnumerateLinkHeaders()
+    {
+        #region LinkHeaderValue_EnumerateLinkHeaders
+        using var response = new HttpResponseMessage();
+        response.Headers.Add("Link", "</items?page=2>; rel=next, </items?page=5>; rel=last");
+
+        var links = new List<string>();
+        foreach (var item in response.Headers.EnumerateLinkHeaders())
+        {
+            links.Add($"{item.Rel}: {item.Url}");
+        }
+
+        Assert.Equal(["next: /items?page=2", "last: /items?page=5"], links);
+        #endregion
+
+        #region LinkHeaderValue_GetLinkUrl
+        // Follow pagination links
+        var nextUrl = response.Headers.EnumerateLinkHeaders().GetLinkUrl("next");
+        Assert.Equal("/items?page=2", nextUrl);
+        #endregion
+    }
+
+    [Fact]
     public void LinkHeaderValue_Parse()
     {
         var result = LinkHeaderValue.Parse("<sample>; rel=abc, <plop>; rel\t=\"d\\\"e;f,\"; title = test title; abc");

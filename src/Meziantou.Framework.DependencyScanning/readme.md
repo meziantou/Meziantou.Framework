@@ -72,9 +72,10 @@ The library can detect the following dependency types:
 
 ### Scan a Directory
 
-```csharp
-using Meziantou.Framework.DependencyScanning;
+The types are in the `Meziantou.Framework.DependencyScanning` namespace.
 
+<!-- ref:../../samples/DependencyScannerSample/ReadmeExamples.cs;region=DependencyScanner_ScanDirectory;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Scan with default options
 var dependencies = await DependencyScanner.ScanDirectoryAsync(
     "C:\\MyProject",
@@ -86,9 +87,11 @@ foreach (var dependency in dependencies)
     Console.WriteLine($"{dependency.Type}: {dependency.Name}@{dependency.Version}");
 }
 ```
+<!-- endref -->
 
 ### Scan with Custom Options
 
+<!-- ref:../../samples/DependencyScannerSample/ReadmeExamples.cs;region=DependencyScanner_CustomOptions;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var options = new ScannerOptions
 {
@@ -113,6 +116,7 @@ var dependencies = await DependencyScanner.ScanDirectoryAsync(
     options,
     cancellationToken);
 ```
+<!-- endref -->
 
 Symbolic links and other reparse points to directories are never followed, so a link cannot make the scan loop or leave the root directory. A symbolic link to a file is scanned only when its target is inside the root directory, because updating its dependencies would write to the target.
 
@@ -120,12 +124,14 @@ Symbolic links and other reparse points to directories are never followed, so a 
 
 A file that cannot be scanned does not stop the scan: when a file cannot be opened or read, or a scanner throws while scanning it (for instance because the file is malformed), the remaining scanners are skipped for that file and the scan continues with the next file. The dependencies reported from the file before the failure are kept. Set `ScannerOptions.OnFileScanFailed` to be notified with the path of the file and the exception. The callback can be called concurrently, and an exception it throws stops the scan and is reported by the scan method, so it can be used to fail fast:
 
+<!-- ref:../../samples/DependencyScannerSample/ReadmeExamples.cs;region=DependencyScanner_ErrorHandling;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var options = new ScannerOptions
 {
     OnFileScanFailed = (filePath, exception) => throw new InvalidOperationException($"Cannot scan '{filePath}'", exception),
 };
 ```
+<!-- endref -->
 
 `ScanFileAsync`, `ScanFilesAsync` and `ScanDirectoryAsync` behave the same way: `ScanFileAsync` returns the dependencies found before the failure. The in-memory `ScanFileAsync` overloads, which take no options, skip the failure silently. Cancellation is not a failure: the scan methods throw an `OperationCanceledException` when their cancellation token is canceled. An exception thrown by the `onDependencyFound` callback also stops the scan.
 
@@ -137,6 +143,7 @@ var options = new ScannerOptions
 
 ### Filter by Dependency Type
 
+<!-- ref:../../samples/DependencyScannerSample/ReadmeExamples.cs;region=DependencyScanner_FilterByDependencyType;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var options = new ScannerOptions
 {
@@ -150,11 +157,13 @@ var options2 = new ScannerOptions
     ExcludedDependencyTypes = [DependencyType.DockerImage],
 };
 ```
+<!-- endref -->
 
 ### Stream Dependencies as They're Found
 
 Files are scanned in parallel, so the callback can be called concurrently from several threads and must be thread-safe. Use a concurrent collection, a lock, or `DegreeOfParallelism = 1`.
 
+<!-- ref:../../samples/DependencyScannerSample/ReadmeExamples.cs;region=DependencyScanner_StreamDependencies;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var dependencies = new ConcurrentQueue<Dependency>();
 await DependencyScanner.ScanDirectoryAsync(
@@ -167,9 +176,11 @@ await DependencyScanner.ScanDirectoryAsync(
     },
     cancellationToken);
 ```
+<!-- endref -->
 
 ### Scan Individual Files
 
+<!-- ref:../../samples/DependencyScannerSample/ReadmeExamples.cs;region=DependencyScanner_ScanFiles;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Scan a single file
 var dependencies = await DependencyScanner.ScanFileAsync(
@@ -182,15 +193,16 @@ var dependencies = await DependencyScanner.ScanFileAsync(
 var filePaths = new[]
 {
     "C:\\MyProject\\package.json",
-    "C:\\MyProject\\MyProject.csproj"
+    "C:\\MyProject\\MyProject.csproj",
 };
 
-var dependencies = await DependencyScanner.ScanFilesAsync(
+var allDependencies = await DependencyScanner.ScanFilesAsync(
     rootDirectory: "C:\\MyProject",
     filePaths,
     options: null,
     cancellationToken);
 ```
+<!-- endref -->
 
 The root directory and the file paths can be relative or contain `.` and `..` segments: they are made absolute before the scanners that depend on the location of the file, such as the GitHub Actions scanner, check them.
 
@@ -198,6 +210,7 @@ Dependencies scanned from in-memory content (`ScanFileAsync` with a `byte[]`) ha
 
 ### Update Dependency Versions
 
+<!-- ref:../../samples/DependencyScannerSample/ReadmeExamples.cs;region=DependencyScanner_UpdateVersions;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var dependencies = await DependencyScanner.ScanDirectoryAsync(
     "C:\\MyProject",
@@ -213,13 +226,15 @@ foreach (var dependency in dependencies.Where(d => d.Type == DependencyType.NuGe
     }
 }
 ```
+<!-- endref -->
 
 An update never writes blindly: it first checks that the file still holds the expected value at the location, and throws a `DependencyScannerException` otherwise, for instance when the file was modified since the scan. The expected value is the one passed to `Location.UpdateAsync(oldValue, newValue)`, or, when none is given, the value the location holds: the value found by the scan, then the value written by the last update. So a dependency can be updated several times, and its name and its version can be updated in any order, even when they share a line such as `FROM node:18`. `Dependency.Name` and `Dependency.Version` keep the values found by the scan.
 
 ### Custom Regex Scanner
 
-For custom file formats, you can use the `RegexScanner`:
+For custom file formats, you can use the `RegexScanner` (in the `Meziantou.Framework.DependencyScanning.Scanners` namespace; `Glob` is in `Meziantou.Framework.Globbing`):
 
+<!-- ref:../../samples/DependencyScannerSample/ReadmeExamples.cs;region=DependencyScanner_CustomRegexScanner;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var options = new ScannerOptions
 {
@@ -229,9 +244,9 @@ var options = new ScannerOptions
         {
             FilePatterns = [Glob.Parse("**/*.custom", GlobDialect.Standard, GlobOptions.IgnoreCase)],
             DependencyType = DependencyType.DockerImage,
-            Regex = new Regex(@"image:\s*(?<name>[a-z/]+)(:(?<version>[0-9.]+))?", RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10))
-        }
-    ]
+            Regex = new Regex(@"image:\s*(?<name>[a-z/]+)(:(?<version>[0-9.]+))?", RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10)),
+        },
+    ],
 };
 
 var dependencies = await DependencyScanner.ScanDirectoryAsync(
@@ -239,6 +254,7 @@ var dependencies = await DependencyScanner.ScanDirectoryAsync(
     options,
     cancellationToken);
 ```
+<!-- endref -->
 
 `FilePatterns` are matched against the path of the file relative to the scanned root directory, for instance `build/*.yml` or `**/*.custom`.
 

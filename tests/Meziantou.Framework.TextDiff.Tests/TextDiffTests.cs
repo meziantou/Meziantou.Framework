@@ -4,6 +4,11 @@ using TextDiffLib::Meziantou.Framework;
 
 namespace Meziantou.Framework.Tests;
 
+// The generated code of the test project declares the Meziantou.Framework.TextDiff.Tests namespace, which hides the
+// TextDiff class from this namespace. An alias declared inside the namespace wins over it, so the readme examples can
+// use the class name.
+using TextDiff = TextDiffLib::Meziantou.Framework.TextDiff;
+
 public sealed class TextDiffTests
 {
     private static readonly IReadOnlyList<DiffCorpusCase> LineCorpus =
@@ -181,6 +186,111 @@ public sealed class TextDiffTests
         {
             yield return new object[] { testCase.Algorithm, testCase.Name, testCase.OldText, testCase.NewText, testCase.ExpectedEntries };
         }
+    }
+
+    [Fact]
+    public void ReadmeExample_BasicUsage()
+    {
+        #region TextDiff_BasicUsage
+        var oldText = "line1\nline2\nline3";
+        var newText = "line1\nline2 updated\nline3";
+
+        var result = TextDiff.ComputeDiff(oldText, newText);
+
+        Assert.True(result.HasDifferences);
+        Assert.Equal(
+            [
+                new TextDiffEntry(TextDiffOperation.Equal, "line1\n"),
+                new TextDiffEntry(TextDiffOperation.Delete, "line2\n"),
+                new TextDiffEntry(TextDiffOperation.Insert, "line2 updated\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "line3"),
+            ],
+            result.Entries);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_RebuildSides()
+    {
+        #region TextDiff_RebuildSides
+        var result = TextDiff.ComputeDiff("Hello\nWorld\n", "hello\nWORLD\nagain\n", new TextDiffOptions { IgnoreCase = true });
+
+        var oldText = string.Concat(result.Entries
+            .Where(e => e.Operation is TextDiffOperation.Equal or TextDiffOperation.Delete)
+            .Select(e => e.OldText));
+
+        var newText = string.Concat(result.Entries
+            .Where(e => e.Operation is TextDiffOperation.Equal or TextDiffOperation.Insert)
+            .Select(e => e.NewText));
+
+        Assert.Equal("Hello\nWorld\n", oldText);
+        Assert.Equal("hello\nWORLD\nagain\n", newText);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ChunkingAndComparison()
+    {
+        #region TextDiff_ChunkingAndComparison
+        var options = new TextDiffOptions
+        {
+            Chunker = TextChunker.Words,        // Lines (default), Words, Characters, or custom chunker
+            IgnoreCase = true,
+            IgnoreWhitespace = true,
+            IgnoreEndOfLine = true,
+        };
+
+        var result = TextDiff.ComputeDiff("Hello   world\r\n", "hello world\n", options);
+        Assert.False(result.HasDifferences);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_HierarchyDiff()
+    {
+        #region TextDiff_HierarchyDiff
+        var result = TextDiff.ComputeHierarchyDiff(
+            oldText: "line1\nhello world\nline3",
+            newText: "line1\nhello brave world\nline3",
+            chunkers: [TextChunker.Lines, TextChunker.Words, TextChunker.Characters]);
+
+        // Only the second line changed. The Words chunker refines it into words, without going further
+        // down to characters since every word is either equal or inserted.
+        Assert.HasCount(3, result.Entries);
+        var changedLine = result.Entries[1];
+        Assert.Equal(TextDiffHierarchyOperation.Replace, changedLine.Operation);
+        Assert.Equal("hello world\n", changedLine.OldText);
+        Assert.Equal("hello brave world\n", changedLine.NewText);
+
+        var insertedWords = changedLine.Children
+            .Where(child => child.Operation is TextDiffHierarchyOperation.Insert)
+            .Select(child => child.NewText)
+            .ToArray();
+        Assert.Equal(["brave", " "], insertedWords);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Algorithm()
+    {
+        #region TextDiff_Algorithm
+        var options = new TextDiffOptions
+        {
+            Algorithm = TextDiffAlgorithm.Patience,
+        };
+
+        var result = TextDiff.ComputeDiff("A\nB\nA\nC", "A\nA\nB\nC", options);
+
+        Assert.Equal(
+            [
+                new TextDiffEntry(TextDiffOperation.Equal, "A\n"),
+                new TextDiffEntry(TextDiffOperation.Delete, "B\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "A\n"),
+                new TextDiffEntry(TextDiffOperation.Insert, "B\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "C"),
+            ],
+            result.Entries);
+        #endregion
     }
 
     [Fact]

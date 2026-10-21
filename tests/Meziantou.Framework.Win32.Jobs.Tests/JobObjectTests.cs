@@ -8,6 +8,58 @@ namespace Meziantou.Framework.Win32.Jobs.Tests;
 public class JobObjectTests
 {
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ReadmeExample_Terminate()
+    {
+        using var job = new JobObject();
+        using var process = Process.Start(new ProcessStartInfo
+        {
+            FileName = "ping",
+            Arguments = "127.0.0.1 -n 100",
+            UseShellExecute = true,
+            CreateNoWindow = true,
+        });
+        Assert.NotNull(process);
+        job.AssignProcess(process);
+
+        #region JobObject_Terminate
+        job.Terminate();
+        job.Terminate(exitCode: 1);
+        #endregion
+
+        process.WaitForExit();
+        Assert.Equal(1, process.ExitCode);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ReadmeExample_AccountingInformation()
+    {
+        using var job = new JobObject();
+        using var process = Process.Start(new ProcessStartInfo
+        {
+            FileName = "ping",
+            Arguments = "127.0.0.1 -n 100",
+            UseShellExecute = true,
+            CreateNoWindow = true,
+        });
+        Assert.NotNull(process);
+        job.AssignProcess(process);
+
+        #region JobObject_AccountingInformation
+        var basicInfo = job.GetBasicAccountingInformation();
+        var basicAndIoInfo = job.GetBasicAndIoAccountingInformation();
+        var memoryInfo = job.GetMemoryAccountingInformation();
+        #endregion
+
+        // Windows can add helper processes, such as the console host, to the job
+        Assert.NotEqual(0u, basicInfo.ActiveProcesses);
+        Assert.NotEqual(0u, basicAndIoInfo.BasicInfo.TotalProcesses);
+        Assert.NotEqual(0ul, memoryInfo.PeakJobMemoryUsed);
+
+        job.Terminate();
+        process.WaitForExit();
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void ShouldKillProcessOnTerminate()
     {
         using var job = new JobObject();

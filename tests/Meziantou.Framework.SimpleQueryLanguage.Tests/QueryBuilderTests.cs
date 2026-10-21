@@ -8,6 +8,21 @@ namespace Meziantou.Framework.SimpleQueryLanguage.Tests;
 public sealed class QueryBuilderTests
 {
     [Fact]
+    public void ReadmeExample_Usage()
+    {
+        #region QueryBuilder_Usage
+        var queryBuilder = new QueryBuilder<Person>();
+        queryBuilder.AddHandler<string>("name", (obj, value) => obj.FullName.Contains(value, StringComparison.OrdinalIgnoreCase));
+        queryBuilder.AddRangeHandler<int>("age", (obj, value) => value.IsInRange((int)(DateTime.UtcNow - obj.DateOfBirth).TotalDays / 365));
+
+        var query = queryBuilder.Build("name:john AND age>=18");
+        Assert.True(query.Evaluate(new Person("John Doe", new DateTime(2000, 1, 1))));
+        Assert.False(query.Evaluate(new Person("Jane Doe", new DateTime(2000, 1, 1))));
+        Assert.False(query.Evaluate(new Person("Johnny Doe", DateTime.UtcNow.AddYears(-10))));
+        #endregion
+    }
+
+    [Fact]
     public void Query_DocumentationExample()
     {
         #region Query_Evaluate
@@ -1493,8 +1508,6 @@ public sealed class QueryBuilderTests
         return queryBuilder;
     }
 
-    private sealed record Person(string FullName, DateTime DateOfBirth);
-
     private sealed class Sample
     {
         public byte ByteValue { get; set; }
@@ -1520,3 +1533,9 @@ public sealed class QueryBuilderTests
         public string? StringValue { get; set; }
     }
 }
+
+#pragma warning disable MA0048 // File name must match type name
+#region QueryBuilder_Person
+internal sealed record Person(string FullName, DateTime DateOfBirth);
+#endregion
+#pragma warning restore MA0048

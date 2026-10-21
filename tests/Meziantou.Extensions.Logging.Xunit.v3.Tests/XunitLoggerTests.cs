@@ -58,6 +58,84 @@ public sealed class XunitLoggerTests
     }
 
     [Fact]
+    public void ReadmeExample_CreateLoggerForTheCurrentTest()
+    {
+        #region XUnitLogger_CreateLogger
+        ILogger logger = XUnitLogger.CreateLogger();
+        ILogger<MyType> typedLogger = XUnitLogger.CreateLogger<MyType>();
+        #endregion
+
+        logger.LogInformation("Written by the untyped logger");
+        typedLogger.LogInformation("Written by the typed logger");
+
+        var output = TestContext.Current.TestOutputHelper?.Output;
+        Assert.Contains("Written by the untyped logger", output, StringComparison.Ordinal);
+        Assert.Contains("Written by the typed logger", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ReadmeExample_CreateLoggerWithTestOutputHelper()
+    {
+        var testOutputHelper = new InMemoryTestOutputHelper();
+
+        #region XUnitLogger_CreateLoggerWithTestOutputHelper
+        ILogger logger = XUnitLogger.CreateLogger(testOutputHelper);
+        ILogger<MyType> typedLogger = XUnitLogger.CreateLogger<MyType>(testOutputHelper);
+        #endregion
+
+        logger.LogInformation("Untyped");
+        typedLogger.LogInformation("Typed");
+
+        Assert.Equal(["Untyped" + Environment.NewLine, "Typed" + Environment.NewLine], testOutputHelper.Logs, StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void ReadmeExample_Options()
+    {
+        var testOutputHelper = new InMemoryTestOutputHelper();
+
+        #region XUnitLogger_Options
+        ILogger<MyType> logger = XUnitLogger.CreateLogger<MyType>(testOutputHelper, new XUnitLoggerOptions
+        {
+            IncludeLogLevel = true,
+            IncludeCategory = true,
+            IncludeScopes = true,
+            TimestampFormat = "HH:mm:ss.fff",
+            UseUtcTimestamp = true,
+        });
+
+        using (logger.BeginScope("TheScope"))
+        {
+            logger.LogWarning("Something happened");
+        }
+
+        // 12:20:41.812 warn [MyNamespace.MyType] Something happened
+        //  => TheScope
+        #endregion
+
+        var log = Assert.Single(testOutputHelper.Logs);
+        Assert.Matches(@"^[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3} warn \[Meziantou\.Extensions\.Logging\.Xunit\.v3\.Tests\.XunitLoggerTests\.MyType\] Something happened\r?\n => TheScope\r?\n$", log);
+    }
+
+    [Fact]
+    public void ReadmeExample_AddXunit()
+    {
+        #region XUnitLogger_AddXunit
+        using var host = new HostBuilder()
+            .ConfigureLogging(builder =>
+            {
+                builder.AddXunit();
+            })
+            .Build();
+        #endregion
+
+        var logger = host.Services.GetRequiredService<ILogger<MyType>>();
+        logger.LogInformation("Written through the host");
+
+        Assert.Contains("Written through the host", TestContext.Current.TestOutputHelper?.Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void XUnitLoggerProviderTest()
     {
         var output = new InMemoryTestOutputHelper();
@@ -359,6 +437,8 @@ public sealed class XunitLoggerTests
         var exception = Assert.Throws<NotSupportedException>(() => logger.LogInformation("message"));
         Assert.Equal("broken helper", exception.Message, StringComparer.Ordinal);
     }
+
+    private sealed class MyType;
 
     private sealed class ThrowingTestOutputHelper : ITestOutputHelper
     {

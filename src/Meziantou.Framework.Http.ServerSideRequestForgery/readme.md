@@ -4,9 +4,10 @@ SSRF protection for `SocketsHttpHandler` using scheme allow-listing and runtime 
 
 ## Usage
 
-```csharp
-using Meziantou.Framework.Http.ServerSideRequestForgery;
+The types are in the `Meziantou.Framework.Http.ServerSideRequestForgery` namespace.
 
+<!-- ref:../../tests/Meziantou.Framework.Http.ServerSideRequestForgery.Tests/ServerSideRequestForgeryOptionsTests.cs;region=ServerSideRequestForgery_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 var options = new ServerSideRequestForgeryOptions
 {
     ResolutionStrategy = IpAddressResolutionStrategy.PreferIpv4,
@@ -22,6 +23,7 @@ var handler = new ServerSideRequestForgeryClientHandler(new SocketsHttpHandler {
 
 using var httpClient = new HttpClient(handler, disposeHandler: true);
 ```
+<!-- endref -->
 
 `ServerSideRequestForgeryClientHandler` configures the inner `SocketsHttpHandler` and rejects the requests that
 would bypass it over HTTP/3. `SocketsHttpHandler.ConfigureSsrf(options)` applies the connection validation on its
@@ -48,10 +50,13 @@ The collections start populated, and the example above adds to those defaults ra
 
 Call `Clear()` first to define a set from scratch:
 
+<!-- ref:../../tests/Meziantou.Framework.Http.ServerSideRequestForgery.Tests/ServerSideRequestForgeryOptionsTests.cs;region=ServerSideRequestForgery_ClearDefaults;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var options = new ServerSideRequestForgeryOptions();
 options.SafeSchemes.Clear();
 options.SafeSchemes.Add("https");
 ```
+<!-- endref -->
 
 `SafeIpNetworks` takes precedence: an address it matches is allowed even when `UnsafeIpNetworks` also matches it.
 That is how you reach a specific internal host without dropping the range it sits in — and why a broad entry there
@@ -62,9 +67,22 @@ silently re-opens whatever part of the deny list it covers.
 A rejected request surfaces as an `HttpRequestException` with a `ServerSideRequestForgeryException` as its
 `InnerException`, because the runtime wraps anything thrown from `ConnectCallback`. Catch it accordingly:
 
+<!-- ref:../../tests/Meziantou.Framework.Http.ServerSideRequestForgery.Tests/ServerSideRequestForgeryConnectPipelineTests.cs;region=ServerSideRequestForgery_CatchRejection;format=md-fenced-code-block;dedent=true -->
 ```csharp
+ServerSideRequestForgeryException? rejection = null;
+try
+{
+    // 127.0.0.1 is in the default UnsafeIpNetworks
+    using var response = await httpClient.GetAsync(new Uri("https://127.0.0.1/"), cancellationToken);
+}
 catch (HttpRequestException ex) when (ex.InnerException is ServerSideRequestForgeryException ssrf)
+{
+    rejection = ssrf;
+}
+
+Assert.NotNull(rejection);
 ```
+<!-- endref -->
 
 The HTTP/3 rejection is thrown before the request reaches the inner handler, so that one arrives as a
 `ServerSideRequestForgeryException` directly.
@@ -81,10 +99,12 @@ Rather than appear to protect such a request, the handler rejects it with a
 without the application configuring one. Send requests that need SSRF protection through a handler with
 `UseProxy = false`:
 
+<!-- ref:../../tests/Meziantou.Framework.Http.ServerSideRequestForgery.Tests/ServerSideRequestForgeryConnectPipelineTests.cs;region=ServerSideRequestForgery_ConfigureSsrf;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var handler = new SocketsHttpHandler { UseProxy = false };
 handler.ConfigureSsrf(options);
 ```
+<!-- endref -->
 
 Requests the proxy is configured to bypass are connected to directly and are validated normally.
 

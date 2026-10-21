@@ -3,6 +3,35 @@ namespace Meziantou.Framework.Tests;
 public sealed class UrlPatternCollectionTests
 {
     [Fact]
+    public void ReadmeExample_Usage()
+    {
+        #region UrlPatternCollection_Usage
+        var docsPattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/docs/*" });
+        var collection = new UrlPatternCollection
+        {
+            UrlPattern.Create(new UrlPatternInit { Pathname = "/api/*" }),
+            docsPattern,
+        };
+
+        // Test if any pattern matches
+        Assert.True(collection.IsMatch("https://example.com/api/users"));
+
+        // Get the first matching pattern
+        UrlPattern? match = collection.FindPattern("https://example.com/docs/guide");
+        Assert.Same(docsPattern, match);
+
+        // Match and capture groups from the first matching pattern
+        var apiCollection = new UrlPatternCollection
+        {
+            UrlPattern.Create(new UrlPatternInit { Pathname = "/api/:version/*" }),
+        };
+        UrlPatternResult? apiResult = apiCollection.Match("https://example.com/api/v2/users");
+        Assert.NotNull(apiResult);
+        Assert.Equal("v2", apiResult.Pathname.Groups["version"]);
+        #endregion
+    }
+
+    [Fact]
     public void UrlPatternCollection_Example()
     {
         #region UrlPatternCollection_Example

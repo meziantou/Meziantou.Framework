@@ -7,6 +7,41 @@ namespace Meziantou.Framework.Yaml.Tests;
 public class YamlNodeTest
 {
     [Fact]
+    public void ReadmeExample_Load()
+    {
+        #region YamlStream_Load
+        var stream = YamlStream.Load(new StringReader("""
+            product:
+              id: 1
+              name: Sample product
+            """));
+
+        var document = stream[0];
+        var root = (YamlMapping)document.Contents!;
+        var product = (YamlMapping)root["product"]!;
+        var name = ((YamlValue)product["name"]!).Value;
+        Assert.Equal("Sample product", name);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_LoadWithOptions()
+    {
+        #region YamlStream_LoadWithOptions
+        var options = new YamlSerializerOptions { MaxAliasExpansionNodeCount = 1_000 };
+
+        using var reader = new StringReader("""
+            base: &base { name: default }
+            copy: *base
+            """);
+
+        var stream = YamlStream.Load(reader, options);
+        #endregion
+
+        Assert.HasCount(1, stream);
+    }
+
+    [Fact]
     public void ReadYamlReference()
     {
         using var file = Utils.GetResourceStream("YamlReferenceCard.yaml");

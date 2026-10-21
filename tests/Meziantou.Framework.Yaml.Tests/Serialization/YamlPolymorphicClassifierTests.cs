@@ -72,6 +72,56 @@ internal sealed class ShapeByFirstKeyClassifier : YamlTypeClassifierFactory
 
 public sealed class YamlPolymorphicClassifierTests
 {
+    [Fact]
+    public void ReadmeExample_TypeClassifier()
+    {
+        var options = new YamlSerializerOptions { TypeClassifiers = [new ShapeClassifier()] };
+
+        Assert.IsType<Circle>(YamlSerializer.Deserialize<Shape>("Radius: 3\n", options));
+        Assert.IsType<Square>(YamlSerializer.Deserialize<Shape>("Side: 2\n", options));
+    }
+
+    #region YamlTypeClassifierFactory_Usage
+    internal sealed class ShapeClassifier : YamlTypeClassifierFactory
+    {
+        public override bool CanClassify(YamlTypeClassifierContext context)
+            => context.Kind is YamlTypeClassifierKind.PolymorphicType && context.DeclaringType == typeof(Shape);
+
+        public override YamlTypeClassifier CreateYamlClassifier(YamlTypeClassifierContext context, YamlSerializerOptions options)
+            => reader =>
+            {
+                // The classifier reads a copy of the value: select the derived type from the first key of the mapping
+                if (reader.TokenType is not YamlTokenType.StartMapping)
+                    return null;
+
+                reader.Read();
+                var type = reader.GetScalarValue() switch
+                {
+                    "Radius" => typeof(Circle),
+                    "Side" => typeof(Square),
+                    _ => null,
+                };
+
+                return context.DerivedTypes.Any(derivedType => derivedType.DerivedType == type) ? type : null;
+            };
+    }
+    #endregion
+
+    [YamlPolymorphic]
+    [YamlDerivedType(typeof(Circle), "circle")]
+    [YamlDerivedType(typeof(Square), "square")]
+    internal abstract class Shape;
+
+    internal sealed class Circle : Shape
+    {
+        public int Radius { get; set; }
+    }
+
+    internal sealed class Square : Shape
+    {
+        public int Side { get; set; }
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

@@ -15,6 +15,144 @@ public sealed partial class SnapshotTests
     private const string SnapshotUpdateStrategyEnvironmentVariableName = "SNAPSHOTTESTING_STRATEGY";
 
     [Fact]
+    public void ReadmeExample_BasicUsage()
+    {
+        #region Snapshot_BasicUsage
+        var value = new { Name = "John", Age = 42 };
+        Snapshot.Validate(value);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_TypedSnapshots()
+    {
+        #region Snapshot_TypedSnapshots
+        var imageBytes = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC"); // A 1x1 PNG image
+        var svgText = """<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10" fill="red" /></svg>""";
+
+        Snapshot.Validate(imageBytes, SnapshotType.Png);
+        Snapshot.Validate(svgText, SnapshotType.Svg);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_SeveralAssertions()
+    {
+        #region Snapshot_SeveralAssertions
+        var html = "<p>Hello</p>";
+        var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC");
+
+        Snapshot.Validate(html);                   // __snapshots__/SnapshotTests_ReadmeExample_SeveralAssertions.verified.txt
+        Snapshot.Validate(png, SnapshotType.Png);  // __snapshots__/SnapshotTests_ReadmeExample_SeveralAssertions~2.verified.png
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_LineEndings()
+    {
+        #region Snapshot_LineEndings
+        var settings = SnapshotSettings.Default with { };
+        settings.ConfigureHumanReadableSerializer(options => options.NewLine = "\r\n");
+        #endregion
+
+        var snapshot = Assert.Single(settings.Serializers.Serialize(SnapshotType.Default, new { A = 1, B = 2 }).Data);
+        Assert.Equal("A: 1\r\nB: 2", Encoding.UTF8.GetString(snapshot.Data));
+    }
+
+    #region Snapshot_HelperMethod
+    public static class ApiSnapshot
+    {
+        public static void ValidateOpenApiSpec(
+            string spec,
+            [CallerFilePath] string? filePath = null,
+            [CallerLineNumber] int lineNumber = -1)
+        {
+            var settings = SnapshotSettings.Default with { /* shared configuration */ };
+            Snapshot.Validate(spec, "yaml", settings, filePath, lineNumber);
+        }
+    }
+    #endregion
+
+    [Fact]
+    public void ReadmeExample_HelperMethod()
+    {
+        #region Snapshot_HelperMethodUsage
+        var spec = """
+            openapi: 3.1.0
+            info:
+              title: Sample API
+            """;
+
+        ApiSnapshot.ValidateOpenApiSpec(spec);
+        // => __snapshots__/SnapshotTests_ReadmeExample_HelperMethod.verified.yaml
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_AutoDetectContinuousEnvironment()
+    {
+        #region Snapshot_AutoDetectContinuousEnvironment
+        var settings = SnapshotSettings.Default with
+        {
+            AutoDetectContinuousEnvironment = false,
+        };
+        #endregion
+
+        Assert.False(settings.AutoDetectContinuousEnvironment);
+    }
+
+    [Fact]
+    public void ReadmeExample_Customization()
+    {
+        #region Snapshot_Customization
+        var value = new { Name = "John", Age = 42 };
+        var settings = SnapshotSettings.Default with
+        {
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
+        };
+
+        Snapshot.Validate(value, SnapshotType.Default, settings);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Scrubbing()
+    {
+        #region Snapshot_Scrubbing
+        var value = new { Id = Guid.NewGuid(), Name = "John", GeneratedAt = DateTime.UtcNow };
+
+        var settings = SnapshotSettings.Default with { };
+        settings.ConfigureHumanReadableSerializer(options => options.ScrubGuid());
+        settings.ScrubLinesContaining("GeneratedAt:");
+
+        Snapshot.Validate(value, SnapshotType.Default, settings);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_RelativeDateTime()
+    {
+        #region Snapshot_RelativeDateTime
+        var now = DateTime.UtcNow;
+        var settings = SnapshotSettings.Default with { };
+        settings.ConfigureHumanReadableSerializer(options => options.UseRelativeDateTime(now));
+
+        Snapshot.Validate(new { CreatedAt = now.AddMinutes(-5), ExpiresAt = now.AddHours(1) }, settings);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_InvisibleCharacters()
+    {
+        #region Snapshot_InvisibleCharacters
+        var settings = SnapshotSettings.Default with { };
+        settings.ConfigureHumanReadableSerializer(options => options.ShowInvisibleCharactersInValues = true);
+
+        Snapshot.Validate("line 1 \r\nline\t2", settings);
+        #endregion
+    }
+
+    [Fact]
     public void Validate_CreateSnapshotFile()
     {
         using var directory = TemporaryDirectory.Create();

@@ -4,10 +4,10 @@ An implementation of [JSONPath (RFC 9535)](https://datatracker.ietf.org/doc/html
 
 ## Usage
 
-```csharp
-using System.Text.Json.Nodes;
-using Meziantou.Framework;
+The types are in the `Meziantou.Framework.Json` namespace; `JsonNode` is in `System.Text.Json.Nodes`.
 
+<!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 var document = JsonNode.Parse("""{"store":{"book":[{"title":"A"},{"title":"B"}]}}""");
 
 // Parse a JSONPath expression (can be reused)
@@ -15,13 +15,15 @@ var path = JsonPath.Parse("$.store.book[*].title");
 
 // Evaluate against a document
 var result = path.Evaluate(document);
+var matches = new List<string>();
 foreach (var match in result)
 {
-    Console.WriteLine($"{match.Path}: {match.Value}");
-    // $['store']['book'][0]['title']: A
-    // $['store']['book'][1]['title']: B
+    matches.Add($"{match.Path}: {match.Value}");
 }
+
+Assert.Equal(["$['store']['book'][0]['title']: A", "$['store']['book'][1]['title']: B"], matches);
 ```
+<!-- endref -->
 
 ## Evaluation modes
 
@@ -30,29 +32,127 @@ foreach (var match in result)
 - `JsonPathEvaluationMode.Lax` (default): path evaluation errors produce no match.
 - `JsonPathEvaluationMode.Strict`: path evaluation errors throw `JsonPathEvaluationException`.
 
+<!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_EvaluationModes;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var doc = JsonNode.Parse("""{"a": 1}""");
 var path = JsonPath.Parse("$.name");
 
-var laxValue = path.EvaluateValue(doc, JsonPathEvaluationMode.Lax); // null
+var laxValue = path.EvaluateValue(doc, JsonPathEvaluationMode.Lax);
+Assert.Null(laxValue);
 
-var strictValue = path.EvaluateValue(doc, JsonPathEvaluationMode.Strict); // throws JsonPathEvaluationException
+Assert.Throws<JsonPathEvaluationException>(() => path.EvaluateValue(doc, JsonPathEvaluationMode.Strict));
 ```
+<!-- endref -->
 
 ## Custom object models
 
 Use `JsonPathNavigator<TValue>` to evaluate JSONPath expressions against a custom tree without converting it to `JsonNode`.
 
+<!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_CustomNavigator;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var myRoot = MyNode.Object(new()
+{
+    ["items"] = MyNode.Array(
+        MyNode.Object(new() { ["name"] = MyNode.String("a"), ["enabled"] = MyNode.Boolean(true) }),
+        MyNode.Object(new() { ["name"] = MyNode.String("b"), ["enabled"] = MyNode.Boolean(false) })),
+});
+
 var path = JsonPath.Parse("$.items[?@.enabled == true]");
 var result = path.Evaluate(root: myRoot, navigator: MyNodeNavigator.Instance);
 
+var matches = new List<string>();
 foreach (var match in result)
 {
     MyNode? node = match.Value;
-    Console.WriteLine(match.Path);
+    matches.Add($"{match.Path}: {node?.Properties["name"]?.Value}");
+}
+
+Assert.Equal(["$['items'][0]: a"], matches);
+```
+<!-- endref -->
+
+Here, `MyNode` is a small object model and `MyNodeNavigator` exposes it to JSONPath:
+
+<!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_CustomNavigatorTypes;format=md-fenced-code-block;dedent=true -->
+```csharp
+internal sealed class MyNode
+{
+    private MyNode(JsonPathNodeKind kind) => Kind = kind;
+
+    public JsonPathNodeKind Kind { get; }
+    public object? Value { get; private init; } // string, double or bool
+    public Dictionary<string, MyNode?> Properties { get; private init; } = [];
+    public List<MyNode?> Items { get; private init; } = [];
+
+    public static MyNode Object(Dictionary<string, MyNode?> properties) => new(JsonPathNodeKind.Object) { Properties = properties };
+    public static MyNode Array(params MyNode?[] items) => new(JsonPathNodeKind.Array) { Items = [.. items] };
+    public static MyNode String(string value) => new(JsonPathNodeKind.String) { Value = value };
+    public static MyNode Number(double value) => new(JsonPathNodeKind.Number) { Value = value };
+    public static MyNode Boolean(bool value) => new(JsonPathNodeKind.Boolean) { Value = value };
+}
+
+internal sealed class MyNodeNavigator : JsonPathNavigator<MyNode>
+{
+    public static MyNodeNavigator Instance { get; } = new();
+
+    // A null node is JSON null
+    public override JsonPathNodeKind GetKind(MyNode? value) => value?.Kind ?? JsonPathNodeKind.Null;
+
+    public override IEnumerable<JsonPathProperty<MyNode>> GetProperties(MyNode? value)
+        => value?.Properties.Select(property => new JsonPathProperty<MyNode>(property.Key, property.Value)) ?? [];
+
+    public override bool TryGetPropertyValue(MyNode? value, string name, out MyNode? result)
+    {
+        result = null;
+        return value is not null && value.Properties.TryGetValue(name, out result);
+    }
+
+    public override int GetArrayLength(MyNode? value) => value?.Items.Count ?? 0;
+
+    public override bool TryGetElement(MyNode? value, int index, out MyNode? result)
+    {
+        if (value is not null && index >= 0 && index < value.Items.Count)
+        {
+            result = value.Items[index];
+            return true;
+        }
+
+        result = null;
+        return false;
+    }
+
+    public override bool TryGetString(MyNode? value, out string? result)
+    {
+        result = value?.Value as string;
+        return result is not null;
+    }
+
+    public override bool TryGetNumber(MyNode? value, out double result)
+    {
+        if (value?.Value is double number)
+        {
+            result = number;
+            return true;
+        }
+
+        result = 0;
+        return false;
+    }
+
+    public override bool TryGetBoolean(MyNode? value, out bool result)
+    {
+        if (value?.Value is bool boolean)
+        {
+            result = boolean;
+            return true;
+        }
+
+        result = false;
+        return false;
+    }
 }
 ```
+<!-- endref -->
 
 Navigator implementations expose JSON-like semantics for the custom node type. A `null` node represents JSON `null`; a `false` return value from `TryGetPropertyValue` or `TryGetElement` means the member or element is missing. Arrays are zero-based, and object property order follows the navigator's `GetProperties` enumeration order.
 

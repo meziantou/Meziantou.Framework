@@ -8,6 +8,58 @@ namespace Meziantou.Framework.Tests;
 public sealed class UrlPatternTests
 {
     [Fact]
+    public void ReadmeExample_Usage()
+    {
+        #region UrlPattern_Usage
+        // Create a pattern from a URL pattern init
+        var pattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Protocol = "https",
+            Hostname = "example.com",
+            Pathname = "/books/:id",
+        });
+
+        // Test if a URL matches the pattern
+        Assert.True(pattern.IsMatch("https://example.com/books/123"));
+
+        // Create a pattern from a pattern string
+        var pattern2 = UrlPattern.Create("https://example.com/api/:version/*");
+        Assert.True(pattern2.IsMatch("https://example.com/api/v1/users"));
+
+        // Use wildcards
+        var wildcardPattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Pathname = "/files/*",
+        });
+        Assert.True(wildcardPattern.IsMatch("https://example.com/files/a/b/c"));
+
+        // Use modifiers (optional, one-or-more, zero-or-more)
+        var optionalPattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Pathname = "/items{/:category}?",
+        });
+        Assert.True(optionalPattern.IsMatch("https://example.com/items"));
+        Assert.True(optionalPattern.IsMatch("https://example.com/items/books"));
+
+        // Case-insensitive matching
+        var caseInsensitivePattern = UrlPattern.Create(
+            new UrlPatternInit { Pathname = "/Books/:id" },
+            new UrlPatternOptions { IgnoreCase = true });
+        Assert.True(caseInsensitivePattern.IsMatch("https://example.com/BOOKS/123"));
+
+        // Execute pattern and capture groups
+        var pattern3 = UrlPattern.Create(new UrlPatternInit
+        {
+            Pathname = "/users/:userId/posts/:postId",
+        });
+        UrlPatternResult? result = pattern3.Match("https://example.com/users/42/posts/99");
+        Assert.NotNull(result);
+        Assert.Equal("42", result.Pathname.Groups["userId"]);
+        Assert.Equal("99", result.Pathname.Groups["postId"]);
+        #endregion
+    }
+
+    [Fact]
     public void UrlPattern_Example()
     {
         #region UrlPattern_Example

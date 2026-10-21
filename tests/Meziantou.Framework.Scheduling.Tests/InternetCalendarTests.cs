@@ -2,6 +2,88 @@ namespace Meziantou.Framework.Scheduling.Tests;
 
 public sealed class InternetCalendarTests
 {
+    [Fact]
+    public void ReadmeExample_Parse()
+    {
+        #region InternetCalendar_Parse
+        var content = """
+            BEGIN:VCALENDAR
+            VERSION:2.0
+            PRODID:-//Example//Example//EN
+            BEGIN:VEVENT
+            UID:1@example.com
+            DTSTAMP:20240101T000000Z
+            DTSTART:20240102T080000Z
+            SUMMARY:Team meeting
+            END:VEVENT
+            END:VCALENDAR
+            """;
+
+        var calendar = InternetCalendar.Parse(content);
+        var @event = Assert.Single(calendar.Events);
+        Assert.Equal("Team meeting", @event.Summary);
+        Assert.Equal(new DateTime(2024, 01, 02, 08, 00, 00, DateTimeKind.Utc), @event.Start);
+
+        var invalidContent = "BEGIN:VCALENDAR";
+        Assert.False(InternetCalendar.TryParse(invalidContent, out _, out var error));
+        Assert.Equal("The VCALENDAR component is not terminated by END:VCALENDAR", error);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_AttendeeParameters()
+    {
+        #region InternetCalendar_AttendeeParameters
+        var @event = new Event();
+        @event.Attendees.Add(new Attendee
+        {
+            Address = new InternetCalendarUserAddress("jane@example.com"),
+            Parameters = { new("CN", "\"Doe, Jane\""), new("PARTSTAT", "ACCEPTED"), new("RSVP", "TRUE") },
+        });
+        #endregion
+
+        var calendar = new InternetCalendar();
+        calendar.Events.Add(@event);
+        Assert.Contains("ATTENDEE;CN=\"Doe, Jane\";PARTSTAT=ACCEPTED;RSVP=TRUE:mailto:jane@example.com\r\n", calendar.ToIcs());
+    }
+
+    [Fact]
+    public void ReadmeExample_RawProperties()
+    {
+        #region InternetCalendar_RawProperties
+        var @event = new Event();
+        @event.RawProperties.Add(new InternetCalendarProperty("EXDATE", [new("TZID", "Europe/Paris")], "20240104T100000"));
+        @event.RawProperties.Add(new InternetCalendarProperty("GEO", "37.386013;-122.082932"));
+        #endregion
+
+        var calendar = new InternetCalendar();
+        calendar.Events.Add(@event);
+        var ics = calendar.ToIcs();
+        Assert.Contains("EXDATE;TZID=Europe/Paris:20240104T100000\r\n", ics);
+        Assert.Contains("GEO:37.386013;-122.082932\r\n", ics);
+    }
+
+#if !INVARIANT_GLOBALIZATION_MODE_ENABLED
+    // An IANA identifier does not resolve on Windows when globalization is invariant.
+    [Fact]
+    public void ReadmeExample_WriteWithTimeZone()
+    {
+        #region InternetCalendar_WriteWithTimeZone
+        var calendar = new InternetCalendar();
+        calendar.Events.Add(new Event
+        {
+            Start = new DateTime(2024, 01, 02, 08, 00, 00),
+            End = new DateTime(2024, 01, 02, 09, 00, 00),
+            TimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/New_York"),
+        });
+
+        var ics = calendar.ToIcs();
+        Assert.Contains("BEGIN:VTIMEZONE\r\nTZID:America/New_York\r\n", ics);
+        Assert.Contains("DTSTART;TZID=America/New_York:20240102T080000\r\n", ics);
+        #endregion
+    }
+#endif
+
     // A value that contains an escaped "\nBEGIN:VEVENT" still holds those characters, so the
     // injection has to be judged on the content lines rather than on a substring search.
     private static int CountContentLines(string ics, string line)

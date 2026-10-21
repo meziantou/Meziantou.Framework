@@ -4,6 +4,31 @@ namespace Meziantou.Framework.Yaml.Tests.Serialization;
 public sealed class YamlIgnoreAttributeTests
 {
     [Fact]
+    public void ReadmeExample_Ignore()
+    {
+        var yaml = YamlSerializer.Serialize(new Product { Secret = "secret" });
+        var product = YamlSerializer.Deserialize<Product>("Name: Table\nSecret: secret\n");
+
+        Assert.Equal("Description: null\n", yaml);
+        Assert.Equal("Table", product!.Name);
+        Assert.Null(product.Secret);
+    }
+
+    #region YamlIgnoreAttribute_Usage
+    [YamlIgnore(Condition = YamlIgnoreCondition.WhenWritingNull)]
+    internal sealed class Product
+    {
+        public string? Name { get; set; }                 // omitted when null
+
+        [YamlIgnore(Condition = YamlIgnoreCondition.Never)]
+        public string? Description { get; set; }          // always written
+
+        [YamlIgnore]
+        public string? Secret { get; set; }               // never serialized nor deserialized
+    }
+    #endregion
+
+    [Fact]
     public void TypeLevel_AppliesConditionToAllMembers()
     {
         var yaml = YamlSerializer.Serialize(new TypeIgnoreModel { FirstValue = null, SecondValue = "b" });

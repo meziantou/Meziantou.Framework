@@ -6,7 +6,10 @@ Run JavaScript and call Node.js modules (local files or npm packages) from .NET.
 
 ## Usage
 
-````c#
+The types are in the `Meziantou.Framework.NodeJs` namespace (`JsonElement` is in `System.Text.Json`, and `JsonObject` in `System.Text.Json.Nodes`).
+
+<!-- ref:../../samples/Meziantou.Framework.NodeJs.Samples/ReadmeExamples.cs;region=NodeJs_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 await using var node = await NodeJsHost.StartAsync(new NodeJsHostOptions
 {
     // Module specifiers (relative paths and npm packages) are resolved from this directory
@@ -28,7 +31,8 @@ JsonElement result = await node.InvokeAsync("./scripts/math.mjs", "add", [1, 2])
 
 // Call the default export
 JsonElement greeting = await node.InvokeAsync("./greet.mjs", exportName: null, ["World"]);
-````
+```
+<!-- endref -->
 
 If the export is a function, it is called with the arguments and its result is awaited when it is a promise. Otherwise, the value of the export is returned.
 
@@ -46,13 +50,17 @@ A module is loaded once and kept for the lifetime of the process (or of the work
 
 ### Typed results
 
-````c#
+`MyJsonContext` is a `JsonSerializerContext` declared with `[JsonSerializable(typeof(Person))]`.
+
+<!-- ref:../../samples/Meziantou.Framework.NodeJs.Samples/ReadmeExamples.cs;region=NodeJs_TypedResults;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Trimming and Native AOT compatible
 Person? person = await node.InvokeAsync("./people.mjs", "get", [42], MyJsonContext.Default.Person);
 
 // Reflection-based serialization of arguments and results
-Person? person = await node.InvokeAsync<Person>("./people.mjs", "get", [42]);
-````
+Person? samePerson = await node.InvokeAsync<Person>("./people.mjs", "get", [42]);
+```
+<!-- endref -->
 
 Without `JsonSerializerOptions`, the reflection-based overloads use the web defaults (`JsonSerializerDefaults.Web`), as JavaScript code uses camelCase names: properties are written in camelCase, and read case-insensitively. Numbers can also be read from strings, and `NaN` and infinities can be read as numbers. Options that you provide are used as is.
 
@@ -62,10 +70,12 @@ A result that cannot be deserialized to the requested type throws the exception 
 
 `InvokeVoidAsync` and `EvaluateVoidAsync` wait for the call to complete but do not serialize its result, so the result does not need to be serializable.
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.NodeJs.Samples/ReadmeExamples.cs;region=NodeJs_IgnoreResult;format=md-fenced-code-block;dedent=true -->
+```csharp
 await node.InvokeVoidAsync("./cache.mjs", "warmUp");
 await node.EvaluateVoidAsync("globalThis.server = require('node:http').createServer();");
-````
+```
+<!-- endref -->
 
 ### JavaScript values
 
@@ -82,9 +92,11 @@ Arguments are serialized as JSON. Use `JSValue` for values that JSON cannot repr
 | `JSValue.Date(DateTimeOffset)`, `JSValue.Date(DateTime)` | `Date`, truncated to the millisecond. A local or unspecified `DateTime` is a local time. |
 | `JSValue.Uint8Array(ReadOnlyMemory<byte>)` | `Uint8Array` |
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.NodeJs.Samples/ReadmeExamples.cs;region=NodeJs_JavaScriptValues;format=md-fenced-code-block;dedent=true -->
+```csharp
 await node.InvokeAsync("./module.mjs", "run", [JSValue.Undefined, JSValue.BigInt(long.MaxValue), new JsonObject { ["date"] = JSValue.Date(DateTimeOffset.UtcNow) }]);
-````
+```
+<!-- endref -->
 
 ### Results
 
@@ -115,7 +127,8 @@ Before Node.js 21, a result that contains a `BigInt` cannot be serialized, so th
 
 A value that cannot be serialized, or that must be reused across calls (a class instance, a `Map`, a database client, a function...), can be kept in the Node.js process. `InvokeReferenceAsync` and `EvaluateReferenceAsync` return a `JSReference` instead of the JSON representation of the result.
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.NodeJs.Samples/ReadmeExamples.cs;region=NodeJs_References;format=md-fenced-code-block;dedent=true -->
+```csharp
 await using var client = await node.InvokeReferenceAsync("./database.mjs", "connect", ["connection-string"]);
 
 // Call a method of the referenced value, with the value as "this"
@@ -133,7 +146,8 @@ await using var parser = await node.CreateInstanceAsync("./parser.mjs", "Parser"
 
 // Get the JSON representation of the referenced value
 JsonElement value = await client.GetValueAsync();
-````
+```
+<!-- endref -->
 
 The value is kept until the reference is disposed or the process exits. A reference can only be used with the process that created it: once the process exits, calls that use it fail with a `NodeJsException` whose `ExitCode` is set. With [worker threads](#worker-threads), the value is kept by the worker thread that created it, and is lost when this worker thread exits.
 
@@ -187,7 +201,8 @@ A canceled call keeps running, and synchronous code (e.g. an infinite loop) bloc
 
 Set `MaxConcurrentCalls` so calls wait in the pool and run on the first process that becomes available. Otherwise, all calls are sent immediately, and a call can wait for a long call sent to the same process while other processes are idle. `1` is a good value for CPU-bound code. Calls made on the pool by a `RunAsync` callback do not wait in the pool, as the callback already counts as a call.
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.NodeJs.Samples/ReadmeExamples.cs;region=NodeJs_Pool;format=md-fenced-code-block;dedent=true -->
+```csharp
 await using var pool = await NodeJsHostPool.StartAsync(Environment.ProcessorCount, new NodeJsHostOptions { WorkingDirectory = "path/to/js/project", MaxConcurrentCalls = 1 });
 var results = await Task.WhenAll(documents.Select(document => pool.InvokeAsync("./render.mjs", "render", [document])));
 
@@ -197,7 +212,8 @@ await pool.RunAsync(async host =>
     await host.EvaluateAsync("globalThis.cache = new Map();");
     await host.InvokeAsync("./render.mjs", "warmUp");
 });
-````
+```
+<!-- endref -->
 
 Processes do not share state: values stored on `globalThis` are only visible to calls running on the same process.
 
@@ -207,10 +223,12 @@ A reference returned by the pool is bound to the process that created it. Calls 
 
 Set `WorkerThreads` to run calls on several [worker threads](https://nodejs.org/api/worker_threads.html) of a single Node.js process. Each worker thread has its own connection with the host, so calls do not go through the main thread. Each call is sent to the worker thread with the fewest calls in progress, including canceled calls whose JavaScript code has not completed. Set `MaxConcurrentCalls` to the number of worker threads for CPU-bound code, so calls wait in the host and run on the first worker thread that becomes available.
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.NodeJs.Samples/ReadmeExamples.cs;region=NodeJs_WorkerThreads;format=md-fenced-code-block;dedent=true -->
+```csharp
 await using var node = await NodeJsHost.StartAsync(new NodeJsHostOptions { WorkerThreads = Environment.ProcessorCount, MaxConcurrentCalls = Environment.ProcessorCount });
 var results = await Task.WhenAll(documents.Select(document => node.InvokeAsync("./render.mjs", "render", [document])));
-````
+```
+<!-- endref -->
 
 Compared to `NodeJsHostPool`, worker threads use less memory and start faster, and a worker thread blocked by a canceled call is terminated and restarted without restarting the process (see `UnresponsiveTimeout`). However, a crash of the process (e.g. a native crash, or running out of memory) fails the calls of all the worker threads. Both can be combined: each process of a pool can run worker threads.
 

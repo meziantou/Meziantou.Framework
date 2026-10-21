@@ -8,7 +8,8 @@ It uses ASP.NET Core with the TestServer to handle the requests, so you can easi
 You can use the `MapGet`, `MapPost`, and so on, methods to define the response for a given request. You can also use the `ForwardUnknownRequestsToUpstream` method to forward the request to upstream server.
 The url provided to the Map methods can be relative or absolute. It can also contains a query string.
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.HttpClientMock.Tests/MockTests.cs;region=HttpClientMock_Configure;format=md-fenced-code-block;dedent=true -->
+```csharp
 await using var mock = new HttpClientMock();
 mock.MapGet("/", () => Results.Ok("test"));
 mock.MapGet("/todos/{id}", (int id) => Results.Ok("test"));
@@ -26,14 +27,17 @@ mock.MapGet("/upstream", () => Results.Extensions.ForwardToUpstream());
 
 // Forward any request that doesn't match a configure route to the upstream server
 mock.ForwardUnknownRequestsToUpstream();
-````
+```
+<!-- endref -->
 
 The `RequestCounter` class allows you to count the number of requests per endpoint. You can use it to test if a specific endpoint has been called.
 A request is counted before its handler runs, so `Get()` includes the request being handled, and a request whose handler throws is still counted.
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.HttpClientMock.Tests/MockTests.cs;region=HttpClientMock_RequestCounter;format=md-fenced-code-block;dedent=true -->
+```csharp
 mock.MapGet("/counter", (RequestCounter counter) => counter.Get());
-````
+```
+<!-- endref -->
 
 ## Use the mock
 
@@ -41,19 +45,24 @@ There are multiple ways to use the mock depending on your needs:
 
 - Get an `HttpClient` instance from the mock
 
-    ```c#
+    <!-- ref:../../tests/Meziantou.Framework.HttpClientMock.Tests/MockTests.cs;region=HttpClientMock_CreateHttpClient;format=md-fenced-code-block;dedent=true -->
+    ```csharp
     using var httpClient = mock.CreateHttpClient();
     ```
+    <!-- endref -->
 
 - Get an `HttpMessageHandler` instance from the mock
 
-    ```c#
+    <!-- ref:../../tests/Meziantou.Framework.HttpClientMock.Tests/MockTests.cs;region=HttpClientMock_CreateHttpMessageHandler;format=md-fenced-code-block;dedent=true -->
+    ```csharp
     using var httpMessageHandler = mock.CreateHttpMessageHandler();
     ```
+    <!-- endref -->
 
 - Register the mock in the service collection (Dependency Injection)
 
-    ````c#
+    <!-- ref:../../tests/Meziantou.Framework.HttpClientMock.Tests/MockTests.cs;region=HttpClientMock_DependencyInjection;format=md-fenced-code-block;dedent=true -->
+    ```csharp
     var services = new ServiceCollection();
     services.AddHttpClient();
     services.AddHttpClient<SampleClient>();
@@ -66,50 +75,61 @@ There are multiple ways to use the mock depending on your needs:
     // Alternative way to register the mock
     services.AddHttpClient<SampleClient>()
         .ConfigurePrimaryHttpMessageHandler(() => mock.CreateHttpMessageHandler());
-    ````
+    ```
+    <!-- endref -->
 
     By default, an `HttpClient` for which no mock is registered sends real HTTP requests. Use `ThrowOnUnknownHttpClient`
     to fail instead, so a client you forgot to mock cannot silently reach the network.
 
-    ````c#
+    <!-- ref:../../tests/Meziantou.Framework.HttpClientMock.Tests/MockTests.cs;region=HttpClientMock_ThrowOnUnknownHttpClient;format=md-fenced-code-block;dedent=true -->
+    ```csharp
     services.AddHttpClientMock(builder => builder
         .AddHttpClientMock(mock)
         .ThrowOnUnknownHttpClient());
-    ````
+    ```
+    <!-- endref -->
 
 # Use resiliency policies when forwarding requests
 
 When forwarding requests to an upstream server, you can use resiliency policies to handle transient failures. You can use the `Microsoft.Extensions.Http.Resilience` package.
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.HttpClientMock.Tests/MockTests.cs;region=HttpClientMock_ResiliencePolicies;format=md-fenced-code-block;dedent=true -->
+```csharp
 await using var mock = new HttpClientMock(configureLogging: null, configureServices: services =>
 {
     services.ConfigureHttpClientDefaults(services => services.AddStandardResilienceHandler());
 });
-````
+```
+<!-- endref -->
 
 # Forward logs to xUnit ITestOutputHelper
 
 You can forward logs to the xUnit `ITestOutputHelper`. This can be useful to debug issues with the mock.
 
 1. Add the `Meziantou.Extensions.Logging.Xunit.v3` package to your project
-1. ````c#
+1. Create an `XUnitLoggerProvider` from the `ITestOutputHelper` of the test class, and pass it to the mock:
+
+   <!-- ref:../../tests/Meziantou.Framework.HttpClientMock.Tests/MockTests.cs;region=HttpClientMock_XUnitLoggerProvider;format=md-fenced-code-block;dedent=true -->
+   ```csharp
    using var loggerProvider = new XUnitLoggerProvider(testOutputHelper);
    await using var mock = new HttpClientMock(loggerProvider);
-   ````
+   ```
+   <!-- endref -->
 
 If you need more controls about logging, you can use the `configureLogging` parameter of the constructor. Note that a bare
 `null` is ambiguous between the constructor overloads, so use a named argument to select one
 (`new HttpClientMock(configureLogging: null, configureServices: ...)`).
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.HttpClientMock.Tests/MockTests.cs;region=HttpClientMock_ConfigureLogging;format=md-fenced-code-block;dedent=true -->
+```csharp
 using var loggerProvider = new XUnitLoggerProvider(testOutputHelper);
 await using var mock = new HttpClientMock(logs =>
 {
     logs.AddProvider(loggerProvider);
     logs.SetMinimumLevel(LogLevel.Trace);
 });
-````
+```
+<!-- endref -->
 
 # Configuration
 
@@ -117,9 +137,16 @@ The mock does not read the configuration of the host application: `appsettings.j
 environment variables and the command line are ignored, so a mock behaves the same on any machine. Use the
 `configureServices` parameter to add the configuration sources you need.
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.HttpClientMock.Tests/MockTests.cs;region=HttpClientMock_Configuration;format=md-fenced-code-block;dedent=true -->
+```csharp
 await using var mock = new HttpClientMock(configureLogging: null, configureServices: services =>
 {
-    services.AddSingleton<IConfiguration>(new ConfigurationBuilder().AddInMemoryCollection(...).Build());
+    var configuration = new ConfigurationBuilder()
+        .AddInMemoryCollection(new Dictionary<string, string?> { ["Greeting"] = "Hello" })
+        .Build();
+    services.AddSingleton<IConfiguration>(configuration);
 });
-````
+
+mock.MapGet("/greeting", (IConfiguration configuration) => configuration["Greeting"]);
+```
+<!-- endref -->

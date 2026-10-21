@@ -6,32 +6,32 @@ The package uses class names compatible with `highlight.js` by default, so you c
 
 ## Usage
 
-```csharp
-using Meziantou.Framework.SyntaxHighlighting;
+`SyntaxHighlighter` and `HighlightOptions` are in the `Meziantou.Framework.SyntaxHighlighting` namespace.
 
+<!-- ref:../../tests/Meziantou.Framework.SyntaxHighlighting.Tests/HighlighterTests.cs;region=SyntaxHighlighter_Highlight;format=md-fenced-code-block;dedent=true -->
+```csharp
 var html = SyntaxHighlighter.Highlight(
     "public class MyClass { }",
     "csharp");
 
-Console.WriteLine(html);
-// <span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">MyClass</span> { }
+Assert.Equal("""<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">MyClass</span> { }""", html);
 ```
+<!-- endref -->
 
 ## Custom CSS prefix
 
 If you do not want to use the default `hljs-` prefix, you can customize it:
 
+<!-- ref:../../tests/Meziantou.Framework.SyntaxHighlighting.Tests/HighlighterTests.cs;region=SyntaxHighlighter_ClassPrefix;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.SyntaxHighlighting;
-
 var html = SyntaxHighlighter.Highlight(
     "public class MyClass { }",
     "csharp",
     new HighlightOptions { ClassPrefix = "syntax-" });
 
-Console.WriteLine(html);
-// <span class="syntax-keyword">public</span> <span class="syntax-keyword">class</span> <span class="syntax-title">MyClass</span> { }
+Assert.Equal("""<span class="syntax-keyword">public</span> <span class="syntax-keyword">class</span> <span class="syntax-title">MyClass</span> { }""", html);
 ```
+<!-- endref -->
 
 The prefix may only contain ASCII letters, digits, `-` and `_`.
 
@@ -41,9 +41,13 @@ Grammars flag some constructs as illegal (for example a stray character where th
 By default, such a lexeme is emitted as plain text and the rest of the code is still highlighted, like highlight.js
 does in a web page. Set `IgnoreIllegals` to `false` to get the whole result as plain text instead:
 
+<!-- ref:../../tests/Meziantou.Framework.SyntaxHighlighting.Tests/HighlighterTests.cs;region=SyntaxHighlighter_IgnoreIllegals;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var code = """{"a": 1};""";
 var html = SyntaxHighlighter.Highlight(code, "json", new HighlightOptions { IgnoreIllegals = false });
+Assert.Equal("{&quot;a&quot;: 1};", html);
 ```
+<!-- endref -->
 
 Embedded languages (CSS in HTML, C# in Razor, …) always ignore illegal lexemes.
 
@@ -56,9 +60,13 @@ Grammars are regular expressions, and a hostile input can make some of them slow
 users, bound each match with `MatchTimeout`; if a match takes longer, the code is returned as plain (encoded) text
 rather than blocking the caller:
 
+<!-- ref:../../tests/Meziantou.Framework.SyntaxHighlighting.Tests/HighlighterTests.cs;region=SyntaxHighlighter_MatchTimeout;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var code = "public class MyClass { }";
+var language = "csharp";
 var html = SyntaxHighlighter.Highlight(code, language, new HighlightOptions { MatchTimeout = TimeSpan.FromSeconds(1) });
 ```
+<!-- endref -->
 
 A timeout makes matching about twice as slow, which is why it is not enabled by default. Choose a value that leaves
 room for large documents on a busy machine, and keep it constant: each grammar is compiled again for every timeout, and
@@ -92,14 +100,20 @@ With the default options, the generated markup is designed to work well with hig
 
 `Highlight` throws `NotSupportedException` when the language is not recognized. When the
 identifier comes from untrusted input — a Markdown fence, for example — use `TryHighlight` or
-`IsSupported` instead:
+`IsSupported` instead (`WebUtility` is in the `System.Net` namespace):
 
+<!-- ref:../../tests/Meziantou.Framework.SyntaxHighlighting.Tests/HighlighterTests.cs;region=SyntaxHighlighter_TryHighlight;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var code = "<b>Hello</b>";
+var language = "not-a-language";
 if (!SyntaxHighlighter.TryHighlight(code, language, out var html))
 {
     html = WebUtility.HtmlEncode(code); // render it as plain text
 }
+
+Assert.Equal("&lt;b&gt;Hello&lt;/b&gt;", html);
 ```
+<!-- endref -->
 
 `SyntaxHighlighter.GetSupportedLanguages()` returns every identifier and alias listed below.
 

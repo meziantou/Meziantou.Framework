@@ -5,6 +5,25 @@ using Meziantou.Framework.Yaml.Serialization;
 namespace Meziantou.Framework.Yaml.Tests.Serialization;
 public sealed class YamlObjectConverterContractTests
 {
+    [Fact]
+    public void ReadmeExample_PropertyOrder()
+    {
+        var yaml = YamlSerializer.Serialize(new Product { Id = 1, Name = "Table" });
+
+        Assert.Equal("Id: 1\nName: Table\n", yaml);
+    }
+
+    #region YamlPropertyOrderAttribute_Usage
+    internal sealed class Product
+    {
+        [YamlPropertyOrder(1)]
+        public int Id { get; set; }
+
+        [YamlPropertyOrder(2)]
+        public string? Name { get; set; }
+    }
+    #endregion
+
     private sealed class FieldIncludedModel
     {
 #pragma warning disable IDE0032 // Use auto property

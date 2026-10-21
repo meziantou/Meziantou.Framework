@@ -4,6 +4,80 @@ namespace Meziantou.Framework.Language.Css.Tests;
 
 public sealed class CssSyntaxTreeTests
 {
+    [Fact]
+    public void ReadmeExample_Overview()
+    {
+        #region CssSyntaxTree_Overview
+        var tree = CssSyntaxTree.ParseText("""
+            .card {
+              color: red; /* the brand color */
+              &:hover { color: blue; }
+              @media (width >= 600px) { padding: 2rem; }
+            }
+            """);
+
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Equal(tree.GetText().Text, tree.GetRoot().ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Selectors()
+    {
+        #region CssSyntaxTree_Selectors
+        var rule = (CssQualifiedRuleSyntax)CssSyntaxTree.ParseText("nav > a.active:hover, [href^='https' i] {}").GetRoot().Statements[0];
+
+        var parts = new List<string>();
+        foreach (var selector in rule.Selectors!.Selectors.OfType<CssComplexSelectorSyntax>())
+        {
+            foreach (var part in selector.Parts)
+            {
+                parts.Add($"{part.CombinatorKind}: {part.Compound}");
+            }
+        }
+
+        Assert.Equal(["None: nav", "Child: a.active:hover", "None: [href^='https' i]"], parts);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Editing()
+    {
+        #region CssSyntaxTree_Editing
+        var root = CssSyntaxTree.ParseText("a { color: red; /* keep */ }").GetRoot();
+        var value = (CssTokenValueSyntax)root.DescendantNodes().OfType<CssDeclarationSyntax>().Single().Values[0];
+
+        var updated = root.ReplaceNode(value, value.WithToken(SyntaxFactory.Identifier("blue").WithTriviaFrom(value.Token)));
+        Assert.Equal("a { color: blue; /* keep */ }", updated.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Diagnostics()
+    {
+        #region CssSyntaxTree_Diagnostics
+        var messages = new List<string>();
+        foreach (var diagnostic in CssSyntaxTree.ParseText("a { color: }").GetDiagnostics())
+        {
+            var line = diagnostic.Location.GetLineSpan().Start;
+            messages.Add($"{diagnostic.Id} ({line.Line},{line.Character}): {diagnostic.Message}");
+        }
+
+        Assert.Equal(["CSS0011 (0,4): The declaration 'color' has no value."], messages);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Rewriter()
+    {
+        #region CssSyntaxTree_RewriterUsage
+        var root = CssSyntaxTree.ParseText(".old, .other .old { color: red; }").GetRoot();
+
+        var updated = new RenameClass().Visit(root);
+        Assert.Equal(".new, .other .new { color: red; }", updated?.ToFullString());
+        #endregion
+    }
+
     private const string ModernStyleSheet = """
         @charset "utf-8";
         @import url("theme.css") layer(theme) supports(display: grid) screen and (min-width: 600px);

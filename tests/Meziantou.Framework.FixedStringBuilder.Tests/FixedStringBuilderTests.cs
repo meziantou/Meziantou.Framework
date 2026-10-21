@@ -3,8 +3,53 @@ using Meziantou.Framework.FixedStringBuilder;
 
 namespace Meziantou.Framework.Tests;
 
-public sealed class FixedStringBuilderTests
+public sealed partial class FixedStringBuilderTests
 {
+    [Fact]
+    public void ReadmeExample_Interpolation()
+    {
+#pragma warning disable MA0011 // The readme calls ToString() without a format provider, as most callers do
+        #region FixedStringBuilder_Interpolation
+        FixedStringBuilder16 sb = $"Hello {"World"}";
+        sb.AppendLiteral("!");
+
+        string str = sb.ToString();
+        Assert.Equal("Hello World!", str);
+        #endregion
+#pragma warning restore MA0011
+    }
+
+    [Fact]
+    public void ReadmeExample_ClearZeroBuffer()
+    {
+        #region FixedStringBuilder_ClearZeroBuffer
+        FixedStringBuilder16 sb = $"secret";
+        sb.Clear(zeroBuffer: true);
+        Assert.Equal(0, sb.Length);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_CustomType()
+    {
+        FixedStringBuilder128 value = $"{new string('a', 100)}";
+        Assert.Equal(100, value.Length);
+        Assert.Throws<ArgumentException>(() => value.AppendLiteral(new string('b', 29)));
+
+        FixedStringBuilder10 small = "0123456789";
+        Assert.Equal("0123456789", small.ToString(null, null));
+    }
+
+    #region FixedStringBuilder_CustomType
+    [FixedStringBuilderAttribute(128)]
+    public partial struct FixedStringBuilder128;
+    #endregion
+
+    #region FixedStringBuilderGenerator_Usage
+    [FixedStringBuilderAttribute(10)]
+    public partial struct FixedStringBuilder10;
+    #endregion
+
     [Theory]
     [InlineData("get_Length")]
     [InlineData("Equals")]

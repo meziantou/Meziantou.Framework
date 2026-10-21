@@ -3,6 +3,80 @@ namespace Meziantou.Framework.Csv.Tests;
 public class CsvWriterTests
 {
     [Fact]
+    public async Task ReadmeExample_WriteRows()
+    {
+        #region CsvWriter_WriteRows
+        using var writer = new StringWriter();
+        var csvWriter = new CsvWriter(writer)
+        {
+            EndOfLine = "\n", // Environment.NewLine by default
+        };
+
+        await csvWriter.WriteRowAsync("Name", "Age", "City");
+        await csvWriter.WriteRowAsync("Alice", "30", "New York");
+        await csvWriter.WriteRowAsync("Bob", "25", "London, UK");
+
+        Assert.Equal("Name,Age,City\nAlice,30,New York\nBob,25,\"London, UK\"", writer.ToString());
+        #endregion
+    }
+
+    [Fact]
+    public async Task ReadmeExample_CustomSeparator()
+    {
+        #region CsvWriter_CustomSeparator
+        using var writer = new StringWriter();
+        var csvWriter = new CsvWriter(writer)
+        {
+            Separator = ';',
+            EndOfLine = "\n",
+        };
+
+        await csvWriter.WriteRowAsync("Column1", "Column2");
+        await csvWriter.WriteRowAsync("Value1", "Value2");
+
+        Assert.Equal("Column1;Column2\nValue1;Value2", writer.ToString());
+        #endregion
+    }
+
+    [Fact]
+    public async Task ReadmeExample_WriteValuesIncrementally()
+    {
+        #region CsvWriter_WriteValuesIncrementally
+        using var writer = new StringWriter();
+        var csvWriter = new CsvWriter(writer)
+        {
+            EndOfLine = "\n",
+        };
+
+        await csvWriter.BeginRowAsync();
+        await csvWriter.WriteValueAsync("First");
+        await csvWriter.WriteValueAsync("Second");
+        await csvWriter.WriteValueAsync("Third");
+
+        await csvWriter.BeginRowAsync();
+        await csvWriter.WriteValuesAsync("Fourth", "Fifth", "Sixth");
+
+        Assert.Equal("First,Second,Third\nFourth,Fifth,Sixth", writer.ToString());
+        #endregion
+    }
+
+    [Fact]
+    public async Task ReadmeExample_DisableQuotes()
+    {
+        #region CsvWriter_DisableQuotes
+        using var writer = new StringWriter();
+        var csvWriter = new CsvWriter(writer)
+        {
+            Quote = null, // Disable quoting (values won't be escaped)
+        };
+
+        await csvWriter.WriteRowAsync("A\"", "B");
+
+        Assert.Equal("A\",B", writer.ToString());
+        #endregion
+    }
+
+    [Fact]
     public async Task CsvWriter_DocumentationExample()
     {
         #region CsvWriter_WriteRowAsync

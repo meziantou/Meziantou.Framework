@@ -27,9 +27,10 @@ Dialects within a family share a parser; `ShellDialect.Features` records what ea
 
 ## Parsing
 
-```csharp
-using Meziantou.Framework.Language.Shell;
+The types are in the `Meziantou.Framework.Language.Shell` namespace, and the shared ones (`SyntaxAnnotation`, `TextChange`, …) in `Meziantou.Framework.Language`.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxTreeTests.cs;region=ShellSyntaxTree_Parsing;format=md-fenced-code-block;dedent=true -->
+```csharp
 const string Script = """
     # deploy the app
     set -euo pipefail
@@ -44,14 +45,15 @@ const string Script = """
 var tree = ShellSyntaxTree.ParseText(Script, ShellDialect.Bash);
 
 // Nothing is lost: the tree reproduces the input byte for byte.
-Console.WriteLine(tree.GetRoot().ToFullString() == Script); // True
+Assert.Equal(Script, tree.GetRoot().ToFullString());
+Assert.Empty(tree.GetDiagnostics());
 
 // Invalid input produces diagnostics instead of exceptions.
-foreach (var diagnostic in tree.GetDiagnostics())
-{
-    Console.WriteLine($"{diagnostic.Id} at {diagnostic.Location}: {diagnostic.Message}");
-}
+var invalid = ShellSyntaxTree.ParseText("echo 'unterminated", ShellDialect.Bash);
+var diagnostic = Assert.Single(invalid.GetDiagnostics());
+Assert.Equal("SHELL0003 at (0,5)-(0,6): Unterminated single-quoted string.", $"{diagnostic.Id} at {diagnostic.Location}: {diagnostic.Message}");
 ```
+<!-- endref -->
 
 ### Diagnostics
 
@@ -77,28 +79,31 @@ dialect; the message says what was found.
 
 To read a single command rather than a whole script:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxTreeTests.cs;region=ShellSyntaxTree_ParseCommand;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var command = (ShellCommandSyntax)ShellSyntaxTree.ParseCommand("git commit -m 'wip'", ShellDialect.Bash);
 
-Console.WriteLine(command.NameValue);                       // git
-Console.WriteLine(command.Arguments[2].Value);              // wip
+Assert.Equal("git", command.NameValue);
+Assert.Equal("wip", command.Arguments[2].Value);
 ```
+<!-- endref -->
 
 `ParseCommand` is the entry point for a single command; there is no separate expression entry point, because what a
 shell expression *is* differs per dialect. Expressions are reached through the nodes that contain them:
 `PosixArithmeticExpansionSyntax.Expression` for `$(( ))`, `PosixDelimitedExpressionStatementSyntax.Expression` for
 `(( ))` and `[[ ]]`, and `PowerShellExpressionStatementSyntax.Expression` for a PowerShell expression statement.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxTreeTests.cs;region=ShellSyntaxTree_Expressions;format=md-fenced-code-block;dedent=true -->
 ```csharp
-var command = (ShellCommandSyntax)ShellSyntaxTree.ParseCommand("ls /root", ShellDialect.Bash);
 var arithmetic = ShellSyntaxTree.ParseText("echo $((1 + 2 * 3))", ShellDialect.Bash)
     .GetRoot().DescendantNodes().OfType<PosixArithmeticExpansionSyntax>().Single();
 
 // 1 + (2 * 3): precedence is in the tree, not left to the caller.
 var binary = (ShellBinaryExpressionSyntax)arithmetic.Expression;
-Console.WriteLine(binary.OperatorText);                     // +
-Console.WriteLine(binary.Right is ShellBinaryExpressionSyntax); // True
+Assert.Equal("+", binary.OperatorText);
+Assert.IsType<ShellBinaryExpressionSyntax>(binary.Right);
 ```
+<!-- endref -->
 
 ## Inspecting the tree
 
@@ -110,12 +115,19 @@ and `SeparatorCount` counts separators.
 
 Comments are trivia, so they never interrupt the node structure but still round-trip:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxTreeTests.cs;region=ShellSyntaxTree_Comments;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var tree = ShellSyntaxTree.ParseText("# build\nmake # all targets\n", ShellDialect.Bash);
+
+var comments = new List<string>();
 foreach (var comment in tree.GetRoot().DescendantComments())
 {
-    Console.WriteLine($"{comment.Span.Start}: {comment}");
+    comments.Add($"{comment.Span.Start}: {comment}");
 }
+
+Assert.Equal(["0: # build", "13: # all targets"], comments);
 ```
+<!-- endref -->
 
 ## Editing without reparsing
 
@@ -125,6 +137,7 @@ rest of the script is untouched — and the result is the same type you started 
 Nothing is carried over onto the replacement, including the trivia in front of the node being replaced. Ask for it
 with `WithTriviaFrom` when you want it:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxTreeTests.cs;region=ShellSyntaxTree_ReplaceNode;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var tree = ShellSyntaxTree.ParseText("echo   old    # keep this", ShellDialect.Bash);
 var command = (ShellCommandSyntax)tree.GetRoot().Statements.Statements[0];
@@ -132,62 +145,82 @@ var argument = command.Arguments[0];
 
 var updated = tree.GetRoot().ReplaceNode(argument, SyntaxFactory.Word("new", ShellDialect.Bash).WithTriviaFrom(argument));
 
-Console.WriteLine(updated.ToFullString()); // echo   new    # keep this
+Assert.Equal("echo   new    # keep this", updated.ToFullString());
 ```
+<!-- endref -->
 
 `ReplaceToken`, `ReplaceTrivia`, `RemoveNode` and the `WithX` method on every slot of every node work the same way.
 For text-based edits, use `WithChanges`, which reparses:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxTreeTests.cs;region=ShellSyntaxTree_WithChanges;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var tree = ShellSyntaxTree.ParseText("echo old", ShellDialect.Bash);
 var updated = tree.WithChanges(new TextChange(new TextSpan(5, 3), "new"));
 
-Console.WriteLine(updated.GetRoot().ToFullString()); // echo new
+Assert.Equal("echo new", updated.GetRoot().ToFullString());
 ```
+<!-- endref -->
 
 `GetChanges` reports what actually differs between two trees, with the common prefix and suffix trimmed, and
 `IsEquivalentTo` compares them structurally, so two scripts that differ only in whitespace or comments are equivalent:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxTreeTests.cs;region=ShellSyntaxTree_IsEquivalentTo;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var a = ShellSyntaxTree.ParseText("echo   a  # note", ShellDialect.Bash);
 var b = ShellSyntaxTree.ParseText("echo a", ShellDialect.Bash);
 
-Console.WriteLine(a.IsEquivalentTo(b)); // True
+Assert.True(a.IsEquivalentTo(b));
 ```
+<!-- endref -->
 
 ## Finding a node again after an edit
 
 An annotation is a marker you attach to a node and find again in the tree an edit produced, wherever it ended up:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxTreeTests.cs;region=ShellSyntaxTree_Annotations;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var root = ShellSyntaxTree.ParseText("make build\necho done\n", ShellDialect.Bash).GetRoot();
+var command = (ShellCommandSyntax)root.Statements.Statements[0];
+
 var marker = new SyntaxAnnotation();
 var marked = root.ReplaceNode(command, command.WithAdditionalAnnotations(marker));
-var edited = marked.ReplaceNode(/* something else entirely */);
+
+// Something else entirely: replace the argument of the second command
+var argument = ((ShellCommandSyntax)marked.Statements.Statements[1]).Arguments[0];
+var edited = marked.ReplaceNode(argument, SyntaxFactory.Word("finished", ShellDialect.Bash).WithTriviaFrom(argument));
 
 var found = edited.GetAnnotatedNodes(marker).Single();
+Assert.Equal("make build", found.ToString());
+Assert.Equal("make build\necho finished\n", edited.ToFullString());
 ```
+<!-- endref -->
 
 ## Building trees
 
 `SyntaxFactory` creates nodes programmatically and quotes for the target dialect only when needed:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxTreeTests.cs;region=ShellSyntaxTree_SyntaxFactory;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var command = SyntaxFactory.Command(ShellDialect.Bash, "echo", "two words", "plain");
 
-Console.WriteLine(command.ToFullString()); // echo 'two words' plain
+Assert.Equal("echo 'two words' plain", command.ToFullString());
 ```
+<!-- endref -->
 
 ## Visitors and rewriters
 
 `ShellSyntaxVisitor`, `ShellSyntaxVisitor<TResult>`, and `ShellSyntaxRewriter` cover every node type across all dialects, so one walker handles any tree. A rewriter descends into every node whatever its type, returns the original instance when nothing changed, and keeps the exact text of everything it did not touch:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxTreeTests.cs;region=ShellSyntaxTree_Rewriter;format=md-fenced-code-block;dedent=true -->
 ```csharp
-sealed class RenameCommand(string oldName, string newName) : ShellSyntaxRewriter
+private sealed class RenameCommand(string oldName, string newName) : ShellSyntaxRewriter
 {
     public override SyntaxNode? VisitCommand(ShellCommandSyntax node)
     {
         if (node.NameValue != oldName || node.Name is null)
+        {
             return base.VisitCommand(node);
+        }
 
         // WithText keeps the word's own leading trivia, so the comment and indentation in front of the
         // command are not lost. A node built from scratch carries no trivia and would drop them.
@@ -198,6 +231,17 @@ sealed class RenameCommand(string oldName, string newName) : ShellSyntaxRewriter
     }
 }
 ```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxTreeTests.cs;region=ShellSyntaxTree_RewriterUsage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var tree = ShellSyntaxTree.ParseText("if true; then\n  # build it\n  make all\nfi\n", ShellDialect.Bash);
+
+var updated = new RenameCommand("make", "ninja").Visit(tree.GetRoot());
+
+Assert.Equal("if true; then\n  # build it\n  ninja all\nfi\n", updated?.ToFullString());
+```
+<!-- endref -->
 
 `rewriter.Visit(tree.GetRoot())` returns a new `ShellScriptSyntax`; visiting a node further down scopes the rewrite to
 that subtree. `ShellSyntaxWalker` visits a node and everything below it without producing anything, and
@@ -205,10 +249,15 @@ that subtree. `ShellSyntaxWalker` visits a node and everything below it without 
 
 ## Parse options
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxTreeTests.cs;region=ShellSyntaxTree_ParseOptions;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var script = "echo $(echo $(echo nested))";
 var options = new ShellParseOptions(ShellDialect.Bash) { MaxRecursionDepth = 64 };
 var tree = ShellSyntaxTree.ParseText(script, options);
+
+Assert.Empty(tree.GetDiagnostics());
 ```
+<!-- endref -->
 
 `MaxRecursionDepth` bounds how deeply the parser descends. Input that nests beyond it reports `SHELL0100` and keeps the remainder as skipped text, so deeply nested input cannot overflow the stack.
 

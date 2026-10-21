@@ -13,5 +13,9 @@
 
   <ItemGroup>
     <None Include="TestAssets/*.*" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The readme examples (SampleTests, ReadmeExample_*) read their files from the current directory -->
+    <None Include="TestAssets/sample.png;TestAssets/sample.jpg" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="TestAssets/serializer-two-frame.gif" Link="animation.gif" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="TestAssets/serializer-multi-entry.ico" Link="favicon.ico" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

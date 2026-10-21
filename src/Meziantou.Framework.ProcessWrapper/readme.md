@@ -4,40 +4,40 @@ Fluent, immutable API for configuring and running processes.
 
 ## Basic usage
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.ProcessWrapper.Tests/ProcessWrapperTests.cs;region=ProcessWrapper_BasicUsage;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Execute and wait for exit (throws if exit code is non-zero by default)
 var result = await ProcessWrapper.Create("dotnet")
     .WithArguments("--version")
     .ExecuteAsync();
 
-if (result.ExitCode.IsSuccess)
-{
-    Console.WriteLine("Process succeeded");
-}
-````
+Assert.True(result.ExitCode.IsSuccess);
+```
+<!-- endref -->
 
 ## Buffered execution
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.ProcessWrapper.Tests/ProcessWrapperTests.cs;region=ProcessWrapper_BufferedExecution;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Capture all output
 var result = await ProcessWrapper.Create("dotnet")
     .WithArguments("--info")
     .ExecuteBufferedAsync();
 
 int exitCode = result.ExitCode;
+Assert.Equal(0, exitCode);
 
 // Access output after awaiting
-foreach (var line in result.Output.StandardOutput)
-{
-    Console.WriteLine(line.Text);
-}
-````
+Assert.Contains(result.Output.StandardOutput, line => line.Text.StartsWith(".NET SDK", StringComparison.Ordinal));
+```
+<!-- endref -->
 
 ## Intercepting process execution (for tests)
 
 Use `ProcessWrapper.DefaultProcessFactory` to intercept process creation globally.
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.ProcessWrapper.Tests/ProcessWrapperTests.cs;region=ProcessWrapper_DefaultProcessFactory;format=md-fenced-code-block;dedent=true -->
+```csharp
 var previousFactory = ProcessWrapper.DefaultProcessFactory;
 ProcessWrapper.DefaultProcessFactory = new FakeProcessFactory(startInfo =>
 {
@@ -52,26 +52,35 @@ try
     var result = await ProcessWrapper.Create("my-command")
         .WithArguments("--version")
         .ExecuteBufferedAsync();
+
+    Assert.Equal("simulated output", result.Output.StandardOutput.Single().Text);
 }
 finally
 {
     ProcessWrapper.DefaultProcessFactory = previousFactory;
 }
-````
+```
+<!-- endref -->
 
 You can also override the factory per command:
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.ProcessWrapper.Tests/ProcessWrapperTests.cs;region=ProcessWrapper_ProcessFactory;format=md-fenced-code-block;dedent=true -->
+```csharp
 var result = await ProcessWrapper.Create("my-command")
     .WithProcessFactory(new FakeProcessFactory(_ => FakeProcess.Create(0, "instance output", "")))
     .ExecuteBufferedAsync();
-````
+
+Assert.Equal("instance output", result.Output.StandardOutput.Single().Text);
+```
+<!-- endref -->
 
 ## Interceptors
 
-Use interceptors to update commands globally or per instance before execution.
+Use interceptors to update commands globally or per instance before execution (`ProcessStartInfo` is in the
+`System.Diagnostics` namespace).
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.ProcessWrapper.Tests/ProcessWrapperTests.cs;region=ProcessWrapper_InterceptorTypes;format=md-fenced-code-block;dedent=true -->
+```csharp
 public sealed class SampleProcessWrapperInterceptor : IProcessWrapperInterceptor
 {
     public void Intercept(ProcessWrapper processWrapper)
@@ -89,7 +98,11 @@ public sealed class SampleProcessStartInfoInterceptor : IProcessStartInfoInterce
         Console.WriteLine($"Executing: {processStartInfo.FileName}");
     }
 }
+```
+<!-- endref -->
 
+<!-- ref:../../tests/Meziantou.Framework.ProcessWrapper.Tests/ProcessWrapperTests.cs;region=ProcessWrapper_Interceptors;format=md-fenced-code-block;dedent=true -->
+```csharp
 using var globalWrapperRegistration = ProcessWrapper.AddInterceptor(new SampleProcessWrapperInterceptor());
 using var globalStartInfoRegistration = ProcessWrapper.AddInterceptor(new SampleProcessStartInfoInterceptor());
 
@@ -98,32 +111,38 @@ var result = await ProcessWrapper.Create("dotnet")
     .WithInterceptor(new SampleProcessWrapperInterceptor())
     .WithInterceptor(new SampleProcessStartInfoInterceptor())
     .ExecuteBufferedAsync();
-````
+```
+<!-- endref -->
 
 ## Working directory
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.ProcessWrapper.Samples/ReadmeExamples.cs;region=ProcessWrapper_WorkingDirectory;format=md-fenced-code-block;dedent=true -->
+```csharp
 await ProcessWrapper.Create("git")
     .WithArguments("status")
     .WithWorkingDirectory("/path/to/repo")
     .ExecuteAsync();
-````
+```
+<!-- endref -->
 
 The executable is resolved from `PATH`. The working directory is not searched, so a file sitting in it cannot
 shadow the command `PATH` resolves for the same name. Windows searches the current directory before `PATH` by
 default, but that is disabled here too, for the same reason. Opt in with `WithSearchWorkingDirectory()` when the
 working directory is trusted and you want the executable looked up there first:
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.ProcessWrapper.Samples/ReadmeExamples.cs;region=ProcessWrapper_SearchWorkingDirectory;format=md-fenced-code-block;dedent=true -->
+```csharp
 await ProcessWrapper.Create("run.sh")
     .WithWorkingDirectory("/path/to/scripts")
     .WithSearchWorkingDirectory()
     .ExecuteAsync();
-````
+```
+<!-- endref -->
 
 ## Environment variables
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.ProcessWrapper.Samples/ReadmeExamples.cs;region=ProcessWrapper_EnvironmentVariables;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Using callback
 await ProcessWrapper.Create("my-app")
     .WithEnvironmentVariables(env => env
@@ -139,11 +158,13 @@ await ProcessWrapper.Create("my-app")
         ["UNWANTED_VAR"] = null,
     })
     .ExecuteAsync();
-````
+```
+<!-- endref -->
 
 ## Resource limits
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.ProcessWrapper.Samples/ReadmeExamples.cs;region=ProcessWrapper_ResourceLimits;format=md-fenced-code-block;dedent=true -->
+```csharp
 var result = await ProcessWrapper.Create("my-app")
     .WithLimits(new ProcessLimits
     {
@@ -152,14 +173,19 @@ var result = await ProcessWrapper.Create("my-app")
         ProcessCountLimit = 20,
     })
     .ExecuteAsync();
-````
+```
+<!-- endref -->
 
 Common limits are mapped to Windows Job Objects or Linux cgroups v2 depending on the current OS.
 If a configured limit cannot be applied on the current platform, execution throws.
 
 ### Advanced platform-specific configuration
 
-````c#
+`WithWindowsJobObject` configures a `JobObject` (`JobObjectLimits` is in the `Meziantou.Framework.Win32` namespace),
+whose methods are only supported on Windows:
+
+<!-- ref:../../samples/Meziantou.Framework.ProcessWrapper.Samples/ReadmeExamples.cs;region=ProcessWrapper_WindowsJobObject;format=md-fenced-code-block;dedent=true -->
+```csharp
 var result = await ProcessWrapper.Create("my-app")
     .WithLimits(limits => limits.MemoryLimitInBytes = 512L * 1024 * 1024)
     .WithWindowsJobObject(job =>
@@ -170,22 +196,30 @@ var result = await ProcessWrapper.Create("my-app")
         });
     })
     .ExecuteAsync();
-````
+```
+<!-- endref -->
 
-````c#
+`WithLinuxControlGroup` configures a `CGroup2` (in the `Meziantou.Framework.Unix.ControlGroups` namespace), whose
+methods are only supported on Linux:
+
+<!-- ref:../../samples/Meziantou.Framework.ProcessWrapper.Samples/ReadmeExamples.cs;region=ProcessWrapper_LinuxControlGroup;format=md-fenced-code-block;dedent=true -->
+```csharp
 var result = await ProcessWrapper.Create("my-app")
     .WithLinuxControlGroup(cgroup =>
     {
         cgroup.SetMemoryHigh(256L * 1024 * 1024);
     })
     .ExecuteAsync();
-````
+```
+<!-- endref -->
 
 ## Output handling
 
-Use `With*` methods to replace handlers, and `Add*` methods to append additional handlers.
+Use `With*` methods to replace handlers, and `Add*` methods to append additional handlers (`StringBuilder` and
+`Encoding` are in the `System.Text` namespace).
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.ProcessWrapper.Samples/ReadmeExamples.cs;region=ProcessWrapper_OutputHandling;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Stream output line by line
 await ProcessWrapper.Create("dotnet")
     .WithArguments("build")
@@ -252,11 +286,13 @@ await ProcessWrapper.Create("my-command")
     .WithOutputStream(OutputTarget.ToTextDelegate(line => Console.WriteLine(line)))
     .WithErrorStream(OutputTarget.ToTextDelegate(line => Console.Error.WriteLine(line)))
     .ExecuteAsync();
-````
+```
+<!-- endref -->
 
 ## Input stream
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.ProcessWrapper.Samples/ReadmeExamples.cs;region=ProcessWrapper_InputStream;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Pipe a string to stdin
 var result = await ProcessWrapper.Create("cat")
     .WithInputStream(InputSource.FromText("Hello, World!"))
@@ -292,11 +328,13 @@ await ProcessWrapper.Create("process-a")
     .ExecuteAsync();
 
 await downstream;
-````
+```
+<!-- endref -->
 
 ### Pipe operator (`|`)
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.ProcessWrapper.Samples/ReadmeExamples.cs;region=ProcessWrapper_PipeOperator;format=md-fenced-code-block;dedent=true -->
+```csharp
 var result = await (ProcessWrapper.Create("process-a")
     .WithArguments("--generate-data")
     | ProcessWrapper.Create("process-b")
@@ -308,14 +346,16 @@ foreach (var line in result.Output.StandardOutput)
 {
     Console.WriteLine(line.Text);
 }
-````
+```
+<!-- endref -->
 
 The `|` operator wires the standard output of each command to the standard input of the next command.
 Validation runs on every command in the pipeline, and execution fails if any command fails.
 
 ## Validation
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.ProcessWrapper.Samples/ReadmeExamples.cs;region=ProcessWrapper_Validation;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Default: throws ProcessExecutionException if exit code is non-zero
 try
 {
@@ -346,23 +386,28 @@ await ProcessWrapper.Create("my-command")
     .WithArguments("--token", "secret")
     .WithLogVerbosity(ProcessLogVerbosity.IncludeProcessPath | ProcessLogVerbosity.IncludeArguments)
     .ExecuteAsync();
-````
+```
+<!-- endref -->
 
 ## Cancellation
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.ProcessWrapper.Samples/ReadmeExamples.cs;region=ProcessWrapper_Cancellation;format=md-fenced-code-block;dedent=true -->
+```csharp
 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
 await ProcessWrapper.Create("long-running-process")
     .ExecuteAsync(cts.Token);  // throws OperationCanceledException if cancelled
-````
+```
+<!-- endref -->
 
 ## Killing a process
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.ProcessWrapper.Samples/ReadmeExamples.cs;region=ProcessWrapper_Kill;format=md-fenced-code-block;dedent=true -->
+```csharp
 var process = ProcessWrapper.Create("long-running-process")
     .WithValidation(ProcessValidationMode.None)
     .ExecuteAsync();
 
 process.Kill(); // or process.Kill(entireProcessTree: false)
 await process;
-````
+```
+<!-- endref -->

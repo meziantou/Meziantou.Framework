@@ -1440,6 +1440,43 @@ internal sealed partial class TestYamlSerializerContextWithBuildTimeMemberExclus
 public class YamlSerializerSourceGenerationTests
 {
     [Fact]
+    public void ReadmeExample_TypeInfo()
+    {
+        #region YamlSerializerContext_TypeInfo
+        var product = new Product { Id = 1, DisplayName = "Sample product", Tags = ["new"] };
+
+        var yaml = YamlSerializer.Serialize(product, AppYamlContext.Default.Product);
+        Assert.Equal("id: 1\nname: Sample product\ntags:\n  - new\n", yaml);
+
+        var copy = YamlSerializer.Deserialize(yaml, AppYamlContext.Default.Product);
+        Assert.Equal("Sample product", copy!.DisplayName);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Context()
+    {
+        #region YamlSerializerContext_Context
+        var product = new Product { Id = 1, DisplayName = "Sample product" };
+
+        var yaml = YamlSerializer.Serialize(product, AppYamlContext.Default);
+        var copy = YamlSerializer.Deserialize<Product>(yaml, AppYamlContext.Default);
+        Assert.Equal("Sample product", copy!.DisplayName);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_CreateOptions()
+    {
+        #region YamlSerializerContext_CreateOptions
+        var options = AppYamlContext.Default.CreateOptions(o => o with { SourceName = "config.yaml" });
+        #endregion
+
+        Assert.Equal("config.yaml", options.SourceName);
+        Assert.Same(AppYamlContext.Default, options.TypeInfoResolver);
+    }
+
+    [Fact]
     public void GeneratedContext_YamlNodeRoot_UsesModelConverter()
     {
         var node = new YamlValue("abc");
@@ -4042,3 +4079,27 @@ extra_list:
         Assert.Equal((2, "y"), YamlSerializer.Deserialize<GeneratedValueTuplePayload>("Value:\n  Item1: 2\n  Item2: y\n", CreateOptions(includeFields: true))!.Value);
     }
 }
+
+#pragma warning disable CA1819 // Properties should not return arrays: the readme example uses an array
+#region YamlSerializer_Product
+public sealed class Product
+{
+    public int Id { get; set; }
+
+    [YamlPropertyName("name")]
+    public string DisplayName { get; set; } = "";
+
+    public string[] Tags { get; set; } = [];
+}
+#endregion
+#pragma warning restore CA1819
+
+#region YamlSerializerContext_Declare
+[YamlSerializable(typeof(Product))]
+[YamlSourceGenerationOptions(
+    PropertyNamingPolicy = YamlKnownNamingPolicy.KebabCaseLower,
+    WriteIndented = true)]
+public sealed partial class AppYamlContext : YamlSerializerContext
+{
+}
+#endregion

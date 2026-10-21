@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using Meziantou.Framework.Http.Caching.InMemory;
 
 namespace Meziantou.Framework.Http.Caching.Tests;
@@ -6,6 +7,29 @@ namespace Meziantou.Framework.Http.Caching.Tests;
 /// <summary>Tests for RFC 8246 immutable directive, Expires header, heuristic freshness, and edge cases.</summary>
 public sealed class AdvancedCachingTests
 {
+    [Fact]
+    public async Task ReadmeExample_Immutable()
+    {
+        await using var context = new HttpTestContext();
+        context.AddResponse(HttpStatusCode.OK, "console.log('hello');", ("Cache-Control", "max-age=31536000, immutable"), ("ETag", "\"abc123\""));
+        var httpClient = context.HttpClient;
+
+        #region HttpCachingDelegateHandler_Immutable
+        // Server responds with:
+        // Cache-Control: max-age=31536000, immutable
+        // ETag: "abc123"
+
+        // First request fetches from origin
+        using var response1 = await httpClient.GetAsync("https://cdn.example.com/script.js");
+
+        // Second request with no-cache still uses cached version (because immutable + fresh)
+        using var request2 = new HttpRequestMessage(HttpMethod.Get, "https://cdn.example.com/script.js");
+        request2.Headers.CacheControl = new CacheControlHeaderValue { NoCache = true };
+        using var response2 = await httpClient.SendAsync(request2); // Served from cache, no revalidation
+        Assert.NotNull(response2.Headers.Age);
+        #endregion
+    }
+
     #region RFC 8246: Immutable Responses
 
     [Fact]

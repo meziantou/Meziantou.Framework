@@ -3,6 +3,100 @@ namespace Meziantou.Framework.Csv.Tests;
 public class CsvReaderTests
 {
     [Fact]
+    public async Task ReadmeExample_ReadWithoutHeader()
+    {
+        #region CsvReader_ReadWithoutHeader
+        using var reader = new StringReader("""
+            Alice,30,New York
+            Bob,25,London
+            """);
+        var csvReader = new CsvReader(reader)
+        {
+            HasHeaderRow = false,
+        };
+
+        var lines = new List<string>();
+        while (await csvReader.ReadRowAsync() is { } row)
+        {
+            lines.Add($"{row[0]}, {row[1]}, {row[2]}");
+        }
+
+        Assert.Equal(["Alice, 30, New York", "Bob, 25, London"], lines);
+        #endregion
+    }
+
+    [Fact]
+    public async Task ReadmeExample_ReadWithHeader()
+    {
+        #region CsvReader_ReadWithHeader
+        using var reader = new StringReader("""
+            Name,Age
+            Alice,30
+            """);
+        var csvReader = new CsvReader(reader)
+        {
+            HasHeaderRow = true,
+        };
+
+        var row = await csvReader.ReadRowAsync();
+        Assert.NotNull(row);
+
+        // Access by column name
+        Assert.Equal("Alice", row["Name"]);
+        Assert.Equal("30", row["Age"]);
+
+        // Access by index
+        Assert.Equal("Alice", row[0]);
+
+        // Access by CsvColumn
+        var nameColumn = row.Columns?.FirstOrDefault(c => c.Name == "Name");
+        Assert.NotNull(nameColumn);
+        Assert.Equal("Alice", row[nameColumn]);
+
+        // ReadRowAsync returns null at the end of the data
+        Assert.Null(await csvReader.ReadRowAsync());
+        #endregion
+    }
+
+    [Fact]
+    public async Task ReadmeExample_CustomSeparatorAndQuote()
+    {
+        #region CsvReader_CustomSeparatorAndQuote
+        using var reader = new StringReader("Name\tComment\nAlice\t'Tab\tand ''quote'''");
+        var csvReader = new CsvReader(reader)
+        {
+            Separator = '\t',      // Tab-separated
+            Quote = '\'',          // Single quote instead of double quote
+            HasHeaderRow = true,
+        };
+
+        var row = await csvReader.ReadRowAsync();
+        Assert.NotNull(row);
+        Assert.Equal("Alice", row["Name"]);
+        Assert.Equal("Tab\tand 'quote'", row["Comment"]);
+        #endregion
+    }
+
+    [Fact]
+    public async Task ReadmeExample_QuotedValues()
+    {
+        #region CsvReader_QuotedValues
+        using var reader = new StringReader(""""
+            "Value with, comma","Normal value","Value with ""quotes""","Multi-line
+            value"
+            """");
+        var csvReader = new CsvReader(reader);
+
+        var row = await csvReader.ReadRowAsync();
+        Assert.NotNull(row);
+        Assert.Equal("Value with, comma", row[0]);
+        Assert.Equal("Normal value", row[1]);
+        Assert.Equal("Value with \"quotes\"", row[2]);
+        Assert.Equal("Multi-line\nvalue", row[3], ignoreLineEndingDifferences: true);
+        #endregion
+    }
+
+    [Fact]
     public async Task CsvReader_DocumentationExample()
     {
         #region CsvReader_ReadRowAsync

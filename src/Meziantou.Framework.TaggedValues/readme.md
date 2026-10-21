@@ -2,18 +2,19 @@
 
 Tag primitive values with `[ValueTag]`, and the bundled Roslyn analyzer reports when values with different tags are mixed. The value stays a `Guid`, an `int` or a `string`, so there is nothing to change in serializers, ORMs, or APIs.
 
-````c#
-using Meziantou.Framework.TaggedValues;
+`ValueTagAttribute` is in the `Meziantou.Framework.TaggedValues` namespace. The examples of this page are compiled, and a test checks that the analyzer reports the diagnostics named in their comments.
 
-class Order
+<!-- ref:../../samples/Meziantou.Framework.TaggedValues.Samples/Order.cs;region=TaggedValues_Overview;format=md-fenced-code-block;dedent=true -->
+```csharp
+public sealed class Order
 {
     [ValueTag("OrderId")] public Guid Id { get; set; }
     [ValueTag("ProjectId")] public Guid ProjectId { get; set; }
 }
 
-class OrderService
+public sealed class OrderService
 {
-    public Order Load([ValueTag("OrderId")] Guid orderId) => ...;
+    public Order Load([ValueTag("OrderId")] Guid orderId) => new() { Id = orderId };
 
     public void M(Order order)
     {
@@ -21,7 +22,8 @@ class OrderService
         Load(order.ProjectId);           // MFTV0002: a ProjectId flows to a parameter that expects an OrderId
     }
 }
-````
+```
+<!-- endref -->
 
 Values that are not tagged are never reported, so you can adopt the package one declaration at a time.
 
@@ -50,51 +52,58 @@ Spaces around `=` and `,` are allowed. A tag cannot contain spaces, `=`, or `,`,
 
 A `/* ... */` comment must be part of the declaration: before the type, after the type, or next to the name. A comment before or after the type tags every variable of the declaration, and a comment next to a name, or right after the comma that precedes it, tags only that variable:
 
-````c#
-/* ValueTag=OrderId */ Guid id1 = ...;
-Guid /* ValueTag=OrderId */ id2 = ...;
-var id3 /* ValueTag=OrderId */ = ...;
-using var /* ValueTag=OrderId */ id4 = ...;
+<!-- ref:../../samples/Meziantou.Framework.TaggedValues.Samples/LocalVariables.cs;region=TaggedValues_LocalBlockComments;format=md-fenced-code-block;dedent=true -->
+```csharp
+/* ValueTag=OrderId */ Guid id1 = Guid.NewGuid();
+Guid /* ValueTag=OrderId */ id2 = Guid.NewGuid();
+var id3 /* ValueTag=OrderId */ = Guid.NewGuid();
+using var /* ValueTag=OrderFile */ stream = File.OpenRead(path);
 
-Guid /* ValueTag=OrderId */ a = ..., b = ...;       // a and b are OrderIds
-Guid c = ..., d /* ValueTag=ProjectId */ = ...;     // only d is a ProjectId
-Guid e = ..., /* ValueTag=ProjectId */ f = ...;     // only f is a ProjectId
+Guid /* ValueTag=OrderId */ a = Guid.NewGuid(), b = Guid.NewGuid();   // a and b are OrderIds
+Guid c = Guid.NewGuid(), d /* ValueTag=ProjectId */ = Guid.NewGuid(); // only d is a ProjectId
+Guid e = Guid.NewGuid(), /* ValueTag=ProjectId */ f = Guid.NewGuid(); // only f is a ProjectId
 
 var /* ValueTag Key=OrderId Value=ProjectId */ projectIdByOrderId = new Dictionary<Guid, Guid>();
-````
+```
+<!-- endref -->
 
 A `//` comment must be on a line before the statement, and tags every variable the statement declares. Other comments can sit between the `// ValueTag` comment and the statement, but a comment at the end of the previous line does not count. When a variable also has a `/* ... */` comment, that comment wins. A comment that another comment overrides for every variable it could tag, with other tags, is reported (MFTV0005):
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.TaggedValues.Samples/LocalVariables.cs;region=TaggedValues_LocalLineComments;format=md-fenced-code-block;dedent=true -->
+```csharp
 // ValueTag=OrderId
-Guid id1 = ...;
+Guid id1 = Guid.NewGuid();
 
 // ValueTag=OrderId
 // The order being processed
-Guid a = ..., b /* ValueTag=ProjectId */ = ...; // a is an OrderId, b is a ProjectId
+Guid a = Guid.NewGuid(), b /* ValueTag=ProjectId */ = Guid.NewGuid(); // a is an OrderId, b is a ProjectId
 
 // ValueTag=OrderId
-Guid c /* ValueTag=ProjectId */ = ...; // MFTV0005 on the // comment, which does not tag anything
+Guid c /* ValueTag=ProjectId */ = Guid.NewGuid(); // MFTV0005 on the // comment, which does not tag anything
 
 // ValueTag Key=OrderId Value=ProjectId
 var projectIdByOrderId = new Dictionary<Guid, Guid>();
-````
+```
+<!-- endref -->
 
 It also works for the variables of `foreach`, `for`, `out var`, patterns, and deconstructions. A `//` comment works for `foreach` and `for`, but not for `out var`, patterns, and deconstructions, whose statement is not a declaration:
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.TaggedValues.Samples/LocalVariables.cs;region=TaggedValues_LocalOtherDeclarations;format=md-fenced-code-block;dedent=true -->
+```csharp
 // ValueTag=OrderId
 foreach (var id in ids) { }
 foreach (Guid /* ValueTag=OrderId */ id in ids) { }
 for (int /* ValueTag=OrderIndex */ i = 0; i < count; i++) { }
-if (TryGetId(out var /* ValueTag=OrderId */ id)) { }
-if (value is Guid /* ValueTag=OrderId */ id) { }
+if (TryGetId(out var /* ValueTag=OrderId */ parsedId)) { }
+if (value is Guid /* ValueTag=OrderId */ matchedId) { }
 var (orderId /* ValueTag=OrderId */, projectId) = GetIds();
-````
+```
+<!-- endref -->
 
 A local without a comment takes the tag of its initializer, of the collection of a `foreach`, of the parameter of an `out var`, or of the value matched by a pattern. In a property pattern, a list pattern, a positional pattern, or a deconstruction, it takes the tag of the part it matches: `order is { Id: var id }` is an OrderId, and so is `id` in `foreach (var (id, projectId) in projectIdByOrderId)`, in `var (id, projectId) = (order.Id, order.ProjectId)`, or in `var (id, projectId) = order` when `Order` is a record or has a `Deconstruct` method with tagged `out` parameters. The element of a tuple, such as `pair.Item1`, takes the tag of the element of the tuple literal it was created with:
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.TaggedValues.Samples/LocalVariables.cs;region=TaggedValues_LocalInference;format=md-fenced-code-block;dedent=true -->
+```csharp
 var id = order.Id;    // id is an OrderId
 Load(id);             // ok
 id = order.ProjectId; // MFTV0002
@@ -102,7 +111,8 @@ id = order.ProjectId; // MFTV0002
 var pair = (order.Id, order.ProjectId);
 Load(pair.Item1);     // ok
 Load(pair.Item2);     // MFTV0002
-````
+```
+<!-- endref -->
 
 When the comment disagrees with the initializer, the collection of a `foreach`, the parameter of an `out var`, the value matched by a pattern, or the deconstructed value, the comment wins and the value is reported (MFTV0002). The code fix changes the tag in the comment. When the comment also tags other variables of the declaration, the code fix adds a comment next to the name of the variable instead.
 
@@ -110,11 +120,13 @@ When the comment disagrees with the initializer, the collection of a `foreach`, 
 
 A `/* ValueTag=... */` comment can also be written in a type argument, to tag the elements of a collection or the keys and the values of a dictionary without naming them:
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.TaggedValues.Samples/TypeArguments.cs;region=TaggedValues_TypeArguments;format=md-fenced-code-block;dedent=true -->
+```csharp
 var projectIdByOrderId = new Dictionary</* ValueTag=OrderId */ Guid, /* ValueTag=ProjectId */ Guid>();
 var orderIds = new List</* ValueTag=OrderId */ Guid>();
 Dictionary</* ValueTag=OrderId */ Guid, /* ValueTag=ProjectId */ Guid> map = GetMap();
-````
+```
+<!-- endref -->
 
 - The comment can be placed before or after the type argument: `</* ValueTag=OrderId */ Guid, ...>` and `<Guid /* ValueTag=OrderId */, ...>` are equivalent.
 - The type argument of a collection, a `Nullable<T>`, a `Task<T>`, a `ValueTask<T>`, or a `Lazy<T>` tags its elements or its value. The type arguments of a dictionary or a `KeyValuePair<TKey, TValue>` tag its keys and its values. Type arguments can be nested: `new Dictionary</* ValueTag=OrderId */ Guid, List</* ValueTag=ProjectId */ Guid>>()`.
@@ -129,20 +141,27 @@ Comments that do not start with `ValueTag`, prose that starts with `ValueTag` bu
 
 On a collection, a `Nullable<T>`, a `Task<T>`, a `ValueTask<T>`, a `Lazy<T>`, a span, or a memory, the tag describes the element or the value. It flows through indexers, `foreach`, LINQ, lambda parameters (including `IQueryable` expression trees), `ConfigureAwait`, `WithCancellation`, and any generic method whose signature preserves the element type. A string is not a collection: the tag of a string describes the string, not its characters:
 
-````c#
-[ValueTag("OrderId")] public List<Guid> OrderIds { get; }
+<!-- ref:../../samples/Meziantou.Framework.TaggedValues.Samples/OrderCollections.cs;region=TaggedValues_Collections;format=md-fenced-code-block;dedent=true -->
+```csharp
+[ValueTag("OrderId")] public List<Guid> OrderIds { get; } = [];
 
-OrderIds.Add(order.ProjectId);                            // MFTV0002
-OrderIds.Where(id => id == order.ProjectId);              // MFTV0001
-Load(OrderIds.Where(id => id != Guid.Empty).First());     // ok
-````
+public void M(Order order)
+{
+    OrderIds.Add(order.ProjectId);                        // MFTV0002
+    _ = OrderIds.Where(id => id == order.ProjectId);      // MFTV0001
+    Load(OrderIds.Where(id => id != Guid.Empty).First()); // ok
+}
+```
+<!-- endref -->
 
 Use `Key` and `Value` for dictionaries:
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.TaggedValues.Samples/OrderCollections.cs;region=TaggedValues_Dictionaries;format=md-fenced-code-block;dedent=true -->
+```csharp
 [ValueTag(Key = "OrderId", Value = "ProjectId")]
-public Dictionary<Guid, Guid> ProjectIdByOrderId { get; }
-````
+public Dictionary<Guid, Guid> ProjectIdByOrderId { get; } = [];
+```
+<!-- endref -->
 
 Anonymous type properties take the tag of their initializer, so projections keep their tags. A collection initializer takes the tags of the elements it adds: `new List<Guid> { order.Id }` holds OrderIds, and `new Dictionary<Guid, Guid> { [order.Id] = order.ProjectId }` maps OrderIds to ProjectIds.
 
@@ -157,10 +176,12 @@ Built-in arithmetic on numbers, including the numbers of the framework such as `
 
 A user-defined operator or conversion creates a new value, so it does not keep the tag of its operands: `dueDate - startDate` is a `TimeSpan`, not a due date. Tag the return value of the operator to tag its result, and its parameters to check its operands, including the operands of a comparison operator and the target of a compound assignment such as `+=`:
 
-````c#
+<!-- ref:../../samples/Meziantou.Framework.TaggedValues.Samples/Distance.cs;region=TaggedValues_Operator;format=md-fenced-code-block;dedent=true -->
+```csharp
 [return: ValueTag("Meters")]
-public static Distance operator +([ValueTag("Meters")] Distance left, [ValueTag("Meters")] Distance right) => ...;
-````
+public static Distance operator +([ValueTag("Meters")] Distance left, [ValueTag("Meters")] Distance right) => new(left.Value + right.Value);
+```
+<!-- endref -->
 
 ## Naming conventions (opt-in)
 
@@ -185,17 +206,29 @@ By default, untagged values are never reported. Strict mode also reports a tagge
 taggedvalues.strict = true
 ````
 
-````c#
-[ValueTag("OrderId")] public Guid Id { get; set; } = Guid.NewGuid(); // ok, a new value
+<!-- ref:../../samples/Meziantou.Framework.TaggedValues.Samples/Strict/StrictMode.cs;region=TaggedValues_StrictMode;format=md-fenced-code-block;dedent=true -->
+```csharp
+public sealed class Order
+{
+    [ValueTag("OrderId")] public Guid Id { get; set; } = Guid.NewGuid(); // ok, a new value
+}
 
-void Load(Guid id) { }
-Guid _other;
+public sealed class OrderService
+{
+    private readonly Guid _other = Guid.NewGuid();
 
-_ = order.Id == _other;     // MFTV0009, compared with an untagged value
-order.Id = _other;          // MFTV0009, an untagged value flows to a tagged declaration
-Load(order.Id);             // MFTV0009, a tagged value flows to an untagged declaration
-_ = order.Id == Guid.Empty; // ok
-````
+    public void M(Order order)
+    {
+        _ = order.Id == _other;     // MFTV0009, compared with an untagged value
+        order.Id = _other;          // MFTV0009, an untagged value flows to a tagged declaration
+        Load(order.Id);             // MFTV0009, a tagged value flows to an untagged declaration
+        _ = order.Id == Guid.Empty; // ok
+    }
+
+    private static void Load(Guid id) { }
+}
+```
+<!-- endref -->
 
 - Default values, `null`, constants, `Guid.Empty`, `string.Empty`, and `new Guid()` are always allowed.
 - New values, such as `Guid.NewGuid()`, `new Guid(bytes)`, or `Guid.Parse(text)`, can flow to a tagged declaration. Values read from an untagged field, property, parameter, local, or array element, or returned by an untagged method of your code, cannot. A `?:`, `??`, or switch expression is a new value only when each of its branches is a new value or an allowed value.

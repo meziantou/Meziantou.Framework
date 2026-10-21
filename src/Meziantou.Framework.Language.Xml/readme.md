@@ -10,22 +10,23 @@ annotations. On top of that it speaks XPath, so a node can be found the way XML 
 Parsing never throws and never gives up. Whatever the text says, the tree reproduces it exactly, and anything wrong
 with it is reported through `GetDiagnostics()`.
 
-```csharp
-using Meziantou.Framework.Language;
-using Meziantou.Framework.Language.Xml;
+The types are in the `Meziantou.Framework.Language.Xml` namespace, and the shared ones (`SyntaxAnnotation`, `TextChange`, …) in `Meziantou.Framework.Language`.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs;region=XmlSyntaxTree_Overview;format=md-fenced-code-block;dedent=true -->
+```csharp
 const string Xml = "<root><item version='1.0.0' /></root>";
 
 var tree = XmlSyntaxTree.ParseText(Xml);
 
 // The text comes back exactly as it went in.
-Console.WriteLine(tree.GetRoot().ToFullString() == tree.GetText().Text); // True
+Assert.Equal(tree.GetText().Text, tree.GetRoot().ToFullString());
 
 // Find a node with XPath, and edit it without touching anything else.
 var updated = tree.GetRoot().ReplaceNode("//item/@version", node => ((XmlAttributeSyntax)node).WithValue("2.0.0"));
 
-Console.WriteLine(updated.ToFullString()); // <root><item version='2.0.0' /></root>
+Assert.Equal("<root><item version='2.0.0' /></root>", updated.ToFullString());
 ```
+<!-- endref -->
 
 ## The shape of a tree
 
@@ -50,14 +51,16 @@ has attributes but no content and no end tag; `<item></item>` is an `XmlElementS
 **Everything is a token, including the punctuation.** `<`, `>`, `/>`, `=`, and the quotes around an attribute value
 are each a token of their own, so an edit rebuilds the tree rather than splicing text:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs;region=XmlSyntaxTree_Tokens;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var attribute = (XmlAttributeSyntax)tree.GetRoot().SelectSingleSyntaxNode("//item/@version")!;
 
-attribute.NameToken.Text;       // version
-attribute.StartQuoteToken.Text; // '
-attribute.ValueToken.Text;      // 1.0.0
-attribute.Value;                // 1.0.0
+Assert.Equal("version", attribute.NameToken.Text);
+Assert.Equal("'", attribute.StartQuoteToken.Text);
+Assert.Equal("1.0.0", attribute.ValueToken.Text);
+Assert.Equal("1.0.0", attribute.Value);
 ```
+<!-- endref -->
 
 ## Which whitespace is trivia
 
@@ -65,22 +68,25 @@ attribute.Value;                // 1.0.0
 `<book id = '1'>` carries no meaning, while the newline between two elements is character data an application may
 care about.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs;region=XmlSyntaxTree_Trivia;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var tree = XmlSyntaxTree.ParseText("<root>\n  <book id = '1' />\n</root>");
 var book = (XmlEmptyElementSyntax)tree.GetRoot().SelectSingleSyntaxNode("//book")!;
 
-book.Attributes[0].NameToken.LeadingTrivia.ToFullString();   // " "
-book.Attributes[0].EqualsToken.LeadingTrivia.ToFullString(); // " "
+Assert.Equal(" ", book.Attributes[0].NameToken.LeadingTrivia.ToFullString());
+Assert.Equal(" ", book.Attributes[0].EqualsToken.LeadingTrivia.ToFullString());
 
 var root = (XmlElementSyntax)tree.GetRoot().Nodes[0];
-((XmlTextSyntax)root.Content[0]).Text;                       // "\n  "
+Assert.Equal("\n  ", ((XmlTextSyntax)root.Content[0]).Text);
 ```
+<!-- endref -->
 
 ## Editing without reformatting
 
 An edit rebuilds only the path from the changed node up to the root. Everything else is carried over as-is, so the
 rest of the document is untouched — and the result is the same type you started with, so no cast is needed.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs;region=XmlSyntaxTree_Editing;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var tree = XmlSyntaxTree.ParseText("<root><a>1</a><b>2</b></root>");
 var root = (XmlElementSyntax)tree.GetRoot().Nodes[0];
@@ -88,11 +94,12 @@ var b = root.Content.OfType<XmlElementSyntax>().Single(element => element.Name =
 
 XmlDocumentSyntax updated = tree.GetRoot().ReplaceNode(b, b.WithInnerText("two"));
 
-Console.WriteLine(updated.ToFullString()); // <root><a>1</a><b>two</b></root>
+Assert.Equal("<root><a>1</a><b>two</b></root>", updated.ToFullString());
 
 // <a> was not touched, so it is the very same node.
-Console.WriteLine(root.Content[0].IsIncrementallyIdenticalTo(((XmlElementSyntax)updated.Nodes[0]).Content[0])); // True
+Assert.True(root.Content[0].IsIncrementallyIdenticalTo(((XmlElementSyntax)updated.Nodes[0]).Content[0]));
 ```
+<!-- endref -->
 
 There is a `WithX` method for every slot of every node, `SyntaxFactory` to build nodes from scratch, and
 `RemoveNode` with `SyntaxRemoveOptions` to take one out.
@@ -104,6 +111,7 @@ Nothing is carried over onto a replacement, including the trivia in front of the
 
 With XPath, including namespaces:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs;region=XmlSyntaxTree_XPathWithNamespaces;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var tree = XmlSyntaxTree.ParseText("<root xmlns:pkg='urn:test'><pkg:item pkg:version='1.0.0' /></root>");
 var namespaces = new XmlNamespaceManager(new NameTable());
@@ -111,7 +119,11 @@ namespaces.AddNamespace("pkg", "urn:test");
 
 var item = tree.GetRoot().SelectSingleSyntaxNode("//pkg:item", namespaces);
 var version = tree.GetRoot().SelectSingleSyntaxNode("//pkg:item/@pkg:version", namespaces);
+
+Assert.IsType<XmlEmptyElementSyntax>(item);
+Assert.Equal("1.0.0", ((XmlAttributeSyntax)version!).Value);
 ```
+<!-- endref -->
 
 `SelectNodes` returns `XPathNavigator`s, `SelectSyntaxNodes` returns the syntax nodes behind them, and
 `CreateNavigator()` gives an `XPathNavigator` over the whole document. Or, without XPath:
@@ -121,13 +133,22 @@ var version = tree.GetRoot().SelectSingleSyntaxNode("//pkg:item/@pkg:version", n
 
 An annotation is a marker you attach to a node and find again in the tree an edit produced, wherever it ended up:
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs;region=XmlSyntaxTree_Annotations;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var root = XmlSyntaxTree.ParseText("<root><a>1</a><b>2</b></root>").GetRoot();
+var a = root.DescendantNodes().OfType<XmlElementSyntax>().Single(element => element.Name == "a");
+
 var marker = new SyntaxAnnotation();
 var marked = root.ReplaceNode(a, a.WithAdditionalAnnotations(marker));
-var edited = marked.ReplaceNode(/* something else entirely */);
+
+// Something else entirely: replace <b>, which rebuilds the path from <b> up to the root
+var b = marked.DescendantNodes().OfType<XmlElementSyntax>().Single(element => element.Name == "b");
+var edited = marked.ReplaceNode(b, b.WithInnerText("two"));
 
 var found = edited.GetAnnotatedNodes(marker).Single();
+Assert.Equal("<a>1</a>", found.ToFullString());
 ```
+<!-- endref -->
 
 ## Diagnostics
 
@@ -139,13 +160,18 @@ and of Namespaces in XML 1.0. A document System.Xml can read produces no diagnos
 where the specifications are stricter than it is — an encoding name that is not an `EncName`, and an element name
 with the `xmlns` prefix — and one where they are more permissive: any `1.x` version is accepted.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs;region=XmlSyntaxTree_Diagnostics;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var messages = new List<string>();
 foreach (var diagnostic in XmlSyntaxTree.ParseText("<root>\n  <item>\n</root>").GetDiagnostics())
 {
     var line = diagnostic.Location.GetLineSpan().Start;
-    Console.WriteLine($"{diagnostic.Id} ({line.Line},{line.Character}): {diagnostic.Message}");
+    messages.Add($"{diagnostic.Id} ({line.Line},{line.Character}): {diagnostic.Message}");
 }
+
+Assert.Equal(["XML0001 (1,2): Missing end tag for 'item'."], messages);
 ```
+<!-- endref -->
 
 | Id | Reported for |
 | --- | --- |
@@ -189,6 +215,7 @@ The parser keeps the shape the author most likely meant, so one mistake produces
 `XmlSyntaxWalker` visits a node and everything below it; `XmlSyntaxVisitor` dispatches on kind without recursing;
 `XmlSyntaxRewriter` builds a new tree from an old one.
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs;region=XmlSyntaxVisitor_ElementCounter;format=md-fenced-code-block;dedent=true -->
 ```csharp
 private sealed class ElementCounter : XmlSyntaxWalker
 {
@@ -201,6 +228,17 @@ private sealed class ElementCounter : XmlSyntaxWalker
     }
 }
 ```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs;region=XmlSyntaxTree_WalkerUsage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var counter = new ElementCounter();
+counter.Visit(XmlSyntaxTree.ParseText("<root><a><b></b></a><c /></root>").GetRoot());
+
+// <c /> is an XmlEmptyElementSyntax, so VisitElement does not count it
+Assert.Equal(3, counter.Count);
+```
+<!-- endref -->
 
 ## Formatting
 
@@ -209,12 +247,14 @@ It is the one thing here that does reformat, and it is opt-in. It never changes 
 
 ## Editing by text
 
+<!-- ref:../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs;region=XmlSyntaxTree_EditingByText;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var tree = XmlSyntaxTree.ParseText("<root><a /></root>");
 var updated = tree.WithChanges(new TextChange(new TextSpan(6, 5), "<b />"));
 
-Console.WriteLine(updated.GetRoot().ToFullString()); // <root><b /></root>
+Assert.Equal("<root><b /></root>", updated.GetRoot().ToFullString());
 ```
+<!-- endref -->
 
 ## Coming from version 3
 

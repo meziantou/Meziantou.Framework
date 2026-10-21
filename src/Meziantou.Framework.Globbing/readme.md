@@ -34,21 +34,37 @@ dotnet package add Meziantou.Framework.Globbing
 
 - `IsMatch` tests whether a file matches the glob pattern
 
-    ````csharp
+    <!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs;region=Glob_IsMatchIgnoreCase;format=md-fenced-code-block;dedent=true -->
+    ```csharp
     Glob glob = Glob.Parse("src/**/*.txt", GlobDialect.Standard, GlobOptions.IgnoreCase);
-    glob.IsMatch("src/abc.txt");
-    ````
+    Assert.True(glob.IsMatch("src/abc.txt"));
+    Assert.True(glob.IsMatch("SRC/a/b/abc.TXT"));
+    Assert.False(glob.IsMatch("src/abc.png"));
+    ```
+    <!-- endref -->
 
-- Enumerate files that match a glob pattern
+- Enumerate files that match a glob pattern (the example creates the files in a
+  [`TemporaryDirectory`](https://www.nuget.org/packages/Meziantou.Framework.TemporaryDirectory/)). `EnumerateFiles`
+  returns full paths.
 
-    ````csharp
+    <!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs;region=Glob_EnumerateFiles;format=md-fenced-code-block;dedent=true -->
+    ```csharp
+    using var rootDirectory = TemporaryDirectory.Create();
+    rootDirectory.CreateEmptyFile("src/a/abc.txt");
+    rootDirectory.CreateEmptyFile("src/a/abc.png");
+    rootDirectory.CreateEmptyFile("docs/readme.txt");
+
     // Enumerate files that match the glob in the folder rootDirectory
     Glob glob = Glob.Parse("src/**/*.txt", GlobDialect.Standard);
-    foreach(var file in glob.EnumerateFiles("rootDirectory"))
+    var files = new List<string>();
+    foreach (var file in glob.EnumerateFiles(rootDirectory.FullPath))
     {
-        Console.WriteLine(file);
+        files.Add(file);
     }
-    ````
+
+    Assert.Equal([Path.Combine(rootDirectory.FullPath, "src", "a", "abc.txt")], files);
+    ```
+    <!-- endref -->
 
 ## Addition resources
 

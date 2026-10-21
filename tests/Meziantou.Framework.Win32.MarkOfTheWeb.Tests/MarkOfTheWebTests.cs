@@ -5,6 +5,47 @@ namespace Meziantou.Framework.Win32.Tests;
 public sealed class MarkOfTheWebTests
 {
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ReadmeExample_Usage()
+    {
+        #region MarkOfTheWeb_Usage
+        var path = Path.GetTempFileName();
+
+        // Add the Mark of the Web to a file
+        MarkOfTheWeb.SetFileZone(path, UrlZone.Internet, referrerUrl: "https://example.com/", hostUrl: "https://example.com/file.zip");
+
+        // Get the zone Windows assigns to a file
+        var zone = MarkOfTheWeb.GetFileZone(path);
+        Assert.Equal(UrlZone.Internet, zone);
+
+        // Check whether a file comes from the Internet or Restricted Sites zones
+        Assert.True(MarkOfTheWeb.IsUntrusted(path));
+
+        // Read what the Zone.Identifier stream records
+        var zoneIdentifier = MarkOfTheWeb.GetFileZoneIdentifier(path); // null when the file has no Mark of the Web
+        Assert.NotNull(zoneIdentifier);
+        Assert.Equal(UrlZone.Internet, zoneIdentifier.Zone);
+        Assert.Equal("https://example.com/file.zip", zoneIdentifier.HostUrl);
+        Assert.Equal("https://example.com/", zoneIdentifier.ReferrerUrl);
+
+        // Read the raw content of the Zone.Identifier stream
+        var content = MarkOfTheWeb.GetFileZoneContent(path);
+        Assert.Equal("""
+            [ZoneTransfer]
+            ZoneId=3
+            ReferrerUrl=https://example.com/
+            HostUrl=https://example.com/file.zip
+
+            """, content, ignoreLineEndingDifferences: true);
+
+        // Remove the Mark of the Web from a file
+        MarkOfTheWeb.RemoveFileZone(path);
+        Assert.Null(MarkOfTheWeb.GetFileZoneIdentifier(path));
+        #endregion
+
+        File.Delete(path);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void DocumentationExample()
     {
         #region MarkOfTheWeb_SetGetRemove

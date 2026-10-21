@@ -5,6 +5,21 @@ public sealed class FlacTests
     private static string GetTestFilePath(string fileName) => Path.Combine("TestFiles", fileName);
 
     [Fact]
+    public void ReadmeExample_ReadTags()
+    {
+        #region MediaFile_ReadTags
+        var result = MediaFile.ReadTags("TestFiles/basic.flac");
+        Assert.True(result.IsSuccess, $"{result.Error}: {result.ErrorMessage}");
+
+        var tags = result.Value;
+        Assert.Equal(MediaFormat.Flac, tags.Format);
+        Assert.True(tags.Duration > TimeSpan.Zero);
+        Assert.Equal("Test Title", tags.Title);
+        Assert.Equal("Test Artist", tags.Artist);
+        #endregion
+    }
+
+    [Fact]
     public void ReadTags_BasicFlac()
     {
         var result = MediaFile.ReadTags(GetTestFilePath("basic.flac"));

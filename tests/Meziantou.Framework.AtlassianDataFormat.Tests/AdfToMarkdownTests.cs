@@ -20,6 +20,93 @@ public sealed class AdfToMarkdownTests
             ? $$"""{"type":"text","text":"{{text}}"}"""
             : $$"""{"type":"text","text":"{{text}}","marks":[{{marks}}]}""";
 
+    [Fact]
+    public void ReadmeExample_Convert()
+    {
+        #region AdfToMarkdown_Convert
+        var json = """
+            {
+              "version": 1,
+              "type": "doc",
+              "content": [
+                { "type": "heading", "attrs": { "level": 1 }, "content": [ { "type": "text", "text": "Title" } ] },
+                { "type": "paragraph", "content": [ { "type": "text", "text": "Hello", "marks": [ { "type": "strong" } ] } ] }
+              ]
+            }
+            """;
+
+        var markdown = AdfToMarkdown.Convert(json);
+        Assert.Equal("# Title\n\n**Hello**", markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Options()
+    {
+        var json = """
+            {
+              "version": 1,
+              "type": "doc",
+              "content": [
+                { "type": "heading", "attrs": { "level": 1 }, "content": [ { "type": "text", "text": "Title" } ] },
+                { "type": "paragraph", "content": [ { "type": "text", "text": "Hello", "marks": [ { "type": "strong" } ] } ] }
+              ]
+            }
+            """;
+
+        #region AdfToMarkdown_Options
+        var markdown = AdfToMarkdown.Convert(json, new AdfToMarkdownOptions
+        {
+            PanelStyle = AdfPanelStyle.GitHubAlert,      // > [!WARNING]
+            ExpandStyle = AdfExpandStyle.HtmlDetails,    // <details><summary>…</summary>
+            TableStyle = AdfTableStyle.Auto,             // pipe table, or HTML when cells span rows/columns
+            MediaRendering = AdfMediaRendering.Link,
+            EmojiRendering = AdfEmojiRendering.ShortName,
+            TaskListStyle = AdfTaskListStyle.Checkbox,
+            DecisionListStyle = AdfDecisionListStyle.BulletList,
+            UnknownNodeHandling = AdfUnknownNodeHandling.KeepContent,
+            MentionFormat = "@{text}",
+            StatusFormat = "**[{text}]**",
+            DateFormat = "yyyy-MM-dd",
+            HeadingStyle = AdfHeadingStyle.Atx,
+            EmphasisMarker = AdfEmphasisMarker.Asterisk,
+            CodeBlockStyle = AdfCodeBlockStyle.Fenced,
+            LineBreakStyle = AdfLineBreakStyle.Backslash,
+        });
+        #endregion
+
+        Assert.Equal("# Title\n\n**Hello**", markdown);
+    }
+
+    [Fact]
+    public void ReadmeExample_Resolvers()
+    {
+        #region AdfToMarkdown_Resolvers
+        var json = """
+            {
+              "version": 1,
+              "type": "doc",
+              "content": [
+                { "type": "paragraph", "content": [ { "type": "mention", "attrs": { "id": "123" } } ] },
+                {
+                  "type": "mediaSingle",
+                  "content": [ { "type": "media", "attrs": { "type": "file", "id": "abc", "collection": "files", "alt": "diagram.png" } } ]
+                }
+              ]
+            }
+            """;
+
+        var displayNames = new Dictionary<string, string> { ["123"] = "Alex" };
+        var markdown = AdfToMarkdown.Convert(json, new AdfToMarkdownOptions
+        {
+            MediaUrlResolver = media => $"https://media.example.com/{media.Collection}/{media.Id}",
+            MentionResolver = mention => displayNames.GetValueOrDefault(mention.Id),
+        });
+
+        Assert.Equal("@Alex\n\n![diagram.png](https://media.example.com/files/abc)", markdown);
+        #endregion
+    }
+
     // --- Document ---
 
     [Fact]

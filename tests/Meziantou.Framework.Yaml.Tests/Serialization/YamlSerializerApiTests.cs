@@ -4,6 +4,175 @@ using Meziantou.Framework.Yaml.Serialization;
 namespace Meziantou.Framework.Yaml.Tests.Serialization;
 public class YamlSerializerApiTests
 {
+    [Fact]
+    public void ReadmeExample_SerializeAndDeserialize()
+    {
+        #region YamlSerializer_SerializeAndDeserialize
+        var options = new YamlSerializerOptions
+        {
+            PropertyNamingPolicy = YamlNamingPolicy.KebabCaseLower,
+        };
+
+        var yaml = YamlSerializer.Serialize(new Product
+        {
+            Id = 1,
+            DisplayName = "Sample product",
+            Tags = ["new", "featured"],
+        }, options);
+
+        Assert.Equal("""
+            id: 1
+            name: Sample product
+            tags:
+              - new
+              - featured
+
+            """, yaml);
+
+        var product = YamlSerializer.Deserialize<Product>(yaml, options);
+        Assert.Equal("Sample product", product!.DisplayName);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_TryDeserialize()
+    {
+        #region YamlSerializer_TryDeserialize
+        if (YamlSerializer.TryDeserialize<Product>("Id: 1", out var value))
+        {
+            Assert.Equal(1, value!.Id);
+        }
+
+        Assert.False(YamlSerializer.TryDeserialize<Product>("Id: not a number", out _));
+        #endregion
+
+        Assert.NotNull(value);
+    }
+
+    [Fact]
+    public void ReadmeExample_LiteralStringStyle()
+    {
+        #region YamlScalarStylePreferences_StringStyle
+        var options = new YamlSerializerOptions
+        {
+            ScalarStylePreferences = new YamlScalarStylePreferences { StringStyle = ScalarStyle.Literal },
+        };
+
+        var yaml = YamlSerializer.Serialize(new { Script = "echo one\necho two\n" }, options);
+        #endregion
+
+        Assert.Equal("Script: |\n  echo one\n  echo two\n", yaml);
+    }
+
+    [Fact]
+    public void ReadmeExample_StringStyleAttribute()
+    {
+        var yaml = YamlSerializer.Serialize(new Job { Script = "echo one\necho two", Name = "build" });
+
+        Assert.Equal("Script: |-\n  echo one\n  echo two\nName: build\n", yaml);
+    }
+
+    #region YamlStringStyleAttribute_Usage
+    internal sealed class Job
+    {
+        [YamlStringStyle(ScalarStyle.Literal)]
+        public string? Script { get; set; }
+
+        public string? Name { get; set; }
+    }
+    #endregion
+
+    [Fact]
+    public void ReadmeExample_AmbiguousScalars()
+    {
+        #region YamlScalarStylePreferences_AmbiguousScalars
+        var yaml = YamlSerializer.Serialize(new { A = "yes", B = "123", C = "plain" });
+        #endregion
+
+        Assert.Equal("A: yes\nB: \"123\"\nC: plain\n", yaml);
+    }
+
+    [Fact]
+    public void ReadmeExample_Polymorphism()
+    {
+        var animal = YamlSerializer.Deserialize<Animal>("$type: dog\nName: Rex\n");
+
+        Assert.Equal("Rex", Assert.IsType<Dog>(animal).Name);
+        Assert.Equal("$type: dog\nName: Rex\n", YamlSerializer.Serialize<Animal>(new Dog { Name = "Rex" }));
+    }
+
+    #region YamlPolymorphicAttribute_Usage
+    [YamlPolymorphic]
+    [YamlDerivedType(typeof(Dog), "dog")]
+    [YamlDerivedType(typeof(Cat), "cat")]
+    internal abstract class Animal
+    {
+        public string Name { get; set; } = "";
+    }
+
+    internal sealed class Dog : Animal;
+
+    internal sealed class Cat : Animal;
+    #endregion
+
+    [Fact]
+    public void ReadmeExample_InferClosedTypePolymorphismOnType()
+    {
+        var yaml = YamlSerializer.Serialize<Shape>(new Square());
+
+        Assert.Equal("$type: Square\n", yaml);
+        Assert.IsType<Square>(YamlSerializer.Deserialize<Shape>(yaml));
+    }
+
+    #region YamlPolymorphicAttribute_InferClosedTypePolymorphism
+    [YamlPolymorphic(InferClosedTypePolymorphism = true)]
+    public closed class Shape
+    {
+    }
+    #endregion
+
+    public sealed class Square : Shape;
+
+    [Fact]
+    public void ReadmeExample_FromObject()
+    {
+        #region YamlNode_FromObject
+        var product = new Product { Id = 1, DisplayName = "Sample product" };
+
+        var node = YamlNode.FromObject(product);
+        var back = node.ToObject<Product>();
+        Assert.Equal("Sample product", back!.DisplayName);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_SourceName()
+    {
+        #region YamlSerializerOptions_SourceName
+        var options = new YamlSerializerOptions { SourceName = "config.yaml" };
+
+        var exception = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Product>("Id: [1, 2]", options));
+        Assert.Equal("config.yaml: (Lin: 0, Col: 4, Chr: 4) - (Lin: 0, Col: 4, Chr: 4): Expected a Scalar token but found 'StartSequence'.", exception.Message);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Hardening()
+    {
+        #region YamlSerializerOptions_Hardening
+        var options = new YamlSerializerOptions
+        {
+            MaxDepth = 32,
+            AllowAnchors = false,
+            AllowAliases = false,
+            UnmappedMemberHandling = YamlUnmappedMemberHandling.Disallow,
+        };
+
+        Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Product>("Id: &id 1", options));
+        Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Product>("Price: 10", options));
+        #endregion
+    }
+
     private sealed class Person
     {
         public string FirstName { get; set; } = string.Empty;

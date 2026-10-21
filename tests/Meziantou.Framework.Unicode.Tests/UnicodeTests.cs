@@ -3,6 +3,256 @@ namespace Meziantou.Framework.Tests;
 public sealed class UnicodeTests
 {
     [Fact]
+    public void ReadmeExample_ReplaceConfusablesCharacters()
+    {
+        #region Unicode_ReplaceConfusablesCharacters
+        var input = "\u0440\u0430\u0443\u0440\u0430l"; // "раураl": Cyrillic letters that look like Latin ones
+        var normalized = Unicode.ReplaceConfusablesCharacters(input);
+
+        Assert.Equal("paypal", normalized);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_AreConfusable()
+    {
+        #region Unicode_AreConfusable
+        Assert.True(Unicode.AreConfusable("paypal", "\u0440\u0430\u0443\u0440\u0430l")); // Cyrillic look-alikes
+        Assert.True(Unicode.AreConfusable("caf\u00E9", "cafe\u0301")); // composed vs decomposed
+        Assert.False(Unicode.AreConfusable("paypal", "example"));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_GetConfusableSkeleton()
+    {
+        #region Unicode_GetConfusableSkeleton
+        var userName = "\u0440\u0430\u0443\u0440\u0430l";
+        var skeleton = Unicode.GetConfusableSkeleton(userName);
+
+        Assert.Equal(Unicode.GetConfusableSkeleton("paypal"), skeleton);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_IsMixedScript()
+    {
+        #region Unicode_IsMixedScript
+        Assert.False(Unicode.IsMixedScript("paypal")); // all Latin
+        Assert.True(Unicode.IsMixedScript("\u0440\u0430\u0443\u0440\u0430l")); // Cyrillic letters with a Latin "l"
+        Assert.False(Unicode.IsMixedScript("日本語です")); // Japanese legitimately mixes Han and Hiragana
+        Assert.False(Unicode.IsMixedScript("user123")); // digits match any script
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Scripts()
+    {
+        #region Unicode_Scripts
+        Assert.Equal(UnicodeScript.Latin, UnicodeScripts.GetScript(new Rune('A')));
+        Assert.Equal(UnicodeScript.Cyrillic, UnicodeScripts.GetScript(new Rune(0x0410)));
+        Assert.Equal("Latn", UnicodeScripts.GetIso15924Code(UnicodeScript.Latin));
+
+        // Script_Extensions: the scripts a shared character is used with
+        Span<UnicodeScript> scripts = stackalloc UnicodeScript[UnicodeScripts.MaxScriptExtensionCount];
+        var count = UnicodeScripts.GetScriptExtensions(0x30FC, scripts);
+        Assert.Equal<UnicodeScript>([UnicodeScript.Hiragana, UnicodeScript.Katakana], scripts[..count]);
+        Assert.True(UnicodeScripts.HasScriptExtension(0x30FC, UnicodeScript.Katakana));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Properties()
+    {
+        #region Unicode_Properties
+        Assert.Equal(UnicodeCategory.UppercaseLetter, UnicodeProperties.GetGeneralCategory('A'));
+        Assert.Equal(230, UnicodeProperties.GetCanonicalCombiningClass(0x0301));
+        Assert.Equal(UnicodeBidirectionalCategory.RightToLeft, UnicodeProperties.GetBidiClass(0x05D0));
+        Assert.True(UnicodeProperties.TryGetBidiMirroringGlyph('(', out var mirrored));
+        Assert.Equal(')', mirrored);
+        Assert.Equal(UnicodeLineBreakClass.Glue, UnicodeProperties.GetLineBreakClass(0x00A0));
+        Assert.Equal(UnicodeGraphemeClusterBreak.ZWJ, UnicodeProperties.GetGraphemeClusterBreak(0x200D));
+        Assert.Equal(UnicodeWordBreak.ExtendNumLet, UnicodeProperties.GetWordBreak('_'));
+        Assert.Equal(UnicodeEastAsianWidth.Wide, UnicodeProperties.GetEastAsianWidth(0x4E00));
+        Assert.Equal(UnicodeVerticalOrientation.TransformedRotated, UnicodeProperties.GetVerticalOrientation(0x300C));
+        Assert.Equal(UnicodeJoiningType.DualJoining, UnicodeProperties.GetJoiningType(0x0628));
+        Assert.Equal(UnicodeIndicSyllabicCategory.Virama, UnicodeProperties.GetIndicSyllabicCategory(0x094D));
+        Assert.True(UnicodeProperties.IsDefaultIgnorable(0x00AD));
+        Assert.True(UnicodeProperties.IsIdStart('a')); // UAX #31
+        Assert.True(UnicodeProperties.IsIdContinue('0'));
+        Assert.Equal('a', UnicodeProperties.ToSimpleLowercase('A'));
+        Assert.Equal(0x01C5, UnicodeProperties.ToSimpleTitlecase(0x01C6)); // 'ǆ' to 'ǅ'
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_CaseMappings()
+    {
+        #region Unicode_CaseMappings
+        Span<int> mapping = stackalloc int[UnicodeProperties.MaxCaseMappingLength];
+
+        var length = UnicodeProperties.GetUppercaseMapping('ß', mapping);
+        Assert.Equal<int>(['S', 'S'], mapping[..length]);
+
+        length = UnicodeProperties.GetTitlecaseMapping(0xFB01, mapping); // the "ﬁ" ligature
+        Assert.Equal<int>(['F', 'i'], mapping[..length]);
+
+        length = UnicodeProperties.GetLowercaseMapping(0x0130, mapping); // 'İ'
+        Assert.Equal<int>(['i', 0x0307], mapping[..length]);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Segmentation()
+    {
+        #region Unicode_Segmentation
+        // Extended grapheme clusters: what a reader perceives as one character
+        var text = "e\u0301\U0001F1EB\U0001F1F7"; // "e" and a combining acute accent, then the French flag
+        var clusters = new List<string>();
+        foreach (Range cluster in Unicode.EnumerateGraphemeClusters(text))
+        {
+            clusters.Add(text[cluster]);
+        }
+
+        Assert.Equal(["e\u0301", "\U0001F1EB\U0001F1F7"], clusters);
+
+        // Word boundaries: words, numbers, runs of spaces, punctuation marks
+        text = "Hello, world!";
+        var segments = new List<string>();
+        foreach (Range segment in Unicode.EnumerateWordBoundaries(text))
+        {
+            segments.Add(text[segment]);
+        }
+
+        Assert.Equal(["Hello", ",", " ", "world", "!"], segments);
+
+        // Line break opportunities
+        text = "A long line\nof text";
+        var lines = new List<string>();
+        var lineStart = 0;
+        foreach (UnicodeLineBreak lineBreak in Unicode.EnumerateLineBreaks(text))
+        {
+            // lineBreak.Index: the index of the first character of the next line
+            // lineBreak.IsMandatory: after a line feed, and at the end of the text
+            lines.Add(text[lineStart..lineBreak.Index] + (lineBreak.IsMandatory ? " (mandatory)" : ""));
+            lineStart = lineBreak.Index;
+        }
+
+        Assert.Equal(["A ", "long ", "line\n (mandatory)", "of ", "text (mandatory)"], lines);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_ScriptRuns()
+    {
+        #region Unicode_ScriptRuns
+        var text = "gamma (\u03B3) is";
+        var runs = new List<string>();
+        foreach (UnicodeScriptRun run in Unicode.EnumerateScriptRuns(text))
+        {
+            runs.Add($"{text.Substring(run.Index, run.Length)}: {run.Script}");
+        }
+
+        Assert.Equal(["gamma (: Latin", "\u03B3: Greek", ") is: Latin"], runs);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_LineBreakDictionary()
+    {
+        #region Unicode_LineBreakDictionary
+        // The word list, as plain text: one word per line.
+        // Use LineBreakDictionary.Load("thaidict.txt") to read it from a file.
+        var dictionary = LineBreakDictionary.Parse("ภาษา\nไทย");
+
+        // The line break opportunities of a text: those of UAX #14, and those before the words of the dictionary
+        var breaks = new List<int>();
+        foreach (UnicodeLineBreak lineBreak in Unicode.EnumerateLineBreaks("Hello ภาษาไทย!", dictionary))
+        {
+            breaks.Add(lineBreak.Index);
+        }
+
+        Assert.Equal([6, 10, 14], breaks); // after the space, before "ไทย", the end of the text
+
+        // The words of a run of text of the script of the dictionary
+        Span<int> positions = stackalloc int[16];
+        var count = dictionary.FindBreaks("ภาษาไทย", positions);
+        Assert.Equal<int>([4], positions[..count]);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Normalization()
+    {
+        #region Unicode_Normalization
+        Assert.Equal("caf\u00E9", UnicodeNormalization.Normalize("cafe\u0301")); // NFC
+        Assert.Equal("cafe\u0301", UnicodeNormalization.Normalize("caf\u00E9", NormalizationForm.FormD));
+        Assert.True(UnicodeNormalization.IsNormalized("caf\u00E9"));
+
+        // Span-based
+        Span<char> destination = stackalloc char[16];
+        Assert.True(UnicodeNormalization.TryNormalize("cafe\u0301", destination, out var written));
+        Assert.Equal("caf\u00E9", destination[..written]);
+
+        Assert.True(UnicodeNormalization.TryComposeCanonical('e', 0x0301, out var composite));
+        Assert.Equal('\u00E9', composite);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Bidi()
+    {
+        #region Unicode_Bidi
+        var paragraph = "car \u05D0\u05D1\u05D2!";
+        Span<byte> levels = stackalloc byte[paragraph.Length];
+        var paragraphLevel = UnicodeBidi.ResolveLevels(paragraph, UnicodeBidiDirection.Auto, levels);
+
+        // For each line, once the paragraph is broken into lines:
+        UnicodeBidi.ResetLineLevels(paragraph, paragraphLevel, levels);
+        Span<int> visualToLogical = stackalloc int[paragraph.Length];
+        UnicodeBidi.GetVisualOrder(levels, visualToLogical);
+
+        Assert.Equal<int>([0, 1, 2, 3, 6, 5, 4, 7], visualToLogical);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Idna()
+    {
+        #region Unicode_Idna
+        Assert.True(UnicodeIdna.TryToAscii("B\u00FCcher.example", out var ascii));
+        Assert.Equal("xn--bcher-kva.example", ascii);
+
+        Assert.Equal("b\u00FCcher.example", UnicodeIdna.ToUnicode("xn--bcher-kva.example", out var hasErrors));
+        Assert.False(hasErrors);
+
+        // The flags of UTS #46: the defaults enable every check, with nontransitional processing
+        var options = new UnicodeIdnaOptions { UseStd3AsciiRules = false, VerifyDnsLength = false };
+        Assert.True(UnicodeIdna.TryToAscii("exa_mple.com", options, out ascii));
+        Assert.Equal("exa_mple.com", ascii);
+
+        Assert.True(UnicodeIdna.TryEncodePunycode("b\u00FCcher", out var encoded));
+        Assert.Equal("bcher-kva", encoded);
+        Assert.True(UnicodeIdna.TryDecodePunycode("bcher-kva", out var decoded));
+        Assert.Equal("b\u00FCcher", decoded);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_GetCharacterInfo()
+    {
+        #region Unicode_GetCharacterInfo
+        var info = Unicode.GetCharacterInfo(new Rune('A'));
+
+        Assert.NotNull(info);
+        Assert.Equal("LATIN CAPITAL LETTER A", info.Value.Name);
+        Assert.Equal(UnicodeCategory.UppercaseLetter, info.Value.Category);
+        Assert.Equal(UnicodeBidirectionalCategory.LeftToRight, info.Value.BidiCategory);
+        Assert.Equal("Basic Latin", info.Value.Block.Name);
+        #endregion
+    }
+
+    [Fact]
     public void ReplaceConfusablesCharacters_ReplacesMappedCharacters()
     {
         var input = "\u0410\u0430\u03B1";

@@ -14,29 +14,27 @@
 
 ## Usage
 
-```c#
-using Meziantou.Framework.MediaTags;
+The types are in the `Meziantou.Framework.MediaTags` namespace. `ReadTags` returns a result: check `IsSuccess`, and
+read `Error` and `ErrorMessage` when it fails.
 
-var result = MediaFile.ReadTags("song.flac");
-if (!result.IsSuccess)
-{
-    Console.WriteLine($"{result.Error}: {result.ErrorMessage}");
-    return;
-}
+<!-- ref:../../tests/Meziantou.Framework.MediaTags.Tests/FlacTests.cs;region=MediaFile_ReadTags;format=md-fenced-code-block;dedent=true -->
+```csharp
+var result = MediaFile.ReadTags("TestFiles/basic.flac");
+Assert.True(result.IsSuccess, $"{result.Error}: {result.ErrorMessage}");
 
 var tags = result.Value;
-Console.WriteLine($"Format: {tags.Format}");
-Console.WriteLine($"Duration: {tags.Duration}");
-Console.WriteLine($"Title: {tags.Title}");
-Console.WriteLine($"Artist: {tags.Artist}");
+Assert.Equal(MediaFormat.Flac, tags.Format);
+Assert.True(tags.Duration > TimeSpan.Zero);
+Assert.Equal("Test Title", tags.Title);
+Assert.Equal("Test Artist", tags.Artist);
 ```
+<!-- endref -->
 
 Writing **replaces** the tags of the file, so change one field by reading the tags first, editing the result
 and writing it back:
 
-```c#
-using Meziantou.Framework.MediaTags;
-
+<!-- ref:../../samples/Meziantou.Framework.MediaTags.Samples/ReadmeExamples.cs;region=MediaFile_UpdateTags;format=md-fenced-code-block;dedent=true -->
+```csharp
 var read = MediaFile.ReadTags("song.mp3");
 if (!read.IsSuccess)
     return;
@@ -60,16 +58,19 @@ if (!writeResult.IsSuccess)
     Console.WriteLine($"{writeResult.Error}: {writeResult.ErrorMessage}");
 }
 ```
+<!-- endref -->
 
 ## Write semantics
 
 `WriteTags` **replaces** the whole tag rather than merging into it. A field left `null` is *removed* from the
 file, so writing a freshly constructed `MediaTagInfo` deletes every field it does not set:
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.MediaTags.Samples/ReadmeExamples.cs;region=MediaFile_ReplaceTags;format=md-fenced-code-block;dedent=true -->
+```csharp
 // This deletes the artist, album, artwork and everything else the file had.
 MediaFile.WriteTags("song.mp3", new MediaTagInfo { Title = "New Title" });
 ```
+<!-- endref -->
 
 Use `MediaFile.RemoveTags` when removing the tags is what you actually want.
 

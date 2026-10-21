@@ -3,6 +3,20 @@ namespace Meziantou.Framework.Language.Tests;
 public sealed class SourceTextTests
 {
     [Fact]
+    public void ReadmeExample_SourceTextAndEdits()
+    {
+        #region Language_SourceTextAndEdits
+        var source = SourceText.From("<root/>");
+
+        var updated = source.WithChanges([new TextChange(new TextSpan(1, 4), "item")]);
+        Assert.Equal("<item/>", updated.Text);
+
+        var line = source.GetLine(position: 3);
+        Assert.Equal(0, line.LineNumber);
+        #endregion
+    }
+
+    [Fact]
     public void From_RejectsNullText()
     {
         Assert.Equal("text", Assert.Throws<ArgumentNullException>(() => SourceText.From(null!)).ParamName);

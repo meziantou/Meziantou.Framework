@@ -6,6 +6,95 @@ namespace Meziantou.Framework.Tests;
 public class ProcessWrapperTests
 {
     [Fact]
+    public async Task ReadmeExample_BasicUsage()
+    {
+        #region ProcessWrapper_BasicUsage
+        // Execute and wait for exit (throws if exit code is non-zero by default)
+        var result = await ProcessWrapper.Create("dotnet")
+            .WithArguments("--version")
+            .ExecuteAsync();
+
+        Assert.True(result.ExitCode.IsSuccess);
+        #endregion
+    }
+
+    [Fact]
+    public async Task ReadmeExample_BufferedExecution()
+    {
+        #region ProcessWrapper_BufferedExecution
+        // Capture all output
+        var result = await ProcessWrapper.Create("dotnet")
+            .WithArguments("--info")
+            .ExecuteBufferedAsync();
+
+        int exitCode = result.ExitCode;
+        Assert.Equal(0, exitCode);
+
+        // Access output after awaiting
+        Assert.Contains(result.Output.StandardOutput, line => line.Text.StartsWith(".NET SDK", StringComparison.Ordinal));
+        #endregion
+    }
+
+    // Swaps the process-wide ProcessWrapper.DefaultProcessFactory, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
+    public async Task ReadmeExample_DefaultProcessFactory()
+    {
+        #region ProcessWrapper_DefaultProcessFactory
+        var previousFactory = ProcessWrapper.DefaultProcessFactory;
+        ProcessWrapper.DefaultProcessFactory = new FakeProcessFactory(startInfo =>
+        {
+            return FakeProcess.Create(
+                exitCode: 0,
+                outputText: "simulated output",
+                errorText: "");
+        });
+
+        try
+        {
+            var result = await ProcessWrapper.Create("my-command")
+                .WithArguments("--version")
+                .ExecuteBufferedAsync();
+
+            Assert.Equal("simulated output", result.Output.StandardOutput.Single().Text);
+        }
+        finally
+        {
+            ProcessWrapper.DefaultProcessFactory = previousFactory;
+        }
+        #endregion
+    }
+
+    [Fact]
+    public async Task ReadmeExample_ProcessFactory()
+    {
+        #region ProcessWrapper_ProcessFactory
+        var result = await ProcessWrapper.Create("my-command")
+            .WithProcessFactory(new FakeProcessFactory(_ => FakeProcess.Create(0, "instance output", "")))
+            .ExecuteBufferedAsync();
+
+        Assert.Equal("instance output", result.Output.StandardOutput.Single().Text);
+        #endregion
+    }
+
+    // Registers process-wide interceptors, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
+    public async Task ReadmeExample_Interceptors()
+    {
+        #region ProcessWrapper_Interceptors
+        using var globalWrapperRegistration = ProcessWrapper.AddInterceptor(new SampleProcessWrapperInterceptor());
+        using var globalStartInfoRegistration = ProcessWrapper.AddInterceptor(new SampleProcessStartInfoInterceptor());
+
+        var result = await ProcessWrapper.Create("dotnet")
+            .WithArguments("--version")
+            .WithInterceptor(new SampleProcessWrapperInterceptor())
+            .WithInterceptor(new SampleProcessStartInfoInterceptor())
+            .ExecuteBufferedAsync();
+        #endregion
+
+        Assert.True(result.ExitCode.IsSuccess);
+    }
+
+    [Fact]
     public void ProcessExitCode_IsSuccess_TrueForZero()
     {
         var exitCode = new ProcessExitCode(0);
@@ -2253,4 +2342,24 @@ public class ProcessWrapperTests
     }
 
     private sealed record CreatedProcessInfo(string FileName, string WorkingDirectory, IReadOnlyList<string> Arguments);
+
+    #region ProcessWrapper_InterceptorTypes
+    public sealed class SampleProcessWrapperInterceptor : IProcessWrapperInterceptor
+    {
+        public void Intercept(ProcessWrapper processWrapper)
+        {
+            // You can inspect/mutate the wrapper instance
+            processWrapper.WithEnvironmentVariables(env => env.Set("TRACE_ID", Guid.NewGuid().ToString("N")));
+        }
+    }
+
+    public sealed class SampleProcessStartInfoInterceptor : IProcessStartInfoInterceptor
+    {
+        public void Intercept(ProcessWrapper processWrapper, ProcessStartInfo processStartInfo)
+        {
+            // You can inspect/mutate ProcessStartInfo right before process creation
+            Console.WriteLine($"Executing: {processStartInfo.FileName}");
+        }
+    }
+    #endregion
 }

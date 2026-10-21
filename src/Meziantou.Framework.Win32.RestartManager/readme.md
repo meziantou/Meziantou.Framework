@@ -6,19 +6,23 @@ A .NET library that wraps the Windows Restart Manager API to detect which proces
 
 This library provides functionality to interact with the Windows Restart Manager (RM) API, which helps identify processes that have locks on files and manage graceful shutdown and restart of applications.
 
+The types are in the `Meziantou.Framework.Win32` namespace.
+
 ### Check if a File is Locked
 
 The simplest way to check if a file is currently locked by any process:
 
+<!-- ref:../../tests/Meziantou.Framework.Win32.RestartManager.Tests/RestartManagerTests.cs;region=RestartManager_IsFileLocked;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Win32;
-
-var path = @"C:\path\to\file.txt";
-if (RestartManager.IsFileLocked(path))
+var path = Path.GetTempFileName();
+using (File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
 {
-    Console.WriteLine("File is locked by one or more processes");
+    Assert.True(RestartManager.IsFileLocked(path));
 }
+
+Assert.False(RestartManager.IsFileLocked(path));
 ```
+<!-- endref -->
 
 ### Find Processes Locking a File
 
@@ -26,18 +30,22 @@ Get a list of all processes that have locks on a specific file:
 
 The caller owns the returned `Process` instances and should dispose them.
 
+<!-- ref:../../tests/Meziantou.Framework.Win32.RestartManager.Tests/RestartManagerTests.cs;region=RestartManager_GetProcessesLockingFile;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Win32;
-
-var path = @"C:\path\to\file.txt";
-var processes = RestartManager.GetProcessesLockingFile(path);
-
-foreach (var process in processes)
+var path = Path.GetTempFileName();
+using (File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
 {
-    Console.WriteLine($"Process {process.ProcessName} (PID: {process.Id}) is locking the file");
-    process.Dispose();
+    var processes = RestartManager.GetProcessesLockingFile(path);
+    Assert.Equal(Environment.ProcessId, Assert.Single(processes).Id);
+
+    // The caller owns the returned Process instances
+    foreach (var process in processes)
+    {
+        process.Dispose();
+    }
 }
 ```
+<!-- endref -->
 
 ### Find Processes Locking Several Files
 
@@ -47,65 +55,67 @@ session is significantly cheaper than calling `GetProcessesLockingFile` in a loo
 Registrations are persisted to the registry, so one session can only hold a bounded number of paths. A very
 large set fails with `ERROR_WRITE_FAULT` (29) and should be split across several sessions.
 
+<!-- ref:../../tests/Meziantou.Framework.Win32.RestartManager.Tests/RestartManagerTests.cs;region=RestartManager_GetProcessesLockingFiles;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Win32;
-
-var processes = RestartManager.GetProcessesLockingFiles(
-[
-    @"C:\path\to\file1.txt",
-    @"C:\path\to\file2.txt",
-]);
-
-foreach (var process in processes)
+var path1 = Path.GetTempFileName();
+var path2 = Path.GetTempFileName();
+using (File.Open(path2, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
 {
-    Console.WriteLine($"Process {process.ProcessName} (PID: {process.Id}) is locking at least one of the files");
-    process.Dispose();
+    var processes = RestartManager.GetProcessesLockingFiles([path1, path2]);
+
+    Assert.Contains(Environment.ProcessId, processes.Select(process => process.Id));
+    foreach (var process in processes)
+    {
+        process.Dispose();
+    }
 }
 ```
+<!-- endref -->
 
 ### Manual Session Management
 
 For more control, you can create and manage a Restart Manager session manually:
 
+<!-- ref:../../tests/Meziantou.Framework.Win32.RestartManager.Tests/RestartManagerTests.cs;region=RestartManager_ManualSession;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Win32;
-
 // Create a new session
 using var session = RestartManager.CreateSession();
 
 // Register one or more files to monitor
-session.RegisterFile(@"C:\path\to\file.txt");
-session.RegisterFiles(new[] { @"C:\path\to\file1.txt", @"C:\path\to\file2.txt" });
+session.RegisterFile(path);
+session.RegisterFiles([path1, path2]);
 
 // Check if any registered resources are locked
-if (session.IsResourcesLocked())
+Assert.True(session.IsResourcesLocked());
+
+// Get the processes locking the resources
+var processes = session.GetProcessesLockingResources();
+Assert.Contains(Environment.ProcessId, processes.Select(process => process.Id));
+foreach (var process in processes)
 {
-    // Get the processes locking the resources
-    var processes = session.GetProcessesLockingResources();
-    foreach (var process in processes)
-    {
-        Console.WriteLine($"Locked by: {process.ProcessName}");
-        process.Dispose();
-    }
+    process.Dispose();
 }
 ```
+<!-- endref -->
 
 ### Join an Existing Session
 
-You can join an existing Restart Manager session using its session key:
+You can join an existing Restart Manager session using its session key (`RestartManager.SessionKey`):
 
+<!-- ref:../../tests/Meziantou.Framework.Win32.RestartManager.Tests/RestartManagerTests.cs;region=RestartManager_JoinSession;format=md-fenced-code-block;dedent=true -->
 ```csharp
-var sessionKey = "existing-session-key";
 using var session = RestartManager.JoinSession(sessionKey);
 ```
+<!-- endref -->
 
 ### Shutdown and Restart Applications
 
 The Restart Manager can shut down and restart applications that are locking resources:
 
+<!-- ref:../../samples/Meziantou.Framework.Win32.RestartManager.Samples/Program.cs;region=RestartManager_ShutdownAndRestart;format=md-fenced-code-block;dedent=true -->
 ```csharp
 using var session = RestartManager.CreateSession();
-session.RegisterFile(@"C:\path\to\file.txt");
+session.RegisterFile(path);
 
 // A non-zero reboot reason means shutting applications down cannot free the resources,
 // and that a system restart is required instead. Check it before shutting anything down.
@@ -130,6 +140,7 @@ session.Restart(percentComplete =>
     Console.WriteLine($"Restart progress: {percentComplete}%");
 });
 ```
+<!-- endref -->
 
 ### Shutdown Types
 

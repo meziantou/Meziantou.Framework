@@ -25,8 +25,11 @@ QR and barcode generation library with SVG and PNG renderers, plus a console ren
 
 ## Usage
 
+The types are in the `Meziantou.Framework` namespace.
+
 ### Generate QR codes (Standard, Micro QR, rMQR)
 
+<!-- ref:../../tests/Meziantou.Framework.QRCode.Tests/QRCodeTests.cs;region=QRCode_Create;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Standard QR code
 var standardQr = QRCode.Create("HELLO WORLD", ErrorCorrectionLevel.H);
@@ -37,14 +40,16 @@ var microQr = QRCode.CreateMicroQR("12345", ErrorCorrectionLevel.L);
 // Rectangular Micro QR code (narrow rectangular shape)
 var rmqr = QRCode.CreateRMQR("https://www.meziantou.net", ErrorCorrectionLevel.M);
 
-// Format info
-Console.WriteLine($"{standardQr.Type} {standardQr.Width}x{standardQr.Height}");
-Console.WriteLine($"{microQr.Type} {microQr.Width}x{microQr.Height}");
-Console.WriteLine($"{rmqr.Type} {rmqr.Width}x{rmqr.Height}");
+// Format info: type, width and height in modules
+Assert.Equal((QRCodeType.Standard, 25, 25), (standardQr.Type, standardQr.Width, standardQr.Height));
+Assert.Equal((QRCodeType.MicroQR, 11, 11), (microQr.Type, microQr.Width, microQr.Height));
+Assert.Equal((QRCodeType.RMQR, 43, 13), (rmqr.Type, rmqr.Width, rmqr.Height));
 ```
+<!-- endref -->
 
 ### Generate barcodes (Code 39, Code 93, Code 128, EAN/UPC, Codabar, ITF)
 
+<!-- ref:../../tests/Meziantou.Framework.QRCode.Tests/BarCodeAdditionalTypesTests.cs;region=Barcode_Create;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var code39 = Barcode.CreateCode39("ABC-123", includeChecksum: true);
 var code93 = Barcode.CreateCode93("ABC123");
@@ -55,24 +60,33 @@ var upcA = Barcode.CreateUpcA("03600029145", extension: "12");
 var codabar = Barcode.CreateCodabar("40156", startCharacter: 'A', stopCharacter: 'B');
 var itf = Barcode.CreateItf("12345678");
 
-Console.WriteLine($"{code39.Type} {code39.Width}x{code39.Height}");
-Console.WriteLine($"{code93.Type} {code93.Width}x{code93.Height}");
-Console.WriteLine($"{code128.Type} {code128.Width}x{code128.Height}");
-Console.WriteLine($"{ean8.Type} {ean8.Width}x{ean8.Height}");
-Console.WriteLine($"{ean13.Type} {ean13.Width}x{ean13.Height}");
-Console.WriteLine($"{upcA.Type} {upcA.Width}x{upcA.Height}");
-Console.WriteLine($"{codabar.Type} {codabar.Width}x{codabar.Height}");
-Console.WriteLine($"{itf.Type} {itf.Width}x{itf.Height}");
+// Type, width in modules and height (a linear barcode is one module high)
+Assert.Equal((BarcodeType.Code39, 129, 1), (code39.Type, code39.Width, code39.Height));
+Assert.Equal((BarcodeType.Code93, 91, 1), (code93.Type, code93.Width, code93.Height));
+Assert.Equal((BarcodeType.Code128, 123, 1), (code128.Type, code128.Width, code128.Height));
+Assert.Equal((BarcodeType.Ean8, 67, 1), (ean8.Type, ean8.Width, ean8.Height));
+Assert.Equal((BarcodeType.Ean13, 95, 1), (ean13.Type, ean13.Width, ean13.Height));
+Assert.Equal((BarcodeType.UpcA, 122, 1), (upcA.Type, upcA.Width, upcA.Height));
+Assert.Equal((BarcodeType.Codabar, 71, 1), (codabar.Type, codabar.Width, codabar.Height));
+Assert.Equal((BarcodeType.Itf, 81, 1), (itf.Type, itf.Width, itf.Height));
 ```
+<!-- endref -->
 
 ### Render as SVG
 
+<!-- ref:../../tests/Meziantou.Framework.QRCode.Tests/QRCodeSvgRendererTests.cs;region=QRCode_ToSvg;format=md-fenced-code-block;dedent=true -->
 ```csharp
-var svg = standardQr.ToSvg();
-var microSvg = microQr.ToSvg(new QRCodeSvgOptions { ModuleSize = 2, QuietZoneModules = 2 });
-var rmqrSvg = rmqr.ToSvg(new QRCodeSvgOptions { ModuleSize = 2, QuietZoneModules = 2 });
+var qrCode = QRCode.Create("HELLO WORLD", ErrorCorrectionLevel.H);
+var microQr = QRCode.CreateMicroQR("12345", ErrorCorrectionLevel.L);
+var barcode = Barcode.CreateCode128("SKU-123456");
 
-var customSvg = standardQr.ToSvg(new QRCodeSvgOptions
+var svg = qrCode.ToSvg();
+Assert.StartsWith("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 330 330\">", svg);
+
+var microSvg = microQr.ToSvg(new QRCodeSvgOptions { ModuleSize = 2, QuietZoneModules = 2 });
+Assert.Contains("viewBox=\"0 0 30 30\"", microSvg);
+
+var customSvg = qrCode.ToSvg(new QRCodeSvgOptions
 {
     ModuleSize = 10,
     QuietZoneModules = 4,
@@ -81,24 +95,34 @@ var customSvg = standardQr.ToSvg(new QRCodeSvgOptions
     LogoImageHref = "https://example.com/logo.svg", // Also supports data URIs
     LogoSizePercent = 20,
 });
+Assert.Contains("<image href=\"https://example.com/logo.svg\"", customSvg);
 
-var barcodeSvg = code128.ToSvg(new BarcodeSvgOptions
+var barcodeSvg = barcode.ToSvg(new BarcodeSvgOptions
 {
     ModuleWidth = 2,
     ModuleHeight = 80,
     QuietZoneModules = 10,
 });
+Assert.Contains("viewBox=\"0 0 286 80\"", barcodeSvg);
 ```
+<!-- endref -->
 
 Logo images are currently supported in the SVG renderer only.
 
 ### Render as PNG
 
+<!-- ref:../../tests/Meziantou.Framework.QRCode.Tests/QRCodePngRendererTests.cs;region=QRCode_ToPng;format=md-fenced-code-block;dedent=true -->
 ```csharp
-var png = standardQr.ToPng();
-File.WriteAllBytes("qrcode.png", png);
+var qrCode = QRCode.Create("HELLO WORLD", ErrorCorrectionLevel.H);
+var microQr = QRCode.CreateMicroQR("12345", ErrorCorrectionLevel.L);
+var barcode = Barcode.CreateCode39("ABC-123", includeChecksum: true);
 
-using var stream = File.Create("micro-qrcode.png");
+// The content of a PNG file, to save with File.WriteAllBytes("qrcode.png", png)
+var png = qrCode.ToPng();
+Assert.Equal([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], png[..8]); // the PNG signature
+
+// Any writable stream, such as File.Create("micro-qrcode.png")
+using var stream = new MemoryStream();
 microQr.WriteToPng(stream, new QRCodePngOptions
 {
     ModuleSize = 4,
@@ -107,21 +131,26 @@ microQr.WriteToPng(stream, new QRCodePngOptions
     LightColor = Color.FromRgb(0xf9, 0xfa, 0xfb),
 });
 
-var barcodePng = code39.ToPng(new BarcodePngOptions
+var barcodePng = barcode.ToPng(new BarcodePngOptions
 {
     ModuleWidth = 2,
     ModuleHeight = 80,
     DarkColor = Color.FromRgb(0x0f, 0x76, 0x6e),
     LightColor = Color.FromRgb(0xec, 0xfe, 0xff),
 });
-File.WriteAllBytes("barcode.png", barcodePng);
 ```
+<!-- endref -->
 
 ### Render to console
 
+<!-- ref:../../tests/Meziantou.Framework.QRCode.Tests/QRCodeConsoleRendererTests.cs;region=QRCode_ToConsoleString;format=md-fenced-code-block;dedent=true -->
 ```csharp
-standardQr.WriteToConsole();
-var standardText = standardQr.ToConsoleString();
+var qrCode = QRCode.Create("HELLO WORLD", ErrorCorrectionLevel.H);
+var microQr = QRCode.CreateMicroQR("12345", ErrorCorrectionLevel.L);
+
+qrCode.WriteToConsole();
+var text = qrCode.ToConsoleString();
+
 var microText = microQr.ToConsoleString(new QRCodeConsoleOptions
 {
     QuietZoneModules = 1,
@@ -129,52 +158,75 @@ var microText = microQr.ToConsoleString(new QRCodeConsoleOptions
     ModuleHeight = 2, // 2x bigger output that can look more square on many terminals
 });
 
-var rmqrText = rmqr.ToConsoleString(new QRCodeConsoleOptions
-{
-    QuietZoneModules = 1,
-    ModuleWidth = 2,
-    ModuleHeight = 2,
-});
+Assert.Equal("""
+
+      ██████████████  ██  ██
+      ██          ██
+      ██  ██████  ██  ██████
+      ██  ██████  ██
+      ██  ██████  ██  ██████
+      ██          ██    ████
+      ██████████████  ██
+                      ██████
+      ████    ██████    ████
+        ██  ██      ████
+      ████████          ████
+
+    """, microText, ignoreLineEndingDifferences: true);
 ```
+<!-- endref -->
 
 ### Content helpers
 
+<!-- ref:../../tests/Meziantou.Framework.QRCode.Tests/QRCodePayloadTests.cs;region=QRCodePayload_Create;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // WiFi
 var wifi = QRCodePayload.Wifi("MyNetwork", "password123", WifiAuthentication.WPA);
+Assert.Equal("WIFI:T:WPA;S:MyNetwork;P:password123;;", wifi);
 
 // vCard
 var vcard = QRCodePayload.VCard("Doe", "John", phone: "+1234567890", email: "john@example.com");
+Assert.StartsWith("BEGIN:VCARD\r\nVERSION:3.0\r\nN:Doe;John;;;\r\nFN:John Doe\r\n", vcard);
 
 // MeCard (compact contact format)
 var mecard = QRCodePayload.MeCard("Doe", "John", phone: "+1234567890");
+Assert.Equal("MECARD:N:Doe,John;TEL:+1234567890;;", mecard);
 
 // Email
 var email = QRCodePayload.Email("test@example.com", subject: "Hello");
+Assert.Equal("mailto:test@example.com?subject=Hello", email);
 
 // Phone
 var phone = QRCodePayload.Phone("+1234567890");
+Assert.Equal("tel:+1234567890", phone);
 
 // SMS
 var sms = QRCodePayload.Sms("+1234567890", "Hello!");
+Assert.Equal("smsto:+1234567890:Hello!", sms);
 
 // Geolocation
 var geo = QRCodePayload.Geolocation(48.8566, 2.3522);
+Assert.Equal("geo:48.8566,2.3522", geo);
 
 // Calendar event
 var evt = QRCodePayload.CalendarEvent("Meeting",
     new DateTime(2025, 6, 15, 14, 0, 0, DateTimeKind.Utc),
     new DateTime(2025, 6, 15, 15, 0, 0, DateTimeKind.Utc),
     location: "Room 42");
+Assert.Contains("DTSTART:20250615T140000Z\r\n", evt);
 
 // OTP Auth (2FA setup)
 var otp = QRCodePayload.OneTimePassword(OneTimePasswordType.Totp,
     "JBSWY3DPEHPK3PXP", "user@example.com", issuer: "MyApp");
+Assert.Equal("otpauth://totp/MyApp:user%40example.com?secret=JBSWY3DPEHPK3PXP&issuer=MyApp", otp);
 
 // Bitcoin payment
 var btc = QRCodePayload.Bitcoin("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", amount: 0.05m);
+Assert.Equal("bitcoin:1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa?amount=0.05", btc);
 
 // SEPA payment (EPC QR)
 var sepa = QRCodePayload.SepaPayment("Example", "DE00000000000000000000", 12.50m,
     remittanceText: "Donation");
+Assert.StartsWith("BCD\n002\n1\nSCT\n", sepa);
 ```
+<!-- endref -->

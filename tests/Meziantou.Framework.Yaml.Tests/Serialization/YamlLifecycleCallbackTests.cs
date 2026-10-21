@@ -5,6 +5,25 @@ namespace Meziantou.Framework.Yaml.Tests.Serialization;
 public sealed class YamlLifecycleCallbackTests
 {
     [Fact]
+    public void ReadmeExample_LifecycleCallbacks()
+    {
+        var yaml = YamlSerializer.Serialize(new Product());
+
+        Assert.Equal("{}\n", yaml);
+        Assert.NotNull(YamlSerializer.Deserialize<Product>(yaml));
+    }
+
+    #region IYamlOnSerializing_Usage
+    internal sealed class Product : IYamlOnSerializing, IYamlOnSerialized, IYamlOnDeserializing, IYamlOnDeserialized
+    {
+        public void OnSerializing() { }
+        public void OnSerialized() { }
+        public void OnDeserializing() { }
+        public void OnDeserialized() { }
+    }
+    #endregion
+
+    [Fact]
     public void Serialize_CallsSerializingAndSerialized()
     {
         var value = new LifecycleModel { Value = 123 };

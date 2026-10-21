@@ -47,8 +47,9 @@ public sealed partial class WriterTests
         });
     }
 
-    // The examples write to the same file, so they run one after the other
-    [Fact]
+    // The examples write to the same file, so they run one after the other, and not beside ReadmeExample_BasicExample,
+    // which writes trace.json too
+    [Fact(DisableParallelization = true)]
     public async Task DocumentationExamples()
     {
         {
@@ -665,6 +666,435 @@ public sealed partial class WriterTests
         using var document = JsonDocument.Parse(decompressed.ToArray());
         Assert.Equal(1, document.RootElement.GetArrayLength());
         Assert.Equal("compressed", document.RootElement[0].GetProperty("name").GetString());
+    }
+
+    // Writes trace.json in the current directory, like DocumentationExamples
+    [Fact(DisableParallelization = true)]
+    public async Task ReadmeExample_BasicExample()
+    {
+        try
+        {
+            await WriteTraceAsync();
+
+            using var document = JsonDocument.Parse(await File.ReadAllBytesAsync("trace.json"));
+            var tracingEvent = Assert.Single(document.RootElement.EnumerateArray());
+            Assert.Equal("My Operation", tracingEvent.GetProperty("name").GetString());
+            Assert.Equal("X", tracingEvent.GetProperty("ph").GetString());
+            Assert.Equal(42, tracingEvent.GetProperty("args").GetProperty("count").GetInt32());
+        }
+        finally
+        {
+            File.Delete("trace.json");
+        }
+
+        static async Task WriteTraceAsync()
+        {
+            #region ChromiumTracing_BasicExample
+            // Create a writer
+            await using var writer = ChromiumTracingWriter.Create("trace.json");
+
+            // Write a complete event (shows as a box in the timeline)
+            await writer.WriteEventAsync(new ChromiumTracingCompleteEvent
+            {
+                Name = "My Operation",
+                Category = "category1",
+                Timestamp = DateTimeOffset.UtcNow,
+                Duration = TimeSpan.FromMilliseconds(150),
+                ProcessId = Environment.ProcessId,
+                ThreadId = Environment.CurrentManagedThreadId,
+                Arguments = new Dictionary<string, object?>
+                {
+                    ["result"] = "success",
+                    ["count"] = 42,
+                },
+            });
+            #endregion
+        }
+    }
+
+    [Fact]
+    public async Task ReadmeExample_DurationEvents()
+    {
+        var phases = await GetReadmeExamplePhasesAsync(async writer =>
+        {
+            #region ChromiumTracing_DurationEvents
+            // Begin event
+            await writer.WriteEventAsync(new ChromiumTracingDurationBeginEvent
+            {
+                Name = "Processing",
+                Category = "compute",
+                Timestamp = DateTimeOffset.UtcNow,
+                ProcessId = Environment.ProcessId,
+                ThreadId = Environment.CurrentManagedThreadId,
+            });
+
+            // ... do work ...
+
+            // End event
+            await writer.WriteEventAsync(new ChromiumTracingDurationEndEvent
+            {
+                Name = "Processing",
+                Category = "compute",
+                Timestamp = DateTimeOffset.UtcNow,
+                ProcessId = Environment.ProcessId,
+                ThreadId = Environment.CurrentManagedThreadId,
+            });
+            #endregion
+        });
+
+        Assert.Equal(["B", "E"], phases);
+    }
+
+    [Fact]
+    public async Task ReadmeExample_CompleteEvents()
+    {
+        var phases = await GetReadmeExamplePhasesAsync(async writer =>
+        {
+            #region ChromiumTracing_CompleteEvents
+            var startTime = DateTimeOffset.UtcNow;
+
+            // ... do work ...
+
+            await writer.WriteEventAsync(new ChromiumTracingCompleteEvent
+            {
+                Name = "Complete Operation",
+                Category = "work",
+                Timestamp = startTime,
+                Duration = TimeSpan.FromMilliseconds(200),
+                ProcessId = Environment.ProcessId,
+                ThreadId = Environment.CurrentManagedThreadId,
+            });
+            #endregion
+        });
+
+        Assert.Equal(["X"], phases);
+    }
+
+    [Fact]
+    public async Task ReadmeExample_InstantEvents()
+    {
+        var phases = await GetReadmeExamplePhasesAsync(async writer =>
+        {
+            #region ChromiumTracing_InstantEvents
+            await writer.WriteEventAsync(new ChromiumTracingInstantEvent
+            {
+                Name = "Checkpoint",
+                Category = "milestone",
+                Timestamp = DateTimeOffset.UtcNow,
+                Scope = ChromiumTracingInstantEventScope.Thread, // Global, Process, or Thread
+                ProcessId = Environment.ProcessId,
+                ThreadId = Environment.CurrentManagedThreadId,
+            });
+            #endregion
+        });
+
+        Assert.Equal(["i"], phases);
+    }
+
+    [Fact]
+    public async Task ReadmeExample_CounterEvents()
+    {
+        var phases = await GetReadmeExamplePhasesAsync(async writer =>
+        {
+            #region ChromiumTracing_CounterEvents
+            await writer.WriteEventAsync(new ChromiumTracingCounterEvent
+            {
+                Name = "Memory Usage",
+                Category = "system",
+                Timestamp = DateTimeOffset.UtcNow,
+                ProcessId = Environment.ProcessId,
+                Arguments = new Dictionary<string, object?>
+                {
+                    ["bytes"] = 1024 * 1024 * 500, // 500 MB
+                },
+            });
+            #endregion
+        });
+
+        Assert.Equal(["C"], phases);
+    }
+
+    [Fact]
+    public async Task ReadmeExample_AsyncEvents()
+    {
+        var phases = await GetReadmeExamplePhasesAsync(async writer =>
+        {
+            #region ChromiumTracing_AsyncEvents
+            // Start async operation
+            await writer.WriteEventAsync(new ChromiumTracingAsyncBeginEvent
+            {
+                Name = "Async Task",
+                Category = "async",
+                Timestamp = DateTimeOffset.UtcNow,
+                Id = 123, // Unique ID for this async operation
+                ProcessId = Environment.ProcessId,
+            });
+
+            // End async operation
+            await writer.WriteEventAsync(new ChromiumTracingAsyncEndEvent
+            {
+                Name = "Async Task",
+                Category = "async",
+                Timestamp = DateTimeOffset.UtcNow,
+                Id = 123, // Same ID as begin event
+                ProcessId = Environment.ProcessId,
+            });
+
+            // Instant async event
+            await writer.WriteEventAsync(new ChromiumTracingAsyncInstantEvent
+            {
+                Name = "Async Milestone",
+                Category = "async",
+                Timestamp = DateTimeOffset.UtcNow,
+                Id = 123,
+                ProcessId = Environment.ProcessId,
+            });
+            #endregion
+        });
+
+        Assert.Equal(["b", "e", "n"], phases);
+    }
+
+    [Fact]
+    public async Task ReadmeExample_FlowEvents()
+    {
+        var phases = await GetReadmeExamplePhasesAsync(async writer =>
+        {
+            #region ChromiumTracing_FlowEvents
+            // Start flow
+            await writer.WriteEventAsync(new ChromiumTracingFlowBeginEvent
+            {
+                Name = "Request Flow",
+                Category = "network",
+                Timestamp = DateTimeOffset.UtcNow,
+                ProcessId = Environment.ProcessId,
+            });
+
+            // Flow step
+            await writer.WriteEventAsync(new ChromiumTracingFlowStepEvent
+            {
+                Name = "Request Flow",
+                Category = "network",
+                Timestamp = DateTimeOffset.UtcNow,
+                ProcessId = Environment.ProcessId,
+            });
+
+            // End flow
+            await writer.WriteEventAsync(new ChromiumTracingFlowEndEvent
+            {
+                Name = "Request Flow",
+                Category = "network",
+                Timestamp = DateTimeOffset.UtcNow,
+                ProcessId = Environment.ProcessId,
+            });
+            #endregion
+        });
+
+        Assert.Equal(["s", "t", "f"], phases);
+    }
+
+    [Fact]
+    public async Task ReadmeExample_ObjectEvents()
+    {
+        var phases = await GetReadmeExamplePhasesAsync(async writer =>
+        {
+            #region ChromiumTracing_ObjectEvents
+            // Object created
+            await writer.WriteEventAsync(new ChromiumTracingObjectCreatedEvent
+            {
+                Name = "MyObject",
+                Category = "objects",
+                Timestamp = DateTimeOffset.UtcNow,
+                Id = "obj-1",
+                ProcessId = Environment.ProcessId,
+            });
+
+            // Object snapshot
+            await writer.WriteEventAsync(new ChromiumTracingObjectSnapshotEvent
+            {
+                Name = "MyObject",
+                Category = "objects",
+                Timestamp = DateTimeOffset.UtcNow,
+                Id = "obj-1",
+                ProcessId = Environment.ProcessId,
+                Arguments = new Dictionary<string, object?>
+                {
+                    ["state"] = "active",
+                },
+            });
+
+            // Object destroyed
+            await writer.WriteEventAsync(new ChromiumTracingObjectDestroyedEvent
+            {
+                Name = "MyObject",
+                Category = "objects",
+                Timestamp = DateTimeOffset.UtcNow,
+                Id = "obj-1",
+                ProcessId = Environment.ProcessId,
+            });
+            #endregion
+        });
+
+        Assert.Equal(["N", "O", "D"], phases);
+    }
+
+    [Fact]
+    public async Task ReadmeExample_MetadataEvents()
+    {
+        var phases = await GetReadmeExamplePhasesAsync(async writer =>
+        {
+            #region ChromiumTracing_MetadataEvents
+            // Set process name
+            await writer.WriteEventAsync(ChromiumTracingMetadataEvent.ProcessName(
+                Environment.ProcessId,
+                "My Application"));
+
+            // Set process labels
+            await writer.WriteEventAsync(ChromiumTracingMetadataEvent.ProcessLabels(
+                Environment.ProcessId,
+                "label1", "label2"));
+
+            // Set process sort index
+            await writer.WriteEventAsync(ChromiumTracingMetadataEvent.ProcessSortIndex(
+                Environment.ProcessId,
+                1));
+
+            // Set thread name
+            await writer.WriteEventAsync(ChromiumTracingMetadataEvent.ThreadName(
+                Environment.ProcessId,
+                Environment.CurrentManagedThreadId,
+                "Main Thread"));
+
+            // Set thread sort index
+            await writer.WriteEventAsync(ChromiumTracingMetadataEvent.ThreadSortIndex(
+                Environment.ProcessId,
+                Environment.CurrentManagedThreadId,
+                0));
+            #endregion
+        });
+
+        Assert.Equal(["M", "M", "M", "M", "M"], phases);
+    }
+
+    [Fact]
+    public async Task ReadmeExample_MemoryDumpEvents()
+    {
+        var phases = await GetReadmeExamplePhasesAsync(async writer =>
+        {
+            #region ChromiumTracing_MemoryDumpEvents
+            // Process memory dump
+            await writer.WriteEventAsync(new ChromiumTracingMemoryDumpProcessEvent
+            {
+                Timestamp = DateTimeOffset.UtcNow,
+                ProcessId = Environment.ProcessId,
+            });
+
+            // Global memory dump
+            await writer.WriteEventAsync(new ChromiumTracingMemoryDumpGlobalEvent
+            {
+                Timestamp = DateTimeOffset.UtcNow,
+            });
+            #endregion
+        });
+
+        Assert.Equal(["v", "V"], phases);
+    }
+
+    [Fact]
+    public async Task ReadmeExample_OtherEvents()
+    {
+        var phases = await GetReadmeExamplePhasesAsync(async writer =>
+        {
+            #region ChromiumTracing_OtherEvents
+            // Mark event
+            await writer.WriteEventAsync(new ChromiumTracingMarkEvent
+            {
+                Name = "Mark Point",
+                Category = "marks",
+                Timestamp = DateTimeOffset.UtcNow,
+                ProcessId = Environment.ProcessId,
+            });
+
+            // Clock sync event
+            await writer.WriteEventAsync(new ChromiumTracingClockSyncEvent
+            {
+                Timestamp = DateTimeOffset.UtcNow,
+                ProcessId = Environment.ProcessId,
+            });
+
+            // Context events (for tracking nested scopes)
+            await writer.WriteEventAsync(new ChromiumTracingContextBeginEvent
+            {
+                Name = "Context",
+                Category = "context",
+                Timestamp = DateTimeOffset.UtcNow,
+                ProcessId = Environment.ProcessId,
+            });
+
+            await writer.WriteEventAsync(new ChromiumTracingContextEndEvent
+            {
+                Name = "Context",
+                Category = "context",
+                Timestamp = DateTimeOffset.UtcNow,
+                ProcessId = Environment.ProcessId,
+            });
+            #endregion
+        });
+
+        Assert.Equal(["R", "c", "(", ")"], phases);
+    }
+
+    [Fact]
+    public async Task ReadmeExample_Compression()
+    {
+        try
+        {
+            await WriteTraceAsync();
+
+            using var decompressed = new MemoryStream();
+            await using (var gzip = new GZipStream(File.OpenRead("trace.json.gz"), CompressionMode.Decompress))
+            {
+                await gzip.CopyToAsync(decompressed);
+            }
+
+            using var document = JsonDocument.Parse(decompressed.ToArray());
+            var tracingEvent = Assert.Single(document.RootElement.EnumerateArray());
+            Assert.Equal("Operation", tracingEvent.GetProperty("name").GetString());
+        }
+        finally
+        {
+            File.Delete("trace.json.gz");
+        }
+
+        static async Task WriteTraceAsync()
+        {
+            #region ChromiumTracing_Compression
+            // Create compressed file
+            await using var writer = ChromiumTracingWriter.CreateGzip(
+                "trace.json.gz",
+                CompressionLevel.Fastest);
+
+            await writer.WriteEventAsync(new ChromiumTracingCompleteEvent
+            {
+                Name = "Operation",
+                Timestamp = DateTimeOffset.UtcNow,
+                Duration = TimeSpan.FromMilliseconds(100),
+            });
+            #endregion
+        }
+    }
+
+    // Runs a readme example that writes events to the writer it is given, and returns the phases of the written events
+    private static async Task<List<string?>> GetReadmeExamplePhasesAsync(Func<ChromiumTracingWriter, Task> writeEvents)
+    {
+        using var stream = new MemoryStream();
+        await using (var writer = ChromiumTracingWriter.Create(stream, streamOwned: false))
+        {
+            await writeEvents(writer);
+        }
+
+        using var document = JsonDocument.Parse(stream.ToArray());
+        return document.RootElement.EnumerateArray().Select(element => element.GetProperty("ph").GetString()).ToList();
     }
 
     private static List<Type> GetConcreteEventTypes()

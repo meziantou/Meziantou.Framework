@@ -25,11 +25,12 @@ A .NET library for managing Linux Control Groups v2 (cgroups v2).
 
 ## Usage
 
+The types are in the `Meziantou.Framework.Unix.ControlGroups` namespace, and are only supported on Linux. The sections below continue each other: they use the `root`, `myGroup`, and `subGroup` variables of the first one.
+
 ### Basic Operations
 
+<!-- ref:../../samples/Meziantou.Framework.Unix.ControlGroups.Samples/ReadmeExamples.cs;region=CGroup2_BasicOperations;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Unix.ControlGroups;
-
 // Get the root cgroup
 var root = CGroup2.Root;
 
@@ -42,9 +43,11 @@ myGroup.AssociateProcess(Environment.ProcessId);
 // Create nested cgroups
 var subGroup = myGroup.CreateOrGetChild("worker1");
 ```
+<!-- endref -->
 
 ### CPU Control
 
+<!-- ref:../../samples/Meziantou.Framework.Unix.ControlGroups.Samples/ReadmeExamples.cs;region=CGroup2_CpuControl;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Enable the CPU controller for the children of the root cgroup, which is where myGroup lives.
 // Controllers are always enabled on the PARENT, never on the cgroup being limited.
@@ -67,9 +70,11 @@ if (myGroup.GetCpuStat().TryGetValue(out var cpuStat))
     Console.WriteLine($"System time: {cpuStat.SystemMicroseconds} μs");
 }
 ```
+<!-- endref -->
 
 ### Memory Control
 
+<!-- ref:../../samples/Meziantou.Framework.Unix.ControlGroups.Samples/ReadmeExamples.cs;region=CGroup2_MemoryControl;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Enable the memory controller on the parent (see the note in "CPU Control")
 root.SetControllers("memory");
@@ -108,9 +113,11 @@ if (myGroup.GetMemoryStat().TryGetValue(out var memoryStat))
     Console.WriteLine($"Page faults: {memoryStat.PageFault}");
 }
 ```
+<!-- endref -->
 
 ### IO Control
 
+<!-- ref:../../samples/Meziantou.Framework.Unix.ControlGroups.Samples/ReadmeExamples.cs;region=CGroup2_IoControl;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Enable the IO controller on the parent
 root.SetControllers("io");
@@ -126,23 +133,23 @@ myGroup.SetIoMax(
     major: 8,
     minor: 0,
     readBytesPerSecond: 10 * 1024 * 1024,
-    writeBytesPerSecond: 5 * 1024 * 1024
-);
+    writeBytesPerSecond: 5 * 1024 * 1024);
 
 // Set IOPS limits
 myGroup.SetIoMax(
     major: 8,
     minor: 0,
     readIopsPerSecond: 1000,
-    writeIopsPerSecond: 500
-);
+    writeIopsPerSecond: 500);
 
 // Remove limits
 myGroup.RemoveIoMax(8, 0);
 ```
+<!-- endref -->
 
 ### PID Control
 
+<!-- ref:../../samples/Meziantou.Framework.Unix.ControlGroups.Samples/ReadmeExamples.cs;region=CGroup2_PidControl;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Enable the PIDs controller on the parent
 root.SetControllers("pids");
@@ -158,9 +165,11 @@ Console.WriteLine($"Current processes: {currentPids.Value}");
 var maxPids = myGroup.GetPidsMax();
 Console.WriteLine($"Max processes: {maxPids.GetValueOrDefault(long.MaxValue)}");
 ```
+<!-- endref -->
 
 ### CPU Affinity (Cpuset)
 
+<!-- ref:../../samples/Meziantou.Framework.Unix.ControlGroups.Samples/ReadmeExamples.cs;region=CGroup2_Cpuset;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Enable the cpuset controller on the parent
 root.SetControllers("cpuset");
@@ -181,9 +190,11 @@ Console.WriteLine($"Effective CPUs: {string.Join(", ", effectiveCpus.GetValueOrD
 // Set partition type
 myGroup.SetCpusetPartition("isolated");
 ```
+<!-- endref -->
 
 ### HugeTLB Control
 
+<!-- ref:../../samples/Meziantou.Framework.Unix.ControlGroups.Samples/ReadmeExamples.cs;region=CGroup2_HugeTlb;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Enable hugetlb controller (if available)
 // Note: HugeTLB support depends on kernel configuration
@@ -202,9 +213,11 @@ if (current.IsConfigured)
 var limitHits = myGroup.GetHugeTlbEventsMax("2MB");
 Console.WriteLine($"HugeTLB limit hits: {limitHits.GetValueOrDefault(0)}");
 ```
+<!-- endref -->
 
 ### Process Management
 
+<!-- ref:../../samples/Meziantou.Framework.Unix.ControlGroups.Samples/ReadmeExamples.cs;region=CGroup2_ProcessManagement;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Associate a process
 using var process = Process.Start("myapp");
@@ -228,9 +241,11 @@ foreach (var tid in myGroup.GetThreads())
     Console.WriteLine($"Thread: {tid}");
 }
 ```
+<!-- endref -->
 
 ### Freezer
 
+<!-- ref:../../samples/Meziantou.Framework.Unix.ControlGroups.Samples/ReadmeExamples.cs;region=CGroup2_Freezer;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Freeze all processes (SIGSTOP)
 myGroup.Freeze();
@@ -244,16 +259,20 @@ if (myGroup.IsFrozen())
 // Unfreeze
 myGroup.Unfreeze();
 ```
+<!-- endref -->
 
 ### Kill All Processes
 
+<!-- ref:../../samples/Meziantou.Framework.Unix.ControlGroups.Samples/ReadmeExamples.cs;region=CGroup2_Kill;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Kill all processes in the cgroup (SIGKILL)
 myGroup.Kill();
 ```
+<!-- endref -->
 
 ### Controller Management
 
+<!-- ref:../../samples/Meziantou.Framework.Unix.ControlGroups.Samples/ReadmeExamples.cs;region=CGroup2_ControllerManagement;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Get available controllers
 var available = myGroup.GetAvailableControllers();
@@ -270,14 +289,17 @@ myGroup.SetControllers("cpu", "memory", "io");
 // Prefixing a controller name with '-' disables that controller. For example, "-io" disables the IO controller.
 myGroup.SetControllers("-io");
 ```
+<!-- endref -->
 
 ### Cleanup
 
+<!-- ref:../../samples/Meziantou.Framework.Unix.ControlGroups.Samples/ReadmeExamples.cs;region=CGroup2_Cleanup;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Delete a cgroup (must be empty - no processes, no child cgroups)
 subGroup.Delete();
 myGroup.Delete();
 ```
+<!-- endref -->
 
 ## Important Notes
 
@@ -308,10 +330,10 @@ myGroup.Delete();
 
 ## Example: Complete Application Resource Limiting
 
-```csharp
-using Meziantou.Framework.Unix.ControlGroups;
-using System.Diagnostics;
+`Process` is in the `System.Diagnostics` namespace.
 
+<!-- ref:../../samples/Meziantou.Framework.Unix.ControlGroups.Samples/ReadmeExamples.cs;region=CGroup2_CompleteExample;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Create a cgroup for the application
 var appGroup = CGroup2.Root.CreateOrGetChild("myapp");
 
@@ -335,17 +357,18 @@ while (!process.HasExited)
     var cpuStat = appGroup.GetCpuStat();
     var memCurrent = appGroup.GetMemoryCurrent();
     var pidsCurrent = appGroup.GetPidsCurrent();
-    
+
     Console.WriteLine($"CPU: {cpuStat.Value.UsageMicroseconds} μs");
     Console.WriteLine($"Memory: {memCurrent.Value / (1024.0 * 1024):F2} MB");
     Console.WriteLine($"Processes: {pidsCurrent.Value}");
-    
+
     await Task.Delay(1000);
 }
 
 // Cleanup
 appGroup.Delete();
 ```
+<!-- endref -->
 
 ## References
 

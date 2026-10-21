@@ -13,6 +13,49 @@ public sealed class ImageSnapshotTests
     private static readonly Rgba32 Black = Colors.Black;
 
     [Fact]
+    public void ReadmeExample_AddImageComparer()
+    {
+        #region SnapshotTestingImaging_AddImageComparer
+        var settings = new SnapshotSettings(); // SnapshotSettings.Default in the module initializer
+        settings.Comparers.AddImageComparer();
+        Assert.IsType<ImageComparer>(settings.Comparers.Get(SnapshotType.Png));
+        #endregion
+    }
+
+    // The verified frames are __snapshots__/ImageSnapshotTests_ReadmeExample_GifAndIcoFrames*.verified.png
+    [Fact]
+    public void ReadmeExample_GifAndIcoFrames()
+    {
+        #region SnapshotTestingImaging_GifAndIcoFrames
+        var settings = SnapshotSettings.Default with { };
+        settings.Serializers.AddGifSerializer();
+        settings.Serializers.AddIcoSerializer();
+        settings.Comparers.AddImageComparer();
+
+        var gifBytes = File.ReadAllBytes("animation.gif");
+        var icoBytes = File.ReadAllBytes("favicon.ico");
+        Snapshot.Validate(gifBytes, SnapshotType.Gif, settings);
+        Snapshot.Validate(icoBytes, SnapshotType.Ico, settings);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Thresholds()
+    {
+        #region SnapshotTestingImaging_Thresholds
+        var settings = new SnapshotSettings(); // SnapshotSettings.Default in the module initializer
+        settings.AddImaging(new ImageComparisonSettings
+        {
+            SimilarityThreshold = 0.99f, // SSIM: 0.0 = completely different, 1.0 = identical
+            DHashThreshold = 4,          // dHash distance: 0 = same structure, up to 64
+            PHashThreshold = 4,          // pHash distance: 0 = same structure, up to 64
+        });
+        #endregion
+
+        Assert.IsType<ImageComparer>(settings.Comparers.Get(SnapshotType.Png));
+    }
+
+    [Fact]
     public void AddImaging_RegistersTheComparerForEveryImageType()
     {
         var settings = new SnapshotSettings();

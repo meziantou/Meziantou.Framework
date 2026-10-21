@@ -1,0 +1,24 @@
+<LogViewer Entries="@logEntries" />
+
+@code {
+    private List<LogEntry> logEntries = new()
+    {
+        new LogEntry
+        {
+            Timestamp = DateTimeOffset.UtcNow,
+            LogLevel = LogLevel.Information,
+            Message = new
+            {
+                Text = "Request completed with details",
+                UserId = 123,
+                Endpoint = "/api/users",
+                Duration = TimeSpan.FromMilliseconds(245),
+                Headers = new Dictionary<string, string>
+                {
+                    { "User-Agent", "Mozilla/5.0" },
+                    { "Content-Type", "application/json" }
+                }
+            }
+        },
+    };
+}

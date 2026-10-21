@@ -4,32 +4,46 @@ An `ILogger` implementation that writes to a file. The messages are queued and w
 
 ## Usage
 
-```c#
-using Microsoft.Extensions.Logging;
+The types are in the `Meziantou.Extensions.Logging` namespace, and `LoggerFactory` is in `Microsoft.Extensions.Logging`.
 
-var logsDirectory = Path.Combine(Path.GetTempPath(), "logs");
-using var provider = new FileLoggerProvider(logsDirectory);
+<!-- ref:../../tests/Meziantou.Extensions.Logging.FileLogger.Tests/FileLoggerProviderTests.cs;region=FileLogger_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var logsDirectory = Directory.CreateTempSubdirectory("logs").FullName;
+await using var provider = new FileLoggerProvider(logsDirectory);
 
 using var loggerFactory = LoggerFactory.Create(builder => builder.AddProvider(provider));
 var logger = loggerFactory.CreateLogger("Sample");
 
 logger.LogInformation("Hello from file logger");
-Console.WriteLine($"Log file: {provider.LogFilePath}");
+
+// Wait for the background thread to write the pending messages
+await provider.FlushAsync();
+
+var logFilePath = provider.LogFilePath;
+Assert.NotNull(logFilePath);
+Assert.StartsWith(logsDirectory, logFilePath);
 ```
+<!-- endref -->
 
 ## Dependency Injection
 
-```c#
+`AddFile` registers the provider on the `ILoggingBuilder` of a host (`Host` is in the `Microsoft.Extensions.Hosting`
+namespace):
+
+<!-- ref:../../samples/Meziantou.Extensions.Logging.FileLogger.Samples/ReadmeExamples.cs;region=FileLogger_AddFileWithOptions;format=md-fenced-code-block;dedent=true -->
+```csharp
 var builder = Host.CreateApplicationBuilder(args);
 builder.Logging.AddFile(options =>
 {
     options.Directory = "logs";
     options.RollInterval = RollInterval.Daily;
     options.MaxRetainedFiles = 7;
-    options.CompressRolledFiles = true;
+    options.Compression = LogFileCompression.GZip;
+    options.CompressionMode = LogFileCompressionMode.OnRoll;
     options.IncludeScopes = true;
 });
 ```
+<!-- endref -->
 
 The options can also be set from the configuration, using the `File` provider alias:
 
@@ -50,9 +64,11 @@ The options can also be set from the configuration, using the `File` provider al
 }
 ```
 
-```c#
+<!-- ref:../../samples/Meziantou.Extensions.Logging.FileLogger.Samples/ReadmeExamples.cs;region=FileLogger_AddFileFromConfiguration;format=md-fenced-code-block;dedent=true -->
+```csharp
 builder.Logging.AddFile();
 ```
+<!-- endref -->
 
 Note that the options related to the log file itself (`Directory`, file name, `Append`, rolling, `MaxQueueLength`, `QueueFullMode`) are read when the provider is created. The other options are re-read when the configuration changes.
 
@@ -74,20 +90,25 @@ The log files are named `{FileNamePrefix}{timestamp}-{processId}{FileNameExtensi
 - `IncludeProcessIdInFileName` must be `false` to reuse a file across restarts, as the identifier of the process changes.
 
 With the default values of these two options, a new file is created on every start even when `Append` is `true`.
+In the snippets below, `options` is the `FileLoggerOptions` instance passed to the `AddFile` callback.
 
-```c#
+<!-- ref:../../tests/Meziantou.Extensions.Logging.FileLogger.Tests/FileLoggerProviderTests.cs;region=FileLogger_Append;format=md-fenced-code-block;dedent=true -->
+```csharp
 options.Append = true;
 options.RollInterval = RollInterval.Daily;
 options.IncludeProcessIdInFileName = false; // Required to reuse the file after a restart
 ```
+<!-- endref -->
 
 ## Compression
 
-```c#
+<!-- ref:../../tests/Meziantou.Extensions.Logging.FileLogger.Tests/FileLoggerProviderTests.cs;region=FileLogger_Compression;format=md-fenced-code-block;dedent=true -->
+```csharp
 options.Compression = LogFileCompression.GZip;      // GZip, Brotli, or Zstandard (.NET 11+)
 options.CompressionLevel = CompressionLevel.SmallestSize;
 options.CompressionMode = LogFileCompressionMode.Continuous;
 ```
+<!-- endref -->
 
 | `CompressionMode` | Description |
 | --- | --- |
@@ -104,9 +125,11 @@ options.CompressionMode = LogFileCompressionMode.Continuous;
 
 On Unix, the log files are created with the default mode of the platform, which usually makes them readable by every local user. Set `UnixCreateMode` when the messages can contain sensitive data:
 
-```c#
+<!-- ref:../../tests/Meziantou.Extensions.Logging.FileLogger.Tests/FileLoggerProviderTests.cs;region=FileLogger_UnixCreateMode;format=md-fenced-code-block;dedent=true -->
+```csharp
 options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
 ```
+<!-- endref -->
 
 The value is ignored on Windows, and it is still filtered by the umask of the process. The mode of the directory is not changed, so create the directory yourself when it must be private too.
 
@@ -120,9 +143,11 @@ The value is ignored on Windows, and it is still filtered by the umask of the pr
 
 `JsonFileFormatter` writes one JSON object per entry, including the message template and its named parameters:
 
-```c#
+<!-- ref:../../samples/Meziantou.Extensions.Logging.FileLogger.Samples/ReadmeExamples.cs;region=FileLogger_JsonFormatter;format=md-fenced-code-block;dedent=true -->
+```csharp
 builder.Logging.AddFile("logs", options => options.FormatterName = FileFormatterNames.Json);
 ```
+<!-- endref -->
 
 ```json
 {"Timestamp":"2024-01-02 03:04:05.006","LogLevel":"INFO","Category":"Sample.Program","Message":"Hello world","State":{"Name":"world","{OriginalFormat}":"Hello {Name}"},"Scopes":["Scope1"]}
@@ -150,9 +175,11 @@ You can also write a custom formatter by inheriting from `FileFormatter` and set
 
 `SimpleFileFormatter` writes the messages as-is, so a value containing a line break produces several lines. When the value comes from an untrusted source, it can forge entries that look exactly like real ones:
 
-```c#
+<!-- ref:../../tests/Meziantou.Extensions.Logging.FileLogger.Tests/FileLoggerProviderTests.cs;region=FileLogger_UntrustedData;format=md-fenced-code-block;dedent=true -->
+```csharp
 logger.LogInformation("User said: {Text}", "hello\n[2020-01-01 00:00:00.000] [CRIT] [Security] admin login succeeded");
 ```
+<!-- endref -->
 
 Set `EscapeControlCharacters` to `true` to write `\n`, `\r`, `\t` and the other control characters as escape sequences, so an entry always spans a single line. The stack traces are then written on a single line, which is harder to read. `JsonFileFormatter` is not affected, as the JSON writer already escapes the control characters.
 

@@ -4,12 +4,10 @@
 
 ## Setup
 
-Call `AddRoslyn()` on your `SnapshotSettings` to register the serializers and converters:
+Call `AddRoslyn()` on your `SnapshotSettings` to register the serializers and converters. `AddRoslyn` is in the `Meziantou.Framework.SnapshotTesting.Roslyn` namespace, and `ModuleInitializer` in `System.Runtime.CompilerServices`:
 
+<!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Roslyn.Tests/RoslynSnapshotSerializerTests.cs;region=SnapshotSettings_AddRoslyn;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.SnapshotTesting;
-using Meziantou.Framework.SnapshotTesting.Roslyn;
-
 internal static class SnapshotConfiguration
 {
     [ModuleInitializer]
@@ -19,6 +17,7 @@ internal static class SnapshotConfiguration
     }
 }
 ```
+<!-- endref -->
 
 ## Supported types
 
@@ -31,68 +30,87 @@ internal static class SnapshotConfiguration
 
 ## Source generators
 
-```csharp
-[Fact]
-public void GenerateCode()
-{
-    var compilation = CSharpCompilation.Create("compilation", [CSharpSyntaxTree.ParseText(source)], references);
-    GeneratorDriver driver = CSharpGeneratorDriver.Create(new MyGenerator());
-    driver = driver.RunGenerators(compilation);
+Run the generator in a test and validate the result of the run:
 
-    Snapshot.Validate(driver.GetRunResult());
-}
+<!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Roslyn.Tests/RoslynSnapshotSerializerTests.cs;region=SnapshotRoslyn_SourceGenerator;format=md-fenced-code-block;dedent=true -->
+```csharp
+var source = "partial class Customer; partial class Order;";
+MetadataReference[] references = [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)];
+
+var compilation = CSharpCompilation.Create("compilation", [CSharpSyntaxTree.ParseText(source)], references);
+GeneratorDriver driver = CSharpGeneratorDriver.Create(new MyGenerator());
+driver = driver.RunGenerators(compilation);
+
+Snapshot.Validate(driver.GetRunResult());
 ```
+<!-- endref -->
 
 - One `.cs` file per generated source, ordered by hint name. The order in which the driver runs the generators is not a contract, so it is not used to name the files.
 - Each file starts with a `// HintName: <name>` comment, so renaming a generated file shows up as a diff.
 - A final `.txt` file listing the diagnostics reported by the generators and, if a generator threw, the exception it threw. The file is omitted when there is nothing to report.
 
-Because a run usually produces several files, the snapshots are numbered: `MyTests.GenerateCode_0.verified.cs`, `MyTests.GenerateCode_1.verified.cs`, `MyTests.GenerateCode_2.verified.txt`, … Adding a generated source therefore shifts the files that come after it in hint-name order.
+Because a run usually produces several files, the snapshots are numbered: `MyTests_GenerateCode_0.verified.cs`, `MyTests_GenerateCode_1.verified.cs`, `MyTests_GenerateCode_2.verified.txt`, … Adding a generated source therefore shifts the files that come after it in hint-name order.
 
 A run that generated no source and reported no diagnostic has nothing to compare, and fails with a `SnapshotException`.
 
 ## Syntax trees, nodes, tokens and trivia
 
-```csharp
-[Fact]
-public void RewriteSyntaxTree()
-{
-    var tree = CSharpSyntaxTree.ParseText(source);
+Validate the tree, or any node of it, for example the output of a syntax rewriter:
 
-    Snapshot.Validate(new MyRewriter().Visit(tree.GetRoot()));
-}
+<!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Roslyn.Tests/RoslynSnapshotSerializerTests.cs;region=SnapshotRoslyn_SyntaxRewriter;format=md-fenced-code-block;dedent=true -->
+```csharp
+var tree = CSharpSyntaxTree.ParseText("""
+    public class Sample
+    {
+        public class Nested;
+    }
+    """);
+
+Snapshot.Validate(new MyRewriter().Visit(tree.GetRoot()));
 ```
+<!-- endref -->
 
 The value is stored as a single `.cs` file (`.vb` for Visual Basic) containing its full text, trivia included. The text is not reformatted, so a change in the generated whitespace shows up as a diff.
 
 A `SourceText`, and an empty token or trivia list, have no language attached: they use the extension of the requested snapshot type, which defaults to `.txt`.
 
+<!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Roslyn.Tests/RoslynSnapshotSerializerTests.cs;region=SnapshotRoslyn_SourceText;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var sourceText = SourceText.From("class Sample;\n");
 Snapshot.Validate(sourceText, SnapshotType.Create("cs"));
 ```
+<!-- endref -->
 
 ## Diagnostics
 
-```csharp
-[Fact]
-public async Task ReportDiagnostics()
-{
-    var diagnostics = await compilation.WithAnalyzers([new MyAnalyzer()]).GetAnalyzerDiagnosticsAsync();
+Validate the diagnostics reported by an analyzer:
 
-    Snapshot.Validate(diagnostics);
-}
+<!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Roslyn.Tests/RoslynSnapshotSerializerTests.cs;region=SnapshotRoslyn_Diagnostics;format=md-fenced-code-block;dedent=true -->
+```csharp
+var source = """
+    class Sample
+    {
+        void DoNotUse() { }
+    }
+    """;
+var compilation = CSharpCompilation.Create("compilation", [CSharpSyntaxTree.ParseText(source, path: "Sample.cs")]);
+
+var diagnostics = await compilation.WithAnalyzers([new MyAnalyzer()]).GetAnalyzerDiagnosticsAsync();
+
+Snapshot.Validate(diagnostics);
 ```
+<!-- endref -->
 
 Each diagnostic is written on its own line, the way the compiler reports it:
 
 ```text
-Sample.cs(4,10): warning MY0001: Do not use this method
+Sample.cs(3,10): warning MY0001: Do not use this method
 warning MY0002: This diagnostic has no location
 ```
 
 - The message is formatted with the invariant culture, so the snapshot does not depend on the machine's UI culture. `Diagnostic.ToString()` uses the current UI culture, which is why it is not used here.
 - Positions are one-based, like the compiler reports them.
-- The order is the one the collection was in. An assertion on a list of diagnostics is usually about the order they were reported in, so it is not sorted; sort the list yourself when its source does not guarantee an order.
+- The diagnostics are sorted by path, position, ID, then message, so the snapshot does not depend on the order the analyzers reported them in, which is not deterministic when they run concurrently.
 - An empty collection produces an empty file: that is the point when the test asserts no diagnostic is reported.
 - The path comes from the syntax tree. A tree parsed from a string has no path; a tree read from disk carries the path it was read with, which is machine-specific unless it is relative. Use a [scrubber](https://www.nuget.org/packages/Meziantou.Framework.SnapshotTesting) if that path ends up in the snapshot.
 

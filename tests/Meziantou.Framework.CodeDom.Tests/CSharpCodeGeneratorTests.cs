@@ -18,6 +18,48 @@ public class CSharpCodeGeneratorTests
     }
 
     [Fact]
+    public void ReadmeExample_Usage()
+    {
+        #region CodeDom_Usage
+        var unit = new CompilationUnit();
+        unit.AddUsing("System");
+
+        var ns = unit.AddNamespace("Demo");
+        var type = ns.AddType(new ClassDeclaration("Greeter")
+        {
+            Modifiers = Modifiers.Public,
+        });
+
+        var method = type.AddMember(new MethodDeclaration("GetMessage")
+        {
+            Modifiers = Modifiers.Public | Modifiers.Static,
+            ReturnType = typeof(string),
+        });
+
+        var nameArgument = method.AddArgument("name", typeof(string));
+        method.Statements = new ReturnStatement(Expression.Add("Hello ", nameArgument, "!"));
+
+        var generatedCode = unit.ToCsharpString();
+        #endregion
+
+        // The readme shows this output after the example. The generator writes no line break between the last using
+        // directive and the first namespace.
+        Assert.Equal("""
+            using System;namespace Demo
+            {
+                public class Greeter
+                {
+                    public static string GetMessage(string name)
+                    {
+                        return (("Hello " + name) + "!");
+                    }
+                }
+            }
+
+            """, generatedCode.ReplaceLineEndings("\n"));
+    }
+
+    [Fact]
     public void CSharpCodeGenerator_Factorial()
     {
         var unit = new CompilationUnit();

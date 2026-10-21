@@ -2,6 +2,18 @@ namespace Meziantou.Framework.LLMContext.Tests;
 
 public sealed class LLMContextDetectorTests
 {
+    [Fact]
+    public void ReadmeExample_Detect()
+    {
+        #region LLMContextDetector_Detect
+        if (LLMContextDetector.IsLLMContext())
+        {
+            IReadOnlyList<LLMContextKind> contexts = LLMContextDetector.Detect();
+            Assert.NotEmpty(contexts);
+        }
+        #endregion
+    }
+
     public static TheoryData<LLMContextKind, string, string> DetectionRules()
     {
         return new()

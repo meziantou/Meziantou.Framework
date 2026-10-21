@@ -7,34 +7,37 @@
 
 ## Parse and write bencode data
 
-```csharp
-using System.IO.Pipelines;
-using Meziantou.Framework.Bencode;
+The types are in the `Meziantou.Framework.Bencode` namespace, and `PipeReader` in `System.IO.Pipelines`.
 
+<!-- ref:../../tests/Meziantou.Framework.Bencode.Tests/BencodeDocumentTests.cs;region=BencodeDocument_ParseAndWrite;format=md-fenced-code-block;dedent=true -->
+```csharp
 var data = "d3:cow3:moo4:spam4:eggse"u8.ToArray();
 var document = BencodeDocument.Parse(data);
 
-await using var input = File.OpenRead("input.bencode");
+// Parse from a stream, such as File.OpenRead("input.bencode")
+await using var input = new MemoryStream(data);
 var pipeReader = PipeReader.Create(input);
 var streamedDocument = await BencodeDocument.ParseAsync(pipeReader);
 await pipeReader.CompleteAsync();
+Assert.IsType<BencodeDictionary>(streamedDocument.Root);
 
 var dictionary = (BencodeDictionary)document.Root;
 var cow = (BencodeString)dictionary[new BencodeString("cow"u8.ToArray())];
-Console.WriteLine(cow.ToUtf8String()); // moo
+Assert.Equal("moo", cow.ToUtf8String());
 
-var encoded = dictionary.ToUtf8ByteArray(); // d3:cow3:moo4:spam4:eggse
+var encoded = dictionary.ToUtf8ByteArray();
+Assert.Equal("d3:cow3:moo4:spam4:eggse"u8.ToArray(), encoded);
 
-await using var stream = File.Create("output.bencode");
+// Write to a stream, such as File.Create("output.bencode")
+await using var stream = new MemoryStream();
 await dictionary.WriteToAsync(stream);
 ```
+<!-- endref -->
 
-You can also write bencode directly:
+You can also write bencode directly (`ArrayBufferWriter<T>` is in the `System.Buffers` namespace):
 
+<!-- ref:../../tests/Meziantou.Framework.Bencode.Tests/BencodeDocumentTests.cs;region=BencodeWriter_Write;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using System.Buffers;
-using Meziantou.Framework.Bencode;
-
 var buffer = new ArrayBufferWriter<byte>();
 var writer = new BencodeWriter(buffer);
 
@@ -44,21 +47,29 @@ writer.WriteUtf8String("moo");
 writer.WriteEndDictionary();
 writer.Complete();
 
-var data = buffer.WrittenSpan.ToArray(); // d3:cow3:mooe
+var data = buffer.WrittenSpan.ToArray();
+Assert.Equal("d3:cow3:mooe"u8.ToArray(), data);
 ```
+<!-- endref -->
 
 ## Parse and write torrent files
 
-```csharp
-using Meziantou.Framework.Bencode.Torrent;
+The torrent types are in the `Meziantou.Framework.Bencode.Torrent` namespace.
 
-await using var input = File.OpenRead("file.torrent");
+<!-- ref:../../tests/Meziantou.Framework.Bencode.Tests/TorrentFileTests.cs;region=TorrentFile_ParseAndWrite;format=md-fenced-code-block;dedent=true -->
+```csharp
+var content = "d8:announce14:https://t.test4:infod6:lengthi123e4:name8:file.txt12:piece lengthi16384e6:pieces20:01234567890123456789ee"u8.ToArray();
+
+// Parse from a stream, such as File.OpenRead("file.torrent")
+await using var input = new MemoryStream(content);
 var torrent = await TorrentFile.ParseAsync(input);
 
-Console.WriteLine(torrent.Announce);
-Console.WriteLine(torrent.Info.Name);
-Console.WriteLine(Convert.ToHexString(torrent.GetInfoHashSha1()));
+Assert.Equal("https://t.test", torrent.Announce);
+Assert.Equal("file.txt", torrent.Info.Name);
+Assert.Equal("5A47092756A964C26715F69510A7B35B63B3B01C", Convert.ToHexString(torrent.GetInfoHashSha1()));
 
-await using var output = File.Create("copy.torrent");
+// Write to a stream, such as File.Create("copy.torrent")
+await using var output = new MemoryStream();
 await torrent.WriteToAsync(output, canonical: true);
 ```
+<!-- endref -->

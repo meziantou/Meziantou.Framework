@@ -11,6 +11,98 @@ namespace Meziantou.Framework.PostgreSql.Tests;
 public sealed class PostgreSqlServerProtocolTests
 {
     [Fact]
+    public async Task ReadmeExample_ReadingParameters()
+    {
+        var options = new PostgreSqlServerOptions
+        {
+            AuthenticationMethod = PostgreSqlAuthenticationMethod.ClearTextPassword,
+        };
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new PostgreSqlServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(PostgreSqlAuthenticationResult.Success()),
+            (context, cancellationToken) =>
+            {
+                if (context.RequestType == PostgreSqlQueryRequestType.Describe)
+                {
+                    return ValueTask.FromResult(CreateScalarResult(PostgreSqlColumnType.Int32, 0));
+                }
+
+                #region PostgreSqlServer_ReadingParameters
+                var id = context.Parameters[0].AsInt32();
+                #endregion
+
+                return ValueTask.FromResult(CreateScalarResult(PostgreSqlColumnType.Int32, id ?? -1));
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new NpgsqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT @id";
+        command.AllResultTypesAreUnknown = true;
+        _ = command.Parameters.Add(new NpgsqlParameter("id", NpgsqlTypes.NpgsqlDbType.Integer) { Value = 42 });
+        var result = await command.ExecuteScalarAsync();
+
+        Assert.Equal(42, Convert.ToInt32(result, CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public async Task ReadmeExample_ErrorsAndCommandTags()
+    {
+        var options = new PostgreSqlServerOptions
+        {
+            AuthenticationMethod = PostgreSqlAuthenticationMethod.ClearTextPassword,
+        };
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new PostgreSqlServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(PostgreSqlAuthenticationResult.Success()),
+            (context, cancellationToken) =>
+            {
+                #region PostgreSqlServer_ErrorsAndCommandTags
+                if (context.CommandText?.StartsWith("UPDATE", StringComparison.OrdinalIgnoreCase) != true)
+                {
+                    // An error the client sees as a PostgresException, without terminating the connection.
+                    return ValueTask.FromResult(PostgreSqlQueryResult.FromError(new PostgreSqlQueryError
+                    {
+                        Code = "42601",
+                        Message = "syntax error",
+                    }));
+                }
+
+                // Affected rows for a command that returns no result set.
+                return ValueTask.FromResult(new PostgreSqlQueryResult
+                {
+                    CommandTag = "UPDATE",
+                    AffectedRowCount = 5,
+                    TransactionStatus = PostgreSqlTransactionStatus.InTransaction,
+                });
+                #endregion
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new NpgsqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var invalidCommand = connection.CreateCommand();
+        invalidCommand.CommandText = "SELEC 1";
+        var exception = await Assert.ThrowsAsync<PostgresException>(() => invalidCommand.ExecuteNonQueryAsync());
+        Assert.Equal("42601", exception.SqlState);
+
+        await using var updateCommand = connection.CreateCommand();
+        updateCommand.CommandText = "UPDATE customers SET name = 'a'";
+        Assert.Equal(5, await updateCommand.ExecuteNonQueryAsync());
+    }
+
+    [Fact]
     public async Task Npgsql_ClearTextAuthentication_UsesCallbackValidation()
     {
         const string UserName = "app_user";

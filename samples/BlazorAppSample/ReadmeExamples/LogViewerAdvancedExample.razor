@@ -1,0 +1,32 @@
+@page "/logs/advanced"
+@using Meziantou.AspNetCore.Components
+
+<LogViewer
+    Entries="@logEntries"
+    TimestampDisplayFormat="TimestampDisplayFormat.DateTimeThenRelativeTime"
+    ShowLineNumbers="true"
+    LogHighlighters="@highlighters" />
+
+@code {
+    private ILogHighlighter[] highlighters = new ILogHighlighter[]
+    {
+        new UrlLogHighlighter(),
+        new QuoteLogHighlighter()
+    };
+
+    private List<LogEntry> logEntries = new()
+    {
+        new LogEntry
+        {
+            Timestamp = DateTimeOffset.UtcNow,
+            Message = "Check out https://example.com for more info",
+            LogLevel = LogLevel.Information
+        },
+        new LogEntry
+        {
+            Timestamp = DateTimeOffset.UtcNow.AddSeconds(5),
+            Message = "User 'admin' logged in",
+            LogLevel = LogLevel.Information
+        },
+    };
+}

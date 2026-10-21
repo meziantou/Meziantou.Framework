@@ -7,13 +7,13 @@ using Meziantou.Framework.Imaging.Typography;
 namespace Meziantou.Framework.Imaging.Samples;
 
 /// <summary>
-/// Representative usage of the public API, shown by the package README (snippets), and run by
+/// Representative usage of the public API, shown by the package README (its regions), and run by
 /// the unit tests (<c>DocumentationExampleTests</c>).
 /// </summary>
 internal static class Examples
 {
     /// <summary>Eager animated resize: every frame and the poster frame are resized atomically; timing is preserved.</summary>
-    // begin-snippet: resize-animation
+    #region Imaging_ResizeAnimation
     public static void ResizeAnimation(string inputPath, string outputPath)
     {
         using var image = Image.Load(inputPath);
@@ -22,10 +22,10 @@ internal static class Examples
         // Same format as the extension; APNG/GIF timing and play count come from the decoded image
         image.Save(outputPath);
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Auto-crop: trims the uniform background around the content and keeps a margin; returns whether the image changed.</summary>
-    // begin-snippet: auto-crop
+    #region Imaging_AutoCrop
     public static bool TrimBackground(string inputPath, string outputPath)
     {
         using var image = Image.Load(inputPath);
@@ -45,10 +45,10 @@ internal static class Examples
         image.Save(outputPath);
         return changed;
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Convolution matrices: a sharpening matrix on a copy, then edge detection with the alpha of the pixels kept.</summary>
-    // begin-snippet: convolve
+    #region Imaging_Convolve
     public static void SharpenAndDetectEdges(string inputPath, string sharpenedPath, string edgesPath)
     {
         using var image = Image.Load(inputPath);
@@ -66,10 +66,10 @@ internal static class Examples
         image.Convolve(new ConvolutionOptions(laplacian) { PreserveAlpha = true, EdgeMode = ConvolutionEdgeMode.Mirror });
         image.Save(edgesPath);
     }
-    // end-snippet
+    #endregion
 
     /// <summary>New colors for an image, for a part of it, and for a drawing.</summary>
-    // begin-snippet: color-matrix
+    #region Imaging_ColorMatrix
     public static void ApplyColorFilters(string photoPath, string iconPath, string outputPath)
     {
         using var photo = Image.Load(photoPath);
@@ -95,10 +95,10 @@ internal static class Examples
 
         photo.Save(outputPath);
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Image comparison: two files look the same when every frame is similar enough to the expected one.</summary>
-    // begin-snippet: image-similarity
+    #region Imaging_ImageSimilarity
     public static bool LookTheSame(string expectedPath, string actualPath)
     {
         using var expected = Image.Load(expectedPath);
@@ -119,10 +119,10 @@ internal static class Examples
 
         return true;
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Drawing: gradients, a disk, a filled and stroked curve and a frame on a new image.</summary>
-    // begin-snippet: draw-shapes
+    #region Imaging_DrawShapes
     public static void DrawLandscape(string outputPath)
     {
         using var image = new Image<Rgba32>(256, 160);
@@ -149,10 +149,10 @@ internal static class Examples
 
         image.Save(outputPath);
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Drawing on every frame of an animation, with a static callback (no closure allocation).</summary>
-    // begin-snippet: draw-on-animation
+    #region Imaging_DrawOnAnimation
     public static void MarkAnimation(string inputPath, string outputPath)
     {
         using var image = Image.Load(inputPath);
@@ -170,10 +170,10 @@ internal static class Examples
 
         image.Save(outputPath);
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Composing a picture from another image: a clip, a rounded rectangle, a dashed line and an arc.</summary>
-    // begin-snippet: draw-card
+    #region Imaging_DrawCard
     public static void ComposeCard(string photoPath, string outputPath)
     {
         using var photo = Image.Load(photoPath);
@@ -201,10 +201,10 @@ internal static class Examples
 
         card.Save(outputPath);
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Measuring a path to place shapes along it, and turning a shape to the direction of the path.</summary>
-    // begin-snippet: draw-route
+    #region Imaging_DrawRoute
     public static void DrawRoute(string outputPath)
     {
         using var image = new Image<Rgba32>(200, 120, Colors.White);
@@ -235,10 +235,10 @@ internal static class Examples
 
         image.Save(outputPath);
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Colors of sRGB drawn on an image of another color space.</summary>
-    // begin-snippet: draw-color-managed
+    #region Imaging_DrawColorManaged
     public static void DrawBrandColors(string inputPath, string outputPath)
     {
         // A photograph whose ICC profile is not the one of sRGB (Display P3, Adobe RGB): its samples are not sRGB colors
@@ -261,10 +261,10 @@ internal static class Examples
         // The profile of the photograph is kept: the file still says what its samples are
         image.Save(outputPath);
     }
-    // end-snippet
+    #endregion
 
     /// <summary>A shape with round corners, and its outline moved outward and inward.</summary>
-    // begin-snippet: draw-sticker
+    #region Imaging_DrawSticker
     public static void DrawSticker(string outputPath)
     {
         // A star: a point above the center, at the radius of a tip or of a notch, turned by a tenth of a turn each time
@@ -295,10 +295,10 @@ internal static class Examples
 
         image.Save(outputPath);
     }
-    // end-snippet
+    #endregion
 
     /// <summary>The path data of an SVG icon, scaled to the image, and a part of its outline.</summary>
-    // begin-snippet: draw-icon
+    #region Imaging_DrawIcon
     public static string DrawIcon(string outputPath)
     {
         // The path data of an icon of 24 by 24 pixels, as the "d" attribute of an SVG file has it
@@ -320,10 +320,10 @@ internal static class Examples
         image.Save(outputPath);
         return icon.ToSvgPathData();
     }
-    // end-snippet
+    #endregion
 
     /// <summary>A shadow, a blend mode, a gradient mixed in Oklab, a rounded rectangle with a radius per corner and a layer.</summary>
-    // begin-snippet: draw-badge
+    #region Imaging_DrawBadge
     public static void DrawBadge(string outputPath)
     {
         using var image = new Image<Rgba32>(220, 120, Colors.WhiteSmoke);
@@ -352,10 +352,10 @@ internal static class Examples
 
         image.Save(outputPath);
     }
-    // end-snippet
+    #endregion
 
     /// <summary>A curve through points with markers at its ends, axes that end with an arrow, an area hatched by a pattern, and an outline on the inside of its path.</summary>
-    // begin-snippet: draw-chart
+    #region Imaging_DrawChart
     public static void DrawChart(string outputPath)
     {
         using var image = new Image<Rgba32>(240, 140, Colors.White);
@@ -389,10 +389,10 @@ internal static class Examples
 
         image.Save(outputPath);
     }
-    // end-snippet
+    #endregion
 
     /// <summary>A panel of frosted glass over a photo: the backdrop blurred inside a clip, a light out of focus, an inner shadow, and a mask by the luminance of a gradient.</summary>
-    // begin-snippet: draw-glass
+    #region Imaging_DrawGlass
     public static void DrawGlassPanel(string photoPath, string outputPath)
     {
         using var image = Image.Load(photoPath);
@@ -428,10 +428,10 @@ internal static class Examples
 
         image.Save(outputPath);
     }
-    // end-snippet
+    #endregion
 
     /// <summary>The filters of CSS: frosted glass behind a card (backdrop-filter) and a drop shadow under a badge (filter).</summary>
-    // begin-snippet: draw-filters
+    #region Imaging_DrawFilters
     public static void DrawFrostedCard(string photoPath, string outputPath)
     {
         using var image = Image.Load(photoPath);
@@ -453,10 +453,10 @@ internal static class Examples
 
         image.Save(outputPath);
     }
-    // end-snippet
+    #endregion
 
     /// <summary>An SVG filter: a ring that glows, from a blurred and colored copy of its own shape under it.</summary>
-    // begin-snippet: draw-filter-graph
+    #region Imaging_DrawFilterGraph
     public static void DrawGlowingRing(string outputPath)
     {
         using var image = new Image<Rgba32>(160, 160, new Rgba32(16, 20, 40));
@@ -474,10 +474,10 @@ internal static class Examples
         image.Draw(canvas => canvas.Filter(glow, ring => ring.StrokeCircle(new Pen(new Rgba32(255, 255, 255), 6), new PointD(80, 80), 40)));
         image.Save(outputPath);
     }
-    // end-snippet
+    #endregion
 
     /// <summary>An image drawn on a quadrilateral, as a plane seen in perspective: a screenshot on the screen of a photo.</summary>
-    // begin-snippet: draw-perspective
+    #region Imaging_DrawPerspective
     public static void DrawOnScreen(string photoPath, string screenshotPath, string outputPath)
     {
         using var photo = Image.Load(photoPath);
@@ -495,10 +495,10 @@ internal static class Examples
 
         photo.Save(outputPath);
     }
-    // end-snippet
+    #endregion
 
     /// <summary>A card turned in three dimensions and seen in perspective, as the 3D transforms of CSS draw it.</summary>
-    // begin-snippet: draw-3d
+    #region Imaging_Draw3d
     public static void DrawTiltedCard(string outputPath)
     {
         using var image = new Image<Rgba32>(240, 160, Colors.WhiteSmoke);
@@ -521,10 +521,10 @@ internal static class Examples
 
         image.Save(outputPath);
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Hard edges for pixel art, and paints mixed in linear light.</summary>
-    // begin-snippet: draw-rendering
+    #region Imaging_DrawRendering
     public static void DrawSprite(string outputPath)
     {
         using var image = new Image<Rgba32>(32, 32, Colors.Black);
@@ -545,10 +545,10 @@ internal static class Examples
 
         image.Save(outputPath);
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Typed row access with a static callback (no closure allocation).</summary>
-    // begin-snippet: typed-rows
+    #region Imaging_TypedRows
     public static void InvertColors(string path)
     {
         using var image = Image.Load<Rgba32>(path);
@@ -568,10 +568,10 @@ internal static class Examples
 
         image.Save(path);
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Typed row access passing state explicitly.</summary>
-    // begin-snippet: typed-rows-state
+    #region Imaging_TypedRowsState
     public static long ComputeLuminanceSum(Image<Gray16> image)
     {
         var total = new StrongBox<long>();
@@ -588,10 +588,10 @@ internal static class Examples
 
         return total.Value;
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Builds an animation from scratch with exact rational timing and saves it as APNG and GIF.</summary>
-    // begin-snippet: build-animation
+    #region Imaging_BuildAnimation
     public static void BuildAnimation(string apngPath, string gifPath)
     {
         using var animation = new Image<Rgba32>(64, 64, new Rgba32(255, 0, 0));
@@ -612,10 +612,10 @@ internal static class Examples
         animation.Save(apngPath, new PngEncoder { AnimationMode = PngAnimationMode.Animated });
         animation.Save(gifPath, new GifEncoder { Dithering = GifDithering.FloydSteinberg });
     }
-    // end-snippet
+    #endregion
 
     /// <summary>An animated cursor: an animation whose frames are cursor images with a hotspot, played forever.</summary>
-    // begin-snippet: animated-cursor
+    #region Imaging_AnimatedCursor
     public static Point WriteAndReadAnimatedCursor(string animationPath, string cursorPath)
     {
         using var animation = Image.Load(animationPath);
@@ -634,10 +634,10 @@ internal static class Examples
         cursor.Resize(new ResizeOptions(64, 64) { Mode = ResizeMode.Stretch, AllowUpscaling = true });
         return cursor.Frames[0].Metadata.Hotspot!.Value;
     }
-    // end-snippet
+    #endregion
 
     /// <summary>JPEG stores a single frame: export one frame explicitly and choose how to remove alpha.</summary>
-    // begin-snippet: export-jpeg-frame
+    #region Imaging_ExportJpegFrame
     public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string jpegPath)
     {
         using var animation = Image.Load(animatedPath);
@@ -650,10 +650,10 @@ internal static class Examples
             MetadataHandling = MetadataHandling.DiscardUnsupported,
         });
     }
-    // end-snippet
+    #endregion
 
     /// <summary>A progressive JPEG shows the whole picture early when it is downloaded, and is usually smaller.</summary>
-    // begin-snippet: save-progressive-jpeg
+    #region Imaging_SaveProgressiveJpeg
     public static void SaveProgressiveJpeg(string sourcePath, string jpegPath)
     {
         using var image = Image.Load<Rgb24>(sourcePath);
@@ -664,10 +664,10 @@ internal static class Examples
             MetadataHandling = MetadataHandling.DiscardUnsupported,
         });
     }
-    // end-snippet
+    #endregion
 
     /// <summary>WebP output: a lossy photo with its alpha kept losslessly, and a lossless animation published atomically.</summary>
-    // begin-snippet: save-webp
+    #region Imaging_SaveWebp
     public static void SaveWebP(string photoPath, string webpPath, string animatedPath, string animatedWebPPath)
     {
         using (var photo = Image.Load(photoPath))
@@ -686,10 +686,10 @@ internal static class Examples
         using var animation = Image.Load(animatedPath);
         animation.Save(animatedWebPPath, new WebPEncoder { Compression = WebPCompression.Lossless });
     }
-    // end-snippet
+    #endregion
 
     /// <summary>QOI output: a lossless still image, and linear-light samples whose label must survive the conversion.</summary>
-    // begin-snippet: save-qoi
+    #region Imaging_SaveQoi
     public static void SaveQoi(string inputPath, string qoiPath, string linearQoiPath, string pngPath)
     {
         using var image = Image.Load(inputPath);
@@ -704,10 +704,10 @@ internal static class Examples
             linear.Save(pngPath, new PngEncoder { MetadataHandling = MetadataHandling.DiscardUnsupported });
         }
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Asset-pipeline output: the BMP, TGA and Netpbm formats, with their explicit choices.</summary>
-    // begin-snippet: save-asset-formats
+    #region Imaging_SaveAssetFormats
     public static void SaveAssetFormats(string inputPath, string bmpPath, string tgaPath, string pnmPath)
     {
         using var image = Image.Load(inputPath);
@@ -725,10 +725,10 @@ internal static class Examples
         // PnmPixelLayout.Bitmap, and only from black and white pixels.
         frame.Save(pnmPath, new PnmEncoder());
     }
-    // end-snippet
+    #endregion
 
     /// <summary>A compact BMP for graphics: 8-bit palette indexes, run-length encoded, with an explicit color-reduction policy.</summary>
-    // begin-snippet: save-bmp-indexed
+    #region Imaging_SaveBmpIndexed
     public static void SaveIndexedBmp(string inputPath, string outputPath)
     {
         using var image = Image.Load(inputPath);
@@ -747,10 +747,10 @@ internal static class Examples
             AllowBitDepthReduction = true,
         });
     }
-    // end-snippet
+    #endregion
 
     /// <summary>A compact PNG for graphics with few colors: palette indexes instead of color samples, stored exactly.</summary>
-    // begin-snippet: save-png-indexed
+    #region Imaging_SavePngIndexed
     public static bool SaveIndexedPng(string inputPath, string outputPath)
     {
         using var image = Image.Load(inputPath);
@@ -769,10 +769,10 @@ internal static class Examples
             return false;
         }
     }
-    // end-snippet
+    #endregion
 
     /// <summary>The smallest lossless PNG or APNG: the encoder compresses the candidate encodings and keeps the smallest.</summary>
-    // begin-snippet: save-png-minimum-size
+    #region Imaging_SavePngMinimumSize
     public static void SaveSmallestPng(string inputPath, string outputPath)
     {
         using var image = Image.Load(inputPath);
@@ -782,10 +782,10 @@ internal static class Examples
         // metadata are stored exactly; only the encoding changes, and it takes several times longer.
         image.Save(outputPath, new PngEncoder { Optimization = PngOptimization.MinimumSize });
     }
-    // end-snippet
+    #endregion
 
     /// <summary>A multi-page TIFF document: pages may differ in size and pixel format, and are read one at a time.</summary>
-    // begin-snippet: tiff-pages
+    #region Imaging_TiffPages
     public static Size WriteAndReadTiffDocument(string inputPath, string documentPath)
     {
         using (var pages = ImageCollection.Create(ImageCollectionKind.Pages))
@@ -806,10 +806,10 @@ internal static class Examples
         using var page = document[1].Decode();
         return page.Size; // the second page keeps its own size, never the first one's
     }
-    // end-snippet
+    #endregion
 
     /// <summary>A multi-size icon and a cursor: representations are alternatives, never animation frames.</summary>
-    // begin-snippet: ico-representations
+    #region Imaging_IcoRepresentations
     public static Point WriteAndReadIcon(string inputPath, string iconPath, string cursorPath)
     {
         using var loaded = Image.Load(inputPath);
@@ -831,10 +831,10 @@ internal static class Examples
         using var cursor = ImageCollection.Load(cursorPath);
         return cursor.SelectBySize(new Size(16, 16)).Hotspot!.Value;
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Bounded-memory streaming transform: decode, resize and re-encode one frame at a time.</summary>
-    // begin-snippet: streaming-transform
+    #region Imaging_StreamingTransform
     public static async Task StreamingResizeAsync(Stream input, Stream output, CancellationToken cancellationToken)
     {
         await using var reader = await Image.OpenReaderAsync<Rgba32>(input, cancellationToken: cancellationToken);
@@ -859,10 +859,10 @@ internal static class Examples
 
         await writer.CompleteAsync(cancellationToken); // mandatory: disposing without Complete aborts the output
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Streaming with a reused destination: ReadFrameInto overwrites the pixels of one caller-owned image.</summary>
-    // begin-snippet: read-frame-into
+    #region Imaging_ReadFrameInto
     public static void StreamingWithReusedBuffer(string inputPath, string outputPath)
     {
         using var reader = Image.OpenReader<Rgba32>(inputPath);
@@ -893,10 +893,10 @@ internal static class Examples
 
         writer.Complete(); // publishes outputPath atomically
     }
-    // end-snippet
+    #endregion
 
     /// <summary>AVIF output: a lossy photo, a lossless image and an animation written as an image sequence.</summary>
-    // begin-snippet: save-avif
+    #region Imaging_SaveAvif
     public static void SaveAvif(string photoPath, string avifPath, string losslessPath, string animatedPath, string animatedAvifPath)
     {
         using (var photo = Image.Load(photoPath))
@@ -920,10 +920,10 @@ internal static class Examples
         using var animation = Image.Load(animatedPath);
         animation.Save(animatedAvifPath, new AvifEncoder());
     }
-    // end-snippet
+    #endregion
 
     /// <summary>AVIF input: a still image or an animation is decoded, then saved in another format.</summary>
-    // begin-snippet: load-avif
+    #region Imaging_LoadAvif
     public static string ConvertAvif(string avifPath, string pngPath)
     {
         using var image = Image.Load(avifPath);
@@ -937,10 +937,10 @@ internal static class Examples
         image.Save(pngPath, new PngEncoder { MetadataHandling = MetadataHandling.Strict });
         return description;
     }
-    // end-snippet
+    #endregion
 
     /// <summary>HEIC output: a photo that every HEIC reader opens, a lossless image and an animation written as an image sequence.</summary>
-    // begin-snippet: save-heic
+    #region Imaging_SaveHeic
     public static void SaveHeic(string photoPath, string heicPath, string losslessPath, string animatedPath, string animatedHeicPath)
     {
         using (var photo = Image.Load(photoPath))
@@ -965,10 +965,10 @@ internal static class Examples
         using var animation = Image.Load(animatedPath);
         animation.Save(animatedHeicPath, new HeicEncoder { Compression = HeicCompression.Lossy });
     }
-    // end-snippet
+    #endregion
 
     /// <summary>HEIC input: the photo of a phone is decoded, turned upright and saved as a JPEG file.</summary>
-    // begin-snippet: load-heic
+    #region Imaging_LoadHeic
     public static string ConvertHeic(string heicPath, string jpegPath)
     {
         using var image = Image.Load(heicPath);
@@ -983,10 +983,10 @@ internal static class Examples
         image.Save(jpegPath, new JpegEncoder { Quality = 90 });
         return description;
     }
-    // end-snippet
+    #endregion
 
     /// <summary>JPEG XL output: lossless files, 16-bit samples and animations included, lossy and progressive files, and what a JPEG XL file declares.</summary>
-    // begin-snippet: save-jpegxl
+    #region Imaging_SaveJpegxl
     public static string SaveJpegXl(string inputPath, string jxlPath, string lossyPath, string animatedPath, string animatedJxlPath)
     {
         using (var image = Image.Load(inputPath))
@@ -1010,10 +1010,10 @@ internal static class Examples
         var info = Image.Identify(jxlPath);
         return $"{info.Format} {info.Size.Width}x{info.Size.Height} {info.PixelFormat}, {info.BitsPerComponent} bits";
     }
-    // end-snippet
+    #endregion
 
     /// <summary>JPEG 2000 output: a lossless JP2 file, a lossy codestream, and what a JPEG 2000 file declares.</summary>
-    // begin-snippet: save-jpeg2000
+    #region Imaging_SaveJpeg2000
     public static string SaveJpeg2000(string inputPath, string jp2Path, string codestreamPath)
     {
         using var image = Image.Load(inputPath);
@@ -1036,10 +1036,10 @@ internal static class Examples
         var info = Image.Identify(jp2Path);
         return $"{info.Format} {info.Size.Width}x{info.Size.Height} {info.PixelFormat}, {info.BitsPerComponent} bits";
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Progressive reading: the renderings of a frame before it is complete.</summary>
-    // begin-snippet: progressive-read
+    #region Imaging_ProgressiveRead
     public static int ShowWhileReading(Stream input, Action<Image<Rgba32>, FrameRefinement> show)
     {
         using var reader = Image.OpenReader<Rgba32>(input);
@@ -1059,10 +1059,10 @@ internal static class Examples
 
         return renderings;
     }
-    // end-snippet
+    #endregion
 
     /// <summary>A JPEG file stored in a JPEG XL file and rebuilt, without decoding its pixels.</summary>
-    // begin-snippet: transcode-jpeg
+    #region Imaging_TranscodeJpeg
     public static bool RecompressJpeg(string jpegPath, string jxlPath, string rebuiltPath)
     {
         // No pixel is decoded: the JPEG XL file holds the coefficients of the JPEG file. A file that cannot be stored
@@ -1079,20 +1079,20 @@ internal static class Examples
         return JpegXlTranscoder.TryReconstructJpeg(jxlPath, rebuiltPath)
             && File.ReadAllBytes(jpegPath).AsSpan().SequenceEqual(File.ReadAllBytes(rebuiltPath));
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Identify without decoding pixels; unknown values stay null.</summary>
-    // begin-snippet: identify
+    #region Imaging_Identify
     public static string Describe(Stream stream)
     {
         var info = Image.Identify(stream, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
         var frames = info.FrameCount?.ToString(CultureInfo.InvariantCulture) ?? "unknown";
         return $"{info.Format} {info.Size} {info.PixelFormat}, frames: {frames}, orientation: {info.Metadata.Orientation}";
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Precision-preserving conversion with an explicit alpha policy.</summary>
-    // begin-snippet: convert-precision
+    #region Imaging_ConvertPrecision
     public static void ConvertToGray16(string inputPath, string outputPath)
     {
         using var image = Image.Load<Rgba64>(inputPath);
@@ -1104,10 +1104,10 @@ internal static class Examples
         });
         gray.Save(outputPath, new PngEncoder());
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Copies raw pixels in and out; the library never wraps caller memory.</summary>
-    // begin-snippet: raw-pixels
+    #region Imaging_RawPixels
     public static byte[] RoundTripRawPixels(ReadOnlySpan<byte> rgba, int width, int height)
     {
         using var image = Image.ImportPixelBytes<Rgba32>(rgba, width, height);
@@ -1116,10 +1116,10 @@ internal static class Examples
         image.Frames[0].CopyPixelBytesTo(result);
         return result;
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Handling the error taxonomy.</summary>
-    // begin-snippet: error-handling
+    #region Imaging_ErrorHandling
     public static Image? TryLoad(string path, ImageConfiguration configuration)
     {
         try
@@ -1145,10 +1145,10 @@ internal static class Examples
             return null; // corrupted or truncated file
         }
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Metadata editing with explicit save policies.</summary>
-    // begin-snippet: edit-metadata
+    #region Imaging_EditMetadata
     public static void EditMetadata(string path)
     {
         using var image = Image.Load(path);
@@ -1156,10 +1156,10 @@ internal static class Examples
         image.Metadata.Resolution = new ImageResolution(300, 300);
         image.Save(path, new PngEncoder { MetadataHandling = MetadataHandling.Strict });
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Explicit color management of an image: convert the pixels to sRGB.</summary>
-    // begin-snippet: convert-to-srgb
+    #region Imaging_ConvertToSrgb
     public static void ConvertToSrgb(string inputPath, string outputPath)
     {
         using var image = Image.Load(inputPath);
@@ -1173,10 +1173,10 @@ internal static class Examples
         image.Metadata.IccProfile = null;
         image.Save(outputPath);
     }
-    // end-snippet
+    #endregion
 
     /// <summary>A high dynamic range image is converted to sRGB by choosing how its highlights are compressed.</summary>
-    // begin-snippet: convert-hdr-to-srgb
+    #region Imaging_ConvertHdrToSrgb
     public static void ConvertHdrToSrgb(string avifPath, string pngPath)
     {
         using var image = Image.Load(avifPath);
@@ -1194,10 +1194,10 @@ internal static class Examples
         // The pixels are sRGB ones: the color description and the light levels went with the conversion
         image.Save(pngPath, new PngEncoder { MetadataHandling = MetadataHandling.Strict });
     }
-    // end-snippet
+    #endregion
 
     /// <summary>A CMYK JPEG is only loaded with a color conversion.</summary>
-    // begin-snippet: load-cmyk-jpeg
+    #region Imaging_LoadCmykJpeg
     public static Image LoadCmykJpeg(string path)
     {
         // Default options: converted to sRGB from the CMYK profile of the file, or from
@@ -1210,10 +1210,10 @@ internal static class Examples
         // The pixels are RGB, labeled with the destination profile (image.Metadata.IccProfile)
         return Image.Load(path, new ImageDecodeOptions { CmykConversion = conversion });
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Color conversion of sample buffers between two ICC profiles.</summary>
-    // begin-snippet: convert-samples
+    #region Imaging_ConvertSamples
     public static byte[] ConvertSamplesToSrgb(IccProfile sourceProfile, ReadOnlySpan<byte> samples)
     {
         // A transform is immutable and thread-safe: create it once for a pair of profiles and reuse it
@@ -1225,10 +1225,10 @@ internal static class Examples
         transform.Convert(samples, converted);
         return converted;
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Load a font file and read its names and its metrics at a size.</summary>
-    // begin-snippet: load-font
+    #region Imaging_LoadFont
     public static string DescribeFont(string path)
     {
         // TrueType, OpenType, WOFF and WOFF2 are detected from the content of the file.
@@ -1239,10 +1239,10 @@ internal static class Examples
             CultureInfo.InvariantCulture,
             $"{font.FamilyName} {font.SubfamilyName}: {font.GlyphCount} glyphs, ascent {metrics.Ascent:0.##}, descent {metrics.Descent:0.##}, euro sign: {hasEuro}");
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Variable fonts: draw a word at five weights of one font file.</summary>
-    // begin-snippet: variable-font
+    #region Imaging_VariableFont
     public static void DrawWeights(string variableFontPath, string outputPath)
     {
         var font = Font.Load(variableFontPath);
@@ -1264,10 +1264,10 @@ internal static class Examples
 
         image.Save(outputPath);
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Text: measure a text with a layout, then fill and outline it on an image of its size.</summary>
-    // begin-snippet: draw-text
+    #region Imaging_DrawText
     public static void DrawLabel(string fontPath, string outputPath)
     {
         var font = Font.Load(fontPath);
@@ -1291,10 +1291,10 @@ internal static class Examples
 
         image.Save(outputPath);
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Text: a wrapped and justified paragraph whose parts have their own style.</summary>
-    // begin-snippet: draw-paragraph
+    #region Imaging_DrawParagraph
     public static void DrawParagraph(string fontPath, string outputPath)
     {
         var font = Font.Load(fontPath);
@@ -1315,10 +1315,10 @@ internal static class Examples
         image.Draw(canvas => canvas.FillText(new Rgba32(0, 0, 0), layout, new PointD(10, 10)));
         image.Save(outputPath);
     }
-    // end-snippet
+    #endregion
 
     /// <summary>A transformation of the canvas: a text repeated along a diagonal, over an image.</summary>
-    // begin-snippet: draw-watermark
+    #region Imaging_DrawWatermark
     public static void DrawWatermark(string fontPath, string inputPath, string outputPath)
     {
         using var image = Image.Load(inputPath);
@@ -1341,10 +1341,10 @@ internal static class Examples
 
         image.Save(outputPath);
     }
-    // end-snippet
+    #endregion
 
     /// <summary>A title fitted to a box, with a highlighted word, an outlined word and an icon in the line.</summary>
-    // begin-snippet: draw-fitted-text
+    #region Imaging_DrawFittedText
     public static double DrawTitleCard(string fontPath, string iconPath, string outputPath)
     {
         var font = Font.Load(fontPath);
@@ -1383,10 +1383,10 @@ internal static class Examples
         image.Save(outputPath);
         return layout.Scale;
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Text in vertical lines: Japanese set from the top to the bottom, in columns that go to the left.</summary>
-    // begin-snippet: draw-vertical-text
+    #region Imaging_DrawVerticalText
     public static void DrawVerticalText(string fontPath, string outputPath)
     {
         var style = new TextStyle(Font.Load(fontPath), 24);
@@ -1404,10 +1404,10 @@ internal static class Examples
         image.Draw(canvas => canvas.FillText(new Rgba32(0, 0, 0), layout, new PointD(10, 10)));
         image.Save(outputPath);
     }
-    // end-snippet
+    #endregion
 
     /// <summary>Text: a line of text that follows a curve.</summary>
-    // begin-snippet: draw-text-on-path
+    #region Imaging_DrawTextOnPath
     public static void DrawTextOnPath(string fontPath, string outputPath)
     {
         var font = Font.Load(fontPath);
@@ -1426,5 +1426,5 @@ internal static class Examples
 
         image.Save(outputPath);
     }
-    // end-snippet
+    #endregion
 }

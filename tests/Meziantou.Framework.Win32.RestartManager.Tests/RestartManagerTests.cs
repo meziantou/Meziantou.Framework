@@ -14,6 +14,112 @@ public class RestartManagerTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ReadmeExample_IsFileLocked()
+    {
+        #region RestartManager_IsFileLocked
+        var path = Path.GetTempFileName();
+        using (File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            Assert.True(RestartManager.IsFileLocked(path));
+        }
+
+        Assert.False(RestartManager.IsFileLocked(path));
+        #endregion
+
+        File.Delete(path);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ReadmeExample_GetProcessesLockingFile()
+    {
+        #region RestartManager_GetProcessesLockingFile
+        var path = Path.GetTempFileName();
+        using (File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            var processes = RestartManager.GetProcessesLockingFile(path);
+            Assert.Equal(Environment.ProcessId, Assert.Single(processes).Id);
+
+            // The caller owns the returned Process instances
+            foreach (var process in processes)
+            {
+                process.Dispose();
+            }
+        }
+        #endregion
+
+        File.Delete(path);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ReadmeExample_GetProcessesLockingFiles()
+    {
+        #region RestartManager_GetProcessesLockingFiles
+        var path1 = Path.GetTempFileName();
+        var path2 = Path.GetTempFileName();
+        using (File.Open(path2, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            var processes = RestartManager.GetProcessesLockingFiles([path1, path2]);
+
+            Assert.Contains(Environment.ProcessId, processes.Select(process => process.Id));
+            foreach (var process in processes)
+            {
+                process.Dispose();
+            }
+        }
+        #endregion
+
+        File.Delete(path1);
+        File.Delete(path2);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ReadmeExample_ManualSession()
+    {
+        var path = Path.GetTempFileName();
+        var path1 = Path.GetTempFileName();
+        var path2 = Path.GetTempFileName();
+        using (File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            #region RestartManager_ManualSession
+            // Create a new session
+            using var session = RestartManager.CreateSession();
+
+            // Register one or more files to monitor
+            session.RegisterFile(path);
+            session.RegisterFiles([path1, path2]);
+
+            // Check if any registered resources are locked
+            Assert.True(session.IsResourcesLocked());
+
+            // Get the processes locking the resources
+            var processes = session.GetProcessesLockingResources();
+            Assert.Contains(Environment.ProcessId, processes.Select(process => process.Id));
+            foreach (var process in processes)
+            {
+                process.Dispose();
+            }
+            #endregion
+        }
+
+        File.Delete(path);
+        File.Delete(path1);
+        File.Delete(path2);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ReadmeExample_JoinSession()
+    {
+        using var existingSession = RestartManager.CreateSession();
+        var sessionKey = existingSession.SessionKey;
+
+        #region RestartManager_JoinSession
+        using var session = RestartManager.JoinSession(sessionKey);
+        #endregion
+
+        Assert.Equal(sessionKey, session.SessionKey);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void DocumentationExample()
     {
         #region RestartManager_Usage

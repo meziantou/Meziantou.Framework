@@ -1,0 +1,12 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- The examples of src/Meziantou.Framework.WebPlatform/readme.md that need the network (see Program.cs) -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <NoWarn>$(NoWarn);CA1303;CA1515;CA2007</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.Imaging\Meziantou.Framework.WebPlatform.Imaging.csproj" />
+  </ItemGroup>
+</Project>

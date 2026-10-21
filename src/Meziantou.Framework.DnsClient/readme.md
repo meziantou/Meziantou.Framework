@@ -14,56 +14,66 @@ A DNS client library supporting multiple transport protocols, the common DNS rec
 
 ## Usage
 
-```c#
-using Meziantou.Framework.DnsClient;
-using Meziantou.Framework.DnsClient.Query;
+The examples import the `Meziantou.Framework.DnsClient`, `Meziantou.Framework.DnsClient.Query` and
+`Meziantou.Framework.DnsClient.Response.Records` namespaces.
 
+<!-- ref:../../samples/Meziantou.Framework.DnsClient.Samples/ReadmeExamples.cs;region=DnsClient_Query;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Simple query using DNS over HTTPS
 using var client = new DnsClient("https://cloudflare-dns.com/dns-query", DnsClientProtocol.Https);
 var response = await client.QueryAsync("example.com", DnsQueryType.A);
 
-foreach (var record in response.Answers.OfType<Response.Records.DnsARecord>())
+foreach (var record in response.Answers.OfType<DnsARecord>())
 {
     Console.WriteLine(record.Address);
 }
 ```
+<!-- endref -->
 
 ### DNS over TLS
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.DnsClient.Samples/ReadmeExamples.cs;region=DnsClient_Tls;format=md-fenced-code-block;dedent=true -->
+```csharp
 using var client = new DnsClient("1.1.1.1", DnsClientProtocol.Tls);
 var response = await client.QueryAsync("example.com", DnsQueryType.AAAA);
 ```
+<!-- endref -->
 
 ### Reverse DNS lookup
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.DnsClient.Samples/ReadmeExamples.cs;region=DnsClient_ReverseLookup;format=md-fenced-code-block;dedent=true -->
+```csharp
 using var client = new DnsClient("https://cloudflare-dns.com/dns-query", DnsClientProtocol.Https);
 var response = await client.ReverseLookupAsync(IPAddress.Parse("1.1.1.1"));
 
-foreach (var ptr in response.Answers.OfType<Response.Records.DnsPtrRecord>())
+foreach (var ptr in response.Answers.OfType<DnsPtrRecord>())
 {
     Console.WriteLine(ptr.DomainName);
 }
 ```
+<!-- endref -->
 
 ### Internationalized domain names
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.DnsClient.Samples/ReadmeExamples.cs;region=DnsClient_Idn;format=md-fenced-code-block;dedent=true -->
+```csharp
 using var client = new DnsClient("https://cloudflare-dns.com/dns-query", DnsClientProtocol.Https);
 // Unicode domain names are automatically converted to punycode
 var response = await client.QueryAsync("münchen.de", DnsQueryType.A);
 ```
+<!-- endref -->
 
 ### DNSSEC
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.DnsClient.Samples/ReadmeExamples.cs;region=DnsClient_Dnssec;format=md-fenced-code-block;dedent=true -->
+```csharp
 using var client = new DnsClient("https://cloudflare-dns.com/dns-query", DnsClientProtocol.Https,
     new DnsClientOptions { DnssecValidationMode = DnssecValidationMode.Local });
 
 var response = await client.QueryAsync("cloudflare.com", DnsQueryType.A);
 Console.WriteLine($"Local DNSSEC validation: {response.DnssecValidationResult.Status}");
 ```
+<!-- endref -->
 
 `DnsResponseHeader.AuthenticatedData` exposes the upstream resolver's AD flag. Use `DnssecValidationMode.Local` when the client must validate the DNSSEC chain locally.
 

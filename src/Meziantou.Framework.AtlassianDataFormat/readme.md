@@ -7,9 +7,10 @@
 
 ## Convert a document to Markdown
 
-```csharp
-using Meziantou.Framework.AtlassianDataFormat;
+The types are in the `Meziantou.Framework.AtlassianDataFormat` namespace.
 
+<!-- ref:../../tests/Meziantou.Framework.AtlassianDataFormat.Tests/AdfToMarkdownTests.cs;region=AdfToMarkdown_Convert;format=md-fenced-code-block;dedent=true -->
+```csharp
 var json = """
     {
       "version": 1,
@@ -22,19 +23,18 @@ var json = """
     """;
 
 var markdown = AdfToMarkdown.Convert(json);
-
-// # Title
-//
-// **Hello**
+Assert.Equal("# Title\n\n**Hello**", markdown);
 ```
+<!-- endref -->
 
 `Convert` also accepts a `JsonElement` or a `JsonNode`, which avoids a round trip when the document
 comes from an API response you already parsed.
 
 ## Configure the conversion
 
-Defaults produce plain CommonMark/GitHub-Flavored Markdown; HTML output is opt-in.
+Defaults produce plain CommonMark/GitHub-Flavored Markdown; HTML output is opt-in. With the `json` of the previous example:
 
+<!-- ref:../../tests/Meziantou.Framework.AtlassianDataFormat.Tests/AdfToMarkdownTests.cs;region=AdfToMarkdown_Options;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var markdown = AdfToMarkdown.Convert(json, new AdfToMarkdownOptions
 {
@@ -55,6 +55,7 @@ var markdown = AdfToMarkdown.Convert(json, new AdfToMarkdownOptions
     LineBreakStyle = AdfLineBreakStyle.Backslash,
 });
 ```
+<!-- endref -->
 
 ### Resolving media and mentions
 
@@ -63,33 +64,67 @@ collection, and turning those into a URL needs an authenticated call to the medi
 returned by the APIs also often omit the display name of a mention. Both can be supplied by a
 callback:
 
+<!-- ref:../../tests/Meziantou.Framework.AtlassianDataFormat.Tests/AdfToMarkdownTests.cs;region=AdfToMarkdown_Resolvers;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var json = """
+    {
+      "version": 1,
+      "type": "doc",
+      "content": [
+        { "type": "paragraph", "content": [ { "type": "mention", "attrs": { "id": "123" } } ] },
+        {
+          "type": "mediaSingle",
+          "content": [ { "type": "media", "attrs": { "type": "file", "id": "abc", "collection": "files", "alt": "diagram.png" } } ]
+        }
+      ]
+    }
+    """;
+
+var displayNames = new Dictionary<string, string> { ["123"] = "Alex" };
 var markdown = AdfToMarkdown.Convert(json, new AdfToMarkdownOptions
 {
     MediaUrlResolver = media => $"https://media.example.com/{media.Collection}/{media.Id}",
-    MentionResolver = mention => directory.GetDisplayName(mention.Id),
+    MentionResolver = mention => displayNames.GetValueOrDefault(mention.Id),
 });
+
+Assert.Equal("@Alex\n\n![diagram.png](https://media.example.com/files/abc)", markdown);
 ```
+<!-- endref -->
 
 ## Work with the object model
 
+<!-- ref:../../tests/Meziantou.Framework.AtlassianDataFormat.Tests/AdfDocumentTests.cs;region=AdfDocument_ObjectModel;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var json = """
+    {
+      "version": 1,
+      "type": "doc",
+      "content": [
+        { "type": "heading", "attrs": { "level": 1 }, "content": [ { "type": "text", "text": "Title" } ] },
+        { "type": "paragraph", "content": [ { "type": "text", "text": "Hello " }, { "type": "mention", "attrs": { "id": "123", "text": "@Alex" } } ] }
+      ]
+    }
+    """;
+
 var document = AdfDocument.Parse(json);
 
-foreach (var mention in document.Descendants().OfType<AdfMention>())
-{
-    Console.WriteLine(mention.Id);
-}
+var mentionIds = document.Descendants().OfType<AdfMention>().Select(mention => mention.Id).ToList();
+Assert.Equal(["123"], mentionIds);
 
 var heading = (AdfHeading)document.Content[0];
-Console.WriteLine(heading.Level); // 1
+Assert.Equal(1, heading.Level);
 
 var markdown = document.ToMarkdown();
+Assert.Equal("# Title\n\nHello @Alex", markdown);
+
 var roundTripped = document.ToJsonString();
+Assert.Equal(AdfDocument.Parse(roundTripped).ToMarkdown(), markdown);
 ```
+<!-- endref -->
 
 Documents can also be built from scratch:
 
+<!-- ref:../../tests/Meziantou.Framework.AtlassianDataFormat.Tests/AdfDocumentTests.cs;region=AdfDocument_Build;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var document = new AdfDocument
 {
@@ -100,8 +135,10 @@ var document = new AdfDocument
     ],
 };
 
-Console.WriteLine(document.ToJsonString());
+var json = document.ToJsonString();
+Assert.Equal("""{"version":1,"type":"doc","content":[{"type":"heading","attrs":{"level":1},"content":[{"type":"text","text":"Title"}]},{"type":"paragraph","content":[{"type":"text","text":"Hello","marks":[{"type":"strong"}]}]}]}""", json);
 ```
+<!-- endref -->
 
 ## Unknown nodes
 

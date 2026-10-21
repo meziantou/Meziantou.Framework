@@ -7,6 +7,20 @@ namespace Meziantou.Framework.Assertions.Tests;
 public sealed class AssertionFormatterTests
 {
     [Fact]
+    public void ReadmeExample_UseFormatterOptions()
+    {
+        #region Assert_UseFormatterOptions
+        int[] expected = [1, 2, 3];
+        int[] actual = [1, 2, 3];
+
+        using (Assert.UseFormatterOptions(new FormatterOptions { MaxFormattedItems = 100 }))
+        {
+            Assert.Equal(expected, actual);
+        }
+        #endregion
+    }
+
+    [Fact]
     public void AssertExposesFormatterOptions()
     {
         // Tests run in parallel and many of them depend on the options set by the module initializer, so the global

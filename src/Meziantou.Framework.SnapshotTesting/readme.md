@@ -4,24 +4,26 @@
 
 ## Basic usage
 
+Call `Snapshot.Validate` in a test:
+
+<!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Tests/SnapshotTests.cs;region=Snapshot_BasicUsage;format=md-fenced-code-block;dedent=true -->
 ```csharp
-public sealed class SampleTests
-{
-    [Fact]
-    public void ValidateUser()
-    {
-        var value = new { Name = "John", Age = 42 };
-        Snapshot.Validate(value);
-    }
-}
+var value = new { Name = "John", Age = 42 };
+Snapshot.Validate(value);
 ```
+<!-- endref -->
 
 For typed snapshots:
 
+<!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Tests/SnapshotTests.cs;region=Snapshot_TypedSnapshots;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var imageBytes = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC"); // A 1x1 PNG image
+var svgText = """<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10" fill="red" /></svg>""";
+
 Snapshot.Validate(imageBytes, SnapshotType.Png);
 Snapshot.Validate(svgText, SnapshotType.Svg);
 ```
+<!-- endref -->
 
 Typed binary snapshots, such as images, are compared byte for byte. To compare images by their pixels, exactly or by
 similarity, and to validate image objects, use
@@ -75,14 +77,15 @@ Notes:
 
 Each call to `Snapshot.Validate` in a test gets its own snapshot file:
 
+<!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Tests/SnapshotTests.cs;region=Snapshot_SeveralAssertions;format=md-fenced-code-block;dedent=true -->
 ```csharp
-[Fact]
-public void Render()
-{
-    Snapshot.Validate(html);                   // __snapshots__/RenderTests_Render.verified.txt
-    Snapshot.Validate(png, SnapshotType.Png);  // __snapshots__/RenderTests_Render~2.verified.png
-}
+var html = "<p>Hello</p>";
+var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC");
+
+Snapshot.Validate(html);                   // __snapshots__/SnapshotTests_ReadmeExample_SeveralAssertions.verified.txt
+Snapshot.Validate(png, SnapshotType.Png);  // __snapshots__/SnapshotTests_ReadmeExample_SeveralAssertions~2.verified.png
 ```
+<!-- endref -->
 
 The calls are numbered by the line they are made from, in the order they first run, so the calls must run in
 a deterministic order. Calls made from the same line - in a loop, or through a helper that does not forward
@@ -169,9 +172,12 @@ The default serializer writes `\n` line endings on every platform, so a snapshot
 identical to one produced on Linux or macOS. Use `HumanReadableSerializerOptions.NewLine` to write `\r\n`
 instead:
 
+<!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Tests/SnapshotTests.cs;region=Snapshot_LineEndings;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var settings = SnapshotSettings.Default with { };
 settings.ConfigureHumanReadableSerializer(options => options.NewLine = "\r\n");
 ```
+<!-- endref -->
 
 Text snapshots are compared without regard to line endings: `\r\n`, `\r` and `\n` are equivalent, and a leading
 UTF-8 byte order mark is ignored. A verified file whose line endings were changed by an editor, a merge tool or git's
@@ -199,6 +205,7 @@ them such as `[DataTestMethod]` or `[SkippableFact]`) is found.
 The snapshot directory, however, comes from `[CallerFilePath]`, which points at the file declaring the
 helper. Forward the caller information so the snapshots are created next to the test file:
 
+<!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Tests/SnapshotTests.cs;region=Snapshot_HelperMethod;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static class ApiSnapshot
 {
@@ -211,17 +218,23 @@ public static class ApiSnapshot
         Snapshot.Validate(spec, "yaml", settings, filePath, lineNumber);
     }
 }
-
-public sealed class OpenApiTests
-{
-    [Fact]
-    public void ValidateSpec()
-    {
-        ApiSnapshot.ValidateOpenApiSpec(GetSpec());
-        // => __snapshots__/OpenApiTests_ValidateSpec.verified.yaml
-    }
-}
 ```
+<!-- endref -->
+
+In a test:
+
+<!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Tests/SnapshotTests.cs;region=Snapshot_HelperMethodUsage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var spec = """
+    openapi: 3.1.0
+    info:
+      title: Sample API
+    """;
+
+ApiSnapshot.ValidateOpenApiSpec(spec);
+// => __snapshots__/SnapshotTests_ReadmeExample_HelperMethod.verified.yaml
+```
+<!-- endref -->
 
 No custom `SnapshotNamingStrategy` or `SnapshotPathStrategy` is needed for this scenario.
 
@@ -279,12 +292,14 @@ is `Overwrite` or is set using `SNAPSHOTTESTING_STRATEGY`. The failure message s
 To allow updates in such an environment, set the `SNAPSHOTTESTING_AUTODETECT_CONTINUOUS_ENVIRONMENT` environment variable
 to `false` (or `0`, `no`, `off`), or set `AutoDetectContinuousEnvironment` to `false`:
 
+<!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Tests/SnapshotTests.cs;region=Snapshot_AutoDetectContinuousEnvironment;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var settings = SnapshotSettings.Default with
 {
     AutoDetectContinuousEnvironment = false,
 };
 ```
+<!-- endref -->
 
 ## Snapshot types
 
@@ -319,7 +334,9 @@ that called the assertion - captured by the compiler, always available - is enou
 You can also set the default strategy using the `SNAPSHOTTESTING_STRATEGY` environment variable.
 The value is case-insensitive and must match one of the `SnapshotUpdateStrategy` static property names (for example: `DISALLOW`, `MergeTool`, `overwritewithoutfailure`).
 
+<!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Tests/SnapshotTests.cs;region=Snapshot_Customization;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var value = new { Name = "John", Age = 42 };
 var settings = SnapshotSettings.Default with
 {
     SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
@@ -327,6 +344,7 @@ var settings = SnapshotSettings.Default with
 
 Snapshot.Validate(value, SnapshotType.Default, settings);
 ```
+<!-- endref -->
 
 The default serializers handle human-readable objects, `byte[]`, and `Stream`.
 Image snapshots (`SnapshotType.Png`, `SnapshotType.Jpeg`, ...) are compared byte for byte unless a comparer is
@@ -343,13 +361,17 @@ snapshots only: snapshots stored in a binary format (`png`, `bmp`, `jpeg`, `bin`
 without a format (`SnapshotType.None`) is stored as a `bin` file, and is binary too. A leading UTF-8 byte order mark is
 removed before the scrubbers run, so a pattern anchored at the start of the first line matches it.
 
+<!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Tests/SnapshotTests.cs;region=Snapshot_Scrubbing;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var value = new { Id = Guid.NewGuid(), Name = "John", GeneratedAt = DateTime.UtcNow };
+
 var settings = SnapshotSettings.Default with { };
 settings.ConfigureHumanReadableSerializer(options => options.ScrubGuid());
 settings.ScrubLinesContaining("GeneratedAt:");
 
 Snapshot.Validate(value, SnapshotType.Default, settings);
 ```
+<!-- endref -->
 
 The line scrubbers (`ScrubLines*`) split the text on `\r\n`, `\r` and `\n` only and keep the line endings. A text
 that ends with a line break has no empty last line, so `ScrubLinesWithReplace(line => "// " + line)` turns
@@ -358,13 +380,17 @@ that ends with a line break has no empty last line, so `ScrubLinesWithReplace(li
 `ScrubUserName` and `ScrubMachineName` replace the user and machine names only where they form a whole word,
 ignoring case: with the user `runner`, `/home/runner/work` is scrubbed but `xunit.runner.visualstudio` is not.
 
-You can also scrub relative temporal values:
+You can also scrub relative temporal values: dates are written as their difference with `now` (`CreatedAt: -00:05:00`):
 
+<!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Tests/SnapshotTests.cs;region=Snapshot_RelativeDateTime;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var now = DateTime.UtcNow;
 var settings = SnapshotSettings.Default with { };
 settings.ConfigureHumanReadableSerializer(options => options.UseRelativeDateTime(now));
+
+Snapshot.Validate(new { CreatedAt = now.AddMinutes(-5), ExpiresAt = now.AddHours(1) }, settings);
 ```
+<!-- endref -->
 
 ## Invisible characters
 
@@ -372,19 +398,23 @@ When spaces, tabs, or line endings matter, a snapshot that looks correct can sti
 Set `ShowInvisibleCharactersInValues` to write them as Unicode control pictures (`␉` for a tab, `␍` and `␊` for
 line endings, `␀` for U+0000, and so on):
 
+<!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Tests/SnapshotTests.cs;region=Snapshot_InvisibleCharacters;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var settings = SnapshotSettings.Default with { };
 settings.ConfigureHumanReadableSerializer(options => options.ShowInvisibleCharactersInValues = true);
 
 Snapshot.Validate("line 1 \r\nline\t2", settings);
 ```
+<!-- endref -->
 
 The verified snapshot contains:
 
+<!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Tests/__snapshots__/SnapshotTests_ReadmeExample_InvisibleCharacters.verified.txt;format=md-fenced-code-block;language=text -->
 ```text
 line 1␠␍␊
 line␉2
 ```
+<!-- endref -->
 
 Notes:
 

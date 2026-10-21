@@ -50,7 +50,7 @@ color conversion, and bounded-memory streaming.
 - Explicit policies for alpha, precision, metadata and color-profile losses; configurable resource limits
 
 This document is the user guide: it describes what the library guarantees to its callers. Every C# example below is
-compiled and run by the test suite.
+copied from code that compiles, and most of them also run in the test suite.
 
 ## Table of contents
 
@@ -98,25 +98,23 @@ compiled and run by the test suite.
 
 Namespaces: `Meziantou.Framework.Imaging` (images, I/O, processing, configuration), `Meziantou.Framework.Imaging.Formats`
 (encoders and their settings), `Meziantou.Framework.Imaging.Metadata`, `Meziantou.Framework.Imaging.Drawing` (brushes,
-pens and paths).
+pens and paths), `Meziantou.Framework.Imaging.Typography` (fonts). The examples of this README omit the `using` directives: the first one only needs
+`using Meziantou.Framework.Imaging;`.
 
-<!-- snippet: package-readme-quickstart -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/PackageReadmeSnippets.cs;region=Imaging_QuickStart;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Imaging;
-
 using var image = Image.Load("animation.gif");
 image.Resize(new ResizeOptions(320, 240));
 image.Save("thumbnail.gif");
 ```
+<!-- endref -->
 
 The output format follows the extension, and the timing and play count of the animation are kept. An explicit encoder
-chooses the format and its settings; formats that store one still image require the frame to be exported explicitly:
+chooses the format and its settings (the encoders are in `Meziantou.Framework.Imaging.Formats`); formats that store one
+still image require the frame to be exported explicitly:
 
-<!-- snippet: readme-quickstart -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ReadmeSnippets.cs;region=Imaging_QuickStartWithEncoders;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using Meziantou.Framework.Imaging;
-using Meziantou.Framework.Imaging.Formats;
-
 using var image = Image.Load("animation.gif");          // every displayed frame, exact timing
 image.Resize(new ResizeOptions(320, 240));               // all frames, atomically
 image.Save("thumbnail.png", new PngEncoder());           // APNG, because the image is animated
@@ -124,6 +122,7 @@ image.Save("thumbnail.png", new PngEncoder());           // APNG, because the im
 using var frame = image.CloneFrame(0);                    // JPEG stores one frame: export it explicitly
 frame.Save("first.jpg", new JpegEncoder { Quality = 85, BackgroundColor = new Rgba32(255, 255, 255) });
 ```
+<!-- endref -->
 
 ## Design highlights
 
@@ -219,7 +218,7 @@ default: `RequireExact`; GIF default: `RoundToNearest`, to the nearest hundredth
 range are always rejected, never clamped. `ToTimeSpan` rounds to the nearest 100 ns tick (ties up); `TotalSeconds` and
 `TotalMilliseconds` are floating-point approximations for display.
 
-<!-- snippet: build-animation -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_BuildAnimation;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void BuildAnimation(string apngPath, string gifPath)
 {
@@ -242,11 +241,12 @@ public static void BuildAnimation(string apngPath, string gifPath)
     animation.Save(gifPath, new GifEncoder { Dithering = GifDithering.FloydSteinberg });
 }
 ```
+<!-- endref -->
 
 **Animated cursors**. An ANI file is an animation whose frames are cursor images: each frame has
 its own hotspot, durations are whole sixtieths of a second, and the animation always loops.
 
-<!-- snippet: animated-cursor -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_AnimatedCursor;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static Point WriteAndReadAnimatedCursor(string animationPath, string cursorPath)
 {
@@ -267,6 +267,7 @@ public static Point WriteAndReadAnimatedCursor(string animationPath, string curs
     return cursor.Frames[0].Metadata.Hotspot!.Value;
 }
 ```
+<!-- endref -->
 
 ### Pages and representations
 
@@ -303,7 +304,7 @@ or icon sizes by accident.
   `Image.Load` of a cursor exposes the hotspot of the representation it decodes as `Frames[0].Metadata.Hotspot`, and
   `Image.Save` with `IcoEncoder { Kind = IconKind.Cursor }` writes it.
 
-<!-- snippet: tiff-pages -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_TiffPages;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static Size WriteAndReadTiffDocument(string inputPath, string documentPath)
 {
@@ -326,8 +327,9 @@ public static Size WriteAndReadTiffDocument(string inputPath, string documentPat
     return page.Size; // the second page keeps its own size, never the first one's
 }
 ```
+<!-- endref -->
 
-<!-- snippet: ico-representations -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_IcoRepresentations;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static Point WriteAndReadIcon(string inputPath, string iconPath, string cursorPath)
 {
@@ -351,6 +353,7 @@ public static Point WriteAndReadIcon(string inputPath, string iconPath, string c
     return cursor.SelectBySize(new Size(16, 16)).Hotspot!.Value;
 }
 ```
+<!-- endref -->
 
 ### Ownership, lifetimes and leases
 
@@ -375,7 +378,7 @@ is active, disposing the image, structural edits and conflicting access throw `I
 detection, not synchronization). Leases are released even when the callback throws. Static callbacks and the explicit
 state overloads allocate nothing per row.
 
-<!-- snippet: typed-rows -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_TypedRows;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void InvertColors(string path)
 {
@@ -397,8 +400,9 @@ public static void InvertColors(string path)
     image.Save(path);
 }
 ```
+<!-- endref -->
 
-<!-- snippet: typed-rows-state -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_TypedRowsState;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static long ComputeLuminanceSum(Image<Gray16> image)
 {
@@ -417,8 +421,9 @@ public static long ComputeLuminanceSum(Image<Gray16> image)
     return total.Value;
 }
 ```
+<!-- endref -->
 
-<!-- snippet: raw-pixels -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_RawPixels;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static byte[] RoundTripRawPixels(ReadOnlySpan<byte> rgba, int width, int height)
 {
@@ -429,6 +434,7 @@ public static byte[] RoundTripRawPixels(ReadOnlySpan<byte> rgba, int width, int 
     return result;
 }
 ```
+<!-- endref -->
 
 **Memory accounting**. Every library-controlled buffer is charged, at its actual rented
 capacity, to the allocation scope of its owner (an image, or a reader and the images it returns) and bounded by
@@ -495,7 +501,7 @@ without the `#`), which `ToHexString` writes back. An `Rgba32` converts implicit
 | A color profile that cannot label the converted pixels | `PixelConversionOptions.DiscardIncompatibleColorProfile` |
 | Metadata the output format cannot store | `ImageEncoder.MetadataHandling` (see [Metadata](#metadata-color-profiles-and-orientation)) |
 
-<!-- snippet: convert-precision -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ConvertPrecision;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void ConvertToGray16(string inputPath, string outputPath)
 {
@@ -509,8 +515,9 @@ public static void ConvertToGray16(string inputPath, string outputPath)
     gray.Save(outputPath, new PngEncoder());
 }
 ```
+<!-- endref -->
 
-<!-- snippet: export-jpeg-frame -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ExportJpegFrame;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string jpegPath)
 {
@@ -525,6 +532,7 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
     });
 }
 ```
+<!-- endref -->
 
 ### Processing
 
@@ -574,7 +582,7 @@ padding is in pixels instead of percents, the color difference uses the Rec. 709
 formats and every frame are analyzed, the retry removes the 5% on all four sides, `ColorThreshold` is always set, and a
 uniform image reports the whole canvas as its box.
 
-<!-- snippet: auto-crop -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_AutoCrop;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static bool TrimBackground(string inputPath, string outputPath)
 {
@@ -596,6 +604,7 @@ public static bool TrimBackground(string inputPath, string outputPath)
     return changed;
 }
 ```
+<!-- endref -->
 
 **Resizing**. `ResizeOptions` sets the target box and `Mode`: `Contain` (default: fit inside,
 never padded), `Cover` (fill exactly, cropped around `Anchor`, one of nine positions) or `Stretch`;
@@ -628,7 +637,7 @@ rounding boundary; none is off by more, and the headroom of the 16-bit rows is c
 which keeps double precision when it does not fit. Results do not depend on the worker count or on SIMD support: the
 vectorized and parallel kernels are bit-identical to the scalar reference.
 
-<!-- snippet: resize-animation -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ResizeAnimation;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void ResizeAnimation(string inputPath, string outputPath)
 {
@@ -639,6 +648,7 @@ public static void ResizeAnimation(string inputPath, string outputPath)
     image.Save(outputPath);
 }
 ```
+<!-- endref -->
 
 **Convolution matrices**. `Convolve` replaces every sample by the weighted sum of the same sample
 of the neighboring pixels: sharpening, blurring, embossing and edge detection are all matrices. A `ConvolutionKernel` has
@@ -672,7 +682,7 @@ frame is blurred as its colors alone and keeps the maximum alpha, except with th
 transparent pixels beyond the image. The weights `exp(-i^2 / (2 sigma^2))`, divided by their sum, are computed without
 any function of the platform.
 
-<!-- snippet: convolve -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Convolve;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void SharpenAndDetectEdges(string inputPath, string sharpenedPath, string edgesPath)
 {
@@ -692,6 +702,7 @@ public static void SharpenAndDetectEdges(string inputPath, string sharpenedPath,
     image.Save(edgesPath);
 }
 ```
+<!-- endref -->
 
 **Color matrices**. `ApplyColorMatrix` gives each pixel a color computed from its own one, by a `ColorMatrix`: four
 rows, for the red, the green, the blue and the alpha of the result, of five coefficients, for the red, the green, the
@@ -712,7 +723,7 @@ as red, green and blue and gets the Rec. 709 luma of the result. No color profil
 `canvas.Filter` applies a matrix to what a callback draws and `canvas.FilterBackdrop` to a part of what is already
 drawn (see [Drawing](#drawing)).
 
-<!-- snippet: color-matrix -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ColorMatrix;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void ApplyColorFilters(string photoPath, string iconPath, string outputPath)
 {
@@ -740,6 +751,7 @@ public static void ApplyColorFilters(string photoPath, string iconPath, string o
     photo.Save(outputPath);
 }
 ```
+<!-- endref -->
 
 There is no HDR processing or custom processor.
 
@@ -766,7 +778,7 @@ Every pixel format is read as 8-bit RGBA, with the conversion of `CloneAs<Rgba32
 frames of different pixel formats can be compared. The results depend only on the pixels, not on the hardware. The
 members compare frames: compare an animation frame by frame.
 
-<!-- snippet: image-similarity -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ImageSimilarity;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static bool LookTheSame(string expectedPath, string actualPath)
 {
@@ -789,6 +801,7 @@ public static bool LookTheSame(string expectedPath, string actualPath)
     return true;
 }
 ```
+<!-- endref -->
 
 ### Drawing
 
@@ -797,7 +810,7 @@ paints every frame and the poster identically. The callback runs once, while the
 valid inside it, and other pixel access or geometry changes on the same image throw `InvalidOperationException` until it
 returns. The drawing types are in the `Meziantou.Framework.Imaging.Drawing` namespace.
 
-<!-- snippet: draw-shapes -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawShapes;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void DrawLandscape(string outputPath)
 {
@@ -826,6 +839,7 @@ public static void DrawLandscape(string outputPath)
     image.Save(outputPath);
 }
 ```
+<!-- endref -->
 
 **Shapes**. A canvas fills (`Fill`, `FillRectangle`, `FillRoundedRectangle`, `FillEllipse`, `FillCircle`, `FillPie`,
 `FillPolygon`, `FillClosedCurve`) and strokes (`Stroke`, `StrokeRectangle`, `StrokeRoundedRectangle`, `StrokeEllipse`,
@@ -859,7 +873,7 @@ points are `P1 + tension (P2 - P0) / 3` and `P2 - tension (P3 - P1) / 3`; the fi
 previous point, and its last point its own next point. A curve can go beyond the points it goes through where they
 turn sharply.
 
-<!-- snippet: draw-chart -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawChart;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void DrawChart(string outputPath)
 {
@@ -895,6 +909,7 @@ public static void DrawChart(string outputPath)
     image.Save(outputPath);
 }
 ```
+<!-- endref -->
 
 **Transforms**. An `AffineTransform` is a combination of translations, scalings, rotations and skews
 (`CreateTranslation`, `CreateScale`, `CreateRotation`, `CreateSkew`, combined with `Then` or `*`; the first one is
@@ -931,7 +946,7 @@ closer larger, as the transforms of nested elements of CSS do. The blur and the 
 glyphs a font draws with its own colors are drawn in the plane, on an image of it, then that image is drawn in
 perspective. `DrawImage` takes a `ProjectiveTransform` too.
 
-<!-- snippet: draw-3d -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Draw3d;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void DrawTiltedCard(string outputPath)
 {
@@ -956,8 +971,9 @@ public static void DrawTiltedCard(string outputPath)
     image.Save(outputPath);
 }
 ```
+<!-- endref -->
 
-<!-- snippet: draw-watermark -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawWatermark;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void DrawWatermark(string fontPath, string inputPath, string outputPath)
 {
@@ -982,6 +998,7 @@ public static void DrawWatermark(string fontPath, string inputPath, string outpu
     image.Save(outputPath);
 }
 ```
+<!-- endref -->
 
 **Clipping**. `canvas.Clip` runs a callback whose drawings only change the inside of a path or of a rectangle: the clip
 lasts as long as the callback, and a clip started inside another one keeps what both let through. The edge of a clip
@@ -1036,7 +1053,7 @@ middle, or else is the smaller one that touches both at half the length of the s
 corners of `AddRoundedRectangle`. The corners where a curve or an arc starts or ends are kept. The result has arcs:
 it stays smooth when it is enlarged.
 
-<!-- snippet: draw-sticker -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawSticker;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void DrawSticker(string outputPath)
 {
@@ -1069,6 +1086,7 @@ public static void DrawSticker(string outputPath)
     image.Save(outputPath);
 }
 ```
+<!-- endref -->
 
 **SVG path data**. `VectorPath.ParseSvgPathData` reads the `d` attribute of an SVG `path` element, the format icons
 come in: every command (`M L H V C S Q T A Z`, absolute and relative) with the grammar of SVG, in the coordinates of
@@ -1077,7 +1095,7 @@ position (or `false` from `TryParseSvgPathData`), where a browser draws what com
 path the same way, with absolute coordinates and numbers that read back as the same values: lines and curves are read
 back exactly, an arc to a few units of the last place.
 
-<!-- snippet: draw-icon -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawIcon;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static string DrawIcon(string outputPath)
 {
@@ -1101,8 +1119,9 @@ public static string DrawIcon(string outputPath)
     return icon.ToSvgPathData();
 }
 ```
+<!-- endref -->
 
-<!-- snippet: draw-route -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawRoute;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void DrawRoute(string outputPath)
 {
@@ -1135,6 +1154,7 @@ public static void DrawRoute(string outputPath)
     image.Save(outputPath);
 }
 ```
+<!-- endref -->
 
 **Coordinates**. Positions are `double` values in pixels (`PointD`, `RectangleD`; the integer `Point` and `Rectangle`
 convert implicitly). The origin is the top-left corner, and integer coordinates are pixel boundaries: the pixel
@@ -1197,7 +1217,7 @@ image); points that are all on a line draw nothing, and a parallelogram is an af
 pixels. With `ImageSampling.Smooth`, each pixel of the canvas reads what it covers of the image, which changes from
 the near side to the far side.
 
-<!-- snippet: draw-perspective -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawPerspective;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void DrawOnScreen(string photoPath, string screenshotPath, string outputPath)
 {
@@ -1217,6 +1237,7 @@ public static void DrawOnScreen(string photoPath, string screenshotPath, string 
     photo.Save(outputPath);
 }
 ```
+<!-- endref -->
 
 **Patterns**. A `PatternBrush` paints a drawing that repeats: a callback draws a tile (a rectangle of the coordinates
 of the pattern), and the tile is laid side by side in both directions, placed on the canvas by the `Transform` of the
@@ -1262,7 +1283,7 @@ as an argument. Painting a pixel then costs as many pixels of the image as it co
 many times, which also has sharper filters. The frame is read while it is drawn: it cannot be one of the frames the canvas draws on, but
 it can be another frame of the same image when the drawing is on one frame (`ImageFrame.Draw`).
 
-<!-- snippet: draw-card -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawCard;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void ComposeCard(string photoPath, string outputPath)
 {
@@ -1292,6 +1313,7 @@ public static void ComposeCard(string photoPath, string outputPath)
     card.Save(outputPath);
 }
 ```
+<!-- endref -->
 
 **Layers**. `canvas.Layer(opacity, callback)` runs a callback whose drawings are made on a transparent image of the
 size of the canvas, which is then drawn on the canvas as a whole. Shapes that overlap, drawn one after the other with a
@@ -1386,7 +1408,7 @@ noise of the reference code of SVG, with `StitchTiles`), and `DiffuseLightingPri
 with a `DistantLight`, a `PointLight` or a `SpotLight`, and `ImagePrimitive`, whose result is what a callback draws
 (an image, or an element that `feImage` refers to).
 
-<!-- snippet: draw-filter-graph -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawFilterGraph;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void DrawGlowingRing(string outputPath)
 {
@@ -1406,8 +1428,9 @@ public static void DrawGlowingRing(string outputPath)
     image.Save(outputPath);
 }
 ```
+<!-- endref -->
 
-<!-- snippet: draw-filters -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawFilters;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void DrawFrostedCard(string photoPath, string outputPath)
 {
@@ -1431,6 +1454,7 @@ public static void DrawFrostedCard(string photoPath, string outputPath)
     image.Save(outputPath);
 }
 ```
+<!-- endref -->
 
 **Masks**. `canvas.Mask(mask, content, mode)` keeps what one callback draws only where another one draws: the content
 is drawn on a layer, the mask on a layer of its own, and each pixel of the content is kept in proportion to the mask
@@ -1438,7 +1462,7 @@ there. With `MaskMode.Alpha` (the default), the mask is the alpha of its drawing
 text, a gradient to a transparent color. With `MaskMode.Luminance`, as in the masks of SVG, it is the luminance of
 their colors multiplied by their alpha: white keeps, black removes, and a gradient from white to black fades.
 
-<!-- snippet: draw-badge -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawBadge;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void DrawBadge(string outputPath)
 {
@@ -1469,8 +1493,9 @@ public static void DrawBadge(string outputPath)
     image.Save(outputPath);
 }
 ```
+<!-- endref -->
 
-<!-- snippet: draw-glass -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawGlass;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void DrawGlassPanel(string photoPath, string outputPath)
 {
@@ -1508,6 +1533,7 @@ public static void DrawGlassPanel(string photoPath, string outputPath)
     image.Save(outputPath);
 }
 ```
+<!-- endref -->
 
 **Operators**. A brush is painted over the pixels (`CompositeMode.SourceOver`) unless its `CompositeMode` says
 otherwise. The modes are the compositing operators of Porter and Duff: `Source` replaces the pixels, alpha included (a
@@ -1598,7 +1624,7 @@ grayscale image, a color becomes the gray that has its luminance. A color the im
 component by component, and an image of PQ or HLG samples is rejected, since the light of the white of a paint among
 them is a choice.
 
-<!-- snippet: draw-color-managed -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawColorManaged;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void DrawBrandColors(string inputPath, string outputPath)
 {
@@ -1623,9 +1649,10 @@ public static void DrawBrandColors(string inputPath, string outputPath)
     image.Save(outputPath);
 }
 ```
+<!-- endref -->
 
 
-<!-- snippet: draw-rendering -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawRendering;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void DrawSprite(string outputPath)
 {
@@ -1648,8 +1675,9 @@ public static void DrawSprite(string outputPath)
     image.Save(outputPath);
 }
 ```
+<!-- endref -->
 
-<!-- snippet: draw-on-animation -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawOnAnimation;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void MarkAnimation(string inputPath, string outputPath)
 {
@@ -1669,6 +1697,7 @@ public static void MarkAnimation(string inputPath, string outputPath)
     image.Save(outputPath);
 }
 ```
+<!-- endref -->
 
 **Rendering**. The result is defined exactly and does not depend on the platform:
 
@@ -1886,7 +1915,7 @@ the machine, find its file with `SystemFontCollection` of `Meziantou.Framework.F
 `SystemFontCollection.Default.Match("Arial", weight: 700)` gives the face of the family closest to the style (`null` when
 the family is not installed), and `FontCollection.Load(face.FilePath)[face.FaceIndex]` loads it.
 
-<!-- snippet: load-font -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_LoadFont;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static string DescribeFont(string path)
 {
@@ -1899,6 +1928,7 @@ public static string DescribeFont(string path)
         $"{font.FamilyName} {font.SubfamilyName}: {font.GlyphCount} glyphs, ascent {metrics.Ascent:0.##}, descent {metrics.Descent:0.##}, euro sign: {hasEuro}");
 }
 ```
+<!-- endref -->
 
 | | Supported |
 | --- | --- |
@@ -1914,7 +1944,7 @@ public static string DescribeFont(string path)
 A variable font is one file for a whole family: its axes (`Font.VariationAxes`) say what varies, such as the weight or
 the width, and `Font.WithVariations` gives the font of an instance.
 
-<!-- snippet: variable-font -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_VariableFont;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void DrawWeights(string variableFontPath, string outputPath)
 {
@@ -1938,6 +1968,7 @@ public static void DrawWeights(string variableFontPath, string outputPath)
     image.Save(outputPath);
 }
 ```
+<!-- endref -->
 
 - **Instances.** A font is loaded at its default instance. `WithVariations` takes the value of some axes, by their tag
   (`wght`, `wdth`, `slnt`, `ital`, `opsz`, or a tag of the font); an axis that is not named is at its default, a value
@@ -2021,7 +2052,7 @@ A `TextLayout` is a text laid out: its lines, its glyphs and their positions. It
 `Height`, `Baseline`, `Lines`, `InkBounds`) and is what `DrawingCanvas.FillText` and `StrokeText` draw, so that what is
 measured is what is drawn. The text types are in the `Meziantou.Framework.Imaging.Typography` namespace.
 
-<!-- snippet: draw-text -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawText;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void DrawLabel(string fontPath, string outputPath)
 {
@@ -2047,12 +2078,13 @@ public static void DrawLabel(string fontPath, string outputPath)
     image.Save(outputPath);
 }
 ```
+<!-- endref -->
 
 A text of one font is `TextLayout.Create(text, font, size)`. A `TextStyle` holds everything else about how a text is
 set, a `RichText` gives each part of a text its own style, and `TextLayoutOptions` say how the text is wrapped and
 aligned:
 
-<!-- snippet: draw-paragraph -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawParagraph;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void DrawParagraph(string fontPath, string outputPath)
 {
@@ -2075,11 +2107,12 @@ public static void DrawParagraph(string fontPath, string outputPath)
     image.Save(outputPath);
 }
 ```
+<!-- endref -->
 
 A text can be made to fit a box, have a background and a contour on some of its words, and leave room in its lines
 for what is not text:
 
-<!-- snippet: draw-fitted-text -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawFittedText;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static double DrawTitleCard(string fontPath, string iconPath, string outputPath)
 {
@@ -2120,11 +2153,12 @@ public static double DrawTitleCard(string fontPath, string iconPath, string outp
     return layout.Scale;
 }
 ```
+<!-- endref -->
 
 A text can be set in vertical lines, as Chinese, Japanese and Korean often are: `TextLayoutOptions.WritingMode` turns
 the lines, and each character is upright or on its side as its script asks:
 
-<!-- snippet: draw-vertical-text -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawVerticalText;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void DrawVerticalText(string fontPath, string outputPath)
 {
@@ -2144,11 +2178,12 @@ public static void DrawVerticalText(string fontPath, string outputPath)
     image.Save(outputPath);
 }
 ```
+<!-- endref -->
 
 A layout can also follow a path: `FillText` and `StrokeText` take a `VectorPath` and `TextPathOptions` instead of an
 origin.
 
-<!-- snippet: draw-text-on-path -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawTextOnPath;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void DrawTextOnPath(string fontPath, string outputPath)
 {
@@ -2169,6 +2204,7 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
     image.Save(outputPath);
 }
 ```
+<!-- endref -->
 
 | | Supported |
 | --- | --- |
@@ -2576,7 +2612,7 @@ boxes); it stores no text entry, no CICP color description and no linear transfe
 written without a file stores no metadata at all. Unknown chunks, segments, boxes and extensions are skipped on decode
 and not round-tripped.
 
-<!-- snippet: edit-metadata -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_EditMetadata;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void EditMetadata(string path)
 {
@@ -2586,6 +2622,7 @@ public static void EditMetadata(string path)
     image.Save(path, new PngEncoder { MetadataHandling = MetadataHandling.Strict });
 }
 ```
+<!-- endref -->
 
 ### Color management
 
@@ -2611,7 +2648,7 @@ the poster from the color space of the image to the color space of `profile`, th
 - When both profiles have identical bytes nothing is converted: converting an untagged image to `IccProfile.Srgb` only
   labels it.
 
-<!-- snippet: convert-to-srgb -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ConvertToSrgb;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void ConvertToSrgb(string inputPath, string outputPath)
 {
@@ -2627,6 +2664,7 @@ public static void ConvertToSrgb(string inputPath, string outputPath)
     image.Save(outputPath);
 }
 ```
+<!-- endref -->
 
 High dynamic range samples (the PQ and HLG transfer characteristics, 16 and 18) are not converted implicitly: an ICC
 profile describes a standard dynamic range, and compressing highlights into it changes the look of the image.
@@ -2649,7 +2687,7 @@ functions, and the samples are converted from the color space of the tag.
 - Samples are 8-bit or 16-bit integers from end to end: there is no floating-point pixel format, and the converted
   image is a standard dynamic range one.
 
-<!-- snippet: convert-hdr-to-srgb -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ConvertHdrToSrgb;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void ConvertHdrToSrgb(string avifPath, string pngPath)
 {
@@ -2669,13 +2707,14 @@ public static void ConvertHdrToSrgb(string avifPath, string pngPath)
     image.Save(pngPath, new PngEncoder { MetadataHandling = MetadataHandling.Strict });
 }
 ```
+<!-- endref -->
 
 `IccColorTransform` is the underlying primitive: an immutable, thread-safe conversion between two profiles for
 interleaved 8-bit, 16-bit or floating-point samples without alpha (in place when both profiles have the same number of
 channels). Integer samples cover the whole range of their type, floating-point samples are in [0, 1], and colors
 outside the destination gamut are clipped per channel.
 
-<!-- snippet: convert-samples -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ConvertSamples;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static byte[] ConvertSamplesToSrgb(IccProfile sourceProfile, ReadOnlySpan<byte> samples)
 {
@@ -2689,6 +2728,7 @@ public static byte[] ConvertSamplesToSrgb(IccProfile sourceProfile, ReadOnlySpan
     return converted;
 }
 ```
+<!-- endref -->
 
 Supported profiles are ICC version 2 and version 4 input, display, output and color space profiles for grayscale, RGB
 and CMYK data, with a CIEXYZ or CIELAB connection space:
@@ -2708,7 +2748,7 @@ the pages of a TIFF document take the options of `ImageCollectionEntry.Decode`).
 `UnsupportedImageFeatureException`; `Identify` always works and reports `ImageColorModel.Cmyk` or `Ycck` with the
 embedded CMYK profile, so a caller can decide first. Other images are not affected by the setting.
 
-<!-- snippet: load-cmyk-jpeg -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_LoadCmykJpeg;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static Image LoadCmykJpeg(string path)
 {
@@ -2723,6 +2763,7 @@ public static Image LoadCmykJpeg(string path)
     return Image.Load(path, new ImageDecodeOptions { CmykConversion = conversion });
 }
 ```
+<!-- endref -->
 
 - `DestinationProfile` (default `IccProfile.Srgb`) is an RGB profile. The loaded image has `Rgb24` pixels labeled with
   it: the pixels and their profile change together, and the CMYK profile is not kept. A typed load then converts the
@@ -2790,7 +2831,7 @@ forms, with identical results and error categories. `Identify` returns an `Image
 mode reads up to the first pixel data, `FullScan` walks the whole structure (chunks, blocks, markers, CRCs, rows). Unknown
 values stay `null` and are never guessed (a GIF header never yields a frame count).
 
-<!-- snippet: identify -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Identify;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static string Describe(Stream stream)
 {
@@ -2799,6 +2840,7 @@ public static string Describe(Stream stream)
     return $"{info.Format} {info.Size} {info.PixelFormat}, frames: {frames}, orientation: {info.Metadata.Orientation}";
 }
 ```
+<!-- endref -->
 
 **Limits versus prefix selection.** `ImageResourceLimits` (canvas width/height, pixels per frame, frames, total pixels,
 encoded bytes, metadata bytes, live allocations, and for fonts the bytes of a font and the complexity of a glyph) are
@@ -2887,7 +2929,7 @@ output.
 (state, order, frame size or pixel type, a frame duration the format cannot store) leave the writer usable; a failure once
 encoding started faults it.
 
-<!-- snippet: streaming-transform -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_StreamingTransform;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static async Task StreamingResizeAsync(Stream input, Stream output, CancellationToken cancellationToken)
 {
@@ -2914,8 +2956,9 @@ public static async Task StreamingResizeAsync(Stream input, Stream output, Cance
     await writer.CompleteAsync(cancellationToken); // mandatory: disposing without Complete aborts the output
 }
 ```
+<!-- endref -->
 
-<!-- snippet: read-frame-into -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ReadFrameInto;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void StreamingWithReusedBuffer(string inputPath, string outputPath)
 {
@@ -2948,6 +2991,7 @@ public static void StreamingWithReusedBuffer(string inputPath, string outputPath
     writer.Complete(); // publishes outputPath atomically
 }
 ```
+<!-- endref -->
 
 ### Saving files
 
@@ -2981,7 +3025,7 @@ conflicts, overlapping or faulted reader/writer calls), `ObjectDisposedException
 `IOException` from the stream, propagated unchanged. Malformed data and resource failures are never reported as a clean
 end of input.
 
-<!-- snippet: error-handling -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ErrorHandling;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static Image? TryLoad(string path, ImageConfiguration configuration)
 {
@@ -3009,6 +3053,7 @@ public static Image? TryLoad(string path, ImageConfiguration configuration)
     }
 }
 ```
+<!-- endref -->
 
 ## Format reference
 
@@ -3028,7 +3073,7 @@ and alpha (fully transparent pixels keep their color, so they count too), or wit
 `Save` collects the colors of all of them first, while a sequential writer takes the palette from the first image it is
 given. The palette order is deterministic (alpha, then red, green and blue), and an indexed file loads as `Rgba32`.
 
-<!-- snippet: save-png-indexed -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SavePngIndexed;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static bool SaveIndexedPng(string inputPath, string outputPath)
 {
@@ -3049,6 +3094,7 @@ public static bool SaveIndexedPng(string inputPath, string outputPath)
     }
 }
 ```
+<!-- endref -->
 
 `PngEncoder.Optimization`: `None` (the default) follows the settings. `MinimumSize` searches the lossless options and
 writes the smallest file it finds, several times slower; the pixels (alpha and the color of fully transparent pixels
@@ -3076,7 +3122,7 @@ when it completes), because a frame's control data holds the disposal chosen for
 another pixel format than the one it was written from (`Rgb24` for an opaque `Rgba32` image, `Rgba32` for a color key or
 a palette), with the same pixel values.
 
-<!-- snippet: save-png-minimum-size -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SavePngMinimumSize;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void SaveSmallestPng(string inputPath, string outputPath)
 {
@@ -3088,6 +3134,7 @@ public static void SaveSmallestPng(string inputPath, string outputPath)
     image.Save(outputPath, new PngEncoder { Optimization = PngOptimization.MinimumSize });
 }
 ```
+<!-- endref -->
 
 | Feature | Decoding | Encoding |
 | --- | --- | --- |
@@ -3142,7 +3189,7 @@ public static void SaveSmallestPng(string inputPath, string outputPath)
 A progressive file holds the same picture as a baseline one in several scans of increasing precision, so a viewer can
 show the whole image before the end of a download:
 
-<!-- snippet: save-progressive-jpeg -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SaveProgressiveJpeg;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void SaveProgressiveJpeg(string sourcePath, string jpegPath)
 {
@@ -3155,6 +3202,7 @@ public static void SaveProgressiveJpeg(string sourcePath, string jpegPath)
     });
 }
 ```
+<!-- endref -->
 
 ### WebP
 
@@ -3171,7 +3219,7 @@ as they come and the RIFF size and alpha flag are patched at the end. Non-seekab
 Durations are rounded to the nearest millisecond by default (`DurationRounding`), and the loop count holds 1 to 65,535
 plays or infinite.
 
-<!-- snippet: save-webp -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SaveWebp;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void SaveWebP(string photoPath, string webpPath, string animatedPath, string animatedWebPPath)
 {
@@ -3192,6 +3240,7 @@ public static void SaveWebP(string photoPath, string webpPath, string animatedPa
     animation.Save(animatedWebPPath, new WebPEncoder { Compression = WebPCompression.Lossless });
 }
 ```
+<!-- endref -->
 
 Decoding: lossless images decode exactly; lossy images decode to the exact VP8 reconstruction (RFC 6386) converted to RGB
 with a documented BT.601 contract and centered bilinear chroma upsampling (within one unit of libwebp). Still images
@@ -3212,7 +3261,7 @@ the qoi.h reference encoder. QOI stores no metadata: ICC, EXIF, XMP, orientation
 writes 0) and decoded back into it. Encoding and decoding stream: the decoder keeps one row and consumes the input as it
 arrives, the encoder writes bounded bands to any destination.
 
-<!-- snippet: save-qoi -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SaveQoi;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void SaveQoi(string inputPath, string qoiPath, string linearQoiPath, string pngPath)
 {
@@ -3229,6 +3278,7 @@ public static void SaveQoi(string inputPath, string qoiPath, string linearQoiPat
     }
 }
 ```
+<!-- endref -->
 
 Decoding: 3-channel files load as `Rgb24` (opaque, whatever alpha values the chunks carry), 4-channel files as `Rgba32`.
 Every chunk form is supported, runs may cross rows, and bytes after the end marker are not read. Zero dimensions, other
@@ -3242,7 +3292,7 @@ BMP, TGA and Netpbm are uncompressed (or run-length) formats for desktop interch
 (BMP), asset pipelines (TGA) and tooling fixtures (Netpbm). Each stores one still image, and each encoder makes its
 format-specific choices explicit.
 
-<!-- snippet: save-asset-formats -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SaveAssetFormats;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void SaveAssetFormats(string inputPath, string bmpPath, string tgaPath, string pnmPath)
 {
@@ -3262,12 +3312,13 @@ public static void SaveAssetFormats(string inputPath, string bmpPath, string tga
     frame.Save(pnmPath, new PnmEncoder());
 }
 ```
+<!-- endref -->
 
 The BMP encoder never picks a lossy layout by itself: `BmpPixelLayout.Auto` is 24-bit or 32-bit. The indexed layouts
 (`Indexed1`, `Indexed4`, `Indexed8`) store the colors of the image exactly when its palette can hold them, and reject
 the image otherwise unless `AllowColorReduction` is set; `Indexed4` and `Indexed8` can be run-length encoded.
 
-<!-- snippet: save-bmp-indexed -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SaveBmpIndexed;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void SaveIndexedBmp(string inputPath, string outputPath)
 {
@@ -3288,6 +3339,7 @@ public static void SaveIndexedBmp(string inputPath, string outputPath)
     });
 }
 ```
+<!-- endref -->
 
 | Feature | Decoding | Encoding |
 | --- | --- | --- |
@@ -3452,7 +3504,7 @@ specification. The decoder is exact: every plane it decodes equals the output of
 included. The encoder reconstructs its frames with the reconstruction and the filters of the decoder, so a file it
 writes decodes to the same samples in every conforming decoder.
 
-<!-- snippet: load-avif -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_LoadAvif;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static string ConvertAvif(string avifPath, string pngPath)
 {
@@ -3468,6 +3520,7 @@ public static string ConvertAvif(string avifPath, string pngPath)
     return description;
 }
 ```
+<!-- endref -->
 
 | Feature | Decoding |
 | --- | --- |
@@ -3492,7 +3545,7 @@ coefficients without the transfer characteristics they are defined with (constan
 reserved transfer characteristics, ICtCp with other ones than PQ and HLG) are rejected with
 `UnsupportedImageFeatureException`.
 
-<!-- snippet: save-avif -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SaveAvif;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void SaveAvif(string photoPath, string avifPath, string losslessPath, string animatedPath, string animatedAvifPath)
 {
@@ -3518,6 +3571,7 @@ public static void SaveAvif(string photoPath, string avifPath, string losslessPa
     animation.Save(animatedAvifPath, new AvifEncoder());
 }
 ```
+<!-- endref -->
 
 | Feature | Encoding |
 | --- | --- |
@@ -3543,7 +3597,7 @@ photos of Apple devices and of many cameras. The HEVC decoder is fully managed a
 exact: every plane it decodes equals the output of the reference decoders (FFmpeg, libde265 and the HM reference
 software), and the picture hashes that a bitstream carries are checked by the tests.
 
-<!-- snippet: load-heic -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_LoadHeic;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static string ConvertHeic(string heicPath, string jpegPath)
 {
@@ -3560,6 +3614,7 @@ public static string ConvertHeic(string heicPath, string jpegPath)
     return description;
 }
 ```
+<!-- endref -->
 
 | Feature | Decoding |
 | --- | --- |
@@ -3583,7 +3638,7 @@ bit depths, separate color planes, field sequences, extended precision processin
 types 3 to 5 are rejected with `UnsupportedImageFeatureException`, as are the container features that the
 AVIF decoder rejects.
 
-<!-- snippet: save-heic -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SaveHeic;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void SaveHeic(string photoPath, string heicPath, string losslessPath, string animatedPath, string animatedHeicPath)
 {
@@ -3610,6 +3665,7 @@ public static void SaveHeic(string photoPath, string heicPath, string losslessPa
     animation.Save(animatedHeicPath, new HeicEncoder { Compression = HeicCompression.Lossy });
 }
 ```
+<!-- endref -->
 
 | Feature | Encoding |
 | --- | --- |
@@ -3636,7 +3692,7 @@ path is exact: a lossless file decodes to the samples that were encoded, and the
 same samples in libjxl and jxl-oxide. The lossy path (VarDCT) is defined in floating point: the decoded samples are
 within a few sixteen-bit units of what those decoders give (they differ from each other by as much), not bit-exact.
 
-<!-- snippet: save-jpegxl -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SaveJpegxl;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static string SaveJpegXl(string inputPath, string jxlPath, string lossyPath, string animatedPath, string animatedJxlPath)
 {
@@ -3662,6 +3718,7 @@ public static string SaveJpegXl(string inputPath, string jxlPath, string lossyPa
     return $"{info.Format} {info.Size.Width}x{info.Size.Height} {info.PixelFormat}, {info.BitsPerComponent} bits";
 }
 ```
+<!-- endref -->
 
 | Feature | Decoding | Encoding |
 | --- | --- | --- |
@@ -3681,7 +3738,7 @@ public static string SaveJpegXl(string inputPath, string jxlPath, string lossyPa
 complete once all its bytes are available (the encoded size of a frame is buffered, not the file), and
 `ReadFrameRefinementInto` renders it before that:
 
-<!-- snippet: progressive-read -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ProgressiveRead;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static int ShowWhileReading(Stream input, Action<Image<Rgba32>, FrameRefinement> show)
 {
@@ -3703,11 +3760,12 @@ public static int ShowWhileReading(Stream input, Action<Image<Rgba32>, FrameRefi
     return renderings;
 }
 ```
+<!-- endref -->
 
 A JPEG file can be stored in a JPEG XL file without decoding it: the frame holds its quantized coefficients, coded more
 efficiently, and the container holds what rebuilds the file. Nothing is lost, in either direction:
 
-<!-- snippet: transcode-jpeg -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_TranscodeJpeg;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static bool RecompressJpeg(string jpegPath, string jxlPath, string rebuiltPath)
 {
@@ -3726,6 +3784,7 @@ public static bool RecompressJpeg(string jpegPath, string jxlPath, string rebuil
         && File.ReadAllBytes(jpegPath).AsSpan().SequenceEqual(File.ReadAllBytes(rebuiltPath));
 }
 ```
+<!-- endref -->
 
 `JpegXlTranscoder` also rebuilds the files `cjxl --lossless_jpeg=1` writes, and libjxl and jxl-oxide rebuild the files it
 writes. `HasJpegReconstructionData` tells whether a file holds a JPEG file, without decoding it.
@@ -3739,7 +3798,7 @@ to the samples that were encoded, and the files the encoder writes decode to the
 The irreversible path (the 9-7 wavelet transformation) is defined on real numbers: the decoded samples are within one
 8-bit level of what those decoders give (they differ from each other by as much), not bit-exact.
 
-<!-- snippet: save-jpeg2000 -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SaveJpeg2000;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static string SaveJpeg2000(string inputPath, string jp2Path, string codestreamPath)
 {
@@ -3764,6 +3823,7 @@ public static string SaveJpeg2000(string inputPath, string jp2Path, string codes
     return $"{info.Format} {info.Size.Width}x{info.Size.Height} {info.PixelFormat}, {info.BitsPerComponent} bits";
 }
 ```
+<!-- endref -->
 
 | Feature | Decoding | Encoding |
 | --- | --- | --- |

@@ -3,6 +3,61 @@ namespace Meziantou.Framework.Tests;
 public class QRCodePayloadTests
 {
     [Fact]
+    public void ReadmeExample_Payloads()
+    {
+        #region QRCodePayload_Create
+        // WiFi
+        var wifi = QRCodePayload.Wifi("MyNetwork", "password123", WifiAuthentication.WPA);
+        Assert.Equal("WIFI:T:WPA;S:MyNetwork;P:password123;;", wifi);
+
+        // vCard
+        var vcard = QRCodePayload.VCard("Doe", "John", phone: "+1234567890", email: "john@example.com");
+        Assert.StartsWith("BEGIN:VCARD\r\nVERSION:3.0\r\nN:Doe;John;;;\r\nFN:John Doe\r\n", vcard);
+
+        // MeCard (compact contact format)
+        var mecard = QRCodePayload.MeCard("Doe", "John", phone: "+1234567890");
+        Assert.Equal("MECARD:N:Doe,John;TEL:+1234567890;;", mecard);
+
+        // Email
+        var email = QRCodePayload.Email("test@example.com", subject: "Hello");
+        Assert.Equal("mailto:test@example.com?subject=Hello", email);
+
+        // Phone
+        var phone = QRCodePayload.Phone("+1234567890");
+        Assert.Equal("tel:+1234567890", phone);
+
+        // SMS
+        var sms = QRCodePayload.Sms("+1234567890", "Hello!");
+        Assert.Equal("smsto:+1234567890:Hello!", sms);
+
+        // Geolocation
+        var geo = QRCodePayload.Geolocation(48.8566, 2.3522);
+        Assert.Equal("geo:48.8566,2.3522", geo);
+
+        // Calendar event
+        var evt = QRCodePayload.CalendarEvent("Meeting",
+            new DateTime(2025, 6, 15, 14, 0, 0, DateTimeKind.Utc),
+            new DateTime(2025, 6, 15, 15, 0, 0, DateTimeKind.Utc),
+            location: "Room 42");
+        Assert.Contains("DTSTART:20250615T140000Z\r\n", evt);
+
+        // OTP Auth (2FA setup)
+        var otp = QRCodePayload.OneTimePassword(OneTimePasswordType.Totp,
+            "JBSWY3DPEHPK3PXP", "user@example.com", issuer: "MyApp");
+        Assert.Equal("otpauth://totp/MyApp:user%40example.com?secret=JBSWY3DPEHPK3PXP&issuer=MyApp", otp);
+
+        // Bitcoin payment
+        var btc = QRCodePayload.Bitcoin("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", amount: 0.05m);
+        Assert.Equal("bitcoin:1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa?amount=0.05", btc);
+
+        // SEPA payment (EPC QR)
+        var sepa = QRCodePayload.SepaPayment("Example", "DE00000000000000000000", 12.50m,
+            remittanceText: "Donation");
+        Assert.StartsWith("BCD\n002\n1\nSCT\n", sepa);
+        #endregion
+    }
+
+    [Fact]
     public void Wifi_WPA_ProducesExpectedPayload()
     {
         var payload = QRCodePayload.Wifi("MyNetwork", "MyPassword123");

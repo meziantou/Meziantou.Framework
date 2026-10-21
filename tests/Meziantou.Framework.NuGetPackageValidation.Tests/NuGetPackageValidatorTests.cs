@@ -125,6 +125,26 @@ public sealed class NuGetPackageValidatorTests
     }
 
     [Fact]
+    public async Task ReadmeExample_CustomRules()
+    {
+        #region NuGetPackageValidator_CustomRules
+        var packagePath = FullPath.FromPath(AppContext.BaseDirectory) / "Packages" / "Release_Author.1.0.0.nupkg";
+
+        // Validate with specific rules only
+        var result = await NuGetPackageValidator.ValidateAsync(
+            packagePath,
+            [
+                NuGetPackageValidationRules.AuthorMustBeSet,
+                NuGetPackageValidationRules.LicenseMustBeSet,
+                NuGetPackageValidationRules.IconMustBeSet,
+            ]);
+
+        Assert.False(result.IsValid);
+        Assert.Equal([21, 32], result.Errors.Select(error => error.ErrorCode).Order()); // LicenseNotSet, IconNotSet
+        #endregion
+    }
+
+    [Fact]
     public async Task Validate_PackageFileNotFound()
     {
         using var temporaryDirectory = TemporaryDirectory.Create();

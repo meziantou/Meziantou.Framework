@@ -5,6 +5,43 @@ namespace Meziantou.Framework.Tests;
 public sealed class ObjectMethodExecutorTests
 {
     [Fact]
+    public async Task ReadmeExample_Execute()
+    {
+        #region ObjectMethodExecutor_Execute
+        var methodInfo = typeof(Sample).GetMethod(nameof(Sample.AsyncMethod))!;
+        var executor = ObjectMethodExecutor.Create(methodInfo);
+
+        var instance = new Sample { Offset = 10 };
+        var parameters = new object?[] { 1, 2 };
+        if (executor.IsMethodAsync)
+        {
+            // You can call ExecuteAsync even if the underlying method is not async.
+            // It returns an awaitable that completes with the return value of the method.
+            var result = await executor.ExecuteAsync(instance, parameters);
+            Assert.Equal(13, result);
+        }
+        else
+        {
+            var result = executor.Execute(instance, parameters);
+            Assert.Equal(13, result);
+        }
+        #endregion
+    }
+
+    #region ObjectMethodExecutor_Sample
+    public sealed class Sample
+    {
+        public int Offset { get; init; }
+
+        public async Task<int> AsyncMethod(int a, int b)
+        {
+            await Task.Yield();
+            return Offset + a + b;
+        }
+    }
+    #endregion
+
+    [Fact]
     public async Task Documentation_Example()
     {
         #region ObjectMethodExecutor_Example

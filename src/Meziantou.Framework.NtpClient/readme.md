@@ -13,9 +13,10 @@ An NTP client library for querying NTP servers to retrieve accurate network time
 
 ## Usage
 
-```c#
-using Meziantou.Framework.Ntp;
+The types are in the `Meziantou.Framework.Ntp` namespace.
 
+<!-- ref:../../samples/Meziantou.Framework.NtpClient.Samples/ReadmeExamples.cs;region=NtpClient_Query;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Query an NTP server using NTPv4 (default)
 var client = new NtpClient("pool.ntp.org");
 var response = await client.QueryAsync();
@@ -28,16 +29,19 @@ Console.WriteLine($"Stratum: {response.Stratum}");
 // How much the server itself vouches for that reading
 Console.WriteLine($"Root dispersion: {response.RootDispersion}");
 ```
+<!-- endref -->
 
 ### Using NTPv3
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.NtpClient.Samples/ReadmeExamples.cs;region=NtpClient_V3;format=md-fenced-code-block;dedent=true -->
+```csharp
 var client = new NtpClient("pool.ntp.org", new NtpClientOptions
 {
     Version = NtpVersion.V3,
 });
 var response = await client.QueryAsync();
 ```
+<!-- endref -->
 
 ### Cancellation and timeout
 
@@ -45,11 +49,13 @@ var response = await client.QueryAsync();
 to several addresses can take up to `Timeout × addressCount` overall. Use the cancellation token to
 bound the total duration.
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.NtpClient.Samples/ReadmeExamples.cs;region=NtpClient_Cancellation;format=md-fenced-code-block;dedent=true -->
+```csharp
 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
 var client = new NtpClient("time.google.com");
 var response = await client.QueryAsync(cts.Token);
 ```
+<!-- endref -->
 
 `QueryAsync` throws `TimeoutException` when a query times out, `OperationCanceledException` when the
 caller's token is cancelled, and `AggregateException` when several resolved addresses failed for
@@ -57,13 +63,15 @@ differing reasons.
 
 ### Custom port
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.NtpClient.Samples/ReadmeExamples.cs;region=NtpClient_CustomPort;format=md-fenced-code-block;dedent=true -->
+```csharp
 var client = new NtpClient("localhost", new NtpClientOptions
 {
     Port = 12345,
 });
 var response = await client.QueryAsync();
 ```
+<!-- endref -->
 
 ## Response validation
 
@@ -80,7 +88,8 @@ single stray or forged datagram cannot deny service.
 
 You can inspect a refusal by turning validation off:
 
-```c#
+<!-- ref:../../samples/Meziantou.Framework.NtpClient.Samples/ReadmeExamples.cs;region=NtpClient_WithoutValidation;format=md-fenced-code-block;dedent=true -->
+```csharp
 var client = new NtpClient("pool.ntp.org", new NtpClientOptions { ValidateResponse = false });
 var response = await client.QueryAsync();
 if (response.IsKissOfDeath)
@@ -88,6 +97,7 @@ if (response.IsKissOfDeath)
     Console.WriteLine($"The server refused to answer: {response.KissCode}"); // RATE, DENY, RSTR, ...
 }
 ```
+<!-- endref -->
 
 > [!WARNING]
 > Validation ties a reply to the request that was sent; it does not authenticate the server. This

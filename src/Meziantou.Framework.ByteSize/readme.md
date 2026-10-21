@@ -1,28 +1,31 @@
 # Meziantou.Framework.ByteSize
 
-`ByteSize` represent a value in the Byte unit. It can parse, display, and compare values.
+`ByteSize` represent a value in the Byte unit. It can parse, display, and compare values. `kB`, `MB`, ... are powers of 1000, and `kiB`, `MiB`, ... are powers of 1024.
 
-````c#
+<!-- ref:../../tests/Meziantou.Framework.ByteSize.Tests/ByteSizeTests.cs;region=ByteSize_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
 // Create an instance of ByteSize
 var size = new ByteSize(10); // 10 bytes
-_ = ByteSize.FromKiloBytes(10);
-_ = ByteSize.From(10, ByteSizeUnit.GigaByte);
-_ = ByteSize.Parse("10MB", CultureInfo.InvariantCulture);
-_ = ByteSize.TryParse("10MB", out var parsedSize);
-_ = ByteSize.TryParse("10MB", CultureInfo.InvariantCulture, out var parsedSizeInvariant);
+Assert.Equal(new ByteSize(10_000), ByteSize.FromKiloBytes(10));
+Assert.Equal(new ByteSize(10_000_000_000), ByteSize.From(10, ByteSizeUnit.GigaByte));
+Assert.Equal(ByteSize.FromMegaBytes(10), ByteSize.Parse("10MB", CultureInfo.InvariantCulture));
+Assert.True(ByteSize.TryParse("10MB", out var parsedSize)); // Uses the current culture
+Assert.True(ByteSize.TryParse("10MB", CultureInfo.InvariantCulture, out var parsedSizeInvariant));
+Assert.Equal(ByteSize.FromMegaBytes(10), parsedSizeInvariant);
 
 // Formatting
-size.ToString(); // Automatically find the best unit
-size.ToString("MB"); // Display the value in megabytes
-                     // Supports B, kB, kiB, MB, MiB, GB, GiB, TB, TiB, PB, PiB, EB, EiB
+Assert.Equal("10B", size.ToString(CultureInfo.InvariantCulture)); // Automatically find the best unit
+Assert.Equal("1.5MB", ByteSize.FromKiloBytes(1500).ToString("MB", CultureInfo.InvariantCulture)); // Display the value in megabytes
+// Supports B, kB, kiB, MB, MiB, GB, GiB, TB, TiB, PB, PiB, EB, EiB
 
 // Comparisons
 var a = ByteSize.FromKiloBytes(1);
 var b = ByteSize.FromMegaBytes(1);
-_ = a == b;
-_ = a != b;
-_ = a < b;
-_ = a <= b;
-_ = a > b;
-_ = a >= b;
-````
+Assert.False(a == b);
+Assert.True(a != b);
+Assert.True(a < b);
+Assert.True(a <= b);
+Assert.False(a > b);
+Assert.False(a >= b);
+```
+<!-- endref -->

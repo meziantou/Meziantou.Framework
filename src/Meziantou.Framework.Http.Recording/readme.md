@@ -20,9 +20,10 @@ dotnet add package Meziantou.Framework.Http.Recording
 
 ## Basic usage (auto record + replay)
 
-```c#
-using Meziantou.Framework.Http.Recording;
+The types are in the `Meziantou.Framework.Http.Recording` namespace.
 
+<!-- ref:../../samples/Meziantou.Framework.Http.Samples/HttpRecordingExamples.cs;region=HttpRecordingHandler_AutoRecordAndReplay;format=md-fenced-code-block;dedent=true -->
+```csharp
 var store = new HarHttpRecordingStore("http-recordings.har");
 var options = new HttpRecordingOptions
 {
@@ -40,14 +41,14 @@ var response1 = await httpClient.GetAsync("https://api.example.com/data");
 // Persist all recordings at the end of the test/session.
 await recordingHandler.SaveAsync();
 ```
+<!-- endref -->
 
 On a later run, the recorded response is replayed instead of calling the real endpoint.
 
 ## Replay-only mode
 
-```c#
-using Meziantou.Framework.Http.Recording;
-
+<!-- ref:../../samples/Meziantou.Framework.Http.Samples/HttpRecordingExamples.cs;region=HttpRecordingHandler_ReplayOnly;format=md-fenced-code-block;dedent=true -->
+```csharp
 var store = new JsonHttpRecordingStore("http-recordings.json");
 var options = new HttpRecordingOptions
 {
@@ -60,6 +61,7 @@ using var httpClient = new HttpClient(recordingHandler);
 
 var response = await httpClient.GetAsync("https://api.example.com/data");
 ```
+<!-- endref -->
 
 The constructor without an inner handler can only be used with `HttpRecordingMode.Replay` and a miss behavior other
 than `Passthrough`: there is nothing to forward a request to. Any other combination throws an `ArgumentException`.
@@ -72,12 +74,14 @@ match each other, which matters for GraphQL, JSON-RPC, SOAP and batch endpoints.
 
 If the body varies between runs in a way that should not affect matching (a nonce, a timestamp), match on the URL only:
 
-```c#
+<!-- ref:../../tests/Meziantou.Framework.Http.Recording.Tests/HttpRecordingHandlerTests.cs;region=HttpRecordingOptions_IgnoringRequestBody;format=md-fenced-code-block;dedent=true -->
+```csharp
 var options = new HttpRecordingOptions
 {
     RequestMatcher = DefaultHttpRequestMatcher.IgnoringRequestBody,
 };
 ```
+<!-- endref -->
 
 Implement `IHttpRequestMatcher` for anything else. The entry passed to `ComputeFingerprint` carries the method, URI,
 headers and body on both the record and the replay path, so a matcher may read any of them.
@@ -98,13 +102,15 @@ the mode: `Throw` in `Replay` mode, and `Passthrough` in `Auto` mode so that a m
 Setting it explicitly applies to `Auto` as well. `Mode = Auto` with `MissBehavior = Throw` replays what has been
 recorded and fails on anything else, without ever performing a real HTTP call:
 
-```c#
+<!-- ref:../../tests/Meziantou.Framework.Http.Recording.Tests/HttpRecordingHandlerTests.cs;region=HttpRecordingOptions_AutoWithThrowOnMiss;format=md-fenced-code-block;dedent=true -->
+```csharp
 var options = new HttpRecordingOptions
 {
     Mode = HttpRecordingMode.Auto,
     MissBehavior = HttpRecordingMissBehavior.Throw,
 };
 ```
+<!-- endref -->
 
 ## Recording modes and the store
 
@@ -118,10 +124,12 @@ var options = new HttpRecordingOptions
 Nothing is written until `SaveAsync` is called. Set `AutoSave = true` and dispose the handler with `await using` to
 save automatically:
 
-```c#
+<!-- ref:../../tests/Meziantou.Framework.Http.Recording.Tests/HttpRecordingHandlerTests.cs;region=HttpRecordingOptions_AutoSave;format=md-fenced-code-block;dedent=true -->
+```csharp
 var options = new HttpRecordingOptions { Mode = HttpRecordingMode.Auto, AutoSave = true };
 await using var recordingHandler = new HttpRecordingHandler(innerHandler, store, options);
 ```
+<!-- endref -->
 
 Saving is atomic: the file is written next to the destination and moved into place, so an interrupted save cannot
 destroy an existing recording.
@@ -130,7 +138,8 @@ destroy an existing recording.
 
 Recording files are usually committed, so anything secret in a request or response ends up in the repository.
 
-```c#
+<!-- ref:../../tests/Meziantou.Framework.Http.Recording.Tests/HttpRecordingHandlerTests.cs;region=HttpRecordingOptions_Sanitizers;format=md-fenced-code-block;dedent=true -->
+```csharp
 var options = new HttpRecordingOptions
 {
     Sanitizers =
@@ -140,6 +149,7 @@ var options = new HttpRecordingOptions
     },
 };
 ```
+<!-- endref -->
 
 - `HeaderRemovalSanitizer` removes headers. It does **not** touch the URL or the bodies.
 - `UriQueryParameterSanitizer` masks the value of the named query string parameters.

@@ -299,6 +299,32 @@ public sealed class IntlTests
             """));
     }
 
+    [Theory]
+    [InlineData("en", "{}", "{ hours: 1, minutes: 2, seconds: 3 }", "1 hr, 2 min, 3 sec")]
+    [InlineData("en", "{ style: 'long' }", "{ days: -1, hours: -2 }", "-1 day, 2 hours")]
+    [InlineData("en", "{ style: 'digital' }", "{ days: 1, hours: 2, minutes: 3, seconds: 4, milliseconds: 5 }", "1 day, 2:03:04.005")]
+    [InlineData("en", "{ style: 'digital', fractionalDigits: 2 }", "{ seconds: 1, milliseconds: 999 }", "0:00:01.99")]
+    [InlineData("en", "{ style: 'digital' }", "{ seconds: 10000000, nanoseconds: 1 }", "0:00:10000000.000000001")]
+    [InlineData("en", "{ style: 'digital' }", "{ minutes: -5 }", "-0:05:00")]
+    [InlineData("fi", "{ style: 'digital' }", "{ hours: 1, minutes: 2, seconds: 3 }", "1.02.03")]
+    [InlineData("fr", "{ style: 'narrow' }", "'P1Y2M'", "1a 2m.")]
+    [InlineData("en", "{}", "new Temporal.Duration(0, 0, 0, 0, 1)", "1 hr")]
+    public void DurationFormat(string locale, string options, string duration, string expected)
+    {
+        Assert.Equal(expected, Evaluate($"new Intl.DurationFormat('{locale}', {options}).format({duration})"));
+    }
+
+    [Theory]
+    [InlineData("{}", "'bad string'", "RangeError")]
+    [InlineData("{}", "{}", "TypeError")]
+    [InlineData("{}", "{ hours: 1.5 }", "RangeError")]
+    [InlineData("{}", "{ hours: 1, minutes: -1 }", "RangeError")]
+    [InlineData("{ minutes: 'numeric', seconds: 'long' }", "{ hours: 1 }", "RangeError")]
+    public void DurationFormat_Errors(string options, string duration, string expected)
+    {
+        Assert.Equal(expected, Evaluate($"try {{ new Intl.DurationFormat('en', {options}).format({duration}); 'none' }} catch (e) {{ e.name }}"));
+    }
+
     [Fact]
     public void DefaultLocale()
     {

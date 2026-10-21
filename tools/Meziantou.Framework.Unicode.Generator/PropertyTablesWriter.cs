@@ -51,6 +51,7 @@ internal static class PropertyTablesWriter
         var (bracketType, bracketPairs) = await LoadBracketsAsync(aliases, bracketEnum);
         var mirroringPairs = await LoadMirroringPairsAsync();
         var (lowerDelta, upperDelta, titleDelta) = await LoadSimpleCaseMappingsAsync();
+        var foldDelta = await LoadSimpleCaseFoldingAsync();
         var (specialCasingRecords, specialCasingPool) = await LoadSpecialCasingAsync();
 
         const int ExtendedPictographic = 1 << 5; // EmojiProperties.ExtendedPictographic
@@ -72,8 +73,8 @@ internal static class PropertyTablesWriter
         var joining = new byte[ValueCount];
         var indicTuples = new TupleTable(width: 2);
         var indic = new byte[ValueCount];
-        var caseTuples = new List<(int Lower, int Upper, int Title)>();
-        var caseTupleIndexes = new Dictionary<(int Lower, int Upper, int Title), int>();
+        var caseTuples = new List<(int Lower, int Upper, int Title, int Fold)>();
+        var caseTupleIndexes = new Dictionary<(int Lower, int Upper, int Title, int Fold), int>();
         var caseLeaves = new byte[ValueCount];
 
         // The default entry is processed first so that every default tuple has the index 0.
@@ -102,7 +103,7 @@ internal static class PropertyTablesWriter
             joining[i] = joiningTuples.GetIndex(joiningType[i], joiningGroup[i]);
             indic[i] = indicTuples.GetIndex(syllabic[i], positional[i]);
 
-            var caseKey = (lowerDelta[i], upperDelta[i], titleDelta[i]);
+            var caseKey = (lowerDelta[i], upperDelta[i], titleDelta[i], foldDelta[i]);
             if (!caseTupleIndexes.TryGetValue(caseKey, out var caseIndex))
             {
                 caseIndex = caseTuples.Count;
@@ -153,18 +154,19 @@ internal static class PropertyTablesWriter
             Vertical_Orientation (a UnicodeVerticalOrientation), with the default values of the unassigned code points.
             """);
         AppendTrie(tables, sizes, "Case", caseLeaves, """
-            Index of a 12-byte entry of CaseTuples: the differences between the code point and its Simple_Lowercase_Mapping,
-            its Simple_Uppercase_Mapping and its Simple_Titlecase_Mapping.
+            Index of a 16-byte entry of CaseTuples: the differences between the code point and its Simple_Lowercase_Mapping,
+            its Simple_Uppercase_Mapping, its Simple_Titlecase_Mapping and its Simple_Case_Folding.
             """);
-        var caseBytes = new byte[caseTuples.Count * 12];
+        var caseBytes = new byte[caseTuples.Count * 16];
         for (var i = 0; i < caseTuples.Count; i++)
         {
-            System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(caseBytes.AsSpan(i * 12), caseTuples[i].Lower);
-            System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(caseBytes.AsSpan((i * 12) + 4), caseTuples[i].Upper);
-            System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(caseBytes.AsSpan((i * 12) + 8), caseTuples[i].Title);
+            System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(caseBytes.AsSpan(i * 16), caseTuples[i].Lower);
+            System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(caseBytes.AsSpan((i * 16) + 4), caseTuples[i].Upper);
+            System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(caseBytes.AsSpan((i * 16) + 8), caseTuples[i].Title);
+            System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(caseBytes.AsSpan((i * 16) + 12), caseTuples[i].Fold);
         }
 
-        AppendBytes(tables, sizes, "CaseTuples", caseBytes, "12-byte entries: three little-endian 32-bit differences, see GetCase.");
+        AppendBytes(tables, sizes, "CaseTuples", caseBytes, "16-byte entries: four little-endian 32-bit differences, see GetCase.");
         AppendBytes(tables, sizes, "SpecialCasingMappings", specialCasingRecords, "The unconditional full case mappings of SpecialCasing.txt: 6-byte entries sorted by code point: the code point (3 bytes), the offset of its mappings in SpecialCasingPool (2 bytes), then the lengths of its lowercase (bits 0-1), titlecase (bits 2-3) and uppercase (bits 4-5) mappings, little-endian.");
         AppendSpecialCasingFilter(tables, specialCasingRecords);
         AppendBytes(tables, sizes, "SpecialCasingPool", EncodeUInt24(specialCasingPool), "The code points of the full case mappings, 3 bytes each, little-endian: the lowercase, the titlecase then the uppercase mapping of each entry of SpecialCasingMappings.");
@@ -608,6 +610,28 @@ internal static class PropertyTablesWriter
         }
 
         return (lower, upper, title);
+    }
+
+    /// <summary>Loads the Simple_Case_Folding of every code point: the mappings of CaseFolding.txt whose status is C or S.</summary>
+    private static async Task<int[]> LoadSimpleCaseFoldingAsync()
+    {
+        var result = new int[ValueCount];
+        var count = 0;
+        foreach (var line in Ucd.ParseLines(await Ucd.DownloadAsync("ucd/CaseFolding.txt")))
+        {
+            // code; status; mapping;
+            if (line.IsMissing || line.Start != line.End || line.Fields.Length < 2 || line.Fields[0] is not ("C" or "S"))
+                continue;
+
+            result[line.Start] = int.Parse(line.Fields[1], NumberStyles.HexNumber, CultureInfo.InvariantCulture) - line.Start;
+            count++;
+        }
+
+        if (count == 0)
+            throw new InvalidOperationException("No simple case folding in CaseFolding.txt");
+
+        Console.WriteLine($"  Loaded {count} simple case foldings");
+        return result;
     }
 
     /// <summary>

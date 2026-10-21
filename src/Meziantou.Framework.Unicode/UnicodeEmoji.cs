@@ -68,4 +68,44 @@ public static class UnicodeEmoji
     public static bool IsExtendedPictographic(int codePoint) => HasProperty(codePoint, EmojiProperties.ExtendedPictographic);
 
     private static bool HasProperty(int codePoint, EmojiProperties property) => (UnicodeProperties.GetEmojiProperties(codePoint) & property) != EmojiProperties.None;
+
+    /// <summary>Gets the emoji sequences of an emoji property of strings, such as <c>RGI_Emoji_Flag_Sequence</c>.</summary>
+    /// <param name="property">The property.</param>
+    /// <returns>The sequences, in the order of the data files of UTS #51. The list is created once and shared.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="property"/> is not a value of <see cref="UnicodeEmojiSequenceProperty"/>.</exception>
+    /// <seealso href="https://www.unicode.org/reports/tr51/#Emoji_Sets" />
+    public static IReadOnlyList<string> GetSequences(UnicodeEmojiSequenceProperty property)
+    {
+        if ((uint)property >= (uint)SequenceCache.Length)
+            throw new ArgumentOutOfRangeException(nameof(property), property, "The value is not an emoji property of strings");
+
+        return Volatile.Read(ref SequenceCache[(int)property]) ?? CreateSequences(property);
+    }
+
+    private static readonly string[]?[] SequenceCache = new string[]?[6];
+
+    private static string[] CreateSequences(UnicodeEmojiSequenceProperty property)
+    {
+        var data = UnicodeEmojiSequenceTables.GetSequences((int)property);
+        var result = new List<string>();
+        var builder = new StringBuilder();
+        var offset = 0;
+        while (offset < data.Length)
+        {
+            var length = data[offset];
+            offset++;
+            builder.Clear();
+            for (var i = 0; i < length; i++)
+            {
+                builder.Append(char.ConvertFromUtf32(UnicodeTableReader.ReadUInt24(data, offset)));
+                offset += 3;
+            }
+
+            result.Add(builder.ToString());
+        }
+
+        var array = result.ToArray();
+        Volatile.Write(ref SequenceCache[(int)property], array);
+        return array;
+    }
 }

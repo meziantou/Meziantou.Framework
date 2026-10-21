@@ -205,13 +205,13 @@ public static class UnicodeProperties
     /// <param name="codePoint">The code point.</param>
     /// <returns>The lowercase code point, or <paramref name="codePoint"/> when it has no mapping.</returns>
     /// <remarks>The mapping is the one-to-one, culture-independent mapping of the Unicode Character Database.</remarks>
-    public static int ToSimpleLowercase(int codePoint) => codePoint + UnicodeTableReader.ReadInt32(UnicodeTables.CaseTuples, UnicodeTables.GetCase(codePoint) * 12);
+    public static int ToSimpleLowercase(int codePoint) => codePoint + UnicodeTableReader.ReadInt32(UnicodeTables.CaseTuples, UnicodeTables.GetCase(codePoint) * 16);
 
     /// <summary>Gets the Simple_Uppercase_Mapping of a code point.</summary>
     /// <param name="codePoint">The code point.</param>
     /// <returns>The uppercase code point, or <paramref name="codePoint"/> when it has no mapping.</returns>
     /// <remarks>The mapping is the one-to-one, culture-independent mapping of the Unicode Character Database.</remarks>
-    public static int ToSimpleUppercase(int codePoint) => codePoint + UnicodeTableReader.ReadInt32(UnicodeTables.CaseTuples, (UnicodeTables.GetCase(codePoint) * 12) + 4);
+    public static int ToSimpleUppercase(int codePoint) => codePoint + UnicodeTableReader.ReadInt32(UnicodeTables.CaseTuples, (UnicodeTables.GetCase(codePoint) * 16) + 4);
 
     /// <summary>Gets the Simple_Titlecase_Mapping of a code point: the form of the code point at the start of a word.</summary>
     /// <param name="codePoint">The code point.</param>
@@ -221,7 +221,79 @@ public static class UnicodeProperties
     /// (<c>ǆ</c> → <c>ǅ</c>) and the Georgian Mkhedruli letters.
     /// </returns>
     /// <remarks>The mapping is the one-to-one, culture-independent mapping of the Unicode Character Database.</remarks>
-    public static int ToSimpleTitlecase(int codePoint) => codePoint + UnicodeTableReader.ReadInt32(UnicodeTables.CaseTuples, (UnicodeTables.GetCase(codePoint) * 12) + 8);
+    public static int ToSimpleTitlecase(int codePoint) => codePoint + UnicodeTableReader.ReadInt32(UnicodeTables.CaseTuples, (UnicodeTables.GetCase(codePoint) * 16) + 8);
+
+    /// <summary>Gets the Simple_Case_Folding of a code point: the mappings of <c>CaseFolding.txt</c> whose status is <c>C</c> or <c>S</c>.</summary>
+    /// <param name="codePoint">The code point.</param>
+    /// <returns>The folded code point, or <paramref name="codePoint"/> when it has no mapping.</returns>
+    /// <remarks>
+    /// Two strings that differ only by case have the same simple case folding when their characters fold one to one;
+    /// the full case folding (status <c>F</c>), which can map a code point to several ones (U+00DF to <c>ss</c>), is not
+    /// applied. The Turkic mappings (status <c>T</c>) are not applied either.
+    /// </remarks>
+    public static int ToSimpleCaseFold(int codePoint) => codePoint + UnicodeTableReader.ReadInt32(UnicodeTables.CaseTuples, (UnicodeTables.GetCase(codePoint) * 16) + 12);
+
+    /// <summary>Determines whether a code point has a binary property.</summary>
+    /// <param name="codePoint">The code point.</param>
+    /// <param name="property">The property.</param>
+    /// <returns><see langword="true"/> when the code point has the property; <see langword="false"/> otherwise, and for an integer that is not a code point.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="property"/> is not a value of <see cref="UnicodeBinaryProperty"/>.</exception>
+    public static bool HasBinaryProperty(int codePoint, UnicodeBinaryProperty property)
+    {
+        var (first, count) = GetBinaryPropertyRangeIndexes(property);
+        var ranges = UnicodeBinaryPropertyTables.Ranges;
+        var low = first;
+        var high = first + count - 1;
+        while (low <= high)
+        {
+            var middle = (int)(((uint)low + (uint)high) / 2);
+            var offset = middle * 6;
+            if (codePoint < UnicodeTableReader.ReadUInt24(ranges, offset))
+            {
+                high = middle - 1;
+            }
+            else if (codePoint > UnicodeTableReader.ReadUInt24(ranges, offset + 3))
+            {
+                low = middle + 1;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>Gets the code points that have a binary property.</summary>
+    /// <param name="property">The property.</param>
+    /// <returns>The ranges of the code points that have the property, in increasing order. The ranges neither overlap nor touch.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="property"/> is not a value of <see cref="UnicodeBinaryProperty"/>.</exception>
+    /// <remarks>Each call returns a new array.</remarks>
+    public static UnicodeRange[] GetBinaryPropertyRanges(UnicodeBinaryProperty property)
+    {
+        var (first, count) = GetBinaryPropertyRangeIndexes(property);
+        var ranges = UnicodeBinaryPropertyTables.Ranges;
+        var result = new UnicodeRange[count];
+        for (var i = 0; i < count; i++)
+        {
+            var offset = (first + i) * 6;
+            result[i] = new UnicodeRange(UnicodeTableReader.ReadUInt24(ranges, offset), UnicodeTableReader.ReadUInt24(ranges, offset + 3));
+        }
+
+        return result;
+    }
+
+    private static (int First, int Count) GetBinaryPropertyRangeIndexes(UnicodeBinaryProperty property)
+    {
+        if ((uint)property >= UnicodeBinaryPropertyTables.PropertyCount)
+            throw new ArgumentOutOfRangeException(nameof(property), property, "The value is not a binary property");
+
+        var offsets = UnicodeBinaryPropertyTables.RangeOffsets;
+        var first = UnicodeTableReader.ReadUInt24(offsets, (int)property * 3);
+        var next = UnicodeTableReader.ReadUInt24(offsets, ((int)property + 1) * 3);
+        return (first, next - first);
+    }
 
     /// <summary>Gets the greatest number of code points a full case mapping writes for a code point.</summary>
     /// <seealso cref="GetLowercaseMapping(int, Span{int})"/>

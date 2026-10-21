@@ -788,6 +788,16 @@ internal sealed partial class CodeGenerator
 
     private void EmitMember(MemberExpression member)
     {
+        // a?.[key]: the object is checked before the key is evaluated
+        if (member is { Optional: true, Computed: true })
+        {
+            EmitExpression(member.Object);
+            EmitOptionalCheck(0);
+            EmitExpression(member.Property);
+            EmitGetReference(member, TargetKind.Element);
+            return;
+        }
+
         var kind = EmitReferenceBase(member);
         if (member.Optional)
         {

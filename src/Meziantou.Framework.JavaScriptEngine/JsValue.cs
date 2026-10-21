@@ -13,7 +13,7 @@ namespace Meziantou.Framework.JavaScriptEngine;
 public readonly struct JsValue : IEquatable<JsValue>
 {
     // null: undefined; NumberCell.Instance: a number (in _number); the other cells are the value itself
-    internal readonly JsCell? Cell;
+    internal JsCell? Cell { get; }
     private readonly double _number;
 
     internal JsValue(JsCell? cell)

@@ -21,7 +21,7 @@ public class JsObject : JsCell
         Flags = ObjectFlags.Extensible;
     }
 
-    internal ObjectFlags Flags;
+    internal ObjectFlags Flags { get; set; }
 
     internal ObjectClass Class { get; set; }
 

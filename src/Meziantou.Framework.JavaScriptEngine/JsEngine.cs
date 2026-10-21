@@ -9,7 +9,7 @@ namespace Meziantou.Framework.JavaScriptEngine;
 public sealed partial class JsEngine : IDisposable
 {
     [ThreadStatic]
-    private static JsEngine? t_current;
+    private static JsEngine? s_current;
 
     private readonly List<JsRealm> _realms = [];
 
@@ -23,7 +23,7 @@ public sealed partial class JsEngine : IDisposable
     public JsEngineOptions Options { get; }
 
     /// <summary>Gets the engine whose code runs on the current thread, if any.</summary>
-    internal static JsEngine? Current => t_current;
+    internal static JsEngine? Current => s_current;
 
     /// <summary>Gets the realm of the running execution context (the current realm).</summary>
     internal JsRealm? CurrentRealm { get; set; }
@@ -46,8 +46,8 @@ public sealed partial class JsEngine : IDisposable
     /// <summary>Makes the engine the engine of the current thread until the returned scope is disposed.</summary>
     internal EngineScope Enter()
     {
-        var previous = t_current;
-        t_current = this;
+        var previous = s_current;
+        s_current = this;
         return new EngineScope(previous);
     }
 
@@ -89,6 +89,6 @@ public sealed partial class JsEngine : IDisposable
 
     internal readonly struct EngineScope(JsEngine? previous) : IDisposable
     {
-        public void Dispose() => t_current = previous;
+        public void Dispose() => s_current = previous;
     }
 }

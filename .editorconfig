@@ -211,6 +211,9 @@ dotnet_diagnostic.CA1508.severity = none
 dotnet_diagnostic.MA0099.severity = none
 # CA1720: The names mirror the types of the specification (e.g. JsValueKind.String, JsValueKind.Object).
 dotnet_diagnostic.CA1720.severity = none
+# IDE0370: The intrinsics are initialized by the partial methods of their area (not seen by the nullable analysis): the
+# null-forgiving initializers are required on one target framework and reported as unnecessary on the other.
+dotnet_diagnostic.IDE0370.severity = none
 # CA1054, CA1056: The URL of a script is any string given by the host (a URL, a file name...), as in the stack traces of the browsers.
 dotnet_diagnostic.CA1054.severity = none
 dotnet_diagnostic.CA1056.severity = none

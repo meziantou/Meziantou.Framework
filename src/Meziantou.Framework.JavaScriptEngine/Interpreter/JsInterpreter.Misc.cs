@@ -55,7 +55,11 @@ internal static partial class JsInterpreter
     }
 
     /// <summary>import.meta (modules are not supported yet).</summary>
-    private static JsValue GetImportMeta(Frame frame) => ThrowHelper.ThrowSyntaxError<JsValue>("import.meta is only valid in modules");
+    private static JsValue GetImportMeta(Frame frame)
+    {
+        _ = frame;
+        return ThrowHelper.ThrowSyntaxError<JsValue>("import.meta is only valid in modules");
+    }
 
     /// <summary>import() (modules are not supported yet): a rejected promise.</summary>
     private static JsValue ImportCall(Frame frame, JsValue specifier, JsValue options)

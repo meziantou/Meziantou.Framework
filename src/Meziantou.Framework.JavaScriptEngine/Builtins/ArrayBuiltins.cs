@@ -62,7 +62,7 @@ internal static class ArrayBuiltins
         var values = realm.DefineMethod(prototype, "values", 0, (f, t, _, _) => JsArrayIterator.Create(f.Realm, JsOperations.ToObject(t), ArrayIteratorKind.Values));
         realm.DefineMethod(prototype, "with", 2, With);
         prototype.DefineBuiltIn(WellKnownSymbols.Iterator, values);
-        prototype.DefineBuiltIn(WellKnownSymbols.Unscopables, CreateUnscopables(intrinsics), PropertyFlags.Configurable);
+        prototype.DefineBuiltIn(WellKnownSymbols.Unscopables, CreateUnscopables(), PropertyFlags.Configurable);
 
         // %Object.prototype.toString%, the fallback of Array.prototype.toString
         if (intrinsics.ObjectPrototype.GetOwnProperty(ToStringKey, out var objectToString) && objectToString.Value.Cell is JsObject { IsCallable: true } objectToStringFunction)
@@ -78,7 +78,7 @@ internal static class ArrayBuiltins
         return (constructor, values, toString);
     }
 
-    private static JsObject CreateUnscopables(Intrinsics intrinsics)
+    private static JsObject CreateUnscopables()
     {
         var unscopables = new JsObject(prototype: null);
         foreach (var name in (ReadOnlySpan<string>)["at", "copyWithin", "entries", "fill", "find", "findIndex", "findLast", "findLastIndex", "flat", "flatMap", "includes", "keys", "toReversed", "toSorted", "toSpliced", "values"])

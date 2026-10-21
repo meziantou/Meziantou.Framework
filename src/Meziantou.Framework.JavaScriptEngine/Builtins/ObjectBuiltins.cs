@@ -55,7 +55,6 @@ internal static class ObjectBuiltins
 
     private static JsValue Arg(ReadOnlySpan<JsValue> arguments, int index) => arguments.Length > index ? arguments[index] : default;
 
-    private static JsRealm CurrentRealm => JsEngine.Current!.CurrentRealm!;
 
     /// <summary>Object([value])</summary>
     private static JsValue Construct(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)

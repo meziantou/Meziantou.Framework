@@ -18,12 +18,6 @@ internal readonly struct PropertyKey : IEquatable<PropertyKey>
     private readonly object? _value;
     private readonly uint _index;
 
-    private PropertyKey(object? value, uint index)
-    {
-        _value = value;
-        _index = index;
-    }
-
     public PropertyKey(string value)
     {
         if (TryParseArrayIndex(value, out var index))

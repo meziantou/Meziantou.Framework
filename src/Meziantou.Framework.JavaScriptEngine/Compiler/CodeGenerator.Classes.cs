@@ -259,7 +259,7 @@ internal sealed partial class CodeGenerator
         EmitVarInitialization(scope, parameterScope: null);
         EnterScope(_function.LexicalScope!);
         EmitFunctionDeclarations(block.Body, scope, isGlobal: false);
-        EmitStatements(block.Body);
+        EmitWithDisposal(_function.LexicalScope!, () => EmitStatements(block.Body));
         if (!_builder.IsUnreachable)
         {
             _builder.Emit(OpCode.PushUndefined);

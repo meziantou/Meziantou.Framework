@@ -1489,8 +1489,69 @@ internal static partial class JsInterpreter
                     break;
                 case OpCode.AddDisposableResource:
                     {
-                        var isAsync = code[pc++] != 0;
-                        AddDisposableResource(frame, values[sp - 1], isAsync);
+                        var hint = code[pc++] != 0 ? DisposeHint.AsyncDispose : DisposeHint.SyncDispose;
+                        var value = values[--sp];
+                        var capability = (DisposeCapabilityCell)values[--sp].Cell!;
+                        DisposableOperations.AddDisposableResource(capability.Capability, value, hint);
+                        break;
+                    }
+
+                case OpCode.NewDisposeCapability:
+                    values[sp++] = new JsValue(new DisposeCapabilityCell(DisposableOperations.NewDisposeCapability()));
+                    break;
+                case OpCode.DisposeResources:
+                    {
+                        var value = values[--sp];
+                        var type = (int)values[--sp].NumberValue;
+                        var capability = ((DisposeCapabilityCell)values[--sp].Cell!).Capability;
+                        frame.Sp = sp;
+                        if (DisposableOperations.DisposeResources(capability, type == 1 ? value : (JsValue?)null) is { } thrown)
+                            throw new JsException(thrown);
+
+                        break;
+                    }
+
+                case OpCode.AsyncDisposeStart:
+                    {
+                        var value = values[--sp];
+                        var type = (int)values[--sp].NumberValue;
+                        var capability = ((DisposeCapabilityCell)values[sp - 1].Cell!).Capability;
+                        values[sp - 1] = new JsValue(new AsyncDisposeOperationCell(new AsyncDisposeResourcesOperation(frame.Realm, capability, type == 1 ? value : (JsValue?)null)));
+                        break;
+                    }
+
+                case OpCode.AsyncDisposeNext:
+                    {
+                        var target = code[pc++];
+                        var operation = ((AsyncDisposeOperationCell)values[sp - 1].Cell!).Operation;
+                        frame.Sp = sp;
+                        if (operation.MoveNext(out var value))
+                        {
+                            values[sp - 1] = value;
+                        }
+                        else
+                        {
+                            sp--;
+                            pc = target;
+                        }
+
+                        break;
+                    }
+
+                case OpCode.AsyncDisposeSetResult:
+                    {
+                        var thrown = values[--sp];
+                        var operation = ((AsyncDisposeOperationCell)values[--sp].Cell!).Operation;
+                        operation.SetAwaitResult(thrown.IsHole ? (JsValue?)null : thrown);
+                        break;
+                    }
+
+                case OpCode.AsyncDisposeFinish:
+                    {
+                        var operation = ((AsyncDisposeOperationCell)values[--sp].Cell!).Operation;
+                        if (operation.Completion is { } thrown)
+                            throw new JsException(thrown);
+
                         break;
                     }
 

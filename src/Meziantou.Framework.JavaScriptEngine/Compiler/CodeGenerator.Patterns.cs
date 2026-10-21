@@ -266,10 +266,7 @@ internal sealed partial class CodeGenerator
     // ------------------------------------------------------------------------------------------------------------------
 
     /// <summary>AddDisposableResource for a using declaration: value -> value.</summary>
-    private void EmitAddDisposableResource(bool isAsync)
-    {
-        _builder.Emit(OpCode.AddDisposableResource, isAsync ? 1 : 0);
-    }
+    private void EmitAddDisposableResource(bool isAsync) => EmitAddDisposableResourceCore(isAsync);
 
     /// <summary>AsyncIteratorClose for a normal completion: iteratorRecord ->.</summary>
     private void EmitAsyncIteratorClose()

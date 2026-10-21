@@ -67,18 +67,21 @@ internal static partial class JsInterpreter
         return capability.Promise;
     }
 
-    /// <summary>AddDisposableResource for a using declaration (explicit resource management is not supported yet).</summary>
-    private static void AddDisposableResource(Frame frame, JsValue value, bool isAsync)
-    {
-        _ = frame;
-        _ = value;
-        _ = isAsync;
-        ThrowHelper.ThrowSyntaxError("using declarations are not supported yet");
-    }
-
     /// <summary>Runs a generator frame suspended at its start.</summary>
     internal static JsValue RunGeneratorFrame(Frame frame) => RunWithDepth(frame.Realm.Engine, frame);
 
     /// <summary>Await in the frame of an async generator: the continuations resume it.</summary>
     internal static void AwaitInFrame(Frame frame, JsValue value, object state, PromiseContinuation onFulfilled, PromiseContinuation onRejected) => AwaitValue(frame, value, state, onFulfilled, onRejected);
+}
+
+/// <summary>A DisposeCapability stored in a register.</summary>
+internal sealed class DisposeCapabilityCell(DisposeCapability capability) : JsCell(JsValueKind.Undefined)
+{
+    public DisposeCapability Capability { get; } = capability;
+}
+
+/// <summary>The disposal of the resources of an await using scope, stored in a register.</summary>
+internal sealed class AsyncDisposeOperationCell(AsyncDisposeResourcesOperation operation) : JsCell(JsValueKind.Undefined)
+{
+    public AsyncDisposeResourcesOperation Operation { get; } = operation;
 }

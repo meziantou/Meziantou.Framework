@@ -195,7 +195,7 @@ internal sealed partial class CodeGenerator
         }
         else
         {
-            EmitStatements(((BlockStatement)node.Body).Body);
+            EmitWithDisposal(_function.LexicalScope!, () => EmitStatements(((BlockStatement)node.Body).Body));
             if (!_builder.IsUnreachable)
             {
                 EmitImplicitReturn();

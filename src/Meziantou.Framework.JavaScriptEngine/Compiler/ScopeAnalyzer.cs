@@ -218,6 +218,7 @@ internal sealed partial class ScopeAnalyzer
                         var variable = scope.Declare(name.Name, declaration.Kind == VariableDeclarationKind.Let ? VariableKind.Let : VariableKind.Const);
                         variable.DeclarationEnd = declarator.End;
                         variable.IsUsing = declaration.Kind is VariableDeclarationKind.Using or VariableDeclarationKind.AwaitUsing;
+                        variable.IsAwaitUsing = declaration.Kind is VariableDeclarationKind.AwaitUsing;
                     }
                 }
 

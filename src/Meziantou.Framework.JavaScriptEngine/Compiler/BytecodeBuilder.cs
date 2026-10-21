@@ -177,7 +177,7 @@ internal sealed class BytecodeBuilder
         var depthAtTarget = op switch
         {
             OpCode.IteratorNext or OpCode.ForInNext => StackDepth - 1,
-            OpCode.IteratorStepFinish or OpCode.JumpIfUndefinedPop => StackDepth - 1,
+            OpCode.IteratorStepFinish or OpCode.JumpIfUndefinedPop or OpCode.AsyncDisposeNext => StackDepth - 1,
             _ => StackDepth,
         };
         RecordLabelDepth(label, depthAtTarget);
@@ -280,7 +280,7 @@ internal sealed class BytecodeBuilder
                 or OpCode.CallEvalSpread
                 or OpCode.SaveEnvironment or OpCode.RestoreEnvironment
                 or OpCode.JumpIfUndefinedPop or OpCode.AddDisposableResource
-                or OpCode.ResolveName or OpCode.LoadResolved or OpCode.SetVarBinding
+                or OpCode.ResolveName or OpCode.LoadResolved or OpCode.SetVarBinding or OpCode.AsyncDisposeNext
                 => 1,
             OpCode.LoadLocalChecked or OpCode.StoreLocalChecked or OpCode.ThrowConstAssignLocal
                 or OpCode.LoadContext or OpCode.StoreContext
@@ -371,7 +371,13 @@ internal sealed class BytecodeBuilder
             OpCode.SetHomeObject => -1,
             OpCode.IteratorCallReturn or OpCode.ThrowIfNotObject => 0,
             OpCode.JumpIfUndefinedPop => 0,
-            OpCode.AddDisposableResource => 0,
+            OpCode.AddDisposableResource => -2,
+            OpCode.NewDisposeCapability => 1,
+            OpCode.DisposeResources => -3,
+            OpCode.AsyncDisposeStart => -2,
+            OpCode.AsyncDisposeNext => 0,
+            OpCode.AsyncDisposeSetResult => -2,
+            OpCode.AsyncDisposeFinish => -1,
             OpCode.RequireObjectCoercibleBase => 0,
             OpCode.ResolveName => 1,
             OpCode.LoadResolved => 0,

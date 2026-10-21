@@ -354,7 +354,7 @@ internal sealed partial class CodeGenerator
 
         EnterScope(scope);
         EmitBlockFunctionDeclarations(block.Body, scope);
-        EmitStatements(block.Body);
+        EmitWithDisposal(scope, () => EmitStatements(block.Body));
         ExitScope(scope);
         if (control is not null)
         {
@@ -511,6 +511,22 @@ internal sealed partial class CodeGenerator
             copyEnvironment = loopScope.NeedsContext && forStatement.Init is VariableDeclaration { Kind: VariableDeclarationKind.Let };
         }
 
+        if (loopScope is not null && HasUsingDeclarations(loopScope, out _))
+        {
+            EmitWithDisposal(loopScope, () => EmitForBody(forStatement, labels, copyEnvironment));
+            ExitScope(loopScope);
+            return;
+        }
+
+        EmitForBody(forStatement, labels, copyEnvironment);
+        if (loopScope is not null)
+        {
+            ExitScope(loopScope);
+        }
+    }
+
+    private void EmitForBody(ForStatement forStatement, HashSet<string>? labels, bool copyEnvironment)
+    {
         if (forStatement.Init is VariableDeclaration declaration)
         {
             EmitVariableDeclaration(declaration);
@@ -554,10 +570,6 @@ internal sealed partial class CodeGenerator
 
         _builder.EmitJump(OpCode.Jump, testLabel);
         _builder.MarkLabel(breakLabel);
-        if (loopScope is not null)
-        {
-            ExitScope(loopScope);
-        }
     }
 
     /// <summary>Evaluates the expression of a for-in/of statement (in the TDZ scope of its lexical bindings).</summary>
@@ -721,8 +733,20 @@ internal sealed partial class CodeGenerator
             EnterScope(iterationScope);
         }
 
-        EmitForInOfBinding(forOf, forOf.Left);
-        EmitStatement(forOf.Body, labels: null);
+        if (iterationScope is not null && HasUsingDeclarations(iterationScope, out _))
+        {
+            EmitWithDisposal(iterationScope, () =>
+            {
+                EmitForInOfBinding(forOf, forOf.Left);
+                EmitStatement(forOf.Body, labels: null);
+            });
+        }
+        else
+        {
+            EmitForInOfBinding(forOf, forOf.Left);
+            EmitStatement(forOf.Body, labels: null);
+        }
+
         _builder.MarkLabel(continueLabel);
         if (iterationScope is not null)
         {
@@ -975,6 +999,7 @@ internal sealed partial class CodeGenerator
         }
 
         _control = control.Parent;
+        _ = HasUsingDeclarations(scope, out _);
         _builder.MarkLabel(breakLabel);
         ExitScope(scope);
         _builder.MarkLabel(exitLabel);

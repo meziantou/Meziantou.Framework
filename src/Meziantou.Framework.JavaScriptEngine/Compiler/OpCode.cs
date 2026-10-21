@@ -561,6 +561,24 @@ internal enum OpCode
 
     // ---- Explicit resource management ------------------------------------------------------------------------------------
 
-    /// <summary>(async) value -> value: AddDisposableResource for a using declaration in the current scope</summary>
+    /// <summary>(async) capability value ->: AddDisposableResource for a using declaration</summary>
     AddDisposableResource,
+
+    /// <summary>-> capability: NewDisposeCapability</summary>
+    NewDisposeCapability,
+
+    /// <summary>capability type value ->: DisposeResources with the completion of the scope; throws the resulting exception</summary>
+    DisposeResources,
+
+    /// <summary>capability type value -> operation: starts the disposal of the resources of an await using scope</summary>
+    AsyncDisposeStart,
+
+    /// <summary>(target) operation -> value: the value to await, or jumps to target (the operation popped) when the resources are disposed</summary>
+    AsyncDisposeNext,
+
+    /// <summary>operation thrown ->: the result of the await (a hole when it completed normally)</summary>
+    AsyncDisposeSetResult,
+
+    /// <summary>operation ->: throws the resulting exception of the disposal, if any</summary>
+    AsyncDisposeFinish,
 }

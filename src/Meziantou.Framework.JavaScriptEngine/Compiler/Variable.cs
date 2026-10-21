@@ -36,4 +36,7 @@ internal sealed class Variable(string name, VariableKind kind, Scope scope)
 
     /// <summary>Gets or sets whether a const binding is a 'using' declaration (disposed at the end of the block).</summary>
     public bool IsUsing { get; set; }
+
+    /// <summary>Gets or sets whether the binding is an 'await using' declaration.</summary>
+    public bool IsAwaitUsing { get; set; }
 }

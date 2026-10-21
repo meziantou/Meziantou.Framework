@@ -253,13 +253,51 @@ internal static class NumberFormatting
         return quotient;
     }
 
+    /// <summary>Compares a positive finite number with 10^exponent, exactly.</summary>
+    private static int CompareWithPowerOfTen(double value, int exponent)
+    {
+        Decompose(value, out var significand, out var binaryExponent);
+        var left = new BigInteger(significand);
+        var right = BigInteger.One;
+        if (binaryExponent >= 0)
+        {
+            left <<= binaryExponent;
+        }
+        else
+        {
+            right <<= -binaryExponent;
+        }
+
+        if (exponent >= 0)
+        {
+            right *= BigInteger.Pow(10, exponent);
+        }
+        else
+        {
+            left *= BigInteger.Pow(10, -exponent);
+        }
+
+        return left.CompareTo(right);
+    }
+
     /// <summary>
     /// Gets the integer n of <paramref name="precision"/> digits and the exponent e for which n \u00D7 10^(e \u2212 precision + 1)
     /// is the closest to a positive finite number (the larger n when two are as close).
     /// </summary>
     internal static string GetFixedPrecisionDigits(double value, int precision, out int exponent)
     {
+        // e is the exponent of the value (10^e <= value < 10^(e + 1)): Math.Log10 can be off by one close to a power of ten,
+        // and an exponent too large can give a value of n in range that is not the closest (e.g. 9.999999999999999e-22)
         var e = (int)Math.Floor(Math.Log10(value));
+        if (CompareWithPowerOfTen(value, e) < 0)
+        {
+            e--;
+        }
+        else if (CompareWithPowerOfTen(value, e + 1) >= 0)
+        {
+            e++;
+        }
+
         var lower = BigInteger.Pow(10, precision - 1);
         var upper = lower * 10;
         while (true)

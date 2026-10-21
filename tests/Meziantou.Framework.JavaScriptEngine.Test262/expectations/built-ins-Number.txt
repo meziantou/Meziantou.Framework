@@ -1,2 +1,0 @@
-built-ins/Number/prototype/toPrecision/exponential.js:sloppy
-built-ins/Number/prototype/toPrecision/exponential.js:strict

@@ -55,6 +55,9 @@ public sealed class NumberBuiltinsTests
     [InlineData(25.0, 1, "3e+1")]
     [InlineData(35.0, 1, "4e+1")]
     [InlineData(-1.5, 1, "-2")]
+    [InlineData(1e-21, 7, "1.000000e-21")]
+    [InlineData(1e-21, 16, "9.999999999999999e-22")]
+    [InlineData(1e-21, 21, "9.99999999999999907537e-22")]
     [InlineData(5e-324, 100, "4.940656458412465441765687928682213723650598026143247644255856825006755072702087518652998363616359924e-324")]
     public void ToPrecision(double value, int precision, string expected)
     {

@@ -300,7 +300,7 @@ internal sealed class DateTimePatternGenerator
     private string GetAppendName(int field)
     {
         var name = FieldDisplayNames[field] is { } key ? _data.GetLocaleString(CldrCategory.Fields, key + "/displayName") : null;
-        return "'" + (name ?? "") + "'";
+        return "'" + (name ?? "").Replace("'", "''", StringComparison.Ordinal) + "'";
     }
 
     // adjustFieldTypes: the widths of the fields of a pattern adjusted to the requested ones

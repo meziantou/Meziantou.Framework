@@ -1,0 +1,3 @@
+language/destructuring/binding/keyed-destructuring-property-reference-target-evaluation-order-with-bindings.js:sloppy
+language/destructuring/binding/typedarray-backed-by-resizable-buffer.js:sloppy
+language/destructuring/binding/typedarray-backed-by-resizable-buffer.js:strict

@@ -3,6 +3,5 @@
 annexB/
 built-ins/
 intl402/
-language/
 staging/
 

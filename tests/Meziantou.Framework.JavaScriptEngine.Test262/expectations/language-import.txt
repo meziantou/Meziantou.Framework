@@ -1,0 +1,16 @@
+language/import/dup-bound-names.js:module
+language/import/escaped-as-import-specifier.js:module
+language/import/escaped-as-namespace-import.js:module
+language/import/escaped-from.js:module
+language/import/import-attributes/json-extensibility-array.js:module
+language/import/import-attributes/json-extensibility-object.js:module
+language/import/import-attributes/json-idempotency.js:module
+language/import/import-attributes/json-invalid.js:module
+language/import/import-attributes/json-named-bindings.js:module
+language/import/import-attributes/json-value-array.js:module
+language/import/import-attributes/json-value-boolean.js:module
+language/import/import-attributes/json-value-null.js:module
+language/import/import-attributes/json-value-number.js:module
+language/import/import-attributes/json-value-object.js:module
+language/import/import-attributes/json-value-string.js:module
+language/import/import-attributes/json-via-namespace.js:module

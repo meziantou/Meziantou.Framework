@@ -9,10 +9,10 @@ internal static partial class JsInterpreter
         var intrinsics = realm.Intrinsics;
         var arguments = frame.Arguments;
         JsObject obj;
-        if (mapped)
+        if (mapped && frame.Code.ParameterNames is { Length: > 0 })
         {
             // The indices of the parameters alias the slots of the parameters in the environment of the function
-            var parameterNames = frame.Code.ParameterNames ?? [];
+            var parameterNames = frame.Code.ParameterNames;
             var map = new int[Math.Min(arguments.Length, parameterNames.Length)];
             map.AsSpan().Fill(-1);
             var environment = (DeclarativeEnvironment)frame.Environment;
@@ -40,6 +40,8 @@ internal static partial class JsInterpreter
 
         obj.DefineBuiltIn("length", arguments.Length);
         obj.DefineBuiltIn(WellKnownSymbols.Iterator, intrinsics.ArrayPrototypeValues);
+
+        // A function with a mapped arguments object (sloppy, simple parameters) exposes itself as callee
         if (mapped)
         {
             obj.DefineBuiltIn("callee", frame.Function is { } function ? new JsValue(function) : default);

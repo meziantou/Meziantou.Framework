@@ -92,7 +92,7 @@ public sealed class BigIntBuiltinsTests
         Assert.Equal("RangeError", realm.GetErrorName(() => BigIntOperations.Divide(1, 0)));
         Assert.Equal("RangeError", realm.GetErrorName(() => BigIntOperations.Remainder(1, 0)));
         Assert.Equal("RangeError", realm.GetErrorName(() => BigIntOperations.LeftShift(1, BigInteger.Pow(10, 30))));
-        Assert.Equal("TypeError", realm.GetErrorName(() => BigIntOperations.UnsignedRightShift(1, 1)));
+        Assert.Equal("TypeError", realm.GetErrorName(() => BigIntOperations.UnsignedRightShift()));
     }
 
     [Fact]

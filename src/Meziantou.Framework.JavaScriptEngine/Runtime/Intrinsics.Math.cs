@@ -2,8 +2,10 @@ namespace Meziantou.Framework.JavaScriptEngine;
 
 internal sealed partial class Intrinsics
 {
-    /// <summary>%Math%</summary>
-    public JsObject MathObject { get; private set; } = null!;
+    private JsObject? _math;
 
-    partial void InitializeMath() => MathObject = MathBuiltins.Initialize(this);
+    /// <summary>%Math%</summary>
+    public JsObject MathObject => _math!;
+
+    partial void InitializeMath() => _math = MathBuiltins.Initialize(this);
 }

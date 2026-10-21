@@ -48,8 +48,14 @@ internal static class GlobalFunctionsBuiltins
         return double.IsNaN(JsOperations.ToNumber(arguments.Length > 0 ? arguments[0] : default));
     }
 
+    /// <summary>Creates %parseInt% (Number.parseInt is the same function object).</summary>
+    internal static JsBuiltinFunction CreateParseInt(JsRealm realm) => realm.CreateBuiltinFunction("parseInt", 2, ParseInt);
+
+    /// <summary>Creates %parseFloat% (Number.parseFloat is the same function object).</summary>
+    internal static JsBuiltinFunction CreateParseFloat(JsRealm realm) => realm.CreateBuiltinFunction("parseFloat", 1, ParseFloat);
+
     /// <summary>parseInt(string, radix)</summary>
-    internal static JsValue ParseInt(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
+    private static JsValue ParseInt(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
         var input = JsOperations.ToString(arguments.Length > 0 ? arguments[0] : default);
         var s = TrimLeadingWhiteSpace(input.AsSpan());
@@ -132,7 +138,7 @@ internal static class GlobalFunctionsBuiltins
     }
 
     /// <summary>parseFloat(string)</summary>
-    internal static JsValue ParseFloat(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
+    private static JsValue ParseFloat(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
         var input = JsOperations.ToString(arguments.Length > 0 ? arguments[0] : default);
         return ParseFloat(TrimLeadingWhiteSpace(input.AsSpan()));

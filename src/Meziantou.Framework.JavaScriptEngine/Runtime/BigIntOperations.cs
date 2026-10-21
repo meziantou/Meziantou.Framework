@@ -281,7 +281,7 @@ internal static class BigIntOperations
     public static BigInteger SignedRightShift(BigInteger x, BigInteger y) => LeftShift(x, -y);
 
     /// <summary>BigInt::unsignedRightShift(x, y): always a TypeError.</summary>
-    public static BigInteger UnsignedRightShift(BigInteger x, BigInteger y) => ThrowHelper.ThrowTypeError<BigInteger>("BigInts have no unsigned right shift, use >> instead");
+    public static BigInteger UnsignedRightShift() => ThrowHelper.ThrowTypeError<BigInteger>("BigInts have no unsigned right shift, use >> instead");
 
     /// <summary>BigInt::bitwiseAND(x, y)</summary>
     public static BigInteger BitwiseAnd(BigInteger x, BigInteger y) => x & y;

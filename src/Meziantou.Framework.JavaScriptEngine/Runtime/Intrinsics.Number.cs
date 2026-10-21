@@ -2,20 +2,24 @@ namespace Meziantou.Framework.JavaScriptEngine;
 
 internal sealed partial class Intrinsics
 {
+    private JsFunction? _number;
+    private JsFunction? _parseInt;
+    private JsFunction? _parseFloat;
+
     /// <summary>%Number%</summary>
-    public JsFunction Number { get; private set; } = null!;
+    public JsFunction Number => _number!;
 
     /// <summary>%parseInt%, also Number.parseInt</summary>
-    public JsFunction ParseInt { get; private set; } = null!;
+    public JsFunction ParseInt => _parseInt!;
 
     /// <summary>%parseFloat%, also Number.parseFloat</summary>
-    public JsFunction ParseFloat { get; private set; } = null!;
+    public JsFunction ParseFloat => _parseFloat!;
 
     partial void InitializeNumber()
     {
         // parseInt and parseFloat are the same function objects as Number.parseInt and Number.parseFloat
-        ParseInt = Realm.CreateBuiltinFunction("parseInt", 2, GlobalFunctionsBuiltins.ParseInt);
-        ParseFloat = Realm.CreateBuiltinFunction("parseFloat", 1, GlobalFunctionsBuiltins.ParseFloat);
-        Number = NumberBuiltins.Initialize(this);
+        _parseInt = GlobalFunctionsBuiltins.CreateParseInt(Realm);
+        _parseFloat = GlobalFunctionsBuiltins.CreateParseFloat(Realm);
+        _number = NumberBuiltins.Initialize(this);
     }
 }

@@ -2,8 +2,10 @@ namespace Meziantou.Framework.JavaScriptEngine;
 
 internal sealed partial class Intrinsics
 {
-    /// <summary>%BigInt%</summary>
-    public JsFunction BigInt { get; private set; } = null!;
+    private JsFunction? _bigInt;
 
-    partial void InitializeBigInt() => BigInt = BigIntBuiltins.Initialize(this);
+    /// <summary>%BigInt%</summary>
+    public JsFunction BigInt => _bigInt!;
+
+    partial void InitializeBigInt() => _bigInt = BigIntBuiltins.Initialize(this);
 }

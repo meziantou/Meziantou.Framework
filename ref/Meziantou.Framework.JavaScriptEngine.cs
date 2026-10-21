@@ -13,8 +13,16 @@ namespace Meziantou.Framework.JavaScriptEngine
     {
     }
 
+    public enum JsCompilationType
+    {
+        DirectEval = 0,
+        IndirectEval = 1,
+        Function = 2,
+    }
+
     public sealed class JsEngine : System.IDisposable
     {
+        public bool IsScriptRunning { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsEngineOptions Options { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.JavaScriptEngine.JsRealm> Realms { get => throw null; }
         public JsEngine(Meziantou.Framework.JavaScriptEngine.JsEngineOptions? options = null) { }
@@ -63,6 +71,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public Meziantou.Framework.JavaScriptEngine.JsObject GlobalObject { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsValue GlobalThis { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsValue Evaluate(string code) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsValue Execute(string code, string? url = null) => throw null;
     }
 
     public sealed class JsSymbol : Meziantou.Framework.JavaScriptEngine.JsCell

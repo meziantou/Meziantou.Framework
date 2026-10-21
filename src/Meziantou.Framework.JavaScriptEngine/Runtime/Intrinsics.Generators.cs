@@ -31,9 +31,6 @@ internal sealed partial class Intrinsics
     /// <summary>%AsyncFromSyncIteratorPrototype%</summary>
     public JsObject AsyncFromSyncIteratorPrototype => _asyncFromSyncIteratorPrototype!;
 
-    /// <summary>Gets %Array.prototype.values% (the @@iterator of the arguments objects).</summary>
-    public JsValue ArrayPrototypeValues { get; private set; }
-
     /// <summary>%eval%</summary>
     public JsFunction Eval => _eval!;
 
@@ -43,7 +40,6 @@ internal sealed partial class Intrinsics
     partial void InitializeGenerators()
     {
         var realm = Realm;
-        ArrayPrototypeValues = ArrayPrototype.GetOwnProperty("values", out var valuesDescriptor) ? valuesDescriptor.Value : default;
 
         // %GeneratorFunction%, %GeneratorFunction.prototype%, %GeneratorPrototype%
         _generatorFunctionPrototype = new JsObject(FunctionPrototype);

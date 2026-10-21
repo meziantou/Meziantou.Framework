@@ -269,6 +269,18 @@ internal enum OpCode
     /// <summary>value -> value; TypeError when the value is undefined or null (RequireObjectCoercible)</summary>
     RequireObjectCoercible,
 
+    /// <summary>base key -> base key; TypeError when the base is undefined or null (before the key is converted)</summary>
+    RequireObjectCoercibleBase,
+
+    /// <summary>(name) -> reference: resolves a name in the environments (the environment that has the binding, or undefined)</summary>
+    ResolveName,
+
+    /// <summary>(name) reference -> value: GetValue of a resolved reference</summary>
+    LoadResolved,
+
+    /// <summary>(name, strict) reference value -> value: PutValue of a resolved reference</summary>
+    StoreResolved,
+
     // ---- Control flow --------------------------------------------------------------------------------------------------
 
     /// <summary>(target) -></summary>
@@ -543,6 +555,9 @@ internal enum OpCode
 
     /// <summary>(name) value ->: sets a global var (Annex B function in block, and the var declarations with an initializer)</summary>
     SetGlobalVar,
+
+    /// <summary>(name) value ->: sets a var in the variable environment, not in the scopes in between (Annex B functions of eval code)</summary>
+    SetVarBinding,
 
     // ---- Explicit resource management ------------------------------------------------------------------------------------
 

@@ -332,7 +332,7 @@ internal sealed partial class CodeGenerator
             }
             else if (varBinding.Location == VariableLocation.Dynamic)
             {
-                _builder.Emit(OpCode.StoreName, GetNameKey(name), 0);
+                _builder.Emit(OpCode.SetVarBinding, GetNameKey(name));
             }
             else
             {

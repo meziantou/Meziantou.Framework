@@ -47,6 +47,16 @@ internal sealed partial class ScopeAnalyzer
             }
         }
 
+        // The special bindings used by nested functions are declared first: the function then reads them from its environment too
+        foreach (var (_, scope, kind) in _specials)
+        {
+            var owner = GetThisFunction(scope.Function);
+            if (owner != scope.Function && owner.Kind is not FunctionInfoKind.Script and not FunctionInfoKind.Module and not FunctionInfoKind.Eval)
+            {
+                GetOrDeclareSpecialVariable(owner, kind).IsCaptured = true;
+            }
+        }
+
         foreach (var (node, scope, kind) in _specials)
         {
             SpecialReferences[(node, kind)] = ResolveSpecial(scope, kind);

@@ -200,8 +200,6 @@ built-ins/Array/prototype/concat/Array.prototype.concat_small-typed-array.js:slo
 built-ins/Array/prototype/concat/Array.prototype.concat_small-typed-array.js:strict
 built-ins/Array/prototype/concat/Array.prototype.concat_spreadable-reg-exp.js:sloppy
 built-ins/Array/prototype/concat/Array.prototype.concat_spreadable-reg-exp.js:strict
-built-ins/Array/prototype/concat/is-concat-spreadable-val-truthy.js:sloppy
-built-ins/Array/prototype/concat/is-concat-spreadable-val-truthy.js:strict
 built-ins/Array/prototype/copyWithin/resizable-buffer.js:sloppy
 built-ins/Array/prototype/copyWithin/resizable-buffer.js:strict
 built-ins/Array/prototype/entries/resizable-buffer-grow-mid-iteration.js:sloppy
@@ -264,8 +262,6 @@ built-ins/Array/prototype/find/resizable-buffer-shrink-mid-iteration.js:sloppy
 built-ins/Array/prototype/find/resizable-buffer-shrink-mid-iteration.js:strict
 built-ins/Array/prototype/find/resizable-buffer.js:sloppy
 built-ins/Array/prototype/find/resizable-buffer.js:strict
-built-ins/Array/prototype/find/return-found-value-predicate-result-is-true.js:sloppy
-built-ins/Array/prototype/find/return-found-value-predicate-result-is-true.js:strict
 built-ins/Array/prototype/findIndex/callbackfn-resize-arraybuffer.js:sloppy
 built-ins/Array/prototype/findIndex/callbackfn-resize-arraybuffer.js:strict
 built-ins/Array/prototype/findIndex/predicate-is-not-callable-throws.js:sloppy
@@ -276,8 +272,6 @@ built-ins/Array/prototype/findIndex/resizable-buffer-shrink-mid-iteration.js:slo
 built-ins/Array/prototype/findIndex/resizable-buffer-shrink-mid-iteration.js:strict
 built-ins/Array/prototype/findIndex/resizable-buffer.js:sloppy
 built-ins/Array/prototype/findIndex/resizable-buffer.js:strict
-built-ins/Array/prototype/findIndex/return-index-predicate-result-is-true.js:sloppy
-built-ins/Array/prototype/findIndex/return-index-predicate-result-is-true.js:strict
 built-ins/Array/prototype/findLast/callbackfn-resize-arraybuffer.js:sloppy
 built-ins/Array/prototype/findLast/callbackfn-resize-arraybuffer.js:strict
 built-ins/Array/prototype/findLast/predicate-is-not-callable-throws.js:sloppy
@@ -288,8 +282,6 @@ built-ins/Array/prototype/findLast/resizable-buffer-shrink-mid-iteration.js:slop
 built-ins/Array/prototype/findLast/resizable-buffer-shrink-mid-iteration.js:strict
 built-ins/Array/prototype/findLast/resizable-buffer.js:sloppy
 built-ins/Array/prototype/findLast/resizable-buffer.js:strict
-built-ins/Array/prototype/findLast/return-found-value-predicate-result-is-true.js:sloppy
-built-ins/Array/prototype/findLast/return-found-value-predicate-result-is-true.js:strict
 built-ins/Array/prototype/findLastIndex/callbackfn-resize-arraybuffer.js:sloppy
 built-ins/Array/prototype/findLastIndex/callbackfn-resize-arraybuffer.js:strict
 built-ins/Array/prototype/findLastIndex/predicate-is-not-callable-throws.js:sloppy
@@ -300,8 +292,6 @@ built-ins/Array/prototype/findLastIndex/resizable-buffer-shrink-mid-iteration.js
 built-ins/Array/prototype/findLastIndex/resizable-buffer-shrink-mid-iteration.js:strict
 built-ins/Array/prototype/findLastIndex/resizable-buffer.js:sloppy
 built-ins/Array/prototype/findLastIndex/resizable-buffer.js:strict
-built-ins/Array/prototype/findLastIndex/return-index-predicate-result-is-true.js:sloppy
-built-ins/Array/prototype/findLastIndex/return-index-predicate-result-is-true.js:strict
 built-ins/Array/prototype/flatMap/array-like-objects-nested.js:sloppy
 built-ins/Array/prototype/flatMap/array-like-objects-nested.js:strict
 built-ins/Array/prototype/flatMap/array-like-objects-typedarrays.js:sloppy

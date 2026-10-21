@@ -291,6 +291,13 @@ internal static partial class JsInterpreter
         }
         else if ((template.Flags & FunctionTemplateFlags.Constructor) != 0 && !template.IsClassConstructor)
         {
+            // Non-strict functions have caller and arguments own properties (null): an extension the spec allows
+            if (!template.IsStrict)
+            {
+                closure.DefineBuiltIn("arguments", JsValue.Null, PropertyFlags.None);
+                closure.DefineBuiltIn("caller", JsValue.Null, PropertyFlags.None);
+            }
+
             // MakeConstructor
             var functionPrototype = new JsObject(intrinsics.ObjectPrototype);
             functionPrototype.DefineBuiltIn("constructor", closure);

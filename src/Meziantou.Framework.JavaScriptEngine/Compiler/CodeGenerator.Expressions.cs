@@ -601,6 +601,9 @@ internal sealed partial class CodeGenerator
     private enum TargetKind
     {
         Identifier,
+
+        /// <summary>An identifier resolved at runtime: the base is the resolved environment (with, eval).</summary>
+        DynamicIdentifier,
         Property,
         Element,
         SuperProperty,
@@ -613,6 +616,9 @@ internal sealed partial class CodeGenerator
     {
         switch (target)
         {
+            case Identifier identifier when _analysis.References[identifier].IsDynamic:
+                _builder.Emit(OpCode.ResolveName, GetNameKey(identifier.Name));
+                return TargetKind.DynamicIdentifier;
             case Identifier:
                 return TargetKind.Identifier;
             case MemberExpression { Object: Super } superMember:
@@ -651,6 +657,9 @@ internal sealed partial class CodeGenerator
             case TargetKind.Identifier:
                 EmitLoadIdentifier((Identifier)target);
                 break;
+            case TargetKind.DynamicIdentifier:
+                _builder.Emit(OpCode.LoadResolved, GetNameKey(((Identifier)target).Name));
+                break;
             case TargetKind.Property:
                 _builder.Emit(OpCode.GetProperty, _builder.AddKey(GetPropertyKey(((MemberExpression)target).Property)));
                 break;
@@ -681,6 +690,9 @@ internal sealed partial class CodeGenerator
                 _builder.Emit(OpCode.Dup);
                 EmitStoreIdentifier((Identifier)target);
                 break;
+            case TargetKind.DynamicIdentifier:
+                _builder.Emit(OpCode.StoreResolved, GetNameKey(((Identifier)target).Name), IsStrict ? 1 : 0);
+                break;
             case TargetKind.Property:
                 _builder.Emit(OpCode.SetProperty, _builder.AddKey(GetPropertyKey(((MemberExpression)target).Property)));
                 break;
@@ -707,7 +719,7 @@ internal sealed partial class CodeGenerator
         return kind switch
         {
             TargetKind.Identifier => 0,
-            TargetKind.Property or TargetKind.SuperProperty or TargetKind.Private => 1,
+            TargetKind.Property or TargetKind.SuperProperty or TargetKind.Private or TargetKind.DynamicIdentifier => 1,
             _ => 2,
         };
     }
@@ -904,6 +916,7 @@ internal sealed partial class CodeGenerator
         var targetKind = EmitReferenceBase(left);
         if (targetKind == TargetKind.Element)
         {
+            _builder.Emit(OpCode.RequireObjectCoercibleBase);
             _builder.Emit(OpCode.ToPropertyKey);
         }
 
@@ -921,6 +934,7 @@ internal sealed partial class CodeGenerator
         var kind = EmitReferenceBase(left);
         if (kind == TargetKind.Element)
         {
+            _builder.Emit(OpCode.RequireObjectCoercibleBase);
             _builder.Emit(OpCode.ToPropertyKey);
         }
 
@@ -956,6 +970,7 @@ internal sealed partial class CodeGenerator
         var kind = EmitReferenceBase(target);
         if (kind == TargetKind.Element)
         {
+            _builder.Emit(OpCode.RequireObjectCoercibleBase);
             _builder.Emit(OpCode.ToPropertyKey);
         }
 

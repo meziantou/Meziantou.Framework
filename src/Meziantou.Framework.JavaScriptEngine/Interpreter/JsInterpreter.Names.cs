@@ -479,4 +479,160 @@ internal static partial class JsInterpreter
             }
         }
     }
+
+    /// <summary>ResolveBinding(name): the environment that has the binding (undefined: the global environment, or unresolvable).</summary>
+    private static JsValue ResolveName(Frame frame, in PropertyKey key)
+    {
+        var name = key.AsString();
+        for (var environment = frame.Environment; environment is not null; environment = environment.Outer)
+        {
+            switch (environment)
+            {
+                case DeclarativeEnvironment declarative:
+                    if (declarative.Info.IndexOf(name) >= 0 || declarative.HasEvalVar(name))
+                        return new JsValue(declarative);
+
+                    break;
+                case ObjectEnvironment objectEnvironment:
+                    if (HasWithBinding(objectEnvironment, key))
+                        return new JsValue(objectEnvironment);
+
+                    break;
+                case GlobalEnvironment:
+                    return default;
+            }
+        }
+
+        return default;
+    }
+
+    private static JsValue LoadResolved(Frame frame, JsValue reference, in PropertyKey key)
+    {
+        switch (reference.Cell)
+        {
+            case DeclarativeEnvironment declarative:
+                {
+                    var index = declarative.Info.IndexOf(key.AsString());
+                    if (index < 0)
+                        return declarative.EvalVars!.GetValueOrDefault(key.AsString());
+
+                    var value = declarative.Slots[index];
+                    if (value.IsHole)
+                    {
+                        ThrowTdz(key);
+                    }
+
+                    return value;
+                }
+
+            case ObjectEnvironment objectEnvironment:
+                {
+                    var bindingObject = objectEnvironment.BindingObject;
+                    if (!bindingObject.HasProperty(key))
+                    {
+                        if (frame.Code.IsStrict)
+                        {
+                            ThrowHelper.ThrowReferenceError($"{key} is not defined");
+                        }
+
+                        return default;
+                    }
+
+                    return bindingObject.Get(key, bindingObject);
+                }
+
+            default:
+                return LoadGlobal(frame.Realm, key, throwIfMissing: true);
+        }
+    }
+
+    private static void StoreResolved(Frame frame, JsValue reference, in PropertyKey key, JsValue value, bool strict)
+    {
+        switch (reference.Cell)
+        {
+            case DeclarativeEnvironment declarative:
+                {
+                    var name = key.AsString();
+                    var index = declarative.Info.IndexOf(name);
+                    if (index < 0)
+                    {
+                        declarative.SetEvalVar(name, value);
+                        return;
+                    }
+
+                    var flags = declarative.Info.Flags[index];
+                    if (declarative.Slots[index].IsHole)
+                    {
+                        ThrowTdz(key);
+                    }
+
+                    if ((flags & ScopeSlotFlags.FunctionName) != 0)
+                    {
+                        if (strict)
+                        {
+                            ThrowHelper.ThrowTypeError("Assignment to constant variable.");
+                        }
+
+                        return;
+                    }
+
+                    if ((flags & ScopeSlotFlags.Immutable) != 0)
+                    {
+                        ThrowHelper.ThrowTypeError("Assignment to constant variable.");
+                    }
+
+                    declarative.Slots[index] = value;
+                    return;
+                }
+
+            case ObjectEnvironment objectEnvironment:
+                {
+                    var bindingObject = objectEnvironment.BindingObject;
+                    var stillExists = bindingObject.HasProperty(key);
+                    if (!stillExists && strict)
+                    {
+                        ThrowHelper.ThrowReferenceError($"{key} is not defined");
+                    }
+
+                    if (!bindingObject.Set(key, value, bindingObject) && strict)
+                    {
+                        ThrowHelper.ThrowTypeError($"Cannot assign to read only property '{key}' of object");
+                    }
+
+                    return;
+                }
+
+            default:
+                StoreGlobal(frame.Realm, key, value, strict);
+                return;
+        }
+    }
+
+    /// <summary>Sets a binding of the variable environment (the nearest var scope of a function, or the global object).</summary>
+    private static void SetVarBinding(Frame frame, in PropertyKey key, JsValue value)
+    {
+        var name = key.AsString();
+        for (var environment = frame.Environment; environment is not null; environment = environment.Outer)
+        {
+            if (environment is DeclarativeEnvironment { Info: { IsVarScope: true, Kind: not ScopeKind.Eval } } declarative)
+            {
+                var index = declarative.Info.IndexOf(name);
+                if (index >= 0)
+                {
+                    declarative.Slots[index] = value;
+                }
+                else
+                {
+                    declarative.SetEvalVar(name, value);
+                }
+
+                return;
+            }
+
+            if (environment is GlobalEnvironment)
+                break;
+        }
+
+        frame.Realm.GlobalObject.Set(key, value, throwOnFailure: false);
+    }
 }

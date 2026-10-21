@@ -580,6 +580,29 @@ internal static partial class JsInterpreter
 
                     break;
 
+                case OpCode.RequireObjectCoercibleBase:
+                    if (values[sp - 2].IsNullOrUndefined)
+                    {
+                        ThrowHelper.ThrowTypeError($"Cannot read properties of {values[sp - 2]}");
+                    }
+
+                    break;
+                case OpCode.ResolveName:
+                    values[sp++] = ResolveName(frame, keys[code[pc++]]);
+                    break;
+                case OpCode.LoadResolved:
+                    values[sp - 1] = LoadResolved(frame, values[sp - 1], keys[code[pc++]]);
+                    break;
+                case OpCode.StoreResolved:
+                    {
+                        var name = keys[code[pc++]];
+                        var isStrict = code[pc++] != 0;
+                        var value = values[--sp];
+                        StoreResolved(frame, values[sp - 1], name, value, isStrict);
+                        values[sp - 1] = value;
+                        break;
+                    }
+
                 // ---- Control flow ---------------------------------------------------------------------------------
                 case OpCode.Jump:
                     {
@@ -1457,6 +1480,9 @@ internal static partial class JsInterpreter
                     break;
                 case OpCode.InitializeGlobalFunction:
                     InitializeGlobalFunction(frame.Realm, keys[code[pc++]], values[--sp]);
+                    break;
+                case OpCode.SetVarBinding:
+                    SetVarBinding(frame, keys[code[pc++]], values[--sp]);
                     break;
                 case OpCode.SetGlobalVar:
                     frame.Realm.GlobalObject.Set(keys[code[pc++]], values[--sp], throwOnFailure: false);

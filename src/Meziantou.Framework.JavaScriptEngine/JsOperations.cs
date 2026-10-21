@@ -214,6 +214,7 @@ internal static class JsOperations
             JsString str => !str.IsEmpty,
             JsBigInt bigint => !bigint.Value.IsZero,
             JsObject obj => !obj.IsHtmlDda,
+            JsSymbol => true,
             _ => false,
         };
     }

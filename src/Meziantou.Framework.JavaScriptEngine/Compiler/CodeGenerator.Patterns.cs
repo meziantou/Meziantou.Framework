@@ -98,7 +98,7 @@ internal sealed partial class CodeGenerator
         }
 
         // In an assignment, a reference target is evaluated before the value
-        if (isAssignment && target is not ObjectPattern and not ArrayPattern and not Identifier)
+        if (isAssignment && target is not ObjectPattern and not ArrayPattern && (target is not Identifier identifierTarget || _analysis.References[identifierTarget].IsDynamic))
         {
             var kind = EmitReferenceBase(target);
             emitValue();
@@ -213,6 +213,8 @@ internal sealed partial class CodeGenerator
         _builder.Emit(OpCode.SaveEnvironment, environment);
         var depth = _builder.StackDepth;
         var regionStart = _builder.Position;
+        var control = new ControlScope { Kind = ControlKind.ForOf, Parent = _control, BreakScope = _scope, IteratorRegister = iterator };
+        _control = control;
         foreach (var element in pattern.Elements)
         {
             switch (element)
@@ -239,6 +241,7 @@ internal sealed partial class CodeGenerator
             }
         }
 
+        _control = control.Parent;
         var regionEnd = _builder.Position;
         var endLabel = _builder.DefineLabel();
 

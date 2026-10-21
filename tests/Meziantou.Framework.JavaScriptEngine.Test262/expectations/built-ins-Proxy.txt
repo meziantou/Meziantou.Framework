@@ -13,5 +13,3 @@ built-ins/Proxy/isExtensible/trap-is-missing-target-is-proxy.js:strict
 built-ins/Proxy/preventExtensions/trap-is-undefined-target-is-proxy.js:module
 built-ins/Proxy/set/trap-is-missing-target-is-proxy.js:sloppy
 built-ins/Proxy/set/trap-is-missing-target-is-proxy.js:strict
-built-ins/Proxy/setPrototypeOf/toboolean-trap-result-true-target-is-extensible.js:sloppy
-built-ins/Proxy/setPrototypeOf/toboolean-trap-result-true-target-is-extensible.js:strict

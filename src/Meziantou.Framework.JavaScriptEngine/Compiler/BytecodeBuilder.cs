@@ -280,6 +280,7 @@ internal sealed class BytecodeBuilder
                 or OpCode.CallEvalSpread
                 or OpCode.SaveEnvironment or OpCode.RestoreEnvironment
                 or OpCode.JumpIfUndefinedPop or OpCode.AddDisposableResource
+                or OpCode.ResolveName or OpCode.LoadResolved or OpCode.SetVarBinding
                 => 1,
             OpCode.LoadLocalChecked or OpCode.StoreLocalChecked or OpCode.ThrowConstAssignLocal
                 or OpCode.LoadContext or OpCode.StoreContext
@@ -291,6 +292,7 @@ internal sealed class BytecodeBuilder
                 or OpCode.DefinePrivateMethod
                 or OpCode.ThrowError
                 or OpCode.CreateRegExp
+                or OpCode.StoreResolved
                 => 2,
             OpCode.LoadContextChecked or OpCode.StoreContextChecked or OpCode.ThrowConstAssignContext
                 => 3,
@@ -370,6 +372,10 @@ internal sealed class BytecodeBuilder
             OpCode.IteratorCallReturn or OpCode.ThrowIfNotObject => 0,
             OpCode.JumpIfUndefinedPop => 0,
             OpCode.AddDisposableResource => 0,
+            OpCode.RequireObjectCoercibleBase => 0,
+            OpCode.ResolveName => 1,
+            OpCode.LoadResolved => 0,
+            OpCode.StoreResolved => -1,
             OpCode.SetFieldInitializer => -2,
             OpCode.DefineClassField => -2,
             OpCode.DefineClassFieldComputed or OpCode.DefinePrivateField => -3,
@@ -390,7 +396,7 @@ internal sealed class BytecodeBuilder
             OpCode.Yield => 1,
             OpCode.Await or OpCode.CreateIterResult or OpCode.CreateIterResultDone => 0,
             OpCode.GlobalDeclarationInstantiation or OpCode.EvalDeclarationInstantiation => 0,
-            OpCode.InitializeGlobalLexical or OpCode.InitializeGlobalFunction or OpCode.SetGlobalVar => -1,
+            OpCode.InitializeGlobalLexical or OpCode.InitializeGlobalFunction or OpCode.SetGlobalVar or OpCode.SetVarBinding => -1,
             OpCode.SaveEnvironment or OpCode.RestoreEnvironment => 0,
             OpCode.BindThis or OpCode.CheckThisUninitialized => 0,
             _ => throw new ArgumentOutOfRangeException(nameof(op), op, "Unknown opcode"),

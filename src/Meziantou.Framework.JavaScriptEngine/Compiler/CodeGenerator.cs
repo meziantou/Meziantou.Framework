@@ -246,6 +246,8 @@ internal sealed partial class CodeGenerator
             _builder.Emit(OpCode.PushScope, _builder.AddObject(scope.Info!));
         }
 
+        // The parameters of a function whose parameters have expressions are uninitialized until they are evaluated
+        EmitTdzInitialization(scope);
         EmitSpecialBindings();
 
         // The arguments object

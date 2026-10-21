@@ -73,7 +73,7 @@ public sealed class JsModuleLoadRequest
     public object? HostDefined { get; }
 
     /// <summary>Gets whether the request comes from an <c>import()</c> call.</summary>
-    public bool IsDynamicImport => _payload is PromiseCapability;
+    public bool IsDynamicImport => _payload is DynamicImportPayload;
 
     /// <summary>Completes the request with the loaded module (FinishLoadingImportedModule).</summary>
     public void Complete(JsModule module)

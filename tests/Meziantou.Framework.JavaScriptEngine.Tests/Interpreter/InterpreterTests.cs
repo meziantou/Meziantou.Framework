@@ -308,6 +308,30 @@ public sealed class InterpreterTests
     }
 
     [Fact]
+    public void Module_ImportDefer_EvaluatesOnFirstAccess()
+    {
+        var result = RunModule(new()
+        {
+            ["main"] = "import defer * as ns from 'dep'; globalThis.log = ['main']; const tag = ns[Symbol.toStringTag]; const value = ns.value; import.defer('dep').then(d => { globalThis.result = log.join('|') + ',' + tag + ',' + value + ',' + (d === ns) + ',' + ('then' in ns); });",
+            ["dep"] = "globalThis.log.push('dep'); export const value = 42; export function then() { }",
+        });
+
+        Assert.Equal("main|dep,Deferred Module,42,true,false", result);
+    }
+
+    [Fact]
+    public void Module_ImportSource_TheSourceOfAJavaScriptModuleIsNotAvailable()
+    {
+        var result = RunModule(new()
+        {
+            ["main"] = "import.source('dep').then(() => { globalThis.result = 'loaded'; }, e => { globalThis.result = e.name + ',' + globalThis.evaluated; });",
+            ["dep"] = "globalThis.evaluated = true;",
+        });
+
+        Assert.Equal("SyntaxError,undefined", result);
+    }
+
+    [Fact]
     public void Module_ImportsAreLiveBindings()
     {
         var result = RunModule(new()

@@ -1012,6 +1012,8 @@ internal static partial class JsInterpreter
             OpCode.SuperCall => ExecuteSuperCall(frame, sp, op),
             OpCode.SuperCallSpread => ExecuteSuperCall(frame, sp, op),
             OpCode.ImportCall => ExecuteImportCall(frame, sp),
+            OpCode.ImportDeferCall => ExecuteImportCall(frame, sp, Modules.ModulePhase.Defer),
+            OpCode.ImportSourceCall => ExecuteImportCall(frame, sp, Modules.ModulePhase.Source),
             OpCode.CreateClass => ExecuteCreateClass(frame, sp),
             OpCode.InitializeInstanceElements => ExecuteInitializeInstanceElements(frame, sp),
             OpCode.CreatePrivateName => ExecuteCreatePrivateName(frame, sp),

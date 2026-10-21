@@ -989,6 +989,11 @@ public partial class JsObject : JsCell
         SetOwnSlot(key, new JsValue(new LazyValue(factory)), (flags & PropertyFlags.Default) | PropertyFlags.Lazy);
     }
 
+    internal void DefineLazy(in PropertyKey key, Func<object?, JsValue> factory, object? state, PropertyFlags flags)
+    {
+        SetOwnSlot(key, new JsValue(new LazyValue(factory, state)), (flags & PropertyFlags.Default) | PropertyFlags.Lazy);
+    }
+
     /// <summary>Gets the dense elements (the array fast paths); the holes are absent properties.</summary>
     internal JsValue[]? DenseElements => _elements;
 

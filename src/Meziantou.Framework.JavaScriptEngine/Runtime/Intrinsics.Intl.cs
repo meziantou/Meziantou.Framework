@@ -43,7 +43,7 @@ internal sealed partial class Intrinsics
 
     partial void InitializeIntl()
     {
-        AddLazyGlobal("Intl", () => EnsureIntl()._intl!);
+        AddLazyGlobal("Intl", static intrinsics => intrinsics.EnsureIntl()._intl!);
         CollatorBuiltins.InitializeLocaleCompare(this);
         DateTimeFormatLocaleSensitiveBuiltins.Initialize(this);
         LocaleSensitiveBuiltins.Initialize(this);

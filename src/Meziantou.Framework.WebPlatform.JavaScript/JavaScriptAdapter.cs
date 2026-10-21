@@ -73,7 +73,8 @@ internal readonly struct JavaScriptAdapter(JavaScriptAdapterState state) : IJsAd
 
     public bool IsConstructor(object value) => value is JsObject { IsConstructor: true };
 
-    public bool IsArray(object value) => value is JsObject obj && Engine.IsArray(obj);
+    // An Array exotic object: a Proxy of an array is not one (e.g. it is not a valid key of IndexedDB)
+    public bool IsArray(object value) => value is JsArray;
 
     public bool IsDate(object value) => value is JsObject obj && obj.HasInternalSlot(EngineInternalSlot.DateValue);
 
@@ -153,8 +154,14 @@ internal readonly struct JavaScriptAdapter(JavaScriptAdapterState state) : IJsAd
 
     public bool IsRevokedProxy(object value, out object? objectPrototype)
     {
+        if (value is JsProxy { IsRevoked: true } proxy)
+        {
+            objectPrototype = proxy.CreationRealm?.ObjectPrototype;
+            return true;
+        }
+
         objectPrototype = null;
-        return value is JsProxy { IsRevoked: true };
+        return false;
     }
 
     public bool SetPrototypeOf(object obj, object prototype)
@@ -383,18 +390,21 @@ internal readonly struct JavaScriptAdapter(JavaScriptAdapterState state) : IJsAd
 
     public object CreateArrayBufferView(WebIdlBufferKind kind, object buffer, int byteOffset, int length) => Realm.CreateBufferView((EngineBufferKind)kind, (JsObject)buffer, byteOffset, length);
 
+    // The factories of the lazy properties are their state: no closure is allocated per property
+    private static readonly Func<object?, JsValue> InvokeFactory = static state => ToJs(((Func<object>)state!)());
+
     public void DefineLazyDataProperty(object obj, object key, Func<object> factory, bool writable, bool enumerable, bool configurable)
     {
         ArgumentNullException.ThrowIfNull(factory);
         using var scope = Engine.Enter();
-        ((JsObject)obj).DefineLazyDataProperty(Key(key), () => ToJs(factory()), writable, enumerable, configurable);
+        ((JsObject)obj).DefineLazyDataProperty(Key(key), InvokeFactory, factory, writable, enumerable, configurable);
     }
 
     public void DefineLazyAccessorProperty(object obj, object key, Func<object> getterFactory, Func<object>? setterFactory, bool enumerable, bool configurable)
     {
         ArgumentNullException.ThrowIfNull(getterFactory);
         using var scope = Engine.Enter();
-        ((JsObject)obj).DefineLazyAccessorProperty(Key(key), () => ToJs(getterFactory()), setterFactory is null ? null : () => ToJs(setterFactory()), enumerable, configurable);
+        ((JsObject)obj).DefineLazyAccessorProperty(Key(key), InvokeFactory, getterFactory, setterFactory is null ? null : InvokeFactory, setterFactory, enumerable, configurable);
     }
 }
 

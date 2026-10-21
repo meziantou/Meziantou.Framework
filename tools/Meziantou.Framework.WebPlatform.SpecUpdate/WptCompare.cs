@@ -68,6 +68,21 @@ internal static class WptCompare
         return unlisted == 0;
     }
 
+    /// <summary>
+    /// Reads the known regressions: a JSON object whose keys are the test ids (and whose values are the reasons), or a text
+    /// file with one test id per line (# starts a comment). A trailing <c>*</c> matches a prefix.
+    /// </summary>
+    public static string[] ReadAllowedRegressions(string path)
+    {
+        if (path.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+        {
+            using var document = JsonDocument.Parse(File.ReadAllText(path), new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip });
+            return [.. document.RootElement.EnumerateObject().Select(property => property.Name)];
+        }
+
+        return [.. File.ReadLines(path).Select(line => line.Trim()).Where(line => line.Length > 0 && !line.StartsWith('#', StringComparison.Ordinal))];
+    }
+
     private static bool IsAllowed(string id, IReadOnlyCollection<string> allowedRegressions)
     {
         foreach (var pattern in allowedRegressions)

@@ -931,20 +931,30 @@ internal sealed partial class Parser
     {
         var start = _token.Start;
         Next();
+        var phase = Modules.ModulePhase.Evaluation;
         if (_token.Kind == TokenKind.Dot)
         {
             Next();
-            if (_token.Kind != TokenKind.Identifier || _token.Value != "meta")
-                Raise(_token.Start, "The only valid meta property for import is 'import.meta'");
+            if (_token.Kind == TokenKind.Identifier && _token.Value is "defer" or "source" && !_token.IsEscaped)
+            {
+                // import.defer(specifier, options) (https://tc39.es/proposal-defer-import-eval/) and import.source(specifier, options) (https://tc39.es/proposal-source-phase-imports/)
+                phase = _token.Value == "defer" ? Modules.ModulePhase.Defer : Modules.ModulePhase.Source;
+                Next();
+            }
+            else
+            {
+                if (_token.Kind != TokenKind.Identifier || _token.Value != "meta")
+                    Raise(_token.Start, "The only valid meta property for import is 'import.meta'");
 
-            if (_token.IsEscaped)
-                Raise(_token.Start, "'import.meta' must not contain escaped characters");
+                if (_token.IsEscaped)
+                    Raise(_token.Start, "'import.meta' must not contain escaped characters");
 
-            Next();
-            if (!_isModule)
-                Raise(start, "Cannot use 'import.meta' outside a module");
+                Next();
+                if (!_isModule)
+                    Raise(start, "Cannot use 'import.meta' outside a module");
 
-            return Finish(new MetaProperty { Kind = MetaPropertyKind.ImportMeta }, start);
+                return Finish(new MetaProperty { Kind = MetaPropertyKind.ImportMeta }, start);
+            }
         }
 
         if (_token.Kind != TokenKind.LeftParen || forNew)
@@ -960,7 +970,7 @@ internal sealed partial class Parser
         }
 
         Expect(TokenKind.RightParen);
-        return Finish(new ImportExpression { Source = source, Options = options }, start);
+        return Finish(new ImportExpression { Source = source, Options = options, Phase = phase }, start);
     }
 
     private TemplateLiteral ParseTemplate(bool isTagged)

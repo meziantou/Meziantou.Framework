@@ -586,16 +586,7 @@
     "total": 1
   },
   "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-no-beforeunload.window.js": {
-    "harness": "TIMEOUT",
-    "total": 8,
-    "failures": {
-      "Navigating an iframe via location.href to a javascript: URL must not fire beforeunload: string completion": "NOTRUN",
-      "Navigating an iframe via src=\"\" to a javascript: URL after insertion must not fire beforeunload: string completion": "NOTRUN",
-      "Navigating an opened window via location.href to a javascript: URL must not fire beforeunload: string completion": "NOTRUN",
-      "Navigating an opened window via location.href to a javascript: URL must not fire beforeunload: undefined completion": "TIMEOUT",
-      "Navigating an opened window with an iframe via location.href to a javascript: URL must not fire beforeunload on the iframe: string completion": "NOTRUN",
-      "Navigating an opened window with an iframe via location.href to a javascript: URL must not fire beforeunload on the iframe: undefined completion": "NOTRUN"
-    }
+    "total": 8
   },
   "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-query-fragment-components.html": {
     "total": 1
@@ -634,12 +625,7 @@
     "total": 2
   },
   "html/browsers/browsing-the-web/navigating-across-documents/javascript-url-task-queuing.html": {
-    "harness": "TIMEOUT",
-    "total": 5,
-    "failures": {
-      "Navigating an opened window as part of creation to a javascript: URL must queue a task": "NOTRUN",
-      "Navigating an opened window via location.href to a javascript: URL must queue a task": "TIMEOUT"
-    }
+    "total": 5
   },
   "html/browsers/browsing-the-web/navigating-across-documents/multiple-globals/context-for-location-assign.html": {
     "total": 1
@@ -1956,15 +1942,18 @@
       "Can only enumerate safelisted enumerable properties (cross-origin)": "FAIL",
       "Can only enumerate safelisted enumerable properties (cross-site)": "FAIL",
       "Can only enumerate safelisted enumerable properties (same-origin + document.domain)": "FAIL",
+      "Cross-origin Window accessors get local Function.prototype (cross-origin)": "FAIL",
+      "Cross-origin Window accessors get local Function.prototype (cross-site)": "FAIL",
+      "Cross-origin Window accessors get local Function.prototype (same-origin + document.domain)": "FAIL",
+      "Cross-origin functions get local Function.prototype (cross-origin)": "FAIL",
+      "Cross-origin functions get local Function.prototype (cross-site)": "FAIL",
+      "Cross-origin functions get local Function.prototype (same-origin + document.domain)": "FAIL",
       "Only certain properties are accessible cross-origin (cross-origin)": "FAIL",
       "Only certain properties are accessible cross-origin (cross-site)": "FAIL",
       "Only certain properties are accessible cross-origin (same-origin + document.domain)": "FAIL",
       "Only certain properties are usable as cross-origin this objects (cross-origin)": "FAIL",
       "Only certain properties are usable as cross-origin this objects (cross-site)": "FAIL",
       "Only certain properties are usable as cross-origin this objects (same-origin + document.domain)": "FAIL",
-      "Resolving a promise with a cross-origin window with a 'then' subframe should work (cross-origin)": "FAIL",
-      "Resolving a promise with a cross-origin window with a 'then' subframe should work (cross-site)": "FAIL",
-      "Resolving a promise with a cross-origin window with a 'then' subframe should work (same-origin + document.domain)": "FAIL",
       "Same-origin observers get different accessors for cross-origin Location (cross-origin)": "FAIL",
       "Same-origin observers get different accessors for cross-origin Location (cross-site)": "FAIL",
       "Same-origin observers get different accessors for cross-origin Location (same-origin + document.domain)": "FAIL",

@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 76 | 87 | 0 | 87% |
+| [Stable](#stable-tests) | 81 | 87 | 0 | 93% |
 | [Tentative](#tentative-tests) | 0 | 3 | 0 | 0% |
 | [Reftests](#reftests) | 6 | 6 | 0 | 100% |
-| **All** | **82** | **96** | **0** | **85%** |
+| **All** | **87** | **96** | **0** | **91%** |
 
 ## Stable tests
 
@@ -23,7 +23,7 @@
 | [`api/document-exit-fullscreen-timing.html`](https://wpt.fyi/results/fullscreen/api/document-exit-fullscreen-timing.html) | Pass | 1 / 1 |  |  |
 | [`api/document-exit-fullscreen-twice.html`](https://wpt.fyi/results/fullscreen/api/document-exit-fullscreen-twice.html) | Pass | 1 / 1 |  |  |
 | [`api/document-exit-fullscreen.html`](https://wpt.fyi/results/fullscreen/api/document-exit-fullscreen.html) | Pass | 1 / 1 |  |  |
-| [`api/document-fullscreen-element.html`](https://wpt.fyi/results/fullscreen/api/document-fullscreen-element.html) | Fail | 0 / 1 | JINT | the default parameter initializer of `trusted_click(container = document.body)` (`/fullscreen/trusted-click.js`) reads the `var document` that the body of the function declares instead of the global `document`: Jint creates the variables of the body in the scope of the parameters, so calling the helper without argument throws |
+| [`api/document-fullscreen-element.html`](https://wpt.fyi/results/fullscreen/api/document-fullscreen-element.html) | Pass | 1 / 1 |  |  |
 | [`api/document-fullscreen-enabled-active-document.html`](https://wpt.fyi/results/fullscreen/api/document-fullscreen-enabled-active-document.html) | Pass | 1 / 1 |  |  |
 | [`api/document-fullscreen-enabled-cross-origin.sub.html`](https://wpt.fyi/results/fullscreen/api/document-fullscreen-enabled-cross-origin.sub.html) | Pass | 4 / 4 |  |  |
 | [`api/document-fullscreen-enabled-removing-allowfullscreen.sub.html`](https://wpt.fyi/results/fullscreen/api/document-fullscreen-enabled-removing-allowfullscreen.sub.html) | Fail | 0 / 1 | TEST BUG | the test expects `document.fullscreenEnabled` to be false in a same-origin iframe without `allowfullscreen`, but the default allowlist of the `fullscreen` feature is `'self'` (fails in every browser) |
@@ -42,7 +42,7 @@
 | [`api/element-ready-check-fullscreen-element-sibling.html`](https://wpt.fyi/results/fullscreen/api/element-ready-check-fullscreen-element-sibling.html) | Pass | 1 / 1 |  |  |
 | [`api/element-ready-check-fullscreen-iframe-child.html`](https://wpt.fyi/results/fullscreen/api/element-ready-check-fullscreen-iframe-child.html) | Pass | 1 / 1 |  |  |
 | [`api/element-ready-check-iframe-child.html`](https://wpt.fyi/results/fullscreen/api/element-ready-check-iframe-child.html) | Pass | 1 / 1 |  |  |
-| [`api/element-ready-check-not-allowed-cross-origin.sub.html`](https://wpt.fyi/results/fullscreen/api/element-ready-check-not-allowed-cross-origin.sub.html) | Fail | 0 / 1 | JINT | the default parameter initializer of `trusted_click(container = document.body)` (`/fullscreen/trusted-click.js`) reads the `var document` that the body of the function declares instead of the global `document`: Jint creates the variables of the body in the scope of the parameters, so calling the helper without argument throws |
+| [`api/element-ready-check-not-allowed-cross-origin.sub.html`](https://wpt.fyi/results/fullscreen/api/element-ready-check-not-allowed-cross-origin.sub.html) | Pass | 1 / 1 |  |  |
 | [`api/element-ready-check-not-in-document.html`](https://wpt.fyi/results/fullscreen/api/element-ready-check-not-in-document.html) | Pass | 1 / 1 |  |  |
 | [`api/element-request-fullscreen-active-document.html`](https://wpt.fyi/results/fullscreen/api/element-request-fullscreen-active-document.html) | Pass | 1 / 1 |  |  |
 | [`api/element-request-fullscreen-after-error.html`](https://wpt.fyi/results/fullscreen/api/element-request-fullscreen-after-error.html) | Pass | 1 / 1 |  |  |
@@ -59,7 +59,7 @@
 | [`api/element-request-fullscreen-not-allowed.html`](https://wpt.fyi/results/fullscreen/api/element-request-fullscreen-not-allowed.html) | Pass | 1 / 1 |  |  |
 | [`api/element-request-fullscreen-options.html`](https://wpt.fyi/results/fullscreen/api/element-request-fullscreen-options.html) | Pass | 2 / 2 |  |  |
 | [`api/element-request-fullscreen-same-element.html`](https://wpt.fyi/results/fullscreen/api/element-request-fullscreen-same-element.html) | Pass | 1 / 1 |  |  |
-| [`api/element-request-fullscreen-screen-size.https.html`](https://wpt.fyi/results/fullscreen/api/element-request-fullscreen-screen-size.https.html) | Fail | 1 / 2 | JINT | 1 subtest: the default parameter initializer of `trusted_click(container = document.body)` (`/fullscreen/trusted-click.js`) reads the `var document` that the body of the function declares instead of the global `document`: Jint creates the variables of the body in the scope of the parameters, so calling the helper without argument throws |
+| [`api/element-request-fullscreen-screen-size.https.html`](https://wpt.fyi/results/fullscreen/api/element-request-fullscreen-screen-size.https.html) | Fail | 1 / 2 | REQUIRES(media) | `navigator.mediaDevices.getDisplayMedia()` (the tab capture of the element) |
 | [`api/element-request-fullscreen-svg-rect.html`](https://wpt.fyi/results/fullscreen/api/element-request-fullscreen-svg-rect.html) | Pass | 1 / 1 |  |  |
 | [`api/element-request-fullscreen-svg-svg.html`](https://wpt.fyi/results/fullscreen/api/element-request-fullscreen-svg-svg.html) | Pass | 1 / 1 |  |  |
 | [`api/element-request-fullscreen-svg-text.html`](https://wpt.fyi/results/fullscreen/api/element-request-fullscreen-svg-text.html) | Pass | 1 / 1 |  |  |
@@ -76,7 +76,7 @@
 | [`api/fullscreen-reordering.html`](https://wpt.fyi/results/fullscreen/api/fullscreen-reordering.html) | Pass | 1 / 1 |  |  |
 | [`api/fullscreen-request-preconditions.html`](https://wpt.fyi/results/fullscreen/api/fullscreen-request-preconditions.html) | Pass | 3 / 3 |  |  |
 | [`api/historical.html`](https://wpt.fyi/results/fullscreen/api/historical.html) | Pass | 85 / 85 |  |  |
-| [`api/keyboard-lock-cross-origin-iframe.sub.html`](https://wpt.fyi/results/fullscreen/api/keyboard-lock-cross-origin-iframe.sub.html) | Fail | 0 / 2 | JINT | the default parameter initializer of `trusted_click(container = document.body)` (`/fullscreen/trusted-click.js`) reads the `var document` that the body of the function declares instead of the global `document`: Jint creates the variables of the body in the scope of the parameters, so calling the helper without argument throws |
+| [`api/keyboard-lock-cross-origin-iframe.sub.html`](https://wpt.fyi/results/fullscreen/api/keyboard-lock-cross-origin-iframe.sub.html) | Pass | 2 / 2 |  |  |
 | [`api/navigate-iframe.sub.html`](https://wpt.fyi/results/fullscreen/api/navigate-iframe.sub.html) | Fail | 4 / 5 | TEST BUG | 1 subtest (`cross_to_same`) expects the default allowlist `'self'` to compare the declared origin of the iframe (its `src`), as Firefox does; the "define an inherited policy for feature in container" algorithm compares the origin of the new document, which is same origin with its parent (it also fails in Chrome and Safari) |
 | [`api/promises-reject.html`](https://wpt.fyi/results/fullscreen/api/promises-reject.html) | Pass | 1 / 1 |  |  |
 | [`api/promises-resolve.html`](https://wpt.fyi/results/fullscreen/api/promises-resolve.html) | Pass | 1 / 1 |  |  |
@@ -98,8 +98,8 @@
 | [`rendering/fullscreen-css-transition.html`](https://wpt.fyi/results/fullscreen/rendering/fullscreen-css-transition.html) | Pass | 1 / 1 |  |  |
 | [`rendering/fullscreen-pseudo-class-support.html`](https://wpt.fyi/results/fullscreen/rendering/fullscreen-pseudo-class-support.html) | Pass | 1 / 1 |  |  |
 | [`rendering/fullscreen-pseudo-class.html`](https://wpt.fyi/results/fullscreen/rendering/fullscreen-pseudo-class.html) | Pass | 1 / 1 |  |  |
-| [`rendering/fullscreen-root-block-scroll.html`](https://wpt.fyi/results/fullscreen/rendering/fullscreen-root-block-scroll.html) | Fail | 0 / 1 | JINT | the default parameter initializer of `trusted_click(container = document.body)` (`/fullscreen/trusted-click.js`) reads the `var document` that the body of the function declares instead of the global `document`: Jint creates the variables of the body in the scope of the parameters, so calling the helper without argument throws |
-| [`rendering/fullscreen-root-block-size.html`](https://wpt.fyi/results/fullscreen/rendering/fullscreen-root-block-size.html) | Fail | 0 / 1 | JINT | the default parameter initializer of `trusted_click(container = document.body)` (`/fullscreen/trusted-click.js`) reads the `var document` that the body of the function declares instead of the global `document`: Jint creates the variables of the body in the scope of the parameters, so calling the helper without argument throws |
+| [`rendering/fullscreen-root-block-scroll.html`](https://wpt.fyi/results/fullscreen/rendering/fullscreen-root-block-scroll.html) | Pass | 1 / 1 |  |  |
+| [`rendering/fullscreen-root-block-size.html`](https://wpt.fyi/results/fullscreen/rendering/fullscreen-root-block-size.html) | Pass | 1 / 1 |  |  |
 | [`rendering/fullscreen-ua-stylesheet.html`](https://wpt.fyi/results/fullscreen/rendering/fullscreen-ua-stylesheet.html) | Pass | 3 / 3 |  |  |
 | [`rendering/ua-style-iframe.html`](https://wpt.fyi/results/fullscreen/rendering/ua-style-iframe.html) | Pass | 1 / 1 |  |  |
 

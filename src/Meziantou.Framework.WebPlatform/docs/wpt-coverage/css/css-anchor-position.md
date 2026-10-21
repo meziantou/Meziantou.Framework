@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 245 | 260 | 3 | 95% |
+| [Stable](#stable-tests) | 245 | 260 | 0 | 94% |
 | [Tentative](#tentative-tests) | 2 | 4 | 0 | 50% |
-| [Reftests](#reftests) | 209 | 229 | 5 | 93% |
-| **All** | **456** | **493** | **8** | **94%** |
+| [Reftests](#reftests) | 213 | 229 | 0 | 93% |
+| **All** | **460** | **493** | **0** | **93%** |
 
 ## Stable tests
 
@@ -73,9 +73,9 @@
 | [`anchor-position-dynamic-003.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-dynamic-003.html) | Pass | 10 / 10 |  |  |
 | [`anchor-position-dynamic-004.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-dynamic-004.html) | Pass | 1 / 1 |  |  |
 | [`anchor-position-flip-sibling-index.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-flip-sibling-index.html) | Pass | 1 / 1 |  |  |
-| [`anchor-position-inline-001.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-inline-001.html) | Disabled | – | JINT | the body onload handler calls the global function onload(), which resolves to the onload handler of the body element (the handler itself): the unbounded recursion overflows the stack of the thread (the runner sets no recursion limit) and aborts the runner instead of throwing a RangeError |
-| [`anchor-position-inline-002.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-inline-002.html) | Disabled | – | JINT | the body onload handler calls the global function onload(), which resolves to the onload handler of the body element (the handler itself): the unbounded recursion overflows the stack of the thread (the runner sets no recursion limit) and aborts the runner instead of throwing a RangeError |
-| [`anchor-position-inline-003.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-inline-003.html) | Disabled | – | JINT | the body onload handler calls the global function onload(), which resolves to the onload handler of the body element (the handler itself): the unbounded recursion overflows the stack of the thread (the runner sets no recursion limit) and aborts the runner instead of throwing a RangeError |
+| [`anchor-position-inline-001.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-inline-001.html) | Error | 0 / 0 | BUG | the body onload handler calls the global function onload(), which resolves to the onload handler of the body element (the handler itself): the unbounded recursion throws a RangeError |
+| [`anchor-position-inline-002.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-inline-002.html) | Error | 0 / 0 | BUG | the body onload handler calls the global function onload(), which resolves to the onload handler of the body element (the handler itself): the unbounded recursion throws a RangeError |
+| [`anchor-position-inline-003.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-inline-003.html) | Error | 0 / 0 | BUG | the body onload handler calls the global function onload(), which resolves to the onload handler of the body element (the handler itself): the unbounded recursion throws a RangeError |
 | [`anchor-position-multicol-001.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-multicol-001.html) | Pass | 4 / 4 |  |  |
 | [`anchor-position-multicol-005.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-multicol-005.html) | Pass | 1 / 1 |  |  |
 | [`anchor-position-multicol-006.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-multicol-006.html) | Pass | 4 / 4 |  |  |
@@ -327,11 +327,11 @@
 | [`anchor-position-dynamic-006.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-dynamic-006.html) | Pass | 1 / 1 |  |  |
 | [`anchor-position-grid-001.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-grid-001.html) | Pass | 1 / 1 |  |  |
 | [`anchor-position-grid-002.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-grid-002.html) | Pass | 1 / 1 |  |  |
-| [`anchor-position-inline-004.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-inline-004.html) | Disabled | – | JINT | the body onload handler calls the global function onload(), which resolves to the onload handler of the body element (the handler itself): the unbounded recursion overflows the stack of the thread (the runner sets no recursion limit) and aborts the runner instead of throwing a RangeError |
-| [`anchor-position-inline-005.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-inline-005.html) | Disabled | – | JINT | the body onload handler calls the global function onload(), which resolves to the onload handler of the body element (the handler itself): the unbounded recursion overflows the stack of the thread (the runner sets no recursion limit) and aborts the runner instead of throwing a RangeError |
-| [`anchor-position-inline-006.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-inline-006.html) | Disabled | – | JINT | the body onload handler calls the global function onload(), which resolves to the onload handler of the body element (the handler itself): the unbounded recursion overflows the stack of the thread (the runner sets no recursion limit) and aborts the runner instead of throwing a RangeError |
-| [`anchor-position-inline-007.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-inline-007.html) | Disabled | – | JINT | the body onload handler calls the global function onload(), which resolves to the onload handler of the body element (the handler itself): the unbounded recursion overflows the stack of the thread (the runner sets no recursion limit) and aborts the runner instead of throwing a RangeError |
-| [`anchor-position-inline-008.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-inline-008.html) | Disabled | – | JINT | the body onload handler calls the global function onload(), which resolves to the onload handler of the body element (the handler itself): the unbounded recursion overflows the stack of the thread (the runner sets no recursion limit) and aborts the runner instead of throwing a RangeError |
+| [`anchor-position-inline-004.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-inline-004.html) | Pass | 1 / 1 |  |  |
+| [`anchor-position-inline-005.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-inline-005.html) | Pass | 1 / 1 |  |  |
+| [`anchor-position-inline-006.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-inline-006.html) | Pass | 1 / 1 |  |  |
+| [`anchor-position-inline-007.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-inline-007.html) | Pass | 1 / 1 |  |  |
+| [`anchor-position-inline-008.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-inline-008.html) | Fail | 0 / 1 | BUG | the anchor box of an inline element split by a block child (block-in-inline) is not the union of its fragments |
 | [`anchor-position-multicol-002.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-multicol-002.html) | Pass | 1 / 1 |  |  |
 | [`anchor-position-multicol-003.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-multicol-003.html) | Pass | 1 / 1 |  |  |
 | [`anchor-position-multicol-004.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-multicol-004.html) | Pass | 1 / 1 |  |  |

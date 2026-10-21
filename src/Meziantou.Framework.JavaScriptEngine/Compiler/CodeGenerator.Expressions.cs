@@ -159,7 +159,12 @@ internal sealed partial class CodeGenerator
                 }
 
                 _builder.SetPosition(import.Start);
-                _builder.Emit(OpCode.ImportCall);
+                _builder.Emit(import.Phase switch
+                {
+                    Modules.ModulePhase.Defer => OpCode.ImportDeferCall,
+                    Modules.ModulePhase.Source => OpCode.ImportSourceCall,
+                    _ => OpCode.ImportCall,
+                });
                 return;
             default:
                 throw new InvalidOperationException("Unexpected expression: " + node.Type);

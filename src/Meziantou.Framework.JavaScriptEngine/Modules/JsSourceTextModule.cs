@@ -89,11 +89,12 @@ public sealed class JsSourceTextModule : JsModule
             {
                 case ImportDeclaration import:
                     {
-                        var request = AddRequest(import.Source, import.Attributes);
+                        var request = AddRequest(import.Source, import.Attributes, import.Phase);
                         foreach (var specifier in import.Specifiers)
                         {
                             ImportEntries.Add(specifier switch
                             {
+                                ImportDefaultSpecifier s when import.Phase == ModulePhase.Source => new ImportEntry(request, ImportName: null, s.Local.Name),
                                 ImportDefaultSpecifier s => new ImportEntry(request, "default", s.Local.Name),
                                 ImportNamespaceSpecifier s => new ImportEntry(request, ImportName: null, s.Local.Name),
                                 ImportSpecifier s => new ImportEntry(request, GetName(s.Imported), s.Local.Name),
@@ -184,12 +185,16 @@ public sealed class JsSourceTextModule : JsModule
         }
     }
 
-    private ModuleRequest AddRequest(StringLiteral source, List<ImportAttribute> attributes)
+    /// <summary>
+    /// Adds a request to [[RequestedModules]] (ModuleRequests): the requests of the same module with the same phase are
+    /// merged (a module imported deferred and not deferred has a request for each phase).
+    /// </summary>
+    private ModuleRequest AddRequest(StringLiteral source, List<ImportAttribute> attributes, ModulePhase phase = ModulePhase.Evaluation)
     {
-        var request = ModuleRequest.Create(source.Value, attributes.Select(a => new KeyValuePair<string, string>(GetName(a.Key), a.Value.Value)));
+        var request = ModuleRequest.Create(source.Value, attributes.Select(a => new KeyValuePair<string, string>(GetName(a.Key), a.Value.Value)), phase);
         foreach (var existing in RequestedModules)
         {
-            if (existing.Equals(request))
+            if (existing.Phase == phase && existing.Equals(request))
                 return existing;
         }
 
@@ -293,7 +298,7 @@ public sealed class JsSourceTextModule : JsModule
             {
                 var imported = GetImportedModule(entry.ModuleRequest!);
                 if (entry.ImportKind == ExportImportKind.All)
-                    return new ResolvedBinding(imported, bindingName: null);
+                    return new ResolvedBinding(imported, bindingName: null, entry.ModuleRequest!.Phase);
 
                 return imported.ResolveExport(entry.ImportName!, resolveSet);
             }
@@ -318,7 +323,7 @@ public sealed class JsSourceTextModule : JsModule
             {
                 starResolution = resolution;
             }
-            else if (resolution.Module != starResolution.Module || !string.Equals(resolution.BindingName, starResolution.BindingName, StringComparison.Ordinal))
+            else if (resolution.Module != starResolution.Module || !string.Equals(resolution.BindingName, starResolution.BindingName, StringComparison.Ordinal) || resolution.NamespacePhase != starResolution.NamespacePhase)
             {
                 return ResolvedBinding.Ambiguous;
             }

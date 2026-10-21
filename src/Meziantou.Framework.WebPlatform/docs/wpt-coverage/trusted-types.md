@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 210 | 222 | 4 | 96% |
+| [Stable](#stable-tests) | 212 | 222 | 0 | 95% |
 | [Tentative](#tentative-tests) | 6 | 9 | 0 | 67% |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
-| **All** | **217** | **232** | **4** | **95%** |
+| **All** | **219** | **232** | **0** | **94%** |
 
 ## Stable tests
 
@@ -167,9 +167,9 @@
 | [`should-sink-type-mismatch-violation-be-blocked-by-csp-001.html`](https://wpt.fyi/results/trusted-types/should-sink-type-mismatch-violation-be-blocked-by-csp-001.html) | Fail | 13 / 15 | TEST RUNNER | the runner ends a header value at a line break: the continuation line of the `%0A%20` and `%0D%20` cases (obs-fold) is lost, so the directive has no `'script'` keyword |
 | [`should-sink-type-mismatch-violation-be-blocked-by-csp-002-worker.html`](https://wpt.fyi/results/trusted-types/should-sink-type-mismatch-violation-be-blocked-by-csp-002-worker.html) | Pass | 2 / 2 |  |  |
 | [`should-sink-type-mismatch-violation-be-blocked-by-csp-003.html`](https://wpt.fyi/results/trusted-types/should-sink-type-mismatch-violation-be-blocked-by-csp-003.html) | Pass | 1 / 1 |  |  |
-| [`should-trusted-type-policy-creation-be-blocked-by-csp-001.html`](https://wpt.fyi/results/trusted-types/should-trusted-type-policy-creation-be-blocked-by-csp-001.html) | Disabled | – | JINT | a for-in/for-of statement assigning to the global 'name' accessor (inherited from Window.prototype) throws an InvalidOperationException that aborts the runner |
-| [`should-trusted-type-policy-creation-be-blocked-by-csp-002.html`](https://wpt.fyi/results/trusted-types/should-trusted-type-policy-creation-be-blocked-by-csp-002.html) | Disabled | – | JINT | a for-in/for-of statement assigning to the global 'name' accessor (inherited from Window.prototype) throws an InvalidOperationException that aborts the runner |
-| [`should-trusted-type-policy-creation-be-blocked-by-csp-003.html`](https://wpt.fyi/results/trusted-types/should-trusted-type-policy-creation-be-blocked-by-csp-003.html) | Disabled | – | JINT | a for-in/for-of statement assigning to the global 'name' accessor (inherited from Window.prototype) throws an InvalidOperationException that aborts the runner |
+| [`should-trusted-type-policy-creation-be-blocked-by-csp-001.html`](https://wpt.fyi/results/trusted-types/should-trusted-type-policy-creation-be-blocked-by-csp-001.html) | Pass | 24 / 24 |  |  |
+| [`should-trusted-type-policy-creation-be-blocked-by-csp-002.html`](https://wpt.fyi/results/trusted-types/should-trusted-type-policy-creation-be-blocked-by-csp-002.html) | Fail | 19 / 21 | BUG | the values of the `trusted-types` directive separated by ASCII whitespace other than spaces, and the non-ASCII directives, are not parsed as the specification says: the creation of the policy is blocked |
+| [`should-trusted-type-policy-creation-be-blocked-by-csp-003.html`](https://wpt.fyi/results/trusted-types/should-trusted-type-policy-creation-be-blocked-by-csp-003.html) | Pass | 6 / 6 |  |  |
 | [`should-trusted-type-policy-creation-be-blocked-by-csp-004-worker.html`](https://wpt.fyi/results/trusted-types/should-trusted-type-policy-creation-be-blocked-by-csp-004-worker.html) | Pass | 16 / 16 |  |  |
 | [`should-trusted-type-policy-creation-be-blocked-by-csp-005.html`](https://wpt.fyi/results/trusted-types/should-trusted-type-policy-creation-be-blocked-by-csp-005.html) | Pass | 1 / 1 |  |  |
 | [`trusted-types-createHTMLDocument.html`](https://wpt.fyi/results/trusted-types/trusted-types-createHTMLDocument.html) | Pass | 13 / 13 |  |  |
@@ -179,7 +179,7 @@
 | [`trusted-types-duplicate-names.html`](https://wpt.fyi/results/trusted-types/trusted-types-duplicate-names.html) | Pass | 1 / 1 |  |  |
 | [`trusted-types-eval-reporting-no-unsafe-eval.html`](https://wpt.fyi/results/trusted-types/trusted-types-eval-reporting-no-unsafe-eval.html) | Pass | 3 / 3 |  |  |
 | [`trusted-types-eval-reporting-report-only.html`](https://wpt.fyi/results/trusted-types/trusted-types-eval-reporting-report-only.html) | Pass | 3 / 3 |  |  |
-| [`trusted-types-event-handlers.html`](https://wpt.fyi/results/trusted-types/trusted-types-event-handlers.html) | Disabled | – | JINT | a for-in/for-of statement assigning to the global 'name' accessor (inherited from Window.prototype) throws an InvalidOperationException that aborts the runner |
+| [`trusted-types-event-handlers.html`](https://wpt.fyi/results/trusted-types/trusted-types-event-handlers.html) | Fail | 113 / 115 | NOT IMPLEMENTED | the `onfullscreenchange` and `onfullscreenerror` event handler content attributes of the elements (Fullscreen API) |
 | [`trusted-types-navigation.html`](https://wpt.fyi/results/trusted-types/trusted-types-navigation.html) | Timeout | 9 / 36 | BUG | the report-only cases: the navigation started by the script of the `javascript:` URL replaces the document before the task of the `securitypolicyviolation` event runs (the loader of the runner completes synchronously and the new document is loaded at once), so the listeners of the previous document do not run (it is not fully active) and the violation is not posted to the opener; the next cases do not run |
 | [`trusted-types-report-only.html`](https://wpt.fyi/results/trusted-types/trusted-types-report-only.html) | Pass | 5 / 5 |  |  |
 | [`trusted-types-reporting-check-report-DedicatedWorker-create-policy.html`](https://wpt.fyi/results/trusted-types/trusted-types-reporting-check-report-DedicatedWorker-create-policy.html) | Pass | 4 / 4 |  |  |

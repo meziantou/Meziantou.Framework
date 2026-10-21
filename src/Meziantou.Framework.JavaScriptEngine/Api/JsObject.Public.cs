@@ -77,6 +77,40 @@ public partial class JsObject
         DefineLazy(key.Key, factory, flags);
     }
 
+    /// <summary>
+    /// Defines a data property whose value is created on first access by <paramref name="factory"/>, which gets
+    /// <paramref name="state"/>: a static callback with a state does not allocate a closure per property.
+    /// </summary>
+    public void DefineLazyDataProperty(JsPropertyKey key, Func<object?, JsValue> factory, object? state, bool writable, bool enumerable, bool configurable)
+    {
+        ArgumentNullException.ThrowIfNull(factory);
+        var flags = (writable ? PropertyFlags.Writable : 0) | (enumerable ? PropertyFlags.Enumerable : 0) | (configurable ? PropertyFlags.Configurable : 0);
+        if (IsExotic)
+        {
+            DefineOwnProperty(key.Key, PropertyDescriptor.Data(factory(state), flags));
+            return;
+        }
+
+        DefineLazy(key.Key, factory, state, flags);
+    }
+
+    /// <summary>
+    /// Defines an accessor property whose functions are created on first access by the factories, which get their state;
+    /// <paramref name="setterFactory"/> is null when the property has no setter.
+    /// </summary>
+    public void DefineLazyAccessorProperty(JsPropertyKey key, Func<object?, JsValue> getterFactory, object? getterState, Func<object?, JsValue>? setterFactory, object? setterState, bool enumerable, bool configurable)
+    {
+        ArgumentNullException.ThrowIfNull(getterFactory);
+        var flags = (enumerable ? PropertyFlags.Enumerable : 0) | (configurable ? PropertyFlags.Configurable : 0);
+        if (IsExotic)
+        {
+            DefineOwnProperty(key.Key, PropertyDescriptor.Accessor(getterFactory(getterState), setterFactory is null ? default : setterFactory(setterState), flags));
+            return;
+        }
+
+        SetOwnSlot(key.Key, new JsValue(new AccessorPair(getterFactory, getterState, setterFactory, setterState)), flags | PropertyFlags.Accessor);
+    }
+
     /// <summary>Defines an accessor property whose functions are created on first access; <paramref name="setterFactory"/> is null when the property has no setter.</summary>
     public void DefineLazyAccessorProperty(JsPropertyKey key, Func<JsValue> getterFactory, Func<JsValue>? setterFactory, bool enumerable, bool configurable)
     {

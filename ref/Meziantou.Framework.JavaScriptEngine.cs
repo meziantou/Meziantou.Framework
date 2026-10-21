@@ -253,7 +253,9 @@ namespace Meziantou.Framework.JavaScriptEngine
         public bool IsConstructor { get => throw null; }
         public bool ContainsProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key) => throw null;
         public void DefineLazyAccessorProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, System.Func<Meziantou.Framework.JavaScriptEngine.JsValue> getterFactory, System.Func<Meziantou.Framework.JavaScriptEngine.JsValue>? setterFactory, bool enumerable, bool configurable) { }
+        public void DefineLazyAccessorProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, System.Func<object?, Meziantou.Framework.JavaScriptEngine.JsValue> getterFactory, object? getterState, System.Func<object?, Meziantou.Framework.JavaScriptEngine.JsValue>? setterFactory, object? setterState, bool enumerable, bool configurable) { }
         public void DefineLazyDataProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, System.Func<Meziantou.Framework.JavaScriptEngine.JsValue> factory, bool writable, bool enumerable, bool configurable) { }
+        public void DefineLazyDataProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, System.Func<object?, Meziantou.Framework.JavaScriptEngine.JsValue> factory, object? state, bool writable, bool enumerable, bool configurable) { }
         public bool DefineProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, in Meziantou.Framework.JavaScriptEngine.JsPropertyDescriptor descriptor) => throw null;
         public bool DeleteProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key) => throw null;
         public string? GetErrorStack() => throw null;
@@ -347,6 +349,7 @@ namespace Meziantou.Framework.JavaScriptEngine
 
     public sealed class JsProxy : Meziantou.Framework.JavaScriptEngine.JsObject
     {
+        public Meziantou.Framework.JavaScriptEngine.JsRealm? CreationRealm { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsObject? Handler { get => throw null; }
         public bool IsRevoked { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsObject? Target { get => throw null; }

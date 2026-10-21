@@ -899,14 +899,14 @@ internal static partial class JsInterpreter
         return sp;
     }
 
-    private static int ExecuteImportCall(Frame frame, int sp)
+    private static int ExecuteImportCall(Frame frame, int sp, Modules.ModulePhase phase = Modules.ModulePhase.Evaluation)
     {
         var values = frame.Values;
         var pc = frame.Pc + 1;
         var options = values[--sp];
         var specifier = values[--sp];
         frame.Sp = sp;
-        values[sp++] = ImportCall(frame, specifier, options);
+        values[sp++] = ImportCall(frame, specifier, options, phase);
         frame.Pc = pc;
         return sp;
     }

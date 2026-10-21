@@ -9,6 +9,8 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     /// <summary>The names of the cross-origin properties of a Window (https://html.spec.whatwg.org/multipage/nav-history-apis.html#crossoriginproperties-(-o-)).</summary>
     private static readonly string[] CrossOriginWindowProperties = ["window", "self", "location", "close", "closed", "focus", "blur", "frames", "length", "top", "opener", "parent", "postMessage"];
 
+    private TValue? _reflect;
+
     /// <summary>
     /// Returns the JavaScript value of a window for the code of a realm: the global object when the window is the one of the
     /// realm, else the WindowProxy of its browsing context (<see cref="GetWindowProxy"/>).
@@ -84,8 +86,10 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         // The accessors of the global object get the global object as this value, except the __proto__ accessor of
         // Object.prototype, whose [[GetPrototypeOf]] and [[SetPrototypeOf]] are the ones of the WindowProxy
         TValue Receiver(TValue receiver, TValue key) => ReferenceEquals(receiver, self) && !(adapter.IsString(key) && adapter.AsString(key) == "__proto__") ? Global() : receiver;
-        var reflect = EvaluateBuiltIn("Reflect");
-        TValue Reflect(string name, params TValue[] arguments) => adapter.Call(adapter.Get(reflect, adapter.FromString(name)), adapter.Undefined, arguments);
+        // The internal methods of the global object are called with the Reflect functions of the realm of the caller: a built-in
+        // function runs in its own realm, and the realm of the caller must stay the current realm (e.g. the window returned by
+        // an accessor of the global object is the global object for the code of its realm, else its WindowProxy)
+        TValue Reflect(string name, params TValue[] arguments) => adapter.Call(adapter.Get((agent.CurrentRealm ?? this).ReflectObject, adapter.FromString(name)), adapter.Undefined, arguments);
 
         // https://html.spec.whatwg.org/multipage/nav-history-apis.html#isplatformobjectsameorigin-(-o-), with the realm of the caller
         WebIdlRealm<TAdapter, TValue>? CrossOriginCaller()
@@ -226,6 +230,9 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         Agent.WindowProxyBrowsingContexts.AddOrUpdate(proxy, instance);
         return proxy;
     }
+
+    /// <summary>Gets the Reflect object of the realm.</summary>
+    private TValue ReflectObject => _reflect ??= EvaluateBuiltIn("Reflect");
 
     /// <summary>The "SecurityError" DOMException of this realm thrown by the access of a cross-origin property.</summary>
     private Exception CrossOriginSecurityError() => ToJsException(new DomException("Blocked a frame from accessing a cross-origin frame", "SecurityError"));

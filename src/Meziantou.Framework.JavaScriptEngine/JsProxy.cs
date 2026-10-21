@@ -30,6 +30,7 @@ public sealed class JsProxy : JsObject, IProxyTarget
         _engine = engine;
         _target = target;
         _handler = handler;
+        CreationRealm = engine.CurrentRealm;
         Flags |= ObjectFlags.Exotic;
         if (target.IsCallable)
         {
@@ -49,6 +50,12 @@ public sealed class JsProxy : JsObject, IProxyTarget
 
     /// <summary>Gets whether the proxy is revoked.</summary>
     public bool IsRevoked => _handler is null;
+
+    /// <summary>
+    /// Gets the realm in which the proxy was created (the current realm of ProxyCreate). A host uses it as the associated
+    /// realm of a revoked proxy, whose prototype chain cannot be read.
+    /// </summary>
+    public JsRealm? CreationRealm { get; }
 
     /// <summary>ProxyCreate(target, handler)</summary>
     internal static JsProxy Create(JsEngine engine, JsValue target, JsValue handler)

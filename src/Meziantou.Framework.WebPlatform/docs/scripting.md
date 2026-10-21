@@ -8,17 +8,19 @@ event loop) and calls the engine at the points the standard defines, so that the
 Without an engine, nothing changes: the scripts are never fetched or run, the event handler content attributes
 (`onclick="..."`) have no value, and the `javascript:` URLs are ignored.
 
-## Opt-in with Jint
+## Opt-in with Meziantou.Framework.JavaScriptEngine
 
-The `Meziantou.Framework.WebPlatform.Jint` package runs the scripts with [Jint](https://github.com/sebastienros/jint), a
-JavaScript interpreter written in .NET:
+The `Meziantou.Framework.WebPlatform.JavaScript` package runs the scripts with
+[Meziantou.Framework.JavaScriptEngine](../../Meziantou.Framework.JavaScriptEngine/readme.md), the ECMAScript engine of
+this repository (a parser, a bytecode compiler and an interpreter written in .NET, validated by test262), see
+[its readme](../../Meziantou.Framework.WebPlatform.JavaScript/readme.md):
 
 ```csharp
 using Meziantou.Framework.WebPlatform;
 using Meziantou.Framework.WebPlatform.Dom;
-using Meziantou.Framework.WebPlatform.Jint;
+using Meziantou.Framework.WebPlatform.JavaScript;
 
-using var engine = new JintScriptEngine(new JintScriptEngineOptions
+using var engine = new JavaScriptScriptEngine(new JavaScriptScriptEngineOptions
 {
     Timeout = TimeSpan.FromSeconds(5),            // per script or callback
 });
@@ -46,9 +48,19 @@ do { await context.EventLoop.RunUntilIdleAsync(); } while (await context.EventLo
 Console.WriteLine(document.Body!.InnerHtml); // <ul id="list"><li>a</li><li>b</li></ul>...
 ```
 
-- Each window is the global object of its own realm (the `iframe` elements have their own globals), created when a
-  script first runs in it. `JintScriptEngine.Evaluate(window, code)` runs code in the realm of a window, and
-  `OnRealmCreated` lets a subclass add its own functions to the global objects.
+- The windows of the browsing contexts that use an engine share its `JsEngine` (`JavaScriptScriptEngine.Engine`, the
+  similar-origin window agent). Each window is the global object of its own realm (the `iframe` elements have their own
+  globals), created when a script first runs in it. `JavaScriptScriptEngine.Evaluate(window, code)` runs code in the realm
+  of a window, as an indirect `eval` (it does not run the microtasks), and `OnRealmCreated` lets a subclass add its own
+  functions to the global objects. `ConfigureEngine` sets the other options of the engine (`JsEngineOptions`, e.g. its
+  `TimeZone` and its `DefaultLocale`); the host hooks and the module loader are the ones of the library.
+- The adapter uses the public embedding API of the engine only, and the engine implements the host hooks of the HTML
+  Standard: the code and the original arguments of `eval` and of the `Function` constructors for the content security
+  policies and Trusted Types (`HostEnsureCanCompileStrings`, `HostGetCodeForEval`, see
+  [Compilation of strings](browsing-context.md#compilation-of-strings-and-of-webassembly)), the incumbent settings object
+  and the active script of the promise jobs (`HostMakeJobCallback`, `HostCallJobCallback`), the rejection tracking
+  (`HostPromiseRejectionTracker`), the module loading and `import.meta`. The functions of the WebIDL bindings run in the
+  realm of their caller.
 - The `console` namespace of the [Console Standard](https://console.spec.whatwg.org/) is implemented by the WebIDL
   bindings (`Scripting/WebIdl/WebIdlRealm.Console.cs`): its formatter works on the JavaScript values. The messages are
   given to `BrowsingContextOptions.ConsoleMessage` (a `ConsoleMessage`: the method, the level, the formatted text, the
@@ -62,8 +74,9 @@ Console.WriteLine(document.Body!.InnerHtml); // <ul id="list"><li>a</li><li>b</l
 - The DOM is exposed with the WebIDL bindings of the library (interface objects, prototypes, attributes, operations,
   overloads, dictionaries, unions, callbacks, legacy platform objects, `[CEReactions]`...), generated at build time from
   webref by `tools/Meziantou.Framework.WebPlatform.SpecGen`: see [Writing an engine adapter](#writing-an-engine-adapter). The package implements their
-  adapter with Jint; it uses no reflection and is trimming- and AOT-compatible. A member whose type is an abstract
-  dictionary (e.g. the `body` of a `Report`, a `ReportBody`) is converted with the dictionary of its runtime type.
+  adapter with Meziantou.Framework.JavaScriptEngine; it uses no reflection and is trimming- and AOT-compatible. A member
+  whose type is an abstract dictionary (e.g. the `body` of a `Report`, a `ReportBody`) is converted with the dictionary
+  of its runtime type.
 - Custom elements defined by the scripts (`customElements.define(name, class)`) are supported.
 - The global object of a realm whose agent cluster is not cross-origin isolated has no `SharedArrayBuffer` property
   (https://html.spec.whatwg.org/multipage/webappapis.html#creating-a-new-javascript-realm): see
@@ -75,39 +88,28 @@ Console.WriteLine(document.Body!.InnerHtml); // <ul id="list"><li>a</li><li>b</l
 - The Streams Standard (`ReadableStream`, `WritableStream`, `TransformStream`...), `TextEncoderStream`,
   `TextDecoderStream`, `CompressionStream`, `DecompressionStream`, `Blob.stream()` and `Blob.textStream()` are supported:
   see [Streams](#streams).
-- `Function.prototype.toString()` returns the source text of the functions (https://tc39.es/ecma262/#sec-function.prototype.tostring),
-  as Jint's `RetainFunctionSourceText` option is enabled (Jint returns `function f() { [native code] }` otherwise): the
-  parsed scripts keep their source in memory. Disable it with `ConfigureEngine` when the source is not needed.
+- `Function.prototype.toString()` returns the source text of the functions (https://tc39.es/ecma262/#sec-function.prototype.tostring):
+  the compiled functions reference the source of their script, so the source of a script stays in memory as long as one
+  of its functions is alive. This is not configurable. A function without source text (a built-in function, or a
+  function implemented in .NET by the bindings) returns `function name() { [native code] }`.
 
 ### Threat model
 
 A document may be untrusted: its scripts run in the process.
 
-- The CLR interop of Jint is disabled: the scripts only see the DOM and the JavaScript built-ins. Do not enable it
-  (`AllowClr`) for untrusted documents.
-- Resource exhaustion: `JintScriptEngineOptions` limits each entry into JavaScript (a script, an event listener, a timer
-  callback...): `Timeout` (10 s by default), `MemoryLimit` (256 MB allocated by default), `RecursionLimit` (512 by default),
-  `RegexTimeout` (2 s by default) and `MaxStatements`. When a limit is exceeded, the script stops and the error is
-  reported. A page can still keep the event loop busy (e.g. `setInterval(f, 0)`): bound the time the host runs the event
-  loop (e.g. with the cancellation token of `RunUntilIdleAsync`, and by not waiting for the timers indefinitely).
+- The engine has no CLR interop: the scripts only see the DOM and the JavaScript built-ins (and the functions that a
+  subclass adds in `OnRealmCreated`).
+- Resource exhaustion: `JavaScriptScriptEngineOptions` limits each entry into JavaScript (a script, an event listener, a
+  timer callback...): `Timeout` (10 s by default), `MemoryLimit` (256 MB allocated by default), `RecursionLimit` (512 by
+  default; null is the limit of the engine, 10,000 calls: the frames of the engine are not on the .NET stack, so there is
+  always a limit), `RegexTimeout` (2 s by default) and `MaxStatements` (no limit by default; the engine counts the
+  iterations of the loops and the calls). When a limit is exceeded, the script stops and the error is reported (a deeper
+  call throws a `RangeError`). A page can still keep the event loop busy (e.g. `setInterval(f, 0)`): bound the time the
+  host runs the event loop (e.g. with the cancellation token of `RunUntilIdleAsync`, and by not waiting for the timers
+  indefinitely).
 - Requests: the scripts, the `iframe` elements and the navigations request URLs through the `DocumentLoader`. The HTTP
   loader of `DocumentLoader.Create()` requests any URL: do not use it with untrusted documents when the requests can reach
   private resources (server-side request forgery). Use a loader that filters the destinations.
-
-## Opt-in with Meziantou.Framework.JavaScriptEngine
-
-The `Meziantou.Framework.WebPlatform.JavaScript` package runs the scripts with
-[Meziantou.Framework.JavaScriptEngine](../../Meziantou.Framework.JavaScriptEngine/readme.md), the ECMAScript engine of
-this repository: `JavaScriptScriptEngine` has the same shape as `JintScriptEngine` (the options `Timeout`, `MemoryLimit`,
-`MaxStatements`, `RecursionLimit` and `RegexTimeout`, plus `TimeProvider`; `Evaluate(window, code)`; `OnRealmCreated`), so
-moving from Jint is a rename (see [its readme](../../Meziantou.Framework.WebPlatform.JavaScript/readme.md)). Its adapter
-uses the public embedding API of the engine only (no reflection), and the engine implements the host hooks of the HTML
-Standard: the code and the original arguments of `eval` and of the `Function` constructors for the content security
-policies and Trusted Types (`HostEnsureCanCompileStrings`, `HostGetCodeForEval`), the incumbent settings object and the
-active script of the promise jobs (`HostMakeJobCallback`, `HostCallJobCallback`), the rejection tracking, the module
-loading and `import.meta`. The functions of the WebIDL bindings run in the realm of their caller, as with Jint. The tests
-of the library run with it when `WEBPLATFORM_SCRIPT_ENGINE=javascript`, and the web-platform-tests when
-`WPT_ENGINE=javascript` (Jint stays the engine of the expectations).
 
 ## Opt-in with another engine
 
@@ -139,14 +141,14 @@ are called on the thread of the worker. The global object of a realm is a `Globa
 | `DestroyRealm(GlobalScope)` | The browsing context is discarded (e.g. its `iframe` is removed), the worker ends, or the global scopes of the worklets of a document are terminated. |
 | `CreateWorkerScriptEngine(CancellationToken)` | A worker is created: the engine of the new agent, used on the thread of the worker (null by default: the workers do not run scripts). The token is canceled when the worker is terminated: the engine aborts the running script. |
 | `OnChildNavigablesChanged(Window)` | An `iframe` is inserted or removed: the indexed properties of the `WindowProxy` (`window[0]`) changed. |
-| `ExecuteClassicScript(ClassicScript)` | A classic script runs ("run a classic script"): a `script` element, a `javascript:` URL, a string passed to `setTimeout()`, the script of a worker or of `importScripts()`. It returns the completion value (a .NET `string` for a JavaScript string), or throws. The source text of an inline script created by the HTML parser starts at `SourceTextLine`/`SourceTextColumn` in its document: the Jint engine pads it, so the lines of its errors and of the violations of the content security policies are the lines in the document. |
+| `ExecuteClassicScript(ClassicScript)` | A classic script runs ("run a classic script"): a `script` element, a `javascript:` URL, a string passed to `setTimeout()`, the script of a worker or of `importScripts()`. It returns the completion value (a .NET `string` for a JavaScript string), or throws. The source text of an inline script created by the HTML parser starts at `SourceTextLine`/`SourceTextColumn` in its document: `JavaScriptScriptEngine` parses it with these offsets, so the lines and the columns of its errors and of the violations of the content security policies are the ones in the document. |
 | `ParseClassicScript(ClassicScript)` | The script of a worker is fetched: the engine returns its parse error, if any (the worker object then fires an `error` event), or null (the default: the parse errors are thrown by `ExecuteClassicScript`). |
 | `CompileEventHandler(EventHandlerSource)` | An event handler content attribute is used for the first time (lazily). |
 | `QueueMicrotask(Action)` | The library queues a microtask (e.g. a mutation observer notification): it must run in order with the jobs of the engine (promise reactions). |
 | `PerformMicrotaskCheckpoint()` | The library performs a microtask checkpoint: the engine runs its jobs until its queue is empty. |
 | `EnterNestedMicrotaskQueue()` | Optional. The layout runs a callback of a layout worklet (see [Worklets](#worklets)): until the returned scope is disposed, the jobs go to a separate queue, the only one that `PerformMicrotaskCheckpoint()` runs. The default implementation does nothing. |
 | `IsScriptRunning` | The library needs to know whether the JavaScript execution context stack is empty ("clean up after running script", the microtask checkpoint of the parser before a custom element constructor or a script). |
-| `ExtractErrorInformation(object?)` | The library reports an exception: the engine gives the message, the location and the error value of the `ErrorEvent`. The Jint engine gives the error string (`TypeError: a message`, as the browsers do), and the location where the exception was thrown or, for an error object that was not thrown (the reason of a rejected promise, the argument of `reportError()`), where it was created (the first frame of its `stack`). |
+| `ExtractErrorInformation(object?)` | The library reports an exception: the engine gives the message, the location and the error value of the `ErrorEvent`. `JavaScriptScriptEngine` gives the error string (`TypeError: a message`, as the browsers do), and the location where the exception was thrown or, for an error object that was not thrown (the reason of a rejected promise, the argument of `reportError()`), where it was created (the first frame of its `stack`). |
 | `IsPromiseHandled(object)` | The library fires the `unhandledrejection` events. |
 | `SupportsModuleScripts` | The library decides whether the module scripts are fetched and run (false by default). |
 | `LoadModuleScriptGraph(ModuleScript, Action<bool>)` | A module script is fetched: the engine parses it, resolves its imports (`ModuleSpecifierResolution`), fetches its descendants with the library (`ModuleFetching`) and calls the callback when the graph is loaded (false when a module cannot be fetched). A parse error is stored in `ModuleScript.ErrorToRethrow`. |
@@ -154,7 +156,7 @@ are called on the thread of the worker. The global object of a realm is a `Globa
 | `PreloadModuleScript(GlobalScope, string, ModuleType, RequestDestination, ModuleFetchOptions, Element?, Action<bool>)` | A `<link rel=modulepreload>` fetches a module ("fetch a modulepreload module script graph"): the default implementation fetches the module with the library and ignores it; an engine with a module map adds the module to it, without loading its descendants nor running it. The callback gets false when the module cannot be fetched. |
 | `ExecuteModuleScript(ModuleScript)` | A module script runs ("run a module script"): the engine links and evaluates the graph and reports the errors (including the errors of a top-level `await`). |
 | `GetActiveScriptBaseUrl()` | A string is compiled by `setTimeout()` or `setInterval()`: the base URL of the active script, used to resolve the module specifiers of `import()`. |
-| `GetCurrentScriptLocation()` | A content security policy is violated: the URL, the line and the column of the running code (`ScriptLocation`), the `sourceFile`, `lineNumber` and `columnNumber` of the violation, or null (the default). The Jint engine gives the location of the last evaluated node (the name of the method of a call). |
+| `GetCurrentScriptLocation()` | A content security policy is violated: the URL, the line and the column of the running code (`ScriptLocation`), the `sourceFile`, `lineNumber` and `columnNumber` of the violation, or null (the default). `JavaScriptScriptEngine` gives the position of the running instruction (e.g. the call of the method that found the violation), as the top frame of its stack traces. |
 | `StructuredSerialize(GlobalScope, object?)` / `StructuredDeserialize(GlobalScope, object?)` | A value is sent to another realm or cloned (e.g. `BroadcastChannel.postMessage()`, `MessagePort.postMessage()`, `structuredClone()`): the structured clone of the value (https://html.spec.whatwg.org/multipage/structured-data.html). The default implementations only support the .NET primitive values and the serializable platform objects; the WebIDL bindings implement the structured clone of the JavaScript values (primitives, wrapper objects, `Date`, `RegExp`, the buffers and views, `Map`, `Set`, the errors with their stack, arrays, ordinary objects, and the serializable platform objects: `Blob`, `File`, `FileList`, `DOMException`, `DOMPoint`, `DOMRect`, `DOMQuad`, `DOMMatrix` and their read-only variants). The other platform objects (e.g. `Request`, `Response`, the streams) throw a `DataCloneError`. A `SharedArrayBuffer` throws a `DataCloneError` unless the current global object is cross-origin isolated; it is deserialized as a new `SharedArrayBuffer` that shares the memory of the original (with `IJsAdapter.GetSharedDataBlock` and `SetSharedDataBlock`), in the realms of the same agent cluster only (another agent cluster throws a `DataCloneError`, e.g. a `messageerror` event). The windows of a cross-origin isolated browsing context group and their dedicated workers are in origin-keyed agent clusters; a shared worker has its own agent cluster. |
 | `StructuredSerialize(GlobalScope, object?, IReadOnlyList<object>)` | `structuredClone(value, { transfer })` and `window.postMessage()`: the objects of the transfer list are transferred (https://html.spec.whatwg.org/multipage/structured-data.html#structuredserializewithtransfer). The default implementation throws a `DataCloneError` when the list is not empty; the WebIDL bindings transfer the `ArrayBuffer` objects (resizable buffers keep their maximum length, length-tracking views keep tracking) and the `MessagePort` objects. |
 | `StructuredSerializeForAgent(GlobalScope, object?, IReadOnlyList<object>)` | A message is posted to a `MessagePort`, a `BroadcastChannel` or a worker: the result is deserialized by another engine instance, on another thread, so it must not reference the values of the engine (the WebIDL bindings convert their records to .NET values). The default implementation calls `StructuredSerialize`. |
@@ -182,8 +184,8 @@ its document. The response is decoded with its byte
 order mark, the `charset` parameter of its MIME type, then the encoding of the document. A network error (a null
 resource or an exception) fires `error` at the element. The errors of a script fetched from another origin without
 `crossorigin` are muted: the reported error is `"Script error."`, without information (also when the code of the script
-is called later by another script or by a callback: with Jint, the errors thrown by the code of a script whose errors are
-muted are muted, as in the browsers). A script with a `crossorigin`
+is called later by another script or by a callback: with `JavaScriptScriptEngine`, the errors thrown by the code of a
+script whose errors are muted are muted, as in the browsers). A script with a `crossorigin`
 attribute is a CORS request (`DocumentRequest.Mode` is `RequestMode.Cors`): a response from another origin must allow
 the origin with its `Access-Control-Allow-Origin` header (and `Access-Control-Allow-Credentials` for `use-credentials`),
 else it is a network error (the library performs the check with the headers of the `DocumentResource`).
@@ -216,7 +218,7 @@ The `speculationrules` scripts are the speculation rules of the document (see
 
 ### Module scripts
 
-When the engine supports them (`ScriptEngine.SupportsModuleScripts`, true for Jint), the module scripts run as specified
+When the engine supports them (`ScriptEngine.SupportsModuleScripts`, true for `JavaScriptScriptEngine`), the module scripts run as specified
 (https://html.spec.whatwg.org/multipage/webappapis.html#module-script):
 
 - `<script type="module">` (inline or external) is deferred: a script inserted by the parser runs when the document has
@@ -243,10 +245,9 @@ When the engine supports them (`ScriptEngine.SupportsModuleScripts`, true for Ji
   the `integrity` of the import map (also for the static and the dynamic imports): a module whose response does not match
   is a network error (see [The fetch algorithm](browsing-context.md#the-fetch-algorithm)).
 - Each window has its own module map: a module is fetched and evaluated once per window, and shared by the external
-  `<script type="module">` elements, the static imports and `import()` (Jint caches the modules by key for the whole
-  engine, so the key of a module is its URL for the first global object that loads modules, and the URL followed by an
-  identifier of the global object for the other ones). `import()` is available in the classic scripts, the module scripts, the event handlers and the strings
-  compiled by `eval()` or `setTimeout()`; its base URL is the one of the referencing module, else the base URL of the
+  `<script type="module">` elements, the static imports and `import()` (the module map of a global object is keyed by
+  the URL and the type of the modules). `import()` is available in the classic scripts, the module scripts, the event
+  handlers and the strings compiled by `eval()` or `setTimeout()`; its base URL is the one of the referencing module, else the base URL of the
   document in an event handler (it has no script), else the one of the active script (`about:blank` for a classic script
   whose errors are muted, e.g. a cross-origin script fetched without CORS; the base URL of the document when an inline
   script was prepared). When no script runs (e.g. in a promise job), the active script is the script or module of the
@@ -283,7 +284,7 @@ await CSS.paintWorklet.addModule('paint.js', { credentials: 'same-origin' });
   concurrently with its scripts, and deterministically. The realms share no object with the windows: a worklet global scope
   only exposes the interfaces of its kind (`[Exposed=Worklet]`, `[Exposed=PaintWorklet]`... in the IDL: the Typed OM values,
   the streams, `console`, `WebAssembly`), and has no timer, no `fetch()` and no `self`. A worklet is in its own agent
-  cluster for the specification: `SharedArrayBuffer` is not exposed. The limits of the engine (e.g. the timeout of Jint)
+  cluster for the specification: `SharedArrayBuffer` is not exposed. The limits of the engine (e.g. `JavaScriptScriptEngineOptions.Timeout`)
   apply to each module and each callback.
 - **Global scopes**: they are created by the first call of `addModule()` (two for each kind of worklet, as the CSS Painting
   API and the CSS Layout API require, so that the classes cannot rely on the state of a global scope; the animator
@@ -312,9 +313,9 @@ await CSS.paintWorklet.addModule('paint.js', { credentials: 'same-origin' });
   the layout worklet are async functions that the layout of the document runs to completion, synchronously, possibly while
   a script of the document reads a geometry: `ScriptEngine.EnterNestedMicrotaskQueue()` gives them a separate queue (the
   jobs queued until the returned scope is disposed go to a new queue, which `PerformMicrotaskCheckpoint()` runs; the pending
-  microtasks of the document are kept and do not run in the scope). `JintScriptEngine` replaces the job queue of its engine
-  for the scope; the default implementation of an engine does nothing (the microtasks of the document then run with the
-  ones of the worklet).
+  microtasks of the document are kept and do not run in the scope). `JavaScriptScriptEngine` gives its engine a new job
+  queue for the scope (`JsEngine.EnterNestedJobQueue()`); the default implementation of an engine does nothing (the
+  microtasks of the document then run with the ones of the worklet).
 - **Feature toggles**: `WebPlatformFeatures.PaintWorkletEnabled`, `LayoutWorkletEnabled` and `AnimationWorkletEnabled`
   hide `CSS.paintWorklet`, `CSS.layoutWorklet` and `CSS.animationWorklet` (and `WorkletAnimation`); the `Worklet` interface
   is hidden when the three are disabled. They are only exposed in the secure contexts (the `CSS` attributes as in Chromium:
@@ -437,8 +438,8 @@ has its own store of instances, memories, tables, globals and tags):
 - The modules are compiled on the thread of the agent, and the promises are settled by a task.
 - A `WebAssembly.Module` is serializable within its agent cluster (`postMessage()` to a window or a dedicated worker):
   the compiled module is shared.
-- The running code is interrupted by the limits of the script engine (the timeout of Jint), and a stack overflow throws a
-  `RangeError`.
+- The running code is interrupted by the limits of the script engine (e.g. `JavaScriptScriptEngineOptions.Timeout`), and
+  a stack overflow throws a `RangeError`.
 
 The Wasmtime runtime enables the features of WebAssembly 3.0 (the reference types, the typed function references, the
 GC types, the exceptions, the tail calls, memory64, the multiple memories, the SIMD and relaxed SIMD instructions) and

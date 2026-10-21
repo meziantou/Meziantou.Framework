@@ -8572,30 +8572,13 @@
     "total": 1
   },
   "html/semantics/scripting-1/the-script-element/module/dynamic-import/dynamic-imports-credentials-setTimeout.sub.html": {
-    "total": 12,
-    "failures": {
-      "Cross-origin dynamic import from setTimeout(string) from classic script (crossOrigin=use-credentials)": "FAIL",
-      "Cross-origin dynamic import from setTimeout(string) from module script (crossOrigin=use-credentials)": "FAIL"
-    }
+    "total": 12
   },
   "html/semantics/scripting-1/the-script-element/module/dynamic-import/dynamic-imports-credentials.sub.html": {
-    "total": 12,
-    "failures": {
-      "Cross-origin dynamic import from classic script (crossOrigin=use-credentials)": "FAIL"
-    }
+    "total": 12
   },
   "html/semantics/scripting-1/the-script-element/module/dynamic-import/dynamic-imports-fetch-error.sub.html": {
-    "total": 16,
-    "failures": {
-      "import() must reject with a different error object for each import when there is a 404": "FAIL",
-      "import() must reject with a different error object for each import when there is a 404 of a dependency": "FAIL",
-      "import() must reject with a different error object for each import when there is a 500": "FAIL",
-      "import() must reject with a different error object for each import when there is a 500 of a dependency": "FAIL",
-      "import() must reject with a different error object for each import when there is a cross-origin module (without CORS)": "FAIL",
-      "import() must reject with a different error object for each import when there is a cross-origin module dependency (without CORS)": "FAIL",
-      "import() must reject with a different error object for each import when there is a wrong MIME type": "FAIL",
-      "import() must reject with a different error object for each import when there is a wrong MIME type of a dependency": "FAIL"
-    }
+    "total": 16
   },
   "html/semantics/scripting-1/the-script-element/module/dynamic-import/dynamic-imports-script-error.html": {
     "total": 11,
@@ -8679,24 +8662,13 @@
     "total": 5
   },
   "html/semantics/scripting-1/the-script-element/module/dynamic-import/string-compilation-nonce-classic.html": {
-    "total": 6,
-    "failures": {
-      "inline event handlers triggered via UA code must not inherit the nonce from the triggering script, thus fail": "FAIL",
-      "reflected inline event handlers must not inherit the nonce from the triggering script, thus fail": "FAIL"
-    }
+    "total": 6
   },
   "html/semantics/scripting-1/the-script-element/module/dynamic-import/string-compilation-nonce-module.html": {
-    "total": 6,
-    "failures": {
-      "inline event handlers triggered via UA code must not inherit the nonce from the triggering script, thus fail": "FAIL",
-      "reflected inline event handlers must not inherit the nonce from the triggering script, thus fail": "FAIL"
-    }
+    "total": 6
   },
   "html/semantics/scripting-1/the-script-element/module/dynamic-import/string-compilation-of-promise-result.html": {
-    "total": 4,
-    "failures": {
-      "Evaled the script via Function, successful import": "FAIL"
-    }
+    "total": 4
   },
   "html/semantics/scripting-1/the-script-element/module/dynamic-import/string-compilation-other-document.html": {
     "total": 5
@@ -8807,22 +8779,13 @@
     "total": 1
   },
   "html/semantics/scripting-1/the-script-element/module/instantiation-error-3.html": {
-    "total": 1,
-    "failures": {
-      "Test that unresolvable cycles lead to SyntaxError events on window and load events on script": "FAIL"
-    }
+    "total": 1
   },
   "html/semantics/scripting-1/the-script-element/module/instantiation-error-4.html": {
-    "total": 1,
-    "failures": {
-      "Test that loading a graph in which a module is already errored results in an error.": "FAIL"
-    }
+    "total": 1
   },
   "html/semantics/scripting-1/the-script-element/module/instantiation-error-5.html": {
-    "total": 1,
-    "failures": {
-      "Test that loading a graph in which a module is already errored results an error.": "FAIL"
-    }
+    "total": 1
   },
   "html/semantics/scripting-1/the-script-element/module/instantiation-error-6.html": {
     "total": 1

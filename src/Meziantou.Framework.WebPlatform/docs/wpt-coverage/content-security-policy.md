@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 781 | 882 | 0 | 89% |
+| [Stable](#stable-tests) | 783 | 882 | 0 | 89% |
 | [Tentative](#tentative-tests) | 3 | 13 | 0 | 23% |
 | [Reftests](#reftests) | 2 | 2 | 0 | 100% |
-| **All** | **786** | **897** | **0** | **88%** |
+| **All** | **788** | **897** | **0** | **88%** |
 
 ## Stable tests
 
@@ -555,7 +555,7 @@
 | [`reporting-api/reporting-api-report-to-only-sends-reports-to-first-endpoint.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-report-to-only-sends-reports-to-first-endpoint.https.sub.html) | Pass | 3 / 3 |  |  |
 | [`reporting-api/reporting-api-report-to-overrides-report-uri-1.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-report-to-overrides-report-uri-1.https.sub.html) | Pass | 3 / 3 |  |  |
 | [`reporting-api/reporting-api-report-to-overrides-report-uri-2.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-report-to-overrides-report-uri-2.https.sub.html) | Pass | 3 / 3 |  |  |
-| [`reporting-api/reporting-api-sends-reports-on-violation-2.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-2.https.sub.html) | Pass | 4 / 4 |  |  |
+| [`reporting-api/reporting-api-sends-reports-on-violation-2.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-2.https.sub.html) | Fail | 3 / 4 | BUG | the source location of the violation of a fetch started after the script ends (the image whose `src` is set by the script is fetched by a microtask): no script runs, so the report has no `sourceFile`; the browsers capture the location when the attribute is set |
 | [`reporting-api/reporting-api-sends-reports-on-violation-for-dedicated-worker-import.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-for-dedicated-worker-import.https.sub.html) | Pass | 2 / 2 |  |  |
 | [`reporting-api/reporting-api-sends-reports-on-violation-for-shared-worker-import.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-for-shared-worker-import.https.sub.html) | Pass | 2 / 2 |  |  |
 | [`reporting-api/reporting-api-sends-reports-on-violation-for-worklet-import.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-for-worklet-import.https.sub.html) | Fail | 0 / 2 | REQUIRES(media) | Web Audio (`AudioContext` and its `audioWorklet`) |
@@ -737,20 +737,20 @@
 | [`securitypolicyviolation/securitypolicyviolation-block-image.sub.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/securitypolicyviolation-block-image.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the source location of a violation is the location of the script that runs when the request is checked, not of the script that started the request: the image is fetched later (in a microtask), so the line and column of the violation are not the ones of the `src` setter or of `appendChild()` |
 | [`securitypolicyviolation/source-file-blob-scheme.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/source-file-blob-scheme.html) | Pass | 1 / 1 |  |  |
 | [`securitypolicyviolation/source-file-data-scheme.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/source-file-data-scheme.html) | Pass | 1 / 1 |  |  |
-| [`securitypolicyviolation/source-file.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/source-file.html) | Fail | 1 / 17 | JINT | the `//# sourceURL=` comment of the code compiled by `eval()` is ignored: the source file of its violations is the URL of the document |
+| [`securitypolicyviolation/source-file.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/source-file.html) | Fail | 14 / 17 | BUG | the source file of the violations of the code compiled by `eval()` with a `//# sourceURL=` comment: a `ws:` or `wss:` URL is reported as its scheme, and the query of the URL is not removed (3 subtests of 17) |
 | [`securitypolicyviolation/style-sample-no-opt-in.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/style-sample-no-opt-in.html) | Pass | 2 / 2 |  |  |
 | [`securitypolicyviolation/style-sample.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/style-sample.html) | Pass | 2 / 2 |  |  |
 | [`securitypolicyviolation/targeting-for-inline-handler-connected-after-set.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/targeting-for-inline-handler-connected-after-set.html) | Pass | 1 / 1 |  |  |
 | [`securitypolicyviolation/targeting-for-inline-handler-in-markup-disconnected-after-set.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/targeting-for-inline-handler-in-markup-disconnected-after-set.html) | Pass | 1 / 1 |  |  |
 | [`securitypolicyviolation/targeting-for-inline-handler-in-markup-then-disconnected.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/targeting-for-inline-handler-in-markup-then-disconnected.html) | Pass | 2 / 2 |  |  |
 | [`securitypolicyviolation/targeting-for-inline-handler-in-markup.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/targeting-for-inline-handler-in-markup.html) | Pass | 2 / 2 |  |  |
-| [`securitypolicyviolation/targeting-for-inline-handler-in-shadow-dom.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/targeting-for-inline-handler-in-shadow-dom.html) | Fail | 0 / 1 | JINT | the column of the violation of an inline check caused by a call whose last argument is an identifier (e.g. `shadow.appendChild(style)`) is the column of the argument, not of the name of the method: Jint gives the last evaluated node |
+| [`securitypolicyviolation/targeting-for-inline-handler-in-shadow-dom.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/targeting-for-inline-handler-in-shadow-dom.html) | Pass | 1 / 1 |  |  |
 | [`securitypolicyviolation/targeting-for-inline-handler-on-disconnected-element.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/targeting-for-inline-handler-on-disconnected-element.html) | Pass | 1 / 1 |  |  |
 | [`securitypolicyviolation/targeting-for-inline-handler-on-element-in-disconnected-document-fragment.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/targeting-for-inline-handler-on-element-in-disconnected-document-fragment.html) | Pass | 1 / 1 |  |  |
 | [`securitypolicyviolation/targeting-for-inline-handler-on-main-frame-element-moved-to-subframe.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/targeting-for-inline-handler-on-main-frame-element-moved-to-subframe.html) | Pass | 1 / 1 |  |  |
-| [`securitypolicyviolation/targeting-for-inline-handler-on-subframe-element.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/targeting-for-inline-handler-on-subframe-element.html) | Fail | 5 / 9 | JINT | the location of the running script is not available when it calls a method of an object of another realm (here `setAttribute()` of an element of the iframe): the violation has no source file, line and column |
+| [`securitypolicyviolation/targeting-for-inline-handler-on-subframe-element.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/targeting-for-inline-handler-on-subframe-element.html) | Pass | 9 / 9 |  |  |
 | [`securitypolicyviolation/targeting-for-inline-script-without-nonce.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/targeting-for-inline-script-without-nonce.html) | Pass | 5 / 5 |  |  |
-| [`securitypolicyviolation/targeting-for-inline-style-in-shadow-dom.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/targeting-for-inline-style-in-shadow-dom.html) | Fail | 7 / 9 | JINT | the column of the violation of an inline check caused by a call whose last argument is an identifier (e.g. `shadow.appendChild(style)`) is the column of the argument, not of the name of the method: Jint gives the last evaluated node |
+| [`securitypolicyviolation/targeting-for-inline-style-in-shadow-dom.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/targeting-for-inline-style-in-shadow-dom.html) | Pass | 9 / 9 |  |  |
 | [`securitypolicyviolation/targeting-for-inline-style.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/targeting-for-inline-style.html) | Pass | 5 / 5 |  |  |
 | [`securitypolicyviolation/upgrade-insecure-requests-reporting.https.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/upgrade-insecure-requests-reporting.https.html) | Pass | 3 / 3 |  |  |
 | [`securitypolicyviolation/worklet-import-nested-cross-origin-blocked.https.sub.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/worklet-import-nested-cross-origin-blocked.https.sub.html) | Pass | 1 / 1 |  |  |

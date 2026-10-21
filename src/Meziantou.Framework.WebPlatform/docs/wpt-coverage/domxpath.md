@@ -7,9 +7,9 @@
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 28 | 28 | 0 | 100% |
-| [Tentative](#tentative-tests) | 5 | 6 | 0 | 83% |
+| [Tentative](#tentative-tests) | 6 | 6 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **33** | **34** | **0** | **97%** |
+| **All** | **34** | **34** | **0** | **100%** |
 
 ## Stable tests
 
@@ -53,4 +53,4 @@
 | [`evaluator-different-document.tentative.html`](https://wpt.fyi/results/domxpath/evaluator-different-document.tentative.html) | Pass | 8 / 8 |  |  |
 | [`expression-cross-realm.tentative.html`](https://wpt.fyi/results/domxpath/expression-cross-realm.tentative.html) | Pass | 4 / 4 |  |  |
 | [`expression-different-document.tentative.html`](https://wpt.fyi/results/domxpath/expression-different-document.tentative.html) | Pass | 8 / 8 |  |  |
-| [`resolver-callback-interface-cross-realm.tentative.html`](https://wpt.fyi/results/domxpath/resolver-callback-interface-cross-realm.tentative.html) | Fail | 0 / 5 | JINT | the built-in functions run in the realm of the caller instead of their own realm, so `new otherWindow.Object`, `new otherWindow.Function` and `otherWindow.Proxy.revocable()` create objects of the current realm (the error is reported to the wrong window) |
+| [`resolver-callback-interface-cross-realm.tentative.html`](https://wpt.fyi/results/domxpath/resolver-callback-interface-cross-realm.tentative.html) | Pass | 5 / 5 |  |  |

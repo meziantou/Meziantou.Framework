@@ -154,6 +154,9 @@ internal sealed class HtmlTokenizer
     // When it can stop before the end of file (_canSuspend), a token that is not complete at the limit is tokenized again
     // from its start when more characters are inserted (see NextTokenSuspendable).
     private int _limit;
+
+    // The position of the character that follows a carriage return consumed at the limit of the input, or -1
+    private int _lineFeedSkipPosition = -1;
     private int? _stopFromEnd;
     private bool _eofInserted = true;
     private bool _canSuspend;
@@ -346,6 +349,18 @@ internal sealed class HtmlTokenizer
     {
         _limit = _input.Length - (_stopFromEnd ?? 0);
         _canSuspend = _stopFromEnd is not null || !_eofInserted;
+
+        // https://html.spec.whatwg.org/multipage/parsing.html#preprocessing-the-input-stream: a line feed that follows a
+        // carriage return is ignored, also when they are inserted separately
+        if (_lineFeedSkipPosition >= 0 && _lineFeedSkipPosition == _position && _position < _limit)
+        {
+            if (_input[_position] == '\n')
+            {
+                _position++;
+            }
+
+            _lineFeedSkipPosition = -1;
+        }
     }
 
     /// <summary>Thrown when the tokenizer reaches its limit before the end of the file: the current token is tokenized again later.</summary>
@@ -599,9 +614,18 @@ internal sealed class HtmlTokenizer
         int c = _input[_position++];
         if (c == '\r')
         {
-            if (_position < _limit && _input[_position] == '\n')
+            if (_position < _limit)
             {
-                _position++;
+                if (_input[_position] == '\n')
+                {
+                    _position++;
+                }
+            }
+            else
+            {
+                // The next character is not inserted yet (e.g. document.write("\r") then document.write("\n")): a line
+                // feed inserted there is ignored
+                _lineFeedSkipPosition = _position;
             }
 
             c = '\n';

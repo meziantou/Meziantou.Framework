@@ -17,8 +17,10 @@ internal static class LocaleSensitiveBuiltins
         realm.DefineMethod(intrinsics.ArrayPrototype, "toLocaleString", 0, ArrayToLocaleString);
         realm.DefineMethod(intrinsics.StringPrototype, "toLocaleLowerCase", 0, (function, thisValue, arguments, _) => TransformCase(thisValue, arguments, upper: false, "toLocaleLowerCase"));
         realm.DefineMethod(intrinsics.StringPrototype, "toLocaleUpperCase", 0, (function, thisValue, arguments, _) => TransformCase(thisValue, arguments, upper: true, "toLocaleUpperCase"));
-        realm.DefineMethod(intrinsics.TemporalDurationPrototype, "toLocaleString", 0, DurationToLocaleString);
     }
+
+    /// <summary>Temporal.Duration.prototype.toLocaleString (the Temporal built-ins are created on first use).</summary>
+    public static void InitializeTemporal(Intrinsics intrinsics) => intrinsics.Realm.DefineMethod(intrinsics.TemporalDurationPrototype, "toLocaleString", 0, DurationToLocaleString);
 
     /// <summary>The languages whose case mappings differ from the default ones (SpecialCasing.txt).</summary>
     private static bool HasLanguageSensitiveCaseMapping(string locale) => locale is "az" or "lt" or "tr";

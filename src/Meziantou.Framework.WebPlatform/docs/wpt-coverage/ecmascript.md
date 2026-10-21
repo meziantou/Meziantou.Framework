@@ -15,5 +15,5 @@
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`locale-compat.html`](https://wpt.fyi/results/ecmascript/locale-compat.html) | Disabled | – | OUT OF SCOPE | ECMAScript tests are the responsibility of the JavaScript engine (Jint) |
-| [`regexp-lookbehind.html`](https://wpt.fyi/results/ecmascript/regexp-lookbehind.html) | Disabled | – | OUT OF SCOPE | ECMAScript tests are the responsibility of the JavaScript engine (Jint) |
+| [`locale-compat.html`](https://wpt.fyi/results/ecmascript/locale-compat.html) | Disabled | – | OUT OF SCOPE | ECMAScript tests are the responsibility of the JavaScript engine: Meziantou.Framework.JavaScriptEngine is tested by test262 (`tests/Meziantou.Framework.JavaScriptEngine.Test262`) |
+| [`regexp-lookbehind.html`](https://wpt.fyi/results/ecmascript/regexp-lookbehind.html) | Disabled | – | OUT OF SCOPE | ECMAScript tests are the responsibility of the JavaScript engine: Meziantou.Framework.JavaScriptEngine is tested by test262 (`tests/Meziantou.Framework.JavaScriptEngine.Test262`) |

@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 648 | 683 | 6 | 96% |
+| [Stable](#stable-tests) | 651 | 683 | 6 | 96% |
 | [Tentative](#tentative-tests) | 3 | 55 | 2 | 6% |
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
-| **All** | **655** | **742** | **8** | **89%** |
+| **All** | **658** | **742** | **8** | **90%** |
 
 ## Stable tests
 
@@ -83,7 +83,7 @@
 | [`events/Event-type-empty.html`](https://wpt.fyi/results/dom/events/Event-type-empty.html) | Pass | 2 / 2 |  |  |
 | [`events/Event-type.html`](https://wpt.fyi/results/dom/events/Event-type.html) | Pass | 3 / 3 |  |  |
 | [`events/EventListener-addEventListener.sub.window.js`](https://wpt.fyi/results/dom/events/EventListener-addEventListener.sub.window.js) | Pass | 1 / 1 |  |  |
-| [`events/EventListener-handleEvent-cross-realm.html`](https://wpt.fyi/results/dom/events/EventListener-handleEvent-cross-realm.html) | Fail | 0 / 5 | JINT | the built-in functions run in the realm of the caller instead of their own realm, so `new otherWindow.Object`, `new otherWindow.Function` and `otherWindow.Proxy.revocable()` create objects of the current realm (the error is reported to the wrong window) |
+| [`events/EventListener-handleEvent-cross-realm.html`](https://wpt.fyi/results/dom/events/EventListener-handleEvent-cross-realm.html) | Pass | 5 / 5 |  |  |
 | [`events/EventListener-handleEvent.html`](https://wpt.fyi/results/dom/events/EventListener-handleEvent.html) | Pass | 6 / 6 |  |  |
 | [`events/EventListener-incumbent-global-1.sub.html`](https://wpt.fyi/results/dom/events/EventListener-incumbent-global-1.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the incumbent settings object of callbacks (the callback context recorded by `addEventListener()`), so `postMessage()` from a listener reports the wrong source origin |
 | [`events/EventListener-incumbent-global-2.sub.html`](https://wpt.fyi/results/dom/events/EventListener-incumbent-global-2.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the incumbent settings object of callbacks (the callback context recorded by `addEventListener()`), so `postMessage()` from a listener reports the wrong source origin |
@@ -217,7 +217,7 @@
 | [`historical-mutation-events.html`](https://wpt.fyi/results/dom/historical-mutation-events.html) | Pass | 10 / 10 |  |  |
 | [`historical.html`](https://wpt.fyi/results/dom/historical.html) | Pass | 80 / 80 |  |  |
 | [`idlharness.any.js`](https://wpt.fyi/results/dom/idlharness.any.js) | Pass | 438 / 438 |  |  |
-| [`idlharness.window.js`](https://wpt.fyi/results/dom/idlharness.window.js) | Fail | 1,948 / 1,979 | JINT, NOT IMPLEMENTED | `+"0xFFFFFFFF"` gives -1 in the `SHOW_ALL` check; `XSLTProcessor` |
+| [`idlharness.window.js`](https://wpt.fyi/results/dom/idlharness.window.js) | Fail | 1,949 / 1,979 | NOT IMPLEMENTED | `XSLTProcessor` |
 | [`interface-objects.html`](https://wpt.fyi/results/dom/interface-objects.html) | Pass | 23 / 23 |  |  |
 | [`lists/DOMTokenList-Iterable.html`](https://wpt.fyi/results/dom/lists/DOMTokenList-Iterable.html) | Pass | 6 / 6 |  |  |
 | [`lists/DOMTokenList-coverage-for-attributes.html`](https://wpt.fyi/results/dom/lists/DOMTokenList-coverage-for-attributes.html) | Fail | 174 / 175 | NOT IMPLEMENTED | `relList` on the MathML `<a>` element (`MathMLAnchorElement` only reflects `href`) |
@@ -419,12 +419,12 @@
 | [`nodes/Node-textContent.html`](https://wpt.fyi/results/dom/nodes/Node-textContent.html) | Pass | 81 / 81 |  |  |
 | [`nodes/NodeList-Iterable.html`](https://wpt.fyi/results/dom/nodes/NodeList-Iterable.html) | Pass | 8 / 8 |  |  |
 | [`nodes/NodeList-live-mutations.window.js`](https://wpt.fyi/results/dom/nodes/NodeList-live-mutations.window.js) | Pass | 4 / 4 |  |  |
-| [`nodes/NodeList-static-length-getter-tampered-1.html`](https://wpt.fyi/results/dom/nodes/NodeList-static-length-getter-tampered-1.html) | Disabled | – | PERFORMANCE | JavaScript engine stress test (millions of property accesses in a loop): too slow in Jint, and it does not test the DOM |
-| [`nodes/NodeList-static-length-getter-tampered-2.html`](https://wpt.fyi/results/dom/nodes/NodeList-static-length-getter-tampered-2.html) | Disabled | – | PERFORMANCE | JavaScript engine stress test (millions of property accesses in a loop): too slow in Jint, and it does not test the DOM |
-| [`nodes/NodeList-static-length-getter-tampered-3.html`](https://wpt.fyi/results/dom/nodes/NodeList-static-length-getter-tampered-3.html) | Disabled | – | PERFORMANCE | JavaScript engine stress test (millions of property accesses in a loop): too slow in Jint, and it does not test the DOM |
-| [`nodes/NodeList-static-length-getter-tampered-indexOf-1.html`](https://wpt.fyi/results/dom/nodes/NodeList-static-length-getter-tampered-indexOf-1.html) | Disabled | – | PERFORMANCE | JavaScript engine stress test (millions of property accesses in a loop): too slow in Jint, and it does not test the DOM |
-| [`nodes/NodeList-static-length-getter-tampered-indexOf-2.html`](https://wpt.fyi/results/dom/nodes/NodeList-static-length-getter-tampered-indexOf-2.html) | Disabled | – | PERFORMANCE | JavaScript engine stress test (millions of property accesses in a loop): too slow in Jint, and it does not test the DOM |
-| [`nodes/NodeList-static-length-getter-tampered-indexOf-3.html`](https://wpt.fyi/results/dom/nodes/NodeList-static-length-getter-tampered-indexOf-3.html) | Disabled | – | PERFORMANCE | JavaScript engine stress test (millions of property accesses in a loop): too slow in Jint, and it does not test the DOM |
+| [`nodes/NodeList-static-length-getter-tampered-1.html`](https://wpt.fyi/results/dom/nodes/NodeList-static-length-getter-tampered-1.html) | Disabled | – | PERFORMANCE | JavaScript engine stress test (millions of property accesses in a loop, ~18 seconds per test alone in a Release build): too slow for every run, and it does not test the DOM |
+| [`nodes/NodeList-static-length-getter-tampered-2.html`](https://wpt.fyi/results/dom/nodes/NodeList-static-length-getter-tampered-2.html) | Disabled | – | PERFORMANCE | JavaScript engine stress test (millions of property accesses in a loop, ~18 seconds per test alone in a Release build): too slow for every run, and it does not test the DOM |
+| [`nodes/NodeList-static-length-getter-tampered-3.html`](https://wpt.fyi/results/dom/nodes/NodeList-static-length-getter-tampered-3.html) | Disabled | – | PERFORMANCE | JavaScript engine stress test (millions of property accesses in a loop, ~18 seconds per test alone in a Release build): too slow for every run, and it does not test the DOM |
+| [`nodes/NodeList-static-length-getter-tampered-indexOf-1.html`](https://wpt.fyi/results/dom/nodes/NodeList-static-length-getter-tampered-indexOf-1.html) | Disabled | – | PERFORMANCE | JavaScript engine stress test (millions of property accesses in a loop, ~18 seconds per test alone in a Release build): too slow for every run, and it does not test the DOM |
+| [`nodes/NodeList-static-length-getter-tampered-indexOf-2.html`](https://wpt.fyi/results/dom/nodes/NodeList-static-length-getter-tampered-indexOf-2.html) | Disabled | – | PERFORMANCE | JavaScript engine stress test (millions of property accesses in a loop, ~18 seconds per test alone in a Release build): too slow for every run, and it does not test the DOM |
+| [`nodes/NodeList-static-length-getter-tampered-indexOf-3.html`](https://wpt.fyi/results/dom/nodes/NodeList-static-length-getter-tampered-indexOf-3.html) | Disabled | – | PERFORMANCE | JavaScript engine stress test (millions of property accesses in a loop, ~18 seconds per test alone in a Release build): too slow for every run, and it does not test the DOM |
 | [`nodes/NonDocumentTypeChildNode-sibling-element.html`](https://wpt.fyi/results/dom/nodes/NonDocumentTypeChildNode-sibling-element.html) | Pass | 6 / 6 |  |  |
 | [`nodes/ParentNode-append.html`](https://wpt.fyi/results/dom/nodes/ParentNode-append.html) | Pass | 25 / 25 |  |  |
 | [`nodes/ParentNode-children.html`](https://wpt.fyi/results/dom/nodes/ParentNode-children.html) | Pass | 1 / 1 |  |  |
@@ -572,7 +572,7 @@
 | [`nodes/moveBefore/fire-focusin-focusout.html`](https://wpt.fyi/results/dom/nodes/moveBefore/fire-focusin-focusout.html) | Pass | 5 / 5 |  |  |
 | [`nodes/moveBefore/focus-preserve.html`](https://wpt.fyi/results/dom/nodes/moveBefore/focus-preserve.html) | Pass | 5 / 5 |  |  |
 | [`nodes/moveBefore/focus-within.html`](https://wpt.fyi/results/dom/nodes/moveBefore/focus-within.html) | Pass | 5 / 5 |  |  |
-| [`nodes/moveBefore/fullscreen-preserve.html`](https://wpt.fyi/results/dom/nodes/moveBefore/fullscreen-preserve.html) | Fail | 0 / 1 | JINT | the default parameter initializer of `trusted_click(container = document.body)` (`/fullscreen/trusted-click.js`) reads the `var document` that the body of the function declares instead of the global `document`: Jint creates the variables of the body in the scope of the parameters, so calling the helper without argument throws |
+| [`nodes/moveBefore/fullscreen-preserve.html`](https://wpt.fyi/results/dom/nodes/moveBefore/fullscreen-preserve.html) | Pass | 1 / 1 |  |  |
 | [`nodes/moveBefore/hover-style-update.html`](https://wpt.fyi/results/dom/nodes/moveBefore/hover-style-update.html) | Pass | 2 / 2 |  |  |
 | [`nodes/moveBefore/iframe-document-preserve.window.js`](https://wpt.fyi/results/dom/nodes/moveBefore/iframe-document-preserve.window.js) | Pass | 7 / 7 |  |  |
 | [`nodes/moveBefore/listed-form-element-reset.html`](https://wpt.fyi/results/dom/nodes/moveBefore/listed-form-element-reset.html) | Pass | 1 / 1 |  |  |
@@ -682,7 +682,7 @@
 | [`traversal/NodeIterator-removal.html`](https://wpt.fyi/results/dom/traversal/NodeIterator-removal.html) | Pass | 25 / 25 |  |  |
 | [`traversal/NodeIterator.html`](https://wpt.fyi/results/dom/traversal/NodeIterator.html) | Pass | 766 / 766 |  |  |
 | [`traversal/TreeWalker-acceptNode-filter-cross-realm-null-browsing-context.html`](https://wpt.fyi/results/dom/traversal/TreeWalker-acceptNode-filter-cross-realm-null-browsing-context.html) | Pass | 1 / 1 |  |  |
-| [`traversal/TreeWalker-acceptNode-filter-cross-realm.html`](https://wpt.fyi/results/dom/traversal/TreeWalker-acceptNode-filter-cross-realm.html) | Fail | 0 / 5 | JINT | the built-in functions run in the realm of the caller instead of their own realm, so `new otherWindow.Object`, `new otherWindow.Function` and `otherWindow.Proxy.revocable()` create objects of the current realm (the error is reported to the wrong window) |
+| [`traversal/TreeWalker-acceptNode-filter-cross-realm.html`](https://wpt.fyi/results/dom/traversal/TreeWalker-acceptNode-filter-cross-realm.html) | Pass | 5 / 5 |  |  |
 | [`traversal/TreeWalker-acceptNode-filter.html`](https://wpt.fyi/results/dom/traversal/TreeWalker-acceptNode-filter.html) | Pass | 12 / 12 |  |  |
 | [`traversal/TreeWalker-basic.html`](https://wpt.fyi/results/dom/traversal/TreeWalker-basic.html) | Pass | 6 / 6 |  |  |
 | [`traversal/TreeWalker-currentNode.html`](https://wpt.fyi/results/dom/traversal/TreeWalker-currentNode.html) | Pass | 4 / 4 |  |  |

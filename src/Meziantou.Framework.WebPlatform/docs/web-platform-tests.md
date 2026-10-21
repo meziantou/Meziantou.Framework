@@ -5,7 +5,7 @@
 
 - The test page is loaded by a navigation, with the headers of its `.headers` files (an XML test page is parsed from its
   file: only the `Content-Language` of its `.headers` file is applied, as the default language of its elements), in a top-level
-  [browsing context](browsing-context.md) whose script engine is implemented with [Jint](https://github.com/sebastienros/jint) (see [scripting.md](scripting.md)). The library
+  [browsing context](browsing-context.md) whose script engine is `JavaScriptScriptEngine`, implemented with [Meziantou.Framework.JavaScriptEngine](../../Meziantou.Framework.JavaScriptEngine/readme.md) (see [scripting.md](scripting.md)). The library
   runs the scripts as in a browser: the script elements, the event handler content attributes, the `javascript:` URLs.
   The documents of the iframes and the scripts are loaded from the files of the test suite by the `DocumentLoader` of the
   browsing context. The headers of a response are the ones of the `.headers` files (the `__dir__.headers` file of its
@@ -192,7 +192,7 @@
   `{{uuid()}}`, and the variables: `{{$id:uuid()}}` sets the variable `id`, `{{$id}}` is its value, in the same file). As in wptserve, the values are HTML-escaped by `pipe=sub` and in the `.sub.` markup files (`.html`,
   `.svg`...), not by `pipe=sub(none)`, in the other `.sub.` files (e.g. scripts) and in the `.sub.headers` files.
 - The global object of each realm is the library's `Window`. Each window (the test page and its iframes) has its own
-  Jint realm (global object, intrinsics, interface objects), so that cross-realm tests behave as in a browser. The
+  realm of the engine (global object, intrinsics, interface objects), so that cross-realm tests behave as in a browser. The
   interface objects of a realm are created on first use.
 - The JavaScript bindings are the shared WebIDL bindings of the library (`src/Meziantou.Framework.WebPlatform/Scripting/WebIdl`,
   generated from the webref IDL and the .NET members annotated with `[IdlMember]` by `tools/Meziantou.Framework.WebPlatform.SpecGen`), which follow the WebIDL
@@ -221,7 +221,7 @@
   (`FakeTimeProvider`), which the runner advances to the next timer when the event loop is idle, so the tests run as fast
   as possible. Each read of the clock advances it by 100 µs (the resolution of `performance.now()`), so time passes while a
   script runs, and the times of the performance timeline (the steps of a navigation or of a fetch, see
-  [Performance timeline](browsing-context.md#performance-timeline)) differ. `Date` uses the same clock (Jint's time system), in UTC. Microtasks of the DOM and promise jobs share Jint's job queue.
+  [Performance timeline](browsing-context.md#performance-timeline)) differ. `Date` uses the same clock (`JavaScriptScriptEngineOptions.TimeProvider`: each read of `Date.now()` advances it by 1 ms), in UTC. Microtasks of the DOM and promise jobs share the job queue of the engine.
 - Content Security Policy is partially implemented: the library applies the fetch, navigation and document directives (see
   [Content security policy](browsing-context.md#content-security-policy)), the `upgrade-insecure-requests` directive and
   the Trusted Types directives (see
@@ -503,7 +503,6 @@ reflect the current state.
 | `WPT_UPDATE_EXPECTATIONS=1` | Rewrite the expectations from the current results |
 | `WPT_FILTER=dom/nodes/Node-append` | Only run the tests whose id contains the value (or one of the values separated by `\|`, e.g. `dom/nodes\|html/canvas`) |
 | `WPT_REPORT=/path/report.jsonl` | Write the detailed results (including the failure messages) as JSON lines |
-| `WPT_ENGINE=javascript` | Run the scripts with Meziantou.Framework.JavaScriptEngine instead of Jint (`jint`, the default): the expectations are not checked, use `WPT_REPORT` |
 | `WPT_REFTESTS=0` | Do not run the reftests |
 | `WPT_REFTEST_IMAGES=/path` | Save the images of the failing reftests (test, reference, differences) |
 | `WPT_TIMEOUT_MULTIPLIER=3` | Multiply the longest duration of a test (60 s, `MaxDuration`), as the `--timeout-multiplier` option of wptrunner; 3 by default on a CI agent (`CI=true`), whose shared cores make the heaviest tests 5 to 8 times slower |
@@ -547,10 +546,11 @@ share a reason and a test can override it. The value is an array of causes, so a
 ]
 ```
 
-The kinds are `BUG`, `TEST BUG` (the test is wrong and fails in every browser), `JINT` (a limitation of the JavaScript
-engine), `NOT IMPLEMENTED`, `REQUIRES` (the feature or the test needs other features that are not implemented: `features`
+The kinds are `BUG`, `TEST BUG` (the test is wrong and fails in every browser), `JS ENGINE` (a limitation of the
+JavaScript engine, Meziantou.Framework.JavaScriptEngine, or of its integration with the library), `NOT IMPLEMENTED`, `REQUIRES` (the feature or the test needs other features that are not implemented: `features`
 lists them, e.g. `layout`, `rendering`, `workers`, `user-input`, `hardware`, `media`), `TEST RUNNER` (a limitation of the
-runner or of the emulated WPT server), `OUT OF SCOPE` (e.g. the tests of the JavaScript engine), `FLAKY` and `PERFORMANCE`
+runner or of the emulated WPT server), `OUT OF SCOPE` (e.g. the `ecmascript/*` and `js/*` tests of the JavaScript engine,
+which test262 covers in `tests/Meziantou.Framework.JavaScriptEngine.Test262`), `FLAKY` and `PERFORMANCE`
 (too slow to be run by every build). The coverage pages show them in the **Kind** and **Description** columns, and
 [wpt-coverage.md](wpt-coverage.md) defines every kind and feature (`Kinds` and `Features` in `tools/Meziantou.Framework.WebPlatform.SpecUpdate/WptCoverage.cs`).
 `wpt-coverage` lists the tests without reason and the invalid reasons (unknown kind or feature, missing description), so
@@ -559,15 +559,18 @@ runner or of the emulated WPT server), `OUT OF SCOPE` (e.g. the tests of the Jav
 
 ## JavaScript engine
 
-The expectations are the results of Jint, with the WebAssembly runtime of `Meziantou.Framework.WebPlatform.Wasmtime`
-(`BrowsingContextOptions.WebAssemblyRuntime`) and Jint's stack overflow guard (an unbounded recursion throws a
-`RangeError`, as the WebAssembly core tests expect, instead of ending the process). `WptEngine` abstracts the engine, so
-that the adapter of another engine can be validated by the same tests (use `WPT_REPORT` to compare its results).
-`WPT_ENGINE=javascript` runs them with Meziantou.Framework.JavaScriptEngine (`JavaScriptWptEngine`, whose `Date` uses
-the virtual clock of the runner through its `TimeProvider`); compare two reports with
-`dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate -- wpt-compare <jint.jsonl> <javascript.jsonl> [--allowed <file>]`,
+The expectations are the results of Meziantou.Framework.JavaScriptEngine (`Runner/WptEngine.cs`, `JavaScriptWptEngine`),
+with the WebAssembly runtime of `Meziantou.Framework.WebPlatform.Wasmtime` (`BrowsingContextOptions.WebAssemblyRuntime`).
+Its `Date` uses the virtual clock of the runner through `JavaScriptScriptEngineOptions.TimeProvider`, and an unbounded
+recursion throws a `RangeError` (the recursion limit of the engine), as the WebAssembly core tests expect, instead of
+ending the process. The expectations were switched from the results of Jint, the previous engine:
+`engine-parity-exceptions.json` lists the differences that were not regressions.
+
+Compare two reports of `WPT_REPORT` (e.g. of two commits) with
+`dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate -- wpt-compare <baseline.jsonl> <candidate.jsonl> [--allowed <file>]`,
 which lists the regressions and the improvements and the ratio of the durations, and fails on a regression that the
-allowed file (one test id per line, a trailing `*` matches a prefix) does not list.
+allowed file does not list: a text file with one test id per line (`#` starts a comment), or a JSON object whose keys
+are the test ids (e.g. `engine-parity-exceptions.json`); a trailing `*` matches a prefix.
 
 ## Unexpected results
 
@@ -578,8 +581,9 @@ still fails.
 
 ## Skipped tests
 
-`wpt-skip.json` lists the tests that are not run, with their reasons in the format of `wpt-reasons.json` (e.g. JavaScript
-engine stress tests that are too slow in Jint and do not test the DOM: `PERFORMANCE`). Prefer expectations: a skipped test cannot detect regressions.
+`wpt-skip.json` lists the tests that are not run, with their reasons in the format of `wpt-reasons.json` (e.g. the JavaScript
+engine stress tests `dom/nodes/NodeList-static-length-getter-tampered-*`, ~18 s per test in a Release build, which do
+not test the DOM: `PERFORMANCE`). Prefer expectations: a skipped test cannot detect regressions.
 
 ## IDL coverage
 

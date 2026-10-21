@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 47 | 49 | 0 | 96% |
+| [Stable](#stable-tests) | 48 | 49 | 0 | 98% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **47** | **49** | **0** | **96%** |
+| **All** | **48** | **49** | **0** | **98%** |
 
 ## Stable tests
 
@@ -35,7 +35,7 @@
 | [`dynamic-module-map-key.html`](https://wpt.fyi/results/import-maps/dynamic-module-map-key.html) | Pass | 5 / 5 |  |  |
 | [`external-import-map-errors.html`](https://wpt.fyi/results/import-maps/external-import-map-errors.html) | Pass | 3 / 3 |  |  |
 | [`http-url-like-specifiers.sub.html`](https://wpt.fyi/results/import-maps/http-url-like-specifiers.sub.html) | Pass | 20 / 20 |  |  |
-| [`import-maps-base-url.sub.html`](https://wpt.fyi/results/import-maps/import-maps-base-url.sub.html) | Fail | 5 / 6 | BUG | a dynamic `import()` of a classic inline script that the parser runs after a parser-blocking external script, in an iframe written by `document.write()`, gets the module that another window loaded for the same URL (the module is not evaluated in the iframe); the other cases pass |
+| [`import-maps-base-url.sub.html`](https://wpt.fyi/results/import-maps/import-maps-base-url.sub.html) | Pass | 6 / 6 |  |  |
 | [`module-map-key.html`](https://wpt.fyi/results/import-maps/module-map-key.html) | Pass | 1 / 1 |  |  |
 | [`multiple-import-maps/already-resolved-dropped.html`](https://wpt.fyi/results/import-maps/multiple-import-maps/already-resolved-dropped.html) | Pass | 1 / 1 |  |  |
 | [`multiple-import-maps/basic.html`](https://wpt.fyi/results/import-maps/multiple-import-maps/basic.html) | Pass | 1 / 1 |  |  |

@@ -90,10 +90,7 @@
     "total": 20
   },
   "import-maps/import-maps-base-url.sub.html": {
-    "total": 6,
-    "failures": {
-      "bare/bare: dynamic import (from text/javascript) with inject <base>": "FAIL"
-    }
+    "total": 6
   },
   "import-maps/module-map-key.html": {
     "total": 1

@@ -384,6 +384,85 @@ public sealed class JsEngineTests
         Assert.Equal(new JsSourceLocation("module.js", 2, 3), module.EvaluationErrorLocation);
     }
 
+    [Fact]
+    public void ReadmeExample_Execute()
+    {
+        #region JavaScriptEngine_Execute
+        using var engine = new JsEngine(new JsEngineOptions
+        {
+            Timeout = TimeSpan.FromSeconds(5), // per entry into JavaScript
+            RecursionLimit = 1_000,
+        });
+
+        var realm = engine.CreateRealm();
+
+        // Expose a .NET function to the scripts
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("add", realm.CreateFunction("add", 2, (thisValue, arguments) => arguments[0].AsNumber() + arguments[1].AsNumber()));
+        }
+
+        var result = realm.Execute("const values = [1, 2, 3].map(x => add(x, 10)); values.join('-')");
+        Assert.Equal("11-12-13", result.AsString());
+
+        // The promise jobs run when the host asks for them
+        realm.Execute("globalThis.log = []; Promise.resolve().then(() => log.push('job')); log.push('script');");
+        engine.RunJobs();
+        Assert.Equal("script,job", realm.Execute("log.join()").AsString());
+
+        // An uncaught JavaScript error is a JsException
+        var exception = Assert.Throws<JsException>(() => realm.Execute("null.x"));
+        Assert.StartsWith("TypeError", exception.Message, StringComparison.Ordinal);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Modules()
+    {
+        #region JavaScriptEngine_Modules
+        var files = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["main.js"] = "import { square } from './math.js'; globalThis.result = square(7);",
+            ["math.js"] = "export function square(x) { return x * x; }",
+        };
+
+        using var engine = new JsEngine(new JsEngineOptions { ModuleLoader = new DictionaryModuleLoader(files) });
+        var realm = engine.CreateRealm();
+        var module = realm.ParseModule(files["main.js"], "main.js");
+        module.LoadRequestedModules();
+        engine.RunJobs();
+        module.Link();
+        module.Evaluate();
+        engine.RunJobs();
+
+        Assert.Equal(49, realm.Execute("result").AsNumber());
+        #endregion
+    }
+
+    /// <summary>Loads the modules from a dictionary: the specifiers are the keys (e.g. <c>./math.js</c> is <c>math.js</c>).</summary>
+    private sealed class DictionaryModuleLoader(Dictionary<string, string> files) : JsModuleLoader
+    {
+        private readonly Dictionary<string, JsModule> _modules = new(StringComparer.Ordinal);
+
+        protected internal override void LoadImportedModule(JsModuleLoadRequest request)
+        {
+            var name = request.Specifier.StartsWith("./", StringComparison.Ordinal) ? request.Specifier[2..] : request.Specifier;
+            if (!files.TryGetValue(name, out var code))
+            {
+                request.Fail("Cannot find the module '" + request.Specifier + "'");
+                return;
+            }
+
+            if (!_modules.TryGetValue(name, out var module))
+            {
+                module = request.Realm.ParseModule(code, name);
+                _modules[name] = module;
+            }
+
+            request.Complete(module);
+        }
+    }
+
     private sealed class UppercaseHostObject(JsObject prototype, object target) : JsHostObject(prototype, target)
     {
         protected override bool GetOwnPropertyCore(JsPropertyKey key, out JsPropertyDescriptor descriptor)

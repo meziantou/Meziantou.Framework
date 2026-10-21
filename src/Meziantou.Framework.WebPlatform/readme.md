@@ -7,7 +7,7 @@ custom elements, accessibility, and more. A managed layout engine computes the g
 View, the observers...), and the documents are painted into a display list that a rendering backend (a managed
 rasterizer, in a separate package) rasterizes for the screenshots and the canvases. Documents can be loaded in a
 browsing context that fetches their resources over the network and runs their scripts with a pluggable JavaScript
-engine ([Jint](https://github.com/sebastienros/jint) is provided).
+engine ([Meziantou.Framework.JavaScriptEngine](../Meziantou.Framework.JavaScriptEngine/readme.md) is provided).
 
 Every public member mapping a WebIDL member is annotated with `[IdlMember(name, specUrl)]`. The WebIDL names follow the
 .NET naming guidelines: acronyms of 3 letters or more are PascalCased and acronyms of 2 letters stay upper case
@@ -181,12 +181,12 @@ See [docs/browsing-context.md](docs/browsing-context.md#the-document-loader).
 ### Execute scripts
 
 Scripts only run when a JavaScript engine is plugged into the browsing context. The
-`Meziantou.Framework.WebPlatform.Jint` package provides one, based on [Jint](https://github.com/sebastienros/jint), in the
-`Meziantou.Framework.WebPlatform.Jint` namespace:
+`Meziantou.Framework.WebPlatform.JavaScript` package provides one, based on `Meziantou.Framework.JavaScriptEngine`, in the
+`Meziantou.Framework.WebPlatform.JavaScript` namespace:
 
-<!-- ref:../../tests/Meziantou.Framework.WebPlatform.Tests/Jint/JintScriptEngineTests.cs;region=WebPlatform_ExecuteScripts;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/JavaScriptScriptEngineTests.cs;region=WebPlatformJavaScript_ExecuteScripts;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using var engine = new JintScriptEngine(new JintScriptEngineOptions
+using var engine = new JavaScriptScriptEngine(new JavaScriptScriptEngineOptions
 {
     Timeout = TimeSpan.FromSeconds(5), // per script or callback
 });
@@ -214,7 +214,7 @@ Assert.Equal("<li>a</li><li>b</li>", document.GetElementById("list")!.InnerHtml)
 
 // Evaluate code in the realm of a window
 var title = engine.Evaluate(context.Window, "document.title");
-Assert.Equal("Example", title.ToString());
+Assert.Equal("Example", title.AsString());
 ```
 <!-- endref -->
 
@@ -307,12 +307,12 @@ See [docs/rendering.md](docs/rendering.md) for what is painted, and [Printing](d
   not implemented.
 - **No downloads**, and the third-party cookies are not blocked.
 - **Content Security Policy** covers the fetch directives, the inline checks (scripts, styles, event handlers, `style`
-  attributes, `javascript:` URLs), `'unsafe-eval'`/`'wasm-unsafe-eval'` (`eval()` and the `Function` constructors with
-  Jint only), the navigation and document directives (`frame-src`, `form-action`, `frame-ancestors`, `base-uri`,
-  `object-src`, `worker-src`), `upgrade-insecure-requests`, the inheritance of the policies and the Trusted Types
-  directives, with their violation reports (`securitypolicyviolation`, `report-uri`, and `report-to` with the Reporting
-  API): no CSP Embedded Enforcement (the `csp` attribute of the `iframe` element). The Reporting API only generates the
-  CSP, COEP and test reports (no deprecation, intervention, COOP or Document Policy reports).
+  attributes, `javascript:` URLs), `'unsafe-eval'`/`'wasm-unsafe-eval'` (`eval()` and the `Function` constructors), the
+  navigation and document directives (`frame-src`, `form-action`, `frame-ancestors`, `base-uri`, `object-src`,
+  `worker-src`), `upgrade-insecure-requests`, the inheritance of the policies and the Trusted Types directives,
+  with their violation reports (`securitypolicyviolation`, `report-uri`, and `report-to` with the Reporting API): no CSP
+  Embedded Enforcement (the `csp` attribute of the `iframe` element). The Reporting API only generates the CSP, COEP
+  and test reports (no deprecation, intervention, COOP or Document Policy reports).
 - Streams cannot be transferred, and the tentative `URLPattern` methods `compareComponent()` and `generate()` are not
   implemented.
 - **Experimental APIs.** The public APIs of the tentative features (proposals that no specification defines yet, e.g.
@@ -362,12 +362,12 @@ See [docs/rendering.md](docs/rendering.md) for what is painted, and [Printing](d
 | Deferred fetching | [Fetch](https://fetch.spec.whatwg.org/#deferred-fetch) | Done (`fetchLater()` and `FetchLaterResult`: the requests are sent when the document is destroyed or after `activateAfter`, the quota shared by the documents of an origin and delegated to the cross-origin frames by the `deferred-fetch` and `deferred-fetch-minimal` policy-controlled features; no back/forward cache): see [docs/browsing-context.md](docs/browsing-context.md#the-fetch-algorithm) |
 | Storage manager | [Storage](https://storage.spec.whatwg.org/) | Done (`navigator.storage` in the windows and the workers: `estimate()` from the usage that the storage backends report, `persisted()`, `persist()` answered by the host; no storage buckets): see [docs/browsing-context.md](docs/browsing-context.md#storage-manager) |
 | Origin private file system | [File System](https://fs.spec.whatwg.org/) | Done (`getDirectory()`, the file and directory handles, the async iteration, `FileSystemWritableFileStream`, `FileSystemSyncAccessHandle` in the dedicated workers, the locks, the serialization of the handles, `move()` and `remove()`, on a delegated `FileSystemBackend`; no `FileSystemObserver`): see [docs/browsing-context.md](docs/browsing-context.md#origin-private-file-system) |
-| Prioritized Task Scheduling | [Prioritized Task Scheduling](https://wicg.github.io/scheduling-apis/) | Done (`scheduler.postTask()`, `scheduler.yield()`, `TaskController`, `TaskSignal`, `TaskSignal.any()`, the priorities in the event loop, in the windows and the workers; the scheduling state is not propagated by the `await` of a promise that another task settles: Jint has no HostMakeJobCallback hook): see [docs/browsing-context.md](docs/browsing-context.md#prioritized-task-scheduling) |
+| Prioritized Task Scheduling | [Prioritized Task Scheduling](https://wicg.github.io/scheduling-apis/) | Done (`scheduler.postTask()`, `scheduler.yield()`, `TaskController`, `TaskSignal`, `TaskSignal.any()`, the priorities in the event loop, in the windows and the workers; the scheduling state is not propagated by the `await` of a promise that another task settles: it is not attached to the promise jobs yet): see [docs/browsing-context.md](docs/browsing-context.md#prioritized-task-scheduling) |
 | Close watchers | [WHATWG HTML](https://html.spec.whatwg.org/multipage/interaction.html#close-requests-and-close-watchers) | Done (`CloseWatcher`, the close watcher manager shared with the dialogs, the popovers and the pickers of the `select` elements; the close request is the `Escape` key): see [docs/browsing-context.md](docs/browsing-context.md#close-watchers) |
 | Editing, drag and drop | [WHATWG HTML](https://html.spec.whatwg.org/multipage/interaction.html#editing), [execCommand](https://w3c.github.io/editing/docs/execCommand/), [Drag and drop](https://html.spec.whatwg.org/multipage/dnd.html) | Partial (editing hosts, `designMode`, the `delete`, `forwardDelete`, `insertText` and `selectAll` commands, `hidden=until-found`; `DataTransfer` and the drag-and-drop processing model, driven by the host with `DragAndDropOperation`): see [docs/browsing-context.md](docs/browsing-context.md#editing) |
 | Browsing contexts | [WHATWG HTML](https://html.spec.whatwg.org/multipage/document-sequences.html) (`Window`, `iframe`, `Location`, `History`) | Opt-in (nested documents, navigations, `window.open()`, focus; the resources are fetched only with a `DocumentLoader`): see [docs/browsing-context.md](docs/browsing-context.md) |
 | Client Hints | [Client Hints Infrastructure](https://wicg.github.io/client-hints-infrastructure/), [User-Agent Client Hints](https://wicg.github.io/ua-client-hints/) | Done (the `Accept-CH` cache, the `Sec-CH-*` request headers with the values of `BrowsingContextOptions.ClientHints` and of the viewport, their delegation with the permissions policy and `<meta http-equiv="delegate-ch">`, the `Critical-CH` restarts and `navigator.userAgentData`; the requests of the workers have no hint, and of `Clear-Site-Data` only the clearing of the hints is implemented): see [docs/browsing-context.md](docs/browsing-context.md#client-hints) |
-| Scripting | [WHATWG HTML](https://html.spec.whatwg.org/multipage/webappapis.html) (script elements, event handlers, `javascript:` URLs, timers, error reporting) | Opt-in: a JavaScript engine is plugged into the browsing contexts (`Meziantou.Framework.WebPlatform.Jint` for [Jint](https://github.com/sebastienros/jint)), with module scripts and import maps: see [docs/scripting.md](docs/scripting.md) |
+| Scripting | [WHATWG HTML](https://html.spec.whatwg.org/multipage/webappapis.html) (script elements, event handlers, `javascript:` URLs, timers, error reporting) | Opt-in: a JavaScript engine is plugged into the browsing contexts (`Meziantou.Framework.WebPlatform.JavaScript` for [Meziantou.Framework.JavaScriptEngine](../Meziantou.Framework.JavaScriptEngine/readme.md)), with module scripts and import maps: see [docs/scripting.md](docs/scripting.md) |
 | Speculation rules | [WHATWG HTML](https://html.spec.whatwg.org/multipage/speculative-loading.html), [Prefetch](https://wicg.github.io/nav-speculation/prefetch.html), [Prerendering](https://wicg.github.io/nav-speculation/prerendering.html) | Done (`<script type="speculationrules">` and the `Speculation-Rules` header, list and document rules, eagerness with the pointer of the user, navigational prefetches used by the navigations, prerendering traversables activated by the navigations, `document.prerendering`, `prerenderingchange`, `activationStart`: see [docs/browsing-context.md](docs/browsing-context.md#speculative-loading)); the workers and the media elements of a prerendering document are not suspended, and there is no HTTP cache |
 | Worklets, CSS Painting API, CSS Layout API, Animation Worklet | [WHATWG HTML](https://html.spec.whatwg.org/multipage/worklets.html), [CSS Painting API](https://drafts.css-houdini.org/css-paint-api-1/), [CSS Layout API](https://drafts.css-houdini.org/css-layout-api-1/), [CSS Animation Worklet API](https://drafts.css-houdini.org/css-animation-worklet-1/) | Done with a script engine that supports the module scripts (`Worklet.addModule()`; `CSS.paintWorklet`, `registerPaint()`, `PaintRenderingContext2D` and the `paint()` images, which need a rendering backend; `CSS.layoutWorklet`, `registerLayout()` and the `display: layout()` boxes, without fragmentation by the layout; `CSS.animationWorklet`, `registerAnimator()` and `WorkletAnimation`: see [docs/scripting.md](docs/scripting.md#worklets), [docs/rendering.md](docs/rendering.md#paint-worklet-images), [docs/layout.md](docs/layout.md#layout-api-containers-csslayoutlayoutapi-csslayoutapi) and [docs/animations.md](docs/animations.md#animation-worklet)); the global scopes of a worklet are realms of the script engine of the document. The audio worklets are not implemented |
 | Web Cryptography | [Web Cryptography API](https://w3c.github.io/webcrypto/), [Secure Curves](https://wicg.github.io/webcrypto-secure-curves/), [Modern Algorithms](https://wicg.github.io/webcrypto-modern-algos/) | Done (implemented in JavaScript in the WebIDL bindings, with managed primitives; no SLH-DSA): see [docs/scripting.md](docs/scripting.md#web-cryptography) |
@@ -383,7 +383,7 @@ dotnet test --project tests/Meziantou.Framework.WebPlatform.Imaging.Tests
 dotnet test --project tests/Meziantou.Framework.WebPlatform.Wpt
 ```
 
-The web-platform-tests (testharness.js tests and reftests, the reftests being rendered by the Imaging backend) run with the Jint script engine of `Meziantou.Framework.WebPlatform.Jint`: see [docs/web-platform-tests.md](docs/web-platform-tests.md).
+The web-platform-tests (testharness.js tests and reftests, the reftests being rendered by the Imaging backend) run with the script engine of `Meziantou.Framework.WebPlatform.JavaScript`: see [docs/web-platform-tests.md](docs/web-platform-tests.md).
 
 See [docs/updating-specs.md](docs/updating-specs.md) to update the specification data, [docs/fuzzing.md](docs/fuzzing.md)
 to fuzz the parsers, and [docs/performance.md](docs/performance.md) for the benchmarks.

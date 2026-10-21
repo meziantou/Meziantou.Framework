@@ -299,6 +299,33 @@
   "css/css-anchor-position/anchor-position-grid-002.html": {
     "reftest": "PASS"
   },
+  "css/css-anchor-position/anchor-position-inline-001.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "css/css-anchor-position/anchor-position-inline-002.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "css/css-anchor-position/anchor-position-inline-003.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "css/css-anchor-position/anchor-position-inline-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-inline-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-inline-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-inline-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/anchor-position-inline-008.html": {
+    "reftest": "FAIL"
+  },
   "css/css-anchor-position/anchor-position-multicol-001.html": {
     "total": 4
   },

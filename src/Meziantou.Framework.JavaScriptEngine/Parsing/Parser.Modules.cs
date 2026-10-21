@@ -15,6 +15,42 @@ internal sealed partial class Parser
         {
             node.Source = ParseModuleSpecifier();
         }
+        else if (_token.Kind == TokenKind.Identifier && _token.Value == "defer" && !_token.IsEscaped && PeekToken().Kind == TokenKind.Star)
+        {
+            // import defer * as ns from '...' (https://tc39.es/proposal-defer-import-eval/): only a namespace import can be deferred
+            Next();
+            var specifierStart = _token.Start;
+            Next();
+            ExpectContextual("as");
+            var local = ParseImportedBinding();
+            node.Specifiers.Add(Finish(new ImportNamespaceSpecifier { Local = local }, specifierStart));
+            node.Phase = Modules.ModulePhase.Defer;
+            ExpectContextual("from");
+            node.Source = ParseModuleSpecifier();
+        }
+        else if (_token.Kind == TokenKind.Identifier && _token.Value == "source" && !_token.IsEscaped && PeekToken().Kind == TokenKind.Identifier)
+        {
+            // import source x from '...' (https://tc39.es/proposal-source-phase-imports/), unless it is the default import
+            // of a binding named "source" (import source from '...'; import source from from '...' is a source import)
+            var sourceToken = _token;
+            Next();
+            if (_token.Value == "from" && !_token.IsEscaped && PeekToken().Kind != TokenKind.Identifier)
+            {
+                var binding = FinishAt(new Identifier { Name = "source" }, sourceToken.Start, sourceToken.End);
+                CheckLValSimple(binding, BindingKind.Lexical);
+                node.Specifiers.Add(FinishAt(new ImportDefaultSpecifier { Local = binding }, sourceToken.Start, sourceToken.End));
+            }
+            else
+            {
+                var specifierStart = _token.Start;
+                var local = ParseImportedBinding();
+                node.Specifiers.Add(Finish(new ImportDefaultSpecifier { Local = local }, specifierStart));
+                node.Phase = Modules.ModulePhase.Source;
+            }
+
+            ExpectContextual("from");
+            node.Source = ParseModuleSpecifier();
+        }
         else
         {
             var needsNamedImports = true;

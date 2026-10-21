@@ -439,10 +439,13 @@ public sealed class ArrayBuiltinsTests
     [Fact]
     public void Join_Recursion()
     {
+        // An array that contains itself is joined as an empty string, as in the browsers
         using var context = new BuiltinsTestContext();
         var array = context.Array(1);
         array.CreateDataPropertyOrThrow(new PropertyKey(1), array);
-        context.AssertThrows("RangeError", () => CallArray(context, "join", array));
+        Assert.Equal("1,", CallArray(context, "join", array).AsString());
+        Assert.Equal("1,", CallArray(context, "toString", array).AsString());
+        Assert.Equal("1,1,", CallArray(context, "join", context.Array(1, context.Array(array))).AsString());
     }
 
     [Fact]

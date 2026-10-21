@@ -23,7 +23,11 @@ public sealed class JavaScriptScriptEngineOptions
     /// </summary>
     public int? MaxStatements { get; init; }
 
-    /// <summary>Gets the maximum depth of the JavaScript calls. The default is 512. Null disables the limit.</summary>
+    /// <summary>
+    /// Gets the maximum depth of the JavaScript calls: a deeper call throws a RangeError. The default is 512. Null is the
+    /// limit of the engine (<see cref="JsEngineOptions.RecursionLimit"/>, 10,000 calls): the frames of the engine are not on
+    /// the .NET stack, so there is always a limit.
+    /// </summary>
     public int? RecursionLimit { get; init; } = 512;
 
     /// <summary>

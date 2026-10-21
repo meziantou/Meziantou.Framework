@@ -15,7 +15,7 @@
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`requirements-for-implementations/other-elements-attributes-and-apis/document-all.html`](https://wpt.fyi/results/html/obsolete/requirements-for-implementations/other-elements-attributes-and-apis/document-all.html) | Fail | 0 / 2 | JINT | `document.all` cannot be an `[[IsHTMLDDA]]` object (typeof, falsiness) |
+| [`requirements-for-implementations/other-elements-attributes-and-apis/document-all.html`](https://wpt.fyi/results/html/obsolete/requirements-for-implementations/other-elements-attributes-and-apis/document-all.html) | Fail | 0 / 2 | JS ENGINE | `document.all` cannot be an `[[IsHTMLDDA]]` object (typeof, falsiness) |
 | [`requirements-for-implementations/other-elements-attributes-and-apis/document-applets.html`](https://wpt.fyi/results/html/obsolete/requirements-for-implementations/other-elements-attributes-and-apis/document-applets.html) | Pass | 1 / 1 |  |  |
 | [`requirements-for-implementations/other-elements-attributes-and-apis/document-color-01.html`](https://wpt.fyi/results/html/obsolete/requirements-for-implementations/other-elements-attributes-and-apis/document-color-01.html) | Pass | 6 / 6 |  |  |
 | [`requirements-for-implementations/other-elements-attributes-and-apis/document-color-02.html`](https://wpt.fyi/results/html/obsolete/requirements-for-implementations/other-elements-attributes-and-apis/document-color-02.html) | Pass | 7 / 7 |  |  |

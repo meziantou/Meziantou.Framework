@@ -16,6 +16,9 @@ internal sealed class GraphLoadingState(PromiseCapability capability, object? ho
     public object? HostDefined { get; } = hostDefined;
 }
 
+/// <summary>The payload of the loading of the module of an <c>import()</c> or <c>import.defer()</c> call.</summary>
+internal sealed record DynamicImportPayload(PromiseCapability Capability, ModulePhase Phase);
+
 /// <summary>The algorithms of the module graphs (https://tc39.es/ecma262/#sec-cyclic-module-records): loading, linking and evaluation.</summary>
 internal static class ModuleOperations
 {
@@ -40,10 +43,10 @@ internal static class ModuleOperations
         return capability.Promise;
     }
 
-    /// <summary>InnerModuleLoading(state, module)</summary>
-    private static void InnerModuleLoading(GraphLoadingState state, JsModule module)
+    /// <summary>InnerModuleLoading(state, module): the dependencies of the module of a source phase import are not loaded.</summary>
+    private static void InnerModuleLoading(GraphLoadingState state, JsModule module, bool loadDependencies = true)
     {
-        if (module is JsSourceTextModule { Status: JsModuleStatus.New } cyclic && state.Visited.Add(cyclic))
+        if (loadDependencies && module is JsSourceTextModule { Status: JsModuleStatus.New } cyclic && state.Visited.Add(cyclic))
         {
             state.PendingModulesCount += cyclic.RequestedModules.Count;
             foreach (var request in cyclic.RequestedModules)
@@ -54,7 +57,7 @@ internal static class ModuleOperations
                 }
                 else if (FindLoadedModule(cyclic, request) is { } loaded)
                 {
-                    InnerModuleLoading(state, loaded);
+                    InnerModuleLoading(state, loaded, request.Phase != ModulePhase.Source);
                 }
                 else
                 {
@@ -83,14 +86,14 @@ internal static class ModuleOperations
     }
 
     /// <summary>ContinueModuleLoading(state, moduleCompletion)</summary>
-    private static void ContinueModuleLoading(GraphLoadingState state, JsModule? module, JsValue error)
+    private static void ContinueModuleLoading(GraphLoadingState state, JsModule? module, JsValue error, bool loadDependencies = true)
     {
         if (!state.IsLoading)
             return;
 
         if (module is not null)
         {
-            InnerModuleLoading(state, module);
+            InnerModuleLoading(state, module, loadDependencies);
         }
         else
         {
@@ -153,11 +156,11 @@ internal static class ModuleOperations
 
         if (payload is GraphLoadingState state)
         {
-            ContinueModuleLoading(state, module, error);
+            ContinueModuleLoading(state, module, error, request.Phase != ModulePhase.Source);
         }
         else
         {
-            ContinueDynamicImport((PromiseCapability)payload, module, error);
+            ContinueDynamicImport((DynamicImportPayload)payload, module, error);
         }
     }
 
@@ -213,6 +216,10 @@ internal static class ModuleOperations
         stack.Add(cyclic);
         foreach (var request in cyclic.RequestedModules)
         {
+            // The module of a source phase import is not linked
+            if (request.Phase == ModulePhase.Source)
+                continue;
+
             var required = cyclic.GetImportedModule(request);
             index = InnerModuleLinking(required, stack, index);
             if (required is JsSourceTextModule { Status: JsModuleStatus.Linking } requiredCyclic)
@@ -256,7 +263,7 @@ internal static class ModuleOperations
             var slot = module.GetBindingSlot(entry.LocalName);
             if (entry.IsNamespace)
             {
-                environment.Slots[slot] = GetModuleNamespace(imported);
+                environment.Slots[slot] = GetModuleNamespaceOrSource(imported, entry.ModuleRequest.Phase);
                 continue;
             }
 
@@ -265,7 +272,7 @@ internal static class ModuleOperations
                 ThrowHelper.ThrowSyntaxError(GetResolutionError(entry.ImportName!, resolution, imported));
 
             environment.Slots[slot] = resolution.IsNamespace
-                ? GetModuleNamespace(resolution.Module)
+                ? GetModuleNamespaceOrSource(resolution.Module, resolution.NamespacePhase)
                 : new JsValue(new ImportBindingCell(resolution.Module, resolution.Module.GetBindingSlot(resolution.BindingName!)));
         }
 
@@ -366,9 +373,30 @@ internal static class ModuleOperations
         cyclic.PendingAsyncDependencies = 0;
         index++;
         stack.Add(cyclic);
+
+        // The deferred modules are not evaluated, only their asynchronous dependencies (https://tc39.es/proposal-defer-import-eval/)
+        var evaluationList = new List<JsModule>(cyclic.RequestedModules.Count);
         foreach (var request in cyclic.RequestedModules)
         {
+            if (request.Phase == ModulePhase.Source)
+                continue;
+
             var required = cyclic.GetImportedModule(request);
+            if (request.Phase == ModulePhase.Defer)
+            {
+                foreach (var additional in GatherAsynchronousTransitiveDependencies(required))
+                {
+                    AddUnique(evaluationList, additional);
+                }
+            }
+            else
+            {
+                AddUnique(evaluationList, required);
+            }
+        }
+
+        foreach (var required in evaluationList)
+        {
             index = InnerModuleEvaluation(required, stack, index);
             if (required is JsSourceTextModule requiredCyclic)
             {
@@ -418,6 +446,93 @@ internal static class ModuleOperations
         }
 
         return index;
+    }
+
+    private static void AddUnique(List<JsModule> list, JsModule module)
+    {
+        if (!list.Contains(module))
+        {
+            list.Add(module);
+        }
+    }
+
+    /// <summary>GatherAsynchronousTransitiveDependencies(module, [seen]): the modules with a top-level await that a deferred module depends on.</summary>
+    private static List<JsModule> GatherAsynchronousTransitiveDependencies(JsModule module, List<JsModule>? seen = null)
+    {
+        seen ??= [];
+        var result = new List<JsModule>();
+        if (seen.Contains(module))
+            return result;
+
+        seen.Add(module);
+        if (module is not JsSourceTextModule cyclic || cyclic.Status == JsModuleStatus.Evaluating || IsModuleSccEvaluated(cyclic))
+            return result;
+
+        if (cyclic.HasTopLevelAwait)
+        {
+            result.Add(cyclic);
+            return result;
+        }
+
+        foreach (var request in cyclic.RequestedModules)
+        {
+            if (request.Phase == ModulePhase.Source)
+                continue;
+
+            foreach (var additional in GatherAsynchronousTransitiveDependencies(cyclic.GetImportedModule(request), seen))
+            {
+                AddUnique(result, additional);
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>IsModuleSCCEvaluated(module): whether the whole strongly connected component of the module is evaluated.</summary>
+    private static bool IsModuleSccEvaluated(JsSourceTextModule module) => (module.CycleRoot ?? module).Status == JsModuleStatus.Evaluated;
+
+    /// <summary>ReadyForSyncExecution(module, [seen]): whether a deferred module can be evaluated synchronously.</summary>
+    private static bool ReadyForSyncExecution(JsModule module, List<JsModule> seen)
+    {
+        if (seen.Contains(module))
+            return true;
+
+        seen.Add(module);
+        if (module is not JsSourceTextModule cyclic)
+            return true;
+
+        if (IsModuleSccEvaluated(cyclic))
+            return true;
+
+        if (cyclic.Status is JsModuleStatus.Evaluating or JsModuleStatus.EvaluatingAsync || cyclic.HasTopLevelAwait)
+            return false;
+
+        foreach (var request in cyclic.RequestedModules)
+        {
+            if (request.Phase != ModulePhase.Source && !ReadyForSyncExecution(cyclic.GetImportedModule(request), seen))
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>The evaluation of a deferred module on the access to its namespace (GetModuleExportsList, EvaluateSync).</summary>
+    public static void EnsureDeferredNamespaceEvaluation(JsModule module)
+    {
+        if (module is JsSourceTextModule { Status: not JsModuleStatus.Evaluated } && !ReadyForSyncExecution(module, []))
+            ThrowHelper.ThrowTypeError("The deferred module '" + module.Url + "' cannot be evaluated synchronously: it or one of its dependencies is being evaluated or has a top-level await");
+
+        var promise = (JsPromise)Evaluate(module).Cell!;
+        if (promise.State == PromiseState.Rejected)
+        {
+            if (!promise.IsHandled)
+            {
+                JsEngine.Current!.TrackPromiseRejection(promise, JsPromiseRejectionOperation.Handle);
+            }
+
+            promise.IsHandled = true;
+            throw new JsException(promise.Result);
+        }
     }
 
     /// <summary>ExecuteModule() without a capability: runs the body of a module that has no top-level await.</summary>
@@ -532,10 +647,24 @@ internal static class ModuleOperations
     // Namespaces, import() and import.meta
     // ------------------------------------------------------------------------------------------------------------------
 
-    /// <summary>GetModuleNamespace(module)</summary>
-    public static JsObject GetModuleNamespace(JsModule module)
+    /// <summary>The value of a namespace import (GetModuleNamespace) or of a source phase import (GetModuleSource).</summary>
+    public static JsValue GetModuleNamespaceOrSource(JsModule module, ModulePhase phase) => phase == ModulePhase.Source ? GetModuleSource(module) : GetModuleNamespace(module, phase);
+
+    /// <summary>
+    /// GetModuleSource(): the source of a module (e.g. a WebAssembly.Module). The source of a JavaScript module or of a
+    /// JSON module is not available: a SyntaxError is thrown.
+    /// </summary>
+    public static JsValue GetModuleSource(JsModule module)
     {
-        if (module.Namespace is { } existing)
+        var url = module.Url is null ? "the module" : "the module '" + module.Url + "'";
+        return ThrowHelper.ThrowSyntaxError<JsValue>("The source phase import of " + url + " is not supported: it has no source representation");
+    }
+
+    /// <summary>GetModuleNamespace(module, phase)</summary>
+    public static JsObject GetModuleNamespace(JsModule module, ModulePhase phase = ModulePhase.Evaluation)
+    {
+        var deferred = phase == ModulePhase.Defer;
+        if ((deferred ? module.DeferredNamespace : module.Namespace) is { } existing)
             return existing;
 
         var names = new List<string>();
@@ -548,13 +677,21 @@ internal static class ModuleOperations
             }
         }
 
-        var ns = new ModuleNamespaceObject(module, names);
-        module.Namespace = ns;
+        var ns = new ModuleNamespaceObject(module, names, deferred);
+        if (deferred)
+        {
+            module.DeferredNamespace = ns;
+        }
+        else
+        {
+            module.Namespace = ns;
+        }
+
         return ns;
     }
 
-    /// <summary>EvaluateImportCall: the promise of <c>import(specifier, options)</c>.</summary>
-    public static JsValue EvaluateImportCall(JsRealm realm, IScriptOrModule? referrer, JsValue specifier, JsValue options)
+    /// <summary>EvaluateImportCall: the promise of <c>import(specifier, options)</c> or <c>import.defer(specifier, options)</c>.</summary>
+    public static JsValue EvaluateImportCall(JsRealm realm, IScriptOrModule? referrer, JsValue specifier, JsValue options, ModulePhase phase = ModulePhase.Evaluation)
     {
         var capability = PromiseCapability.CreateIntrinsic(realm);
         ModuleRequest request;
@@ -584,7 +721,7 @@ internal static class ModuleOperations
                 }
             }
 
-            request = ModuleRequest.Create(specifierString, attributes);
+            request = ModuleRequest.Create(specifierString, attributes, phase);
             if (!AllImportAttributesSupported(request))
                 return Reject(capability, realm, "Unsupported import attribute");
         }
@@ -594,7 +731,7 @@ internal static class ModuleOperations
             return capability.Promise;
         }
 
-        HostLoadImportedModule(referrer?.Realm ?? realm, realm, referrer, request, hostDefined: null, capability);
+        HostLoadImportedModule(referrer?.Realm ?? realm, realm, referrer, request, hostDefined: null, new DynamicImportPayload(capability, phase));
         return capability.Promise;
     }
 
@@ -604,17 +741,33 @@ internal static class ModuleOperations
         return capability.Promise;
     }
 
-    /// <summary>ContinueDynamicImport(promiseCapability, moduleCompletion)</summary>
-    private static void ContinueDynamicImport(PromiseCapability capability, JsModule? module, JsValue error)
+    /// <summary>ContinueDynamicImport(payload, moduleCompletion)</summary>
+    private static void ContinueDynamicImport(DynamicImportPayload payload, JsModule? module, JsValue error)
     {
+        var capability = payload.Capability;
         if (module is null)
         {
             capability.Reject(error);
             return;
         }
 
+        // import.source(): the module is not linked nor evaluated, and its dependencies are not loaded
+        if (payload.Phase == ModulePhase.Source)
+        {
+            try
+            {
+                capability.Resolve(GetModuleSource(module));
+            }
+            catch (JsException ex)
+            {
+                capability.Reject(ex.Value);
+            }
+
+            return;
+        }
+
         var loadPromise = (JsPromise)LoadRequestedModules(module, hostDefined: null).Cell!;
-        JsPromise.PerformPromiseThen(loadPromise, static (state, _) => LinkAndEvaluate((DynamicImportState)state!), static (state, reason) => ((DynamicImportState)state!).Capability.Reject(reason), new DynamicImportState(capability, module));
+        JsPromise.PerformPromiseThen(loadPromise, static (state, _) => LinkAndEvaluate((DynamicImportState)state!), static (state, reason) => ((DynamicImportState)state!).Capability.Reject(reason), new DynamicImportState(capability, module, payload.Phase));
     }
 
     private static void LinkAndEvaluate(DynamicImportState state)
@@ -629,19 +782,62 @@ internal static class ModuleOperations
             return;
         }
 
-        var evaluatePromise = (JsPromise)Evaluate(state.Module).Cell!;
+        JsPromise evaluatePromise;
+        if (state.Phase == ModulePhase.Defer)
+        {
+            // import.defer(): only the asynchronous dependencies are evaluated
+            var evaluationList = GatherAsynchronousTransitiveDependencies(state.Module);
+            if (evaluationList.Count == 0)
+            {
+                state.Capability.Resolve(GetModuleNamespace(state.Module, ModulePhase.Defer));
+                return;
+            }
+
+            // SafePerformPromiseAll of the promises of the evaluations
+            var all = PromiseCapability.CreateIntrinsic(state.Module.Realm);
+            var allState = new PromiseAllState(all, evaluationList.Count);
+            foreach (var dependency in evaluationList)
+            {
+                JsPromise.PerformPromiseThen(
+                    (JsPromise)Evaluate(dependency).Cell!,
+                    static (s, _) =>
+                    {
+                        var promiseAll = (PromiseAllState)s!;
+                        if (--promiseAll.Remaining == 0)
+                        {
+                            promiseAll.Capability.Resolve(default);
+                        }
+                    },
+                    static (s, reason) => ((PromiseAllState)s!).Capability.Reject(reason),
+                    allState);
+            }
+
+            evaluatePromise = (JsPromise)all.Promise;
+        }
+        else
+        {
+            evaluatePromise = (JsPromise)Evaluate(state.Module).Cell!;
+        }
+
         JsPromise.PerformPromiseThen(
             evaluatePromise,
             static (s, _) =>
             {
                 var importState = (DynamicImportState)s!;
-                importState.Capability.Resolve(GetModuleNamespace(importState.Module));
+                importState.Capability.Resolve(GetModuleNamespace(importState.Module, importState.Phase));
             },
             static (s, reason) => ((DynamicImportState)s!).Capability.Reject(reason),
             state);
     }
 
-    private sealed record DynamicImportState(PromiseCapability Capability, JsModule Module);
+    private sealed record DynamicImportState(PromiseCapability Capability, JsModule Module, ModulePhase Phase);
+
+    private sealed class PromiseAllState(PromiseCapability capability, int remaining)
+    {
+        public PromiseCapability Capability { get; } = capability;
+
+        public int Remaining { get; set; } = remaining;
+    }
 
     /// <summary>The import.meta object of a module (created on first use).</summary>
     public static JsObject GetImportMeta(JsSourceTextModule module)

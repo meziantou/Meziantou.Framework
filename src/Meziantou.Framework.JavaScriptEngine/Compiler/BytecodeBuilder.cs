@@ -572,7 +572,7 @@ internal sealed class BytecodeBuilder
             OpCode.SuperCall => 1 - firstOperand,
             OpCode.SuperCallSpread => 0,
             OpCode.LoadAllArguments => 1,
-            OpCode.ImportCall => -1,
+            OpCode.ImportCall or OpCode.ImportDeferCall or OpCode.ImportSourceCall => -1,
             OpCode.CreateClosure => 1,
             OpCode.CreateClass => 1,
             OpCode.InitializeInstanceElements => -1,

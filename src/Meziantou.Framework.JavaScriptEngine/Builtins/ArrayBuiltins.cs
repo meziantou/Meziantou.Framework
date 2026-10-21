@@ -633,6 +633,25 @@ internal static class ArrayBuiltins
             StringOperations.ThrowInvalidLength();
         }
 
+        // An array that contains itself is joined as an empty string, as in the browsers, instead of an infinite recursion
+        // (e.g. [a] where a = [a] is converted to the string ""): the specification has no cycle detection
+        var joinStack = function.Realm.Engine.ArrayJoinStack ??= [];
+        if (joinStack.Contains(obj))
+            return JsValue.FromJsString(JsString.Empty);
+
+        joinStack.Add(obj);
+        try
+        {
+            return JoinElements(obj, length, separator);
+        }
+        finally
+        {
+            joinStack.RemoveAt(joinStack.Count - 1);
+        }
+    }
+
+    private static JsValue JoinElements(JsObject obj, long length, string separator)
+    {
         if (length == 1)
         {
             var element = ArrayOperations.GetElement(obj, 0);

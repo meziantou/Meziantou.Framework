@@ -13,7 +13,12 @@ internal static class DateTimeFormatLocaleSensitiveBuiltins
         realm.DefineMethod(intrinsics.DatePrototype, "toLocaleString", 0, (function, thisValue, arguments, _) => DateToLocaleString(function, thisValue, arguments, DateTimeRequired.Any, DateTimeDefaults.All, 0));
         realm.DefineMethod(intrinsics.DatePrototype, "toLocaleDateString", 0, (function, thisValue, arguments, _) => DateToLocaleString(function, thisValue, arguments, DateTimeRequired.Date, DateTimeDefaults.Date, 1));
         realm.DefineMethod(intrinsics.DatePrototype, "toLocaleTimeString", 0, (function, thisValue, arguments, _) => DateToLocaleString(function, thisValue, arguments, DateTimeRequired.Time, DateTimeDefaults.Time, 2));
+    }
 
+    /// <summary>The toLocaleString methods of the Temporal types (the Temporal built-ins are created on first use).</summary>
+    public static void InitializeTemporal(Intrinsics intrinsics)
+    {
+        var realm = intrinsics.Realm;
         realm.DefineMethod(intrinsics.TemporalPlainDatePrototype, "toLocaleString", 0, (function, thisValue, arguments, _) => TemporalToLocaleString<JsPlainDate>(function, thisValue, arguments, "PlainDate", DateTimeRequired.Date, DateTimeDefaults.Date));
         realm.DefineMethod(intrinsics.TemporalPlainDateTimePrototype, "toLocaleString", 0, (function, thisValue, arguments, _) => TemporalToLocaleString<JsPlainDateTime>(function, thisValue, arguments, "PlainDateTime", DateTimeRequired.Any, DateTimeDefaults.All));
         realm.DefineMethod(intrinsics.TemporalPlainMonthDayPrototype, "toLocaleString", 0, (function, thisValue, arguments, _) => TemporalToLocaleString<JsPlainMonthDay>(function, thisValue, arguments, "PlainMonthDay", DateTimeRequired.Date, DateTimeDefaults.Date));

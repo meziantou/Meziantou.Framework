@@ -65,5 +65,17 @@ internal sealed class JsNumberFormatObject(JsObject prototype) : JsObject(protot
         }
     }
 
+    /// <summary>Gets or sets the cached number pattern of the style.</summary>
+    public NumberPattern? StylePattern { get; set; }
+
+    /// <summary>Gets or sets the cached decimal pattern (its grouping sizes are used for every style).</summary>
+    public NumberPattern? DecimalPattern { get; set; }
+
+    /// <summary>Gets or sets the cached text of the currency (code, symbol or narrow symbol).</summary>
+    public string? CurrencyText { get; set; }
+
+    /// <summary>Gets or sets the cached minimumGroupingDigits of the locale.</summary>
+    public int? MinimumGroupingDigits { get; set; }
+
     public Data.PluralRules PluralRules => _pluralRules ??= CldrData.Default.Supplemental.GetPluralRules(DataLocale.Name, PluralRuleType.Cardinal);
 }

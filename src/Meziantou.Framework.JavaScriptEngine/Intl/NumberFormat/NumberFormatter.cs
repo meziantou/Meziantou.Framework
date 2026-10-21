@@ -83,7 +83,7 @@ internal static class NumberFormatter
         string? compactPattern = null;
         var pluralCategory = "other";
         var isCurrency = nf.Style is "currency";
-        var stylePattern = GetStylePattern(nf);
+        var stylePattern = nf.StylePattern ??= GetStylePattern(nf);
         if (x.IsNaN)
         {
             parts.Number.Add(new NumberPart("nan", symbols.NaN));
@@ -103,8 +103,12 @@ internal static class NumberFormatter
             var formatted = nf.Digits.FormatNumericToString(x.ScaleByPowerOfTen(-exponent));
             rounded = formatted.RoundedNumber;
             var n = formatted.FormattedString;
-            pluralCategory = PluralRulesBuiltins.SelectCategory(nf.PluralRules, n, nf.Notation is "compact" ? exponent : 0);
-            AppendDigits(nf, parts.Number, n, GetDecimalPattern(nf));
+            if (nf.Style is "unit" || nf.Notation is "compact" || (isCurrency && nf.CurrencyDisplay is "name"))
+            {
+                pluralCategory = PluralRulesBuiltins.SelectCategory(nf.PluralRules, n, nf.Notation is "compact" ? exponent : 0);
+            }
+
+            AppendDigits(nf, parts.Number, n, nf.DecimalPattern ??= GetDecimalPattern(nf));
 
             if (nf.Notation is "scientific" or "engineering")
             {
@@ -160,16 +164,7 @@ internal static class NumberFormatter
         }
 
         GetAffixes(pattern, sign, out var prefix, out var suffix);
-        var currencyText = isCurrency && nf.CurrencyDisplay is not "name" ? GetCurrencyText(nf, pluralCategory) : "";
-        if (isCurrency && !affixesFromCompact && nf.CurrencyDisplay is not "name")
-        {
-            // A currency symbol that ends (or starts) with a letter next to the number uses the alphaNextToNumber pattern
-            var alternate = GetAlphaNextToNumberPattern(nf, prefix, suffix, currencyText);
-            if (alternate is not null)
-            {
-                GetAffixes(alternate, sign, out prefix, out suffix);
-            }
-        }
+        var currencyText = isCurrency && nf.CurrencyDisplay is not "name" ? nf.CurrencyText ??= GetCurrencyText(nf, "other") : "";
 
         // Prefix
         var innerStart = affixesFromCompact ? FindFirstLiteral(prefix) : prefix.Length;
@@ -413,6 +408,13 @@ internal static class NumberFormatter
                 break;
             case "currency" when nf.CurrencyDisplay is not "name":
                 pattern = locale.GetNumberPattern(nf.NumberingSystem, "currencyFormats", nf.CurrencySign is "accounting" ? "accounting" : "standard");
+                if (pattern is not null)
+                {
+                    // A currency symbol that ends (or starts) with a letter next to the number uses the alphaNextToNumber pattern
+                    var parsed = NumberPattern.Parse(pattern);
+                    return GetAlphaNextToNumberPattern(nf, parsed.PositivePrefix, parsed.PositiveSuffix, nf.CurrencyText ??= GetCurrencyText(nf, "other")) ?? parsed;
+                }
+
                 break;
         }
 
@@ -549,7 +551,7 @@ internal static class NumberFormatter
         {
             "always" => 1,
             "min2" => 2,
-            "auto" => GetMinimumGroupingDigits(nf.DataLocale),
+            "auto" => nf.MinimumGroupingDigits ??= GetMinimumGroupingDigits(nf.DataLocale),
             _ => int.MaxValue,
         };
 

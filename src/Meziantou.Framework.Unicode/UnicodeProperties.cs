@@ -169,6 +169,15 @@ public static class UnicodeProperties
         return (UnicodeWordBreak)UnicodeTables.SegmentationTuples[(UnicodeTables.GetSegmentation(codePoint) * 2) + 1];
     }
 
+    /// <summary>Gets the Sentence_Break property of a code point.</summary>
+    /// <param name="codePoint">The code point.</param>
+    /// <returns>The class used by the sentence boundary rules.</returns>
+    /// <seealso href="https://www.unicode.org/reports/tr29/" />
+    public static UnicodeSentenceBreak GetSentenceBreak(int codePoint)
+    {
+        return (UnicodeSentenceBreak)(UnicodeTables.GetSentenceBreak(codePoint) & 0xF);
+    }
+
     /// <summary>Gets the Joining_Type property of a code point.</summary>
     /// <param name="codePoint">The code point.</param>
     /// <returns>How the code point joins its neighbors in a cursive script such as Arabic.</returns>

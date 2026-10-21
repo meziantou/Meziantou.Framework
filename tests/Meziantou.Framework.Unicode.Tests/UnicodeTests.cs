@@ -126,6 +126,16 @@ public sealed class UnicodeTests
 
         Assert.Equal(["Hello", ",", " ", "world", "!"], segments);
 
+        // Sentences: the spaces after the terminal punctuation belong to the sentence
+        text = "It costs $3.50, i.e. not much. Really? Yes!";
+        var sentences = new List<string>();
+        foreach (Range sentence in Unicode.EnumerateSentenceBoundaries(text))
+        {
+            sentences.Add(text[sentence]);
+        }
+
+        Assert.Equal(["It costs $3.50, i.e. not much. ", "Really? ", "Yes!"], sentences);
+
         // Line break opportunities
         text = "A long line\nof text";
         var lines = new List<string>();
@@ -1243,6 +1253,30 @@ public sealed class UnicodeTests
     }
 
     [Theory]
+    [InlineData(0x0061, UnicodeSentenceBreak.Lower)]
+    [InlineData(0x0041, UnicodeSentenceBreak.Upper)]
+    [InlineData(0x05D0, UnicodeSentenceBreak.OLetter)]
+    [InlineData(0x0030, UnicodeSentenceBreak.Numeric)]
+    [InlineData(0x002E, UnicodeSentenceBreak.ATerm)]
+    [InlineData(0x003F, UnicodeSentenceBreak.STerm)]
+    [InlineData(0x3002, UnicodeSentenceBreak.STerm)]
+    [InlineData(0x0029, UnicodeSentenceBreak.Close)]
+    [InlineData(0x002C, UnicodeSentenceBreak.SContinue)]
+    [InlineData(0x0020, UnicodeSentenceBreak.Sp)]
+    [InlineData(0x2029, UnicodeSentenceBreak.Sep)]
+    [InlineData(0x000D, UnicodeSentenceBreak.CR)]
+    [InlineData(0x000A, UnicodeSentenceBreak.LF)]
+    [InlineData(0x0301, UnicodeSentenceBreak.Extend)]
+    [InlineData(0x00AD, UnicodeSentenceBreak.Format)]
+    [InlineData(0x0024, UnicodeSentenceBreak.Other)]
+    [InlineData(-1, UnicodeSentenceBreak.Other)]
+    [InlineData(0x110000, UnicodeSentenceBreak.Other)]
+    public void GetSentenceBreak_ReturnsTheClass(int codePoint, UnicodeSentenceBreak expected)
+    {
+        Assert.Equal(expected, UnicodeProperties.GetSentenceBreak(codePoint));
+    }
+
+    [Theory]
     [InlineData(0x0628, UnicodeJoiningType.DualJoining, UnicodeJoiningGroup.Beh)]
     [InlineData(0x0627, UnicodeJoiningType.RightJoining, UnicodeJoiningGroup.Alef)]
     [InlineData(0x0644, UnicodeJoiningType.DualJoining, UnicodeJoiningGroup.Lam)]
@@ -1496,6 +1530,7 @@ public sealed class UnicodeTests
         Assert.Equal(0, (int)UnicodeGraphemeClusterBreak.Other);
         Assert.Equal(0, (int)UnicodeIndicConjunctBreak.None);
         Assert.Equal(0, (int)UnicodeWordBreak.Other);
+        Assert.Equal(0, (int)UnicodeSentenceBreak.Other);
         Assert.Equal(0, (int)UnicodeEastAsianWidth.Neutral);
         Assert.Equal(0, (int)UnicodeBidiPairedBracketType.None);
         Assert.Equal(0, (int)UnicodeJoiningType.NonJoining);
@@ -1602,6 +1637,70 @@ public sealed class UnicodeTests
         }
 
         Assert.Equal(expected, segments.ToArray());
+    }
+
+    [Theory]
+    [InlineData("", new string[0])]
+    [InlineData("Hello.", new[] { "Hello." })]
+    [InlineData("Hello. World", new[] { "Hello. ", "World" })]
+    [InlineData("Hello.  World", new[] { "Hello.  ", "World" })]
+    // The closing punctuation and the spaces after the terminal punctuation end the sentence (SB9, SB10).
+    [InlineData("(He left.) Then", new[] { "(He left.) ", "Then" })]
+    // A full stop followed by a digit (SB6), by an uppercase letter (SB7) or by a lowercase word (SB8). The other
+    // terminal punctuation marks end the sentence before a lowercase word.
+    [InlineData("Pi is 3.14 today.", new[] { "Pi is 3.14 today." })]
+    [InlineData("The U.S.A. Is big.", new[] { "The U.S.A. ", "Is big." })]
+    [InlineData("See e.g. the list.", new[] { "See e.g. the list." })]
+    [InlineData("Mr. Smith", new[] { "Mr. ", "Smith" })]
+    [InlineData("\"Stop!\" he said", new[] { "\"Stop!\" ", "he said" })]
+    [InlineData("Ready?! Go.", new[] { "Ready?! ", "Go." })]
+    // A comma after a terminal punctuation continues the sentence (SB8a).
+    [InlineData("\"Why?\", she asked.", new[] { "\"Why?\", she asked." })]
+    // A paragraph separator ends a sentence (SB4), and belongs to it.
+    [InlineData("One\nTwo\r\nThree\u2029Four", new[] { "One\n", "Two\r\n", "Three\u2029", "Four" })]
+    [InlineData("End.\nNext", new[] { "End.\n", "Next" })]
+    [InlineData("End. \r\nNext", new[] { "End. \r\n", "Next" })]
+    // Extend and Format characters are ignored (SB5).
+    [InlineData("e\u0301. Then", new[] { "e\u0301. ", "Then" })]
+    [InlineData(".\u0301 Then", new[] { ".\u0301 ", "Then" })]
+    [InlineData("\u3053\u308C\u3002\u305D\u308C\u3002", new[] { "\u3053\u308C\u3002", "\u305D\u308C\u3002" })]
+    public void EnumerateSentenceBoundaries_ReturnsTheSentences(string text, string[] expected)
+    {
+        var sentences = new List<string>();
+        foreach (var range in Unicode.EnumerateSentenceBoundaries(text))
+        {
+            sentences.Add(text[range]);
+        }
+
+        Assert.Equal(expected, sentences.ToArray());
+    }
+
+    [Fact]
+    public void EnumerateSentenceBoundaries_IsLinearAfterAFullStop()
+    {
+        // SB8 looks ahead for a lowercase letter after "ATerm Close* Sp*": the lookahead must not be repeated at each
+        // position of a long sequence of spaces or of characters it skips.
+        var text = "a." + new string(' ', 100_000) + new string('1', 100_000) + "A";
+        var sentences = new List<Range>();
+        foreach (var range in Unicode.EnumerateSentenceBoundaries(text))
+        {
+            sentences.Add(range);
+        }
+
+        Assert.Equal([0..100_002, 100_002..text.Length], sentences);
+    }
+
+    [Fact]
+    public void EnumerateSentenceBoundaries_KeepsUnpairedSurrogates()
+    {
+        var text = "a" + (char)0xD800 + ". " + (char)0xDC00 + "B";
+        var sentences = new List<string>();
+        foreach (var range in Unicode.EnumerateSentenceBoundaries(text))
+        {
+            sentences.Add(text[range]);
+        }
+
+        Assert.Equal(["a" + (char)0xD800 + ". ", (char)0xDC00 + "B"], sentences);
     }
 
     [Theory]

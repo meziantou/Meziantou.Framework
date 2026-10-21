@@ -1,8 +1,9 @@
 # Meziantou.Framework.Unicode
 
 This package provides Unicode text algorithms and data that do not depend on the Unicode version of the runtime or on
-ICU: character properties, case mappings, grapheme, word and line segmentation, normalization, the bidirectional
-algorithm, script runs, internationalized domain names (IDNA), and confusable detection. The data is the one of Unicode 18.0.0.
+ICU: character properties, case mappings, grapheme, word, sentence and line segmentation, normalization, the
+bidirectional algorithm, script runs, internationalized domain names (IDNA), and confusable detection. The data is the
+one of Unicode 18.0.0.
 The types are in the `Meziantou.Framework` namespace.
 
 <!-- ref:../../tests/Meziantou.Framework.Unicode.Tests/UnicodeTests.cs;region=Unicode_ReplaceConfusablesCharacters;format=md-fenced-code-block;dedent=true -->
@@ -159,6 +160,16 @@ foreach (Range segment in Unicode.EnumerateWordBoundaries(text))
 
 Assert.Equal(["Hello", ",", " ", "world", "!"], segments);
 
+// Sentences: the spaces after the terminal punctuation belong to the sentence
+text = "It costs $3.50, i.e. not much. Really? Yes!";
+var sentences = new List<string>();
+foreach (Range sentence in Unicode.EnumerateSentenceBoundaries(text))
+{
+    sentences.Add(text[sentence]);
+}
+
+Assert.Equal(["It costs $3.50, i.e. not much. ", "Really? ", "Yes!"], sentences);
+
 // Line break opportunities
 text = "A long line\nof text";
 var lines = new List<string>();
@@ -174,6 +185,9 @@ foreach (UnicodeLineBreak lineBreak in Unicode.EnumerateLineBreaks(text))
 Assert.Equal(["A ", "long ", "line\n (mandatory)", "of ", "text (mandatory)"], lines);
 ```
 <!-- endref -->
+
+`EnumerateSentenceBoundaries` applies the default rules, without a list of abbreviations: `Mr. Smith` is two
+sentences, while `e.g. the` (a full stop before a lowercase word), `U.S.A.` and `3.14` are not broken.
 
 `EnumerateLineBreaks` takes two optional tailorings, which match the CSS properties `line-break` and `word-break`:
 

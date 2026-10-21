@@ -59,6 +59,7 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.UnicodeLineBreakEnumerator EnumerateLineBreaks(System.ReadOnlySpan<char> text, Meziantou.Framework.UnicodeLineBreakStrictness strictness = Meziantou.Framework.UnicodeLineBreakStrictness.Strict, Meziantou.Framework.UnicodeWordBreakBehavior wordBreak = Meziantou.Framework.UnicodeWordBreakBehavior.Normal) => throw null;
         public static Meziantou.Framework.UnicodeLineBreakEnumerator EnumerateLineBreaks(System.ReadOnlySpan<char> text, Meziantou.Framework.LineBreakDictionary? dictionary, Meziantou.Framework.UnicodeLineBreakStrictness strictness = Meziantou.Framework.UnicodeLineBreakStrictness.Strict, Meziantou.Framework.UnicodeWordBreakBehavior wordBreak = Meziantou.Framework.UnicodeWordBreakBehavior.Normal) => throw null;
         public static Meziantou.Framework.UnicodeScriptRunEnumerator EnumerateScriptRuns(System.ReadOnlySpan<char> text) => throw null;
+        public static Meziantou.Framework.UnicodeSentenceEnumerator EnumerateSentenceBoundaries(System.ReadOnlySpan<char> text) => throw null;
         public static Meziantou.Framework.UnicodeWordEnumerator EnumerateWordBoundaries(System.ReadOnlySpan<char> text) => throw null;
         public static Meziantou.Framework.UnicodeCharacterInfo? GetCharacterInfo(System.Text.Rune rune) => throw null;
         public static Meziantou.Framework.UnicodeCharacterInfo? GetCharacterInfo(char value) => throw null;
@@ -913,6 +914,7 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.UnicodeJoiningType GetJoiningType(int codePoint) => throw null;
         public static Meziantou.Framework.UnicodeLineBreakClass GetLineBreakClass(int codePoint) => throw null;
         public static int GetLowercaseMapping(int codePoint, System.Span<int> destination) => throw null;
+        public static Meziantou.Framework.UnicodeSentenceBreak GetSentenceBreak(int codePoint) => throw null;
         public static int GetTitlecaseMapping(int codePoint, System.Span<int> destination) => throw null;
         public static int GetUppercaseMapping(int codePoint, System.Span<int> destination) => throw null;
         public static Meziantou.Framework.UnicodeVerticalOrientation GetVerticalOrientation(int codePoint) => throw null;
@@ -1154,6 +1156,32 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.UnicodeScript GetScript(int codePoint) => throw null;
         public static int GetScriptExtensions(int codePoint, System.Span<Meziantou.Framework.UnicodeScript> destination) => throw null;
         public static bool HasScriptExtension(int codePoint, Meziantou.Framework.UnicodeScript script) => throw null;
+    }
+
+    public enum UnicodeSentenceBreak : byte
+    {
+        Other = 0,
+        ATerm = 1,
+        Close = 2,
+        CR = 3,
+        Extend = 4,
+        Format = 5,
+        OLetter = 6,
+        LF = 7,
+        Lower = 8,
+        Numeric = 9,
+        SContinue = 10,
+        Sep = 11,
+        Sp = 12,
+        STerm = 13,
+        Upper = 14,
+    }
+
+    public ref struct UnicodeSentenceEnumerator
+    {
+        public readonly System.Range Current { get => throw null; }
+        public readonly Meziantou.Framework.UnicodeSentenceEnumerator GetEnumerator() => throw null;
+        public bool MoveNext() => throw null;
     }
 
     public enum UnicodeVerticalOrientation : byte

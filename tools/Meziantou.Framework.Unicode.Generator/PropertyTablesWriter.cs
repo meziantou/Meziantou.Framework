@@ -22,6 +22,7 @@ internal static class PropertyTablesWriter
         var graphemeEnum = CreateEnum(enumsPath, aliases, "GCB", "UnicodeGraphemeClusterBreak", "Other", "the Grapheme_Cluster_Break property of a code point", "https://www.unicode.org/reports/tr29/");
         var conjunctEnum = CreateEnum(enumsPath, aliases, "InCB", "UnicodeIndicConjunctBreak", "None", "the Indic_Conjunct_Break property of a code point", "https://www.unicode.org/reports/tr44/");
         var wordEnum = CreateEnum(enumsPath, aliases, "WB", "UnicodeWordBreak", "Other", "the Word_Break property of a code point", "https://www.unicode.org/reports/tr29/");
+        var sentenceEnum = CreateEnum(enumsPath, aliases, "SB", "UnicodeSentenceBreak", "Other", "the Sentence_Break property of a code point", "https://www.unicode.org/reports/tr29/");
         var widthEnum = CreateEnum(enumsPath, aliases, "ea", "UnicodeEastAsianWidth", "Neutral", "the East_Asian_Width property of a code point", "https://www.unicode.org/reports/tr11/");
         var bracketEnum = CreateEnum(enumsPath, aliases, "bpt", "UnicodeBidiPairedBracketType", "None", "the Bidi_Paired_Bracket_Type property of a code point", "https://www.unicode.org/reports/tr9/");
         var joiningTypeEnum = CreateEnum(enumsPath, aliases, "jt", "UnicodeJoiningType", "Non_Joining", "the Joining_Type property of a code point", "https://www.unicode.org/reports/tr44/");
@@ -29,7 +30,7 @@ internal static class PropertyTablesWriter
         var syllabicEnum = CreateEnum(enumsPath, aliases, "InSC", "UnicodeIndicSyllabicCategory", "Other", "the Indic_Syllabic_Category property of a code point", "https://www.unicode.org/reports/tr44/");
         var positionalEnum = CreateEnum(enumsPath, aliases, "InPC", "UnicodeIndicPositionalCategory", "Not_Applicable", "the Indic_Positional_Category property of a code point", "https://www.unicode.org/reports/tr44/");
         var orientationEnum = CreateEnum(enumsPath, aliases, "vo", "UnicodeVerticalOrientation", "Rotated", "the Vertical_Orientation property of a code point", "https://www.unicode.org/reports/tr50/");
-        GeneratedEnum[] enums = [lineBreakEnum, graphemeEnum, conjunctEnum, wordEnum, widthEnum, bracketEnum, joiningTypeEnum, joiningGroupEnum, syllabicEnum, positionalEnum, orientationEnum];
+        GeneratedEnum[] enums = [lineBreakEnum, graphemeEnum, conjunctEnum, wordEnum, sentenceEnum, widthEnum, bracketEnum, joiningTypeEnum, joiningGroupEnum, syllabicEnum, positionalEnum, orientationEnum];
 
         var generalCategory = await LoadGeneralCategoryAsync();
         var bidiClass = await LoadBidiClassAsync(aliases);
@@ -43,6 +44,7 @@ internal static class PropertyTablesWriter
         var grapheme = await LoadEnumAsync("ucd/auxiliary/GraphemeBreakProperty.txt", aliases, graphemeEnum, filter: null);
         var conjunct = await LoadEnumAsync("ucd/DerivedCoreProperties.txt", aliases, conjunctEnum, filter: "InCB");
         var word = await LoadEnumAsync("ucd/auxiliary/WordBreakProperty.txt", aliases, wordEnum, filter: null);
+        var sentence = await LoadEnumAsync("ucd/auxiliary/SentenceBreakProperty.txt", aliases, sentenceEnum, filter: null);
         var joiningType = await LoadEnumAsync("ucd/extracted/DerivedJoiningType.txt", aliases, joiningTypeEnum, filter: null);
         var joiningGroup = await LoadEnumAsync("ucd/extracted/DerivedJoiningGroup.txt", aliases, joiningGroupEnum, filter: null);
         var syllabic = await LoadEnumAsync("ucd/IndicSyllabicCategory.txt", aliases, syllabicEnum, filter: null);
@@ -59,6 +61,7 @@ internal static class PropertyTablesWriter
         RequireBelow(width, 8, "East_Asian_Width");
         RequireBelow(grapheme, 32, "Grapheme_Cluster_Break");
         RequireBelow(conjunct, 4, "Indic_Conjunct_Break");
+        RequireBelow(sentence, 16, "Sentence_Break");
         RequireBelow(generalCategory, 32, "General_Category");
 
         var generalTuples = new TupleTable(width: 2);
@@ -139,6 +142,9 @@ internal static class PropertyTablesWriter
             (a UnicodeWordBreak).
             """);
         AppendBytes(tables, sizes, "SegmentationTuples", segmentationTuples.Bytes);
+        AppendTrie(tables, sizes, "SentenceBreak", sentence, """
+            Sentence_Break (bits 0-3, a UnicodeSentenceBreak); the other bits are 0.
+            """);
         AppendTrie(tables, sizes, "Joining", joining, """
             Index of a 2-byte entry of JoiningTuples: Joining_Type (a UnicodeJoiningType), then Joining_Group
             (a UnicodeJoiningGroup).

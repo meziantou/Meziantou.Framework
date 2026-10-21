@@ -42,6 +42,24 @@ public sealed class UnicodeConformanceTests
     }
 
     [Fact]
+    public void SentenceBoundaries_MatchSentenceBreakTest()
+    {
+        var count = AssertBreaks("SentenceBreakTest.txt.gz", text =>
+        {
+            var boundaries = new List<int> { 0 };
+            foreach (var range in Unicode.EnumerateSentenceBoundaries(text))
+            {
+                Assert.Equal(boundaries[^1], range.Start.Value);
+                boundaries.Add(range.End.Value);
+            }
+
+            return boundaries;
+        });
+
+        Assert.True(count > 500, $"Only {count} cases were run");
+    }
+
+    [Fact]
     public void LineBreaks_MatchLineBreakTest()
     {
         var count = AssertBreaks("LineBreakTest.txt.gz", text =>

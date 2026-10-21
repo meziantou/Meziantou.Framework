@@ -124,6 +124,55 @@ public sealed class IntlTests
             """));
     }
 
+    [Theory]
+    [InlineData("en-US", "{}", "1234567.891", "1,234,567.891")]
+    [InlineData("de-DE", "{}", "1234567.891", "1.234.567,891")]
+    [InlineData("fr-FR", "{}", "1234567.891", "1\u202F234\u202F567,891")]
+    [InlineData("en-IN", "{}", "123456789", "12,34,56,789")]
+    [InlineData("ar-EG", "{}", "1234.5", "\u0661\u066C\u0662\u0663\u0664\u066B\u0665")]
+    [InlineData("en-US", "{ style: 'currency', currency: 'EUR' }", "-1234.5", "-\u20AC1,234.50")]
+    [InlineData("en-US", "{ style: 'currency', currency: 'USD', currencySign: 'accounting' }", "-1234.5", "($1,234.50)")]
+    [InlineData("en-US", "{ style: 'currency', currency: 'JPY', currencyDisplay: 'code' }", "1234.5", "JPY\u00A01,235")]
+    [InlineData("en-US", "{ style: 'currency', currency: 'USD', currencyDisplay: 'name' }", "1", "1.00 US dollars")]
+    [InlineData("de-DE", "{ style: 'currency', currency: 'EUR' }", "1234.5", "1.234,50\u00A0\u20AC")]
+    [InlineData("en-US", "{ style: 'percent' }", "0.256", "26%")]
+    [InlineData("en-US", "{ style: 'unit', unit: 'kilometer-per-hour', unitDisplay: 'long' }", "50", "50 kilometers per hour")]
+    [InlineData("en-US", "{ notation: 'compact' }", "1234567", "1.2M")]
+    [InlineData("en-US", "{ notation: 'compact', compactDisplay: 'long' }", "1234567", "1.2 million")]
+    [InlineData("en-US", "{ notation: 'scientific' }", "123456", "1.235E5")]
+    [InlineData("en-US", "{ notation: 'engineering' }", "0.000123", "123E-6")]
+    [InlineData("en-US", "{ signDisplay: 'exceptZero' }", "-0", "0")]
+    [InlineData("en-US", "{ maximumFractionDigits: 20 }", "0.1", "0.10000000000000000555")]
+    [InlineData("en-US", "{ maximumSignificantDigits: 2, roundingMode: 'floor' }", "-123", "-130")]
+    [InlineData("en-US", "{ minimumFractionDigits: 2, maximumFractionDigits: 2, roundingIncrement: 5 }", "1.234", "1.25")]
+    [InlineData("en-US", "{}", "'1e1000'", "\u221E")]
+    [InlineData("en-US", "{}", "'123456789012345678901234567890'", "123,456,789,012,345,678,901,234,567,890")]
+    [InlineData("en-US", "{}", "12345678901234567890n", "12,345,678,901,234,567,890")]
+    public void NumberFormat(string locale, string options, string value, string expected)
+    {
+        Assert.Equal(expected, Evaluate($"new Intl.NumberFormat('{locale}', {options}).format({value})"));
+    }
+
+    [Fact]
+    public void NumberFormat_Range()
+    {
+        Assert.Equal("$3 \u2013 $5|~$3|+$2.90\u20133.10|3\u20135", Evaluate("""
+            [
+                new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).formatRange(3, 5),
+                new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).formatRange(2.9, 3.1),
+                new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", signDisplay: "always" }).formatRange(2.9, 3.1),
+                new Intl.NumberFormat("en-US").formatRange(3, 5),
+            ].join("|")
+            """));
+    }
+
+    [Fact]
+    public void DefaultLocale()
+    {
+        Assert.Equal("fr|1\u202F234,5", Evaluate("[new Intl.NumberFormat().resolvedOptions().locale, new Intl.NumberFormat().format(1234.5)].join('|')", new JsEngineOptions { DefaultLocale = "fr" }));
+        Assert.Equal("en-US", Evaluate("new Intl.NumberFormat().resolvedOptions().locale", new JsEngineOptions { DefaultLocale = "zz-invalid-" }));
+    }
+
     [Fact]
     public void SupportedValuesOf()
     {

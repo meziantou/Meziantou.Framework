@@ -1,6 +1,2 @@
 intl402/Locale/prototype/getCollations/collations-supported-by-collator.js:sloppy
 intl402/Locale/prototype/getCollations/collations-supported-by-collator.js:strict
-intl402/Locale/prototype/getNumberingSystems/lookup-locale-by-prefix.js:sloppy
-intl402/Locale/prototype/getNumberingSystems/lookup-locale-by-prefix.js:strict
-intl402/Locale/prototype/getNumberingSystems/unsupported-defaults-to-latn.js:sloppy
-intl402/Locale/prototype/getNumberingSystems/unsupported-defaults-to-latn.js:strict

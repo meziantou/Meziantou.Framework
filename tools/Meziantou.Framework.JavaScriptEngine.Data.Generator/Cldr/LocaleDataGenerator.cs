@@ -317,8 +317,9 @@ internal sealed class LocaleDataGenerator(CldrJsonSource source, LocaleSet local
         };
     }
 
-    // Keeps the units of ECMA-402, under their identifier ("length-kilometer" -> "kilometer"), the compound pattern
-    // "per" and the duration patterns
+    // Keeps the units of ECMA-402, under their identifier ("length-kilometer" -> "kilometer"), the compound units of two
+    // of them that CLDR has ("speed-kilometer-per-hour" -> "kilometer-per-hour"), the compound pattern "per" and the
+    // duration patterns
     private static TreeTable? FilterUnits(TreeTable? units)
     {
         if (units is null)
@@ -346,7 +347,7 @@ internal sealed class LocaleDataGenerator(CldrJsonSource source, LocaleSet local
                 }
 
                 var separator = unitKey.IndexOf('-', StringComparison.Ordinal);
-                if (separator > 0 && SanctionedUnits.Contains(unitKey[(separator + 1)..]))
+                if (separator > 0 && IsSanctionedUnit(unitKey[(separator + 1)..]))
                 {
                     var id = unitKey[(separator + 1)..];
                     if (width.TryGetValue(id, out _))
@@ -360,5 +361,14 @@ internal sealed class LocaleDataGenerator(CldrJsonSource source, LocaleSet local
         }
 
         return result;
+
+        static bool IsSanctionedUnit(string id)
+        {
+            if (SanctionedUnits.Contains(id))
+                return true;
+
+            var per = id.IndexOf("-per-", StringComparison.Ordinal);
+            return per > 0 && SanctionedUnits.Contains(id[..per]) && SanctionedUnits.Contains(id[(per + 5)..]);
+        }
     }
 }

@@ -33,7 +33,9 @@ var generatedCode = unit.ToCsharpString();
 `generatedCode` contains:
 
 ```csharp
-using System;namespace Demo
+using System;
+
+namespace Demo
 {
     public class Greeter
     {

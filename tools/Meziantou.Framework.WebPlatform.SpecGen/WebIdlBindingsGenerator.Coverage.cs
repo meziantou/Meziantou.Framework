@@ -54,7 +54,8 @@ internal sealed partial class WebIdlBindingsGenerator
     /// <summary>
     /// Reports the .NET types and members whose <see cref="ExperimentalAttribute"/> does not match the proposal of their IDL
     /// (<see cref="IdlDefinition.ExperimentalApi"/>, <see cref="IdlMember.ExperimentalApi"/>): a public API of a proposal must
-    /// be experimental, and must not be anymore once the IDL of webref defines it.
+    /// be experimental, and must not be anymore once the IDL of webref defines it. Also reports the members that map an IDL
+    /// member that does not exist (e.g. a member removed from the specification).
     /// </summary>
     private void CheckExperimentalApis()
     {
@@ -101,11 +102,96 @@ internal sealed partial class WebIdlBindingsGenerator
                 var memberId = member.GetCustomAttribute<ExperimentalAttribute>(inherit: false)?.DiagnosticId ?? typeId;
                 foreach (var attribute in member.GetCustomAttributes<IdlMemberAttribute>(inherit: false))
                 {
+                    // The attributes of the CSS properties are not in the IDL: CheckCssStyleProperties checks them
+                    if (IsCssPropertyAttribute(attribute))
+                        continue;
+
+                    if (!DefinesIdlName(definition, attribute.Name))
+                    {
+                        Error($"The member {type.FullName}.{member.Name} maps {definition.Name}.{attribute.Name}, which the IDL does not define: add the IDL to IdlModel.cs (with ExperimentalApi when no specification defines it), or remove the member");
+                        continue;
+                    }
+
                     var idlMember = definition.Members.Find(m => m.Name == attribute.Name && m.ExperimentalApi is not null) ?? definition.Members.Find(m => m.Name == attribute.Name);
                     Check($"The member {type.FullName}.{member.Name} ({definition.Name}.{attribute.Name})", GetDiagnosticId(idlMember?.ExperimentalApi) ?? definitionId, memberId);
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Reports the properties of CSSStyleProperties whose <see cref="ExperimentalAttribute"/> does not match the CSS
+    /// definitions of webref: a property that no specification defines (e.g. a property of the tentative web-platform-tests,
+    /// or a former name kept for compatibility) must be experimental, and must not be anymore once webref defines it.
+    /// </summary>
+    private void CheckCssStyleProperties()
+    {
+        var definedProperties = CssPropertiesGenerator.GetPropertyNames(_context);
+        var experimentalIds = typeof(IdlMemberAttribute).Assembly.GetType("Meziantou.Framework.WebPlatform.ExperimentalApis", throwOnError: true)!
+            .GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Select(f => f.GetRawConstantValue())
+            .OfType<string>()
+            .ToHashSet(StringComparer.Ordinal);
+
+        foreach (var property in typeof(Meziantou.Framework.WebPlatform.Css.Om.CssStyleProperties).GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+        {
+            var attributes = property.GetCustomAttributes<IdlMemberAttribute>(inherit: false).Where(IsCssPropertyAttribute).ToList();
+            if (attributes.Count == 0)
+                continue;
+
+            var cssName = GetCssPropertyName(attributes);
+            var experimentalId = property.GetCustomAttribute<ExperimentalAttribute>(inherit: false)?.DiagnosticId;
+            if (definedProperties.Contains(cssName))
+            {
+                if (experimentalId is not null)
+                {
+                    Error($"The property CssStyleProperties.{property.Name} has [Experimental(\"{experimentalId}\")] but webref now defines {cssName}: remove the attribute (and its entry of docs/experimental-apis.md)");
+                }
+            }
+            else if (experimentalId is null)
+            {
+                Error($"The property CssStyleProperties.{property.Name} maps {cssName}, which no specification of webref defines: add [Experimental] (ExperimentalApis.cs, docs/experimental-apis.md), or remove the property");
+            }
+            else if (!experimentalIds.Contains(experimentalId))
+            {
+                Error($"The property CssStyleProperties.{property.Name} has [Experimental(\"{experimentalId}\")], which is not a constant of ExperimentalApis");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Whether the IDL definition defines the name of an <see cref="IdlMemberAttribute"/>. The .NET type of an interface
+    /// mixin can also implement the members of the other mixins of the interfaces that include it (e.g. the .NET type of
+    /// CanvasState implements all the mixins of CanvasRenderingContext2D).
+    /// </summary>
+    private bool DefinesIdlName(IdlDefinition definition, string name)
+    {
+        if (DefinesOwnIdlName(definition, name))
+            return true;
+
+        return definition.Kind == IdlDefinitionKind.InterfaceMixin
+            && _idl.Definitions.Values.Any(d => d.Kind == IdlDefinitionKind.Interface && d.Members.Exists(m => m.DeclaringDefinition == definition.Name) && DefinesOwnIdlName(d, name));
+    }
+
+    /// <summary>Whether the IDL definition defines the name of an <see cref="IdlMemberAttribute"/>: a member, an enum value, or a special member that has no name of its own.</summary>
+    private static bool DefinesOwnIdlName(IdlDefinition definition, string name)
+    {
+        if (definition.Members.Exists(m => m.Name == name) || definition.EnumValues.Contains(name, StringComparer.Ordinal))
+            return true;
+
+        // https://webidl.spec.whatwg.org/#LegacyFactoryFunction (e.g. Option)
+        if (definition.ExtAttrs.Exists(a => a.Name == "LegacyFactoryFunction" && a.Value == name))
+            return true;
+
+        return name switch
+        {
+            "constructor" => definition.Members.Exists(m => m.Kind == IdlMemberKind.Constructor),
+            "getter" or "setter" or "deleter" or "stringifier" => definition.Members.Exists(m => m.Special == name),
+            "iterable" => definition.Members.Exists(m => m.Kind is IdlMemberKind.Iterable or IdlMemberKind.AsyncIterable),
+            "maplike" => definition.Members.Exists(m => m.Kind == IdlMemberKind.Maplike),
+            "setlike" => definition.Members.Exists(m => m.Kind == IdlMemberKind.Setlike),
+            _ => false,
+        };
     }
 
     private static HashSet<string> GetIdlMemberNames(Type type)

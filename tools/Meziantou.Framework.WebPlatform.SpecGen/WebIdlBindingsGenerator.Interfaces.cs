@@ -1148,12 +1148,11 @@ internal sealed partial class WebIdlBindingsGenerator
         var properties = new List<(string Attribute, string Property)>();
         foreach (var property in typeof(Meziantou.Framework.WebPlatform.Css.Om.CssStyleProperties).GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
         {
-            var attributes = property.GetCustomAttributes<IdlMemberAttribute>().Where(a => a.SpecUrl.Contains("#dom-cssstyleproperties-", StringComparison.Ordinal) && a.Name != "cssFloat").ToList();
+            var attributes = property.GetCustomAttributes<IdlMemberAttribute>().Where(IsCssPropertyAttribute).ToList();
             if (attributes.Count == 0)
                 continue;
 
-            // The name of the CSS property is the dashed attribute, or the camel-cased attribute when there is no dash
-            var cssName = attributes.Find(a => a.SpecUrl.EndsWith("dashed_attribute", StringComparison.Ordinal))?.Name ?? attributes[0].Name;
+            var cssName = GetCssPropertyName(attributes);
             foreach (var attribute in attributes)
             {
                 properties.Add((attribute.Name, cssName));
@@ -1170,6 +1169,12 @@ internal sealed partial class WebIdlBindingsGenerator
         writer.Line("];");
         define.Append("r.DefineCssPropertyAccessors(prototype, Binding, CssProperties);\n");
     }
+
+    /// <summary>Whether the attribute is a camel-cased, webkit-cased or dashed attribute of a CSS property (cssFloat is a regular IDL attribute).</summary>
+    private static bool IsCssPropertyAttribute(IdlMemberAttribute attribute) => attribute.SpecUrl.Contains("#dom-cssstyleproperties-", StringComparison.Ordinal) && attribute.Name != "cssFloat";
+
+    /// <summary>The name of the CSS property is the dashed attribute, or the camel-cased attribute when there is no dash.</summary>
+    private static string GetCssPropertyName(List<IdlMemberAttribute> attributes) => attributes.Find(a => a.SpecUrl.EndsWith("dashed_attribute", StringComparison.Ordinal))?.Name ?? attributes[0].Name;
 
     // ----------------------------------------------------------------------------------------------------------------
     // Exposure (https://webidl.spec.whatwg.org/#Exposed)

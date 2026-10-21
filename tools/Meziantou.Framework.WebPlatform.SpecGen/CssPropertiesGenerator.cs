@@ -148,6 +148,25 @@ internal static partial class CssPropertiesGenerator
         GenerateStyleProperties(context, properties);
     }
 
+    /// <summary>Returns the names of the CSS properties that the CSS definitions of webref define, with or without a value grammar.</summary>
+    public static HashSet<string> GetPropertyNames(GeneratorContext context)
+    {
+        var result = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var file in Directory.EnumerateFiles(context.SpecData("webref", "ed", "css"), "*.json"))
+        {
+            using var document = JsonDocument.Parse(File.ReadAllText(file));
+            if (!document.RootElement.TryGetProperty("properties", out var propertyArray))
+                continue;
+
+            foreach (var property in propertyArray.EnumerateArray())
+            {
+                result.Add(property.GetProperty("name").GetString()!);
+            }
+        }
+
+        return result;
+    }
+
     /// <summary>
     /// Generates the IDL attributes of CSSStyleProperties (https://drafts.csswg.org/cssom/#cssstyleproperties): the
     /// camel-cased and webkit-cased attributes are .NET properties; the dashed attributes are mapped to the same property.

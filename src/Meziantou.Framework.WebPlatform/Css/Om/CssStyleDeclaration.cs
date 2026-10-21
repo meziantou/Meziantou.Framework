@@ -1299,6 +1299,7 @@ public sealed partial class CssStyleProperties : CssStyleDeclaration
     [IdlMember("WebkitBoxDirection", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("webkitBoxDirection", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-webkit_cased_attribute")]
     [IdlMember("-webkit-box-direction", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
+    [Experimental(ExperimentalApis.NonStandardCssProperties, UrlFormat = ExperimentalApis.UrlFormat)]
     public string WebkitBoxDirection
     {
         get => GetPropertyValue("-webkit-box-direction");
@@ -1349,6 +1350,7 @@ public sealed partial class CssStyleProperties : CssStyleDeclaration
     /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("gridLanesDirection", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("grid-lanes-direction", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
+    [Experimental(ExperimentalApis.GridLanesOrientation, UrlFormat = ExperimentalApis.UrlFormat)]
     public string GridLanesDirection
     {
         get => GetPropertyValue("grid-lanes-direction");
@@ -1360,6 +1362,7 @@ public sealed partial class CssStyleProperties : CssStyleDeclaration
     /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("gridLanes", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("grid-lanes", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
+    [Experimental(ExperimentalApis.GridLanesOrientation, UrlFormat = ExperimentalApis.UrlFormat)]
     public string GridLanes
     {
         get => GetPropertyValue("grid-lanes");
@@ -1371,6 +1374,7 @@ public sealed partial class CssStyleProperties : CssStyleDeclaration
     /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("gridLanesPack", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("grid-lanes-pack", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
+    [Experimental(ExperimentalApis.GridLanesOrientation, UrlFormat = ExperimentalApis.UrlFormat)]
     public string GridLanesPack
     {
         get => GetPropertyValue("grid-lanes-pack");
@@ -1382,6 +1386,7 @@ public sealed partial class CssStyleProperties : CssStyleDeclaration
     /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
     [IdlMember("flowTolerance", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
     [IdlMember("flow-tolerance", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
+    [Experimental(ExperimentalApis.NonStandardCssProperties, UrlFormat = ExperimentalApis.UrlFormat)]
     public string FlowTolerance
     {
         get => GetPropertyValue("flow-tolerance");

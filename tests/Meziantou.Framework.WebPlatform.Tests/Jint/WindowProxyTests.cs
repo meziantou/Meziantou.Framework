@@ -58,6 +58,25 @@ public sealed class WindowProxyTests : IDisposable
     }
 
     [Fact]
+    public void WindowProxy_TheTrapsRunInTheRealmOfTheCaller()
+    {
+        // The WindowProxy of the frame is created by the realm of its child frame (parent), and its traps run in the realm of
+        // the caller: the top window is the global object for the code of the top window, not its WindowProxy
+        var document = Load(
+            """
+            <iframe src="https://example.com/a"></iframe>
+            <script>
+              window.onload = () => {
+                document.title = [frames[0].top === window, frames[0].parent === window, frames[0].frames[0].top === window].join();
+              };
+            </script>
+            """,
+            url => url.Pathname == "/a" ? "<iframe src='https://example.com/c'></iframe>" : "<script>parent.created = true;</script>");
+
+        Assert.Equal("true,true,true", document.Title);
+    }
+
+    [Fact]
     public void CrossOriginWindow_ExposesOnlyTheCrossOriginProperties()
     {
         var document = Load(

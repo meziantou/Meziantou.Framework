@@ -93,11 +93,6 @@ public sealed class WptReftests
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var result = WptReftestRunner.Run(test, expectedToPass: !WptExpectations.UpdateMode && WptExpectations.GetExpectedStatus(test) == "PASS");
         WptReport.Append(test, result, stopwatch.Elapsed);
-
-        // The expectations are the results of the default engine (Meziantou.Framework.JavaScriptEngine)
-        if (WptEngine.IsDefault)
-        {
-            WptExpectations.Check(test, result);
-        }
+        WptExpectations.Check(test, result);
     }
 }

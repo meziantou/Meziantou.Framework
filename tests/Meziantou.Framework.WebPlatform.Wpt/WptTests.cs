@@ -614,25 +614,17 @@ public sealed class WptTests
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var result = WptTestRunner.Run(test);
 
-        // The expectations are the results of the default engine (Meziantou.Framework.JavaScriptEngine)
-        if (WptEngine.IsDefault)
+        // A test whose result is not the expected one runs again once, as with the --retry-unexpected option of wptrunner:
+        // the tests run in parallel, and on a loaded machine (e.g. the CI agents) a test can exceed its timeout or observe
+        // another order of its asynchronous steps. A regression still fails.
+        if (!WptExpectations.UpdateMode && WptExpectations.GetDifferences(test, result) is not null)
         {
-            // A test whose result is not the expected one runs again once, as with the --retry-unexpected option of wptrunner:
-            // the tests run in parallel, and on a loaded machine (e.g. the CI agents) a test can exceed its timeout or observe
-            // another order of its asynchronous steps. A regression still fails.
-            if (!WptExpectations.UpdateMode && WptExpectations.GetDifferences(test, result) is not null)
-            {
-                stopwatch.Restart();
-                result = WptTestRunner.Run(test);
-            }
+            stopwatch.Restart();
+            result = WptTestRunner.Run(test);
+        }
 
-            WptReport.Append(test, result, stopwatch.Elapsed);
-            WptExpectations.Check(test, result);
-        }
-        else
-        {
-            WptReport.Append(test, result, stopwatch.Elapsed);
-        }
+        WptReport.Append(test, result, stopwatch.Elapsed);
+        WptExpectations.Check(test, result);
     }
 
     [Theory(SkipTestWithoutData = true)]

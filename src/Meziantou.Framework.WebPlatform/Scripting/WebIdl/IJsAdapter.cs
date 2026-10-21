@@ -9,7 +9,7 @@ namespace Meziantou.Framework.WebPlatform.Scripting;
 /// (<c>where TAdapter : struct, IJsAdapter&lt;TValue&gt;</c>), so the JIT specializes them for each engine (no boxing, no
 /// interface dispatch).
 /// </summary>
-/// <typeparam name="TValue">The type of the JavaScript values of the engine (e.g. <c>JsValue</c> for Jint).</typeparam>
+/// <typeparam name="TValue">The type of the JavaScript values of the engine (e.g. <c>object</c> for Meziantou.Framework.JavaScriptEngine).</typeparam>
 /// <remarks>
 /// <para>
 /// The operations that can run JavaScript code (<see cref="ToNumber"/>, <see cref="Get"/>, <see cref="Call"/>...) throw the

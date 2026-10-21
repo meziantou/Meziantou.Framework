@@ -29,6 +29,9 @@ internal enum ObjectFlags
     /// <summary>The object is a class constructor (calling it throws a TypeError).</summary>
     ClassConstructor = 1 << 7,
 
-    /// <summary>An inline cache depends on the properties or the prototype of the object (a holder or a prototype): a change invalidates the inline caches.</summary>
-    InlineCacheDependency = 1 << 8,
+    /// <summary>An inline cache remembers the position of an own property of the object: a removal or a reconfiguration of a property (which may move the others) invalidates the inline caches.</summary>
+    InlineCacheHolder = 1 << 8,
+
+    /// <summary>An inline cache depends on the absence of a property in the object (it is in the prototype chain of a lookup): any change of its properties or of its prototype invalidates the inline caches.</summary>
+    InlineCachePrototype = 1 << 9,
 }

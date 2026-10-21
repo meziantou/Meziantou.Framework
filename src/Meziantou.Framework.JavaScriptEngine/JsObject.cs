@@ -147,7 +147,7 @@ public partial class JsObject : JsCell
         }
 
         _prototype = prototype;
-        OnStructureChanged();
+        OnPrototypeChanged();
         return true;
     }
 
@@ -155,7 +155,7 @@ public partial class JsObject : JsCell
     internal void SetPrototypeDirect(JsObject? prototype)
     {
         _prototype = prototype;
-        OnStructureChanged();
+        OnPrototypeChanged();
     }
 
     internal bool OrdinaryGetOwnProperty(in PropertyKey key, out PropertyDescriptor descriptor)
@@ -414,8 +414,9 @@ public partial class JsObject : JsCell
             }
 
             Flags |= ObjectFlags.IndexedProperties;
+            var indexCompactions = indexTable.Compactions;
             indexTable.Add(key, value, flags);
-            OnStructureChanged();
+            OnPropertyAdded(indexTable.Compactions != indexCompactions);
             return;
         }
 
@@ -428,8 +429,9 @@ public partial class JsObject : JsCell
             }
             else
             {
+                var compactions = properties.Compactions;
                 properties.Add(key, value, flags);
-                OnStructureChanged();
+                OnPropertyAdded(properties.Compactions != compactions);
             }
 
             return;
@@ -476,23 +478,25 @@ public partial class JsObject : JsCell
                 var slots = _slots;
                 if (slots is null)
                 {
-                    _slots = slots = new JsValue[4];
+                    _slots = slots = new JsValue[next.GetSlotsLength(0)];
                 }
                 else if (slot >= slots.Length)
                 {
-                    Array.Resize(ref _slots, slots.Length * 2);
+                    Array.Resize(ref _slots, next.GetSlotsLength(slots.Length));
                     slots = _slots;
                 }
 
                 slots[slot] = value;
                 _map = next;
-                OnStructureChanged();
+                OnPropertyAdded(positionsChanged: false);
                 return;
             }
         }
 
-        GetPropertyTable().Add(key, value, flags);
-        OnStructureChanged();
+        var table = GetPropertyTable();
+        var tableCompactions = table.Compactions;
+        table.Add(key, value, flags);
+        OnPropertyAdded(table.Compactions != tableCompactions);
     }
 
     /// <summary>Gets the empty shape of the kind of the object, or null when its named properties are exotic (it uses a property table).</summary>
@@ -529,11 +533,34 @@ public partial class JsObject : JsCell
         return table;
     }
 
-    /// <summary>Invalidates the inline caches when the object is a holder or a prototype they depend on (its properties or its prototype changed).</summary>
+    /// <summary>Invalidates the inline caches that depend on the object: a property was removed or reconfigured, or the properties moved.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void OnStructureChanged()
     {
-        if ((Flags & ObjectFlags.InlineCacheDependency) != 0)
+        if ((Flags & (ObjectFlags.InlineCacheHolder | ObjectFlags.InlineCachePrototype)) != 0)
+        {
+            InlineCache.Invalidate();
+        }
+    }
+
+    /// <summary>
+    /// Invalidates the inline caches that depend on the absence of a property in the object (a prototype): a property was
+    /// added. The caches that only remember the positions of its properties are still valid (unless they moved).
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void OnPropertyAdded(bool positionsChanged)
+    {
+        var flags = Flags;
+        if ((flags & ObjectFlags.InlineCachePrototype) != 0 || (positionsChanged && (flags & ObjectFlags.InlineCacheHolder) != 0))
+        {
+            InlineCache.Invalidate();
+        }
+    }
+
+    /// <summary>Invalidates the inline caches whose lookups go through the object (a prototype).</summary>
+    private void OnPrototypeChanged()
+    {
+        if ((Flags & ObjectFlags.InlineCachePrototype) != 0)
         {
             InlineCache.Invalidate();
         }
@@ -884,8 +911,9 @@ public partial class JsObject : JsCell
                 var position = properties.Find(key);
                 if (position < 0)
                 {
+                    var compactions = properties.Compactions;
                     properties.Add(key, value, PropertyFlags.Default);
-                    OnStructureChanged();
+                    OnPropertyAdded(properties.Compactions != compactions);
                     return true;
                 }
 

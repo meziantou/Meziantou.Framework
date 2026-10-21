@@ -146,7 +146,32 @@ internal sealed class Shape : PropertyMap
             (_transitions ??= []).Add(transitionKey, child);
         }
 
+        // The objects that reach a shape usually get as many properties as the objects that reached it before
+        for (var shape = this; shape is not null && shape.ExpectedSlotCount < child.Count; shape = shape.Parent)
+        {
+            shape.ExpectedSlotCount = child.Count;
+        }
+
         return child;
+    }
+
+    /// <summary>
+    /// Gets the number of slots to allocate for an object that reaches the shape: the largest number of properties of the
+    /// shapes that descend from it (the objects of a constructor or of an object literal get their slots at once).
+    /// </summary>
+    public int ExpectedSlotCount { get; private set; }
+
+    /// <summary>
+    /// Gets the length of the slots of an object that gets this shape and has <paramref name="currentLength"/> slots: the
+    /// expected count for the first slots (at most 4: some objects that reach the shape may get many more properties),
+    /// then twice the length.
+    /// </summary>
+    public int GetSlotsLength(int currentLength)
+    {
+        if (currentLength == 0)
+            return Math.Max(Count, Math.Clamp(ExpectedSlotCount, 1, 4));
+
+        return Math.Max(Count, currentLength * 2);
     }
 
     /// <summary>Creates the empty shape of an engine for a kind of objects (the parent of its shapes with properties).</summary>

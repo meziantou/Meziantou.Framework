@@ -72,4 +72,7 @@ internal sealed class GlobalEnvironment(JsRealm realm) : Environment(outer: null
     public JsObject GlobalObject => Realm.GlobalObject;
 
     public Dictionary<string, GlobalLexicalBinding> LexicalBindings { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>Gets or sets the number of scripts that declared lexical bindings (the inline caches of the properties of the global object check it).</summary>
+    public int LexicalVersion { get; set; }
 }

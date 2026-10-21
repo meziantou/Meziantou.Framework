@@ -136,8 +136,23 @@ public partial class JsObject
         return false;
     }
 
-    /// <summary>Marks the object as a dependency of an inline cache: a change of its properties or of its prototype invalidates the caches.</summary>
-    internal void MarkInlineCacheDependency() => Flags |= ObjectFlags.InlineCacheDependency;
+    /// <summary>Marks the object as the holder of a property whose position an inline cache remembers.</summary>
+    internal void MarkInlineCacheHolder()
+    {
+        if ((Flags & ObjectFlags.InlineCacheHolder) == 0)
+        {
+            Flags |= ObjectFlags.InlineCacheHolder;
+        }
+    }
+
+    /// <summary>Marks the object as a prototype that an inline cache depends on (the absence of a property, its prototype).</summary>
+    internal void MarkInlineCachePrototype()
+    {
+        if ((Flags & ObjectFlags.InlineCachePrototype) == 0)
+        {
+            Flags |= ObjectFlags.InlineCachePrototype;
+        }
+    }
 
     /// <summary>Gets the value at a position found by <see cref="TryFindOwnForCache"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -164,16 +179,16 @@ public partial class JsObject
         var slots = _slots;
         if (slots is null)
         {
-            _slots = slots = new JsValue[4];
+            _slots = slots = new JsValue[next.GetSlotsLength(0)];
         }
         else if (slot >= slots.Length)
         {
-            Array.Resize(ref _slots, slots.Length * 2);
+            Array.Resize(ref _slots, next.GetSlotsLength(slots.Length));
             slots = _slots;
         }
 
         slots[slot] = value;
         _map = next;
-        OnStructureChanged();
+        OnPropertyAdded(positionsChanged: false);
     }
 }

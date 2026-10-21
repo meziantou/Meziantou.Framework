@@ -64,7 +64,7 @@ internal sealed partial class Intrinsics
         var returnKey = new PropertyKey("return");
         for (var prototype = ArrayIteratorPrototype; prototype is not null; prototype = prototype.PrototypeSlot)
         {
-            prototype.MarkInlineCacheDependency();
+            prototype.MarkInlineCachePrototype();
             if (prototype.IsExotic || prototype.TryFindOwnForCache(returnKey, out _, out _))
                 return false;
         }
@@ -73,7 +73,7 @@ internal sealed partial class Intrinsics
 
         static bool TryFindOwnData(JsObject obj, in PropertyKey key, out int position, out bool inTable)
         {
-            obj.MarkInlineCacheDependency();
+            obj.MarkInlineCacheHolder();
             inTable = obj.Map is PropertyTable;
             return obj.TryFindOwnForCache(key, out position, out var flags) && (flags & PropertyFlags.Accessor) == 0;
         }

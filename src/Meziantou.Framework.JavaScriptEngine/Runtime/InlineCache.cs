@@ -8,7 +8,8 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// <para>
 /// A cache that depends on other objects than the receiver (a property found on a prototype, or in the property table of
 /// a receiver in dictionary mode) remembers the epoch: the objects it depends on are flagged
-/// (<see cref="ObjectFlags.InlineCacheDependency"/>), and a change of their properties or of their prototype increments the
+/// (<see cref="ObjectFlags.InlineCacheHolder"/>: the positions of its properties are remembered,
+/// <see cref="ObjectFlags.InlineCachePrototype"/>: the absence of a property is remembered), and a change of their properties or of their prototype increments the
 /// epoch, which invalidates all these caches at once. Such changes are rare once the prototypes are set up.
 /// </para>
 /// <para>
@@ -55,13 +56,25 @@ internal enum PropertyCacheKind : byte
     /// <summary>The length of a string.</summary>
     StringLength,
 
+    /// <summary>The site missed too often: it is not cached anymore.</summary>
+    Megamorphic,
+
     /// <summary>A data property of the prototype chain of a primitive value (the prototype of its wrapper is <see cref="PropertyCacheEntry.Prototype"/>).</summary>
     PrimitivePrototype,
 }
 
-/// <summary>An entry of an inline cache (immutable).</summary>
+/// <summary>An entry of an inline cache (immutable once stored).</summary>
 internal sealed class PropertyCacheEntry
 {
+    /// <summary>Gets the entry of the sites that are not cached anymore (its map is never the map of an object).</summary>
+    public static PropertyCacheEntry Megamorphic { get; } = new() { Kind = PropertyCacheKind.Megamorphic, Map = new PropertyTable() };
+
+    /// <summary>Gets or sets the number of times the site missed before this entry (set before the entry is stored).</summary>
+    public int Misses { get; set; }
+
+    /// <summary>Gets or initializes the <see cref="Interpreter.GlobalEnvironment.LexicalVersion"/> of the realm (a property of the global object).</summary>
+    public int LexicalVersion { get; init; }
+
     /// <summary>Gets or initializes the storage of the receivers the entry applies to.</summary>
     public PropertyMap? Map { get; init; }
 

@@ -5,6 +5,27 @@ namespace Meziantou.Framework.JavaScriptEngine.Interpreter;
 /// <summary>The property accesses with an inline cache (<see cref="PropertyCacheEntry"/>): the fast path, then the lookup that fills the cache.</summary>
 internal static partial class JsInterpreter
 {
+    // A site that missed this many times (it sees many shapes, or the objects it depends on keep changing) is not cached
+    // anymore: each miss allocated an entry
+    private const int MaxCacheMisses = 16;
+
+    private static bool IsMegamorphic(Frame frame, int cache) => frame.Code.Caches[cache] is { Kind: PropertyCacheKind.Megamorphic };
+
+    /// <summary>Stores the entry of a cache after a miss (the site becomes megamorphic when it misses too often).</summary>
+    private static void StoreCacheEntry(Frame frame, int cache, PropertyCacheEntry entry)
+    {
+        var caches = frame.Code.Caches;
+        var misses = caches[cache] is { } previous ? previous.Misses + 1 : 0;
+        if (misses > MaxCacheMisses)
+        {
+            caches[cache] = PropertyCacheEntry.Megamorphic;
+            return;
+        }
+
+        entry.Misses = misses;
+        caches[cache] = entry;
+    }
+
     // ------------------------------------------------------------------------------------------------------------------
     // Get
     // ------------------------------------------------------------------------------------------------------------------
@@ -79,9 +100,13 @@ internal static partial class JsInterpreter
     private static JsValue GetPrimitivePropertyMiss(Frame frame, int name, int cache, JsValue target)
     {
         ref readonly var key = ref frame.Code.Keys[name];
-        if (target.Cell is JsString && key.Equals(LengthKey))
+        if (IsMegamorphic(frame, cache))
         {
-            frame.Code.Caches[cache] = new PropertyCacheEntry { Kind = PropertyCacheKind.StringLength };
+            // Not cached
+        }
+        else if (target.Cell is JsString && key.Equals(LengthKey))
+        {
+            StoreCacheEntry(frame, cache, new PropertyCacheEntry { Kind = PropertyCacheKind.StringLength });
         }
         else if (GetPrimitivePrototypeOrNull(frame.Realm, target) is { } prototype && !key.IsArrayIndex)
         {
@@ -97,12 +122,12 @@ internal static partial class JsInterpreter
                     {
                         for (var dependency = prototype; dependency is not null; dependency = dependency.PrototypeSlot)
                         {
-                            dependency.MarkInlineCacheDependency();
+                            dependency.MarkInlineCachePrototype();
                             if (ReferenceEquals(dependency, holder))
                                 break;
                         }
 
-                        frame.Code.Caches[cache] = new PropertyCacheEntry
+                        StoreCacheEntry(frame, cache, new PropertyCacheEntry
                         {
                             Kind = PropertyCacheKind.PrimitivePrototype,
                             Prototype = prototype,
@@ -110,7 +135,7 @@ internal static partial class JsInterpreter
                             Position = position,
                             InTable = holderMap is PropertyTable,
                             Epoch = InlineCache.Epoch,
-                        };
+                        });
                     }
 
                     break;
@@ -131,9 +156,9 @@ internal static partial class JsInterpreter
     private static JsValue GetPropertyMiss(Frame frame, int name, int cache, JsObject obj, JsValue target)
     {
         ref readonly var key = ref frame.Code.Keys[name];
-        if (CreateGetEntry(obj, key) is { } entry)
+        if (!IsMegamorphic(frame, cache) && CreateGetEntry(obj, key) is { } entry)
         {
-            frame.Code.Caches[cache] = entry;
+            StoreCacheEntry(frame, cache, entry);
         }
 
         return obj.Get(key, target);
@@ -156,7 +181,7 @@ internal static partial class JsInterpreter
             var ownInTable = map is PropertyTable;
             if (ownInTable)
             {
-                obj.MarkInlineCacheDependency();
+                obj.MarkInlineCacheHolder();
             }
 
             if ((flags & PropertyFlags.Accessor) != 0)
@@ -199,12 +224,12 @@ internal static partial class JsInterpreter
     {
         if (receiverMap is PropertyTable)
         {
-            receiver.MarkInlineCacheDependency();
+            receiver.MarkInlineCachePrototype();
         }
 
         for (var prototype = receiver.PrototypeSlot; prototype is not null; prototype = prototype.PrototypeSlot)
         {
-            prototype.MarkInlineCacheDependency();
+            prototype.MarkInlineCachePrototype();
             if (ReferenceEquals(prototype, last))
                 break;
         }
@@ -239,9 +264,9 @@ internal static partial class JsInterpreter
     private static void SetPropertyMiss(Frame frame, int name, int cache, JsValue target, JsValue value)
     {
         ref readonly var key = ref frame.Code.Keys[name];
-        if (target.Cell is JsObject obj && CreateSetEntry(obj, key) is { } entry)
+        if (target.Cell is JsObject obj && !IsMegamorphic(frame, cache) && CreateSetEntry(obj, key) is { } entry)
         {
-            frame.Code.Caches[cache] = entry;
+            StoreCacheEntry(frame, cache, entry);
         }
 
         SetPropertyOfValue(target, key, value, frame.Code.IsStrict);
@@ -262,7 +287,7 @@ internal static partial class JsInterpreter
             if (map is Shape)
                 return new PropertyCacheEntry { Map = map, Kind = PropertyCacheKind.OwnSlot, Position = position };
 
-            obj.MarkInlineCacheDependency();
+            obj.MarkInlineCacheHolder();
             return new PropertyCacheEntry { Map = map, Kind = PropertyCacheKind.OwnTable, Position = position, Epoch = InlineCache.Epoch };
         }
 
@@ -314,10 +339,10 @@ internal static partial class JsInterpreter
     private static void DefineFieldMiss(Frame frame, int name, int cache, JsObject obj, JsValue value)
     {
         ref readonly var key = ref frame.Code.Keys[name];
-        if (!obj.IsExotic && obj.GetMapForCache(key) is Shape shape && shape.Find(key) < 0 && shape.AddProperty(key, PropertyFlags.Default) is { } next)
+        if (!obj.IsExotic && !IsMegamorphic(frame, cache) && obj.GetMapForCache(key) is Shape shape && shape.Find(key) < 0 && shape.AddProperty(key, PropertyFlags.Default) is { } next)
         {
             // CreateDataProperty does not look at the prototypes: the shape is enough
-            frame.Code.Caches[cache] = new PropertyCacheEntry { Map = shape, Kind = PropertyCacheKind.Add, NextShape = next };
+            StoreCacheEntry(frame, cache, new PropertyCacheEntry { Map = shape, Kind = PropertyCacheKind.Add, NextShape = next });
         }
 
         obj.CreateDataPropertyOrThrow(key, value);
@@ -338,7 +363,7 @@ internal static partial class JsInterpreter
                 if (!value.IsHole)
                     return value;
             }
-            else if (entry.Epoch == InlineCache.Epoch)
+            else if (entry.Epoch == InlineCache.Epoch && entry.LexicalVersion == frame.Realm.GlobalEnvironment.LexicalVersion)
             {
                 var global = entry.Holder!;
                 if (ReferenceEquals(global.Map, entry.Map))
@@ -361,11 +386,11 @@ internal static partial class JsInterpreter
         }
         else
         {
-            // A data property of the global object (a new global lexical declaration invalidates the caches)
+            // A data property of the global object (valid until a script declares global lexical bindings in the realm: they shadow the global object)
             var global = realm.GlobalObject;
             if (global.GetMapForCache(key) is { } map && global.TryFindOwnForCache(key, out var position, out var flags) && (flags & PropertyFlags.Accessor) == 0)
             {
-                global.MarkInlineCacheDependency();
+                global.MarkInlineCacheHolder();
                 frame.Code.Caches[cache] = new PropertyCacheEntry
                 {
                     Kind = PropertyCacheKind.OwnTable,
@@ -374,6 +399,7 @@ internal static partial class JsInterpreter
                     Position = position,
                     InTable = map is PropertyTable,
                     Epoch = InlineCache.Epoch,
+                    LexicalVersion = realm.GlobalEnvironment.LexicalVersion,
                     Realm = realm,
                 };
             }

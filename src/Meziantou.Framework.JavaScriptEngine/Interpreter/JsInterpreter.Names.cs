@@ -134,7 +134,7 @@ internal static partial class JsInterpreter
         if (declarations.LexicalNames.Length > 0)
         {
             // A lexical binding shadows the property of the global object that an inline cache may have remembered
-            InlineCache.Invalidate();
+            environment.LexicalVersion++;
         }
 
         foreach (var name in declarations.VarNames)

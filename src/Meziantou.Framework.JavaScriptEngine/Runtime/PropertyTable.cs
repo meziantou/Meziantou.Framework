@@ -20,6 +20,9 @@ internal sealed class PropertyTable : PropertyMap
         _entries = new Entry[capacity];
     }
 
+    /// <summary>Gets the number of times the table was compacted (the positions of the properties changed).</summary>
+    public int Compactions { get; private set; }
+
     /// <summary>Gets the number of properties.</summary>
     public int Count => _count - _deletedCount;
 
@@ -59,6 +62,7 @@ internal sealed class PropertyTable : PropertyMap
             if (_deletedCount > _count / 2)
             {
                 Compact();
+                Compactions++;
             }
 
             if (_count == _entries.Length)

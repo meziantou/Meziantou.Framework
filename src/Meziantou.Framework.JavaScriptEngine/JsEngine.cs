@@ -35,6 +35,9 @@ public sealed partial class JsEngine : IDisposable
     /// <summary>[[ModuleAsyncEvaluationCount]] of the agent.</summary>
     internal long ModuleAsyncEvaluationCount { get; set; }
 
+    /// <summary>The objects being joined by Array.prototype.join (the cycle detection of the browsers).</summary>
+    internal List<JsObject>? ArrayJoinStack { get; set; }
+
     /// <summary>Gets the realms created by the engine.</summary>
     public IReadOnlyList<JsRealm> Realms => _realms;
 

@@ -18,7 +18,7 @@ internal static class TzifReader
         {
             // Skip the 32-bit data
             position += (timeCount * 4) + timeCount + (typeCount * 6) + charCount + (leapCount * 8) + isStdCount + isUtCount;
-            (timeCount, typeCount, charCount, leapCount, isStdCount, isUtCount) = ReadHeader(data, position);
+            (timeCount, typeCount, charCount, _, _, _) = ReadHeader(data, position);
             position += 44;
             return ReadData(data, position, timeSize: 8, timeCount, typeCount, charCount);
         }

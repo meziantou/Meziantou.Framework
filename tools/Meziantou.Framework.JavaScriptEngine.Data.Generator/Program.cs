@@ -8,13 +8,16 @@ using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Meziantou.Framework;
 using Meziantou.Framework.JavaScriptEngine.Data.Generator;
+using Meziantou.Framework.JavaScriptEngine.Data.Generator.Cldr;
 using Meziantou.Framework.JavaScriptEngine.TimeZones;
 
-// Generates src/Meziantou.Framework.JavaScriptEngine/TimeZones/tzdb.bin from the IANA time zone database and the CLDR
-// mapping of the Windows time zone identifiers, at the versions pinned in data-versions.json.
+// Generates the data embedded in Meziantou.Framework.JavaScriptEngine, at the versions pinned in data-versions.json:
+// - tzdb: TimeZones/tzdb.bin from the IANA time zone database and the CLDR mapping of the Windows time zone identifiers
+// - cldr: Intl/Data/*.bin from cldr-json (locale and supplemental data) and the CLDR XML release (collation)
 // Exit code: 0 when the files are up to date, 1 when they were updated, any other value on failure.
 var update = false;
 var verify = false;
+var steps = new HashSet<string>(StringComparer.Ordinal);
 foreach (var arg in args)
 {
     switch (arg)
@@ -25,86 +28,135 @@ foreach (var arg in args)
         case "--verify":
             verify = true;
             break;
+        case "tzdb" or "cldr":
+            steps.Add(arg);
+            break;
         default:
             await Console.Error.WriteLineAsync("Unexpected argument: " + arg);
-            await Console.Error.WriteLineAsync("Usage: Meziantou.Framework.JavaScriptEngine.Data.Generator [--update] [--verify]");
+            await Console.Error.WriteLineAsync("Usage: Meziantou.Framework.JavaScriptEngine.Data.Generator [--update] [--verify] [tzdb] [cldr]");
             return 2;
     }
+}
+
+if (steps.Count == 0)
+{
+    steps.Add("tzdb");
+    steps.Add("cldr");
 }
 
 if (!FullPath.CurrentDirectory().TryFindGitRepositoryRoot(out var root))
     throw new InvalidOperationException("Cannot find git root from " + FullPath.CurrentDirectory());
 
 var pinsPath = root / "tools" / "Meziantou.Framework.JavaScriptEngine.Data.Generator" / "data-versions.json";
-var outputDirectory = root / "src" / "Meziantou.Framework.JavaScriptEngine" / "TimeZones";
-var binPath = outputDirectory / "tzdb.bin";
-var versionFilePath = outputDirectory / "TimeZoneDatabase.g.cs";
+var downloadCache = root / "artifacts" / "javascriptengine-data";
 
 var pins = JsonNode.Parse(await File.ReadAllTextAsync(pinsPath))!.AsObject();
 var updated = false;
 if (update)
 {
-    updated |= await UpdatePinAsync(pins, "tzdata", await GetLatestTzdataVersionAsync(), GetTzdataUrl);
-    updated |= await UpdatePinAsync(pins, "cldr", await GetLatestCldrVersionAsync(), GetWindowsZonesUrl);
-    if (updated)
+    var pinsUpdated = false;
+    if (steps.Contains("tzdb"))
+    {
+        pinsUpdated |= await UpdatePinAsync(pins, "tzdata", await GetLatestTzdataVersionAsync(), GetTzdataUrl);
+    }
+
+    var latestCldr = await GetLatestCldrVersionAsync();
+    pinsUpdated |= await UpdatePinAsync(pins, "cldr", latestCldr, GetWindowsZonesUrl);
+    if (steps.Contains("cldr"))
+    {
+        pinsUpdated |= await UpdatePinAsync(pins, "cldr-json", await GetLatestCldrJsonVersionAsync(), CldrGenerator.GetCldrJsonUrl);
+        pinsUpdated |= await UpdatePinAsync(pins, "cldr-common", CldrGenerator.GetCldrCommonVersion(latestCldr), CldrGenerator.GetCldrCommonUrl);
+        var common = await Downloads.DownloadCachedAsync(CldrGenerator.GetCldrCommonUrl((string)pins["cldr-common"]!["version"]!), (string)pins["cldr-common"]!["sha256"]!, downloadCache);
+        pinsUpdated |= await UpdatePinAsync(pins, "ucd", CldrGenerator.GetUcaVersion(common), CldrGenerator.GetPropListUrl);
+    }
+
+    if (pinsUpdated)
     {
         await File.WriteAllTextAsync(pinsPath, pins.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true, RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true }).ReplaceLineEndings("\n") + "\n");
+        updated = true;
     }
 }
 
-var tzdataVersion = (string)pins["tzdata"]!["version"]!;
-var cldrVersion = (string)pins["cldr"]!["version"]!;
-Console.WriteLine($"tzdata {tzdataVersion}, CLDR {cldrVersion}");
-
-var archive = await DownloadAsync(GetTzdataUrl(tzdataVersion), (string)pins["tzdata"]!["sha256"]!);
-var files = ExtractTarGz(archive);
-var windowsZones = await DownloadAsync(GetWindowsZonesUrl(cldrVersion), (string)pins["cldr"]!["sha256"]!);
-
-var source = TzdbSource.Parse(name => files.TryGetValue(name, out var content) ? content : throw new InvalidOperationException("Missing file in the tzdata archive: " + name));
-var compiler = new ZoneCompiler(source);
-var zones = source.Zones.Values.Select(compiler.Compile).ToList();
-var windowsIds = ParseWindowsZones(windowsZones, source);
-var payload = TzdbWriter.Write(tzdataVersion, zones, source.Links, windowsIds);
-Console.WriteLine($"{zones.Count} zones, {source.Links.Count} links, {zones.Sum(zone => zone.Transitions.Count)} transitions, {windowsIds.Count} Windows identifiers");
-
-if (!IsSamePayload(binPath, payload))
+if (steps.Contains("tzdb"))
 {
-    using var memory = new MemoryStream();
-    using (var brotli = new BrotliStream(memory, CompressionLevel.SmallestSize, leaveOpen: true))
-    {
-        brotli.Write(payload);
-    }
+    var result = await RunTzdbAsync();
+    if (result is not (0 or 1))
+        return result;
 
-    await File.WriteAllBytesAsync(binPath, memory.ToArray());
-    Console.WriteLine($"Updated {binPath} ({memory.Length} bytes)");
-    updated = true;
+    updated |= result == 1;
 }
 
-var versionFile = $$"""
-    // <auto-generated/>
-    // Generated by tools/Meziantou.Framework.JavaScriptEngine.Data.Generator from data-versions.json
-    namespace Meziantou.Framework.JavaScriptEngine.TimeZones;
-
-    internal sealed partial class TimeZoneDatabase
-    {
-        /// <summary>The release of the IANA time zone database embedded in tzdb.bin.</summary>
-        public const string EmbeddedTzdataVersion = "{{tzdataVersion}}";
-
-        /// <summary>The release of CLDR whose windowsZones.xml is embedded in tzdb.bin.</summary>
-        public const string EmbeddedCldrVersion = "{{cldrVersion}}";
-    }
-
-    """;
-if (!File.Exists(versionFilePath) || (await File.ReadAllTextAsync(versionFilePath)).ReplaceLineEndings("\n") != versionFile)
+if (steps.Contains("cldr"))
 {
-    await File.WriteAllTextAsync(versionFilePath, versionFile);
-    updated = true;
-}
+    var result = await CldrGenerator.RunAsync(root, pins, downloadCache);
+    if (result is not (0 or 1))
+        return result;
 
-if (verify && !Verify(source, payload))
-    return 3;
+    updated |= result == 1;
+}
 
 return updated ? 1 : 0;
+
+async Task<int> RunTzdbAsync()
+{
+    var outputDirectory = root / "src" / "Meziantou.Framework.JavaScriptEngine" / "TimeZones";
+    var binPath = outputDirectory / "tzdb.bin";
+    var versionFilePath = outputDirectory / "TimeZoneDatabase.g.cs";
+    var changed = false;
+    var tzdataVersion = (string)pins["tzdata"]!["version"]!;
+    var cldrVersion = (string)pins["cldr"]!["version"]!;
+    Console.WriteLine($"tzdata {tzdataVersion}, CLDR {cldrVersion}");
+
+    var archive = await Downloads.DownloadAsync(GetTzdataUrl(tzdataVersion), (string)pins["tzdata"]!["sha256"]!);
+    var files = ExtractTarGz(archive);
+    var windowsZones = await Downloads.DownloadAsync(GetWindowsZonesUrl(cldrVersion), (string)pins["cldr"]!["sha256"]!);
+
+    var source = TzdbSource.Parse(name => files.TryGetValue(name, out var content) ? content : throw new InvalidOperationException("Missing file in the tzdata archive: " + name));
+    var compiler = new ZoneCompiler(source);
+    var zones = source.Zones.Values.Select(compiler.Compile).ToList();
+    var windowsIds = ParseWindowsZones(windowsZones, source);
+    var payload = TzdbWriter.Write(tzdataVersion, zones, source.Links, windowsIds);
+    Console.WriteLine($"{zones.Count} zones, {source.Links.Count} links, {zones.Sum(zone => zone.Transitions.Count)} transitions, {windowsIds.Count} Windows identifiers");
+
+    if (!IsSamePayload(binPath, payload))
+    {
+        using var memory = new MemoryStream();
+        using (var brotli = new BrotliStream(memory, CompressionLevel.SmallestSize, leaveOpen: true))
+        {
+            brotli.Write(payload);
+        }
+
+        await File.WriteAllBytesAsync(binPath, memory.ToArray());
+        Console.WriteLine($"Updated {binPath} ({memory.Length} bytes)");
+        changed = true;
+    }
+
+    var versionFile = $$"""
+        // <auto-generated/>
+        // Generated by tools/Meziantou.Framework.JavaScriptEngine.Data.Generator from data-versions.json
+        namespace Meziantou.Framework.JavaScriptEngine.TimeZones;
+
+        internal sealed partial class TimeZoneDatabase
+        {
+            /// <summary>The release of the IANA time zone database embedded in tzdb.bin.</summary>
+            public const string EmbeddedTzdataVersion = "{{tzdataVersion}}";
+
+            /// <summary>The release of CLDR whose windowsZones.xml is embedded in tzdb.bin.</summary>
+            public const string EmbeddedCldrVersion = "{{cldrVersion}}";
+        }
+
+        """;
+    if (!File.Exists(versionFilePath) || (await File.ReadAllTextAsync(versionFilePath)).ReplaceLineEndings("\n") != versionFile)
+    {
+        await File.WriteAllTextAsync(versionFilePath, versionFile);
+        changed = true;
+    }
+
+    if (verify && !Verify(source, payload))
+        return 3;
+
+    return changed ? 1 : 0;
+}
 
 static string GetTzdataUrl(string version) => $"https://data.iana.org/time-zones/releases/tzdata{version}.tar.gz";
 
@@ -117,7 +169,7 @@ static async Task<bool> UpdatePinAsync(JsonObject pins, string name, string late
         return false;
 
     Console.WriteLine($"Moving {name} from {pin["version"]} to {latestVersion}");
-    var content = await DownloadAsync(getUrl(latestVersion), expectedSha256: null);
+    var content = await Downloads.DownloadAsync(getUrl(latestVersion), expectedSha256: null);
     pin["version"] = latestVersion;
     pin["sha256"] = Convert.ToHexStringLower(SHA256.HashData(content));
     return true;
@@ -134,24 +186,16 @@ static async Task<string> GetLatestTzdataVersionAsync()
         .Last();
 }
 
+static async Task<string> GetLatestCldrJsonVersionAsync()
+{
+    var json = await SharedHttpClient.InstanceWithAutoRedirect.GetStringAsync("https://api.github.com/repos/unicode-org/cldr-json/releases/latest");
+    return (string)JsonNode.Parse(json)!["tag_name"]!;
+}
+
 static async Task<string> GetLatestCldrVersionAsync()
 {
     var json = await SharedHttpClient.InstanceWithAutoRedirect.GetStringAsync("https://api.github.com/repos/unicode-org/cldr/releases/latest");
     return (string)JsonNode.Parse(json)!["tag_name"]!;
-}
-
-static async Task<byte[]> DownloadAsync(string url, string? expectedSha256)
-{
-    Console.WriteLine("Downloading " + url);
-    var content = await SharedHttpClient.InstanceWithAutoRedirect.GetByteArrayAsync(url);
-    if (expectedSha256 is not null)
-    {
-        var actual = Convert.ToHexStringLower(SHA256.HashData(content));
-        if (!string.Equals(actual, expectedSha256, StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException($"The SHA-256 of {url} is {actual}, expected {expectedSha256}");
-    }
-
-    return content;
 }
 
 static Dictionary<string, string> ExtractTarGz(byte[] archive)

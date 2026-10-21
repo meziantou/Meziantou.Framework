@@ -6,5 +6,17 @@
   "cldr": {
     "version": "release-48-2",
     "sha256": "9cf3db6a31fb382fee21b70be6feba1e82766b0fcd06e6261fb7936a73e537ff"
+  },
+  "cldr-json": {
+    "version": "48.2.3",
+    "sha256": "d580253a99baea84f7fc361b91a73023f2268331a1671244cf8180b4e008e0e4"
+  },
+  "cldr-common": {
+    "version": "48.2",
+    "sha256": "d2844f9dbf6124d11a7b047f5381a467902d82a673be3d658f4c0791ffa0b83b"
+  },
+  "ucd": {
+    "version": "17.0.0",
+    "sha256": "130dcddcaadaf071008bdfce1e7743e04fdfbc910886f017d9f9ac931d8c64dd"
   }
 }

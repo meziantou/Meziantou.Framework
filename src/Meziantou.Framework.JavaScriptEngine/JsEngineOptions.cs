@@ -14,4 +14,12 @@ public sealed class JsEngineOptions
 
     /// <summary>Gets or sets the clock of <c>Date.now()</c>, <c>new Date()</c> and the time zone of the dates.</summary>
     public TimeProvider TimeProvider { get; set; } = TimeProvider.System;
+
+    /// <summary>
+    /// Gets or sets the identifier of the IANA time zone of the local time of the scripts (e.g. "Europe/Paris"), or null to
+    /// use the local time zone of <see cref="TimeProvider"/> (a Windows identifier is mapped to its IANA identifier, and an
+    /// unknown time zone is UTC). The engine uses its own copy of the IANA time zone database, so the local times do not
+    /// depend on the operating system.
+    /// </summary>
+    public string? TimeZone { get; set; }
 }

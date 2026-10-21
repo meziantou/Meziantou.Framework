@@ -169,6 +169,31 @@ internal sealed class NamedTimeZone
         }
     }
 
+    /// <summary>
+    /// Gets the UTC offset, in seconds, of a local date and time with the disambiguation of UTC(t) of ECMA-262: the offset
+    /// of the earlier instant for a repeated local time, the offset before the transition for a skipped local time.
+    /// </summary>
+    public int GetOffsetSecondsForLocalTime(long localSeconds)
+    {
+        Span<long> instants = stackalloc long[2];
+        if (GetPossibleEpochSeconds(localSeconds, instants) > 0)
+            return GetOffsetSeconds(instants[0]);
+
+        // In a gap: the offset in effect just before the transition that skips the local time
+        const long Window = 2 * CalendarMath.SecondsPerDay;
+        var current = localSeconds - Window;
+        while (TryGetNextTransitionCore(current, out var time, out var typeIndex) && time <= localSeconds + Window)
+        {
+            var before = GetOffsetSeconds(time - 1);
+            if (time + before <= localSeconds && localSeconds < time + _types[typeIndex].OffsetSeconds)
+                return before;
+
+            current = time;
+        }
+
+        return GetOffsetSeconds(localSeconds);
+    }
+
     /// <summary>Gets the transitions in a range, including the ones that change only the abbreviation (for the tests and the generator).</summary>
     internal List<(long Time, TimeZoneLocalTimeType Type)> GetTransitions(long startExclusive, long endInclusive)
     {

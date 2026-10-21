@@ -5,9 +5,9 @@ internal sealed class FundamentalsTestContext : IDisposable
 {
     private readonly JsEngine.EngineScope _scope;
 
-    public FundamentalsTestContext()
+    public FundamentalsTestContext(JsEngineOptions? options = null)
     {
-        Engine = new JsEngine();
+        Engine = new JsEngine(options);
         Realm = Engine.CreateRealm();
         _scope = Engine.Enter();
         Engine.CurrentRealm = Realm;

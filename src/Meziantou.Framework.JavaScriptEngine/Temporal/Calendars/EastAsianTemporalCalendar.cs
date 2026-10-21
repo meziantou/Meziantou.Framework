@@ -90,7 +90,7 @@ internal sealed class EastAsianTemporalCalendar : NonIsoTemporalCalendar
     }
 
     /// <summary>
-    /// The approximation of a year outside of the data, inspired by the píngqì rule of the Ming dynasty: the solar terms
+    /// The approximation of a year outside of the data, inspired by the pingqi rule of the Ming dynasty: the solar terms
     /// and the new moons are computed from their mean motions, anchored in the Gregorian calendar.
     /// </summary>
     private static LunisolarYear ComputeSimpleYear(long utcOffset, long relatedIsoYear)
@@ -153,7 +153,7 @@ internal sealed class EastAsianTemporalCalendar : NonIsoTemporalCalendar
         static long Day(long moment) => TemporalMath.FloorDivide(moment, MillisecondsPerDay);
     }
 
-    /// <summary>The largest moment base + n × duration that is on the day <paramref name="rataDie"/> or before.</summary>
+    /// <summary>The largest moment base + n * duration that is on the day <paramref name="rataDie"/> or before.</summary>
     private static long PeriodicMomentOnOrBefore(long rataDie, long baseMoment, long duration)
     {
         var difference = (rataDie * MillisecondsPerDay) - baseMoment;

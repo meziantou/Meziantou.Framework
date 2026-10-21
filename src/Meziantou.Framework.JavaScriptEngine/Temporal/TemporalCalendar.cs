@@ -39,7 +39,7 @@ internal interface ITemporalCalendar
 /// <summary>The available calendars (AvailableCalendars of ECMA-402) and their aliases.</summary>
 internal static class TemporalCalendars
 {
-    // The calendar types and the aliases, with the index of their calendar in s_calendars
+    // The calendar types and the aliases, with the index of their calendar in CalendarInstances
     private static readonly (string Id, int Index)[] CalendarTypes =
     [
         ("buddhist", 0),
@@ -62,7 +62,7 @@ internal static class TemporalCalendars
         ("roc", 15),
     ];
 
-    private static readonly ITemporalCalendar?[] s_calendars = new ITemporalCalendar?[16];
+    private static readonly ITemporalCalendar?[] CalendarInstances = new ITemporalCalendar?[16];
 
     public static ITemporalCalendar Iso { get; } = new IsoTemporalCalendar();
 
@@ -93,14 +93,14 @@ internal static class TemporalCalendars
 
     private static ITemporalCalendar? GetCalendar(int index)
     {
-        var calendar = Volatile.Read(ref s_calendars[index]);
+        var calendar = Volatile.Read(ref CalendarInstances[index]);
         if (calendar is null)
         {
             calendar = Create(index);
             if (calendar is null)
                 return null;
 
-            calendar = Interlocked.CompareExchange(ref s_calendars[index], calendar, comparand: null) ?? calendar;
+            calendar = Interlocked.CompareExchange(ref CalendarInstances[index], calendar, comparand: null) ?? calendar;
         }
 
         return calendar;

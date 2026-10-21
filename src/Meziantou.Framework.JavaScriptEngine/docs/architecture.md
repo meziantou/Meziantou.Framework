@@ -18,7 +18,7 @@ source text ──Parsing/JsParser──▶ Ast (Program, nodes) ──Compiler�
 | `Interpreter/` | The bytecode interpreter: frames on the heap, no .NET recursion for JavaScript-to-JavaScript calls. |
 | `Runtime/` | The object model and the abstract operations shared by everything. |
 | `Builtins/` | The built-in objects of the realm: one static class per built-in (e.g. `ArrayBuiltins`). |
-| `Temporal/` | The Temporal objects (`JsPlainDate`, `JsZonedDateTime`... with their internal slots), the abstract operations (`TemporalOperations`: exact `Int128` epoch nanoseconds and time durations, the rounding family), the RFC 9557 / ISO 8601 parser (`TemporalParser`) and the calendars (`ITemporalCalendar`, `TemporalCalendars`: ISO 8601 only, the place to add the calendars of ECMA-402). |
+| `Temporal/` | The Temporal objects (`JsPlainDate`, `JsZonedDateTime`... with their internal slots), the abstract operations (`TemporalOperations`: exact `Int128` epoch nanoseconds and time durations, the rounding family), the RFC 9557 / ISO 8601 parser (`TemporalParser`) and the calendars (`ITemporalCalendar`, `TemporalCalendars`: ISO 8601, and in `Temporal/Calendars/` the calendars of ECMA-402 ported from ICU4X: `NonIsoTemporalCalendar` implements the NonISO* operations of the Intl era and monthCode proposal from the primitives of each calendar, `TemporalCalendarData` holds the year data of the Chinese, Korean and Umm al-Qura calendars). |
 | `TimeZones/` | The embedded IANA time zone database used by Date and Temporal (`TimeZoneDatabase`, `NamedTimeZone`). |
 
 ## Values

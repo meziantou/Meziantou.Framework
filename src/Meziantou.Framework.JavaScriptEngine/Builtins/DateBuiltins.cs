@@ -61,7 +61,7 @@ internal static class DateBuiltins
         realm.DefineMethod(prototype, "toLocaleTimeString", 0, ToTimeString);
         realm.DefineMethod(prototype, "toString", 0, ToStringImpl);
         realm.DefineMethod(prototype, "toTimeString", 0, ToTimeString);
-        var toUtcString = realm.DefineMethod(prototype, "toUTCString", 0, ToUtcStringImpl);
+        var toUtcString = realm.DefineEagerMethod(prototype, "toUTCString", 0, ToUtcStringImpl);
         realm.DefineMethod(prototype, "valueOf", 0, GetTime);
         realm.DefineMethod(prototype, WellKnownSymbols.ToPrimitive, 1, ToPrimitive, PropertyFlags.Configurable);
 

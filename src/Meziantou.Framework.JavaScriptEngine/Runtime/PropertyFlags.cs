@@ -12,7 +12,7 @@ internal enum PropertyFlags : byte
     /// <summary>The property is an accessor property: its value is an <see cref="AccessorPair"/>.</summary>
     Accessor = 8,
 
-    /// <summary>The value of the data property is computed the first time it is read: its value is a <see cref="LazyValue"/>.</summary>
+    /// <summary>The value of the data property is computed the first time it is read: its value is a <see cref="LazyCell"/> (only in a property table).</summary>
     Lazy = 16,
 
     /// <summary>The attributes of a property created by an assignment or by CreateDataProperty.</summary>

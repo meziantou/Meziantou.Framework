@@ -58,7 +58,7 @@ internal static class TypedArrayBuiltins
         // %TypedArray%.prototype.toString is %Array.prototype.toString%
         prototype.DefineBuiltIn("toString", intrinsics.ArrayPrototypeToString);
 
-        var values = realm.DefineMethod(prototype, "values", 0, Values);
+        var values = realm.DefineEagerMethod(prototype, "values", 0, Values);
         realm.DefineMethod(prototype, "with", 2, With);
         prototype.DefineBuiltIn(WellKnownSymbols.Iterator, values);
         realm.DefineAccessor(prototype, WellKnownSymbols.ToStringTag, GetToStringTag, setter: null);

@@ -215,11 +215,26 @@ public partial class JsObject : JsCell
         }
 
         if ((flags & PropertyFlags.Lazy) != 0)
+            return EvaluateLazyProperty(properties, position, flags);
+
+        return PropertyDescriptor.Data(value, flags);
+    }
+
+    private static PropertyDescriptor EvaluateLazyProperty(PropertyTable properties, int position, PropertyFlags flags)
+    {
+        var lazy = (LazyCell)properties.GetValue(position).Cell!;
+        var key = properties.GetKey(position);
+        var value = lazy.Evaluate();
+        flags &= ~PropertyFlags.Lazy;
+
+        // The evaluation can change the object (e.g. add properties, which can move the entries): the property is found
+        // again. The inline caches are not invalidated: they never remember a lazy property (they evaluate it first), and its
+        // attributes do not change (the built-in methods are evaluated on first access, while the caches are warm).
+        position = properties.Find(key);
+        if (position >= 0 && ReferenceEquals(properties.GetValue(position).Cell, lazy))
         {
-            value = ((LazyValue)value.Cell!).Evaluate();
-            flags &= ~PropertyFlags.Lazy;
+            properties.GetValue(position) = value;
             properties.GetFlags(position) = flags;
-            OnStructureChanged();
         }
 
         return PropertyDescriptor.Data(value, flags);
@@ -984,14 +999,13 @@ public partial class JsObject : JsCell
     }
 
     /// <summary>Defines a data property whose value is computed the first time it is read.</summary>
-    internal void DefineLazy(in PropertyKey key, Func<JsValue> factory, PropertyFlags flags = PropertyFlags.BuiltIn)
-    {
-        SetOwnSlot(key, new JsValue(new LazyValue(factory)), (flags & PropertyFlags.Default) | PropertyFlags.Lazy);
-    }
+    internal void DefineLazy(in PropertyKey key, Func<JsValue> factory, PropertyFlags flags = PropertyFlags.BuiltIn) => DefineLazy(key, new LazyValue(factory), flags);
 
-    internal void DefineLazy(in PropertyKey key, Func<object?, JsValue> factory, object? state, PropertyFlags flags)
+    internal void DefineLazy(in PropertyKey key, Func<object?, JsValue> factory, object? state, PropertyFlags flags) => DefineLazy(key, new LazyValue(factory, state), flags);
+
+    internal void DefineLazy(in PropertyKey key, LazyCell value, PropertyFlags flags)
     {
-        SetOwnSlot(key, new JsValue(new LazyValue(factory, state)), (flags & PropertyFlags.Default) | PropertyFlags.Lazy);
+        SetOwnSlot(key, new JsValue(value), (flags & PropertyFlags.Default) | PropertyFlags.Lazy);
     }
 
     /// <summary>Gets the dense elements (the array fast paths); the holes are absent properties.</summary>

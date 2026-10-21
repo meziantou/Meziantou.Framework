@@ -20,7 +20,7 @@ internal static class MapBuiltins
         realm.DefineMethod(prototype, "clear", 0, Clear);
         prototype.DefineBuiltIn("constructor", constructor);
         realm.DefineMethod(prototype, "delete", 1, Delete);
-        var entries = realm.DefineMethod(prototype, "entries", 0, static (_, thisValue, _, _) => CreateMapIterator(thisValue, CollectionIteratorKind.Entries));
+        var entries = realm.DefineEagerMethod(prototype, "entries", 0, static (_, thisValue, _, _) => CreateMapIterator(thisValue, CollectionIteratorKind.Entries));
         realm.DefineMethod(prototype, "forEach", 1, ForEach);
         realm.DefineMethod(prototype, "get", 1, Get);
         realm.DefineMethod(prototype, "getOrInsert", 2, GetOrInsert);
@@ -33,7 +33,7 @@ internal static class MapBuiltins
         prototype.DefineBuiltIn(WellKnownSymbols.Iterator, entries);
         prototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Map", PropertyFlags.Configurable);
 
-        realm.DefineMethod(iteratorPrototype, "next", 0, static (_, thisValue, _, _) => CollectionIteratorNext(thisValue, isMapIterator: true)).IteratorStep = static (_, thisValue, out value) => CollectionIteratorStep(thisValue, isMapIterator: true, out value);
+        realm.DefineEagerMethod(iteratorPrototype, "next", 0, static (_, thisValue, _, _) => CollectionIteratorNext(thisValue, isMapIterator: true)).IteratorStep = static (_, thisValue, out value) => CollectionIteratorStep(thisValue, isMapIterator: true, out value);
         iteratorPrototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Map Iterator", PropertyFlags.Configurable);
 
         intrinsics.AddGlobal("Map", constructor);

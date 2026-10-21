@@ -29,7 +29,7 @@ internal static class RegExpBuiltins
         realm.DefineAccessor(constructor, WellKnownSymbols.Species, GetSpecies, setter: null);
         DefineLegacyAccessors(realm, constructor);
 
-        var exec = realm.DefineMethod(prototype, "exec", 1, Exec);
+        var exec = realm.DefineEagerMethod(prototype, "exec", 1, Exec);
         realm.DefineAccessor(prototype, "dotAll", (f, t, _, _) => HasFlag(f, t, 's'), setter: null);
         realm.DefineAccessor(prototype, "flags", GetFlags, setter: null);
         realm.DefineAccessor(prototype, "global", (f, t, _, _) => HasFlag(f, t, 'g'), setter: null);

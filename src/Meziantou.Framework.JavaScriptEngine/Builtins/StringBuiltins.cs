@@ -43,8 +43,8 @@ internal static class StringBuiltins
         realm.DefineMethod(prototype, "toUpperCase", 0, (f, t, a, _) => StringOperations.ToUpperCase(ThisToString(t, "toUpperCase")));
         realm.DefineMethod(prototype, "toWellFormed", 0, (f, t, a, _) => StringOperations.ToWellFormed(ThisToString(t, "toWellFormed")));
         realm.DefineMethod(prototype, "trim", 0, (f, t, a, _) => StringOperations.Trim(ThisToString(t, "trim"), start: true, end: true));
-        var trimEnd = realm.DefineMethod(prototype, "trimEnd", 0, (f, t, a, _) => StringOperations.Trim(ThisToString(t, "trimEnd"), start: false, end: true));
-        var trimStart = realm.DefineMethod(prototype, "trimStart", 0, (f, t, a, _) => StringOperations.Trim(ThisToString(t, "trimStart"), start: true, end: false));
+        var trimEnd = realm.DefineEagerMethod(prototype, "trimEnd", 0, (f, t, a, _) => StringOperations.Trim(ThisToString(t, "trimEnd"), start: false, end: true));
+        var trimStart = realm.DefineEagerMethod(prototype, "trimStart", 0, (f, t, a, _) => StringOperations.Trim(ThisToString(t, "trimStart"), start: true, end: false));
         realm.DefineMethod(prototype, "valueOf", 0, (f, t, a, _) => JsValue.FromJsString(ThisStringValue(t, "valueOf")));
         realm.DefineMethod(prototype, WellKnownSymbols.Iterator, 0, GetIterator);
 

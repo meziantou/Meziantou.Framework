@@ -57,9 +57,9 @@ internal static class ArrayBuiltins
         realm.DefineMethod(prototype, "toReversed", 0, ToReversed);
         realm.DefineMethod(prototype, "toSorted", 1, ToSorted);
         realm.DefineMethod(prototype, "toSpliced", 2, ToSpliced);
-        var toString = realm.DefineMethod(prototype, "toString", 0, ToString);
+        var toString = realm.DefineEagerMethod(prototype, "toString", 0, ToString);
         realm.DefineMethod(prototype, "unshift", 1, Unshift);
-        var values = realm.DefineMethod(prototype, "values", 0, (f, t, _, _) => JsArrayIterator.Create(f.Realm, JsOperations.ToObject(t), ArrayIteratorKind.Values));
+        var values = realm.DefineEagerMethod(prototype, "values", 0, (f, t, _, _) => JsArrayIterator.Create(f.Realm, JsOperations.ToObject(t), ArrayIteratorKind.Values));
         realm.DefineMethod(prototype, "with", 2, With);
         prototype.DefineBuiltIn(WellKnownSymbols.Iterator, values);
         prototype.DefineBuiltIn(WellKnownSymbols.Unscopables, CreateUnscopables(), PropertyFlags.Configurable);
@@ -71,7 +71,7 @@ internal static class ArrayBuiltins
         }
 
         var iteratorPrototype = intrinsics.ArrayIteratorPrototype;
-        realm.DefineMethod(iteratorPrototype, "next", 0, IteratorNext).IteratorStep = IteratorStep;
+        realm.DefineEagerMethod(iteratorPrototype, "next", 0, IteratorNext).IteratorStep = IteratorStep;
         iteratorPrototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Array Iterator", PropertyFlags.Configurable);
 
         intrinsics.AddGlobal("Array", constructor);

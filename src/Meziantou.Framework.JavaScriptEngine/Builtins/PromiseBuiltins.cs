@@ -26,7 +26,7 @@ internal static class PromiseBuiltins
         prototype.DefineBuiltIn("constructor", constructor);
         realm.DefineMethod(prototype, "catch", 1, Catch);
         realm.DefineMethod(prototype, "finally", 1, Finally);
-        then = realm.DefineMethod(prototype, "then", 2, Then);
+        then = realm.DefineEagerMethod(prototype, "then", 2, Then);
         prototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Promise", PropertyFlags.Configurable);
 
         intrinsics.AddGlobal("Promise", constructor);

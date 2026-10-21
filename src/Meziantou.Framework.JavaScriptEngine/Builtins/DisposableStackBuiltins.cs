@@ -29,7 +29,7 @@ internal static class DisposableStackBuiltins
         prototype.DefineBuiltIn("constructor", constructor);
         realm.DefineMethod(prototype, "adopt", 2, Adopt);
         realm.DefineMethod(prototype, "defer", 1, Defer);
-        var dispose = realm.DefineMethod(prototype, "dispose", 0, Dispose);
+        var dispose = realm.DefineEagerMethod(prototype, "dispose", 0, Dispose);
         realm.DefineAccessor(prototype, "disposed", GetDisposed, setter: null);
         realm.DefineMethod(prototype, "move", 0, Move);
         realm.DefineMethod(prototype, "use", 1, Use);
@@ -151,7 +151,7 @@ internal static class AsyncDisposableStackBuiltins
         prototype.DefineBuiltIn("constructor", constructor);
         realm.DefineMethod(prototype, "adopt", 2, Adopt);
         realm.DefineMethod(prototype, "defer", 1, Defer);
-        var disposeAsync = realm.DefineMethod(prototype, "disposeAsync", 0, DisposeAsync);
+        var disposeAsync = realm.DefineEagerMethod(prototype, "disposeAsync", 0, DisposeAsync);
         realm.DefineAccessor(prototype, "disposed", GetDisposed, setter: null);
         realm.DefineMethod(prototype, "move", 0, Move);
         realm.DefineMethod(prototype, "use", 1, Use);

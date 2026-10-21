@@ -223,8 +223,20 @@ public sealed partial class JsRealm
         return BuiltinNames.GetOrAdd(name, JsString.Create(name));
     }
 
-    /// <summary>Defines a built-in method (writable, configurable, not enumerable).</summary>
-    internal JsBuiltinFunction DefineMethod(JsObject target, PropertyKey name, int length, BuiltinFunctionCallback callback, PropertyFlags flags = PropertyFlags.BuiltIn)
+    /// <summary>
+    /// Defines a built-in method (writable, configurable, not enumerable by default). Its function object is created on
+    /// first access (<see cref="LazyBuiltinMethod"/>): a realm defines hundreds of methods, most scripts use a few of them.
+    /// </summary>
+    internal void DefineMethod(JsObject target, PropertyKey name, int length, BuiltinFunctionCallback callback, PropertyFlags flags = PropertyFlags.BuiltIn)
+    {
+        target.DefineLazy(name, new LazyBuiltinMethod(this, name, length, callback), flags);
+    }
+
+    /// <summary>
+    /// Defines a built-in method whose function object is created now: the caller needs it (an intrinsic, a function shared by
+    /// two properties, or a function with a state).
+    /// </summary>
+    internal JsBuiltinFunction DefineEagerMethod(JsObject target, PropertyKey name, int length, BuiltinFunctionCallback callback, PropertyFlags flags = PropertyFlags.BuiltIn)
     {
         var function = CreateBuiltinFunction(name, length, callback);
         target.UsePropertyTableForBuiltIns();

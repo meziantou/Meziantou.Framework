@@ -114,6 +114,18 @@ internal static class LocaleCanonicalizer
         return value;
     }
 
+    /// <summary>
+    /// Gets the BCP 47 type of a keyword from its CLDR name (the "_alias" of the BCP 47 data, e.g. ("co", "phonebook") ->
+    /// "phonebk"), or the name itself.
+    /// </summary>
+    public static string GetBcp47Type(string key, string name)
+    {
+        if (Data.LegacyTypeNames.TryGetValue(key, out var names) && names.TryGetValue(name, out var type))
+            return type;
+
+        return name;
+    }
+
     /// <summary>Gets the canonical value of a tfield of the transformed extension (lower case, aliases replaced).</summary>
     public static string CanonicalizeTransformedValue(string key, string value)
     {
@@ -267,8 +279,8 @@ internal static class LocaleCanonicalizer
 
             if (supplemental.GetSection("bcp47") is { } bcp47)
             {
-                ReadValueAliases(bcp47, "u", UnicodeValueAliases);
-                ReadValueAliases(bcp47, "t", TransformedValueAliases);
+                ReadValueAliases(bcp47, "u", UnicodeValueAliases, LegacyTypeNames);
+                ReadValueAliases(bcp47, "t", TransformedValueAliases, legacyNames: null);
             }
         }
 
@@ -283,6 +295,9 @@ internal static class LocaleCanonicalizer
         public Dictionary<string, Dictionary<string, string>> UnicodeValueAliases { get; } = new(StringComparer.Ordinal);
 
         public Dictionary<string, Dictionary<string, string>> TransformedValueAliases { get; } = new(StringComparer.Ordinal);
+
+        /// <summary>Gets the BCP 47 types of the CLDR names of the keywords ("_alias", e.g. co: phonebook -> phonebk).</summary>
+        public Dictionary<string, Dictionary<string, string>> LegacyTypeNames { get; } = new(StringComparer.Ordinal);
 
         public bool TryFindLanguageRule(LanguageTag tag, [NotNullWhen(true)] out LanguageRule? result)
         {
@@ -334,7 +349,7 @@ internal static class LocaleCanonicalizer
         }
 
         // bcp47/u/ca/{ islamicc: { _preferred: "islamic-civil" }, ethioaa: { _alias: "ethiopic-amete-alem" } }
-        private static void ReadValueAliases(CldrTable bcp47, string extension, Dictionary<string, Dictionary<string, string>> result)
+        private static void ReadValueAliases(CldrTable bcp47, string extension, Dictionary<string, Dictionary<string, string>> result, Dictionary<string, Dictionary<string, string>>? legacyNames)
         {
             if (!bcp47.TryGetNode(extension, out var node) || !node.IsTable)
                 return;
@@ -348,6 +363,7 @@ internal static class LocaleCanonicalizer
 
                 var types = keys.GetValue(i).GetTable();
                 var aliases = new Dictionary<string, string>(StringComparer.Ordinal);
+                var names = new Dictionary<string, string>(StringComparer.Ordinal);
                 for (var j = 0; j < types.Count; j++)
                 {
                     var type = types.GetKey(j);
@@ -366,6 +382,7 @@ internal static class LocaleCanonicalizer
                     {
                         foreach (var item in alias.Split(' ', StringSplitOptions.RemoveEmptyEntries))
                         {
+                            names.TryAdd(item, canonical);
                             var lower = item.ToLowerInvariant();
                             if (lower != canonical && lower != type && LanguageTag.IsUnicodeType(lower))
                             {
@@ -378,6 +395,11 @@ internal static class LocaleCanonicalizer
                 if (aliases.Count > 0)
                 {
                     result[key] = aliases;
+                }
+
+                if (legacyNames is not null && names.Count > 0)
+                {
+                    legacyNames[key] = names;
                 }
             }
         }

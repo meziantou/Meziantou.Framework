@@ -48,7 +48,16 @@ internal static class LocaleInfo
     };
 
     /// <summary>Gets the BCP 47 identifier of a CLDR collation type ("phonebook" -> "phonebk", "traditional" -> "trad").</summary>
-    public static string ToBcp47Collation(string type) => type.StartsWith('_', StringComparison.Ordinal) ? type : LocaleCanonicalizer.CanonicalizeUnicodeValue("co", type);
+    public static string ToBcp47Collation(string type) => LocaleCanonicalizer.GetBcp47Type("co", type);
+
+    // A type of the BCP 47 data of collation, not deprecated (the private types of CLDR such as "digits-after" are not)
+    private static bool IsBcp47Collation(string type)
+    {
+        return Data.Supplemental.GetSection("bcp47") is { } bcp47
+            && bcp47.TryGetNode("u/co/" + type, out var node)
+            && node.IsTable
+            && !(node.GetTable().TryGetString("_deprecated", out var deprecated) && deprecated is "true");
+    }
 
     public static bool IsAvailableCalendar(string calendar) => Array.BinarySearch(AvailableCalendars, calendar, StringComparer.Ordinal) >= 0;
 
@@ -66,7 +75,7 @@ internal static class LocaleInfo
             for (var i = 0; i < table.Count; i++)
             {
                 var key = ToBcp47Collation(table.GetKey(i));
-                if (key is not ("_default" or "standard" or "search") && LanguageTag.IsUnicodeType(key))
+                if (key is not ("_default" or "standard" or "search") && IsBcp47Collation(key))
                 {
                     result.Add(key);
                 }
@@ -176,7 +185,7 @@ internal static class LocaleInfo
             foreach (var cldrType in Data.Collation.GetCollationTypes(id))
             {
                 var type = ToBcp47Collation(cldrType);
-                if (type is not ("standard" or "search") && LanguageTag.IsUnicodeType(type))
+                if (type is not ("standard" or "search") && IsBcp47Collation(type))
                 {
                     result.Add(type);
                 }

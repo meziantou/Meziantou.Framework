@@ -204,8 +204,8 @@ private sealed class ElementCounter : XmlSyntaxWalker
 
 ## Formatting
 
-`Formatter.Format` lays a document out again, with `XmlFormattingOptions` controlling indentation and line breaks.
-It is the one thing here that does reformat, and it is opt-in.
+`Formatter.Format` lays a document out again, with `XmlFormattingOptions` controlling indentation, line breaks, attribute wrapping, the spacing inside tags, and whether elements written on one line stay that way.
+It is the one thing here that does reformat, and it is opt-in. It never changes text: an element that contains text keeps its content as written, and so does an element under `xml:space="preserve"`.
 
 ## Editing by text
 

@@ -19,5 +19,5 @@ internal sealed class TemplateSite(string?[] cooked, string[] raw)
     public string[] Raw { get; } = raw;
 }
 
-/// <summary>The compile-time description of a class: its constructor (null for a default constructor) and its source text.</summary>
-internal sealed record ClassTemplate(string Name, FunctionTemplate? Constructor, bool HasHeritage, SourceText Source, int SourceStart, int SourceEnd);
+/// <summary>The compile-time description of a class: its constructor and its source text.</summary>
+internal sealed record ClassTemplate(string Name, FunctionTemplate Constructor, bool HasHeritage, SourceText Source, int SourceStart, int SourceEnd);

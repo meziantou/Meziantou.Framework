@@ -33,13 +33,16 @@ internal sealed partial class CodeGenerator
 
         // The constructor (or the default constructor)
         var constructorMethod = node.Body.OfType<MethodDefinition>().FirstOrDefault(m => m.Kind == MethodKind.Constructor);
-        FunctionTemplate? constructorTemplate = null;
+        FunctionTemplate constructorTemplate;
         if (constructorMethod is not null)
         {
             var info = _analysis.Functions[constructorMethod.Value];
             var generator = new CodeGenerator(_analysis, _source, info);
-            var template = generator.CompileFunctionBody(constructorMethod.Value, name, FunctionTemplateFlags.None);
-            constructorTemplate = template;
+            constructorTemplate = generator.CompileFunctionBody(constructorMethod.Value, name, FunctionTemplateFlags.None);
+        }
+        else
+        {
+            constructorTemplate = CreateDefaultConstructor(name, node.SuperClass is not null, node);
         }
 
         var classTemplate = new ClassTemplate(name, constructorTemplate, node.SuperClass is not null, _source, node.Start, node.End);
@@ -95,6 +98,53 @@ internal sealed partial class CodeGenerator
         _builder.Emit(OpCode.LoadLocal, constructor);
         ExitScope(classScope);
         _scope = outerScope;
+    }
+
+    /// <summary>
+    /// The default constructor of a class: <c>constructor() {}</c>, or <c>constructor(...args) { super(...args); }</c> for a
+    /// derived class (the arguments are forwarded without iterating them).
+    /// </summary>
+    private FunctionTemplate CreateDefaultConstructor(string name, bool isDerived, ClassNode node)
+    {
+        var builder = new BytecodeBuilder();
+        var flags = FunctionTemplateFlags.Strict | FunctionTemplateFlags.ClassConstructor | FunctionTemplateFlags.Constructor | FunctionTemplateFlags.Method | FunctionTemplateFlags.DefaultConstructor;
+        if (isDerived)
+        {
+            flags |= FunctionTemplateFlags.DerivedConstructor;
+            builder.Emit(OpCode.LoadFunction);
+            builder.Emit(OpCode.LoadNewTarget);
+            builder.Emit(OpCode.LoadAllArguments);
+            builder.Emit(OpCode.SuperCallSpread);
+            builder.Emit(OpCode.BindThis);
+            builder.Emit(OpCode.LoadFunction);
+            builder.Emit(OpCode.InitializeInstanceElements);
+        }
+        else
+        {
+            builder.Emit(OpCode.LoadThis);
+            builder.Emit(OpCode.LoadFunction);
+            builder.Emit(OpCode.InitializeInstanceElements);
+        }
+
+        builder.Emit(OpCode.Return);
+        var (code, constants, keys, objects, handlers, positions) = builder.Build();
+        return new FunctionTemplate
+        {
+            Name = name,
+            Length = 0,
+            Flags = flags,
+            Code = code,
+            Constants = constants,
+            Keys = keys,
+            Objects = objects,
+            RegisterCount = 0,
+            MaxStack = builder.MaxStack + 1,
+            Handlers = handlers,
+            Positions = positions,
+            Source = _source,
+            SourceStart = node.Start,
+            SourceEnd = node.End,
+        };
     }
 
     /// <summary>Defines a method, a getter or a setter of a class (public or private).</summary>

@@ -29,13 +29,7 @@ internal static class DynamicFunctions
     {
         newTarget ??= constructor;
         var source = GetSource(kind, arguments);
-
-        // The remaining steps (HostEnsureCanCompileStrings, parsing the parameters and the body, the early errors,
-        // GetPrototypeFromConstructor(newTarget, fallbackProto), OrdinaryFunctionCreate, the prototype property of the
-        // generators and MakeConstructor) need the compiler.
-        _ = newTarget;
-        _ = source;
-        throw new NotSupportedException("The compiler is not available yet");
+        return Interpreter.JsInterpreter.CreateDynamicFunction(constructor, newTarget, kind, source, arguments);
     }
 
     /// <summary>Converts the arguments to strings (the parameters, then the body) and assembles the source text of the function.</summary>

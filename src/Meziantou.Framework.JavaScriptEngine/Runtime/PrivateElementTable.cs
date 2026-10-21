@@ -40,6 +40,21 @@ internal sealed class PrivateElementTable
 
     public void SetValue(int index, JsValue value) => System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_entries)[index].Value = value;
 
+    /// <summary>Completes an accessor with a getter or a setter (a getter and a setter of the same name are one element).</summary>
+    public void UpdateAccessor(int index, JsValue getter, JsValue setter)
+    {
+        ref var entry = ref System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_entries)[index];
+        if (!getter.IsUndefined)
+        {
+            entry.Getter = getter;
+        }
+
+        if (!setter.IsUndefined)
+        {
+            entry.Setter = setter;
+        }
+    }
+
     public JsValue GetGetter(int index) => _entries[index].Getter;
 
     public JsValue GetSetter(int index) => _entries[index].Setter;

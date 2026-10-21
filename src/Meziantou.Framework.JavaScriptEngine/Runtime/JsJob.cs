@@ -68,5 +68,13 @@ internal class JsHostHooks
     public virtual void EnqueueTimeoutJob(JsEngine engine, in JsJob job, TimeSpan delay) => engine.EnqueueTimeoutJobCore(job, delay);
 
     /// <summary>Reports the exception thrown by a job (HostReportErrors). The default implementation rethrows it: it propagates out of <see cref="JsEngine.RunJobs"/>, and the other jobs stay in the queue.</summary>
+    /// <summary>HostGetCodeForEval(argument): the code of a value given to eval (a string; the host may accept other objects, e.g. a TrustedScript), or null.</summary>
+    public virtual string? GetCodeForEval(JsEngine engine, JsValue argument) => argument.IsString ? argument.AsString() : null;
+
+    /// <summary>HostEnsureCanCompileStrings: throws (e.g. an EvalError) when the host forbids the compilation of the code (a content security policy).</summary>
+    public virtual void EnsureCanCompileStrings(JsEngine engine, JsRealm realm, IReadOnlyList<string> parameterStrings, string bodyString, string codeString, JsCompilationType compilationType, IReadOnlyList<JsValue> parameterArgs, JsValue bodyArg)
+    {
+    }
+
     public virtual void ReportJobException(JsEngine engine, JsException exception) => System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw(exception);
 }

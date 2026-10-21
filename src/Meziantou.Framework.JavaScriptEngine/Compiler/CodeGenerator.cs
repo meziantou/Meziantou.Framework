@@ -36,6 +36,22 @@ internal sealed partial class CodeGenerator
         return generator.CompileProgramBody(program, kind);
     }
 
+    /// <summary>Compiles the function of a dynamic function (the Function constructor): its scope is the global scope.</summary>
+    public static FunctionTemplate CompileDynamicFunction(FunctionNode function, SourceText source)
+    {
+        var program = new Program
+        {
+            Start = function.Start,
+            End = function.End,
+            Body = [new ExpressionStatement { Start = function.Start, End = function.End, Expression = new FunctionExpression { Start = function.Start, End = function.End, Function = function } }],
+        };
+
+        var analysis = ScopeAnalyzer.Analyze(program, ProgramKind.Script, isStrict: false);
+        var info = analysis.Functions[function];
+        var generator = new CodeGenerator(analysis, source, info);
+        return generator.CompileFunctionBody(function, "anonymous", FunctionTemplateFlags.None);
+    }
+
     private FunctionTemplate CompileProgramBody(Program program, ProgramKind kind)
     {
         var scope = _function.Scope;
@@ -104,6 +120,7 @@ internal sealed partial class CodeGenerator
             SourceEnd = sourceEnd,
             NameScope = nameScope,
             CompletionRegister = _completionRegister,
+            ParameterNames = _function.UsesMappedArguments && _function.FunctionNode is { } functionNode ? [.. functionNode.Params.OfType<Identifier>().Select(p => p.Name)] : null,
         };
     }
 

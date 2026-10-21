@@ -42,6 +42,9 @@ internal sealed class FunctionTemplate
     /// <summary>Gets the environment of the name of a named function expression (null when the name is not captured).</summary>
     public ScopeInfo? NameScope { get; init; }
 
+    /// <summary>Gets the names of the parameters of a function with a mapped arguments object (simple parameters).</summary>
+    public string[]? ParameterNames { get; init; }
+
     /// <summary>Gets the register that holds the completion value of script and eval code (-1 otherwise).</summary>
     public int CompletionRegister { get; init; } = -1;
 

@@ -1345,23 +1345,14 @@ internal sealed partial class CodeGenerator
 
         // (iterator, received, kind) -> result, or undefined when a return resumption finds no return method
         _builder.Emit(OpCode.IteratorDelegateStep, isAsync ? 1 : 0);
+        _builder.Emit(OpCode.Dup);
+        _builder.Emit(OpCode.PushHole);
+        _builder.Emit(OpCode.StrictEqual);
+        _builder.EmitJump(OpCode.JumpIfTrue, returnWithoutMethod);
         if (isAsync)
         {
-            var hasResult = _builder.DefineLabel();
-            _builder.EmitJump(OpCode.JumpIfNotUndefinedKeep, hasResult);
-            _builder.EmitJump(OpCode.Jump, returnWithoutMethod);
-            _builder.MarkLabel(hasResult);
             _builder.Emit(OpCode.Await);
-            _builder.Emit(OpCode.Dup);
             _builder.Emit(OpCode.ThrowIfNotObject);
-            _builder.Emit(OpCode.Pop);
-        }
-        else
-        {
-            var hasResult = _builder.DefineLabel();
-            _builder.EmitJump(OpCode.JumpIfNotUndefinedKeep, hasResult);
-            _builder.EmitJump(OpCode.Jump, returnWithoutMethod);
-            _builder.MarkLabel(hasResult);
         }
 
         _builder.Emit(OpCode.Dup);

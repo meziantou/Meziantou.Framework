@@ -13,6 +13,7 @@ public sealed class JsRealm
             Intrinsics = new Intrinsics(this);
             GlobalObject = new JsObject(Intrinsics.ObjectPrototype);
             GlobalThis = new JsValue(GlobalObject);
+            GlobalEnvironment = new Interpreter.GlobalEnvironment(this);
             Intrinsics.Initialize();
             Intrinsics.DefineGlobalBindings(GlobalObject);
         }
@@ -33,14 +34,70 @@ public sealed class JsRealm
 
     internal Intrinsics Intrinsics { get; }
 
-    /// <summary>Evaluates a script in this realm, as an indirect <c>eval</c>, and returns its completion value.</summary>
-    /// <exception cref="JsSyntaxErrorException">The code is not a valid script.</exception>
-    /// <exception cref="JsException">The script threw an exception.</exception>
+    /// <summary>Gets the global environment of the realm.</summary>
+    internal Interpreter.GlobalEnvironment GlobalEnvironment { get; }
+
+    /// <summary>Gets the template objects of the tagged templates ([[TemplateMap]]).</summary>
+    internal System.Runtime.CompilerServices.ConditionalWeakTable<Compiler.TemplateSite, JsArray> TemplateRegistry { get; } = [];
+
+    /// <summary>Runs a script in this realm (ScriptEvaluation) and returns its completion value.</summary>
+    /// <param name="code">The source text of the script.</param>
+    /// <param name="url">The URL (or file name) of the script, used in the stack traces and the error locations.</param>
+    /// <exception cref="JsException">The script threw an exception (a SyntaxError for an invalid script).</exception>
+    public JsValue Execute(string code, string? url = null)
+    {
+        using var scope = Engine.Enter();
+        var source = new Text.SourceText(code, url);
+        var template = Compile(source);
+        var script = new Interpreter.ScriptRecord(this, source, hostDefined: null, mutedErrors: false);
+        var frame = new Interpreter.Frame(template, this, GlobalEnvironment, [])
+        {
+            Script = script,
+            This = GlobalThis,
+        };
+
+        return Interpreter.JsInterpreter.Run(frame);
+    }
+
+    private Compiler.FunctionTemplate Compile(Text.SourceText source)
+    {
+        var previousRealm = Engine.CurrentRealm;
+        Engine.CurrentRealm = this;
+        try
+        {
+            Ast.Program program;
+            try
+            {
+                program = Parsing.JsParser.ParseScript(source, Parsing.ParserOptions.Script);
+            }
+            catch (JsSyntaxErrorException ex)
+            {
+                throw ThrowHelper.CreateException(ErrorType.SyntaxError, ex.Message);
+            }
+
+            return Compiler.CodeGenerator.CompileProgram(program, source, Compiler.ProgramKind.Script, isStrict: false);
+        }
+        finally
+        {
+            Engine.CurrentRealm = previousRealm;
+        }
+    }
+
+    /// <summary>Evaluates code in this realm as an indirect <c>eval</c> and returns its completion value.</summary>
+    /// <exception cref="JsException">The code threw an exception (a SyntaxError for invalid code).</exception>
     public JsValue Evaluate(string code)
     {
         using var scope = Engine.Enter();
-        var program = Parsing.JsParser.ParseScript(new Text.SourceText(code), Parsing.ParserOptions.Script);
-        throw new NotSupportedException($"The compiler is not implemented yet ({program.Body.Count} statements)");
+        var previousRealm = Engine.CurrentRealm;
+        Engine.CurrentRealm = this;
+        try
+        {
+            return Interpreter.JsInterpreter.IndirectEval(this, code);
+        }
+        finally
+        {
+            Engine.CurrentRealm = previousRealm;
+        }
     }
 
     /// <summary>Creates a native error object of this realm.</summary>

@@ -294,6 +294,28 @@ public interface IJsAdapter<TValue>
     }
 
     /// <summary>
+    /// Defines a data property whose value is created on first access by <paramref name="factory"/> (one object per property
+    /// instead of a closure: the interface objects of a realm are defined this way). The default implementation calls
+    /// <see cref="DefineLazyDataProperty(TValue, TValue, Func{TValue}, bool, bool, bool)"/>.
+    /// </summary>
+    void DefineLazyDataProperty(TValue obj, TValue key, IJsLazyValue<TValue> factory, bool writable, bool enumerable, bool configurable)
+    {
+        ArgumentNullException.ThrowIfNull(factory);
+        DefineLazyDataProperty(obj, key, factory.CreateValue, writable, enumerable, configurable);
+    }
+
+    /// <summary>
+    /// Defines an accessor property whose functions are created on first access by <paramref name="factory"/> (one object per
+    /// property instead of closures: the attributes of the interfaces are defined this way). The default implementation calls
+    /// <see cref="DefineLazyAccessorProperty(TValue, TValue, Func{TValue}, Func{TValue}?, bool, bool)"/>.
+    /// </summary>
+    void DefineLazyAccessorProperty(TValue obj, TValue key, IJsLazyAccessor<TValue> factory, bool hasSetter, bool enumerable, bool configurable)
+    {
+        ArgumentNullException.ThrowIfNull(factory);
+        DefineLazyAccessorProperty(obj, key, factory.CreateGetter, hasSetter ? factory.CreateSetter : null, enumerable, configurable);
+    }
+
+    /// <summary>
     /// Sets the [[Stack]] internal slot of an error (https://tc39.es/proposal-error-stack-accessor/), read by the
     /// <c>Error.prototype.stack</c> accessor: the stack of a deserialized error
     /// (https://html.spec.whatwg.org/multipage/structured-data.html#structureddeserialize). Returns false when the engine

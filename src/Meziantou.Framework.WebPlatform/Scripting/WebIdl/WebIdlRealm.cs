@@ -404,7 +404,13 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
     private void DefineLazyGlobal(string name, InterfaceBinding<TAdapter, TValue> binding)
     {
-        Adapter.DefineLazyDataProperty(Global, Key(name), () => EnsureInterfaceObject(binding).InterfaceObject, writable: true, enumerable: false, configurable: true);
+        Adapter.DefineLazyDataProperty(Global, Key(name), new LazyInterfaceObject(this, binding), writable: true, enumerable: false, configurable: true);
+    }
+
+    /// <summary>The interface object of a global property, created on first access (a realm has hundreds of them).</summary>
+    private sealed class LazyInterfaceObject(WebIdlRealm<TAdapter, TValue> realm, InterfaceBinding<TAdapter, TValue> binding) : IJsLazyValue<TValue>
+    {
+        public TValue CreateValue() => realm.EnsureInterfaceObject(binding).InterfaceObject;
     }
 
     /// <summary>Returns the interface prototype object of an interface, creating it in this realm.</summary>
@@ -578,19 +584,32 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             }
         }
 
+        // Most attributes are never used: their functions are created on first access, in this realm
+        Adapter.DefineLazyAccessorProperty(target, Key(name), new LazyAttribute(this, name, getter, setter, returnsPromise), hasSetter: setter is not null, enumerable, configurable);
+    }
+
+    /// <summary>The functions of an attribute, created on first access in the realm (one object per attribute, instead of closures).</summary>
+    private sealed class LazyAttribute(WebIdlRealm<TAdapter, TValue> realm, string name, Getter getter, Setter? setter, bool returnsPromise) : IJsLazyAccessor<TValue>
+    {
+        public TValue CreateGetter() => realm.Adapter.RunInRealm(realm.EngineRealm, CreateGetterInRealm);
+
+        public TValue CreateSetter() => realm.Adapter.RunInRealm(realm.EngineRealm, CreateSetterInRealm);
+
         // https://webidl.spec.whatwg.org/#dfn-attribute-getter: the getter of a promise attribute returns a rejected promise
         // instead of throwing (e.g. when this is not a platform object)
-        TValue CreateGetter() => returnsPromise
-            ? Adapter.CreateFunction("get " + name, 0, (thisValue, _) => InvokePromiseGetter(getter, thisValue))
-            : Adapter.CreateFunction("get " + name, 0, (thisValue, _) => InvokeGetter(getter, thisValue));
-        TValue CreateSetter() => Adapter.CreateFunction("set " + name, 1, (thisValue, arguments) =>
-        {
-            InvokeSetter(setter, thisValue, arguments.Length > 0 ? arguments[0] : Adapter.Undefined);
-            return Adapter.Undefined;
-        });
+        private TValue CreateGetterInRealm() => returnsPromise
+            ? realm.Adapter.CreateFunction("get " + name, 0, (thisValue, _) => realm.InvokePromiseGetter(getter, thisValue))
+            : realm.Adapter.CreateFunction("get " + name, 0, (thisValue, _) => realm.InvokeGetter(getter, thisValue));
 
-        // Most attributes are never used: their functions are created on first access, in this realm
-        Adapter.DefineLazyAccessorProperty(target, Key(name), () => Adapter.RunInRealm(EngineRealm, CreateGetter), setter is null ? null : () => Adapter.RunInRealm(EngineRealm, CreateSetter), enumerable, configurable);
+        private TValue CreateSetterInRealm()
+        {
+            var attributeSetter = setter!;
+            return realm.Adapter.CreateFunction("set " + name, 1, (thisValue, arguments) =>
+            {
+                realm.InvokeSetter(attributeSetter, thisValue, arguments.Length > 0 ? arguments[0] : realm.Adapter.Undefined);
+                return realm.Adapter.Undefined;
+            });
+        }
     }
 
     /// <summary>A readonly attribute with [PutForwards] (https://webidl.spec.whatwg.org/#PutForwards).</summary>
@@ -667,12 +686,18 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             };
         }
 
-        TValue CreateOperation() => returnsPromise
-            ? Adapter.CreateFunction(name, length, (thisValue, arguments) => InvokePromiseOperation(operation, thisValue, arguments, ceReactions))
-            : Adapter.CreateFunction(name, length, (thisValue, arguments) => InvokeOperation(operation, thisValue, arguments, ceReactions));
-
         // Most operations are never used: their functions are created on first access, in this realm
-        Adapter.DefineLazyDataProperty(target, Key(name), () => Adapter.RunInRealm(EngineRealm, CreateOperation), writable: configurable, enumerable, configurable);
+        Adapter.DefineLazyDataProperty(target, Key(name), new LazyOperation(this, name, length, operation, ceReactions, returnsPromise), writable: configurable, enumerable, configurable);
+    }
+
+    /// <summary>The function of an operation, created on first access in the realm (one object per operation, instead of closures).</summary>
+    private sealed class LazyOperation(WebIdlRealm<TAdapter, TValue> realm, string name, int length, Operation operation, bool ceReactions, bool returnsPromise) : IJsLazyValue<TValue>
+    {
+        public TValue CreateValue() => realm.Adapter.RunInRealm(realm.EngineRealm, CreateOperation);
+
+        private TValue CreateOperation() => returnsPromise
+            ? realm.Adapter.CreateFunction(name, length, (thisValue, arguments) => realm.InvokePromiseOperation(operation, thisValue, arguments, ceReactions))
+            : realm.Adapter.CreateFunction(name, length, (thisValue, arguments) => realm.InvokeOperation(operation, thisValue, arguments, ceReactions));
     }
 
     /// <summary>Defines a data property whose value is a function (e.g. the methods of the iterators).</summary>

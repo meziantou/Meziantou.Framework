@@ -406,6 +406,24 @@ internal readonly struct JavaScriptAdapter(JavaScriptAdapterState state) : IJsAd
         using var scope = Engine.Enter();
         ((JsObject)obj).DefineLazyAccessorProperty(Key(key), InvokeFactory, getterFactory, setterFactory is null ? null : InvokeFactory, setterFactory, enumerable, configurable);
     }
+
+    private static readonly Func<object?, JsValue> CreateLazyValue = static state => ToJs(((IJsLazyValue<object>)state!).CreateValue());
+    private static readonly Func<object?, JsValue> CreateLazyGetter = static state => ToJs(((IJsLazyAccessor<object>)state!).CreateGetter());
+    private static readonly Func<object?, JsValue> CreateLazySetter = static state => ToJs(((IJsLazyAccessor<object>)state!).CreateSetter());
+
+    public void DefineLazyDataProperty(object obj, object key, IJsLazyValue<object> factory, bool writable, bool enumerable, bool configurable)
+    {
+        ArgumentNullException.ThrowIfNull(factory);
+        using var scope = Engine.Enter();
+        ((JsObject)obj).DefineLazyDataProperty(Key(key), CreateLazyValue, factory, writable, enumerable, configurable);
+    }
+
+    public void DefineLazyAccessorProperty(object obj, object key, IJsLazyAccessor<object> factory, bool hasSetter, bool enumerable, bool configurable)
+    {
+        ArgumentNullException.ThrowIfNull(factory);
+        using var scope = Engine.Enter();
+        ((JsObject)obj).DefineLazyAccessorProperty(Key(key), CreateLazyGetter, factory, hasSetter ? CreateLazySetter : null, factory, enumerable, configurable);
+    }
 }
 
 /// <summary>The JavaScript object of a .NET platform object (https://webidl.spec.whatwg.org/#dfn-platform-object).</summary>

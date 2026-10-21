@@ -244,6 +244,9 @@ internal static class DurationFormatBuiltins
     }
 
     /// <summary>Intl.DurationFormat.prototype.format(duration)</summary>
+    /// <summary>Formats a duration with a DurationFormat (Intl.DurationFormat.prototype.format without the property lookup).</summary>
+    internal static JsValue FormatDuration(JsValue durationFormat, JsValue duration) => Format(function: null!, durationFormat, [duration], newTarget: null);
+
     private static JsValue Format(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
         var durationFormat = ThisDurationFormat(thisValue, "format");

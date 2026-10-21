@@ -1,4 +1,2 @@
-intl402/Temporal/Duration/prototype/toLocaleString/returns-same-results-as-DurationFormat.js:sloppy
-intl402/Temporal/Duration/prototype/toLocaleString/returns-same-results-as-DurationFormat.js:strict
 intl402/Temporal/ZonedDateTime/links.js:sloppy
 intl402/Temporal/ZonedDateTime/links.js:strict

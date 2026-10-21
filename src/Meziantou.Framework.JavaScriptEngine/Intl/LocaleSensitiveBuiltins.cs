@@ -2,7 +2,8 @@ namespace Meziantou.Framework.JavaScriptEngine.Intl;
 
 /// <summary>
 /// The locale-sensitive methods of ECMA-262 that ECMA-402 replaces (https://tc39.es/ecma402/#locale-sensitive-functions):
-/// Number.prototype.toLocaleString, BigInt.prototype.toLocaleString and Array.prototype.toLocaleString.
+/// Number.prototype.toLocaleString, BigInt.prototype.toLocaleString, Array.prototype.toLocaleString, the case
+/// conversions of String.prototype and Temporal.Duration.prototype.toLocaleString.
 /// </summary>
 internal static class LocaleSensitiveBuiltins
 {
@@ -14,6 +15,42 @@ internal static class LocaleSensitiveBuiltins
         realm.DefineMethod(intrinsics.NumberPrototype, "toLocaleString", 0, NumberToLocaleString);
         realm.DefineMethod(intrinsics.BigIntPrototype, "toLocaleString", 0, BigIntToLocaleString);
         realm.DefineMethod(intrinsics.ArrayPrototype, "toLocaleString", 0, ArrayToLocaleString);
+        realm.DefineMethod(intrinsics.StringPrototype, "toLocaleLowerCase", 0, (function, thisValue, arguments, _) => TransformCase(thisValue, arguments, upper: false, "toLocaleLowerCase"));
+        realm.DefineMethod(intrinsics.StringPrototype, "toLocaleUpperCase", 0, (function, thisValue, arguments, _) => TransformCase(thisValue, arguments, upper: true, "toLocaleUpperCase"));
+        realm.DefineMethod(intrinsics.TemporalDurationPrototype, "toLocaleString", 0, DurationToLocaleString);
+    }
+
+    /// <summary>The languages whose case mappings differ from the default ones (SpecialCasing.txt).</summary>
+    private static bool HasLanguageSensitiveCaseMapping(string locale) => locale is "az" or "lt" or "tr";
+
+    /// <summary>String.prototype.toLocaleLowerCase / toLocaleUpperCase (TransformCase, https://tc39.es/ecma402/#sec-transform-case).</summary>
+    private static JsValue TransformCase(JsValue thisValue, ReadOnlySpan<JsValue> arguments, bool upper, string methodName)
+    {
+        if (thisValue.IsNullOrUndefined)
+            return ThrowHelper.ThrowTypeError<JsValue>("String.prototype." + methodName + " called on null or undefined");
+
+        var s = JsOperations.ToString(thisValue);
+        var requestedLocales = IntlOperations.CanonicalizeLocaleList(arguments.Length > 0 ? arguments[0] : default);
+        var requestedLocale = requestedLocales.Count > 0 ? requestedLocales[0] : IntlOperations.DefaultLocale(JsEngine.Current!);
+        var noExtensionsLocale = IntlOperations.RemoveUnicodeExtension(requestedLocale, out _);
+        var language = IntlOperations.LookupMatchingLocaleByPrefix(noExtensionsLocale, HasLanguageSensitiveCaseMapping);
+        if (language is null)
+            return upper ? StringOperations.ToUpperCase(s) : StringOperations.ToLowerCase(s);
+
+        return upper ? UnicodeCaseMapping.ToUpper(s, language) : UnicodeCaseMapping.ToLower(s, language);
+    }
+
+    /// <summary>Temporal.Duration.prototype.toLocaleString([locales [, options]]): the format of an Intl.DurationFormat.</summary>
+    private static JsValue DurationToLocaleString(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
+    {
+        if (thisValue.Cell is not JsDuration)
+            return ThrowHelper.ThrowTypeError<JsValue>("Temporal.Duration.prototype.toLocaleString called on an object that is not a Temporal.Duration");
+
+        var constructor = function.Realm.Intrinsics.IntlDurationFormat;
+        var locales = arguments.Length > 0 ? arguments[0] : default;
+        var options = arguments.Length > 1 ? arguments[1] : default;
+        var formatter = JsOperations.Construct(constructor, [locales, options], constructor);
+        return DurationFormatBuiltins.FormatDuration(formatter, thisValue);
     }
 
     private static JsNumberFormatObject CreateNumberFormat(JsBuiltinFunction function, ReadOnlySpan<JsValue> arguments)

@@ -504,4 +504,21 @@ public sealed class IntlTests
             ].join("|")
             """, UtcOptions));
     }
+
+    [Theory]
+    [InlineData("'I'.toLocaleLowerCase('tr')", "\u0131")]
+    [InlineData("'i'.toLocaleUpperCase('az-Latn')", "\u0130")]
+    [InlineData("'i'.toLocaleUpperCase('en')", "I")]
+    [InlineData("'I'.toLocaleLowerCase('lt')", "i")]
+    [InlineData("'\u00CC'.toLocaleLowerCase('lt')", "i\u0307\u0300")]
+    public void LocaleSensitiveCaseMapping(string code, string expected)
+    {
+        Assert.Equal(expected, Evaluate(code));
+    }
+
+    [Fact]
+    public void DurationToLocaleStringUsesDurationFormat()
+    {
+        Assert.Equal("1 hr, 2 min", Evaluate("new Temporal.Duration(0, 0, 0, 0, 1, 2).toLocaleString('en')"));
+    }
 }

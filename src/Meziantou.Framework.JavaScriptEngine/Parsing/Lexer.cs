@@ -538,6 +538,9 @@ internal sealed class Lexer
             if (isStart)
             {
                 ScanIdentifier(ref token);
+
+                // A reserved word is a valid private name (#if)
+                token.Value ??= Intern(_text.AsSpan(start + 1, token.End - start - 1));
                 token.Kind = TokenKind.PrivateName;
                 token.Start = start;
                 return token;

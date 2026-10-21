@@ -264,6 +264,7 @@ public sealed class JsParserTests
     [InlineData("if (a) function f() {}")]
     [InlineData("try {} catch (e) { var e; }")]
     [InlineData("class A { get #a() {} set #a(v) {} m() { return #a in this; } }")]
+    [InlineData("class A { #if = 1; static #class() {} m() { return this.#if + A.#class(); } }")]
     [InlineData("class A extends B { constructor() { (() => super())(); } }")]
     [InlineData("{ using x = null; }")]
     [InlineData("var let = 1; let\nx = 1")]
@@ -354,9 +355,21 @@ public sealed class JsParserTests
     [InlineData("a, a", "'use strict';")]
     [InlineData("a = 1", "'use strict';")]
     [InlineData("", "super.x")]
+    [InlineData("-->", "")]
     public void DynamicFunction_Errors(string parameters, string body)
     {
         Assert.Throws<JsSyntaxErrorException>(() => JsParser.ParseDynamicFunction(parameters, body, isAsync: false, isGenerator: false));
+    }
+
+    [Theory]
+    [InlineData("\n-->", "")]
+    [InlineData("<!--", "")]
+    [InlineData("", "-->")]
+    [InlineData("a, a", "")]
+    [InlineData("a,", "return a;")]
+    public void DynamicFunction_Valid(string parameters, string body)
+    {
+        JsParser.ParseDynamicFunction(parameters, body, isAsync: false, isGenerator: false);
     }
 
     [Fact]

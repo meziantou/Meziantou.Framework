@@ -290,7 +290,7 @@ internal static class SuppressedErrorBuiltins
     private static JsValue Construct(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
         var prototype = ObjectOperations.GetPrototypeForConstruct(function, newTarget, static intrinsics => intrinsics.SuppressedErrorPrototype);
-        var error = new JsObject(prototype, ObjectClass.Error);
+        var error = new JsErrorObject(prototype);
         var message = arguments.Length > 2 ? arguments[2] : default;
         if (!message.IsUndefined)
         {
@@ -299,6 +299,7 @@ internal static class SuppressedErrorBuiltins
 
         ObjectOperations.CreateNonEnumerableDataPropertyOrThrow(error, "error", arguments.Length > 0 ? arguments[0] : default);
         ObjectOperations.CreateNonEnumerableDataPropertyOrThrow(error, "suppressed", arguments.Length > 1 ? arguments[1] : default);
+        error.CaptureStackTrace(function.Realm.Engine);
         return error;
     }
 }

@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.JavaScriptEngine;
 
 /// <summary>A realm (https://tc39.es/ecma262/#sec-code-realms): a global object, its global environment and the intrinsics.</summary>
-public sealed class JsRealm
+public sealed partial class JsRealm
 {
     internal JsRealm(JsEngine engine)
     {
@@ -49,7 +49,7 @@ public sealed class JsRealm
         using var scope = Engine.Enter();
         var source = new Text.SourceText(code, url);
         var template = Compile(source);
-        var script = new Interpreter.ScriptRecord(this, source, hostDefined: null, mutedErrors: false);
+        var script = new JsScript(this, source, hostDefined: null, mutedErrors: false);
         var frame = new Interpreter.Frame(template, this, GlobalEnvironment, [])
         {
             Script = script,

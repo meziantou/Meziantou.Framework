@@ -7,23 +7,12 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// A Module Record (https://tc39.es/ecma262/#sec-abstract-module-records). A module is loaded
 /// (<see cref="LoadRequestedModules"/>), linked (<see cref="Link"/>), then evaluated (<see cref="Evaluate"/>).
 /// </summary>
-public abstract class JsModule : IScriptOrModule
+public abstract class JsModule : JsScriptOrModule
 {
     private protected JsModule(JsRealm realm, string? url, object? hostDefined)
+        : base(realm, url, hostDefined)
     {
-        Realm = realm;
-        Url = url;
-        HostDefined = hostDefined;
     }
-
-    /// <summary>Gets the realm the module was created in ([[Realm]]).</summary>
-    public JsRealm Realm { get; }
-
-    /// <summary>Gets the URL (or the file name) of the module.</summary>
-    public string? Url { get; }
-
-    /// <summary>Gets the data of the host associated with the module ([[HostDefined]]).</summary>
-    public object? HostDefined { get; }
 
     /// <summary>Gets the status of the module.</summary>
     public JsModuleStatus Status { get; internal set; }

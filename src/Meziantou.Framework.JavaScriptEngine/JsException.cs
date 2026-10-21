@@ -22,11 +22,20 @@ public sealed class JsException : Exception
 
     /// <summary>Initializes a new instance of the <see cref="JsException"/> class with the thrown value.</summary>
     public JsException(JsValue value)
+        : this(value, JsEngine.Current?.GetCurrentLocation())
+    {
+    }
+
+    internal JsException(JsValue value, JsSourceLocation? location)
         : base(ErrorFormatting.GetDescription(value))
     {
         Value = value;
+        Location = location;
     }
 
     /// <summary>Gets the thrown value.</summary>
     public JsValue Value { get; }
+
+    /// <summary>Gets the position of the code that threw the exception, when it was thrown by JavaScript code.</summary>
+    public JsSourceLocation? Location { get; }
 }

@@ -55,7 +55,7 @@ public sealed partial class JsEngine
     /// is disposed. The jobs of the outer queue do not run in the meantime. When the scope is disposed, the jobs left in
     /// the nested queue are appended to the outer queue.
     /// </summary>
-    internal IDisposable EnterNestedJobQueue()
+    private NestedJobQueueScope EnterNestedJobQueueCore()
     {
         var queue = new JobQueue(_jobQueue);
         _jobQueue = queue;

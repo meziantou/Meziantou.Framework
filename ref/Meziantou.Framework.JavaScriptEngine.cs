@@ -22,13 +22,31 @@ namespace Meziantou.Framework.JavaScriptEngine
 
     public sealed class JsEngine : System.IDisposable
     {
+        public Meziantou.Framework.JavaScriptEngine.JsRealm? CurrentRealm { get => throw null; }
         public bool IsScriptRunning { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsEngineOptions Options { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.JavaScriptEngine.JsRealm> Realms { get => throw null; }
         public JsEngine(Meziantou.Framework.JavaScriptEngine.JsEngineOptions? options = null) { }
+        public Meziantou.Framework.JavaScriptEngine.JsValue Call(Meziantou.Framework.JavaScriptEngine.JsValue function, Meziantou.Framework.JavaScriptEngine.JsValue thisValue, params System.ReadOnlySpan<Meziantou.Framework.JavaScriptEngine.JsValue> arguments) => throw null;
+        public string CaptureStackTrace() => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsValue Construct(Meziantou.Framework.JavaScriptEngine.JsValue constructor, System.ReadOnlySpan<Meziantou.Framework.JavaScriptEngine.JsValue> arguments, Meziantou.Framework.JavaScriptEngine.JsValue newTarget = default) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsRealm CreateRealm() => throw null;
         public void Dispose() { }
+        public void EnqueueJob(System.Action job, Meziantou.Framework.JavaScriptEngine.JsRealm? realm = null) { }
+        public Meziantou.Framework.JavaScriptEngine.JsEngineScope Enter() => throw null;
+        public System.IDisposable EnterNestedJobQueue() => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsScriptOrModule? GetActiveScriptOrModule() => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsSourceLocation? GetCurrentLocation() => throw null;
+        public bool IsArray(Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
+        public T RunInRealm<T>(Meziantou.Framework.JavaScriptEngine.JsRealm realm, System.Func<T> action) => throw null;
         public void RunJobs() { }
+        public static bool SameValue(Meziantou.Framework.JavaScriptEngine.JsValue x, Meziantou.Framework.JavaScriptEngine.JsValue y) => throw null;
+        public System.Numerics.BigInteger ToBigInt(Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
+        public static bool ToBoolean(Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
+        public double ToNumber(Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsObject ToObject(Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsPropertyKey ToPropertyKey(Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
+        public string ToString(Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
     }
 
     public sealed class JsEngineOptions
@@ -41,8 +59,19 @@ namespace Meziantou.Framework.JavaScriptEngine
         public System.TimeSpan? Timeout { get => throw null; set { } }
     }
 
+    public readonly struct JsEngineScope : System.IDisposable, System.IEquatable<Meziantou.Framework.JavaScriptEngine.JsEngineScope>
+    {
+        public void Dispose() { }
+        public bool Equals(Meziantou.Framework.JavaScriptEngine.JsEngineScope other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.JavaScriptEngine.JsEngineScope left, Meziantou.Framework.JavaScriptEngine.JsEngineScope right) => throw null;
+        public static bool operator !=(Meziantou.Framework.JavaScriptEngine.JsEngineScope left, Meziantou.Framework.JavaScriptEngine.JsEngineScope right) => throw null;
+    }
+
     public sealed class JsException : System.Exception
     {
+        public Meziantou.Framework.JavaScriptEngine.JsSourceLocation? Location { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsValue Value { get => throw null; }
         public JsException(Meziantou.Framework.JavaScriptEngine.JsValue value) { }
         public JsException(string message) { }
@@ -54,14 +83,34 @@ namespace Meziantou.Framework.JavaScriptEngine
         public Meziantou.Framework.JavaScriptEngine.JsRealm Realm { get => throw null; }
     }
 
-    public abstract class JsModule
+    public class JsHostObject : Meziantou.Framework.JavaScriptEngine.JsObject
+    {
+        public bool HasImmutablePrototype { get => throw null; set { } }
+        public bool IsHtmlDdaObject { get => throw null; set { } }
+        public object? Target { get => throw null; }
+        public JsHostObject(Meziantou.Framework.JavaScriptEngine.JsObject? prototype, object? target = null) { }
+        protected virtual bool DefineOwnPropertyCore(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, in Meziantou.Framework.JavaScriptEngine.JsPropertyDescriptor descriptor) => throw null;
+        protected virtual bool DeleteCore(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key) => throw null;
+        protected virtual Meziantou.Framework.JavaScriptEngine.JsValue GetCore(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, Meziantou.Framework.JavaScriptEngine.JsValue receiver) => throw null;
+        protected virtual bool GetOwnPropertyCore(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, out Meziantou.Framework.JavaScriptEngine.JsPropertyDescriptor descriptor) => throw null;
+        protected virtual Meziantou.Framework.JavaScriptEngine.JsObject? GetPrototypeOfCore() => throw null;
+        protected virtual bool HasPropertyCore(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key) => throw null;
+        protected virtual bool IsExtensibleCore() => throw null;
+        public bool OrdinaryDefineOwnProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, in Meziantou.Framework.JavaScriptEngine.JsPropertyDescriptor descriptor) => throw null;
+        public bool OrdinaryDelete(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key) => throw null;
+        public bool OrdinaryGetOwnProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, out Meziantou.Framework.JavaScriptEngine.JsPropertyDescriptor descriptor) => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.JavaScriptEngine.JsPropertyKey> OrdinaryOwnPropertyKeys() => throw null;
+        protected virtual System.Collections.Generic.IReadOnlyList<Meziantou.Framework.JavaScriptEngine.JsPropertyKey> OwnPropertyKeysCore() => throw null;
+        protected virtual bool PreventExtensionsCore() => throw null;
+        protected virtual bool SetCore(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, Meziantou.Framework.JavaScriptEngine.JsValue value, Meziantou.Framework.JavaScriptEngine.JsValue receiver) => throw null;
+        protected virtual bool SetPrototypeOfCore(Meziantou.Framework.JavaScriptEngine.JsObject? prototype) => throw null;
+    }
+
+    public abstract class JsModule : Meziantou.Framework.JavaScriptEngine.JsScriptOrModule
     {
         public Meziantou.Framework.JavaScriptEngine.JsValue EvaluationError { get => throw null; }
         public bool HasEvaluationError { get => throw null; }
-        public object? HostDefined { get => throw null; }
-        public Meziantou.Framework.JavaScriptEngine.JsRealm Realm { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsModuleStatus Status { get => throw null; }
-        public string? Url { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsValue Evaluate() => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsValue GetNamespace() => throw null;
         public void Link() { }
@@ -106,6 +155,72 @@ namespace Meziantou.Framework.JavaScriptEngine
     {
         public bool IsCallable { get => throw null; }
         public bool IsConstructor { get => throw null; }
+        public bool ContainsProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key) => throw null;
+        public void DefineLazyAccessorProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, System.Func<Meziantou.Framework.JavaScriptEngine.JsValue> getterFactory, System.Func<Meziantou.Framework.JavaScriptEngine.JsValue>? setterFactory, bool enumerable, bool configurable) { }
+        public void DefineLazyDataProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, System.Func<Meziantou.Framework.JavaScriptEngine.JsValue> factory, bool writable, bool enumerable, bool configurable) { }
+        public bool DefineProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, in Meziantou.Framework.JavaScriptEngine.JsPropertyDescriptor descriptor) => throw null;
+        public bool DeleteProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key) => throw null;
+        public bool GetIsExtensible() => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.JavaScriptEngine.JsPropertyKey> GetOwnPropertyKeys() => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsValue GetProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsValue GetProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, Meziantou.Framework.JavaScriptEngine.JsValue receiver) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsObject? GetPrototype() => throw null;
+        public bool PreventObjectExtensions() => throw null;
+        public bool SetProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
+        public bool SetProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, Meziantou.Framework.JavaScriptEngine.JsValue value, Meziantou.Framework.JavaScriptEngine.JsValue receiver) => throw null;
+        public bool SetPrototype(Meziantou.Framework.JavaScriptEngine.JsObject? prototype) => throw null;
+        public bool TryGetOwnProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, out Meziantou.Framework.JavaScriptEngine.JsPropertyDescriptor descriptor) => throw null;
+    }
+
+    public readonly struct JsPropertyDescriptor
+    {
+        public bool Configurable { get => throw null; }
+        public bool Enumerable { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsPropertyDescriptorFlags Flags { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsValue Getter { get => throw null; }
+        public bool IsAccessorDescriptor { get => throw null; }
+        public bool IsDataDescriptor { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsValue Setter { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsValue Value { get => throw null; }
+        public bool Writable { get => throw null; }
+        public JsPropertyDescriptor(Meziantou.Framework.JavaScriptEngine.JsValue value, Meziantou.Framework.JavaScriptEngine.JsValue getter, Meziantou.Framework.JavaScriptEngine.JsValue setter, Meziantou.Framework.JavaScriptEngine.JsPropertyDescriptorFlags flags) { }
+        public static Meziantou.Framework.JavaScriptEngine.JsPropertyDescriptor Accessor(Meziantou.Framework.JavaScriptEngine.JsValue getter, Meziantou.Framework.JavaScriptEngine.JsValue setter, bool enumerable = false, bool configurable = true) => throw null;
+        public static Meziantou.Framework.JavaScriptEngine.JsPropertyDescriptor Data(Meziantou.Framework.JavaScriptEngine.JsValue value, bool writable = true, bool enumerable = true, bool configurable = true) => throw null;
+    }
+
+    [System.Flags]
+    public enum JsPropertyDescriptorFlags
+    {
+        None = 0,
+        HasValue = 1,
+        HasGet = 2,
+        HasSet = 4,
+        HasWritable = 8,
+        HasEnumerable = 16,
+        HasConfigurable = 32,
+        Writable = 64,
+        Enumerable = 128,
+        Configurable = 256,
+    }
+
+    public readonly struct JsPropertyKey : System.IEquatable<Meziantou.Framework.JavaScriptEngine.JsPropertyKey>
+    {
+        public bool IsString { get => throw null; }
+        public bool IsSymbol { get => throw null; }
+        public JsPropertyKey(Meziantou.Framework.JavaScriptEngine.JsSymbol symbol) { }
+        public JsPropertyKey(string name) { }
+        public string AsString() => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsSymbol AsSymbol() => throw null;
+        public bool Equals(Meziantou.Framework.JavaScriptEngine.JsPropertyKey other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.JavaScriptEngine.JsPropertyKey FromValue(Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
+        public override int GetHashCode() => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsValue ToJsValue() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.JavaScriptEngine.JsPropertyKey left, Meziantou.Framework.JavaScriptEngine.JsPropertyKey right) => throw null;
+        public static bool operator !=(Meziantou.Framework.JavaScriptEngine.JsPropertyKey left, Meziantou.Framework.JavaScriptEngine.JsPropertyKey right) => throw null;
+        public static implicit operator Meziantou.Framework.JavaScriptEngine.JsPropertyKey(Meziantou.Framework.JavaScriptEngine.JsSymbol symbol) => throw null;
+        public static implicit operator Meziantou.Framework.JavaScriptEngine.JsPropertyKey(string name) => throw null;
     }
 
     public sealed class JsProxy : Meziantou.Framework.JavaScriptEngine.JsObject
@@ -125,6 +240,37 @@ namespace Meziantou.Framework.JavaScriptEngine
         public Meziantou.Framework.JavaScriptEngine.JsValue Evaluate(string code) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsValue Execute(string code, string? url = null) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsSourceTextModule ParseModule(string code, string? url = null, object? hostDefined = null) => throw null;
+    }
+
+    public sealed class JsScript : Meziantou.Framework.JavaScriptEngine.JsScriptOrModule
+    {
+        public bool MutedErrors { get => throw null; }
+    }
+
+    public abstract class JsScriptOrModule
+    {
+        public object? HostDefined { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsRealm Realm { get => throw null; }
+        public string? Url { get => throw null; }
+    }
+
+    public readonly struct JsSourceLocation : System.IEquatable<Meziantou.Framework.JavaScriptEngine.JsSourceLocation>
+    {
+        public int Column { get => throw null; init { } }
+        public int Line { get => throw null; init { } }
+        public string? Url { get => throw null; init { } }
+        public JsSourceLocation(string? Url, int Line, int Column) { }
+        public void Deconstruct(out string? Url, out int Line, out int Column) => throw null;
+        public bool Equals(Meziantou.Framework.JavaScriptEngine.JsSourceLocation other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.JavaScriptEngine.JsSourceLocation left, Meziantou.Framework.JavaScriptEngine.JsSourceLocation right) => throw null;
+        public static bool operator !=(Meziantou.Framework.JavaScriptEngine.JsSourceLocation left, Meziantou.Framework.JavaScriptEngine.JsSourceLocation right) => throw null;
     }
 
     public sealed class JsSourceTextModule : Meziantou.Framework.JavaScriptEngine.JsModule

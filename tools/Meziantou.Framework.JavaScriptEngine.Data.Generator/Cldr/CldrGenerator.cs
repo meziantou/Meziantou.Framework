@@ -50,7 +50,13 @@ internal static class CldrGenerator
 
         var locales = new LocaleSet(source, supplemental.LikelySubtags);
         Console.WriteLine($"{locales.Locales.Count} locales, {locales.Aliases.Count} aliases");
-        var localeGenerator = new LocaleDataGenerator(source, locales);
+        TreeTable rootNumbers;
+        using (var common = new ZipArchive(new MemoryStream(commonArchive), ZipArchiveMode.Read))
+        {
+            rootNumbers = LocaleDataGenerator.ReadRootNumbers(common);
+        }
+
+        var localeGenerator = new LocaleDataGenerator(source, locales, rootNumbers);
         var localeChunks = localeGenerator.Build();
         var localesFile = ChunkedFileWriter.Write(localeChunks);
         Console.WriteLine($"Locale data: {stopwatch.Elapsed}, {localeGenerator.MissingInChildCount} values of a parent missing in the resolved data of a child");

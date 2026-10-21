@@ -233,9 +233,11 @@ public sealed class CldrDataTests
         Assert.Equal("{0}/{1}", en.GetString(CldrCategory.Units, "short/per/compoundUnitPattern"));
         Assert.Equal("h:mm:ss", en.GetString(CldrCategory.Units, "durationUnit-type-hms/durationUnitPattern"));
 
-        // The 45 units of ECMA-402
+        // The 45 units of ECMA-402, and the 5 compound units of two of them that CLDR has
         var units = en.GetKeys(CldrCategory.Units, "long");
-        Assert.Equal(46, units.Count);
+        Assert.Equal(51, units.Count);
+        Assert.Contains("kilometer-per-hour", units);
+        Assert.Equal("{0} km/h", en.GetString(CldrCategory.Units, "short/kilometer-per-hour/unitPattern-count-one"));
         Assert.Contains("per", units);
         Assert.Contains("fluid-ounce", units);
         Assert.Contains("mile-scandinavian", units);

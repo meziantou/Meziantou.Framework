@@ -1,0 +1,2 @@
+intl402/PluralRules/undefined-newtarget-throws.js:sloppy
+intl402/PluralRules/undefined-newtarget-throws.js:strict

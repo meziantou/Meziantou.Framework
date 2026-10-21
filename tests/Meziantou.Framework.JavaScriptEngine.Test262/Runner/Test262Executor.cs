@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Meziantou.Framework.JavaScriptEngine.Test262.Runner;
@@ -39,6 +40,11 @@ internal static class Test262Executor
     }
 
     /// <summary>Runs the test in a mode; returns null when it passes, or the reason of the failure.</summary>
+    /// <remarks>
+    /// The method is compiled optimized up front, without dynamic PGO: the .NET 11 RC2 JIT crashes the process (in
+    /// Compiler::fgCreateGCPoll) when it recompiles it at tier 1 with the profile data.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private static string? RunMode(Test262Test test, string source, Test262Mode mode)
     {
         var metadata = test.Metadata;

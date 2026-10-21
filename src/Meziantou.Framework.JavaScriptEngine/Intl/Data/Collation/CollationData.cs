@@ -8,7 +8,7 @@ namespace Meziantou.Framework.JavaScriptEngine.Intl.Data.Collation;
 /// <code>
 /// keyCount key* ucaVersion rootChunk
 /// tailoringCount (locale chunk table)*      (a table per locale: collation type = rules, "_default" = default type)
-/// parentCount (locale parent)*              (supplemental parentLocales.json, "collations")
+/// parentCount (locale parent)*              (parentLocales.json: "collations", and the main ones to a non-root locale)
 /// </code>
 /// </summary>
 internal sealed class CollationData
@@ -79,8 +79,8 @@ internal sealed class CollationData
     /// <summary>
     /// Gets the locales whose tailorings apply to a locale, from the most specific to the root ("und"): the locale, its
     /// collation parent (parentLocales "collations", e.g. "yue" -> "zh-Hant") or its truncation (a region implying
-    /// another script is looked up with that script, e.g. "zh-TW" as "zh-Hant-TW"; a script that is not the likely one
-    /// of the language falls back to the root).
+    /// another script is looked up with that script, e.g. "zh-TW" as "zh-Hant-TW"; a script is truncated too, e.g.
+    /// "zh-Hant" inherits the tailorings of "zh", as in ICU).
     /// </summary>
     public IReadOnlyList<string> GetFallbackChain(LanguageId locale)
     {
@@ -120,8 +120,10 @@ internal sealed class CollationData
             {
                 current = current.WithRegion("");
             }
-            else if (current.HasScript && !current.IsUnknownLanguage && string.Equals(likely.AddLikelySubtags(new LanguageId(current.Language, "", "")).Script, current.Script, StringComparison.Ordinal))
+            else if (current.HasScript && !current.IsUnknownLanguage)
             {
+                // The collations use truncation inheritance (parentLocales component="collations" lists the exceptions):
+                // "zh-Hant" inherits the tailorings of "zh", as in ICU
                 current = current.WithScript("");
             }
             else

@@ -1,9 +1,3 @@
-intl402/String/prototype/localeCompare/default-options-object-prototype.js:sloppy
-intl402/String/prototype/localeCompare/default-options-object-prototype.js:strict
-intl402/String/prototype/localeCompare/returns-same-results-as-Collator.js:sloppy
-intl402/String/prototype/localeCompare/returns-same-results-as-Collator.js:strict
-intl402/String/prototype/localeCompare/throws-same-exceptions-as-Collator.js:sloppy
-intl402/String/prototype/localeCompare/throws-same-exceptions-as-Collator.js:strict
 intl402/String/prototype/toLocaleLowerCase/special_casing_Azeri.js:sloppy
 intl402/String/prototype/toLocaleLowerCase/special_casing_Azeri.js:strict
 intl402/String/prototype/toLocaleLowerCase/special_casing_Lithuanian.js:sloppy

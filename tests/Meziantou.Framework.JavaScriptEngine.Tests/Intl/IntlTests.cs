@@ -332,6 +332,79 @@ public sealed class IntlTests
         Assert.Equal("en-US", Evaluate("new Intl.NumberFormat().resolvedOptions().locale", new JsEngineOptions { DefaultLocale = "zz-invalid-" }));
     }
 
+    // The expected orders are the ones of ICU (Node.js)
+    [Theory]
+    [InlineData("de", "{collation: 'phonebk'}", "\u00E4b,af,ae,\u00C4,ad", "ad,ae,\u00C4,\u00E4b,af")]
+    [InlineData("de", "{}", "\u00E4b,af,ae,\u00C4,ad", "\u00C4,\u00E4b,ad,ae,af")]
+    [InlineData("sv", "{}", "\u00E4,z,\u00E5,\u00F6,a,o", "a,o,z,\u00E5,\u00E4,\u00F6")]
+    [InlineData("es", "{collation: 'trad'}", "n,\u00F1,o,ch,cz,d", "cz,ch,d,n,\u00F1,o")]
+    [InlineData("zh", "{}", "\u4E2D,\u554A,\u963F,\u4E00,\u5927", "\u963F,\u554A,\u5927,\u4E00,\u4E2D")]
+    [InlineData("zh-TW", "{}", "\u4E2D,\u554A,\u963F,\u4E00,\u5927", "\u4E00,\u5927,\u4E2D,\u963F,\u554A")]
+    [InlineData("ja", "{}", "\u30A2,\u3042,\u30A1,b,A,\u4E00", "A,b,\u30A1,\u30A2,\u3042,\u4E00")]
+    [InlineData("ko", "{}", "\uB098,\uAC00,\u4F3D,\uB2E4", "\uAC00,\u4F3D,\uB098,\uB2E4")]
+    [InlineData("ru", "{}", "\u0431,\u0430,b,a", "\u0430,\u0431,a,b")]
+    [InlineData("en", "{}", "\u0431,\u0430,b,a", "a,b,\u0430,\u0431")]
+    [InlineData("en", "{numeric: true}", "a10,a9,a1,a01b,a100", "a1,a01b,a9,a10,a100")]
+    [InlineData("en", "{caseFirst: 'upper'}", "a,A,b,B", "A,a,B,b")]
+    [InlineData("en", "{ignorePunctuation: true}", "a-c,ab,a c,ac", "ab,a-c,a c,ac")]
+    [InlineData("fr-CA", "{}", "cote,cot\u00E9,c\u00F4te,c\u00F4t\u00E9", "cote,c\u00F4te,cot\u00E9,c\u00F4t\u00E9")]
+    [InlineData("fr", "{}", "cote,cot\u00E9,c\u00F4te,c\u00F4t\u00E9", "cote,cot\u00E9,c\u00F4te,c\u00F4t\u00E9")]
+    [InlineData("da", "{}", "aa,\u00E5,z,\u00E6,\u00F8,A,a", "A,a,z,\u00E6,\u00F8,\u00E5,aa")]
+    [InlineData("tr", "{}", "\u0131,i,I,\u0130,h,j", "h,\u0131,I,i,\u0130,j")]
+    public void Collator_Sort(string locale, string options, string values, string expected)
+    {
+        Assert.Equal(expected, Evaluate($"'{values}'.split(',').sort(new Intl.Collator('{locale}', {options}).compare).join()"));
+    }
+
+    [Fact]
+    public void Collator()
+    {
+        Assert.Equal("de-u-co-phonebk|search|variant|false|default|true|upper|da|upper|true|-1,0,1|0|0", Evaluate("""
+            [
+                new Intl.Collator("de-u-co-phonebk").resolvedOptions().locale,
+                new Intl.Collator("de", { usage: "search", numeric: true, caseFirst: "upper" }).resolvedOptions().usage,
+                new Intl.Collator("de", { usage: "search" }).resolvedOptions().sensitivity,
+                new Intl.Collator("de", { usage: "search" }).resolvedOptions().ignorePunctuation,
+                new Intl.Collator("de", { usage: "search", collation: "phonebk" }).resolvedOptions().collation,
+                new Intl.Collator("en-u-kn").resolvedOptions().numeric,
+                new Intl.Collator("en-u-kf-upper").resolvedOptions().caseFirst,
+                new Intl.Collator("da").resolvedOptions().locale,
+                new Intl.Collator("da").resolvedOptions().caseFirst,
+                new Intl.Collator("th").resolvedOptions().ignorePunctuation,
+                ["a", "b", "c"].map(x => new Intl.Collator("en").compare(x, "b")).join(),
+                new Intl.Collator("en", { sensitivity: "base" }).compare("a", "\u00C1"),
+                new Intl.Collator("en").compare("\u00C5", "A\u030A"),
+            ].join("|")
+            """));
+        Assert.Equal("1|0|-1|1|1|pinyin,stroke|true|false|-1", Evaluate("""
+            [
+                new Intl.Collator("en", { sensitivity: "case" }).compare("A", "a"),
+                new Intl.Collator("en", { sensitivity: "case" }).compare("a", "\u00E1"),
+                new Intl.Collator("en", { sensitivity: "accent" }).compare("a", "\u00E1"),
+                new Intl.Collator("de", { usage: "search" }).compare("\u00C4", "AE"),
+                new Intl.Collator("de", { collation: "phonebk" }).compare("\u00C4", "AE"),
+                new Intl.Locale("zh-Hant").getCollations().filter(c => c === "pinyin" || c === "stroke").join(),
+                Intl.Collator.supportedLocalesOf(["bs-Cyrl"]).length === 1,
+                new Intl.Collator("da", { usage: "search" }).resolvedOptions().caseFirst,
+                new Intl.Collator("ar", { caseFirst: "upper" }).compare("8", "\u064E8"),
+            ].join("|")
+            """));
+    }
+
+    [Fact]
+    public void LocaleCompare()
+    {
+        Assert.Equal("-1|1|0|-1|0", Evaluate("""
+            [
+                "a".localeCompare("b"),
+                "\u00E4".localeCompare("z", "sv"),
+                "a".localeCompare("A", "en", { sensitivity: "base" }),
+                "\u00E4".localeCompare("z", "de"),
+                "\u0041\u030A".localeCompare("\u00C5"),
+            ].join("|")
+            """));
+    }
+
     [Fact]
     public void SupportedValuesOf()
     {

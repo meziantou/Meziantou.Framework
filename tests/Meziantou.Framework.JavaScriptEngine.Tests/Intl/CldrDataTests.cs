@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.IO.Compression;
+using Meziantou.Framework.JavaScriptEngine.Intl;
 using Meziantou.Framework.JavaScriptEngine.Intl.Data;
 using Meziantou.Framework.JavaScriptEngine.Intl.Data.Collation;
 using Meziantou.Framework.JavaScriptEngine.TimeZones;
@@ -721,9 +722,130 @@ public sealed class CldrDataTests
         Assert.Equal("stroke", collation.GetDefaultCollation(LanguageId.Parse("yue")));
         Assert.Equal("standard", collation.GetDefaultCollation(LanguageId.Parse("fr")));
         Assert.Equal(["fr-CA", "und"], collation.GetFallbackChain(LanguageId.Parse("fr-CA")));
-        Assert.Equal(["sr-Latn", "und"], collation.GetFallbackChain(LanguageId.Parse("sr-Latn-RS")));
-        Assert.Equal(["und"], collation.GetFallbackChain(LanguageId.Parse("az-Cyrl")));
+        Assert.Equal(["sr-Latn", "sr", "und"], collation.GetFallbackChain(LanguageId.Parse("sr-Latn-RS")));
+        Assert.Equal(["az", "und"], collation.GetFallbackChain(LanguageId.Parse("az-Cyrl")));
+        Assert.Equal(["zh-Hant", "zh", "und"], collation.GetFallbackChain(LanguageId.Parse("zh-TW")));
+        Assert.Equal(["zh-Hant", "zh", "und"], collation.GetFallbackChain(LanguageId.Parse("yue")));
+        Assert.Equal(["es", "und"], collation.GetFallbackChain(LanguageId.Parse("es-MX")));
+        Assert.Equal(["no", "und"], collation.GetFallbackChain(LanguageId.Parse("nb")));
+        Assert.Equal(["pinyin", "standard", "stroke", "unihan", "zhuyin"], collation.GetCollationTypes(LanguageId.Parse("zh-Hant")).Where(type => type is not ("emoji" or "eor" or "search")).ToArray());
         Assert.Equal("[backwards 2]", collation.GetRules(LanguageId.Parse("fr-CA"), "standard"));
+    }
+
+    // The collator with the root collation: each line of the conformance tests of CLDR sorts after the previous one
+    // when comparing the levels 1 to 3 (the variable characters are ignored with the shifted alternate)
+    [Theory]
+    [InlineData("CollationTest_CLDR_NON_IGNORABLE_SHORT.txt", false)]
+    [InlineData("CollationTest_CLDR_SHIFTED_SHORT.txt", true)]
+    public void Collator_ConformanceTest(string file, bool shifted)
+    {
+        var collator = TailoredCollation.Root.GetCollator(new CollatorSettings(3, CaseLevel: false, CollationCaseFirst.Off, shifted, Numeric: false));
+        string? previous = null;
+        var previousLine = "";
+        var count = 0;
+        var errors = new List<string>();
+        foreach (var line in ReadTestData(file))
+        {
+            if (line.Length == 0 || line.StartsWith('#', StringComparison.Ordinal))
+                continue;
+
+            var text = new StringBuilder();
+            foreach (var item in line.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var codePoint = int.Parse(item, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+                text.Append(codePoint is >= 0xD800 and <= 0xDFFF ? ((char)codePoint).ToString() : char.ConvertFromUtf32(codePoint));
+            }
+
+            var current = text.ToString();
+            if (previous is not null && (collator.Compare(previous, current) > 0 || collator.CompareWithoutFastPath(previous, current) > 0))
+            {
+                errors.Add($"{line} sorts before {previousLine}");
+            }
+
+            previous = current;
+            previousLine = line;
+            count++;
+        }
+
+        Assert.True(count > 100_000, $"{count} lines");
+        Assert.Empty(errors.Take(20));
+    }
+
+    // Every tailoring of the data builds, and the fast path of the comparison (common prefix, precomputed collation
+    // elements of the characters below U+0300) gives the results of the general path
+    [Fact]
+    public void Collator_Tailorings()
+    {
+        var collation = Data.Collation;
+        var seed = 42u;
+        const string Pool = "aAbcChHlLnNoOsSzZ019 -.'\u00E4\u00C4\u00E5\u00E6\u00F1\u00E7\u00F6\u00FC\u00DF\u0131\u0130\u0301\u0308\u00B7\u0430\u4E00\uAC00\u3042\u30FC";
+        var count = 0;
+        foreach (var locale in collation.TailoredLocales)
+        {
+            foreach (var type in collation.GetCollationTypes(LanguageId.Parse(locale)))
+            {
+                var tailoring = TailoredCollation.Get(locale, type);
+                Assert.NotNull(tailoring);
+                foreach (var settings in (CollatorSettings[])[new(3, CaseLevel: false, CollationCaseFirst.Off, Shifted: false, Numeric: false), new(1, CaseLevel: true, CollationCaseFirst.Upper, Shifted: true, Numeric: true)])
+                {
+                    var collator = tailoring.GetCollator(settings);
+                    for (var i = 0; i < 50; i++)
+                    {
+                        var x = RandomString(ref seed);
+                        var y = Next(ref seed, 3) == 0 ? x + RandomString(ref seed) : RandomString(ref seed);
+                        if (Next(ref seed, 2) == 0)
+                        {
+                            (x, y) = (y, x);
+                        }
+
+                        Assert.Equal(Math.Sign(collator.CompareWithoutFastPath(x, y)), Math.Sign(collator.Compare(x, y)), $"{locale} {type} {settings}: '{x}' '{y}'");
+                        Assert.Equal(-Math.Sign(collator.Compare(x, y)), Math.Sign(collator.Compare(y, x)));
+                    }
+                }
+
+                count++;
+            }
+        }
+
+        Assert.True(count > 100, $"{count} tailorings");
+
+        static string RandomString(ref uint seed)
+        {
+            var length = 1 + Next(ref seed, 5);
+            var builder = new StringBuilder();
+            for (var i = 0; i < length; i++)
+            {
+                builder.Append(Pool[Next(ref seed, Pool.Length)]);
+            }
+
+            return builder.ToString();
+        }
+
+        // A deterministic pseudo-random sequence (LCG)
+        static int Next(ref uint seed, int maxValue)
+        {
+            seed = (seed * 1103515245) + 12345;
+            return (int)((seed >> 8) % (uint)maxValue);
+        }
+    }
+
+    [Fact]
+    public void Collator_ScriptGroups()
+    {
+        var root = RootCollation.Instance;
+        var groups = root.ScriptRuns.Select(run => run.Group).ToList();
+        Assert.Equal(["space", "punct", "symbol", "currency", "digit", "Latn", "Grek"], groups.Take(7).ToArray());
+        Assert.Contains("Hani", groups);
+        Assert.Contains("Hrkt", groups);
+
+        // [reorder Cyrl]: the Cyrillic letters before the Latin ones, the digits and the symbols do not move
+        var reorder = root.GetReorderTable(["Cyrl"])!;
+        var a = CollationWeights.Primary(root.Map.GetElements(root.Map.GetEntry('a'))[0]) >> 16;
+        var be = CollationWeights.Primary(root.Map.GetElements(root.Map.GetEntry('\u0431'))[0]) >> 16;
+        var zero = CollationWeights.Primary(root.Map.GetElements(root.Map.GetEntry('0'))[0]) >> 16;
+        Assert.True(reorder[be] < reorder[a]);
+        Assert.Equal(zero, reorder[zero]);
+        Assert.Null(root.GetReorderTable([]));
     }
 
     [Fact]
@@ -745,6 +867,9 @@ public sealed class CldrDataTests
 
         Assert.Equal("last regular", tailoring.Chains[3].ResetPosition);
         Assert.Equal("z", tailoring.Chains[3].Relations[0].Text);
+
+        // The escapes of the XML rules are unescaped in a quoted text too
+        Assert.Equal("\u3000x", CollationTailoring.Parse("&a='\\u3000x'").Chains[0].Relations[0].Text);
 
         Assert.Throws<FormatException>(() => CollationTailoring.Parse("<a"));
         Assert.Throws<FormatException>(() => CollationTailoring.Parse("&a<"));

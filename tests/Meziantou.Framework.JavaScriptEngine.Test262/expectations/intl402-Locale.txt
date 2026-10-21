@@ -1,2 +1,0 @@
-intl402/Locale/prototype/getCollations/collations-supported-by-collator.js:sloppy
-intl402/Locale/prototype/getCollations/collations-supported-by-collator.js:strict

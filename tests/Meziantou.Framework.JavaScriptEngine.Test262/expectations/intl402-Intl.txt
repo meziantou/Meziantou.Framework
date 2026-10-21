@@ -1,2 +1,0 @@
-intl402/Intl/supportedValuesOf/collations-accepted-by-Collator.js:sloppy
-intl402/Intl/supportedValuesOf/collations-accepted-by-Collator.js:strict

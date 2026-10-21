@@ -373,6 +373,13 @@ internal sealed class CollationRuleParser(string rules)
                         break;
                     }
 
+                    // The escapes of the CLDR XML (\uXXXX) are unescaped in quoted text too (ICU's data is unescaped before parsing)
+                    if (_rules[_position] == '\\')
+                    {
+                        quoted.Append(ReadEscape());
+                        continue;
+                    }
+
                     quoted.Append(_rules[_position++]);
                 }
 

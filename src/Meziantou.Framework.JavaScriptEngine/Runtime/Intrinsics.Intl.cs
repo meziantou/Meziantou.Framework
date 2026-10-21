@@ -38,14 +38,13 @@ internal sealed partial class Intrinsics
 
     // The Intl object and its constructors are created when the global Intl is read or a locale-sensitive method needs
     // them (most scripts do not use them: the creation of a realm is cheaper); the locale-sensitive methods of the other
-    // built-ins are defined with the realm
+    // built-ins are defined with the realm (or with their built-ins: Date, Temporal)
     private bool _isIntlInitializing;
 
     partial void InitializeIntl()
     {
         AddLazyGlobal("Intl", static intrinsics => intrinsics.EnsureIntl()._intl!);
         CollatorBuiltins.InitializeLocaleCompare(this);
-        DateTimeFormatLocaleSensitiveBuiltins.Initialize(this);
         LocaleSensitiveBuiltins.Initialize(this);
     }
 

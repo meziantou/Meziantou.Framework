@@ -167,10 +167,10 @@ internal static partial class JsInterpreter
                     values[sp++] = JsValue.False;
                     break;
                 case OpCode.PushInt:
-                    values[sp++] = new JsValue(code[pc++]);
+                    JsValue.StoreNumber(ref values[sp++], code[pc++]);
                     break;
                 case OpCode.PushConst:
-                    values[sp++] = frame.Code.Constants[code[pc++]];
+                    JsValue.Store(ref values[sp++], frame.Code.Constants[code[pc++]]);
                     break;
                 case OpCode.PushHole:
                     values[sp++] = JsValue.Hole;
@@ -181,7 +181,7 @@ internal static partial class JsInterpreter
                     sp--;
                     break;
                 case OpCode.Dup:
-                    values[sp] = values[sp - 1];
+                    JsValue.Store(ref values[sp], values[sp - 1]);
                     sp++;
                     break;
                 case OpCode.Dup2:
@@ -204,7 +204,7 @@ internal static partial class JsInterpreter
 
                 // ---- Registers and environments -------------------------------------------------------------------
                 case OpCode.LoadLocal:
-                    values[sp++] = values[code[pc++]];
+                    JsValue.Store(ref values[sp++], values[code[pc++]]);
                     break;
                 case OpCode.LoadLocalChecked:
                     {
@@ -214,25 +214,41 @@ internal static partial class JsInterpreter
                             ThrowTdz(frame, code[pc + 1]);
                         }
 
-                        values[sp++] = value;
+                        JsValue.Store(ref values[sp++], value);
                         pc += 2;
                         break;
                     }
 
                 case OpCode.StoreLocal:
-                    values[code[pc++]] = values[--sp];
+                    JsValue.Store(ref values[code[pc++]], values[--sp]);
                     break;
                 case OpCode.IncrementLocal:
                     {
                         ref var local = ref values[code[pc++]];
-                        local = local.IsNumber ? new JsValue(local.NumberValue + 1) : Operators.Increment(JsOperations.ToNumeric(local), 1);
+                        if (local.IsNumber)
+                        {
+                            JsValue.StoreNumber(ref local, local.NumberValue + 1);
+                        }
+                        else
+                        {
+                            local = Operators.Increment(JsOperations.ToNumeric(local), 1);
+                        }
+
                         break;
                     }
 
                 case OpCode.DecrementLocal:
                     {
                         ref var local = ref values[code[pc++]];
-                        local = local.IsNumber ? new JsValue(local.NumberValue - 1) : Operators.Increment(JsOperations.ToNumeric(local), -1);
+                        if (local.IsNumber)
+                        {
+                            JsValue.StoreNumber(ref local, local.NumberValue - 1);
+                        }
+                        else
+                        {
+                            local = Operators.Increment(JsOperations.ToNumeric(local), -1);
+                        }
+
                         break;
                     }
 
@@ -244,13 +260,13 @@ internal static partial class JsInterpreter
                             ThrowTdz(frame, code[pc + 1]);
                         }
 
-                        values[register] = values[--sp];
+                        JsValue.Store(ref values[register], values[--sp]);
                         pc += 2;
                         break;
                     }
 
                 case OpCode.LoadContext:
-                    values[sp++] = GetEnvironment(frame.Environment, code[pc]).Slots[code[pc + 1]];
+                    JsValue.Store(ref values[sp++], GetEnvironment(frame.Environment, code[pc]).Slots[code[pc + 1]]);
                     pc += 2;
                     break;
                 case OpCode.LoadContextChecked:
@@ -261,13 +277,13 @@ internal static partial class JsInterpreter
                             ThrowTdz(frame, code[pc + 2]);
                         }
 
-                        values[sp++] = value;
+                        JsValue.Store(ref values[sp++], value);
                         pc += 3;
                         break;
                     }
 
                 case OpCode.StoreContext:
-                    GetEnvironment(frame.Environment, code[pc]).Slots[code[pc + 1]] = values[--sp];
+                    JsValue.Store(ref GetEnvironment(frame.Environment, code[pc]).Slots[code[pc + 1]], values[--sp]);
                     pc += 2;
                     break;
                 case OpCode.StoreContextChecked:
@@ -279,7 +295,7 @@ internal static partial class JsInterpreter
                             ThrowTdz(frame, code[pc + 2]);
                         }
 
-                        slots[slot] = values[--sp];
+                        JsValue.Store(ref slots[slot], values[--sp]);
                         pc += 3;
                         break;
                     }
@@ -301,7 +317,7 @@ internal static partial class JsInterpreter
                     {
                         // The arguments are stored after the registers
                         var index = code[pc++];
-                        values[sp++] = (uint)index < (uint)frame.ArgumentCount ? values[frame.Code.RegisterCount + index] : default;
+                        JsValue.Store(ref values[sp++], (uint)index < (uint)frame.ArgumentCount ? values[frame.Code.RegisterCount + index] : default);
                         break;
                     }
 
@@ -323,7 +339,15 @@ internal static partial class JsInterpreter
                         var left = values[sp - 2];
                         var right = values[sp - 1];
                         sp--;
-                        values[sp - 1] = left.IsNumber && right.IsNumber ? new JsValue(left.NumberValue + right.NumberValue) : Operators.Add(left, right);
+                        if (left.IsNumber && right.IsNumber)
+                        {
+                            JsValue.StoreNumber(ref values[sp - 1], left.NumberValue + right.NumberValue);
+                        }
+                        else
+                        {
+                            values[sp - 1] = Operators.Add(left, right);
+                        }
+
                         break;
                     }
 
@@ -332,7 +356,15 @@ internal static partial class JsInterpreter
                         var left = values[sp - 2];
                         var right = values[sp - 1];
                         sp--;
-                        values[sp - 1] = left.IsNumber && right.IsNumber ? new JsValue(left.NumberValue - right.NumberValue) : Operators.Binary(op, left, right);
+                        if (left.IsNumber && right.IsNumber)
+                        {
+                            JsValue.StoreNumber(ref values[sp - 1], left.NumberValue - right.NumberValue);
+                        }
+                        else
+                        {
+                            values[sp - 1] = Operators.Binary(op, left, right);
+                        }
+
                         break;
                     }
 
@@ -341,7 +373,15 @@ internal static partial class JsInterpreter
                         var left = values[sp - 2];
                         var right = values[sp - 1];
                         sp--;
-                        values[sp - 1] = left.IsNumber && right.IsNumber ? new JsValue(left.NumberValue * right.NumberValue) : Operators.Binary(op, left, right);
+                        if (left.IsNumber && right.IsNumber)
+                        {
+                            JsValue.StoreNumber(ref values[sp - 1], left.NumberValue * right.NumberValue);
+                        }
+                        else
+                        {
+                            values[sp - 1] = Operators.Binary(op, left, right);
+                        }
+
                         break;
                     }
 
@@ -350,7 +390,15 @@ internal static partial class JsInterpreter
                         var left = values[sp - 2];
                         var right = values[sp - 1];
                         sp--;
-                        values[sp - 1] = left.IsNumber && right.IsNumber ? new JsValue(left.NumberValue / right.NumberValue) : Operators.Binary(op, left, right);
+                        if (left.IsNumber && right.IsNumber)
+                        {
+                            JsValue.StoreNumber(ref values[sp - 1], left.NumberValue / right.NumberValue);
+                        }
+                        else
+                        {
+                            values[sp - 1] = Operators.Binary(op, left, right);
+                        }
+
                         break;
                     }
 
@@ -359,7 +407,15 @@ internal static partial class JsInterpreter
                         var left = values[sp - 2];
                         var right = values[sp - 1];
                         sp--;
-                        values[sp - 1] = left.IsNumber && right.IsNumber ? new JsValue(left.NumberValue % right.NumberValue) : Operators.Binary(op, left, right);
+                        if (left.IsNumber && right.IsNumber)
+                        {
+                            JsValue.StoreNumber(ref values[sp - 1], left.NumberValue % right.NumberValue);
+                        }
+                        else
+                        {
+                            values[sp - 1] = Operators.Binary(op, left, right);
+                        }
+
                         break;
                     }
 
@@ -673,7 +729,7 @@ internal static partial class JsInterpreter
                     ArrayAppend(values[sp - 1], values[sp]);
                     break;
                 case OpCode.GetProperty:
-                    values[sp - 1] = GetProperty(frame, code[pc], code[pc + 1], values[sp - 1]);
+                    JsValue.Store(ref values[sp - 1], GetProperty(frame, code[pc], code[pc + 1], values[sp - 1]));
                     pc += 2;
                     break;
                 case OpCode.GetMethod:
@@ -694,7 +750,7 @@ internal static partial class JsInterpreter
                     break;
                 case OpCode.GetElement:
                     sp--;
-                    values[sp - 1] = GetElement(frame.Realm, values[sp - 1], values[sp]);
+                    JsValue.Store(ref values[sp - 1], GetElement(frame.Realm, values[sp - 1], values[sp]));
                     break;
                 case OpCode.SetElement:
                     sp -= 2;

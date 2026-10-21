@@ -97,6 +97,49 @@ public readonly struct JsValue : IEquatable<JsValue>
     /// <summary>Gets the number of a value that is known to be a number (no check).</summary>
     internal double NumberValue => _number;
 
+    /// <summary>
+    /// Stores a value in a slot of the interpreter (a register, the stack). When the slot already has the same cell (the
+    /// numbers: they share <see cref="NumberCell.Instance"/>), only the number is written: storing a reference into a heap
+    /// object calls the write barrier of the GC, the main cost of the loops on numbers.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void Store(ref JsValue slot, JsValue value)
+    {
+        if (ReferenceEquals(slot.Cell, value.Cell))
+        {
+            ref var layout = ref unsafe(Unsafe.As<JsValue, ValueLayout>(ref slot));
+            layout.Number = value._number;
+        }
+        else
+        {
+            slot = value;
+        }
+    }
+
+    /// <summary>Stores a number in a slot of the interpreter (see <see cref="Store"/>).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void StoreNumber(ref JsValue slot, double value)
+    {
+        if (ReferenceEquals(slot.Cell, NumberCell.Instance))
+        {
+            ref var layout = ref unsafe(Unsafe.As<JsValue, ValueLayout>(ref slot));
+            layout.Number = value;
+        }
+        else
+        {
+            slot = new JsValue(value);
+        }
+    }
+
+    /// <summary>The fields of <see cref="JsValue"/> (same types, same order) with a writable number.</summary>
+    private struct ValueLayout
+    {
+#pragma warning disable CS0649 // Only the number is written
+        public JsCell? Cell;
+#pragma warning restore CS0649
+        public double Number;
+    }
+
     /// <summary>Gets the boolean of a boolean value.</summary>
     public bool AsBoolean() => ((BooleanCell)Cell!).Value;
 

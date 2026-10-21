@@ -239,15 +239,16 @@ public partial class JavaScriptScriptEngine
 /// </summary>
 internal sealed class JavaScriptModuleLoader(JavaScriptScriptEngine owner) : JsModuleLoader
 {
-    private readonly ConditionalWeakTable<GlobalScope, Dictionary<(string Url, ModuleType Type), ModuleMapEntry>> _moduleMaps = [];
-    private readonly ConditionalWeakTable<JsObject, object> _fetchFailures = [];
-    private readonly ConditionalWeakTable<JsObject, ErrorLocation> _parseErrorLocations = [];
+    // Created on first use: most documents have no module, and the container of a ConditionalWeakTable is finalized twice
+    private ConditionalWeakTable<GlobalScope, Dictionary<(string Url, ModuleType Type), ModuleMapEntry>>? _moduleMaps;
+    private ConditionalWeakTable<JsObject, object>? _fetchFailures;
+    private ConditionalWeakTable<JsObject, ErrorLocation>? _parseErrorLocations;
 
     /// <summary>The location of a parse error of a module (see <see cref="ErrorLocation"/>), or null.</summary>
-    public ErrorLocation? GetParseErrorLocation(JsValue error) => error.TryGetObject() is { } obj && _parseErrorLocations.TryGetValue(obj, out var location) ? location : null;
+    public ErrorLocation? GetParseErrorLocation(JsValue error) => error.TryGetObject() is { } obj && _parseErrorLocations is not null && _parseErrorLocations.TryGetValue(obj, out var location) ? location : null;
 
     /// <summary>Whether a rejection reason is the error of a module that could not be fetched.</summary>
-    public bool IsFetchFailure(JsValue reason) => reason.TryGetObject() is { } obj && _fetchFailures.TryGetValue(obj, out _);
+    public bool IsFetchFailure(JsValue reason) => reason.TryGetObject() is { } obj && _fetchFailures is not null && _fetchFailures.TryGetValue(obj, out _);
 
     protected override void InitializeImportMeta(JsSourceTextModule module, JsObject importMeta) => owner.InitializeImportMeta(module, importMeta);
 
@@ -262,7 +263,7 @@ internal sealed class JavaScriptModuleLoader(JavaScriptScriptEngine owner) : JsM
         }
 
         var module = Build(realm, script.BaseUrl, script.SourceText, ModuleType.JavaScript, hostDefined, script.Global, isInline: false, 0, 0);
-        var map = _moduleMaps.GetOrCreateValue(script.Global);
+        var map = (_moduleMaps ??= []).GetOrCreateValue(script.Global);
         map.TryAdd((script.BaseUrl, ModuleType.JavaScript), new ModuleMapEntry { Module = module, Url = script.BaseUrl, SourceText = script.SourceText });
         return module;
     }
@@ -392,7 +393,7 @@ internal sealed class JavaScriptModuleLoader(JavaScriptScriptEngine owner) : JsM
     /// </summary>
     public void Load(GlobalScope window, string url, ModuleType type, ModuleFetchOptions fetchOptions, string? referrer, Element? initiator, Action<ModuleMapEntry> onLoaded, RequestDestination? destination = null)
     {
-        var map = _moduleMaps.GetOrCreateValue(window);
+        var map = (_moduleMaps ??= []).GetOrCreateValue(window);
         var key = (url, type);
         if (map.TryGetValue(key, out var entry))
         {
@@ -473,7 +474,7 @@ internal sealed class JavaScriptModuleLoader(JavaScriptScriptEngine owner) : JsM
     {
         var realm = owner.Agent.GetRealm(window);
         var error = (JsObject)realm.Run(() => realm.CreateError("TypeError", $"Failed to fetch the module '{url}'"));
-        _fetchFailures.AddOrUpdate(error, error);
+        (_fetchFailures ??= []).AddOrUpdate(error, error);
         return error;
     }
 
@@ -510,7 +511,7 @@ internal sealed class JavaScriptModuleLoader(JavaScriptScriptEngine owner) : JsM
             // A parse error of the module, or invalid JSON: the error is located in the module (the inline scripts are located in their document)
             if (ex.Value.TryGetObject() is { } error)
             {
-                _parseErrorLocations.AddOrUpdate(error, new ErrorLocation(isInline ? null : url, ex.Location?.Line ?? 0, ex.Location?.Column ?? 0));
+                (_parseErrorLocations ??= []).AddOrUpdate(error, new ErrorLocation(isInline ? null : url, ex.Location?.Line ?? 0, ex.Location?.Column ?? 0));
             }
 
             throw;

@@ -19,8 +19,11 @@ internal sealed class JavaScriptAdapterState(JsEngine engine, JavaScriptHost hos
 
     public JavaScriptHost Host { get; } = host;
 
-    /// <summary>The [[ArrayBufferDetachKey]] of the buffers created by <see cref="JavaScriptAdapter.CreateArrayBufferWithData"/>.</summary>
-    public ConditionalWeakTable<JsObject, string> DetachKeys { get; } = [];
+    /// <summary>
+    /// The [[ArrayBufferDetachKey]] of the buffers created by <see cref="JavaScriptAdapter.CreateArrayBufferWithData"/>,
+    /// created on first use (the container of a ConditionalWeakTable is finalized twice).
+    /// </summary>
+    public ConditionalWeakTable<JsObject, string> DetachKeys => field ??= [];
 
     public JsRealm CreateRealm() => Engine.CreateRealm();
 }

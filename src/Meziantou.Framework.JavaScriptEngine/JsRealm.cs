@@ -37,8 +37,11 @@ public sealed partial class JsRealm
     /// <summary>Gets the global environment of the realm.</summary>
     internal Interpreter.GlobalEnvironment GlobalEnvironment { get; }
 
-    /// <summary>Gets the template objects of the tagged templates ([[TemplateMap]]).</summary>
-    internal System.Runtime.CompilerServices.ConditionalWeakTable<Compiler.TemplateSite, JsArray> TemplateRegistry { get; } = [];
+    /// <summary>
+    /// Gets the template objects of the tagged templates ([[TemplateMap]]). It is created on first use: the container of a
+    /// ConditionalWeakTable is finalized twice, which keeps it alive for two more collections.
+    /// </summary>
+    internal System.Runtime.CompilerServices.ConditionalWeakTable<Compiler.TemplateSite, JsArray> TemplateRegistry => field ??= [];
 
     /// <summary>Runs a script in this realm (ScriptEvaluation) and returns its completion value.</summary>
     /// <param name="code">The source text of the script.</param>

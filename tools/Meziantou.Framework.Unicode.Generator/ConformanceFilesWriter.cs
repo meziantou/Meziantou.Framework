@@ -16,6 +16,7 @@ internal static class ConformanceFilesWriter
     [
         "ucd/auxiliary/GraphemeBreakTest.txt",
         "ucd/auxiliary/WordBreakTest.txt",
+        "ucd/auxiliary/SentenceBreakTest.txt",
         "ucd/auxiliary/LineBreakTest.txt",
         "ucd/BidiTest.txt",
         "ucd/BidiCharacterTest.txt",

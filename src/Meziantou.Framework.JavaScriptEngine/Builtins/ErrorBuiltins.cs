@@ -10,6 +10,7 @@ internal static class ErrorBuiltins
         var error = realm.CreateBuiltinFunction("Error", 1, (f, _, args, newTarget) => Construct(f, args, newTarget, ErrorType.Error), isConstructor: true);
         InitializeConstructor(error, errorPrototype);
         realm.DefineMethod(errorPrototype, "toString", 0, ToString);
+        realm.DefineAccessor(errorPrototype, "stack", GetStack, SetStack);
         constructors[(int)ErrorType.Error] = error;
         intrinsics.AddGlobal("Error", error);
 
@@ -45,7 +46,7 @@ internal static class ErrorBuiltins
     private static JsValue Construct(JsBuiltinFunction function, ReadOnlySpan<JsValue> arguments, JsObject? newTarget, ErrorType type)
     {
         var prototype = ObjectOperations.GetPrototypeForConstruct(function, newTarget, intrinsics => intrinsics.GetErrorPrototype(type));
-        var error = new JsObject(prototype, ObjectClass.Error);
+        var error = new JsErrorObject(prototype);
         var message = arguments.Length > 0 ? arguments[0] : default;
         if (!message.IsUndefined)
         {
@@ -53,13 +54,14 @@ internal static class ErrorBuiltins
         }
 
         InstallErrorCause(error, arguments.Length > 1 ? arguments[1] : default);
+        error.CaptureStackTrace(function.Realm.Engine);
         return error;
     }
 
     private static JsValue ConstructAggregateError(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
         var prototype = ObjectOperations.GetPrototypeForConstruct(function, newTarget, intrinsics => intrinsics.GetErrorPrototype(ErrorType.AggregateError));
-        var error = new JsObject(prototype, ObjectClass.Error);
+        var error = new JsErrorObject(prototype);
         var message = arguments.Length > 1 ? arguments[1] : default;
         if (!message.IsUndefined)
         {
@@ -69,6 +71,7 @@ internal static class ErrorBuiltins
         InstallErrorCause(error, arguments.Length > 2 ? arguments[2] : default);
         var errors = IteratorOperations.IterableToList(arguments.Length > 0 ? arguments[0] : default);
         ObjectOperations.CreateNonEnumerableDataPropertyOrThrow(error, "errors", JsArray.Create(function.Realm, errors.ToArray()));
+        error.CaptureStackTrace(function.Realm.Engine);
         return error;
     }
 
@@ -80,6 +83,45 @@ internal static class ErrorBuiltins
             var cause = optionsObject.Get(new PropertyKey("cause"));
             ObjectOperations.CreateNonEnumerableDataPropertyOrThrow(error, "cause", cause);
         }
+    }
+
+    /// <summary>get Error.prototype.stack (https://tc39.es/proposal-error-stack-accessor/)</summary>
+    private static JsValue GetStack(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
+    {
+        if (!thisValue.IsObject)
+            return ThrowHelper.ThrowTypeError<JsValue>("Error.prototype.stack getter called on non-object");
+
+        return thisValue.Cell is JsErrorObject { StackTrace: { } stack } ? stack : JsValue.Undefined;
+    }
+
+    /// <summary>set Error.prototype.stack (https://tc39.es/proposal-error-stack-accessor/)</summary>
+    private static JsValue SetStack(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
+    {
+        if (thisValue.Cell is not JsObject obj)
+            return ThrowHelper.ThrowTypeError<JsValue>("Error.prototype.stack setter called on non-object");
+
+        if (arguments.Length == 0)
+            return ThrowHelper.ThrowTypeError<JsValue>("Error.prototype.stack setter requires an argument");
+
+        var value = arguments[0];
+        if (!value.IsString)
+            return ThrowHelper.ThrowTypeError<JsValue>("Error.prototype.stack must be a string");
+
+        // SetterThatIgnoresPrototypeProperties(this, %Error.prototype%, "stack", value)
+        if (ReferenceEquals(obj, function.Realm.Intrinsics.GetErrorPrototype(ErrorType.Error)))
+            return ThrowHelper.ThrowTypeError<JsValue>("Cannot set the stack of Error.prototype");
+
+        var key = new PropertyKey("stack");
+        if (!obj.GetOwnProperty(key, out _))
+        {
+            obj.CreateDataPropertyOrThrow(key, value);
+        }
+        else
+        {
+            obj.Set(key, value, throwOnFailure: true);
+        }
+
+        return JsValue.Undefined;
     }
 
     /// <summary>Error.prototype.toString()</summary>

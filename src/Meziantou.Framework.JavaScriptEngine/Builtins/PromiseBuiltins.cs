@@ -256,9 +256,9 @@ internal static class PromiseBuiltins
     }
 
     /// <summary>A newly created AggregateError object whose "errors" property is the list of the errors.</summary>
-    private static JsObject CreateAggregateError(JsRealm realm, CombinatorState state)
+    private static JsErrorObject CreateAggregateError(JsRealm realm, CombinatorState state)
     {
-        var error = new JsObject(realm.Intrinsics.GetErrorPrototype(ErrorType.AggregateError), ObjectClass.Error);
+        var error = new JsErrorObject(realm.Intrinsics.GetErrorPrototype(ErrorType.AggregateError));
         error.DefinePropertyOrThrow("errors", PropertyDescriptor.Data(JsArray.Create(realm, state.ValuesAsSpan()), PropertyFlags.Writable | PropertyFlags.Configurable));
         return error;
     }

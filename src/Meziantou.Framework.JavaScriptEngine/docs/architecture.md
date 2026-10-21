@@ -130,6 +130,25 @@ internal static class MapBuiltins
 - Register the built-in in `Intrinsics` (a prototype property created in the constructor of `Intrinsics` when other
   built-ins reference it, and a call in `InitializeBuiltins`).
 
+## Jobs and promises
+
+The job queue of the agent is in `JsEngine.Jobs.cs`. A job is a `JsJob`: a static `JsJobAction(state, argument)` (no
+closure), its state and argument, and the realm it runs in. `engine.EnqueuePromiseJob` / `EnqueueGenericJob` (callable
+from any thread) / `EnqueueTimeoutJob` go through the host hooks (`JsHostHooks`, `engine.HostHooks`), whose default
+implementations queue the jobs in the engine. `engine.RunJobs()` runs the promise jobs first, then the generic jobs and
+the due timeout jobs (on the `TimeProvider` of the options), until the queue is empty; it clears the WeakRef kept
+objects after each job. A job exception goes to `JsHostHooks.ReportJobException` (default: rethrown by `RunJobs`).
+`EnterNestedJobQueue()` redirects the new jobs to a separate queue until it is disposed. The other hooks:
+HostPromiseRejectionTracker, HostMakeJobCallback / HostCallJobCallback (a host state captured by `then` and restored when
+the reaction runs).
+
+`JsPromise` (`Runtime/JsPromise.cs`) has the promise abstract operations: `PromiseCapability.Create(C)` /
+`CreateIntrinsic(realm)` (NewPromiseCapability; the capabilities of %Promise% do not create the resolving functions
+until they are needed), `capability.Resolve(value)` / `Reject(reason)`, `JsPromise.PromiseResolve(C, x)`,
+`JsPromise.PerformPromiseThen(promise, onFulfilled, onRejected, capability)`. For `await`:
+`JsPromise.PromiseResolve(realm, value)` and `JsPromise.PerformPromiseThen(promise, PromiseContinuation, PromiseContinuation, state)`
+(.NET continuations: no function object is created).
+
 ## Tests
 
 - `tests/Meziantou.Framework.JavaScriptEngine.Tests`: unit tests (xUnit, the repo's `Assert`).

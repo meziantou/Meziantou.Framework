@@ -1,0 +1,2 @@
+language/arguments-object/10.6-13-a-2.js:sloppy
+language/arguments-object/10.6-13-a-3.js:sloppy

@@ -316,6 +316,57 @@ public enum UnicodeWordBreak : byte
     ZWJ = 22,
 }
 
+/// <summary>Represents the Sentence_Break property of a code point.</summary>
+/// <remarks>The numeric values are stable across the versions of this package.</remarks>
+/// <seealso href="https://www.unicode.org/reports/tr29/" />
+public enum UnicodeSentenceBreak : byte
+{
+    /// <summary>The <c>Other</c> value (<c>XX</c>).</summary>
+    Other = 0,
+
+    /// <summary>The <c>ATerm</c> value (<c>AT</c>).</summary>
+    ATerm = 1,
+
+    /// <summary>The <c>Close</c> value (<c>CL</c>).</summary>
+    Close = 2,
+
+    /// <summary>The <c>CR</c> value.</summary>
+    CR = 3,
+
+    /// <summary>The <c>Extend</c> value (<c>EX</c>).</summary>
+    Extend = 4,
+
+    /// <summary>The <c>Format</c> value (<c>FO</c>).</summary>
+    Format = 5,
+
+    /// <summary>The <c>OLetter</c> value (<c>LE</c>).</summary>
+    OLetter = 6,
+
+    /// <summary>The <c>LF</c> value.</summary>
+    LF = 7,
+
+    /// <summary>The <c>Lower</c> value (<c>LO</c>).</summary>
+    Lower = 8,
+
+    /// <summary>The <c>Numeric</c> value (<c>NU</c>).</summary>
+    Numeric = 9,
+
+    /// <summary>The <c>SContinue</c> value (<c>SC</c>).</summary>
+    SContinue = 10,
+
+    /// <summary>The <c>Sep</c> value (<c>SE</c>).</summary>
+    Sep = 11,
+
+    /// <summary>The <c>Sp</c> value (<c>SP</c>).</summary>
+    Sp = 12,
+
+    /// <summary>The <c>STerm</c> value (<c>ST</c>).</summary>
+    STerm = 13,
+
+    /// <summary>The <c>Upper</c> value (<c>UP</c>).</summary>
+    Upper = 14,
+}
+
 /// <summary>Represents the East_Asian_Width property of a code point.</summary>
 /// <remarks>The numeric values are stable across the versions of this package.</remarks>
 /// <seealso href="https://www.unicode.org/reports/tr11/" />

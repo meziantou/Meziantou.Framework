@@ -1,0 +1,10 @@
+{
+  "tzdata": {
+    "version": "2026e",
+    "sha256": "b26882805f26aac59d5b222978e6580484b834ccdc98be89df2f05a6dc53a652"
+  },
+  "cldr": {
+    "version": "release-48-2",
+    "sha256": "9cf3db6a31fb382fee21b70be6feba1e82766b0fcd06e6261fb7936a73e537ff"
+  }
+}

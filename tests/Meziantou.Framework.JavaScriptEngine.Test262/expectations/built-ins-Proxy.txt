@@ -1,0 +1,14 @@
+built-ins/Proxy/defineProperty/trap-is-null-target-is-proxy.js:sloppy
+built-ins/Proxy/defineProperty/trap-is-null-target-is-proxy.js:strict
+built-ins/Proxy/deleteProperty/trap-is-null-target-is-proxy.js:sloppy
+built-ins/Proxy/deleteProperty/trap-is-null-target-is-proxy.js:strict
+built-ins/Proxy/get/trap-is-missing-target-is-proxy.js:sloppy
+built-ins/Proxy/get/trap-is-missing-target-is-proxy.js:strict
+built-ins/Proxy/getOwnPropertyDescriptor/trap-is-undefined-target-is-proxy.js:sloppy
+built-ins/Proxy/getOwnPropertyDescriptor/trap-is-undefined-target-is-proxy.js:strict
+built-ins/Proxy/has/trap-is-missing-target-is-proxy.js:sloppy
+built-ins/Proxy/has/trap-is-missing-target-is-proxy.js:strict
+built-ins/Proxy/isExtensible/trap-is-missing-target-is-proxy.js:sloppy
+built-ins/Proxy/isExtensible/trap-is-missing-target-is-proxy.js:strict
+built-ins/Proxy/set/trap-is-missing-target-is-proxy.js:sloppy
+built-ins/Proxy/set/trap-is-missing-target-is-proxy.js:strict

@@ -1,0 +1,2 @@
+built-ins/AsyncIteratorPrototype/Symbol.asyncDispose/invokes-return.js:sloppy
+built-ins/AsyncIteratorPrototype/Symbol.asyncDispose/invokes-return.js:strict

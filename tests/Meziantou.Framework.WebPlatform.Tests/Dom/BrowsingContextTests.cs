@@ -348,11 +348,12 @@ public sealed class BrowsingContextTests
     [Fact]
     public async Task Iframe_Src_AsynchronousDocumentLoader()
     {
+        var loaderRelease = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var context = new BrowsingContext(new BrowsingContextOptions
         {
             DocumentLoader = new DelegateDocumentLoader(async (url, cancellationToken) =>
             {
-                await Task.Delay(10, cancellationToken);
+                await loaderRelease.Task.WaitAsync(cancellationToken);
                 return new DocumentResource("<title>" + url + "</title>");
             }),
         });
@@ -370,6 +371,7 @@ public sealed class BrowsingContextTests
         Assert.Equal(DocumentReadyState.Interactive, document.ReadyState);
         Assert.Empty(events);
 
+        loaderRelease.SetResult();
         await eventLoop.RunUntilIdleAsync(TestContext.Current.CancellationToken);
         Assert.False(eventLoop.HasPendingOperations);
         Assert.Equal(["iframe load", "window load"], events);

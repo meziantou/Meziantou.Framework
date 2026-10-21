@@ -127,7 +127,7 @@ public sealed class TemporalBuiltinsTests
     [Fact]
     public void Calendars_IdentifiersAreCanonicalized()
     {
-        Assert.Equal("gregory,japanese", Evaluate("['GREGORY', 'Japanese'].map(c => new Temporal.PlainDate(2024, 1, 1, c).calendarId).join()"));
+        Assert.Equal("gregory,japanese,ethioaa", Evaluate("['GREGORY', 'Japanese', 'ethiopic-amete-alem'].map(c => new Temporal.PlainDate(2024, 1, 1, c).calendarId).join()"));
         Assert.Equal("RangeError", ErrorName("new Temporal.PlainDate(2024, 1, 1, 'islamic')"));
         Assert.Equal("2024-01-01[u-ca=gregory]", Evaluate("Temporal.PlainDate.from('2024-01-01[u-ca=gregory]').toString()"));
     }
@@ -142,6 +142,11 @@ public sealed class TemporalBuiltinsTests
     [InlineData("japanese", "2019-05-01", "reiwa 1 2019 M05 1")]
     [InlineData("japanese", "1872-12-31", "ce 1872 1872 M12 31")]
     [InlineData("japanese", "1873-01-01", "meiji 6 1873 M01 1")]
+    [InlineData("coptic", "2024-03-15", "am 1740 1740 M07 6")]
+    [InlineData("ethiopic", "2024-03-15", "am 2016 2016 M07 6")]
+    [InlineData("ethioaa", "2024-03-15", "aa 7516 7516 M07 6")]
+    [InlineData("indian", "2024-03-15", "shaka 1945 1945 M12 25")]
+    [InlineData("persian", "2024-03-15", "ap 1402 1402 M12 25")]
     public void Calendars_IsoToCalendarDate(string calendar, string isoDate, string expected)
     {
         Assert.Equal(expected, Evaluate($"const d = Temporal.PlainDate.from('{isoDate}').withCalendar('{calendar}'); [d.era, d.eraYear, d.year, d.monthCode, d.day].join(' ')"));
@@ -156,6 +161,44 @@ public sealed class TemporalBuiltinsTests
         Assert.Equal("P1Y1M1D", Evaluate("Temporal.PlainDate.from({ calendar: 'gregory', year: 2024, month: 1, day: 31 }).until(Temporal.PlainDate.from({ calendar: 'gregory', year: 2025, month: 3, day: 1 }), { largestUnit: 'years' }).toString()"));
         Assert.Equal("2024-02-29[u-ca=buddhist]", Evaluate("Temporal.PlainDate.from({ calendar: 'buddhist', year: 2567, month: 1, day: 31 }).add({ months: 1 }).toString()"));
         Assert.Equal("1972-02-29[u-ca=gregory]", Evaluate("Temporal.PlainMonthDay.from({ calendar: 'gregory', monthCode: 'M02', day: 30 }).toString()"));
+    }
+
+    [Theory]
+    [InlineData("buddhist")]
+    [InlineData("coptic")]
+    [InlineData("ethioaa")]
+    [InlineData("ethiopic")]
+    [InlineData("gregory")]
+    [InlineData("indian")]
+    [InlineData("japanese")]
+    [InlineData("persian")]
+    [InlineData("roc")]
+    public void Calendars_RoundTripAndArithmetic(string calendar)
+    {
+        // Every day of a few years converts to the calendar and back, and adding the months one by one is the same as
+        // adding them at once
+        var code = $$"""
+            let errors = [];
+            let date = Temporal.PlainDate.from('2019-01-01').withCalendar('{{calendar}}');
+            const start = date;
+            for (let i = 0; i < 2000; i++) {
+                const copy = Temporal.PlainDate.from({ calendar: '{{calendar}}', year: date.year, monthCode: date.monthCode, day: date.day });
+                if (!copy.equals(date)) errors.push(date.toString());
+                const next = date.add({ days: 1 });
+                if (next.day !== 1 && (next.day !== date.day + 1 || next.month !== date.month)) errors.push('next ' + date.toString());
+                if (next.day === 1 && date.day !== date.daysInMonth) errors.push('end ' + date.toString());
+                date = next;
+            }
+
+            const months = start.until(date, { largestUnit: 'months' });
+            if (!start.add(months).equals(date)) errors.push('months ' + months);
+            const years = start.until(date, { largestUnit: 'years' });
+            if (!start.add(years).equals(date)) errors.push('years ' + years);
+            const backwards = date.until(start, { largestUnit: 'years' });
+            if (!date.add(backwards).equals(start)) errors.push('backwards ' + backwards);
+            errors.join()
+            """;
+        Assert.Equal("", Evaluate(code));
     }
 
     private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider

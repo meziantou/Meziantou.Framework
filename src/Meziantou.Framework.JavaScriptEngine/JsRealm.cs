@@ -185,6 +185,9 @@ public sealed partial class JsRealm
     internal JsBuiltinFunction CreateBuiltinFunction(PropertyKey name, int length, BuiltinFunctionCallback callback, bool isConstructor = false, JsObject? prototype = null, string? prefix = null)
     {
         var function = new JsBuiltinFunction(this, callback, isConstructor, prototype ?? Intrinsics.FunctionPrototype);
+
+        // Most built-in functions only have their length and their name
+        function.ReserveSlots(2);
         function.SetFunctionLength(length);
         if (prefix is null && name.IsString && GetBuiltinName(name.AsString()) is { } sharedName)
         {
@@ -221,6 +224,7 @@ public sealed partial class JsRealm
     internal JsBuiltinFunction DefineMethod(JsObject target, PropertyKey name, int length, BuiltinFunctionCallback callback, PropertyFlags flags = PropertyFlags.BuiltIn)
     {
         var function = CreateBuiltinFunction(name, length, callback);
+        target.UsePropertyTableForBuiltIns();
         target.DefineBuiltIn(name, function, flags);
         return function;
     }

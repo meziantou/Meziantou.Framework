@@ -136,6 +136,28 @@ public partial class JsObject
         return false;
     }
 
+    /// <summary>
+    /// Moves an object that gets many built-in methods (a prototype, a constructor, a namespace) to a property table of its
+    /// own: building a chain of shapes for each realm of each engine would cost more than it saves (the inline caches
+    /// use the positions in the table).
+    /// </summary>
+    internal void UsePropertyTableForBuiltIns()
+    {
+        if (_map is Shape { Count: >= 4 })
+        {
+            GetPropertyTable();
+        }
+    }
+
+    /// <summary>Allocates the slots of an object that has no property yet and will get <paramref name="count"/> properties (e.g. the length and the name of a built-in function).</summary>
+    internal void ReserveSlots(int count)
+    {
+        if (_slots is null && _map is Shape { Count: 0 })
+        {
+            _slots = new JsValue[count];
+        }
+    }
+
     /// <summary>Marks the object as the holder of a property whose position an inline cache remembers.</summary>
     internal void MarkInlineCacheHolder()
     {

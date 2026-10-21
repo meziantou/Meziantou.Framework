@@ -71,3 +71,35 @@ public class ScriptBenchmarks
         return document.Title;
     }
 }
+
+/// <summary>Runs a scenario of <see cref="ScriptBenchmarks"/> in a loop, to profile it (time and allocations per operation).</summary>
+internal static class ScriptProfile
+{
+    public static int Run(string scenario, int count)
+    {
+        var benchmarks = new ScriptBenchmarks();
+        Func<string> operation = scenario switch
+        {
+            "ParseAndRun" => benchmarks.ParseAndRun,
+            "CreateRealm" => benchmarks.CreateRealm,
+            "DispatchEvents" => benchmarks.DispatchEvents,
+            _ => throw new ArgumentException("Unknown scenario: " + scenario, nameof(scenario)),
+        };
+
+        for (var i = 0; i < Math.Min(count, 20); i++)
+        {
+            operation();
+        }
+
+        var allocated = GC.GetAllocatedBytesForCurrentThread();
+        var start = System.Diagnostics.Stopwatch.GetTimestamp();
+        for (var i = 0; i < count; i++)
+        {
+            operation();
+        }
+
+        var elapsed = System.Diagnostics.Stopwatch.GetElapsedTime(start);
+        Console.WriteLine($"{scenario}: {elapsed.TotalMilliseconds * 1000 / count:F1} us, {(GC.GetAllocatedBytesForCurrentThread() - allocated) / count / 1024.0:F1} KB per operation");
+        return 0;
+    }
+}

@@ -58,8 +58,9 @@ internal sealed class JsClosure : JsFunction
 
     internal override JsValue Call(JsValue thisValue, ReadOnlySpan<JsValue> arguments)
     {
+        // The error is created in the realm of the function (the callee context)
         if (IsClassConstructorFunction)
-            return ThrowHelper.ThrowTypeError<JsValue>("Class constructor " + (InitialName ?? "") + " cannot be invoked without 'new'");
+            throw new JsException(new JsValue(Realm.CreateError(ErrorType.TypeError, "Class constructor " + (InitialName ?? "") + " cannot be invoked without 'new'")));
 
         return JsInterpreter.CallClosure(this, thisValue, arguments, newTarget: null);
     }

@@ -32,7 +32,15 @@ internal static partial class JsInterpreter
             {
                 try
                 {
-                    return Execute(ref frame, entry, engine);
+                    var result = Execute(ref frame, entry, engine);
+                    if (entry.IsConstruct && entry.State == FrameState.Completed)
+                    {
+                        // The checks of the result of [[Construct]] are done once the function has been left: no handler
+                        // of the function can catch them, and the errors are created in the realm of the caller
+                        result = GetConstructResult(entry, result, previousRealm ?? entry.Realm);
+                    }
+
+                    return result;
                 }
                 catch (JsException ex)
                 {
@@ -744,9 +752,9 @@ internal static partial class JsInterpreter
                 case OpCode.Return:
                     {
                         var result = values[--sp];
-                        if (frame.IsConstruct)
+                        if (frame.IsConstruct && !ReferenceEquals(frame, entry))
                         {
-                            result = GetConstructResult(frame, result);
+                            result = GetConstructResult(frame, result, frame.Parent!.Realm);
                         }
 
                         frame.State = FrameState.Completed;

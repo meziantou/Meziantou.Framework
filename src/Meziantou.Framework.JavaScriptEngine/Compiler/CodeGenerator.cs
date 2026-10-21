@@ -241,15 +241,8 @@ internal sealed partial class CodeGenerator
 
     private void EmitImplicitReturn()
     {
-        if (_function.Kind == FunctionInfoKind.ClassConstructor && _function.FunctionNode!.IsDerivedConstructor)
-        {
-            EmitLoadThis(_function.Node, checkInitialized: true);
-        }
-        else
-        {
-            _builder.Emit(OpCode.PushUndefined);
-        }
-
+        _builder.Emit(OpCode.PushUndefined);
+        EmitDerivedConstructorReturnValue();
         _builder.Emit(OpCode.Return);
     }
 

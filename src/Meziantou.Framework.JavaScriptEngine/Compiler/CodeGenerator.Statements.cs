@@ -154,8 +154,27 @@ internal sealed partial class CodeGenerator
             }
         }
 
+        EmitDerivedConstructorReturnValue();
         _builder.Emit(OpCode.Return);
         _scope = savedScope;
+    }
+
+    /// <summary>
+    /// value -> value or this: a derived constructor that returns undefined returns its this binding when the binding is in
+    /// the environment (an arrow function or eval can call super()). The binding is not checked here: the checks of the
+    /// result are done by the Return instruction, once the function body has been left (no handler of the function can
+    /// catch them).
+    /// </summary>
+    private void EmitDerivedConstructorReturnValue()
+    {
+        if (_function.Kind != FunctionInfoKind.ClassConstructor || !_function.FunctionNode!.IsDerivedConstructor || _function.ThisVariable is not { } thisVariable)
+            return;
+
+        var hasValue = _builder.DefineLabel();
+        _builder.EmitJump(OpCode.JumpIfNotUndefinedKeep, hasValue);
+        _builder.Emit(OpCode.Pop);
+        EmitLoadVariable(thisVariable, checkTdz: false);
+        _builder.MarkLabel(hasValue);
     }
 
     private void EmitIteratorClose(bool isAsync)
@@ -781,14 +800,7 @@ internal sealed partial class CodeGenerator
     {
         if (returnStatement.Argument is null)
         {
-            if (_function.Kind == FunctionInfoKind.ClassConstructor && _function.FunctionNode!.IsDerivedConstructor)
-            {
-                EmitLoadThis(_function.Node, checkInitialized: true);
-            }
-            else
-            {
-                _builder.Emit(OpCode.PushUndefined);
-            }
+            _builder.Emit(OpCode.PushUndefined);
         }
         else
         {
@@ -798,16 +810,6 @@ internal sealed partial class CodeGenerator
             if (_function.FunctionNode is { IsAsync: true, IsGenerator: true })
             {
                 _builder.Emit(OpCode.Await);
-            }
-
-            // A derived constructor that returns undefined returns its this
-            if (_function.Kind == FunctionInfoKind.ClassConstructor && _function.FunctionNode!.IsDerivedConstructor)
-            {
-                var hasValue = _builder.DefineLabel();
-                _builder.EmitJump(OpCode.JumpIfNotUndefinedKeep, hasValue);
-                _builder.Emit(OpCode.Pop);
-                EmitLoadThis(_function.Node, checkInitialized: true);
-                _builder.MarkLabel(hasValue);
             }
         }
 

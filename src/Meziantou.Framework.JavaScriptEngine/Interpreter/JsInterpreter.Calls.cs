@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.JavaScriptEngine.Compiler;
 
 namespace Meziantou.Framework.JavaScriptEngine.Interpreter;
@@ -80,22 +81,41 @@ internal static partial class JsInterpreter
         return frame;
     }
 
-    /// <summary>The result of a [[Construct]]: the returned object, or this.</summary>
-    private static JsValue GetConstructResult(Frame frame, JsValue result)
+    /// <summary>
+    /// The result of a [[Construct]]: the returned object, or this. The errors are created in the realm of the caller, and
+    /// thrown as if by the caller (the handlers of the constructor are skipped).
+    /// </summary>
+    private static JsValue GetConstructResult(Frame frame, JsValue result, JsRealm callerRealm)
     {
         if (result.IsObject)
             return result;
 
-        if (frame.Function!.IsDerivedConstructor)
-        {
-            if (!result.IsUndefined)
-                return ThrowHelper.ThrowTypeError<JsValue>("Derived constructors may only return object or undefined");
+        if (!frame.Function!.IsDerivedConstructor)
+            return frame.This;
 
-            if (frame.This.IsHole)
-                return ThrowHelper.ThrowTypeError<JsValue>("Must call super constructor in derived class before accessing 'this' or returning from derived constructor");
+        if (result.IsUndefined)
+        {
+            // The this binding is in the frame (or, when it is in the environment, the compiler has replaced undefined by it)
+            result = frame.This;
+        }
+        else if (!result.IsHole)
+        {
+            ThrowFromCaller(frame, callerRealm, ErrorType.TypeError, "Derived constructors may only return object or undefined");
         }
 
-        return frame.This;
+        if (result.IsHole)
+        {
+            ThrowFromCaller(frame, callerRealm, ErrorType.ReferenceError, "Must call super constructor in derived class before accessing 'this' or returning from derived constructor");
+        }
+
+        return result;
+
+        [DoesNotReturn]
+        static void ThrowFromCaller(Frame frame, JsRealm callerRealm, ErrorType type, string message)
+        {
+            frame.Pc = -1;
+            throw new JsException(new JsValue(callerRealm.CreateError(type, message)));
+        }
     }
 
     /// <summary>[[Call]] of a closure from .NET (a built-in calls a callback...).</summary>

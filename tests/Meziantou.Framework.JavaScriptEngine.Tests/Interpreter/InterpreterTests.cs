@@ -45,6 +45,11 @@ public sealed class InterpreterTests
     [InlineData("var r = 0; Promise.resolve(5).then(v => { globalThis.r = v; }); r", "0")]
     [InlineData("var x = []; for (var k = 0; k <= 32; k++) x[Math.pow(2, k) - 2] = k; x.length + ',' + x[4294967294] + ',' + x[2147483646]", "4294967295,32,31")]
     [InlineData("var n = 0; function f() { n++; } var r = []; for (var code of ['f() = 1', 'f() += 1', 'f()++', '--f()', 'for (f() in [1]) {}', 'for (f() of [1]) {}']) { try { eval(code); } catch (e) { r.push(e.constructor.name); } } r.length + ',' + r[0] + ',' + n", "6,ReferenceError,6")]
+    [InlineData("class C extends Object { constructor() { super(); try { return 0; } catch (e) { return; } } } var r; try { new C(); } catch (e) { r = e.constructor.name; } r", "TypeError")]
+    [InlineData("class C extends Object { constructor() { try { return; } catch (e) { super(); } } } var r; try { new C(); } catch (e) { r = e.constructor.name; } r", "ReferenceError")]
+    [InlineData("class C extends class { } { constructor() { try { throw null; } catch (e) { return; } finally { super(); } } } typeof new C()", "object")]
+    [InlineData("class C extends class { } { constructor() { var f = () => super(); try { return; } finally { f(); } } } typeof new C()", "object")]
+    [InlineData("var iter = { [Symbol.iterator]() { return this; }, next() { return { done: false }; }, return() { this.f(); return { done: true }; } }; class C extends class { } { constructor() { iter.f = () => super(); for (var k of iter) { return; } } } typeof new C()", "object")]
     public void Evaluate(string code, string expected)
     {
         Assert.Equal(expected, Run(code));
@@ -59,6 +64,26 @@ public sealed class InterpreterTests
         engine.RunJobs();
         using var scope = engine.Enter();
         Assert.Equal("1,0,2,3", realm.Execute("log.join()").AsString());
+    }
+
+    [Fact]
+    public void Realms_ErrorsOfClassConstructors()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var other = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            realm.GlobalObject.CreateDataProperty(new PropertyKey("other"), new JsValue(other.GlobalObject));
+        }
+
+        // Calling a class constructor: the TypeError of the realm of the class
+        Assert.Equal("true", realm.Execute("var C = other.eval('(class {})'); var r; try { C(); } catch (e) { r = e.constructor === other.TypeError; } r").ToString());
+
+        // The result of a derived constructor: the errors of the realm of the caller
+        Assert.Equal("true", realm.Execute("var C = other.eval('0, class extends Object { constructor() { return null; } }'); var r; try { new C(); } catch (e) { r = e.constructor === TypeError; } r").ToString());
+        Assert.Equal("true", realm.Execute("var C = other.eval('0, class extends Object { constructor() { } }'); var r; try { new C(); } catch (e) { r = e.constructor === ReferenceError; } r").ToString());
+        Assert.Equal("true", realm.Execute("var C = other.eval('0, class extends Object { constructor() { return null; } }'); var r; try { Reflect.construct(C, []); } catch (e) { r = e.constructor === TypeError; } r").ToString());
     }
 
     [Fact]

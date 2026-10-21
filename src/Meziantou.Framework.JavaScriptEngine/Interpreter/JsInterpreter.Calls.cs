@@ -224,7 +224,8 @@ internal static partial class JsInterpreter
         for (var i = 0; i < callee.Length; i++)
         {
             var c = callee[i];
-            if (c == '(')
+            // The arguments of a call (a parenthesized expression is kept)
+            if (c == '(' && IsEndOfCallee(builder))
             {
                 i = SkipBalanced(callee, i);
                 builder.Append("(...)");
@@ -241,6 +242,20 @@ internal static partial class JsInterpreter
 
         var description = builder.ToString().Trim();
         return description.Length is > 0 and < 100 ? description : "expression";
+
+        static bool IsEndOfCallee(StringBuilder builder)
+        {
+            for (var i = builder.Length - 1; i >= 0; i--)
+            {
+                var c = builder[i];
+                if (c == ' ')
+                    continue;
+
+                return c is ')' or ']' or '_' or '$' || char.IsAsciiLetterOrDigit(c) || c > '\u007F';
+            }
+
+            return false;
+        }
 
         // The index of the parenthesis that closes the one at start (strings and templates are skipped)
         static int SkipBalanced(ReadOnlySpan<char> text, int start)

@@ -66,6 +66,7 @@ public sealed class InterpreterTests
     [InlineData("var str = 'abc'; var r; try { str.slice(0, 1).foo(''); } catch (e) { r = e.message; } r", "str.slice(...).foo is not a function")]
     [InlineData("var o = { f() { return []; } }; var r; try { (o.f(')')[0])(); } catch (e) { r = e.message; } r", "o.f(...)[0] is not a function")]
     [InlineData("var o = { a: {} }; var r; try { new o.a(1); } catch (e) { r = e.message; } r", "o.a is not a constructor")]
+    [InlineData("var r; try { (1 + 2).foo(); } catch (e) { r = e.message; } r", "(1 + 2).foo is not a function")]
     [InlineData("var fn, g, h; (fn) = function () { }; g = function () { }; (h) ??= () => { }; JSON.stringify([fn.name, g.name, h.name])", "[\"\",\"g\",\"\"]")]
     [InlineData("var log = []; var source = { get p() { log.push('get'); } }; var env = new Proxy({}, { has(t, key) { log.push('has ' + String(key)); return false; } }); var target; with (env) { var { p: target = 0 } = source; } log.join()", "has source,has target,get")]
     public void Evaluate(string code, string expected)

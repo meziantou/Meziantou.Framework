@@ -240,10 +240,7 @@
     "total": 5,
     "failures": {
       "EventListener is cross-realm callable revoked Proxy": "FAIL",
-      "EventListener is cross-realm non-callable revoked Proxy": "FAIL",
-      "EventListener is cross-realm plain object with non-callable 'handleEvent' property": "FAIL",
-      "EventListener is cross-realm plain object with revoked Proxy as 'handleEvent' property": "FAIL",
-      "EventListener is cross-realm plain object without 'handleEvent' property": "FAIL"
+      "EventListener is cross-realm non-callable revoked Proxy": "FAIL"
     }
   },
   "dom/events/EventListener-handleEvent.html": {
@@ -757,7 +754,6 @@
   "dom/idlharness.window.js?exclude=Node": {
     "total": 1366,
     "failures": {
-      "NodeFilter interface: constant SHOW_ALL on interface object": "FAIL",
       "Stringification of new XSLTProcessor()": "FAIL",
       "XSLTProcessor interface object length": "FAIL",
       "XSLTProcessor interface object name": "FAIL",
@@ -1921,10 +1917,7 @@
     "total": 5
   },
   "dom/nodes/moveBefore/fullscreen-preserve.html": {
-    "total": 1,
-    "failures": {
-      "Document#fullscreenElement": "FAIL"
-    }
+    "total": 1
   },
   "dom/nodes/moveBefore/hover-style-update.html": {
     "total": 2
@@ -3359,10 +3352,7 @@
     "total": 5,
     "failures": {
       "NodeFilter is cross-realm callable revoked Proxy": "FAIL",
-      "NodeFilter is cross-realm non-callable revoked Proxy": "FAIL",
-      "NodeFilter is cross-realm plain object with non-callable 'acceptNode' property": "FAIL",
-      "NodeFilter is cross-realm plain object with revoked Proxy as 'acceptNode' property": "FAIL",
-      "NodeFilter is cross-realm plain object without 'acceptNode' property": "FAIL"
+      "NodeFilter is cross-realm non-callable revoked Proxy": "FAIL"
     }
   },
   "dom/traversal/TreeWalker-acceptNode-filter.html": {

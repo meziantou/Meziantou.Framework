@@ -2223,7 +2223,10 @@
     "total": 3
   },
   "content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-2.https.sub.html": {
-    "total": 4
+    "total": 4,
+    "failures": {
+      "Report is observable to ReportingObserver": "FAIL"
+    }
   },
   "content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-for-dedicated-worker-import.https.sub.html": {
     "total": 2
@@ -2887,22 +2890,9 @@
   "content-security-policy/securitypolicyviolation/source-file.html": {
     "total": 17,
     "failures": {
-      "Basic HTTP URL": "FAIL",
-      "Basic HTTPS URL": "FAIL",
       "Basic WS URL": "FAIL",
       "Basic WSS URL": "FAIL",
-      "Custom protocol": "FAIL",
-      "Fragment": "FAIL",
-      "Port": "FAIL",
-      "Query": "FAIL",
-      "User": "FAIL",
-      "User:password": "FAIL",
-      "about:blank": "FAIL",
-      "about:custom": "FAIL",
-      "blob:": "FAIL",
-      "data:": "FAIL",
-      "file:": "FAIL",
-      "javascript:": "FAIL"
+      "Query": "FAIL"
     }
   },
   "content-security-policy/securitypolicyviolation/style-sample-no-opt-in.html": {
@@ -2924,10 +2914,7 @@
     "total": 2
   },
   "content-security-policy/securitypolicyviolation/targeting-for-inline-handler-in-shadow-dom.html": {
-    "total": 1,
-    "failures": {
-      "targeting-for-inline-handler-in-shadow-dom": "FAIL"
-    }
+    "total": 1
   },
   "content-security-policy/securitypolicyviolation/targeting-for-inline-handler-on-disconnected-element.html": {
     "total": 1
@@ -2939,23 +2926,13 @@
     "total": 1
   },
   "content-security-policy/securitypolicyviolation/targeting-for-inline-handler-on-subframe-element.html": {
-    "total": 9,
-    "failures": {
-      "assert_equals(e.lineNumber, 11)": "FAIL",
-      "assert_equals(e.lineNumber, 11) 1": "FAIL",
-      "assert_in_array(e.columnNumber, [7, 19])": "FAIL",
-      "assert_in_array(e.columnNumber, [7, 19]) 1": "FAIL"
-    }
+    "total": 9
   },
   "content-security-policy/securitypolicyviolation/targeting-for-inline-script-without-nonce.html": {
     "total": 5
   },
   "content-security-policy/securitypolicyviolation/targeting-for-inline-style-in-shadow-dom.html": {
-    "total": 9,
-    "failures": {
-      "assert_in_array(e.columnNumber, [12, 23])": "FAIL",
-      "assert_in_array(e.columnNumber, [12, 23]) 1": "FAIL"
-    }
+    "total": 9
   },
   "content-security-policy/securitypolicyviolation/targeting-for-inline-style.html": {
     "total": 5

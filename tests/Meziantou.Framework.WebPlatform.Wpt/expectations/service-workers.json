@@ -236,10 +236,7 @@
     "total": 2
   },
   "service-workers/service-worker/ServiceWorkerGlobalScope/service-worker-error-event.https.html": {
-    "total": 1,
-    "failures": {
-      "Error handlers inside serviceworker should see the attributes of ErrorEvent": "FAIL"
-    }
+    "total": 1
   },
   "service-workers/service-worker/ServiceWorkerGlobalScope/unregister.https.html": {
     "total": 4
@@ -525,7 +522,7 @@
     }
   },
   "service-workers/service-worker/fetch-event-respond-with-response-body-with-invalid-chunk.https.html": {
-    "harness": "ERROR",
+    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
       "Response with a ReadableStream having non-Uint8Array chunks should be transferred as errored": "TIMEOUT"

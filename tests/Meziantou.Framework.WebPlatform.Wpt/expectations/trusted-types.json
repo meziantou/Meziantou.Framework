@@ -523,6 +523,19 @@
   "trusted-types/should-sink-type-mismatch-violation-be-blocked-by-csp-003.html": {
     "total": 1
   },
+  "trusted-types/should-trusted-type-policy-creation-be-blocked-by-csp-001.html": {
+    "total": 24
+  },
+  "trusted-types/should-trusted-type-policy-creation-be-blocked-by-csp-002.html": {
+    "total": 21,
+    "failures": {
+      "directive \"trusted-type _TTP1_%09_TTP2_%0A%20_TTP3_%0C_TTP4_%0D_TTP5_%20_TTP6_\" (required-ascii-whitespace)": "FAIL",
+      "non-ASCII trusted-types directives are discarded (\"política\")": "FAIL"
+    }
+  },
+  "trusted-types/should-trusted-type-policy-creation-be-blocked-by-csp-003.html": {
+    "total": 6
+  },
   "trusted-types/should-trusted-type-policy-creation-be-blocked-by-csp-004-worker.html": {
     "total": 16
   },
@@ -549,6 +562,13 @@
   },
   "trusted-types/trusted-types-eval-reporting-report-only.html": {
     "total": 3
+  },
+  "trusted-types/trusted-types-event-handlers.html": {
+    "total": 115,
+    "failures": {
+      "Event handler div.onfullscreenchange should be blocked.": "FAIL",
+      "Event handler div.onfullscreenerror should be blocked.": "FAIL"
+    }
   },
   "trusted-types/trusted-types-from-literal.tentative.html": {
     "total": 45,

@@ -2025,19 +2025,7 @@
     }
   },
   "html/dom/idlharness.https.html?include=(Document|Window)": {
-    "total": 298,
-    "failures": {
-      "Document interface: calling execCommand(DOMString, optional boolean, optional DOMString) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
-      "Document interface: calling getElementsByName(DOMString) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
-      "Document interface: calling parseHTML(DOMString, optional SetHTMLOptions) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
-      "Document interface: calling parseHTMLUnsafe((TrustedHTML or DOMString), optional (ParseHTMLUnsafeOptions or TrustedHTMLParserOptions)) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
-      "Document interface: calling queryCommandEnabled(DOMString) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
-      "Document interface: calling queryCommandIndeterm(DOMString) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
-      "Document interface: calling queryCommandState(DOMString) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
-      "Document interface: calling queryCommandSupported(DOMString) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
-      "Document interface: calling queryCommandValue(DOMString) on iframe.contentDocument with too few arguments must throw TypeError": "FAIL",
-      "Document interface: iframe.contentDocument must have own property \"location\"": "FAIL"
-    }
+    "total": 298
   },
   "html/dom/idlharness.https.html?include=HTML.+": {
     "total": 3903,

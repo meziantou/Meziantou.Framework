@@ -213,7 +213,18 @@ Assert.Equal("Hello World!", result);
 
 ### Adding Using Directives
 
-Import namespaces to use types without fully-qualified names (`System`, `System.Collections.Generic`, `System.Linq`, `System.Text` and `System.Threading.Tasks` are imported by default):
+Templates import `System`, `System.Collections.Generic`, `System.Linq`, `System.Text` and `System.Threading.Tasks` by default:
+
+<!-- ref:../../tests/Meziantou.Framework.Templating.Tests/TemplateTest.cs;region=Template_DefaultUsings;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var template = new Template();
+template.Load("<%= Enumerable.Range(1, 5).Sum() %>");
+var result = template.Run();
+Assert.Equal("15", result);
+```
+<!-- endref -->
+
+Import other namespaces to use their types without fully-qualified names. Importing a namespace that is already imported has no effect:
 
 <!-- ref:../../tests/Meziantou.Framework.Templating.Tests/TemplateTest.cs;region=Template_Usings;format=md-fenced-code-block;dedent=true -->
 ```csharp

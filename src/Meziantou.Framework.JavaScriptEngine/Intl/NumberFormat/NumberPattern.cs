@@ -49,6 +49,9 @@ internal sealed class NumberPattern
     /// <summary>Gets the size of the other groups.</summary>
     public int SecondaryGrouping { get; }
 
+    /// <summary>Gets whether the pattern has digits (a compact pattern such as "mille" replaces the number).</summary>
+    public bool HasDigits { get; private init; }
+
     public bool HasCurrency => Contains(PositivePrefix, AffixKind.Currency) || Contains(PositiveSuffix, AffixKind.Currency);
 
     private static bool Contains(AffixToken[] tokens, AffixKind kind)
@@ -76,7 +79,7 @@ internal sealed class NumberPattern
             ParseSubpattern(pattern[(separator + 1)..], out negativePrefix, out negativeSuffix, out _, out _);
         }
 
-        return new NumberPattern(prefix, suffix, negativePrefix, negativeSuffix, primary, secondary);
+        return new NumberPattern(prefix, suffix, negativePrefix, negativeSuffix, primary, secondary) { HasDigits = positive.AsSpan().IndexOfAny('0', '#') >= 0 };
     }
 
     private static int FindNegativeSeparator(string pattern)

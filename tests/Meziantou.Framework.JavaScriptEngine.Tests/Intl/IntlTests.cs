@@ -148,9 +148,24 @@ public sealed class IntlTests
     [InlineData("en-US", "{}", "'1e1000'", "\u221E")]
     [InlineData("en-US", "{}", "'123456789012345678901234567890'", "123,456,789,012,345,678,901,234,567,890")]
     [InlineData("en-US", "{}", "12345678901234567890n", "12,345,678,901,234,567,890")]
+    [InlineData("es-MX", "{ style: 'currency', currency: 'EUR', notation: 'compact' }", "1234.5", "EUR\u00A01.2\u00A0k")]
+    [InlineData("en-US", "{ numberingSystem: 'arab' }", "-1234.5", "\u061C-\u0661\u066C\u0662\u0663\u0664\u066B\u0665")]
+    [InlineData("de-DE", "{ style: 'unit', unit: 'percent' }", "5", "5\u00A0%")]
+    [InlineData("fr-FR", "{ notation: 'compact', compactDisplay: 'long' }", "1000", "mille")]
+    [InlineData("fr-FR", "{ notation: 'compact', compactDisplay: 'long' }", "1234567", "1,2 million")]
+    [InlineData("ja-JP", "{ notation: 'compact' }", "1e21", "100,000\u4EAC")]
+    [InlineData("en-IN", "{ style: 'currency', currency: 'USD', currencySign: 'accounting' }", "98765432", "$98,765,432.00")]
+    [InlineData("en-US", "{ style: 'currency', currency: 'USD', currencyDisplay: 'code' }", "NaN", "USDNaN")]
     public void NumberFormat(string locale, string options, string value, string expected)
     {
         Assert.Equal(expected, Evaluate($"new Intl.NumberFormat('{locale}', {options}).format({value})"));
+    }
+
+    [Fact]
+    public void NumberFormat_FormatToParts()
+    {
+        Assert.Equal("integer:\u0665\u0660|percentSign:\u066A|literal:\u061C", Evaluate("new Intl.NumberFormat('ar-EG', { style: 'percent' }).formatToParts(0.5).map(p => p.type + ':' + p.value).join('|')"));
+        Assert.Equal("literal:\u200F|approximatelySign:~|literal:\u200E|plusSign:+|integer:1|decimal:.|fraction:00|literal:\u00A0\u200F|currency:CHF", Evaluate("new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'CHF', currencySign: 'accounting', signDisplay: 'always' }).formatRangeToParts(1, 1.0001).map(p => p.type + ':' + p.value).join('|')"));
     }
 
     [Fact]

@@ -8,6 +8,8 @@ internal sealed class JsNumberFormatObject(JsObject prototype) : JsObject(protot
     private Data.PluralRules? _pluralRules;
     private NumberSymbols? _symbols;
     private string? _digits;
+    private string? _currencyDecimal;
+    private string? _currencyGroup;
 
     public string Locale { get; set; } = "";
 
@@ -71,11 +73,29 @@ internal sealed class JsNumberFormatObject(JsObject prototype) : JsObject(protot
     /// <summary>Gets or sets the cached decimal pattern (its grouping sizes are used for every style).</summary>
     public NumberPattern? DecimalPattern { get; set; }
 
+    /// <summary>Gets or sets the cached alphaNextToNumber variant of the currency pattern, used next to a digit, or null.</summary>
+    public NumberPattern? CurrencyAlphaNextToNumberPattern { get; set; }
+
+    /// <summary>Gets whether the style is "unit" with the unit "percent", formatted with the percent pattern.</summary>
+    public bool IsPercentUnit => Style is "unit" && Unit is "percent";
+
+    /// <summary>Gets the decimal separator of the currencies (currencyDecimal, else decimal).</summary>
+    public string CurrencyDecimal => _currencyDecimal ??= GetCurrencySymbol("currencyDecimal") ?? Symbols.Decimal;
+
+    /// <summary>Gets the grouping separator of the currencies (currencyGroup, else group).</summary>
+    public string CurrencyGroup => _currencyGroup ??= GetCurrencySymbol("currencyGroup") ?? Symbols.Group;
+
     /// <summary>Gets or sets the cached text of the currency (code, symbol or narrow symbol).</summary>
     public string? CurrencyText { get; set; }
 
     /// <summary>Gets or sets the cached minimumGroupingDigits of the locale.</summary>
     public int? MinimumGroupingDigits { get; set; }
+
+    private string? GetCurrencySymbol(string name)
+    {
+        var prefix = DataLocale.Contains(CldrCategory.Numbers, "symbols-numberSystem-" + NumberingSystem) ? "symbols-numberSystem-" + NumberingSystem : "symbols-numberSystem-latn";
+        return DataLocale.GetString(CldrCategory.Numbers, prefix + "/" + name);
+    }
 
     public Data.PluralRules PluralRules => _pluralRules ??= CldrData.Default.Supplemental.GetPluralRules(DataLocale.Name, PluralRuleType.Cardinal);
 }

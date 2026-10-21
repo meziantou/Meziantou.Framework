@@ -153,7 +153,7 @@ internal static class PluralRulesBuiltins
         return SelectRange(pluralRules.Rules, xp.Category, yp.Category);
     }
 
-    /// <summary>PluralRuleSelectRange: the category of a range from the pluralRanges data of CLDR, else the category of the end.</summary>
+    /// <summary>PluralRuleSelectRange: the category of a range from the pluralRanges data of CLDR, else "other" (as ICU).</summary>
     internal static string SelectRange(Data.PluralRules rules, string start, string end)
     {
         var supplemental = IntlOperations.Data.Supplemental;
@@ -170,7 +170,7 @@ internal static class PluralRulesBuiltins
             key = key[..separator];
         }
 
-        return end;
+        return "other";
     }
 
     /// <summary>ResolvePlural(pluralRules, n)</summary>

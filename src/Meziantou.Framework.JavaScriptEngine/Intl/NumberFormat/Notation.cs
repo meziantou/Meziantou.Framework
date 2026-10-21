@@ -5,34 +5,42 @@ namespace Meziantou.Framework.JavaScriptEngine.Intl;
 /// <summary>The exponent of the notations (ComputeExponent, ComputeExponentForMagnitude) and the compact patterns of CLDR.</summary>
 internal static class Notation
 {
-    /// <summary>The largest magnitude with a compact pattern in CLDR (10^14).</summary>
-    private const int MaxCompactMagnitude = 14;
+    /// <summary>The largest magnitude to look for a compact pattern (CLDR has patterns up to 10^14, 10^19 for the East Asian languages).</summary>
+    private const int MaxCompactMagnitude = 24;
 
     /// <summary>
-    /// Gets the compact pattern of a magnitude (e.g. "0K" for 1000, "00 thousand" for 10000), falling back to the "other"
-    /// count, and to the short style; null when the locale has no compact pattern for it (the number is not scaled).
+    /// Gets the compact pattern of a magnitude (e.g. "0K" for 1000, "00 thousand" for 10000) and the magnitude of its
+    /// type (the largest one of the data for a larger magnitude), for a count ("one", "other", or an explicit "1"),
+    /// falling back to the "other" count, and to the short style; null when the locale has no compact pattern for it.
     /// </summary>
-    public static string? GetCompactPattern(CldrLocale locale, string numberingSystem, string compactDisplay, bool currency, int magnitude, string count)
+    public static (string? Pattern, int TypeMagnitude) GetCompactPattern(CldrLocale locale, string numberingSystem, string compactDisplay, bool currency, int magnitude, string count, bool fallbackToOther = true)
     {
         if (magnitude < 3)
-            return null;
+            return (null, magnitude);
 
-        magnitude = Math.Min(magnitude, MaxCompactMagnitude);
-        var type = "1" + new string('0', magnitude);
-        string? pattern;
-        if (currency)
+        for (var m = Math.Min(magnitude, MaxCompactMagnitude); m >= 3; m--)
         {
-            pattern = Get("currencyFormats", "short/standard/" + type + "-count-" + count) ?? Get("currencyFormats", "short/standard/" + type + "-count-other");
-        }
-        else
-        {
-            pattern = Get("decimalFormats", compactDisplay + "/decimalFormat/" + type + "-count-" + count)
-                ?? Get("decimalFormats", compactDisplay + "/decimalFormat/" + type + "-count-other")
-                ?? Get("decimalFormats", "short/decimalFormat/" + type + "-count-" + count)
-                ?? Get("decimalFormats", "short/decimalFormat/" + type + "-count-other");
+            var type = "1" + new string('0', m);
+            string? pattern;
+            var other = fallbackToOther ? "other" : count;
+            if (currency)
+            {
+                pattern = Get("currencyFormats", "short/standard/" + type + "-count-" + count) ?? Get("currencyFormats", "short/standard/" + type + "-count-" + other);
+            }
+            else
+            {
+                pattern = Get("decimalFormats", compactDisplay + "/decimalFormat/" + type + "-count-" + count)
+                    ?? Get("decimalFormats", compactDisplay + "/decimalFormat/" + type + "-count-" + other)
+                    ?? Get("decimalFormats", "short/decimalFormat/" + type + "-count-" + count)
+                    ?? Get("decimalFormats", "short/decimalFormat/" + type + "-count-" + other);
+            }
+
+            // The patterns cover the magnitudes from 3 to the largest one of the data
+            if (pattern is not null)
+                return (pattern, m);
         }
 
-        return pattern;
+        return (null, magnitude);
 
         string? Get(string group, string path) => locale.GetNumberPattern(numberingSystem, group, path);
     }
@@ -47,12 +55,14 @@ internal static class Notation
             case "engineering":
                 return (int)Math.Floor(magnitude / 3.0) * 3;
             case "compact":
-                var pattern = GetCompactPattern(locale, numberingSystem, compactDisplay, currency, magnitude, "other");
+                var (pattern, typeMagnitude) = GetCompactPattern(locale, numberingSystem, compactDisplay, currency, magnitude, "other");
                 if (pattern is null or "0")
                     return 0;
 
+                // The zeros of the positive subpattern ("0K;-0K")
                 var zeros = 0;
-                foreach (var c in pattern)
+                var separator = pattern.IndexOf(';', StringComparison.Ordinal);
+                foreach (var c in separator < 0 ? pattern : pattern[..separator])
                 {
                     if (c == '0')
                     {
@@ -63,7 +73,7 @@ internal static class Notation
                 if (zeros == 0)
                     return 0;
 
-                return Math.Min(magnitude, MaxCompactMagnitude) - zeros + 1;
+                return typeMagnitude - zeros + 1;
             default:
                 return 0;
         }

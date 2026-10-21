@@ -27,20 +27,46 @@ internal sealed class FormattedNumberParts
 
     public List<NumberPart> OuterSuffix { get; } = [];
 
+    /// <summary>Gets or sets whether the outer pattern has no number: only the outer parts are displayed.</summary>
+    public bool OmitNumber { get; set; }
+
+    /// <summary>Gets or sets the plural category of the displayed number (for the unit, currency name and compact patterns).</summary>
+    public string PluralCategory { get; set; } = "other";
+
     /// <summary>Gets or sets the index in <see cref="MiddlePrefix"/> where the sign is, or would be.</summary>
     public int SignIndex { get; set; }
 
     public List<NumberPart> ToList()
     {
         var result = new List<NumberPart>(OuterPrefix.Count + MiddlePrefix.Count + InnerPrefix.Count + Number.Count + InnerSuffix.Count + MiddleSuffix.Count + OuterSuffix.Count);
-        result.AddRange(OuterPrefix);
-        result.AddRange(MiddlePrefix);
-        result.AddRange(InnerPrefix);
-        result.AddRange(Number);
-        result.AddRange(InnerSuffix);
-        result.AddRange(MiddleSuffix);
-        result.AddRange(OuterSuffix);
+        AddMerged(result, OuterPrefix);
+        if (!OmitNumber)
+        {
+            AddMerged(result, MiddlePrefix);
+            AddMerged(result, InnerPrefix);
+            AddMerged(result, Number);
+            AddMerged(result, InnerSuffix);
+            AddMerged(result, MiddleSuffix);
+        }
+
+        AddMerged(result, OuterSuffix);
         return result;
+    }
+
+    /// <summary>Appends parts, merging a literal with a previous literal.</summary>
+    public static void AddMerged(List<NumberPart> target, List<NumberPart> parts)
+    {
+        foreach (var part in parts)
+        {
+            if (part.Type is "literal" && target.Count > 0 && target[^1].Type is "literal")
+            {
+                target[^1] = new NumberPart("literal", target[^1].Value + part.Value);
+            }
+            else
+            {
+                target.Add(part);
+            }
+        }
     }
 
     public override string ToString() => Concat(ToList());
@@ -67,22 +93,21 @@ internal static class NumberFormatter
         None,
         Minus,
         Plus,
+        Approximately,
     }
 
     public static string Format(JsNumberFormatObject nf, IntlDecimal x) => PartitionNumberPattern(nf, x).ToString();
 
     /// <summary>PartitionNumberPattern(numberFormat, x)</summary>
-    public static FormattedNumberParts PartitionNumberPattern(JsNumberFormatObject nf, IntlDecimal x)
+    public static FormattedNumberParts PartitionNumberPattern(JsNumberFormatObject nf, IntlDecimal x, bool approximately = false)
     {
         var symbols = nf.Symbols;
         var locale = nf.DataLocale;
         var parts = new FormattedNumberParts();
         var rounded = x;
-        int exponent;
-        int magnitude;
         string? compactPattern = null;
-        var pluralCategory = "other";
         var isCurrency = nf.Style is "currency";
+        var hasCurrencySymbol = isCurrency && nf.CurrencyDisplay is not "name";
         var stylePattern = nf.StylePattern ??= GetStylePattern(nf);
         if (x.IsNaN)
         {
@@ -99,16 +124,20 @@ internal static class NumberFormatter
                 x = x.ScaleByPowerOfTen(2);
             }
 
-            (exponent, magnitude) = Notation.ComputeExponent(nf.Digits, nf.Notation, locale, nf.NumberingSystem, nf.CompactDisplay, isCurrency && nf.CurrencyDisplay is not "name", x);
+            var (exponent, magnitude) = Notation.ComputeExponent(nf.Digits, nf.Notation, locale, nf.NumberingSystem, nf.CompactDisplay, hasCurrencySymbol, x);
             var formatted = nf.Digits.FormatNumericToString(x.ScaleByPowerOfTen(-exponent));
             rounded = formatted.RoundedNumber;
             var n = formatted.FormattedString;
+
+            // As ICU, the plural category of the patterns is the one of the displayed digits (without the exponent of
+            // the compact notation: "1.2 million", not "1.2 millions")
             if (nf.Style is "unit" || nf.Notation is "compact" || (isCurrency && nf.CurrencyDisplay is "name"))
             {
-                pluralCategory = PluralRulesBuiltins.SelectCategory(nf.PluralRules, n, nf.Notation is "compact" ? exponent : 0);
+                parts.PluralCategory = PluralRulesBuiltins.SelectCategory(nf.PluralRules, n, 0);
             }
 
-            AppendDigits(nf, parts.Number, n, nf.DecimalPattern ??= GetDecimalPattern(nf));
+            var groupingPattern = nf.Notation is "compact" || stylePattern.PrimaryGrouping == 0 ? nf.DecimalPattern ??= GetDecimalPattern(nf) : stylePattern;
+            AppendDigits(nf, parts.Number, n, groupingPattern, isCurrency);
 
             if (nf.Notation is "scientific" or "engineering")
             {
@@ -116,7 +145,7 @@ internal static class NumberFormatter
                 var exponentValue = exponent;
                 if (exponentValue < 0)
                 {
-                    parts.InnerSuffix.Add(new NumberPart("exponentMinusSign", symbols.MinusSign));
+                    AddSymbol(parts.InnerSuffix, "exponentMinusSign", symbols.MinusSign);
                     exponentValue = -exponentValue;
                 }
 
@@ -124,10 +153,21 @@ internal static class NumberFormatter
             }
             else if (nf.Notation is "compact" && exponent != 0)
             {
-                compactPattern = Notation.GetCompactPattern(locale, nf.NumberingSystem, nf.CompactDisplay, isCurrency && nf.CurrencyDisplay is not "name", magnitude, pluralCategory);
+                // An explicit pattern for 1 (e.g. "mille" in French), else the one of the plural category
+                if (n is "1" or "0")
+                {
+                    compactPattern = Notation.GetCompactPattern(locale, nf.NumberingSystem, nf.CompactDisplay, hasCurrencySymbol, magnitude, n, fallbackToOther: false).Pattern;
+                }
+
+                compactPattern ??= Notation.GetCompactPattern(locale, nf.NumberingSystem, nf.CompactDisplay, hasCurrencySymbol, magnitude, parts.PluralCategory).Pattern;
                 if (compactPattern is "0")
                 {
                     compactPattern = null;
+                }
+                else if (compactPattern is not null && !NumberPattern.Parse(compactPattern).HasDigits)
+                {
+                    // The pattern replaces the number
+                    parts.Number.Clear();
                 }
             }
         }
@@ -144,13 +184,26 @@ internal static class NumberFormatter
             _ => isNegative ? SignKind.Minus : SignKind.None,
         };
 
+        // FormatApproximately: the approximately sign takes the place of the plus sign (ICU), or goes before the sign
+        var approximatelyBeforeSign = approximately && sign is not SignKind.None;
+        if (approximately && sign is SignKind.None)
+        {
+            sign = SignKind.Approximately;
+        }
+
         // The affixes of the pattern: the compact pattern replaces the one of the style
         var pattern = stylePattern;
+        if (hasCurrencySymbol && rounded.IsFinite && compactPattern is null && nf.CurrencyAlphaNextToNumberPattern is { } alphaNextToNumber)
+        {
+            // The currency spacing applies next to a digit only
+            pattern = alphaNextToNumber;
+        }
+
         var affixesFromCompact = false;
         if (compactPattern is not null)
         {
             var compact = NumberPattern.Parse(compactPattern);
-            if (nf.Style is "percent")
+            if (nf.Style is "percent" || nf.IsPercentUnit)
             {
                 // The compact symbol goes before the affixes of the percent pattern
                 AddCompactLiterals(parts.InnerPrefix, compact.PositivePrefix);
@@ -164,7 +217,7 @@ internal static class NumberFormatter
         }
 
         GetAffixes(pattern, sign, out var prefix, out var suffix);
-        var currencyText = isCurrency && nf.CurrencyDisplay is not "name" ? nf.CurrencyText ??= GetCurrencyText(nf, "other") : "";
+        var currencyText = hasCurrencySymbol ? nf.CurrencyText ??= GetCurrencyText(nf, "other") : "";
 
         // Prefix
         var innerStart = affixesFromCompact ? FindFirstLiteral(prefix) : prefix.Length;
@@ -174,6 +227,15 @@ internal static class NumberFormatter
             if (token.Kind is AffixKind.MinusSign or AffixKind.PlusSign)
             {
                 parts.SignIndex = parts.MiddlePrefix.Count;
+                if (approximatelyBeforeSign)
+                {
+                    AddSymbol(parts.MiddlePrefix, "approximatelySign", symbols.ApproximatelySign);
+                }
+                else if (sign is SignKind.Approximately)
+                {
+                    AddSymbol(parts.MiddlePrefix, "approximatelySign", symbols.ApproximatelySign);
+                    continue;
+                }
             }
 
             if (i >= innerStart && token.Kind is AffixKind.Literal)
@@ -182,7 +244,7 @@ internal static class NumberFormatter
             }
             else
             {
-                AddToken(parts.MiddlePrefix, token, nf, currencyText);
+                AddToken(i >= innerStart ? parts.InnerPrefix : parts.MiddlePrefix, token, nf, currencyText);
             }
         }
 
@@ -191,6 +253,17 @@ internal static class NumberFormatter
         for (var i = 0; i < suffix.Length; i++)
         {
             var token = suffix[i];
+            if (sign is SignKind.Approximately && token.Kind is AffixKind.PlusSign)
+            {
+                AddSymbol(i <= innerEnd ? parts.InnerSuffix : parts.MiddleSuffix, "approximatelySign", symbols.ApproximatelySign);
+                continue;
+            }
+
+            if (approximatelyBeforeSign && token.Kind is AffixKind.MinusSign or AffixKind.PlusSign)
+            {
+                AddSymbol(i <= innerEnd ? parts.InnerSuffix : parts.MiddleSuffix, "approximatelySign", symbols.ApproximatelySign);
+            }
+
             if (i <= innerEnd && token.Kind is AffixKind.Literal)
             {
                 AddCompactLiteral(parts.InnerSuffix, token.Text);
@@ -205,27 +278,66 @@ internal static class NumberFormatter
             }
         }
 
-        // Outer: the unit pattern, or the currency name pattern
-        if (nf.Style is "unit")
+        if (hasCurrencySymbol && rounded.IsFinite && !ReferenceEquals(pattern, nf.CurrencyAlphaNextToNumberPattern))
         {
-            ApplyOuterPattern(parts, GetUnitPattern(nf, pluralCategory), "unit", "");
+            ApplyCurrencySpacing(nf, parts);
         }
-        else if (isCurrency && nf.CurrencyDisplay is "name")
+
+        AddOuterParts(nf, parts.PluralCategory, parts.OuterPrefix, parts.OuterSuffix);
+        if (parts.OuterPrefix.Count > 0 && parts.OuterPrefix[^1].Type is "omitNumber")
         {
-            var unitPattern = locale.GetNumberPattern(nf.NumberingSystem, "currencyFormats", "unitPattern-count-" + pluralCategory)
-                ?? locale.GetNumberPattern(nf.NumberingSystem, "currencyFormats", "unitPattern-count-other")
-                ?? "{0} {1}";
-            ApplyOuterPattern(parts, unitPattern, "currency", GetCurrencyText(nf, pluralCategory));
+            // A unit pattern without the number (e.g. "{0} \u0644\u062A\u0631" for "other" but "\u0644\u062A\u0631" for "one" in Arabic)
+            parts.OuterPrefix.RemoveAt(parts.OuterPrefix.Count - 1);
+            parts.OmitNumber = true;
         }
 
         return parts;
+    }
+
+    /// <summary>Adds the parts of the outer pattern: the unit pattern, or the currency name pattern.</summary>
+    internal static void AddOuterParts(JsNumberFormatObject nf, string pluralCategory, List<NumberPart> prefix, List<NumberPart> suffix)
+    {
+        if (nf.Style is "unit" && !nf.IsPercentUnit)
+        {
+            ApplyOuterPattern(prefix, suffix, GetUnitPattern(nf, pluralCategory), "unit", "");
+        }
+        else if (nf.Style is "currency" && nf.CurrencyDisplay is "name")
+        {
+            var locale = nf.DataLocale;
+            var unitPattern = locale.GetNumberPattern(nf.NumberingSystem, "currencyFormats", "unitPattern-count-" + pluralCategory)
+                ?? locale.GetNumberPattern(nf.NumberingSystem, "currencyFormats", "unitPattern-count-other")
+                ?? "{0} {1}";
+            ApplyOuterPattern(prefix, suffix, unitPattern, "currency", GetCurrencyText(nf, pluralCategory));
+        }
+    }
+
+    // UTS 35 currencySpacing: a currency whose character next to the digits is not a symbol is separated from them
+    private static void ApplyCurrencySpacing(JsNumberFormatObject nf, FormattedNumberParts parts)
+    {
+        if (parts.Number.Count == 0)
+            return;
+
+        var before = parts.InnerPrefix.Count > 0 ? parts.InnerPrefix : parts.MiddlePrefix;
+        if (before.Count > 0 && before[^1].Type is "currency" && !IsSymbolOrSpace(before[^1].Value[^1]))
+        {
+            before.Add(new NumberPart("literal", nf.DataLocale.GetNumberPattern(nf.NumberingSystem, "currencyFormats", "currencySpacing/afterCurrency/insertBetween") ?? "\u00A0"));
+        }
+
+        var after = parts.InnerSuffix.Count > 0 ? parts.InnerSuffix : parts.MiddleSuffix;
+        if (after.Count > 0 && after[0].Type is "currency" && !IsSymbolOrSpace(after[0].Value[0]))
+        {
+            after.Insert(0, new NumberPart("literal", nf.DataLocale.GetNumberPattern(nf.NumberingSystem, "currencyFormats", "currencySpacing/beforeCurrency/insertBetween") ?? "\u00A0"));
+        }
+
+        static bool IsSymbolOrSpace(char c) => char.GetUnicodeCategory(c) is UnicodeCategory.MathSymbol or UnicodeCategory.CurrencySymbol or UnicodeCategory.ModifierSymbol or UnicodeCategory.OtherSymbol
+            or UnicodeCategory.SpaceSeparator or UnicodeCategory.LineSeparator or UnicodeCategory.ParagraphSeparator;
     }
 
     private static int FindFirstLiteral(AffixToken[] tokens)
     {
         for (var i = 0; i < tokens.Length; i++)
         {
-            if (tokens[i].Kind is AffixKind.Literal)
+            if (tokens[i].Kind is AffixKind.Literal && !IsSpaces(tokens[i].Text))
                 return i;
         }
 
@@ -236,7 +348,7 @@ internal static class NumberFormatter
     {
         for (var i = tokens.Length - 1; i >= 0; i--)
         {
-            if (tokens[i].Kind is AffixKind.Literal)
+            if (tokens[i].Kind is AffixKind.Literal && !IsSpaces(tokens[i].Text))
                 return i;
         }
 
@@ -288,6 +400,17 @@ internal static class NumberFormatter
         }
     }
 
+    private static bool IsSpaces(string text)
+    {
+        foreach (var c in text)
+        {
+            if (!IsSpace(c))
+                return false;
+        }
+
+        return true;
+    }
+
     private static bool IsSpace(char c) => c is ' ' or '\u00A0' or '\u202F' or '\u2009' or '\u200F' or '\u200E' or '\u061C';
 
     private static void AddToken(List<NumberPart> target, AffixToken token, JsNumberFormatObject nf, string currencyText)
@@ -296,16 +419,16 @@ internal static class NumberFormatter
         switch (token.Kind)
         {
             case AffixKind.MinusSign:
-                target.Add(new NumberPart("minusSign", symbols.MinusSign));
+                AddSymbol(target, "minusSign", symbols.MinusSign);
                 break;
             case AffixKind.PlusSign:
-                target.Add(new NumberPart("plusSign", symbols.PlusSign));
+                AddSymbol(target, "plusSign", symbols.PlusSign);
                 break;
             case AffixKind.Percent:
-                target.Add(new NumberPart("percentSign", symbols.PercentSign));
+                AddSymbol(target, nf.IsPercentUnit ? "unit" : "percentSign", symbols.PercentSign);
                 break;
             case AffixKind.PerMille:
-                target.Add(new NumberPart("percentSign", symbols.PerMille));
+                AddSymbol(target, "percentSign", symbols.PerMille);
                 break;
             case AffixKind.Currency:
                 if (currencyText.Length > 0)
@@ -320,6 +443,35 @@ internal static class NumberFormatter
         }
     }
 
+    // The bidi marks around a symbol (e.g. U+061C before the minus sign of Arabic) are literals
+    private static void AddSymbol(List<NumberPart> target, string type, string symbol)
+    {
+        var start = 0;
+        while (start < symbol.Length && IsBidiMark(symbol[start]))
+        {
+            start++;
+        }
+
+        var end = symbol.Length;
+        while (end > start && IsBidiMark(symbol[end - 1]))
+        {
+            end--;
+        }
+
+        if (start > 0)
+        {
+            target.Add(new NumberPart("literal", symbol[..start]));
+        }
+
+        target.Add(new NumberPart(type, symbol[start..end]));
+        if (end < symbol.Length)
+        {
+            target.Add(new NumberPart("literal", symbol[end..]));
+        }
+
+        static bool IsBidiMark(char c) => c is (char)0x200E or (char)0x200F or (char)0x061C;
+    }
+
     // The affixes for a sign: the explicit negative subpattern, or the positive one with the sign before it
     private static void GetAffixes(NumberPattern pattern, SignKind sign, out AffixToken[] prefix, out AffixToken[] suffix)
     {
@@ -330,7 +482,7 @@ internal static class NumberFormatter
                 suffix = pattern.NegativeSuffix!;
                 return;
 
-            case SignKind.Plus when pattern.NegativePrefix is not null && (ContainsKind(pattern.NegativePrefix, AffixKind.MinusSign) || ContainsKind(pattern.NegativeSuffix!, AffixKind.MinusSign)):
+            case SignKind.Plus or SignKind.Approximately when pattern.NegativePrefix is not null && (ContainsKind(pattern.NegativePrefix, AffixKind.MinusSign) || ContainsKind(pattern.NegativeSuffix!, AffixKind.MinusSign)):
                 prefix = ReplaceMinus(pattern.NegativePrefix);
                 suffix = ReplaceMinus(pattern.NegativeSuffix!);
                 return;
@@ -340,7 +492,7 @@ internal static class NumberFormatter
                 suffix = RemoveSigns(pattern.PositiveSuffix);
                 return;
 
-            case SignKind.Plus:
+            case SignKind.Plus or SignKind.Approximately:
                 prefix = [new AffixToken(AffixKind.PlusSign, "+"), .. RemoveSigns(pattern.PositivePrefix)];
                 suffix = RemoveSigns(pattern.PositiveSuffix);
                 return;
@@ -404,6 +556,7 @@ internal static class NumberFormatter
         switch (nf.Style)
         {
             case "percent":
+            case "unit" when nf.IsPercentUnit:
                 pattern = locale.GetNumberPattern(nf.NumberingSystem, "percentFormats", "standard");
                 break;
             case "currency" when nf.CurrencyDisplay is not "name":
@@ -412,7 +565,8 @@ internal static class NumberFormatter
                 {
                     // A currency symbol that ends (or starts) with a letter next to the number uses the alphaNextToNumber pattern
                     var parsed = NumberPattern.Parse(pattern);
-                    return GetAlphaNextToNumberPattern(nf, parsed.PositivePrefix, parsed.PositiveSuffix, nf.CurrencyText ??= GetCurrencyText(nf, "other")) ?? parsed;
+                    nf.CurrencyAlphaNextToNumberPattern = GetAlphaNextToNumberPattern(nf, parsed.PositivePrefix, parsed.PositiveSuffix, nf.CurrencyText ??= GetCurrencyText(nf, "other"));
+                    return parsed;
                 }
 
                 break;
@@ -500,16 +654,18 @@ internal static class NumberFormatter
     }
 
     // Wraps the parts in a pattern with "{0}" (the number) and optionally "{1}" (the unit or currency name)
-    private static void ApplyOuterPattern(FormattedNumberParts parts, string pattern, string type, string name)
+    private static void ApplyOuterPattern(List<NumberPart> prefix, List<NumberPart> suffix, string pattern, string type, string name)
     {
         var index = pattern.IndexOf("{0}", StringComparison.Ordinal);
         if (index < 0)
+        {
+            AddOuterText(prefix, pattern, type, name);
+            prefix.Add(new NumberPart("omitNumber", ""));
             return;
+        }
 
-        var before = pattern[..index];
-        var after = pattern[(index + 3)..];
-        AddOuterText(parts.OuterPrefix, before, type, name);
-        AddOuterText(parts.OuterSuffix, after, type, name);
+        AddOuterText(prefix, pattern[..index], type, name);
+        AddOuterText(suffix, pattern[(index + 3)..], type, name);
     }
 
     private static void AddOuterText(List<NumberPart> target, string text, string type, string name)
@@ -517,30 +673,15 @@ internal static class NumberFormatter
         if (text.Length == 0)
             return;
 
-        var placeholder = text.IndexOf("{1}", StringComparison.Ordinal);
-        if (placeholder >= 0)
-        {
-            AddLiteral(target, text[..placeholder]);
-            target.Add(new NumberPart(type, name));
-            AddLiteral(target, text[(placeholder + 3)..]);
-            return;
-        }
-
-        AddSplitText(target, text, type);
-
-        static void AddLiteral(List<NumberPart> target, string text)
-        {
-            if (text.Length > 0)
-            {
-                target.Add(new NumberPart("literal", text));
-            }
-        }
+        AddSplitText(target, text.Replace("{1}", name, StringComparison.Ordinal), type);
     }
 
     /// <summary>Appends the integer, group, decimal and fraction parts of the digits of a formatted number ("1234.5").</summary>
-    private static void AppendDigits(JsNumberFormatObject nf, List<NumberPart> target, string n, NumberPattern pattern)
+    private static void AppendDigits(JsNumberFormatObject nf, List<NumberPart> target, string n, NumberPattern pattern, bool isCurrency)
     {
         var symbols = nf.Symbols;
+        var decimalSymbol = isCurrency ? nf.CurrencyDecimal : symbols.Decimal;
+        var groupSymbol = isCurrency ? nf.CurrencyGroup : symbols.Group;
         var dot = n.IndexOf('.', StringComparison.Ordinal);
         var integer = dot < 0 ? n : n[..dot];
         var fraction = dot < 0 ? null : n[(dot + 1)..];
@@ -578,14 +719,14 @@ internal static class NumberFormatter
                 target.Add(new NumberPart("integer", MapDigits(nf, groups[i])));
                 if (i > 0)
                 {
-                    target.Add(new NumberPart("group", symbols.Group));
+                    target.Add(new NumberPart("group", groupSymbol));
                 }
             }
         }
 
         if (fraction is not null)
         {
-            target.Add(new NumberPart("decimal", symbols.Decimal));
+            target.Add(new NumberPart("decimal", decimalSymbol));
             target.Add(new NumberPart("fraction", MapDigits(nf, fraction)));
         }
     }
@@ -639,14 +780,8 @@ internal static class NumberFormatter
         return result;
     }
 
-    /// <summary>FormatApproximately(numberFormat, result): inserts the approximately sign where the sign is (or would be).</summary>
-    public static List<NumberPart> FormatApproximately(JsNumberFormatObject nf, FormattedNumberParts parts)
-    {
-        var index = parts.OuterPrefix.Count + parts.SignIndex;
-        var list = parts.ToList();
-        list.Insert(index, new NumberPart("approximatelySign", nf.Symbols.ApproximatelySign));
-        return list;
-    }
+    /// <summary>FormatApproximately(numberFormat, x): the parts of x with the approximately sign where the sign is, or would be.</summary>
+    public static List<NumberPart> FormatApproximately(JsNumberFormatObject nf, IntlDecimal x) => PartitionNumberPattern(nf, x, approximately: true).ToList();
 
     /// <summary>PartitionNumberRangePattern(numberFormat, x, y): the parts with their source ("startRange", "endRange" or "shared").</summary>
     public static List<(NumberPart Part, string Source)> PartitionNumberRangePattern(JsNumberFormatObject nf, IntlDecimal x, IntlDecimal y)
@@ -659,7 +794,7 @@ internal static class NumberFormatter
         var result = new List<(NumberPart, string)>();
         if (xResult.ToString() == yResult.ToString())
         {
-            foreach (var part in FormatApproximately(nf, xResult))
+            foreach (var part in FormatApproximately(nf, x))
             {
                 result.Add((part, "shared"));
             }
@@ -669,7 +804,20 @@ internal static class NumberFormatter
 
         // CollapseNumberRange, as ICU does (UNUM_RANGE_COLLAPSE_AUTO): the outer affixes are shared when they are equal,
         // the middle ones too when they are also equal and longer than one code point
-        var collapseOuter = FormattedNumberParts.Concat(xResult.OuterPrefix, xResult.OuterSuffix) == FormattedNumberParts.Concat(yResult.OuterPrefix, yResult.OuterSuffix);
+        // The outer affixes (unit and currency names) of a formatter are the same unit: the shared one uses the plural
+        // category of the range
+        var collapseOuter = true;
+        if (xResult.OuterPrefix.Count + xResult.OuterSuffix.Count > 0)
+        {
+            var category = PluralRulesBuiltins.SelectRange(nf.PluralRules, xResult.PluralCategory, yResult.PluralCategory);
+            xResult.OuterPrefix.Clear();
+            xResult.OuterSuffix.Clear();
+            AddOuterParts(nf, category, xResult.OuterPrefix, xResult.OuterSuffix);
+            xResult.OuterPrefix.RemoveAll(static part => part.Type is "omitNumber");
+            xResult.OmitNumber = false;
+            yResult.OmitNumber = false;
+        }
+
         var middleX = FormattedNumberParts.Concat(xResult.MiddlePrefix, xResult.MiddleSuffix);
         var collapseMiddle = collapseOuter && middleX == FormattedNumberParts.Concat(yResult.MiddlePrefix, yResult.MiddleSuffix) && CodePointCount(middleX) > 2;
         var repeatOuter = !collapseOuter && xResult.OuterPrefix.Count + xResult.OuterSuffix.Count > 0;
@@ -750,7 +898,14 @@ internal static class NumberFormatter
         {
             foreach (var part in parts)
             {
-                result.Add((part, source));
+                if (part.Type is "literal" && result.Count > 0 && result[^1].Item1.Type is "literal" && result[^1].Item2 == source)
+                {
+                    result[^1] = (new NumberPart("literal", result[^1].Item1.Value + part.Value), source);
+                }
+                else
+                {
+                    result.Add((part, source));
+                }
             }
         }
 

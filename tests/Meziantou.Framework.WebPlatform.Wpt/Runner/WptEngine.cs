@@ -11,13 +11,13 @@ using Meziantou.Framework.WebPlatform.Scripting;
 namespace Meziantou.Framework.WebPlatform.Wpt.Runner;
 
 /// <summary>
-/// The JavaScript engine that runs a test: Jint, the engine of the expectations (WPT_ENGINE=jint, the default), or
-/// Meziantou.Framework.JavaScriptEngine (WPT_ENGINE=javascript), whose results are only reported (WPT_REPORT).
+/// The JavaScript engine that runs a test: Meziantou.Framework.JavaScriptEngine, the engine of the expectations
+/// (WPT_ENGINE=javascript, the default), or Jint (WPT_ENGINE=jint), whose results are only reported (WPT_REPORT).
 /// </summary>
 internal abstract class WptEngine : IDisposable
 {
-    /// <summary>Gets whether the tests run with the engine of the expectations (Jint).</summary>
-    public static bool IsDefault => Environment.GetEnvironmentVariable("WPT_ENGINE") is null or "" or "jint";
+    /// <summary>Gets whether the tests run with the engine of the expectations (Meziantou.Framework.JavaScriptEngine).</summary>
+    public static bool IsDefault => Environment.GetEnvironmentVariable("WPT_ENGINE") is null or "" or "javascript";
 
     public abstract ScriptEngine ScriptEngine { get; }
 
@@ -26,10 +26,10 @@ internal abstract class WptEngine : IDisposable
     public static WptEngine Create(WptTestRunner runner, int? recursionLimit = null)
     {
         if (IsDefault)
-            return new JintWptEngine(runner, recursionLimit);
-
-        if (Environment.GetEnvironmentVariable("WPT_ENGINE") == "javascript")
             return new JavaScriptWptEngine(runner, recursionLimit);
+
+        if (Environment.GetEnvironmentVariable("WPT_ENGINE") == "jint")
+            return new JintWptEngine(runner, recursionLimit);
 
         throw new InvalidOperationException("Unknown WPT_ENGINE: " + Environment.GetEnvironmentVariable("WPT_ENGINE"));
     }

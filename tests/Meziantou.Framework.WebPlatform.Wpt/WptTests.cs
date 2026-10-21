@@ -614,7 +614,7 @@ public sealed class WptTests
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var result = WptTestRunner.Run(test);
 
-        // The expectations are the results of Jint
+        // The expectations are the results of the default engine (Meziantou.Framework.JavaScriptEngine)
         if (WptEngine.IsDefault)
         {
             // A test whose result is not the expected one runs again once, as with the --retry-unexpected option of wptrunner:

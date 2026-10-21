@@ -9,7 +9,7 @@ namespace Meziantou.Framework.WebPlatform.Tests.Scripting;
 
 /// <summary>
 /// Creates the script engine of the tests. The engine is selected by the <c>WEBPLATFORM_SCRIPT_ENGINE</c> environment
-/// variable (<c>jint</c>, the default, or <c>javascript</c>), so that the same tests can run against each engine. The helpers hide the values of
+/// variable (<c>javascript</c>, the default, or <c>jint</c>), so that the same tests can run against each engine. The helpers hide the values of
 /// the engine: the tests only use the strings and the numbers they return.
 /// </summary>
 /// <remarks>This file is linked into the other test projects that run scripts.</remarks>
@@ -26,7 +26,7 @@ internal static class TestScriptEngines
             var name = Environment.GetEnvironmentVariable(EnvironmentVariableName);
             if (string.IsNullOrWhiteSpace(name))
             {
-                return "jint";
+                return "javascript";
             }
 
             if (name.Trim().Equals("jint", StringComparison.OrdinalIgnoreCase))
@@ -39,7 +39,7 @@ internal static class TestScriptEngines
                 return "javascript";
             }
 
-            throw new InvalidOperationException($"The script engine '{name}' set in the environment variable {EnvironmentVariableName} is not supported. The supported values are: jint, javascript.");
+            throw new InvalidOperationException($"The script engine '{name}' set in the environment variable {EnvironmentVariableName} is not supported. The supported values are: javascript, jint.");
         }
     }
 

@@ -1215,6 +1215,7 @@ namespace Meziantou.Framework.WebPlatform.Css.Om
         public string FloodOpacity { get => throw null; set { } }
         public string FlowFrom { get => throw null; set { } }
         public string FlowInto { get => throw null; set { } }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0013", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public string FlowTolerance { get => throw null; set { } }
         public string Font { get => throw null; set { } }
         public string FontFamily { get => throw null; set { } }
@@ -1259,8 +1260,11 @@ namespace Meziantou.Framework.WebPlatform.Css.Om
         public string GridColumnGap { get => throw null; set { } }
         public string GridColumnStart { get => throw null; set { } }
         public string GridGap { get => throw null; set { } }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0012", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public string GridLanes { get => throw null; set { } }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0012", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public string GridLanesDirection { get => throw null; set { } }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0012", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public string GridLanesPack { get => throw null; set { } }
         public string GridRow { get => throw null; set { } }
         public string GridRowEnd { get => throw null; set { } }
@@ -1685,6 +1689,7 @@ namespace Meziantou.Framework.WebPlatform.Css.Om
         public string WebkitBorderTopLeftRadius { get => throw null; set { } }
         public string WebkitBorderTopRightRadius { get => throw null; set { } }
         public string WebkitBoxAlign { get => throw null; set { } }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0013", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public string WebkitBoxDirection { get => throw null; set { } }
         public string WebkitBoxFlex { get => throw null; set { } }
         public string WebkitBoxOrdinalGroup { get => throw null; set { } }

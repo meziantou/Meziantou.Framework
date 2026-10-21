@@ -2,8 +2,9 @@
 
 Some public APIs implement tentative features of the web platform: proposals that no specification defines yet (a pull
 request of a specification, an explainer, an issue), which the browsers implement behind flags or ship before the
-standardization, and whose web-platform-tests are tentative (`*.tentative.*`). They may change or be removed when the
-proposal changes, is merged into a specification, or is abandoned.
+standardization, and whose web-platform-tests are tentative (`*.tentative.*`), and features that the browsers implement but
+no specification defines. They may change or be removed when the proposal changes, is merged into a specification, or is
+abandoned.
 
 These APIs have the [`[Experimental]`](https://learn.microsoft.com/dotnet/api/system.diagnostics.codeanalysis.experimentalattribute)
 attribute: using them from your code reports an error, with one diagnostic identifier per feature. Suppress the
@@ -30,7 +31,9 @@ The identifiers are defined in `src/Meziantou.Framework.WebPlatform/Specificatio
 that add IDL to the IDL of webref (`tools/Meziantou.Framework.WebPlatform.SpecGen/IdlModel.cs`) set `ExperimentalApi` on the IDL they add, and
 `SpecGen --check` fails when a .NET type or member that maps this IDL does not have the matching attribute, or when a
 type or member still has the attribute after webref defines its IDL (the feature is then standard: remove the attribute and
-its section below).
+its section below). It also fails when a property of `CssStyleProperties` maps a CSS property that the CSS definitions of
+webref do not define and does not have the attribute, when such a property still has the attribute after webref defines
+it, and when an `[IdlMember]` names an IDL member that does not exist.
 
 <a id="WEBPLATEXP0001"></a>
 
@@ -121,3 +124,24 @@ but no specification defines its event handler, which the browsers implement.
 `IJsAdapter<TValue>.TrySetErrorStack()`, the [[Stack]] internal slot of the errors of the
 [error stack accessor proposal](https://github.com/tc39/proposal-error-stack-accessor) (TC39): only the script engine
 adapters implement or call it.
+
+<a id="WEBPLATEXP0012"></a>
+
+## WEBPLATEXP0012: Grid lanes orientation
+
+`CssStyleProperties.GridLanes`, `GridLanesDirection` and `GridLanesPack`: the `grid-lanes`, `grid-lanes-direction` and
+`grid-lanes-pack` properties of the tentative web-platform-tests (`css/css-grid/grid-lanes`).
+[CSS Grid 3](https://drafts.csswg.org/css-grid-3/#grid-lanes-orientation) leaves the orientation of a grid lanes container
+to a "TBD property" ([w3c/csswg-drafts#12803](https://github.com/w3c/csswg-drafts/issues/12803)).
+
+<a id="WEBPLATEXP0013"></a>
+
+## WEBPLATEXP0013: Non-standard CSS properties
+
+The properties of `CssStyleProperties` that the browsers implement but no specification defines:
+
+- `FlowTolerance`: `flow-tolerance`, the former name of `fit-tolerance`
+  ([w3c/csswg-drafts#10884](https://github.com/w3c/csswg-drafts/issues/10884)), kept as a legacy name alias as in WebKit
+  because the web-platform-tests still use it. Use `FitTolerance`.
+- `WebkitBoxDirection`: `-webkit-box-direction`, a property of the legacy `-webkit-box` layout that the
+  [Compatibility Standard](https://compat.spec.whatwg.org/) does not define.

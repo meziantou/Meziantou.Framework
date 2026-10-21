@@ -55,6 +55,7 @@ internal sealed partial class WebIdlBindingsGenerator
         var interfaces = _model.Interfaces.Values.Where(i => i.ClrType is not null).OrderBy(i => i.Name, StringComparer.Ordinal).ToList();
         CheckCoverage(interfaces);
         CheckExperimentalApis();
+        CheckCssStyleProperties();
         var files = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var model in interfaces)
         {

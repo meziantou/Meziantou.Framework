@@ -3,9 +3,13 @@ namespace Meziantou.Framework.WebPlatform;
 /// <summary>
 /// The diagnostic identifiers of the <see cref="System.Diagnostics.CodeAnalysis.ExperimentalAttribute"/> of the public APIs
 /// that implement tentative features: proposals that no specification defines yet (pull requests, explainers, issues), whose
-/// web-platform-tests are tentative. Each feature has its own identifier, documented in docs/experimental-apis.md.
+/// web-platform-tests are tentative, and features that the browsers implement but no specification defines. Each feature has
+/// its own identifier, documented in docs/experimental-apis.md.
 /// </summary>
-/// <remarks>The IDL that tools/Meziantou.Framework.WebPlatform.SpecGen/IdlModel.cs adds for the proposals names these constants (<c>ExperimentalApi</c>): SpecGen checks that the .NET types and members of this IDL have the matching attribute.</remarks>
+/// <remarks>
+/// The IDL that tools/Meziantou.Framework.WebPlatform.SpecGen/IdlModel.cs adds for the proposals names these constants (<c>ExperimentalApi</c>): SpecGen checks that the .NET types and members of this IDL have the matching attribute.
+/// SpecGen also checks that the properties of <c>CssStyleProperties</c> whose CSS property is not defined by webref have the attribute.
+/// </remarks>
 internal static class ExperimentalApis
 {
     /// <summary>The URL of the documentation of the diagnostics.</summary>
@@ -40,4 +44,10 @@ internal static class ExperimentalApis
 
     /// <summary>The error stack accessor (https://github.com/tc39/proposal-error-stack-accessor).</summary>
     public const string ErrorStackAccessor = "WEBPLATEXP0011";
+
+    /// <summary>The <c>grid-lanes</c>, <c>grid-lanes-direction</c> and <c>grid-lanes-pack</c> CSS properties of the tentative web-platform-tests, which CSS Grid 3 leaves to a "TBD property" (https://github.com/w3c/csswg-drafts/issues/12803).</summary>
+    public const string GridLanesOrientation = "WEBPLATEXP0012";
+
+    /// <summary>The CSS properties that the browsers implement but no specification defines (e.g. <c>flow-tolerance</c>, the former name of <c>fit-tolerance</c>).</summary>
+    public const string NonStandardCssProperties = "WEBPLATEXP0013";
 }

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Meziantou.Framework.JavaScriptEngine.Interpreter;
 
 namespace Meziantou.Framework.JavaScriptEngine;
@@ -6,9 +7,15 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// <summary>The execution context stack and the limits of the running scripts.</summary>
 public sealed partial class JsEngine
 {
+    // The limits are checked every InterruptCheckInterval interrupt points (the backward jumps and the calls)
+    private const long InterruptCheckInterval = 1024;
+
     private readonly List<Frame> _frames = [];
     private long _interruptCounter;
+    private long _nextInterruptCheck = InterruptCheckInterval;
     private long _executionStart;
+    private long _executionStartCounter;
+    private long _executionStartAllocatedBytes;
 
     /// <summary>Gets whether a script is running (the execution context stack is not empty).</summary>
     public bool IsScriptRunning => _frames.Count > 0;
@@ -17,7 +24,7 @@ public sealed partial class JsEngine
     {
         if (_frames.Count == 0)
         {
-            _executionStart = Stopwatch.GetTimestamp();
+            StartExecution();
         }
 
         _frames.Add(frame);
@@ -31,18 +38,70 @@ public sealed partial class JsEngine
     /// <summary>Gets the frames of the running code, the innermost last.</summary>
     internal IReadOnlyList<Frame> Frames => _frames;
 
-    /// <summary>Checks the limits of the running script (cancellation, timeout): called at the backward jumps and the calls.</summary>
-    internal void CheckInterrupt()
+    /// <summary>Starts an entry into JavaScript: the limits of <see cref="JsEngineOptions"/> apply to each entry.</summary>
+    private void StartExecution()
     {
-        if ((++_interruptCounter & 0x3FF) != 0)
+        var options = Options;
+        _executionStart = Stopwatch.GetTimestamp();
+        _executionStartCounter = _interruptCounter;
+        _executionStartAllocatedBytes = options.MemoryLimit is null ? 0 : GC.GetAllocatedBytesForCurrentThread();
+        _nextInterruptCheck = GetNextInterruptCheck(options);
+    }
+
+    private long GetNextInterruptCheck(JsEngineOptions options)
+    {
+        var next = _interruptCounter + InterruptCheckInterval;
+        if (options.MaxStatements is { } maxStatements)
+        {
+            // The statement limit is exact: the limits are checked when it is reached
+            var limit = _executionStartCounter + Math.Max(maxStatements, 0) + 1;
+            if (limit < next)
+            {
+                next = Math.Max(limit, _interruptCounter + 1);
+            }
+        }
+
+        return next;
+    }
+
+    /// <summary>Counts an interrupt point (a backward jump or a call) and checks the limits of the running script periodically.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal void CountInterruptPoint()
+    {
+        if (++_interruptCounter < _nextInterruptCheck)
             return;
 
+        CheckLimits();
+    }
+
+    /// <summary>
+    /// Throws a <see cref="JsTerminationException"/> when the running script must stop: the execution is canceled
+    /// (<see cref="JsEngineOptions.CancellationToken"/>) or a limit of <see cref="JsEngineOptions"/> is exceeded. The host
+    /// calls it periodically while it runs code on behalf of the script (e.g. WebAssembly code); the engine checks the
+    /// limits itself while JavaScript code runs.
+    /// </summary>
+    /// <exception cref="JsTerminationException">The script must stop.</exception>
+    public void CheckInterrupt() => CheckLimits();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void CheckLimits()
+    {
         var options = Options;
+        _nextInterruptCheck = GetNextInterruptCheck(options);
         if (options.CancellationToken.IsCancellationRequested)
             throw new JsTerminationException(JsTerminationReason.Canceled, "The script was canceled");
 
+        if (!IsScriptRunning)
+            return;
+
         if (options.Timeout is { } timeout && Stopwatch.GetElapsedTime(_executionStart) > timeout)
             throw new JsTerminationException(JsTerminationReason.Timeout, "The script exceeded its time limit");
+
+        if (options.MemoryLimit is { } memoryLimit && GC.GetAllocatedBytesForCurrentThread() - _executionStartAllocatedBytes > memoryLimit)
+            throw new JsTerminationException(JsTerminationReason.MemoryLimit, "The script exceeded its memory limit");
+
+        if (options.MaxStatements is { } maxStatements && _interruptCounter - _executionStartCounter > maxStatements)
+            throw new JsTerminationException(JsTerminationReason.StatementLimit, "The script exceeded its statement limit");
     }
 
     internal string? HostGetCodeForEval(JsValue argument) => HostHooks.GetCodeForEval(this, argument);

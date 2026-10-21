@@ -321,6 +321,7 @@ internal static class ModuleOperations
             {
                 m.Status = JsModuleStatus.Evaluated;
                 m.EvaluationError = ex.Value;
+                m.EvaluationErrorLocation = ex.Location;
                 m.HasEvaluationError = true;
             }
 

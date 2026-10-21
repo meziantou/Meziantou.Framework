@@ -9,6 +9,24 @@ public sealed class JsEngineOptions
     /// <summary>Gets or sets the maximum duration of an entry into JavaScript (a script, a callback...), or null for no limit.</summary>
     public TimeSpan? Timeout { get; set; }
 
+    /// <summary>
+    /// Gets or sets the maximum number of bytes allocated by the thread during an entry into JavaScript (a script, a
+    /// callback...), or null for no limit. The allocations are measured with <see cref="GC.GetAllocatedBytesForCurrentThread"/>.
+    /// </summary>
+    public long? MemoryLimit { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum number of statements of an entry into JavaScript, or null for no limit. The engine counts
+    /// the iterations of the loops and the calls, which bound the work of a script as the statements do.
+    /// </summary>
+    public long? MaxStatements { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum duration of a regular expression match, or null for no limit (the matches are still bounded
+    /// by <see cref="Timeout"/>). A match that exceeds it stops the script (<see cref="JsTerminationReason.Timeout"/>).
+    /// </summary>
+    public TimeSpan? RegExpTimeout { get; set; }
+
     /// <summary>Gets or sets the token that stops the running script when it is canceled.</summary>
     public CancellationToken CancellationToken { get; set; }
 

@@ -94,7 +94,7 @@ internal static partial class JsInterpreter
         var realm = constructor.Realm;
         var parameterArguments = arguments.Length > 1 ? arguments[..^1].ToArray() : [];
         var bodyArgument = arguments.Length > 0 ? arguments[^1] : default;
-        realm.Engine.HostEnsureCanCompileStrings(realm, [.. parameterArguments.Select(JsOperations.ToString)], source.Body, source.SourceText, JsCompilationType.Function, parameterArguments, bodyArgument);
+        realm.Engine.HostEnsureCanCompileStrings(realm, source.ParameterStrings, source.Body, source.SourceText, JsCompilationType.Function, parameterArguments, bodyArgument);
         var isAsync = kind is DynamicFunctionKind.Async or DynamicFunctionKind.AsyncGenerator;
         var isGenerator = kind is DynamicFunctionKind.Generator or DynamicFunctionKind.AsyncGenerator;
         Ast.FunctionNode function;

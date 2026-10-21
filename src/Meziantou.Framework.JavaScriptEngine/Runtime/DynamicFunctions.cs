@@ -19,7 +19,7 @@ internal enum DynamicFunctionKind
 }
 
 /// <summary>The source of a function created by CreateDynamicFunction: the strings given to the constructor, and the source text of the function.</summary>
-internal readonly record struct DynamicFunctionSource(string Parameters, string Body, string SourceText);
+internal readonly record struct DynamicFunctionSource(string Parameters, string[] ParameterStrings, string Body, string SourceText);
 
 /// <summary>CreateDynamicFunction (https://tc39.es/ecma262/#sec-createdynamicfunction): the constructors <c>Function</c>, <c>GeneratorFunction</c>, <c>AsyncFunction</c> and <c>AsyncGeneratorFunction</c>.</summary>
 internal static class DynamicFunctions
@@ -46,6 +46,7 @@ internal static class DynamicFunctions
 
         var parameterCount = arguments.Length == 0 ? 0 : arguments.Length - 1;
         var parameters = new StringBuilder();
+        var parameterStrings = parameterCount == 0 ? [] : new string[parameterCount];
         for (var i = 0; i < parameterCount; i++)
         {
             if (i > 0)
@@ -53,12 +54,14 @@ internal static class DynamicFunctions
                 parameters.Append(',');
             }
 
-            parameters.Append(JsOperations.ToString(arguments[i]));
+            // Each argument is converted once (the strings are given to HostEnsureCanCompileStrings)
+            parameterStrings[i] = JsOperations.ToString(arguments[i]);
+            parameters.Append(parameterStrings[i]);
         }
 
         var body = arguments.Length == 0 ? "" : JsOperations.ToString(arguments[^1]);
         var parametersString = parameters.ToString();
         var sourceText = prefix + " anonymous(" + parametersString + "\n) {\n" + body + "\n}";
-        return new DynamicFunctionSource(parametersString, body, sourceText);
+        return new DynamicFunctionSource(parametersString, parameterStrings, body, sourceText);
     }
 }

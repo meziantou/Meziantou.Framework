@@ -7,13 +7,11 @@ public sealed partial class JsEngine
     /// pathological pattern cannot run forever: it throws a <see cref="JsTerminationException"/> when the execution
     /// limits of the engine are exceeded.
     /// </summary>
-    internal void CheckRegExpBudget()
+    /// <param name="matchStart">The timestamp of the start of the match (<see cref="System.Diagnostics.Stopwatch.GetTimestamp"/>), for <see cref="JsEngineOptions.RegExpTimeout"/>.</param>
+    internal void CheckRegExpBudget(long matchStart)
     {
-        var options = Options;
-        if (options.CancellationToken.IsCancellationRequested)
-            throw new JsTerminationException(JsTerminationReason.Canceled, "The script was canceled");
-
-        if (options.Timeout is { } timeout && IsScriptRunning && System.Diagnostics.Stopwatch.GetElapsedTime(_executionStart) > timeout)
-            throw new JsTerminationException(JsTerminationReason.Timeout, "The script exceeded its time limit");
+        CheckLimits();
+        if (Options.RegExpTimeout is { } timeout && matchStart != 0 && System.Diagnostics.Stopwatch.GetElapsedTime(matchStart) > timeout)
+            throw new JsTerminationException(JsTerminationReason.Timeout, "The regular expression exceeded its time limit");
     }
 }

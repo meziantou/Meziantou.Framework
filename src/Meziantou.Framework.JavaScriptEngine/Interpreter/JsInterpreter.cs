@@ -628,7 +628,7 @@ internal static partial class JsInterpreter
                         var target = code[pc];
                         if (target < pc)
                         {
-                            engine.CheckInterrupt();
+                            engine.CountInterruptPoint();
                         }
 
                         pc = target;

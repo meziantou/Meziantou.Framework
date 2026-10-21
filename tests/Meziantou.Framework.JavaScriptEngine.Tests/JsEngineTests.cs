@@ -163,6 +163,16 @@ public sealed class JsEngineTests
         first.Execute("1");
         using var scope = engine.Enter();
         Assert.NotSame(first.GlobalObject.GetProperty("Array").AsObject().GetProperty("prototype").AsObject(), array.GetPrototype());
+
+        // A function runs in its own realm, or in the realm of its caller
+        JsRealm? calledRealm = null;
+        second.GlobalObject.SetProperty("ownRealm", second.CreateFunction("ownRealm", 0, (_, _) => { calledRealm = engine.CurrentRealm; return default; }));
+        second.GlobalObject.SetProperty("callerRealm", second.CreateFunction("callerRealm", 0, (_, _) => { calledRealm = engine.CurrentRealm; return default; }, runInCallerRealm: true));
+        first.GlobalObject.SetProperty("other", second.GlobalObject);
+        first.Execute("other.ownRealm()");
+        Assert.Same(second, calledRealm);
+        first.Execute("other.callerRealm()");
+        Assert.Same(first, calledRealm);
     }
 
     [Fact]
@@ -252,6 +262,88 @@ public sealed class JsEngineTests
         Assert.Equal("active.js", url);
         Assert.Equal(2, location?.Line);
         Assert.Null(engine.GetActiveScriptOrModule());
+    }
+
+    [Fact]
+    public void ExecutionLimits()
+    {
+        using (var engine = new JsEngine(new JsEngineOptions { MaxStatements = 100 }))
+        {
+            var realm = engine.CreateRealm();
+            Assert.Equal(10, realm.Execute("var i = 0; while (i < 10) i++; i").AsNumber());
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("for (;;) {}"));
+            Assert.Equal(JsTerminationReason.StatementLimit, exception.Reason);
+
+            // A recursion without loops counts its calls; the limit applies to each entry
+            exception = Assert.Throws<JsTerminationException>(() => realm.Execute("function f(n) { return n < 2 ? n : f(n - 1) + f(n - 2); } f(30)"));
+            Assert.Equal(JsTerminationReason.StatementLimit, exception.Reason);
+            Assert.Equal(3, realm.Execute("1 + 2").AsNumber());
+        }
+
+        using (var engine = new JsEngine(new JsEngineOptions { RegExpTimeout = TimeSpan.FromMilliseconds(50) }))
+        {
+            var realm = engine.CreateRealm();
+            Assert.True(realm.Execute("/^(a+)+$/.test('aaaa')").AsBoolean());
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("/^(a+)+$/.test('a'.repeat(40) + 'b')"));
+            Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
+        }
+
+        using (var engine = new JsEngine(new JsEngineOptions { MemoryLimit = 1024 * 1024 }))
+        {
+            var exception = Assert.Throws<JsTerminationException>(() => engine.CreateRealm().Execute("var a = []; for (;;) a.push({});"));
+            Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
+        }
+
+        using var cancellation = new CancellationTokenSource();
+        using (var engine = new JsEngine(new JsEngineOptions { CancellationToken = cancellation.Token }))
+        {
+            var realm = engine.CreateRealm();
+            using var scope = engine.Enter();
+            engine.CheckInterrupt();
+            realm.GlobalObject.SetProperty("check", realm.CreateFunction("check", 0, (_, _) =>
+            {
+                cancellation.Cancel();
+                engine.CheckInterrupt();
+                return default;
+            }));
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("check()"));
+            Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+        }
+    }
+
+    [Fact]
+    public void SyntaxErrorsHaveTheirLocation()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var exception = Assert.Throws<JsException>(() => realm.Execute("var a = 1;\nvar = 2;", "script.js"));
+        Assert.Equal("script.js", exception.Location?.Url);
+        Assert.Equal(2, exception.Location?.Line);
+
+        // The module of an inline script is located in its document
+        exception = Assert.Throws<JsException>(() => realm.ParseModule("export const a = 1;\nexport const = 2;", "page.html", hostDefined: null, lineOffset: 10, columnOffset: 4));
+        Assert.Equal(new JsSourceLocation("page.html", 12, 14), exception.Location);
+
+        using var scope = engine.Enter();
+        var error = realm.CreateError(JsErrorType.TypeError, "custom");
+        exception = new JsException(error, new JsSourceLocation("other.js", 3, 4));
+        Assert.Equal(new JsSourceLocation("other.js", 3, 4), exception.Location);
+        Assert.Equal(error, exception.Value);
+    }
+
+    [Fact]
+    public void ModuleEvaluationErrorHasItsLocation()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var module = realm.ParseModule("export const a = 1;\n  throw new Error('boom');", "module.js");
+        module.LoadRequestedModules();
+        module.Link();
+        var promise = module.Evaluate().AsObject();
+        Assert.True(promise.TryGetPromiseState(out var state, out _, out _));
+        Assert.Equal(JsPromiseState.Rejected, state);
+        Assert.True(module.HasEvaluationError);
+        Assert.Equal(new JsSourceLocation("module.js", 2, 3), module.EvaluationErrorLocation);
     }
 
     private sealed class UppercaseHostObject(JsObject prototype, object target) : JsHostObject(prototype, target)

@@ -55,6 +55,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public JsEngine(Meziantou.Framework.JavaScriptEngine.JsEngineOptions? options = null) { }
         public Meziantou.Framework.JavaScriptEngine.JsValue Call(Meziantou.Framework.JavaScriptEngine.JsValue function, Meziantou.Framework.JavaScriptEngine.JsValue thisValue, params System.ReadOnlySpan<Meziantou.Framework.JavaScriptEngine.JsValue> arguments) => throw null;
         public string CaptureStackTrace() => throw null;
+        public void CheckInterrupt() { }
         public Meziantou.Framework.JavaScriptEngine.JsValue Construct(Meziantou.Framework.JavaScriptEngine.JsValue constructor, System.ReadOnlySpan<Meziantou.Framework.JavaScriptEngine.JsValue> arguments, Meziantou.Framework.JavaScriptEngine.JsValue newTarget = default) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsRealm CreateRealm() => throw null;
         public void Dispose() { }
@@ -79,8 +80,11 @@ namespace Meziantou.Framework.JavaScriptEngine
     {
         public System.Threading.CancellationToken CancellationToken { get => throw null; set { } }
         public Meziantou.Framework.JavaScriptEngine.JsHost? Host { get => throw null; set { } }
+        public long? MaxStatements { get => throw null; set { } }
+        public long? MemoryLimit { get => throw null; set { } }
         public Meziantou.Framework.JavaScriptEngine.JsModuleLoader? ModuleLoader { get => throw null; set { } }
         public int RecursionLimit { get => throw null; set { } }
+        public System.TimeSpan? RegExpTimeout { get => throw null; set { } }
         public System.TimeProvider TimeProvider { get => throw null; set { } }
         public string? TimeZone { get => throw null; set { } }
         public System.TimeSpan? Timeout { get => throw null; set { } }
@@ -113,6 +117,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public Meziantou.Framework.JavaScriptEngine.JsValue Value { get => throw null; }
         public JsException(Meziantou.Framework.JavaScriptEngine.JsValue value) { }
         public JsException(string message) { }
+        public JsException(Meziantou.Framework.JavaScriptEngine.JsValue value, Meziantou.Framework.JavaScriptEngine.JsSourceLocation? location) { }
         public JsException(string message, System.Exception innerException) { }
     }
 
@@ -191,6 +196,7 @@ namespace Meziantou.Framework.JavaScriptEngine
     public abstract class JsModule : Meziantou.Framework.JavaScriptEngine.JsScriptOrModule
     {
         public Meziantou.Framework.JavaScriptEngine.JsValue EvaluationError { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsSourceLocation? EvaluationErrorLocation { get => throw null; }
         public bool HasEvaluationError { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsModuleStatus Status { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsValue Evaluate() => throw null;
@@ -358,6 +364,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public Meziantou.Framework.JavaScriptEngine.JsObject CreateError(Meziantou.Framework.JavaScriptEngine.JsErrorType type, string message) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsException CreateException(Meziantou.Framework.JavaScriptEngine.JsErrorType type, string message) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsFunction CreateFunction(string name, int length, Meziantou.Framework.JavaScriptEngine.JsNativeFunction function) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsFunction CreateFunction(string name, int length, Meziantou.Framework.JavaScriptEngine.JsNativeFunction function, bool runInCallerRealm) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsSyntheticModule CreateJsonModule(string json, string? url = null, object? hostDefined = null) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsObject CreateObject() => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsObject CreateObject(Meziantou.Framework.JavaScriptEngine.JsObject? prototype) => throw null;
@@ -367,6 +374,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public Meziantou.Framework.JavaScriptEngine.JsValue Execute(string code, string? url = null) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsValue Execute(Meziantou.Framework.JavaScriptEngine.JsPreparedScript script, object? hostDefined = null, bool mutedErrors = false) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsSourceTextModule ParseModule(string code, string? url = null, object? hostDefined = null) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsSourceTextModule ParseModule(string code, string? url, object? hostDefined, int lineOffset, int columnOffset) => throw null;
     }
 
     public sealed class JsScript : Meziantou.Framework.JavaScriptEngine.JsScriptOrModule

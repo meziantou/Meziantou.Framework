@@ -253,7 +253,7 @@ The general attributes other than `class` are shared with the generic attributes
 
 The library includes a `UrlSanitizer` class that validates URLs:
 
-<!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/UrlSanitizerTests.cs;region=UrlSanitizer_IsSafeUrl;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/UrlSanitizerTests.cs;region=UrlSanitizer_IsSafeUrlAndSrcset;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Check if a URL is safe
 Assert.True(UrlSanitizer.IsSafeUrl("https://example.com"));

@@ -38,6 +38,32 @@ public class SlugTests
         #endregion
     }
 
+    [Fact]
+    public void SlugExample()
+    {
+        #region Slug_Example
+        var slug = Slug.Create("This is a test!");
+        Assert.Equal("This-is-a-test", slug);
+
+        var lowerSlug = Slug.Create("Hello World", new SlugOptions { CasingTransformation = CasingTransformation.ToLowerCase });
+        Assert.Equal("hello-world", lowerSlug);
+        #endregion
+    }
+
+    [Fact]
+    public void SlugOptionsExample()
+    {
+        #region SlugOptions_Example
+        var options = new SlugOptions
+        {
+            MaximumLength = 20,
+            CasingTransformation = CasingTransformation.ToLowerCase,
+        };
+        var slug = Slug.Create("This is a text", options);
+        Assert.Equal("this-is-a-text", slug);
+        #endregion
+    }
+
     [Theory]
     [InlineData("a", "a")]
     [InlineData("z", "z")]

@@ -1,12 +1,12 @@
 <Project Sdk="Meziantou.NET.Sdk">
-
   <PropertyGroup>
+    <OutputType>Exe</OutputType>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Framework.StronglyTypedId.Annotations/Meziantou.Framework.StronglyTypedId.Annotations.csproj" />
-    <ProjectReference Include="../../src/Meziantou.Framework.StronglyTypedId/Meziantou.Framework.StronglyTypedId.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.StronglyTypedId.Annotations\Meziantou.Framework.StronglyTypedId.Annotations.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.StronglyTypedId.Interfaces\Meziantou.Framework.StronglyTypedId.Interfaces.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.StronglyTypedId\Meziantou.Framework.StronglyTypedId.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
   </ItemGroup>
-
 </Project>

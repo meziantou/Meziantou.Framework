@@ -58,7 +58,7 @@ internal sealed class HttpCache
 
         // Find the matching entries considering Vary headers.
         // The match is decided on the persisted entry: building a CacheEntry copies the whole serialized
-        // response and scans it to check that it is well-formed, and most candidates are about to be
+        // response and deserializes it to check that it is valid, and most candidates are about to be
         // rejected. Only the selected one is materialized, below.
         List<HttpCachePersistenceEntry>? candidates = null;
 

@@ -2,10 +2,14 @@ namespace Meziantou.Framework.CodeDom;
 
 /// <summary>Base class for all code objects in the CodeDOM tree.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs" ref:region="CodeObject_Example" ref:dedent="true">
 /// var unit = new CompilationUnit();
 /// var ns = unit.AddNamespace("MyNamespace");
 /// var cls = ns.AddType(new ClassDeclaration("MyClass"));
+///
+/// // Code objects form a tree
+/// Assert.Same(ns, cls.Parent);
+/// Assert.Same(unit, ns.Parent);
 /// </code>
 /// </example>
 public abstract class CodeObject

@@ -1,0 +1,18 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.Http.Caching. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The header values of the unit tests (Cache-Control, ETag, Vary, No-Vary-Search, ...) are the seeds -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Http.Caching.Tests\*.cs" LogicalName="HttpCachingTests.%(FileName)%(Extension)" Link="Seeds\%(FileName)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Caching\Meziantou.Framework.Http.Caching.csproj" />
+  </ItemGroup>
+</Project>

@@ -538,9 +538,26 @@ public sealed class CronExpression : IRecurrenceRule, IEquatable<CronExpression>
         return false;
     }
 
+    // A value is made of ASCII digits only. int.TryParse also accepts trailing null characters, even with NumberStyles.None.
     private static bool TryParseInt(ReadOnlySpan<char> value, out int result)
     {
-        return int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out result);
+        result = 0;
+        if (value.IsEmpty)
+            return false;
+
+        long number = 0;
+        foreach (var c in value)
+        {
+            if (c is < '0' or > '9')
+                return false;
+
+            number = (number * 10) + (c - '0');
+            if (number > int.MaxValue)
+                return false;
+        }
+
+        result = (int)number;
+        return true;
     }
 
     private static int GetMinValue(CronFieldKind kind) => kind switch

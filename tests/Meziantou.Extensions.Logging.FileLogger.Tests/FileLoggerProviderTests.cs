@@ -442,6 +442,18 @@ public sealed class FileLoggerProviderTests
     }
 
     [Fact]
+    public async Task FileFormatter_Example()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        await using var provider = new FileLoggerProvider(new FileLoggerOptions { Directory = tempDirectory.FullPath, Formatter = new CsvFileFormatter() });
+        provider.CreateLogger("Test").LogWarning("Hello");
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+        var content = await ReadLogFileAsync(provider.LogFilePath);
+        Assert.Equal("Warning,Hello", content.Trim());
+    }
+
+    [Fact]
     public async Task RollFileOnMaxFileSize()
     {
         using var tempDirectory = TemporaryDirectory.Create();
@@ -1217,4 +1229,16 @@ public sealed class FileLoggerProviderTests
             textWriter.Write(logEntry.Formatter(logEntry.State, logEntry.Exception).ToUpperInvariant());
         }
     }
+
+    #region FileFormatter_Example
+    internal sealed class CsvFileFormatter() : FileFormatter("csv")
+    {
+        public override void Write<TState>(in LogEntry<TState> logEntry, DateTimeOffset timestamp, FileLoggerOptions options, IExternalScopeProvider? scopeProvider, TextWriter textWriter)
+        {
+            textWriter.Write(logEntry.LogLevel);
+            textWriter.Write(',');
+            textWriter.Write(logEntry.Formatter(logEntry.State, logEntry.Exception));
+        }
+    }
+    #endregion
 }

@@ -9,18 +9,20 @@ namespace Meziantou.Framework.Win32;
 
 /// <summary>Represents a security identifier (SID) that uniquely identifies a user, group, or other security principal.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Win32.AccessToken.Tests/AccessTokenTests.cs" ref:region="SecurityIdentifier_Usage" ref:dedent="true">
 /// // Get a well-known SID
 /// var adminSid = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinBuiltinAdministratorsSid);
-/// Console.WriteLine($"Administrators SID: {adminSid.Sid}");
-/// Console.WriteLine($"Full Name: {adminSid.FullName}");
+/// Assert.Equal("S-1-5-32-544", adminSid.Sid);
+///
+/// // The account name is localized: "BUILTIN\Administrators" on an English version of Windows
+/// Assert.NotEmpty(adminSid.FullName);
 ///
 /// // Compare SIDs
 /// using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
 /// var ownerSid = token.GetOwner();
 /// if (ownerSid == adminSid)
 /// {
-///     Console.WriteLine("Owner is administrator");
+///     // The owner is the Administrators group, which is the case of an elevated process
 /// }
 /// </code>
 /// </example>
@@ -97,9 +99,11 @@ public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
     /// <returns>A <see cref="SecurityIdentifier"/> representing the well-known SID.</returns>
     /// <exception cref="Win32Exception">The SID could not be created.</exception>
     /// <example>
-    /// <code>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Win32.AccessToken.Tests/AccessTokenTests.cs" ref:region="SecurityIdentifier_FromWellKnown" ref:dedent="true">
     /// var adminSid = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinBuiltinAdministratorsSid);
     /// var systemSid = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinLocalSystemSid);
+    /// Assert.Equal("S-1-5-32-544", adminSid.Sid);
+    /// Assert.Equal("S-1-5-18", systemSid.Sid);
     /// </code>
     /// </example>
     public static unsafe SecurityIdentifier FromWellKnown(WellKnownSidType type)

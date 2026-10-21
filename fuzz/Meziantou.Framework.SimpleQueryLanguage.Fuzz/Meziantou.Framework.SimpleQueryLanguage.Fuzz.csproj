@@ -1,0 +1,20 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.SimpleQueryLanguage. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The query strings of the unit tests are the seeds -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.SimpleQueryLanguage.Tests\QueryBuilderTests.cs" LogicalName="QueryBuilderTests.cs" Link="Seeds\QueryBuilderTests.cs" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.SimpleQueryLanguage.Tests\ExpressionQueryBuilderTests.cs" LogicalName="ExpressionQueryBuilderTests.cs" Link="Seeds\ExpressionQueryBuilderTests.cs" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.SimpleQueryLanguage.Tests\ValueParserTests.cs" LogicalName="ValueParserTests.cs" Link="Seeds\ValueParserTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.SimpleQueryLanguage\Meziantou.Framework.SimpleQueryLanguage.csproj" />
+  </ItemGroup>
+</Project>

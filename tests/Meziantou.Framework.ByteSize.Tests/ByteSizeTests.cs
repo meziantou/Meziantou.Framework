@@ -36,6 +36,30 @@ public sealed class ByteSizeTests
         Assert.Equal(ByteSize.FromMegaBytes(10), parsedSize);
     }
 
+    [Fact]
+    public void Documentation_Example()
+    {
+        #region ByteSize_Example
+        // Create an instance
+        var size = new ByteSize(1024);
+        var size2 = ByteSize.FromKiloBytes(10);
+        var size3 = ByteSize.Parse("10MB", CultureInfo.InvariantCulture);
+        Assert.Equal(10_000, size2.Value);
+        Assert.Equal(10_000_000, size3.Value);
+
+        // Format with automatic unit selection
+        Assert.Equal("1.024kB", size.ToString(CultureInfo.InvariantCulture)); // decimal units
+        Assert.Equal("1kiB", size.ToString("gi", CultureInfo.InvariantCulture)); // binary units
+
+        // Format with specific unit
+        Assert.Equal("0.001024MB", size.ToString("MB", CultureInfo.InvariantCulture));
+
+        // Perform arithmetic operations
+        var total = ByteSize.FromKiloBytes(1) + ByteSize.FromKiloBytes(2);
+        Assert.Equal("3kB", total.ToString(CultureInfo.InvariantCulture));
+        #endregion
+    }
+
     [Theory]
     [InlineData(10L, null, "10B")]
     [InlineData(10L, "", "10B")]

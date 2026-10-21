@@ -105,6 +105,31 @@ public sealed partial class SerializerTests : SerializerTestsBase
     public void SerializeObject_Null_Nested() => AssertSerialization(new { Obj = (object?)null }, "Obj: <null>");
 
     [Fact]
+    public void Serialize_DocumentationExample()
+    {
+        #region HumanReadableSerializer_Serialize
+        var obj = new { Name = "John Doe", Age = 32 };
+        var output = HumanReadableSerializer.Serialize(obj);
+        Assert.Equal("Name: John Doe\nAge: 32", output);
+        #endregion
+    }
+
+    [Fact]
+    public void SerializeWithOptions_DocumentationExample()
+    {
+        #region HumanReadableSerializerOptions_Serialize
+        var options = new HumanReadableSerializerOptions
+        {
+            IncludeFields = true,
+            DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingNull,
+        };
+        var obj = new { Name = "John Doe", Nickname = (string?)null };
+        var output = HumanReadableSerializer.Serialize(obj, options);
+        Assert.Equal("Name: John Doe", output);
+        #endregion
+    }
+
+    [Fact]
     public void SerializeArray_Empty()
         => AssertSerialization(Array.Empty<string>(), "[]");
 
@@ -1114,7 +1139,13 @@ public sealed partial class SerializerTests : SerializerTestsBase
     public void MethodInfo_ByRefParameters() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.ByRefParameters))!, "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.ByRefParameters(ref System.Int32 a,out System.Collections.Generic.List<System.Int32>[] b,ref dynamic c)");
 
     [Fact]
-    public void Type_AnonymType() => AssertSerialization(new { }.GetType(), "<>f__AnonymousType4, Meziantou.Framework.HumanReadableSerializer.Tests");
+    public void Type_AnonymType()
+    {
+        // The compiler numbers the anonymous types of the assembly, so the number changes when a test adds one
+        var type = new { }.GetType();
+        Assert.StartsWith("<>f__AnonymousType", type.Name);
+        AssertSerialization(type, type.Name + ", Meziantou.Framework.HumanReadableSerializer.Tests");
+    }
 
     [Fact]
     public void MethodInfo() => AssertSerialization(typeof(object).GetMethod("ToString")!, "System.Object.ToString()");

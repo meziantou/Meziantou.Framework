@@ -10,7 +10,7 @@ The types are in the `Meziantou.Framework.Win32` namespace.
 
 ### Get Perceived Type
 
-<!-- ref:../../tests/Meziantou.Framework.Win32.PerceivedType.Tests/PerceivedTests.cs;region=Perceived_GetPerceivedType;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../tests/Meziantou.Framework.Win32.PerceivedType.Tests/PerceivedTests.cs;region=Perceived_GetPerceivedTypes;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Get perceived type for a file extension
 var perceived = Perceived.GetPerceivedType(".txt");

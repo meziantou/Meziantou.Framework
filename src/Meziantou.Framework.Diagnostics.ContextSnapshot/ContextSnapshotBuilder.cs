@@ -6,13 +6,14 @@ namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 /// <summary>A builder for creating diagnostic snapshots of the current execution context. Use this to gather system, runtime, and process information for troubleshooting.</summary>
 /// <example>
 /// Capture comprehensive system diagnostics:
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Diagnostics.ContextSnapshot.Tests/SnapshotTests.cs" ref:region="ContextSnapshotBuilder_AddDefault" ref:dedent="true">
 /// var builder = new ContextSnapshotBuilder();
 /// builder.AddDefault();
 /// var snapshot = builder.BuildSnapshot();
-/// 
+///
 /// // Serialize for logging
-/// var json = JsonSerializer.Serialize(snapshot, new JsonSerializerOptions { WriteIndented = true });
+/// var json = JsonSerializer.Serialize(snapshot, new JsonSerializerOptions(JsonSerializerDefaults.Strict) { WriteIndented = true });
+/// Assert.StartsWith("{", json);
 /// </code>
 /// </example>
 public sealed class ContextSnapshotBuilder

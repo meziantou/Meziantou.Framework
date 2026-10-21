@@ -25,7 +25,7 @@ internal static class Binding_EventTarget<TAdapter, TValue> where TAdapter : str
         if (a.Length < 2) throw r.NotEnoughArguments("addEventListener", 2, a.Length);
         var a0 = r.ToDomString(a[0]);
         var a1 = (r.IsNullOrUndefined(a[1]) ? (global::Meziantou.Framework.WebPlatform.Scripting.JsCallbackInterface<TAdapter, TValue>?)null : r.ToCallbackInterface(a[1], "EventListener"));
-        var a2 = r.IsMissing(a, 2) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_42(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_42(r, a[2]);
+        var a2 = r.IsMissing(a, 2) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_b07c9407(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_b07c9407(r, a[2]);
         if ((a2 is null or global::Meziantou.Framework.WebPlatform.Dom.AddEventListenerOptions)) { o.AddEventListener(a0, a1, (global::Meziantou.Framework.WebPlatform.Dom.AddEventListenerOptions)a2!); return r.Adapter.Undefined; }
         if ((a2 is bool)) { o.AddEventListener(a0, a1, (bool)a2!); return r.Adapter.Undefined; }
         throw r.CreateTypeError("Failed to execute 'addEventListener': the arguments are not supported");
@@ -36,7 +36,7 @@ internal static class Binding_EventTarget<TAdapter, TValue> where TAdapter : str
         if (a.Length < 2) throw r.NotEnoughArguments("removeEventListener", 2, a.Length);
         var a0 = r.ToDomString(a[0]);
         var a1 = (r.IsNullOrUndefined(a[1]) ? (global::Meziantou.Framework.WebPlatform.Scripting.JsCallbackInterface<TAdapter, TValue>?)null : r.ToCallbackInterface(a[1], "EventListener"));
-        var a2 = r.IsMissing(a, 2) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_43(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_43(r, a[2]);
+        var a2 = r.IsMissing(a, 2) ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_53134ebb(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToUnion_53134ebb(r, a[2]);
         if ((a2 is null or global::Meziantou.Framework.WebPlatform.Dom.EventListenerOptions)) { o.RemoveEventListener(a0, a1, (global::Meziantou.Framework.WebPlatform.Dom.EventListenerOptions)a2!); return r.Adapter.Undefined; }
         if ((a2 is bool)) { o.RemoveEventListener(a0, a1, (bool)a2!); return r.Adapter.Undefined; }
         throw r.CreateTypeError("Failed to execute 'removeEventListener': the arguments are not supported");

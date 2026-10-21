@@ -4,7 +4,7 @@ namespace Meziantou.Framework.TemporaryContainers;
 
 /// <summary>Describes how a volume should be created. Configure an instance and call <see cref="CreateVolume"/> to obtain a <see cref="TemporaryVolume"/>.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/Meziantou.Framework.TemporaryContainers.Samples/Examples.cs" ref:region="VolumeDefinition_Example" ref:dedent="true">
 /// await using var volume = new VolumeDefinition().CreateVolume();
 ///
 /// var definition = new ContainerDefinition(ImageSource.FromRegistry("redis:8"));

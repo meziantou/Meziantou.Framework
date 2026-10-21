@@ -2,15 +2,19 @@ namespace Meziantou.Framework.Scheduling;
 
 /// <summary>Represents an iCalendar calendar containing events.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Scheduling.Tests/InternetCalendarTests.cs" ref:region="InternetCalendar_Example" ref:dedent="true">
 /// var calendar = new InternetCalendar();
 /// calendar.Events.Add(new Event
 /// {
-///     Start = DateTime.Now,
-///     End = DateTime.Now.AddHours(1),
-///     Summary = "Meeting"
+///     Start = new DateTime(2024, 01, 02, 08, 00, 00, DateTimeKind.Utc),
+///     End = new DateTime(2024, 01, 02, 09, 00, 00, DateTimeKind.Utc),
+///     Summary = "Meeting",
 /// });
 /// var icsContent = calendar.ToIcs();
+///
+/// Assert.Contains("BEGIN:VEVENT", icsContent);
+/// Assert.Contains("DTSTART:20240102T080000Z", icsContent);
+/// Assert.Contains("SUMMARY:Meeting", icsContent);
 /// </code>
 /// </example>
 public sealed class InternetCalendar
@@ -160,8 +164,9 @@ public sealed class InternetCalendar
                 continue;
 
             Utilities.WriteLine(writer, "BEGIN:VEVENT");
-            if (!string.IsNullOrEmpty(@event.Id))
-                WriteProperty(writer, "UID", @event.IdParameters, skipParameter: null, Utilities.EscapeText(@event.Id));
+            // An empty value is not written, nor one made of control characters only, which TEXT escaping drops
+            if (Utilities.EscapeText(@event.Id) is { Length: > 0 } id)
+                WriteProperty(writer, "UID", @event.IdParameters, skipParameter: null, id);
 
             if (@event.Status is { } status)
                 WriteProperty(writer, "STATUS", @event.StatusParameters, skipParameter: null, GetStatusValue(status));
@@ -209,8 +214,8 @@ public sealed class InternetCalendar
             if (@event.RecurrenceRule is not null)
                 WriteProperty(writer, "RRULE", @event.RecurrenceRuleParameters, skipParameter: null, GetRecurrenceRuleValue(@event.RecurrenceRule, @event, timeZone));
 
-            if (!string.IsNullOrEmpty(@event.Summary))
-                WriteProperty(writer, "SUMMARY", @event.SummaryParameters, skipParameter: null, Utilities.EscapeText(@event.Summary));
+            if (Utilities.EscapeText(@event.Summary) is { Length: > 0 } summary)
+                WriteProperty(writer, "SUMMARY", @event.SummaryParameters, skipParameter: null, summary);
 
             WriteAdditionalProperties(writer, @event.AdditionalProperties, @event.RawProperties, name => IsReservedEventPropertyName(@event, name, isRawProperty: false), name => IsReservedEventPropertyName(@event, name, isRawProperty: true));
 
@@ -290,7 +295,7 @@ public sealed class InternetCalendar
             }
 
             DateTime? eventReferenceDate = @event.Start == default ? null : @event.Start;
-            if (!string.IsNullOrEmpty(@event.Id))
+            if (Utilities.EscapeText(@event.Id).Length > 0)
                 AddReferencedTimeZones(@event.IdParameters, value: null, eventReferenceDate);
 
             if (@event.Status is not null)
@@ -308,7 +313,7 @@ public sealed class InternetCalendar
             if (@event.RecurrenceRule is not null)
                 AddReferencedTimeZones(@event.RecurrenceRuleParameters, value: null, eventReferenceDate);
 
-            if (!string.IsNullOrEmpty(@event.Summary))
+            if (Utilities.EscapeText(@event.Summary).Length > 0)
                 AddReferencedTimeZones(@event.SummaryParameters, value: null, eventReferenceDate);
 
             if (@event.Description is not null)

@@ -816,6 +816,28 @@ public sealed class DnsMessageEncoderTests
         Assert.Throws<DnsProtocolException>(() => DnsMessageEncoder.DecodeQuery(buffer));
     }
 
+    [Theory]
+    [InlineData(new byte[] { 8, (byte)'e', (byte)'v', (byte)'i', (byte)'l', (byte)'.', (byte)'c', (byte)'o', (byte)'m', 0 })] // one label "evil.com"
+    [InlineData(new byte[] { 2, (byte)'.', (byte)'a', 0 })] // an empty label once split on the dot
+    [InlineData(new byte[] { 3, (byte)'a', 0xFF, (byte)'b', 0 })] // a non-ASCII byte
+    public void Decode_LabelThatCannotBeRepresented_IsRejected(byte[] name)
+    {
+        // The name is the labels joined with dots, so these labels would come back as other labels, or as "a?b"
+        byte[] message = [0x12, 0x34, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, .. name, 0x00, 0x01, 0x00, 0x01];
+
+        Assert.Throws<DnsProtocolException>(() => DnsMessageEncoder.DecodeQuery(message));
+    }
+
+    [Fact]
+    public void Decode_LabelWithPrintableAsciiAndControlBytes_RoundTrips()
+    {
+        byte[] message = [0x12, 0x34, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 4, (byte)'a', (byte)'\\', 0x01, (byte)'_', 3, (byte)'c', (byte)'o', (byte)'m', 0, 0x00, 0x01, 0x00, 0x01];
+
+        var decoded = DnsMessageEncoder.DecodeQuery(message);
+        Assert.Equal("a\\\u0001_.com", decoded.Questions[0].Name);
+        Assert.Equal(message, DnsMessageEncoder.EncodeResponse(decoded));
+    }
+
     [Fact]
     public void Decode_DomainNameLongerThan255Bytes_IsRejected()
     {

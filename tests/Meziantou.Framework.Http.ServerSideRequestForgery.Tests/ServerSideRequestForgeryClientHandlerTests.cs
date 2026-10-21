@@ -5,6 +5,22 @@ namespace Meziantou.Framework.Http.ServerSideRequestForgery.Tests;
 
 public sealed class ServerSideRequestForgeryClientHandlerTests
 {
+#pragma warning disable CA2000 // Dispose objects before losing scope: the HttpClient disposes the handlers
+    [Fact]
+    public async Task ServerSideRequestForgeryClientHandler_Example()
+    {
+        #region ServerSideRequestForgeryClientHandler_Example
+        var options = new ServerSideRequestForgeryOptions();
+        var handler = new ServerSideRequestForgeryClientHandler(new SocketsHttpHandler { UseProxy = false }, options);
+        using var client = new HttpClient(handler, disposeHandler: true);
+
+        // Requests to a loopback or private address are rejected before connecting
+        var exception = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(new Uri("https://127.0.0.1/")));
+        Assert.IsType<ServerSideRequestForgeryException>(exception.InnerException);
+        #endregion
+    }
+#pragma warning restore CA2000
+
     [Theory]
     [InlineData("3.0", HttpVersionPolicy.RequestVersionOrLower)]
     [InlineData("3.0", HttpVersionPolicy.RequestVersionExact)]

@@ -349,6 +349,46 @@ public sealed class DrawingStrokeTests
     }
 
     [Fact]
+    public void AStrokeWiderThanTheCanvasCoversItWhateverTheTransformation()
+    {
+        // A pen much wider than the canvas through a translation, a mirror (which reverses the orientation of the
+        // pieces), a turn and a scaling: a translucent paint shows that the many pieces of such a stroke are painted once
+        var center = new PointD(2, 1.5);
+        AffineTransform[] transforms =
+        [
+            AffineTransform.CreateTranslation(2, 2),
+            AffineTransform.CreateScale(-1, 1, center),
+            AffineTransform.CreateRotation(30, center),
+            AffineTransform.CreateScale(100, 100, center),
+        ];
+        var paint = new SolidBrush(new Rgba32(255, 255, 255, 128));
+        var curve = new VectorPathBuilder().MoveTo(-300, 2).CubicBezierTo(100, -4000, 3, 5000, 400, 3).QuadraticBezierTo(2, 2, 3, 3).AddCircle(new PointD(2, 2), 50).Build();
+        (double Width, LineJoin Join, LineCap Cap)[] pens = [(1000, LineJoin.Miter, LineCap.Butt), (1000, LineJoin.Round, LineCap.Round), (100000, LineJoin.Bevel, LineCap.Square)];
+        foreach (var transform in transforms)
+        {
+            foreach (var (width, join, cap) in pens)
+            {
+                using var image = NewBlack(4, 3);
+                image.Frames[0].Draw(canvas => canvas.Transform(transform, inner => inner.Stroke(new Pen(paint, width) { LineJoin = join, LineCap = cap }, curve)), Ct);
+                AssertGray8(image, [[128, 128, 128, 128], [128, 128, 128, 128], [128, 128, 128, 128]]);
+            }
+        }
+
+        // A pen narrower than the canvas that the transformation makes 5 million pixels wide, with a dot every 10
+        // pixels of the canvas: the first dot that covers the canvas ends the stroke. Compared to the canvas before it
+        // is scaled, the pen is too narrow to be tested, and the 256,000 dots that reach the canvas take minutes.
+        using (var image = NewBlack(512, 512))
+        {
+            using var budget = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+            budget.CancelAfter(TimeSpan.FromSeconds(60));
+            var pen = new Pen(White, 500) { DashPattern = [0, 1.0 / 1024], LineCap = LineCap.Round };
+            var middle = new PointD(256, 256);
+            image.Frames[0].Draw(canvas => canvas.Transform(AffineTransform.CreateScale(10000, 10000, middle), inner => inner.StrokeLine(pen, new PointD(-44, 256), middle)), budget.Token);
+            Assert.All(DrawingTestSupport.ReadSamples(image.Frames[0]), sample => Assert.Equal(255, sample));
+        }
+    }
+
+    [Fact]
     public void ACircleIsStrokedSymmetrically()
     {
         using var image = NewBlack(16, 16);
@@ -666,6 +706,52 @@ public sealed class DrawingStrokeTests
             var pen = new Pen(White, 10) { DashPattern = [1.0 / 2048] };
             image.Frames[0].Draw(canvas => canvas.StrokeLine(pen, new PointD(-16777216, 100), new PointD(16777216, 100.5)), timeout.Token);
             AssertGray8(image, [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]);
+        }
+    }
+
+    [Fact]
+    public void TheMiterLimitDoesNotChangeHowFinelyAnEllipseIsCutInPerspective()
+    {
+        // An ellipse narrower than the pen, on a plane whose horizon is about 100 pixels away from it. The miters of the
+        // pen once made the whole curve reach that horizon, where it was cut 65,536 times finer: 160,000 crossing
+        // pieces, 33 s per stroke (fuzzing), even with bevel joins. An ellipse has no corner, so no miter.
+        var transform = new ProjectiveTransform(0.5, 0, 0, -0.4854, -0.4854, -0.00735, 66.24, 66.24, 1.0037);
+        var center = new PointD(23.2, -1);
+        foreach (var join in (LineJoin[])[LineJoin.Miter, LineJoin.Bevel, LineJoin.Round])
+        {
+            using var budget = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+            budget.CancelAfter(TimeSpan.FromSeconds(10));
+            using var limited = NewBlack(133, 132);
+            using var unlimited = NewBlack(133, 132);
+            limited.Frames[0].Draw(canvas => canvas.Transform(transform, plane => plane.StrokeEllipse(new Pen(White, 57.6) { LineJoin = join, MiterLimit = 1 }, center, 9.4, 33.4)), budget.Token);
+            unlimited.Frames[0].Draw(canvas => canvas.Transform(transform, plane => plane.StrokeEllipse(new Pen(White, 57.6) { LineJoin = join, MiterLimit = 588 }, center, 9.4, 33.4)), budget.Token);
+            Assert.Equal(DrawingTestSupport.ReadSamples(limited.Frames[0]), DrawingTestSupport.ReadSamples(unlimited.Frames[0]));
+            Assert.Contains(DrawingTestSupport.ReadSamples(limited.Frames[0]), sample => sample != 0);
+        }
+    }
+
+    [Fact]
+    public void AWidePenCoversTheCanvasWhateverTheTransformation()
+    {
+        // Dots 4 million pixels wide, one every half pixel, through a transformation: the image of a layer of a rectangle
+        // (a translation), a translation, a turn and a scaling, a mirror. The first dot that covers the canvas still ends
+        // the stroke: the millions of dots that reach it took minutes before (fuzzing, issue #3488).
+        var pen = new Pen(White, 4000000) { DashPattern = [0, 0.5], LineCap = LineCap.Round };
+        DrawingAction stroke = canvas => canvas.StrokeLine(pen, new PointD(-4000000, 1.5), new PointD(2, 1.5));
+        DrawingAction[] drawings =
+        [
+            canvas => canvas.Layer(new RectangleD(-1.5, -2, 9, 7), 1, stroke),
+            canvas => canvas.Transform(AffineTransform.CreateTranslation(0.25, 0.5), stroke),
+            canvas => canvas.Transform(AffineTransform.CreateRotation(30).Then(AffineTransform.CreateScale(0.5, 2)), stroke),
+            canvas => canvas.Transform(AffineTransform.CreateScale(-1, 1), stroke),
+        ];
+        foreach (var drawing in drawings)
+        {
+            using var budget = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+            budget.CancelAfter(TimeSpan.FromSeconds(60));
+            using var image = NewBlack(4, 3);
+            image.Frames[0].Draw(drawing, budget.Token);
+            AssertGray8(image, [[255, 255, 255, 255], [255, 255, 255, 255], [255, 255, 255, 255]]);
         }
     }
 

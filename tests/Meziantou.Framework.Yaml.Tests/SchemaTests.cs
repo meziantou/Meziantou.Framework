@@ -52,6 +52,32 @@ public class SchemaTests
         TryParse(schema, "2002-12-14 21:59:43.234", ExtendedSchema.TimestampShortTag, new DateTime(2002, 12, 14, 21, 59, 43, 234));
     }
 
+    [Fact]
+    public void AddScalarRule_DocumentationExample()
+    {
+        var schema = new OnOffSchema();
+
+        Assert.True(schema.TryParse(new Scalar("on"), true, out var tag, out var value));
+        Assert.Equal("!!bool", tag);
+        Assert.Equal(true, value);
+        Assert.True(schema.TryParse(new Scalar("Off"), typeof(bool), out value));
+        Assert.Equal(false, value);
+    }
+
+    #region SchemaBase_AddScalarRule
+    private sealed class OnOffSchema : CoreSchema
+    {
+        protected override void PrepareScalarRules()
+        {
+            base.PrepareScalarRules();
+
+            // Resolve on/off as booleans, in addition to the rules of the core schema
+            AddScalarRule("!!bool", "on|On|ON", _ => true, null);
+            AddScalarRule("!!bool", "off|Off|OFF", _ => false, null);
+        }
+    }
+    #endregion
+
     [Theory]
     [InlineData("0", 0)]
     [InlineData("-0", 0)]

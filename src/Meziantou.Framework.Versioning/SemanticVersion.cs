@@ -419,9 +419,9 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         {
             var span = versionString[index..last];
 
-            // A numeric identifier must not have a leading zero. Identifiers that contain at
-            // least one non-digit, or that do not start with '0', are always valid.
-            if (span[0] != '0' || ContainsNonDigit(span))
+            // A numeric identifier must not have a leading zero, but "0" itself is valid ("1.0.0-0.3.7").
+            // Identifiers that contain at least one non-digit, or that do not start with '0', are always valid.
+            if (span[0] != '0' || span.Length == 1 || ContainsNonDigit(span))
             {
                 value = span.ToString();
                 index = last;

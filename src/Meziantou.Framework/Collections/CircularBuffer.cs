@@ -5,12 +5,15 @@ namespace Meziantou.Framework.Collections;
 
 /// <summary>A circular buffer (ring buffer) collection that maintains a fixed-size buffer and overwrites old items when full.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Tests/Collections/CircularBufferTests.cs" ref:region="CircularBuffer_AllowOverwrite" ref:dedent="true">
 /// var buffer = new CircularBuffer&lt;int&gt;(3) { AllowOverwrite = true };
-/// buffer.Add(1); // [1]
-/// buffer.Add(2); // [1, 2]
-/// buffer.Add(3); // [1, 2, 3]
-/// buffer.Add(4); // [2, 3, 4] - overwrites 1
+/// buffer.AddLast(1);
+/// buffer.AddLast(2);
+/// buffer.AddLast(3);
+/// Assert.Equal([1, 2, 3], buffer);
+///
+/// buffer.AddLast(4); // overwrites 1
+/// Assert.Equal([2, 3, 4], buffer);
 /// </code>
 /// </example>
 #if PUBLIC_CIRCULARBUFFER

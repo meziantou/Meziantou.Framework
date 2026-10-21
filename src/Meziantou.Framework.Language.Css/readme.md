@@ -214,7 +214,7 @@ the limit says.
 `SyntaxWalkerDepth`. `CssSyntaxRewriter` returns a new tree from the nodes it rewrites, and the nodes it does not
 change are kept as they are.
 
-<!-- ref:../../tests/Meziantou.Framework.Language.Css.Tests/CssSyntaxTreeTests.cs;region=CssSyntaxTree_Rewriter;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../tests/Meziantou.Framework.Language.Css.Tests/CssSyntaxTreeTests.cs;region=CssSyntaxRewriter_RenameClass;format=md-fenced-code-block;dedent=true -->
 ```csharp
 private sealed class RenameClass : CssSyntaxRewriter
 {

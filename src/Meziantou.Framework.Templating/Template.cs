@@ -15,13 +15,13 @@ namespace Meziantou.Framework.Templating;
 /// the garbage collector runs.
 /// </remarks>
 /// <example>
-/// <code><![CDATA[
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Templating.Tests/TemplateTest.cs" ref:region="Template_Example" ref:dedent="true">
 /// using var template = new Template();
-/// template.Load("Hello <%=Name%>!");
+/// template.Load("Hello &lt;%=Name%&gt;!");
 /// template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
 /// var result = template.Run("Meziantou");
-/// // result: "Hello Meziantou!"
-/// ]]></code>
+/// Assert.Equal("Hello Meziantou!", result);
+/// </code>
 /// </example>
 public class Template : IDisposable
 {

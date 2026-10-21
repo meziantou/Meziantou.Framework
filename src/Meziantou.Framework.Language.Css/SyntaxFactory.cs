@@ -11,8 +11,9 @@ namespace Meziantou.Framework.Language.Css;
 /// must not touch -- two type selectors of a descendant selector -- need trivia between them.
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Css.Tests/CssSyntaxTreeTests.cs" ref:region="SyntaxFactory_Declaration" ref:dedent="true">
 /// var declaration = SyntaxFactory.Declaration("color", SyntaxFactory.CssTokenValue(SyntaxFactory.Identifier("red")));
+/// Assert.Equal("color: red;", declaration.ToFullString());
 /// </code>
 /// </example>
 public static partial class SyntaxFactory

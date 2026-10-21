@@ -377,6 +377,26 @@ public sealed class SyntaxTreeInvariantTests
         protected override void VisitTrivia(SyntaxTrivia trivia) => TriviaCount++;
     }
 
+    [Fact]
+    public void Walker_DocumentationExample()
+    {
+        var root = TestSyntax.ParseRoot("(a, b)");
+        var counter = new TokenCounter();
+
+        counter.Visit(root);
+
+        Assert.Equal(root.DescendantTokens().Count(), counter.Count);
+    }
+
+    #region SyntaxWalker_TokenCounter
+    private sealed class TokenCounter() : SyntaxWalker(SyntaxWalkerDepth.Token)
+    {
+        public int Count { get; private set; }
+
+        protected override void VisitToken(SyntaxToken token) => Count++;
+    }
+    #endregion
+
     private static IEnumerable<SyntaxNode> Descendants(SyntaxNode root)
     {
         var stack = new Stack<SyntaxNode>();

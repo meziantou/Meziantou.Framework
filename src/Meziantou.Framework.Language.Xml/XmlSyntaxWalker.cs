@@ -4,11 +4,16 @@ namespace Meziantou.Framework.Language.Xml;
 
 /// <summary>Visits an XML node and everything below it.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs" ref:region="XmlSyntaxWalker_AttributeCounter" ref:dedent="true">
 /// private sealed class AttributeCounter : XmlSyntaxWalker
 /// {
 ///     public int Count { get; private set; }
-///     public override void VisitAttribute(XmlAttributeSyntax node) { Count++; base.VisitAttribute(node); }
+///
+///     public override void VisitAttribute(XmlAttributeSyntax node)
+///     {
+///         Count++;
+///         base.VisitAttribute(node);
+///     }
 /// }
 /// </code>
 /// </example>

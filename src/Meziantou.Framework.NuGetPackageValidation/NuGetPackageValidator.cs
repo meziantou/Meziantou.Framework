@@ -4,9 +4,10 @@ namespace Meziantou.Framework.NuGetPackageValidation;
 
 /// <summary>Provides methods to validate NuGet packages against a set of rules to ensure they follow best practices and contain required metadata.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/Meziantou.Framework.NuGetPackageValidation.Samples/Examples.cs" ref:region="NuGetPackageValidator_Example" ref:dedent="true">
 /// // Validate a package with default rules
-/// var result = await NuGetPackageValidator.ValidateAsync("MyPackage.1.0.0.nupkg");
+/// var packagePath = FullPath.FromPath("MyPackage.1.0.0.nupkg");
+/// var result = await NuGetPackageValidator.ValidateAsync(packagePath);
 /// if (!result.IsValid)
 /// {
 ///     foreach (var error in result.Errors)
@@ -19,7 +20,7 @@ namespace Meziantou.Framework.NuGetPackageValidation;
 /// var options = new NuGetPackageValidationOptions();
 /// options.Rules.Add(NuGetPackageValidationRules.LicenseMustBeSet);
 /// options.Rules.Add(NuGetPackageValidationRules.AuthorMustBeSet);
-/// var customResult = await NuGetPackageValidator.ValidateAsync("MyPackage.1.0.0.nupkg", options);
+/// var customResult = await NuGetPackageValidator.ValidateAsync(packagePath, options);
 /// </code>
 /// </example>
 public static class NuGetPackageValidator

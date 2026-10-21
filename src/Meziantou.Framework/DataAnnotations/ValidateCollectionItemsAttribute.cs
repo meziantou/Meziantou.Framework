@@ -5,11 +5,18 @@ namespace Meziantou.Framework.DataAnnotations;
 
 /// <summary>Validates each item in a collection by running validation on each item.</summary>
 /// <example>
-/// <code>
-/// public class MyModel
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Tests/DataAnnotations/ValidateCollectionItemsAttributeTests.cs" ref:region="ValidateCollectionItemsAttribute_Usage" ref:dedent="true">
+/// public sealed class MyModel
 /// {
+///     // Validates each item using the data annotations of ChildModel
 ///     [ValidateCollectionItems]
 ///     public List&lt;ChildModel&gt;? Items { get; set; }
+/// }
+///
+/// public sealed class ChildModel
+/// {
+///     [Required]
+///     public string? Name { get; set; }
 /// }
 /// </code>
 /// </example>

@@ -2,14 +2,17 @@ namespace Meziantou.Framework.Csv;
 
 /// <summary>Reads CSV data from a text reader and parses it into rows.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs" ref:region="CsvReader_ReadRowAsync" ref:dedent="true">
 /// using var reader = new StringReader("Name,Age\nJohn,30\nJane,25");
 /// var csvReader = new CsvReader(reader) { HasHeaderRow = true };
-/// 
+///
+/// var lines = new List&lt;string&gt;();
 /// while (await csvReader.ReadRowAsync() is { } row)
 /// {
-///     Console.WriteLine($"{row["Name"]} is {row["Age"]} years old");
+///     lines.Add($"{row["Name"]} is {row["Age"]} years old");
 /// }
+///
+/// Assert.Equal(["John is 30 years old", "Jane is 25 years old"], lines);
 /// </code>
 /// </example>
 public class CsvReader
@@ -188,6 +191,7 @@ public class CsvReader
                         if (next == Quote)
                         {
                             await ReadCharAsync().ConfigureAwait(false);
+                            ColumnNumber++;
                             hasPendingValue = true;
                             value.Append(Quote.Value);
                         }

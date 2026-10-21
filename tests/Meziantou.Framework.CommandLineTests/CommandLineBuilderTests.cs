@@ -64,4 +64,22 @@ public class CommandLineBuilderTests(ArgumentPrinterClassFixture argumentPrinter
         var actualArguments = await argumentPrinterFixture.RoundtripCmdArguments(args);
         Assert.Equal([expected], actualArguments);
     }
+
+    [Fact]
+    public void CommandLineBuilderExample()
+    {
+        #region CommandLineBuilder_Example
+        // Quote a single argument for standard Windows applications
+        var arg = CommandLineBuilder.WindowsQuotedArgument(@"path with spaces\file.txt");
+        Assert.Equal(@"""path with spaces\file.txt""", arg);
+
+        // Quote multiple arguments
+        var args = CommandLineBuilder.WindowsQuotedArguments("arg1", "path with spaces", "normal");
+        Assert.Equal(@"arg1 ""path with spaces"" normal", args);
+
+        // Quote for cmd.exe (escapes special characters like &, |, ^, etc.)
+        var cmdArg = CommandLineBuilder.WindowsCmdArgument(@"malicious argument"" & whoami");
+        Assert.Equal(@"^""malicious argument\^"" ^& whoami^""", cmdArg);
+        #endregion
+    }
 }

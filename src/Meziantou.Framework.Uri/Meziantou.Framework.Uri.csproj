@@ -15,4 +15,8 @@
     <PackageReference Include="Microsoft.Extensions.Primitives" Version="10.0.12" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Uri.Fuzz" />
+  </ItemGroup>
+
 </Project>

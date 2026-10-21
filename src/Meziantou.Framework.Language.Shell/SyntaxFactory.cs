@@ -10,8 +10,10 @@ namespace Meziantou.Framework.Language.Shell;
 /// without re-reading any text.
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxFactoryTests.cs" ref:region="SyntaxFactory_Command" ref:dedent="true">
+/// // Arguments are quoted when the dialect requires it
 /// var command = SyntaxFactory.Command(ShellDialect.Bash, "echo", "hello world");
+/// Assert.Equal("echo 'hello world'", command.ToFullString());
 /// </code>
 /// </example>
 public static partial class SyntaxFactory

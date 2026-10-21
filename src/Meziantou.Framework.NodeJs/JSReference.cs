@@ -14,10 +14,18 @@ namespace Meziantou.Framework.NodeJs;
 /// <para>A <see cref="JSReference"/> converts implicitly to a <see cref="JsonNode"/>, so it can be used as an argument, or nested in a <see cref="JsonObject"/> or a <see cref="JsonArray"/> argument. The function receives the referenced value.</para>
 /// </remarks>
 /// <example>
-/// <code>
-/// await using var client = await node.InvokeReferenceAsync("./database.mjs", "connect", ["connection-string"]);
-/// var rows = await client.InvokeAsync("query", ["SELECT 1"]);
-/// await node.InvokeVoidAsync("./database.mjs", "seed", [client]);
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.NodeJs.Tests/NodeJsHostTests.cs" ref:region="JSReference_Example" ref:dedent="true">
+/// await using var node = await NodeJsHost.StartAsync();
+///
+/// // A Hash object cannot be serialized as JSON, so it stays in the Node.js process
+/// await using var hash = await node.InvokeReferenceAsync("node:crypto", "createHash", ["sha256"]);
+/// await hash.InvokeVoidAsync("update", ["hello"]);
+///
+/// // A function receives the referenced value
+/// await node.EvaluateVoidAsync("args[0].update(' world');", [hash]);
+///
+/// var digest = await hash.InvokeAsync("digest", ["hex"]);
+/// Assert.Equal("b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9", digest.GetString());
 /// </code>
 /// </example>
 [JsonConverter(typeof(NodeJsArgumentConverter<JSReference>))]

@@ -53,6 +53,20 @@ public sealed class SnapshotTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
+    public void DocumentationExample()
+    {
+        #region ContextSnapshotBuilder_AddDefault
+        var builder = new ContextSnapshotBuilder();
+        builder.AddDefault();
+        var snapshot = builder.BuildSnapshot();
+
+        // Serialize for logging
+        var json = JsonSerializer.Serialize(snapshot, new JsonSerializerOptions(JsonSerializerDefaults.Strict) { WriteIndented = true });
+        Assert.StartsWith("{", json);
+        #endregion
+    }
+
+    [Fact]
     public void HasAppContextData()
     {
         var builder = new ContextSnapshotBuilder();
@@ -141,6 +155,21 @@ public sealed class SnapshotTests(ITestOutputHelper testOutputHelper)
         Assert.NotEqual(0, snapshot.LogicalCoreCount);
         Assert.NotEqual(0, snapshot.PhysicalCoreCount);
         Assert.NotEqual(0, snapshot.MaxFrequency);
+    }
+
+    [Fact]
+    public void CpuSnapshotDocumentationExample()
+    {
+        #region CpuSnapshot_AddCpu
+        var snapshot = new ContextSnapshotBuilder().AddCpu().BuildSnapshot();
+        var cpuInfo = Assert.IsType<CpuSnapshot>(snapshot["CPU"]);
+
+        // A value is null when it is not available on the current platform
+        Assert.NotEqual("", cpuInfo.ProcessorName);
+        Assert.True(cpuInfo.PhysicalCoreCount is null or > 0);
+        Assert.True(cpuInfo.LogicalCoreCount is null or > 0);
+        Assert.True(cpuInfo.MaxFrequency is null or > 0); // in hertz
+        #endregion
     }
 
     [Fact]

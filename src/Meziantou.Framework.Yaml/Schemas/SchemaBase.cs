@@ -253,14 +253,20 @@ public abstract class SchemaBase : IYamlSchema
     /// <param name="decode">The decode function.</param>
     /// <param name="encode">The encode function.</param>
     /// <example>
-    ///   <code>
-    /// BeginUpdate(); // to avoid invoking slow internal calculation method many times.
-    /// Add( ... );
-    /// Add( ... );
-    /// Add( ... );
-    /// Add( ... );
-    /// EndUpdate();   // automaticall invoke internal calculation method
-    ///   </code></example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Yaml.Tests/SchemaTests.cs" ref:region="SchemaBase_AddScalarRule" ref:dedent="true">
+    /// private sealed class OnOffSchema : CoreSchema
+    /// {
+    ///     protected override void PrepareScalarRules()
+    ///     {
+    ///         base.PrepareScalarRules();
+    ///
+    ///         // Resolve on/off as booleans, in addition to the rules of the core schema
+    ///         AddScalarRule("!!bool", "on|On|ON", _ =&gt; true, null);
+    ///         AddScalarRule("!!bool", "off|Off|OFF", _ =&gt; false, null);
+    ///     }
+    /// }
+    /// </code>
+    /// </example>
     protected void AddScalarRule<T>(string tag, [StringSyntax(StringSyntaxAttribute.Regex)] string regex, Func<Match, T?> decode, Func<T, string>? encode)
     {
         // Make sure the tag is expanded to its long form

@@ -8,13 +8,13 @@ namespace Meziantou.Framework.SimpleQueryLanguage;
 /// <summary>Builds query objects from query strings with custom property handlers.</summary>
 /// <typeparam name="T">The type of object to query against.</typeparam>
 /// <example>
-/// <code>
-/// var collection = new List&lt;Person&gt;();
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.SimpleQueryLanguage.Tests/QueryBuilderTests.cs" ref:region="QueryBuilder_Build" ref:dedent="true">
 /// var queryBuilder = new QueryBuilder&lt;Person&gt;();
-/// queryBuilder.AddHandler&lt;string&gt;("name", (obj, value) => obj.FullName.Contains(value, StringComparison.OrdinalIgnoreCase));
-/// queryBuilder.AddRangeHandler&lt;int&gt;("age", (obj, range) => range.IsInRange((int)(DateTime.UtcNow - obj.DateOfBirth).TotalDays / 365));
-/// var query = queryBuilder.Build("name:john AND age>=21");
-/// var result = query.Evaluate(new Person("John Doe", new DateTime(2000, 1, 1)));
+/// queryBuilder.AddHandler&lt;string&gt;("name", (obj, value) =&gt; obj.FullName.Contains(value, StringComparison.OrdinalIgnoreCase));
+/// queryBuilder.AddRangeHandler&lt;int&gt;("age", (obj, range) =&gt; range.IsInRange((int)(DateTime.UtcNow - obj.DateOfBirth).TotalDays / 365));
+/// var query = queryBuilder.Build("name:john AND age&gt;=21");
+/// Assert.True(query.Evaluate(new Person("John Doe", new DateTime(2000, 1, 1))));
+/// Assert.False(query.Evaluate(new Person("Jane Doe", new DateTime(2000, 1, 1))));
 /// </code>
 /// </example>
 public sealed class QueryBuilder<T>

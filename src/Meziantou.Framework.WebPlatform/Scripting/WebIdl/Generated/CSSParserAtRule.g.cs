@@ -36,7 +36,7 @@ internal static class Binding_CSSParserAtRule<TAdapter, TValue> where TAdapter :
     {
         if (a.Length < 2) throw r.NotEnoughArguments("CSSParserAtRule", 2, a.Length);
         var a0 = r.ToDomString(a[0]);
-        var a1 = r.ToSequence<object?>(a[1], static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_11(r, e));
+        var a1 = r.ToSequence<object?>(a[1], static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_c19d9aba(r, e));
         var has2 = !r.IsMissing(a, 2); var a2 = has2 ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Css.ParserApi.CssParserRule>?)(r.IsNullOrUndefined(a[2]) ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Css.ParserApi.CssParserRule>?)null : r.ToSequence<global::Meziantou.Framework.WebPlatform.Css.ParserApi.CssParserRule>(a[2], static (r, e) => r.ToInterface<global::Meziantou.Framework.WebPlatform.Css.ParserApi.CssParserRule>(e, "CSSParserRule"))) : default;
         return new global::Meziantou.Framework.WebPlatform.Css.ParserApi.CssParserAtRule(a0, global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a1!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_ParserApi_CssParserToken(r, e))), (has2 ? a2 : (global::System.Collections.Generic.IEnumerable<global::Meziantou.Framework.WebPlatform.Css.ParserApi.CssParserRule>?)null));
     }

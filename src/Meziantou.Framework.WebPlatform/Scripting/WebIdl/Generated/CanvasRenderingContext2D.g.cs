@@ -28,9 +28,9 @@ internal static class Binding_CanvasRenderingContext2D<TAdapter, TValue> where T
     private static TValue Get_imageSmoothingQuality(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2D>(t, Binding); return r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ImageSmoothingQuality(o.ImageSmoothingQuality)); }
     private static void Set_imageSmoothingQuality(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2D>(t, Binding); var s = r.ToDomString(v); if (global::System.Array.IndexOf(WebIdlHelpers<TAdapter, TValue>.Enum_ImageSmoothingQuality_Values, s) < 0) return; v = r.Adapter.FromString(s); var x = r.ToEnumerationValueOrNull(v, WebIdlHelpers<TAdapter, TValue>.Enum_ImageSmoothingQuality_Values); if (x is null) return; o.ImageSmoothingQuality = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_ImageSmoothingQuality(x); }
     private static TValue Get_strokeStyle(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2D>(t, Binding); return r.ToJs((object?)o.StrokeStyle); }
-    private static void Set_strokeStyle(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2D>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_16(r, v); o.StrokeStyle = x; }
+    private static void Set_strokeStyle(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2D>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_c68972d8(r, v); o.StrokeStyle = x; }
     private static TValue Get_fillStyle(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2D>(t, Binding); return r.ToJs((object?)o.FillStyle); }
-    private static void Set_fillStyle(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2D>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_16(r, v); o.FillStyle = x; }
+    private static void Set_fillStyle(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2D>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_c68972d8(r, v); o.FillStyle = x; }
     private static TValue Get_shadowOffsetX(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2D>(t, Binding); return r.FromNumber((double)o.ShadowOffsetX); }
     private static void Set_shadowOffsetX(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2D>(t, Binding); var x = r.ToDouble(v, restricted: false); o.ShadowOffsetX = x; }
     private static TValue Get_shadowOffsetY(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2D>(t, Binding); return r.FromNumber((double)o.ShadowOffsetY); }
@@ -204,7 +204,7 @@ internal static class Binding_CanvasRenderingContext2D<TAdapter, TValue> where T
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2D>(t, Binding);
         if (a.Length < 2) throw r.NotEnoughArguments("createPattern", 2, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_17(r, a[0]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_b083e7a4(r, a[0]);
         var a1 = r.ToDomString(a[1], legacyNullToEmptyString: true);
         var result = o.CreatePattern(a0, a1); return r.Wrap(result);
     }
@@ -418,7 +418,7 @@ internal static class Binding_CanvasRenderingContext2D<TAdapter, TValue> where T
             case 0:
             {
                 if (a.Length < 3) throw r.NotEnoughArguments("drawImage", 3, a.Length);
-                var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_17(r, a[0]);
+                var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_b083e7a4(r, a[0]);
                 var a1 = r.ToDouble(a[1], restricted: false);
                 var a2 = r.ToDouble(a[2], restricted: false);
                 o.DrawImage(a0, a1, a2); return r.Adapter.Undefined;
@@ -426,7 +426,7 @@ internal static class Binding_CanvasRenderingContext2D<TAdapter, TValue> where T
             case 1:
             {
                 if (a.Length < 5) throw r.NotEnoughArguments("drawImage", 5, a.Length);
-                var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_17(r, a[0]);
+                var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_b083e7a4(r, a[0]);
                 var a1 = r.ToDouble(a[1], restricted: false);
                 var a2 = r.ToDouble(a[2], restricted: false);
                 var a3 = r.ToDouble(a[3], restricted: false);
@@ -436,7 +436,7 @@ internal static class Binding_CanvasRenderingContext2D<TAdapter, TValue> where T
             case 2:
             {
                 if (a.Length < 9) throw r.NotEnoughArguments("drawImage", 9, a.Length);
-                var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_17(r, a[0]);
+                var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_b083e7a4(r, a[0]);
                 var a1 = r.ToDouble(a[1], restricted: false);
                 var a2 = r.ToDouble(a[2], restricted: false);
                 var a3 = r.ToDouble(a[3], restricted: false);
@@ -600,7 +600,7 @@ internal static class Binding_CanvasRenderingContext2D<TAdapter, TValue> where T
         var a1 = r.ToDouble(a[1], restricted: false);
         var a2 = r.ToDouble(a[2], restricted: false);
         var a3 = r.ToDouble(a[3], restricted: false);
-        var a4 = r.IsMissing(a, 4) ? (object?)(object)(0d) : WebIdlHelpers<TAdapter, TValue>.ToUnion_18(r, a[4]);
+        var a4 = r.IsMissing(a, 4) ? (object?)(object)(0d) : WebIdlHelpers<TAdapter, TValue>.ToUnion_1d89567d(r, a[4]);
         o.RoundRect(a0, a1, a2, a3, a4); return r.Adapter.Undefined;
     }
     private static TValue Op_arc(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)

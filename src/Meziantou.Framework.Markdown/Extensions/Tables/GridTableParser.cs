@@ -340,7 +340,7 @@ public class GridTableParser : BlockParser
                         ColumnIndex = i,
                         Column = columnSlice.Start,
                         Line = processor.LineIndex,
-                        Span = new SourceSpan(line.Start + columnSlice.Start, line.Start + columnSlice.End)
+                        Span = new SourceSpan(line.Start + columnSlice.Start, Math.Min(line.Start + columnSlice.End, line.End))
                     };
 
                     columnSlice.BlockProcessor ??= processor.CreateChild();

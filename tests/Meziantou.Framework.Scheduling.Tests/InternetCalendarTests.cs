@@ -170,6 +170,25 @@ public sealed class InternetCalendarTests
     }
 
     [Fact]
+    public void DocumentationExample()
+    {
+        #region InternetCalendar_Example
+        var calendar = new InternetCalendar();
+        calendar.Events.Add(new Event
+        {
+            Start = new DateTime(2024, 01, 02, 08, 00, 00, DateTimeKind.Utc),
+            End = new DateTime(2024, 01, 02, 09, 00, 00, DateTimeKind.Utc),
+            Summary = "Meeting",
+        });
+        var icsContent = calendar.ToIcs();
+
+        Assert.Contains("BEGIN:VEVENT", icsContent);
+        Assert.Contains("DTSTART:20240102T080000Z", icsContent);
+        Assert.Contains("SUMMARY:Meeting", icsContent);
+        #endregion
+    }
+
+    [Fact]
     public void ToIcs_WritesTheStartAndEndWithTheTimeZoneIdentifier()
     {
         var @event = new Event
@@ -1340,6 +1359,27 @@ public sealed class InternetCalendarTests
         Assert.Equal(calendar.ToIcs(), InternetCalendar.Parse(calendar.ToIcs()).ToIcs());
     }
 
+    [Theory]
+    [InlineData("2.0\u0001")]
+    [InlineData("\u00002.0")]
+    [InlineData("2.0\u007F")]
+    public void Parse_RejectsAVersionContainingAControlCharacter(string version)
+    {
+        // Such a version cannot be written, so accepting it would give a calendar ToIcs throws for
+        Assert.False(InternetCalendar.TryParse("BEGIN:VCALENDAR\r\nVERSION:" + version + "\r\nEND:VCALENDAR\r\n", out var calendar, out var error));
+        Assert.Null(calendar);
+        Assert.Contains("VERSION", error);
+    }
+
+    [Fact]
+    public void Parse_AcceptsAVersionContainingATab()
+    {
+        var calendar = InternetCalendar.Parse("BEGIN:VCALENDAR\r\nVERSION:2.0\t\r\nEND:VCALENDAR\r\n");
+
+        Assert.Equal("2.0\t", calendar.Version);
+        Assert.Equal(calendar.ToIcs(), InternetCalendar.Parse(calendar.ToIcs()).ToIcs());
+    }
+
     [Fact]
     public void ToIcs_ThrowsBeforeWritingAnythingWhenTheVersionContainsALineBreak()
     {
@@ -1357,6 +1397,26 @@ public sealed class InternetCalendarTests
 
         Assert.DoesNotContain(GetEventContentLines(ics), line => line.StartsWith("DESCRIPTION", StringComparison.Ordinal));
         Assert.Null(Assert.Single(InternetCalendar.Parse(ics).Events).Description);
+    }
+
+    [Fact]
+    public void ToIcs_OmitsTheIdAndTheSummaryMadeOfControlCharactersOnly()
+    {
+        // TEXT escaping drops the control characters, which leaves nothing to write, as for an empty value
+        var ics = CreateCalendarWithEvent(new Event { Id = "\u0001", Summary = "\u000C\u001B" }).ToIcs();
+
+        Assert.DoesNotContain(GetEventContentLines(ics), line => line.StartsWith("UID", StringComparison.Ordinal) || line.StartsWith("SUMMARY", StringComparison.Ordinal));
+        Assert.Equal(ics, InternetCalendar.Parse(ics).ToIcs());
+    }
+
+    [Fact]
+    public void Parse_WritesBackTheSummaryMadeOfControlCharactersOnlyTheSameWayOnceParsed()
+    {
+        var calendar = InternetCalendar.Parse(CreateIcs("UID:\u000C", "SUMMARY:\u0001"));
+
+        var ics = calendar.ToIcs();
+        Assert.DoesNotContain(GetEventContentLines(ics), line => line.StartsWith("UID", StringComparison.Ordinal) || line.StartsWith("SUMMARY", StringComparison.Ordinal));
+        Assert.Equal(ics, InternetCalendar.Parse(ics).ToIcs());
     }
 
     [Fact]
@@ -1944,6 +2004,14 @@ public sealed class InternetCalendarTests
     }
 
     [Fact]
+    public void Parse_ReadsADurationEndingOnTheLastDayOfDateTime()
+    {
+        var calendar = InternetCalendar.Parse(CreateIcs("DTSTART;VALUE=DATE:20240101", "DURATION:P2913173D"));
+
+        Assert.Equal(new DateTime(9999, 12, 31), Assert.Single(calendar.Events).End);
+    }
+
+    [Fact]
     public void ToIcs_WritesTheEndInsteadOfTheDurationOnceTheEndChanged()
     {
         var calendar = InternetCalendar.Parse(CreateIcs("DTSTART:20240101T100000Z", "DURATION:PT1H"));
@@ -1981,6 +2049,10 @@ public sealed class InternetCalendarTests
     [InlineData("DTSTART:20240101T100000Z", "DURATION:P99999999999999999999D")]
     [InlineData("DTSTART:99991231T100000Z", "DURATION:P1D")]
     [InlineData("DTSTART;VALUE=DATE:20240101", "DURATION:PT1H")]
+
+    // The days left after a midnight are a whole number of days minus one tick, which a double rounds up
+    [InlineData("DTSTART;VALUE=DATE:20240101", "DURATION:P2913174D")]
+    [InlineData("DTSTART:20240101T000000", "DURATION:P2913174D")]
     public void Parse_RejectsAnInvalidDuration(params string[] contentLines)
     {
         Assert.False(InternetCalendar.TryParse(CreateIcs(contentLines), out var calendar, out var error));
@@ -2091,6 +2163,25 @@ public sealed class InternetCalendarTests
         Assert.Equal("DTSTART;TZID=Customized Time Zone:20240715T090000", GetContentLine(CreateCalendarWithEvent(@event).ToIcs(), "DTSTART"));
     }
 
+    // Chile changes on the first Sunday after the first Saturday, which no TimeZoneInfo.TransitionTime expresses, and Outlook
+    // anchors the recurrences in 1601.
+    private static readonly string[] ChileTimeZone =
+    [
+        "TZID:Chile",
+        "BEGIN:STANDARD",
+        "DTSTART:16010101T000000",
+        "TZOFFSETFROM:-0300",
+        "TZOFFSETTO:-0400",
+        "RRULE:FREQ=YEARLY;BYMONTH=4;BYDAY=SU;BYMONTHDAY=2,3,4,5,6,7,8",
+        "END:STANDARD",
+        "BEGIN:DAYLIGHT",
+        "DTSTART:16010101T000000",
+        "TZOFFSETFROM:-0400",
+        "TZOFFSETTO:-0300",
+        "RRULE:FREQ=YEARLY;BYMONTH=9;BYDAY=SU;BYMONTHDAY=2,3,4,5,6,7,8",
+        "END:DAYLIGHT",
+    ];
+
     [Theory]
     [InlineData(1700, 4, 5)]
     [InlineData(2026, 5, 6)]
@@ -2099,26 +2190,7 @@ public sealed class InternetCalendarTests
     [InlineData(9000, 6, 7)]
     public void Parse_FollowsAnOpenEndedVTimeZoneRecurrenceWithoutTransitionTimeForAnyYear(int year, int aprilDay, int septemberDay)
     {
-        // Chile changes on the first Sunday after the first Saturday, which no TimeZoneInfo.TransitionTime expresses, and Outlook
-        // anchors the recurrences in 1601.
-        string[] timeZone =
-        [
-            "TZID:Chile",
-            "BEGIN:STANDARD",
-            "DTSTART:16010101T000000",
-            "TZOFFSETFROM:-0300",
-            "TZOFFSETTO:-0400",
-            "RRULE:FREQ=YEARLY;BYMONTH=4;BYDAY=SU;BYMONTHDAY=2,3,4,5,6,7,8",
-            "END:STANDARD",
-            "BEGIN:DAYLIGHT",
-            "DTSTART:16010101T000000",
-            "TZOFFSETFROM:-0400",
-            "TZOFFSETTO:-0300",
-            "RRULE:FREQ=YEARLY;BYMONTH=9;BYDAY=SU;BYMONTHDAY=2,3,4,5,6,7,8",
-            "END:DAYLIGHT",
-        ];
-
-        var @event = Assert.Single(InternetCalendar.Parse(CreateIcsWithTimeZone(timeZone, "DTSTART;TZID=Chile:20260715T120000")).Events);
+        var @event = Assert.Single(InternetCalendar.Parse(CreateIcsWithTimeZone(ChileTimeZone, "DTSTART;TZID=Chile:20260715T120000")).Events);
 
         Assert.NotNull(@event.TimeZone);
         foreach (var (utc, offset) in new[]
@@ -2134,6 +2206,25 @@ public sealed class InternetCalendarTests
         {
             Assert.Equal(TimeSpan.FromHours(offset), @event.TimeZone.GetUtcOffset(utc), $"{utc:O}");
         }
+    }
+
+    [Fact]
+    public void ToIcs_WritesAnOpenEndedVTimeZoneRecurrenceWithoutTransitionTimeAsOpenEnded()
+    {
+        var calendar = InternetCalendar.Parse(CreateIcsWithTimeZone(ChileTimeZone, "DTSTART;TZID=Chile:20260715T120000"));
+
+        // A recurrence ending in the last supported year would read back as a bounded one, which is only expanded for 2000 onsets
+        var ics = calendar.ToIcs();
+        Assert.Contains("\r\nRRULE:FREQ=YEARLY;BYMONTH=4;BYDAY=SU;BYMONTHDAY=2,3,4,5,6,7,8\r\n", ics);
+        Assert.Contains("\r\nRRULE:FREQ=YEARLY;BYMONTH=9;BYDAY=SU;BYMONTHDAY=2,3,4,5,6,7,8\r\n", ics);
+        Assert.DoesNotContain("UNTIL", ics);
+
+        var reparsed = InternetCalendar.Parse(ics);
+        Assert.Equal(ics, reparsed.ToIcs());
+        var timeZone = Assert.Single(reparsed.Events).TimeZone;
+        Assert.NotNull(timeZone);
+        Assert.Equal(TimeSpan.FromHours(-4), timeZone.GetUtcOffset(new DateTime(5000, 07, 15, 16, 00, 00, DateTimeKind.Utc)));
+        Assert.Equal(TimeSpan.FromHours(-3), timeZone.GetUtcOffset(new DateTime(5000, 12, 15, 16, 00, 00, DateTimeKind.Utc)));
     }
 
     [Fact]

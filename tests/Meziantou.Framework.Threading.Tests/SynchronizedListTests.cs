@@ -174,6 +174,27 @@ public sealed class SynchronizedListTests
     }
 
     [Fact]
+    public void SynchronizedList_Example()
+    {
+        #region SynchronizedList_Usage
+        var list = new SynchronizedList<int>();
+        list.Add(1);
+        list.Add(2);
+        Assert.Equal([1, 2], list); // Enumerating the list enumerates a snapshot
+
+        // Multiple operations as a single atomic unit
+        list.Execute(items =>
+        {
+            if (!items.Contains(3))
+            {
+                items.Add(3);
+            }
+        });
+        Assert.Equal([1, 2, 3], list);
+        #endregion
+    }
+
+    [Fact]
     public void Execute_ShouldRunActionOnUnderlyingList()
     {
         var list = new SynchronizedList<int>([1, 2, 3]);

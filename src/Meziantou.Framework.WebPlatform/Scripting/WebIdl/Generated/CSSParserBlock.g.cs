@@ -34,7 +34,7 @@ internal static class Binding_CSSParserBlock<TAdapter, TValue> where TAdapter : 
     {
         if (a.Length < 2) throw r.NotEnoughArguments("CSSParserBlock", 2, a.Length);
         var a0 = r.ToDomString(a[0]);
-        var a1 = r.ToSequence<object?>(a[1], static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_11(r, e));
+        var a1 = r.ToSequence<object?>(a[1], static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_c19d9aba(r, e));
         return new global::Meziantou.Framework.WebPlatform.Css.ParserApi.CssParserBlock(a0, global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(a1!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_ParserApi_CssParserToken(r, e))));
     }
 }

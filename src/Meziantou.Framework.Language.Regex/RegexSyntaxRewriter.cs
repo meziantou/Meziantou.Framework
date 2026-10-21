@@ -6,10 +6,10 @@ namespace Meziantou.Framework.Language.Regex;
 /// costs nothing and keeps every node.
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Regex.Tests/RegexEditingTests.cs" ref:region="RegexSyntaxRewriter_DotToWord" ref:dedent="true">
 /// private sealed class DotToWord : RegexSyntaxRewriter
 /// {
-///     public override SyntaxNode? VisitAnyCharacter(RegexAnyCharacterSyntax node) => SyntaxFactory.ClassEscape('w');
+///     public override SyntaxNode? VisitAnyCharacter(RegexAnyCharacterSyntax node) =&gt; SyntaxFactory.ClassEscape('w');
 /// }
 /// </code>
 /// </example>

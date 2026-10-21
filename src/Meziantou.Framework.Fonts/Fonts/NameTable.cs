@@ -4,7 +4,8 @@ namespace Meziantou.Framework.Fonts;
 /// <remarks>
 /// OpenType specification, "name - Naming Table". A name is taken from the Windows platform in US English when the
 /// font has it, then from the Windows platform in any language, then from the Unicode platform, then from the
-/// Macintosh platform in MacRoman.
+/// Macintosh platform in MacRoman. A record whose string is outside the table is ignored, as if the font did not have
+/// it: a malformed name does not make the font unusable, and another record can still give the name.
 /// </remarks>
 internal static class NameTable
 {
@@ -46,12 +47,10 @@ internal static class NameTable
                 1 when encoding == 0 => 1,
                 _ => 0,
             };
-            if (priority <= bestPriority)
+            if (priority <= bestPriority || !TryGetString(table, storageOffset, record, out var data))
                 continue;
 
-            var length = FontBinary.UInt16(record, 8);
-            var offset = FontBinary.UInt16(record, 10);
-            best = FontBinary.Slice(table, (long)storageOffset + offset, length);
+            best = data;
             bestPriority = priority;
             bestPlatform = platform;
         }
@@ -86,13 +85,30 @@ internal static class NameTable
             if (!(platform == 0 || (platform == 3 && encoding is 0 or 1 or 10) || (platform == 1 && encoding == 0)))
                 continue;
 
-            var data = FontBinary.Slice(table, (long)storageOffset + FontBinary.UInt16(record, 10), FontBinary.UInt16(record, 8));
+            if (!TryGetString(table, storageOffset, record, out var data))
+                continue;
+
             var value = platform == 1 ? DecodeMacintoshRoman(data) : Encoding.BigEndianUnicode.GetString(data);
             if (value.Length != 0 && !names.Contains(value, StringComparer.Ordinal))
             {
                 names.Add(value);
             }
         }
+    }
+
+    /// <summary>Gets the bytes of the string of a record; <see langword="false"/> when they are not all inside the table.</summary>
+    private static bool TryGetString(ReadOnlySpan<byte> table, int storageOffset, ReadOnlySpan<byte> record, out ReadOnlySpan<byte> data)
+    {
+        var length = FontBinary.UInt16(record, 8);
+        var offset = (long)storageOffset + FontBinary.UInt16(record, 10);
+        if (offset + length > table.Length)
+        {
+            data = default;
+            return false;
+        }
+
+        data = table.Slice((int)offset, length);
+        return true;
     }
 
     // The upper half of the Mac OS Roman character set (the lower half is ASCII), in the order of its bytes from 0x80:

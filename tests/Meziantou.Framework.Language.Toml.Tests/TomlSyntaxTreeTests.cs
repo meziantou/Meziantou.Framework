@@ -123,6 +123,16 @@ public sealed class TomlSyntaxTreeTests
     }
 
     [Fact]
+    public void ParseText_DocumentationExample()
+    {
+        #region TomlSyntaxTree_ParseText
+        var tree = TomlSyntaxTree.ParseText("[server]\nport = 8080\n");
+        var port = (TomlIntegerSyntax)tree.GetRoot().Tables.Single().Properties.Single().Value;
+        Assert.Equal(8080, port.Value);
+        #endregion
+    }
+
+    [Fact]
     public void ParseText_BuildsTypedTree()
     {
         const string Text = """
@@ -1089,6 +1099,29 @@ public sealed class TomlSyntaxTreeTests
         Assert.Null(pairs[0].Table);
         Assert.NotSame(pairs[6].Table, pairs[7].Table);
         Assert.Equal("1.0", ((TomlStringSyntax)pairs[2].Value).Value);
+    }
+
+    [Fact]
+    public void GetKeyValues_DocumentationExample()
+    {
+        #region TomlDocumentSyntax_GetKeyValues
+        var document = TomlSyntaxTree.ParseText("""
+            [dependencies]
+            serde = "1.0"
+            tokio = "1.2"
+            """).GetRoot();
+
+        var dependencies = new List<string>();
+        foreach (var pair in document.GetKeyValues())
+        {
+            if (pair.Names is ["dependencies", var name] && pair.Value is TomlStringSyntax version)
+            {
+                dependencies.Add($"{name} {version.Value}");
+            }
+        }
+
+        Assert.Equal(["serde 1.0", "tokio 1.2"], dependencies);
+        #endregion
     }
 
     [Theory]

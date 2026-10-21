@@ -133,8 +133,8 @@ internal static class Binding_ElementInternals<TAdapter, TValue> where TAdapter 
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.ElementInternals>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("setFormValue", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_41(r, a[0]);
-        var has1 = !r.IsMissing(a, 1); var a1 = has1 ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_41(r, a[1]) : default;
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_6b8aa1b2(r, a[0]);
+        var has1 = !r.IsMissing(a, 1); var a1 = has1 ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_6b8aa1b2(r, a[1]) : default;
         if (!has1) { o.SetFormValue((a0 is null ? (global::Meziantou.Framework.WebPlatform.Dom.FileOrStringOrFormData?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_FileOrStringOrFormData(r, a0))); return r.Adapter.Undefined; }
         if (has1) { o.SetFormValue((a0 is null ? (global::Meziantou.Framework.WebPlatform.Dom.FileOrStringOrFormData?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_FileOrStringOrFormData(r, a0)), (a1 is null ? (global::Meziantou.Framework.WebPlatform.Dom.FileOrStringOrFormData?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_FileOrStringOrFormData(r, a1))); return r.Adapter.Undefined; }
         throw r.CreateTypeError("Failed to execute 'setFormValue': the arguments are not supported");

@@ -4,11 +4,16 @@ namespace Meziantou.Framework.Language.Shell;
 
 /// <summary>Visits a shell node and everything below it.</summary>
 /// <example>
-/// <code>
-/// private sealed class CommandCounter : ShellSyntaxWalker
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxVisitorTests.cs" ref:region="ShellSyntaxWalker_SimpleCommandCounter" ref:dedent="true">
+/// private sealed class SimpleCommandCounter : ShellSyntaxWalker
 /// {
 ///     public int Count { get; private set; }
-///     public override void VisitCommand(ShellCommandSyntax node) { Count++; base.VisitCommand(node); }
+///
+///     public override void VisitCommand(ShellCommandSyntax node)
+///     {
+///         Count++;
+///         base.VisitCommand(node);
+///     }
 /// }
 /// </code>
 /// </example>

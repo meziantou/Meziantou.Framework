@@ -89,7 +89,7 @@ internal static class Binding_URLSearchParams<TAdapter, TValue> where TAdapter :
 
     private static object Construct(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::System.ReadOnlySpan<TValue> a)
     {
-        var a0 = r.IsMissing(a, 0) ? (object?)(object)"" : WebIdlHelpers<TAdapter, TValue>.ToUnion_83(r, a[0]);
+        var a0 = r.IsMissing(a, 0) ? (object?)(object)"" : WebIdlHelpers<TAdapter, TValue>.ToUnion_a57bbb4a(r, a[0]);
         if (r.IsMissing(a, 0)) { return new global::Meziantou.Framework.WebPlatform.Dom.UrlSearchParams(); }
         if ((a0 is null or string)) { return new global::Meziantou.Framework.WebPlatform.Dom.UrlSearchParams((string)a0!); }
         if ((a0 is null or global::System.Collections.Generic.IEnumerable<global::System.Collections.Generic.IReadOnlyList<string>>)) { return new global::Meziantou.Framework.WebPlatform.Dom.UrlSearchParams((global::System.Collections.Generic.IEnumerable<global::System.Collections.Generic.IReadOnlyList<string>>)a0!); }

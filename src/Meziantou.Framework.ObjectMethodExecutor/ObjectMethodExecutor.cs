@@ -15,19 +15,28 @@ namespace Meziantou.Framework;
 /// </remarks>
 /// <example>
 /// Basic usage with synchronous and asynchronous methods:
-/// <code>
-/// var methodInfo = typeof(MyClass).GetMethod("MyMethod");
-/// var executor = ObjectMethodExecutor.Create(methodInfo);
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.ObjectMethodExecutor.Tests/ObjectMethodExecutorTests.cs" ref:region="ObjectMethodExecutor_Example" ref:dedent="true">
+/// // Synchronous method
+/// var replaceMethod = typeof(string).GetMethod(nameof(string.Replace), [typeof(string), typeof(string)])!;
+/// var replaceExecutor = ObjectMethodExecutor.Create(replaceMethod);
+/// Assert.Equal("Hello Universe", await InvokeAsync(replaceExecutor, "Hello World", ["World", "Universe"]));
 ///
-/// var instance = new MyClass();
-/// var parameters = new object?[] { param1, param2 };
-/// if (executor.IsMethodAsync)
+/// // Asynchronous method
+/// var readToEndMethod = typeof(StringReader).GetMethod(nameof(StringReader.ReadToEndAsync), Type.EmptyTypes)!;
+/// var readToEndExecutor = ObjectMethodExecutor.Create(readToEndMethod);
+/// using var reader = new StringReader("Hello");
+/// Assert.Equal("Hello", await InvokeAsync(readToEndExecutor, reader, []));
+///
+/// static async Task&lt;object?&gt; InvokeAsync(ObjectMethodExecutor executor, object instance, object?[] parameters)
 /// {
-///     var result = await executor.ExecuteAsync(instance, parameters);
-/// }
-/// else
-/// {
-///     var result = executor.Execute(instance, parameters);
+///     if (executor.IsMethodAsync)
+///     {
+///         return await executor.ExecuteAsync(instance, parameters);
+///     }
+///     else
+///     {
+///         return executor.Execute(instance, parameters);
+///     }
 /// }
 /// </code>
 /// </example>

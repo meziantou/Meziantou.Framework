@@ -20,7 +20,7 @@ namespace Meziantou.Framework.RobotsTxt;
 /// </para>
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.RobotsTxt.Tests/RobotsFileTests.cs" ref:region="RobotsFile_Example" ref:dedent="true">
 /// var robots = RobotsFile.Parse("""
 ///     User-agent: *
 ///     Disallow: /private/
@@ -29,10 +29,12 @@ namespace Meziantou.Framework.RobotsTxt;
 ///     Sitemap: https://example.com/sitemap.xml
 ///     """);
 ///
-/// bool allowed = robots.IsAllowed("Googlebot", "/public/page");
+/// Assert.True(robots.IsAllowed("Googlebot", "/public/page"));
+/// Assert.False(robots.IsAllowed("Googlebot", "/private/page"));
+/// Assert.Equal(["https://example.com/sitemap.xml"], robots.Sitemaps);
 ///
-/// foreach (var error in robots.ParseErrors)
-///     Console.WriteLine(error);
+/// // Invalid lines are reported instead of throwing
+/// Assert.Empty(robots.ParseErrors);
 /// </code>
 /// </example>
 public sealed class RobotsFile
@@ -301,11 +303,16 @@ public sealed class RobotsFile
                 line = line[1..];
 
             // Strip inline comments and trim whitespace.
-            var trimmed = StripComment(line).Trim();
+            var withoutComment = StripComment(line);
+            var trimmed = withoutComment.Trim();
 
             if (trimmed.IsEmpty)
             {
-                FlushGroup();
+                // Only a blank line ends the group. A comment-only line is ignored, so a comment
+                // between a User-agent line and its rules does not orphan the rules.
+                if (withoutComment.Length == line.Length)
+                    FlushGroup();
+
                 return;
             }
 

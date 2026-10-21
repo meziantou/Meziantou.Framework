@@ -8,7 +8,7 @@ namespace Meziantou.Framework.Diagnostics;
 /// <para>A memory dump may contain sensitive data such as credentials, tokens, or connection strings. Store and share it accordingly.</para>
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/Meziantou.Framework.Diagnostics.MemoryDump.Samples/MemoryDumpExamples.cs" ref:region="MemoryDump_Write" ref:dedent="true">
 /// MemoryDump.Write("app.dmp");
 /// await MemoryDump.WriteAsync("app.dmp", MemoryDumpType.WithHeap);
 /// </code>

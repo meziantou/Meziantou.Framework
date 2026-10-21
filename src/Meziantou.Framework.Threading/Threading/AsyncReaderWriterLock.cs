@@ -11,27 +11,31 @@ namespace Meziantou.Framework.Threading;
 /// <see cref="ValueTask{TResult}.AsTask"/> rather than storing the value task itself.
 /// </remarks>
 /// <example>
-/// <code><![CDATA[
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Threading.Tests/AsyncReaderWriterLockTests.cs" ref:region="AsyncReaderWriterLock_Usage" ref:dedent="true">
 /// var rwLock = new AsyncReaderWriterLock();
-/// 
+/// var data = new List&lt;int&gt;();
+///
 /// // Multiple readers can execute concurrently
-/// async Task ReadAsync()
+/// async Task&lt;int&gt; ReadAsync()
 /// {
 ///     using (await rwLock.ReaderLockAsync())
 ///     {
-///         // Read data
+///         return data.Count;
 ///     }
 /// }
-/// 
+///
 /// // Only one writer can execute at a time
-/// async Task WriteAsync()
+/// async Task WriteAsync(int value)
 /// {
 ///     using (await rwLock.WriterLockAsync())
 ///     {
-///         // Write data
+///         data.Add(value);
 ///     }
 /// }
-/// ]]></code>
+///
+/// await Task.WhenAll(WriteAsync(1), WriteAsync(2));
+/// Assert.Equal([2, 2], await Task.WhenAll(ReadAsync(), ReadAsync()));
+/// </code>
 /// </example>
 public sealed class AsyncReaderWriterLock
 {

@@ -164,6 +164,13 @@ internal static class InternetCalendarParser
                 // RFC 5545 section 3.7.4: the value is "vers" or "minver;maxver", not TEXT, so it is kept as written. An empty
                 // value, which the writer would omit, leaves the default version so the calendar is written back the same way.
                 case "VERSION":
+                    // A control character would make the calendar impossible to write, as InternetCalendar.Version documents.
+                    if (!InternetCalendarProperty.IsValidValue(line.Value))
+                    {
+                        error = "The VERSION value contains a control character";
+                        return false;
+                    }
+
                     if (line.Value.Length > 0)
                     {
                         result.Version = line.Value;

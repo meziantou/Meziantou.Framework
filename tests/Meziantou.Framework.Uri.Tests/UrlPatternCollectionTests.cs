@@ -32,6 +32,31 @@ public sealed class UrlPatternCollectionTests
     }
 
     [Fact]
+    public void UrlPatternCollection_Example()
+    {
+        #region UrlPatternCollection_Example
+        // Create a collection of patterns for routing
+        var patterns = new UrlPatternCollection();
+        patterns.Add("https://example.com/api/users/:id");
+        patterns.Add("https://example.com/api/products/:id");
+        patterns.Add("https://example.com/static/*");
+
+        // Check if any pattern matches
+        Assert.True(patterns.IsMatch("https://example.com/api/users/123"));
+
+        // Find the first matching pattern
+        var matchingPattern = patterns.FindPattern("https://example.com/api/products/456");
+        Assert.NotNull(matchingPattern);
+        Assert.Equal("/api/products/:id", matchingPattern.Pathname);
+
+        // Get match result with captured groups
+        var result = patterns.Match("https://example.com/api/users/789");
+        Assert.NotNull(result);
+        Assert.Equal("789", result.Pathname.Groups["id"]);
+        #endregion
+    }
+
+    [Fact]
     public void Add_WithPatternObject_ShouldAddToCollection()
     {
         var collection = new UrlPatternCollection();

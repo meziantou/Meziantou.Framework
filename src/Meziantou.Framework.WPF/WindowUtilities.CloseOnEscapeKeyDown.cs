@@ -5,8 +5,9 @@ namespace Meziantou.Framework.WPF;
 
 /// <summary>Provides utility methods and attached properties for WPF windows.</summary>
 /// <example>
-/// <code>
-/// &lt;Window xmlns:wpf="clr-namespace:Meziantou.Framework.WPF;assembly=Meziantou.Framework.WPF"
+/// <code language="xml" xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/Meziantou.Framework.WPF.EnumComboBox/Examples/CloseOnEscapeKeyDownExample.xaml">
+/// &lt;Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+///         xmlns:wpf="clr-namespace:Meziantou.Framework.WPF;assembly=Meziantou.Framework.WPF"
 ///         wpf:WindowUtilities.CloseOnEscapeKeyDown="True"&gt;
 /// &lt;/Window&gt;
 /// </code>

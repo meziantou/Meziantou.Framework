@@ -6,11 +6,16 @@ namespace Meziantou.Framework.Language.Shell;
 /// costs nothing and keeps every node.
 /// </remarks>
 /// <example>
-/// <code>
-/// sealed class RenameCommand : ShellSyntaxRewriter
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxVisitorTests.cs" ref:region="ShellSyntaxRewriter_RenameCommand" ref:dedent="true">
+/// private sealed class RenameCommand : ShellSyntaxRewriter
 /// {
 ///     public override SyntaxNode? VisitCommand(ShellCommandSyntax node)
-///         => node.NameValue == "ls" ? node.WithName("dir") : base.VisitCommand(node);
+///     {
+///         if (node.Name is { } name &amp;&amp; node.NameValue == "ls")
+///             return node.ReplaceNode(name, name.WithText("dir"));
+///
+///         return base.VisitCommand(node);
+///     }
 /// }
 /// </code>
 /// </example>

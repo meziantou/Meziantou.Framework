@@ -27,16 +27,18 @@ namespace Meziantou.Framework.Threading;
 /// <para>Read <see cref="Token"/> again after resetting rather than relying on either behavior.</para>
 /// </remarks>
 /// <example>
-/// <code><![CDATA[
-/// var cts = new ResettableCancellationTokenSource(cancelOnResetAndDispose: true);
-/// 
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Threading.Tests/ResettableCancellationTokenSourceTests.cs" ref:region="ResettableCancellationTokenSource_Usage" ref:dedent="true">
+/// using var cts = new ResettableCancellationTokenSource(cancelOnResetAndDispose: true);
+///
 /// // Use the token
-/// await DoWorkAsync(cts.Token);
-/// 
-/// // Reset to reuse
+/// var token = cts.Token;
+/// await Task.Delay(1, token);
+///
+/// // Reset to reuse: the previous token is canceled, read Token again to get a new one
 /// cts.Reset();
-/// await DoWorkAsync(cts.Token);
-/// ]]></code>
+/// Assert.True(token.IsCancellationRequested);
+/// await Task.Delay(1, cts.Token);
+/// </code>
 /// </example>
 public sealed class ResettableCancellationTokenSource : IDisposable, IAsyncDisposable
 {

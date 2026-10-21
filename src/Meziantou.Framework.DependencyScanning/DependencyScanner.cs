@@ -8,13 +8,13 @@ namespace Meziantou.Framework.DependencyScanning;
 /// <summary>
 /// Provides the base class for scanning source code files to discover dependencies across multiple package ecosystems and formats.
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/DependencyScannerSample/DocumentationExamples.cs" ref:region="DependencyScanner_ScanDirectory" ref:dedent="true">
 /// // Scan a directory for all dependencies
 /// var dependencies = await DependencyScanner.ScanDirectoryAsync(
 ///     "C:\\MyProject",
 ///     options: null,
 ///     cancellationToken);
-/// 
+///
 /// foreach (var dependency in dependencies)
 /// {
 ///     Console.WriteLine($"{dependency.Type}: {dependency.Name}@{dependency.Version}");

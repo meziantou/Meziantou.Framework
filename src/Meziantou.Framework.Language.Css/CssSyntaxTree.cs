@@ -18,10 +18,12 @@ namespace Meziantou.Framework.Language.Css;
 /// </para>
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Css.Tests/CssSyntaxTreeTests.cs" ref:region="CssSyntaxTree_ParseText" ref:dedent="true">
 /// var tree = CssSyntaxTree.ParseText(".card { color: red; &amp;:hover { color: blue } }");
 /// var rule = (CssQualifiedRuleSyntax)tree.GetRoot().Statements[0];
 /// var selectors = (CssSelectorListSyntax)rule.Prelude!;
+/// Assert.Empty(tree.GetDiagnostics());
+/// Assert.Equal(".card", selectors.Selectors.Single().ToString());
 /// </code>
 /// </example>
 public sealed class CssSyntaxTree : SyntaxTree

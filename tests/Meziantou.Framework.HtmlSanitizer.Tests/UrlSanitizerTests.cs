@@ -5,13 +5,22 @@ public class UrlSanitizerTests
     [Fact]
     public void ReadmeExample_IsSafeUrl()
     {
-        #region UrlSanitizer_IsSafeUrl
+        #region UrlSanitizer_IsSafeUrlAndSrcset
         // Check if a URL is safe
         Assert.True(UrlSanitizer.IsSafeUrl("https://example.com"));
         Assert.False(UrlSanitizer.IsSafeUrl("javascript:alert('xss')"));
 
         // Check if a srcset value is safe
         Assert.True(UrlSanitizer.IsSafeSrcset("https://example.com/img1.jpg 300w, https://example.com/img2.jpg 600w"));
+        #endregion
+    }
+
+    [Fact]
+    public void IsSafeUrl_DocumentationExample()
+    {
+        #region UrlSanitizer_IsSafeUrl
+        Assert.True(UrlSanitizer.IsSafeUrl("https://example.com"));
+        Assert.False(UrlSanitizer.IsSafeUrl("javascript:alert('xss')"));
         #endregion
     }
 

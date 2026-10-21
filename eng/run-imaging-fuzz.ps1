@@ -33,6 +33,8 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $projectName = Split-Path -Leaf $Project
+# x64 or arm64: the codecs take other hardware intrinsics paths on each
+$architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant()
 $resultsDirectory = Join-Path $OutputDirectory 'results'
 # An absolute path: dotnet test resolves a relative project path twice
 $projectPath = (Resolve-Path $Project).Path
@@ -57,6 +59,8 @@ function Get-Campaign {
         $campaign += ", $Duration s per campaign"
     }
 
+    $campaign += ", $architecture"
+
     return $campaign
 }
 
@@ -69,11 +73,12 @@ function Write-Result([string]$Target, [bool]$Failed, [string]$Failure, [int]$Se
     $directory = Join-Path $resultsDirectory (Get-DirectoryName $Target)
     New-Item -ItemType Directory -Path $directory -Force | Out-Null
     $result = [ordered]@{
-        project = $projectName
-        shard   = $Shard
-        target  = $Target
-        seconds = $Seconds
-        failed  = $Failed
+        project      = $projectName
+        shard        = $Shard
+        architecture = $architecture
+        target       = $Target
+        seconds      = $Seconds
+        failed       = $Failed
     }
 
     $result | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $directory 'result.json')

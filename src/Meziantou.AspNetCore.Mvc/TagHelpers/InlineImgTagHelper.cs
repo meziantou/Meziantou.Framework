@@ -8,12 +8,9 @@ namespace Meziantou.AspNetCore.Mvc.TagHelpers;
 
 /// <summary>A TagHelper that inlines image files as Base64-encoded data URIs to reduce HTTP requests.</summary>
 /// <example>
-/// <code language="razor">
-/// &lt;!-- Input --&gt;
+/// <code language="razor" xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../samples/Meziantou.AspNetCore.Mvc.Samples/Views/Examples/InlineImg.cshtml">
 /// &lt;inline-img src="logo.png" alt="Company Logo" /&gt;
-///
-/// &lt;!-- Output --&gt;
-/// &lt;img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..." alt="Company Logo" /&gt;
+/// @* Rendered as &lt;img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..." alt="Company Logo" /&gt; *@
 /// </code>
 /// </example>
 /// <remarks>

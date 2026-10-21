@@ -7,11 +7,28 @@ namespace Meziantou.Framework.UndoRedo;
 /// <see cref="ValueTask"/>), and the two may be mixed (e.g. an async execute with a sync unexecute).
 /// </summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.UndoRedo.Tests/UndoRedoManagerTests.cs" ref:region="UndoRedoDelegateAction_Usage" ref:dedent="true">
+/// var savedContents = new List&lt;string&gt;();
+///
+/// async ValueTask SaveAsync(CancellationToken cancellationToken)
+/// {
+///     await Task.Delay(1, cancellationToken);
+///     savedContents.Add("content");
+/// }
+///
+/// void Restore() =&gt; savedContents.RemoveAt(savedContents.Count - 1);
+///
 /// // Asynchronous execute, synchronous unexecute
 /// var action = new UndoRedoDelegateAction(
-///     execute: ct => SaveAsync(ct),
-///     unexecute: () => Restore());
+///     execute: ct =&gt; SaveAsync(ct),
+///     unexecute: () =&gt; Restore());
+///
+/// var manager = new UndoRedoManager();
+/// await manager.RecordActionAsync(action);
+/// Assert.Equal(["content"], savedContents);
+///
+/// await manager.UndoAsync();
+/// Assert.Empty(savedContents);
 /// </code>
 /// </example>
 public sealed class UndoRedoDelegateAction : UndoRedoActionBase

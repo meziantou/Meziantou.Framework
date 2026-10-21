@@ -314,13 +314,13 @@ internal ref struct CodeOwnersParserContext
 
             switch (c)
             {
-                // The next character is escaped
+                // The next character is escaped, unless the line ends: an entry never spans several lines
                 case '\\':
-                    c = Consume();
-                    if (c is null) // end of file
+                    if (Peek() is not { } escaped || escaped is '\r' or '\n')
                         return sb.ToString();
 
-                    sb.Append(c.GetValueOrDefault());
+                    _ = Consume();
+                    sb.Append(escaped);
                     break;
 
                 case ' ':

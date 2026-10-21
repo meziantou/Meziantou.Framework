@@ -1,0 +1,12 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFramework)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.Win32.ProjectedFileSystem/Meziantou.Framework.Win32.ProjectedFileSystem.csproj" />
+  </ItemGroup>
+
+</Project>

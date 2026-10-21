@@ -7,7 +7,7 @@ public class GlobTests
     [Fact]
     public void ReadmeExample_IsMatch()
     {
-        #region Glob_IsMatch
+        #region Glob_IsMatchIgnoreCase
         Glob glob = Glob.Parse("src/**/*.txt", GlobDialect.Standard, GlobOptions.IgnoreCase);
         Assert.True(glob.IsMatch("src/abc.txt"));
         Assert.True(glob.IsMatch("SRC/a/b/abc.TXT"));
@@ -220,6 +220,16 @@ public class GlobTests
             Assert.True(glob.IsMatch(path.Replace('/', '\\')));
             Assert.True(glob.IsMatch(directoryName!.Replace('/', '\\'), fileName, itemType));
         }
+    }
+
+    [Fact]
+    public void GlobExample()
+    {
+        #region Glob_IsMatch
+        var glob = Glob.Parse("src/**/*.txt", GlobDialect.Standard);
+        Assert.True(glob.IsMatch("src/folder/file.txt"));
+        Assert.False(glob.IsMatch("docs/file.txt"));
+        #endregion
     }
 
     [Theory]

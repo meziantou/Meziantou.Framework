@@ -5,11 +5,16 @@ namespace Meziantou.Framework.Language.Xml;
 /// Visiting a node does not visit its children. Derive from <see cref="XmlSyntaxWalker"/> to walk a whole tree.
 /// </remarks>
 /// <example>
-/// <code>
-/// sealed class Counter : XmlSyntaxWalker
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs" ref:region="XmlSyntaxVisitor_ElementCounter" ref:dedent="true">
+/// private sealed class ElementCounter : XmlSyntaxWalker
 /// {
 ///     public int Count { get; private set; }
-///     public override void VisitElement(XmlElementSyntax node) { Count++; base.VisitElement(node); }
+///
+///     public override void VisitElement(XmlElementSyntax node)
+///     {
+///         Count++;
+///         base.VisitElement(node);
+///     }
 /// }
 /// </code>
 /// </example>
@@ -41,10 +46,10 @@ public abstract class XmlSyntaxVisitor
 /// <summary>Dispatches on the kind of an XML node and returns a result.</summary>
 /// <typeparam name="TResult">What visiting a node produces.</typeparam>
 /// <example>
-/// <code>
-/// sealed class ElementName : XmlSyntaxVisitor&lt;string?&gt;
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs" ref:region="XmlSyntaxVisitor_ElementName" ref:dedent="true">
+/// private sealed class ElementName : XmlSyntaxVisitor&lt;string?&gt;
 /// {
-///     public override string? VisitElement(XmlElementSyntax node) => node.Name;
+///     public override string? VisitElement(XmlElementSyntax node) =&gt; node.Name;
 /// }
 /// </code>
 /// </example>

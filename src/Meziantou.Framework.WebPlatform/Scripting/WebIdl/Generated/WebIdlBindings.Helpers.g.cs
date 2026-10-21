@@ -3140,9 +3140,9 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var m2_value = r.GetDictionaryMember(value, "composed");
         var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
         var m3_value = r.GetDictionaryMember(value, "currentTime");
-        var m3 = r.Adapter.IsUndefined(m3_value) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_4(r, m3_value);
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_27d2640e(r, m3_value);
         var m4_value = r.GetDictionaryMember(value, "timelineTime");
-        var m4 = r.Adapter.IsUndefined(m4_value) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_4(r, m4_value);
+        var m4 = r.Adapter.IsUndefined(m4_value) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_27d2640e(r, m4_value);
         return new global::Meziantou.Framework.WebPlatform.Animations.AnimationPlaybackEventInit
         {
             Bubbles = m0,
@@ -3173,7 +3173,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var m1_value = r.GetDictionaryMember(value, "direction");
         var m1 = r.Adapter.IsUndefined(m1_value) ? (string)"normal" : r.ToEnumerationValue(m1_value, "PlaybackDirection", WebIdlHelpers<TAdapter, TValue>.Enum_PlaybackDirection_Values);
         var m2_value = r.GetDictionaryMember(value, "duration");
-        var m2 = r.Adapter.IsUndefined(m2_value) ? (object?)(object)"auto" : WebIdlHelpers<TAdapter, TValue>.ToUnion_40(r, m2_value);
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (object?)(object)"auto" : WebIdlHelpers<TAdapter, TValue>.ToUnion_5045d039(r, m2_value);
         var m3_value = r.GetDictionaryMember(value, "easing");
         var m3 = r.Adapter.IsUndefined(m3_value) ? (string)"linear" : r.ToDomString(m3_value);
         var m4_value = r.GetDictionaryMember(value, "endDelay");
@@ -3218,7 +3218,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var m1 = m1_present ? (string?)r.ToEnumerationValue(m1_value, "PlaybackDirection", WebIdlHelpers<TAdapter, TValue>.Enum_PlaybackDirection_Values) : default;
         var m2_value = r.GetDictionaryMember(value, "duration");
         var m2_present = !r.Adapter.IsUndefined(m2_value);
-        var m2 = m2_present ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_3(r, m2_value) : default;
+        var m2 = m2_present ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_f62144ee(r, m2_value) : default;
         var m3_value = r.GetDictionaryMember(value, "easing");
         var m3_present = !r.Adapter.IsUndefined(m3_value);
         var m3 = m3_present ? (string?)r.ToDomString(m3_value) : default;
@@ -3321,7 +3321,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var m0_value = r.GetDictionaryMember(value, "axis");
         var m0 = r.Adapter.IsUndefined(m0_value) ? (string)"block" : r.ToEnumerationValue(m0_value, "ScrollAxis", WebIdlHelpers<TAdapter, TValue>.Enum_ScrollAxis_Values);
         var m1_value = r.GetDictionaryMember(value, "inset");
-        var m1 = r.Adapter.IsUndefined(m1_value) ? (object?)(object)"auto" : WebIdlHelpers<TAdapter, TValue>.ToUnion_85(r, m1_value);
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (object?)(object)"auto" : WebIdlHelpers<TAdapter, TValue>.ToUnion_32776a3a(r, m1_value);
         var m2_value = r.GetDictionaryMember(value, "subject");
         if (r.Adapter.IsUndefined(m2_value)) throw r.MissingRequiredDictionaryMember("ViewTimelineOptions", "subject");
         var m2 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.Element>(m2_value, "Element");
@@ -3361,7 +3361,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var m1_value = r.GetDictionaryMember(value, "disabled");
         var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
         var m2_value = r.GetDictionaryMember(value, "media");
-        var m2 = r.Adapter.IsUndefined(m2_value) ? (object?)(object)"" : WebIdlHelpers<TAdapter, TValue>.ToUnion_14(r, m2_value);
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (object?)(object)"" : WebIdlHelpers<TAdapter, TValue>.ToUnion_932cb064(r, m2_value);
         return new global::Meziantou.Framework.WebPlatform.Css.Om.CssStyleSheetInit
         {
             BaseUrl = m0,
@@ -3577,7 +3577,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var m0 = r.Adapter.IsUndefined(m0_value) ? (string)"border" : r.ToEnumerationValue(m0_value, "CSSBoxType", WebIdlHelpers<TAdapter, TValue>.Enum_CSSBoxType_Values);
         var m1_value = r.GetDictionaryMember(value, "relativeTo");
         var m1_present = !r.Adapter.IsUndefined(m1_value);
-        var m1 = m1_present ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_13(r, m1_value) : default;
+        var m1 = m1_present ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_4dee98ea(r, m1_value) : default;
         return new global::Meziantou.Framework.WebPlatform.Dom.BoxQuadOptions
         {
             Box = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_CssBoxType(m0),
@@ -4457,7 +4457,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var m6_value = r.GetDictionaryMember(value, "ports");
         var m6 = r.Adapter.IsUndefined(m6_value) ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.MessagePort>)new global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.MessagePort>() : r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.MessagePort>(m6_value, static (r, e) => r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.MessagePort>(e, "MessagePort"));
         var m7_value = r.GetDictionaryMember(value, "source");
-        var m7 = r.Adapter.IsUndefined(m7_value) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_44(r, m7_value);
+        var m7 = r.Adapter.IsUndefined(m7_value) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_2653ed20(r, m7_value);
         return new global::Meziantou.Framework.WebPlatform.Dom.ExtendableMessageEventInit
         {
             Bubbles = m0,
@@ -4795,7 +4795,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var m0_value = r.GetDictionaryMember(value, "autoIncrement");
         var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
         var m1_value = r.GetDictionaryMember(value, "keyPath");
-        var m1 = r.Adapter.IsUndefined(m1_value) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_59(r, m1_value);
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_036e38a5(r, m1_value);
         return new global::Meziantou.Framework.WebPlatform.Dom.IdbObjectStoreParameters
         {
             AutoIncrement = m0,
@@ -5009,13 +5009,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var m0_value = r.GetDictionaryMember(value, "delay");
         var m0 = r.Adapter.IsUndefined(m0_value) ? (int)(int)(0d) : r.ToLong(m0_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
         var m1_value = r.GetDictionaryMember(value, "root");
-        var m1 = r.Adapter.IsUndefined(m1_value) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_60(r, m1_value);
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_c4f38216(r, m1_value);
         var m2_value = r.GetDictionaryMember(value, "rootMargin");
         var m2 = r.Adapter.IsUndefined(m2_value) ? (string)"0px" : r.ToDomString(m2_value);
         var m3_value = r.GetDictionaryMember(value, "scrollMargin");
         var m3 = r.Adapter.IsUndefined(m3_value) ? (string)"0px" : r.ToDomString(m3_value);
         var m4_value = r.GetDictionaryMember(value, "threshold");
-        var m4 = r.Adapter.IsUndefined(m4_value) ? (object?)(object)(0d) : WebIdlHelpers<TAdapter, TValue>.ToUnion_61(r, m4_value);
+        var m4 = r.Adapter.IsUndefined(m4_value) ? (object?)(object)(0d) : WebIdlHelpers<TAdapter, TValue>.ToUnion_c80935b2(r, m4_value);
         var m5_value = r.GetDictionaryMember(value, "trackVisibility");
         var m5 = r.Adapter.IsUndefined(m5_value) ? (bool)false : r.ToBoolean(m5_value);
         return new global::Meziantou.Framework.WebPlatform.Dom.IntersectionObserverInit
@@ -5131,7 +5131,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var m1_value = r.GetDictionaryMember(value, "direction");
         var m1 = r.Adapter.IsUndefined(m1_value) ? (string)"normal" : r.ToEnumerationValue(m1_value, "PlaybackDirection", WebIdlHelpers<TAdapter, TValue>.Enum_PlaybackDirection_Values);
         var m2_value = r.GetDictionaryMember(value, "duration");
-        var m2 = r.Adapter.IsUndefined(m2_value) ? (object?)(object)"auto" : WebIdlHelpers<TAdapter, TValue>.ToUnion_40(r, m2_value);
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (object?)(object)"auto" : WebIdlHelpers<TAdapter, TValue>.ToUnion_5045d039(r, m2_value);
         var m3_value = r.GetDictionaryMember(value, "easing");
         var m3 = r.Adapter.IsUndefined(m3_value) ? (string)"linear" : r.ToDomString(m3_value);
         var m4_value = r.GetDictionaryMember(value, "endDelay");
@@ -5152,9 +5152,9 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var m11_value = r.GetDictionaryMember(value, "id");
         var m11 = r.Adapter.IsUndefined(m11_value) ? (string)"" : r.ToDomString(m11_value);
         var m12_value = r.GetDictionaryMember(value, "rangeEnd");
-        var m12 = r.Adapter.IsUndefined(m12_value) ? (object?)(object)"normal" : WebIdlHelpers<TAdapter, TValue>.ToUnion_2(r, m12_value);
+        var m12 = r.Adapter.IsUndefined(m12_value) ? (object?)(object)"normal" : WebIdlHelpers<TAdapter, TValue>.ToUnion_b88c3fd3(r, m12_value);
         var m13_value = r.GetDictionaryMember(value, "rangeStart");
-        var m13 = r.Adapter.IsUndefined(m13_value) ? (object?)(object)"normal" : WebIdlHelpers<TAdapter, TValue>.ToUnion_2(r, m13_value);
+        var m13 = r.Adapter.IsUndefined(m13_value) ? (object?)(object)"normal" : WebIdlHelpers<TAdapter, TValue>.ToUnion_b88c3fd3(r, m13_value);
         var m14_value = r.GetDictionaryMember(value, "timeline");
         var m14_present = !r.Adapter.IsUndefined(m14_value);
         var m14 = m14_present ? (global::Meziantou.Framework.WebPlatform.Animations.AnimationTimeline?)(r.IsNullOrUndefined(m14_value) ? (global::Meziantou.Framework.WebPlatform.Animations.AnimationTimeline?)null : r.ToInterface<global::Meziantou.Framework.WebPlatform.Animations.AnimationTimeline>(m14_value, "AnimationTimeline")) : default;
@@ -5281,7 +5281,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var m6_value = r.GetDictionaryMember(value, "ports");
         var m6 = r.Adapter.IsUndefined(m6_value) ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.MessagePort>)new global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.MessagePort>() : r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.MessagePort>(m6_value, static (r, e) => r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.MessagePort>(e, "MessagePort"));
         var m7_value = r.GetDictionaryMember(value, "source");
-        var m7 = r.Adapter.IsUndefined(m7_value) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_63(r, m7_value);
+        var m7 = r.Adapter.IsUndefined(m7_value) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_45a0a843(r, m7_value);
         return new global::Meziantou.Framework.WebPlatform.Dom.MessageEventInit
         {
             Bubbles = m0,
@@ -5523,8 +5523,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return new global::Meziantou.Framework.WebPlatform.Dom.NavigationInterceptOptions
         {
             FocusReset = m0_present ? (m0 is { } enumValue_m0 ? WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_NavigationFocusReset(enumValue_m0) : (global::Meziantou.Framework.WebPlatform.Dom.NavigationFocusReset?)null) : Defaults_Dom_NavigationInterceptOptions.FocusReset,
-            Handler = m1_present ? (m1 is { } function64 ? WebIdlHelpers<TAdapter, TValue>.ToDelegate_Dom_NavigationInterceptHandler(r, function64) : null) : Defaults_Dom_NavigationInterceptOptions.Handler,
-            PrecommitHandler = m2_present ? (m2 is { } function65 ? WebIdlHelpers<TAdapter, TValue>.ToDelegate_Dom_NavigationPrecommitHandler(r, function65) : null) : Defaults_Dom_NavigationInterceptOptions.PrecommitHandler,
+            Handler = m1_present ? (m1 is { } m1Function ? WebIdlHelpers<TAdapter, TValue>.ToDelegate_Dom_NavigationInterceptHandler(r, m1Function) : null) : Defaults_Dom_NavigationInterceptOptions.Handler,
+            PrecommitHandler = m2_present ? (m2 is { } m2Function ? WebIdlHelpers<TAdapter, TValue>.ToDelegate_Dom_NavigationPrecommitHandler(r, m2Function) : null) : Defaults_Dom_NavigationInterceptOptions.PrecommitHandler,
             Scroll = m3_present ? (m3 is { } enumValue_m3 ? WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_NavigationScrollBehavior(enumValue_m3) : (global::Meziantou.Framework.WebPlatform.Dom.NavigationScrollBehavior?)null) : Defaults_Dom_NavigationInterceptOptions.Scroll,
         };
     }
@@ -5673,7 +5673,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         r.CheckDictionary(value, "ParseHTMLUnsafeOptions");
         var m0_value = r.GetDictionaryMember(value, "sanitizer");
         var m0_present = !r.Adapter.IsUndefined(m0_value);
-        var m0 = m0_present ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_20(r, m0_value) : default;
+        var m0 = m0_present ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_5bab7ee7(r, m0_value) : default;
         return new global::Meziantou.Framework.WebPlatform.Dom.ParseHtmlUnsafeOptions
         {
             Sanitizer = m0_present ? (m0 is null ? (global::Meziantou.Framework.WebPlatform.Dom.SanitizerOrSanitizerConfigOrSanitizerPresets?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_SanitizerOrSanitizerConfigOrSanitizerPresets(r, m0)) : Defaults_Dom_ParseHtmlUnsafeOptions.Sanitizer,
@@ -5707,10 +5707,10 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var m1 = m1_present ? (double?)r.ToDouble(m1_value, restricted: true) : default;
         var m2_value = r.GetDictionaryMember(value, "end");
         var m2_present = !r.Adapter.IsUndefined(m2_value);
-        var m2 = m2_present ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_69(r, m2_value) : default;
+        var m2 = m2_present ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_74b562ff(r, m2_value) : default;
         var m3_value = r.GetDictionaryMember(value, "start");
         var m3_present = !r.Adapter.IsUndefined(m3_value);
-        var m3 = m3_present ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_69(r, m3_value) : default;
+        var m3 = m3_present ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_74b562ff(r, m3_value) : default;
         return new global::Meziantou.Framework.WebPlatform.Dom.PerformanceMeasureOptions
         {
             Detail = m0_present ? m0 : Defaults_Dom_PerformanceMeasureOptions.Detail,
@@ -6057,7 +6057,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         r.CheckDictionary(value, "SanitizerConfig");
         var m0_value = r.GetDictionaryMember(value, "attributes");
         var m0_present = !r.Adapter.IsUndefined(m0_value);
-        var m0 = m0_present ? (global::System.Collections.Generic.List<object?>?)r.ToSequence<object?>(m0_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_21(r, e)) : default;
+        var m0 = m0_present ? (global::System.Collections.Generic.List<object?>?)r.ToSequence<object?>(m0_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_f2bac3cd(r, e)) : default;
         var m1_value = r.GetDictionaryMember(value, "comments");
         var m1_present = !r.Adapter.IsUndefined(m1_value);
         var m1 = m1_present ? (bool?)r.ToBoolean(m1_value) : default;
@@ -6066,25 +6066,25 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var m2 = m2_present ? (bool?)r.ToBoolean(m2_value) : default;
         var m3_value = r.GetDictionaryMember(value, "elements");
         var m3_present = !r.Adapter.IsUndefined(m3_value);
-        var m3 = m3_present ? (global::System.Collections.Generic.List<object?>?)r.ToSequence<object?>(m3_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_22(r, e)) : default;
+        var m3 = m3_present ? (global::System.Collections.Generic.List<object?>?)r.ToSequence<object?>(m3_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_f09d6e44(r, e)) : default;
         var m4_value = r.GetDictionaryMember(value, "javascriptURLs");
         var m4_present = !r.Adapter.IsUndefined(m4_value);
         var m4 = m4_present ? (bool?)r.ToBoolean(m4_value) : default;
         var m5_value = r.GetDictionaryMember(value, "processingInstructions");
         var m5_present = !r.Adapter.IsUndefined(m5_value);
-        var m5 = m5_present ? (global::System.Collections.Generic.List<object?>?)r.ToSequence<object?>(m5_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_23(r, e)) : default;
+        var m5 = m5_present ? (global::System.Collections.Generic.List<object?>?)r.ToSequence<object?>(m5_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_00dbe749(r, e)) : default;
         var m6_value = r.GetDictionaryMember(value, "removeAttributes");
         var m6_present = !r.Adapter.IsUndefined(m6_value);
-        var m6 = m6_present ? (global::System.Collections.Generic.List<object?>?)r.ToSequence<object?>(m6_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_21(r, e)) : default;
+        var m6 = m6_present ? (global::System.Collections.Generic.List<object?>?)r.ToSequence<object?>(m6_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_f2bac3cd(r, e)) : default;
         var m7_value = r.GetDictionaryMember(value, "removeElements");
         var m7_present = !r.Adapter.IsUndefined(m7_value);
-        var m7 = m7_present ? (global::System.Collections.Generic.List<object?>?)r.ToSequence<object?>(m7_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_24(r, e)) : default;
+        var m7 = m7_present ? (global::System.Collections.Generic.List<object?>?)r.ToSequence<object?>(m7_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_a985ecd1(r, e)) : default;
         var m8_value = r.GetDictionaryMember(value, "removeProcessingInstructions");
         var m8_present = !r.Adapter.IsUndefined(m8_value);
-        var m8 = m8_present ? (global::System.Collections.Generic.List<object?>?)r.ToSequence<object?>(m8_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_23(r, e)) : default;
+        var m8 = m8_present ? (global::System.Collections.Generic.List<object?>?)r.ToSequence<object?>(m8_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_00dbe749(r, e)) : default;
         var m9_value = r.GetDictionaryMember(value, "replaceWithChildrenElements");
         var m9_present = !r.Adapter.IsUndefined(m9_value);
-        var m9 = m9_present ? (global::System.Collections.Generic.List<object?>?)r.ToSequence<object?>(m9_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_24(r, e)) : default;
+        var m9 = m9_present ? (global::System.Collections.Generic.List<object?>?)r.ToSequence<object?>(m9_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_a985ecd1(r, e)) : default;
         return new global::Meziantou.Framework.WebPlatform.Dom.SanitizerConfig
         {
             Attributes = m0_present ? global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(m0!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_SanitizerAttribute(r, e))) : Defaults_Dom_SanitizerConfig.Attributes,
@@ -6125,10 +6125,10 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var m1 = r.Adapter.IsUndefined(m1_value) ? (string?)"http://www.w3.org/1999/xhtml" : (r.IsNullOrUndefined(m1_value) ? (string?)null : r.ToDomString(m1_value));
         var m2_value = r.GetDictionaryMember(value, "attributes");
         var m2_present = !r.Adapter.IsUndefined(m2_value);
-        var m2 = m2_present ? (global::System.Collections.Generic.List<object?>?)r.ToSequence<object?>(m2_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_21(r, e)) : default;
+        var m2 = m2_present ? (global::System.Collections.Generic.List<object?>?)r.ToSequence<object?>(m2_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_f2bac3cd(r, e)) : default;
         var m3_value = r.GetDictionaryMember(value, "removeAttributes");
         var m3_present = !r.Adapter.IsUndefined(m3_value);
-        var m3 = m3_present ? (global::System.Collections.Generic.List<object?>?)r.ToSequence<object?>(m3_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_21(r, e)) : default;
+        var m3 = m3_present ? (global::System.Collections.Generic.List<object?>?)r.ToSequence<object?>(m3_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_f2bac3cd(r, e)) : default;
         return new global::Meziantou.Framework.WebPlatform.Dom.SanitizerElementNamespaceWithAttributes
         {
             Name = m0,
@@ -6265,7 +6265,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         r.CheckDictionary(value, "SetHTMLOptions");
         var m0_value = r.GetDictionaryMember(value, "sanitizer");
-        var m0 = r.Adapter.IsUndefined(m0_value) ? (object?)(object)"default" : WebIdlHelpers<TAdapter, TValue>.ToUnion_20(r, m0_value);
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (object?)(object)"default" : WebIdlHelpers<TAdapter, TValue>.ToUnion_5bab7ee7(r, m0_value);
         return new global::Meziantou.Framework.WebPlatform.Dom.SetHtmlOptions
         {
             Sanitizer = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_SanitizerOrSanitizerConfigOrSanitizerPresets(r, m0),
@@ -6279,7 +6279,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
         var m1_value = r.GetDictionaryMember(value, "sanitizer");
         var m1_present = !r.Adapter.IsUndefined(m1_value);
-        var m1 = m1_present ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_20(r, m1_value) : default;
+        var m1 = m1_present ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_5bab7ee7(r, m1_value) : default;
         return new global::Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptions
         {
             RunScripts = m0,
@@ -6369,7 +6369,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return new global::Meziantou.Framework.WebPlatform.Dom.StartViewTransitionOptions
         {
             Types = m0,
-            Update = (m1 is { } function34 ? WebIdlHelpers<TAdapter, TValue>.ToDelegate_Dom_ViewTransitionUpdateCallback(r, function34) : null),
+            Update = (m1 is { } m1Function ? WebIdlHelpers<TAdapter, TValue>.ToDelegate_Dom_ViewTransitionUpdateCallback(r, m1Function) : null),
         };
     }
 
@@ -6543,7 +6543,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         r.CheckDictionary(value, "TaskSignalAnyInit");
         var m0_value = r.GetDictionaryMember(value, "priority");
-        var m0 = r.Adapter.IsUndefined(m0_value) ? (object?)(object)"user-visible" : WebIdlHelpers<TAdapter, TValue>.ToUnion_75(r, m0_value);
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (object?)(object)"user-visible" : WebIdlHelpers<TAdapter, TValue>.ToUnion_3fc8bd7f(r, m0_value);
         return new global::Meziantou.Framework.WebPlatform.Dom.TaskSignalAnyInit
         {
             Priority = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_TaskPriorityOrSignal(r, m0),
@@ -6763,7 +6763,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var m2_value = r.GetDictionaryMember(value, "composed");
         var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
         var m3_value = r.GetDictionaryMember(value, "track");
-        var m3 = r.Adapter.IsUndefined(m3_value) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_76(r, m3_value);
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_ca95854c(r, m3_value);
         return new global::Meziantou.Framework.WebPlatform.Dom.TrackEventInit
         {
             Bubbles = m0,
@@ -6790,10 +6790,10 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var m3 = m3_present ? (TValue?)r.ToCallbackFunction(m3_value, "CreateScriptURLCallback", false)! : default;
         return new global::Meziantou.Framework.WebPlatform.Dom.TrustedTypePolicyOptions
         {
-            CreateHtml = m0_present ? (m0 is { } function77 ? WebIdlHelpers<TAdapter, TValue>.ToDelegate_Dom_CreateHtmlCallback(r, function77) : null) : Defaults_Dom_TrustedTypePolicyOptions.CreateHtml,
-            CreateParserOptions = m1_present ? (m1 is { } function78 ? WebIdlHelpers<TAdapter, TValue>.ToDelegate_Dom_CreateParserOptionsCallback(r, function78) : null) : Defaults_Dom_TrustedTypePolicyOptions.CreateParserOptions,
-            CreateScript = m2_present ? (m2 is { } function79 ? WebIdlHelpers<TAdapter, TValue>.ToDelegate_Dom_CreateScriptCallback(r, function79) : null) : Defaults_Dom_TrustedTypePolicyOptions.CreateScript,
-            CreateScriptUrl = m3_present ? (m3 is { } function80 ? WebIdlHelpers<TAdapter, TValue>.ToDelegate_Dom_CreateScriptUrlCallback(r, function80) : null) : Defaults_Dom_TrustedTypePolicyOptions.CreateScriptUrl,
+            CreateHtml = m0_present ? (m0 is { } m0Function ? WebIdlHelpers<TAdapter, TValue>.ToDelegate_Dom_CreateHtmlCallback(r, m0Function) : null) : Defaults_Dom_TrustedTypePolicyOptions.CreateHtml,
+            CreateParserOptions = m1_present ? (m1 is { } m1Function ? WebIdlHelpers<TAdapter, TValue>.ToDelegate_Dom_CreateParserOptionsCallback(r, m1Function) : null) : Defaults_Dom_TrustedTypePolicyOptions.CreateParserOptions,
+            CreateScript = m2_present ? (m2 is { } m2Function ? WebIdlHelpers<TAdapter, TValue>.ToDelegate_Dom_CreateScriptCallback(r, m2Function) : null) : Defaults_Dom_TrustedTypePolicyOptions.CreateScript,
+            CreateScriptUrl = m3_present ? (m3 is { } m3Function ? WebIdlHelpers<TAdapter, TValue>.ToDelegate_Dom_CreateScriptUrlCallback(r, m3Function) : null) : Defaults_Dom_TrustedTypePolicyOptions.CreateScriptUrl,
         };
     }
 
@@ -7889,215 +7889,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => throw new global::System.InvalidCastException("The value cannot be converted to ReadOnlySpan`1"),
     };
 
-    /// <summary>(double or CSSNumericValue)?</summary>
-    internal static object? ToUnion_1(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return null;
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: true);
-        return r.ToDouble(value, restricted: true);
-    }
-
-    /// <summary>(unsigned long or sequence&lt;unsigned long&gt;)</summary>
-    internal static object? ToUnion_10(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Adapter.IsObject(value))
-        {
-            if (r.HasIterator(value)) return r.ToSequence<uint>(value, static (r, e) => r.ToUnsignedLong(e, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None));
-        }
-        if (r.Adapter.IsNumber(value)) return r.ToUnsignedLong(value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
-        return r.ToUnsignedLong(value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
-    }
-
-    /// <summary>(DOMString or CSSStyleValue or CSSParserValue)</summary>
-    internal static object? ToUnion_11(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssStyleValue) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.ParserApi.CssParserValue) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(CSSNumericValue or (DOMString or CSSKeywordValue))</summary>
-    internal static object? ToUnion_12(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssKeywordValue) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(Text or Element or CSSPseudoElement or Document)</summary>
-    internal static object? ToUnion_13(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Text) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Element) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.Om.CssPseudoElement) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Document) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        throw r.CreateTypeError("The value cannot be converted to (Text or Element or CSSPseudoElement or Document)");
-    }
-
-    /// <summary>(MediaList or DOMString)</summary>
-    internal static object? ToUnion_14(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.Om.MediaList) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(USVString or CSSVariableReferenceValue)</summary>
-    internal static object? ToUnion_15(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssVariableReferenceValue) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        return r.ToUsvString(value);
-    }
-
-    /// <summary>(DOMString or CanvasGradient or CanvasPattern)</summary>
-    internal static object? ToUnion_16(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.CanvasGradient) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.CanvasPattern) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>((HTMLImageElement or SVGImageElement) or HTMLVideoElement or HTMLCanvasElement or ImageBitmap or OffscreenCanvas or VideoFrame or CSSImageValue)</summary>
-    internal static object? ToUnion_17(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.HtmlImageElement) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.SvgImageElement) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.HtmlVideoElement) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.ImageBitmap) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.OffscreenCanvas) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssImageValue) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        throw r.CreateTypeError("The value cannot be converted to ((HTMLImageElement or SVGImageElement) or HTMLVideoElement or HTMLCanvasElement or ImageBitmap or OffscreenCanvas or VideoFrame or CSSImageValue)");
-    }
-
-    /// <summary>(unrestricted double or DOMPointInit or sequence&lt;(unrestricted double or DOMPointInit)&gt;)</summary>
-    internal static object? ToUnion_18(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DomPointInit(r, value);
-        if (r.Adapter.IsObject(value))
-        {
-            if (r.HasIterator(value)) return r.ToSequence<object?>(value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_19(r, e));
-            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DomPointInit(r, value);
-        }
-        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: false);
-        return r.ToDouble(value, restricted: false);
-    }
-
-    /// <summary>(unrestricted double or DOMPointInit)</summary>
-    internal static object? ToUnion_19(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DomPointInit(r, value);
-        if (r.Adapter.IsObject(value))
-        {
-            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DomPointInit(r, value);
-        }
-        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: false);
-        return r.ToDouble(value, restricted: false);
-    }
-
-    /// <summary>(TimelineRangeOffset or CSSNumericValue or CSSKeywordValue or DOMString)</summary>
-    internal static object? ToUnion_2(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Animations_TimelineRangeOffset(r, value);
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssKeywordValue) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Animations_TimelineRangeOffset(r, value);
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(Sanitizer or SanitizerConfig or SanitizerPresets)</summary>
-    internal static object? ToUnion_20(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SanitizerConfig(r, value);
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Sanitizer) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SanitizerConfig(r, value);
-        }
-        return r.ToEnumerationValue(value, "SanitizerPresets", WebIdlHelpers<TAdapter, TValue>.Enum_SanitizerPresets_Values);
-    }
-
-    /// <summary>(DOMString or SanitizerAttributeNamespace)</summary>
-    internal static object? ToUnion_21(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SanitizerAttributeNamespace(r, value);
-        if (r.Adapter.IsObject(value))
-        {
-            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SanitizerAttributeNamespace(r, value);
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(DOMString or SanitizerElementNamespaceWithAttributes)</summary>
-    internal static object? ToUnion_22(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SanitizerElementNamespaceWithAttributes(r, value);
-        if (r.Adapter.IsObject(value))
-        {
-            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SanitizerElementNamespaceWithAttributes(r, value);
-        }
-        return r.ToDomString(value);
-    }
-
     /// <summary>(DOMString or SanitizerProcessingInstruction)</summary>
-    internal static object? ToUnion_23(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    internal static object? ToUnion_00dbe749(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SanitizerProcessingInstruction(r, value);
         if (r.Adapter.IsObject(value))
@@ -8107,370 +7900,19 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return r.ToDomString(value);
     }
 
-    /// <summary>(DOMString or SanitizerElementNamespace)</summary>
-    internal static object? ToUnion_24(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SanitizerElementNamespace(r, value);
-        if (r.Adapter.IsObject(value))
-        {
-            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SanitizerElementNamespace(r, value);
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(TrustedHTML or DOMString)</summary>
-    internal static object? ToUnion_25(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(SetHTMLUnsafeOptions or TrustedHTMLParserOptions)</summary>
-    internal static object? ToUnion_26(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SetHtmlUnsafeOptions(r, value);
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedHtmlParserOptions) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SetHtmlUnsafeOptions(r, value);
-        }
-        throw r.CreateTypeError("The value cannot be converted to (SetHTMLUnsafeOptions or TrustedHTMLParserOptions)");
-    }
-
-    /// <summary>(Node or DOMString)</summary>
-    internal static object? ToUnion_27(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Node) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(DOMString or Blob)</summary>
-    internal static object? ToUnion_28(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.FileApi.Blob) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(DOMString or sequence&lt;unrestricted double&gt;)</summary>
-    internal static object? ToUnion_29(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Adapter.IsObject(value))
-        {
-            if (r.HasIterator(value)) return r.ToSequence<double>(value, static (r, e) => r.ToDouble(e, restricted: false));
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(unrestricted double or DOMString)</summary>
-    internal static object? ToUnion_3(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: false);
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(DOMString or ElementCreationOptions)</summary>
-    internal static object? ToUnion_31(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ElementCreationOptions(r, value);
-        if (r.Adapter.IsObject(value))
-        {
-            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ElementCreationOptions(r, value);
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(boolean or ImportNodeOptions)</summary>
-    internal static object? ToUnion_32(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ImportNodeOptions(r, value);
-        if (r.Adapter.IsObject(value))
-        {
-            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ImportNodeOptions(r, value);
-        }
-        if (r.Adapter.IsBoolean(value)) return r.ToBoolean(value);
-        return r.ToBoolean(value);
-    }
-
-    /// <summary>(ViewTransitionUpdateCallback or StartViewTransitionOptions)</summary>
-    internal static object? ToUnion_33(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_StartViewTransitionOptions(r, value);
-        if (r.Adapter.IsObject(value))
-        {
-            if (r.Adapter.IsCallable(value)) return new global::Meziantou.Framework.WebPlatform.Scripting.JsFunctionValue<TValue>(r.ToCallbackFunction(value, "ViewTransitionUpdateCallback", false)!);
-            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_StartViewTransitionOptions(r, value);
-        }
-        throw r.CreateTypeError("The value cannot be converted to (ViewTransitionUpdateCallback or StartViewTransitionOptions)");
-    }
-
-    /// <summary>(ParseHTMLUnsafeOptions or TrustedHTMLParserOptions)</summary>
-    internal static object? ToUnion_35(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ParseHtmlUnsafeOptions(r, value);
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedHtmlParserOptions) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ParseHtmlUnsafeOptions(r, value);
-        }
-        throw r.CreateTypeError("The value cannot be converted to (ParseHTMLUnsafeOptions or TrustedHTMLParserOptions)");
-    }
-
-    /// <summary>(TrustedHTML or DOMString)</summary>
-    internal static object? ToUnion_36(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        return r.ToDomString(value, legacyNullToEmptyString: true);
-    }
-
-    /// <summary>((TrustedHTML or TrustedScript or TrustedScriptURL) or DOMString)</summary>
-    internal static object? ToUnion_37(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedScript) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedScriptUrl) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(boolean or ScrollIntoViewOptions)</summary>
-    internal static object? ToUnion_38(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ScrollIntoViewOptions(r, value);
-        if (r.Adapter.IsObject(value))
-        {
-            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ScrollIntoViewOptions(r, value);
-        }
-        if (r.Adapter.IsBoolean(value)) return r.ToBoolean(value);
-        return r.ToBoolean(value);
-    }
-
-    /// <summary>(unrestricted double or KeyframeAnimationOptions)</summary>
-    internal static object? ToUnion_39(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_KeyframeAnimationOptions(r, value);
-        if (r.Adapter.IsObject(value))
-        {
-            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_KeyframeAnimationOptions(r, value);
-        }
-        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: false);
-        return r.ToDouble(value, restricted: false);
-    }
-
-    /// <summary>(double or CSSNumericValue)?</summary>
-    internal static object? ToUnion_4(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return null;
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: true);
-        return r.ToDouble(value, restricted: true);
-    }
-
-    /// <summary>(unrestricted double or CSSNumericValue or DOMString)</summary>
-    internal static object? ToUnion_40(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: false);
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(File or USVString or FormData)?</summary>
-    internal static object? ToUnion_41(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return null;
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.FileApi.File) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.FormData) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        return r.ToUsvString(value);
-    }
-
-    /// <summary>(AddEventListenerOptions or boolean)</summary>
-    internal static object? ToUnion_42(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_AddEventListenerOptions(r, value);
-        if (r.Adapter.IsObject(value))
-        {
-            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_AddEventListenerOptions(r, value);
-        }
-        if (r.Adapter.IsBoolean(value)) return r.ToBoolean(value);
-        return r.ToBoolean(value);
-    }
-
-    /// <summary>(EventListenerOptions or boolean)</summary>
-    internal static object? ToUnion_43(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_EventListenerOptions(r, value);
-        if (r.Adapter.IsObject(value))
-        {
-            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_EventListenerOptions(r, value);
-        }
-        if (r.Adapter.IsBoolean(value)) return r.ToBoolean(value);
-        return r.ToBoolean(value);
-    }
-
-    /// <summary>(Client or ServiceWorker or MessagePort)?</summary>
-    internal static object? ToUnion_44(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return null;
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Client) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.ServiceWorker) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.MessagePort) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        throw r.CreateTypeError("The value cannot be converted to (Client or ServiceWorker or MessagePort)?");
-    }
-
-    /// <summary>(DOMString or (ArrayBuffer or (Int8Array or Int16Array or Int32Array or Uint8Array or Uint16Array or Uint32Array or Uint8ClampedArray or BigInt64Array or BigUint64Array or Float16Array or Float32Array or Float64Array or DataView)))</summary>
-    internal static object? ToUnion_45(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Adapter.IsObject(value))
-        {
-            if (r.TryToBufferSource(value, 32765u, false) is { } buffer) return buffer;
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(boolean or unrestricted double or DOMString)?</summary>
-    internal static object? ToUnion_46(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    /// <summary>(DOMString or sequence&lt;DOMString&gt;)?</summary>
+    internal static object? ToUnion_036e38a5(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         if (r.IsNullOrUndefined(value)) return null;
         if (r.Adapter.IsObject(value))
         {
-        }
-        if (r.Adapter.IsBoolean(value)) return r.ToBoolean(value);
-        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: false);
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(TogglePopoverOptions or boolean)</summary>
-    internal static object? ToUnion_47(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_TogglePopoverOptions(r, value);
-        if (r.Adapter.IsObject(value))
-        {
-            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_TogglePopoverOptions(r, value);
-        }
-        if (r.Adapter.IsBoolean(value)) return r.ToBoolean(value);
-        return r.ToBoolean(value);
-    }
-
-    /// <summary>(TrustedHTML or DOMString)</summary>
-    internal static object? ToUnion_48(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
+            if (r.HasIterator(value)) return r.ToSequence<string>(value, static (r, e) => r.ToDomString(e));
         }
         return r.ToDomString(value);
-    }
-
-    /// <summary>(MediaStream or MediaSource or Blob or MediaSourceHandle)?</summary>
-    internal static object? ToUnion_49(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return null;
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.MediaSource) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.FileApi.Blob) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.MediaSourceHandle) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        throw r.CreateTypeError("The value cannot be converted to (MediaStream or MediaSource or Blob or MediaSourceHandle)?");
-    }
-
-    /// <summary>((ArrayBuffer or (Int8Array or Int16Array or Int32Array or Uint8Array or Uint16Array or Uint32Array or Uint8ClampedArray or BigInt64Array or BigUint64Array or Float16Array or Float32Array or Float64Array or DataView)) or Blob or USVString)</summary>
-    internal static object? ToUnion_5(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.FileApi.Blob) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-            if (r.TryToBufferSource(value, 32765u, false) is { } buffer) return buffer;
-        }
-        return r.ToUsvString(value);
-    }
-
-    /// <summary>(HTMLOptionElement or HTMLOptGroupElement)</summary>
-    internal static object? ToUnion_50(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.HtmlOptionElement) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.HtmlOptGroupElement) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        throw r.CreateTypeError("The value cannot be converted to (HTMLOptionElement or HTMLOptGroupElement)");
     }
 
     /// <summary>(HTMLElement or long)?</summary>
-    internal static object? ToUnion_51(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    internal static object? ToUnion_044f3563(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         if (r.IsNullOrUndefined(value)) return null;
         if (r.Unwrap(value) is { } platformObject)
@@ -8484,425 +7926,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return r.ToLong(value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
     }
 
-    /// <summary>(TrustedScriptURL or USVString)</summary>
-    internal static object? ToUnion_52(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedScriptUrl) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        return r.ToUsvString(value);
-    }
-
-    /// <summary>(TrustedScript or DOMString)</summary>
-    internal static object? ToUnion_53(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedScript) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        return r.ToDomString(value, legacyNullToEmptyString: true);
-    }
-
-    /// <summary>(TrustedScript or DOMString)?</summary>
-    internal static object? ToUnion_54(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return null;
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedScript) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(TrustedScript or DOMString)</summary>
-    internal static object? ToUnion_55(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedScript) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(Element or Text)</summary>
-    internal static object? ToUnion_56(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Element) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Text) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        throw r.CreateTypeError("The value cannot be converted to (Element or Text)");
-    }
-
-    /// <summary>(sequence&lt;sequence&lt;ByteString&gt;&gt; or record&lt;ByteString, ByteString&gt;)</summary>
-    internal static object? ToUnion_57(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Adapter.IsObject(value))
-        {
-            if (r.HasIterator(value)) return r.ToSequence<global::System.Collections.Generic.List<string>>(value, static (r, e) => r.ToSequence<string>(e, static (r, e) => r.ToByteString(e)));
-            return r.ToRecord(value, static (r, k) => r.ToByteString(k), static (r, e) => r.ToByteString(e));
-        }
-        throw r.CreateTypeError("The value cannot be converted to (sequence<sequence<ByteString>> or record<ByteString, ByteString>)");
-    }
-
-    /// <summary>(DOMString or sequence&lt;DOMString&gt;)</summary>
-    internal static object? ToUnion_58(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Adapter.IsObject(value))
-        {
-            if (r.HasIterator(value)) return r.ToSequence<string>(value, static (r, e) => r.ToDomString(e));
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(DOMString or sequence&lt;DOMString&gt;)?</summary>
-    internal static object? ToUnion_59(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return null;
-        if (r.Adapter.IsObject(value))
-        {
-            if (r.HasIterator(value)) return r.ToSequence<string>(value, static (r, e) => r.ToDomString(e));
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(DOMString or ReadableStream)</summary>
-    internal static object? ToUnion_6(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Adapter.IsObject(value))
-        {
-            if (r.IsReadableStream(value)) return global::Meziantou.Framework.WebPlatform.Scripting.JsReadableStream.Instance;
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(Element or Document)?</summary>
-    internal static object? ToUnion_60(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return null;
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Element) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Document) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        throw r.CreateTypeError("The value cannot be converted to (Element or Document)?");
-    }
-
-    /// <summary>(double or sequence&lt;double&gt;)</summary>
-    internal static object? ToUnion_61(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Adapter.IsObject(value))
-        {
-            if (r.HasIterator(value)) return r.ToSequence<double>(value, static (r, e) => r.ToDouble(e, restricted: true));
-        }
-        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: true);
-        return r.ToDouble(value, restricted: true);
-    }
-
-    /// <summary>(unrestricted double or KeyframeEffectOptions)</summary>
-    internal static object? ToUnion_62(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Animations_KeyframeEffectOptions(r, value);
-        if (r.Adapter.IsObject(value))
-        {
-            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Animations_KeyframeEffectOptions(r, value);
-        }
-        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: false);
-        return r.ToDouble(value, restricted: false);
-    }
-
-    /// <summary>(WindowProxy or MessagePort or ServiceWorker)?</summary>
-    internal static object? ToUnion_63(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return null;
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Window) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.MessagePort) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.ServiceWorker) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        throw r.CreateTypeError("The value cannot be converted to (WindowProxy or MessagePort or ServiceWorker)?");
-    }
-
-    /// <summary>(ReadableStream or (Blob or (ArrayBuffer or (Int8Array or Int16Array or Int32Array or Uint8Array or Uint16Array or Uint32Array or Uint8ClampedArray or BigInt64Array or BigUint64Array or Float16Array or Float32Array or Float64Array or DataView)) or FormData or URLSearchParams or USVString))?</summary>
-    internal static object? ToUnion_66(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return null;
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.FileApi.Blob) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.FormData) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.UrlSearchParams) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-            if (r.IsReadableStream(value)) return global::Meziantou.Framework.WebPlatform.Scripting.JsReadableStream.Instance;
-            if (r.TryToBufferSource(value, 32765u, false) is { } buffer) return buffer;
-        }
-        return r.ToUsvString(value);
-    }
-
-    /// <summary>(Path2D or DOMString)</summary>
-    internal static object? ToUnion_67(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Path2D) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(DOMString or PerformanceMeasureOptions)</summary>
-    internal static object? ToUnion_68(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_PerformanceMeasureOptions(r, value);
-        if (r.Adapter.IsObject(value))
-        {
-            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_PerformanceMeasureOptions(r, value);
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(DOMString or double)</summary>
-    internal static object? ToUnion_69(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: true);
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(DOMString or CSSKeywordValue)</summary>
-    internal static object? ToUnion_7(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssKeywordValue) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(DOMString or TrustedScriptURL)</summary>
-    internal static object? ToUnion_70(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedScriptUrl) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(SanitizerConfig or SanitizerPresets)</summary>
-    internal static object? ToUnion_71(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SanitizerConfig(r, value);
-        if (r.Adapter.IsObject(value))
-        {
-            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SanitizerConfig(r, value);
-        }
-        return r.ToEnumerationValue(value, "SanitizerPresets", WebIdlHelpers<TAdapter, TValue>.Enum_SanitizerPresets_Values);
-    }
-
-    /// <summary>(TrustedScriptURL or USVString)</summary>
-    internal static object? ToUnion_72(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedScriptUrl) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        return r.ToUsvString(value);
-    }
-
-    /// <summary>(DOMString or SharedWorkerOptions)</summary>
-    internal static object? ToUnion_73(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SharedWorkerOptions(r, value);
-        if (r.Adapter.IsObject(value))
-        {
-            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SharedWorkerOptions(r, value);
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(CSSStyleValue or USVString)</summary>
-    internal static object? ToUnion_74(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssStyleValue) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        return r.ToUsvString(value);
-    }
-
-    /// <summary>(TaskPriority or TaskSignal)</summary>
-    internal static object? ToUnion_75(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TaskSignal) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        return r.ToEnumerationValue(value, "TaskPriority", WebIdlHelpers<TAdapter, TValue>.Enum_TaskPriority_Values);
-    }
-
-    /// <summary>(VideoTrack or AudioTrack or TextTrack)?</summary>
-    internal static object? ToUnion_76(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return null;
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.VideoTrack) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.AudioTrack) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TextTrack) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        throw r.CreateTypeError("The value cannot be converted to (VideoTrack or AudioTrack or TextTrack)?");
-    }
-
-    /// <summary>((double or CSSNumericValue) or (DOMString or CSSKeywordValue))</summary>
-    internal static object? ToUnion_8(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssKeywordValue) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: true);
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(Blob or MediaSource)</summary>
-    internal static object? ToUnion_81(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.FileApi.Blob) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.MediaSource) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        throw r.CreateTypeError("The value cannot be converted to (Blob or MediaSource)");
-    }
-
-    /// <summary>(USVString or URLPatternInit)</summary>
-    internal static object? ToUnion_82(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_UrlPatternInit(r, value);
-        if (r.Adapter.IsObject(value))
-        {
-            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_UrlPatternInit(r, value);
-        }
-        return r.ToUsvString(value);
-    }
-
-    /// <summary>(sequence&lt;sequence&lt;USVString&gt;&gt; or record&lt;USVString, USVString&gt; or USVString)</summary>
-    internal static object? ToUnion_83(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Adapter.IsObject(value))
-        {
-            if (r.HasIterator(value)) return r.ToSequence<global::System.Collections.Generic.List<string>>(value, static (r, e) => r.ToSequence<string>(e, static (r, e) => r.ToUsvString(e)));
-            return r.ToRecord(value, static (r, k) => r.ToUsvString(k), static (r, e) => r.ToUsvString(e));
-        }
-        return r.ToUsvString(value);
-    }
-
-    /// <summary>(double or AutoKeyword)</summary>
-    internal static object? ToUnion_84(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: true);
-        return r.ToEnumerationValue(value, "AutoKeyword", WebIdlHelpers<TAdapter, TValue>.Enum_AutoKeyword_Values);
-    }
-
-    /// <summary>(DOMString or sequence&lt;(CSSNumericValue or CSSKeywordValue)&gt;)</summary>
-    internal static object? ToUnion_85(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Adapter.IsObject(value))
-        {
-            if (r.HasIterator(value)) return r.ToSequence<object?>(value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_86(r, e));
-        }
-        return r.ToDomString(value);
-    }
-
-    /// <summary>(CSSNumericValue or CSSKeywordValue)</summary>
-    internal static object? ToUnion_86(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue) return platformObject;
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssKeywordValue) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-        }
-        throw r.CreateTypeError("The value cannot be converted to (CSSNumericValue or CSSKeywordValue)");
-    }
-
-    /// <summary>(DOMString or Function or TrustedScript)</summary>
-    internal static object? ToUnion_87(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        if (r.Unwrap(value) is { } platformObject)
-        {
-            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedScript) return platformObject;
-        }
-        if (r.Adapter.IsObject(value))
-        {
-            if (r.Adapter.IsCallable(value)) return new global::Meziantou.Framework.WebPlatform.Scripting.JsFunctionValue<TValue>(r.ToCallbackFunction(value, "Function", false)!);
-        }
-        return r.ToDomString(value);
-    }
-
     /// <summary>(((HTMLImageElement or SVGImageElement) or HTMLVideoElement or HTMLCanvasElement or ImageBitmap or OffscreenCanvas or VideoFrame or CSSImageValue) or Blob or ImageData)</summary>
-    internal static object? ToUnion_88(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    internal static object? ToUnion_09921dfc(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         if (r.Unwrap(value) is { } platformObject)
         {
@@ -8922,8 +7947,94 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         throw r.CreateTypeError("The value cannot be converted to (((HTMLImageElement or SVGImageElement) or HTMLVideoElement or HTMLCanvasElement or ImageBitmap or OffscreenCanvas or VideoFrame or CSSImageValue) or Blob or ImageData)");
     }
 
+    /// <summary>(DOMString or (ArrayBuffer or (Int8Array or Int16Array or Int32Array or Uint8Array or Uint16Array or Uint32Array or Uint8ClampedArray or BigInt64Array or BigUint64Array or Float16Array or Float32Array or Float64Array or DataView)))</summary>
+    internal static object? ToUnion_0bd70388(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Adapter.IsObject(value))
+        {
+            if (r.TryToBufferSource(value, 32765u, false) is { } buffer) return buffer;
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(unrestricted double or KeyframeEffectOptions)</summary>
+    internal static object? ToUnion_0d1b20a9(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Animations_KeyframeEffectOptions(r, value);
+        if (r.Adapter.IsObject(value))
+        {
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Animations_KeyframeEffectOptions(r, value);
+        }
+        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: false);
+        return r.ToDouble(value, restricted: false);
+    }
+
+    /// <summary>(TrustedScriptURL or USVString)</summary>
+    internal static object? ToUnion_15e8c867(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedScriptUrl) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        return r.ToUsvString(value);
+    }
+
+    /// <summary>(double or CSSNumericValue)?</summary>
+    internal static object? ToUnion_18a3cc56(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return null;
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: true);
+        return r.ToDouble(value, restricted: true);
+    }
+
+    /// <summary>(DOMString or sequence&lt;DOMString&gt;)</summary>
+    internal static object? ToUnion_1d13fa2b(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Adapter.IsObject(value))
+        {
+            if (r.HasIterator(value)) return r.ToSequence<string>(value, static (r, e) => r.ToDomString(e));
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(unrestricted double or DOMPointInit or sequence&lt;(unrestricted double or DOMPointInit)&gt;)</summary>
+    internal static object? ToUnion_1d89567d(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DomPointInit(r, value);
+        if (r.Adapter.IsObject(value))
+        {
+            if (r.HasIterator(value)) return r.ToSequence<object?>(value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_9cf64ac0(r, e));
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DomPointInit(r, value);
+        }
+        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: false);
+        return r.ToDouble(value, restricted: false);
+    }
+
+    /// <summary>(DOMString or CSSKeywordValue)</summary>
+    internal static object? ToUnion_1da26a10(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssKeywordValue) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        return r.ToDomString(value);
+    }
+
     /// <summary>(AnimationEffect or sequence&lt;AnimationEffect&gt;)?</summary>
-    internal static object? ToUnion_89(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    internal static object? ToUnion_217842a0(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         if (r.IsNullOrUndefined(value)) return null;
         if (r.Unwrap(value) is { } platformObject)
@@ -8937,9 +8048,73 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         throw r.CreateTypeError("The value cannot be converted to (AnimationEffect or sequence<AnimationEffect>)?");
     }
 
-    /// <summary>(double or CSSNumericValue)</summary>
-    internal static object? ToUnion_9(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    /// <summary>(DOMString or ElementCreationOptions)</summary>
+    internal static object? ToUnion_2202527e(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ElementCreationOptions(r, value);
+        if (r.Adapter.IsObject(value))
+        {
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ElementCreationOptions(r, value);
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(boolean or unrestricted double or DOMString)?</summary>
+    internal static object? ToUnion_252894ae(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return null;
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        if (r.Adapter.IsBoolean(value)) return r.ToBoolean(value);
+        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: false);
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(Client or ServiceWorker or MessagePort)?</summary>
+    internal static object? ToUnion_2653ed20(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return null;
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Client) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.ServiceWorker) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.MessagePort) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        throw r.CreateTypeError("The value cannot be converted to (Client or ServiceWorker or MessagePort)?");
+    }
+
+    /// <summary>(DOMString or ReadableStream)</summary>
+    internal static object? ToUnion_269d0be7(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Adapter.IsObject(value))
+        {
+            if (r.IsReadableStream(value)) return global::Meziantou.Framework.WebPlatform.Scripting.JsReadableStream.Instance;
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(CSSNumericValue or CSSKeywordValue)</summary>
+    internal static object? ToUnion_27404656(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssKeywordValue) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        throw r.CreateTypeError("The value cannot be converted to (CSSNumericValue or CSSKeywordValue)");
+    }
+
+    /// <summary>(double or CSSNumericValue)?</summary>
+    internal static object? ToUnion_27d2640e(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return null;
         if (r.Unwrap(value) is { } platformObject)
         {
             if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue) return platformObject;
@@ -8951,8 +8126,224 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return r.ToDouble(value, restricted: true);
     }
 
+    /// <summary>(DOMString or sequence&lt;(CSSNumericValue or CSSKeywordValue)&gt;)</summary>
+    internal static object? ToUnion_32776a3a(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Adapter.IsObject(value))
+        {
+            if (r.HasIterator(value)) return r.ToSequence<object?>(value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_27404656(r, e));
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(HTMLOptionElement or HTMLOptGroupElement)</summary>
+    internal static object? ToUnion_3a8fd89a(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.HtmlOptionElement) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.HtmlOptGroupElement) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        throw r.CreateTypeError("The value cannot be converted to (HTMLOptionElement or HTMLOptGroupElement)");
+    }
+
+    /// <summary>(TrustedHTML or DOMString)</summary>
+    internal static object? ToUnion_3b9b89b1(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        return r.ToDomString(value, legacyNullToEmptyString: true);
+    }
+
+    /// <summary>(TrustedScript or DOMString)</summary>
+    internal static object? ToUnion_3c17bf08(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedScript) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        return r.ToDomString(value, legacyNullToEmptyString: true);
+    }
+
+    /// <summary>(TaskPriority or TaskSignal)</summary>
+    internal static object? ToUnion_3fc8bd7f(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TaskSignal) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        return r.ToEnumerationValue(value, "TaskPriority", WebIdlHelpers<TAdapter, TValue>.Enum_TaskPriority_Values);
+    }
+
+    /// <summary>(Node or DOMString)</summary>
+    internal static object? ToUnion_456ed33c(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Node) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(WindowProxy or MessagePort or ServiceWorker)?</summary>
+    internal static object? ToUnion_45a0a843(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return null;
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Window) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.MessagePort) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.ServiceWorker) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        throw r.CreateTypeError("The value cannot be converted to (WindowProxy or MessagePort or ServiceWorker)?");
+    }
+
+    /// <summary>(unsigned long or sequence&lt;unsigned long&gt;)</summary>
+    internal static object? ToUnion_4bfa8986(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Adapter.IsObject(value))
+        {
+            if (r.HasIterator(value)) return r.ToSequence<uint>(value, static (r, e) => r.ToUnsignedLong(e, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None));
+        }
+        if (r.Adapter.IsNumber(value)) return r.ToUnsignedLong(value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+        return r.ToUnsignedLong(value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+    }
+
+    /// <summary>(Text or Element or CSSPseudoElement or Document)</summary>
+    internal static object? ToUnion_4dee98ea(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Text) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Element) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.Om.CssPseudoElement) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Document) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        throw r.CreateTypeError("The value cannot be converted to (Text or Element or CSSPseudoElement or Document)");
+    }
+
+    /// <summary>(USVString or CSSVariableReferenceValue)</summary>
+    internal static object? ToUnion_501723c8(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssVariableReferenceValue) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        return r.ToUsvString(value);
+    }
+
+    /// <summary>(unrestricted double or CSSNumericValue or DOMString)</summary>
+    internal static object? ToUnion_5045d039(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: false);
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(MediaStream or MediaSource or Blob or MediaSourceHandle)?</summary>
+    internal static object? ToUnion_52f1c25c(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return null;
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.MediaSource) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.FileApi.Blob) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.MediaSourceHandle) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        throw r.CreateTypeError("The value cannot be converted to (MediaStream or MediaSource or Blob or MediaSourceHandle)?");
+    }
+
+    /// <summary>(EventListenerOptions or boolean)</summary>
+    internal static object? ToUnion_53134ebb(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_EventListenerOptions(r, value);
+        if (r.Adapter.IsObject(value))
+        {
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_EventListenerOptions(r, value);
+        }
+        if (r.Adapter.IsBoolean(value)) return r.ToBoolean(value);
+        return r.ToBoolean(value);
+    }
+
+    /// <summary>(TogglePopoverOptions or boolean)</summary>
+    internal static object? ToUnion_5a5354c4(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_TogglePopoverOptions(r, value);
+        if (r.Adapter.IsObject(value))
+        {
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_TogglePopoverOptions(r, value);
+        }
+        if (r.Adapter.IsBoolean(value)) return r.ToBoolean(value);
+        return r.ToBoolean(value);
+    }
+
+    /// <summary>(Sanitizer or SanitizerConfig or SanitizerPresets)</summary>
+    internal static object? ToUnion_5bab7ee7(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SanitizerConfig(r, value);
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Sanitizer) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SanitizerConfig(r, value);
+        }
+        return r.ToEnumerationValue(value, "SanitizerPresets", WebIdlHelpers<TAdapter, TValue>.Enum_SanitizerPresets_Values);
+    }
+
+    /// <summary>(SetHTMLUnsafeOptions or TrustedHTMLParserOptions)</summary>
+    internal static object? ToUnion_6113ec85(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SetHtmlUnsafeOptions(r, value);
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedHtmlParserOptions) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SetHtmlUnsafeOptions(r, value);
+        }
+        throw r.CreateTypeError("The value cannot be converted to (SetHTMLUnsafeOptions or TrustedHTMLParserOptions)");
+    }
+
     /// <summary>(Document or (Blob or (ArrayBuffer or (Int8Array or Int16Array or Int32Array or Uint8Array or Uint16Array or Uint32Array or Uint8ClampedArray or BigInt64Array or BigUint64Array or Float16Array or Float32Array or Float64Array or DataView)) or FormData or URLSearchParams or USVString))?</summary>
-    internal static object? ToUnion_90(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    internal static object? ToUnion_6385e220(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         if (r.IsNullOrUndefined(value)) return null;
         if (r.Unwrap(value) is { } platformObject)
@@ -8967,6 +8358,615 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             if (r.TryToBufferSource(value, 32765u, false) is { } buffer) return buffer;
         }
         return r.ToUsvString(value);
+    }
+
+    /// <summary>(File or USVString or FormData)?</summary>
+    internal static object? ToUnion_6b8aa1b2(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return null;
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.FileApi.File) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.FormData) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        return r.ToUsvString(value);
+    }
+
+    /// <summary>(ParseHTMLUnsafeOptions or TrustedHTMLParserOptions)</summary>
+    internal static object? ToUnion_70f6bf75(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ParseHtmlUnsafeOptions(r, value);
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedHtmlParserOptions) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ParseHtmlUnsafeOptions(r, value);
+        }
+        throw r.CreateTypeError("The value cannot be converted to (ParseHTMLUnsafeOptions or TrustedHTMLParserOptions)");
+    }
+
+    /// <summary>(CSSNumericValue or (DOMString or CSSKeywordValue))</summary>
+    internal static object? ToUnion_72d087f4(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssKeywordValue) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(TrustedHTML or DOMString)</summary>
+    internal static object? ToUnion_74895ea7(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(DOMString or double)</summary>
+    internal static object? ToUnion_74b562ff(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: true);
+        return r.ToDomString(value);
+    }
+
+    /// <summary>((TrustedHTML or TrustedScript or TrustedScriptURL) or DOMString)</summary>
+    internal static object? ToUnion_76bad453(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedScript) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedScriptUrl) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(ViewTransitionUpdateCallback or StartViewTransitionOptions)</summary>
+    internal static object? ToUnion_7834526b(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_StartViewTransitionOptions(r, value);
+        if (r.Adapter.IsObject(value))
+        {
+            if (r.Adapter.IsCallable(value)) return new global::Meziantou.Framework.WebPlatform.Scripting.JsFunctionValue<TValue>(r.ToCallbackFunction(value, "ViewTransitionUpdateCallback", false)!);
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_StartViewTransitionOptions(r, value);
+        }
+        throw r.CreateTypeError("The value cannot be converted to (ViewTransitionUpdateCallback or StartViewTransitionOptions)");
+    }
+
+    /// <summary>(ReadableStream or (Blob or (ArrayBuffer or (Int8Array or Int16Array or Int32Array or Uint8Array or Uint16Array or Uint32Array or Uint8ClampedArray or BigInt64Array or BigUint64Array or Float16Array or Float32Array or Float64Array or DataView)) or FormData or URLSearchParams or USVString))?</summary>
+    internal static object? ToUnion_7b4e93c7(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return null;
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.FileApi.Blob) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.FormData) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.UrlSearchParams) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+            if (r.IsReadableStream(value)) return global::Meziantou.Framework.WebPlatform.Scripting.JsReadableStream.Instance;
+            if (r.TryToBufferSource(value, 32765u, false) is { } buffer) return buffer;
+        }
+        return r.ToUsvString(value);
+    }
+
+    /// <summary>(sequence&lt;sequence&lt;ByteString&gt;&gt; or record&lt;ByteString, ByteString&gt;)</summary>
+    internal static object? ToUnion_8520c452(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Adapter.IsObject(value))
+        {
+            if (r.HasIterator(value)) return r.ToSequence<global::System.Collections.Generic.List<string>>(value, static (r, e) => r.ToSequence<string>(e, static (r, e) => r.ToByteString(e)));
+            return r.ToRecord(value, static (r, k) => r.ToByteString(k), static (r, e) => r.ToByteString(e));
+        }
+        throw r.CreateTypeError("The value cannot be converted to (sequence<sequence<ByteString>> or record<ByteString, ByteString>)");
+    }
+
+    /// <summary>(USVString or URLPatternInit)</summary>
+    internal static object? ToUnion_8931bb7e(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_UrlPatternInit(r, value);
+        if (r.Adapter.IsObject(value))
+        {
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_UrlPatternInit(r, value);
+        }
+        return r.ToUsvString(value);
+    }
+
+    /// <summary>(MediaList or DOMString)</summary>
+    internal static object? ToUnion_932cb064(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.Om.MediaList) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(unrestricted double or DOMPointInit)</summary>
+    internal static object? ToUnion_9cf64ac0(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DomPointInit(r, value);
+        if (r.Adapter.IsObject(value))
+        {
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DomPointInit(r, value);
+        }
+        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: false);
+        return r.ToDouble(value, restricted: false);
+    }
+
+    /// <summary>(DOMString or TrustedScriptURL)</summary>
+    internal static object? ToUnion_a27fbd78(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedScriptUrl) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(sequence&lt;sequence&lt;USVString&gt;&gt; or record&lt;USVString, USVString&gt; or USVString)</summary>
+    internal static object? ToUnion_a57bbb4a(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Adapter.IsObject(value))
+        {
+            if (r.HasIterator(value)) return r.ToSequence<global::System.Collections.Generic.List<string>>(value, static (r, e) => r.ToSequence<string>(e, static (r, e) => r.ToUsvString(e)));
+            return r.ToRecord(value, static (r, k) => r.ToUsvString(k), static (r, e) => r.ToUsvString(e));
+        }
+        return r.ToUsvString(value);
+    }
+
+    /// <summary>(DOMString or SanitizerElementNamespace)</summary>
+    internal static object? ToUnion_a985ecd1(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SanitizerElementNamespace(r, value);
+        if (r.Adapter.IsObject(value))
+        {
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SanitizerElementNamespace(r, value);
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(unrestricted double or KeyframeAnimationOptions)</summary>
+    internal static object? ToUnion_ab78efec(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_KeyframeAnimationOptions(r, value);
+        if (r.Adapter.IsObject(value))
+        {
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_KeyframeAnimationOptions(r, value);
+        }
+        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: false);
+        return r.ToDouble(value, restricted: false);
+    }
+
+    /// <summary>(AddEventListenerOptions or boolean)</summary>
+    internal static object? ToUnion_b07c9407(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_AddEventListenerOptions(r, value);
+        if (r.Adapter.IsObject(value))
+        {
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_AddEventListenerOptions(r, value);
+        }
+        if (r.Adapter.IsBoolean(value)) return r.ToBoolean(value);
+        return r.ToBoolean(value);
+    }
+
+    /// <summary>((HTMLImageElement or SVGImageElement) or HTMLVideoElement or HTMLCanvasElement or ImageBitmap or OffscreenCanvas or VideoFrame or CSSImageValue)</summary>
+    internal static object? ToUnion_b083e7a4(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.HtmlImageElement) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.SvgImageElement) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.HtmlVideoElement) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.ImageBitmap) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.OffscreenCanvas) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssImageValue) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        throw r.CreateTypeError("The value cannot be converted to ((HTMLImageElement or SVGImageElement) or HTMLVideoElement or HTMLCanvasElement or ImageBitmap or OffscreenCanvas or VideoFrame or CSSImageValue)");
+    }
+
+    /// <summary>(TimelineRangeOffset or CSSNumericValue or CSSKeywordValue or DOMString)</summary>
+    internal static object? ToUnion_b88c3fd3(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Animations_TimelineRangeOffset(r, value);
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssKeywordValue) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Animations_TimelineRangeOffset(r, value);
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(Element or Text)</summary>
+    internal static object? ToUnion_bc0bde80(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Element) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Text) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        throw r.CreateTypeError("The value cannot be converted to (Element or Text)");
+    }
+
+    /// <summary>(boolean or ImportNodeOptions)</summary>
+    internal static object? ToUnion_bdd97297(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ImportNodeOptions(r, value);
+        if (r.Adapter.IsObject(value))
+        {
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ImportNodeOptions(r, value);
+        }
+        if (r.Adapter.IsBoolean(value)) return r.ToBoolean(value);
+        return r.ToBoolean(value);
+    }
+
+    /// <summary>((ArrayBuffer or (Int8Array or Int16Array or Int32Array or Uint8Array or Uint16Array or Uint32Array or Uint8ClampedArray or BigInt64Array or BigUint64Array or Float16Array or Float32Array or Float64Array or DataView)) or Blob or USVString)</summary>
+    internal static object? ToUnion_beb33dfa(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.FileApi.Blob) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+            if (r.TryToBufferSource(value, 32765u, false) is { } buffer) return buffer;
+        }
+        return r.ToUsvString(value);
+    }
+
+    /// <summary>(DOMString or Function or TrustedScript)</summary>
+    internal static object? ToUnion_c10518b5(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedScript) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+            if (r.Adapter.IsCallable(value)) return new global::Meziantou.Framework.WebPlatform.Scripting.JsFunctionValue<TValue>(r.ToCallbackFunction(value, "Function", false)!);
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(DOMString or CSSStyleValue or CSSParserValue)</summary>
+    internal static object? ToUnion_c19d9aba(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssStyleValue) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.ParserApi.CssParserValue) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(TrustedHTML or DOMString)</summary>
+    internal static object? ToUnion_c4e99e98(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(Element or Document)?</summary>
+    internal static object? ToUnion_c4f38216(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return null;
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Element) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Document) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        throw r.CreateTypeError("The value cannot be converted to (Element or Document)?");
+    }
+
+    /// <summary>(Blob or MediaSource)</summary>
+    internal static object? ToUnion_c5a702b9(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.FileApi.Blob) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.MediaSource) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        throw r.CreateTypeError("The value cannot be converted to (Blob or MediaSource)");
+    }
+
+    /// <summary>(DOMString or CanvasGradient or CanvasPattern)</summary>
+    internal static object? ToUnion_c68972d8(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.CanvasGradient) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.CanvasPattern) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(double or sequence&lt;double&gt;)</summary>
+    internal static object? ToUnion_c80935b2(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Adapter.IsObject(value))
+        {
+            if (r.HasIterator(value)) return r.ToSequence<double>(value, static (r, e) => r.ToDouble(e, restricted: true));
+        }
+        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: true);
+        return r.ToDouble(value, restricted: true);
+    }
+
+    /// <summary>(VideoTrack or AudioTrack or TextTrack)?</summary>
+    internal static object? ToUnion_ca95854c(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return null;
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.VideoTrack) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.AudioTrack) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TextTrack) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        throw r.CreateTypeError("The value cannot be converted to (VideoTrack or AudioTrack or TextTrack)?");
+    }
+
+    /// <summary>(TrustedScriptURL or USVString)</summary>
+    internal static object? ToUnion_ce1bca79(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedScriptUrl) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        return r.ToUsvString(value);
+    }
+
+    /// <summary>(TrustedScript or DOMString)?</summary>
+    internal static object? ToUnion_d2e387ad(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return null;
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedScript) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(double or CSSNumericValue)</summary>
+    internal static object? ToUnion_d6b8dadd(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: true);
+        return r.ToDouble(value, restricted: true);
+    }
+
+    /// <summary>(Path2D or DOMString)</summary>
+    internal static object? ToUnion_d79b3836(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Path2D) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(boolean or ScrollIntoViewOptions)</summary>
+    internal static object? ToUnion_d8d0e767(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ScrollIntoViewOptions(r, value);
+        if (r.Adapter.IsObject(value))
+        {
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ScrollIntoViewOptions(r, value);
+        }
+        if (r.Adapter.IsBoolean(value)) return r.ToBoolean(value);
+        return r.ToBoolean(value);
+    }
+
+    /// <summary>((double or CSSNumericValue) or (DOMString or CSSKeywordValue))</summary>
+    internal static object? ToUnion_da028f64(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericValue) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssKeywordValue) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: true);
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(DOMString or Blob)</summary>
+    internal static object? ToUnion_decd47ef(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.FileApi.Blob) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(TrustedScript or DOMString)</summary>
+    internal static object? ToUnion_e41c1648(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.TrustedScript) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(DOMString or PerformanceMeasureOptions)</summary>
+    internal static object? ToUnion_eddcf589(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_PerformanceMeasureOptions(r, value);
+        if (r.Adapter.IsObject(value))
+        {
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_PerformanceMeasureOptions(r, value);
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(DOMString or SanitizerElementNamespaceWithAttributes)</summary>
+    internal static object? ToUnion_f09d6e44(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SanitizerElementNamespaceWithAttributes(r, value);
+        if (r.Adapter.IsObject(value))
+        {
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SanitizerElementNamespaceWithAttributes(r, value);
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(DOMString or SharedWorkerOptions)</summary>
+    internal static object? ToUnion_f2a21dfd(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SharedWorkerOptions(r, value);
+        if (r.Adapter.IsObject(value))
+        {
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SharedWorkerOptions(r, value);
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(DOMString or SanitizerAttributeNamespace)</summary>
+    internal static object? ToUnion_f2bac3cd(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SanitizerAttributeNamespace(r, value);
+        if (r.Adapter.IsObject(value))
+        {
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SanitizerAttributeNamespace(r, value);
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(CSSStyleValue or USVString)</summary>
+    internal static object? ToUnion_f3fb4a25(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssStyleValue) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        return r.ToUsvString(value);
+    }
+
+    /// <summary>(unrestricted double or DOMString)</summary>
+    internal static object? ToUnion_f62144ee(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: false);
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(SanitizerConfig or SanitizerPresets)</summary>
+    internal static object? ToUnion_fa5e0492(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SanitizerConfig(r, value);
+        if (r.Adapter.IsObject(value))
+        {
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SanitizerConfig(r, value);
+        }
+        return r.ToEnumerationValue(value, "SanitizerPresets", WebIdlHelpers<TAdapter, TValue>.Enum_SanitizerPresets_Values);
+    }
+
+    /// <summary>(DOMString or sequence&lt;unrestricted double&gt;)</summary>
+    internal static object? ToUnion_fc46e747(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Adapter.IsObject(value))
+        {
+            if (r.HasIterator(value)) return r.ToSequence<double>(value, static (r, e) => r.ToDouble(e, restricted: false));
+        }
+        return r.ToDomString(value);
+    }
+
+    /// <summary>(double or AutoKeyword)</summary>
+    internal static object? ToUnion_fda10a8a(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: true);
+        return r.ToEnumerationValue(value, "AutoKeyword", WebIdlHelpers<TAdapter, TValue>.Enum_AutoKeyword_Values);
     }
 
     internal static bool TryToEnum_Dom_AutoKeyword(string value, out global::Meziantou.Framework.WebPlatform.Dom.AutoKeyword result)

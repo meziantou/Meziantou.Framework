@@ -1,10 +1,18 @@
 using Meziantou.Extensions.Logging.FileLogger.Samples;
 
-// The examples of the readme (src/Meziantou.Extensions.Logging.FileLogger/readme.md) configure the logging of a host.
-// They are compiled in CI to keep the documentation in sync with the API. Run one with:
-// dotnet run --project samples/Meziantou.Extensions.Logging.FileLogger.Samples -- <example>
+// The examples of the readme (src/Meziantou.Extensions.Logging.FileLogger/readme.md) and of the XML documentation are
+// compiled in CI to keep them in sync with the API. They write the logs to the "logs" folder of the current directory.
+// Run one with: dotnet run --project samples/Meziantou.Extensions.Logging.FileLogger.Samples -- <example>
 switch (args)
 {
+    case ["host", .. var hostArgs]:
+        await Examples.AddFileToHost(hostArgs);
+        return 0;
+
+    case ["provider"]:
+        Examples.CreateProvider();
+        return 0;
+
     case ["options"]:
         ReadmeExamples.ConfigureWithOptions(args);
         return 0;
@@ -18,6 +26,6 @@ switch (args)
         return 0;
 
     default:
-        Console.Error.WriteLine("Usage: <options|configuration|json>");
+        Console.Error.WriteLine("Usage: host [args...] | provider | options | configuration | json");
         return 1;
 }

@@ -52,6 +52,27 @@ public sealed class RobotsFileTests
         #endregion
     }
 
+    [Fact]
+    public void RobotsFile_Example()
+    {
+        #region RobotsFile_Example
+        var robots = RobotsFile.Parse("""
+            User-agent: *
+            Disallow: /private/
+            Allow: /public/
+
+            Sitemap: https://example.com/sitemap.xml
+            """);
+
+        Assert.True(robots.IsAllowed("Googlebot", "/public/page"));
+        Assert.False(robots.IsAllowed("Googlebot", "/private/page"));
+        Assert.Equal(["https://example.com/sitemap.xml"], robots.Sitemaps);
+
+        // Invalid lines are reported instead of throwing
+        Assert.Empty(robots.ParseErrors);
+        #endregion
+    }
+
     // -------------------------------------------------------------------------
     // Parsing
     // -------------------------------------------------------------------------
@@ -170,6 +191,34 @@ public sealed class RobotsFileTests
         var group = Assert.Single(robots.Groups);
         Assert.Equal("*", group.UserAgents[0]);
         Assert.Equal("/private/", group.Rules[0].Value);
+    }
+
+    [Fact]
+    public void Parse_CommentOnlyLines_DoNotEndTheGroup()
+    {
+        var robots = RobotsFile.Parse("""
+            User-agent: *
+            # Directories
+            Disallow: /core/
+              # Files
+            Disallow: /README.md
+            """);
+
+        var group = Assert.Single(robots.Groups);
+        Assert.Equal(["/core/", "/README.md"], group.Rules.Select(rule => rule.Value));
+        Assert.Empty(robots.ParseErrors);
+        Assert.False(robots.IsAllowed("Bot", "/core/install.php"));
+        Assert.False(robots.IsAllowed("Bot", "/README.md"));
+    }
+
+    [Fact]
+    public void Parse_CommentOnlyLineBetweenUserAgents_DoesNotSplitTheGroup()
+    {
+        var robots = RobotsFile.Parse("User-agent: A\n# B is blocked too\nUser-agent: B\nDisallow: /\n");
+
+        var group = Assert.Single(robots.Groups);
+        Assert.Equal(["A", "B"], group.UserAgents);
+        Assert.False(robots.IsAllowed("A", "/x"));
     }
 
     [Fact]

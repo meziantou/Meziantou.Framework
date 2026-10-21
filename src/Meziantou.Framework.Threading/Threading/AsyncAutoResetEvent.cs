@@ -4,16 +4,20 @@ namespace Meziantou.Framework.Threading;
 
 /// <summary>Represents an asynchronous auto-reset event that signals a single waiting task when set.</summary>
 /// <example>
-/// <code><![CDATA[
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Threading.Tests/AsyncAutoResetEventTests.cs" ref:region="AsyncAutoResetEvent_Usage" ref:dedent="true">
 /// var autoResetEvent = new AsyncAutoResetEvent(initialState: false);
-/// 
+///
 /// // In one task
-/// await autoResetEvent.WaitAsync();
-/// Console.WriteLine("Event was set!");
-/// 
+/// var waitingTask = Task.Run(async () =&gt;
+/// {
+///     await autoResetEvent.WaitAsync();
+///     return "Event was set!";
+/// });
+///
 /// // In another task
 /// autoResetEvent.Set();
-/// ]]></code>
+/// Assert.Equal("Event was set!", await waitingTask);
+/// </code>
 /// </example>
 [DebuggerDisplay("Signaled: {_signaled}")]
 public sealed class AsyncAutoResetEvent

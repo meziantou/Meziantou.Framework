@@ -6,13 +6,14 @@ namespace Meziantou.Framework;
 /// <summary>
 /// Provides options for customizing slug generation.
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Slug.Tests/SlugTests.cs" ref:region="SlugOptions_Example" ref:dedent="true">
 /// var options = new SlugOptions
 /// {
 ///     MaximumLength = 20,
 ///     CasingTransformation = CasingTransformation.ToLowerCase,
 /// };
-/// var slug = Slug.Create("This is a text", options); // this-is-a-text
+/// var slug = Slug.Create("This is a text", options);
+/// Assert.Equal("this-is-a-text", slug);
 /// </code>
 /// </example>
 /// </summary>

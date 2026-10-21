@@ -16,6 +16,22 @@ public class CsvRowTests
     }
 
     [Fact]
+    public async Task CsvRow_DocumentationExample()
+    {
+        #region CsvRow_Indexers
+        using var reader = new StringReader("Name,Age\nJohn,30");
+        var csvReader = new CsvReader(reader) { HasHeaderRow = true };
+        var row = await csvReader.ReadRowAsync();
+
+        // Access by column name
+        Assert.Equal("John", row!["Name"]);
+
+        // Access by column index
+        Assert.Equal("30", row[1]);
+        #endregion
+    }
+
+    [Fact]
     public async Task RaggedRow_ValueOfMissingColumnIsNull()
     {
         var row = await ReadSingleRowWithHeaderAsync("A,B,C\n1,2");

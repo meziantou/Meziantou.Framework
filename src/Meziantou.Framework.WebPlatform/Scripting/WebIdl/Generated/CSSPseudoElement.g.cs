@@ -40,7 +40,7 @@ internal static class Binding_CSSPseudoElement<TAdapter, TValue> where TAdapter 
         var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.CssPseudoElement>(t, Binding);
         if (a.Length < 2) throw r.NotEnoughArguments("convertQuadFromNode", 2, a.Length);
         var a0 = WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DomQuadInit(r, a[0]);
-        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_13(r, a[1]);
+        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_4dee98ea(r, a[1]);
         var a2 = r.IsMissing(a, 2) ? (global::Meziantou.Framework.WebPlatform.Dom.ConvertCoordinateOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ConvertCoordinateOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ConvertCoordinateOptions(r, a[2]);
         var result = o.ConvertQuadFromNode(a0, WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_GeometryNode(r, a1), a2); return r.Wrap(result);
     }
@@ -49,7 +49,7 @@ internal static class Binding_CSSPseudoElement<TAdapter, TValue> where TAdapter 
         var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.CssPseudoElement>(t, Binding);
         if (a.Length < 2) throw r.NotEnoughArguments("convertRectFromNode", 2, a.Length);
         var a0 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.DomRectReadOnly>(a[0], "DOMRectReadOnly");
-        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_13(r, a[1]);
+        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_4dee98ea(r, a[1]);
         var a2 = r.IsMissing(a, 2) ? (global::Meziantou.Framework.WebPlatform.Dom.ConvertCoordinateOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ConvertCoordinateOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ConvertCoordinateOptions(r, a[2]);
         var result = o.ConvertRectFromNode(a0, WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_GeometryNode(r, a1), a2); return r.Wrap(result);
     }
@@ -58,7 +58,7 @@ internal static class Binding_CSSPseudoElement<TAdapter, TValue> where TAdapter 
         var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.CssPseudoElement>(t, Binding);
         if (a.Length < 2) throw r.NotEnoughArguments("convertPointFromNode", 2, a.Length);
         var a0 = WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DomPointInit(r, a[0]);
-        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_13(r, a[1]);
+        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_4dee98ea(r, a[1]);
         var a2 = r.IsMissing(a, 2) ? (global::Meziantou.Framework.WebPlatform.Dom.ConvertCoordinateOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ConvertCoordinateOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ConvertCoordinateOptions(r, a[2]);
         var result = o.ConvertPointFromNode(a0, WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_GeometryNode(r, a1), a2); return r.Wrap(result);
     }

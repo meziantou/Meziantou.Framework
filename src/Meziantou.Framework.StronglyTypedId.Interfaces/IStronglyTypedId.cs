@@ -3,14 +3,17 @@ namespace Meziantou.Framework;
 /// <summary>Provides non-generic access to a strongly-typed ID's underlying value as a string and its type information.</summary>
 /// <example>
 /// Working with strongly-typed IDs polymorphically:
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs" ref:region="StronglyTypedIdAttribute_Declaration" ref:dedent="true">
 /// [StronglyTypedId(typeof(int))]
-/// public partial struct UserId { }
-///
+/// public partial struct UserId
+/// {
+/// }
+/// </code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs" ref:region="IStronglyTypedId_Usage" ref:dedent="true">
 /// var userId = UserId.FromInt32(42);
 /// IStronglyTypedId stronglyTypedId = userId;
-/// Console.WriteLine(stronglyTypedId.ValueAsString); // "42"
-/// Console.WriteLine(stronglyTypedId.UnderlyingType); // System.Int32
+/// Assert.Equal("42", stronglyTypedId.ValueAsString);
+/// Assert.Equal(typeof(int), stronglyTypedId.UnderlyingType);
 /// </code>
 /// </example>
 public interface IStronglyTypedId
@@ -26,13 +29,18 @@ public interface IStronglyTypedId
 /// <typeparam name="T">The type of the underlying value.</typeparam>
 /// <example>
 /// Accessing strongly-typed ID values with compile-time type safety:
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs" ref:region="IStronglyTypedIdOfT_Declaration" ref:dedent="true">
 /// [StronglyTypedId(typeof(Guid))]
-/// public partial struct OrderId { }
-///
-/// var orderId = OrderId.FromGuid(Guid.NewGuid());
+/// public partial struct OrderId
+/// {
+/// }
+/// </code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs" ref:region="IStronglyTypedIdOfT_Usage" ref:dedent="true">
+/// var guid = Guid.NewGuid();
+/// var orderId = OrderId.FromGuid(guid);
 /// IStronglyTypedId&lt;Guid&gt; typedId = orderId;
 /// Guid value = typedId.Value; // Direct access to the typed value
+/// Assert.Equal(guid, value);
 /// </code>
 /// </example>
 public interface IStronglyTypedId<T> : IStronglyTypedId

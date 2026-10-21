@@ -2,11 +2,13 @@ namespace Meziantou.Framework;
 
 /// <summary>A utility class to compute unique short names for a given collection of names.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Tests/ShortNameUtilitiesTests.cs" ref:region="ShortName_Create" ref:dedent="true">
 /// // Create short names for a collection
 /// var names = new[] { "CustomerName", "CustomerNumber", "CustomerAddress" };
-/// var shortNames = ShortName.Create(names, maxLength: 5);
-/// // Result: { "CustomerName" = "Custo", "CustomerNumber" = "Custo0", "CustomerAddress" = "Custo1" }
+/// var shortNames = ShortName.Create(names, maxLength: 5, StringComparer.OrdinalIgnoreCase);
+/// Assert.Equal("Custo", shortNames["CustomerName"]);
+/// Assert.Equal("Custm", shortNames["CustomerNumber"]);
+/// Assert.Equal("Custe", shortNames["CustomerAddress"]);
 /// </code>
 /// </example>
 public static class ShortName

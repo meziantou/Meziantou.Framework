@@ -2,10 +2,17 @@ namespace Meziantou.Framework.CodeDom;
 
 /// <summary>Represents a binary operation expression (addition, comparison, logical operations, etc.).</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs" ref:region="BinaryExpression_Example" ref:dedent="true">
 /// var addition = new BinaryExpression(BinaryOperator.Add, 10, 20);
 /// var comparison = new BinaryExpression(BinaryOperator.GreaterThan, new VariableReferenceExpression("x"), 0);
-/// var logicalAnd = new BinaryExpression(BinaryOperator.And, condition1, condition2);
+/// var logicalAnd = new BinaryExpression(
+///     BinaryOperator.And,
+///     new BinaryExpression(BinaryOperator.GreaterThan, new VariableReferenceExpression("x"), 0),
+///     new BinaryExpression(BinaryOperator.LessThan, new VariableReferenceExpression("x"), 100));
+///
+/// Assert.Equal("(10 + 20)", addition.ToCsharpString());
+/// Assert.Equal("(x &gt; 0)", comparison.ToCsharpString());
+/// Assert.Equal("((x &gt; 0) &amp;&amp; (x &lt; 100))", logicalAnd.ToCsharpString());
 /// </code>
 /// </example>
 public class BinaryExpression : Expression

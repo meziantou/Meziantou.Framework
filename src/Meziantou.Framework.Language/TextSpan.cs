@@ -4,9 +4,11 @@ namespace Meziantou.Framework.Language;
 
 /// <summary>Represents a contiguous character range in text.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Tests/TextSpanTests.cs" ref:region="TextSpan_Create" ref:dedent="true">
 /// var span = new TextSpan(start: 5, length: 3);
 /// var sameSpan = TextSpan.FromBounds(5, 8);
+/// Assert.Equal(span, sameSpan);
+/// Assert.Equal(8, span.End);
 /// </code>
 /// </example>
 [StructLayout(LayoutKind.Auto)]

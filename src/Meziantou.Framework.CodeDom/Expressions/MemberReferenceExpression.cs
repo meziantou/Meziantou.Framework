@@ -2,9 +2,12 @@ namespace Meziantou.Framework.CodeDom;
 
 /// <summary>Represents a reference to a member (field, property, method) of an object or type.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs" ref:region="MemberReferenceExpression_Example" ref:dedent="true">
 /// var memberRef = new MemberReferenceExpression(new ThisExpression(), "Name");
 /// var staticMemberRef = new MemberReferenceExpression(typeof(Console), "WriteLine");
+///
+/// Assert.Equal("this.Name", memberRef.ToCsharpString());
+/// Assert.Equal("global::System.Console.WriteLine", staticMemberRef.ToCsharpString());
 /// </code>
 /// </example>
 public class MemberReferenceExpression : Expression

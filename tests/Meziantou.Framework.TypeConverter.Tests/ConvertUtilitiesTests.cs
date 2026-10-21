@@ -43,6 +43,25 @@ public sealed class ConvertUtilitiesTests
         }
     }
 
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void Documentation_Example()
+    {
+        #region ConvertUtilities_Example
+        // Using TryChangeType
+        Assert.True(ConvertUtilities.TryChangeType("42", CultureInfo.InvariantCulture, out int value));
+        Assert.Equal(42, value);
+
+        // Using ChangeType with default value
+        var result = ConvertUtilities.ChangeType<int>("invalid", defaultValue: 0, CultureInfo.InvariantCulture);
+        Assert.Equal(0, result);
+
+        // Convert with culture-specific formatting
+        var cultureInfo = CultureInfo.GetCultureInfo("fr-FR");
+        var number = ConvertUtilities.ChangeType<decimal>("1234,56", defaultValue: 0m, provider: cultureInfo);
+        Assert.Equal(1234.56m, number);
+        #endregion
+    }
+
     [Fact]
     public void TryChangeType_ConverterFailsWithMismatchedValue_ReturnsDefault()
     {

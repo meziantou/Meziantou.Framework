@@ -2,6 +2,16 @@ namespace Meziantou.Framework.Tests;
 
 public class RangeTests
 {
+    [Fact]
+    public void Range_IsInRangeInclusive_Example()
+    {
+        #region Range_IsInRangeInclusive
+        var range = new Range<int>(1, 10);
+        Assert.True(range.IsInRangeInclusive(5));
+        Assert.False(range.IsInRangeInclusive(15));
+        #endregion
+    }
+
     [Theory]
     [InlineData(0, 10, 5, true)]
     [InlineData(0, 10, 0, true)]

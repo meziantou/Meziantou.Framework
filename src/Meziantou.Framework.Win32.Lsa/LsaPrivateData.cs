@@ -23,12 +23,13 @@ namespace Meziantou.Framework.Win32;
 /// </remarks>
 /// <example>
 /// Store and retrieve a secret value:
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Win32.Lsa.Tests/LsaPrivateDataTests.cs" ref:region="LsaPrivateData_SetGetRemove" ref:dedent="true">
 /// // Store a secret value (requires administrator privileges)
 /// LsaPrivateData.SetValue("L$MySecretKey", "MySecretValue");
 ///
 /// // Retrieve the value
 /// string? value = LsaPrivateData.GetValue("L$MySecretKey");
+/// Assert.Equal("MySecretValue", value);
 ///
 /// // Remove the value (requires administrator privileges)
 /// LsaPrivateData.RemoveValue("L$MySecretKey");

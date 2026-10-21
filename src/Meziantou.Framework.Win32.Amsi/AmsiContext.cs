@@ -5,12 +5,11 @@ namespace Meziantou.Framework.Win32;
 
 /// <summary>Provides access to the Windows Antimalware Scan Interface (AMSI) for scanning content for malware.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Win32.AmsiTests/AmsiContextTests.cs" ref:region="AmsiContext_IsMalware" ref:dedent="true">
 /// using var context = AmsiContext.Create("MyApplication");
-/// if (context.IsMalware("X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*", "test.txt"))
-/// {
-///     Console.WriteLine("Malware detected!");
-/// }
+///
+/// // The EICAR test file is detected as malware by every antivirus
+/// Assert.True(context.IsMalware(@"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*", "test.txt"));
 /// </code>
 /// </example>
 [SupportedOSPlatform("windows10.0.10240")]

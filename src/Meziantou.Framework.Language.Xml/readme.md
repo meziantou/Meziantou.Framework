@@ -215,7 +215,7 @@ The parser keeps the shape the author most likely meant, so one mistake produces
 `XmlSyntaxWalker` visits a node and everything below it; `XmlSyntaxVisitor` dispatches on kind without recursing;
 `XmlSyntaxRewriter` builds a new tree from an old one.
 
-<!-- ref:../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs;region=XmlSyntaxTree_Walker;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs;region=XmlSyntaxVisitor_ElementCounter;format=md-fenced-code-block;dedent=true -->
 ```csharp
 private sealed class ElementCounter : XmlSyntaxWalker
 {
@@ -242,8 +242,8 @@ Assert.Equal(3, counter.Count);
 
 ## Formatting
 
-`Formatter.Format` lays a document out again, with `XmlFormattingOptions` controlling indentation and line breaks.
-It is the one thing here that does reformat, and it is opt-in.
+`Formatter.Format` lays a document out again, with `XmlFormattingOptions` controlling indentation, line breaks, attribute wrapping, the spacing inside tags, and whether elements written on one line stay that way.
+It is the one thing here that does reformat, and it is opt-in. It never changes text: an element that contains text keeps its content as written, and so does an element under `xml:space="preserve"`.
 
 ## Editing by text
 

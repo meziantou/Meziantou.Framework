@@ -1,13 +1,14 @@
 <#
 .SYNOPSIS
-Opens an issue for each target of a fuzz project that failed in the weekly fuzzing campaign (.github/workflows/fuzz.yml).
+Opens an issue for each target of a fuzz project that failed in its weekly fuzzing campaign (.github/workflows/fuzz-*.yml).
 
 .DESCRIPTION
 Reads the result.json and failure.md files that eng/run-fuzz.ps1 (SharpFuzz projects) and eng/run-imaging-fuzz.ps1
-(Imaging fuzz tests) write for each target of a fuzz project. Each failed target gets an issue titled
-"Fuzzing: <target> failed", with the failure report, the failing input and the commands that reproduce it. When an open
-issue with the same title and all the labels exists, the details are added to it as a comment instead. A failed campaign
-without any result for the project (a build error, a job timeout) gets a single issue pointing to the run.
+(Imaging fuzz tests) write for each target of a fuzz project, on each architecture. Each failed target gets an issue
+titled "Fuzzing: <target> failed", with the failure report, the failing input and the commands that reproduce it (one
+section per architecture when it failed on several). When an open issue with the same title and all the labels exists,
+the details are added to it as a comment instead. A failed campaign without any result for the project (a build error, a
+job timeout) gets a single issue pointing to the run.
 
 Reads GITHUB_SHA, RUN_URL and FUZZ_JOB_RESULT from the environment.
 #>
@@ -16,7 +17,7 @@ param(
     [Parameter(Mandatory)]
     [string]$Project,
 
-    # The results of the project (the fuzz-results-<project> artifacts)
+    # The results of the project (the fuzz-results-<project>-* artifacts)
     [Parameter(Mandatory)]
     [string]$ResultsDirectory,
 
@@ -47,6 +48,7 @@ function Limit-Length([string]$Text) {
 # 'a,b' arrives as a single value through pwsh -File
 $Labels = @($Labels | ForEach-Object { $_ -split ',' } | ForEach-Object Trim | Where-Object { $_ })
 $issues = [System.Collections.Generic.List[object]]::new()
+$failures = [System.Collections.Generic.List[object]]::new()
 $results = @(if (Test-Path -LiteralPath $ResultsDirectory) { Get-ChildItem -Path $ResultsDirectory -Recurse -Filter 'result.json' | Sort-Object FullName })
 foreach ($file in $results) {
     $result = Get-Content -LiteralPath $file.FullName -Raw | ConvertFrom-Json
@@ -56,14 +58,30 @@ foreach ($file in $results) {
 
     $failure = Join-Path $file.DirectoryName 'failure.md'
     $details = if (Test-Path -LiteralPath $failure) { Get-Content -LiteralPath $failure -Raw } else { "No failure report, see the run." }
+    $failures.Add([pscustomobject]@{ Title = "Fuzzing: $($result.target) failed"; Result = $result; Details = $details })
+}
+
+# Every architecture fuzzes the same targets: a target that fails on several gets a single issue, with a section each
+foreach ($group in $failures | Group-Object -CaseSensitive Title) {
+    $result = $group.Group[0].Result
+    $architectures = @($group.Group | ForEach-Object { $_.Result.architecture } | Where-Object { $_ } | Sort-Object -Unique)
+    $on = if ($architectures.Count -gt 0) { " on $($architectures -join ', ')" } else { '' }
     $body = [System.Text.StringBuilder]::new()
-    [void]$body.AppendLine("The weekly fuzzing campaign found a failure in the target ``$($result.target)`` of ``fuzz/$($result.project)``.")
+    [void]$body.AppendLine("The weekly fuzzing campaign found a failure in the target ``$($result.target)`` of ``fuzz/$($result.project)``$on.")
     [void]$body.AppendLine()
-    [void]$body.AppendLine("- Run: $RunUrl (the failing inputs and the logs are in the ``fuzz-results-$($result.project)`` artifacts)")
+    [void]$body.AppendLine("- Run: $RunUrl (the failing inputs and the logs are in the ``fuzz-results-$($result.project)-*`` artifacts)")
     [void]$body.AppendLine("- Commit: $Commit")
-    [void]$body.AppendLine()
-    [void]$body.AppendLine($details)
-    $issues.Add([pscustomobject]@{ Title = "Fuzzing: $($result.target) failed"; Body = Limit-Length $body.ToString() })
+    foreach ($failure in $group.Group) {
+        [void]$body.AppendLine()
+        if ($group.Count -gt 1) {
+            [void]$body.AppendLine("## $($failure.Result.architecture ?? 'Failure')")
+            [void]$body.AppendLine()
+        }
+
+        [void]$body.AppendLine($failure.Details)
+    }
+
+    $issues.Add([pscustomobject]@{ Title = $group.Name; Body = Limit-Length $body.ToString() })
 }
 
 # The jobs of a project always upload the results of the targets they fuzzed; none means they failed before

@@ -4,22 +4,24 @@ namespace Meziantou.Framework;
 
 /// <summary>Represents a byte size value that can be formatted, parsed, and compared. Supports both decimal (kB, MB, GB) and binary (kiB, MiB, GiB) units.</summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.ByteSize.Tests/ByteSizeTests.cs" ref:region="ByteSize_Example" ref:dedent="true">
 /// // Create an instance
 /// var size = new ByteSize(1024);
 /// var size2 = ByteSize.FromKiloBytes(10);
 /// var size3 = ByteSize.Parse("10MB", CultureInfo.InvariantCulture);
+/// Assert.Equal(10_000, size2.Value);
+/// Assert.Equal(10_000_000, size3.Value);
 ///
 /// // Format with automatic unit selection
-/// Console.WriteLine(size.ToString()); // "1.024kB" - decimal units
-/// Console.WriteLine(size.ToString("gi")); // "1kiB" - binary units
+/// Assert.Equal("1.024kB", size.ToString(CultureInfo.InvariantCulture)); // decimal units
+/// Assert.Equal("1kiB", size.ToString("gi", CultureInfo.InvariantCulture)); // binary units
 ///
 /// // Format with specific unit
-/// Console.WriteLine(size.ToString("MB")); // "0.001024MB"
+/// Assert.Equal("0.001024MB", size.ToString("MB", CultureInfo.InvariantCulture));
 ///
 /// // Perform arithmetic operations
 /// var total = ByteSize.FromKiloBytes(1) + ByteSize.FromKiloBytes(2);
-/// Console.WriteLine(total.ToString()); // "3kB"
+/// Assert.Equal("3kB", total.ToString(CultureInfo.InvariantCulture));
 /// </code>
 /// </example>
 [StructLayout(LayoutKind.Auto)]

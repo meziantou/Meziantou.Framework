@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using Meziantou.Framework.WebPlatform.Css.Fonts;
 using Meziantou.Framework.WebPlatform.Unicode;
 
@@ -410,6 +411,39 @@ public sealed class FontReaderTests
     public void InvalidData_IsNotAFont(byte[] data)
     {
         Assert.Null(FontFile.Load(data));
+    }
+
+    [Fact]
+    public void NamesOutsideTheNameTable_AreIgnored()
+    {
+        // The strings of the full names start outside the name table (a fuzzing finding): the font is loaded without them
+        var data = File.ReadAllBytes(Bundled("Ahem.ttf"));
+        var moved = 0;
+        for (var i = 0; i < BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(4)); i++)
+        {
+            var directoryRecord = data.AsSpan(12 + (i * 16), 16);
+            if (BinaryPrimitives.ReadUInt32BigEndian(directoryRecord) != OpenTypeTag.Name)
+                continue;
+
+            var table = data.AsSpan((int)BinaryPrimitives.ReadUInt32BigEndian(directoryRecord[8..]), (int)BinaryPrimitives.ReadUInt32BigEndian(directoryRecord[12..]));
+            var storage = BinaryPrimitives.ReadUInt16BigEndian(table[4..]);
+            for (var j = 0; j < BinaryPrimitives.ReadUInt16BigEndian(table[2..]); j++)
+            {
+                var record = table.Slice(6 + (j * 12), 12);
+                if (BinaryPrimitives.ReadUInt16BigEndian(record[6..]) == OpenTypeFont.NameId.FullName)
+                {
+                    BinaryPrimitives.WriteUInt16BigEndian(record[10..], (ushort)(table.Length - storage));
+                    moved++;
+                }
+            }
+        }
+
+        Assert.Equal(3, moved);
+        var font = Assert.Single(FontFile.Load(data)!.Faces);
+        Assert.Equal("", font.FullName);
+        Assert.Null(font.GetName(OpenTypeFont.NameId.FullName));
+        Assert.Equal("Ahem", font.FamilyName);
+        Assert.Equal(["Ahem"], font.GetFamilyNames());
     }
 
     [Theory]

@@ -64,8 +64,8 @@ internal static class Binding_HTMLSelectElement<TAdapter, TValue> where TAdapter
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlSelectElement>(t, Binding);
         if (a.Length < 1) throw r.NotEnoughArguments("add", 1, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_50(r, a[0]);
-        var a1 = r.IsMissing(a, 1) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_51(r, a[1]);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_3a8fd89a(r, a[0]);
+        var a1 = r.IsMissing(a, 1) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_044f3563(r, a[1]);
         if ((a1 is null or global::Meziantou.Framework.WebPlatform.Dom.HtmlElement)) { o.Add((global::Meziantou.Framework.WebPlatform.Dom.HtmlElement)a0!, (global::Meziantou.Framework.WebPlatform.Dom.HtmlElement)a1!); return r.Adapter.Undefined; }
         if ((a1 is int)) { o.Add((global::Meziantou.Framework.WebPlatform.Dom.HtmlElement)a0!, (int)a1!); return r.Adapter.Undefined; }
         throw r.CreateTypeError("Failed to execute 'add': the arguments are not supported");

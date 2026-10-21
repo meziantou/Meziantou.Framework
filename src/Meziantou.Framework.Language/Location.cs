@@ -5,10 +5,13 @@ namespace Meziantou.Framework.Language;
 /// indexes into.
 /// </summary>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Language.Tests/LocationTests.cs" ref:region="Location_GetLineSpan" ref:dedent="true">
+/// var text = "one\ntwo\nthree line here";
 /// var location = new Location(new TextSpan(15, 7), SourceText.From(text));
-/// Console.WriteLine(location);                          // (2,7)-(2,14)
-/// Console.WriteLine(location.GetLineSpan().Start.Line); // 2
+///
+/// // Lines and columns are zero-based
+/// Assert.Equal("(2,7)-(2,14)", location.ToString());
+/// Assert.Equal(2, location.GetLineSpan().Start.Line);
 /// </code>
 /// </example>
 public sealed class Location : IEquatable<Location>

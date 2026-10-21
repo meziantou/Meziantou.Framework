@@ -5,6 +5,42 @@ namespace Meziantou.Framework.Threading.Tests;
 public sealed class MixedConsumerProducerTests
 {
     [Fact]
+    public async Task MixedConsumerProducer_Example()
+    {
+        #region MixedConsumerProducer_Process
+        // A fake website where each page links to other pages
+        var website = new Dictionary<string, string[]>(StringComparer.Ordinal)
+        {
+            ["https://example.com/"] = ["https://example.com/a", "https://example.com/b"],
+            ["https://example.com/a"] = ["https://example.com/a/1"],
+        };
+        var crawledPages = new ConcurrentBag<string>();
+
+        async Task<string[]> CrawlPageAsync(string url, CancellationToken cancellationToken)
+        {
+            await Task.Delay(1, cancellationToken);
+            crawledPages.Add(url);
+            return website.GetValueOrDefault(url, []);
+        }
+
+        var initialUrls = new[] { "https://example.com/" };
+        await MixedConsumerProducer.Process(
+            initialUrls,
+            new ParallelOptions { MaxDegreeOfParallelism = 4 },
+            async (context, url, ct) =>
+            {
+                var links = await CrawlPageAsync(url, ct);
+                foreach (var link in links)
+                {
+                    context.Enqueue(link);
+                }
+            });
+
+        Assert.Equal(["https://example.com/", "https://example.com/a", "https://example.com/a/1", "https://example.com/b"], crawledPages.Order(StringComparer.Ordinal));
+        #endregion
+    }
+
+    [Fact]
     public async Task Process_EmptyData()
     {
         await MixedConsumerProducer.Process(Array.Empty<int>(), new ParallelOptions() { MaxDegreeOfParallelism = 1 }, (context, item, cancellationToken) => ValueTask.CompletedTask);

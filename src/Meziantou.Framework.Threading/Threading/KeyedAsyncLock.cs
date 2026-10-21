@@ -5,19 +5,26 @@ namespace Meziantou.Framework.Threading;
 /// <summary>Provides an asynchronous lock mechanism that locks based on a key, allowing concurrent operations on different keys.</summary>
 /// <typeparam name="TKey">The type of the key.</typeparam>
 /// <example>
-/// <code><![CDATA[
-/// var keyedLock = new KeyedAsyncLock<string>();
-/// 
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Threading.Tests/KeyedAsyncLockTests.cs" ref:region="KeyedAsyncLock_Usage" ref:dedent="true">
+/// var keyedLock = new KeyedAsyncLock&lt;string&gt;(StringComparer.Ordinal);
+/// var updateCounts = new ConcurrentDictionary&lt;string, int&gt;(StringComparer.Ordinal);
+///
 /// async Task ProcessUserAsync(string userId)
 /// {
 ///     using (await keyedLock.LockAsync(userId))
 ///     {
 ///         // Only one operation per userId at a time
 ///         // Multiple different userIds can be processed concurrently
-///         await UpdateUserDataAsync(userId);
+///         var count = updateCounts.GetValueOrDefault(userId);
+///         await Task.Yield();
+///         updateCounts[userId] = count + 1;
 ///     }
 /// }
-/// ]]></code>
+///
+/// await Task.WhenAll(ProcessUserAsync("alice"), ProcessUserAsync("alice"), ProcessUserAsync("bob"));
+/// Assert.Equal(2, updateCounts["alice"]);
+/// Assert.Equal(1, updateCounts["bob"]);
+/// </code>
 /// </example>
 public sealed class KeyedAsyncLock<TKey> where TKey : notnull
 {

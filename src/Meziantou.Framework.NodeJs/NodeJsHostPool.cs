@@ -12,9 +12,15 @@ namespace Meziantou.Framework.NodeJs;
 /// <para>When a Node.js process exits, its host is replaced by a new one the next time a host is selected. Set <see cref="NodeJsHostOptions.UnresponsiveTimeout"/> to also replace a process whose event loop is blocked by a canceled call. With <see cref="NodeJsHostOptions.WorkerThreads"/>, each process runs the calls on several worker threads, and only the worker thread blocked by a canceled call is restarted.</para>
 /// </remarks>
 /// <example>
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.NodeJs.Tests/NodeJsHostTests.cs" ref:region="NodeJsHostPool_Example" ref:dedent="true">
+/// string[] documents = ["# Title", "Some *text*"];
+///
 /// await using var pool = await NodeJsHostPool.StartAsync(Environment.ProcessorCount);
-/// var results = await Task.WhenAll(documents.Select(document => pool.InvokeAsync("./render.mjs", "render", [document])));
+///
+/// // Each call runs on the host with the fewest calls in progress, so the calls run in parallel
+/// var results = await Task.WhenAll(documents.Select(document =&gt; pool.EvaluateAsync("return args[0].length;", [document])));
+///
+/// Assert.Equal([7, 11], results.Select(result =&gt; result.GetInt32()));
 /// </code>
 /// </example>
 public sealed class NodeJsHostPool : IAsyncDisposable

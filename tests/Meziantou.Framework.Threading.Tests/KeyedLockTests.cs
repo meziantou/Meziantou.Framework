@@ -1,7 +1,33 @@
+using System.Collections.Concurrent;
+
 namespace Meziantou.Framework.Threading.Tests;
 
 public sealed class KeyedLockTests
 {
+    [Fact]
+    public void KeyedLock_Example()
+    {
+        #region KeyedLock_Usage
+        var keyedLock = new KeyedLock<string>(StringComparer.Ordinal);
+        var updateCounts = new ConcurrentDictionary<string, int>(StringComparer.Ordinal);
+
+        void ProcessUser(string userId)
+        {
+            using (keyedLock.Lock(userId))
+            {
+                // Only one operation per userId at a time
+                // Multiple different userIds can be processed concurrently
+                var count = updateCounts.GetValueOrDefault(userId);
+                updateCounts[userId] = count + 1;
+            }
+        }
+
+        Parallel.Invoke(() => ProcessUser("alice"), () => ProcessUser("alice"), () => ProcessUser("bob"));
+        Assert.Equal(2, updateCounts["alice"]);
+        Assert.Equal(1, updateCounts["bob"]);
+        #endregion
+    }
+
     [Fact]
     public void Test()
     {

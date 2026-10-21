@@ -4,10 +4,12 @@ namespace Meziantou.AspNetCore.Mvc.TagHelpers;
 
 /// <summary>A TagHelper that conditionally renders elements based on a boolean expression.</summary>
 /// <example>
-/// <code language="razor">
+/// <code language="razor" xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../samples/Meziantou.AspNetCore.Mvc.Samples/Views/Examples/ShowIf.cshtml">
+/// @model FormModel
+///
 /// @* Show content only if user is authenticated *@
-/// &lt;div show-if="@User.Identity.IsAuthenticated"&gt;
-///   Welcome back, @User.Identity.Name!
+/// &lt;div show-if="@(User.Identity?.IsAuthenticated == true)"&gt;
+///     Welcome back, @User.Identity?.Name!
 /// &lt;/div&gt;
 ///
 /// @* Show error message conditionally *@

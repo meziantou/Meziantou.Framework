@@ -3,6 +3,36 @@ namespace Meziantou.Framework.Threading.Tests;
 public class AsyncReaderWriterLockTests
 {
     [Fact]
+    public async Task AsyncReaderWriterLock_Example()
+    {
+        #region AsyncReaderWriterLock_Usage
+        var rwLock = new AsyncReaderWriterLock();
+        var data = new List<int>();
+
+        // Multiple readers can execute concurrently
+        async Task<int> ReadAsync()
+        {
+            using (await rwLock.ReaderLockAsync())
+            {
+                return data.Count;
+            }
+        }
+
+        // Only one writer can execute at a time
+        async Task WriteAsync(int value)
+        {
+            using (await rwLock.WriterLockAsync())
+            {
+                data.Add(value);
+            }
+        }
+
+        await Task.WhenAll(WriteAsync(1), WriteAsync(2));
+        Assert.Equal([2, 2], await Task.WhenAll(ReadAsync(), ReadAsync()));
+        #endregion
+    }
+
+    [Fact]
     public async Task AsyncReaderWriterLock_ReaderWriter()
     {
         var value = 0;

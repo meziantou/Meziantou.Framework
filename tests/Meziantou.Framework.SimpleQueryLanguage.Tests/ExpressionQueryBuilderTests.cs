@@ -41,6 +41,37 @@ public sealed class ExpressionQueryBuilderTests
     }
 
     [Fact]
+    public void ExpressionQuery_DocumentationExample()
+    {
+        #region ExpressionQuery_Apply
+        var queryBuilder = new ExpressionQueryBuilder<Person>();
+        queryBuilder.AddHandler("name", item => item.FullName);
+        var query = queryBuilder.Build("name:John");
+
+        // Apply works on any IQueryable<T>, such as an Entity Framework Core DbSet<T>
+        var people = new[] { new Person("John Doe", 30), new Person("Jane Doe", 25) }.AsQueryable();
+        var results = query.Apply(people).ToList();
+        Assert.Equal("John Doe", Assert.Single(results).FullName);
+        #endregion
+    }
+
+    [Fact]
+    public void ExpressionQueryBuilder_DocumentationExample()
+    {
+        #region ExpressionQueryBuilder_Build
+        var queryBuilder = new ExpressionQueryBuilder<Person>();
+        queryBuilder.AddHandler("name", item => item.FullName);
+        queryBuilder.AddHandler<int>("age", item => item.Age);
+        var query = queryBuilder.Build("name:John AND age>=21");
+
+        // Apply works on any IQueryable<T>, such as an Entity Framework Core DbSet<T>
+        var people = new[] { new Person("John Doe", 30), new Person("John Smith", 18), new Person("Jane Doe", 25) }.AsQueryable();
+        var results = query.Apply(people).ToList();
+        Assert.Equal("John Doe", Assert.Single(results).FullName);
+        #endregion
+    }
+
+    [Fact]
     public void FieldEquals_Int32()
     {
         var queryBuilder = new ExpressionQueryBuilder<Sample>();
@@ -581,6 +612,8 @@ public sealed class ExpressionQueryBuilderTests
         queryBuilder.AddHandler<DateTime>("date", item => item.DateTimeValue);
         return queryBuilder;
     }
+
+    private sealed record Person(string FullName, int Age);
 
     private sealed class Sample
     {

@@ -5,14 +5,14 @@ namespace Meziantou.Framework;
 /// <summary>A lightweight value-type stopwatch for measuring elapsed time without heap allocations.</summary>
 /// <example>
 /// Measure execution time of an operation:
-/// <code>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.ValueStopwatch.Tests/ValueStopwatchTest.cs" ref:region="ValueStopwatch_Example" ref:dedent="true">
 /// var stopwatch = ValueStopwatch.StartNew();
-/// 
+///
 /// // Perform some operation
-/// DoWork();
-/// 
+/// Thread.Sleep(10);
+///
 /// TimeSpan elapsed = stopwatch.GetElapsedTime();
-/// Console.WriteLine($"Operation took {elapsed.TotalMilliseconds}ms");
+/// Assert.True(elapsed &gt; TimeSpan.Zero);
 /// </code>
 /// </example>
 // https://github.com/dotnet/runtime/blob/26b6e4ea97a627ab800362b2c10f32ebecea041d/src/libraries/Common/src/Extensions/ValueStopwatch/ValueStopwatch.cs

@@ -30,6 +30,13 @@ internal abstract class PathSink
     public double GetScale(double minX, double minY, double maxX, double maxY)
         => Projection is { } projection ? projection.GetScale(minX, minY, maxX, maxY) : Scale;
 
+    /// <summary>
+    /// Gets the factor by which what is drawn in a rectangle at one of the ends of a curve is enlarged at most before it
+    /// is drawn: what <see cref="GetScale"/> gives, with <see cref="ProjectiveView.EndReach"/> around the rectangle.
+    /// </summary>
+    public double GetEndScale(double minX, double minY, double maxX, double maxY)
+        => Projection is { } projection ? projection.GetEndScale(minX, minY, maxX, maxY) : Scale;
+
     /// <summary>Starts a contour; the previous contour, if any, ends open.</summary>
     public abstract void MoveTo(double x, double y);
 

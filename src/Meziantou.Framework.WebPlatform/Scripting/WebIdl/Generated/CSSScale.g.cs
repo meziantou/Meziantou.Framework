@@ -21,11 +21,11 @@ internal static class Binding_CSSScale<TAdapter, TValue> where TAdapter : struct
     };
 
     private static TValue Get_x(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssScale>(t, Binding); return r.ToJs((object?)o.X); }
-    private static void Set_x(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssScale>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, v); o.X = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, x); }
+    private static void Set_x(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssScale>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, v); o.X = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, x); }
     private static TValue Get_y(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssScale>(t, Binding); return r.ToJs((object?)o.Y); }
-    private static void Set_y(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssScale>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, v); o.Y = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, x); }
+    private static void Set_y(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssScale>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, v); o.Y = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, x); }
     private static TValue Get_z(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssScale>(t, Binding); return r.ToJs((object?)o.Z); }
-    private static void Set_z(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssScale>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, v); o.Z = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, x); }
+    private static void Set_z(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssScale>(t, Binding); var x = WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, v); o.Z = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, x); }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "x", Get_x, Set_x);
@@ -36,9 +36,9 @@ internal static class Binding_CSSScale<TAdapter, TValue> where TAdapter : struct
     private static object Construct(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::System.ReadOnlySpan<TValue> a)
     {
         if (a.Length < 2) throw r.NotEnoughArguments("CSSScale", 2, a.Length);
-        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, a[0]);
-        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, a[1]);
-        var has2 = !r.IsMissing(a, 2); var a2 = has2 ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_9(r, a[2]) : default;
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, a[0]);
+        var a1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, a[1]);
+        var has2 = !r.IsMissing(a, 2); var a2 = has2 ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_d6b8dadd(r, a[2]) : default;
         return new global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssScale(WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, a0), WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, a1), (has2 ? (a2 is null ? (global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumberish?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Css_TypedOm_CssNumberish(r, a2)) : default(global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumberish?)));
     }
 }

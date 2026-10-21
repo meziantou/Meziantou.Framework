@@ -13,10 +13,12 @@ This library provides two interfaces that can be implemented by strongly-typed I
 
 When you use the `StronglyTypedId` source generator, the generated types automatically implement these interfaces if this package is referenced in your project. The interfaces are in the `Meziantou.Framework` namespace, and the `[StronglyTypedId]` attribute is in the `Meziantou.Framework.Annotations` namespace.
 
-<!-- ref:../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs;region=StronglyTypedId_InterfacesDeclaration;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs;region=StronglyTypedIdAttribute_Declaration;format=md-fenced-code-block;dedent=true -->
 ```csharp
 [StronglyTypedId(typeof(int))]
-public partial struct UserId { }
+public partial struct UserId
+{
+}
 ```
 <!-- endref -->
 

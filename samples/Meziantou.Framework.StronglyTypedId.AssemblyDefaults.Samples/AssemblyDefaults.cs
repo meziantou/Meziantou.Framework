@@ -12,7 +12,7 @@ using Meziantou.Framework.Annotations;
                                    StringComparison = StringComparison.Ordinal,
                                    GenerateToStringAsRecord = true)]
 
-namespace Meziantou.Framework.StronglyTypedId.Samples;
+namespace Meziantou.Framework.StronglyTypedId.AssemblyDefaults.Samples;
 
 [StronglyTypedId<Guid>]
 public partial struct ProjectId { } // New() uses Guid.CreateVersion7()

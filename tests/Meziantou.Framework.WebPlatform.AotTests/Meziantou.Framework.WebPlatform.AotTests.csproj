@@ -18,30 +18,9 @@
     <!-- The trimming and AOT warnings of the libraries fail the publish -->
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <IlcTreatWarningsAsErrors>true</IlcTreatWarningsAsErrors>
-    <!-- IL2104/IL3053: the summary warnings of the third-party assemblies without trimming annotations (see below) -->
-    <NoWarn>$(NoWarn);IL2104;IL3053</NoWarn>
-    <!-- The compiler still reports 3 IL2026 warnings of compiler-generated code of Jint (the closures of Options.Apply). The
-         libraries of the repository are IsAotCompatible: their own IL2026 warnings are reported when they are compiled. -->
-    <WarningsNotAsErrors>$(WarningsNotAsErrors);IL2026</WarningsNotAsErrors>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
-    <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.Jint\Meziantou.Framework.WebPlatform.Jint.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.JavaScript\Meziantou.Framework.WebPlatform.JavaScript.csproj" />
   </ItemGroup>
-
-  <!-- Jint is not annotated for trimming: its warnings are reported as a single warning (suppressed above) instead of failing
-       the publish. The script engine only uses the parts of Jint that do not depend on reflection (no CLR interop). -->
-  <Target Name="SingleWarnForJint" BeforeTargets="PrepareForILLink;WriteIlcRspFileForCompilation" AfterTargets="_ComputeManagedAssemblyToLink">
-    <ItemGroup>
-      <ManagedAssemblyToLink Condition="'%(Filename)' == 'Jint'" TrimmerSingleWarn="true" />
-    </ItemGroup>
-  </Target>
-
-  <!-- The compiler of .NET 11 reads the assemblies from ResolvedFileToPublish instead of ManagedAssemblyToLink -->
-  <Target Name="SingleWarnForJintNet11" BeforeTargets="_ComputeIlcCompileInputs">
-    <ItemGroup>
-      <ResolvedFileToPublish Condition="'%(Filename)%(Extension)' == 'Jint.dll'" TrimmerSingleWarn="true" />
-    </ItemGroup>
-  </Target>
 </Project>

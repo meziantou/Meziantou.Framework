@@ -1,10 +1,10 @@
 using BenchmarkDotNet.Attributes;
 using Meziantou.Framework.WebPlatform.Dom;
-using Meziantou.Framework.WebPlatform.Jint;
+using Meziantou.Framework.WebPlatform.JavaScript;
 
 namespace Meziantou.Framework.WebPlatform.Benchmarks;
 
-/// <summary>Parses a script-heavy page with the Jint script engine: realm creation, DOM-heavy scripts and event dispatch.</summary>
+/// <summary>Parses a script-heavy page with the JavaScript script engine: realm creation, DOM-heavy scripts and event dispatch.</summary>
 [MemoryDiagnoser]
 public class ScriptBenchmarks
 {
@@ -64,7 +64,7 @@ public class ScriptBenchmarks
     private static string Run(string html)
     {
         // Each operation has its own browsing context, and its own event loop
-        using var engine = new JintScriptEngine();
+        using var engine = new JavaScriptScriptEngine();
         using var context = new BrowsingContext(new BrowsingContextOptions { ScriptEngine = engine });
         var document = context.Navigate("https://example.com/", _ => html);
         context.EventLoop.RunUntilIdle();

@@ -1,2 +1,0 @@
-intl402/DateTimeFormat/this-value-ignored.js:sloppy
-intl402/DateTimeFormat/this-value-ignored.js:strict

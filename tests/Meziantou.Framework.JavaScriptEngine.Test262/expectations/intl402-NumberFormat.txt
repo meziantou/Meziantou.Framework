@@ -1,2 +1,0 @@
-intl402/NumberFormat/this-value-ignored.js:sloppy
-intl402/NumberFormat/this-value-ignored.js:strict

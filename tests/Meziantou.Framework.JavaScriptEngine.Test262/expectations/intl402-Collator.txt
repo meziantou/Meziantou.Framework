@@ -1,2 +1,0 @@
-intl402/Collator/this-value-ignored.js:sloppy
-intl402/Collator/this-value-ignored.js:strict

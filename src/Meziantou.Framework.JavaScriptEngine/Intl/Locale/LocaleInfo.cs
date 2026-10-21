@@ -36,7 +36,7 @@ internal static class LocaleInfo
     /// <summary>Gets the collation types of all the locales, without "standard" and "search", sorted.</summary>
     public static string[] Collations => Volatile.Read(ref s_collations) ?? CldrData.InitializeOnce(ref s_collations, ComputeCollations());
 
-    /// <summary>Gets the ISO 4217 currency codes known by the data, sorted.</summary>
+    /// <summary>Gets the ISO 4217 currency codes that have a display name (in English, the most complete locale), sorted: the ones Intl.DisplayNames supports.</summary>
     public static string[] Currencies => Volatile.Read(ref s_currencies) ?? CldrData.InitializeOnce(ref s_currencies, ComputeCurrencies());
 
     /// <summary>Gets the BCP 47 identifier of a CLDR calendar ("gregorian" -> "gregory").</summary>
@@ -95,19 +95,6 @@ internal static class LocaleInfo
             {
                 var key = table.GetKey(i);
                 if (key.Length == 3 && char.IsAsciiLetterUpper(key[0]) && char.IsAsciiLetterUpper(key[1]) && char.IsAsciiLetterUpper(key[2]))
-                {
-                    result.Add(key);
-                }
-            }
-        }
-
-        if (Data.Supplemental.GetSection("currencyData") is { } currencyData && currencyData.TryGetNode("fractions", out var node) && node.IsTable)
-        {
-            var fractions = node.GetTable();
-            for (var i = 0; i < fractions.Count; i++)
-            {
-                var key = fractions.GetKey(i);
-                if (key.Length == 3 && key is not "DEFAULT")
                 {
                     result.Add(key);
                 }

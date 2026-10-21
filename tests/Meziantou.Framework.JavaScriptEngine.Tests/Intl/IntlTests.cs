@@ -240,6 +240,45 @@ public sealed class IntlTests
             """));
     }
 
+    [Theory]
+    [InlineData("en", "{ type: 'language' }", "en-GB", "British English")]
+    [InlineData("en", "{ type: 'language', style: 'short' }", "en-GB", "UK English")]
+    [InlineData("en", "{ type: 'language', languageDisplay: 'standard' }", "en-GB", "English (United Kingdom)")]
+    [InlineData("en", "{ type: 'language' }", "zh-Hant-TW", "Chinese (Traditional, Taiwan)")]
+    [InlineData("en", "{ type: 'language' }", "en-MM", "English (Myanmar [Burma])")]
+    [InlineData("en", "{ type: 'language' }", "sh", "Serbian (Latin)")]
+    [InlineData("en", "{ type: 'language' }", "xyz-US", "xyz (United States)")]
+    [InlineData("en", "{ type: 'language', fallback: 'none' }", "xyz-US", "undefined")]
+    [InlineData("zh", "{ type: 'language' }", "en-Latn-US", "\u82F1\u8BED\uFF08\u62C9\u4E01\u6587\uFF0C\u7F8E\u56FD\uFF09")]
+    [InlineData("en", "{ type: 'region' }", "419", "Latin America")]
+    [InlineData("en", "{ type: 'region', style: 'short' }", "hk", "Hong Kong")]
+    [InlineData("en", "{ type: 'region' }", "SU", "Russia")]
+    [InlineData("en", "{ type: 'region' }", "XY", "XY")]
+    [InlineData("en", "{ type: 'script' }", "latn", "Latin")]
+    [InlineData("fr", "{ type: 'currency' }", "usd", "dollar des \u00C9tats-Unis")]
+    [InlineData("en", "{ type: 'calendar' }", "gregory", "Gregorian Calendar")]
+    [InlineData("en", "{ type: 'calendar' }", "islamicc", "Hijri Calendar (tabular, civil epoch)")]
+    [InlineData("en", "{ type: 'calendar', fallback: 'none' }", "abcde", "undefined")]
+    [InlineData("en", "{ type: 'dateTimeField', style: 'short' }", "weekOfYear", "wk.")]
+    public void DisplayNames(string locale, string options, string code, string expected)
+    {
+        Assert.Equal(expected, Evaluate($"String(new Intl.DisplayNames('{locale}', {options}).of('{code}'))"));
+    }
+
+    [Theory]
+    [InlineData("language", "en-u-ca-gregory")]
+    [InlineData("language", "root")]
+    [InlineData("language", "en_GB")]
+    [InlineData("region", "ABC")]
+    [InlineData("script", "Lat")]
+    [InlineData("calendar", "abc_def")]
+    [InlineData("currency", "US")]
+    [InlineData("dateTimeField", "weekOfMonth")]
+    public void DisplayNames_InvalidCode(string type, string code)
+    {
+        Assert.Equal("RangeError", Evaluate($"try {{ new Intl.DisplayNames('en', {{ type: '{type}' }}).of('{code}'); 'none' }} catch (e) {{ e.name }}"));
+    }
+
     [Fact]
     public void DefaultLocale()
     {

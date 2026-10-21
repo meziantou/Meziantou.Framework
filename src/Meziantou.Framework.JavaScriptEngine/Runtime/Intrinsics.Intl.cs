@@ -47,6 +47,7 @@ internal sealed partial class Intrinsics
         _intlNumberFormat = NumberFormatBuiltins.Initialize(this, _intl);
         InitializeIntlRelativeTimeFormat(_intl);
         InitializeIntlListFormat(_intl);
+        InitializeIntlDisplayNames(_intl);
         LocaleSensitiveBuiltins.Initialize(this);
     }
 }

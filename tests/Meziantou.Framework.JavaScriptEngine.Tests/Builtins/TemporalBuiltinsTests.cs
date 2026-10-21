@@ -68,6 +68,14 @@ public sealed class TemporalBuiltinsTests
     }
 
     [Fact]
+    public void ZonedDateTime_RoundToDayWhenMidnightOccursTwice()
+    {
+        // Casey moved from +11 to +08 at 2010-03-05T02:00: 23:10+08:00 is in the second piece of March 4
+        Assert.Equal("2010-03-04T00:00:00+11:00[Antarctica/Casey]", Evaluate("Temporal.ZonedDateTime.from('2010-03-04T23:10:00+08:00[Antarctica/Casey]').round({ smallestUnit: 'day', roundingMode: 'floor' }).toString()"));
+        Assert.Equal("2010-03-05T00:00:00+11:00[Antarctica/Casey]", Evaluate("Temporal.ZonedDateTime.from('2010-03-04T23:10:00+08:00[Antarctica/Casey]').round({ smallestUnit: 'day', roundingMode: 'ceil' }).toString()"));
+    }
+
+    [Fact]
     public void Parsing_RejectsHour24AndUnknownCriticalAnnotations()
     {
         Assert.Equal("RangeError", ErrorName("Temporal.PlainDateTime.from('2024-01-01T24:00')"));

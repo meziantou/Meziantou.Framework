@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using GraphemeBreak = Meziantou.Framework.UnicodeGraphemeClusterBreak;
+using SentenceBreak = Meziantou.Framework.UnicodeSentenceBreak;
 using WordBreak = Meziantou.Framework.UnicodeWordBreak;
 
 namespace Meziantou.Framework;
@@ -136,6 +137,23 @@ public static partial class Unicode
     /// </remarks>
     /// <seealso href="https://www.unicode.org/reports/tr29/" />
     public static UnicodeWordEnumerator EnumerateWordBoundaries(ReadOnlySpan<char> text) => new(text);
+
+    /// <summary>Enumerates the sentences of a text.</summary>
+    /// <param name="text">The text.</param>
+    /// <returns>An enumerator of the range of each sentence, in order; the ranges cover the whole text.</returns>
+    /// <remarks>
+    /// <para>
+    /// The boundaries are the default sentence boundaries of Unicode Standard Annex #29 for
+    /// <see cref="UnicodeProperties.UnicodeVersion"/>. A sentence ends after a paragraph separator, or after its
+    /// terminal punctuation (a full stop, a question mark, an exclamation mark...) with the closing punctuation, the
+    /// spaces and the paragraph separator that follow it. A full stop does not end a sentence when it is followed by a
+    /// digit, by an uppercase letter without a space between them (<c>U.S.A.</c>), or by a lowercase word
+    /// (<c>etc. and</c>). No list of abbreviations is used: <c>Mr. Smith</c> is two sentences.
+    /// </para>
+    /// <para>The enumeration does not allocate.</para>
+    /// </remarks>
+    /// <seealso href="https://www.unicode.org/reports/tr29/" />
+    public static UnicodeSentenceEnumerator EnumerateSentenceBoundaries(ReadOnlySpan<char> text) => new(text);
 
     /// <summary>Enumerates the positions where a line can or must break.</summary>
     /// <param name="text">The text.</param>
@@ -342,6 +360,50 @@ public static partial class Unicode
         return index;
     }
 
+    /// <summary>Gets the kind of a segment delimited by word boundaries: see <see cref="UnicodeWordKind"/>.</summary>
+    internal static UnicodeWordKind GetWordKind(ReadOnlySpan<char> segment)
+    {
+        var index = FindLastWordBase(segment, segment.Length, out var codePoint, out var wordBreak);
+        if (index < 0)
+            return UnicodeWordKind.None;
+
+        switch (wordBreak)
+        {
+            case WordBreak.ExtendNumLet:
+                // ICU (rules 13a and 13b): the kind of the character before it, a letter after another ExtendNumLet, not
+                // a word on its own.
+                if (FindLastWordBase(segment, index, out codePoint, out wordBreak) < 0)
+                    return UnicodeWordKind.None;
+
+                return wordBreak is WordBreak.ExtendNumLet ? UnicodeWordKind.Letter : UnicodeProperties.GetWordKind(codePoint);
+
+            case WordBreak.SingleQuote:
+                // ICU (rule 7a): a Hebrew letter and a single quote are a word.
+                return FindLastWordBase(segment, index, out _, out wordBreak) >= 0 && wordBreak is WordBreak.HebrewLetter ? UnicodeWordKind.Letter : UnicodeWordKind.None;
+
+            default:
+                return UnicodeProperties.GetWordKind(codePoint);
+        }
+    }
+
+    /// <summary>Finds the last code point before an index that rule WB4 does not ignore.</summary>
+    /// <returns>The index of the code point, or -1 when there is none.</returns>
+    private static int FindLastWordBase(ReadOnlySpan<char> segment, int index, out int codePoint, out WordBreak wordBreak)
+    {
+        while (index > 0)
+        {
+            codePoint = DecodeBefore(segment, index, out var length);
+            index -= length;
+            wordBreak = UnicodeProperties.GetWordBreak(codePoint);
+            if (wordBreak is not (WordBreak.Extend or WordBreak.Format or WordBreak.ZWJ))
+                return index;
+        }
+
+        codePoint = 0;
+        wordBreak = WordBreak.Other;
+        return -1;
+    }
+
     private static bool IsAsciiWordCharacter(char value) => char.IsAsciiLetterOrDigit(value) || value == '_';
 
     // Not inlined: it would make the loop of GetWordSegmentLength slower for the text it does not apply to. The runs
@@ -444,5 +506,124 @@ public static partial class Unicode
         }
 
         return WordBreak.Other;
+    }
+
+    /// <summary>Gets the length of the first sentence of a text.</summary>
+    internal static int GetSentenceLength(ReadOnlySpan<char> text)
+    {
+        if (text.IsEmpty)
+            return 0;
+
+        // The class of the previous character, then the classes of the last two characters SB5 does not ignore: an
+        // Extend or a Format after another character takes the class of that character.
+        var actualPrevious = UnicodeProperties.GetSentenceBreak(DecodeAt(text, 0, out var index));
+        var previous = actualPrevious;
+        var beforePrevious = SentenceBreak.Other;
+
+        // SB8 to SB11: the terminal punctuation (ATerm or STerm) that starts the sequence SATerm Close* Sp* the text
+        // ends with, or Other when it does not end with such a sequence, and whether the sequence has a space.
+        var terminal = previous is SentenceBreak.ATerm or SentenceBreak.STerm ? previous : SentenceBreak.Other;
+        var hasSpace = false;
+
+        while (index < text.Length)
+        {
+            var next = UnicodeProperties.GetSentenceBreak(DecodeAt(text, index, out var length));
+            if (actualPrevious is SentenceBreak.CR && next is SentenceBreak.LF)
+            {
+                // SB3
+            }
+            else if (actualPrevious is SentenceBreak.Sep or SentenceBreak.CR or SentenceBreak.LF)
+            {
+                // SB4
+                break;
+            }
+            else if (next is SentenceBreak.Extend or SentenceBreak.Format)
+            {
+                // SB5: the character is ignored by the rules that follow.
+                actualPrevious = next;
+                index += length;
+                continue;
+            }
+            else if (!IsSentenceJoined(beforePrevious, previous, next, terminal, hasSpace, text, index))
+            {
+                break;
+            }
+
+            if (next is SentenceBreak.ATerm or SentenceBreak.STerm)
+            {
+                terminal = next;
+                hasSpace = false;
+            }
+            else if (terminal is not SentenceBreak.Other && next is SentenceBreak.Sp)
+            {
+                hasSpace = true;
+            }
+            else if (next is not SentenceBreak.Close || hasSpace)
+            {
+                terminal = SentenceBreak.Other;
+            }
+
+            beforePrevious = previous;
+            previous = next;
+            actualPrevious = next;
+            index += length;
+        }
+
+        return index;
+    }
+
+    /// <summary>Applies the rules SB6 to SB11 to the classes around a position.</summary>
+    private static bool IsSentenceJoined(SentenceBreak beforePrevious, SentenceBreak previous, SentenceBreak next, SentenceBreak terminal, bool hasSpace, ReadOnlySpan<char> text, int index)
+    {
+        // SB6
+        if (previous is SentenceBreak.ATerm && next is SentenceBreak.Numeric)
+            return true;
+
+        // SB7
+        if (beforePrevious is SentenceBreak.Upper or SentenceBreak.Lower && previous is SentenceBreak.ATerm && next is SentenceBreak.Upper)
+            return true;
+
+        // SB998: the rules that follow only apply after SATerm Close* Sp*.
+        if (terminal is SentenceBreak.Other)
+            return true;
+
+        // SB8a
+        if (next is SentenceBreak.SContinue or SentenceBreak.STerm or SentenceBreak.ATerm)
+            return true;
+
+        // SB9
+        if (!hasSpace && next is SentenceBreak.Close)
+            return true;
+
+        // SB9, SB10
+        if (next is SentenceBreak.Sp or SentenceBreak.Sep or SentenceBreak.CR or SentenceBreak.LF)
+            return true;
+
+        // SB8 is applied last because it looks ahead: when it does not apply, SB11 breaks, and when it does, the text
+        // no longer ends with SATerm Close* Sp*, so the lookahead is never repeated over the same characters.
+        return terminal is SentenceBreak.ATerm && IsFollowedByLowercase(text, index);
+    }
+
+    /// <summary>
+    /// Determines whether a text continues with [^OLetter Upper Lower ParaSep SATerm]* Lower: whether the
+    /// full stop before it is followed by a lowercase word (rule SB8).
+    /// </summary>
+    private static bool IsFollowedByLowercase(ReadOnlySpan<char> text, int index)
+    {
+        while (index < text.Length)
+        {
+            switch (UnicodeProperties.GetSentenceBreak(DecodeAt(text, index, out var length)))
+            {
+                case SentenceBreak.Lower:
+                    return true;
+
+                case SentenceBreak.OLetter or SentenceBreak.Upper or SentenceBreak.Sep or SentenceBreak.CR or SentenceBreak.LF or SentenceBreak.STerm or SentenceBreak.ATerm:
+                    return false;
+            }
+
+            index += length;
+        }
+
+        return false;
     }
 }

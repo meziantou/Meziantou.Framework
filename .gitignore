@@ -304,5 +304,7 @@ artifacts/
 
 # The external test suites of Meziantou.Framework.WebPlatform, fetched by eng/webplatform/fetch-tests.sh
 /tests/Meziantou.Framework.WebPlatform.External/
+# test262 and test262-parser-tests, fetched by eng/javascriptengine/fetch-tests.cs
+/tests/Meziantou.Framework.JavaScriptEngine.External/
 # The marker of an update of the WPT expectations that is running or was interrupted (see src/Meziantou.Framework.WebPlatform/docs/web-platform-tests.md)
 /tests/Meziantou.Framework.WebPlatform.Wpt/expectations/.incomplete-update-*

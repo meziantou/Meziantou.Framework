@@ -22,6 +22,7 @@ internal static class PropertyTablesWriter
         var graphemeEnum = CreateEnum(enumsPath, aliases, "GCB", "UnicodeGraphemeClusterBreak", "Other", "the Grapheme_Cluster_Break property of a code point", "https://www.unicode.org/reports/tr29/");
         var conjunctEnum = CreateEnum(enumsPath, aliases, "InCB", "UnicodeIndicConjunctBreak", "None", "the Indic_Conjunct_Break property of a code point", "https://www.unicode.org/reports/tr44/");
         var wordEnum = CreateEnum(enumsPath, aliases, "WB", "UnicodeWordBreak", "Other", "the Word_Break property of a code point", "https://www.unicode.org/reports/tr29/");
+        var sentenceEnum = CreateEnum(enumsPath, aliases, "SB", "UnicodeSentenceBreak", "Other", "the Sentence_Break property of a code point", "https://www.unicode.org/reports/tr29/");
         var widthEnum = CreateEnum(enumsPath, aliases, "ea", "UnicodeEastAsianWidth", "Neutral", "the East_Asian_Width property of a code point", "https://www.unicode.org/reports/tr11/");
         var bracketEnum = CreateEnum(enumsPath, aliases, "bpt", "UnicodeBidiPairedBracketType", "None", "the Bidi_Paired_Bracket_Type property of a code point", "https://www.unicode.org/reports/tr9/");
         var joiningTypeEnum = CreateEnum(enumsPath, aliases, "jt", "UnicodeJoiningType", "Non_Joining", "the Joining_Type property of a code point", "https://www.unicode.org/reports/tr44/");
@@ -29,7 +30,7 @@ internal static class PropertyTablesWriter
         var syllabicEnum = CreateEnum(enumsPath, aliases, "InSC", "UnicodeIndicSyllabicCategory", "Other", "the Indic_Syllabic_Category property of a code point", "https://www.unicode.org/reports/tr44/");
         var positionalEnum = CreateEnum(enumsPath, aliases, "InPC", "UnicodeIndicPositionalCategory", "Not_Applicable", "the Indic_Positional_Category property of a code point", "https://www.unicode.org/reports/tr44/");
         var orientationEnum = CreateEnum(enumsPath, aliases, "vo", "UnicodeVerticalOrientation", "Rotated", "the Vertical_Orientation property of a code point", "https://www.unicode.org/reports/tr50/");
-        GeneratedEnum[] enums = [lineBreakEnum, graphemeEnum, conjunctEnum, wordEnum, widthEnum, bracketEnum, joiningTypeEnum, joiningGroupEnum, syllabicEnum, positionalEnum, orientationEnum];
+        GeneratedEnum[] enums = [lineBreakEnum, graphemeEnum, conjunctEnum, wordEnum, sentenceEnum, widthEnum, bracketEnum, joiningTypeEnum, joiningGroupEnum, syllabicEnum, positionalEnum, orientationEnum];
 
         var generalCategory = await LoadGeneralCategoryAsync();
         var bidiClass = await LoadBidiClassAsync(aliases);
@@ -38,11 +39,17 @@ internal static class PropertyTablesWriter
         var idStart = await LoadBinaryAsync("ucd/DerivedCoreProperties.txt", "ID_Start");
         var idContinue = await LoadBinaryAsync("ucd/DerivedCoreProperties.txt", "ID_Continue");
         var emoji = await LoadEmojiAsync();
+        var cased = await LoadBinaryAsync("ucd/DerivedCoreProperties.txt", "Cased");
+        var caseIgnorable = await LoadBinaryAsync("ucd/DerivedCoreProperties.txt", "Case_Ignorable");
+        var softDotted = await LoadBinaryAsync("ucd/PropList.txt", "Soft_Dotted");
         var lineBreak = await LoadEnumAsync("ucd/LineBreak.txt", aliases, lineBreakEnum, filter: null);
         var width = await LoadEnumAsync("ucd/EastAsianWidth.txt", aliases, widthEnum, filter: null);
         var grapheme = await LoadEnumAsync("ucd/auxiliary/GraphemeBreakProperty.txt", aliases, graphemeEnum, filter: null);
         var conjunct = await LoadEnumAsync("ucd/DerivedCoreProperties.txt", aliases, conjunctEnum, filter: "InCB");
         var word = await LoadEnumAsync("ucd/auxiliary/WordBreakProperty.txt", aliases, wordEnum, filter: null);
+        var sentence = await LoadEnumAsync("ucd/auxiliary/SentenceBreakProperty.txt", aliases, sentenceEnum, filter: null);
+        var ideographic = await LoadBinaryAsync("ucd/PropList.txt", "Ideographic");
+        var (han, hiragana) = await LoadHanAndHiraganaAsync();
         var joiningType = await LoadEnumAsync("ucd/extracted/DerivedJoiningType.txt", aliases, joiningTypeEnum, filter: null);
         var joiningGroup = await LoadEnumAsync("ucd/extracted/DerivedJoiningGroup.txt", aliases, joiningGroupEnum, filter: null);
         var syllabic = await LoadEnumAsync("ucd/IndicSyllabicCategory.txt", aliases, syllabicEnum, filter: null);
@@ -59,7 +66,9 @@ internal static class PropertyTablesWriter
         RequireBelow(width, 8, "East_Asian_Width");
         RequireBelow(grapheme, 32, "Grapheme_Cluster_Break");
         RequireBelow(conjunct, 4, "Indic_Conjunct_Break");
+        RequireBelow(sentence, 16, "Sentence_Break");
         RequireBelow(generalCategory, 32, "General_Category");
+        RequireBelow(emoji, 64, "the emoji properties");
 
         var generalTuples = new TupleTable(width: 2);
         var general = new byte[ValueCount];
@@ -87,7 +96,7 @@ internal static class PropertyTablesWriter
                 | (defaultIgnorable[i] ? 0x20 : 0)
                 | (idStart[i] ? 0x40 : 0)
                 | (idContinue[i] ? 0x80 : 0);
-            general[i] = generalTuples.GetIndex((byte)generalFlags, emoji[i]);
+            general[i] = generalTuples.GetIndex((byte)generalFlags, (byte)(emoji[i] | (cased[i] ? 0x40 : 0) | (caseIgnorable[i] ? 0x80 : 0)));
             bidi[i] = (byte)(bidiClass[i] | (bracketType[i] << 5) | (mirrored[i] ? 0x80 : 0));
 
             var lineBreakFlags = width[i]
@@ -120,7 +129,8 @@ internal static class PropertyTablesWriter
         var sizes = new List<(string Name, int Bytes)>();
         AppendTrie(tables, sizes, "General", general, """
             Index of a 2-byte entry of GeneralTuples: General_Category (bits 0-4, a System.Globalization.UnicodeCategory),
-            Default_Ignorable_Code_Point (bit 5), ID_Start (bit 6) and ID_Continue (bit 7), then the EmojiProperties flags.
+            Default_Ignorable_Code_Point (bit 5), ID_Start (bit 6) and ID_Continue (bit 7), then the EmojiProperties flags
+            (bits 0-5), Cased (bit 6) and Case_Ignorable (bit 7).
             """);
         AppendBytes(tables, sizes, "GeneralTuples", generalTuples.Bytes);
         AppendTrie(tables, sizes, "Bidi", bidi, """
@@ -139,6 +149,20 @@ internal static class PropertyTablesWriter
             (a UnicodeWordBreak).
             """);
         AppendBytes(tables, sizes, "SegmentationTuples", segmentationTuples.Bytes);
+        var sentenceWord = new byte[ValueCount];
+        var wordNames = GetLongNamesByValue(wordEnum);
+        var lineBreakNames = GetLongNamesByValue(lineBreakEnum);
+        var graphemeNames = GetLongNamesByValue(graphemeEnum);
+        for (var i = 0; i < ValueCount; i++)
+        {
+            var kind = GetWordKind(i, (UnicodeCategory)generalCategory[i], wordNames[word[i]], lineBreakNames[lineBreak[i]], graphemeNames[grapheme[i]], ideographic[i], han[i], hiragana[i]);
+            sentenceWord[i] = (byte)(sentence[i] | ((int)kind << 4));
+        }
+
+        AppendTrie(tables, sizes, "SentenceBreak", sentenceWord, """
+            Sentence_Break (bits 0-3, a UnicodeSentenceBreak), then the UnicodeWordKind of a word that ends with the code
+            point (bits 4-6).
+            """);
         AppendTrie(tables, sizes, "Joining", joining, """
             Index of a 2-byte entry of JoiningTuples: Joining_Type (a UnicodeJoiningType), then Joining_Group
             (a UnicodeJoiningGroup).
@@ -168,6 +192,7 @@ internal static class PropertyTablesWriter
         AppendBytes(tables, sizes, "SpecialCasingMappings", specialCasingRecords, "The unconditional full case mappings of SpecialCasing.txt: 6-byte entries sorted by code point: the code point (3 bytes), the offset of its mappings in SpecialCasingPool (2 bytes), then the lengths of its lowercase (bits 0-1), titlecase (bits 2-3) and uppercase (bits 4-5) mappings, little-endian.");
         AppendSpecialCasingFilter(tables, specialCasingRecords);
         AppendBytes(tables, sizes, "SpecialCasingPool", EncodeUInt24(specialCasingPool), "The code points of the full case mappings, 3 bytes each, little-endian: the lowercase, the titlecase then the uppercase mapping of each entry of SpecialCasingMappings.");
+        AppendBytes(tables, sizes, "SoftDottedCodePoints", EncodeUInt24(Enumerable.Range(0, Trie.CodePointCount).Where(codePoint => softDotted[codePoint])), "Soft_Dotted: the code points, sorted, 3 bytes each, little-endian.");
         AppendBytes(tables, sizes, "BidiMirroringPairs", EncodeUInt24(mirroringPairs), "Bidi_Mirroring_Glyph: 6-byte entries sorted by code point: the code point then its mirrored code point, 3 bytes each, little-endian.");
         AppendBytes(tables, sizes, "BidiBracketPairs", EncodeUInt24(bracketPairs), "Bidi_Paired_Bracket: 6-byte entries sorted by code point: the code point then its paired bracket, 3 bytes each, little-endian.");
 
@@ -407,6 +432,72 @@ internal static class PropertyTablesWriter
         return sb.ToString();
     }
 
+    /// <summary>Gets the kind of a word segment that ends with a code point, as the rule status values of ICU give it.</summary>
+    /// <remarks>
+    /// The classes are those of the rules of ICU (icu4c/source/data/brkitr/rules/word.txt), where the status of a word
+    /// is the one of its last character: <c>$Numeric</c> is a number (100), <c>$ALetterPlus</c>, <c>$Hebrew_Letter</c>
+    /// and <c>$HangulSyllable</c> are letters (200), <c>$Katakana</c>, <c>$Hiragana</c> and <c>$Ideographic</c>
+    /// are kana and ideographs (400), and a code point that is in several classes takes the greatest status.
+    /// <c>$ALetterPlus</c> is ALetter without the Han, Hiragana, Katakana and Hangul syllables, with the Complex_Context
+    /// characters that are not Extend or Control. The letters of the Han script that are not ideographs, such as the
+    /// iteration mark U+3005, are ideographs too: ICU groups them with the ideographs by its dictionary.
+    /// </remarks>
+    private static UnicodeWordKind GetWordKind(int codePoint, UnicodeCategory category, string wordBreak, string lineBreak, string grapheme, bool ideographic, bool han, bool hiragana)
+    {
+        if (wordBreak is "Katakana" || hiragana)
+            return UnicodeWordKind.Kana;
+
+        var isLetter = category is UnicodeCategory.UppercaseLetter or UnicodeCategory.LowercaseLetter or UnicodeCategory.TitlecaseLetter or UnicodeCategory.ModifierLetter or UnicodeCategory.OtherLetter;
+        if (ideographic || (han && isLetter))
+            return UnicodeWordKind.Ideographic;
+
+        if (codePoint is >= 0xAC00 and <= 0xD7A3)
+            return UnicodeWordKind.Letter;
+
+        if (wordBreak is "ALetter" or "Hebrew_Letter" && !han)
+            return UnicodeWordKind.Letter;
+
+        if (lineBreak is "Complex_Context" && wordBreak is not "Extend" && grapheme is not "Control")
+            return UnicodeWordKind.Letter;
+
+        if (wordBreak is "Numeric")
+            return UnicodeWordKind.Number;
+
+        return UnicodeWordKind.None;
+    }
+
+    private static string[] GetLongNamesByValue(GeneratedEnum target)
+    {
+        var result = new string[target.Members.Max(member => member.Value) + 1];
+        foreach (var member in target.Members)
+        {
+            result[member.Value] = member.LongName;
+        }
+
+        return result;
+    }
+
+    private static async Task<(bool[] Han, bool[] Hiragana)> LoadHanAndHiraganaAsync()
+    {
+        var han = new bool[ValueCount];
+        var hiragana = new bool[ValueCount];
+        foreach (var line in Ucd.ParseLines(await Ucd.DownloadAsync("ucd/Scripts.txt")))
+        {
+            if (line.IsMissing)
+                continue;
+
+            var target = line.Fields[0] switch
+            {
+                "Han" => han,
+                "Hiragana" => hiragana,
+                _ => null,
+            };
+            target?.AsSpan(line.Start, line.End - line.Start + 1).Fill(value: true);
+        }
+
+        return (han, hiragana);
+    }
+
     private static void RequireBelow(byte[] values, int limit, string property)
     {
         foreach (var value in values)
@@ -611,17 +702,52 @@ internal static class PropertyTablesWriter
     }
 
     /// <summary>
+    /// The conditional mappings of SpecialCasing.txt, as <c>code; lower; title; upper; conditions</c>. They are
+    /// implemented by hand in <c>src/Meziantou.Framework.Unicode/UnicodeCaseMapping.cs</c>: the generator fails when
+    /// a version of the standard changes them, so that the code is updated with the data.
+    /// </summary>
+    private static readonly string[] ConditionalMappings =
+    [
+        "03A3; 03C2; 03A3; 03A3; Final_Sigma",
+        "0307; 0307; ; ; lt After_Soft_Dotted",
+        "0049; 0069 0307; 0049; 0049; lt More_Above",
+        "004A; 006A 0307; 004A; 004A; lt More_Above",
+        "012E; 012F 0307; 012E; 012E; lt More_Above",
+        "00CC; 0069 0307 0300; 00CC; 00CC; lt",
+        "00CD; 0069 0307 0301; 00CD; 00CD; lt",
+        "0128; 0069 0307 0303; 0128; 0128; lt",
+        "0130; 0069; 0130; 0130; tr",
+        "0130; 0069; 0130; 0130; az",
+        "0307; ; 0307; 0307; tr After_I",
+        "0307; ; 0307; 0307; az After_I",
+        "0049; 0131; 0049; 0049; tr Not_Before_Dot",
+        "0049; 0131; 0049; 0049; az Not_Before_Dot",
+        "0069; 0069; 0130; 0130; tr",
+        "0069; 0069; 0130; 0130; az",
+    ];
+
+    /// <summary>
     /// Loads the unconditional mappings of SpecialCasing.txt: the full case mappings of the code points whose mapping is
     /// not their simple mapping. The mappings that depend on the language or on the context (a condition list) are not
-    /// included.
+    /// included: they are checked against <see cref="ConditionalMappings"/>.
     /// </summary>
     private static async Task<(byte[] Records, List<int> Pool)> LoadSpecialCasingAsync()
     {
         var mappings = new SortedDictionary<int, (int[] Lower, int[] Title, int[] Upper)>();
+        var conditionalMappings = new List<string>();
         foreach (var line in Ucd.ParseLines(await Ucd.DownloadAsync("ucd/SpecialCasing.txt")))
         {
+            if (line.IsMissing)
+                continue;
+
             // code; lower; title; upper; (condition_list;)? (the fields after the code point)
-            if (line.IsMissing || line.Start != line.End || (line.Fields.Length > 3 && line.Fields[3].Length > 0))
+            if (line.Fields.Length > 3 && line.Fields[3].Length > 0)
+            {
+                conditionalMappings.Add(string.Create(CultureInfo.InvariantCulture, $"{line.Start:X4}; {line.Fields[0]}; {line.Fields[1]}; {line.Fields[2]}; {line.Fields[3]}"));
+                continue;
+            }
+
+            if (line.Start != line.End)
                 continue;
 
             mappings.Add(line.Start, (ParseCodePoints(line.Fields[0]), ParseCodePoints(line.Fields[1]), ParseCodePoints(line.Fields[2])));
@@ -629,6 +755,9 @@ internal static class PropertyTablesWriter
 
         if (mappings.Count == 0)
             throw new InvalidOperationException("No unconditional mapping in SpecialCasing.txt");
+
+        if (!conditionalMappings.SequenceEqual(ConditionalMappings, StringComparer.Ordinal))
+            throw new InvalidOperationException("The conditional mappings of SpecialCasing.txt changed: update UnicodeCaseMapping.cs and ConditionalMappings. The mappings are:\n" + string.Join('\n', conditionalMappings));
 
         var records = new List<byte>();
         var pool = new List<int>();

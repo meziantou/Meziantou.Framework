@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 196 | 204 | 1 | 97% |
+| [Stable](#stable-tests) | 197 | 204 | 0 | 97% |
 | [Tentative](#tentative-tests) | 0 | 12 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **196** | **216** | **1** | **91%** |
+| **All** | **197** | **216** | **0** | **91%** |
 
 ## Stable tests
 
@@ -131,7 +131,7 @@
 | [`interfaces/WebSocket/bufferedAmount/bufferedAmount-defineProperty-getter.html`](https://wpt.fyi/results/websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-defineProperty-getter.html) | Pass | 2 / 2 |  |  |
 | [`interfaces/WebSocket/bufferedAmount/bufferedAmount-defineProperty-setter.html`](https://wpt.fyi/results/websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-defineProperty-setter.html) | Pass | 2 / 2 |  |  |
 | [`interfaces/WebSocket/bufferedAmount/bufferedAmount-deleting.html`](https://wpt.fyi/results/websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-deleting.html) | Pass | 2 / 2 |  |  |
-| [`interfaces/WebSocket/bufferedAmount/bufferedAmount-getting.html`](https://wpt.fyi/results/websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-getting.html) | Disabled | – | FLAKY | The message event of the echo of a message can run before the task that removes the message from bufferedAmount: the continuations of the transmission and of the reception of the connection run on different threads of the thread pool, and under load the one of the echo can be scheduled first |
+| [`interfaces/WebSocket/bufferedAmount/bufferedAmount-getting.html`](https://wpt.fyi/results/websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-getting.html) | Pass | 3 / 3 |  |  |
 | [`interfaces/WebSocket/bufferedAmount/bufferedAmount-initial.html`](https://wpt.fyi/results/websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-initial.html) | Pass | 2 / 2 |  |  |
 | [`interfaces/WebSocket/bufferedAmount/bufferedAmount-large.html`](https://wpt.fyi/results/websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-large.html) | Pass | 3 / 3 |  |  |
 | [`interfaces/WebSocket/bufferedAmount/bufferedAmount-readonly.html`](https://wpt.fyi/results/websockets/interfaces/WebSocket/bufferedAmount/bufferedAmount-readonly.html) | Pass | 2 / 2 |  |  |

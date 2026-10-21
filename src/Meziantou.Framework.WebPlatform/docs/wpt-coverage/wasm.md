@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 324 | 341 | 2 | 96% |
+| [Stable](#stable-tests) | 326 | 341 | 0 | 96% |
 | [Tentative](#tentative-tests) | 14 | 70 | 0 | 20% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **338** | **411** | **2** | **83%** |
+| **All** | **340** | **411** | **0** | **83%** |
 
 ## Stable tests
 
@@ -200,12 +200,12 @@
 | [`core/simd/simd_f32x4.wast.js.html`](https://wpt.fyi/results/wasm/core/simd/simd_f32x4.wast.js.html) | Pass | 3,128 / 3,128 |  |  |
 | [`core/simd/simd_f32x4_arith.wast.js.html`](https://wpt.fyi/results/wasm/core/simd/simd_f32x4_arith.wast.js.html) | Pass | 7,255 / 7,255 |  |  |
 | [`core/simd/simd_f32x4_cmp.wast.js.html`](https://wpt.fyi/results/wasm/core/simd/simd_f32x4_cmp.wast.js.html) | Pass | 10,341 / 10,341 |  |  |
-| [`core/simd/simd_f32x4_pmin_pmax.wast.js.html`](https://wpt.fyi/results/wasm/core/simd/simd_f32x4_pmin_pmax.wast.js.html) | Disabled | – | PERFORMANCE | 15,521 subtests: runs ~10 seconds here but exceeds the maximum duration of the runner (1 minute) on the macOS CI agents under the load of the other tests; it passes when it completes |
+| [`core/simd/simd_f32x4_pmin_pmax.wast.js.html`](https://wpt.fyi/results/wasm/core/simd/simd_f32x4_pmin_pmax.wast.js.html) | Pass | 15,521 / 15,521 |  |  |
 | [`core/simd/simd_f32x4_rounding.wast.js.html`](https://wpt.fyi/results/wasm/core/simd/simd_f32x4_rounding.wast.js.html) | Pass | 757 / 757 |  |  |
 | [`core/simd/simd_f64x2.wast.js.html`](https://wpt.fyi/results/wasm/core/simd/simd_f64x2.wast.js.html) | Pass | 3,196 / 3,196 |  |  |
 | [`core/simd/simd_f64x2_arith.wast.js.html`](https://wpt.fyi/results/wasm/core/simd/simd_f64x2_arith.wast.js.html) | Pass | 7,267 / 7,267 |  |  |
 | [`core/simd/simd_f64x2_cmp.wast.js.html`](https://wpt.fyi/results/wasm/core/simd/simd_f64x2_cmp.wast.js.html) | Pass | 10,653 / 10,653 |  |  |
-| [`core/simd/simd_f64x2_pmin_pmax.wast.js.html`](https://wpt.fyi/results/wasm/core/simd/simd_f64x2_pmin_pmax.wast.js.html) | Disabled | – | PERFORMANCE | 15,521 subtests: runs ~10 seconds here but exceeds the maximum duration of the runner (1 minute) on the macOS CI agents under the load of the other tests; it passes when it completes |
+| [`core/simd/simd_f64x2_pmin_pmax.wast.js.html`](https://wpt.fyi/results/wasm/core/simd/simd_f64x2_pmin_pmax.wast.js.html) | Pass | 15,521 / 15,521 |  |  |
 | [`core/simd/simd_f64x2_rounding.wast.js.html`](https://wpt.fyi/results/wasm/core/simd/simd_f64x2_rounding.wast.js.html) | Pass | 757 / 757 |  |  |
 | [`core/simd/simd_i16x8_arith.wast.js.html`](https://wpt.fyi/results/wasm/core/simd/simd_i16x8_arith.wast.js.html) | Pass | 754 / 754 |  |  |
 | [`core/simd/simd_i16x8_arith2.wast.js.html`](https://wpt.fyi/results/wasm/core/simd/simd_i16x8_arith2.wast.js.html) | Pass | 650 / 650 |  |  |

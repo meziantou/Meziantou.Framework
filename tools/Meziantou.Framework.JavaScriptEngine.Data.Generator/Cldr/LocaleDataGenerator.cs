@@ -1,3 +1,5 @@
+using System.IO.Compression;
+using System.Xml.Linq;
 using Meziantou.Framework.JavaScriptEngine.Intl.Data;
 
 namespace Meziantou.Framework.JavaScriptEngine.Data.Generator.Cldr;
@@ -8,7 +10,7 @@ namespace Meziantou.Framework.JavaScriptEngine.Data.Generator.Cldr;
 /// and a language (e.g. Numbers of "fr", "fr-CA", "fr-CH"...) is a chunk, in which identical strings and identical
 /// tables are stored once.
 /// </summary>
-internal sealed class LocaleDataGenerator(CldrJsonSource source, LocaleSet locales)
+internal sealed class LocaleDataGenerator(CldrJsonSource source, LocaleSet locales, TreeTable? rootNumbers = null)
 {
     // ECMA-402 IsSanctionedSingleUnitIdentifier
     private static readonly HashSet<string> SanctionedUnits = new(StringComparer.Ordinal)
@@ -238,7 +240,7 @@ internal sealed class LocaleDataGenerator(CldrJsonSource source, LocaleSet local
 
         FlattenValues(merged);
         var result = new TreeTable?[Categories.Length];
-        result[(int)CldrCategory.Numbers] = Without(merged.GetPath("numbers"), "currencies", "minimalPairs");
+        result[(int)CldrCategory.Numbers] = AddRootNumbers(Without(merged.GetPath("numbers"), "currencies", "minimalPairs"));
         result[(int)CldrCategory.Currencies] = merged.GetPath("numbers/currencies") as TreeTable;
         result[(int)CldrCategory.Units] = FilterUnits(merged.GetPath("units") as TreeTable);
         result[(int)CldrCategory.Gregorian] = merged.GetPath("dates/calendars/gregorian") as TreeTable;
@@ -272,6 +274,82 @@ internal sealed class LocaleDataGenerator(CldrJsonSource source, LocaleSet local
 
             return result.Count == 0 ? null : result;
         }
+    }
+
+    // The data of the root for the numbering systems other than latn, which cldr-json does not have: every locale
+    // inherits it unless it has its own (e.g. the symbols of "arab" for "en-u-nu-arab")
+    private TreeTable? AddRootNumbers(TreeTable? numbers)
+    {
+        if (rootNumbers is null)
+            return numbers;
+
+        numbers ??= new TreeTable();
+        foreach (var (key, value) in rootNumbers.Entries)
+        {
+            if (!numbers.TryGetValue(key, out _))
+            {
+                numbers[key] = ((TreeTable)value).Clone();
+            }
+        }
+
+        return numbers;
+    }
+
+    /// <summary>
+    /// Reads the numbers data of the numbering systems other than latn of common/main/root.xml that are not aliases to
+    /// latn (the symbols of "arab" and "arabext", the percent and currency patterns of "arab"), with the paths of
+    /// cldr-json.
+    /// </summary>
+    public static TreeTable ReadRootNumbers(ZipArchive commonArchive)
+    {
+        var document = XDocument.Parse(CollationGenerator.ReadEntry(commonArchive, "common/main/root.xml"));
+        var result = new TreeTable();
+        var numbers = document.Root!.Element("numbers") ?? throw new InvalidDataException("root.xml has no numbers");
+        foreach (var element in numbers.Elements())
+        {
+            var numberingSystem = (string?)element.Attribute("numberSystem");
+            if (numberingSystem is null or "latn" || element.Element("alias") is not null)
+                continue;
+
+            var key = element.Name.LocalName + "-numberSystem-" + numberingSystem;
+            switch (element.Name.LocalName)
+            {
+                case "symbols":
+                    var symbols = result.GetOrAddTable(key);
+                    foreach (var symbol in element.Elements())
+                    {
+                        symbols[symbol.Name.LocalName] = symbol.Value;
+                    }
+
+                    break;
+
+                case "percentFormats":
+                    if (element.Element("percentFormatLength")?.Element("percentFormat")?.Element("pattern") is { } percentPattern)
+                    {
+                        result.GetOrAddTable(key)["standard"] = percentPattern.Value;
+                    }
+
+                    break;
+
+                case "currencyFormats":
+                    var standard = element.Element("currencyFormatLength")?.Elements("currencyFormat").FirstOrDefault(format => (string?)format.Attribute("type") == "standard");
+                    if (standard is null)
+                        break;
+
+                    var formats = result.GetOrAddTable(key);
+                    foreach (var pattern in standard.Elements("pattern"))
+                    {
+                        formats[(string?)pattern.Attribute("alt") is { } alt ? "standard-" + alt : "standard"] = pattern.Value;
+                    }
+
+                    var accounting = element.Element("currencyFormatLength")?.Elements("currencyFormat").FirstOrDefault(format => (string?)format.Attribute("type") == "accounting");
+                    var accountingPattern = accounting?.Element("alias") is null ? accounting?.Element("pattern")?.Value : null;
+                    formats["accounting"] = accountingPattern ?? (string)formats["standard"];
+                    break;
+            }
+        }
+
+        return result;
     }
 
     // A pattern with attributes, { "_value": "d/M/yy", "_numbers": "M=romanlow" }, becomes two strings: the pattern
@@ -317,8 +395,9 @@ internal sealed class LocaleDataGenerator(CldrJsonSource source, LocaleSet local
         };
     }
 
-    // Keeps the units of ECMA-402, under their identifier ("length-kilometer" -> "kilometer"), the compound pattern
-    // "per" and the duration patterns
+    // Keeps the units of ECMA-402, under their identifier ("length-kilometer" -> "kilometer"), the compound units of two
+    // of them that CLDR has ("speed-kilometer-per-hour" -> "kilometer-per-hour"), the compound pattern "per" and the
+    // duration patterns
     private static TreeTable? FilterUnits(TreeTable? units)
     {
         if (units is null)
@@ -346,7 +425,7 @@ internal sealed class LocaleDataGenerator(CldrJsonSource source, LocaleSet local
                 }
 
                 var separator = unitKey.IndexOf('-', StringComparison.Ordinal);
-                if (separator > 0 && SanctionedUnits.Contains(unitKey[(separator + 1)..]))
+                if (separator > 0 && IsSanctionedUnit(unitKey[(separator + 1)..]))
                 {
                     var id = unitKey[(separator + 1)..];
                     if (width.TryGetValue(id, out _))
@@ -360,5 +439,14 @@ internal sealed class LocaleDataGenerator(CldrJsonSource source, LocaleSet local
         }
 
         return result;
+
+        static bool IsSanctionedUnit(string id)
+        {
+            if (SanctionedUnits.Contains(id))
+                return true;
+
+            var per = id.IndexOf("-per-", StringComparison.Ordinal);
+            return per > 0 && SanctionedUnits.Contains(id[..per]) && SanctionedUnits.Contains(id[(per + 5)..]);
+        }
     }
 }

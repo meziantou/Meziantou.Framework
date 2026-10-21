@@ -23,7 +23,8 @@ internal enum CldrCategory
 
     /// <summary>
     /// <c>units</c> of units.json, limited to the units of ECMA-402 (IsSanctionedSingleUnitIdentifier) whose key is the
-    /// identifier of ECMA-402 (e.g. "kilometer" instead of "length-kilometer"):
+    /// identifier of ECMA-402 (e.g. "kilometer" instead of "length-kilometer"), and the compound units of two of them
+    /// that CLDR has (e.g. "kilometer-per-hour"):
     /// {long,short,narrow}/kilometer/{displayName, unitPattern-count-one, perUnitPattern},
     /// {long,short,narrow}/per/compoundUnitPattern, durationUnit-type-{hm,hms,ms}/durationUnitPattern.
     /// </summary>

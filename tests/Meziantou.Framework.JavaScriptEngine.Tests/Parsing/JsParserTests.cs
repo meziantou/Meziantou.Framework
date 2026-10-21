@@ -264,6 +264,7 @@ public sealed class JsParserTests
     [InlineData("if (a) function f() {}")]
     [InlineData("try {} catch (e) { var e; }")]
     [InlineData("class A { get #a() {} set #a(v) {} m() { return #a in this; } }")]
+    [InlineData("class A { #if = 1; static #class() {} m() { return this.#if + A.#class(); } }")]
     [InlineData("class A extends B { constructor() { (() => super())(); } }")]
     [InlineData("{ using x = null; }")]
     [InlineData("var let = 1; let\nx = 1")]

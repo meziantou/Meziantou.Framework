@@ -20,6 +20,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public JsEngine(Meziantou.Framework.JavaScriptEngine.JsEngineOptions? options = null) { }
         public Meziantou.Framework.JavaScriptEngine.JsRealm CreateRealm() => throw null;
         public void Dispose() { }
+        public void RunJobs() { }
     }
 
     public sealed class JsEngineOptions

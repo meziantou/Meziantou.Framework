@@ -144,7 +144,19 @@ public sealed class JsArray : JsObject
         if (!ValidateLengthDescriptor(descriptor))
             return false;
 
-        // Delete the elements from the end; stop at a non-configurable element
+        // Delete the elements from the end; stop at a non-configurable element. The dense elements are all configurable.
+        if (HasOnlyDenseElements)
+        {
+            TruncateElements(newLength);
+            _length = newLength;
+            if (!newWritable)
+            {
+                _lengthWritable = false;
+            }
+
+            return true;
+        }
+
         var keys = OrdinaryOwnPropertyKeys();
         for (var i = keys.Count - 1; i >= 0; i--)
         {

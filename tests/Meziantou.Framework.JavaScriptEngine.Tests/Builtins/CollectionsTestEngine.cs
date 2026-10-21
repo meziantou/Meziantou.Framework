@@ -100,8 +100,13 @@ internal sealed class CollectionsTestEngine : IDisposable
         return result;
     }
 
-    /// <summary>Gets the values produced by an iterable.</summary>
-    public static List<JsValue> Iterate(JsValue iterable) => IteratorOperations.IterableToList(iterable);
+    /// <summary>Gets the values produced by an iterable, or by an iterator (%Iterator.prototype%[Symbol.iterator] may not exist).</summary>
+    public static List<JsValue> Iterate(JsValue iterable)
+    {
+        var method = JsOperations.GetMethod(iterable, new PropertyKey(WellKnownSymbols.Iterator));
+        var record = method is null ? IteratorOperations.GetIteratorDirect(iterable.AsObject()) : IteratorOperations.GetIteratorFromMethod(iterable, method);
+        return IteratorOperations.IteratorToList(record);
+    }
 
     /// <summary>Asserts that the value is a native error of the type, created in the realm.</summary>
     public void AssertError(ErrorType type, JsValue value)

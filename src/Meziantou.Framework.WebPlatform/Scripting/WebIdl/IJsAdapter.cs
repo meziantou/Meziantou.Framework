@@ -316,6 +316,15 @@ public interface IJsAdapter<TValue>
     }
 
     /// <summary>
+    /// Prepares an object for <paramref name="count"/> more properties (e.g. the interface objects of a global object), so
+    /// that an engine can allocate their storage once. It does not change the behavior of the object. The default
+    /// implementation does nothing.
+    /// </summary>
+    void ReserveProperties(TValue obj, int count)
+    {
+    }
+
+    /// <summary>
     /// Sets the [[Stack]] internal slot of an error (https://tc39.es/proposal-error-stack-accessor/), read by the
     /// <c>Error.prototype.stack</c> accessor: the stack of a deserialized error
     /// (https://html.spec.whatwg.org/multipage/structured-data.html#structureddeserialize). Returns false when the engine

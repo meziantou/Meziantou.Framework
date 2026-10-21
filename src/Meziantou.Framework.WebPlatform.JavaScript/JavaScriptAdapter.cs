@@ -421,6 +421,8 @@ internal readonly struct JavaScriptAdapter(JavaScriptAdapterState state) : IJsAd
         ((JsObject)obj).DefineLazyDataProperty(Key(key), CreateLazyValue, factory, writable, enumerable, configurable);
     }
 
+    public void ReserveProperties(object obj, int count) => ((JsObject)obj).ReserveProperties(count);
+
     public void DefineLazyAccessorProperty(object obj, object key, IJsLazyAccessor<object> factory, bool hasSetter, bool enumerable, bool configurable)
     {
         ArgumentNullException.ThrowIfNull(factory);

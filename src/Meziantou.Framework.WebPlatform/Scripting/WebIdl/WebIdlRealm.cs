@@ -163,6 +163,9 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             DefineContinuationStatePropagation();
         }
 
+        // The global object gets an interface object per exposed interface, and the members of its interface
+        Adapter.ReserveProperties(Global, WebIdlBindings<TAdapter, TValue>.Interfaces.Count + 256);
+
         var isSecureContext = IsSecureContext;
         foreach (var binding in WebIdlBindings<TAdapter, TValue>.Interfaces.Values)
         {

@@ -186,8 +186,35 @@ public sealed partial class JsRealm
     {
         var function = new JsBuiltinFunction(this, callback, isConstructor, prototype ?? Intrinsics.FunctionPrototype);
         function.SetFunctionLength(length);
-        function.SetFunctionName(name, prefix);
+        if (prefix is null && name.IsString && GetBuiltinName(name.AsString()) is { } sharedName)
+        {
+            // The names of the built-in functions are the same in each realm: their string values are shared
+            function.SetFunctionName(sharedName);
+        }
+        else
+        {
+            function.SetFunctionName(name, prefix);
+        }
+
         return function;
+    }
+
+    // The string values of the names of the built-in functions (the names come from the code that defines them; the host
+    // can create functions with any name: the cache is bounded)
+    private const int MaxBuiltinNames = 8192;
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, JsString> BuiltinNames = new(StringComparer.Ordinal);
+    private static int s_builtinNameCount;
+
+    private static JsString? GetBuiltinName(string name)
+    {
+        if (BuiltinNames.TryGetValue(name, out var value))
+            return value;
+
+        if (Volatile.Read(ref s_builtinNameCount) >= MaxBuiltinNames)
+            return null;
+
+        Interlocked.Increment(ref s_builtinNameCount);
+        return BuiltinNames.GetOrAdd(name, JsString.Create(name));
     }
 
     /// <summary>Defines a built-in method (writable, configurable, not enumerable).</summary>

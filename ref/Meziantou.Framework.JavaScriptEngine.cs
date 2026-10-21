@@ -36,6 +36,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public System.Threading.CancellationToken CancellationToken { get => throw null; set { } }
         public int RecursionLimit { get => throw null; set { } }
         public System.TimeProvider TimeProvider { get => throw null; set { } }
+        public string? TimeZone { get => throw null; set { } }
         public System.TimeSpan? Timeout { get => throw null; set { } }
     }
 

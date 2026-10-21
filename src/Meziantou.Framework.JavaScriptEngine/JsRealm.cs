@@ -84,17 +84,15 @@ public sealed partial class JsRealm
         Engine.CurrentRealm = this;
         try
         {
-            Ast.Program program;
             try
             {
-                program = Parsing.JsParser.ParseScript(source, Parsing.ParserOptions.Script);
+                var program = Parsing.JsParser.ParseScript(source, Parsing.ParserOptions.Script);
+                return Compiler.CodeGenerator.CompileProgram(program, source, Compiler.ProgramKind.Script, isStrict: false);
             }
             catch (JsSyntaxErrorException ex)
             {
                 throw ThrowHelper.CreateSyntaxErrorException(ex);
             }
-
-            return Compiler.CodeGenerator.CompileProgram(program, source, Compiler.ProgramKind.Script, isStrict: false);
         }
         finally
         {

@@ -178,6 +178,7 @@ internal sealed partial class CodeGenerator
 
     private FunctionTemplate CompileFunctionBody(FunctionNode node, string name, FunctionTemplateFlags extraFlags)
     {
+        CompilerStack.EnsureSufficientStack();
         var info = _function;
         var flags = extraFlags;
         if (node.IsStrict)

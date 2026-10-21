@@ -7,7 +7,7 @@ internal sealed partial class Parser
     /// <summary>Parses a BindingIdentifier or a BindingPattern.</summary>
     private Node ParseBindingAtom()
     {
-        EnterRecursion();
+        using var recursion = EnterRecursion();
         switch (_token.Kind)
         {
             case TokenKind.LeftBracket:
@@ -260,7 +260,7 @@ internal sealed partial class Parser
     /// <summary>Converts an expression (a cover grammar) to an assignment pattern or to a binding pattern.</summary>
     private Node ToAssignable(Node node, bool isBinding, DestructuringErrors? errors)
     {
-        EnterRecursion();
+        using var recursion = EnterRecursion();
         switch (node)
         {
             case Identifier identifier:
@@ -423,7 +423,7 @@ internal sealed partial class Parser
 
     private void CheckLValInnerPattern(Node node, BindingKind kind, HashSet<string>? clashes)
     {
-        EnterRecursion();
+        using var recursion = EnterRecursion();
         switch (node)
         {
             case Property property:

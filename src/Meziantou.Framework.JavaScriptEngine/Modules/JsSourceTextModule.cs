@@ -65,16 +65,17 @@ public sealed class JsSourceTextModule : JsModule
     internal static JsSourceTextModule Parse(JsRealm realm, SourceText source, object? hostDefined)
     {
         Ast.Program program;
+        CompiledModule code;
         try
         {
             program = Parsing.JsParser.ParseModule(source);
+            code = CodeGenerator.CompileModule(program, source);
         }
         catch (JsSyntaxErrorException ex)
         {
             throw ThrowHelper.CreateSyntaxErrorException(ex);
         }
 
-        var code = CodeGenerator.CompileModule(program, source);
         var module = new JsSourceTextModule(realm, source, hostDefined, code);
         module.CollectEntries(program);
         return module;

@@ -29,7 +29,7 @@ internal sealed partial class Parser
 
     private Node ParseStatement(StatementContext context, bool topLevel = false)
     {
-        EnterRecursion();
+        using var recursion = EnterRecursion();
         var start = _token.Start;
         var isDeclarationContext = context is StatementContext.Declaration or StatementContext.CaseClause;
         switch (_token.Kind)

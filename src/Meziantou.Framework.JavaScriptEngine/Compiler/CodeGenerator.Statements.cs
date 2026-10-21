@@ -241,6 +241,7 @@ internal sealed partial class CodeGenerator
 
     private void EmitStatement(Node node, HashSet<string>? labels)
     {
+        CompilerStack.EnsureSufficientStack();
         _builder.SetPosition(node.Start);
         switch (node)
         {

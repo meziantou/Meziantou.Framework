@@ -108,6 +108,7 @@ internal sealed partial class ScopeAnalyzer
     /// <summary>Declares the VarScopedDeclarations of a statement (and, at the top level of a function or script, the function declarations).</summary>
     private void DeclareVarScoped(Node? statement, Scope varScope, bool isTopLevel)
     {
+        CompilerStack.EnsureSufficientStack();
         switch (statement)
         {
             case null:
@@ -211,6 +212,7 @@ internal sealed partial class ScopeAnalyzer
 
     private void DeclareLexicalStatement(Node statement, Scope scope, bool isFunctionTopLevel)
     {
+        CompilerStack.EnsureSufficientStack();
         switch (statement)
         {
             case VariableDeclaration { Kind: not VariableDeclarationKind.Var } declaration:
@@ -645,6 +647,7 @@ internal sealed partial class ScopeAnalyzer
 
     private void VisitStatement(Node? node, Scope scope)
     {
+        CompilerStack.EnsureSufficientStack();
         switch (node)
         {
             case null:
@@ -938,6 +941,7 @@ internal sealed partial class ScopeAnalyzer
 
     private void VisitPattern(Node? target, Scope scope, bool isDeclaration)
     {
+        CompilerStack.EnsureSufficientStack();
         switch (target)
         {
             case null:
@@ -987,6 +991,7 @@ internal sealed partial class ScopeAnalyzer
 
     private void VisitExpression(Node? node, Scope scope)
     {
+        CompilerStack.EnsureSufficientStack();
         switch (node)
         {
             case null:

@@ -394,4 +394,66 @@ public sealed class InterpreterTests
 
         Assert.StartsWith("SyntaxError:", exception.Message, StringComparison.Ordinal);
     }
+
+    [Theory]
+    [InlineData("(", ")")]
+    [InlineData("[", "]")]
+    [InlineData("{", "}")]
+    [InlineData("!", "")]
+    [InlineData("a = ", "")]
+    [InlineData("x => ", "")]
+    [InlineData("function f() { return ", "}")]
+    [InlineData("[", "] = [0]")]
+    [InlineData("if (a) ", "")]
+    public void DeepestAcceptedNesting_RunsOnASmallStack(string open, string close)
+    {
+        // The deepest code that the parser accepts: the scope analysis, the code generator and the interpreter must handle
+        // it on the stack of a secondary thread (1 MB on Windows), without a stack overflow
+        string Code(int depth) => string.Concat(Enumerable.Repeat(open, depth)) + "0" + string.Concat(Enumerable.Repeat(close, depth));
+        bool IsAccepted(int depth)
+        {
+            try
+            {
+                JavaScriptEngine.Parsing.JsParser.ParseScript(new JavaScriptEngine.Text.SourceText(Code(depth)), JavaScriptEngine.Parsing.ParserOptions.Script);
+                return true;
+            }
+            catch (JsSyntaxErrorException)
+            {
+                return false;
+            }
+        }
+
+        var low = 1;
+        var high = 100_000;
+        while (low < high)
+        {
+            var middle = (low + high + 1) / 2;
+            if (IsAccepted(middle))
+            {
+                low = middle;
+            }
+            else
+            {
+                high = middle - 1;
+            }
+        }
+
+        Assert.True(low < 100_000);
+        Exception? error = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                using var engine = new JsEngine();
+                engine.CreateRealm().Execute("var a = 1; " + Code(low));
+            }
+            catch (JsException ex)
+            {
+                error = ex;
+            }
+        }, maxStackSize: 1024 * 1024);
+        thread.Start();
+        thread.Join();
+        Assert.True(error is null or JsException);
+    }
 }

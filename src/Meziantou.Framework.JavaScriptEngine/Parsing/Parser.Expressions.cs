@@ -47,7 +47,7 @@ internal sealed partial class Parser
 
     private Node ParseAssignment(bool noIn = false, DestructuringErrors? errors = null, bool forAwait = false)
     {
-        EnterRecursion();
+        using var recursion = EnterRecursion();
         if (IsContextual("yield") && InGenerator)
             return ParseYield(noIn);
 
@@ -333,7 +333,7 @@ internal sealed partial class Parser
 
     private Node ParseUnary(DestructuringErrors? errors, bool sawUnary, bool incDec, bool noIn)
     {
-        EnterRecursion();
+        using var recursion = EnterRecursion();
         var start = _token.Start;
         Node expression;
         var kind = _token.Kind;

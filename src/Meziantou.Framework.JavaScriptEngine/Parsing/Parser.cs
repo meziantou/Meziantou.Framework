@@ -268,10 +268,27 @@ internal sealed partial class Parser
 
     private string GetTokenText(in Token token) => _source.Text.Substring(token.Start, Math.Min(token.End - token.Start, 50));
 
-    private void EnterRecursion()
+    /// <summary>
+    /// The maximum nesting of the recursive productions (statements, expressions, patterns). The limit does not depend on
+    /// the stack of the thread or on the size of the frames (Debug or Release), and it is low enough for the scope analysis
+    /// and the code generator, which recurse on the same trees.
+    /// </summary>
+    internal const int MaxNestingDepth = 1500;
+
+    private int _depth;
+
+    /// <summary>Enters a recursive production: a syntax error when the code is nested too deeply (dispose the scope to leave it).</summary>
+    private RecursionScope EnterRecursion()
     {
-        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+        if (++_depth > MaxNestingDepth || !RuntimeHelpers.TryEnsureSufficientExecutionStack())
             Raise(_token.Start, "Maximum call stack size exceeded: the code is nested too deeply");
+
+        return new RecursionScope(this);
+    }
+
+    private readonly ref struct RecursionScope(Parser parser)
+    {
+        public void Dispose() => parser._depth--;
     }
 
     // Reserved words

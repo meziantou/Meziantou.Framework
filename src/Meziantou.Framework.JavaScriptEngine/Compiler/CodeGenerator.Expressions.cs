@@ -18,6 +18,7 @@ internal sealed partial class CodeGenerator
 
     private void EmitExpression(Node node)
     {
+        CompilerStack.EnsureSufficientStack();
         switch (node)
         {
             case NullLiteral:

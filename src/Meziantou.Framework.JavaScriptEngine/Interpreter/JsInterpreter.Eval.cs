@@ -49,17 +49,17 @@ internal static partial class JsInterpreter
 
         var source = new SourceText(code, GetEvalUrl(code));
         Ast.Program program;
+        FunctionTemplate template;
         try
         {
             program = JsParser.ParseScript(source, options);
+            template = CodeGenerator.CompileProgram(program, source, ProgramKind.Eval, program.IsStrict || (context?.IsStrict ?? false));
         }
         catch (JsSyntaxErrorException ex)
         {
             throw ThrowHelper.CreateException(ErrorType.SyntaxError, ex.Message);
         }
 
-        var isStrict = program.IsStrict || (context?.IsStrict ?? false);
-        var template = CodeGenerator.CompileProgram(program, source, ProgramKind.Eval, isStrict);
         var environment = caller?.Environment ?? realm.GlobalEnvironment;
         var frame = new Frame(template, realm, environment, [])
         {
@@ -99,16 +99,17 @@ internal static partial class JsInterpreter
         var isGenerator = kind is DynamicFunctionKind.Generator or DynamicFunctionKind.AsyncGenerator;
         Ast.FunctionNode function;
         SourceText sourceText;
+        FunctionTemplate template;
         try
         {
             (function, sourceText) = JsParser.ParseDynamicFunction(source.Parameters, source.Body, isAsync, isGenerator);
+            template = CodeGenerator.CompileDynamicFunction(function, sourceText);
         }
         catch (JsSyntaxErrorException ex)
         {
             throw ThrowHelper.CreateException(ErrorType.SyntaxError, ex.Message);
         }
 
-        var template = CodeGenerator.CompileDynamicFunction(function, sourceText);
         var fallback = kind switch
         {
             DynamicFunctionKind.Generator => (Func<Intrinsics, JsObject>)(static intrinsics => intrinsics.GeneratorFunctionPrototype),

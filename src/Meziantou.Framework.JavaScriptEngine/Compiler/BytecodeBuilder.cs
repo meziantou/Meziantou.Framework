@@ -23,6 +23,9 @@ internal sealed class BytecodeBuilder
 
     public int MaxStack { get; private set; }
 
+    /// <summary>Gets whether the code contains an await (the top-level await of a module).</summary>
+    public bool ContainsAwait { get; private set; }
+
     /// <summary>Gets the position of the next instruction.</summary>
     public int Position => _code.Count;
 
@@ -121,6 +124,10 @@ internal sealed class BytecodeBuilder
         }
 
         IsUnreachable = op is OpCode.Jump or OpCode.Throw or OpCode.Return or OpCode.ThrowError;
+        if (op == OpCode.Await)
+        {
+            ContainsAwait = true;
+        }
     }
 
     public void EmitPushNumber(double value)
@@ -294,7 +301,7 @@ internal sealed class BytecodeBuilder
                 or OpCode.CreateRegExp
                 or OpCode.StoreResolved
                 => 2,
-            OpCode.LoadContextChecked or OpCode.StoreContextChecked or OpCode.ThrowConstAssignContext
+            OpCode.LoadContextChecked or OpCode.StoreContextChecked or OpCode.ThrowConstAssignContext or OpCode.LoadImport
                 => 3,
             _ => 0,
         };
@@ -310,7 +317,7 @@ internal sealed class BytecodeBuilder
             OpCode.Dup => 1,
             OpCode.Dup2 => 2,
             OpCode.Swap or OpCode.Rot3 or OpCode.Rot3Reverse or OpCode.Rot4 => 0,
-            OpCode.LoadLocal or OpCode.LoadLocalChecked or OpCode.LoadContext or OpCode.LoadContextChecked => 1,
+            OpCode.LoadLocal or OpCode.LoadLocalChecked or OpCode.LoadContext or OpCode.LoadContextChecked or OpCode.LoadImport => 1,
             OpCode.StoreLocal or OpCode.StoreLocalChecked or OpCode.StoreContext or OpCode.StoreContextChecked => -1,
             OpCode.ThrowConstAssignLocal or OpCode.ThrowConstAssignContext => 0,
             OpCode.LoadGlobal or OpCode.LoadGlobalOrUndefined or OpCode.LoadName or OpCode.LoadNameOrUndefined => 1,

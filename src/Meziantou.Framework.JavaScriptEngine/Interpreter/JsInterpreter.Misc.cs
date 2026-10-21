@@ -54,21 +54,38 @@ internal static partial class JsInterpreter
         return obj;
     }
 
-    /// <summary>import.meta (modules are not supported yet).</summary>
+    /// <summary>import.meta: the object of the module of the running code.</summary>
     private static JsValue GetImportMeta(Frame frame)
     {
-        _ = frame;
-        return ThrowHelper.ThrowSyntaxError<JsValue>("import.meta is only valid in modules");
+        if (frame.Script is not JsSourceTextModule module)
+            return ThrowHelper.ThrowSyntaxError<JsValue>("import.meta is only valid in modules");
+
+        return Modules.ModuleOperations.GetImportMeta(module);
     }
 
-    /// <summary>import() (modules are not supported yet): a rejected promise.</summary>
+    /// <summary>import(specifier, options): a promise of the namespace object of the module.</summary>
     private static JsValue ImportCall(Frame frame, JsValue specifier, JsValue options)
     {
-        _ = specifier;
-        _ = options;
-        var capability = PromiseCapability.CreateIntrinsic(frame.Realm);
-        capability.Reject(frame.Realm.CreateError(ErrorType.TypeError, "Dynamic import is not supported yet"));
-        return capability.Promise;
+        return Modules.ModuleOperations.EvaluateImportCall(frame.Realm, GetActiveScriptOrModule(frame), specifier, options);
+    }
+
+    /// <summary>GetActiveScriptOrModule(): the script or the module of the innermost frame that has one.</summary>
+    internal static IScriptOrModule? GetActiveScriptOrModule(Frame? frame)
+    {
+        if (frame?.Script is { } script)
+            return script;
+
+        var frames = (frame?.Realm.Engine ?? JsEngine.Current)?.Frames;
+        if (frames is not null)
+        {
+            for (var i = frames.Count - 1; i >= 0; i--)
+            {
+                if (frames[i].Script is { } other)
+                    return other;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>Runs a generator frame suspended at its start.</summary>

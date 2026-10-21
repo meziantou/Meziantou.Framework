@@ -72,6 +72,9 @@ internal enum OpCode
     /// <summary>(depth, slot, name) -> value; ReferenceError when the binding is not initialized</summary>
     LoadContextChecked,
 
+    /// <summary>(depth, slot, name) -> value: the value of an import binding (the binding of another module); ReferenceError when it is not initialized</summary>
+    LoadImport,
+
     /// <summary>(depth, slot) value -></summary>
     StoreContext,
 

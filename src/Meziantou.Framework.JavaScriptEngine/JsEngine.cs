@@ -31,6 +31,9 @@ public sealed partial class JsEngine : IDisposable
     /// <summary>Gets the depth of the running calls.</summary>
     internal int CallDepth { get; set; }
 
+    /// <summary>[[ModuleAsyncEvaluationCount]] of the agent.</summary>
+    internal long ModuleAsyncEvaluationCount { get; set; }
+
     /// <summary>Gets the realms created by the engine.</summary>
     public IReadOnlyList<JsRealm> Realms => _realms;
 

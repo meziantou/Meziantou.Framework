@@ -44,7 +44,7 @@ internal sealed class Frame
     /// <summary>Gets or sets the caller frame in the same run of the interpreter.</summary>
     public Frame? Parent { get; set; }
 
-    public ScriptRecord? Script { get; set; }
+    public IScriptOrModule? Script { get; set; }
 
     /// <summary>Gets or sets whether the frame is a [[Construct]] (the result is this when the function does not return an object).</summary>
     public bool IsConstruct { get; set; }

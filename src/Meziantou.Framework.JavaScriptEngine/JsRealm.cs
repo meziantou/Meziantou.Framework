@@ -83,6 +83,52 @@ public sealed class JsRealm
         }
     }
 
+    /// <summary>Parses a module (ParseModule). The module is then loaded, linked and evaluated with the methods of <see cref="JsModule"/>.</summary>
+    /// <param name="code">The source text of the module.</param>
+    /// <param name="url">The URL (or file name) of the module, used to resolve its imports and in the stack traces.</param>
+    /// <param name="hostDefined">The data of the host associated with the module.</param>
+    /// <exception cref="JsException">The module is not valid (a SyntaxError).</exception>
+    public JsSourceTextModule ParseModule(string code, string? url = null, object? hostDefined = null)
+    {
+        using var scope = Engine.Enter();
+        var previousRealm = Engine.CurrentRealm;
+        Engine.CurrentRealm = this;
+        try
+        {
+            return JsSourceTextModule.Parse(this, new Text.SourceText(code, url), hostDefined);
+        }
+        finally
+        {
+            Engine.CurrentRealm = previousRealm;
+        }
+    }
+
+    /// <summary>Creates a JSON module (ParseJSONModule): a module whose default export is the parsed JSON value.</summary>
+    /// <exception cref="JsException">The text is not valid JSON (a SyntaxError).</exception>
+    public JsSyntheticModule CreateJsonModule(string json, string? url = null, object? hostDefined = null)
+    {
+        using var scope = Engine.Enter();
+        var previousRealm = Engine.CurrentRealm;
+        Engine.CurrentRealm = this;
+        try
+        {
+            var value = JsonParser.Parse(this, json, trackSource: false, out _);
+            return new JsSyntheticModule(this, url, hostDefined, ["default"], module => module.SetExport("default", value));
+        }
+        finally
+        {
+            Engine.CurrentRealm = previousRealm;
+        }
+    }
+
+    /// <summary>Creates a synthetic module whose exports are set by <paramref name="evaluate"/> with <see cref="JsSyntheticModule.SetExport"/> when the module is evaluated.</summary>
+    public JsSyntheticModule CreateSyntheticModule(IEnumerable<string> exportNames, Action<JsSyntheticModule> evaluate, string? url = null, object? hostDefined = null)
+    {
+        ArgumentNullException.ThrowIfNull(exportNames);
+        ArgumentNullException.ThrowIfNull(evaluate);
+        return new JsSyntheticModule(this, url, hostDefined, exportNames, evaluate);
+    }
+
     /// <summary>Evaluates code in this realm as an indirect <c>eval</c> and returns its completion value.</summary>
     /// <exception cref="JsException">The code threw an exception (a SyntaxError for invalid code).</exception>
     public JsValue Evaluate(string code)

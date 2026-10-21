@@ -181,7 +181,7 @@ internal static partial class JsInterpreter
                         var index = declarative.Info.IndexOf(name);
                         if (index >= 0)
                         {
-                            var value = declarative.Slots[index];
+                            var value = ImportBindingCell.Read(declarative.Slots[index], key);
                             if (value.IsHole)
                             {
                                 ThrowTdz(key);
@@ -516,7 +516,7 @@ internal static partial class JsInterpreter
                     if (index < 0)
                         return declarative.EvalVars!.GetValueOrDefault(key.AsString());
 
-                    var value = declarative.Slots[index];
+                    var value = ImportBindingCell.Read(declarative.Slots[index], key);
                     if (value.IsHole)
                     {
                         ThrowTdz(key);

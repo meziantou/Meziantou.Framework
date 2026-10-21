@@ -251,6 +251,15 @@ internal static partial class JsInterpreter
                         break;
                     }
 
+                case OpCode.LoadImport:
+                    {
+                        var depth = code[pc++];
+                        var slot = code[pc++];
+                        var name = code[pc++];
+                        values[sp++] = ImportBindingCell.Read(GetEnvironment(frame.Environment, depth).Slots[slot], keys[name]);
+                        break;
+                    }
+
                 case OpCode.StoreContext:
                     {
                         var depth = code[pc++];

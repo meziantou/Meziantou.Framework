@@ -67,4 +67,120 @@ public sealed class InterpreterTests
         var exception = Assert.Throws<JsException>(() => realm.Execute("throw new TypeError('boom')"));
         Assert.Equal("TypeError: boom", exception.Message);
     }
+
+    private sealed class InMemoryModuleLoader(Dictionary<string, string> files) : JsModuleLoader
+    {
+        private readonly Dictionary<string, JsModule> _modules = new(StringComparer.Ordinal);
+
+        protected internal override void LoadImportedModule(JsModuleLoadRequest request)
+        {
+            if (!_modules.TryGetValue(request.Specifier, out var module))
+            {
+                if (!files.TryGetValue(request.Specifier, out var code))
+                {
+                    request.Fail("Cannot find the module '" + request.Specifier + "'");
+                    return;
+                }
+
+                module = request.Type == "json" ? request.Realm.CreateJsonModule(code, request.Specifier) : request.Realm.ParseModule(code, request.Specifier);
+                _modules[request.Specifier] = module;
+            }
+
+            request.Complete(module);
+        }
+
+        public void Register(string specifier, JsModule module) => _modules[specifier] = module;
+    }
+
+    private static string RunModule(Dictionary<string, string> files, string main = "main")
+    {
+        var loader = new InMemoryModuleLoader(files);
+        using var engine = new JsEngine(new JsEngineOptions { ModuleLoader = loader });
+        var realm = engine.CreateRealm();
+        var module = realm.ParseModule(files[main], main);
+        loader.Register(main, module);
+        var loading = module.LoadRequestedModules();
+        engine.RunJobs();
+        AssertFulfilled(loading);
+        module.Link();
+        var evaluation = module.Evaluate();
+        engine.RunJobs();
+        AssertFulfilled(evaluation);
+        using var scope = engine.Enter();
+        var result = realm.GlobalObject.Get(new PropertyKey("result"));
+        return result.IsString ? result.AsString() : result.ToString();
+    }
+
+    private static void AssertFulfilled(JsValue promise)
+    {
+        var jsPromise = (JsPromise)promise.Cell!;
+        if (jsPromise.State == PromiseState.Rejected)
+            throw new JsException(jsPromise.Result);
+
+        Assert.Equal(PromiseState.Fulfilled, jsPromise.State);
+    }
+
+    [Fact]
+    public void Module_ImportsAreLiveBindings()
+    {
+        var result = RunModule(new()
+        {
+            ["main"] = "import { count, increment } from 'counter'; import def, * as ns from 'counter'; increment(); globalThis.result = count + ',' + ns.count + ',' + def() + ',' + Object.keys(ns).join('|');",
+            ["counter"] = "export let count = 0; export function increment() { count++; } export default function () { return 'd'; }",
+        });
+
+        Assert.Equal("1,1,d,count|default|increment", result);
+    }
+
+    [Fact]
+    public void Module_ReexportedNamespaceIsUnambiguous()
+    {
+        var result = RunModule(new()
+        {
+            ["main"] = "export * from 'a'; export * from 'b'; import { foo } from 'main'; globalThis.result = typeof foo;",
+            ["a"] = "import * as foo from 'empty'; export { foo };",
+            ["b"] = "import * as foo from 'empty'; export { foo };",
+            ["empty"] = "",
+        });
+
+        Assert.Equal("object", result);
+    }
+
+    [Fact]
+    public void Module_TopLevelAwaitAndDynamicImport()
+    {
+        var result = RunModule(new()
+        {
+            ["main"] = "import { value } from 'tla'; const json = await import('data', { with: { type: 'json' } }); globalThis.result = value + json.default.x;",
+            ["tla"] = "export const value = await Promise.resolve(40);",
+            ["data"] = """{ "x": 2 }""",
+        });
+
+        Assert.Equal("42", result);
+    }
+
+    [Fact]
+    public void Module_CycleCanCallHoistedFunctions()
+    {
+        var result = RunModule(new()
+        {
+            ["main"] = "import { a } from 'a'; globalThis.result = a();",
+            ["a"] = "import { b } from 'b'; export function a() { return 'a' + b(); }",
+            ["b"] = "import { a } from 'a'; export function b() { return 'b'; } export const fromA = typeof a;",
+        });
+
+        Assert.Equal("ab", result);
+    }
+
+    [Fact]
+    public void Module_MissingExportIsASyntaxError()
+    {
+        var exception = Assert.Throws<JsException>(() => RunModule(new()
+        {
+            ["main"] = "import { missing } from 'a';",
+            ["a"] = "export const x = 1;",
+        }));
+
+        Assert.StartsWith("SyntaxError:", exception.Message, StringComparison.Ordinal);
+    }
 }

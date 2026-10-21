@@ -41,16 +41,15 @@ internal static class Test262Executor
     /// <summary>Runs the test in a mode; returns null when it passes, or the reason of the failure.</summary>
     private static string? RunMode(Test262Test test, string source, Test262Mode mode)
     {
-        if (mode == Test262Mode.Module)
-            return "Modules are not supported yet";
-
         var metadata = test.Metadata;
         using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        var loader = new Test262ModuleLoader(Path.GetDirectoryName(test.FullPath)!);
         using var engine = new JsEngine(new JsEngineOptions
         {
             CancellationToken = cancellation.Token,
             RecursionLimit = 1_000,
             TimeZone = "UTC",
+            ModuleLoader = loader,
         });
 
         var output = new StringBuilder();
@@ -66,9 +65,16 @@ internal static class Test262Executor
                 }
             }
 
-            var code = mode == Test262Mode.Strict ? "\"use strict\";\n" + source : source;
-            realm.Execute(code, test.Id);
-            engine.RunJobs();
+            if (mode == Test262Mode.Module)
+            {
+                RunModule(engine, realm, loader, test, source);
+            }
+            else
+            {
+                var code = mode == Test262Mode.Strict ? "\"use strict\";\n" + source : source;
+                realm.Execute(code, test.FullPath);
+                engine.RunJobs();
+            }
         }
         catch (JsException ex)
         {
@@ -98,6 +104,30 @@ internal static class Test262Executor
         }
 
         return null;
+    }
+
+    /// <summary>Loads, links and evaluates the module of a test; an error of a phase is thrown.</summary>
+    private static void RunModule(JsEngine engine, JsRealm realm, Test262ModuleLoader loader, Test262Test test, string source)
+    {
+        var module = realm.ParseModule(source, test.FullPath);
+        loader.Register(realm, test.FullPath, module);
+        var loading = module.LoadRequestedModules();
+        engine.RunJobs();
+        ThrowIfRejected(loading);
+        module.Link();
+        var evaluation = module.Evaluate();
+        engine.RunJobs();
+        ThrowIfRejected(evaluation);
+    }
+
+    private static void ThrowIfRejected(JsValue promise)
+    {
+        var jsPromise = (JsPromise)promise.Cell!;
+        if (jsPromise.State == PromiseState.Rejected)
+            throw new JsException(jsPromise.Result);
+
+        if (jsPromise.State == PromiseState.Pending)
+            throw new InvalidOperationException("The promise of the module is still pending");
     }
 
     private static IEnumerable<string> GetIncludes(Test262Metadata metadata)

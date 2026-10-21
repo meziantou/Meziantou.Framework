@@ -34,6 +34,7 @@ namespace Meziantou.Framework.JavaScriptEngine
     public sealed class JsEngineOptions
     {
         public System.Threading.CancellationToken CancellationToken { get => throw null; set { } }
+        public Meziantou.Framework.JavaScriptEngine.JsModuleLoader? ModuleLoader { get => throw null; set { } }
         public int RecursionLimit { get => throw null; set { } }
         public System.TimeProvider TimeProvider { get => throw null; set { } }
         public string? TimeZone { get => throw null; set { } }
@@ -51,6 +52,54 @@ namespace Meziantou.Framework.JavaScriptEngine
     public abstract class JsFunction : Meziantou.Framework.JavaScriptEngine.JsObject
     {
         public Meziantou.Framework.JavaScriptEngine.JsRealm Realm { get => throw null; }
+    }
+
+    public abstract class JsModule
+    {
+        public Meziantou.Framework.JavaScriptEngine.JsValue EvaluationError { get => throw null; }
+        public bool HasEvaluationError { get => throw null; }
+        public object? HostDefined { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsRealm Realm { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsModuleStatus Status { get => throw null; }
+        public string? Url { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsValue Evaluate() => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsValue GetNamespace() => throw null;
+        public void Link() { }
+        public Meziantou.Framework.JavaScriptEngine.JsValue LoadRequestedModules(object? hostDefined = null) => throw null;
+    }
+
+    public sealed class JsModuleLoadRequest
+    {
+        public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, string>> Attributes { get => throw null; }
+        public object? HostDefined { get => throw null; }
+        public bool IsDynamicImport { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsRealm Realm { get => throw null; }
+        public object? ReferrerHostDefined { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsModule? ReferrerModule { get => throw null; }
+        public string? ReferrerUrl { get => throw null; }
+        public string Specifier { get => throw null; }
+        public string? Type { get => throw null; }
+        public void Complete(Meziantou.Framework.JavaScriptEngine.JsModule module) { }
+        public void Fail(Meziantou.Framework.JavaScriptEngine.JsException exception) { }
+        public void Fail(Meziantou.Framework.JavaScriptEngine.JsValue error) { }
+        public void Fail(string message) { }
+    }
+
+    public abstract class JsModuleLoader
+    {
+        protected internal virtual void InitializeImportMeta(Meziantou.Framework.JavaScriptEngine.JsSourceTextModule module, Meziantou.Framework.JavaScriptEngine.JsObject importMeta) { }
+        protected internal abstract void LoadImportedModule(Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest request);
+    }
+
+    public enum JsModuleStatus
+    {
+        New = 0,
+        Unlinked = 1,
+        Linking = 2,
+        Linked = 3,
+        Evaluating = 4,
+        EvaluatingAsync = 5,
+        Evaluated = 6,
     }
 
     public class JsObject : Meziantou.Framework.JavaScriptEngine.JsCell
@@ -71,8 +120,15 @@ namespace Meziantou.Framework.JavaScriptEngine
         public Meziantou.Framework.JavaScriptEngine.JsEngine Engine { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsObject GlobalObject { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsValue GlobalThis { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsSyntheticModule CreateJsonModule(string json, string? url = null, object? hostDefined = null) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsSyntheticModule CreateSyntheticModule(System.Collections.Generic.IEnumerable<string> exportNames, System.Action<Meziantou.Framework.JavaScriptEngine.JsSyntheticModule> evaluate, string? url = null, object? hostDefined = null) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsValue Evaluate(string code) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsValue Execute(string code, string? url = null) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsSourceTextModule ParseModule(string code, string? url = null, object? hostDefined = null) => throw null;
+    }
+
+    public sealed class JsSourceTextModule : Meziantou.Framework.JavaScriptEngine.JsModule
+    {
     }
 
     public sealed class JsSymbol : Meziantou.Framework.JavaScriptEngine.JsCell
@@ -90,6 +146,12 @@ namespace Meziantou.Framework.JavaScriptEngine
         public JsSyntaxErrorException(string message) { }
         public JsSyntaxErrorException(string message, System.Exception innerException) { }
         public JsSyntaxErrorException(string message, string? url, int offset, int line, int column) { }
+    }
+
+    public sealed class JsSyntheticModule : Meziantou.Framework.JavaScriptEngine.JsModule
+    {
+        public System.Collections.Generic.IReadOnlyList<string> ExportNames { get => throw null; }
+        public void SetExport(string name, Meziantou.Framework.JavaScriptEngine.JsValue value) { }
     }
 
     public sealed class JsTerminationException : System.Exception

@@ -21,6 +21,9 @@ internal static class ThrowHelper
     public static void ThrowReferenceError(string message) => throw CreateException(ErrorType.ReferenceError, message);
 
     [DoesNotReturn]
+    public static T ThrowReferenceError<T>(string message) => throw CreateException(ErrorType.ReferenceError, message);
+
+    [DoesNotReturn]
     public static T ThrowSyntaxError<T>(string message) => throw CreateException(ErrorType.SyntaxError, message);
 
     [DoesNotReturn]

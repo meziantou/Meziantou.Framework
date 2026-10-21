@@ -22,4 +22,7 @@ public sealed class JsEngineOptions
     /// depend on the operating system.
     /// </summary>
     public string? TimeZone { get; set; }
+
+    /// <summary>Gets or sets the loader of the modules imported by the scripts and the modules, or null when the scripts cannot import modules.</summary>
+    public JsModuleLoader? ModuleLoader { get; set; }
 }

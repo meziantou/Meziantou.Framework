@@ -87,6 +87,14 @@ internal static partial class JsInterpreter
         public PromiseCapability Capability { get; } = capability;
     }
 
+    /// <summary>AsyncBlockStart: runs a frame as the body of an async function (the body of a module with a top-level await).</summary>
+    internal static void StartAsyncBlock(Frame frame, PromiseCapability capability)
+    {
+        var driver = new AsyncFunctionDriver(frame, capability);
+        frame.Owner = driver;
+        AsyncFunctionStep(driver, default, isThrow: false, isStart: true);
+    }
+
     private static void AsyncFunctionStep(AsyncFunctionDriver driver, JsValue value, bool isThrow, bool isStart = false)
     {
         var frame = driver.Frame;

@@ -259,7 +259,7 @@ internal static partial class JsInterpreter
         return CreateClosure(frame.Realm, template, frame.Environment, frame.Script);
     }
 
-    public static JsClosure CreateClosure(JsRealm realm, FunctionTemplate template, Environment environment, ScriptRecord? script)
+    public static JsClosure CreateClosure(JsRealm realm, FunctionTemplate template, Environment environment, IScriptOrModule? script)
     {
         var intrinsics = realm.Intrinsics;
         var prototype = (template.Flags & (FunctionTemplateFlags.Async | FunctionTemplateFlags.Generator)) switch

@@ -5,7 +5,7 @@ namespace Meziantou.Framework.JavaScriptEngine.Interpreter;
 /// <summary>An ECMAScript function object (https://tc39.es/ecma262/#sec-ecmascript-function-objects): compiled code and its environment.</summary>
 internal sealed class JsClosure : JsFunction
 {
-    public JsClosure(JsRealm realm, FunctionTemplate template, Environment environment, JsObject prototype, ScriptRecord? script)
+    public JsClosure(JsRealm realm, FunctionTemplate template, Environment environment, JsObject prototype, IScriptOrModule? script)
         : base(realm, prototype)
     {
         Template = template;
@@ -32,7 +32,7 @@ internal sealed class JsClosure : JsFunction
     public JsObject? HomeObject { get; set; }
 
     /// <summary>Gets the [[ScriptOrModule]] of the function.</summary>
-    public ScriptRecord? Script { get; }
+    public IScriptOrModule? Script { get; }
 
     /// <summary>Gets or sets the class of a class constructor (the source text and the default constructor).</summary>
     public ClassTemplate? ClassDefinition { get; set; }

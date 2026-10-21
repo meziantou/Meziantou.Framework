@@ -1,3 +1,0 @@
-language/export/escaped-as-export-specifier.js:module
-language/export/escaped-default.js:module
-language/export/escaped-from.js:module

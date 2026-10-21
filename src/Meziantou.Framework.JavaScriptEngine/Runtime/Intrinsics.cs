@@ -82,8 +82,85 @@ internal sealed partial class Intrinsics
         InitializeBuiltins();
     }
 
-    /// <summary>Initializes the other built-ins (each built-in has its own file).</summary>
-    partial void InitializeBuiltins();
+    /// <summary>Initializes the other built-ins, in this order. Each one is implemented in its own file (Intrinsics.&lt;Area&gt;.cs).</summary>
+    private void InitializeBuiltins()
+    {
+        InitializeObject();
+        InitializeFunction();
+        InitializeBoolean();
+        InitializeSymbol();
+        InitializeNumber();
+        InitializeBigInt();
+        InitializeMath();
+        InitializeGlobalFunctions();
+        InitializeString();
+        InitializeIterator();
+        InitializeArray();
+        InitializeJson();
+        InitializeReflect();
+        InitializeProxy();
+        InitializeCollections();
+        InitializeWeakRefs();
+        InitializePromise();
+        InitializeGenerators();
+        InitializeAsyncFunctions();
+        InitializeRegExp();
+        InitializeBinaryData();
+        InitializeDate();
+        InitializeDisposable();
+        InitializeTemporal();
+        InitializeIntl();
+    }
+
+    partial void InitializeObject();
+
+    partial void InitializeFunction();
+
+    partial void InitializeBoolean();
+
+    partial void InitializeSymbol();
+
+    partial void InitializeNumber();
+
+    partial void InitializeBigInt();
+
+    partial void InitializeMath();
+
+    partial void InitializeGlobalFunctions();
+
+    partial void InitializeString();
+
+    partial void InitializeIterator();
+
+    partial void InitializeArray();
+
+    partial void InitializeJson();
+
+    partial void InitializeReflect();
+
+    partial void InitializeProxy();
+
+    partial void InitializeCollections();
+
+    partial void InitializeWeakRefs();
+
+    partial void InitializePromise();
+
+    partial void InitializeGenerators();
+
+    partial void InitializeAsyncFunctions();
+
+    partial void InitializeRegExp();
+
+    partial void InitializeBinaryData();
+
+    partial void InitializeDate();
+
+    partial void InitializeDisposable();
+
+    partial void InitializeTemporal();
+
+    partial void InitializeIntl();
 
     /// <summary>Adds a property of the global object (SetDefaultGlobalBindings).</summary>
     public void AddGlobal(PropertyKey name, JsValue value, PropertyFlags flags = PropertyFlags.BuiltIn) => _globals.Add((name, value, flags));

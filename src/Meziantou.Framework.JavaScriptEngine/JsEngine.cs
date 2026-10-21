@@ -6,7 +6,7 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// An ECMAScript agent (https://tc39.es/ecma262/#sec-agents): it owns the realms, the job queue and the execution limits
 /// of the scripts it runs. An engine is used by one thread at a time.
 /// </summary>
-public sealed class JsEngine : IDisposable
+public sealed partial class JsEngine : IDisposable
 {
     [ThreadStatic]
     private static JsEngine? t_current;

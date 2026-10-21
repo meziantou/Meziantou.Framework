@@ -332,7 +332,7 @@ internal static class AsyncIteratorDisposeBuiltins
                 return promiseCapability.Promise;
             }
 
-            var result = returnMethod.Call(thisValue, [JsValue.Undefined]);
+            var result = returnMethod.Call(thisValue, []);
             resultWrapper = JsPromise.PromiseResolve(realm, result);
         }
         catch (JsException exception)

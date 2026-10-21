@@ -12789,6 +12789,7 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         TValue CreateFunction(string name, int length, Meziantou.Framework.WebPlatform.Scripting.JsHostFunction<TValue> function);
         TValue CreateObject(TValue prototype);
         TValue CreatePlatformObject(TValue prototype, object target, Meziantou.Framework.WebPlatform.Scripting.IJsHostObjectHandler<TValue>? handler);
+        public TValue? CreateSharedArrayBuffer(object dataBlock) => throw null;
         public void DefineLazyAccessorProperty(TValue obj, TValue key, System.Func<TValue> getterFactory, System.Func<TValue>? setterFactory, bool enumerable, bool configurable) { }
         public void DefineLazyDataProperty(TValue obj, TValue key, System.Func<TValue> factory, bool writable, bool enumerable, bool configurable) { }
         bool DefineOwnProperty(TValue obj, TValue key, in Meziantou.Framework.WebPlatform.Scripting.JsPropertyDescriptor<TValue> descriptor);
@@ -12824,6 +12825,7 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         bool IsSymbol(TValue value);
         public bool IsTerminationException(System.Exception exception) => throw null;
         bool IsUndefined(TValue value);
+        public bool IsValue(object value) => throw null;
         bool OrdinaryDefineOwnProperty(TValue obj, TValue key, in Meziantou.Framework.WebPlatform.Scripting.JsPropertyDescriptor<TValue> descriptor);
         bool OrdinaryDelete(TValue obj, TValue key);
         bool OrdinaryGetOwnProperty(TValue obj, TValue key, out Meziantou.Framework.WebPlatform.Scripting.JsPropertyDescriptor<TValue> descriptor);

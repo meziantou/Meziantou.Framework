@@ -16,6 +16,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.Imaging\Meziantou.Framework.WebPlatform.Imaging.csproj" />
     <!-- The paint worklets run scripts -->
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.Jint\Meziantou.Framework.WebPlatform.Jint.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.JavaScript\Meziantou.Framework.WebPlatform.JavaScript.csproj" />
   </ItemGroup>
   <ItemGroup>
     <!-- The helper that creates the script engine of the tests -->

@@ -1312,6 +1312,19 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         return proxy;
     }
 
+    /// <summary>Returns whether a .NET object is a value of the engine (see <see cref="IJsAdapter{TValue}.IsValue"/>).</summary>
+    internal bool TryAsValue(object? value, [NotNullWhen(true)] out TValue? jsValue)
+    {
+        if (value is TValue candidate && Adapter.IsValue(candidate))
+        {
+            jsValue = candidate;
+            return true;
+        }
+
+        jsValue = null;
+        return false;
+    }
+
     /// <summary>Returns the .NET object of a JavaScript platform object (or the window of a global object), or null.</summary>
     public object? Unwrap(TValue value)
     {
@@ -1604,7 +1617,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
         // A JavaScript value stored by the DOM (e.g. CustomEvent.detail). It is tested after the .NET types, because the
         // values of an engine may be .NET objects (e.g. an engine whose strings are .NET strings)
-        if (value is TValue jsValue)
+        if (TryAsValue(value, out var jsValue))
             return jsValue;
 
         if (value is IEnumerable enumerable)
@@ -1814,7 +1827,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             }
             else
             {
-                items[i] = values[i] is TValue value ? value : ToJs(values[i]);
+                items[i] = TryAsValue(values[i], out var value) ? value : ToJs(values[i]);
                 rejected[i] = Adapter.FromBoolean(false);
             }
         }

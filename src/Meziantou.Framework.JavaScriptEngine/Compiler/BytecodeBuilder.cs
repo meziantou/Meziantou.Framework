@@ -147,6 +147,43 @@ internal sealed class BytecodeBuilder
 
     private static bool IsSimpleStore(OpCode op) => op is OpCode.StoreLocal or OpCode.StoreLocalChecked or OpCode.StoreContext or OpCode.StoreContextChecked;
 
+    /// <summary>
+    /// A conditional jump after a comparison or a logical not (no jump targets the instruction between them): the
+    /// instruction is removed, and the jump does the comparison (one dispatch, no boolean on the stack).
+    /// </summary>
+    private OpCode FuseConditionalJump(OpCode op)
+    {
+        if (_instruction1 < 0 || _lastLabelPosition > _instruction1 || _instruction1 != _code.Count - 1)
+            return op;
+
+        var jumpIfTrue = op == OpCode.JumpIfTrue;
+        var previous = (OpCode)_code[_instruction1];
+        var fused = previous switch
+        {
+            OpCode.LessThan => jumpIfTrue ? OpCode.JumpIfLessThan : OpCode.JumpIfNotLessThan,
+            OpCode.LessThanOrEqual => jumpIfTrue ? OpCode.JumpIfLessThanOrEqual : OpCode.JumpIfNotLessThanOrEqual,
+            OpCode.GreaterThan => jumpIfTrue ? OpCode.JumpIfGreaterThan : OpCode.JumpIfNotGreaterThan,
+            OpCode.GreaterThanOrEqual => jumpIfTrue ? OpCode.JumpIfGreaterThanOrEqual : OpCode.JumpIfNotGreaterThanOrEqual,
+            OpCode.StrictEqual => jumpIfTrue ? OpCode.JumpIfStrictEqual : OpCode.JumpIfStrictNotEqual,
+            OpCode.StrictNotEqual => jumpIfTrue ? OpCode.JumpIfStrictNotEqual : OpCode.JumpIfStrictEqual,
+            OpCode.LogicalNot => jumpIfTrue ? OpCode.JumpIfFalse : OpCode.JumpIfTrue,
+            _ => op,
+        };
+
+        if (fused == op)
+            return op;
+
+        // Remove the comparison (it has no operand): the fused jump takes its place
+        _code.RemoveAt(_instruction1);
+        StackDepth -= GetStackEffect(previous, 0);
+        _instruction1 = _instruction2;
+        _instruction2 = _instruction3;
+        _instruction3 = -1;
+
+        // !(a < b): the comparison before the logical not
+        return previous == OpCode.LogicalNot ? FuseConditionalJump(fused) : fused;
+    }
+
     public void Emit(OpCode op, int operand)
     {
         if (HasInlineCache(op))
@@ -159,6 +196,17 @@ internal sealed class BytecodeBuilder
         Debug.Assert(GetOperandCount(op) == 1, $"{op} does not have 1 operand");
         EmitCore(op, operand);
         _code.Add(operand);
+    }
+
+    /// <summary>Removes the Dup that was just emitted (the next instruction duplicates the value itself).</summary>
+    public void RemoveLastDup()
+    {
+        Debug.Assert(_instruction1 == _code.Count - 1 && (OpCode)_code[_instruction1] == OpCode.Dup, "The last instruction is not a Dup");
+        _code.RemoveAt(_instruction1);
+        StackDepth--;
+        _instruction1 = _instruction2;
+        _instruction2 = _instruction3;
+        _instruction3 = -1;
     }
 
     public void Emit(OpCode op, int operand1, int operand2)
@@ -245,6 +293,11 @@ internal sealed class BytecodeBuilder
     public void EmitJump(OpCode op, Label label)
     {
         Debug.Assert(GetOperandCount(op) == 1, $"{op} is not a jump");
+        if (op is OpCode.JumpIfTrue or OpCode.JumpIfFalse)
+        {
+            op = FuseConditionalJump(op);
+        }
+
         EmitCore(op, 0);
         _fixups.Add((_code.Count, label.Id));
         _code.Add(-1);
@@ -342,7 +395,10 @@ internal sealed class BytecodeBuilder
     // ------------------------------------------------------------------------------------------------------------------
 
     /// <summary>Gets whether an instruction has an inline cache (its last operand is the index of the cache).</summary>
-    public static bool HasInlineCache(OpCode op) => op is OpCode.GetProperty or OpCode.SetProperty or OpCode.DefineField or OpCode.LoadGlobal or OpCode.LoadGlobalOrUndefined;
+    public static bool HasInlineCache(OpCode op) => op is OpCode.GetProperty or OpCode.GetMethod or OpCode.SetProperty or OpCode.DefineField or OpCode.LoadGlobal or OpCode.LoadGlobalOrUndefined;
+
+    /// <summary>Gets whether an instruction is a conditional jump with a comparison (left right ->).</summary>
+    public static bool IsCompareJump(OpCode op) => op is >= OpCode.JumpIfLessThan and <= OpCode.JumpIfStrictNotEqual;
 
     public static int GetOperandCount(OpCode op)
     {
@@ -353,6 +409,10 @@ internal sealed class BytecodeBuilder
                 or OpCode.LoadName or OpCode.LoadNameOrUndefined or OpCode.LoadNameForCall or OpCode.DeleteName or OpCode.InitializeName
                 or OpCode.PushScope
                 or OpCode.LoadArgument or OpCode.LoadRestArguments or OpCode.CreateArguments
+                or OpCode.IncrementLocal or OpCode.DecrementLocal
+                or OpCode.JumpIfLessThan or OpCode.JumpIfNotLessThan or OpCode.JumpIfLessThanOrEqual or OpCode.JumpIfNotLessThanOrEqual
+                or OpCode.JumpIfGreaterThan or OpCode.JumpIfNotGreaterThan or OpCode.JumpIfGreaterThanOrEqual or OpCode.JumpIfNotGreaterThanOrEqual
+                or OpCode.JumpIfStrictEqual or OpCode.JumpIfStrictNotEqual
                 or OpCode.Jump or OpCode.JumpIfTrue or OpCode.JumpIfFalse or OpCode.JumpIfTrueKeep or OpCode.JumpIfFalseKeep
                 or OpCode.JumpIfNullishKeep or OpCode.JumpIfNotNullishKeep or OpCode.JumpIfNotUndefinedKeep
                 or OpCode.DeleteElement
@@ -371,7 +431,7 @@ internal sealed class BytecodeBuilder
                 or OpCode.ResolveName or OpCode.LoadResolved or OpCode.SetVarBinding or OpCode.AsyncDisposeNext
                 => 1,
             OpCode.LoadLocalChecked or OpCode.StoreLocalChecked or OpCode.ThrowConstAssignLocal
-                or OpCode.GetProperty or OpCode.SetProperty or OpCode.DefineField or OpCode.LoadGlobal or OpCode.LoadGlobalOrUndefined
+                or OpCode.GetProperty or OpCode.GetMethod or OpCode.SetProperty or OpCode.DefineField or OpCode.LoadGlobal or OpCode.LoadGlobalOrUndefined
                 or OpCode.LoadContext or OpCode.StoreContext
                 or OpCode.StoreGlobal or OpCode.StoreName
                 or OpCode.DeleteProperty
@@ -402,6 +462,7 @@ internal sealed class BytecodeBuilder
             OpCode.Swap or OpCode.Rot3 or OpCode.Rot3Reverse or OpCode.Rot4 or OpCode.Rot5 => 0,
             OpCode.LoadLocal or OpCode.LoadLocalChecked or OpCode.LoadContext or OpCode.LoadContextChecked or OpCode.LoadImport => 1,
             OpCode.StoreLocal or OpCode.StoreLocalChecked or OpCode.StoreContext or OpCode.StoreContextChecked => -1,
+            OpCode.IncrementLocal or OpCode.DecrementLocal => 0,
             OpCode.ThrowConstAssignLocal or OpCode.ThrowConstAssignContext => 0,
             OpCode.LoadGlobal or OpCode.LoadGlobalOrUndefined or OpCode.LoadName or OpCode.LoadNameOrUndefined => 1,
             OpCode.LoadNameForCall => 2,
@@ -422,12 +483,14 @@ internal sealed class BytecodeBuilder
                 or OpCode.Increment or OpCode.Decrement or OpCode.ToStringValue or OpCode.ToPropertyKey or OpCode.ToObject or OpCode.RequireObjectCoercible => 0,
             OpCode.Jump => 0,
             OpCode.JumpIfTrue or OpCode.JumpIfFalse => -1,
+            >= OpCode.JumpIfLessThan and <= OpCode.JumpIfStrictNotEqual => -2,
             OpCode.JumpIfTrueKeep or OpCode.JumpIfFalseKeep or OpCode.JumpIfNullishKeep or OpCode.JumpIfNotNullishKeep or OpCode.JumpIfNotUndefinedKeep => 0,
             OpCode.Throw or OpCode.Return => -1,
             OpCode.ThrowError or OpCode.Debugger => 0,
             OpCode.NewObject or OpCode.NewArray => 1,
             OpCode.ArrayAppend or OpCode.ArrayAppendSpread => -1,
             OpCode.GetProperty => 0,
+            OpCode.GetMethod => 1,
             OpCode.SetProperty => -1,
             OpCode.GetElement => -1,
             OpCode.SetElement => -2,

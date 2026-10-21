@@ -1010,8 +1010,33 @@ internal sealed partial class CodeGenerator
         _builder.MarkLabel(endLabel);
     }
 
-    private void EmitUpdate(UpdateExpression update)
+    /// <summary>Evaluates an expression whose value is not used (an expression statement, the parts of a for statement).</summary>
+    private void EmitDiscardedExpression(Node expression)
     {
+        if (expression is UpdateExpression update)
+        {
+            // i++ and ++i are the same when the value is not used: no copy of the old value
+            if (update.Argument is Identifier identifier && _analysis.References[identifier] is { IsDynamic: false, NeedsTdzCheck: false, Variable: { Location: VariableLocation.Register, IsImmutable: false } variable }
+                && variable.Kind != VariableKind.FunctionName)
+            {
+                _builder.SetPosition(update.Start);
+                _builder.Emit(update.Operator == UpdateOperator.Increment ? OpCode.IncrementLocal : OpCode.DecrementLocal, variable.Index);
+                return;
+            }
+
+            EmitUpdate(update, valueUsed: false);
+            _builder.Emit(OpCode.Pop);
+            return;
+        }
+
+        EmitExpression(expression);
+        _builder.Emit(OpCode.Pop);
+    }
+
+    private void EmitUpdate(UpdateExpression update, bool valueUsed = true)
+    {
+        // When the value is not used, a postfix update is a prefix one (no copy of the old value)
+        var prefix = update.Prefix || !valueUsed;
         var target = update.Argument;
         var kind = EmitReferenceBase(target);
         EmitConvertReferenceKey(kind);
@@ -1020,7 +1045,7 @@ internal sealed partial class CodeGenerator
         EmitGetReference(target, kind);
         _builder.SetPosition(update.Start);
         _builder.Emit(OpCode.ToNumeric);
-        if (!update.Prefix)
+        if (!prefix)
         {
             // The old value is the result: keep a copy below the base
             _builder.Emit(OpCode.Dup);
@@ -1029,7 +1054,7 @@ internal sealed partial class CodeGenerator
 
         _builder.Emit(update.Operator == UpdateOperator.Increment ? OpCode.Increment : OpCode.Decrement);
         EmitPutReference(target, kind);
-        if (!update.Prefix)
+        if (!prefix)
         {
             _builder.Emit(OpCode.Pop);
         }
@@ -1080,8 +1105,11 @@ internal sealed partial class CodeGenerator
                 }
                 else
                 {
+                    // Dup, GetProperty, Swap
+                    _builder.RemoveLastDup();
                     _builder.SetPosition(member.Property.Start);
-                    _builder.Emit(OpCode.GetProperty, _builder.AddKey(GetPropertyKey(member.Property)));
+                    _builder.Emit(OpCode.GetMethod, _builder.AddKey(GetPropertyKey(member.Property)));
+                    return;
                 }
 
                 _builder.Emit(OpCode.Swap);

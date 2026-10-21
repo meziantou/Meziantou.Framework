@@ -250,14 +250,14 @@ internal sealed partial class CodeGenerator
                 _builder.Emit(OpCode.Debugger);
                 return;
             case ExpressionStatement statement:
-                EmitExpression(statement.Expression);
                 if (_completionRegister >= 0)
                 {
+                    EmitExpression(statement.Expression);
                     _builder.Emit(OpCode.StoreLocal, _completionRegister);
                 }
                 else
                 {
-                    _builder.Emit(OpCode.Pop);
+                    EmitDiscardedExpression(statement.Expression);
                 }
 
                 return;
@@ -500,16 +500,19 @@ internal sealed partial class CodeGenerator
 
     private void EmitWhile(WhileStatement whileStatement, HashSet<string>? labels)
     {
+        // The test is after the body (one jump per iteration): jump to it first
         ResetCompletion();
+        var bodyLabel = _builder.DefineLabel();
         var testLabel = _builder.DefineLabel();
         var breakLabel = _builder.DefineLabel();
-        _builder.MarkLabel(testLabel);
-        EmitExpression(whileStatement.Test);
-        _builder.EmitJump(OpCode.JumpIfFalse, breakLabel);
+        _builder.EmitJump(OpCode.Jump, testLabel);
+        _builder.MarkLabel(bodyLabel);
         var control = PushControl(ControlKind.Loop, breakLabel, testLabel, _scope, labels);
         EmitStatement(whileStatement.Body, labels: null);
         PopControl(control);
-        _builder.EmitJump(OpCode.Jump, testLabel);
+        _builder.MarkLabel(testLabel);
+        EmitExpression(whileStatement.Test);
+        _builder.EmitJump(OpCode.JumpIfTrue, bodyLabel);
         _builder.MarkLabel(breakLabel);
     }
 
@@ -562,8 +565,7 @@ internal sealed partial class CodeGenerator
         }
         else if (forStatement.Init is not null)
         {
-            EmitExpression(forStatement.Init);
-            _builder.Emit(OpCode.Pop);
+            EmitDiscardedExpression(forStatement.Init);
         }
 
         // CreatePerIterationEnvironment: each iteration has its own copy of the let bindings
@@ -572,16 +574,17 @@ internal sealed partial class CodeGenerator
             _builder.Emit(OpCode.CopyScope);
         }
 
+        // The test is after the body (one jump per iteration): jump to it first
+        var bodyLabel = _builder.DefineLabel();
         var testLabel = _builder.DefineLabel();
         var continueLabel = _builder.DefineLabel();
         var breakLabel = _builder.DefineLabel();
-        _builder.MarkLabel(testLabel);
         if (forStatement.Test is not null)
         {
-            EmitExpression(forStatement.Test);
-            _builder.EmitJump(OpCode.JumpIfFalse, breakLabel);
+            _builder.EmitJump(OpCode.Jump, testLabel);
         }
 
+        _builder.MarkLabel(bodyLabel);
         var control = PushControl(ControlKind.Loop, breakLabel, continueLabel, _scope, labels);
         EmitStatement(forStatement.Body, labels: null);
         PopControl(control);
@@ -593,11 +596,20 @@ internal sealed partial class CodeGenerator
 
         if (forStatement.Update is not null)
         {
-            EmitExpression(forStatement.Update);
-            _builder.Emit(OpCode.Pop);
+            EmitDiscardedExpression(forStatement.Update);
         }
 
-        _builder.EmitJump(OpCode.Jump, testLabel);
+        _builder.MarkLabel(testLabel);
+        if (forStatement.Test is not null)
+        {
+            EmitExpression(forStatement.Test);
+            _builder.EmitJump(OpCode.JumpIfTrue, bodyLabel);
+        }
+        else
+        {
+            _builder.EmitJump(OpCode.Jump, bodyLabel);
+        }
+
         _builder.MarkLabel(breakLabel);
     }
 

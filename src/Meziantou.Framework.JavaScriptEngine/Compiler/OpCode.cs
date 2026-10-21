@@ -69,6 +69,12 @@ internal enum OpCode
     /// <summary>(register) value -></summary>
     StoreLocal,
 
+    /// <summary>(register) ->: register = ToNumeric(register) + 1 (an update expression whose value is discarded)</summary>
+    IncrementLocal,
+
+    /// <summary>(register) ->: register = ToNumeric(register) - 1</summary>
+    DecrementLocal,
+
     /// <summary>(register, name) value ->; ReferenceError when the binding is not initialized</summary>
     StoreLocalChecked,
 
@@ -319,6 +325,38 @@ internal enum OpCode
     /// <summary>(target) value -> value: when the value is undefined, it is popped and the jump is taken</summary>
     JumpIfUndefinedPop,
 
+    // The comparisons followed by a conditional jump (a comparison, then JumpIfTrue or JumpIfFalse): left right ->
+
+    /// <summary>(target) left right ->: jumps when left &lt; right</summary>
+    JumpIfLessThan,
+
+    /// <summary>(target) left right ->: jumps when left &lt; right is false</summary>
+    JumpIfNotLessThan,
+
+    /// <summary>(target) left right ->: jumps when left &lt;= right</summary>
+    JumpIfLessThanOrEqual,
+
+    /// <summary>(target) left right ->: jumps when left &lt;= right is false</summary>
+    JumpIfNotLessThanOrEqual,
+
+    /// <summary>(target) left right ->: jumps when left &gt; right</summary>
+    JumpIfGreaterThan,
+
+    /// <summary>(target) left right ->: jumps when left &gt; right is false</summary>
+    JumpIfNotGreaterThan,
+
+    /// <summary>(target) left right ->: jumps when left &gt;= right</summary>
+    JumpIfGreaterThanOrEqual,
+
+    /// <summary>(target) left right ->: jumps when left &gt;= right is false</summary>
+    JumpIfNotGreaterThanOrEqual,
+
+    /// <summary>(target) left right ->: jumps when left === right</summary>
+    JumpIfStrictEqual,
+
+    /// <summary>(target) left right ->: jumps when left !== right</summary>
+    JumpIfStrictNotEqual,
+
     /// <summary>value ->: throws the value</summary>
     Throw,
 
@@ -347,6 +385,9 @@ internal enum OpCode
 
     /// <summary>(key) object -> value</summary>
     GetProperty,
+
+    /// <summary>(key) object -> function object: the callee and the this value of a method call (Dup, GetProperty, Swap)</summary>
+    GetMethod,
 
     /// <summary>(key) object value -> value</summary>
     SetProperty,

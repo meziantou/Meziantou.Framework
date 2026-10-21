@@ -219,6 +219,20 @@ internal static partial class JsInterpreter
                 case OpCode.StoreLocal:
                     values[code[pc++]] = values[--sp];
                     break;
+                case OpCode.IncrementLocal:
+                    {
+                        ref var local = ref values[code[pc++]];
+                        local = local.IsNumber ? new JsValue(local.NumberValue + 1) : Operators.Increment(JsOperations.ToNumeric(local), 1);
+                        break;
+                    }
+
+                case OpCode.DecrementLocal:
+                    {
+                        ref var local = ref values[code[pc++]];
+                        local = local.IsNumber ? new JsValue(local.NumberValue - 1) : Operators.Increment(JsOperations.ToNumeric(local), -1);
+                        break;
+                    }
+
                 case OpCode.StoreLocalChecked:
                     {
                         var register = code[pc];
@@ -468,7 +482,7 @@ internal static partial class JsInterpreter
                 case OpCode.JumpIfTrue:
                     if (ToBoolean(values[--sp]))
                     {
-                        pc = code[pc];
+                        pc = JumpTarget(code, pc, engine);
                     }
                     else
                     {
@@ -483,10 +497,102 @@ internal static partial class JsInterpreter
                     }
                     else
                     {
-                        pc = code[pc];
+                        pc = JumpTarget(code, pc, engine);
                     }
 
                     break;
+
+                // The comparisons followed by a conditional jump: the numbers inline, the other values in a call
+                case OpCode.JumpIfLessThan:
+                    {
+                        var left = values[sp - 2];
+                        var right = values[sp - 1];
+                        sp -= 2;
+                        pc = (left.IsNumber && right.IsNumber ? left.NumberValue < right.NumberValue : CompareForJump(op, left, right)) ? JumpTarget(code, pc, engine) : pc + 1;
+                        break;
+                    }
+
+                case OpCode.JumpIfNotLessThan:
+                    {
+                        var left = values[sp - 2];
+                        var right = values[sp - 1];
+                        sp -= 2;
+                        pc = (left.IsNumber && right.IsNumber ? !(left.NumberValue < right.NumberValue) : CompareForJump(op, left, right)) ? JumpTarget(code, pc, engine) : pc + 1;
+                        break;
+                    }
+
+                case OpCode.JumpIfLessThanOrEqual:
+                    {
+                        var left = values[sp - 2];
+                        var right = values[sp - 1];
+                        sp -= 2;
+                        pc = (left.IsNumber && right.IsNumber ? left.NumberValue <= right.NumberValue : CompareForJump(op, left, right)) ? JumpTarget(code, pc, engine) : pc + 1;
+                        break;
+                    }
+
+                case OpCode.JumpIfNotLessThanOrEqual:
+                    {
+                        var left = values[sp - 2];
+                        var right = values[sp - 1];
+                        sp -= 2;
+                        pc = (left.IsNumber && right.IsNumber ? !(left.NumberValue <= right.NumberValue) : CompareForJump(op, left, right)) ? JumpTarget(code, pc, engine) : pc + 1;
+                        break;
+                    }
+
+                case OpCode.JumpIfGreaterThan:
+                    {
+                        var left = values[sp - 2];
+                        var right = values[sp - 1];
+                        sp -= 2;
+                        pc = (left.IsNumber && right.IsNumber ? left.NumberValue > right.NumberValue : CompareForJump(op, left, right)) ? JumpTarget(code, pc, engine) : pc + 1;
+                        break;
+                    }
+
+                case OpCode.JumpIfNotGreaterThan:
+                    {
+                        var left = values[sp - 2];
+                        var right = values[sp - 1];
+                        sp -= 2;
+                        pc = (left.IsNumber && right.IsNumber ? !(left.NumberValue > right.NumberValue) : CompareForJump(op, left, right)) ? JumpTarget(code, pc, engine) : pc + 1;
+                        break;
+                    }
+
+                case OpCode.JumpIfGreaterThanOrEqual:
+                    {
+                        var left = values[sp - 2];
+                        var right = values[sp - 1];
+                        sp -= 2;
+                        pc = (left.IsNumber && right.IsNumber ? left.NumberValue >= right.NumberValue : CompareForJump(op, left, right)) ? JumpTarget(code, pc, engine) : pc + 1;
+                        break;
+                    }
+
+                case OpCode.JumpIfNotGreaterThanOrEqual:
+                    {
+                        var left = values[sp - 2];
+                        var right = values[sp - 1];
+                        sp -= 2;
+                        pc = (left.IsNumber && right.IsNumber ? !(left.NumberValue >= right.NumberValue) : CompareForJump(op, left, right)) ? JumpTarget(code, pc, engine) : pc + 1;
+                        break;
+                    }
+
+                case OpCode.JumpIfStrictEqual:
+                    {
+                        var left = values[sp - 2];
+                        var right = values[sp - 1];
+                        sp -= 2;
+                        pc = (left.IsNumber ? right.IsNumber && left.NumberValue == right.NumberValue : JsOperations.IsStrictlyEqual(left, right)) ? JumpTarget(code, pc, engine) : pc + 1;
+                        break;
+                    }
+
+                case OpCode.JumpIfStrictNotEqual:
+                    {
+                        var left = values[sp - 2];
+                        var right = values[sp - 1];
+                        sp -= 2;
+                        pc = (left.IsNumber ? right.IsNumber && left.NumberValue == right.NumberValue : JsOperations.IsStrictlyEqual(left, right)) ? pc + 1 : JumpTarget(code, pc, engine);
+                        break;
+                    }
+
                 case OpCode.JumpIfTrueKeep:
                     if (ToBoolean(values[sp - 1]))
                     {
@@ -567,6 +673,16 @@ internal static partial class JsInterpreter
                     values[sp - 1] = GetProperty(frame, code[pc], code[pc + 1], values[sp - 1]);
                     pc += 2;
                     break;
+                case OpCode.GetMethod:
+                    {
+                        // object -> function object
+                        var target = values[sp - 1];
+                        values[sp - 1] = GetProperty(frame, code[pc], code[pc + 1], target);
+                        values[sp++] = target;
+                        pc += 2;
+                        break;
+                    }
+
                 case OpCode.SetProperty:
                     sp--;
                     SetProperty(frame, code[pc], code[pc + 1], values[sp - 1], values[sp]);
@@ -711,6 +827,36 @@ internal static partial class JsInterpreter
                     break;
             }
         }
+    }
+
+    /// <summary>Gets the target of the jump whose operand is at <paramref name="pc"/>: a backward jump checks the limits of the script (a loop).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int JumpTarget(int[] code, int pc, JsEngine engine)
+    {
+        var target = code[pc];
+        if (target < pc)
+        {
+            engine.CheckInterrupt();
+        }
+
+        return target;
+    }
+
+    /// <summary>The condition of a comparison followed by a conditional jump, when the operands are not both numbers.</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool CompareForJump(OpCode op, JsValue left, JsValue right)
+    {
+        return op switch
+        {
+            OpCode.JumpIfLessThan => Operators.LessThan(left, right, leftFirst: true) is true,
+            OpCode.JumpIfNotLessThan => Operators.LessThan(left, right, leftFirst: true) is not true,
+            OpCode.JumpIfLessThanOrEqual => Operators.LessThan(right, left, leftFirst: false) is false,
+            OpCode.JumpIfNotLessThanOrEqual => Operators.LessThan(right, left, leftFirst: false) is not false,
+            OpCode.JumpIfGreaterThan => Operators.LessThan(right, left, leftFirst: false) is true,
+            OpCode.JumpIfNotGreaterThan => Operators.LessThan(right, left, leftFirst: false) is not true,
+            OpCode.JumpIfGreaterThanOrEqual => Operators.LessThan(left, right, leftFirst: true) is false,
+            _ => Operators.LessThan(left, right, leftFirst: true) is not false,
+        };
     }
 
     /// <summary>ToBoolean with the fast paths of the booleans (the result of the comparisons) inlined in the loop.</summary>

@@ -34,14 +34,29 @@ internal sealed class JsClosure : JsFunction
     /// <summary>Gets the [[ScriptOrModule]] of the function.</summary>
     public IScriptOrModule? Script { get; }
 
+    // The slots of the class constructors (most closures are not: they are in a separate object)
+    private ClassConstructorData? _classData;
+
     /// <summary>Gets or sets the class of a class constructor (the source text and the default constructor).</summary>
-    public ClassTemplate? ClassDefinition { get; set; }
+    public ClassTemplate? ClassDefinition
+    {
+        get => _classData?.Definition;
+        set => (_classData ??= new()).Definition = value;
+    }
 
     /// <summary>Gets or sets the [[Fields]] of a class constructor: the function that defines the instance fields.</summary>
-    public JsClosure? FieldInitializer { get; set; }
+    public JsClosure? FieldInitializer
+    {
+        get => _classData?.FieldInitializer;
+        set => (_classData ??= new()).FieldInitializer = value;
+    }
 
     /// <summary>Gets or sets the [[PrivateMethods]] of a class constructor.</summary>
-    public List<PrivateMethodRecord>? PrivateMethods { get; set; }
+    public List<PrivateMethodRecord>? PrivateMethods
+    {
+        get => _classData?.PrivateMethods;
+        set => (_classData ??= new()).PrivateMethods = value;
+    }
 
     /// <summary>Gets whether the function is the constructor of a class with an extends clause ([[ConstructorKind]] derived).</summary>
     public bool IsDerivedConstructor => ClassDefinition is not null ? ClassDefinition.HasHeritage : Template.IsDerivedConstructor;
@@ -73,3 +88,13 @@ internal sealed class JsClosure : JsFunction
 
 /// <summary>A private method or accessor of a class ([[PrivateMethods]]).</summary>
 internal sealed record PrivateMethodRecord(PrivateName Name, PrivateElementKind Kind, JsValue Method, JsValue Getter, JsValue Setter);
+
+/// <summary>The slots of a class constructor (<see cref="JsClosure.ClassDefinition"/>...).</summary>
+internal sealed class ClassConstructorData
+{
+    public ClassTemplate? Definition { get; set; }
+
+    public JsClosure? FieldInitializer { get; set; }
+
+    public List<PrivateMethodRecord>? PrivateMethods { get; set; }
+}

@@ -373,7 +373,7 @@ internal static partial class JsInterpreter
 
         var closure = new JsClosure(realm, template, environment, prototype, script);
         closure.SetFunctionLength(template.Length);
-        closure.SetFunctionName(template.Name);
+        closure.SetFunctionName(template.NameValue);
         nameEnvironment?.Slots[0] = closure;
 
         if (template.IsGenerator)

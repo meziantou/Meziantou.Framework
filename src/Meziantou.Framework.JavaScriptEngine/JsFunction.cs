@@ -22,6 +22,13 @@ public abstract class JsFunction : JsObject
     /// <summary>Defines the <c>length</c> property (SetFunctionLength).</summary>
     internal void SetFunctionLength(double length) => DefineBuiltIn("length", length, PropertyFlags.Configurable);
 
+    /// <summary>Defines the <c>name</c> property (SetFunctionName) with a name that is a string value.</summary>
+    internal void SetFunctionName(JsString name)
+    {
+        InitialName = name.ToString();
+        DefineBuiltIn("name", JsValue.FromJsString(name), PropertyFlags.Configurable);
+    }
+
     /// <summary>Defines the <c>name</c> property (SetFunctionName).</summary>
     internal void SetFunctionName(PropertyKey name, string? prefix = null)
     {

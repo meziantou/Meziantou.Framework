@@ -10,6 +10,9 @@ internal sealed class FunctionTemplate
 {
     public required string Name { get; init; }
 
+    /// <summary>Gets <see cref="Name"/> as a string value (shared by the functions created from the template).</summary>
+    public JsString NameValue => field ??= JsString.Create(Name);
+
     /// <summary>Gets the value of the <c>length</c> property (ExpectedArgumentCount).</summary>
     public required int Length { get; init; }
 

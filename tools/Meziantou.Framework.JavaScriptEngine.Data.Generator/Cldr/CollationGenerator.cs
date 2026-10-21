@@ -44,7 +44,9 @@ internal static partial class CollationGenerator
             var types = new Dictionary<string, string>(StringComparer.Ordinal);
             foreach (var collation in document.Descendants("collation"))
             {
-                if (collation.Attribute("alt") is not null)
+                // As ICU, the proposed alternatives and the draft data below "contributed" are not included (e.g. the
+                // provisional "eor" of de, whose [reorder others digit] ICU does not have)
+                if (collation.Attribute("alt") is not null || (string?)collation.Attribute("draft") is "unconfirmed" or "provisional")
                     continue;
 
                 var type = (string)collation.Attribute("type")!;

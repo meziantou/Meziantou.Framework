@@ -70,7 +70,11 @@ file), in which identical strings and identical tables are stored once.
   of `FractionalUCA.txt`) and of the Unified_Ideograph code points (`PropList.txt`). The tailorings of
   `common/collation/*.xml` of the languages of the embedded locales are stored as rules (one tree per locale: type =
   rules, `_default` = the default type), with the imports inlined and the comments removed; the generator checks that
-  the parser of the engine (`CollationTailoring.Parse`) accepts them. The collator applies them to the root table.
+  the parser of the engine (`CollationTailoring.Parse`) accepts them. The collator applies them to the root table. As
+  ICU, the collations marked `draft="unconfirmed"` or `"provisional"` and the `alt="proposed"` ones are not included.
+  The collations inherit by truncation (`zh-Hant` -> `zh`, as ICU); the parents of the index are the parentLocales of
+  the "collations" component and the main parentLocales to a locale other than the root of the locales without a script
+  subtag (`nb` -> `no`).
 
 Before writing the files, the generator reads the resolved value of every path of every locale back through the
 runtime (`CldrLocale`) and compares it with cldr-json; any difference fails the run (exit code 3).

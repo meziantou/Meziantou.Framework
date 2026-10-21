@@ -61,12 +61,25 @@ internal static class CldrGenerator
         var localesFile = ChunkedFileWriter.Write(localeChunks);
         Console.WriteLine($"Locale data: {stopwatch.Elapsed}, {localeGenerator.MissingInChildCount} values of a parent missing in the resolved data of a child");
 
+        // The parents of the collations: the collations use truncation inheritance (zh-Hant inherits zh, as in ICU), except
+        // the parentLocales of the "collations" component and the main parentLocales to a locale other than the root of
+        // the locales without a script subtag (nb -> no, es-MX -> es-419)
         var collationParents = new Dictionary<string, string>(StringComparer.Ordinal);
         using (var parents = source.Read("cldr-core/supplemental/parentLocales.json"))
         {
-            foreach (var property in parents.RootElement.GetProperty("supplemental").GetProperty("parentLocales").GetProperty("collations").EnumerateObject())
+            var parentLocales = parents.RootElement.GetProperty("supplemental").GetProperty("parentLocales");
+            foreach (var property in parentLocales.GetProperty("parentLocale").EnumerateObject())
             {
-                collationParents.Add(property.Name, property.Value.GetString()!);
+                var parent = property.Value.GetString()!;
+                if (parent is not "und" && !LanguageId.Parse(property.Name).HasScript)
+                {
+                    collationParents[property.Name] = parent;
+                }
+            }
+
+            foreach (var property in parentLocales.GetProperty("collations").EnumerateObject())
+            {
+                collationParents[property.Name] = property.Value.GetString()!;
             }
         }
 

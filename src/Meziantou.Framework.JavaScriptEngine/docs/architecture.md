@@ -186,6 +186,18 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
   the symbols of the numbering system and the compact, unit and currency patterns; the parts are grouped as the
   modifiers of ICU (outer, middle, inner) for the collapsing of the ranges (PartitionNumberRangePattern). Where ECMA-402
   leaves the output to the implementation, it follows ICU (Node.js is a convenient oracle to compare with).
+- `Intl/Collator/`: Intl.Collator and String.prototype.localeCompare, a UCA collator over the CLDR root collation.
+  `RootCollation` converts allkeys_CLDR.txt to 64-bit CEs (`CollationWeights`: 32-bit primaries, a root primary `p` is
+  `p << 16` so that a tailoring can insert weights after it; the implicit pairs are single primaries) and derives the
+  sorted root weights, the variable range and the script groups of `[reorder]`. `CollationBuilder` applies the rules of
+  a tailoring as ICU's CollationBuilder (lists of nodes after the root primaries, then consecutive weights in the gaps):
+  resets, `[before n]`, the special positions, prefixes, extensions, contractions, `[suppressContractions]`.
+  `CollationTable` computes the CEs of a string in NFD (prefix mappings, contiguous and discontiguous contractions,
+  implicit weights, numeric collation). `TailoredCollation` caches the table of each tailoring (the rules are the key)
+  and `StringCollator` compares two strings with the settings (strength, case level, case first, shifted, numeric,
+  backwards secondary, reordering): it skips the common prefix up to a safe boundary, compares the characters below
+  U+0300 with precomputed CEs and an early exit on the first primary difference, and decomposes the other strings in
+  thread-static buffers (no allocation). Node.js (ICU) is the oracle: the orders of every tailoring match it.
 
 ## Tests
 

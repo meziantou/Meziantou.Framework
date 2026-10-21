@@ -216,6 +216,18 @@ public sealed class InterpreterTests
     }
 
     [Fact]
+    public void Module_ImportSource_TheSourceOfAJavaScriptModuleIsNotAvailable()
+    {
+        var result = RunModule(new()
+        {
+            ["main"] = "import.source('dep').then(() => { globalThis.result = 'loaded'; }, e => { globalThis.result = e.name + ',' + globalThis.evaluated; });",
+            ["dep"] = "globalThis.evaluated = true;",
+        });
+
+        Assert.Equal("SyntaxError,undefined", result);
+    }
+
+    [Fact]
     public void Module_ImportsAreLiveBindings()
     {
         var result = RunModule(new()

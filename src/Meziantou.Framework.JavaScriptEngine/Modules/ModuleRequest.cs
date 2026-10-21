@@ -66,4 +66,7 @@ internal enum ModulePhase
 
     /// <summary>The module is evaluated on the first access to an export of its deferred namespace object.</summary>
     Defer,
+
+    /// <summary>The module is loaded, not linked nor evaluated: the import is the source of the module (https://tc39.es/proposal-source-phase-imports/).</summary>
+    Source,
 }

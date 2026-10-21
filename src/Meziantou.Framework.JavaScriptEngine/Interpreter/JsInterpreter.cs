@@ -1280,7 +1280,16 @@ internal static partial class JsInterpreter
                         var options = values[--sp];
                         var specifier = values[--sp];
                         frame.Sp = sp;
-                        values[sp++] = ImportCall(frame, specifier, options, isDefer: true);
+                        values[sp++] = ImportCall(frame, specifier, options, Modules.ModulePhase.Defer);
+                        break;
+                    }
+
+                case OpCode.ImportSourceCall:
+                    {
+                        var options = values[--sp];
+                        var specifier = values[--sp];
+                        frame.Sp = sp;
+                        values[sp++] = ImportCall(frame, specifier, options, Modules.ModulePhase.Source);
                         break;
                     }
 

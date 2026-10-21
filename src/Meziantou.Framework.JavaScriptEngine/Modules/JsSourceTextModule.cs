@@ -89,11 +89,12 @@ public sealed class JsSourceTextModule : JsModule
             {
                 case ImportDeclaration import:
                     {
-                        var request = AddRequest(import.Source, import.Attributes, import.IsDefer ? ModulePhase.Defer : ModulePhase.Evaluation);
+                        var request = AddRequest(import.Source, import.Attributes, import.Phase);
                         foreach (var specifier in import.Specifiers)
                         {
                             ImportEntries.Add(specifier switch
                             {
+                                ImportDefaultSpecifier s when import.Phase == ModulePhase.Source => new ImportEntry(request, ImportName: null, s.Local.Name),
                                 ImportDefaultSpecifier s => new ImportEntry(request, "default", s.Local.Name),
                                 ImportNamespaceSpecifier s => new ImportEntry(request, ImportName: null, s.Local.Name),
                                 ImportSpecifier s => new ImportEntry(request, GetName(s.Imported), s.Local.Name),

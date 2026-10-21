@@ -63,10 +63,10 @@ internal static partial class JsInterpreter
         return Modules.ModuleOperations.GetImportMeta(module);
     }
 
-    /// <summary>import(specifier, options) or import.defer(specifier, options): a promise of the namespace object of the module.</summary>
-    private static JsValue ImportCall(Frame frame, JsValue specifier, JsValue options, bool isDefer = false)
+    /// <summary>import(specifier, options), import.defer(...) or import.source(...): a promise of the namespace object (or of the source) of the module.</summary>
+    private static JsValue ImportCall(Frame frame, JsValue specifier, JsValue options, Modules.ModulePhase phase = Modules.ModulePhase.Evaluation)
     {
-        return Modules.ModuleOperations.EvaluateImportCall(frame.Realm, GetActiveScriptOrModule(frame), specifier, options, isDefer ? Modules.ModulePhase.Defer : Modules.ModulePhase.Evaluation);
+        return Modules.ModuleOperations.EvaluateImportCall(frame.Realm, GetActiveScriptOrModule(frame), specifier, options, phase);
     }
 
     /// <summary>GetActiveScriptOrModule(): the script or the module of the innermost frame that has one.</summary>

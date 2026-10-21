@@ -55,6 +55,9 @@ internal static class Test262Host
         htmlDda.Flags |= ObjectFlags.IsHtmlDda;
         host.DefineBuiltIn("IsHTMLDDA", htmlDda);
 
+        // %AbstractModuleSource% (source-phase-imports)
+        host.DefineBuiltIn("AbstractModuleSource", realm.Intrinsics.AbstractModuleSource);
+
         agents?.InstallMainAgent(realm, host);
         global.DefineBuiltIn("$262", host);
         return host;

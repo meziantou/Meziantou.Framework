@@ -931,15 +931,15 @@ internal sealed partial class Parser
     {
         var start = _token.Start;
         Next();
-        var isDefer = false;
+        var phase = Modules.ModulePhase.Evaluation;
         if (_token.Kind == TokenKind.Dot)
         {
             Next();
-            if (_token.Kind == TokenKind.Identifier && _token.Value == "defer" && !_token.IsEscaped)
+            if (_token.Kind == TokenKind.Identifier && _token.Value is "defer" or "source" && !_token.IsEscaped)
             {
-                // import.defer(specifier, options) (https://tc39.es/proposal-defer-import-eval/)
+                // import.defer(specifier, options) (https://tc39.es/proposal-defer-import-eval/) and import.source(specifier, options) (https://tc39.es/proposal-source-phase-imports/)
+                phase = _token.Value == "defer" ? Modules.ModulePhase.Defer : Modules.ModulePhase.Source;
                 Next();
-                isDefer = true;
             }
             else
             {
@@ -970,7 +970,7 @@ internal sealed partial class Parser
         }
 
         Expect(TokenKind.RightParen);
-        return Finish(new ImportExpression { Source = source, Options = options, IsDefer = isDefer }, start);
+        return Finish(new ImportExpression { Source = source, Options = options, Phase = phase }, start);
     }
 
     private TemplateLiteral ParseTemplate(bool isTagged)

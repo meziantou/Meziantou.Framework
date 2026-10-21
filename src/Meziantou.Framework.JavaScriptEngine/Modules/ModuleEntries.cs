@@ -1,6 +1,9 @@
 namespace Meziantou.Framework.JavaScriptEngine.Modules;
 
-/// <summary>An ImportEntry Record (https://tc39.es/ecma262/#importentry-record). A null import name is a namespace import.</summary>
+/// <summary>
+/// An ImportEntry Record (https://tc39.es/ecma262/#importentry-record). A null import name is a namespace import, or the
+/// import of the source of the module when the phase of the request is <see cref="ModulePhase.Source"/>.
+/// </summary>
 internal sealed record ImportEntry(ModuleRequest ModuleRequest, string? ImportName, string LocalName)
 {
     public bool IsNamespace => ImportName is null;
@@ -27,7 +30,7 @@ internal sealed record ExportEntry(string? ExportName, ModuleRequest? ModuleRequ
 
 /// <summary>
 /// A ResolvedBinding Record: a binding of a module; a null binding name is the namespace object of the module (deferred
-/// when <see cref="NamespacePhase"/> is <see cref="ModulePhase.Defer"/>).
+/// when <see cref="NamespacePhase"/> is <see cref="ModulePhase.Defer"/>), or its source (<see cref="ModulePhase.Source"/>).
 /// </summary>
 internal sealed class ResolvedBinding(JsModule module, string? bindingName, ModulePhase namespacePhase = ModulePhase.Evaluation)
 {

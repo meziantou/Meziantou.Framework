@@ -43,10 +43,10 @@ internal static class ModuleOperations
         return capability.Promise;
     }
 
-    /// <summary>InnerModuleLoading(state, module)</summary>
-    private static void InnerModuleLoading(GraphLoadingState state, JsModule module)
+    /// <summary>InnerModuleLoading(state, module): the dependencies of the module of a source phase import are not loaded.</summary>
+    private static void InnerModuleLoading(GraphLoadingState state, JsModule module, bool loadDependencies = true)
     {
-        if (module is JsSourceTextModule { Status: JsModuleStatus.New } cyclic && state.Visited.Add(cyclic))
+        if (loadDependencies && module is JsSourceTextModule { Status: JsModuleStatus.New } cyclic && state.Visited.Add(cyclic))
         {
             state.PendingModulesCount += cyclic.RequestedModules.Count;
             foreach (var request in cyclic.RequestedModules)
@@ -57,7 +57,7 @@ internal static class ModuleOperations
                 }
                 else if (FindLoadedModule(cyclic, request) is { } loaded)
                 {
-                    InnerModuleLoading(state, loaded);
+                    InnerModuleLoading(state, loaded, request.Phase != ModulePhase.Source);
                 }
                 else
                 {
@@ -86,14 +86,14 @@ internal static class ModuleOperations
     }
 
     /// <summary>ContinueModuleLoading(state, moduleCompletion)</summary>
-    private static void ContinueModuleLoading(GraphLoadingState state, JsModule? module, JsValue error)
+    private static void ContinueModuleLoading(GraphLoadingState state, JsModule? module, JsValue error, bool loadDependencies = true)
     {
         if (!state.IsLoading)
             return;
 
         if (module is not null)
         {
-            InnerModuleLoading(state, module);
+            InnerModuleLoading(state, module, loadDependencies);
         }
         else
         {
@@ -156,7 +156,7 @@ internal static class ModuleOperations
 
         if (payload is GraphLoadingState state)
         {
-            ContinueModuleLoading(state, module, error);
+            ContinueModuleLoading(state, module, error, request.Phase != ModulePhase.Source);
         }
         else
         {
@@ -216,6 +216,10 @@ internal static class ModuleOperations
         stack.Add(cyclic);
         foreach (var request in cyclic.RequestedModules)
         {
+            // The module of a source phase import is not linked
+            if (request.Phase == ModulePhase.Source)
+                continue;
+
             var required = cyclic.GetImportedModule(request);
             index = InnerModuleLinking(required, stack, index);
             if (required is JsSourceTextModule { Status: JsModuleStatus.Linking } requiredCyclic)
@@ -259,7 +263,7 @@ internal static class ModuleOperations
             var slot = module.GetBindingSlot(entry.LocalName);
             if (entry.IsNamespace)
             {
-                environment.Slots[slot] = GetModuleNamespace(imported, entry.ModuleRequest.Phase);
+                environment.Slots[slot] = GetModuleNamespaceOrSource(imported, entry.ModuleRequest.Phase);
                 continue;
             }
 
@@ -268,7 +272,7 @@ internal static class ModuleOperations
                 ThrowHelper.ThrowSyntaxError(GetResolutionError(entry.ImportName!, resolution, imported));
 
             environment.Slots[slot] = resolution.IsNamespace
-                ? GetModuleNamespace(resolution.Module, resolution.NamespacePhase)
+                ? GetModuleNamespaceOrSource(resolution.Module, resolution.NamespacePhase)
                 : new JsValue(new ImportBindingCell(resolution.Module, resolution.Module.GetBindingSlot(resolution.BindingName!)));
         }
 
@@ -374,6 +378,9 @@ internal static class ModuleOperations
         var evaluationList = new List<JsModule>(cyclic.RequestedModules.Count);
         foreach (var request in cyclic.RequestedModules)
         {
+            if (request.Phase == ModulePhase.Source)
+                continue;
+
             var required = cyclic.GetImportedModule(request);
             if (request.Phase == ModulePhase.Defer)
             {
@@ -469,6 +476,9 @@ internal static class ModuleOperations
 
         foreach (var request in cyclic.RequestedModules)
         {
+            if (request.Phase == ModulePhase.Source)
+                continue;
+
             foreach (var additional in GatherAsynchronousTransitiveDependencies(cyclic.GetImportedModule(request), seen))
             {
                 AddUnique(result, additional);
@@ -499,7 +509,7 @@ internal static class ModuleOperations
 
         foreach (var request in cyclic.RequestedModules)
         {
-            if (!ReadyForSyncExecution(cyclic.GetImportedModule(request), seen))
+            if (request.Phase != ModulePhase.Source && !ReadyForSyncExecution(cyclic.GetImportedModule(request), seen))
                 return false;
         }
 
@@ -637,6 +647,19 @@ internal static class ModuleOperations
     // Namespaces, import() and import.meta
     // ------------------------------------------------------------------------------------------------------------------
 
+    /// <summary>The value of a namespace import (GetModuleNamespace) or of a source phase import (GetModuleSource).</summary>
+    public static JsValue GetModuleNamespaceOrSource(JsModule module, ModulePhase phase) => phase == ModulePhase.Source ? GetModuleSource(module) : GetModuleNamespace(module, phase);
+
+    /// <summary>
+    /// GetModuleSource(): the source of a module (e.g. a WebAssembly.Module). The source of a JavaScript module or of a
+    /// JSON module is not available: a SyntaxError is thrown.
+    /// </summary>
+    public static JsValue GetModuleSource(JsModule module)
+    {
+        var url = module.Url is null ? "the module" : "the module '" + module.Url + "'";
+        return ThrowHelper.ThrowSyntaxError<JsValue>("The source phase import of " + url + " is not supported: it has no source representation");
+    }
+
     /// <summary>GetModuleNamespace(module, phase)</summary>
     public static JsObject GetModuleNamespace(JsModule module, ModulePhase phase = ModulePhase.Evaluation)
     {
@@ -725,6 +748,21 @@ internal static class ModuleOperations
         if (module is null)
         {
             capability.Reject(error);
+            return;
+        }
+
+        // import.source(): the module is not linked nor evaluated, and its dependencies are not loaded
+        if (payload.Phase == ModulePhase.Source)
+        {
+            try
+            {
+                capability.Resolve(GetModuleSource(module));
+            }
+            catch (JsException ex)
+            {
+                capability.Reject(ex.Value);
+            }
+
             return;
         }
 

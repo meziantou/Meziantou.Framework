@@ -56,11 +56,14 @@ internal static partial class JsInterpreter
             {
                 engine.PopFrame();
                 engine.CallDepth--;
+                var discarded = frame;
                 frame = frame.Parent!;
+                engine.FramePool.Return(discarded);
             }
 
             engine.PopFrame();
             engine.CurrentRealm = previousRealm;
+            engine.FramePool.Return(entry);
         }
     }
 
@@ -74,8 +77,7 @@ internal static partial class JsInterpreter
             {
                 if (pc >= handler.Start && pc < handler.End)
                 {
-                    var stackBase = frame.Code.RegisterCount;
-                    frame.Sp = stackBase + handler.StackDepth;
+                    frame.Sp = frame.StackBase + handler.StackDepth;
                     frame.Values[frame.Sp++] = exception;
                     frame.Pc = handler.Target;
                     if (handler.EnvironmentRegister >= 0)
@@ -97,7 +99,9 @@ internal static partial class JsInterpreter
             frame.State = FrameState.Completed;
             engine.PopFrame();
             engine.CallDepth--;
+            var completed = frame;
             frame = frame.Parent!;
+            engine.FramePool.Return(completed);
             isFaultingFrame = false;
         }
     }
@@ -277,9 +281,9 @@ internal static partial class JsInterpreter
                     break;
                 case OpCode.LoadArgument:
                     {
+                        // The arguments are stored after the registers
                         var index = code[pc++];
-                        var arguments = frame.Arguments;
-                        values[sp++] = (uint)index < (uint)arguments.Length ? arguments[index] : default;
+                        values[sp++] = (uint)index < (uint)frame.ArgumentCount ? values[frame.Code.RegisterCount + index] : default;
                         break;
                     }
 
@@ -534,8 +538,10 @@ internal static partial class JsInterpreter
 
                         engine.PopFrame();
                         engine.CallDepth--;
+                        var completed = frame;
                         frame = frame.Parent!;
                         current = frame;
+                        engine.FramePool.Return(completed);
                         engine.CurrentRealm = frame.Realm;
                         code = frame.Code.Code;
                         values = frame.Values;

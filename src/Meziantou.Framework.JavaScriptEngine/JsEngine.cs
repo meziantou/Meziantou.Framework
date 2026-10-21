@@ -32,6 +32,9 @@ public sealed partial class JsEngine : IDisposable
     /// <summary>Gets the depth of the running calls.</summary>
     internal int CallDepth { get; set; }
 
+    /// <summary>Gets the free frames of the ordinary calls.</summary>
+    internal Interpreter.FramePool FramePool { get; } = new();
+
     /// <summary>[[ModuleAsyncEvaluationCount]] of the agent.</summary>
     internal long ModuleAsyncEvaluationCount { get; set; }
 

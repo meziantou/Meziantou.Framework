@@ -27,13 +27,17 @@ if (args is ["profile", var workload, var seconds])
 
     var end = Stopwatch.GetTimestamp() + (long)(double.Parse(seconds, System.Globalization.CultureInfo.InvariantCulture) * Stopwatch.Frequency);
     var count = 0;
+    var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+    var gcBefore = (GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2));
+    var pauseBefore = GC.GetTotalPauseDuration();
     while (Stopwatch.GetTimestamp() < end)
     {
         engine.Call(run, JsValue.Undefined);
         count++;
     }
 
-    Console.WriteLine($"{count} runs");
+    var allocated = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+    Console.WriteLine($"{count} runs, {allocated / Math.Max(count, 1)} bytes/run, GC gen0 {GC.CollectionCount(0) - gcBefore.Item1} gen1 {GC.CollectionCount(1) - gcBefore.Item2} gen2 {GC.CollectionCount(2) - gcBefore.Item3}, pauses {(GC.GetTotalPauseDuration() - pauseBefore).TotalMilliseconds:F0} ms");
     return 0;
 }
 

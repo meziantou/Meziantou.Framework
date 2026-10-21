@@ -300,7 +300,7 @@ internal static partial class JsInterpreter
         var pc = frame.Pc + 1;
         var index = code[pc++];
         var arguments = frame.Arguments;
-        values[sp++] = JsArray.Create(frame.Realm, index < arguments.Length ? arguments.AsSpan(index) : []);
+        values[sp++] = JsArray.Create(frame.Realm, index < arguments.Length ? arguments[index..] : []);
         frame.Pc = pc;
         return sp;
     }

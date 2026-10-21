@@ -7,7 +7,7 @@ internal static partial class JsInterpreter
     {
         var template = closure.Template;
         var engine = closure.Realm.Engine;
-        var frame = CreateCallFrame(closure, thisArgument, arguments, newTarget: null);
+        var frame = CreateCallFrame(closure, thisArgument, arguments, newTarget: null, pooled: false);
         if (template.IsGenerator && !template.IsAsync)
         {
             // The prologue (parameters) runs now; GeneratorStart suspends the frame

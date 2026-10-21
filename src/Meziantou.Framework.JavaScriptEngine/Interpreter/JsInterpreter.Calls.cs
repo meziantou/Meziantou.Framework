@@ -24,16 +24,15 @@ internal static partial class JsInterpreter
         return callee;
     }
 
-    /// <summary>PrepareForOrdinaryCall and OrdinaryCallBindThis: the frame of a call of a closure.</summary>
-    private static Frame CreateCallFrame(JsClosure closure, JsValue thisArgument, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
+    /// <summary>PrepareForOrdinaryCall and OrdinaryCallBindThis: the frame of a call of a closure (from the pool of the engine, except the frames that outlive the call: generators, async functions).</summary>
+    private static Frame CreateCallFrame(JsClosure closure, JsValue thisArgument, ReadOnlySpan<JsValue> arguments, JsObject? newTarget, bool pooled = true)
     {
         var template = closure.Template;
-        var frame = new Frame(template, closure.Realm, closure.Environment, arguments.ToArray())
-        {
-            Function = closure,
-            NewTarget = newTarget,
-            Script = closure.Script,
-        };
+        var realm = closure.Realm;
+        var frame = pooled ? realm.Engine.FramePool.Rent(template, realm, closure.Environment, arguments) : new Frame(template, realm, closure.Environment, arguments);
+        frame.Function = closure;
+        frame.NewTarget = newTarget;
+        frame.Script = closure.Script;
 
         if (!template.IsArrow)
         {
@@ -69,15 +68,13 @@ internal static partial class JsInterpreter
             thisValue = new JsObject(prototype);
         }
 
-        var frame = new Frame(closure.Template, closure.Realm, closure.Environment, arguments.ToArray())
-        {
-            Function = closure,
-            NewTarget = newTarget,
-            Script = closure.Script,
-            This = thisValue,
-            IsConstruct = true,
-        };
-
+        var realm = closure.Realm;
+        var frame = realm.Engine.FramePool.Rent(closure.Template, realm, closure.Environment, arguments);
+        frame.Function = closure;
+        frame.NewTarget = newTarget;
+        frame.Script = closure.Script;
+        frame.This = thisValue;
+        frame.IsConstruct = true;
         return frame;
     }
 

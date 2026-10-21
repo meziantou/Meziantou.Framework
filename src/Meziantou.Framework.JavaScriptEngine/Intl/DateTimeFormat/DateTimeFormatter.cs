@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.JavaScriptEngine.Intl.Data;
 
@@ -76,15 +77,136 @@ internal static class DateTimeFormatter
     }
 
     /// <summary>FormatDateTimePattern(dateTimeFormat, format, pattern, epochNanoseconds, isPlain)</summary>
-    public static void FormatPattern(JsDateTimeFormatObject dtf, DateTimePatternPart[] pattern, Int128 epochNanoseconds, bool isPlain, List<DateTimePart> result, string source = "shared")
+    public static void FormatPattern(JsDateTimeFormatObject dtf, DateTimeFormatRecord format, Int128 epochNanoseconds, bool isPlain, List<DateTimePart> result)
     {
         var timeZone = isPlain ? PlainTimeZone : dtf.TimeZone;
         var time = DateTimeLocalTimeCalculator.ToLocalTime(epochNanoseconds, dtf.Calendar, timeZone);
-        FormatPattern(dtf, pattern, time, result, source);
+        FormatPattern(dtf, format.Parts, time, result, numberOverrides: GetNumberOverrides(dtf, format));
+    }
+
+    /// <summary>Gets the numbering systems of the fields of a format, when it uses the numbering system of the locale.</summary>
+    public static IReadOnlyDictionary<char, string>? GetNumberOverrides(JsDateTimeFormatObject dtf, DateTimeFormatRecord format)
+    {
+        if (format.NumberOverrides is null || dtf.NumberingSystem != dtf.Data.Locale.GetDefaultNumberingSystem())
+            return null;
+
+        return format.NumberOverrides;
+    }
+
+    // The algorithmic numbering systems of the date patterns of CLDR
+    private static bool TryFormatAlgorithmic(string numberingSystem, long value, [NotNullWhen(true)] out string? result)
+    {
+        result = numberingSystem switch
+        {
+            "hebr" when value is > 0 and < 10000 => FormatHebrew(value),
+            "hanidays" when value is >= 1 and <= 30 => FormatHanidays((int)value),
+            "jpanyear" when value == 1 => "\u5143",
+            "romanlow" when value is > 0 and < 4000 => FormatRoman((int)value),
+            _ => null,
+        };
+
+        return result is not null;
+    }
+
+    // The Hebrew numerals (gematria) without the thousands, with the geresh or the gershayim
+    private static string FormatHebrew(long value)
+    {
+        var number = (int)(value % 1000);
+        if (number == 0)
+        {
+            number = (int)value;
+        }
+
+        var letters = new StringBuilder();
+        while (number >= 400)
+        {
+            letters.Append('\u05EA');
+            number -= 400;
+        }
+
+        if (number >= 100)
+        {
+            letters.Append("\u05E7\u05E8\u05E9"[(number / 100) - 1]);
+            number %= 100;
+        }
+
+        if (number is 15 or 16)
+        {
+            letters.Append('\u05D8');
+            letters.Append(number == 15 ? '\u05D5' : '\u05D6');
+            number = 0;
+        }
+
+        if (number >= 10)
+        {
+            letters.Append("\u05D9\u05DB\u05DC\u05DE\u05E0\u05E1\u05E2\u05E4\u05E6"[(number / 10) - 1]);
+            number %= 10;
+        }
+
+        if (number > 0)
+        {
+            letters.Append("\u05D0\u05D1\u05D2\u05D3\u05D4\u05D5\u05D6\u05D7\u05D8"[number - 1]);
+        }
+
+        // The final forms of kaf, mem, nun, pe and tsadi at the end of a number of several letters
+        if (letters.Length > 1)
+        {
+            letters[^1] = letters[^1] switch
+            {
+                '\u05DB' => '\u05DA',
+                '\u05DE' => '\u05DD',
+                '\u05E0' => '\u05DF',
+                '\u05E4' => '\u05E3',
+                '\u05E6' => '\u05E5',
+                var letter => letter,
+            };
+        }
+
+        if (letters.Length == 1)
+        {
+            letters.Append('\u05F3');
+        }
+        else
+        {
+            letters.Insert(letters.Length - 1, '\u05F4');
+        }
+
+        return letters.ToString();
+    }
+
+    // The days of the Chinese calendar: 1 to 10 with the prefix U+521D, 11 to 19 with U+5341, 21 to 29 with U+5EFF
+    private static string FormatHanidays(int value)
+    {
+        const string Digits = "\u4E00\u4E8C\u4E09\u56DB\u4E94\u516D\u4E03\u516B\u4E5D\u5341";
+        return value switch
+        {
+            <= 10 => "\u521D" + Digits[value - 1],
+            < 20 => "\u5341" + Digits[value - 11],
+            20 => "\u4E8C\u5341",
+            < 30 => "\u5EFF" + Digits[value - 21],
+            _ => "\u4E09\u5341",
+        };
+    }
+
+    private static string FormatRoman(int value)
+    {
+        ReadOnlySpan<int> values = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1];
+        string[] symbols = ["m", "cm", "d", "cd", "c", "xc", "l", "xl", "x", "ix", "v", "iv", "i"];
+        var result = new StringBuilder();
+        for (var i = 0; i < values.Length; i++)
+        {
+            while (value >= values[i])
+            {
+                result.Append(symbols[i]);
+                value -= values[i];
+            }
+        }
+
+        return result.ToString();
     }
 
     /// <summary>Formats the fields of a pattern for a local time.</summary>
-    public static void FormatPattern(JsDateTimeFormatObject dtf, DateTimePatternPart[] pattern, in DateTimeLocalTime time, List<DateTimePart> result, string source = "shared", List<char>? symbols = null)
+    public static void FormatPattern(JsDateTimeFormatObject dtf, DateTimePatternPart[] pattern, in DateTimeLocalTime time, List<DateTimePart> result, string source = "shared", List<char>? symbols = null, IReadOnlyDictionary<char, string>? numberOverrides = null)
     {
         var hasMinute = false;
         var hasSecond = false;
@@ -121,7 +243,8 @@ internal static class DateTimeFormatter
             }
 
             var type = DateTimePattern.GetPartType(part.Symbol);
-            var value = FormatField(dtf, part.Symbol, part.Count, time, hasMinute, hasSecond);
+            var numberOverride = numberOverrides is not null && numberOverrides.TryGetValue(part.Symbol, out var system) ? system : null;
+            var value = FormatField(dtf, part.Symbol, part.Count, time, hasMinute, hasSecond, numberOverride);
             if (type is null)
             {
                 result.Add(new DateTimePart("unknown", value, source));
@@ -157,10 +280,30 @@ internal static class DateTimeFormatter
         _ => "abbreviated",
     };
 
-    private static string FormatField(JsDateTimeFormatObject dtf, char symbol, int count, in DateTimeLocalTime time, bool hasMinute, bool hasSecond)
+    private static string FormatField(JsDateTimeFormatObject dtf, char symbol, int count, in DateTimeLocalTime time, bool hasMinute, bool hasSecond, string? numberOverride)
     {
         var data = dtf.Data;
         var digits = dtf.Digits;
+        if (numberOverride is not null)
+        {
+            // The numbering system of a field of the pattern of a style (the "numbers" attribute of CLDR, e.g. "d=hanidays")
+            long? numericValue = symbol switch
+            {
+                'y' => time.Year,
+                'd' => time.Day,
+                'M' or 'L' when count < 3 => time.NumericMonth,
+                _ => null,
+            };
+
+            if (numericValue is { } numeric && TryFormatAlgorithmic(numberOverride, numeric, out var algorithmic))
+                return algorithmic;
+
+            if (GetDigitStrings(CldrData.Default.Supplemental.GetNumberingSystemDigits(numberOverride)) is { } overrideDigits)
+            {
+                digits = overrideDigits;
+            }
+        }
+
         switch (symbol)
         {
             case 'G':
@@ -293,7 +436,7 @@ internal static class DateTimeFormatter
                 }
 
             case 'z' or 'Z' or 'O' or 'v' or 'V' or 'X' or 'x':
-                return TimeZoneNameFormatter.Format(data.Locale, dtf.TimeZoneIdentifier, dtf.TimeZone, time, symbol, count, digits);
+                return TimeZoneNameFormatter.Format(data.Locale, dtf.TimeZone, time, symbol, count, digits);
 
             default:
                 return new string(symbol, count);

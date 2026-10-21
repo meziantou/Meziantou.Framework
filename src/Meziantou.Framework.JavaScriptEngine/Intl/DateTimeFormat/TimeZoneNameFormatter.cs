@@ -18,10 +18,23 @@ internal static class TimeZoneNameFormatter
     private static readonly ConcurrentDictionary<string, string> TargetRegions = new(StringComparer.Ordinal);
 
     /// <summary>Formats the time zone field of a pattern (z, zzzz, O, OOOO, v, vvvv, V...).</summary>
-    public static string Format(CldrLocale locale, string identifier, TemporalTimeZone timeZone, in DateTimeLocalTime time, char symbol, int count, string[]? digits)
+    public static string Format(CldrLocale locale, TemporalTimeZone timeZone, in DateTimeLocalTime time, char symbol, int count, string[]? digits)
     {
         var offsetSeconds = time.OffsetSeconds;
-        var cldrId = timeZone.Zone is null ? null : GetCldrId(identifier);
+
+        // The names of the primary identifier (e.g. "UTC" for "Etc/GMT", as V8); the offset time zone "+00:00" is "Etc/GMT" (as ICU)
+        var zone = timeZone.Zone;
+        string? cldrId = null;
+        if (zone is not null)
+        {
+            cldrId = GetCldrId(timeZone.PrimaryIdentifier);
+        }
+        else if (timeZone.OffsetMinutes == 0 && TimeZoneDatabase.Default.GetTimeZone("Etc/GMT") is { } gmt)
+        {
+            zone = gmt;
+            cldrId = "Etc/GMT";
+        }
+
         string? name = null;
         switch (symbol)
         {
@@ -36,7 +49,7 @@ internal static class TimeZoneNameFormatter
             case 'v':
                 if (cldrId is not null)
                 {
-                    name = GetGenericName(locale, cldrId, timeZone.Zone!, time, isLong: count >= 4);
+                    name = GetGenericName(locale, cldrId, zone!, time, isLong: count >= 4);
                 }
 
                 return name ?? FormatLocalizedGmt(locale, offsetSeconds, isShort: count < 4, digits);
@@ -127,7 +140,8 @@ internal static class TimeZoneNameFormatter
 
     private static string? GetMetazoneString(CldrLocale locale, string metazone, string path) => locale.GetString(CldrCategory.TimeZoneNames, "metazone/" + metazone + "/" + path);
 
-    private static string? GetMetazone(string cldrId, long epochSeconds) => CldrData.Default.Supplemental.GetMetazone(cldrId, epochSeconds);
+    // The metazones are used since 1970 only (as ICU, whose metazone data starts in 1970)
+    private static string? GetMetazone(string cldrId, long epochSeconds) => epochSeconds < 0 ? null : CldrData.Default.Supplemental.GetMetazone(cldrId, epochSeconds);
 
     // The specific name (standard or daylight) of the zone, else of its metazone
     private static string? GetSpecificName(CldrLocale locale, string cldrId, in DateTimeLocalTime time, bool isLong)
@@ -186,9 +200,13 @@ internal static class TimeZoneNameFormatter
         return GetGenericLocationName(locale, cldrId);
     }
 
+    // Whether the zone uses daylight saving time around a date: a daylight saving time, or another offset, 184 days before or after
     private static bool UsesDaylightSavingTimeAround(NamedTimeZone zone, long epochSeconds)
     {
-        return zone.GetLocalTimeType(epochSeconds - DstCheckRange).IsDaylightSavingTime || zone.GetLocalTimeType(epochSeconds + DstCheckRange).IsDaylightSavingTime;
+        var offset = zone.GetOffsetSeconds(epochSeconds);
+        var before = zone.GetLocalTimeType(epochSeconds - DstCheckRange);
+        var after = zone.GetLocalTimeType(epochSeconds + DstCheckRange);
+        return before.IsDaylightSavingTime || after.IsDaylightSavingTime || before.OffsetSeconds != offset || after.OffsetSeconds != offset;
     }
 
     // The region of the locale, or its likely region

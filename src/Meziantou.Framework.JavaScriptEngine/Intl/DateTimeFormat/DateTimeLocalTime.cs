@@ -85,6 +85,26 @@ internal static class DateTimeLocalTimeCalculator
             var type = zone.GetLocalTimeType(epochSeconds);
             offsetSeconds = type.OffsetSeconds;
             inDst = type.IsDaylightSavingTime;
+
+            // A negative daylight saving time (e.g. Europe/Dublin, whose winter time is the "daylight" time of the
+            // database) is the standard time, as in the rearguard format of the database that ICU uses
+            var other = zone.GetLocalTimeType(epochSeconds + (182L * 86_400));
+            if (other.IsDaylightSavingTime == type.IsDaylightSavingTime)
+            {
+                other = zone.GetLocalTimeType(epochSeconds - (182L * 86_400));
+            }
+
+            if (other.IsDaylightSavingTime != type.IsDaylightSavingTime)
+            {
+                if (type.IsDaylightSavingTime && type.OffsetSeconds < other.OffsetSeconds)
+                {
+                    inDst = false;
+                }
+                else if (!type.IsDaylightSavingTime && type.OffsetSeconds > other.OffsetSeconds)
+                {
+                    inDst = true;
+                }
+            }
         }
         else
         {

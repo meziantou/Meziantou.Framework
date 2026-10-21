@@ -660,9 +660,10 @@ internal static class DateIntervalFormatter
         var time2 = DateTimeLocalTimeCalculator.ToLocalTime(y, dtf.Calendar, timeZone);
         var field = GetLargestDifferentField(time1, time2);
         var result = new List<DateTimePart>();
+        var numberOverrides = DateTimeFormatter.GetNumberOverrides(dtf, format);
         if (field is DateIntervalField.None)
         {
-            DateTimeFormatter.FormatPattern(dtf, format.Parts, time1, result);
+            DateTimeFormatter.FormatPattern(dtf, format.Parts, time1, result, numberOverrides: numberOverrides);
             return result;
         }
 
@@ -674,7 +675,7 @@ internal static class DateIntervalFormatter
         {
             if (DateIntervalPatterns.IsFieldUnitIgnored(format.Pattern, field))
             {
-                DateTimeFormatter.FormatPattern(dtf, format.Parts, time1, result);
+                DateTimeFormatter.FormatPattern(dtf, format.Parts, time1, result, numberOverrides: numberOverrides);
                 return result;
             }
 
@@ -830,7 +831,8 @@ internal static class DateIntervalFormatter
         _ => symbol,
     };
 
-    // The sources of the parts: the first occurrences of the repeated fields are the start, the second ones the end (as V8 and ICU)
+    // The sources of the parts: the parts from the first to the last field repeated in the first date are the start, the
+    // ones of their repetitions in the second date are the end, the others are shared (ICU's addOverlapSpans)
     private static List<DateTimePart> AssignSources(List<(DateTimePart Part, char Field)> raw)
     {
         // Merge the adjacent literals
@@ -855,6 +857,7 @@ internal static class DateIntervalFormatter
             position += merged[i].Part.Value.Length;
         }
 
+        var span1Start = int.MaxValue;
         var span1End = -1;
         var span2Start = int.MaxValue;
         var span2End = -1;
@@ -868,6 +871,7 @@ internal static class DateIntervalFormatter
                 if (merged[j].Field != merged[i].Field)
                     continue;
 
+                span1Start = Math.Min(span1Start, starts[i]);
                 span1End = Math.Max(span1End, starts[i] + merged[i].Part.Value.Length);
                 span2Start = Math.Min(span2Start, starts[j]);
                 span2End = Math.Max(span2End, starts[j] + merged[j].Part.Value.Length);
@@ -881,7 +885,7 @@ internal static class DateIntervalFormatter
             var start = starts[i];
             var end = start + merged[i].Part.Value.Length;
             var source = "shared";
-            if (span1End >= 0 && end <= span1End)
+            if (span1End >= 0 && start >= span1Start && end <= span1End)
             {
                 source = "startRange";
             }

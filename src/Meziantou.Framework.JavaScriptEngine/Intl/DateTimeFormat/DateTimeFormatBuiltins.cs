@@ -510,8 +510,38 @@ internal static class DateTimeFormatBuiltins
                 pattern = DateTimePattern.ReplaceHourCycle(data.Generator.GetBestPattern(skeleton), hourCycle);
             }
 
-            return new DateTimeFormatRecord(data, pattern) { DateStyle = dateStyle, TimeStyle = timeStyle };
+            var numberOverrides = dateStyle is null ? null : ParseNumberOverrides(data.GetString("dateFormats/" + dateStyle + "-numbers"));
+            return new DateTimeFormatRecord(data, pattern) { DateStyle = dateStyle, TimeStyle = timeStyle, NumberOverrides = numberOverrides };
         }, (dateStyle, timeStyle, hourCycle));
+    }
+
+    // The "numbers" attribute of a date pattern: "hebr" (every date field) or "d=hanidays;y=..." (the fields of the letters)
+    private static Dictionary<char, string>? ParseNumberOverrides(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return null;
+
+        var result = new Dictionary<char, string>();
+        foreach (var item in value.Split(';', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var separator = item.IndexOf('=', StringComparison.Ordinal);
+            if (separator < 0)
+            {
+                foreach (var symbol in "GyYuUrQqMLwWdDFEecg")
+                {
+                    result[symbol] = item;
+                }
+            }
+            else
+            {
+                foreach (var symbol in item.AsSpan(0, separator))
+                {
+                    result[symbol] = item[(separator + 1)..];
+                }
+            }
+        }
+
+        return result;
     }
 
     // The skeleton with the hour letter of an hour cycle, without the day periods (V8's ReplaceSkeleton)
@@ -636,7 +666,7 @@ internal static class DateTimeFormatBuiltins
     {
         var (format, epochNanoseconds, isPlain) = HandleDateTimeValue(dtf, x);
         var result = new List<DateTimePart>();
-        DateTimeFormatter.FormatPattern(dtf, format.Parts, epochNanoseconds, isPlain, result);
+        DateTimeFormatter.FormatPattern(dtf, format, epochNanoseconds, isPlain, result);
         return result;
     }
 

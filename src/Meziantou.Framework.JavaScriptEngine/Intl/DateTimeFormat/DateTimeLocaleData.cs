@@ -66,7 +66,8 @@ internal sealed class DateTimeLocaleData
         if (_strings.TryGetValue(path, out var cached))
             return cached;
 
-        var value = Locale.GetString(_category, _prefix + path);
+        // The narrow no-break spaces of CLDR (e.g. "h:mm\u202Fa") are spaces, as in the browsers (for web compatibility)
+        var value = Locale.GetString(_category, _prefix + path)?.Replace('\u202F', ' ');
         _strings.TryAdd(path, value);
         return value;
     }

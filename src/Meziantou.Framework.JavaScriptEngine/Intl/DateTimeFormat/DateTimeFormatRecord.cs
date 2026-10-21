@@ -262,6 +262,9 @@ internal sealed class DateTimeFormatRecord
     /// <summary>Gets or sets the date style that created the pattern (for the date-time range of the styles), or null.</summary>
     public string? DateStyle { get; init; }
 
+    /// <summary>Gets the numbering systems of the fields of the pattern of a date style (the "numbers" attribute of CLDR, e.g. "d=hanidays"), or null.</summary>
+    public IReadOnlyDictionary<char, string>? NumberOverrides { get; init; }
+
     /// <summary>Gets or sets the time style that created the pattern, or null.</summary>
     public string? TimeStyle { get; init; }
 

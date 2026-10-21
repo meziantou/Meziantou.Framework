@@ -1,8 +1,2 @@
-intl402/DateTimeFormat/prototype/format/numbering-system.js:sloppy
-intl402/DateTimeFormat/prototype/format/numbering-system.js:strict
-intl402/DateTimeFormat/prototype/formatRangeToParts/en-US.js:sloppy
-intl402/DateTimeFormat/prototype/formatRangeToParts/en-US.js:strict
-intl402/DateTimeFormat/prototype/formatRangeToParts/temporal-objects-resolved-time-zone.js:sloppy
-intl402/DateTimeFormat/prototype/formatRangeToParts/temporal-objects-resolved-time-zone.js:strict
 intl402/DateTimeFormat/this-value-ignored.js:sloppy
 intl402/DateTimeFormat/this-value-ignored.js:strict

@@ -9,7 +9,8 @@ namespace Meziantou.Framework.JavaScriptEngine;
 internal sealed class RegExpRunner
 {
     private const int StepsBetweenBudgetChecks = 1 << 16;
-    private const int MaxStackLength = 1 << 28;
+    private const int MaxStackLength = 1 << 25; // 128 MB
+    private const int MaxCachedStackLength = 1 << 16;
 
     // The records of the backtracking stack: the values, then the tag on top
     private const int TagGoto = 0; // pc, pos
@@ -45,6 +46,12 @@ internal sealed class RegExpRunner
 
     public static void Return(RegExpRunner runner)
     {
+        // Do not keep the memory of a deep backtracking alive
+        if (runner._stack.Length > MaxCachedStackLength)
+        {
+            runner._stack = new int[256];
+        }
+
         runner._program = null!;
         runner._input = "";
         runner._engine = null;

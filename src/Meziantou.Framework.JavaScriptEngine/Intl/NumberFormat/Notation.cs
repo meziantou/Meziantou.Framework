@@ -10,10 +10,11 @@ internal static class Notation
 
     /// <summary>
     /// Gets the compact pattern of a magnitude (e.g. "0K" for 1000, "00 thousand" for 10000) and the magnitude of its
-    /// type (the largest one of the data for a larger magnitude), for a count ("one", "other", or an explicit "1"),
-    /// falling back to the "other" count, and to the short style; null when the locale has no compact pattern for it.
+    /// type (the largest one of the data for a larger magnitude), for a plural category falling back to "other", and to
+    /// the short style; null when the locale has no compact pattern for it. With <paramref name="exactCount"/>, the
+    /// pattern of an explicit count ("1") of the magnitude, or null.
     /// </summary>
-    public static (string? Pattern, int TypeMagnitude) GetCompactPattern(CldrLocale locale, string numberingSystem, string compactDisplay, bool currency, int magnitude, string count, bool fallbackToOther = true)
+    public static (string? Pattern, int TypeMagnitude) GetCompactPattern(CldrLocale locale, string numberingSystem, string compactDisplay, bool currency, int magnitude, string count, bool exactCount = false)
     {
         if (magnitude < 3)
             return (null, magnitude);
@@ -22,7 +23,7 @@ internal static class Notation
         {
             var type = "1" + new string('0', m);
             string? pattern;
-            var other = fallbackToOther ? "other" : count;
+            var other = exactCount ? count : "other";
             if (currency)
             {
                 pattern = Get("currencyFormats", "short/standard/" + type + "-count-" + count) ?? Get("currencyFormats", "short/standard/" + type + "-count-" + other);
@@ -36,7 +37,7 @@ internal static class Notation
             }
 
             // The patterns cover the magnitudes from 3 to the largest one of the data
-            if (pattern is not null)
+            if (pattern is not null || exactCount)
                 return (pattern, m);
         }
 

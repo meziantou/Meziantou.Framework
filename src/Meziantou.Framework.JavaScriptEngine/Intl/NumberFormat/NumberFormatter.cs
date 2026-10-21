@@ -136,7 +136,7 @@ internal static class NumberFormatter
                 parts.PluralCategory = PluralRulesBuiltins.SelectCategory(nf.PluralRules, n, 0);
             }
 
-            var groupingPattern = nf.Notation is "compact" || stylePattern.PrimaryGrouping == 0 ? nf.DecimalPattern ??= GetDecimalPattern(nf) : stylePattern;
+            var groupingPattern = stylePattern.PrimaryGrouping == 0 ? nf.DecimalPattern ??= GetDecimalPattern(nf) : stylePattern;
             AppendDigits(nf, parts.Number, n, groupingPattern, isCurrency);
 
             if (nf.Notation is "scientific" or "engineering")
@@ -154,12 +154,13 @@ internal static class NumberFormatter
             else if (nf.Notation is "compact" && exponent != 0)
             {
                 // An explicit pattern for 1 (e.g. "mille" in French), else the one of the plural category
-                if (n is "1" or "0")
+                var (categoryPattern, typeMagnitude) = Notation.GetCompactPattern(locale, nf.NumberingSystem, nf.CompactDisplay, hasCurrencySymbol, magnitude, parts.PluralCategory);
+                if (n is "1" or "0" && categoryPattern is not null)
                 {
-                    compactPattern = Notation.GetCompactPattern(locale, nf.NumberingSystem, nf.CompactDisplay, hasCurrencySymbol, magnitude, n, fallbackToOther: false).Pattern;
+                    compactPattern = Notation.GetCompactPattern(locale, nf.NumberingSystem, nf.CompactDisplay, hasCurrencySymbol, typeMagnitude, n, exactCount: true).Pattern;
                 }
 
-                compactPattern ??= Notation.GetCompactPattern(locale, nf.NumberingSystem, nf.CompactDisplay, hasCurrencySymbol, magnitude, parts.PluralCategory).Pattern;
+                compactPattern ??= categoryPattern;
                 if (compactPattern is "0")
                 {
                     compactPattern = null;
@@ -691,7 +692,7 @@ internal static class NumberFormatter
         var minimumGrouping = nf.UseGrouping switch
         {
             "always" => 1,
-            "min2" => 2,
+            "min2" => Math.Max(2, nf.MinimumGroupingDigits ??= GetMinimumGroupingDigits(nf.DataLocale)),
             "auto" => nf.MinimumGroupingDigits ??= GetMinimumGroupingDigits(nf.DataLocale),
             _ => int.MaxValue,
         };
@@ -807,6 +808,13 @@ internal static class NumberFormatter
         // The outer affixes (unit and currency names) of a formatter are the same unit: the shared one uses the plural
         // category of the range
         var collapseOuter = true;
+        if (nf.Notation is "compact")
+        {
+            // As ICU, the compact pattern is part of the middle affixes ("1.5\u20132.5 million")
+            MergeInnerIntoMiddle(xResult);
+            MergeInnerIntoMiddle(yResult);
+        }
+
         if (xResult.OuterPrefix.Count + xResult.OuterSuffix.Count > 0)
         {
             var category = PluralRulesBuiltins.SelectRange(nf.PluralRules, xResult.PluralCategory, yResult.PluralCategory);
@@ -842,12 +850,12 @@ internal static class NumberFormatter
         var separator = start >= 0 && end > start ? rangePattern[(start + 3)..end] : "\u2013";
         if ((repeatOuter || repeatMiddle || repeatInner) && separator.Length > 0)
         {
-            if (!IsSpace(separator[0]))
+            if (!IsPatternWhiteSpace(separator[0]))
             {
                 separator = " " + separator;
             }
 
-            if (!IsSpace(separator[^1]))
+            if (!IsPatternWhiteSpace(separator[^1]))
             {
                 separator += " ";
             }
@@ -867,6 +875,17 @@ internal static class NumberFormatter
         }
 
         return result;
+
+        static void MergeInnerIntoMiddle(FormattedNumberParts parts)
+        {
+            parts.MiddlePrefix.AddRange(parts.InnerPrefix);
+            parts.InnerPrefix.Clear();
+            parts.MiddleSuffix.InsertRange(0, parts.InnerSuffix);
+            parts.InnerSuffix.Clear();
+        }
+
+        // Pattern_White_Space (the spaces of the range pattern of ICU: a no-break space is not one)
+        static bool IsPatternWhiteSpace(char c) => c is '\t' or '\n' or '\v' or '\f' or '\r' or ' ' or '\u0085' or '\u200E' or '\u200F' or '\u2028' or '\u2029';
 
         static void AddSide(List<(NumberPart, string)> result, FormattedNumberParts parts, bool collapseOuter, bool collapseMiddle, string source)
         {

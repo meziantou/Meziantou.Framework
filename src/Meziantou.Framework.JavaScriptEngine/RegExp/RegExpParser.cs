@@ -14,6 +14,7 @@ internal sealed class RegExpParser
     private const int MaxNestingDepth = 256;
 
     private static CodePointSet? s_unicodeSetsIgnoreCaseAllCharacters;
+    private static CodePointSet? s_whiteSpace;
 
     private readonly bool _unicode;
     private readonly bool _unicodeSets;
@@ -458,8 +459,10 @@ internal sealed class RegExpParser
 
     public static bool IsBasicWordCharacter(int c) => c is (>= 'a' and <= 'z') or (>= 'A' and <= 'Z') or (>= '0' and <= '9') or '_';
 
-    /// <summary>The characters of WhiteSpace and LineTerminator.</summary>
-    public static CodePointSet CreateWhiteSpaceSet()
+    /// <summary>The characters of WhiteSpace and LineTerminator (a shared set: it must not be modified).</summary>
+    public static CodePointSet CreateWhiteSpaceSet() => s_whiteSpace ??= CreateWhiteSpaceSetCore();
+
+    private static CodePointSet CreateWhiteSpaceSetCore()
     {
         var set = new CodePointSet();
         set.AddRange(0x09, 0x0D); // TAB, LF, VT, FF, CR
@@ -482,6 +485,7 @@ internal sealed class RegExpParser
             }
         }
 
+        _ = set.RangeCount;
         return set;
     }
 

@@ -69,6 +69,13 @@ public sealed class RegExpMatcherTests
     [InlineData("(a){0}b", "", "ab", new[] { "b", null })]
     [InlineData("(?:a{2})*b", "", "aaab", new[] { "aab" })]
     [InlineData("(a{2,3})+?b", "", "aaaaab", new[] { "aaaaab", "aa" })]
+    [InlineData("(?:(?=(abc)))a", "", "abc", new[] { "a", "abc" })]
+    [InlineData("(?:(?=(abc)))?a", "", "abc", new[] { "a", null })]
+    [InlineData("(?:(?=(abc))){1,1}a", "", "abc", new[] { "a", "abc" })]
+    [InlineData("(?:(?=(abc))){0,1}a", "", "abc", new[] { "a", null })]
+    [InlineData("(a?b??)*", "", "ab", new[] { "ab", "b" })]
+    [InlineData("(?:(?:(?<x>a)|(?<x>b)|c)\\k<x>){2}", "", "aac", new[] { "aac", null, null })]
+    [InlineData("(?:(?<x>a)|(?<y>a)(?<x>b))(?:(?<z>c)|(?<z>d))", "", "abc", new[] { "abc", null, "a", "b", "c", null })]
     public void Exec_SpecificationExamples(string pattern, string flags, string input, string?[] expected)
     {
         Assert.Equal(expected, Exec(pattern, flags, input));

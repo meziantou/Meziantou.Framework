@@ -191,6 +191,30 @@ dotnet_diagnostic.CA1065.severity = none
 # CA1508: The flow analysis reports false positives on the tree traversals (e.g. properties of other nodes).
 dotnet_diagnostic.CA1508.severity = none
 
+[{src,tests,tools,benchmarks}/Meziantou.Framework.JavaScriptEngine*/**.cs]
+# Meziantou.Framework.JavaScriptEngine implements ECMAScript: its code mirrors the algorithms of the specification.
+# CA1502: Avoid excessive complexity. The spec algorithms and the interpreter loop are long methods and switch statements.
+dotnet_diagnostic.CA1502.severity = none
+# MA0051: Method is too long. Same reason: the interpreter loop and the spec algorithms follow the specification steps.
+dotnet_diagnostic.MA0051.severity = none
+# MA0048: File name must match type name. The files are organized by specification area (e.g. a built-in object and
+# its prototype, the nodes of a grammar production).
+dotnet_diagnostic.MA0048.severity = none
+# CA1707, CA1716: The names mirror the specification (e.g. %Object.prototype%, Function, Symbol.iterator).
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA1716.severity = none
+# CA1822: Mark members as static. The internal methods of the objects are instance members even when an implementation does not use instance data.
+dotnet_diagnostic.CA1822.severity = suggestion
+# CA1508: The flow analysis reports false positives on the tree traversals and the interpreter state.
+dotnet_diagnostic.CA1508.severity = none
+# MA0099: The flags of the hot paths (property attributes, object flags) are tested with '(flags & X) != 0'.
+dotnet_diagnostic.MA0099.severity = none
+# CA1720: The names mirror the types of the specification (e.g. JsValueKind.String, JsValueKind.Object).
+dotnet_diagnostic.CA1720.severity = none
+# CA1054, CA1056: The URL of a script is any string given by the host (a URL, a file name...), as in the stack traces of the browsers.
+dotnet_diagnostic.CA1054.severity = none
+dotnet_diagnostic.CA1056.severity = none
+
 [tools/Meziantou.Framework.WebPlatform*/**.cs]
 # MA0009: The tools only process the pinned specification data.
 dotnet_diagnostic.MA0009.severity = none

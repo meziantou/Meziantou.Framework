@@ -20,6 +20,8 @@ internal static class Test262Discovery
         public required List<Test262Test> Runnable { get; init; }
 
         public required Dictionary<string, Test262Test> ById { get; init; }
+
+        public required Dictionary<string, Test262Test> AllById { get; init; }
     }
 
     /// <summary>Discovers the tests of a directory (relative to <c>test</c>), without the excluded directories.</summary>
@@ -57,6 +59,7 @@ internal static class Test262Discovery
             All = all,
             Runnable = runnable,
             ById = runnable.ToDictionary(test => test.Id, StringComparer.Ordinal),
+            AllById = all.ToDictionary(test => test.Id, StringComparer.Ordinal),
         };
     }
 

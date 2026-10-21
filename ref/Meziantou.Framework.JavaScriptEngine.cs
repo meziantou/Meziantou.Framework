@@ -4,8 +4,146 @@
 
 namespace Meziantou.Framework.JavaScriptEngine
 {
+    public sealed class JsArray : Meziantou.Framework.JavaScriptEngine.JsObject
+    {
+        public uint Length { get => throw null; }
+    }
+
+    public abstract class JsCell
+    {
+    }
+
     public sealed class JsEngine : System.IDisposable
     {
+        public Meziantou.Framework.JavaScriptEngine.JsEngineOptions Options { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.JavaScriptEngine.JsRealm> Realms { get => throw null; }
+        public JsEngine(Meziantou.Framework.JavaScriptEngine.JsEngineOptions? options = null) { }
+        public Meziantou.Framework.JavaScriptEngine.JsRealm CreateRealm() => throw null;
         public void Dispose() { }
+    }
+
+    public sealed class JsEngineOptions
+    {
+        public System.Threading.CancellationToken CancellationToken { get => throw null; set { } }
+        public int RecursionLimit { get => throw null; set { } }
+        public System.TimeProvider TimeProvider { get => throw null; set { } }
+        public System.TimeSpan? Timeout { get => throw null; set { } }
+    }
+
+    public sealed class JsException : System.Exception
+    {
+        public Meziantou.Framework.JavaScriptEngine.JsValue Value { get => throw null; }
+        public JsException(Meziantou.Framework.JavaScriptEngine.JsValue value) { }
+        public JsException(string message) { }
+        public JsException(string message, System.Exception innerException) { }
+    }
+
+    public abstract class JsFunction : Meziantou.Framework.JavaScriptEngine.JsObject
+    {
+        public Meziantou.Framework.JavaScriptEngine.JsRealm Realm { get => throw null; }
+    }
+
+    public class JsObject : Meziantou.Framework.JavaScriptEngine.JsCell
+    {
+        public bool IsCallable { get => throw null; }
+        public bool IsConstructor { get => throw null; }
+    }
+
+    public sealed class JsRealm
+    {
+        public Meziantou.Framework.JavaScriptEngine.JsEngine Engine { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsObject GlobalObject { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsValue GlobalThis { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsValue Evaluate(string code) => throw null;
+    }
+
+    public sealed class JsSymbol : Meziantou.Framework.JavaScriptEngine.JsCell
+    {
+        public string? Description { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public sealed class JsSyntaxErrorException : System.Exception
+    {
+        public int Column { get => throw null; }
+        public int Line { get => throw null; }
+        public int Offset { get => throw null; }
+        public string? Url { get => throw null; }
+        public JsSyntaxErrorException(string message) { }
+        public JsSyntaxErrorException(string message, System.Exception innerException) { }
+        public JsSyntaxErrorException(string message, string? url, int offset, int line, int column) { }
+    }
+
+    public sealed class JsTerminationException : System.Exception
+    {
+        public Meziantou.Framework.JavaScriptEngine.JsTerminationReason Reason { get => throw null; }
+        public JsTerminationException(string message) { }
+        public JsTerminationException(Meziantou.Framework.JavaScriptEngine.JsTerminationReason reason, string message) { }
+        public JsTerminationException(string message, System.Exception innerException) { }
+    }
+
+    public enum JsTerminationReason
+    {
+        Canceled = 0,
+        Timeout = 1,
+        MemoryLimit = 2,
+        StatementLimit = 3,
+    }
+
+    [System.Diagnostics.DebuggerDisplay("{DebuggerDisplay,nq}")]
+    public readonly struct JsValue : System.IEquatable<Meziantou.Framework.JavaScriptEngine.JsValue>
+    {
+        public static Meziantou.Framework.JavaScriptEngine.JsValue False { get => throw null; }
+        public bool IsBigInt { get => throw null; }
+        public bool IsBoolean { get => throw null; }
+        public bool IsCallable { get => throw null; }
+        public bool IsNull { get => throw null; }
+        public bool IsNullOrUndefined { get => throw null; }
+        public bool IsNumber { get => throw null; }
+        public bool IsObject { get => throw null; }
+        public bool IsString { get => throw null; }
+        public bool IsSymbol { get => throw null; }
+        public bool IsUndefined { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsValueKind Kind { get => throw null; }
+        public static Meziantou.Framework.JavaScriptEngine.JsValue Null { get => throw null; }
+        public static Meziantou.Framework.JavaScriptEngine.JsValue True { get => throw null; }
+        public static Meziantou.Framework.JavaScriptEngine.JsValue Undefined { get => throw null; }
+        public JsValue(double value) { }
+        public System.Numerics.BigInteger AsBigInt() => throw null;
+        public bool AsBoolean() => throw null;
+        public double AsNumber() => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsObject AsObject() => throw null;
+        public string AsString() => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsSymbol AsSymbol() => throw null;
+        public bool Equals(Meziantou.Framework.JavaScriptEngine.JsValue other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.JavaScriptEngine.JsValue FromBigInt(System.Numerics.BigInteger value) => throw null;
+        public static Meziantou.Framework.JavaScriptEngine.JsValue FromBoolean(bool value) => throw null;
+        public static Meziantou.Framework.JavaScriptEngine.JsValue FromNumber(double value) => throw null;
+        public static Meziantou.Framework.JavaScriptEngine.JsValue FromObject(Meziantou.Framework.JavaScriptEngine.JsObject? value) => throw null;
+        public static Meziantou.Framework.JavaScriptEngine.JsValue FromString(string value) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsObject? TryGetObject() => throw null;
+        public static bool operator ==(Meziantou.Framework.JavaScriptEngine.JsValue left, Meziantou.Framework.JavaScriptEngine.JsValue right) => throw null;
+        public static bool operator !=(Meziantou.Framework.JavaScriptEngine.JsValue left, Meziantou.Framework.JavaScriptEngine.JsValue right) => throw null;
+        public static implicit operator Meziantou.Framework.JavaScriptEngine.JsValue(Meziantou.Framework.JavaScriptEngine.JsObject? value) => throw null;
+        public static implicit operator Meziantou.Framework.JavaScriptEngine.JsValue(Meziantou.Framework.JavaScriptEngine.JsSymbol value) => throw null;
+        public static implicit operator Meziantou.Framework.JavaScriptEngine.JsValue(bool value) => throw null;
+        public static implicit operator Meziantou.Framework.JavaScriptEngine.JsValue(double value) => throw null;
+        public static implicit operator Meziantou.Framework.JavaScriptEngine.JsValue(int value) => throw null;
+        public static implicit operator Meziantou.Framework.JavaScriptEngine.JsValue(string value) => throw null;
+    }
+
+    public enum JsValueKind
+    {
+        Undefined = 0,
+        Null = 1,
+        Boolean = 2,
+        Number = 3,
+        String = 4,
+        Symbol = 5,
+        BigInt = 6,
+        Object = 7,
     }
 }

@@ -8,6 +8,8 @@
     <IsTrimmable>true</IsTrimmable>
     <IsAotCompatible>true</IsAotCompatible>
     <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+    <!-- TEMPORARY: the syntax tree is used by the parser and the compiler, which are being written. Remove once they exist. -->
+    <NoWarn>$(NoWarn);MA0182</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.JavaScriptEngine.Tests" />

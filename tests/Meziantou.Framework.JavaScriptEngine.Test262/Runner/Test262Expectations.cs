@@ -18,7 +18,7 @@ internal static class Test262Expectations
 
     public static bool UpdateMode => Environment.GetEnvironmentVariable("TEST262_UPDATE_EXPECTATIONS") is "1" or "true";
 
-    /// <summary>The area of a test: its first two path segments (built-ins/Array → built-ins-Array).</summary>
+    /// <summary>The area of a test: its first two path segments (built-ins/Array \u2192 built-ins-Array).</summary>
     public static string GetArea(string id)
     {
         var segments = id.Split('/');

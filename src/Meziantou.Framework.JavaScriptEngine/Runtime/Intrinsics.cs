@@ -1,0 +1,128 @@
+namespace Meziantou.Framework.JavaScriptEngine;
+
+/// <summary>
+/// The intrinsic objects of a realm (https://tc39.es/ecma262/#sec-well-known-intrinsic-objects). The prototype objects
+/// are created first, so that the built-ins can reference each other; each built-in then adds its properties
+/// (Builtins/*.cs) and its global binding.
+/// </summary>
+internal sealed partial class Intrinsics
+{
+    private readonly List<(PropertyKey Name, JsValue Value, PropertyFlags Flags)> _globals = [];
+    private readonly JsObject[] _errorPrototypes = new JsObject[Enum.GetValues<ErrorType>().Length];
+    private readonly JsObject[] _errorConstructors = new JsObject[Enum.GetValues<ErrorType>().Length];
+
+    public Intrinsics(JsRealm realm)
+    {
+        Realm = realm;
+
+        // %Object.prototype% is an immutable prototype exotic object
+        ObjectPrototype = new JsObject(prototype: null);
+        ObjectPrototype.Flags |= ObjectFlags.ImmutablePrototype;
+
+        // %Function.prototype% is a built-in function that returns undefined
+        FunctionPrototype = new JsBuiltinFunction(realm, static (_, _, _, _) => JsValue.Undefined, isConstructor: false, ObjectPrototype);
+
+        foreach (var type in Enum.GetValues<ErrorType>())
+        {
+            _errorPrototypes[(int)type] = new JsObject(type == ErrorType.Error ? ObjectPrototype : null);
+        }
+
+        BooleanPrototype = new JsPrimitiveObject(ObjectPrototype, ObjectClass.Boolean, JsValue.False);
+        NumberPrototype = new JsPrimitiveObject(ObjectPrototype, ObjectClass.Number, 0);
+        StringPrototype = new JsStringObject(ObjectPrototype, JsString.Empty);
+        SymbolPrototype = new JsObject(ObjectPrototype);
+        BigIntPrototype = new JsObject(ObjectPrototype);
+        ArrayPrototype = new JsArray(ObjectPrototype);
+        IteratorPrototype = new JsObject(ObjectPrototype);
+        AsyncIteratorPrototype = new JsObject(ObjectPrototype);
+    }
+
+    public JsRealm Realm { get; }
+
+    public JsObject ObjectPrototype { get; }
+
+    public JsFunction FunctionPrototype { get; }
+
+    public JsObject BooleanPrototype { get; }
+
+    public JsObject NumberPrototype { get; }
+
+    public JsObject StringPrototype { get; }
+
+    public JsObject SymbolPrototype { get; }
+
+    public JsObject BigIntPrototype { get; }
+
+    public JsArray ArrayPrototype { get; }
+
+    /// <summary>%Iterator.prototype%</summary>
+    public JsObject IteratorPrototype { get; }
+
+    /// <summary>%AsyncIteratorPrototype%</summary>
+    public JsObject AsyncIteratorPrototype { get; }
+
+    /// <summary>%Object%</summary>
+    public JsFunction Object { get; private set; } = null!;
+
+    /// <summary>%Function%</summary>
+    public JsFunction Function { get; private set; } = null!;
+
+    /// <summary>%ThrowTypeError%</summary>
+    public JsFunction ThrowTypeError { get; private set; } = null!;
+
+    public JsObject GetErrorPrototype(ErrorType type) => _errorPrototypes[(int)type];
+
+    public JsObject GetErrorConstructor(ErrorType type) => _errorConstructors[(int)type];
+
+    /// <summary>Creates the properties of the intrinsics.</summary>
+    public void Initialize()
+    {
+        ThrowTypeError = CreateThrowTypeError();
+        ErrorBuiltins.Initialize(this, _errorPrototypes, _errorConstructors);
+        InitializeBuiltins();
+    }
+
+    /// <summary>Initializes the other built-ins (each built-in has its own file).</summary>
+    partial void InitializeBuiltins();
+
+    /// <summary>Adds a property of the global object (SetDefaultGlobalBindings).</summary>
+    public void AddGlobal(PropertyKey name, JsValue value, PropertyFlags flags = PropertyFlags.BuiltIn) => _globals.Add((name, value, flags));
+
+    public void DefineGlobalBindings(JsObject globalObject)
+    {
+        foreach (var (name, value, flags) in _globals)
+        {
+            globalObject.DefineBuiltIn(name, value, flags);
+        }
+    }
+
+    /// <summary>Sets %Object%; called by the built-in that creates it.</summary>
+    public void SetObjectConstructor(JsFunction constructor) => Object = constructor;
+
+    /// <summary>Sets %Function%; called by the built-in that creates it.</summary>
+    public void SetFunctionConstructor(JsFunction constructor) => Function = constructor;
+
+    /// <summary>Creates the wrapper object of a primitive value (ToObject).</summary>
+    public JsObject CreatePrimitiveWrapper(JsValue value)
+    {
+        return value.Kind switch
+        {
+            JsValueKind.Boolean => new JsPrimitiveObject(BooleanPrototype, ObjectClass.Boolean, value),
+            JsValueKind.Number => new JsPrimitiveObject(NumberPrototype, ObjectClass.Number, value),
+            JsValueKind.String => new JsStringObject(StringPrototype, value.AsJsString()),
+            JsValueKind.Symbol => new JsPrimitiveObject(SymbolPrototype, ObjectClass.Symbol, value),
+            JsValueKind.BigInt => new JsPrimitiveObject(BigIntPrototype, ObjectClass.BigInt, value),
+            _ => throw new ArgumentOutOfRangeException(nameof(value), value.Kind, "Not a primitive value"),
+        };
+    }
+
+    /// <summary>%ThrowTypeError% (https://tc39.es/ecma262/#sec-%throwtypeerror%): non-extensible, length and name not configurable.</summary>
+    private JsBuiltinFunction CreateThrowTypeError()
+    {
+        var function = new JsBuiltinFunction(Realm, static (_, _, _, _) => ThrowHelper.ThrowTypeError<JsValue>("'caller', 'callee', and 'arguments' properties may not be accessed on strict mode functions or the arguments objects for calls to them"), isConstructor: false, FunctionPrototype);
+        function.DefineBuiltIn("length", 0, PropertyFlags.None);
+        function.DefineBuiltIn("name", "", PropertyFlags.None);
+        function.PreventExtensions();
+        return function;
+    }
+}

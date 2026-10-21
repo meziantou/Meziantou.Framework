@@ -41,7 +41,27 @@ Assert.Equal("Example", title.AsString());
 The windows of the browsing contexts that use an engine share its `JsEngine` (the similar-origin window agent); each
 window is the global object of its own realm. A worker gets its own engine, with the same options, on its own thread.
 `JavaScriptScriptEngineOptions` limits the resources of each entry into JavaScript (a script, an event listener, a timer
-callback...): `Timeout`, `MemoryLimit`, `MaxStatements` and `RecursionLimit`. A subclass can add its own functions to
-the global objects in `OnRealmCreated`.
+callback...): `Timeout` (10 seconds by default), `MemoryLimit` (256 MB allocated by default), `MaxStatements`,
+`RecursionLimit` (512 calls by default; null is the limit of the engine, 10,000 calls) and `RegexTimeout`.
+`TimeProvider` is the clock of `Date`, and `ConfigureEngine` sets the other options of the engine (e.g. the time zone and
+the default locale of `Intl`). The scripts only see the DOM and the JavaScript built-ins: the engine has no access to
+.NET types.
 
-See [scripting.md](../Meziantou.Framework.WebPlatform/docs/scripting.md) for the threat model and the options.
+A subclass can add its own functions to the global objects in `OnRealmCreated`:
+
+<!-- ref:../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/JavaScriptScriptEngineTests.cs;region=WebPlatformJavaScript_HostFunctions;format=md-fenced-code-block;dedent=true -->
+```csharp
+/// <summary>A script engine whose windows have a <c>hostAdd</c> function.</summary>
+private sealed class HostFunctionsScriptEngine : JavaScriptScriptEngine
+{
+    protected override void OnRealmCreated(GlobalScope global, JsObject globalObject)
+    {
+        var realm = Engine.CurrentRealm!;
+        globalObject.SetProperty("hostAdd", realm.CreateFunction("hostAdd", 2, (_, arguments) => arguments[0].AsNumber() + arguments[1].AsNumber()));
+    }
+}
+```
+<!-- endref -->
+
+See [scripting.md](../Meziantou.Framework.WebPlatform/docs/scripting.md) for the threat model and the integration with
+the processing model of the HTML Standard.

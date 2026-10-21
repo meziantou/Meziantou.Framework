@@ -65,6 +65,65 @@ public sealed class IntlTests
             """));
     }
 
+    [Theory]
+    [InlineData(0.1, "0.1000000000000000055511151231257827021181583404541015625")]
+    [InlineData(1234.5, "1234.5")]
+    [InlineData(-0.0, "-0")]
+    [InlineData(1e21, "1000000000000000000000")]
+    public void IntlDecimal_FromDouble(double value, string exact)
+    {
+        var x = Meziantou.Framework.JavaScriptEngine.Intl.IntlDecimal.FromDouble(value);
+        Assert.Equal(value, x.ToDouble());
+        Assert.Equal(exact, (x.IsNegative ? "-" : "") + FormatExact(x));
+    }
+
+    private static string FormatExact(Meziantou.Framework.JavaScriptEngine.Intl.IntlDecimal x)
+    {
+        var digits = x.Coefficient.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        if (x.Exponent >= 0)
+            return digits + new string('0', x.Exponent);
+
+        digits = digits.PadLeft(-x.Exponent + 1, '0');
+        return digits[..^(-x.Exponent)] + "." + digits[^(-x.Exponent)..];
+    }
+
+    [Theory]
+    [InlineData("1.5", 0, 3, "halfExpand", "1.5")]
+    [InlineData("1.0005", 0, 3, "halfExpand", "1.001")]
+    [InlineData("1.0005", 0, 3, "halfEven", "1")]
+    [InlineData("1.0015", 0, 3, "halfEven", "1.002")]
+    [InlineData("-1.0005", 0, 3, "halfCeil", "1")]
+    [InlineData("-1.0005", 0, 3, "floor", "1.001")]
+    [InlineData("123456789012345678901234567890.5", 2, 2, "trunc", "123456789012345678901234567890.50")]
+    public void FormatNumericToString(string value, int minimumFractionDigits, int maximumFractionDigits, string roundingMode, string expected)
+    {
+        var digits = new Meziantou.Framework.JavaScriptEngine.Intl.DigitOptions
+        {
+            MinimumFractionDigits = minimumFractionDigits,
+            MaximumFractionDigits = maximumFractionDigits,
+            RoundingMode = roundingMode,
+        };
+
+        var result = digits.FormatNumericToString(Meziantou.Framework.JavaScriptEngine.Intl.IntlDecimal.Parse(value));
+        Assert.Equal(expected, result.FormattedString);
+    }
+
+    [Fact]
+    public void PluralRules()
+    {
+        Assert.Equal("one|other|few|many|many|zero,one,two,few,many,other|other", Evaluate("""
+            [
+                new Intl.PluralRules("en").select(1),
+                new Intl.PluralRules("en", { minimumFractionDigits: 1 }).select(1),
+                new Intl.PluralRules("en", { type: "ordinal" }).select(23),
+                new Intl.PluralRules("fr").select(1e6),
+                new Intl.PluralRules("fr", { notation: "compact" }).select(1.5e6),
+                new Intl.PluralRules("ar").resolvedOptions().pluralCategories.join(),
+                new Intl.PluralRules("en").selectRange(1, 5),
+            ].join("|")
+            """));
+    }
+
     [Fact]
     public void SupportedValuesOf()
     {

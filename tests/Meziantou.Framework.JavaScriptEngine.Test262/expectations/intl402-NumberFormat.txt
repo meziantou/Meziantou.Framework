@@ -486,6 +486,8 @@ intl402/NumberFormat/test-option-useGrouping-extended.js:sloppy
 intl402/NumberFormat/test-option-useGrouping-extended.js:strict
 intl402/NumberFormat/test-option-useGrouping.js:sloppy
 intl402/NumberFormat/test-option-useGrouping.js:strict
+intl402/NumberFormat/this-value-ignored.js:sloppy
+intl402/NumberFormat/this-value-ignored.js:strict
 intl402/NumberFormat/throws-for-currency-style-without-currency-option.js:sloppy
 intl402/NumberFormat/throws-for-currency-style-without-currency-option.js:strict
 intl402/NumberFormat/throws-for-maximumFractionDigits-over-limit.js:sloppy

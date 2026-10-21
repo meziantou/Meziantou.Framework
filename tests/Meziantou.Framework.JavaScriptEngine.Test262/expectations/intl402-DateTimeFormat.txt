@@ -470,6 +470,8 @@ intl402/DateTimeFormat/test-option-hour12.js:sloppy
 intl402/DateTimeFormat/test-option-hour12.js:strict
 intl402/DateTimeFormat/test-option-localeMatcher.js:sloppy
 intl402/DateTimeFormat/test-option-localeMatcher.js:strict
+intl402/DateTimeFormat/this-value-ignored.js:sloppy
+intl402/DateTimeFormat/this-value-ignored.js:strict
 intl402/DateTimeFormat/timezone-case-insensitive.js:sloppy
 intl402/DateTimeFormat/timezone-case-insensitive.js:strict
 intl402/DateTimeFormat/timezone-invalid.js:sloppy

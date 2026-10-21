@@ -151,12 +151,12 @@ internal static class IntlOperations
     }
 
     /// <summary>LookupMatchingLocaleByPrefix for one locale without its Unicode extension: the longest available prefix, or null.</summary>
-    public static string? LookupMatchingLocaleByPrefix(string locale)
+    public static string? LookupMatchingLocaleByPrefix(string locale, Func<string, bool>? isAvailable = null)
     {
         var prefix = locale;
         while (prefix.Length > 0)
         {
-            if (IsAvailableLocale(prefix) && Data.Locales.TryGetLocale(prefix, out _))
+            if (isAvailable is null ? IsAvailableLocale(prefix) : isAvailable(prefix))
                 return prefix;
 
             var pos = prefix.LastIndexOf('-', StringComparison.Ordinal);
@@ -177,12 +177,12 @@ internal static class IntlOperations
     }
 
     /// <summary>LookupMatchingLocaleByPrefix / LookupMatchingLocaleByBestFit (the same algorithm): the matched available locale and the Unicode extension of the request.</summary>
-    public static (string Locale, string? Extension)? LookupMatchingLocale(List<string> requestedLocales)
+    public static (string Locale, string? Extension)? LookupMatchingLocale(List<string> requestedLocales, Func<string, bool>? isAvailable = null)
     {
         foreach (var requested in requestedLocales)
         {
             var locale = RemoveUnicodeExtension(requested, out var extension);
-            if (LookupMatchingLocaleByPrefix(locale) is { } match)
+            if (LookupMatchingLocaleByPrefix(locale, isAvailable) is { } match)
                 return (match, extension);
         }
 
@@ -193,9 +193,9 @@ internal static class IntlOperations
     /// ResolveLocale(availableLocales, requestedLocales, options, relevantExtensionKeys, localeData). The options are the
     /// values of the relevant keys read from the options object (null when undefined).
     /// </summary>
-    public static ResolvedLocale ResolveLocale(List<string> requestedLocales, ReadOnlySpan<string> relevantExtensionKeys, Func<string, string?> options, LocaleKeyData localeData)
+    public static ResolvedLocale ResolveLocale(List<string> requestedLocales, ReadOnlySpan<string> relevantExtensionKeys, Func<string, string?> options, LocaleKeyData localeData, Func<string, bool>? isAvailable = null)
     {
-        var r = LookupMatchingLocale(requestedLocales) ?? (DefaultLocale(JsEngine.Current!), null);
+        var r = LookupMatchingLocale(requestedLocales, isAvailable) ?? (DefaultLocale(JsEngine.Current!), null);
         var foundLocale = r.Locale;
         var keywords = new List<KeyValuePair<string, string>>();
         if (r.Extension is not null && LanguageTag.Parse("und" + r.Extension) is { } extensionTag)
@@ -285,7 +285,7 @@ internal static class IntlOperations
     }
 
     /// <summary>FilterLocales / SupportedLocales(availableLocales, requestedLocales, options)</summary>
-    public static JsArray SupportedLocales(JsRealm realm, List<string> requestedLocales, JsValue options)
+    public static JsArray SupportedLocales(JsRealm realm, List<string> requestedLocales, JsValue options, Func<string, bool>? isAvailable = null)
     {
         var optionsObject = CoerceOptionsToObject(options);
         _ = GetStringOption(optionsObject, "localeMatcher", ["lookup", "best fit"], "best fit");
@@ -293,7 +293,7 @@ internal static class IntlOperations
         foreach (var locale in requestedLocales)
         {
             var noExtensionsLocale = RemoveUnicodeExtension(locale, out _);
-            if (LookupMatchingLocaleByPrefix(noExtensionsLocale) is not null)
+            if (LookupMatchingLocaleByPrefix(noExtensionsLocale, isAvailable) is not null)
             {
                 subset.Add(locale);
             }

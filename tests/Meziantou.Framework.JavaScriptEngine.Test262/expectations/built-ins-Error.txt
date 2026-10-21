@@ -1,0 +1,6 @@
+built-ins/Error/isError/non-error-objects-other-realm.js:sloppy
+built-ins/Error/isError/non-error-objects-other-realm.js:strict
+built-ins/Error/isError/non-error-objects.js:sloppy
+built-ins/Error/isError/non-error-objects.js:strict
+built-ins/Error/prototype/stack/getter-no-error-data.js:sloppy
+built-ins/Error/prototype/stack/getter-no-error-data.js:strict

@@ -1,0 +1,13 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.JavaScriptEngine.Test262</RootNamespace>
+    <!-- Each test creates its own engines: the server GC keeps the parallel tests from pausing each other -->
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.JavaScriptEngine/Meziantou.Framework.JavaScriptEngine.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Yaml/Meziantou.Framework.Yaml.csproj" />
+  </ItemGroup>
+</Project>

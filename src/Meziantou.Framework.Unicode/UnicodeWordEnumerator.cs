@@ -15,6 +15,14 @@ public ref struct UnicodeWordEnumerator
     /// <summary>Gets the range of the current segment in the text.</summary>
     public readonly Range Current => _start.._end;
 
+    /// <summary>Gets whether the current segment is a word, and which kind of word: a number, letters, kana or an ideograph.</summary>
+    /// <remarks>
+    /// The segment is word-like, as the <c>isWordLike</c> property of <c>Intl.Segmenter</c> says, when the kind is not
+    /// <see cref="UnicodeWordKind.None"/>. See <see cref="UnicodeWordKind"/> for the rules. The kind is computed from
+    /// the end of the segment when the property is read, so the enumeration costs nothing more when it is not used.
+    /// </remarks>
+    public readonly UnicodeWordKind CurrentKind => Unicode.GetWordKind(_text[_start.._end]);
+
     /// <summary>Returns this instance, so that the enumerator can be used by a <see langword="foreach"/> statement.</summary>
     /// <returns>This instance.</returns>
     public readonly UnicodeWordEnumerator GetEnumerator() => this;

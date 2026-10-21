@@ -103,6 +103,193 @@ public sealed class UnicodeTests
     }
 
     [Fact]
+    public void ReadmeExample_CaseMappingOfText()
+    {
+        #region Unicode_CaseMappingOfText
+        // The mappings that do not depend on the language, with the final sigma of Greek
+        Assert.Equal("STRASSE", UnicodeCaseMapping.ToUpper("Stra\u00DFe"));
+        Assert.Equal("\u03BF\u03B4\u03CC\u03C2", UnicodeCaseMapping.ToLower("\u039F\u0394\u038C\u03A3"));
+
+        // Turkish and Azerbaijani: the dotless and the dotted I
+        Assert.Equal("\u0131i", UnicodeCaseMapping.ToLower("I\u0130", "tr"));
+        Assert.Equal("\u0130I", UnicodeCaseMapping.ToUpper("i\u0131", "tr-TR"));
+
+        // Lithuanian: the i keeps its dot under an accent
+        Assert.Equal("i\u0307\u0300", UnicodeCaseMapping.ToLower("\u00CC", "lt"));
+        #endregion
+    }
+
+    [Theory]
+    // Turkish and Azerbaijani (SpecialCasing.txt)
+    [InlineData("I", "tr", "\u0131")]
+    [InlineData("\u0130", "tr", "i")]
+    [InlineData("I\u0307", "tr", "i")]
+    [InlineData("I\u0316\u0307", "tr", "i\u0316")] // a mark below does not separate the I from the dot above
+    [InlineData("I\u0301\u0307", "tr", "\u0131\u0301\u0307")] // a mark above does
+    [InlineData("a\u0307", "tr", "a\u0307")]
+    [InlineData("ISTANBUL \u0130ZM\u0130R", "tr", "\u0131stanbul izmir")]
+    [InlineData("I\u0130", "az", "\u0131i")]
+    [InlineData("I\u0130", "TR-tr", "\u0131i")]
+    [InlineData("I\u0130", "tur", "\u0131i")]
+    [InlineData("I\u0130", "az_Latn_AZ", "\u0131i")]
+    [InlineData("I\u0130", null, "ii\u0307")]
+    [InlineData("I\u0130", "en", "ii\u0307")]
+    [InlineData("I\u0130", "", "ii\u0307")]
+    [InlineData("I\u0130", "trx", "ii\u0307")]
+    // Lithuanian (SpecialCasing.txt)
+    [InlineData("\u00CC\u00CD\u0128", "lt", "i\u0307\u0300i\u0307\u0301i\u0307\u0303")]
+    [InlineData("I\u0300", "lt", "i\u0307\u0300")]
+    [InlineData("J\u0301", "lt", "j\u0307\u0301")]
+    [InlineData("\u012E\u0301", "lt", "\u012F\u0307\u0301")]
+    [InlineData("I\u0328\u0301", "lt", "i\u0307\u0328\u0301")] // the ogonek (230 is not its class) does not separate them
+    [InlineData("IJ\u012E", "lt", "ij\u012F")]
+    [InlineData("\u00CC", "lit-LT", "i\u0307\u0300")]
+    [InlineData("\u00CC", null, "\u00EC")]
+    [InlineData("I\u0300", null, "i\u0300")]
+    // The final sigma, in every language (The Unicode Standard, section 3.13)
+    [InlineData("\u039F\u0394\u039F\u03A3", null, "\u03BF\u03B4\u03BF\u03C2")]
+    [InlineData("\u039F\u0394\u039F\u03A3", "tr", "\u03BF\u03B4\u03BF\u03C2")]
+    [InlineData("\u03A3", null, "\u03C3")]
+    [InlineData("\u03A3\u0391", null, "\u03C3\u03B1")]
+    [InlineData("\u0391\u03A3\u0391", null, "\u03B1\u03C3\u03B1")]
+    [InlineData("\u0391\u03A3 \u0391\u03A3", null, "\u03B1\u03C2 \u03B1\u03C2")]
+    [InlineData("\u0391\u03A3.", null, "\u03B1\u03C2.")] // the full stop is case-ignorable
+    [InlineData("\u0391.\u03A3", null, "\u03B1.\u03C2")]
+    [InlineData("\u0391\u03A3\u0301", null, "\u03B1\u03C2\u0301")]
+    [InlineData("\u0391\u03A3\u0301\u0391", null, "\u03B1\u03C3\u0301\u03B1")]
+    [InlineData("\u0391\u03A3\u03A3", null, "\u03B1\u03C3\u03C2")]
+    [InlineData("1\u03A3", null, "1\u03C3")]
+    [InlineData("\U00010400\u03A3", null, "\U00010428\u03C2")] // a cased letter outside the BMP
+    [InlineData(" \u02B0\u03A3", null, " \u02B0\u03C3")] // a modifier letter is cased and case-ignorable: it is ignored, as in ICU
+    public void ToLower_AppliesTheConditionalMappings(string value, string? language, string expected)
+    {
+        Assert.Equal(expected, UnicodeCaseMapping.ToLower(value, language));
+    }
+
+    [Theory]
+    [InlineData("i", "tr", "\u0130")]
+    [InlineData("\u0131", "tr", "I")]
+    [InlineData("istanbul izmir", "tr", "\u0130STANBUL \u0130ZM\u0130R")]
+    [InlineData("i", "az", "\u0130")]
+    [InlineData("i", null, "I")]
+    [InlineData("i", "lt", "I")]
+    // Lithuanian: the dot above after a soft-dotted letter is removed
+    [InlineData("i\u0307", "lt", "I")]
+    [InlineData("i\u0307\u0300", "lt", "I\u0300")]
+    [InlineData("j\u0307", "lt", "J")]
+    [InlineData("\u012F\u0307", "lt", "\u012E")]
+    [InlineData("i\u0328\u0307", "lt", "I\u0328")]
+    [InlineData("i\u0300\u0307", "lt", "I\u0300\u0307")] // a mark above separates them
+    [InlineData("a\u0307", "lt", "A\u0307")]
+    [InlineData("\u0307", "lt", "\u0307")]
+    [InlineData("i\u0307", null, "I\u0307")]
+    [InlineData("i\u0307", "tr", "\u0130\u0307")]
+    // The full mappings
+    [InlineData("Stra\u00DFe", null, "STRASSE")]
+    [InlineData("\uFB01", null, "FI")]
+    [InlineData("\u03C2", null, "\u03A3")]
+    [InlineData("\U00010428", null, "\U00010400")]
+    public void ToUpper_AppliesTheConditionalMappings(string value, string? language, string expected)
+    {
+        Assert.Equal(expected, UnicodeCaseMapping.ToUpper(value, language));
+    }
+
+    [Fact]
+    public void CaseMapping_OfOneCodePoint_IsTheFullMapping()
+    {
+        // Without context and without language, the conversion of one code point is its full case mapping.
+        Span<int> mapping = stackalloc int[UnicodeProperties.MaxCaseMappingLength];
+        for (var codePoint = 0; codePoint <= 0x10FFFF; codePoint++)
+        {
+            if (codePoint is >= 0xD800 and <= 0xDFFF)
+            {
+                var surrogate = ((char)codePoint).ToString();
+                Assert.Same(surrogate, UnicodeCaseMapping.ToUpper(surrogate));
+                Assert.Same(surrogate, UnicodeCaseMapping.ToLower(surrogate));
+                continue;
+            }
+
+            var text = char.ConvertFromUtf32(codePoint);
+            var length = UnicodeProperties.GetUppercaseMapping(codePoint, mapping);
+            Assert.Equal(ToString(mapping[..length]), UnicodeCaseMapping.ToUpper(text));
+
+            length = UnicodeProperties.GetLowercaseMapping(codePoint, mapping);
+            Assert.Equal(ToString(mapping[..length]), UnicodeCaseMapping.ToLower(text));
+        }
+    }
+
+    [Fact]
+    public void CaseMapping_ReturnsTheSameInstanceWhenNothingChanges()
+    {
+        var text = new string(['a', 'b', 'c', ' ', '1', '\u00E9', (char)0xD800]);
+        Assert.Same(text, UnicodeCaseMapping.ToLower(text));
+        Assert.Same(text, UnicodeCaseMapping.ToLower(text, "tr"));
+
+        text = new string(['A', 'B', 'C', ' ', '1', '\u00C9', (char)0xDC00]);
+        Assert.Same(text, UnicodeCaseMapping.ToUpper(text));
+        Assert.Same(text, UnicodeCaseMapping.ToUpper(text, "lt"));
+
+        Assert.Same(string.Empty, UnicodeCaseMapping.ToUpper(string.Empty));
+        Assert.Equal("ABC\u00C9" + (char)0xD800, UnicodeCaseMapping.ToUpper("abc\u00E9" + (char)0xD800));
+    }
+
+    [Fact]
+    public void CaseMapping_ThrowsForANullText()
+    {
+        Assert.Throws<ArgumentNullException>("value", () => UnicodeCaseMapping.ToUpper(null!));
+        Assert.Throws<ArgumentNullException>("value", () => UnicodeCaseMapping.ToLower(null!, "tr"));
+    }
+
+    [Theory]
+    [InlineData('A', true, false)]
+    [InlineData('a', true, false)]
+    [InlineData(0x01C5, true, false)] // a titlecase letter
+    [InlineData(0x2160, true, false)] // Other_Uppercase
+    [InlineData(0x02B0, true, true)] // a modifier letter with Other_Lowercase
+    [InlineData(0x0301, false, true)]
+    [InlineData(0x00AD, false, true)]
+    [InlineData('\'', false, true)]
+    [InlineData('.', false, true)]
+    [InlineData(':', false, true)]
+    [InlineData('1', false, false)]
+    [InlineData(' ', false, false)]
+    [InlineData(0x05D0, false, false)]
+    [InlineData(0x4E00, false, false)]
+    [InlineData(-1, false, false)]
+    [InlineData(0x110000, false, false)]
+    public void IsCased_IsCaseIgnorable_ReturnTheProperties(int codePoint, bool cased, bool caseIgnorable)
+    {
+        Assert.Equal(cased, UnicodeProperties.IsCased(codePoint));
+        Assert.Equal(caseIgnorable, UnicodeProperties.IsCaseIgnorable(codePoint));
+    }
+
+    [Theory]
+    [InlineData('i', true)]
+    [InlineData('j', true)]
+    [InlineData(0x012F, true)]
+    [InlineData(0x0456, true)]
+    [InlineData(0x1D422, true)]
+    [InlineData(0x1E068, true)]
+    [InlineData('I', false)]
+    [InlineData('k', false)]
+    [InlineData(0x0131, false)]
+    [InlineData(-1, false)]
+    [InlineData(0x110000, false)]
+    public void IsSoftDotted_ReturnsTheProperty(int codePoint, bool expected)
+    {
+        Assert.Equal(expected, UnicodeProperties.IsSoftDotted(codePoint));
+    }
+
+    [Fact]
+    public void EmojiProperties_AreNotChangedByTheCaseFlags()
+    {
+        // The case flags share their byte with the emoji properties.
+        Assert.True(UnicodeEmoji.IsEmoji(0x1F600));
+        Assert.False(UnicodeEmoji.IsEmoji('a'));
+        Assert.Equal(EmojiProperties.None, UnicodeProperties.GetEmojiProperties(0x02B0));
+    }
+
+    [Fact]
     public void ReadmeExample_Segmentation()
     {
         #region Unicode_Segmentation
@@ -125,6 +312,30 @@ public sealed class UnicodeTests
         }
 
         Assert.Equal(["Hello", ",", " ", "world", "!"], segments);
+
+        // The kind of each segment: whether it is a word (isWordLike in Intl.Segmenter)
+        text = "I have 2 cats.";
+        var words = new List<string>();
+        var enumerator = Unicode.EnumerateWordBoundaries(text);
+        while (enumerator.MoveNext())
+        {
+            if (enumerator.CurrentKind is not UnicodeWordKind.None) // Number, Letter, Kana or Ideographic
+            {
+                words.Add(text[enumerator.Current]);
+            }
+        }
+
+        Assert.Equal(["I", "have", "2", "cats"], words);
+
+        // Sentences: the spaces after the terminal punctuation belong to the sentence
+        text = "It costs $3.50, i.e. not much. Really? Yes!";
+        var sentences = new List<string>();
+        foreach (Range sentence in Unicode.EnumerateSentenceBoundaries(text))
+        {
+            sentences.Add(text[sentence]);
+        }
+
+        Assert.Equal(["It costs $3.50, i.e. not much. ", "Really? ", "Yes!"], sentences);
 
         // Line break opportunities
         text = "A long line\nof text";
@@ -1243,6 +1454,30 @@ public sealed class UnicodeTests
     }
 
     [Theory]
+    [InlineData(0x0061, UnicodeSentenceBreak.Lower)]
+    [InlineData(0x0041, UnicodeSentenceBreak.Upper)]
+    [InlineData(0x05D0, UnicodeSentenceBreak.OLetter)]
+    [InlineData(0x0030, UnicodeSentenceBreak.Numeric)]
+    [InlineData(0x002E, UnicodeSentenceBreak.ATerm)]
+    [InlineData(0x003F, UnicodeSentenceBreak.STerm)]
+    [InlineData(0x3002, UnicodeSentenceBreak.STerm)]
+    [InlineData(0x0029, UnicodeSentenceBreak.Close)]
+    [InlineData(0x002C, UnicodeSentenceBreak.SContinue)]
+    [InlineData(0x0020, UnicodeSentenceBreak.Sp)]
+    [InlineData(0x2029, UnicodeSentenceBreak.Sep)]
+    [InlineData(0x000D, UnicodeSentenceBreak.CR)]
+    [InlineData(0x000A, UnicodeSentenceBreak.LF)]
+    [InlineData(0x0301, UnicodeSentenceBreak.Extend)]
+    [InlineData(0x00AD, UnicodeSentenceBreak.Format)]
+    [InlineData(0x0024, UnicodeSentenceBreak.Other)]
+    [InlineData(-1, UnicodeSentenceBreak.Other)]
+    [InlineData(0x110000, UnicodeSentenceBreak.Other)]
+    public void GetSentenceBreak_ReturnsTheClass(int codePoint, UnicodeSentenceBreak expected)
+    {
+        Assert.Equal(expected, UnicodeProperties.GetSentenceBreak(codePoint));
+    }
+
+    [Theory]
     [InlineData(0x0628, UnicodeJoiningType.DualJoining, UnicodeJoiningGroup.Beh)]
     [InlineData(0x0627, UnicodeJoiningType.RightJoining, UnicodeJoiningGroup.Alef)]
     [InlineData(0x0644, UnicodeJoiningType.DualJoining, UnicodeJoiningGroup.Lam)]
@@ -1496,6 +1731,7 @@ public sealed class UnicodeTests
         Assert.Equal(0, (int)UnicodeGraphemeClusterBreak.Other);
         Assert.Equal(0, (int)UnicodeIndicConjunctBreak.None);
         Assert.Equal(0, (int)UnicodeWordBreak.Other);
+        Assert.Equal(0, (int)UnicodeSentenceBreak.Other);
         Assert.Equal(0, (int)UnicodeEastAsianWidth.Neutral);
         Assert.Equal(0, (int)UnicodeBidiPairedBracketType.None);
         Assert.Equal(0, (int)UnicodeJoiningType.NonJoining);
@@ -1602,6 +1838,107 @@ public sealed class UnicodeTests
         }
 
         Assert.Equal(expected, segments.ToArray());
+    }
+
+    [Theory]
+    [InlineData("Hello, world!", new[] { "Hello", ",", " ", "world", "!" }, new[] { UnicodeWordKind.Letter, UnicodeWordKind.None, UnicodeWordKind.None, UnicodeWordKind.Letter, UnicodeWordKind.None })]
+    [InlineData("3.14 or 1,000", new[] { "3.14", " ", "or", " ", "1,000" }, new[] { UnicodeWordKind.Number, UnicodeWordKind.None, UnicodeWordKind.Letter, UnicodeWordKind.None, UnicodeWordKind.Number })]
+    // The kind is the one of the last character.
+    [InlineData("a1 1a can't", new[] { "a1", " ", "1a", " ", "can't" }, new[] { UnicodeWordKind.Number, UnicodeWordKind.None, UnicodeWordKind.Letter, UnicodeWordKind.None, UnicodeWordKind.Letter })]
+    [InlineData("snake_case42", new[] { "snake_case42" }, new[] { UnicodeWordKind.Number })]
+    // A low line takes the kind of the character before it, and is not a word on its own.
+    [InlineData("a_ 1_ _ __", new[] { "a_", " ", "1_", " ", "_", " ", "__" }, new[] { UnicodeWordKind.Letter, UnicodeWordKind.None, UnicodeWordKind.Number, UnicodeWordKind.None, UnicodeWordKind.None, UnicodeWordKind.None, UnicodeWordKind.Letter })]
+    [InlineData("\u30AB_", new[] { "\u30AB_" }, new[] { UnicodeWordKind.Kana })]
+    // Hebrew letters, and a Hebrew letter with a single quote (WB7a).
+    [InlineData("\u05D0\u05D1 \u05D2'", new[] { "\u05D0\u05D1", " ", "\u05D2'" }, new[] { UnicodeWordKind.Letter, UnicodeWordKind.None, UnicodeWordKind.Letter })]
+    // Kana, ideographs and Hangul.
+    [InlineData("\u30AB\u30BF\u30AB\u30CA", new[] { "\u30AB\u30BF\u30AB\u30CA" }, new[] { UnicodeWordKind.Kana })]
+    [InlineData("\u3053\u65E5\u3005", new[] { "\u3053", "\u65E5", "\u3005" }, new[] { UnicodeWordKind.Kana, UnicodeWordKind.Ideographic, UnicodeWordKind.Ideographic })]
+    [InlineData("\uD55C\uAD6D", new[] { "\uD55C\uAD6D" }, new[] { UnicodeWordKind.Letter })]
+    // A script written without spaces between words is a letter word, even without a dictionary.
+    [InlineData("\u0E20\u0E32", new[] { "\u0E20", "\u0E32" }, new[] { UnicodeWordKind.Letter, UnicodeWordKind.Letter })]
+    // The trailing marks are ignored (WB4), and a mark on its own is not a word.
+    [InlineData("e\u0301 \u0301", new[] { "e\u0301", " \u0301" }, new[] { UnicodeWordKind.Letter, UnicodeWordKind.None })]
+    [InlineData("\u0301e", new[] { "\u0301", "e" }, new[] { UnicodeWordKind.None, UnicodeWordKind.Letter })]
+    [InlineData("\U0001F600\U0001F1EB\U0001F1F7\r\n\u20AC", new[] { "\U0001F600", "\U0001F1EB\U0001F1F7", "\r\n", "\u20AC" }, new[] { UnicodeWordKind.None, UnicodeWordKind.None, UnicodeWordKind.None, UnicodeWordKind.None })]
+    public void EnumerateWordBoundaries_ReturnsTheKindOfEachSegment(string text, string[] expectedSegments, UnicodeWordKind[] expectedKinds)
+    {
+        var segments = new List<string>();
+        var kinds = new List<UnicodeWordKind>();
+        var enumerator = Unicode.EnumerateWordBoundaries(text);
+        Assert.Equal(UnicodeWordKind.None, enumerator.CurrentKind);
+        while (enumerator.MoveNext())
+        {
+            segments.Add(text[enumerator.Current]);
+            kinds.Add(enumerator.CurrentKind);
+        }
+
+        Assert.Equal(expectedSegments, segments.ToArray());
+        Assert.Equal(expectedKinds, kinds.ToArray());
+    }
+
+    [Theory]
+    [InlineData("", new string[0])]
+    [InlineData("Hello.", new[] { "Hello." })]
+    [InlineData("Hello. World", new[] { "Hello. ", "World" })]
+    [InlineData("Hello.  World", new[] { "Hello.  ", "World" })]
+    // The closing punctuation and the spaces after the terminal punctuation end the sentence (SB9, SB10).
+    [InlineData("(He left.) Then", new[] { "(He left.) ", "Then" })]
+    // A full stop followed by a digit (SB6), by an uppercase letter (SB7) or by a lowercase word (SB8). The other
+    // terminal punctuation marks end the sentence before a lowercase word.
+    [InlineData("Pi is 3.14 today.", new[] { "Pi is 3.14 today." })]
+    [InlineData("The U.S.A. Is big.", new[] { "The U.S.A. ", "Is big." })]
+    [InlineData("See e.g. the list.", new[] { "See e.g. the list." })]
+    [InlineData("Mr. Smith", new[] { "Mr. ", "Smith" })]
+    [InlineData("\"Stop!\" he said", new[] { "\"Stop!\" ", "he said" })]
+    [InlineData("Ready?! Go.", new[] { "Ready?! ", "Go." })]
+    // A comma after a terminal punctuation continues the sentence (SB8a).
+    [InlineData("\"Why?\", she asked.", new[] { "\"Why?\", she asked." })]
+    // A paragraph separator ends a sentence (SB4), and belongs to it.
+    [InlineData("One\nTwo\r\nThree\u2029Four", new[] { "One\n", "Two\r\n", "Three\u2029", "Four" })]
+    [InlineData("End.\nNext", new[] { "End.\n", "Next" })]
+    [InlineData("End. \r\nNext", new[] { "End. \r\n", "Next" })]
+    // Extend and Format characters are ignored (SB5).
+    [InlineData("e\u0301. Then", new[] { "e\u0301. ", "Then" })]
+    [InlineData(".\u0301 Then", new[] { ".\u0301 ", "Then" })]
+    [InlineData("\u3053\u308C\u3002\u305D\u308C\u3002", new[] { "\u3053\u308C\u3002", "\u305D\u308C\u3002" })]
+    public void EnumerateSentenceBoundaries_ReturnsTheSentences(string text, string[] expected)
+    {
+        var sentences = new List<string>();
+        foreach (var range in Unicode.EnumerateSentenceBoundaries(text))
+        {
+            sentences.Add(text[range]);
+        }
+
+        Assert.Equal(expected, sentences.ToArray());
+    }
+
+    [Fact]
+    public void EnumerateSentenceBoundaries_IsLinearAfterAFullStop()
+    {
+        // SB8 looks ahead for a lowercase letter after "ATerm Close* Sp*": the lookahead must not be repeated at each
+        // position of a long sequence of spaces or of characters it skips.
+        var text = "a." + new string(' ', 100_000) + new string('1', 100_000) + "A";
+        var sentences = new List<Range>();
+        foreach (var range in Unicode.EnumerateSentenceBoundaries(text))
+        {
+            sentences.Add(range);
+        }
+
+        Assert.Equal([0..100_002, 100_002..text.Length], sentences);
+    }
+
+    [Fact]
+    public void EnumerateSentenceBoundaries_KeepsUnpairedSurrogates()
+    {
+        var text = "a" + (char)0xD800 + ". " + (char)0xDC00 + "B";
+        var sentences = new List<string>();
+        foreach (var range in Unicode.EnumerateSentenceBoundaries(text))
+        {
+            sentences.Add(text[range]);
+        }
+
+        Assert.Equal(["a" + (char)0xD800 + ". ", (char)0xDC00 + "B"], sentences);
     }
 
     [Theory]

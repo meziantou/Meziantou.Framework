@@ -47,7 +47,7 @@ internal static class PluralRulesBuiltins
         if (IntlOperations.IsAvailableLocale(locale))
             return true;
 
-        return IntlOperations.Data.Supplemental.GetSection("plurals") is { } plurals && plurals.TryGetValue(locale, out _);
+        return locale is not ("und" or "root") && IntlOperations.Data.Supplemental.GetSection("plurals") is { } plurals && plurals.TryGetValue(locale, out _);
     }
 
     private static JsValue SupportedLocalesOf(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
@@ -179,17 +179,34 @@ internal static class PluralRulesBuiltins
         if (!double.IsFinite(n))
             return ("other", NumberFormatting.ToString(n));
 
+        // The number is formatted without the exponent of the notation, which is the c (or e) operand of the rules
         var x = IntlDecimal.FromDouble(n);
-        var (exponent, _) = Notation.ComputeExponent(pluralRules.Digits, pluralRules.Notation, pluralRules.DataLocale, "latn", pluralRules.CompactDisplay, currency: false, x);
-        var formatted = pluralRules.Digits.FormatNumericToString(x.ScaleByPowerOfTen(-exponent));
+        var formatted = pluralRules.Digits.FormatNumericToString(x);
+        var exponent = pluralRules.Notation is "standard" ? 0 : Notation.ComputeExponent(pluralRules.Digits, pluralRules.Notation, pluralRules.DataLocale, "latn", pluralRules.CompactDisplay, currency: false, x).Exponent;
         var category = SelectCategory(pluralRules.Rules, formatted.FormattedString, exponent);
         return (category, formatted.FormattedString);
     }
 
-    /// <summary>PluralRuleSelect: the category of a formatted number (digits, '.', without sign) with the exponent of its notation.</summary>
+    /// <summary>
+    /// PluralRuleSelect: the category of a formatted number (digits and '.', without the sign) with the exponent of its
+    /// notation as the c operand (the other operands are the ones of the number: 1200 with c = 3 is "1.200c3").
+    /// </summary>
     internal static string SelectCategory(Data.PluralRules rules, string formatted, int exponent)
     {
-        var text = exponent > 0 ? formatted + "c" + exponent.ToString(System.Globalization.CultureInfo.InvariantCulture) : formatted;
+        var text = formatted;
+        if (exponent > 0)
+        {
+            var dot = formatted.IndexOf('.', StringComparison.Ordinal);
+            var integer = dot < 0 ? formatted : formatted[..dot];
+            var fraction = dot < 0 ? "" : formatted[(dot + 1)..];
+            if (integer.Length <= exponent)
+            {
+                integer = new string('0', exponent - integer.Length + 1) + integer;
+            }
+
+            text = integer[..^exponent] + "." + integer[^exponent..] + fraction + "c" + exponent.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
         if (!PluralOperands.TryParse(text, out var operands))
             return "other";
 

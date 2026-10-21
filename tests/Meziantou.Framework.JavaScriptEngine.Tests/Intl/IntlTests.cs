@@ -53,7 +53,7 @@ public sealed class IntlTests
                 hourCycle: "h24", caseFirst: "false", numeric: "true", numberingSystem: "jpanfin",
             }).toString()
             """));
-        Assert.Equal("en-Latn-US|zh-TW|h12,h23|rtl|7|6,7", Evaluate("""
+        Assert.Equal("en-Latn-US|zh-TW|h12|rtl|7|6,7", Evaluate("""
             [
                 new Intl.Locale("en").maximize().toString(),
                 new Intl.Locale("zh-Hant-TW").minimize().toString(),

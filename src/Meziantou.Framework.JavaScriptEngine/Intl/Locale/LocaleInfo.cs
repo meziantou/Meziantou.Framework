@@ -47,6 +47,9 @@ internal static class LocaleInfo
         _ => calendar,
     };
 
+    /// <summary>Gets the BCP 47 identifier of a CLDR collation type ("phonebook" -> "phonebk", "traditional" -> "trad").</summary>
+    public static string ToBcp47Collation(string type) => type.StartsWith('_', StringComparison.Ordinal) ? type : LocaleCanonicalizer.CanonicalizeUnicodeValue("co", type);
+
     public static bool IsAvailableCalendar(string calendar) => Array.BinarySearch(AvailableCalendars, calendar, StringComparer.Ordinal) >= 0;
 
     public static bool IsAvailableNumberingSystem(string numberingSystem) => Array.BinarySearch(NumberingSystems, numberingSystem, StringComparer.Ordinal) >= 0;
@@ -62,7 +65,7 @@ internal static class LocaleInfo
 
             for (var i = 0; i < table.Count; i++)
             {
-                var key = table.GetKey(i);
+                var key = ToBcp47Collation(table.GetKey(i));
                 if (key is not ("_default" or "standard" or "search") && LanguageTag.IsUnicodeType(key))
                 {
                     result.Add(key);
@@ -170,8 +173,9 @@ internal static class LocaleInfo
         var id = GetLanguageId(tag);
         if (!id.IsUnknownLanguage && Data.Locales.FindLocale(id) is { IsRoot: false })
         {
-            foreach (var type in Data.Collation.GetCollationTypes(id))
+            foreach (var cldrType in Data.Collation.GetCollationTypes(id))
             {
+                var type = ToBcp47Collation(cldrType);
                 if (type is not ("standard" or "search") && LanguageTag.IsUnicodeType(type))
                 {
                     result.Add(type);
@@ -182,20 +186,17 @@ internal static class LocaleInfo
         return [.. result];
     }
 
-    /// <summary>HourCyclesOfLocale: the preferred hour cycle of the locale, then the other allowed ones.</summary>
+    /// <summary>HourCyclesOfLocale: the preferred hour cycle of the locale.</summary>
     public static List<string> GetHourCycles(LanguageTag tag)
     {
         var supplemental = Data.Supplemental;
         var region = GetRegionPreference(tag, region => supplemental.GetTimeData(region) is not null);
         var timeData = supplemental.GetTimeData(tag.Language + "-" + region) ?? supplemental.GetTimeData(region) ?? supplemental.GetTimeData("001");
+        // The preferred hour cycle only, as ICU (the allowed ones are for the skeletons of the formats)
         var result = new List<string>();
         if (timeData is not null)
         {
             Add(timeData.Preferred);
-            foreach (var allowed in timeData.Allowed)
-            {
-                Add(allowed);
-            }
         }
 
         if (result.Count == 0)

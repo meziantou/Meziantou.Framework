@@ -420,6 +420,16 @@ internal sealed partial class CodeGenerator
                 continue;
             }
 
+            // var x = init is an assignment: the binding is resolved before the initializer is evaluated (with, eval)
+            if (declaration.Kind == VariableDeclarationKind.Var && declarator.Id is Identifier identifier && _analysis.References[identifier].IsDynamic)
+            {
+                var kind = EmitReferenceBase(identifier);
+                EmitNamedEvaluation(declarator.Init, identifier);
+                EmitPutReference(identifier, kind);
+                _builder.Emit(OpCode.Pop);
+                continue;
+            }
+
             EmitNamedEvaluation(declarator.Init, declarator.Id);
             if (declaration.Kind is VariableDeclarationKind.Using or VariableDeclarationKind.AwaitUsing)
             {

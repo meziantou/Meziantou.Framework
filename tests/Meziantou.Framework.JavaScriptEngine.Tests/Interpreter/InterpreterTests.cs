@@ -54,6 +54,7 @@ public sealed class InterpreterTests
     [InlineData("var r; (function () { eval('{ function f() { } } r = typeof f;'); })(); r", "function")]
     [InlineData("function f() { var r = typeof arguments; var arguments; return r + typeof arguments; } f()", "objectobject")]
     [InlineData("function f() { { function arguments() { } } return String(arguments); } f()", "[object Arguments]")]
+    [InlineData("var obj = { x: 1 }; with (obj) { var x = delete obj.x; } [obj.x, x].join()", "true,")]
     public void Evaluate(string code, string expected)
     {
         Assert.Equal(expected, Run(code));

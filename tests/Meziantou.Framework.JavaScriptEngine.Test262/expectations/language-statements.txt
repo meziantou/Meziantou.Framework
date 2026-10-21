@@ -18,6 +18,5 @@ language/statements/do-while/S12.6.1_A8.js:sloppy
 language/statements/do-while/S12.6.1_A8.js:strict
 language/statements/for-of/iterator-next-result-type.js:sloppy
 language/statements/for-of/iterator-next-result-type.js:strict
-language/statements/variable/binding-resolution.js:sloppy
 language/statements/while/S12.6.2_A8.js:sloppy
 language/statements/while/S12.6.2_A8.js:strict

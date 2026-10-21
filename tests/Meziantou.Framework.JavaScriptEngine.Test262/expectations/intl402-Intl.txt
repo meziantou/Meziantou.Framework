@@ -1,8 +1,2 @@
-intl402/Intl/supportedValuesOf/calendars-accepted-by-DateTimeFormat.js:sloppy
-intl402/Intl/supportedValuesOf/calendars-accepted-by-DateTimeFormat.js:strict
 intl402/Intl/supportedValuesOf/collations-accepted-by-Collator.js:sloppy
 intl402/Intl/supportedValuesOf/collations-accepted-by-Collator.js:strict
-intl402/Intl/supportedValuesOf/numberingSystems-accepted-by-DateTimeFormat.js:sloppy
-intl402/Intl/supportedValuesOf/numberingSystems-accepted-by-DateTimeFormat.js:strict
-intl402/Intl/supportedValuesOf/timeZones-accepted-by-DateTimeFormat.js:sloppy
-intl402/Intl/supportedValuesOf/timeZones-accepted-by-DateTimeFormat.js:strict

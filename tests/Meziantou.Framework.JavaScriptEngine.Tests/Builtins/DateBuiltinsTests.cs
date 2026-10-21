@@ -77,7 +77,7 @@ public sealed class DateBuiltinsTests
         Assert.Equal("00:00:00 GMT+0100 (CET)", Text(Invoke(date, "toTimeString")));
         Assert.Equal("Mon, 31 Jan 2022 23:00:00 GMT", Text(Invoke(date, "toUTCString")));
         Assert.Equal("2022-01-31T23:00:00.000Z", Text(Invoke(date, "toISOString")));
-        Assert.Equal("Tue Feb 01 2022 00:00:00 GMT+0100 (CET)", Text(Invoke(date, "toLocaleString")));
+        Assert.Equal("2/1/2022, 12:00:00 AM", Text(Invoke(date, "toLocaleString")));
 
         // Two-digit years are 19xx, and the components overflow
         Assert.Equal(Ms(1998, 12, 31, 23), GetTime(NewDate(context, 99, 0)));

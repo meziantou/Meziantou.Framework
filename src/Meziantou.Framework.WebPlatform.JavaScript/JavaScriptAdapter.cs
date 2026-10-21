@@ -384,18 +384,21 @@ internal readonly struct JavaScriptAdapter(JavaScriptAdapterState state) : IJsAd
 
     public object CreateArrayBufferView(WebIdlBufferKind kind, object buffer, int byteOffset, int length) => Realm.CreateBufferView((EngineBufferKind)kind, (JsObject)buffer, byteOffset, length);
 
+    // The factories of the lazy properties are their state: no closure is allocated per property
+    private static readonly Func<object?, JsValue> InvokeFactory = static state => ToJs(((Func<object>)state!)());
+
     public void DefineLazyDataProperty(object obj, object key, Func<object> factory, bool writable, bool enumerable, bool configurable)
     {
         ArgumentNullException.ThrowIfNull(factory);
         using var scope = Engine.Enter();
-        ((JsObject)obj).DefineLazyDataProperty(Key(key), () => ToJs(factory()), writable, enumerable, configurable);
+        ((JsObject)obj).DefineLazyDataProperty(Key(key), InvokeFactory, factory, writable, enumerable, configurable);
     }
 
     public void DefineLazyAccessorProperty(object obj, object key, Func<object> getterFactory, Func<object>? setterFactory, bool enumerable, bool configurable)
     {
         ArgumentNullException.ThrowIfNull(getterFactory);
         using var scope = Engine.Enter();
-        ((JsObject)obj).DefineLazyAccessorProperty(Key(key), () => ToJs(getterFactory()), setterFactory is null ? null : () => ToJs(setterFactory()), enumerable, configurable);
+        ((JsObject)obj).DefineLazyAccessorProperty(Key(key), InvokeFactory, getterFactory, setterFactory is null ? null : InvokeFactory, setterFactory, enumerable, configurable);
     }
 }
 

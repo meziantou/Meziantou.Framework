@@ -7,7 +7,7 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// </summary>
 internal sealed partial class Intrinsics
 {
-    private readonly List<(PropertyKey Name, JsValue Value, PropertyFlags Flags)> _globals = [];
+    private readonly List<(PropertyKey Name, JsValue Value, Func<Intrinsics, JsValue>? Factory, PropertyFlags Flags)> _globals = [];
     private readonly JsObject[] _errorPrototypes = new JsObject[Enum.GetValues<ErrorType>().Length];
     private readonly JsObject[] _errorConstructors = new JsObject[Enum.GetValues<ErrorType>().Length];
 
@@ -163,13 +163,27 @@ internal sealed partial class Intrinsics
     partial void InitializeIntl();
 
     /// <summary>Adds a property of the global object (SetDefaultGlobalBindings).</summary>
-    public void AddGlobal(PropertyKey name, JsValue value, PropertyFlags flags = PropertyFlags.BuiltIn) => _globals.Add((name, value, flags));
+    public void AddGlobal(PropertyKey name, JsValue value, PropertyFlags flags = PropertyFlags.BuiltIn) => _globals.Add((name, value, Factory: null, flags));
+
+    /// <summary>Adds a property of the global object whose value is created on first use (a built-in that is rarely used, e.g. %Temporal%).</summary>
+    public void AddLazyGlobal(PropertyKey name, Func<Intrinsics, JsValue> factory, PropertyFlags flags = PropertyFlags.BuiltIn) => _globals.Add((name, default, factory, flags));
 
     public void DefineGlobalBindings(JsObject globalObject)
     {
-        foreach (var (name, value, flags) in _globals)
+        foreach (var (name, value, factory, flags) in _globals)
         {
-            globalObject.DefineBuiltIn(name, value, flags);
+            if (factory is null)
+            {
+                globalObject.DefineBuiltIn(name, value, flags);
+            }
+            else if (globalObject.IsExotic)
+            {
+                globalObject.DefineBuiltIn(name, factory(this), flags);
+            }
+            else
+            {
+                globalObject.DefineLazy(name, () => factory(this), flags);
+            }
         }
     }
 

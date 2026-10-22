@@ -6,7 +6,8 @@ namespace Meziantou.Framework.JavaScriptEngine;
 
 /// <summary>
 /// A parsed and compiled script. It is immutable: it can run in several realms and engines, on several threads (e.g. the
-/// scripts of a test harness, parsed once for all the pages).
+/// scripts of a test harness, parsed once for all the pages). The syntax errors of the whole script are reported by
+/// <see cref="Parse"/>, but the body of a nested function is compiled on its first call (once, whichever engine calls it).
 /// </summary>
 public sealed class JsPreparedScript
 {

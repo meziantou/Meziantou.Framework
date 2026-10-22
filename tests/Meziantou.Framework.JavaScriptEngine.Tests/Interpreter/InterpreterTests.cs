@@ -195,6 +195,130 @@ public sealed class InterpreterTests
         Assert.Equal(6, realm1.Execute(script).AsNumber());
     }
 
+    // The nested functions are compiled on their first call, in the scopes that enclose them
+    [Theory]
+    [InlineData("function outer(a) { let b = 2; const c = 3; var d = 4; function inner() { return a + b + c + d; } return inner(); } outer(1)", "10")]
+    [InlineData("function f() { let x = 1; function g() { x++; } g(); g(); return x; } f()", "3")]
+    [InlineData("function a() { var x = 1; return function b() { var y = 2; return function c() { return x + y; }; }; } a()()()", "3")]
+    [InlineData("function F() { const g = () => this.v + arguments.length + (new.target === F); this.v = 1; this.r = g(); } new F(1, 2).r", "4")]
+    [InlineData("function f() { return () => () => this.x; } f.call({ x: 7 })()()", "7")]
+    [InlineData("class A { m() { return 1; } } class B extends A { m() { return (() => super.m() + 1)(); } } new B().m()", "2")]
+    [InlineData("class A { constructor() { this.a = 1; } } class B extends A { constructor() { const f = () => super(); f(); } } new B().a", "1")]
+    [InlineData("class A { x = () => this.y; y = 5; } new A().x()", "5")]
+    [InlineData("class C { #x = 1; static has(o) { return #x in o; } get() { return this.#x; } } [C.has(new C()), new C().get()].join()", "true,1")]
+    [InlineData("var f = function g() { g = 1; return typeof g; }; f()", "function")]
+    [InlineData("var f = function g() { 'use strict'; try { g = 1; } catch (e) { return e.constructor.name; } }; f()", "TypeError")]
+    [InlineData("function f() { function g() { return x; } try { g(); } catch (e) { return e.constructor.name; } let x; } f()", "ReferenceError")]
+    [InlineData("function f() { const x = 1; return () => { try { x = 2; } catch (e) { return e.constructor.name; } }; } f()()", "TypeError")]
+    [InlineData("function f() { var x = 5; return function () { return eval('x'); }(); } f()", "5")]
+    [InlineData("function f() { eval('var y = 2'); return function () { return y; }(); } f()", "2")]
+    [InlineData("function f() { var o = { x: 1 }; with (o) { return (() => x)(); } } f()", "1")]
+    [InlineData("function f(a, g = () => a) { var a = 2; return g(); } f(1)", "1")]
+    [InlineData("function f(a) { var g = () => arguments[0]; a = 3; return g(); } f(1)", "3")]
+    [InlineData("function f(a) { 'use strict'; var g = () => arguments[0]; a = 3; return g(); } f(1)", "1")]
+    [InlineData("var o = { get x() { return () => this.y; }, y: 4, m(a = 1) { return a; } }; o.x() + o.m()", "5")]
+    [InlineData("var r; async function f() { r = await (async () => 1)(); } f(); var s = (async () => 2)(); typeof s.then", "function")]
+    [InlineData("var r; async function f() { r = (() => 1)(); await 0; } f(); r", "1")]
+    [InlineData("function* g(a) { yield a; yield* (function* () { yield a + 1; })(); } [...g(1)].join()", "1,2")]
+    [InlineData("for (var f = () => 'arrow' in {}); f()", "arrow")]
+    [InlineData("function f() { <!-- an HTML-like comment\n return 1; } f()", "1")]
+    [InlineData("var yield = 1; function f() { return yield; } function* gen() { yield 2; } f() + gen().next().value", "3")]
+    [InlineData("function* yield() { yield 1; } yield().next().value", "1")]
+    [InlineData("function f() { 'use strict'; return function () { return this; }(); } String(f())", "undefined")]
+    [InlineData("function f(x) { return { [x]: function () { }, x: () => { } }; } var o = f('k'); o.k.name + o.x.name", "kx")]
+    [InlineData("function f() { return function g ( a ) { /* c */ }; } f().toString()", "function g ( a ) { /* c */ }")]
+    [InlineData("var o = { async *m() { } }; o.m.toString()", "async *m() { }")]
+    [InlineData("function f() { return class { static m() { return 1; } }; } f().m.toString() + f().m()", "m() { return 1; }1")]
+    // The scopes of the lazily compiled functions: the names they declare hide the bindings of the enclosing code
+    [InlineData("function f() { let i = 10; var g = () => { let i = 1; return i; }; return g() + i; } f()", "11")]
+    [InlineData("function f() { var x = 'outer'; return function () { var r = typeof x; { let x = 1; } return r; }(); } f()", "string")]
+    [InlineData("function f(a) { return function (b = a) { var a = 2; return b; }(); } f(1)", "1")]
+    [InlineData("function f() { var e = 'outer'; return function () { try { throw 1; } catch (e) { } return e; }(); } f()", "outer")]
+    [InlineData("function f() { let x = [1]; return function () { try { for (let x of x) { } } catch (e) { return e.constructor.name; } }(); } f()", "ReferenceError")]
+    [InlineData("function f() { var C = 1; return class C { m() { return typeof C; } }; } new (f())().m()", "function")]
+    [InlineData("function f() { var v = 'outer'; return class { static { var v = 1; } static m() { return v; } }; } f().m()", "outer")]
+    [InlineData("function f() { let k = 'outer'; return function () { switch (1) { case 1: let k = 'inner'; return k; } }() + k; } f()", "innerouter")]
+    [InlineData("function f() { var g = 'outer'; return function () { return (function g() { return typeof g; })() + typeof g; }(); } f()", "functionstring")]
+    [InlineData("function f() { var h = 'outer'; return function () { { function h() { } } return typeof h; }(); } f()", "function")]
+    [InlineData("function f(a) { return () => function () { return arguments.length; }; } f(1)()(1, 2, 3)", "3")]
+    [InlineData("function f() { return () => arguments.length; } f(1, 2)()", "2")]
+    public void Evaluate_LazyCompilation(string code, string expected)
+    {
+        Assert.Equal(expected, Run(code));
+    }
+
+    [Fact]
+    public void LazyCompilation_OnlyTheFreeNamesOfTheNestedFunctionsAreCaptured()
+    {
+        // The bindings of outer that a nested function declares again stay in registers, and outer has no arguments object
+        var source = new JavaScriptEngine.Text.SourceText("function outer(a, b) { let i = 0; var g = function (c) { let i = 1; for (let b = 0; b < 1; b++) { } return [arguments, i, a, b]; }; return g; }");
+        var program = JavaScriptEngine.Parsing.JsParser.ParseScript(source, JavaScriptEngine.Parsing.ParserOptions.Script);
+        var outer = ((JavaScriptEngine.Ast.FunctionDeclaration)program.Body[0]).Function;
+        var analysis = JavaScriptEngine.Compiler.ScopeAnalyzer.Analyze(program, JavaScriptEngine.Compiler.ProgramKind.Script, isStrict: false, eagerFunction: outer);
+        var info = analysis.Functions[outer];
+        Assert.True(info.Scope.Find("a")!.IsCaptured);
+        Assert.True(info.Scope.Find("b")!.IsCaptured);
+        Assert.False(info.LexicalScope!.Find("i")!.IsCaptured);
+        Assert.False(info.ArgumentsVariable!.IsReferenced);
+    }
+
+    [Fact]
+    public void LazyCompilation_FunctionsAreCompiledOnTheirFirstCall()
+    {
+        var script = JsPreparedScript.Parse("function called() { return 1; } function notCalled() { return 2; } called()");
+        var templates = script.Template.Objects.OfType<JavaScriptEngine.Compiler.FunctionTemplate>().ToDictionary(t => t.Name, StringComparer.Ordinal);
+        Assert.False(templates["called"].IsCompiled);
+        Assert.False(templates["notCalled"].IsCompiled);
+
+        using var engine = new JsEngine();
+        Assert.Equal(1, engine.CreateRealm().Execute(script).AsNumber());
+        Assert.True(templates["called"].IsCompiled);
+        Assert.False(templates["notCalled"].IsCompiled);
+    }
+
+    [Fact]
+    public void LazyCompilation_EarlyErrorsOfFunctionsThatAreNotCalled()
+    {
+        Assert.False(JsPreparedScript.TryParse("function f() { let a; let a; }", "script.js", 0, 0, out _, out var error));
+        Assert.Equal(1, error.Line);
+        Assert.False(JsPreparedScript.TryParse("function f() { return () => { super.x; }; }", "script.js", 0, 0, out _, out _));
+        Assert.False(JsPreparedScript.TryParse("class C { m() { return this.#x; } }", "script.js", 0, 0, out _, out _));
+        Assert.False(JsPreparedScript.TryParse("function f() { 'use strict'; with (a) { } }", "script.js", 0, 0, out _, out _));
+    }
+
+    [Fact]
+    public void LazyCompilation_LocationsOfTheErrors()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var exception = Assert.Throws<JsException>(() => realm.Execute(JsPreparedScript.Parse("function f() {\n  return () => {\n    null.x;\n  };\n}\nf()()", "lazy.js")));
+        Assert.Equal(new JsSourceLocation("lazy.js", 3, 5), exception.Location);
+    }
+
+    [Fact]
+    public void LazyCompilation_PreparedScriptSharedByThreads()
+    {
+        // The functions are compiled once, by the first thread that calls them
+        var script = JsPreparedScript.Parse("""
+            function make(n) { let total = 0; return { add: v => { total += v * n; return total; }, get: function () { return total; } }; }
+            class Counter { #count = 0; increment() { return ++this.#count; } }
+            var counter = make(2); counter.add(1); counter.add(2);
+            var c = new Counter(); c.increment();
+            counter.get() + c.increment()
+            """);
+        var results = new double[16];
+        Parallel.For(0, results.Length, i =>
+        {
+            using var engine = new JsEngine();
+            results[i] = engine.CreateRealm().Execute(script).AsNumber();
+        });
+
+        foreach (var result in results)
+        {
+            Assert.Equal(8, result);
+        }
+    }
+
     [Fact]
     public void AsyncFunction()
     {

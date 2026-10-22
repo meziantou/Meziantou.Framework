@@ -34,5 +34,11 @@ internal sealed class FunctionNode : Node
     /// <summary>Gets or sets whether the function is the constructor of a class that has an <c>extends</c> clause.</summary>
     public bool IsDerivedConstructor { get; set; }
 
+    /// <summary>Gets or sets the offset of the '(' of the parameters (not set for the arrow functions): the start of the text parsed again by the lazy compilation.</summary>
+    public int ParametersStart { get; set; }
+
+    /// <summary>Gets or sets whether the concise body of an arrow function was parsed without the <c>in</c> operator (the head of a for statement).</summary>
+    public bool ExcludesIn { get; set; }
+
     public override NodeType Type => NodeType.FunctionNode;
 }

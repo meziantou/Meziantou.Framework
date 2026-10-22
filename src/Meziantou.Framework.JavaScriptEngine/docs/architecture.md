@@ -14,12 +14,35 @@ source text ──Parsing/JsParser──▶ Ast (Program, nodes) ──Compiler�
 | `Text/` | `SourceText`: the text, its URL, the line map (ECMAScript line terminators) and the line/column offsets of inline scripts. |
 | `Ast/` | The syntax tree: one sealed class per node (`Node.Start`/`End` are UTF-16 offsets), with the `NodeType` enum for fast dispatch. ESTree-like shapes. |
 | `Parsing/` | `JsParser` (hand-written recursive descent, all early errors), `ParserOptions` (goal and eval context). Syntax errors throw `JsSyntaxErrorException`. |
-| `Compiler/` | Scope analysis and the bytecode generator. |
+| `Compiler/` | Scope analysis and the bytecode generator (the nested functions are compiled on their first call: see "Lazy compilation"). |
 | `Interpreter/` | The bytecode interpreter: frames on the heap, no .NET recursion for JavaScript-to-JavaScript calls. |
 | `Runtime/` | The object model and the abstract operations shared by everything. |
 | `Builtins/` | The built-in objects of the realm: one static class per built-in (e.g. `ArrayBuiltins`). |
 | `Temporal/` | The Temporal objects (`JsPlainDate`, `JsZonedDateTime`... with their internal slots), the abstract operations (`TemporalOperations`: exact `Int128` epoch nanoseconds and time durations, the rounding family), the RFC 9557 / ISO 8601 parser (`TemporalParser`) and the calendars (`ITemporalCalendar`, `TemporalCalendars`: ISO 8601, and in `Temporal/Calendars/` the calendars of ECMA-402 ported from ICU4X: `NonIsoTemporalCalendar` implements the NonISO* operations of the Intl era and monthCode proposal from the primitives of each calendar, `TemporalCalendarData` holds the year data of the Chinese, Korean and Umm al-Qura calendars). |
 | `TimeZones/` | The embedded IANA time zone database used by Date and Temporal (`TimeZoneDatabase`, `NamedTimeZone`). |
+
+## Lazy compilation
+
+The parser parses the whole source text with its early errors, but the compiler only compiles the top level: the body of
+a nested function is compiled on its first call, as V8 does (`Compiler/ScopeAnalyzer.Lazy.cs`, `Compiler/LazyFunction.cs`).
+
+- The scope analysis of the enclosing code does not visit the body of a nested function: a scan collects the names of
+  its identifiers (a superset of its free variables) and, for an arrow function, whether it uses the `this`,
+  `new.target` or `super` of its enclosing function. These bindings are stored in the environments (captured), as if the
+  function referenced them. The syntax tree of the body is then dropped.
+- The template of the function (`FunctionTemplate`) has what creating the function object needs (the name, the length,
+  the flags, the source range, the environment of the name of a named function expression) and a `LazyFunction`: the
+  position and the kind of the function in the source text, and an immutable copy of the scopes that enclose it
+  (`ScopeSnapshot`: the bindings, where they are stored, the environments).
+- On the first call (`FunctionTemplate.EnsureCompiled`, from the creation of the frame), the function is parsed again
+  (`JsParser.ParseLazyFunction`: the syntax tree has the positions of the first parse), analyzed in new scopes created
+  from the snapshot, and compiled. The template stays immutable and shareable: the code is compiled once under a lock,
+  and published to the other threads once it is complete. The nested functions of the function are lazy in turn.
+- A function that contains a direct eval (in its body or in a nested function) is compiled with its enclosing code: the
+  eval code can reference any binding. The function of a dynamic function (the Function constructor) is compiled
+  immediately; its nested functions are lazy.
+- A lazily compiled function that references a binding stored in a register of its enclosing code (the scan missed a
+  name) is an internal error (`InvalidOperationException`), not a wrong result.
 
 ## Values
 

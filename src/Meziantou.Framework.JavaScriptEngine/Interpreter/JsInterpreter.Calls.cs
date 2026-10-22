@@ -28,6 +28,7 @@ internal static partial class JsInterpreter
     private static Frame CreateCallFrame(JsClosure closure, JsValue thisArgument, ReadOnlySpan<JsValue> arguments, JsObject? newTarget, bool pooled = true)
     {
         var template = closure.Template;
+        template.EnsureCompiled();
         var realm = closure.Realm;
         var frame = pooled ? realm.Engine.FramePool.Rent(template, realm, closure.Environment, arguments) : new Frame(template, realm, closure.Environment, arguments);
         frame.Function = closure;
@@ -69,6 +70,7 @@ internal static partial class JsInterpreter
         }
 
         var realm = closure.Realm;
+        closure.Template.EnsureCompiled();
         var frame = realm.Engine.FramePool.Rent(closure.Template, realm, closure.Environment, arguments);
         frame.Function = closure;
         frame.NewTarget = newTarget;

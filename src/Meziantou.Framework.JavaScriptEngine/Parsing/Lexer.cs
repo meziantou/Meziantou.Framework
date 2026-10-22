@@ -132,6 +132,13 @@ internal sealed class Lexer
         }
     }
 
+    /// <summary>Moves to <paramref name="position"/>, which is not the start of the input (the start of a function parsed again by the lazy compilation).</summary>
+    public void MoveTo(int position)
+    {
+        _pos = position;
+        _scannedToken = true;
+    }
+
     /// <summary>Scans <paramref name="token"/> again (e.g. after the code became strict).</summary>
     public Token Rescan(in Token token)
     {

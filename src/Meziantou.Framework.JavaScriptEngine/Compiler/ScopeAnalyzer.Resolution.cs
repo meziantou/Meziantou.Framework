@@ -48,6 +48,7 @@ internal sealed partial class ScopeAnalyzer
         }
 
         // The special bindings used by nested functions are declared first: the function then reads them from its environment too
+        ResolveLazySpecials();
         foreach (var (_, scope, kind) in _specials)
         {
             var owner = GetThisFunction(scope.Function);
@@ -67,6 +68,8 @@ internal sealed partial class ScopeAnalyzer
         {
             References[pending.Node] = Resolve(pending);
         }
+
+        ResolveLazyReferences();
 
         // A mapped arguments object aliases the parameters: they are stored in the environment
         foreach (var scope in _allScopes)
@@ -122,6 +125,10 @@ internal sealed partial class ScopeAnalyzer
 
         if (existing is not null)
             return existing;
+
+        // The enclosing code of a lazily compiled function declared the special bindings that the function uses
+        if (function.Snapshot is not null)
+            throw new InvalidOperationException("The lazily compiled function uses the binding '" + GetSpecialName(kind) + "', which is not in an environment of its enclosing code");
 
         var variable = function.Scope.Declare(GetSpecialName(kind), kind);
         switch (kind)
@@ -190,6 +197,7 @@ internal sealed partial class ScopeAnalyzer
 
             if (scope.Find(pending.Name) is { } variable)
             {
+                CheckNotRegisterOfEnclosingFunction(variable);
                 variable.IsReferenced = true;
                 if (variable.Location == VariableLocation.Dynamic)
                     return new Reference(pending.Name, variable: null, isDynamic: true, needsTdzCheck: false);

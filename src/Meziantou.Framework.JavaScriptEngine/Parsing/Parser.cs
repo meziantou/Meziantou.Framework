@@ -281,7 +281,7 @@ internal sealed partial class Parser
     private RecursionScope EnterRecursion()
     {
         if (++_depth > MaxNestingDepth || !RuntimeHelpers.TryEnsureSufficientExecutionStack())
-            Raise(_token.Start, "Maximum call stack size exceeded: the code is nested too deeply");
+            Raise(_token.Start, Compiler.CompilerStack.NestedTooDeeplyMessage);
 
         return new RecursionScope(this);
     }

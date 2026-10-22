@@ -22,4 +22,10 @@ internal static class JsParser
     /// </summary>
     /// <exception cref="JsSyntaxErrorException">The parameters or the body are not valid.</exception>
     public static (FunctionNode Function, SourceText Source) ParseDynamicFunction(string parameters, string body, bool isAsync, bool isGenerator) => Parser.ParseDynamicFunction(parameters, body, isAsync, isGenerator);
+
+    /// <summary>
+    /// Parses again a function of a source text that was already parsed with its early errors: the lazy compilation of its
+    /// body, on its first call. The positions of the nodes are the ones of the first parse.
+    /// </summary>
+    public static FunctionNode ParseLazyFunction(SourceText source, bool isModule, in LazyFunctionSyntax syntax) => Parser.ParseLazyFunction(source, isModule, syntax);
 }

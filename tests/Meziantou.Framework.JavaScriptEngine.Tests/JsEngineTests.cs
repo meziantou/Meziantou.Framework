@@ -114,6 +114,50 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void SetGlobalThis()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        var thisValue = realm.CreateObject();
+        realm.SetGlobalThis(thisValue);
+        realm.GlobalObject.SetProperty("thisValue", thisValue);
+        Assert.Same(thisValue, realm.GlobalThis.TryGetObject());
+
+        // The global object keeps the global bindings: only the this value of the global code changes
+        Assert.Equal("true,true,true,true,true,true,false,1,undefined", realm.Execute("""
+            var declared = 1;
+            function sloppy() { return this; }
+            function strict() { 'use strict'; return this; }
+            [
+              this === thisValue, globalThis === thisValue, sloppy() === thisValue, (0, eval)('this') === thisValue,
+              Function('return this')() === thisValue, (() => this)() === thisValue, strict() === thisValue,
+              declared, typeof thisValue.declared,
+            ].join()
+            """).AsString());
+
+        Assert.True(realm.GlobalObject.TryGetOwnProperty("globalThis", out var descriptor));
+        Assert.Same(thisValue, descriptor.Value.TryGetObject());
+        Assert.True(descriptor.Writable);
+        Assert.False(descriptor.Enumerable);
+        Assert.True(descriptor.Configurable);
+    }
+
+    [Theory]
+    [InlineData("0", true, 0u)]
+    [InlineData("4294967294", true, 4294967294u)]
+    [InlineData("4294967295", false, 0u)]
+    [InlineData("01", false, 0u)]
+    [InlineData("-0", false, 0u)]
+    [InlineData("a", false, 0u)]
+    public void PropertyKey_TryGetArrayIndex(string name, bool isIndex, uint expectedIndex)
+    {
+        var key = new JsPropertyKey(name);
+        Assert.Equal(isIndex, key.TryGetArrayIndex(out var index));
+        Assert.Equal(expectedIndex, index);
+    }
+
+    [Fact]
     public void ReserveProperties()
     {
         using var engine = new JsEngine();

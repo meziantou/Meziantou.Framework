@@ -150,25 +150,6 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
     {
     }
 
-    /// <inheritdoc/>
-    protected internal override void OnDocumentActivated(Document document)
-    {
-        // The window of an initial about:blank document is reused by the new document
-        if (document.RelevantWindow is { } window && Agent.TryGetRealm(window) is { } realm)
-        {
-            realm.SyncFrames();
-        }
-    }
-
-    /// <inheritdoc/>
-    protected internal override void OnChildNavigablesChanged(Window window)
-    {
-        if (Agent.TryGetRealm(window) is { } realm)
-        {
-            realm.SyncFrames();
-        }
-    }
-
     // ----------------------------------------------------------------------------------------------------------------
     // Scripts
     // ----------------------------------------------------------------------------------------------------------------

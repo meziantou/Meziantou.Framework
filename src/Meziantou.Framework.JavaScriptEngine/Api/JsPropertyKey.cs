@@ -29,6 +29,20 @@ public readonly struct JsPropertyKey : IEquatable<JsPropertyKey>
     /// <summary>Gets whether the key is a string.</summary>
     public bool IsString => !Key.IsSymbol;
 
+    /// <summary>Gets whether the key is an array index (https://tc39.es/ecma262/#array-index): the canonical string of an integer below 2^32 - 1.</summary>
+    /// <param name="index">The index, when the key is an array index.</param>
+    public bool TryGetArrayIndex(out uint index)
+    {
+        if (Key.IsArrayIndex)
+        {
+            index = Key.ArrayIndex;
+            return true;
+        }
+
+        index = 0;
+        return false;
+    }
+
     /// <summary>Gets the string of a string key.</summary>
     public string AsString() => Key.AsString();
 

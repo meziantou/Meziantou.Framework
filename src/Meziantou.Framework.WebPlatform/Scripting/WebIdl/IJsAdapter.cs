@@ -217,6 +217,30 @@ public interface IJsAdapter<TValue>
     /// <summary>OrdinaryOwnPropertyKeys (https://tc39.es/ecma262/#sec-ordinaryownpropertykeys) of a host exotic object.</summary>
     IReadOnlyList<TValue> OrdinaryOwnKeys(TValue obj);
 
+    /// <summary>
+    /// Creates the JavaScript object of a cross-origin platform object (a <c>Location</c> object,
+    /// https://html.spec.whatwg.org/multipage/nav-history-apis.html#the-location-interface) in the current realm: its
+    /// prototype cannot be changed, it cannot be made non-extensible, and its internal methods are the cross-origin ones of
+    /// <paramref name="handler"/> when the current realm is not same origin-domain with the object. Returns null when the
+    /// engine does not support it (the object is then created by <see cref="CreatePlatformObject"/>, and only its members check
+    /// the origin of their caller). The default implementation returns null.
+    /// </summary>
+    TValue? CreateCrossOriginPlatformObject(TValue prototype, object target, IJsCrossOriginObjectHandler<TValue> handler) => null;
+
+    /// <summary>
+    /// Creates a WindowProxy exotic object (https://html.spec.whatwg.org/multipage/nav-history-apis.html#the-windowproxy-exotic-object)
+    /// whose internal methods are implemented with <paramref name="handler"/>. It belongs to no realm. Returns null when the
+    /// engine does not support it: a window is then exposed by its global object. The default implementation returns null.
+    /// </summary>
+    TValue? CreateWindowProxy(IJsWindowProxyHandler<TValue> handler) => null;
+
+    /// <summary>
+    /// Sets the this value of the global code of a realm (its [[GlobalThisValue]], also the value of <c>globalThis</c>):
+    /// the WindowProxy of a window. Returns false when the engine does not support it (the this value is then the global
+    /// object). The default implementation returns false.
+    /// </summary>
+    bool TrySetGlobalThis(object realm, TValue thisValue) => false;
+
     // ----------------------------------------------------------------------------------------------------------------
     // Errors
     // ----------------------------------------------------------------------------------------------------------------

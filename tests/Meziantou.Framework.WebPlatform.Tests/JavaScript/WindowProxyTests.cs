@@ -190,6 +190,7 @@ public sealed class WindowProxyTests : IDisposable
         Assert.Equal("undefined,true", document.Title);
     }
 
+
     private sealed class FuncLoader(Func<Url, string> loader) : DocumentLoader
     {
         public override ValueTask<DocumentResource?> LoadAsync(DocumentRequest request, CancellationToken cancellationToken)

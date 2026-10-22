@@ -1347,8 +1347,11 @@ internal sealed partial class WptTestRunner
             return;
 
         var adapter = realm.Adapter;
+
+        // The functions are not enumerable: the tests that enumerate the properties of a window (e.g. to call each method
+        // with another this value) must not see them
         void Define(string name, int length, JsHostFunction<TValue> function)
-            => adapter.DefineOwnProperty(realm.Global, adapter.FromString(name), JsPropertyDescriptor<TValue>.Data(adapter.CreateFunction(name, length, function), writable: true, enumerable: true, configurable: true));
+            => adapter.DefineOwnProperty(realm.Global, adapter.FromString(name), JsPropertyDescriptor<TValue>.Data(adapter.CreateFunction(name, length, function), writable: true, enumerable: false, configurable: true));
 
         Define("__wpt_report", 1, (_, args) =>
         {

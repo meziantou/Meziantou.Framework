@@ -211,6 +211,21 @@ internal readonly struct JavaScriptAdapter(JavaScriptAdapterState state) : IJsAd
         return handler is null ? new JavaScriptPlatformObject(prototypeObject, target) : new JavaScriptLegacyPlatformObject(prototypeObject, target, handler);
     }
 
+    public object? CreateCrossOriginPlatformObject(object prototype, object target, IJsCrossOriginObjectHandler<object> handler) => new JavaScriptCrossOriginPlatformObject(Engine, prototype as JsObject, target, handler);
+
+    public object? CreateWindowProxy(IJsWindowProxyHandler<object> handler)
+    {
+        using var scope = Engine.Enter();
+        return new JavaScriptWindowProxy(Engine, handler);
+    }
+
+    public bool TrySetGlobalThis(object realm, object thisValue)
+    {
+        using var scope = Engine.Enter();
+        ((JsRealm)realm).SetGlobalThis((JsObject)thisValue);
+        return true;
+    }
+
     public bool TryGetPlatformObject(object value, [NotNullWhen(true)] out object? target)
     {
         target = (value as JavaScriptPlatformObject)?.Target;

@@ -28,8 +28,28 @@ public sealed partial class JsRealm
     /// <summary>Gets the global object ([[GlobalObject]]).</summary>
     public JsObject GlobalObject { get; }
 
-    /// <summary>Gets the <c>this</c> value of the global code ([[GlobalThisValue]] of the global environment).</summary>
-    public JsValue GlobalThis { get; }
+    /// <summary>Gets the <c>this</c> value of the global code ([[GlobalThisValue]] of the global environment): the global object, unless the host set another object with <see cref="SetGlobalThis"/>.</summary>
+    public JsValue GlobalThis { get; private set; }
+
+    /// <summary>
+    /// Sets the <c>this</c> value of the global code ([[GlobalThisValue]] of the global environment), the host-defined this
+    /// value of InitializeHostDefinedRealm (https://tc39.es/ecma262/#sec-initializehostdefinedrealm): e.g. the WindowProxy
+    /// of a window, whose global object is the Window. It is the <c>this</c> of the scripts, of the sloppy functions called
+    /// without a this value and of the indirect evals, and the value of the <c>globalThis</c> property. Call it before any
+    /// code runs in the realm.
+    /// </summary>
+    /// <param name="thisValue">The object.</param>
+    public void SetGlobalThis(JsObject thisValue)
+    {
+        ArgumentNullException.ThrowIfNull(thisValue);
+        GlobalThis = new JsValue(thisValue);
+
+        // https://tc39.es/ecma262/#sec-globalthis: the value of globalThis is [[GlobalThisValue]]
+        if (GlobalObject.GetOwnProperty("globalThis", out var descriptor) && descriptor.IsDataDescriptor)
+        {
+            GlobalObject.DefineOwnProperty("globalThis", PropertyDescriptor.Data(GlobalThis, descriptor.Flags));
+        }
+    }
 
     internal Intrinsics Intrinsics { get; }
 

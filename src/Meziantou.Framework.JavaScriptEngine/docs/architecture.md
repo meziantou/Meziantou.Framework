@@ -234,6 +234,14 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
   intervalFormats and the fallbacks). `DateTimeLocalTimeCalculator` computes ToLocalTime with the calendars of Temporal
   (`TemporalCalendars`), `TimeZoneNameFormatter` the time zone names (metazones, generic and location formats, localized
   GMT, as ICU's TimeZoneFormat). The narrow no-break spaces of CLDR are spaces, as in the browsers.
+- `Intl/Segmenter/`: Intl.Segmenter. The graphemes and the sentences are the ones of UAX #29 (Meziantou.Framework.Unicode);
+  the words are the ones of the word break iterator of ICU, as V8 uses it (`WordBreaker`: the root rules of `word.txt`,
+  then the dictionary break engines of `dictbe.cpp` for the segments that have Han, kana, Thai, Lao, Khmer or Burmese
+  characters: `CjkBreakEngine` keeps the segmentation of a run of kana and kanji whose words have the smallest total
+  cost, `ComplexContextBreakEngine` the longest words followed by other words of the list). The word lists of ICU are
+  in `Intl/Data/dictionaries.bin` (`WordDictionaries`, about 1.5 MB): a list is decompressed and loaded into a trie on
+  the first use of its script (about 3 MB of memory for Chinese and Japanese). `Corpus/SegmenterV8.jsonl` of the tests
+  has words recorded with V8.
 
 ## Performance
 

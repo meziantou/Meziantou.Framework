@@ -138,9 +138,10 @@ internal static class SupplementalGenerator
             }
         }
 
+        // CLDR 49 added seconds to some periods (e.g. "1972-01-07 00:44:30"), earlier releases only have minutes
         static string ToEpochSeconds(string value)
         {
-            var date = DateTimeOffset.ParseExact(value, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
+            var date = DateTimeOffset.ParseExact(value, ["yyyy-MM-dd HH:mm", "yyyy-MM-dd HH:mm:ss"], CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
             return date.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
         }
     }

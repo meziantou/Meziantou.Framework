@@ -4,19 +4,19 @@
     "sha256": "b26882805f26aac59d5b222978e6580484b834ccdc98be89df2f05a6dc53a652"
   },
   "cldr": {
-    "version": "release-48-2",
-    "sha256": "9cf3db6a31fb382fee21b70be6feba1e82766b0fcd06e6261fb7936a73e537ff"
+    "version": "release-49",
+    "sha256": "5f902f94106a396cb7774f0b0e1ca4dfecb686494045350c0b4935d378e3913b"
   },
   "cldr-json": {
-    "version": "48.2.3",
-    "sha256": "d580253a99baea84f7fc361b91a73023f2268331a1671244cf8180b4e008e0e4"
+    "version": "49.0.0",
+    "sha256": "3b1f5d684d29c541d3acf91fe834b3fe36ae0f34775e3ee50e93558bf14ca174"
   },
   "cldr-common": {
-    "version": "48.2",
-    "sha256": "d2844f9dbf6124d11a7b047f5381a467902d82a673be3d658f4c0791ffa0b83b"
+    "version": "49",
+    "sha256": "78403d8d6fb1fed6e208bf9001bf5be00bb5abfd9f8110dae062bf49309d6a89"
   },
   "ucd": {
-    "version": "17.0.0",
-    "sha256": "130dcddcaadaf071008bdfce1e7743e04fdfbc910886f017d9f9ac931d8c64dd"
+    "version": "18.0.0",
+    "sha256": "f438f532e8737bb8a2702126cdf9c4af5e357c58c7acf9d9eb2fc7c1a1d955d6"
   }
 }

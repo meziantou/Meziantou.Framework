@@ -6,7 +6,7 @@ using Meziantou.Framework.JavaScriptEngine.Intl.Data;
 
 namespace Meziantou.Framework.JavaScriptEngine.Data.Generator.Cldr;
 
-/// <summary>Generates src/Meziantou.Framework.JavaScriptEngine/Intl/Data/{locales,supplemental,collation}.bin and CldrData.g.cs.</summary>
+/// <summary>Generates src/Meziantou.Framework.JavaScriptEngine/Intl/Data/{locales,supplemental,collation}.bin and CldrData.g.cs, and the CLDR test files of the tests.</summary>
 internal static class CldrGenerator
 {
     public static string GetCldrJsonUrl(string version) => $"https://github.com/unicode-org/cldr-json/releases/download/{version}/cldr-{version}-json-full.zip";
@@ -145,7 +145,56 @@ internal static class CldrGenerator
             updated = true;
         }
 
+        using (var common = new ZipArchive(new MemoryStream(commonArchive), ZipArchiveMode.Read))
+        {
+            updated |= await UpdateTestDataAsync(root, common);
+        }
+
         return updated ? 1 : 0;
+    }
+
+    // The conformance tests of Meziantou.Framework.JavaScriptEngine.Tests compare the data with the test files of the same CLDR release
+    private static async Task<bool> UpdateTestDataAsync(FullPath root, ZipArchive common)
+    {
+        var outputDirectory = root / "tests" / "Meziantou.Framework.JavaScriptEngine.Tests" / "Intl" / "TestData";
+        var updated = false;
+        foreach (var name in (string[])["common/uca/CollationTest_CLDR_NON_IGNORABLE_SHORT.txt", "common/uca/CollationTest_CLDR_SHIFTED_SHORT.txt", "common/testData/localeIdentifiers/likelySubtags.txt"])
+        {
+            var entry = common.GetEntry(name) ?? throw new FileNotFoundException("Missing file in the CLDR archive: " + name);
+            byte[] content;
+            await using (var entryStream = await entry.OpenAsync())
+            {
+                using var buffer = new MemoryStream();
+                await entryStream.CopyToAsync(buffer);
+                content = buffer.ToArray();
+            }
+
+            var path = outputDirectory / (Path.GetFileName(name) + ".gz");
+            if (File.Exists(path))
+            {
+                await using var file = File.OpenRead(path);
+                await using var gzip = new GZipStream(file, CompressionMode.Decompress);
+                using var existing = new MemoryStream();
+                await gzip.CopyToAsync(existing);
+                if (existing.ToArray().AsSpan().SequenceEqual(content))
+                    continue;
+            }
+
+            using (var output = new MemoryStream())
+            {
+                await using (var gzip = new GZipStream(output, CompressionLevel.SmallestSize, leaveOpen: true))
+                {
+                    await gzip.WriteAsync(content);
+                }
+
+                await File.WriteAllBytesAsync(path, output.ToArray());
+            }
+
+            Console.WriteLine($"Updated {path}");
+            updated = true;
+        }
+
+        return updated;
     }
 
     private static async Task<bool> WriteIfChangedAsync(FullPath path, IReadOnlyList<byte[]> chunks, byte[] content)

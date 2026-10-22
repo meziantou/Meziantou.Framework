@@ -635,7 +635,8 @@ public sealed class CldrDataTests
     }
 
     // The conformance test of the CLDR root collation (common/uca/CollationTest_CLDR_NON_IGNORABLE_SHORT.txt): each
-    // line sorts after the previous one, comparing the levels 1 to 3 then the code points (identical level)
+    // line sorts after the previous one, comparing the levels 1 to 3 then the code points (identical level, where the
+    // merge separator U+FFFE sorts before every other code point, as in ICU)
     [Fact]
     public void CollationRoot_ConformanceTest()
     {
@@ -683,7 +684,7 @@ public sealed class CldrDataTests
             key.Add(0);
             var nfd = new List<int>();
             CollationRootTable.AppendNfd(text, nfd);
-            key.AddRange(nfd);
+            key.AddRange(nfd.Select(codePoint => codePoint is 0xFFFE ? -1 : codePoint));
             return [.. key];
         }
     }

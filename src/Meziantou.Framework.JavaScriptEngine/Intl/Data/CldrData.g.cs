@@ -5,11 +5,11 @@ namespace Meziantou.Framework.JavaScriptEngine.Intl.Data;
 internal sealed partial class CldrData
 {
     /// <summary>The release of cldr-json of the locale and supplemental data.</summary>
-    public const string EmbeddedCldrJsonVersion = "48.2.3";
+    public const string EmbeddedCldrJsonVersion = "49.0.0";
 
     /// <summary>The release of CLDR (cldr-common) of the collation data.</summary>
-    public const string EmbeddedCldrVersion = "48.2";
+    public const string EmbeddedCldrVersion = "49";
 
     /// <summary>The version of UCA of the root collation, and of the UCD of its implicit weights.</summary>
-    public const string EmbeddedUcaVersion = "17.0.0";
+    public const string EmbeddedUcaVersion = "18.0.0";
 }

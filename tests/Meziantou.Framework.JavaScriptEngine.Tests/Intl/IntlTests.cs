@@ -573,6 +573,20 @@ public sealed class IntlTests
         Assert.Equal(expected, Evaluate($"new Intl.DateTimeFormat('{locale}', {options}).format(Date.UTC(2026, 9, 21, 15, 4, 5, 123))", UtcOptions));
     }
 
+    // The dates before the first Japanese era of CLDR (Meiji) use the Gregorian eras
+    [Theory]
+    [InlineData(-100, 6, 15, "101 Before Christ")]
+    [InlineData(1850, 6, 15, "1850 Anno Domini")]
+    [InlineData(1868, 10, 22, "1868 Anno Domini")]
+    [InlineData(1868, 10, 23, "1 Meiji")]
+    [InlineData(1872, 12, 31, "5 Meiji")]
+    [InlineData(1873, 1, 1, "6 Meiji")]
+    [InlineData(2026, 10, 21, "8 Reiwa")]
+    public void DateTimeFormat_JapaneseEras(int year, int month, int day, string expected)
+    {
+        Assert.Equal(expected, Evaluate($"new Intl.DateTimeFormat('en', {{ calendar: 'japanese', era: 'long', year: 'numeric', timeZone: 'UTC' }}).format(Date.UTC({year}, {month - 1}, {day}))", UtcOptions));
+    }
+
     [Fact]
     public void DateTimeFormat_FormatToParts()
     {

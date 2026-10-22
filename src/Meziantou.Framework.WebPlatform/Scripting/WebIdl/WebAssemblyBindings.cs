@@ -26,6 +26,7 @@ internal static class WebAssemblyBindings<TAdapter, TValue>
         Name = "Module",
         ClassString = "WebAssembly.Module",
         ClrType = typeof(WebAssemblyModuleObject),
+        Flags = InterfaceBindingFlags.ModuleSource,
         Exposure = ExposureSet.All,
         ConstructorLength = 1,
         Constructor = static (r, a) =>

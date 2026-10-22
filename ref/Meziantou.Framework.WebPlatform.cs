@@ -12804,6 +12804,8 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         TValue FromNumber(double value);
         TValue FromString(string value);
         TValue Get(TValue obj, TValue key);
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0014", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public TValue? GetAbstractModuleSource() => throw null;
         Meziantou.Framework.WebPlatform.Scripting.JsErrorInformation GetErrorInformation(TValue error);
         TValue GetGlobalObject(object realm);
         bool GetOwnProperty(TValue obj, TValue key, out Meziantou.Framework.WebPlatform.Scripting.JsPropertyDescriptor<TValue> descriptor);
@@ -12837,6 +12839,8 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         public void ReserveProperties(TValue obj, int count) { }
         TResult RunInRealm<TResult>(object realm, System.Func<TResult> action);
         void Set(TValue obj, TValue key, TValue value);
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0014", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public void SetModuleSourceClassName(TValue obj, string className) { }
         bool SetPrototypeOf(TValue obj, TValue prototype);
         public bool SetSharedDataBlock(TValue sharedArrayBuffer, object dataBlock) => throw null;
         System.Numerics.BigInteger ToBigInt(TValue value);

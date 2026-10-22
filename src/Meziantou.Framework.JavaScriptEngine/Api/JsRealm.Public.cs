@@ -9,6 +9,13 @@ public sealed partial class JsRealm
     /// <summary>Gets %Function.prototype% of the realm.</summary>
     public JsObject FunctionPrototype => Intrinsics.FunctionPrototype;
 
+    /// <summary>
+    /// Gets %AbstractModuleSource% of the realm (https://tc39.es/proposal-source-phase-imports/#sec-abstractmodulesource-objects):
+    /// the abstract class that the classes of the module source objects (e.g. <c>WebAssembly.Module</c>) extend. It is not a
+    /// global. See <see cref="JsModule.ModuleSource"/>.
+    /// </summary>
+    public JsFunction AbstractModuleSource => Intrinsics.AbstractModuleSource;
+
     /// <summary>Creates an ordinary object (OrdinaryObjectCreate(proto)).</summary>
     /// <param name="prototype">The prototype, or null for an object without prototype.</param>
     public JsObject CreateObject(JsObject? prototype) => new(prototype);

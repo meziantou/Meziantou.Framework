@@ -487,6 +487,14 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             // https://webidl.spec.whatwg.org/#es-DOMException-specialness
             parentPrototype = EvaluateBuiltIn("Error.prototype");
         }
+#pragma warning disable WEBPLATEXP0014 // The source phase imports are experimental for the consumers of the package only
+        else if ((binding.Flags & InterfaceBindingFlags.ModuleSource) != InterfaceBindingFlags.None && Adapter.GetAbstractModuleSource() is { } abstractModuleSource)
+#pragma warning restore WEBPLATEXP0014
+        {
+            // https://webassembly.github.io/esm-integration/js-api/index.html#webassembly-module-objects: WebAssembly.Module extends %AbstractModuleSource%
+            parentInterfaceObject = abstractModuleSource;
+            parentPrototype = Adapter.Get(abstractModuleSource, Key("prototype"));
+        }
         else
         {
             parentPrototype = ObjectPrototype;
@@ -1244,6 +1252,13 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         if (target is HtmlAllCollection all)
         {
             wrapper = CreateHtmlAllCollectionWrapper(all, wrapper);
+        }
+
+        if ((binding.Flags & InterfaceBindingFlags.ModuleSource) != InterfaceBindingFlags.None)
+        {
+#pragma warning disable WEBPLATEXP0014 // The source phase imports are experimental for the consumers of the package only
+            Adapter.SetModuleSourceClassName(wrapper, binding.ClassString ?? binding.Name);
+#pragma warning restore WEBPLATEXP0014
         }
 
         Agent.Wrappers.AddOrUpdate(target, wrapper);

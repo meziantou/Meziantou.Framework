@@ -6,8 +6,8 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 326 | 341 | 0 | 96% |
-| [Tentative](#tentative-tests) | 14 | 70 | 0 | 20% |
+| [Stable](#stable-tests) | 325 | 341 | 0 | 95% |
+| [Tentative](#tentative-tests) | 15 | 70 | 0 | 21% |
 | Reftests | 0 | 0 | 0 | – |
 | **All** | **340** | **411** | **0** | **83%** |
 
@@ -287,7 +287,7 @@
 | [`jsapi/global/toString.any.js`](https://wpt.fyi/results/wasm/jsapi/global/toString.any.js) | Pass | 4 / 4 |  |  |
 | [`jsapi/global/value-get-set.any.js`](https://wpt.fyi/results/wasm/jsapi/global/value-get-set.any.js) | Pass | 136 / 136 |  |  |
 | [`jsapi/global/valueOf.any.js`](https://wpt.fyi/results/wasm/jsapi/global/valueOf.any.js) | Pass | 4 / 4 |  |  |
-| [`jsapi/idlharness.any.js`](https://wpt.fyi/results/wasm/jsapi/idlharness.any.js) | Pass | 182 / 182 |  |  |
+| [`jsapi/idlharness.any.js`](https://wpt.fyi/results/wasm/jsapi/idlharness.any.js) | Fail | 178 / 182 | TEST BUG | the IDL of the test (`interfaces/wasm-js-api.idl`) declares `Module` without a parent, but the source phase imports make `WebAssembly.Module` extend `%AbstractModuleSource%` (https://webassembly.github.io/esm-integration/js-api/index.html#webassembly-module-objects, tested by `wasm/jsapi/module/moduleSource.tentative.any.js`): the prototypes of the interface object and of the interface prototype object are not `Function.prototype` and `Object.prototype` |
 | [`jsapi/instance/constructor-bad-imports.any.js`](https://wpt.fyi/results/wasm/jsapi/instance/constructor-bad-imports.any.js) | Pass | 212 / 212 |  |  |
 | [`jsapi/instance/constructor-caching.any.js`](https://wpt.fyi/results/wasm/jsapi/instance/constructor-caching.any.js) | Pass | 2 / 2 |  |  |
 | [`jsapi/instance/constructor.any.js`](https://wpt.fyi/results/wasm/jsapi/instance/constructor.any.js) | Pass | 58 / 58 |  |  |
@@ -393,7 +393,7 @@
 | [`jsapi/memory/constructor-shared.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/constructor-shared.tentative.any.js) | Fail | 4 / 6 | NOT IMPLEMENTED | the threads of WebAssembly: a shared `WebAssembly.Memory` is only a growable `SharedArrayBuffer` (the shared memories of Wasmtime are not .NET arrays), which is not serializable |
 | [`jsapi/memory/constructor-types.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/constructor-types.tentative.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | the type reflection of WebAssembly (`type()`, the `minimum` member of the descriptors) |
 | [`jsapi/memory/type.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/type.tentative.any.js) | Fail | 0 / 12 | NOT IMPLEMENTED | the type reflection of WebAssembly (`type()`, the `minimum` member of the descriptors) |
-| [`jsapi/module/moduleSource.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/module/moduleSource.tentative.any.js) | Fail | 2 / 8 | NOT IMPLEMENTED | the source phase imports (`AbstractModuleSource`) |
+| [`jsapi/module/moduleSource.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/module/moduleSource.tentative.any.js) | Pass | 8 / 8 |  |  |
 | [`jsapi/table/constructor-types.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/table/constructor-types.tentative.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | the type reflection of WebAssembly (`type()`, the `minimum` member of the descriptors) |
 | [`jsapi/table/type.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/table/type.tentative.any.js) | Fail | 0 / 8 | NOT IMPLEMENTED | the type reflection of WebAssembly (`type()`, the `minimum` member of the descriptors) |
 | [`jsapi/tag/constructor.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/tag/constructor.tentative.any.js) | Pass | 12 / 12 |  |  |

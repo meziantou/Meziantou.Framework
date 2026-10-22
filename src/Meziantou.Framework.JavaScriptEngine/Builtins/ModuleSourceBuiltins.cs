@@ -22,10 +22,10 @@ internal static class ModuleSourceBuiltins
 
     /// <summary>
     /// get %AbstractModuleSource%.prototype[@@toStringTag]: the [[ModuleSourceClassName]] of a module source, or undefined.
-    /// The engine has no module source object (the source of a JavaScript module is not available), so it is undefined.
+    /// The module sources are host objects (the source of a JavaScript module is not available).
     /// </summary>
     private static JsValue GetToStringTag(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
-        return JsValue.Undefined;
+        return thisValue.Cell is JsHostObject { ModuleSourceClassName: { } className } ? JsValue.FromString(className) : JsValue.Undefined;
     }
 }

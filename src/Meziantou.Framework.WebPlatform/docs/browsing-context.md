@@ -272,16 +272,22 @@ disposed. `BrowsingContext.IsAuxiliary` and `BrowsingContext.Opener` expose it f
   [Reporting API](#reporting-api)): a response blocked by the `Cross-Origin-Resource-Policy` check (type `corp`, also for
   the opaque responses of `Cache.match()`), and a document or a dedicated worker without a compatible embedder policy
   (type `navigation` or `worker initialization`, reported to the container document or to the owner).
-- The window of a browsing context is its `WindowProxy` for the scripts of the other windows (e.g. the value returned by
-  `window.open()`, `iframe.contentWindow`, `event.source`): one object per browsing context, which stays the same when
-  the browsing context navigates. For a cross-origin caller, only the cross-origin properties (`location`, `postMessage`,
-  `closed`, `close()`, `frames`, `parent`, `top`, `opener`, the child windows...) are accessible, the others throw a
-  `SecurityError`, and its prototype is null. For the scripts of the window itself, the window is its global object
-  (the engines have no global `this` distinct from the global object, so `window === this` at the top level of a script).
+- The window of a browsing context is its `WindowProxy` (https://html.spec.whatwg.org/multipage/nav-history-apis.html#the-windowproxy-exotic-object),
+  for every script, including the scripts of the window itself (`window`, `self`, `globalThis` and the `this` of the
+  global code are the `WindowProxy`, the global object of the realm is the `Window`): one object per browsing context,
+  which stays the same when the browsing context navigates (e.g. the value returned by `window.open()`,
+  `iframe.contentWindow`, `event.source`). Its indexed properties are the windows of the child navigables (read-only,
+  they cannot be defined or deleted), it cannot be made non-extensible, and its prototype cannot be changed. For a
+  cross-origin caller, only the cross-origin properties (`location`, `postMessage`, `closed`, `close()`, `frames`,
+  `parent`, `top`, `opener`, the child windows...) are accessible, the others throw a `SecurityError`, and its prototype is
+  null. The functions and the accessors of the cross-origin properties are created for each realm that reads them
+  (https://html.spec.whatwg.org/multipage/nav-history-apis.html#crossoriginpropertydescriptormap): they have the
+  `Function.prototype` of the caller, and they run the steps of the IDL member even when the window replaced it. The
+  `Location` objects are cross-origin objects too (only `href` can be set, and `replace()` called, cross-origin); as in
+  the browsers, their `[LegacyUnforgeable]` members stay non-configurable for the same-origin callers (the
+  specification reports the members of [[DefaultProperties]] as configurable).
   The `WindowProxy` of a discarded browsing context (a removed iframe, a closed popup) keeps its last window
-  (`contentWindow.self === contentWindow` still holds, `closed` is true). The global object is an ordinary object: for
-  the scripts of the window itself, its indexed properties are configurable accessor properties, it can be made
-  non-extensible, and its prototype can be changed, unlike the `WindowProxy` that the other realms use.
+  (`contentWindow.self === contentWindow` still holds, `closed` is true).
 
 The history traversal (`history.back()`, `history.go()`) loads the URL of an entry of another document again (there is
 no back/forward cache), and the new document replaces the document of the entry.

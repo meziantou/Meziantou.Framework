@@ -118,7 +118,10 @@ entry point), `engine.CurrentRealm` is the realm of the running execution contex
 switches the current realm to the realm of the function (`JsBuiltinFunction.Call`), and checks the recursion limit.
 
 `JsRealm` owns the `Intrinsics` and the global object. `Intrinsics` is a partial class: the prototype objects are
-created first (constructor of `Intrinsics`), then `Initialize` calls each built-in.
+created first (constructor of `Intrinsics`), then `Initialize` calls each built-in. `JsRealm.GlobalThis` is the this
+value of the global code ([[GlobalThisValue]]): the global object, unless the host sets another object with
+`SetGlobalThis` (the WindowProxy of a browser window); the code reads it at run time (`LoadGlobalThis`, the this of the
+sloppy functions called without this value, the indirect evals).
 
 ### Writing a built-in
 

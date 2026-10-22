@@ -58,10 +58,10 @@ public sealed class WindowProxyTests : IDisposable
     }
 
     [Fact]
-    public void WindowProxy_TheTrapsRunInTheRealmOfTheCaller()
+    public void WindowProxy_IsTheSameObjectForEveryRealm()
     {
-        // The WindowProxy of the frame is created by the realm of its child frame (parent), and its traps run in the realm of
-        // the caller: the top window is the global object for the code of the top window, not its WindowProxy
+        // The WindowProxy of the top window may be created by the realm of a frame (parent): it is also the window of the
+        // code of the top window
         var document = Load(
             """
             <iframe src="https://example.com/a"></iframe>
@@ -190,6 +190,102 @@ public sealed class WindowProxyTests : IDisposable
         Assert.Equal("undefined,true", document.Title);
     }
 
+
+    [Fact]
+    public void GlobalThis_IsTheWindowProxy()
+    {
+        var document = Load(
+            """
+            <script>
+              'use strict';
+              const log = [this === window, globalThis === window, self === window, window.window === window, frames === window];
+              log.push(Object.getPrototypeOf(window) === Window.prototype, Object.isExtensible(window), Reflect.preventExtensions(window));
+              try { Object.preventExtensions(window); log.push('prevented'); } catch (e) { log.push(e.name); }
+              log.push(Reflect.setPrototypeOf(window, {}), Reflect.setPrototypeOf(window, Window.prototype));
+              var declared = 1;
+              log.push(window.declared, Object.getOwnPropertyDescriptor(window, 'declared').configurable);
+              document.title = log.join();
+            </script>
+            """,
+            _ => "");
+
+        Assert.Equal("true,true,true,true,true,true,true,false,TypeError,false,true,1,false", document.Title);
+    }
+
+    [Fact]
+    public void IndexedProperties_AreTheWindowsOfTheChildNavigables()
+    {
+        var document = Load(
+            """
+            <iframe></iframe>
+            <script>
+              'use strict';
+              const descriptor = Object.getOwnPropertyDescriptor(window, 0);
+              const log = [descriptor.value === frames[0], descriptor.writable, descriptor.enumerable, descriptor.configurable, 0 in window, 1 in window];
+              log.push(Reflect.defineProperty(window, 0, { value: 1 }), Reflect.defineProperty(window, 1, { value: 1 }), Reflect.set(window, 1, 1), 1 in window);
+              try { window[1] = 1; log.push('set'); } catch (e) { log.push(e.name); }
+              log.push(Reflect.deleteProperty(window, 0), Reflect.deleteProperty(window, 1), Reflect.ownKeys(window)[0]);
+              document.querySelector('iframe').remove();
+              log.push(0 in window, window[0]);
+              document.title = log.join();
+            </script>
+            """,
+            _ => "");
+
+        Assert.Equal("true,false,true,true,true,false,false,false,false,false,TypeError,false,true,0,false,", document.Title);
+    }
+
+    [Fact]
+    public void CrossOriginLocation_ExposesOnlyTheCrossOriginProperties()
+    {
+        var document = Load(
+            """
+            <iframe src="https://other.example/"></iframe>
+            <script>
+              window.onload = () => {
+                const location = frames[0].location;
+                const log = [location === frames[0].location, Object.getPrototypeOf(location), Reflect.preventExtensions(location), Reflect.ownKeys(location).slice(0, 3).join(' ')];
+                const href = Object.getOwnPropertyDescriptor(location, 'href');
+                log.push(href.get, typeof href.set, href.set.name, Object.getPrototypeOf(href.set) === Function.prototype, String({}.toString.call(location)));
+                for (const access of [() => location.href, () => location.pathname, () => location.assign, () => Object.defineProperty(location, 'x', { value: 1 }), () => delete location.replace]) {
+                  try { access(); log.push('allowed'); } catch (e) { log.push(e.name); }
+                }
+                document.title = log.join();
+              };
+            </script>
+            """,
+            _ => "<p>frame</p>");
+
+        Assert.Equal("true,,false,href replace then,,function,set href,true,[object Object],SecurityError,SecurityError,SecurityError,SecurityError,SecurityError", document.Title);
+    }
+
+    [Fact]
+    public void CrossOriginFunctions_AreCreatedPerCallerRealmAndRunTheStepsOfTheIdlMember()
+    {
+        // The frame replaces its focus method: the cross-origin focus function still performs the steps of Window.focus()
+        var document = Load(
+            """
+            <iframe src="https://other.example/"></iframe>
+            <iframe></iframe>
+            <script>
+              window.onload = () => {
+                const win = frames[0];
+                const sameOrigin = frames[1];
+                const close = win.close;
+                const closeFromFrame = sameOrigin.eval('parent.frames[0].close');
+                const parentGetter = Object.getOwnPropertyDescriptor(win, 'parent').get;
+                document.title = [
+                  close === win.close, close !== window.close, close !== closeFromFrame, Object.getPrototypeOf(close) === Function.prototype,
+                  Object.getPrototypeOf(closeFromFrame) === sameOrigin.Function.prototype, close.name, win.postMessage.length,
+                  typeof win.focus, win.focus.name, parentGetter.name, parentGetter.call(undefined) === window,
+                ].join();
+              };
+            </script>
+            """,
+            url => url.Host == "other.example" ? "<script>window.focus = 'override';</script>" : "");
+
+        Assert.Equal("true,true,true,true,true,close,1,function,focus,get parent,true", document.Title);
+    }
 
     private sealed class FuncLoader(Func<Url, string> loader) : DocumentLoader
     {

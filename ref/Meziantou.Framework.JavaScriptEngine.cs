@@ -361,6 +361,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public override int GetHashCode() => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsValue ToJsValue() => throw null;
         public override string ToString() => throw null;
+        public bool TryGetArrayIndex(out uint index) => throw null;
         public static bool operator ==(Meziantou.Framework.JavaScriptEngine.JsPropertyKey left, Meziantou.Framework.JavaScriptEngine.JsPropertyKey right) => throw null;
         public static bool operator !=(Meziantou.Framework.JavaScriptEngine.JsPropertyKey left, Meziantou.Framework.JavaScriptEngine.JsPropertyKey right) => throw null;
         public static implicit operator Meziantou.Framework.JavaScriptEngine.JsPropertyKey(Meziantou.Framework.JavaScriptEngine.JsSymbol symbol) => throw null;
@@ -402,6 +403,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public Meziantou.Framework.JavaScriptEngine.JsValue Execute(Meziantou.Framework.JavaScriptEngine.JsPreparedScript script, object? hostDefined = null, bool mutedErrors = false) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsSourceTextModule ParseModule(string code, string? url = null, object? hostDefined = null) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsSourceTextModule ParseModule(string code, string? url, object? hostDefined, int lineOffset, int columnOffset) => throw null;
+        public void SetGlobalThis(Meziantou.Framework.JavaScriptEngine.JsObject thisValue) { }
     }
 
     public sealed class JsScript : Meziantou.Framework.JavaScriptEngine.JsScriptOrModule

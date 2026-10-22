@@ -142,7 +142,7 @@ are called on the thread of the worker. The global object of a realm is a `Globa
 | `OnDocumentActivated(Document)` | A document becomes the active document of its browsing context (the window of an initial `about:blank` document is reused by a same-origin document). |
 | `DestroyRealm(GlobalScope)` | The browsing context is discarded (e.g. its `iframe` is removed), the worker ends, or the global scopes of the worklets of a document are terminated. |
 | `CreateWorkerScriptEngine(CancellationToken)` | A worker is created: the engine of the new agent, used on the thread of the worker (null by default: the workers do not run scripts). The token is canceled when the worker is terminated: the engine aborts the running script. |
-| `OnChildNavigablesChanged(Window)` | An `iframe` is inserted or removed: the indexed properties of the `WindowProxy` (`window[0]`) changed. |
+| `OnChildNavigablesChanged(Window)` | An `iframe` is inserted or removed: the indexed properties of the `WindowProxy` (`window[0]`) changed (the `WindowProxy` of `JavaScriptScriptEngine` reads them when they are accessed). |
 | `ExecuteClassicScript(ClassicScript)` | A classic script runs ("run a classic script"): a `script` element, a `javascript:` URL, a string passed to `setTimeout()`, the script of a worker or of `importScripts()`. It returns the completion value (a .NET `string` for a JavaScript string), or throws. The source text of an inline script created by the HTML parser starts at `SourceTextLine`/`SourceTextColumn` in its document: `JavaScriptScriptEngine` parses it with these offsets, so the lines and the columns of its errors and of the violations of the content security policies are the ones in the document. |
 | `ParseClassicScript(ClassicScript)` | The script of a worker is fetched: the engine returns its parse error, if any (the worker object then fires an `error` event), or null (the default: the parse errors are thrown by `ExecuteClassicScript`). |
 | `CompileEventHandler(EventHandlerSource)` | An event handler content attribute is used for the first time (lazily). |
@@ -578,8 +578,11 @@ reference and cache data per object.
 A `WebIdlAgent<TAdapter, TValue>` holds the realms and the JavaScript objects of the .NET objects (one wrapper per
 object, shared by the realms of the agent). The script engine creates it with its adapter and an `IWebIdlHost`, which
 reports the exceptions of the callbacks and performs a microtask checkpoint after a callback when no script is running.
-`WebIdlAgent.GetRealm(window)` creates the realm of a window: it defines the interface objects on the global object and
-makes the global object the JavaScript object of the window.
+`WebIdlAgent.GetRealm(window)` creates the realm of a window: it defines the interface objects on the global object, and
+sets the `WindowProxy` of the browsing context (`IJsAdapter.CreateWindowProxy`, an exotic object whose internal methods
+call an `IJsWindowProxyHandler`) as the this value of the global code (`IJsAdapter.TrySetGlobalThis`). The JavaScript
+object of a window is its `WindowProxy` for every realm; the `Location` objects are created by
+`IJsAdapter.CreateCrossOriginPlatformObject`. An engine that does not support them exposes a window by its global object.
 
 ```csharp
 sealed class MyScriptEngine : ScriptEngine, IWebIdlHost

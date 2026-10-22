@@ -145,6 +145,44 @@ public sealed class InterpreterTests
         Assert.Equal(expected, Run(code));
     }
 
+    // The caller and arguments own properties of the sloppy functions: read from the running calls, as in the browsers
+    [Theory]
+    [InlineData("function g() { return g.caller; } function f() { return g(); } f() === f", "true")]
+    [InlineData("var called = false; function f(flag) { if (flag !== true) { g(); } else { called = true; } } function g() { var caller = arguments.callee.caller; caller(true); } f(); called", "true")]
+    [InlineData("function g() { return g.caller; } String(g())", "null")]
+    [InlineData("function g() { return g.caller; } [String((function () { 'use strict'; return g(); })()), String((() => g())()), String({ m() { return g(); } }.m()), String(gen().next().value)].join(); function* gen() { yield g(); }", "null,null,null,null")]
+    [InlineData("function g() { return g.caller; } function f() { return [1].map(g)[0]; } f() === f", "true")]
+    [InlineData("function g(n) { if (n) return g(n - 1); return g.caller === g; } g(1)", "true")]
+    [InlineData("function g() { return g.caller; } function f() { return g(); } var r = []; for (var i = 0; i < 3; i++) r.push(f() === f, String(g())); r.join()", "true,null,true,null,true,null")]
+    [InlineData("function g() { return g.caller; } function f() { return g(); } var d = Object.getOwnPropertyDescriptor(g, 'caller'); [typeof d.get, d.set, d.enumerable, d.configurable, d.get === Object.getOwnPropertyDescriptor(f, 'caller').get, String(d.get.call(g)), f() === f].join()", "function,,false,false,true,null,true")]
+    [InlineData("function f() { return Reflect.getOwnPropertyDescriptor(f, 'caller'); } function g() { return f(); } [Reflect.defineProperty(f, 'caller', { writable: false, configurable: false }), Reflect.defineProperty(f, 'caller', { value: null }), 'get' in g()].join()", "false,false,true")]
+    [InlineData("function g() { } [String(g.caller), String(g.arguments), Object.hasOwn(g, 'caller'), Object.hasOwn(g, 'arguments')].join()", "null,null,true,true")]
+    [InlineData("function g(a, b) { return g.arguments; } var a = g(1, 2); [a.length, a[0], a[1], a.callee === g, Object.prototype.toString.call(a), a === g(1, 2)].join()", "2,1,2,true,[object Arguments],false")]
+    [InlineData("function g() { } function set() { 'use strict'; g.caller = 1; } var r; try { set(); } catch (e) { r = e.constructor.name; } g.caller = 2; [r, String(g.caller), delete g.caller].join()", "TypeError,null,false")]
+    [InlineData("function g() { return g.caller; } Object.freeze(g); function f() { return g(); } [Object.isFrozen(g), f() === f].join()", "true,true")]
+    [InlineData("[function () { 'use strict'; }, class { }, { m() { } }.m, async function () { }, function* () { }, () => { }].map(f => Object.hasOwn(f, 'caller') || Object.hasOwn(f, 'arguments')).join()", "false,false,false,false,false,false")]
+    [InlineData("function g() { return g.caller; } var get = Object.getOwnPropertyDescriptor(g, 'caller').get; [String(Object.create(g).caller), String(get.call(function () { 'use strict'; })), String(get.call({}))].join()", "null,null,null")]
+    public void Evaluate_FunctionCallerAndArguments(string code, string expected)
+    {
+        Assert.Equal(expected, Run(code));
+    }
+
+    // An assignment to an undeclared identifier in strict code: the reference is resolved before the value is evaluated
+    [Theory]
+    [InlineData("'use strict'; var r; try { undeclared = (this.undeclared = 5); } catch (e) { r = e.constructor.name; } [r, undeclared].join()", "ReferenceError,5")]
+    [InlineData("function f() { 'use strict'; x1 = (globalThis.x1 = 1); } var r; try { f(); } catch (e) { r = e.constructor.name; } [r, x1].join()", "ReferenceError,1")]
+    [InlineData("function f() { 'use strict'; eval(''); x2 = (globalThis.x2 = 1); } var r; try { f(); } catch (e) { r = e.constructor.name; } [r, x2].join()", "ReferenceError,1")]
+    [InlineData("'use strict'; var r; try { nope = 1; } catch (e) { r = e.constructor.name; } [r, typeof nope].join()", "ReferenceError,undefined")]
+    [InlineData("'use strict'; globalThis.y = 0; function f(v) { y = (() => v)(); } f(1); f(2); y", "2")]
+    [InlineData("'use strict'; globalThis.z = 0; function f() { z = (() => 1)(); } f(); f(); delete globalThis.z; var r; try { f(); } catch (e) { r = e.constructor.name; } [r, typeof z].join()", "ReferenceError,undefined")]
+    [InlineData("'use strict'; function f() { z2 = (() => 1)(); } var r; try { f(); } catch (e) { r = e.constructor.name; } globalThis.z2 = 0; f(); [r, z2].join()", "ReferenceError,1")]
+    [InlineData("'use strict'; var it = { [Symbol.iterator]() { return { next() { globalThis.w = 1; return { value: 2, done: false }; }, return() { return {}; } }; } }; var r; try { [w] = it; } catch (e) { r = e.constructor.name; } [r, w].join()", "ReferenceError,1")]
+    [InlineData("u = (this.u = 5, 6); u", "6")]
+    public void Evaluate_StrictAssignmentToUndeclaredGlobal(string code, string expected)
+    {
+        Assert.Equal(expected, Run(code));
+    }
+
     [Fact]
     public void InlineCaches_GlobalLexicalDeclarationShadowsAGlobalProperty()
     {

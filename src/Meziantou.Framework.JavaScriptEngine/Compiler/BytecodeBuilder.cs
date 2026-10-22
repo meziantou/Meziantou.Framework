@@ -452,7 +452,7 @@ internal sealed class BytecodeBuilder
     // ------------------------------------------------------------------------------------------------------------------
 
     /// <summary>Gets whether an instruction has an inline cache (its last operand is the index of the cache).</summary>
-    public static bool HasInlineCache(OpCode op) => op is OpCode.GetProperty or OpCode.GetMethod or OpCode.SetProperty or OpCode.DefineField or OpCode.LoadGlobal or OpCode.LoadGlobalOrUndefined;
+    public static bool HasInlineCache(OpCode op) => op is OpCode.GetProperty or OpCode.GetMethod or OpCode.SetProperty or OpCode.DefineField or OpCode.LoadGlobal or OpCode.LoadGlobalOrUndefined or OpCode.ResolveGlobal;
 
     /// <summary>Gets whether an instruction is a conditional jump with a comparison (left right ->).</summary>
     public static bool IsCompareJump(OpCode op) => op is >= OpCode.JumpIfLessThan and <= OpCode.JumpIfStrictNotEqual;
@@ -489,6 +489,7 @@ internal sealed class BytecodeBuilder
                 => 1,
             OpCode.LoadLocalChecked or OpCode.StoreLocalChecked or OpCode.ThrowConstAssignLocal
                 or OpCode.GetProperty or OpCode.GetMethod or OpCode.SetProperty or OpCode.DefineField or OpCode.LoadGlobal or OpCode.LoadGlobalOrUndefined
+                or OpCode.ResolveGlobal
                 or OpCode.LoadContext or OpCode.StoreContext
                 or OpCode.StoreGlobal or OpCode.StoreName
                 or OpCode.DeleteProperty
@@ -590,7 +591,7 @@ internal sealed class BytecodeBuilder
             OpCode.AsyncDisposeSetResult => -2,
             OpCode.AsyncDisposeFinish => -1,
             OpCode.RequireObjectCoercibleBase => 0,
-            OpCode.ResolveName => 1,
+            OpCode.ResolveName or OpCode.ResolveGlobal => 1,
             OpCode.LoadResolved => 0,
             OpCode.StoreResolved => -1,
             OpCode.SetFieldInitializer => -2,

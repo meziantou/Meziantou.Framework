@@ -11,6 +11,8 @@ internal sealed partial class Intrinsics
     private bool _globalBindingsDefined;
     private readonly JsObject[] _errorPrototypes = new JsObject[Enum.GetValues<ErrorType>().Length];
     private readonly JsObject[] _errorConstructors = new JsObject[Enum.GetValues<ErrorType>().Length];
+    private Interpreter.LegacyFunctionProperty? _functionCallerProperty;
+    private Interpreter.LegacyFunctionProperty? _functionArgumentsProperty;
 
     public Intrinsics(JsRealm realm)
     {
@@ -70,6 +72,12 @@ internal sealed partial class Intrinsics
 
     /// <summary>%ThrowTypeError%</summary>
     public JsFunction ThrowTypeError { get; private set; } = null!;
+
+    /// <summary>The value of the caller own property of the sloppy functions.</summary>
+    public Interpreter.LegacyFunctionProperty FunctionCallerProperty => _functionCallerProperty ??= new(Realm, isCaller: true);
+
+    /// <summary>The value of the arguments own property of the sloppy functions.</summary>
+    public Interpreter.LegacyFunctionProperty FunctionArgumentsProperty => _functionArgumentsProperty ??= new(Realm, isCaller: false);
 
     public JsObject GetErrorPrototype(ErrorType type) => _errorPrototypes[(int)type];
 

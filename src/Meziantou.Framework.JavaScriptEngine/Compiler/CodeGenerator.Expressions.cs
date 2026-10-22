@@ -621,12 +621,19 @@ internal sealed partial class CodeGenerator
     }
 
     /// <summary>Evaluates the base (and the key) of a reference: the values a get and a put need (e.g. object, or object key).</summary>
-    private TargetKind EmitReferenceBase(Node target)
+    /// <param name="target">The reference.</param>
+    /// <param name="valueMayRunCode">Whether the evaluation of the value that is put in the reference (before the put, without a get) may run code.</param>
+    private TargetKind EmitReferenceBase(Node target, bool valueMayRunCode = false)
     {
         switch (target)
         {
             case Identifier identifier when _analysis.References[identifier].IsDynamic:
                 _builder.Emit(OpCode.ResolveName, GetNameKey(identifier.Name));
+                return TargetKind.DynamicIdentifier;
+            case Identifier identifier when valueMayRunCode && IsStrict && _analysis.References[identifier].IsGlobal:
+                // PutValue of an unresolvable reference throws in strict code, even when the evaluation of the value creates
+                // the global binding: the identifier is resolved before (its inline cache makes it cheap when it exists)
+                _builder.Emit(OpCode.ResolveGlobal, GetNameKey(identifier.Name));
                 return TargetKind.DynamicIdentifier;
             case Identifier:
                 return TargetKind.Identifier;
@@ -957,7 +964,7 @@ internal sealed partial class CodeGenerator
                 return;
             }
 
-            var kind = EmitReferenceBase(left);
+            var kind = EmitReferenceBase(left, valueMayRunCode: MayRunCode(assignment.Right));
             EmitNamedEvaluation(assignment.Right, GetNamedEvaluationTarget(assignment));
             EmitPutReference(left, kind);
             return;
@@ -979,6 +986,19 @@ internal sealed partial class CodeGenerator
         _builder.SetPosition(assignment.Start);
         _builder.Emit(GetCompoundOpCode(assignment.Operator));
         EmitPutReference(left, targetKind);
+    }
+
+    /// <summary>Gets whether the evaluation of an expression may run code (a call, a getter, a conversion...): false for the literals, the functions and the local variables.</summary>
+    private bool MayRunCode(Node expression)
+    {
+        return expression switch
+        {
+            NumericLiteral or StringLiteral or BooleanLiteral or NullLiteral or BigIntLiteral or RegExpLiteral => false,
+            FunctionExpression or ArrowFunctionExpression => false,
+            TemplateLiteral template => template.Expressions.Count > 0,
+            Identifier identifier => _analysis.References[identifier] is not { IsDynamic: false, Variable.Location: VariableLocation.Register or VariableLocation.Context },
+            _ => true,
+        };
     }
 
     /// <summary>The target that names an anonymous function of the right side: none when the left side is parenthesized (IsIdentifierRef of a CoverParenthesizedExpression is false).</summary>

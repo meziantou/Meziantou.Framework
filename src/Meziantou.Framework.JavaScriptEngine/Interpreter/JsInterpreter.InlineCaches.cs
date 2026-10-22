@@ -377,8 +377,45 @@ internal static partial class JsInterpreter
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static JsValue LoadGlobalMiss(Frame frame, int name, int cache, bool throwIfMissing)
     {
-        var realm = frame.Realm;
         ref readonly var key = ref frame.Code.Keys[name];
+        CacheGlobalBinding(frame, key, cache);
+        return LoadGlobal(frame.Realm, key, throwIfMissing);
+    }
+
+    /// <summary>
+    /// ResolveBinding of an identifier that is not declared in the code, in strict code: the global environment when it has
+    /// the binding, undefined when the reference is unresolvable. The cache of the instruction remembers a global binding that
+    /// exists (as for <see cref="LoadGlobal(Frame, int, int)"/>): an unresolvable reference is the slow path.
+    /// </summary>
+    private static JsValue ResolveGlobal(Frame frame, int name, int cache)
+    {
+        var realm = frame.Realm;
+        var entry = frame.Code.Caches[cache];
+        if (entry is not null && ReferenceEquals(entry.Realm, realm))
+        {
+            // A global lexical binding is never removed (it exists even before its initialization)
+            if (entry.Kind == PropertyCacheKind.GlobalLexical)
+                return new JsValue(realm.GlobalEnvironment);
+
+            if (entry.Epoch == InlineCache.Epoch && entry.LexicalVersion == realm.GlobalEnvironment.LexicalVersion && ReferenceEquals(entry.Holder!.Map, entry.Map))
+                return new JsValue(realm.GlobalEnvironment);
+        }
+
+        return ResolveGlobalMiss(frame, name, cache);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static JsValue ResolveGlobalMiss(Frame frame, int name, int cache)
+    {
+        ref readonly var key = ref frame.Code.Keys[name];
+        CacheGlobalBinding(frame, key, cache);
+        return ResolveGlobalBinding(frame.Realm, key);
+    }
+
+    /// <summary>Remembers the global binding of a name in the cache of an instruction (a global lexical binding, or a data property of the global object).</summary>
+    private static void CacheGlobalBinding(Frame frame, in PropertyKey key, int cache)
+    {
+        var realm = frame.Realm;
         if (key.IsString && realm.GlobalEnvironment.LexicalBindings.TryGetValue(key.AsString(), out var binding))
         {
             // The bindings of the global lexical declarations are never removed
@@ -404,7 +441,5 @@ internal static partial class JsInterpreter
                 };
             }
         }
-
-        return LoadGlobal(realm, key, throwIfMissing);
     }
 }

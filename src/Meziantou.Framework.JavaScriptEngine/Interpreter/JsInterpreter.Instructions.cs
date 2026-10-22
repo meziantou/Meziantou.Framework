@@ -529,6 +529,15 @@ internal static partial class JsInterpreter
         return sp;
     }
 
+    private static int ExecuteResolveGlobal(Frame frame, int sp)
+    {
+        var code = frame.Code.Code;
+        var pc = frame.Pc + 1;
+        frame.Values[sp++] = ResolveGlobal(frame, code[pc], code[pc + 1]);
+        frame.Pc = pc + 2;
+        return sp;
+    }
+
     private static int ExecuteLoadResolved(Frame frame, int sp)
     {
         var values = frame.Values;

@@ -45,8 +45,7 @@
     <!-- The hyphenation dictionaries (see Unicode/Hyphenation/README.md); their licenses are distributed with the package -->
     <EmbeddedResource Include="Unicode\Hyphenation\*.hyph" LogicalName="Meziantou.Framework.WebPlatform.Unicode.Hyphenation.%(Filename)%(Extension)" />
     <None Include="Unicode\Hyphenation\LICENSES.txt;Unicode\Hyphenation\README.md" Pack="true" PackagePath="hyphenation/%(Filename)%(Extension)" />
-    <!-- The word lists of the Southeast Asian scripts and the model of the Japanese phrases (data of ICU, see Unicode/Segmentation/README.md); their licenses are distributed with the package -->
-    <EmbeddedResource Include="Unicode\Segmentation\*.dict" LogicalName="Meziantou.Framework.WebPlatform.Unicode.Segmentation.%(Filename)%(Extension)" />
+    <!-- The model of the Japanese phrases (data of ICU, see Unicode/Segmentation/README.md); its license is distributed with the package -->
     <None Include="Unicode\Segmentation\LICENSES.txt;Unicode\Segmentation\README.md" Pack="true" PackagePath="segmentation/%(Filename)%(Extension)" />
   </ItemGroup>
   <ItemGroup>
@@ -54,6 +53,8 @@
     <ProjectReference Include="..\Meziantou.Framework.Fonts\Meziantou.Framework.Fonts.csproj" />
     <!-- The properties of the code points, the normalization, the case mappings and IDNA (independent of the OS and ICU) -->
     <ProjectReference Include="..\Meziantou.Framework.Unicode\Meziantou.Framework.Unicode.csproj" />
+    <!-- The word lists and the dictionary break engines of ICU (the lexical word breaking of the Southeast Asian scripts) -->
+    <ProjectReference Include="..\Meziantou.Framework.Unicode.Dictionaries\Meziantou.Framework.Unicode.Dictionaries.csproj" />
   </ItemGroup>
   <ItemGroup>
     <!-- Adler32 is only available from 11.0 -->

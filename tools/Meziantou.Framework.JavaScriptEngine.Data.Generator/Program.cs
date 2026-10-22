@@ -9,13 +9,11 @@ using System.Xml.Linq;
 using Meziantou.Framework;
 using Meziantou.Framework.JavaScriptEngine.Data.Generator;
 using Meziantou.Framework.JavaScriptEngine.Data.Generator.Cldr;
-using Meziantou.Framework.JavaScriptEngine.Data.Generator.Dictionaries;
 using Meziantou.Framework.JavaScriptEngine.TimeZones;
 
 // Generates the data embedded in Meziantou.Framework.JavaScriptEngine, at the versions pinned in data-versions.json:
 // - tzdb: TimeZones/tzdb.bin from the IANA time zone database and the CLDR mapping of the Windows time zone identifiers
 // - cldr: Intl/Data/*.bin from cldr-json (locale and supplemental data) and the CLDR XML release (collation)
-// - dictionaries: Intl/Data/dictionaries.bin from the word lists of the ICU data release (word segmentation)
 // Exit code: 0 when the files are up to date, 1 when they were updated, any other value on failure.
 var update = false;
 var verify = false;
@@ -30,12 +28,12 @@ foreach (var arg in args)
         case "--verify":
             verify = true;
             break;
-        case "tzdb" or "cldr" or "dictionaries":
+        case "tzdb" or "cldr":
             steps.Add(arg);
             break;
         default:
             await Console.Error.WriteLineAsync("Unexpected argument: " + arg);
-            await Console.Error.WriteLineAsync("Usage: Meziantou.Framework.JavaScriptEngine.Data.Generator [--update] [--verify] [tzdb] [cldr] [dictionaries]");
+            await Console.Error.WriteLineAsync("Usage: Meziantou.Framework.JavaScriptEngine.Data.Generator [--update] [--verify] [tzdb] [cldr]");
             return 2;
     }
 }
@@ -44,7 +42,6 @@ if (steps.Count == 0)
 {
     steps.Add("tzdb");
     steps.Add("cldr");
-    steps.Add("dictionaries");
 }
 
 if (!FullPath.CurrentDirectory().TryFindGitRepositoryRoot(out var root))
@@ -73,11 +70,6 @@ if (update)
         pinsUpdated |= await UpdatePinAsync(pins, "ucd", CldrGenerator.GetUcaVersion(common), CldrGenerator.GetPropListUrl);
     }
 
-    if (steps.Contains("dictionaries"))
-    {
-        pinsUpdated |= await UpdatePinAsync(pins, "icu", await DictionaryGenerator.GetLatestIcuVersionAsync(), DictionaryGenerator.GetIcuDataUrl);
-    }
-
     if (pinsUpdated)
     {
         await File.WriteAllTextAsync(pinsPath, pins.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true, RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true }).ReplaceLineEndings("\n") + "\n");
@@ -97,15 +89,6 @@ if (steps.Contains("tzdb"))
 if (steps.Contains("cldr"))
 {
     var result = await CldrGenerator.RunAsync(root, pins, downloadCache);
-    if (result is not (0 or 1))
-        return result;
-
-    updated |= result == 1;
-}
-
-if (steps.Contains("dictionaries"))
-{
-    var result = await DictionaryGenerator.RunAsync(root, pins, downloadCache);
     if (result is not (0 or 1))
         return result;
 

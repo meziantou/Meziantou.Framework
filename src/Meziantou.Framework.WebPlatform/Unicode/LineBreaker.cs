@@ -22,7 +22,7 @@ namespace Meziantou.Framework.WebPlatform.Unicode;
 /// With the CSS tailorings, a soft wrap opportunity is never inside a grapheme cluster (the typographic character unit).
 /// The Southeast Asian scripts (class SA) are broken at their word boundaries (the lexical word breaking of CSS Text,
 /// https://drafts.csswg.org/css-text-4/#lexical-breaking): the words of Thai, Lao, Myanmar and Khmer are found with the word
-/// lists of ICU (<see cref="SoutheastAsianWordBreaker"/>), the other SA scripts use the fallback breaking (a soft wrap
+/// lists of ICU and the dictionary break engines of ICU (<see cref="IcuDictionaryBreakEngine"/>, as Chrome), the other SA scripts use the fallback breaking (a soft wrap
 /// opportunity between the typographic letter units, https://drafts.csswg.org/css-text-4/#fallback-breaking); there is no
 /// break between their letters with <c>word-break: manual</c>. With <c>word-break: auto-phrase</c> and a Japanese content
 /// language, the opportunities inside the phrases of the kanji and kana (<see cref="JapanesePhraseBreaker"/>) are
@@ -33,7 +33,7 @@ namespace Meziantou.Framework.WebPlatform.Unicode;
 internal sealed class LineBreaker
 {
     private Unit[] _units = [];
-    private readonly List<int> _wordBreaks = [];
+    private int[] _wordBreaks = [];
     private int[] _phraseCodePoints = [];
     private bool[] _phraseBoundaries = [];
 
@@ -274,7 +274,7 @@ internal sealed class LineBreaker
                 if (southeastAsianLetter)
                 {
                     flags |= UnitFlags.SoutheastAsianLetter;
-                    if (SoutheastAsianWordBreaker.GetDictionaryScript(codePoint) != UnicodeScript.Unknown)
+                    if (GetWordBreakEngine(codePoint) is not null)
                     {
                         flags |= UnitFlags.DictionaryLetter;
                         hasSegments = true;
@@ -339,30 +339,35 @@ internal sealed class LineBreaker
             if ((flags & UnitFlags.DictionaryLetter) != UnitFlags.None)
             {
                 // The range of the characters of the engine (the dictionary characters of the script, marks included)
-                var breaker = SoutheastAsianWordBreaker.Get(SoutheastAsianWordBreaker.GetDictionaryScript(units[k].BaseCodePoint));
+                var engine = GetWordBreakEngine(units[k].BaseCodePoint)!;
                 var rangeStart = units[k].Start;
                 var rangeEnd = rangeStart;
                 while (rangeEnd < text.Length)
                 {
                     var codePoint = GraphemeClusters.ReadCodePoint(text, rangeEnd, out var length);
-                    if (!breaker.Handles(codePoint))
+                    if (!engine.Handles(codePoint))
                         break;
 
                     rangeEnd += length;
                 }
 
-                _wordBreaks.Clear();
-                breaker.FindBreaks(text, rangeStart, rangeEnd, _wordBreaks);
+                if (_wordBreaks.Length < rangeEnd - rangeStart)
+                {
+                    _wordBreaks = new int[Math.Max(rangeEnd - rangeStart, _wordBreaks.Length * 2)];
+                }
+
+                // The breaks are relative to the start of the range
+                var breakCount = engine.FindBreaks(text[rangeStart..rangeEnd], _wordBreaks);
                 var next = 0;
                 k++;
                 while (k < units.Length && units[k].Start < rangeEnd)
                 {
-                    while (next < _wordBreaks.Count && _wordBreaks[next] < units[k].Start)
+                    while (next < breakCount && rangeStart + _wordBreaks[next] < units[k].Start)
                     {
                         next++;
                     }
 
-                    if (next < _wordBreaks.Count && _wordBreaks[next] == units[k].Start)
+                    if (next < breakCount && rangeStart + _wordBreaks[next] == units[k].Start)
                     {
                         units[k].Flags |= UnitFlags.SegmentBoundary;
                     }
@@ -493,6 +498,13 @@ internal sealed class LineBreaker
     /// General_Category Zs except U+0020 and U+00A0.
     /// </summary>
     internal static bool IsOtherSpaceSeparator(int codePoint) => codePoint is 0x1680 or (>= 0x2000 and <= 0x200A) or 0x202F or 0x205F or 0x3000;
+
+    /// <summary>
+    /// Gets the dictionary break engine of ICU that finds the words of a letter of a Southeast Asian script (the characters of the
+    /// line breaking class SA of Thai, Lao, Myanmar and Khmer), or null for the other characters.
+    /// </summary>
+    internal static IcuDictionaryBreakEngine? GetWordBreakEngine(int codePoint)
+        => IcuDictionaryBreakEngine.GetEngine(codePoint) is { DictionaryKind: not IcuWordDictionaryKind.ChineseJapanese } engine ? engine : null;
 
     private static bool IsLetterOrNumber(int codePoint)
         => UnicodeProperties.GetGeneralCategory(codePoint) is <= UnicodeCategory.OtherLetter or (>= UnicodeCategory.DecimalDigitNumber and <= UnicodeCategory.OtherNumber);

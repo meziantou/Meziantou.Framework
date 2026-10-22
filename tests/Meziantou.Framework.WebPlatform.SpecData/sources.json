@@ -77,11 +77,7 @@
     "ref": "release-78.3",
     "paths": [
       "LICENSE",
-      "icu4c/source/data/brkitr/adaboost/jaml.txt",
-      "icu4c/source/data/brkitr/dictionaries/burmesedict.txt",
-      "icu4c/source/data/brkitr/dictionaries/khmerdict.txt",
-      "icu4c/source/data/brkitr/dictionaries/laodict.txt",
-      "icu4c/source/data/brkitr/dictionaries/thaidict.txt"
+      "icu4c/source/data/brkitr/adaboost/jaml.txt"
     ]
   },
   "publicsuffix": {

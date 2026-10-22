@@ -7,6 +7,7 @@
     <Project Path="../src/Meziantou.Framework.Globbing/Meziantou.Framework.Globbing.csproj" />
     <Project Path="../src/Meziantou.Framework.Html.Tool/Meziantou.Framework.Html.Tool.csproj" />
     <Project Path="../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
+    <Project Path="../src/Meziantou.Framework.Unicode.Dictionaries/Meziantou.Framework.Unicode.Dictionaries.csproj" />
     <Project Path="../src/Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
     <Project Path="../src/Meziantou.Framework.WebPlatform/Meziantou.Framework.WebPlatform.csproj" />
   </Folder>

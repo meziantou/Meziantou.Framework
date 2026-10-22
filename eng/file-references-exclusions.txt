@@ -3,8 +3,8 @@
 #
 # Vendored files are copies of upstream data: they contain no file references, but some of their comments look like
 # references (e.g. "// Reference: ..." in public_suffix_list.dat).
+src/Meziantou.Framework.Unicode.Dictionaries/Data/*.dict
 src/Meziantou.Framework.WebPlatform/Unicode/Hyphenation/*.hyph
-src/Meziantou.Framework.WebPlatform/Unicode/Segmentation/*.dict
 tests/Meziantou.Framework.AtlassianDataFormat.Tests/TestData/third-party/
 tests/Meziantou.Framework.HtmlToMarkdown.Tests/TestData/Specs/
 tests/Meziantou.Framework.Imaging.Fixtures/font-suites/

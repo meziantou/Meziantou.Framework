@@ -25,6 +25,12 @@ internal sealed class JsDisplayNamesObject(JsObject prototype) : JsObject(protot
 /// <summary>Intl.DisplayNames (https://tc39.es/ecma402/#intl-displaynames-objects).</summary>
 internal static class DisplayNamesBuiltins
 {
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("of", 1, Of),
+        new("resolvedOptions", 0, ResolvedOptions),
+    ];
+
     public static JsFunction Initialize(Intrinsics intrinsics, JsObject intl, JsObject prototype)
     {
         var realm = intrinsics.Realm;
@@ -33,8 +39,7 @@ internal static class DisplayNamesBuiltins
         realm.DefineMethod(constructor, "supportedLocalesOf", 1, SupportedLocalesOf);
         prototype.DefineBuiltIn("constructor", constructor);
         prototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Intl.DisplayNames", PropertyFlags.Configurable);
-        realm.DefineMethod(prototype, "of", 1, Of);
-        realm.DefineMethod(prototype, "resolvedOptions", 0, ResolvedOptions);
+        realm.DefineMethods(prototype, PrototypeMethods);
         intl.DefineBuiltIn("DisplayNames", constructor);
         return constructor;
     }

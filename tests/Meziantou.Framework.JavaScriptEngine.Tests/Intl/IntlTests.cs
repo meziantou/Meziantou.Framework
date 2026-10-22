@@ -1,3 +1,5 @@
+using Meziantou.Framework.JavaScriptEngine.Intl;
+
 namespace Meziantou.Framework.JavaScriptEngine.Tests.Intl;
 
 public sealed class IntlTests
@@ -355,7 +357,28 @@ public sealed class IntlTests
     [Theory]
     [InlineData("grapheme", "e\u0301\U0001F1EB\U0001F1F7a", "e\u0301|\U0001F1EB\U0001F1F7|a")]
     [InlineData("word", "Hello, world! 3.14", "Hello*|,| |world*|!| |3.14*")]
-    [InlineData("word", "\u65E5\u672C", "\u65E5*|\u672C*")]
+    [InlineData("word", "日本", "日本*")]
+    [InlineData("word", "台北抹黑", "台北*|抹黑*")]
+    [InlineData("word", "中华人民共和国", "中华*|人民*|共和国*")]
+    [InlineData("word", "私は日本語を勉強しています。", "私*|は*|日本語*|を*|勉強*|し*|てい*|ます*|。")]
+    [InlineData("word", "東京タワーに行きました", "東京タワー*|に*|行き*|ま*|した*")]
+    [InlineData("word", "ｶﾞｷﾞｸﾞ東京", "ｶﾞｷﾞｸﾞ*|東京*")]
+    [InlineData("word", "⼀⼁", "⼀*|⼁*")]
+    [InlineData("word", "\U00020000\U00020001漢字", "\U00020000*|\U00020001*|漢字*")]
+    [InlineData("word", "วัดไทร", "วัด*|ไทร*")]
+    [InlineData("word", "ภาษาไทยabc", "ภาษา*|ไทยabc*")]
+    [InlineData("word", "ภาษาไทย ๆ ฯลฯ", "ภาษา*|ไทย*| |ๆ*| |ฯลฯ*")]
+    [InlineData("word", "ພາສາລາວ", "ພາສາ*|ລາວ*")]
+    [InlineData("word", "ខ្ញុំស្រលាញ់ភាសាខ្មែរ", "ខ្ញុំ*|ស្រលាញ់*|ភាសាខ្មែរ*")]
+    [InlineData("word", "မြန်မာနိုင်ငံသည်", "မြန်မာနိုင်ငံ*|သည်*")]
+    [InlineData("word", "한글abc", "한글*|abc*")]
+    [InlineData("word", "한̀글", "한̀|글*")]
+    [InlineData("word", "漢̀字", "漢̀*|字*")]
+    [InlineData("word", "日々", "日々*")]
+    [InlineData("word", "々", "々")]
+    [InlineData("word", "ー東京", "ー*|東京*")]
+    [InlineData("word", "゛ー東京", "゛ー東京*")]
+    [InlineData("word", "Hello 世界", "Hello*| |世界*")]
     [InlineData("sentence", "It costs $3.50. Really? Yes!", "It costs $3.50. |Really? |Yes!")]
     public void Segmenter(string granularity, string text, string expected)
     {
@@ -370,6 +393,103 @@ public sealed class IntlTests
             const segment = segments.containing(8);
             [segment.segment, segment.index, segment.isWordLike, segments.containing(11), Object.prototype.toString.call(segments[Symbol.iterator]())].join('|')
             """));
+    }
+
+    [Fact]
+    public void Segmenter_Containing_DictionaryWord()
+    {
+        // The Thai of "ภาษาไทยง่ายนิดเดียว" is divided by the word list: "ภาษา|ไทย|ง่าย|นิด|เดียว"
+        Assert.Equal("\u0E44\u0E17\u0E22|4|true|\u0E07\u0E48\u0E32\u0E22|7", Evaluate("""
+            const segments = new Intl.Segmenter('th', { granularity: 'word' }).segment('\u0E20\u0E32\u0E29\u0E32\u0E44\u0E17\u0E22\u0E07\u0E48\u0E32\u0E22\u0E19\u0E34\u0E14\u0E40\u0E14\u0E35\u0E22\u0E27');
+            const segment = segments.containing(5);
+            const next = segments.containing(10);
+            [segment.segment, segment.index, segment.isWordLike, next.segment, next.index].join('|')
+            """));
+    }
+
+    /// <summary>
+    /// Replays random texts whose words were recorded with V8 (node 24, ICU 78): see <c>Corpus/SegmenterV8.md</c>. Each
+    /// line has the text and, for each segment, its length and whether it is word-like.
+    /// </summary>
+    [Fact]
+    public void Segmenter_WordsMatchV8()
+    {
+        using var stream = typeof(IntlTests).Assembly.GetManifestResourceStream("Meziantou.Framework.JavaScriptEngine.Tests.Corpus.SegmenterV8.jsonl")!;
+        using var reader = new StreamReader(stream);
+        var failures = new List<string>();
+        var count = 0;
+        while (reader.ReadLine() is { } line)
+        {
+            if (line.Length == 0)
+                continue;
+
+            count++;
+            using var document = System.Text.Json.JsonDocument.Parse(line);
+            var root = document.RootElement;
+            var text = Decode(root.GetProperty("s").GetString()!);
+            var expected = root.GetProperty("r").EnumerateArray().Select(value => value.GetInt32()).ToArray();
+            var boundaries = new SegmentBoundaries(text, SegmenterGranularity.Word);
+            var actual = new List<int>();
+            for (var index = 0; index < text.Length;)
+            {
+                var segment = boundaries.FindSegment(index);
+                index = boundaries.GetEnd(segment);
+                actual.Add(index - boundaries.GetStart(segment));
+                actual.Add(boundaries.IsWordLike(segment) ? 1 : 0);
+            }
+
+            if (!expected.SequenceEqual(actual))
+            {
+                failures.Add($"\"{Escape(text)}\": expected {Format(text, expected)}, got {Format(text, actual)}");
+            }
+        }
+
+        Assert.True(count > 1000);
+        if (failures.Count > 0)
+        {
+            Assert.Fail($"{failures.Count} differences:\n" + string.Join('\n', failures.Take(50)));
+        }
+
+        // The segments, separated by '|', with '*' after a word-like one
+        static string Format(string text, IReadOnlyList<int> result)
+        {
+            var builder = new System.Text.StringBuilder();
+            var index = 0;
+            for (var i = 0; i + 1 < result.Count && index + result[i] <= text.Length; i += 2)
+            {
+                if (i > 0)
+                {
+                    builder.Append('|');
+                }
+
+                builder.Append(Escape(text.Substring(index, result[i]))).Append(result[i + 1] == 1 ? "*" : "");
+                index += result[i];
+            }
+
+            return builder.ToString();
+        }
+
+        static string Escape(string value) => string.Concat(value.Select(c => c is >= ' ' and <= '~' ? c.ToString() : $"\\u{(int)c:X4}"));
+
+        // %XXXX is a UTF-16 code unit (the JSON reader rejects lone surrogates)
+        static string Decode(string value)
+        {
+            var builder = new System.Text.StringBuilder(value.Length);
+            for (var i = 0; i < value.Length; i++)
+            {
+                if (value[i] == '%')
+                {
+                    builder.Append((char)int.Parse(value.AsSpan(i + 1, 4), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture));
+                    i += 4;
+                }
+                else
+                {
+                    builder.Append(value[i]);
+                }
+            }
+
+            return builder.ToString();
+        }
     }
 
     [Theory]

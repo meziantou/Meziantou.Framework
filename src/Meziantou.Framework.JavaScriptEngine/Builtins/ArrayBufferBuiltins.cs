@@ -8,6 +8,14 @@ internal static class ArrayBufferBuiltins
 {
     private static readonly PropertyKey MaxByteLengthKey = new("maxByteLength");
 
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("resize", 1, Resize),
+        new("slice", 2, Slice),
+        new("transfer", 0, Transfer),
+        new("transferToFixedLength", 0, TransferToFixedLength),
+    ];
+
     public static JsBuiltinFunction Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
@@ -22,10 +30,7 @@ internal static class ArrayBufferBuiltins
         realm.DefineAccessor(prototype, "detached", GetDetached, setter: null);
         realm.DefineAccessor(prototype, "maxByteLength", GetMaxByteLength, setter: null);
         realm.DefineAccessor(prototype, "resizable", GetResizable, setter: null);
-        realm.DefineMethod(prototype, "resize", 1, Resize);
-        realm.DefineMethod(prototype, "slice", 2, Slice);
-        realm.DefineMethod(prototype, "transfer", 0, Transfer);
-        realm.DefineMethod(prototype, "transferToFixedLength", 0, TransferToFixedLength);
+        realm.DefineMethods(prototype, PrototypeMethods);
         prototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "ArrayBuffer", PropertyFlags.Configurable);
 
         intrinsics.AddGlobal("ArrayBuffer", constructor);

@@ -5,11 +5,30 @@ internal static class NumberBuiltins
 {
     public const double MaxSafeInteger = 9007199254740991;
 
+    private static readonly BuiltinMethodTable ConstructorMethods =
+    [
+        new("isFinite", 1, IsFinite),
+        new("isInteger", 1, IsInteger),
+        new("isNaN", 1, IsNaN),
+        new("isSafeInteger", 1, IsSafeInteger),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("toExponential", 1, ToExponential),
+        new("toFixed", 1, ToFixed),
+        new("toLocaleString", 0, ToLocaleString),
+        new("toPrecision", 1, ToPrecision),
+        new("toString", 1, ToString),
+        new("valueOf", 0, ValueOf),
+    ];
+
     public static JsFunction Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
         var prototype = intrinsics.NumberPrototype;
         var constructor = realm.CreateBuiltinFunction("Number", 1, Construct, isConstructor: true);
+        constructor.ReservePropertiesForBuiltIns(ConstructorMethods);
         constructor.DefineBuiltIn("prototype", prototype, PropertyFlags.None);
         prototype.DefineBuiltIn("constructor", constructor);
 
@@ -21,19 +40,11 @@ internal static class NumberBuiltins
         constructor.DefineBuiltIn("NaN", double.NaN, PropertyFlags.None);
         constructor.DefineBuiltIn("NEGATIVE_INFINITY", double.NegativeInfinity, PropertyFlags.None);
         constructor.DefineBuiltIn("POSITIVE_INFINITY", double.PositiveInfinity, PropertyFlags.None);
-        realm.DefineMethod(constructor, "isFinite", 1, IsFinite);
-        realm.DefineMethod(constructor, "isInteger", 1, IsInteger);
-        realm.DefineMethod(constructor, "isNaN", 1, IsNaN);
-        realm.DefineMethod(constructor, "isSafeInteger", 1, IsSafeInteger);
+        realm.DefineMethods(constructor, ConstructorMethods);
         constructor.DefineBuiltIn("parseFloat", intrinsics.ParseFloat);
         constructor.DefineBuiltIn("parseInt", intrinsics.ParseInt);
 
-        realm.DefineMethod(prototype, "toExponential", 1, ToExponential);
-        realm.DefineMethod(prototype, "toFixed", 1, ToFixed);
-        realm.DefineMethod(prototype, "toLocaleString", 0, ToLocaleString);
-        realm.DefineMethod(prototype, "toPrecision", 1, ToPrecision);
-        realm.DefineMethod(prototype, "toString", 1, ToString);
-        realm.DefineMethod(prototype, "valueOf", 0, ValueOf);
+        realm.DefineMethods(prototype, PrototypeMethods);
 
         intrinsics.AddGlobal("Number", constructor);
         return constructor;

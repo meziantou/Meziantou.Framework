@@ -5,6 +5,29 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// <summary>Temporal.PlainMonthDay (https://tc39.es/proposal-temporal/#sec-temporal-plainmonthday-objects).</summary>
 internal static class TemporalPlainMonthDayBuiltins
 {
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("with", 1, With),
+        new("equals", 1, (_, thisValue, arguments, _) =>
+        {
+            var monthDay = ThisPlainMonthDay(thisValue);
+            var other = ToTemporalMonthDay(Argument(arguments, 0));
+            if (CompareIsoDate(monthDay.IsoDate, other.IsoDate) != 0)
+                return false;
+
+            return CalendarEquals(monthDay.Calendar, other.Calendar);
+        }),
+        new("toString", 0, (_, thisValue, arguments, _) =>
+        {
+            var monthDay = ThisPlainMonthDay(thisValue);
+            var resolvedOptions = GetOptionsObject(Argument(arguments, 0));
+            var showCalendar = GetTemporalShowCalendarNameOption(resolvedOptions);
+            return TemporalMonthDayToString(monthDay, showCalendar);
+        }),
+        new("toLocaleString", 0, (_, thisValue, _, _) => TemporalMonthDayToString(ThisPlainMonthDay(thisValue), ShowCalendarOption.Auto)),
+        new("toJSON", 0, (_, thisValue, _, _) => TemporalMonthDayToString(ThisPlainMonthDay(thisValue), ShowCalendarOption.Auto)),
+    ];
+
     public static JsBuiltinFunction Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
@@ -20,25 +43,7 @@ internal static class TemporalPlainMonthDayBuiltins
         realm.DefineAccessor(prototype, "calendarId", (_, thisValue, _, _) => ThisPlainMonthDay(thisValue).Calendar, setter: null);
         TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "monthCode", getDate, d => d.MonthCode);
         TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "day", getDate, d => d.Day);
-        realm.DefineMethod(prototype, "with", 1, With);
-        realm.DefineMethod(prototype, "equals", 1, (_, thisValue, arguments, _) =>
-        {
-            var monthDay = ThisPlainMonthDay(thisValue);
-            var other = ToTemporalMonthDay(Argument(arguments, 0));
-            if (CompareIsoDate(monthDay.IsoDate, other.IsoDate) != 0)
-                return false;
-
-            return CalendarEquals(monthDay.Calendar, other.Calendar);
-        });
-        realm.DefineMethod(prototype, "toString", 0, (_, thisValue, arguments, _) =>
-        {
-            var monthDay = ThisPlainMonthDay(thisValue);
-            var resolvedOptions = GetOptionsObject(Argument(arguments, 0));
-            var showCalendar = GetTemporalShowCalendarNameOption(resolvedOptions);
-            return TemporalMonthDayToString(monthDay, showCalendar);
-        });
-        realm.DefineMethod(prototype, "toLocaleString", 0, (_, thisValue, _, _) => TemporalMonthDayToString(ThisPlainMonthDay(thisValue), ShowCalendarOption.Auto));
-        realm.DefineMethod(prototype, "toJSON", 0, (_, thisValue, _, _) => TemporalMonthDayToString(ThisPlainMonthDay(thisValue), ShowCalendarOption.Auto));
+        realm.DefineMethods(prototype, PrototypeMethods);
         TemporalBuiltinHelpers.DefineValueOf(realm, prototype, "PlainMonthDay");
         realm.DefineMethod(prototype, "toPlainDate", 1, (_, thisValue, arguments, _) =>
         {

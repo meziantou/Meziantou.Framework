@@ -7,6 +7,16 @@ internal static class WeakMapBuiltins
 {
     private static readonly PropertyKey SetKey = new("set");
 
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("delete", 1, Delete),
+        new("get", 1, Get),
+        new("getOrInsert", 2, GetOrInsert),
+        new("getOrInsertComputed", 2, GetOrInsertComputed),
+        new("has", 1, Has),
+        new("set", 2, Set),
+    ];
+
     public static JsFunction Initialize(Intrinsics intrinsics, JsObject prototype)
     {
         var realm = intrinsics.Realm;
@@ -14,12 +24,7 @@ internal static class WeakMapBuiltins
         constructor.DefineBuiltIn("prototype", prototype, PropertyFlags.None);
 
         prototype.DefineBuiltIn("constructor", constructor);
-        realm.DefineMethod(prototype, "delete", 1, Delete);
-        realm.DefineMethod(prototype, "get", 1, Get);
-        realm.DefineMethod(prototype, "getOrInsert", 2, GetOrInsert);
-        realm.DefineMethod(prototype, "getOrInsertComputed", 2, GetOrInsertComputed);
-        realm.DefineMethod(prototype, "has", 1, Has);
-        realm.DefineMethod(prototype, "set", 2, Set);
+        realm.DefineMethods(prototype, PrototypeMethods);
         prototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "WeakMap", PropertyFlags.Configurable);
 
         intrinsics.AddGlobal("WeakMap", constructor);
@@ -151,6 +156,12 @@ internal static class WeakSetBuiltins
 {
     private static readonly PropertyKey AddKey = new("add");
 
+    private static readonly BuiltinMethodTable PrototypeMethods2 =
+    [
+        new("delete", 1, Delete),
+        new("has", 1, Has),
+    ];
+
     public static JsFunction Initialize(Intrinsics intrinsics, JsObject prototype)
     {
         var realm = intrinsics.Realm;
@@ -159,8 +170,7 @@ internal static class WeakSetBuiltins
 
         realm.DefineMethod(prototype, "add", 1, Add);
         prototype.DefineBuiltIn("constructor", constructor);
-        realm.DefineMethod(prototype, "delete", 1, Delete);
-        realm.DefineMethod(prototype, "has", 1, Has);
+        realm.DefineMethods(prototype, PrototypeMethods2);
         prototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "WeakSet", PropertyFlags.Configurable);
 
         intrinsics.AddGlobal("WeakSet", constructor);

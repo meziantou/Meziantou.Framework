@@ -18,5 +18,9 @@
   "ucd": {
     "version": "17.0.0",
     "sha256": "130dcddcaadaf071008bdfce1e7743e04fdfbc910886f017d9f9ac931d8c64dd"
+  },
+  "icu": {
+    "version": "78.3",
+    "sha256": "9d8b3899096aeb83e4e21ef8a40fec9e03b28db18c48452efac882ce25a91e27"
   }
 }

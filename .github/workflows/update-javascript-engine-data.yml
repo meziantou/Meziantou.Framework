@@ -35,7 +35,7 @@ jobs:
             throw "The JavaScript engine data generator failed to build (exit code $LASTEXITCODE)"
           }
 
-          # --update moves the pinned tzdata, CLDR, cldr-json and UCD releases (tools/Meziantou.Framework.JavaScriptEngine.Data.Generator/data-versions.json)
+          # --update moves the pinned tzdata, CLDR, cldr-json, UCD and ICU releases (tools/Meziantou.Framework.JavaScriptEngine.Data.Generator/data-versions.json)
           # to the latest ones before generating. --verify compares the result with the zic of the runner.
           dotnet run --project tools/Meziantou.Framework.JavaScriptEngine.Data.Generator --configuration Release --no-build -- --update --verify
           # The generator reports its result through the exit code: 0 when the files were already up to
@@ -45,7 +45,7 @@ jobs:
           }
           if ($LASTEXITCODE -eq 1) {
             $branch = "update-javascript-engine-data"
-            $title = "Update the time zone database and the CLDR data of Meziantou.Framework.JavaScriptEngine"
+            $title = "Update the time zone database, the CLDR data and the ICU word lists of Meziantou.Framework.JavaScriptEngine"
 
             # Pull requests created with GITHUB_TOKEN run no workflow, so this is the only test run the new data
             # gets before it is merged: the pull request is opened as a draft when the tests fail.

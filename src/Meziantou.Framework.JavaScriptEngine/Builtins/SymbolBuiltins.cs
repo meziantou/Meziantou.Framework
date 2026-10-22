@@ -3,6 +3,19 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// <summary>The Symbol constructor and Symbol.prototype (https://tc39.es/ecma262/#sec-symbol-objects).</summary>
 internal static class SymbolBuiltins
 {
+    private static readonly BuiltinMethodTable ConstructorMethods =
+    [
+        new("for", 1, For),
+        new("keyFor", 1, KeyFor),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("toString", 0, ToString),
+        new("valueOf", 0, ValueOf),
+        new(WellKnownSymbols.ToPrimitive, 1, ToPrimitive, PropertyFlags.Configurable),
+    ];
+
     public static JsBuiltinFunction Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
@@ -10,8 +23,7 @@ internal static class SymbolBuiltins
         var constructor = realm.CreateBuiltinFunction("Symbol", 0, Construct, isConstructor: true);
         constructor.DefineBuiltIn("prototype", prototype, PropertyFlags.None);
 
-        realm.DefineMethod(constructor, "for", 1, For);
-        realm.DefineMethod(constructor, "keyFor", 1, KeyFor);
+        realm.DefineMethods(constructor, ConstructorMethods);
         constructor.DefineBuiltIn("asyncDispose", WellKnownSymbols.AsyncDispose, PropertyFlags.None);
         constructor.DefineBuiltIn("asyncIterator", WellKnownSymbols.AsyncIterator, PropertyFlags.None);
         constructor.DefineBuiltIn("dispose", WellKnownSymbols.Dispose, PropertyFlags.None);
@@ -30,9 +42,7 @@ internal static class SymbolBuiltins
 
         prototype.DefineBuiltIn("constructor", constructor);
         realm.DefineAccessor(prototype, "description", GetDescription, setter: null);
-        realm.DefineMethod(prototype, "toString", 0, ToString);
-        realm.DefineMethod(prototype, "valueOf", 0, ValueOf);
-        realm.DefineMethod(prototype, WellKnownSymbols.ToPrimitive, 1, ToPrimitive, PropertyFlags.Configurable);
+        realm.DefineMethods(prototype, PrototypeMethods);
         prototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Symbol", PropertyFlags.Configurable);
 
         intrinsics.AddGlobal("Symbol", constructor);

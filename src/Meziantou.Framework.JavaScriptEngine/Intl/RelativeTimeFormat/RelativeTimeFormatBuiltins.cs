@@ -29,6 +29,13 @@ internal static class RelativeTimeFormatBuiltins
 {
     private static readonly string[] RelevantExtensionKeys = ["nu"];
 
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("format", 2, Format),
+        new("formatToParts", 2, FormatToParts),
+        new("resolvedOptions", 0, ResolvedOptions),
+    ];
+
     public static JsFunction Initialize(Intrinsics intrinsics, JsObject intl, JsObject prototype)
     {
         var realm = intrinsics.Realm;
@@ -37,9 +44,7 @@ internal static class RelativeTimeFormatBuiltins
         realm.DefineMethod(constructor, "supportedLocalesOf", 1, SupportedLocalesOf);
         prototype.DefineBuiltIn("constructor", constructor);
         prototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Intl.RelativeTimeFormat", PropertyFlags.Configurable);
-        realm.DefineMethod(prototype, "format", 2, Format);
-        realm.DefineMethod(prototype, "formatToParts", 2, FormatToParts);
-        realm.DefineMethod(prototype, "resolvedOptions", 0, ResolvedOptions);
+        realm.DefineMethods(prototype, PrototypeMethods);
         intl.DefineBuiltIn("RelativeTimeFormat", constructor);
         return constructor;
     }

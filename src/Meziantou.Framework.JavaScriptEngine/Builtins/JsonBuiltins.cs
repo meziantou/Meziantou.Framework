@@ -5,14 +5,19 @@ internal static class JsonBuiltins
 {
     private static readonly PropertyKey SourceKey = new("source");
 
+    private static readonly BuiltinMethodTable JsonMethods =
+    [
+        new("isRawJSON", 1, IsRawJson),
+        new("parse", 2, Parse),
+        new("rawJSON", 1, RawJson),
+        new("stringify", 3, Stringify),
+    ];
+
     public static JsObject Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
         var json = new JsObject(intrinsics.ObjectPrototype);
-        realm.DefineMethod(json, "isRawJSON", 1, IsRawJson);
-        realm.DefineMethod(json, "parse", 2, Parse);
-        realm.DefineMethod(json, "rawJSON", 1, RawJson);
-        realm.DefineMethod(json, "stringify", 3, Stringify);
+        realm.DefineMethods(json, JsonMethods);
         json.DefineBuiltIn(WellKnownSymbols.ToStringTag, "JSON", PropertyFlags.Configurable);
         intrinsics.AddGlobal("JSON", json);
         return json;

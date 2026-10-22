@@ -25,6 +25,12 @@ internal sealed class JsClosure : JsFunction
     /// <summary>Gets the compiled code.</summary>
     public FunctionTemplate Template { get; }
 
+    /// <summary>
+    /// Gets whether the function has the caller and arguments own properties: a sloppy function declaration or expression
+    /// (not a strict function, a class, a method, an arrow function, a generator nor an async function).
+    /// </summary>
+    public bool HasLegacyCallerAndArguments => (Template.Flags & (FunctionTemplateFlags.Constructor | FunctionTemplateFlags.Strict | FunctionTemplateFlags.ClassConstructor)) == FunctionTemplateFlags.Constructor;
+
     /// <summary>Gets the [[Environment]] of the function.</summary>
     public Environment Environment { get; internal set; }
 

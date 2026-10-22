@@ -1,10 +1,17 @@
+using System.Runtime.CompilerServices;
+
 namespace Meziantou.Framework.JavaScriptEngine;
 
 /// <summary>
-/// The inline caches of the interpreter: each property access of the bytecode remembers where it found the property the
-/// last time (<see cref="PropertyCacheEntry"/>), for the receivers that have the same <see cref="PropertyMap"/>.
+/// The inline caches of the interpreter: each property access of the bytecode remembers where it found the property
+/// (<see cref="PropertyCacheEntry"/>), for the receivers that have the same <see cref="PropertyMap"/>.
 /// </summary>
 /// <remarks>
+/// <para>
+/// A site remembers up to <see cref="MaxPolymorphicEntries"/> entries (a chain linked by <see cref="PropertyCacheEntry.Next"/>,
+/// the most recent first): a site that sees more kinds of receivers is megamorphic, and uses the cache of its engine
+/// (<see cref="MegamorphicCache"/>), shared by all the megamorphic sites.
+/// </para>
 /// <para>
 /// A cache that depends on other objects than the receiver (a property found on a prototype, or in the property table of
 /// a receiver in dictionary mode) remembers the epoch: the objects it depends on are flagged
@@ -20,6 +27,9 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// </remarks>
 internal static class InlineCache
 {
+    /// <summary>The number of entries of a polymorphic site, above which it becomes megamorphic.</summary>
+    public const int MaxPolymorphicEntries = 4;
+
     private static int s_epoch;
 
     /// <summary>Gets the current epoch: a cache that depends on other objects is valid while the epoch does not change.</summary>
@@ -56,21 +66,30 @@ internal enum PropertyCacheKind : byte
     /// <summary>The length of a string.</summary>
     StringLength,
 
-    /// <summary>The site missed too often: it is not cached anymore.</summary>
+    /// <summary>The site saw too many kinds of receivers, or missed too often: it uses the <see cref="MegamorphicCache"/> of the engine (Get and Set), or is not cached anymore.</summary>
     Megamorphic,
 
     /// <summary>A data property of the prototype chain of a primitive value (the prototype of its wrapper is <see cref="PropertyCacheEntry.Prototype"/>).</summary>
     PrimitivePrototype,
+
+    /// <summary>A property of an object literal added by a transition to <see cref="PropertyCacheEntry.NextShape"/> (CreateDataProperty does not look at the prototypes).</summary>
+    Define,
 }
 
 /// <summary>An entry of an inline cache (immutable once stored).</summary>
 internal sealed class PropertyCacheEntry
 {
-    /// <summary>Gets the entry of the sites that are not cached anymore (its map is never the map of an object).</summary>
-    public static PropertyCacheEntry Megamorphic { get; } = new() { Kind = PropertyCacheKind.Megamorphic, Map = new PropertyTable() };
+    // The map of the megamorphic entries: never the map of an object
+    private static readonly PropertyTable MegamorphicMap = new();
 
     /// <summary>Gets or sets the number of times the site missed before this entry (set before the entry is stored).</summary>
     public int Misses { get; set; }
+
+    /// <summary>Gets or sets the next entry of a polymorphic site (set before the entry is stored).</summary>
+    public PropertyCacheEntry? Next { get; set; }
+
+    /// <summary>Gets or initializes the hash of the key of a megamorphic site (<see cref="MegamorphicCache"/>).</summary>
+    public int KeyHash { get; init; }
 
     /// <summary>Gets or initializes the <see cref="Interpreter.GlobalEnvironment.LexicalVersion"/> of the realm (a property of the global object).</summary>
     public int LexicalVersion { get; init; }
@@ -110,4 +129,83 @@ internal sealed class PropertyCacheEntry
 
     /// <summary>Gets or initializes the realm of a global access.</summary>
     public JsRealm? Realm { get; init; }
+
+    /// <summary>Creates the entry of a site that became megamorphic.</summary>
+    public static PropertyCacheEntry CreateMegamorphic(in PropertyKey key) => new() { Kind = PropertyCacheKind.Megamorphic, Map = MegamorphicMap, KeyHash = key.GetHashCode() };
+
+    /// <summary>Gets whether the entry depends on the epoch of <see cref="InlineCache"/> and the epoch changed (it never matches again).</summary>
+    public bool IsStale => Kind is PropertyCacheKind.OwnTable or PropertyCacheKind.Prototype or PropertyCacheKind.Accessor or PropertyCacheKind.Add or PropertyCacheKind.PrimitivePrototype
+        && Epoch != InlineCache.Epoch;
+
+    /// <summary>Gets whether a new entry of the site applies to the receivers of this entry (it replaces this entry).</summary>
+    public bool IsReplacedBy(PropertyCacheEntry entry) => ReferenceEquals(Map, entry.Map) && ReferenceEquals(Prototype, entry.Prototype) && (Map is not null || Kind == entry.Kind);
+
+    /// <summary>Copies the entry without its next entry (the entries are immutable once stored: a new chain copies them).</summary>
+    public PropertyCacheEntry CloneWithoutNext()
+    {
+        var clone = (PropertyCacheEntry)MemberwiseClone();
+        clone.Next = null;
+        return clone;
+    }
+}
+
+/// <summary>
+/// The inline cache shared by the megamorphic sites of an engine (a stub cache): the entries are found by the storage of
+/// the receiver, its prototype and the key. A set has two ways: a new entry moves the previous one to the second way.
+/// </summary>
+/// <remarks>The engine runs on one thread at a time: the entries are not shared with the other engines.</remarks>
+internal sealed class MegamorphicCache
+{
+    private const int GetBits = 10;
+    private const int SetBits = 9;
+
+    private readonly Slot[] _get = new Slot[1 << GetBits];
+    private readonly Slot[] _set = new Slot[1 << SetBits];
+
+    /// <summary>Finds the entry of a Get (to validate against the receiver: the map and the key match).</summary>
+    public PropertyCacheEntry? FindGet(PropertyMap map, JsObject? prototype, in PropertyKey key, int keyHash) => Find(_get, GetBits, map, prototype, key, keyHash);
+
+    /// <summary>Finds the entry of a Set (to validate against the receiver: the map and the key match).</summary>
+    public PropertyCacheEntry? FindSet(PropertyMap map, JsObject? prototype, in PropertyKey key, int keyHash) => Find(_set, SetBits, map, prototype, key, keyHash);
+
+    /// <summary>Stores the entry of a Get for the receivers of its map whose prototype is <paramref name="prototype"/>.</summary>
+    public void StoreGet(PropertyCacheEntry entry, JsObject? prototype, in PropertyKey key, int keyHash) => Store(_get, GetBits, entry, prototype, key, keyHash);
+
+    /// <summary>Stores the entry of a Set for the receivers of its map whose prototype is <paramref name="prototype"/>.</summary>
+    public void StoreSet(PropertyCacheEntry entry, JsObject? prototype, in PropertyKey key, int keyHash) => Store(_set, SetBits, entry, prototype, key, keyHash);
+
+    private static int GetIndex(int bits, PropertyMap map, JsObject? prototype, int keyHash)
+    {
+        var prototypeHash = prototype is null ? 0 : RuntimeHelpers.GetHashCode(prototype);
+        var hash = (uint)(map.CacheHash ^ (prototypeHash * 31) ^ keyHash) * 0x9E3779B9u;
+        return (int)(hash >> (32 - bits)) & ~1;
+    }
+
+    private static PropertyCacheEntry? Find(Slot[] slots, int bits, PropertyMap map, JsObject? prototype, in PropertyKey key, int keyHash)
+    {
+        var index = GetIndex(bits, map, prototype, keyHash);
+        ref var first = ref slots[index];
+        if (first.Entry is { } entry && ReferenceEquals(entry.Map, map) && first.Key.Equals(key))
+            return entry;
+
+        ref var second = ref slots[index + 1];
+        if (second.Entry is { } other && ReferenceEquals(other.Map, map) && second.Key.Equals(key))
+            return other;
+
+        return null;
+    }
+
+    private static void Store(Slot[] slots, int bits, PropertyCacheEntry entry, JsObject? prototype, in PropertyKey key, int keyHash)
+    {
+        var index = GetIndex(bits, entry.Map!, prototype, keyHash);
+        ref var first = ref slots[index];
+        if (first.Entry is not { } previous || !ReferenceEquals(previous.Map, entry.Map) || !first.Key.Equals(key))
+        {
+            slots[index + 1] = first;
+        }
+
+        first = new Slot(entry, key);
+    }
+
+    private readonly record struct Slot(PropertyCacheEntry? Entry, PropertyKey Key);
 }

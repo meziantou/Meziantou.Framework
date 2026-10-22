@@ -94,6 +94,15 @@ public sealed class InterpreterTests
     [InlineData("function f() { return target; } globalThis.target = 'a'; var r = [f(), f()]; for (var i = 0; i < 40; i++) globalThis['g' + i] = i; for (var i = 0; i < 40; i++) delete globalThis['g' + i]; for (var i = 0; i < 40; i++) globalThis['h' + i] = i; globalThis.target = 'b'; r.push(f()); r.join()", "a,a,b")]
     [InlineData("function up(s) { return s.toUpperCase(); } var r = [up('a'), up('b')]; String.prototype.toUpperCase = function () { return 'X'; }; r.push(up('c')); delete String.prototype.toUpperCase; r.push(typeof 'd'.toUpperCase); r.join()", "A,B,X,undefined")]
     [InlineData("function len(s) { return s.length; } function fix(n) { return n.toFixed; } [len('ab'), len('abc'), len([1]), typeof fix(1), typeof fix(true), typeof fix(2)].join()", "2,3,1,function,undefined,function")]
+    // Polymorphic sites (up to 4 receivers) and megamorphic sites (the cache of the engine): the entries are validated like a single entry
+    [InlineData("function get(o) { return o.x; } var p = { x: 'p' }; var a = Object.create(p); a.a = 1; var b = Object.create(p); b.b = 1; var c = { x: 'c' }; var r = [get(a), get(b), get(c), get(a), get(b), get(c)]; p.x = 'q'; r.push(get(a), get(b), get(c)); Object.defineProperty(p, 'x', { get() { return 'g' + this.a; } }); r.push(get(a), get(b)); delete p.x; r.push(get(a)); r.join()", "p,p,c,p,p,c,q,q,c,g1,gundefined,")]
+    [InlineData("class A { get v() { return 'A' + this.n; } } class B { get v() { return 'B' + this.n; } } function get(o) { return o.v; } var a = new A(); a.n = 1; var b = new B(); b.n = 2; var r = [get(a), get(b), get(a), get(b)]; Object.setPrototypeOf(b, A.prototype); r.push(get(b)); r.join()", "A1,B2,A1,B2,A2")]
+    [InlineData("function get(o) { return o.x; } function make(i) { var o = Object.create(i % 3 ? p : q); o['k' + i] = i; if (i % 3 === 0) o.x = i; return o; } var p = { x: 'p' }; var q = {}; var objs = []; for (var i = 0; i < 30; i++) objs.push(make(i)); var r = [objs.map(get).join(''), objs.map(get).join('')]; p.x = 'P'; q.x = 'Q'; r.push(objs.map(get).join('')); Object.setPrototypeOf(objs[1], q); Object.defineProperty(p, 'x', { get() { return this.k2 === undefined ? '-' : '+'; } }); r.push(objs.map(get).join('')); r.join()", "0pp3pp6pp9pp12pp15pp18pp21pp24pp27pp,0pp3pp6pp9pp12pp15pp18pp21pp24pp27pp,0PP3PP6PP9PP12PP15PP18PP21PP24PP27PP,0Q+3--6--9--12--15--18--21--24--27--")]
+    [InlineData("function set(o, v) { o.x = v; } function make(i) { var o = Object.create(p); o['k' + i] = i; return o; } var p = {}; var objs = []; for (var i = 0; i < 30; i++) objs.push(make(i)); objs.forEach(o => set(o, 1)); objs.forEach(o => set(o, 2)); var fresh = []; for (var i = 0; i < 30; i++) fresh.push(make(i)); fresh.slice(0, 10).forEach(o => set(o, 3)); var log = []; Object.defineProperty(p, 'x', { set(v) { log.push(v); }, configurable: true }); fresh.forEach(o => set(o, 4)); [objs.every(o => o.x === 2), fresh.filter(o => Object.hasOwn(o, 'x')).length, log.length].join()", "true,10,20")]
+    [InlineData("function set(o, v) { 'use strict'; o.x = v; } var objs = []; for (var i = 0; i < 30; i++) { var o = {}; o['k' + i] = i; o.x = 0; objs.push(o); } objs.forEach(o => set(o, 1)); Object.freeze(objs[3]); var r; try { objs.forEach(o => set(o, 2)); } catch (e) { r = e.constructor.name; } [r, objs[3].x, objs[2].x, objs[4].x].join()", "TypeError,1,2,1")]
+    [InlineData("function len(a) { return a.length; } var items = ['ab', [1, 2, 3], new Uint8Array(4), { length: 5 }, function (a, b) { }, 'xyz']; for (var i = 0; i < 20; i++) { var o = { length: i }; o['k' + i] = 0; items.push(o); } var s = 0; for (var j = 0; j < 3; j++) for (var x of items) s += len(x); s", "627")]
+    [InlineData("function make(k) { return { [k]: 1, b: 2, c: 3 }; } var r = []; for (var i = 0; i < 20; i++) { var o = make('p' + (i % 10)); r.push(Object.keys(o).join('') + o.b + o.c); } r.slice(8, 12).join()", "p8bc23,p9bc23,p0bc23,p1bc23")]
+    [InlineData("function call(o) { return o.m(); } var objs = []; for (let i = 0; i < 12; i++) { var o = {}; o['k' + i] = i; o.m = function () { return this['k' + i]; }; objs.push(o); } class C { m() { return 'c'; } } objs.push(new C()); var s = ''; for (var j = 0; j < 2; j++) for (var o of objs) s += call(o); C.prototype.m = function () { return 'C'; }; s + call(new C())", "01234567891011c01234567891011cC")]
     public void Evaluate_InlineCaches(string code, string expected)
     {
         Assert.Equal(expected, Run(code));
@@ -126,6 +135,13 @@ public sealed class InterpreterTests
     [InlineData("var a = [1, 2, 3]; a.length = 1; a.push(5); a.join() + (2 in a)", "1,5false")]
     [InlineData("var f = new Float64Array(new BigUint64Array([0x7FF8DEADBEEF0001n]).buffer); var a = [1, 2]; a[1] = f[0]; (1 in a) + ',' + a[1] + ',' + a.length", "true,NaN,2")]
     [InlineData("var a = []; a[3] = 1.5; a[1] = 2; (0 in a) + ',' + a[3] + a[1] + ',' + Object.keys(a).join()", "false,1.52,1,3")]
+    // The large storages come from the array pools and go back to them when they grow: a reused storage has no stale value
+    [InlineData("var a = []; for (var i = 0; i < 40000; i++) a.push({ v: i }); var b = ['x']; for (var i = 1; i < 30000; i += 2) b[i] = 'y'; [a.length, a[39999].v, 0 in b, 2 in b, 29998 in b, b[29999], b.filter(x => x === 'y').length, b.length].join()", "40000,39999,true,false,false,y,15000,30000")]
+    [InlineData("var a = []; for (var i = 0; i < 40000; i++) a.push(i * 1.5); var m = [0.5]; for (var i = 2; i < 30000; i += 2) m[i] = i; [a[39999], 1 in m, 29999 in m, m[29998], m.reduce((s, x) => s + x, 0), m.length].join()", "59998.5,false,false,29998,224985000.5,29999")]
+    [InlineData("var a = []; for (var i = 0; i < 20000; i++) a.push(i); a.push('s'); for (var i = 0; i < 20000; i++) a.push(null); [a.length, a[19999], a[20000], a[40000], a.indexOf('s'), 40001 in a].join()", "40001,19999,s,,20000,false")]
+    [InlineData("var r = new Array(50000); for (var i = 0; i < 30000; i++) r[i] = i; [r.length, 29999 in r, 30000 in r, r[49999], Object.keys(r).length].join()", "50000,true,false,,30000")]
+    [InlineData("var src = Array.from({ length: 30000 }, (_, i) => i); var m = src.map(x => x % 2 ? 'o' + x : x); [m.length, m[29999], m[29998], m.filter(x => typeof x === 'string').length].join()", "30000,o29999,29998,15000")]
+    [InlineData("var all = []; for (var k = 0; k < 4; k++) { var a = []; for (var i = 0; i < 25000; i++) a.push(k % 2 ? { k } : k); delete a[100]; all.push(a); } all.map(a => [a.length, 100 in a, typeof a[24999], typeof a[5]].join('/')).join()", "25000/false/number/number,25000/false/object/object,25000/false/number/number,25000/false/object/object")]
     public void Evaluate_ElementKinds(string code, string expected)
     {
         Assert.Equal(expected, Run(code));
@@ -141,6 +157,44 @@ public sealed class InterpreterTests
     [InlineData("Object.prototype.extra = 1; var r = []; for (var k in { a: 1 }) r.push(k); delete Object.prototype.extra; for (var k in { b: 1 }) r.push(k); r.join()", "a,extra,b")]
     [InlineData("var o = {}; for (var i = 0; i < 100; i++) o['k' + i] = i; delete o.k1; var n = 0; for (var k in o) n++; n", "99")]
     public void Evaluate_ForIn(string code, string expected)
+    {
+        Assert.Equal(expected, Run(code));
+    }
+
+    // The caller and arguments own properties of the sloppy functions: read from the running calls, as in the browsers
+    [Theory]
+    [InlineData("function g() { return g.caller; } function f() { return g(); } f() === f", "true")]
+    [InlineData("var called = false; function f(flag) { if (flag !== true) { g(); } else { called = true; } } function g() { var caller = arguments.callee.caller; caller(true); } f(); called", "true")]
+    [InlineData("function g() { return g.caller; } String(g())", "null")]
+    [InlineData("function g() { return g.caller; } [String((function () { 'use strict'; return g(); })()), String((() => g())()), String({ m() { return g(); } }.m()), String(gen().next().value)].join(); function* gen() { yield g(); }", "null,null,null,null")]
+    [InlineData("function g() { return g.caller; } function f() { return [1].map(g)[0]; } f() === f", "true")]
+    [InlineData("function g(n) { if (n) return g(n - 1); return g.caller === g; } g(1)", "true")]
+    [InlineData("function g() { return g.caller; } function f() { return g(); } var r = []; for (var i = 0; i < 3; i++) r.push(f() === f, String(g())); r.join()", "true,null,true,null,true,null")]
+    [InlineData("function g() { return g.caller; } function f() { return g(); } var d = Object.getOwnPropertyDescriptor(g, 'caller'); [typeof d.get, d.set, d.enumerable, d.configurable, d.get === Object.getOwnPropertyDescriptor(f, 'caller').get, String(d.get.call(g)), f() === f].join()", "function,,false,false,true,null,true")]
+    [InlineData("function f() { return Reflect.getOwnPropertyDescriptor(f, 'caller'); } function g() { return f(); } [Reflect.defineProperty(f, 'caller', { writable: false, configurable: false }), Reflect.defineProperty(f, 'caller', { value: null }), 'get' in g()].join()", "false,false,true")]
+    [InlineData("function g() { } [String(g.caller), String(g.arguments), Object.hasOwn(g, 'caller'), Object.hasOwn(g, 'arguments')].join()", "null,null,true,true")]
+    [InlineData("function g(a, b) { return g.arguments; } var a = g(1, 2); [a.length, a[0], a[1], a.callee === g, Object.prototype.toString.call(a), a === g(1, 2)].join()", "2,1,2,true,[object Arguments],false")]
+    [InlineData("function g() { } function set() { 'use strict'; g.caller = 1; } var r; try { set(); } catch (e) { r = e.constructor.name; } g.caller = 2; [r, String(g.caller), delete g.caller].join()", "TypeError,null,false")]
+    [InlineData("function g() { return g.caller; } Object.freeze(g); function f() { return g(); } [Object.isFrozen(g), f() === f].join()", "true,true")]
+    [InlineData("[function () { 'use strict'; }, class { }, { m() { } }.m, async function () { }, function* () { }, () => { }].map(f => Object.hasOwn(f, 'caller') || Object.hasOwn(f, 'arguments')).join()", "false,false,false,false,false,false")]
+    [InlineData("function g() { return g.caller; } var get = Object.getOwnPropertyDescriptor(g, 'caller').get; [String(Object.create(g).caller), String(get.call(function () { 'use strict'; })), String(get.call({}))].join()", "null,null,null")]
+    public void Evaluate_FunctionCallerAndArguments(string code, string expected)
+    {
+        Assert.Equal(expected, Run(code));
+    }
+
+    // An assignment to an undeclared identifier in strict code: the reference is resolved before the value is evaluated
+    [Theory]
+    [InlineData("'use strict'; var r; try { undeclared = (this.undeclared = 5); } catch (e) { r = e.constructor.name; } [r, undeclared].join()", "ReferenceError,5")]
+    [InlineData("function f() { 'use strict'; x1 = (globalThis.x1 = 1); } var r; try { f(); } catch (e) { r = e.constructor.name; } [r, x1].join()", "ReferenceError,1")]
+    [InlineData("function f() { 'use strict'; eval(''); x2 = (globalThis.x2 = 1); } var r; try { f(); } catch (e) { r = e.constructor.name; } [r, x2].join()", "ReferenceError,1")]
+    [InlineData("'use strict'; var r; try { nope = 1; } catch (e) { r = e.constructor.name; } [r, typeof nope].join()", "ReferenceError,undefined")]
+    [InlineData("'use strict'; globalThis.y = 0; function f(v) { y = (() => v)(); } f(1); f(2); y", "2")]
+    [InlineData("'use strict'; globalThis.z = 0; function f() { z = (() => 1)(); } f(); f(); delete globalThis.z; var r; try { f(); } catch (e) { r = e.constructor.name; } [r, typeof z].join()", "ReferenceError,undefined")]
+    [InlineData("'use strict'; function f() { z2 = (() => 1)(); } var r; try { f(); } catch (e) { r = e.constructor.name; } globalThis.z2 = 0; f(); [r, z2].join()", "ReferenceError,1")]
+    [InlineData("'use strict'; var it = { [Symbol.iterator]() { return { next() { globalThis.w = 1; return { value: 2, done: false }; }, return() { return {}; } }; } }; var r; try { [w] = it; } catch (e) { r = e.constructor.name; } [r, w].join()", "ReferenceError,1")]
+    [InlineData("u = (this.u = 5, 6); u", "6")]
+    public void Evaluate_StrictAssignmentToUndeclaredGlobal(string code, string expected)
     {
         Assert.Equal(expected, Run(code));
     }
@@ -193,6 +247,24 @@ public sealed class InterpreterTests
         Assert.Equal(6, realm1.Execute(script).AsNumber());
         Assert.Equal(6, realm2.Execute(script).AsNumber());
         Assert.Equal(6, realm1.Execute(script).AsNumber());
+    }
+
+    [Fact]
+    public void InlineCaches_MegamorphicSiteSharedByEngines()
+    {
+        // A megamorphic site uses the cache of the engine that runs it
+        var script = JsPreparedScript.Parse("function get(o) { return o.x; } var s = 0; for (var i = 0; i < 40; i++) { var o = Object.create(proto); o['k' + (i % 20)] = i; s += get(o); } s");
+        using var engine1 = new JsEngine();
+        using var engine2 = new JsEngine();
+        var realm1 = engine1.CreateRealm();
+        var realm2 = engine2.CreateRealm();
+        realm1.Execute("var proto = { x: 1 };");
+        realm2.Execute("var proto = { x: 2 };");
+        Assert.Equal(40, realm1.Execute(script).AsNumber());
+        Assert.Equal(80, realm2.Execute(script).AsNumber());
+        realm1.Execute("proto.x = 3;");
+        Assert.Equal(120, realm1.Execute(script).AsNumber());
+        Assert.Equal(80, realm2.Execute(script).AsNumber());
     }
 
     // The nested functions are compiled on their first call, in the scopes that enclose them

@@ -3,23 +3,28 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// <summary>The Reflect object (https://tc39.es/ecma262/#sec-reflect-object).</summary>
 internal static class ReflectBuiltins
 {
+    private static readonly BuiltinMethodTable ReflectMethods =
+    [
+        new("apply", 3, Apply),
+        new("construct", 2, Construct),
+        new("defineProperty", 3, DefineProperty),
+        new("deleteProperty", 2, DeleteProperty),
+        new("get", 2, Get),
+        new("getOwnPropertyDescriptor", 2, GetOwnPropertyDescriptor),
+        new("getPrototypeOf", 1, GetPrototypeOf),
+        new("has", 2, Has),
+        new("isExtensible", 1, IsExtensible),
+        new("ownKeys", 1, OwnKeys),
+        new("preventExtensions", 1, PreventExtensions),
+        new("set", 3, Set),
+        new("setPrototypeOf", 2, SetPrototypeOf),
+    ];
+
     public static JsObject Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
         var reflect = new JsObject(intrinsics.ObjectPrototype);
-        realm.DefineMethod(reflect, "apply", 3, Apply);
-        realm.DefineMethod(reflect, "construct", 2, Construct);
-        realm.DefineMethod(reflect, "defineProperty", 3, DefineProperty);
-        realm.DefineMethod(reflect, "deleteProperty", 2, DeleteProperty);
-        realm.DefineMethod(reflect, "get", 2, Get);
-        realm.DefineMethod(reflect, "getOwnPropertyDescriptor", 2, GetOwnPropertyDescriptor);
-        realm.DefineMethod(reflect, "getPrototypeOf", 1, GetPrototypeOf);
-        realm.DefineMethod(reflect, "has", 2, Has);
-        realm.DefineMethod(reflect, "isExtensible", 1, IsExtensible);
-        realm.DefineMethod(reflect, "ownKeys", 1, OwnKeys);
-        realm.DefineMethod(reflect, "preventExtensions", 1, PreventExtensions);
-        realm.DefineMethod(reflect, "set", 3, Set);
-        realm.DefineMethod(reflect, "setPrototypeOf", 2, SetPrototypeOf);
+        realm.DefineMethods(reflect, ReflectMethods);
         reflect.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Reflect", PropertyFlags.Configurable);
         intrinsics.AddGlobal("Reflect", reflect);
         return reflect;

@@ -290,6 +290,9 @@ internal enum OpCode
     /// <summary>(name) -> reference: resolves a name in the environments (the environment that has the binding, or undefined)</summary>
     ResolveName,
 
+    /// <summary>(name) -> reference: resolves an identifier that is not declared in strict code (the global environment, or undefined when unresolvable)</summary>
+    ResolveGlobal,
+
     /// <summary>(name) reference -> value: GetValue of a resolved reference</summary>
     LoadResolved,
 

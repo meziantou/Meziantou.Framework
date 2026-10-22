@@ -1,1 +1,0 @@
-language/identifier-resolution/assign-to-global-undefined.js:strict

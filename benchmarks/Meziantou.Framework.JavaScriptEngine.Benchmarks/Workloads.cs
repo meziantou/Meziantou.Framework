@@ -48,6 +48,24 @@ internal static class Workloads
         ["MapSet"] = """
             function run() { const m = new Map(); const s = new Set(); for (let i = 0; i < 5000; i++) { m.set('k' + i, i); s.add(i % 100); } let t = 0; for (const [k, v] of m) t += v; return t + s.size; }
             """,
+        ["Polymorphic"] = """
+            class Shape { area() { return this.w * this.h; } }
+            class Rect extends Shape { constructor(i) { super(); this.w = i; this.h = 2; } }
+            class Square extends Shape { constructor(i) { super(); this.kind = 1; this.w = i; this.h = i; } }
+            const items = Array.from({ length: 900 }, (_, i) => i % 3 === 0 ? new Rect(i) : i % 3 === 1 ? new Square(i) : { tag: 'p', w: i, h: 3, area() { return this.w + this.h; } });
+            function run() { let s = 0; for (let j = 0; j < 20; j++) { for (const o of items) { s += o.w + o.area(); o.h = o.h; } } return s; }
+            """,
+        ["Megamorphic"] = """
+            const items = Array.from({ length: 1200 }, (_, i) => { const o = {}; o['p' + (i % 24)] = i; o.value = i; o.next = null; return o; });
+            function run() { let s = 0; for (let j = 0; j < 20; j++) { for (const o of items) { s += o.value; o.next = o; } } return s; }
+            """,
+        ["LargeArrays"] = """
+            function run() {
+              const numbers = []; for (let i = 0; i < 200000; i++) numbers.push(i);
+              const objects = []; for (let i = 0; i < 50000; i++) objects.push({ i });
+              return numbers.length + objects.length + numbers.map(x => x + 1).length;
+            }
+            """,
     };
 
     /// <summary>A test file of the web-platform-tests style, run after testharness.js (the harness command).</summary>

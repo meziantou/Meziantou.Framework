@@ -984,6 +984,7 @@ internal static partial class JsInterpreter
             OpCode.RequireObjectCoercible => ExecuteRequireObjectCoercible(frame, sp),
             OpCode.RequireObjectCoercibleBase => ExecuteRequireObjectCoercibleBase(frame, sp),
             OpCode.ResolveName => ExecuteResolveName(frame, sp),
+            OpCode.ResolveGlobal => ExecuteResolveGlobal(frame, sp),
             OpCode.LoadResolved => ExecuteLoadResolved(frame, sp),
             OpCode.StoreResolved => ExecuteStoreResolved(frame, sp),
             OpCode.JumpIfNullishKeep => ExecuteJumpIfNullishKeep(frame, sp),

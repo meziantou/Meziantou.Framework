@@ -477,7 +477,11 @@ internal static partial class JsInterpreter
         }
     }
 
-    /// <summary>ResolveBinding(name): the environment that has the binding (undefined: the global environment, or unresolvable).</summary>
+    /// <summary>
+    /// ResolveBinding(name): the environment that has the binding, or undefined when the reference is unresolvable. In
+    /// sloppy code, the global environment is the result without looking at its bindings: PutValue creates the missing
+    /// global, and the binding is looked up when the reference is used.
+    /// </summary>
     private static JsValue ResolveName(Frame frame, in PropertyKey key)
     {
         var name = key.AsString();
@@ -496,9 +500,19 @@ internal static partial class JsInterpreter
 
                     break;
                 case GlobalEnvironment:
-                    return default;
+                    return frame.Code.IsStrict ? ResolveGlobalBinding(frame.Realm, key) : new JsValue(frame.Realm.GlobalEnvironment);
             }
         }
+
+        return frame.Code.IsStrict ? ResolveGlobalBinding(frame.Realm, key) : new JsValue(frame.Realm.GlobalEnvironment);
+    }
+
+    /// <summary>HasBinding of the global environment: the global environment when it has the binding, undefined when the reference is unresolvable.</summary>
+    private static JsValue ResolveGlobalBinding(JsRealm realm, in PropertyKey key)
+    {
+        var environment = realm.GlobalEnvironment;
+        if ((key.IsString && environment.LexicalBindings.ContainsKey(key.AsString())) || realm.GlobalObject.HasProperty(key))
+            return new JsValue(environment);
 
         return default;
     }
@@ -598,6 +612,11 @@ internal static partial class JsInterpreter
 
                     return;
                 }
+
+            case null when strict:
+                // An unresolvable reference: PutValue throws, even when the evaluation of the value created the binding
+                ThrowHelper.ThrowReferenceError($"{key} is not defined");
+                return;
 
             default:
                 StoreGlobal(frame.Realm, key, value, strict);

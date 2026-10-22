@@ -162,6 +162,13 @@ public partial class JsObject
         UsePropertyTable(current + count);
     }
 
+    /// <summary>
+    /// Gets the number of own properties in the storage of the object, without running code (the elements of an array are not
+    /// counted): a host that creates objects with the same properties in each realm can give it to <see cref="ReserveProperties"/>
+    /// for the next ones. It is 0 for an exotic object.
+    /// </summary>
+    public int OwnPropertyCount => IsExotic ? 0 : GetOwnPropertyCount();
+
     /// <summary>Gets whether the object has an internal slot of the built-in objects, without running code.</summary>
     public bool HasInternalSlot(JsInternalSlot slot) => slot switch
     {

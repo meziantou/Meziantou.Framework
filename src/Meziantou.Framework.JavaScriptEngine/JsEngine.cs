@@ -38,6 +38,9 @@ public sealed partial class JsEngine : IDisposable
     /// <summary>Gets the roots of the shapes of the objects of the engine.</summary>
     internal ShapeRoots ShapeRoots { get; } = new();
 
+    /// <summary>Gets the inline cache shared by the megamorphic property accesses (created on first use).</summary>
+    internal MegamorphicCache MegamorphicCache => field ??= new();
+
     /// <summary>[[ModuleAsyncEvaluationCount]] of the agent.</summary>
     internal long ModuleAsyncEvaluationCount { get; set; }
 

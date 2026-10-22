@@ -10,6 +10,8 @@ every operating system and in invariant-globalization mode (no `TimeZoneInfo`, n
 - `src/Meziantou.Framework.JavaScriptEngine/Intl/Data/{locales,supplemental,collation}.bin`: the CLDR data of Intl
   (ECMA-402), read by `CldrData`.
 - `src/Meziantou.Framework.JavaScriptEngine/Intl/Data/CldrData.g.cs`: the versions of the CLDR data.
+- `src/Meziantou.Framework.JavaScriptEngine/Intl/Data/dictionaries.bin`: the word lists of ICU used by the word
+  segmentation of `Intl.Segmenter`, read by `WordDictionaries`; `Intl/Segmenter/WordDictionaries.g.cs` has the version of ICU.
 
 The versions are pinned, with the SHA-256 of the downloaded files, in `data-versions.json`:
 
@@ -20,6 +22,7 @@ The versions are pinned, with the SHA-256 of the downloaded files, in `data-vers
 | `cldr-json` | `cldr-<version>-json-full.zip` of unicode-org/cldr-json | locales.bin, supplemental.bin |
 | `cldr-common` | `https://unicode.org/Public/cldr/<version>/cldr-common-<version>.zip` (the CLDR XML) | collation.bin |
 | `ucd` | `PropList.txt` of the UCD of the version of UCA of the CLDR release | collation.bin (Unified_Ideograph) |
+| `icu` | `icu4c-<version>-data.zip` of the release of unicode-org/icu | dictionaries.bin |
 
 The downloaded files are cached in `artifacts/javascriptengine-data/` (ignored by git; the SHA-256 is checked on every
 use) and never committed. `cldr` and `cldr-common` must be the same CLDR release (a test checks it).
@@ -79,16 +82,28 @@ file), in which identical strings and identical tables are stored once.
 Before writing the files, the generator reads the resolved value of every path of every locale back through the
 runtime (`CldrLocale`) and compares it with cldr-json; any difference fails the run (exit code 3).
 
+## How the word lists are compiled
+
+`dictionaries.bin` uses the same container as the CLDR data, with one chunk per word list of
+`data/brkitr/dictionaries/` of the ICU data release, in the order of `WordDictionaryKind`: `cjdict.txt` (Chinese and
+Japanese), `thaidict.txt`, `laodict.txt`, `khmerdict.txt` and `burmesedict.txt`. A list is read as `gendict` reads it
+(a word, then optionally white space and its value; `#` starts a comment) and compiled into a trie in breadth-first
+order (the format is described by `WordDictionary`). As in the build of ICU (`icu4c/source/data/BUILDRULES.py`),
+`cjdict.txt` keeps the UTF-16 code units of the words and their values (the costs of the Chinese and Japanese
+segmentation), and the other lists are byte tries: a letter is the offset of the character from the start of the block
+of the script (`gendict --transform offset-0x0e00` for Thai), U+200C is 0xFE and U+200D is 0xFF. The generator reads
+every word back through the runtime (`WordDictionary`) with its value; any difference fails the run (exit code 3).
+
 ## Usage
 
 ```shell
-dotnet run --project tools/Meziantou.Framework.JavaScriptEngine.Data.Generator [-- [--update] [--verify] [tzdb] [cldr]]
+dotnet run --project tools/Meziantou.Framework.JavaScriptEngine.Data.Generator [-- [--update] [--verify] [tzdb] [cldr] [dictionaries]]
 ```
 
-- `tzdb`, `cldr`: the data to generate (both by default). The CLDR step takes about 30 seconds once the files are
-  downloaded (about 120 MB the first time).
-- `--update`: moves the pins to the latest releases (tzdata, CLDR, cldr-json, and the UCD of the UCA version of the
-  CLDR release) before generating.
+- `tzdb`, `cldr`, `dictionaries`: the data to generate (all by default). The CLDR step takes about 30 seconds once the files are
+  downloaded (about 120 MB the first time), the dictionaries step about 5 seconds (the ICU data release is about 20 MB).
+- `--update`: moves the pins to the latest releases (tzdata, CLDR, cldr-json, the UCD of the UCA version of the
+  CLDR release, and ICU) before generating.
 - `--verify`: compiles the same source with the `zic` of the system (`zic -b fat`) and compares the transitions of
   every zone and link until 2037 with the ones the engine computes from the generated data (requires `zic`, e.g. on
   macOS or Linux).

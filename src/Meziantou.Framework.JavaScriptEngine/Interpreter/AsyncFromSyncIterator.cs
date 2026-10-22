@@ -13,12 +13,17 @@ internal sealed class AsyncFromSyncIterator(JsObject prototype, IteratorRecord s
         return new IteratorRecord(iterator, next);
     }
 
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("next", 1, Next),
+        new("return", 1, Return),
+        new("throw", 1, Throw),
+    ];
+
     public static void Initialize(Intrinsics intrinsics, JsObject prototype)
     {
         var realm = intrinsics.Realm;
-        realm.DefineMethod(prototype, "next", 1, Next);
-        realm.DefineMethod(prototype, "return", 1, Return);
-        realm.DefineMethod(prototype, "throw", 1, Throw);
+        realm.DefineMethods(prototype, PrototypeMethods);
     }
 
     private static JsValue Next(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)

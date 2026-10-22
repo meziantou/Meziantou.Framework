@@ -2043,7 +2043,14 @@ internal sealed class TdsQueryEngineExecutor
             throw new TdsQueryEngineException("Arithmetic operations require numeric operands.");
         }
 
+        // A NULL operand makes the result NULL: keep the operands nullable so the lifted operator propagates it, instead
+        // of unwrapping a null value
         var targetType = GetNumericPromotionType(leftType, rightType);
+        if (leftType != left.Type || rightType != right.Type)
+        {
+            targetType = typeof(Nullable<>).MakeGenericType(targetType);
+        }
+
         var convertedLeft = left.Type == targetType ? left : Expression.Convert(left, targetType);
         var convertedRight = right.Type == targetType ? right : Expression.Convert(right, targetType);
         return operation(convertedLeft, convertedRight);

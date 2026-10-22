@@ -7,12 +7,17 @@ namespace Meziantou.Framework.JavaScriptEngine.Intl;
 /// </summary>
 internal static class DateTimeFormatLocaleSensitiveBuiltins
 {
+    private static readonly BuiltinMethodTable DatePrototypeMethods =
+    [
+        new("toLocaleString", 0, (function, thisValue, arguments, _) => DateToLocaleString(function, thisValue, arguments, DateTimeRequired.Any, DateTimeDefaults.All, 0)),
+        new("toLocaleDateString", 0, (function, thisValue, arguments, _) => DateToLocaleString(function, thisValue, arguments, DateTimeRequired.Date, DateTimeDefaults.Date, 1)),
+        new("toLocaleTimeString", 0, (function, thisValue, arguments, _) => DateToLocaleString(function, thisValue, arguments, DateTimeRequired.Time, DateTimeDefaults.Time, 2)),
+    ];
+
     public static void Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
-        realm.DefineMethod(intrinsics.DatePrototype, "toLocaleString", 0, (function, thisValue, arguments, _) => DateToLocaleString(function, thisValue, arguments, DateTimeRequired.Any, DateTimeDefaults.All, 0));
-        realm.DefineMethod(intrinsics.DatePrototype, "toLocaleDateString", 0, (function, thisValue, arguments, _) => DateToLocaleString(function, thisValue, arguments, DateTimeRequired.Date, DateTimeDefaults.Date, 1));
-        realm.DefineMethod(intrinsics.DatePrototype, "toLocaleTimeString", 0, (function, thisValue, arguments, _) => DateToLocaleString(function, thisValue, arguments, DateTimeRequired.Time, DateTimeDefaults.Time, 2));
+        realm.DefineMethods(intrinsics.DatePrototype, DatePrototypeMethods);
     }
 
     /// <summary>The toLocaleString methods of the Temporal types (the Temporal built-ins are created on first use).</summary>

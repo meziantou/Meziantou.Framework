@@ -26,6 +26,9 @@ internal sealed class PropertyTable : PropertyMap
         _entries = new Entry[capacity];
     }
 
+    /// <summary>Gets or sets the table of built-in methods that learns the number of properties of the object (<see cref="BuiltinMethodTable.PropertyCount"/>).</summary>
+    public BuiltinMethodTable? CapacityHint { get; set; }
+
     /// <summary>Gets the number of times the table was compacted (the positions of the properties changed).</summary>
     public int Compactions { get; private set; }
 
@@ -133,6 +136,7 @@ internal sealed class PropertyTable : PropertyMap
             BuildIndex();
         }
 
+        CapacityHint?.LearnPropertyCount(Count);
         return position;
     }
 

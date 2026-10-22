@@ -60,15 +60,22 @@ internal sealed partial class Parser
         }
 
         var function = new FunctionNode { Id = id, IsAsync = isAsync, IsGenerator = isGenerator, Kind = FunctionKind.Normal, Start = start };
+        ParseFunctionParametersAndBody(function);
+        _yieldPos = oldYieldPos;
+        _awaitPos = oldAwaitPos;
+        _awaitIdentPos = oldAwaitIdentPos;
+        return function;
+    }
+
+    /// <summary>Parses the parameters and the body of a function declaration or expression (its scope is the current scope, and it is exited); the current token is '('.</summary>
+    private void ParseFunctionParametersAndBody(FunctionNode function)
+    {
+        function.ParametersStart = _token.Start;
         Expect(TokenKind.LeftParen);
         ParseBindingList(function.Params, TokenKind.RightParen, allowEmpty: false, allowTrailingComma: true);
         CheckYieldAwaitInDefaultParams();
         ParseFunctionBody(function, isArrow: false, isMethod: false, noIn: false);
-        _yieldPos = oldYieldPos;
-        _awaitPos = oldAwaitPos;
-        _awaitIdentPos = oldAwaitIdentPos;
         function.End = _prevEnd;
-        return function;
     }
 
     private static ScopeFlags GetFunctionFlags(bool isAsync, bool isGenerator)
@@ -103,8 +110,8 @@ internal sealed partial class Parser
         }
 
         EnterScope(flags);
-        var function = new FunctionNode { Kind = kind, IsAsync = isAsync, IsGenerator = isGenerator, Start = start };
         var parametersStart = _token.Start;
+        var function = new FunctionNode { Kind = kind, IsAsync = isAsync, IsGenerator = isGenerator, Start = start, ParametersStart = parametersStart };
         Expect(TokenKind.LeftParen);
         ParseBindingList(function.Params, TokenKind.RightParen, allowEmpty: false, allowTrailingComma: true);
         CheckYieldAwaitInDefaultParams();
@@ -137,7 +144,7 @@ internal sealed partial class Parser
         _awaitPos = -1;
         _awaitIdentPos = -1;
         EnterScope(GetFunctionFlags(isAsync, isGenerator: false) | ScopeFlags.Arrow);
-        var function = new FunctionNode { Kind = FunctionKind.Arrow, IsAsync = isAsync, Start = start };
+        var function = new FunctionNode { Kind = FunctionKind.Arrow, IsAsync = isAsync, Start = start, ExcludesIn = noIn };
         ToAssignableList(parameters, isBinding: true);
         function.Params = parameters;
         ParseFunctionBody(function, isArrow: true, isMethod: false, noIn);
@@ -604,7 +611,7 @@ internal sealed partial class Parser
             {
                 parent.Used.Add(used);
             }
-            else if (_options.PrivateNames is null || !_options.PrivateNames.Contains(used.Name))
+            else if (!_options.IsLazyFunction && (_options.PrivateNames is null || !_options.PrivateNames.Contains(used.Name)))
             {
                 Raise(used.Start, "Private field '#" + used.Name + "' must be declared in an enclosing class");
             }
@@ -640,7 +647,7 @@ internal sealed partial class Parser
         var identifier = Finish(new PrivateIdentifier { Name = name }, start);
         if (_privateNameScopes.Count == 0)
         {
-            if (_options.PrivateNames is null || !_options.PrivateNames.Contains(name))
+            if (!_options.IsLazyFunction && (_options.PrivateNames is null || !_options.PrivateNames.Contains(name)))
                 Raise(start, "Private field '#" + name + "' must be declared in an enclosing class");
         }
         else

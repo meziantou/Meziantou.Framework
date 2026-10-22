@@ -36,9 +36,7 @@ internal sealed partial class CodeGenerator
         FunctionTemplate constructorTemplate;
         if (constructorMethod is not null)
         {
-            var info = _analysis.Functions[constructorMethod.Value];
-            var generator = new CodeGenerator(_analysis, _source, info);
-            constructorTemplate = generator.CompileFunctionBody(constructorMethod.Value, name, FunctionTemplateFlags.None);
+            constructorTemplate = CompileNestedFunctionTemplate(constructorMethod.Value, name, FunctionTemplateFlags.None);
         }
         else
         {

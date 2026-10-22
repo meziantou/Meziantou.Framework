@@ -56,6 +56,9 @@ internal sealed class Scope
 
     public int ContextSlotCount { get; set; }
 
+    /// <summary>Gets or sets the snapshot this scope was created from (a scope that encloses a lazily compiled function): its bindings are allocated.</summary>
+    public ScopeSnapshot? Snapshot { get; set; }
+
     public Variable Declare(string name, VariableKind kind)
     {
         var variable = new Variable(name, kind, this);

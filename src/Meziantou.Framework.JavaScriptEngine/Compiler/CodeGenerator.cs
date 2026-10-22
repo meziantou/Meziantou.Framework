@@ -1,4 +1,5 @@
 using Meziantou.Framework.JavaScriptEngine.Ast;
+using Meziantou.Framework.JavaScriptEngine.Parsing;
 using Meziantou.Framework.JavaScriptEngine.Text;
 
 namespace Meziantou.Framework.JavaScriptEngine.Compiler;
@@ -46,10 +47,19 @@ internal sealed partial class CodeGenerator
             Body = [new ExpressionStatement { Start = function.Start, End = function.End, Expression = new FunctionExpression { Start = function.Start, End = function.End, Function = function } }],
         };
 
-        var analysis = ScopeAnalyzer.Analyze(program, ProgramKind.Script, isStrict: false);
+        var analysis = ScopeAnalyzer.Analyze(program, ProgramKind.Script, isStrict: false, eagerFunction: function);
         var info = analysis.Functions[function];
         var generator = new CodeGenerator(analysis, source, info);
         return generator.CompileFunctionBody(function, "anonymous", FunctionTemplateFlags.None);
+    }
+
+    /// <summary>Compiles a function on its first call: its source text is parsed again and compiled in the scopes that enclose it.</summary>
+    public static FunctionTemplate CompileLazyFunction(LazyFunction lazy)
+    {
+        var function = JsParser.ParseLazyFunction(lazy.Source, lazy.Scope.IsModule, lazy.Syntax);
+        var analysis = ScopeAnalyzer.AnalyzeLazyFunction(function, lazy.Kind, lazy.Scope);
+        var generator = new CodeGenerator(analysis, lazy.Source, analysis.Root);
+        return generator.CompileFunctionBody(function, lazy.Name, lazy.ExtraFlags);
     }
 
     /// <summary>
@@ -170,16 +180,37 @@ internal sealed partial class CodeGenerator
     /// <summary>Compiles a nested function and returns the index of its template in the constants.</summary>
     private int CompileNestedFunction(FunctionNode node, string name, FunctionTemplateFlags extraFlags = FunctionTemplateFlags.None)
     {
-        var info = _analysis.Functions[node];
-        var generator = new CodeGenerator(_analysis, _source, info);
-        var template = generator.CompileFunctionBody(node, name, extraFlags);
-        return _builder.AddObject(template);
+        return _builder.AddObject(CompileNestedFunctionTemplate(node, name, extraFlags));
     }
 
-    private FunctionTemplate CompileFunctionBody(FunctionNode node, string name, FunctionTemplateFlags extraFlags)
+    /// <summary>Compiles a nested function, or creates the template of a function compiled on its first call.</summary>
+    private FunctionTemplate CompileNestedFunctionTemplate(FunctionNode node, string name, FunctionTemplateFlags extraFlags)
     {
-        CompilerStack.EnsureSufficientStack();
-        var info = _function;
+        var info = _analysis.Functions[node];
+        if (info.LazyScope is { } lazyScope)
+        {
+            return new FunctionTemplate
+            {
+                Name = name,
+                Length = GetExpectedArgumentCount(node),
+                Flags = GetFunctionFlags(node, info.Kind, extraFlags),
+                Source = _source,
+                SourceStart = node.Start,
+                SourceEnd = node.End,
+                NameScope = GetNameScope(node),
+                Lazy = new LazyFunction(_source, LazyFunctionSyntax.From(node), info.Kind, name, extraFlags, _analysis.GetScopeSnapshot(lazyScope)),
+            };
+        }
+
+        var generator = new CodeGenerator(_analysis, _source, info);
+        return generator.CompileFunctionBody(node, name, extraFlags);
+    }
+
+    /// <summary>Gets the environment of the name of a named function expression, when its function references it.</summary>
+    private ScopeInfo? GetNameScope(FunctionNode node) => _analysis.GetFunctionNameScope(node) is { NeedsContext: true } scope ? scope.Info : null;
+
+    private static FunctionTemplateFlags GetFunctionFlags(FunctionNode node, FunctionInfoKind kind, FunctionTemplateFlags extraFlags)
+    {
         var flags = extraFlags;
         if (node.IsStrict)
         {
@@ -196,7 +227,7 @@ internal sealed partial class CodeGenerator
             flags |= FunctionTemplateFlags.Generator;
         }
 
-        switch (info.Kind)
+        switch (kind)
         {
             case FunctionInfoKind.Arrow:
                 flags |= FunctionTemplateFlags.Arrow;
@@ -222,6 +253,13 @@ internal sealed partial class CodeGenerator
             flags |= FunctionTemplateFlags.Anonymous;
         }
 
+        return flags;
+    }
+
+    private FunctionTemplate CompileFunctionBody(FunctionNode node, string name, FunctionTemplateFlags extraFlags)
+    {
+        CompilerStack.EnsureSufficientStack();
+        var flags = GetFunctionFlags(node, _function.Kind, extraFlags);
         EmitFunctionPrologue(node);
         if (node.IsGenerator)
         {
@@ -242,8 +280,7 @@ internal sealed partial class CodeGenerator
             }
         }
 
-        var nameScope = _analysis.GetFunctionNameScope(node) is { NeedsContext: true } scope ? scope.Info : null;
-        return Build(name, GetExpectedArgumentCount(node), flags, node.Start, node.End, nameScope);
+        return Build(name, GetExpectedArgumentCount(node), flags, node.Start, node.End, GetNameScope(node));
     }
 
     private void EmitImplicitReturn()

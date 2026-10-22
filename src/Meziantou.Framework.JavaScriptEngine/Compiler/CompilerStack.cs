@@ -15,6 +15,9 @@ internal static class CompilerStack
             ThrowNestedTooDeeply();
     }
 
+    /// <summary>The start of the message of the syntax errors of the code nested too deeply (the parser uses it too).</summary>
+    public const string NestedTooDeeplyMessage = "Maximum call stack size exceeded: the code is nested too deeply";
+
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void ThrowNestedTooDeeply() => throw new JsSyntaxErrorException("Maximum call stack size exceeded: the code is nested too deeply");
+    private static void ThrowNestedTooDeeply() => throw new JsSyntaxErrorException(NestedTooDeeplyMessage);
 }

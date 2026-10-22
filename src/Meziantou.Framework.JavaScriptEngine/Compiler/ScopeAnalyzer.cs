@@ -31,9 +31,10 @@ internal sealed partial class ScopeAnalyzer
 
     public FunctionInfo Root { get; private set; } = null!;
 
-    public static ScopeAnalyzer Analyze(Program program, ProgramKind kind, bool isStrict)
+    /// <summary>Analyzes a program; its nested functions are compiled on their first call (except <paramref name="eagerFunction"/>).</summary>
+    public static ScopeAnalyzer Analyze(Program program, ProgramKind kind, bool isStrict, FunctionNode? eagerFunction = null)
     {
-        var analyzer = new ScopeAnalyzer(kind);
+        var analyzer = new ScopeAnalyzer(kind) { _eagerFunction = eagerFunction };
 
         // About one reference per 10 characters of source: the lists do not grow from scratch
         analyzer._pending.EnsureCapacity(Math.Max(16, (program.End - program.Start) / 10));
@@ -324,10 +325,7 @@ internal sealed partial class ScopeAnalyzer
         var outer = parentScope;
         if (kind is FunctionInfoKind.Normal && function.Id is not null && IsFunctionExpression(function))
         {
-            var nameScope = CreateScope(ScopeKind.FunctionName, parentScope, parentScope.Function, node: null);
-            nameScope.Declare(function.Id.Name, VariableKind.FunctionName);
-            _functionNameScopes[function] = nameScope;
-            outer = nameScope;
+            outer = CreateFunctionNameScope(function, parentScope);
         }
 
         var info = new FunctionInfo(parentScope.Function, function, kind, function.IsStrict);
@@ -496,7 +494,7 @@ internal sealed partial class ScopeAnalyzer
                     }
 
                     var methodKind = method.Kind == MethodKind.Constructor ? FunctionInfoKind.ClassConstructor : FunctionInfoKind.Method;
-                    VisitFunction(method.Value, classScope, methodKind);
+                    VisitNestedFunction(method.Value, classScope, methodKind);
                     break;
                 case PropertyDefinition property:
                     if (property.Computed)
@@ -677,7 +675,7 @@ internal sealed partial class ScopeAnalyzer
                 }
 
                 RecordReference(declaration.Function.Id!, declaration.Function.Id!.Name, scope, ReferenceKind.Declaration);
-                VisitFunction(declaration.Function, scope, FunctionInfoKind.Normal);
+                VisitNestedFunction(declaration.Function, scope, FunctionInfoKind.Normal);
                 return;
             case ClassDeclaration declaration:
                 RecordReference(declaration.Class.Id!, declaration.Class.Id!.Name, scope, ReferenceKind.Declaration);
@@ -848,7 +846,7 @@ internal sealed partial class ScopeAnalyzer
                             RecordReference(function.Function.Id, function.Function.Id.Name, scope, ReferenceKind.Declaration);
                         }
 
-                        VisitFunction(function.Function, scope, FunctionInfoKind.Normal);
+                        VisitNestedFunction(function.Function, scope, FunctionInfoKind.Normal);
                         break;
                     case ClassDeclaration classDeclaration:
                         if (classDeclaration.Class.Id is not null)
@@ -1048,7 +1046,7 @@ internal sealed partial class ScopeAnalyzer
 
                         if (p.Value is FunctionExpression method && (p.Method || p.Kind != PropertyKind.Init))
                         {
-                            VisitFunction(method.Function, scope, FunctionInfoKind.Method);
+                            VisitNestedFunction(method.Function, scope, FunctionInfoKind.Method);
                         }
                         else
                         {
@@ -1067,10 +1065,10 @@ internal sealed partial class ScopeAnalyzer
                 return;
             case FunctionExpression function:
                 _functionExpressions.Add(function.Function);
-                VisitFunction(function.Function, scope, FunctionInfoKind.Normal);
+                VisitNestedFunction(function.Function, scope, FunctionInfoKind.Normal);
                 return;
             case ArrowFunctionExpression arrow:
-                VisitFunction(arrow.Function, scope, FunctionInfoKind.Arrow);
+                VisitNestedFunction(arrow.Function, scope, FunctionInfoKind.Arrow);
                 return;
             case ClassExpression classExpression:
                 VisitClass(classExpression.Class, scope);

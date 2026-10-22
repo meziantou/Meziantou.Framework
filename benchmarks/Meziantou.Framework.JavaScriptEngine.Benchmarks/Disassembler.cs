@@ -17,6 +17,8 @@ internal static class Disassembler
 
     private static void Disassemble(FunctionTemplate template, StringBuilder builder)
     {
+        // The nested functions are compiled on their first call
+        template.EnsureCompiled();
         builder.Append(CultureInfo.InvariantCulture, $"== {template.Name} (registers {template.RegisterCount}, stack {template.MaxStack})\n");
         var code = template.Code;
         var pc = 0;

@@ -5,7 +5,7 @@ namespace Meziantou.Framework.JavaScriptEngine.Compiler;
 /// <summary>The compile-time information of a function (or a script, a module, eval code, a class initializer).</summary>
 internal sealed class FunctionInfo
 {
-    public FunctionInfo(FunctionInfo? parent, Node node, FunctionInfoKind kind, bool isStrict)
+    public FunctionInfo(FunctionInfo? parent, Node? node, FunctionInfoKind kind, bool isStrict)
     {
         Parent = parent;
         Node = node;
@@ -15,8 +15,11 @@ internal sealed class FunctionInfo
 
     public FunctionInfo? Parent { get; }
 
-    /// <summary>Gets the <see cref="FunctionNode"/>, the <see cref="Program"/>, or the <see cref="ClassNode"/> of a class initializer.</summary>
-    public Node Node { get; }
+    /// <summary>
+    /// Gets the <see cref="FunctionNode"/>, the <see cref="Program"/>, or the <see cref="ClassNode"/> of a class initializer
+    /// (null for a function that encloses a lazily compiled function: <see cref="Snapshot"/>).
+    /// </summary>
+    public Node? Node { get; }
 
     public FunctionInfoKind Kind { get; }
 
@@ -61,6 +64,12 @@ internal sealed class FunctionInfo
 
     /// <summary>Gets the nested functions, in source order.</summary>
     public List<FunctionInfo> Children { get; } = [];
+
+    /// <summary>Gets or sets the scope that encloses a function compiled on its first call (null when the function is compiled with its enclosing code).</summary>
+    public Scope? LazyScope { get; set; }
+
+    /// <summary>Gets or sets the snapshot this function was created from (a function that encloses a lazily compiled function).</summary>
+    public FunctionSnapshot? Snapshot { get; set; }
 
     public int AllocateRegister() => RegisterCount++;
 }

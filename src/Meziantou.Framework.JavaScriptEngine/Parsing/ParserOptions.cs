@@ -32,6 +32,13 @@ internal sealed class ParserOptions
     public IReadOnlyCollection<string>? PrivateNames { get; init; }
 
     /// <summary>
+    /// Gets whether the code is a function parsed again by its lazy compilation: the whole source text was already parsed
+    /// with its early errors, and the context of the function (the private names of the enclosing classes, <c>super</c>,
+    /// <c>new.target</c>) was checked then.
+    /// </summary>
+    public bool IsLazyFunction { get; init; }
+
+    /// <summary>
     /// Gets whether the syntax of the Annex B is enabled (HTML-like comments, legacy octal literals and escapes in sloppy
     /// code, labelled function declarations, function declarations in if statements, RegExp extensions...). It is always
     /// enabled, as in the web browsers.

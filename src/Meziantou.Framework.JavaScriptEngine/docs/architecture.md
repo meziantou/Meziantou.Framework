@@ -259,7 +259,13 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
   `InlineCache`: the objects are flagged `InlineCacheHolder` (the positions of their properties are remembered: a
   removal, a reconfiguration or a compaction increments the epoch) or `InlineCachePrototype` (the absence of a property
   is remembered: any change does). The global lexical declarations increment `GlobalEnvironment.LexicalVersion`. A site
-  that missed 16 times becomes megamorphic (not cached).
+  keeps up to 4 entries (`PropertyCacheEntry.Next`, the most recent first: the dispatch loop checks the first one, the
+  miss path the others); with more receivers, or after 16 misses, it becomes megamorphic: Get and Set then use the cache
+  of the engine (`MegamorphicCache`, found by the map, the prototype and the key), the other instructions are not cached.
+- Elements: the dense storage doubles when it grows. The storages of the large object heap (85 KB and more) have the
+  sizes of the shared array pools: they are rented, and the storage that a growth replaces goes back to the pool (the
+  storage never leaves its object). An array whose length is known (`new Array(n)`, the result of `map`) grows faster
+  up to its length once it has 1024 elements.
 - Iteration: `IteratorStepValue` calls the native step of the built-in next methods (`JsBuiltinFunction.IteratorStep`:
   no result object), and `GetIterator` of an array iterates the array without an iterator object while
   `Intrinsics.IsArrayIterationIntact()` (the iterator object is created if something needs it). for-in enumerates the

@@ -1,3 +1,5 @@
+using System.Buffers;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.JavaScriptEngine;
@@ -26,6 +28,13 @@ public partial class JsObject
     private const long NumberHoleBits = 0x7FF8_DEAD_BEEF_0001;
 
     private static readonly double NumberHole = BitConverter.Int64BitsToDouble(NumberHoleBits);
+
+    // The storage of a large array is in the large object heap, where the allocations count toward a gen2 collection. The
+    // storages of this size come from the shared array pools, and the storage that a growth replaces goes back to them
+    // (nothing else references it: the storage never leaves the object). The growth doubles the length, so the sizes are
+    // the powers of two of the pools.
+    private const int PooledStorageMinBytes = 85_000;
+    private const int PooledStorageMaxLength = 1 << 24;
 
     // Elements in which a hole is an absent property: the dense storage of the array indices (attributes: W/E/C)
     private object? _elements;
@@ -161,10 +170,38 @@ public partial class JsObject
         ((JsValue[])_elements!)[index] = value;
     }
 
+    private static bool IsPooledStorageLength(int length, int elementSize)
+    {
+        return length <= PooledStorageMaxLength && (long)length * elementSize >= PooledStorageMinBytes && BitOperations.IsPow2(length);
+    }
+
+    private static T[] AllocateStorage<T>(int length, int elementSize)
+    {
+        // A rented array is not cleared: the caller writes every element
+        return IsPooledStorageLength(length, elementSize) ? ArrayPool<T>.Shared.Rent(length) : new T[length];
+    }
+
+    private static void ReleaseStorage<T>(T[] storage, int elementSize, bool hasReferences)
+    {
+        if (IsPooledStorageLength(storage.Length, elementSize))
+        {
+            ArrayPool<T>.Shared.Return(storage, clearArray: hasReferences);
+        }
+    }
+
+    /// <summary>Copies the storage to a new one of the given length (more than the current capacity): the new elements are holes.</summary>
+    private static T[] GrowStorage<T>(T[] storage, int length, int elementSize, bool hasReferences)
+    {
+        var grown = AllocateStorage<T>(length, elementSize);
+        storage.AsSpan().CopyTo(grown);
+        ReleaseStorage(storage, elementSize, hasReferences);
+        return grown;
+    }
+
     /// <summary>Moves the elements to a JsValue[] of the given length (at least the current capacity).</summary>
     private void ConvertToMixed(int length)
     {
-        var mixed = new JsValue[length];
+        var mixed = AllocateStorage<JsValue>(length, elementSize: 16);
         var capacity = DenseCapacity;
         switch (_elementKind)
         {
@@ -176,6 +213,7 @@ public partial class JsObject
                         mixed[i] = BitConverter.DoubleToInt64Bits(numbers[i]) == NumberHoleBits ? JsValue.Hole : new JsValue(numbers[i]);
                     }
 
+                    ReleaseStorage(numbers, elementSize: 8, hasReferences: false);
                     break;
                 }
 
@@ -187,12 +225,17 @@ public partial class JsObject
                         mixed[i] = new JsValue(cells[i].Cell);
                     }
 
+                    ReleaseStorage(cells, elementSize: 8, hasReferences: true);
                     break;
                 }
 
             case ElementKind.Mixed:
-                Array.Copy(((JsValue[])_elements!), mixed, capacity);
-                break;
+                {
+                    var values = ((JsValue[])_elements!);
+                    Array.Copy(values, mixed, capacity);
+                    ReleaseStorage(values, elementSize: 16, hasReferences: true);
+                    break;
+                }
         }
 
         mixed.AsSpan(capacity).Fill(JsValue.Hole);
@@ -359,16 +402,27 @@ public partial class JsObject
         }
 
         var newLength = (int)Math.Min(Math.Max(Math.Max((long)currentLength * 2, (long)index + 1), 4), Array.MaxLength);
+        if (this is JsArray { Length: var arrayLength } && index < arrayLength && currentLength >= 1024 && newLength < arrayLength)
+        {
+            // Filling an array whose length is known (new Array(n), the result of map...): it grows faster, up to its length
+            newLength = (int)Math.Min(Math.Min(arrayLength, (long)newLength * 4), Array.MaxLength);
+        }
+        else if (newLength is >= PooledStorageMinBytes / 16 and < PooledStorageMaxLength)
+        {
+            // The large storages have the sizes of the array pools
+            newLength = (int)BitOperations.RoundUpToPowerOf2((uint)newLength);
+        }
+
         if (_elementKind == ElementKind.None)
         {
             if (value.IsNumber)
             {
-                _elements = new double[newLength];
+                _elements = AllocateStorage<double>(newLength, elementSize: 8);
                 _elementKind = ElementKind.Number;
             }
             else
             {
-                _elements = new CellSlot[newLength];
+                _elements = AllocateStorage<CellSlot>(newLength, elementSize: 8);
                 _elementKind = ElementKind.Reference;
             }
 
@@ -380,32 +434,12 @@ public partial class JsObject
         }
         else
         {
-            switch (_elementKind)
+            _elements = _elementKind switch
             {
-                case ElementKind.Number:
-                    {
-                        var numbers = ((double[])_elements!);
-                        Array.Resize(ref numbers, newLength);
-                        _elements = numbers;
-                        break;
-                    }
-
-                case ElementKind.Reference:
-                    {
-                        var cells = ((CellSlot[])_elements!);
-                        Array.Resize(ref cells, newLength);
-                        _elements = cells;
-                        break;
-                    }
-
-                default:
-                    {
-                        var values = ((JsValue[])_elements!);
-                        Array.Resize(ref values, newLength);
-                        _elements = values;
-                        break;
-                    }
-            }
+                ElementKind.Number => GrowStorage((double[])_elements!, newLength, elementSize: 8, hasReferences: false),
+                ElementKind.Reference => GrowStorage((CellSlot[])_elements!, newLength, elementSize: 8, hasReferences: true),
+                _ => GrowStorage((JsValue[])_elements!, newLength, elementSize: 16, hasReferences: true),
+            };
 
             FillDenseHoles(currentLength, newLength - currentLength);
         }

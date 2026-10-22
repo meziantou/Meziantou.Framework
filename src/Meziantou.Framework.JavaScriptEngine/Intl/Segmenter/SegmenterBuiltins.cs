@@ -18,8 +18,9 @@ internal sealed class JsSegmenterObject(JsObject prototype) : JsObject(prototype
 }
 
 /// <summary>
-/// The boundaries of a string for a granularity (UAX #29, without the dictionaries of ICU: the ideographs and the
-/// scripts written without spaces are not split into words), computed once for the Segments object and its iterators.
+/// The boundaries of a string for a granularity (UAX #29; the words as ICU segments them, with its word lists for Chinese,
+/// Japanese and the scripts of Southeast Asia, see <see cref="WordBreaker"/>), computed once for the Segments object and
+/// its iterators.
 /// </summary>
 internal sealed class SegmentBoundaries
 {
@@ -41,13 +42,7 @@ internal sealed class SegmentBoundaries
 
             case SegmenterGranularity.Word:
                 _wordKinds = [];
-                var enumerator = Unicode.EnumerateWordBoundaries(text);
-                while (enumerator.MoveNext())
-                {
-                    _boundaries.Add(enumerator.Current.End.Value);
-                    _wordKinds.Add((byte)enumerator.CurrentKind);
-                }
-
+                WordBreaker.Segment(text, _boundaries, _wordKinds);
                 break;
 
             default:

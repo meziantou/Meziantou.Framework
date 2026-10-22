@@ -11,13 +11,23 @@ internal static partial class IteratorBuiltins
     private static readonly PropertyKey ModeKey = new("mode");
     private static readonly PropertyKey PaddingKey = new("padding");
 
+    private static readonly BuiltinMethodTable ProposalConstructorMethods =
+    [
+        new("zip", 1, Zip),
+        new("zipKeyed", 1, ZipKeyed),
+    ];
+
+    private static readonly BuiltinMethodTable ProposalPrototypeMethods =
+    [
+        new("chunks", 1, Chunks),
+        new("includes", 1, Includes),
+        new("windows", 1, Windows),
+    ];
+
     private static void InitializeProposals(JsRealm realm, JsFunction constructor, JsObject prototype)
     {
-        realm.DefineMethod(constructor, "zip", 1, Zip);
-        realm.DefineMethod(constructor, "zipKeyed", 1, ZipKeyed);
-        realm.DefineMethod(prototype, "chunks", 1, Chunks);
-        realm.DefineMethod(prototype, "includes", 1, Includes);
-        realm.DefineMethod(prototype, "windows", 1, Windows);
+        realm.DefineMethods(constructor, ProposalConstructorMethods);
+        realm.DefineMethods(prototype, ProposalPrototypeMethods);
     }
 
     /// <summary>IteratorCloseAll(iters, completion) for a normal or return completion: all the iterators are closed, in reverse order, then the first error is thrown.</summary>

@@ -8,6 +8,20 @@ internal static class LocaleBuiltins
     /// <summary>[[LocaleExtensionKeys]] of %Intl.Locale%.</summary>
     private static readonly string[] LocaleExtensionKeys = ["ca", "co", "fw", "hc", "kf", "kn", "nu"];
 
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("maximize", 0, Maximize),
+        new("minimize", 0, Minimize),
+        new("toString", 0, ToString),
+        new("getCalendars", 0, GetCalendars),
+        new("getCollations", 0, GetCollations),
+        new("getHourCycles", 0, GetHourCycles),
+        new("getNumberingSystems", 0, GetNumberingSystems),
+        new("getTimeZones", 0, GetTimeZones),
+        new("getTextInfo", 0, GetTextInfo),
+        new("getWeekInfo", 0, GetWeekInfo),
+    ];
+
     public static JsFunction Initialize(Intrinsics intrinsics, JsObject intl)
     {
         var realm = intrinsics.Realm;
@@ -17,16 +31,7 @@ internal static class LocaleBuiltins
         prototype.DefineBuiltIn("constructor", constructor);
         prototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Intl.Locale", PropertyFlags.Configurable);
 
-        realm.DefineMethod(prototype, "maximize", 0, Maximize);
-        realm.DefineMethod(prototype, "minimize", 0, Minimize);
-        realm.DefineMethod(prototype, "toString", 0, ToString);
-        realm.DefineMethod(prototype, "getCalendars", 0, GetCalendars);
-        realm.DefineMethod(prototype, "getCollations", 0, GetCollations);
-        realm.DefineMethod(prototype, "getHourCycles", 0, GetHourCycles);
-        realm.DefineMethod(prototype, "getNumberingSystems", 0, GetNumberingSystems);
-        realm.DefineMethod(prototype, "getTimeZones", 0, GetTimeZones);
-        realm.DefineMethod(prototype, "getTextInfo", 0, GetTextInfo);
-        realm.DefineMethod(prototype, "getWeekInfo", 0, GetWeekInfo);
+        realm.DefineMethods(prototype, PrototypeMethods);
 
         realm.DefineAccessor(prototype, "baseName", GetBaseName, setter: null);
         realm.DefineAccessor(prototype, "calendar", static (f, t, a, n) => ToValue(ThisLocale(t, "calendar").Calendar), setter: null);

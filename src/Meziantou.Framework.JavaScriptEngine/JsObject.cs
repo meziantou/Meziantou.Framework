@@ -215,16 +215,18 @@ public partial class JsObject : JsCell
 
     private static PropertyDescriptor EvaluateLazyProperty(PropertyTable properties, int position, PropertyFlags flags)
     {
-        var lazy = (LazyCell)properties.GetValue(position).Cell!;
+        var slot = properties.GetValue(position);
+        var lazy = (LazyCell)slot.Cell!;
+        var index = (int)slot.NumberValue;
         var key = properties.GetKey(position);
-        var value = lazy.Evaluate();
+        var value = lazy.Evaluate(index);
         flags &= ~PropertyFlags.Lazy;
 
         // The evaluation can change the object (e.g. add properties, which can move the entries): the property is found
         // again. The inline caches are not invalidated: they never remember a lazy property (they evaluate it first), and its
         // attributes do not change (the built-in methods are evaluated on first access, while the caches are warm).
         position = properties.Find(key);
-        if (position >= 0 && ReferenceEquals(properties.GetValue(position).Cell, lazy))
+        if (position >= 0 && ReferenceEquals(properties.GetValue(position).Cell, lazy) && properties.GetValue(position).NumberValue == index)
         {
             properties.GetValue(position) = value;
             properties.GetFlags(position) = flags;
@@ -942,9 +944,36 @@ public partial class JsObject : JsCell
 
     internal void DefineLazy(in PropertyKey key, Func<object?, JsValue> factory, object? state, PropertyFlags flags) => DefineLazy(key, new LazyValue(factory, state), flags);
 
-    internal void DefineLazy(in PropertyKey key, LazyCell value, PropertyFlags flags)
+    internal void DefineLazy(in PropertyKey key, LazyCell value, PropertyFlags flags) => DefineLazy(key, value, index: 0, flags);
+
+    /// <summary>Defines a data property whose value is computed by <paramref name="value"/> (with the index) the first time it is read.</summary>
+    internal void DefineLazy(in PropertyKey key, LazyCell value, int index, PropertyFlags flags)
     {
-        SetOwnSlot(key, new JsValue(value), (flags & PropertyFlags.Default) | PropertyFlags.Lazy);
+        SetOwnSlot(key, new JsValue(value, index), (flags & PropertyFlags.Default) | PropertyFlags.Lazy);
+    }
+
+    /// <summary>Gets the number of named own properties (the elements excluded).</summary>
+    internal int GetOwnPropertyCount()
+    {
+        return _map switch
+        {
+            Shape shape => shape.Count,
+            PropertyTable table => table.Count,
+            _ => 0,
+        };
+    }
+
+    /// <summary>
+    /// Moves the object to a property table that has room for the methods of the table and for the properties that the
+    /// objects that got them had in the previous realms (the table learns the count of the properties of the object).
+    /// </summary>
+    internal void ReservePropertiesForBuiltIns(BuiltinMethodTable methods)
+    {
+        var count = (_map as Shape)?.Count ?? 0;
+        var capacity = Math.Max(methods.PropertyCount, count + methods.Methods.Length);
+        var table = GetPropertyTable(capacity);
+        table.EnsureCapacity(Math.Max(capacity, table.Count + methods.Methods.Length));
+        table.CapacityHint ??= methods;
     }
 
     /// <summary>Gets whether the array indices of the object are all in the dense elements.</summary>

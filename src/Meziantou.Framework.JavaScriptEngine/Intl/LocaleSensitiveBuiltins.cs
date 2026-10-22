@@ -9,14 +9,19 @@ internal static class LocaleSensitiveBuiltins
 {
     private static readonly PropertyKey ToLocaleStringKey = new("toLocaleString");
 
+    private static readonly BuiltinMethodTable StringPrototypeMethods =
+    [
+        new("toLocaleLowerCase", 0, (function, thisValue, arguments, _) => TransformCase(thisValue, arguments, upper: false, "toLocaleLowerCase")),
+        new("toLocaleUpperCase", 0, (function, thisValue, arguments, _) => TransformCase(thisValue, arguments, upper: true, "toLocaleUpperCase")),
+    ];
+
     public static void Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
         realm.DefineMethod(intrinsics.NumberPrototype, "toLocaleString", 0, NumberToLocaleString);
         realm.DefineMethod(intrinsics.BigIntPrototype, "toLocaleString", 0, BigIntToLocaleString);
         realm.DefineMethod(intrinsics.ArrayPrototype, "toLocaleString", 0, ArrayToLocaleString);
-        realm.DefineMethod(intrinsics.StringPrototype, "toLocaleLowerCase", 0, (function, thisValue, arguments, _) => TransformCase(thisValue, arguments, upper: false, "toLocaleLowerCase"));
-        realm.DefineMethod(intrinsics.StringPrototype, "toLocaleUpperCase", 0, (function, thisValue, arguments, _) => TransformCase(thisValue, arguments, upper: true, "toLocaleUpperCase"));
+        realm.DefineMethods(intrinsics.StringPrototype, StringPrototypeMethods);
     }
 
     /// <summary>Temporal.Duration.prototype.toLocaleString (the Temporal built-ins are created on first use).</summary>

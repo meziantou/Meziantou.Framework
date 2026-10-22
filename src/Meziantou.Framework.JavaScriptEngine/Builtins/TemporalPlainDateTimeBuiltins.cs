@@ -5,44 +5,38 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// <summary>Temporal.PlainDateTime (https://tc39.es/proposal-temporal/#sec-temporal-plaindatetime-objects).</summary>
 internal static class TemporalPlainDateTimeBuiltins
 {
-    public static JsBuiltinFunction Initialize(Intrinsics intrinsics)
-    {
-        var realm = intrinsics.Realm;
-        var prototype = intrinsics.TemporalPlainDateTimePrototype;
-        var constructor = TemporalBuiltinHelpers.CreateConstructor(intrinsics, "PlainDateTime", 3, Construct, prototype);
-        realm.DefineMethod(constructor, "from", 1, (_, _, arguments, _) => ToTemporalDateTime(Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(constructor, "compare", 2, (_, _, arguments, _) =>
+    private static readonly BuiltinMethodTable ConstructorMethods =
+    [
+        new("from", 1, (_, _, arguments, _) => ToTemporalDateTime(Argument(arguments, 0), Argument(arguments, 1))),
+        new("compare", 2, (_, _, arguments, _) =>
         {
             var one = ToTemporalDateTime(Argument(arguments, 0));
             var two = ToTemporalDateTime(Argument(arguments, 1));
             return CompareIsoDateTime(one.IsoDateTime, two.IsoDateTime);
-        });
+        }),
+    ];
 
-        TemporalBuiltinHelpers.DefineDateGetters(realm, prototype, value =>
-        {
-            var dateTime = ThisPlainDateTime(value);
-            return (dateTime.Calendar, dateTime.IsoDateTime.Date);
-        });
-        TemporalBuiltinHelpers.DefineTimeGetters(realm, prototype, value => ThisPlainDateTime(value).IsoDateTime.Time);
-        realm.DefineMethod(prototype, "with", 1, With);
-        realm.DefineMethod(prototype, "withPlainTime", 0, (_, thisValue, arguments, _) =>
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("with", 1, With),
+        new("withPlainTime", 0, (_, thisValue, arguments, _) =>
         {
             var plainDateTime = ThisPlainDateTime(thisValue);
             var time = ToTimeRecordOrMidnight(Argument(arguments, 0));
             return CreateTemporalDateTime(new IsoDateTime(plainDateTime.IsoDateTime.Date, time), plainDateTime.Calendar);
-        });
-        realm.DefineMethod(prototype, "withCalendar", 1, (_, thisValue, arguments, _) =>
+        }),
+        new("withCalendar", 1, (_, thisValue, arguments, _) =>
         {
             var plainDateTime = ThisPlainDateTime(thisValue);
             var calendar = ToTemporalCalendarIdentifier(Argument(arguments, 0));
             return CreateTemporalDateTime(plainDateTime.IsoDateTime, calendar);
-        });
-        realm.DefineMethod(prototype, "add", 1, (_, thisValue, arguments, _) => AddDurationToDateTime(subtract: false, ThisPlainDateTime(thisValue), Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(prototype, "subtract", 1, (_, thisValue, arguments, _) => AddDurationToDateTime(subtract: true, ThisPlainDateTime(thisValue), Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(prototype, "until", 1, (_, thisValue, arguments, _) => DifferenceTemporalPlainDateTime(DifferenceOperation.Until, ThisPlainDateTime(thisValue), Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(prototype, "since", 1, (_, thisValue, arguments, _) => DifferenceTemporalPlainDateTime(DifferenceOperation.Since, ThisPlainDateTime(thisValue), Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(prototype, "round", 1, Round);
-        realm.DefineMethod(prototype, "equals", 1, (_, thisValue, arguments, _) =>
+        }),
+        new("add", 1, (_, thisValue, arguments, _) => AddDurationToDateTime(subtract: false, ThisPlainDateTime(thisValue), Argument(arguments, 0), Argument(arguments, 1))),
+        new("subtract", 1, (_, thisValue, arguments, _) => AddDurationToDateTime(subtract: true, ThisPlainDateTime(thisValue), Argument(arguments, 0), Argument(arguments, 1))),
+        new("until", 1, (_, thisValue, arguments, _) => DifferenceTemporalPlainDateTime(DifferenceOperation.Until, ThisPlainDateTime(thisValue), Argument(arguments, 0), Argument(arguments, 1))),
+        new("since", 1, (_, thisValue, arguments, _) => DifferenceTemporalPlainDateTime(DifferenceOperation.Since, ThisPlainDateTime(thisValue), Argument(arguments, 0), Argument(arguments, 1))),
+        new("round", 1, Round),
+        new("equals", 1, (_, thisValue, arguments, _) =>
         {
             var plainDateTime = ThisPlainDateTime(thisValue);
             var other = ToTemporalDateTime(Argument(arguments, 0));
@@ -50,20 +44,23 @@ internal static class TemporalPlainDateTimeBuiltins
                 return false;
 
             return CalendarEquals(plainDateTime.Calendar, other.Calendar);
-        });
-        realm.DefineMethod(prototype, "toString", 0, ToStringMethod);
-        realm.DefineMethod(prototype, "toLocaleString", 0, (_, thisValue, _, _) =>
+        }),
+        new("toString", 0, ToStringMethod),
+        new("toLocaleString", 0, (_, thisValue, _, _) =>
         {
             var plainDateTime = ThisPlainDateTime(thisValue);
             return IsoDateTimeToString(plainDateTime.IsoDateTime, plainDateTime.Calendar, PrecisionAuto, ShowCalendarOption.Auto);
-        });
-        realm.DefineMethod(prototype, "toJSON", 0, (_, thisValue, _, _) =>
+        }),
+        new("toJSON", 0, (_, thisValue, _, _) =>
         {
             var plainDateTime = ThisPlainDateTime(thisValue);
             return IsoDateTimeToString(plainDateTime.IsoDateTime, plainDateTime.Calendar, PrecisionAuto, ShowCalendarOption.Auto);
-        });
-        TemporalBuiltinHelpers.DefineValueOf(realm, prototype, "PlainDateTime");
-        realm.DefineMethod(prototype, "toZonedDateTime", 1, (_, thisValue, arguments, _) =>
+        }),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods2 =
+    [
+        new("toZonedDateTime", 1, (_, thisValue, arguments, _) =>
         {
             var plainDateTime = ThisPlainDateTime(thisValue);
             var timeZone = ToTemporalTimeZoneIdentifier(Argument(arguments, 0));
@@ -71,13 +68,31 @@ internal static class TemporalPlainDateTimeBuiltins
             var disambiguation = GetTemporalDisambiguationOption(resolvedOptions);
             var epochNs = GetEpochNanosecondsFor(timeZone, plainDateTime.IsoDateTime, disambiguation);
             return CreateTemporalZonedDateTime(epochNs, timeZone, plainDateTime.Calendar);
-        });
-        realm.DefineMethod(prototype, "toPlainDate", 0, (_, thisValue, _, _) =>
+        }),
+        new("toPlainDate", 0, (_, thisValue, _, _) =>
         {
             var plainDateTime = ThisPlainDateTime(thisValue);
             return CreateTemporalDate(plainDateTime.IsoDateTime.Date, plainDateTime.Calendar);
+        }),
+        new("toPlainTime", 0, (_, thisValue, _, _) => CreateTemporalTime(ThisPlainDateTime(thisValue).IsoDateTime.Time)),
+    ];
+
+    public static JsBuiltinFunction Initialize(Intrinsics intrinsics)
+    {
+        var realm = intrinsics.Realm;
+        var prototype = intrinsics.TemporalPlainDateTimePrototype;
+        var constructor = TemporalBuiltinHelpers.CreateConstructor(intrinsics, "PlainDateTime", 3, Construct, prototype);
+        realm.DefineMethods(constructor, ConstructorMethods);
+
+        TemporalBuiltinHelpers.DefineDateGetters(realm, prototype, value =>
+        {
+            var dateTime = ThisPlainDateTime(value);
+            return (dateTime.Calendar, dateTime.IsoDateTime.Date);
         });
-        realm.DefineMethod(prototype, "toPlainTime", 0, (_, thisValue, _, _) => CreateTemporalTime(ThisPlainDateTime(thisValue).IsoDateTime.Time));
+        TemporalBuiltinHelpers.DefineTimeGetters(realm, prototype, value => ThisPlainDateTime(value).IsoDateTime.Time);
+        realm.DefineMethods(prototype, PrototypeMethods);
+        TemporalBuiltinHelpers.DefineValueOf(realm, prototype, "PlainDateTime");
+        realm.DefineMethods(prototype, PrototypeMethods2);
         return constructor;
     }
 

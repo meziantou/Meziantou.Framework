@@ -5,13 +5,36 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// <summary>Temporal.Duration (https://tc39.es/proposal-temporal/#sec-temporal-duration-objects).</summary>
 internal static class TemporalDurationBuiltins
 {
+    private static readonly BuiltinMethodTable ConstructorMethods =
+    [
+        new("from", 1, (_, _, arguments, _) => ToTemporalDuration(Argument(arguments, 0))),
+        new("compare", 2, Compare),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("with", 1, With),
+        new("negated", 0, (_, thisValue, _, _) => CreateNegatedTemporalDuration(ThisDuration(thisValue))),
+        new("abs", 0, (_, thisValue, _, _) =>
+        {
+            var duration = ThisDuration(thisValue);
+            return CreateTemporalDuration(Math.Abs(duration.Years), Math.Abs(duration.Months), Math.Abs(duration.Weeks), Math.Abs(duration.Days), Math.Abs(duration.Hours), Math.Abs(duration.Minutes), Math.Abs(duration.Seconds), Math.Abs(duration.Milliseconds), Math.Abs(duration.Microseconds), Math.Abs(duration.Nanoseconds));
+        }),
+        new("add", 1, (_, thisValue, arguments, _) => AddDurations(subtract: false, ThisDuration(thisValue), Argument(arguments, 0))),
+        new("subtract", 1, (_, thisValue, arguments, _) => AddDurations(subtract: true, ThisDuration(thisValue), Argument(arguments, 0))),
+        new("round", 1, Round),
+        new("total", 1, Total),
+        new("toString", 0, ToStringMethod),
+        new("toJSON", 0, (_, thisValue, _, _) => TemporalDurationToString(ThisDuration(thisValue), PrecisionAuto)),
+        new("toLocaleString", 0, (_, thisValue, _, _) => TemporalDurationToString(ThisDuration(thisValue), PrecisionAuto)),
+    ];
+
     public static JsBuiltinFunction Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
         var prototype = intrinsics.TemporalDurationPrototype;
         var constructor = TemporalBuiltinHelpers.CreateConstructor(intrinsics, "Duration", 0, Construct, prototype);
-        realm.DefineMethod(constructor, "from", 1, (_, _, arguments, _) => ToTemporalDuration(Argument(arguments, 0)));
-        realm.DefineMethod(constructor, "compare", 2, Compare);
+        realm.DefineMethods(constructor, ConstructorMethods);
 
         realm.DefineAccessor(prototype, "years", (_, thisValue, _, _) => ThisDuration(thisValue).Years, setter: null);
         realm.DefineAccessor(prototype, "months", (_, thisValue, _, _) => ThisDuration(thisValue).Months, setter: null);
@@ -25,20 +48,7 @@ internal static class TemporalDurationBuiltins
         realm.DefineAccessor(prototype, "nanoseconds", (_, thisValue, _, _) => ThisDuration(thisValue).Nanoseconds, setter: null);
         realm.DefineAccessor(prototype, "sign", (_, thisValue, _, _) => DurationSign(ThisDuration(thisValue)), setter: null);
         realm.DefineAccessor(prototype, "blank", (_, thisValue, _, _) => DurationSign(ThisDuration(thisValue)) == 0, setter: null);
-        realm.DefineMethod(prototype, "with", 1, With);
-        realm.DefineMethod(prototype, "negated", 0, (_, thisValue, _, _) => CreateNegatedTemporalDuration(ThisDuration(thisValue)));
-        realm.DefineMethod(prototype, "abs", 0, (_, thisValue, _, _) =>
-        {
-            var duration = ThisDuration(thisValue);
-            return CreateTemporalDuration(Math.Abs(duration.Years), Math.Abs(duration.Months), Math.Abs(duration.Weeks), Math.Abs(duration.Days), Math.Abs(duration.Hours), Math.Abs(duration.Minutes), Math.Abs(duration.Seconds), Math.Abs(duration.Milliseconds), Math.Abs(duration.Microseconds), Math.Abs(duration.Nanoseconds));
-        });
-        realm.DefineMethod(prototype, "add", 1, (_, thisValue, arguments, _) => AddDurations(subtract: false, ThisDuration(thisValue), Argument(arguments, 0)));
-        realm.DefineMethod(prototype, "subtract", 1, (_, thisValue, arguments, _) => AddDurations(subtract: true, ThisDuration(thisValue), Argument(arguments, 0)));
-        realm.DefineMethod(prototype, "round", 1, Round);
-        realm.DefineMethod(prototype, "total", 1, Total);
-        realm.DefineMethod(prototype, "toString", 0, ToStringMethod);
-        realm.DefineMethod(prototype, "toJSON", 0, (_, thisValue, _, _) => TemporalDurationToString(ThisDuration(thisValue), PrecisionAuto));
-        realm.DefineMethod(prototype, "toLocaleString", 0, (_, thisValue, _, _) => TemporalDurationToString(ThisDuration(thisValue), PrecisionAuto));
+        realm.DefineMethods(prototype, PrototypeMethods);
         TemporalBuiltinHelpers.DefineValueOf(realm, prototype, "Duration");
         return constructor;
     }

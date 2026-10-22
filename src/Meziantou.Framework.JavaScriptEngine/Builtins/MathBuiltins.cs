@@ -5,10 +5,52 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// <summary>The Math object (https://tc39.es/ecma262/#sec-math-object).</summary>
 internal static class MathBuiltins
 {
+    private static readonly BuiltinMethodTable MathMethods =
+    [
+        Unary("abs", Math.Abs),
+        Unary("acos", Math.Acos),
+        Unary("acosh", Math.Acosh),
+        Unary("asin", Math.Asin),
+        Unary("asinh", Math.Asinh),
+        Unary("atan", Math.Atan),
+        Unary("atanh", Math.Atanh),
+        new("atan2", 2, Atan2),
+        Unary("cbrt", Math.Cbrt),
+        Unary("ceil", Math.Ceiling),
+        new("clz32", 1, Clz32),
+        Unary("cos", Math.Cos),
+        Unary("cosh", Math.Cosh),
+        Unary("exp", Math.Exp),
+        Unary("expm1", Expm1),
+        Unary("floor", Math.Floor),
+        Unary("fround", static x => (float)x),
+        Unary("f16round", F16Round),
+        new("hypot", 2, Hypot),
+        new("imul", 2, Imul),
+        Unary("log", Math.Log),
+        Unary("log1p", Log1p),
+        Unary("log10", Math.Log10),
+        Unary("log2", Math.Log2),
+        new("max", 2, Max),
+        new("min", 2, Min),
+        new("pow", 2, Pow),
+        new("random", 0, Random),
+        Unary("round", Round),
+        Unary("sign", Sign),
+        Unary("sin", Math.Sin),
+        Unary("sinh", Math.Sinh),
+        Unary("sqrt", Math.Sqrt),
+        new("sumPrecise", 1, SumPrecise),
+        Unary("tan", Math.Tan),
+        Unary("tanh", Math.Tanh),
+        Unary("trunc", Math.Truncate),
+    ];
+
     public static JsObject Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
         var math = new JsObject(intrinsics.ObjectPrototype);
+        math.ReservePropertiesForBuiltIns(MathMethods);
 
         math.DefineBuiltIn("E", Math.E, PropertyFlags.None);
         math.DefineBuiltIn("LN10", 2.302585092994046, PropertyFlags.None);
@@ -20,52 +62,16 @@ internal static class MathBuiltins
         math.DefineBuiltIn("SQRT2", 1.4142135623730951, PropertyFlags.None);
         math.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Math", PropertyFlags.Configurable);
 
-        DefineUnary(realm, math, "abs", Math.Abs);
-        DefineUnary(realm, math, "acos", Math.Acos);
-        DefineUnary(realm, math, "acosh", Math.Acosh);
-        DefineUnary(realm, math, "asin", Math.Asin);
-        DefineUnary(realm, math, "asinh", Math.Asinh);
-        DefineUnary(realm, math, "atan", Math.Atan);
-        DefineUnary(realm, math, "atanh", Math.Atanh);
-        realm.DefineMethod(math, "atan2", 2, Atan2);
-        DefineUnary(realm, math, "cbrt", Math.Cbrt);
-        DefineUnary(realm, math, "ceil", Math.Ceiling);
-        realm.DefineMethod(math, "clz32", 1, Clz32);
-        DefineUnary(realm, math, "cos", Math.Cos);
-        DefineUnary(realm, math, "cosh", Math.Cosh);
-        DefineUnary(realm, math, "exp", Math.Exp);
-        DefineUnary(realm, math, "expm1", Expm1);
-        DefineUnary(realm, math, "floor", Math.Floor);
-        DefineUnary(realm, math, "fround", static x => (float)x);
-        DefineUnary(realm, math, "f16round", F16Round);
-        realm.DefineMethod(math, "hypot", 2, Hypot);
-        realm.DefineMethod(math, "imul", 2, Imul);
-        DefineUnary(realm, math, "log", Math.Log);
-        DefineUnary(realm, math, "log1p", Log1p);
-        DefineUnary(realm, math, "log10", Math.Log10);
-        DefineUnary(realm, math, "log2", Math.Log2);
-        realm.DefineMethod(math, "max", 2, Max);
-        realm.DefineMethod(math, "min", 2, Min);
-        realm.DefineMethod(math, "pow", 2, Pow);
-        realm.DefineMethod(math, "random", 0, Random);
-        DefineUnary(realm, math, "round", Round);
-        DefineUnary(realm, math, "sign", Sign);
-        DefineUnary(realm, math, "sin", Math.Sin);
-        DefineUnary(realm, math, "sinh", Math.Sinh);
-        DefineUnary(realm, math, "sqrt", Math.Sqrt);
-        realm.DefineMethod(math, "sumPrecise", 1, SumPrecise);
-        DefineUnary(realm, math, "tan", Math.Tan);
-        DefineUnary(realm, math, "tanh", Math.Tanh);
-        DefineUnary(realm, math, "trunc", Math.Truncate);
+        realm.DefineMethods(math, MathMethods);
 
         intrinsics.AddGlobal("Math", math);
         return math;
     }
 
-    /// <summary>Defines a function that converts its argument with ToNumber and applies an operation to it.</summary>
-    private static void DefineUnary(JsRealm realm, JsObject math, string name, Func<double, double> operation)
+    /// <summary>A function that converts its argument with ToNumber and applies an operation to it.</summary>
+    private static BuiltinMethod Unary(string name, Func<double, double> operation)
     {
-        realm.DefineMethod(math, name, 1, (_, _, arguments, _) => operation(JsOperations.ToNumber(arguments.Length > 0 ? arguments[0] : default)));
+        return new(name, 1, (_, _, arguments, _) => operation(JsOperations.ToNumber(arguments.Length > 0 ? arguments[0] : default)));
     }
 
     private static JsValue Atan2(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)

@@ -7,64 +7,67 @@ internal static class StringBuiltins
 {
     private static readonly PropertyKey RawKey = new("raw");
 
+    private static readonly BuiltinMethodTable ConstructorMethods =
+    [
+        new("fromCharCode", 1, FromCharCode),
+        new("fromCodePoint", 1, FromCodePoint),
+        new("raw", 1, Raw),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("at", 1, At),
+        new("charAt", 1, CharAt),
+        new("charCodeAt", 1, CharCodeAt),
+        new("codePointAt", 1, CodePointAt),
+        new("concat", 1, Concat),
+        new("endsWith", 1, EndsWith),
+        new("includes", 1, Includes),
+        new("indexOf", 1, IndexOf),
+        new("isWellFormed", 0, IsWellFormed),
+        new("lastIndexOf", 1, LastIndexOf),
+        new("localeCompare", 1, LocaleCompare),
+        new("normalize", 0, Normalize),
+        new("padEnd", 1, (f, t, a, _) => Pad(t, a, atStart: false, "padEnd")),
+        new("padStart", 1, (f, t, a, _) => Pad(t, a, atStart: true, "padStart")),
+        new("repeat", 1, Repeat),
+        new("slice", 2, Slice),
+        new("startsWith", 1, StartsWith),
+        new("substring", 2, Substring),
+        new("toLocaleLowerCase", 0, (f, t, a, _) => StringOperations.ToLowerCase(ThisToString(t, "toLocaleLowerCase"))),
+        new("toLocaleUpperCase", 0, (f, t, a, _) => StringOperations.ToUpperCase(ThisToString(t, "toLocaleUpperCase"))),
+        new("toLowerCase", 0, (f, t, a, _) => StringOperations.ToLowerCase(ThisToString(t, "toLowerCase"))),
+        new("toString", 0, (f, t, a, _) => JsValue.FromJsString(ThisStringValue(t, "toString"))),
+        new("toUpperCase", 0, (f, t, a, _) => StringOperations.ToUpperCase(ThisToString(t, "toUpperCase"))),
+        new("toWellFormed", 0, (f, t, a, _) => StringOperations.ToWellFormed(ThisToString(t, "toWellFormed"))),
+        new("trim", 0, (f, t, a, _) => StringOperations.Trim(ThisToString(t, "trim"), start: true, end: true)),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods2 =
+    [
+        new("valueOf", 0, (f, t, a, _) => JsValue.FromJsString(ThisStringValue(t, "valueOf"))),
+        new(WellKnownSymbols.Iterator, 0, GetIterator),
+    ];
+
     public static JsFunction Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
         var prototype = intrinsics.StringPrototype;
         var constructor = realm.CreateBuiltinFunction("String", 1, Construct, isConstructor: true);
         constructor.DefineBuiltIn("prototype", prototype, PropertyFlags.None);
-        realm.DefineMethod(constructor, "fromCharCode", 1, FromCharCode);
-        realm.DefineMethod(constructor, "fromCodePoint", 1, FromCodePoint);
-        realm.DefineMethod(constructor, "raw", 1, Raw);
+        realm.DefineMethods(constructor, ConstructorMethods);
 
         prototype.DefineBuiltIn("constructor", constructor);
-        realm.DefineMethod(prototype, "at", 1, At);
-        realm.DefineMethod(prototype, "charAt", 1, CharAt);
-        realm.DefineMethod(prototype, "charCodeAt", 1, CharCodeAt);
-        realm.DefineMethod(prototype, "codePointAt", 1, CodePointAt);
-        realm.DefineMethod(prototype, "concat", 1, Concat);
-        realm.DefineMethod(prototype, "endsWith", 1, EndsWith);
-        realm.DefineMethod(prototype, "includes", 1, Includes);
-        realm.DefineMethod(prototype, "indexOf", 1, IndexOf);
-        realm.DefineMethod(prototype, "isWellFormed", 0, IsWellFormed);
-        realm.DefineMethod(prototype, "lastIndexOf", 1, LastIndexOf);
-        realm.DefineMethod(prototype, "localeCompare", 1, LocaleCompare);
-        realm.DefineMethod(prototype, "normalize", 0, Normalize);
-        realm.DefineMethod(prototype, "padEnd", 1, (f, t, a, _) => Pad(t, a, atStart: false, "padEnd"));
-        realm.DefineMethod(prototype, "padStart", 1, (f, t, a, _) => Pad(t, a, atStart: true, "padStart"));
-        realm.DefineMethod(prototype, "repeat", 1, Repeat);
-        realm.DefineMethod(prototype, "slice", 2, Slice);
-        realm.DefineMethod(prototype, "startsWith", 1, StartsWith);
-        realm.DefineMethod(prototype, "substring", 2, Substring);
-        realm.DefineMethod(prototype, "toLocaleLowerCase", 0, (f, t, a, _) => StringOperations.ToLowerCase(ThisToString(t, "toLocaleLowerCase")));
-        realm.DefineMethod(prototype, "toLocaleUpperCase", 0, (f, t, a, _) => StringOperations.ToUpperCase(ThisToString(t, "toLocaleUpperCase")));
-        realm.DefineMethod(prototype, "toLowerCase", 0, (f, t, a, _) => StringOperations.ToLowerCase(ThisToString(t, "toLowerCase")));
-        realm.DefineMethod(prototype, "toString", 0, (f, t, a, _) => JsValue.FromJsString(ThisStringValue(t, "toString")));
-        realm.DefineMethod(prototype, "toUpperCase", 0, (f, t, a, _) => StringOperations.ToUpperCase(ThisToString(t, "toUpperCase")));
-        realm.DefineMethod(prototype, "toWellFormed", 0, (f, t, a, _) => StringOperations.ToWellFormed(ThisToString(t, "toWellFormed")));
-        realm.DefineMethod(prototype, "trim", 0, (f, t, a, _) => StringOperations.Trim(ThisToString(t, "trim"), start: true, end: true));
+        realm.DefineMethods(prototype, PrototypeMethods);
         var trimEnd = realm.DefineEagerMethod(prototype, "trimEnd", 0, (f, t, a, _) => StringOperations.Trim(ThisToString(t, "trimEnd"), start: false, end: true));
         var trimStart = realm.DefineEagerMethod(prototype, "trimStart", 0, (f, t, a, _) => StringOperations.Trim(ThisToString(t, "trimStart"), start: true, end: false));
-        realm.DefineMethod(prototype, "valueOf", 0, (f, t, a, _) => JsValue.FromJsString(ThisStringValue(t, "valueOf")));
-        realm.DefineMethod(prototype, WellKnownSymbols.Iterator, 0, GetIterator);
+        realm.DefineMethods(prototype, PrototypeMethods2);
 
         // Annex B (https://tc39.es/ecma262/#sec-additional-properties-of-the-string.prototype-object)
         realm.DefineMethod(prototype, "substr", 2, Substr);
         prototype.DefineBuiltIn("trimLeft", trimStart);
         prototype.DefineBuiltIn("trimRight", trimEnd);
-        DefineHtmlMethod(realm, prototype, "anchor", "a", "name");
-        DefineHtmlMethod(realm, prototype, "big", "big", attribute: null);
-        DefineHtmlMethod(realm, prototype, "blink", "blink", attribute: null);
-        DefineHtmlMethod(realm, prototype, "bold", "b", attribute: null);
-        DefineHtmlMethod(realm, prototype, "fixed", "tt", attribute: null);
-        DefineHtmlMethod(realm, prototype, "fontcolor", "font", "color");
-        DefineHtmlMethod(realm, prototype, "fontsize", "font", "size");
-        DefineHtmlMethod(realm, prototype, "italics", "i", attribute: null);
-        DefineHtmlMethod(realm, prototype, "link", "a", "href");
-        DefineHtmlMethod(realm, prototype, "small", "small", attribute: null);
-        DefineHtmlMethod(realm, prototype, "strike", "strike", attribute: null);
-        DefineHtmlMethod(realm, prototype, "sub", "sub", attribute: null);
-        DefineHtmlMethod(realm, prototype, "sup", "sup", attribute: null);
+        realm.DefineMethods(prototype, HtmlMethods);
 
         var iteratorPrototype = intrinsics.StringIteratorPrototype;
         realm.DefineMethod(iteratorPrototype, "next", 0, IteratorNext);
@@ -510,9 +513,27 @@ internal static class StringBuiltins
         return s[intStart..intEnd];
     }
 
-    private static void DefineHtmlMethod(JsRealm realm, JsObject prototype, string name, string tag, string? attribute)
+    // The HTML methods of Annex B
+    private static readonly BuiltinMethodTable HtmlMethods =
+    [
+        HtmlMethod("anchor", "a", "name"),
+        HtmlMethod("big", "big", attribute: null),
+        HtmlMethod("blink", "blink", attribute: null),
+        HtmlMethod("bold", "b", attribute: null),
+        HtmlMethod("fixed", "tt", attribute: null),
+        HtmlMethod("fontcolor", "font", "color"),
+        HtmlMethod("fontsize", "font", "size"),
+        HtmlMethod("italics", "i", attribute: null),
+        HtmlMethod("link", "a", "href"),
+        HtmlMethod("small", "small", attribute: null),
+        HtmlMethod("strike", "strike", attribute: null),
+        HtmlMethod("sub", "sub", attribute: null),
+        HtmlMethod("sup", "sup", attribute: null),
+    ];
+
+    private static BuiltinMethod HtmlMethod(string name, string tag, string? attribute)
     {
-        realm.DefineMethod(prototype, name, attribute is null ? 0 : 1, (f, t, a, _) => CreateHtml(t, name, tag, attribute, Arg(a, 0)));
+        return new(name, attribute is null ? 0 : 1, (f, t, a, _) => CreateHtml(t, name, tag, attribute, Arg(a, 0)));
     }
 
     /// <summary>CreateHTML(string, tag, attribute, value) (Annex B)</summary>

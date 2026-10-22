@@ -3,25 +3,44 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// <summary>Error, the NativeError constructors (https://tc39.es/ecma262/#sec-error-objects).</summary>
 internal static class ErrorBuiltins
 {
+    // The constructors of the error types, and the default prototypes they use (created once: no closure per realm or per error)
+    private static readonly BuiltinFunctionCallback[] ConstructCallbacks = CreateTypeCallbacks<BuiltinFunctionCallback>(static type => (f, _, args, newTarget) => Construct(f, args, newTarget, type));
+    private static readonly Func<Intrinsics, JsObject>[] DefaultPrototypes = CreateTypeCallbacks<Func<Intrinsics, JsObject>>(static type => intrinsics => intrinsics.GetErrorPrototype(type));
+
+    /// <summary>Gets the error types.</summary>
+    public static ErrorType[] Types { get; } = Enum.GetValues<ErrorType>();
+
+    private static T[] CreateTypeCallbacks<T>(Func<ErrorType, T> factory)
+    {
+        var types = Enum.GetValues<ErrorType>();
+        var result = new T[types.Length];
+        foreach (var type in types)
+        {
+            result[(int)type] = factory(type);
+        }
+
+        return result;
+    }
+
     public static void Initialize(Intrinsics intrinsics, JsObject[] prototypes, JsObject[] constructors)
     {
         var realm = intrinsics.Realm;
         var errorPrototype = prototypes[(int)ErrorType.Error];
-        var error = realm.CreateBuiltinFunction("Error", 1, (f, _, args, newTarget) => Construct(f, args, newTarget, ErrorType.Error), isConstructor: true);
+        var error = realm.CreateBuiltinFunction("Error", 1, ConstructCallbacks[(int)ErrorType.Error], isConstructor: true);
         InitializeConstructor(error, errorPrototype);
         realm.DefineMethod(errorPrototype, "toString", 0, ToString);
         realm.DefineAccessor(errorPrototype, "stack", GetStack, SetStack);
         constructors[(int)ErrorType.Error] = error;
         intrinsics.AddGlobal("Error", error);
 
-        foreach (var type in Enum.GetValues<ErrorType>())
+        foreach (var type in Types)
         {
             if (type is ErrorType.Error or ErrorType.AggregateError)
                 continue;
 
             var prototype = prototypes[(int)type];
             prototype.SetPrototypeDirect(errorPrototype);
-            var constructor = realm.CreateBuiltinFunction(type.ToString(), 1, (f, _, args, newTarget) => Construct(f, args, newTarget, type), isConstructor: true, prototype: error);
+            var constructor = realm.CreateBuiltinFunction(type.ToString(), 1, ConstructCallbacks[(int)type], isConstructor: true, prototype: error);
             InitializeConstructor(constructor, prototype);
             constructors[(int)type] = constructor;
             intrinsics.AddGlobal(type.ToString(), constructor);
@@ -45,7 +64,7 @@ internal static class ErrorBuiltins
 
     private static JsValue Construct(JsBuiltinFunction function, ReadOnlySpan<JsValue> arguments, JsObject? newTarget, ErrorType type)
     {
-        var prototype = ObjectOperations.GetPrototypeForConstruct(function, newTarget, intrinsics => intrinsics.GetErrorPrototype(type));
+        var prototype = ObjectOperations.GetPrototypeForConstruct(function, newTarget, DefaultPrototypes[(int)type]);
         var error = new JsErrorObject(prototype);
         var message = arguments.Length > 0 ? arguments[0] : default;
         if (!message.IsUndefined)

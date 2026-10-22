@@ -7,10 +7,14 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// </summary>
 internal sealed partial class Intrinsics
 {
-    private readonly List<(PropertyKey Name, JsValue Value, Func<Intrinsics, JsValue>? Factory, PropertyFlags Flags)> _globals = new(capacity: 96);
-    private bool _globalBindingsDefined;
-    private readonly JsObject[] _errorPrototypes = new JsObject[Enum.GetValues<ErrorType>().Length];
-    private readonly JsObject[] _errorConstructors = new JsObject[Enum.GetValues<ErrorType>().Length];
+    // The number of global properties that the built-ins define (learned by the first realm of the process: the next ones
+    // allocate the property table of their global object once)
+    private static int s_globalCount = 96;
+
+    private JsObject? _globalObject;
+    private LazyGlobals? _lazyGlobals;
+    private readonly JsObject[] _errorPrototypes = new JsObject[ErrorBuiltins.Types.Length];
+    private readonly JsObject[] _errorConstructors = new JsObject[ErrorBuiltins.Types.Length];
 
     public Intrinsics(JsRealm realm)
     {
@@ -23,7 +27,7 @@ internal sealed partial class Intrinsics
         // %Function.prototype% is a built-in function that returns undefined
         FunctionPrototype = new JsBuiltinFunction(realm, static (_, _, _, _) => JsValue.Undefined, isConstructor: false, ObjectPrototype);
 
-        foreach (var type in Enum.GetValues<ErrorType>())
+        foreach (var type in ErrorBuiltins.Types)
         {
             _errorPrototypes[(int)type] = new JsObject(type == ErrorType.Error ? ObjectPrototype : null);
         }
@@ -35,7 +39,6 @@ internal sealed partial class Intrinsics
         BigIntPrototype = new JsObject(ObjectPrototype);
         ArrayPrototype = new JsArray(ObjectPrototype);
         IteratorPrototype = new JsObject(ObjectPrototype);
-        AsyncIteratorPrototype = new JsObject(ObjectPrototype);
     }
 
     public JsRealm Realm { get; }
@@ -59,9 +62,6 @@ internal sealed partial class Intrinsics
     /// <summary>%Iterator.prototype%</summary>
     public JsObject IteratorPrototype { get; }
 
-    /// <summary>%AsyncIteratorPrototype%</summary>
-    public JsObject AsyncIteratorPrototype { get; }
-
     /// <summary>%Object%</summary>
     public JsFunction Object { get; private set; } = null!;
 
@@ -75,12 +75,17 @@ internal sealed partial class Intrinsics
 
     public JsObject GetErrorConstructor(ErrorType type) => _errorConstructors[(int)type];
 
-    /// <summary>Creates the properties of the intrinsics.</summary>
-    public void Initialize()
+    /// <summary>Creates the properties of the intrinsics, and the properties of the global object (SetDefaultGlobalBindings).</summary>
+    public void Initialize(JsObject globalObject)
     {
+        // The global object has many (lazy) properties, and a host usually adds more: a table, not a chain of shapes
+        globalObject.UsePropertyTable(s_globalCount);
+        _globalObject = globalObject;
         ThrowTypeError = CreateThrowTypeError();
         ErrorBuiltins.Initialize(this, _errorPrototypes, _errorConstructors);
         InitializeBuiltins();
+        _globalObject = null;
+        s_globalCount = Math.Max(s_globalCount, globalObject.GetOwnPropertyCount());
     }
 
     /// <summary>Initializes the other built-ins, in this order. Each one is implemented in its own file (Intrinsics.&lt;Area&gt;.cs).</summary>
@@ -164,41 +169,46 @@ internal sealed partial class Intrinsics
     partial void InitializeIntl();
 
     /// <summary>
-    /// Adds a property of the global object (SetDefaultGlobalBindings). It is ignored once the global bindings are defined:
+    /// Adds a property of the global object (SetDefaultGlobalBindings). It is ignored once the intrinsics are initialized:
     /// a built-in created on first use has a lazy global property (<see cref="AddLazyGlobal"/>).
     /// </summary>
     public void AddGlobal(PropertyKey name, JsValue value, PropertyFlags flags = PropertyFlags.BuiltIn)
     {
-        if (!_globalBindingsDefined)
-        {
-            _globals.Add((name, value, Factory: null, flags));
-        }
+        _globalObject?.DefineBuiltIn(name, value, flags);
     }
 
     /// <summary>Adds a property of the global object whose value is created on first use (a built-in that is rarely used, e.g. %Temporal%).</summary>
-    public void AddLazyGlobal(PropertyKey name, Func<Intrinsics, JsValue> factory, PropertyFlags flags = PropertyFlags.BuiltIn) => _globals.Add((name, default, factory, flags));
-
-    public void DefineGlobalBindings(JsObject globalObject)
+    public void AddLazyGlobal(PropertyKey name, Func<Intrinsics, JsValue> factory, PropertyFlags flags = PropertyFlags.BuiltIn)
     {
-        _globalBindingsDefined = true;
+        if (_globalObject is not { } globalObject)
+            return;
 
-        // The global object has many (lazy) properties, and a host usually adds more: a table, not a chain of shapes
-        globalObject.UsePropertyTable(_globals.Count);
-        foreach (var (name, value, factory, flags) in _globals)
+        var lazyGlobals = _lazyGlobals ??= new LazyGlobals(this);
+        globalObject.DefineLazy(name, lazyGlobals, lazyGlobals.Add(factory), flags);
+    }
+
+    /// <summary>The global properties created on first use: the slot of a property has the index of its factory.</summary>
+    private sealed class LazyGlobals(Intrinsics intrinsics) : LazyCell
+    {
+        // The number of lazy global properties (learned by the first realm of the process)
+        private static int s_count = 32;
+
+        private Func<Intrinsics, JsValue>[] _factories = new Func<Intrinsics, JsValue>[s_count];
+        private int _count;
+
+        public int Add(Func<Intrinsics, JsValue> factory)
         {
-            if (factory is null)
+            if (_count == _factories.Length)
             {
-                globalObject.DefineBuiltIn(name, value, flags);
+                Array.Resize(ref _factories, _count * 2);
             }
-            else if (globalObject.IsExotic)
-            {
-                globalObject.DefineBuiltIn(name, factory(this), flags);
-            }
-            else
-            {
-                globalObject.DefineLazy(name, () => factory(this), flags);
-            }
+
+            _factories[_count] = factory;
+            s_count = Math.Max(s_count, _count + 1);
+            return _count++;
         }
+
+        public override JsValue Evaluate(int index) => _factories[index](intrinsics);
     }
 
     /// <summary>Sets %Object%; called by the built-in that creates it.</summary>

@@ -60,6 +60,10 @@ public sealed class JsEngineTests
     [InlineData("var d = Object.getOwnPropertyDescriptor(Array.prototype, 'map'); [typeof d.value, d.value.name, d.value.length, d.writable, d.enumerable, d.configurable, d.value === [].map].join()", "function,map,1,true,false,true,true")]
     [InlineData("var d = Object.getOwnPropertyDescriptor(Map.prototype, 'size'); [typeof d.get, d.get.name, d.get.length, d.set, d.get === Object.getOwnPropertyDescriptor(Map.prototype, 'size').get].join()", "function,get size,0,,true")]
     [InlineData("Object.freeze(String.prototype); 'abc'.at(-1) + Object.isFrozen(String.prototype) + Object.getOwnPropertyDescriptor(String.prototype, 'at').writable", "ctruefalse")]
+    [InlineData("delete globalThis.Promise; var p = (async () => 1)(); [Object.getPrototypeOf(p).constructor.name, typeof p.then, Object.getPrototypeOf(p) === Object.getPrototypeOf((async () => {})())].join()", "Promise,function,true")]
+    [InlineData("var g = function* () { yield 1; }; var proto = Object.getPrototypeOf(g); [proto[Symbol.toStringTag], proto.constructor.name, [...g()].join(), Object.getOwnPropertyNames(Object.getPrototypeOf(g.prototype)).join()].join('|')", "GeneratorFunction|GeneratorFunction|1|constructor,next,return,throw")]
+    [InlineData("var asyncIteratorPrototype = Object.getPrototypeOf(Object.getPrototypeOf(async function* () { }.prototype)); Reflect.ownKeys(asyncIteratorPrototype).map(String).join() + '|' + Object.getPrototypeOf(async function () { }).constructor.name", "Symbol(Symbol.asyncIterator),Symbol(Symbol.asyncDispose)|AsyncFunction")]
+    [InlineData("Object.getPrototypeOf([1].values().map(x => x))[Symbol.toStringTag] + '|' + Object.getOwnPropertyNames(Object.getPrototypeOf(Iterator.from({ next() { } }))).join()", "Iterator Helper|next,return")]
     public void LazyBuiltins(string code, string expected)
     {
         using var engine = new JsEngine();
@@ -67,6 +71,24 @@ public sealed class JsEngineTests
         var result = realm.Execute(code);
         using var scope = engine.Enter();
         Assert.Equal(expected, JsOperations.ToString(result));
+    }
+
+    [Fact]
+    public void BuiltinMethodTablesAreSharedByTheRealms()
+    {
+        // The realms share the static tables of the built-in methods, and the sizes they learn: each realm still gets its own
+        // function objects, and the properties of a realm do not depend on what the scripts of another realm added
+        using var engine = new JsEngine();
+        var realm1 = engine.CreateRealm();
+        const string Names = "[Object.getOwnPropertyNames(Array.prototype).join(), Object.getOwnPropertyNames(Math).join(), Object.getOwnPropertyNames(String.prototype).length].join('|')";
+        var names1 = realm1.Execute(Names);
+        realm1.Execute("for (var i = 0; i < 100; i++) Array.prototype['extra' + i] = i;");
+        var realm2 = engine.CreateRealm();
+        var names2 = realm2.Execute(Names);
+        realm2.GlobalObject.SetProperty("otherMap", realm1.Execute("Array.prototype.map"));
+        using var scope = engine.Enter();
+        Assert.Equal(JsOperations.ToString(names1), JsOperations.ToString(names2));
+        Assert.Equal("false,2,4,true", JsOperations.ToString(realm2.Execute("[otherMap === Array.prototype.map, [1].map(x => x * 2)[0], otherMap.call([2], x => x * 2)[0], 'extra0' in Array.prototype === false].join()")));
     }
 
     [Fact]

@@ -6,6 +6,15 @@ internal static class FunctionBuiltins
     private static readonly PropertyKey LengthKey = new("length");
     private static readonly PropertyKey NameKey = new("name");
 
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("apply", 2, Apply),
+        new("bind", 1, Bind),
+        new("call", 1, Call),
+        new("toString", 0, ToString),
+        new(WellKnownSymbols.HasInstance, 1, HasInstance, PropertyFlags.None),
+    ];
+
     public static JsBuiltinFunction Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
@@ -17,11 +26,7 @@ internal static class FunctionBuiltins
         constructor.DefineBuiltIn("prototype", prototype, PropertyFlags.None);
         prototype.DefineBuiltIn("constructor", constructor);
 
-        realm.DefineMethod(prototype, "apply", 2, Apply);
-        realm.DefineMethod(prototype, "bind", 1, Bind);
-        realm.DefineMethod(prototype, "call", 1, Call);
-        realm.DefineMethod(prototype, "toString", 0, ToString);
-        realm.DefineMethod(prototype, WellKnownSymbols.HasInstance, 1, HasInstance, PropertyFlags.None);
+        realm.DefineMethods(prototype, PrototypeMethods);
 
         // AddRestrictedFunctionProperties(%Function.prototype%, realm)
         var thrower = intrinsics.ThrowTypeError;

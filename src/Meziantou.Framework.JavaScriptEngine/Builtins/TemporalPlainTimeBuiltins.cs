@@ -5,35 +5,45 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// <summary>Temporal.PlainTime (https://tc39.es/proposal-temporal/#sec-temporal-plaintime-objects).</summary>
 internal static class TemporalPlainTimeBuiltins
 {
+    private static readonly BuiltinMethodTable ConstructorMethods =
+    [
+        new("from", 1, (_, _, arguments, _) => ToTemporalTime(Argument(arguments, 0), Argument(arguments, 1))),
+        new("compare", 2, (_, _, arguments, _) =>
+        {
+            var one = ToTemporalTime(Argument(arguments, 0));
+            var two = ToTemporalTime(Argument(arguments, 1));
+            return CompareTimeRecord(one.Time, two.Time);
+        }),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("add", 1, (_, thisValue, arguments, _) => AddDurationToTime(subtract: false, ThisPlainTime(thisValue), Argument(arguments, 0))),
+        new("subtract", 1, (_, thisValue, arguments, _) => AddDurationToTime(subtract: true, ThisPlainTime(thisValue), Argument(arguments, 0))),
+        new("with", 1, With),
+        new("until", 1, (_, thisValue, arguments, _) => DifferenceTemporalPlainTime(DifferenceOperation.Until, ThisPlainTime(thisValue), Argument(arguments, 0), Argument(arguments, 1))),
+        new("since", 1, (_, thisValue, arguments, _) => DifferenceTemporalPlainTime(DifferenceOperation.Since, ThisPlainTime(thisValue), Argument(arguments, 0), Argument(arguments, 1))),
+        new("round", 1, Round),
+        new("equals", 1, (_, thisValue, arguments, _) =>
+        {
+            var plainTime = ThisPlainTime(thisValue);
+            var other = ToTemporalTime(Argument(arguments, 0));
+            return CompareTimeRecord(plainTime.Time, other.Time) == 0;
+        }),
+        new("toString", 0, ToStringMethod),
+        new("toLocaleString", 0, (_, thisValue, _, _) => TimeRecordToString(ThisPlainTime(thisValue).Time, PrecisionAuto)),
+        new("toJSON", 0, (_, thisValue, _, _) => TimeRecordToString(ThisPlainTime(thisValue).Time, PrecisionAuto)),
+    ];
+
     public static JsBuiltinFunction Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
         var prototype = intrinsics.TemporalPlainTimePrototype;
         var constructor = TemporalBuiltinHelpers.CreateConstructor(intrinsics, "PlainTime", 0, Construct, prototype);
-        realm.DefineMethod(constructor, "from", 1, (_, _, arguments, _) => ToTemporalTime(Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(constructor, "compare", 2, (_, _, arguments, _) =>
-        {
-            var one = ToTemporalTime(Argument(arguments, 0));
-            var two = ToTemporalTime(Argument(arguments, 1));
-            return CompareTimeRecord(one.Time, two.Time);
-        });
+        realm.DefineMethods(constructor, ConstructorMethods);
 
         TemporalBuiltinHelpers.DefineTimeGetters(realm, prototype, value => ThisPlainTime(value).Time);
-        realm.DefineMethod(prototype, "add", 1, (_, thisValue, arguments, _) => AddDurationToTime(subtract: false, ThisPlainTime(thisValue), Argument(arguments, 0)));
-        realm.DefineMethod(prototype, "subtract", 1, (_, thisValue, arguments, _) => AddDurationToTime(subtract: true, ThisPlainTime(thisValue), Argument(arguments, 0)));
-        realm.DefineMethod(prototype, "with", 1, With);
-        realm.DefineMethod(prototype, "until", 1, (_, thisValue, arguments, _) => DifferenceTemporalPlainTime(DifferenceOperation.Until, ThisPlainTime(thisValue), Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(prototype, "since", 1, (_, thisValue, arguments, _) => DifferenceTemporalPlainTime(DifferenceOperation.Since, ThisPlainTime(thisValue), Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(prototype, "round", 1, Round);
-        realm.DefineMethod(prototype, "equals", 1, (_, thisValue, arguments, _) =>
-        {
-            var plainTime = ThisPlainTime(thisValue);
-            var other = ToTemporalTime(Argument(arguments, 0));
-            return CompareTimeRecord(plainTime.Time, other.Time) == 0;
-        });
-        realm.DefineMethod(prototype, "toString", 0, ToStringMethod);
-        realm.DefineMethod(prototype, "toLocaleString", 0, (_, thisValue, _, _) => TimeRecordToString(ThisPlainTime(thisValue).Time, PrecisionAuto));
-        realm.DefineMethod(prototype, "toJSON", 0, (_, thisValue, _, _) => TimeRecordToString(ThisPlainTime(thisValue).Time, PrecisionAuto));
+        realm.DefineMethods(prototype, PrototypeMethods);
         TemporalBuiltinHelpers.DefineValueOf(realm, prototype, "PlainTime");
         return constructor;
     }

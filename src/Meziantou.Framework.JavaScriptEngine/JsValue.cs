@@ -22,6 +22,13 @@ public readonly struct JsValue : IEquatable<JsValue>
         _number = 0;
     }
 
+    // The slot of a lazy property: the cell that computes the value, and an index (LazyCell)
+    internal JsValue(JsCell cell, int index)
+    {
+        Cell = cell;
+        _number = index;
+    }
+
     /// <summary>Creates a number value.</summary>
     public JsValue(double value)
     {

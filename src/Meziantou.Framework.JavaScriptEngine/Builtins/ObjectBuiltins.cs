@@ -5,6 +5,47 @@ internal static class ObjectBuiltins
 {
     private static readonly PropertyKey ToStringKey = new("toString");
 
+    private static readonly BuiltinMethodTable ConstructorMethods =
+    [
+        new("assign", 2, Assign),
+        new("create", 2, Create),
+        new("defineProperties", 2, DefineProperties),
+        new("defineProperty", 3, DefineProperty),
+        new("entries", 1, Entries),
+        new("freeze", 1, Freeze),
+        new("fromEntries", 1, FromEntries),
+        new("getOwnPropertyDescriptor", 2, GetOwnPropertyDescriptor),
+        new("getOwnPropertyDescriptors", 1, GetOwnPropertyDescriptors),
+        new("getOwnPropertyNames", 1, GetOwnPropertyNames),
+        new("getOwnPropertySymbols", 1, GetOwnPropertySymbols),
+        new("getPrototypeOf", 1, GetPrototypeOf),
+        new("groupBy", 2, GroupBy),
+        new("hasOwn", 2, HasOwn),
+        new("is", 2, Is),
+        new("isExtensible", 1, IsExtensible),
+        new("isFrozen", 1, IsFrozen),
+        new("isSealed", 1, IsSealed),
+        new("keys", 1, Keys),
+        new("preventExtensions", 1, PreventExtensions),
+        new("seal", 1, Seal),
+        new("setPrototypeOf", 2, SetPrototypeOf),
+        new("values", 1, Values),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("__defineGetter__", 2, DefineGetter),
+        new("__defineSetter__", 2, DefineSetter),
+        new("hasOwnProperty", 1, HasOwnProperty),
+        new("isPrototypeOf", 1, IsPrototypeOf),
+        new("__lookupGetter__", 1, LookupGetter),
+        new("__lookupSetter__", 1, LookupSetter),
+        new("propertyIsEnumerable", 1, PropertyIsEnumerable),
+        new("toLocaleString", 0, ToLocaleString),
+        new("toString", 0, ToString),
+        new("valueOf", 0, ValueOf),
+    ];
+
     public static JsBuiltinFunction Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
@@ -12,41 +53,10 @@ internal static class ObjectBuiltins
         var constructor = realm.CreateBuiltinFunction("Object", 1, Construct, isConstructor: true);
         constructor.DefineBuiltIn("prototype", prototype, PropertyFlags.None);
 
-        realm.DefineMethod(constructor, "assign", 2, Assign);
-        realm.DefineMethod(constructor, "create", 2, Create);
-        realm.DefineMethod(constructor, "defineProperties", 2, DefineProperties);
-        realm.DefineMethod(constructor, "defineProperty", 3, DefineProperty);
-        realm.DefineMethod(constructor, "entries", 1, Entries);
-        realm.DefineMethod(constructor, "freeze", 1, Freeze);
-        realm.DefineMethod(constructor, "fromEntries", 1, FromEntries);
-        realm.DefineMethod(constructor, "getOwnPropertyDescriptor", 2, GetOwnPropertyDescriptor);
-        realm.DefineMethod(constructor, "getOwnPropertyDescriptors", 1, GetOwnPropertyDescriptors);
-        realm.DefineMethod(constructor, "getOwnPropertyNames", 1, GetOwnPropertyNames);
-        realm.DefineMethod(constructor, "getOwnPropertySymbols", 1, GetOwnPropertySymbols);
-        realm.DefineMethod(constructor, "getPrototypeOf", 1, GetPrototypeOf);
-        realm.DefineMethod(constructor, "groupBy", 2, GroupBy);
-        realm.DefineMethod(constructor, "hasOwn", 2, HasOwn);
-        realm.DefineMethod(constructor, "is", 2, Is);
-        realm.DefineMethod(constructor, "isExtensible", 1, IsExtensible);
-        realm.DefineMethod(constructor, "isFrozen", 1, IsFrozen);
-        realm.DefineMethod(constructor, "isSealed", 1, IsSealed);
-        realm.DefineMethod(constructor, "keys", 1, Keys);
-        realm.DefineMethod(constructor, "preventExtensions", 1, PreventExtensions);
-        realm.DefineMethod(constructor, "seal", 1, Seal);
-        realm.DefineMethod(constructor, "setPrototypeOf", 2, SetPrototypeOf);
-        realm.DefineMethod(constructor, "values", 1, Values);
+        realm.DefineMethods(constructor, ConstructorMethods);
 
         prototype.DefineBuiltIn("constructor", constructor);
-        realm.DefineMethod(prototype, "__defineGetter__", 2, DefineGetter);
-        realm.DefineMethod(prototype, "__defineSetter__", 2, DefineSetter);
-        realm.DefineMethod(prototype, "hasOwnProperty", 1, HasOwnProperty);
-        realm.DefineMethod(prototype, "isPrototypeOf", 1, IsPrototypeOf);
-        realm.DefineMethod(prototype, "__lookupGetter__", 1, LookupGetter);
-        realm.DefineMethod(prototype, "__lookupSetter__", 1, LookupSetter);
-        realm.DefineMethod(prototype, "propertyIsEnumerable", 1, PropertyIsEnumerable);
-        realm.DefineMethod(prototype, "toLocaleString", 0, ToLocaleString);
-        realm.DefineMethod(prototype, "toString", 0, ToString);
-        realm.DefineMethod(prototype, "valueOf", 0, ValueOf);
+        realm.DefineMethods(prototype, PrototypeMethods);
         realm.DefineAccessor(prototype, "__proto__", GetProto, SetProto);
 
         intrinsics.AddGlobal("Object", constructor);

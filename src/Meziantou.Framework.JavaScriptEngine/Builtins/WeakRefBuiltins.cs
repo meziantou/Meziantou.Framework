@@ -45,6 +45,12 @@ internal static class WeakRefBuiltins
 /// <summary>The FinalizationRegistry constructor and FinalizationRegistry.prototype (https://tc39.es/ecma262/#sec-finalization-registry-objects).</summary>
 internal static class FinalizationRegistryBuiltins
 {
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("register", 2, Register),
+        new("unregister", 1, Unregister),
+    ];
+
     public static JsFunction Initialize(Intrinsics intrinsics, JsObject prototype)
     {
         var realm = intrinsics.Realm;
@@ -52,8 +58,7 @@ internal static class FinalizationRegistryBuiltins
         constructor.DefineBuiltIn("prototype", prototype, PropertyFlags.None);
 
         prototype.DefineBuiltIn("constructor", constructor);
-        realm.DefineMethod(prototype, "register", 2, Register);
-        realm.DefineMethod(prototype, "unregister", 1, Unregister);
+        realm.DefineMethods(prototype, PrototypeMethods);
         prototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "FinalizationRegistry", PropertyFlags.Configurable);
 
         intrinsics.AddGlobal("FinalizationRegistry", constructor);

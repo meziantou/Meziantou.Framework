@@ -26,6 +26,13 @@ internal sealed class JsPluralRulesObject(JsObject prototype) : JsObject(prototy
 /// <summary>Intl.PluralRules (https://tc39.es/ecma402/#pluralrules-objects).</summary>
 internal static class PluralRulesBuiltins
 {
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("resolvedOptions", 0, ResolvedOptions),
+        new("select", 1, Select),
+        new("selectRange", 2, SelectRange),
+    ];
+
     public static void Initialize(Intrinsics intrinsics, JsObject intl)
     {
         var realm = intrinsics.Realm;
@@ -35,9 +42,7 @@ internal static class PluralRulesBuiltins
         realm.DefineMethod(constructor, "supportedLocalesOf", 1, SupportedLocalesOf);
         prototype.DefineBuiltIn("constructor", constructor);
         prototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Intl.PluralRules", PropertyFlags.Configurable);
-        realm.DefineMethod(prototype, "resolvedOptions", 0, ResolvedOptions);
-        realm.DefineMethod(prototype, "select", 1, Select);
-        realm.DefineMethod(prototype, "selectRange", 2, SelectRange);
+        realm.DefineMethods(prototype, PrototypeMethods);
         intl.DefineBuiltIn("PluralRules", constructor);
     }
 

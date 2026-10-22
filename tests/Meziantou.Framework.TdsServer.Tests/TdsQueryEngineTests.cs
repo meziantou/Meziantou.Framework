@@ -3291,6 +3291,87 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_ArithmeticOnNullValue_ReturnsNull()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id, JSON_PATH_EXISTS(Payload, '$.name') - 2147 AS X
+                    FROM json_docs
+                    WHERE Id IN (1, 4)
+                    """;
+            },
+            """
+            Id X
+            1 -2146
+            4 NULL
+            """,
+            expectedMaterializedQueries: "JsonDocumentRow[].Where(jsonDocumentRow => new [] {1, 4}.Contains(jsonDocumentRow.Id)).Select(jsonDocumentRow2 => new TdsProjection() {Id = jsonDocumentRow2.Id, X = (JsonPathExistsCore(jsonDocumentRow2.Payload, \"$.name\") - Convert(2147, Nullable`1))})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ArithmeticOnNullableColumn_ReturnsNullForNullRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id, Score + 1.5 AS X, -Score * 2 AS Y
+                    FROM nullable_customers
+                    WHERE Score - 1 > 10 OR Score IS NULL
+                    """;
+            },
+            """
+            Id X Y
+            1 101.5 -200
+            3 NULL NULL
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => (((nullableCustomer.Score - Convert(1, Nullable`1)) > 10) OrElse (nullableCustomer.Score == null))).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id, X = (Convert(nullableCustomer2.Score, Nullable`1) + Convert(1.5, Nullable`1)), Y = -(nullableCustomer2.Score * Convert(2, Nullable`1))})");
+    }
+
+    // SqlClient re-encodes the command text, so the query delegate is called directly to keep the unpaired surrogate
+    [Fact]
+    public async Task QueryEngine_JsonFunctions_JsonTextWithAnUnpairedSurrogate_IsNotValidJson()
+    {
+        var handler = TdsQueryEngine.CreateQueryHandler(CreateQueryEngineOptions());
+        Assert.Equal(0, await ExecuteScalarQueryAsync(handler, "SELECT ISJSON('\"\uDCDC\"') AS X FROM json_docs WHERE Id = 1"));
+        foreach (var function in (string[])["JSON_VALUE('\"\uDCDC\"', '$')", "JSON_QUERY('[\"\uDCDC\"]')", "JSON_PATH_EXISTS('{\"\uDCDC\":1}', '$.a')"])
+        {
+            var result = await ExecuteQueryAsync(handler, $"SELECT {function} AS X FROM json_docs WHERE Id = 1");
+            Assert.Equal(50004, result.Error?.Number);
+            Assert.Contains("input is not a valid JSON document", result.Error?.Message, StringComparison.Ordinal);
+        }
+
+        static async Task<object?> ExecuteScalarQueryAsync(TdsQueryDelegate handler, string commandText)
+        {
+            var result = await ExecuteQueryAsync(handler, commandText);
+            Assert.Null(result.Error?.Message);
+            var resultSet = Assert.Single(result.ResultSets);
+            return Assert.Single(resultSet.Rows)[0];
+        }
+
+        static async Task<TdsQueryResult> ExecuteQueryAsync(TdsQueryDelegate handler, string commandText)
+        {
+            return await handler(
+                new TdsQueryContext
+                {
+                    RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, 1433),
+                    RequestType = TdsQueryRequestType.SqlBatch,
+                    CommandText = commandText,
+                    HasCompleteParameters = true,
+                },
+                CancellationToken.None);
+        }
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_XmlDataType_UntypedCast_ReturnsXml()
     {
         var queryEngineOptions = CreateQueryEngineOptions();

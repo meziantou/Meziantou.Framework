@@ -77,7 +77,7 @@ internal static class LocaleSensitiveBuiltins
     {
         var x = NumberBuiltins.ThisNumberValue(thisValue, "toLocaleString");
         var numberFormat = CreateNumberFormat(function, arguments);
-        return NumberFormatter.Format(numberFormat, IntlDecimal.FromDouble(x));
+        return NumberFormatter.Format(numberFormat, IntlDecimal.FromNumber(x));
     }
 
     /// <summary>BigInt.prototype.toLocaleString([locales [, options]])</summary>

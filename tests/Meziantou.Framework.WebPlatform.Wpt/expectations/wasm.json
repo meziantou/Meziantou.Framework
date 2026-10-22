@@ -1251,10 +1251,18 @@
     "total": 2
   },
   "wasm/jsapi/idlharness.any.js": {
-    "total": 91
+    "total": 91,
+    "failures": {
+      "Module interface: existence and properties of interface object": "FAIL",
+      "Module interface: existence and properties of interface prototype object": "FAIL"
+    }
   },
   "wasm/jsapi/idlharness.any.js#dedicatedworker": {
-    "total": 91
+    "total": 91,
+    "failures": {
+      "Module interface: existence and properties of interface object": "FAIL",
+      "Module interface: existence and properties of interface prototype object": "FAIL"
+    }
   },
   "wasm/jsapi/instance/constructor-bad-imports.any.js": {
     "total": 106
@@ -1635,20 +1643,10 @@
     "total": 11
   },
   "wasm/jsapi/module/moduleSource.tentative.any.js": {
-    "total": 4,
-    "failures": {
-      "AbstractModuleSource intrinsic": "FAIL",
-      "AbstractModuleSourceProto intrinsic": "FAIL",
-      "AbstractModuleSourceProto toStringTag brand check": "FAIL"
-    }
+    "total": 4
   },
   "wasm/jsapi/module/moduleSource.tentative.any.js#dedicatedworker": {
-    "total": 4,
-    "failures": {
-      "AbstractModuleSource intrinsic": "FAIL",
-      "AbstractModuleSourceProto intrinsic": "FAIL",
-      "AbstractModuleSourceProto toStringTag brand check": "FAIL"
-    }
+    "total": 4
   },
   "wasm/jsapi/module/toString.any.js": {
     "total": 2

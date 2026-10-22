@@ -1828,11 +1828,7 @@
     "commit": "21d1eb0f306e1141c10931e914dfc038c06121da",
     "files": {
       "LICENSE": "e55522d81edc687a341a4411e0776e54ca654e90147f354a90458aaced4116af",
-      "icu4c/source/data/brkitr/adaboost/jaml.txt": "845816d923c9b376a91c7eaf18d8e5f7c64903f30b4c62f5292f7c0db5d1e779",
-      "icu4c/source/data/brkitr/dictionaries/burmesedict.txt": "61d8abc3d9102b2f9bf0c9f44db0d7ab89b18172d8cd26832e4c83174bd8673b",
-      "icu4c/source/data/brkitr/dictionaries/khmerdict.txt": "87bee2d17cd5148aa36957eb05409eefc124de8ad519b81b789298ef3e60b5d9",
-      "icu4c/source/data/brkitr/dictionaries/laodict.txt": "3c876934a3fa81031d2333525eafaca6a7c9f842e3b98f18c38880420afb5d36",
-      "icu4c/source/data/brkitr/dictionaries/thaidict.txt": "3166abde40c0f44ab91c28f5ce96d7d1472cb7882e1c0bda0a72f8f69dba4274"
+      "icu4c/source/data/brkitr/adaboost/jaml.txt": "845816d923c9b376a91c7eaf18d8e5f7c64903f30b4c62f5292f7c0db5d1e779"
     }
   }
 }

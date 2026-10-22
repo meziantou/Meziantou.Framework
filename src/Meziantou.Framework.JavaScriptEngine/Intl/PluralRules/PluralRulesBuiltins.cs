@@ -132,7 +132,7 @@ internal static class PluralRulesBuiltins
     private static JsValue Select(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
         var pluralRules = ThisPluralRules(thisValue, "select");
-        var n = JsOperations.ToNumber(arguments.Length > 0 ? arguments[0] : default);
+        var n = NumberFormatBuiltins.ToIntlMathematicalValue(arguments.Length > 0 ? arguments[0] : default);
         return ResolvePlural(pluralRules, n).Category;
     }
 
@@ -145,9 +145,9 @@ internal static class PluralRulesBuiltins
         if (start.IsUndefined || end.IsUndefined)
             ThrowHelper.ThrowTypeError("start and end are required");
 
-        var x = JsOperations.ToNumber(start);
-        var y = JsOperations.ToNumber(end);
-        if (double.IsNaN(x) || double.IsNaN(y))
+        var x = NumberFormatBuiltins.ToIntlMathematicalValue(start);
+        var y = NumberFormatBuiltins.ToIntlMathematicalValue(end);
+        if (x.IsNaN || y.IsNaN)
             ThrowHelper.ThrowRangeError("start and end must not be NaN");
 
         var xp = ResolvePlural(pluralRules, x);
@@ -179,13 +179,12 @@ internal static class PluralRulesBuiltins
     }
 
     /// <summary>ResolvePlural(pluralRules, n)</summary>
-    internal static (string Category, string FormattedString) ResolvePlural(JsPluralRulesObject pluralRules, double n)
+    internal static (string Category, string FormattedString) ResolvePlural(JsPluralRulesObject pluralRules, IntlDecimal x)
     {
-        if (!double.IsFinite(n))
-            return ("other", NumberFormatting.ToString(n));
+        if (!x.IsFinite)
+            return ("other", x.ToString());
 
         // The number is formatted without the exponent of the notation, which is the c (or e) operand of the rules
-        var x = IntlDecimal.FromDouble(n);
         var formatted = pluralRules.Digits.FormatNumericToString(x);
         var exponent = pluralRules.Notation is "standard" ? 0 : Notation.ComputeExponent(pluralRules.Digits, pluralRules.Notation, pluralRules.DataLocale, "latn", pluralRules.CompactDisplay, currency: false, x).Exponent;
         var category = SelectCategory(pluralRules.Rules, formatted.FormattedString, exponent);

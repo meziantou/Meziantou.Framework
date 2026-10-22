@@ -121,7 +121,7 @@ internal sealed class ModuleNamespaceObject : JsObject
         var binding = _module.ResolveExport(name, [])!;
         var target = binding.Module;
         if (binding.IsNamespace)
-            return ModuleOperations.GetModuleNamespaceOrSource(target, binding.NamespacePhase);
+            return ModuleOperations.GetModuleNamespaceOrSource(target, binding.NamespacePhase, ErrorType.ReferenceError);
 
         if (target.Environment is not { } environment)
             return ThrowHelper.ThrowReferenceError<JsValue>("Cannot access '" + name + "' before initialization");

@@ -211,7 +211,10 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
 - `Intl/Locale/LocaleInfo.cs`: the available calendars, collations, currencies, numbering systems and units
   (Intl.supportedValuesOf), and the regional preferences of a locale (calendars, hour cycles, week, time zones).
 - `Intl/NumberFormat/IntlDecimal.cs`: the Intl mathematical values (exact decimal values, with negative zero, NaN and
-  the infinities): from a Number (its exact binary value), a BigInt, or a string (ToIntlMathematicalValue).
+  the infinities): from a Number, a BigInt, or a string (ToIntlMathematicalValue). Since Intl.NumberFormat v3, a Number
+  is converted with Number::toString, so its shortest round-tripping decimal is rounded (`FromNumber`:
+  `(1.005).toLocaleString("en", { maximumFractionDigits: 2 })` is "1.01", as in browsers); RelativeTimeFormat keeps
+  the exact binary value of the spec text (`FromDouble`, ℝ(value)).
   `DigitOptions` is SetNumberFormatDigitOptions and FormatNumericToString (ToRawPrecision, ToRawFixed, the rounding
   modes, increments and priorities): Intl.PluralRules and Intl.NumberFormat share it, and so can the other services
   that format numbers.
@@ -244,11 +247,13 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
 - `Intl/Segmenter/`: Intl.Segmenter. The graphemes and the sentences are the ones of UAX #29 (Meziantou.Framework.Unicode);
   the words are the ones of the word break iterator of ICU, as V8 uses it (`WordBreaker`: the root rules of `word.txt`,
   then the dictionary break engines of `dictbe.cpp` for the segments that have Han, kana, Thai, Lao, Khmer or Burmese
-  characters: `CjkBreakEngine` keeps the segmentation of a run of kana and kanji whose words have the smallest total
-  cost, `ComplexContextBreakEngine` the longest words followed by other words of the list). The word lists of ICU are
-  in `Intl/Data/dictionaries.bin` (`WordDictionaries`, about 1.5 MB): a list is decompressed and loaded into a trie on
-  the first use of its script (about 3 MB of memory for Chinese and Japanese). `Corpus/SegmenterV8.jsonl` of the tests
-  has words recorded with V8.
+  characters). The engines and the word lists of ICU are in Meziantou.Framework.Unicode.Dictionaries
+  (`IcuDictionaryBreakEngine`, `IcuWordDictionary`, shared with Meziantou.Framework.WebPlatform): the Chinese and Japanese
+  engine keeps the segmentation of a run of kana and kanji whose words have the smallest total cost, the other ones the
+  longest words followed by other words of the list. A list is decompressed and loaded into a trie on the first use of
+  its script (about 3 MB of memory for Chinese and Japanese). `WordBreaker` keeps what is specific to the break iterator
+  of ICU: the runs given to the engines and the unhandled engine (`EngineStack`). `Corpus/SegmenterV8.jsonl` of the
+  tests has words recorded with V8.
 
 ## Performance
 

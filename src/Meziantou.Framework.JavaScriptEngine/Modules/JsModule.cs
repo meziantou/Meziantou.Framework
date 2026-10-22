@@ -26,6 +26,16 @@ public abstract class JsModule : JsScriptOrModule
     /// <summary>Gets the position of the code that threw <see cref="EvaluationError"/>, when the error was thrown synchronously by the evaluation of a module of the graph.</summary>
     public JsSourceLocation? EvaluationErrorLocation { get; internal set; }
 
+    /// <summary>
+    /// Gets or sets the module source object of the module ([[ModuleSource]], https://tc39.es/proposal-source-phase-imports/):
+    /// the value of a source phase import of the module (<c>import source x from</c> and <c>import.source()</c>), e.g. a
+    /// <c>WebAssembly.Module</c>. The host sets it when it creates the module, before the module loader returns it. The
+    /// object should extend <see cref="JsRealm.AbstractModuleSource"/> and be a <see cref="JsHostObject"/> whose
+    /// <see cref="JsHostObject.ModuleSourceClassName"/> is set. When it is null (e.g. a JavaScript or a JSON module), a source
+    /// phase import of the module throws a SyntaxError.
+    /// </summary>
+    public JsObject? ModuleSource { get; set; }
+
     /// <summary>Gets the module environment ([[Environment]]), created when the module is linked.</summary>
     internal DeclarativeEnvironment? Environment { get; set; }
 

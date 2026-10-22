@@ -287,7 +287,9 @@ dictionary: without one, a sentence has no break opportunity. `LineBreakDictiona
 of a list that you provide. No word list is included in this package: [ICU](https://github.com/unicode-org/icu)
 publishes word lists for Thai, Lao, Khmer and Burmese (`thaidict.txt`, `laodict.txt`, `khmerdict.txt`,
 `burmesedict.txt` in `icu4c/source/data/brkitr/dictionaries`) under the Unicode License; its `LICENSE` file has
-additional notices for some of them.
+additional notices for some of them. The [Meziantou.Framework.Unicode.Dictionaries](../Meziantou.Framework.Unicode.Dictionaries/readme.md)
+package embeds these lists (`IcuWordDictionary.CreateLineBreakDictionary()` creates a `LineBreakDictionary` from them),
+with the dictionary break engines of ICU.
 
 <!-- ref:../../tests/Meziantou.Framework.Unicode.Tests/UnicodeTests.cs;region=Unicode_LineBreakDictionary;format=md-fenced-code-block;dedent=true -->
 ```csharp

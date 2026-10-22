@@ -80,6 +80,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Toml\Meziantou.Framework.Toml.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.UndoRedo\Meziantou.Framework.UndoRedo.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Unicode\Meziantou.Framework.Unicode.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Unicode.Dictionaries\Meziantou.Framework.Unicode.Dictionaries.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Uri\Meziantou.Framework.Uri.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ValueStopwatch\Meziantou.Framework.ValueStopwatch.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ValueStringBuilder\Meziantou.Framework.ValueStringBuilder.csproj" />
@@ -159,6 +160,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Toml" />
     <TrimmerRootAssembly Include="Meziantou.Framework.UndoRedo" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Unicode" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Unicode.Dictionaries" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Uri" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ValueStopwatch" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ValueStringBuilder" />

@@ -158,6 +158,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public bool HasCallInternalMethod { get => throw null; set { } }
         public bool HasImmutablePrototype { get => throw null; set { } }
         public bool IsHtmlDdaObject { get => throw null; set { } }
+        public string? ModuleSourceClassName { get => throw null; set { } }
         public object? Target { get => throw null; }
         public JsHostObject(Meziantou.Framework.JavaScriptEngine.JsObject? prototype, object? target = null) { }
         protected JsHostObject(Meziantou.Framework.JavaScriptEngine.JsObject? prototype, object? target, bool hasOrdinaryInternalMethods) { }
@@ -218,6 +219,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public Meziantou.Framework.JavaScriptEngine.JsValue EvaluationError { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsSourceLocation? EvaluationErrorLocation { get => throw null; }
         public bool HasEvaluationError { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsObject? ModuleSource { get => throw null; set { } }
         public Meziantou.Framework.JavaScriptEngine.JsModuleStatus Status { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsValue Evaluate() => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsValue GetNamespace() => throw null;
@@ -378,6 +380,7 @@ namespace Meziantou.Framework.JavaScriptEngine
 
     public sealed class JsRealm
     {
+        public Meziantou.Framework.JavaScriptEngine.JsFunction AbstractModuleSource { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsEngine Engine { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsObject FunctionPrototype { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsObject GlobalObject { get => throw null; }

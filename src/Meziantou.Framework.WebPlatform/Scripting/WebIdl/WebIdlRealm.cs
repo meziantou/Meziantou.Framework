@@ -458,6 +458,14 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             // https://webidl.spec.whatwg.org/#es-DOMException-specialness
             parentPrototype = EvaluateBuiltIn("Error.prototype");
         }
+#pragma warning disable WEBPLATEXP0014 // The source phase imports are experimental for the consumers of the package only
+        else if ((binding.Flags & InterfaceBindingFlags.ModuleSource) != InterfaceBindingFlags.None && Adapter.GetAbstractModuleSource() is { } abstractModuleSource)
+#pragma warning restore WEBPLATEXP0014
+        {
+            // https://webassembly.github.io/esm-integration/js-api/index.html#webassembly-module-objects: WebAssembly.Module extends %AbstractModuleSource%
+            parentInterfaceObject = abstractModuleSource;
+            parentPrototype = Adapter.Get(abstractModuleSource, Key("prototype"));
+        }
         else
         {
             parentPrototype = ObjectPrototype;
@@ -470,7 +478,8 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         // https://webidl.spec.whatwg.org/#create-an-interface-object: a built-in function object (its [[Construct]] does not
         // read NewTarget.prototype before the constructor steps, as the HTML element constructors require)
         var interfaceObject = Adapter.CreateConstructor(binding.Name, binding.ConstructorLength, (arguments, newTarget) => Construct(binding, newTarget, arguments));
-        if (binding.Parent is not null)
+        // The [[Prototype]] of the interface object is the interface object of the parent (or %AbstractModuleSource%)
+        if (!Adapter.IsUndefined(parentInterfaceObject))
         {
             Adapter.SetPrototypeOf(interfaceObject, parentInterfaceObject);
         }
@@ -1195,6 +1204,13 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             Location location => CreateLocationObject(prototype, location),
             _ => CreatePlatformObject(prototype, target, GetLegacyPlatformObjectHandler(binding)),
         };
+
+        if ((binding.Flags & InterfaceBindingFlags.ModuleSource) != InterfaceBindingFlags.None)
+        {
+#pragma warning disable WEBPLATEXP0014 // The source phase imports are experimental for the consumers of the package only
+            Adapter.SetModuleSourceClassName(wrapper, binding.ClassString ?? binding.Name);
+#pragma warning restore WEBPLATEXP0014
+        }
 
         Agent.Wrappers.AddOrUpdate(target, wrapper);
         if (target is Location)

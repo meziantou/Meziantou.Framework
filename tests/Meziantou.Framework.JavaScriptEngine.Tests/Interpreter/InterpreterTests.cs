@@ -476,6 +476,17 @@ public sealed class InterpreterTests
         {
             if (!_modules.TryGetValue(request.Specifier, out var module))
             {
+                if (request.Specifier == "module-source")
+                {
+                    // A module whose source is a host object, as a WebAssembly module
+                    var abstractModuleSourcePrototype = request.Realm.AbstractModuleSource.GetProperty("prototype").AsObject();
+                    module = request.Realm.CreateSyntheticModule([], _ => { }, request.Specifier);
+                    module.ModuleSource = new JsHostObject(request.Realm.CreateObject(abstractModuleSourcePrototype)) { ModuleSourceClassName = "Test.ModuleSource" };
+                    _modules[request.Specifier] = module;
+                    request.Complete(module);
+                    return;
+                }
+
                 if (!files.TryGetValue(request.Specifier, out var code))
                 {
                     request.Fail("Cannot find the module '" + request.Specifier + "'");
@@ -542,6 +553,26 @@ public sealed class InterpreterTests
         });
 
         Assert.Equal("SyntaxError,undefined", result);
+    }
+
+    [Fact]
+    public void Module_ImportSource_ReturnsTheModuleSourceOfTheHost()
+    {
+        var result = RunModule(new()
+        {
+            ["main"] = """
+                import source a from 'module-source';
+                import { x } from 'reexport';
+                import * as ns from 'reexport';
+                const b = await import.source('module-source');
+                const abstractModuleSourcePrototype = Object.getPrototypeOf(Object.getPrototypeOf(a));
+                const getToStringTag = Object.getOwnPropertyDescriptor(abstractModuleSourcePrototype, Symbol.toStringTag).get;
+                globalThis.result = [a === b, a === x, a === ns.x, abstractModuleSourcePrototype.constructor.name, getToStringTag.call(a), getToStringTag.call({}), Object.prototype.toString.call(a)].join(',');
+                """,
+            ["reexport"] = "import source x from 'module-source'; export { x };",
+        });
+
+        Assert.Equal("true,true,true,AbstractModuleSource,Test.ModuleSource,,[object Test.ModuleSource]", result);
     }
 
     [Fact]

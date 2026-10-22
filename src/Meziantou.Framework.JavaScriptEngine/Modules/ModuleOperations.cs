@@ -648,16 +648,19 @@ internal static class ModuleOperations
     // ------------------------------------------------------------------------------------------------------------------
 
     /// <summary>The value of a namespace import (GetModuleNamespace) or of a source phase import (GetModuleSource).</summary>
-    public static JsValue GetModuleNamespaceOrSource(JsModule module, ModulePhase phase) => phase == ModulePhase.Source ? GetModuleSource(module) : GetModuleNamespace(module, phase);
+    public static JsValue GetModuleNamespaceOrSource(JsModule module, ModulePhase phase, ErrorType missingSourceError = ErrorType.SyntaxError) => phase == ModulePhase.Source ? GetModuleSource(module, missingSourceError) : GetModuleNamespace(module, phase);
 
     /// <summary>
-    /// GetModuleSource(): the source of a module (e.g. a WebAssembly.Module). The source of a JavaScript module or of a
-    /// JSON module is not available: a SyntaxError is thrown.
+    /// The [[ModuleSource]] of a module (e.g. a WebAssembly.Module), set by the host. The source of a JavaScript module or of a
+    /// JSON module is not available: a SyntaxError is thrown (a ReferenceError for the [[Get]] of a namespace object).
     /// </summary>
-    public static JsValue GetModuleSource(JsModule module)
+    public static JsValue GetModuleSource(JsModule module, ErrorType missingSourceError = ErrorType.SyntaxError)
     {
+        if (module.ModuleSource is { } moduleSource)
+            return moduleSource;
+
         var url = module.Url is null ? "the module" : "the module '" + module.Url + "'";
-        return ThrowHelper.ThrowSyntaxError<JsValue>("The source phase import of " + url + " is not supported: it has no source representation");
+        throw ThrowHelper.CreateException(missingSourceError, "The source phase import of " + url + " is not supported: it has no source representation");
     }
 
     /// <summary>GetModuleNamespace(module, phase)</summary>

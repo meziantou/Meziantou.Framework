@@ -373,6 +373,25 @@ public interface IJsAdapter<TValue>
     [Experimental(ExperimentalApis.ErrorStackAccessor, UrlFormat = ExperimentalApis.UrlFormat)]
     bool TrySetErrorStack(TValue error, string stack) => false;
 
+    /// <summary>
+    /// Returns %AbstractModuleSource% of the current realm (https://tc39.es/proposal-source-phase-imports/#sec-abstractmodulesource-objects),
+    /// which the interface object of <c>WebAssembly.Module</c> extends
+    /// (https://webassembly.github.io/esm-integration/js-api/index.html#webassembly-module-objects), or null when the engine does
+    /// not implement the source phase imports: the interface then extends nothing. The default implementation returns null.
+    /// </summary>
+    [Experimental(ExperimentalApis.SourcePhaseImports, UrlFormat = ExperimentalApis.UrlFormat)]
+    TValue? GetAbstractModuleSource() => null;
+
+    /// <summary>
+    /// Sets the [[ModuleSourceClassName]] internal slot of a platform object created by <see cref="CreatePlatformObject"/>
+    /// (e.g. <c>WebAssembly.Module</c>), read by the <c>%AbstractModuleSource%.prototype[@@toStringTag]</c> getter. The
+    /// default implementation does nothing.
+    /// </summary>
+    [Experimental(ExperimentalApis.SourcePhaseImports, UrlFormat = ExperimentalApis.UrlFormat)]
+    void SetModuleSourceClassName(TValue obj, string className)
+    {
+    }
+
     // ----------------------------------------------------------------------------------------------------------------
     // Buffer sources (https://webidl.spec.whatwg.org/#idl-buffer-source-types)
     // ----------------------------------------------------------------------------------------------------------------

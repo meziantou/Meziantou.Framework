@@ -58,6 +58,14 @@ public class JsHostObject : JsObject
     /// <summary>Gets or sets whether the prototype of the object cannot be changed (an immutable prototype exotic object, e.g. <c>Object.prototype</c> or a <c>Window</c>).</summary>
     public bool HasImmutablePrototype { get; set; }
 
+    /// <summary>
+    /// Gets or sets the class name of a module source object ([[ModuleSourceClassName]],
+    /// https://tc39.es/proposal-source-phase-imports/), e.g. <c>WebAssembly.Module</c>: the value of the
+    /// <c>%AbstractModuleSource%.prototype[@@toStringTag]</c> getter for the object. Null when the object is not a module
+    /// source (see <see cref="JsModule.ModuleSource"/>).
+    /// </summary>
+    public string? ModuleSourceClassName { get; set; }
+
     // ------------------------------------------------------------------------------------------------------------------
     // Overridable internal methods
     // ------------------------------------------------------------------------------------------------------------------

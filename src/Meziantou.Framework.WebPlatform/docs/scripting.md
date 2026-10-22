@@ -569,6 +569,10 @@ for each engine: the calls to the adapter are direct calls that can be inlined, 
   a `SharedArrayBuffer` is only shared with the realms of the same engine instance (as the same object).
 - Errors: `TrySetErrorStack` sets the [[Stack]] internal slot of a deserialized error (read by the `Error.prototype.stack`
   accessor of https://tc39.es/proposal-error-stack-accessor/); without it, the stack is an own data property.
+- Module sources (https://tc39.es/proposal-source-phase-imports/): `GetAbstractModuleSource` returns
+  `%AbstractModuleSource%`, which `WebAssembly.Module` extends, and `SetModuleSourceClassName` sets the
+  [[ModuleSourceClassName]] of its instances (read by the `%AbstractModuleSource%.prototype[@@toStringTag]` getter);
+  without them, `WebAssembly.Module` extends nothing.
 
 The adapter must return the same `TValue` instance for the same JavaScript object: the bindings compare the objects by
 reference and cache data per object.

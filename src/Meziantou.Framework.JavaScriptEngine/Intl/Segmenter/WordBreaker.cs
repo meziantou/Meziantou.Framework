@@ -15,8 +15,9 @@ namespace Meziantou.Framework.JavaScriptEngine.Intl;
 /// </para>
 /// <para>
 /// A segment of the rules that contains characters of these scripts is then divided by the dictionary break engines of
-/// ICU (<see cref="DictionaryBreakEngine"/>): Chinese and Japanese, Thai, Lao, Khmer and Burmese. The parts of a segment
-/// all have its kind. Hangul and the Complex_Context scripts that have no word list are not divided.
+/// ICU (<see cref="IcuDictionaryBreakEngine"/>, of Meziantou.Framework.Unicode.Dictionaries): Chinese and Japanese, Thai,
+/// Lao, Khmer and Burmese. The parts of a segment all have its kind. Hangul and the Complex_Context scripts that have no
+/// word list are not divided.
 /// </para>
 /// <para>
 /// The kind of a segment is the rule status of ICU: a number (100), a word of letters (200), kana or kanji (400), or
@@ -78,12 +79,13 @@ internal static class WordBreaker
     {
         var foundBreakCount = 0;
         var position = start;
+        int[]? runBreaks = null;
         while (true)
         {
             var codePoint = -1;
             while (position < end)
             {
-                codePoint = WordDictionary.DecodeAt(text, position, out var length);
+                codePoint = DecodeAt(text, position, out var length);
                 if (GetProperties(codePoint).HasFlag(WordFlags.Dictionary))
                     break;
 
@@ -93,8 +95,29 @@ internal static class WordBreaker
             if (position >= end)
                 break;
 
+            // The run of the characters the engine handles (DictionaryBreakEngine::findBreaks): the unhandled engine skips it
             var engine = engines.GetEngine(codePoint);
-            foundBreakCount += engine.FindBreaks(text, position, end, foundBreaks, out position);
+            var runStart = position;
+            while (position < end && engines.Handles(engine, DecodeAt(text, position, out var length)))
+            {
+                position += length;
+            }
+
+            if (engine is not null)
+            {
+                if (runBreaks is null || runBreaks.Length < position - runStart)
+                {
+                    runBreaks = new int[Math.Max(position - runStart, 64)];
+                }
+
+                var count = engine.FindBreaks(text.AsSpan(runStart, position - runStart), runBreaks);
+                for (var i = 0; i < count; i++)
+                {
+                    foundBreaks.Add(runStart + runBreaks[i]);
+                }
+
+                foundBreakCount += count;
+            }
         }
 
         return foundBreakCount;
@@ -103,7 +126,7 @@ internal static class WordBreaker
     /// <summary>Gets the length of the first segment of a text delimited by the rules, its kind, and whether it has dictionary characters.</summary>
     private static int GetRuleSegmentLength(ReadOnlySpan<char> text, out UnicodeWordKind kind, out bool hasDictionaryCharacters)
     {
-        var actualPrevious = GetProperties(WordDictionary.DecodeAt(text, 0, out var index));
+        var actualPrevious = GetProperties(DecodeAt(text, 0, out var index));
         hasDictionaryCharacters = actualPrevious.HasFlag(WordFlags.Dictionary);
 
         // The last character that is not Extend, Format or ZWJ (none when the segment starts with them: ^$ExFm+), the one
@@ -120,7 +143,7 @@ internal static class WordBreaker
 
         while (index < text.Length)
         {
-            var next = GetProperties(WordDictionary.DecodeAt(text, index, out var length));
+            var next = GetProperties(DecodeAt(text, index, out var length));
             if (actualPrevious.Class is WordClass.CR && next.Class is WordClass.LF)
             {
                 // $CR $LF
@@ -304,7 +327,7 @@ internal static class WordBreaker
     {
         while (index < text.Length)
         {
-            var value = GetProperties(WordDictionary.DecodeAt(text, index, out var length)).Class;
+            var value = GetProperties(DecodeAt(text, index, out var length)).Class;
             if (!IsExtendOrFormat(value))
                 return value;
 
@@ -312,6 +335,20 @@ internal static class WordBreaker
         }
 
         return WordClass.Other;
+    }
+
+    /// <summary>Decodes the code point at an index: an unpaired surrogate is returned as is, as UText does.</summary>
+    private static int DecodeAt(ReadOnlySpan<char> text, int index, out int length)
+    {
+        var value = text[index];
+        if (char.IsHighSurrogate(value) && index + 1 < text.Length && char.IsLowSurrogate(text[index + 1]))
+        {
+            length = 2;
+            return char.ConvertToUtf32(value, text[index + 1]);
+        }
+
+        length = 1;
+        return value;
     }
 
     private static bool IsLetter(WordClass value) => value is WordClass.ALetter or WordClass.HebrewLetter;
@@ -463,39 +500,21 @@ internal static class WordBreaker
     /// </summary>
     private sealed class EngineStack
     {
-        private readonly List<DictionaryBreakEngine> _engines = [];
-        private UnhandledBreakEngine? _unhandled;
+        // The engines in the order of their creation; null is the unhandled engine of the segmentation (UnhandledEngine),
+        // which finds no break and skips the characters of the scripts it was given so far
+        private readonly List<IcuDictionaryBreakEngine?> _engines = [];
+        private HashSet<UnicodeScript>? _unhandledScripts;
 
-        public DictionaryBreakEngine GetEngine(int codePoint)
+        /// <summary>Gets the engine of a character, or null for the unhandled engine.</summary>
+        public IcuDictionaryBreakEngine? GetEngine(int codePoint)
         {
             for (var i = _engines.Count - 1; i >= 0; i--)
             {
-                if (_engines[i].Handles(codePoint))
+                if (Handles(_engines[i], codePoint))
                     return _engines[i];
             }
 
-            DictionaryBreakEngine? engine = null;
-            if (ComplexContextBreakEngine.Thai.Handles(codePoint))
-            {
-                engine = ComplexContextBreakEngine.Thai;
-            }
-            else if (ComplexContextBreakEngine.Lao.Handles(codePoint))
-            {
-                engine = ComplexContextBreakEngine.Lao;
-            }
-            else if (ComplexContextBreakEngine.Burmese.Handles(codePoint))
-            {
-                engine = ComplexContextBreakEngine.Burmese;
-            }
-            else if (ComplexContextBreakEngine.Khmer.Handles(codePoint))
-            {
-                engine = ComplexContextBreakEngine.Khmer;
-            }
-            else if (CjkBreakEngine.Instance.Handles(codePoint))
-            {
-                engine = CjkBreakEngine.Instance;
-            }
-
+            var engine = IcuDictionaryBreakEngine.GetEngine(codePoint);
             if (engine is not null)
             {
                 _engines.Add(engine);
@@ -503,14 +522,24 @@ internal static class WordBreaker
             }
 
             // Put it last so that scripts for which we have an engine get tried first
-            if (_unhandled is null)
+            if (_unhandledScripts is null)
             {
-                _unhandled = new UnhandledBreakEngine();
-                _engines.Insert(0, _unhandled);
+                _unhandledScripts = [];
+                _engines.Insert(0, item: null);
             }
 
-            _unhandled.HandleCharacter(codePoint);
-            return _unhandled;
+            // handleCharacter
+            _unhandledScripts.Add(UnicodeScripts.GetScript(codePoint));
+            return null;
+        }
+
+        /// <summary>Gets whether an engine (null for the unhandled engine) handles a character.</summary>
+        public bool Handles(IcuDictionaryBreakEngine? engine, int codePoint)
+        {
+            if (engine is not null)
+                return engine.Handles(codePoint);
+
+            return codePoint >= 0 && _unhandledScripts is not null && _unhandledScripts.Contains(UnicodeScripts.GetScript(codePoint));
         }
     }
 }

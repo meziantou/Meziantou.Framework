@@ -20,6 +20,18 @@ internal sealed class JsDisposableStack(JsObject prototype, ObjectClass objectCl
 /// <summary>The DisposableStack constructor and DisposableStack.prototype (https://tc39.es/proposal-explicit-resource-management/#sec-disposablestack-objects).</summary>
 internal static class DisposableStackBuiltins
 {
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("adopt", 2, Adopt),
+        new("defer", 1, Defer),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods2 =
+    [
+        new("move", 0, Move),
+        new("use", 1, Use),
+    ];
+
     public static JsFunction Initialize(Intrinsics intrinsics, JsObject prototype)
     {
         var realm = intrinsics.Realm;
@@ -27,12 +39,10 @@ internal static class DisposableStackBuiltins
         constructor.DefineBuiltIn("prototype", prototype, PropertyFlags.None);
 
         prototype.DefineBuiltIn("constructor", constructor);
-        realm.DefineMethod(prototype, "adopt", 2, Adopt);
-        realm.DefineMethod(prototype, "defer", 1, Defer);
+        realm.DefineMethods(prototype, PrototypeMethods);
         var dispose = realm.DefineEagerMethod(prototype, "dispose", 0, Dispose);
         realm.DefineAccessor(prototype, "disposed", GetDisposed, setter: null);
-        realm.DefineMethod(prototype, "move", 0, Move);
-        realm.DefineMethod(prototype, "use", 1, Use);
+        realm.DefineMethods(prototype, PrototypeMethods2);
         prototype.DefineBuiltIn(WellKnownSymbols.Dispose, dispose);
         prototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "DisposableStack", PropertyFlags.Configurable);
 
@@ -142,6 +152,18 @@ internal static class DisposableStackBuiltins
 /// <summary>The AsyncDisposableStack constructor and AsyncDisposableStack.prototype (https://tc39.es/proposal-explicit-resource-management/#sec-asyncdisposablestack-objects).</summary>
 internal static class AsyncDisposableStackBuiltins
 {
+    private static readonly BuiltinMethodTable PrototypeMethods3 =
+    [
+        new("adopt", 2, Adopt),
+        new("defer", 1, Defer),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods4 =
+    [
+        new("move", 0, Move),
+        new("use", 1, Use),
+    ];
+
     public static JsFunction Initialize(Intrinsics intrinsics, JsObject prototype)
     {
         var realm = intrinsics.Realm;
@@ -149,12 +171,10 @@ internal static class AsyncDisposableStackBuiltins
         constructor.DefineBuiltIn("prototype", prototype, PropertyFlags.None);
 
         prototype.DefineBuiltIn("constructor", constructor);
-        realm.DefineMethod(prototype, "adopt", 2, Adopt);
-        realm.DefineMethod(prototype, "defer", 1, Defer);
+        realm.DefineMethods(prototype, PrototypeMethods3);
         var disposeAsync = realm.DefineEagerMethod(prototype, "disposeAsync", 0, DisposeAsync);
         realm.DefineAccessor(prototype, "disposed", GetDisposed, setter: null);
-        realm.DefineMethod(prototype, "move", 0, Move);
-        realm.DefineMethod(prototype, "use", 1, Use);
+        realm.DefineMethods(prototype, PrototypeMethods4);
         prototype.DefineBuiltIn(WellKnownSymbols.AsyncDispose, disposeAsync);
         prototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "AsyncDisposableStack", PropertyFlags.Configurable);
 
@@ -311,10 +331,9 @@ internal static class AsyncIteratorDisposeBuiltins
     private static readonly PromiseContinuation ResolveUndefined = static (state, _) => ((PromiseCapability)state!).Resolve(JsValue.Undefined);
     private static readonly PromiseContinuation Reject = static (state, reason) => ((PromiseCapability)state!).Reject(reason);
 
-    public static void Initialize(Intrinsics intrinsics)
+    public static void Initialize(JsRealm realm, JsObject asyncIteratorPrototype)
     {
-        var realm = intrinsics.Realm;
-        realm.DefineMethod(intrinsics.AsyncIteratorPrototype, WellKnownSymbols.AsyncDispose, 0, AsyncIteratorAsyncDispose);
+        realm.DefineMethod(asyncIteratorPrototype, WellKnownSymbols.AsyncDispose, 0, AsyncIteratorAsyncDispose);
     }
 
     /// <summary>%AsyncIteratorPrototype%[@@asyncDispose]()</summary>

@@ -6,68 +6,93 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// <summary>The Date constructor and Date.prototype (https://tc39.es/ecma262/#sec-date-objects), with the Annex B methods.</summary>
 internal static class DateBuiltins
 {
+    private static readonly BuiltinMethodTable ConstructorMethods =
+    [
+        new("now", 0, Now),
+        new("parse", 1, Parse),
+        new("UTC", 7, Utc),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("getDate", 0, LocalGetter(t => DateFromTime(t))),
+        new("getDay", 0, LocalGetter(t => WeekDay(t))),
+        new("getFullYear", 0, LocalGetter(YearFromTime)),
+        new("getHours", 0, LocalGetter(t => HourFromTime(t))),
+        new("getMilliseconds", 0, LocalGetter(t => MsFromTime(t))),
+        new("getMinutes", 0, LocalGetter(t => MinFromTime(t))),
+        new("getMonth", 0, LocalGetter(t => MonthFromTime(t))),
+        new("getSeconds", 0, LocalGetter(t => SecFromTime(t))),
+        new("getTime", 0, GetTime),
+        new("getTimezoneOffset", 0, GetTimezoneOffset),
+        new("getUTCDate", 0, UtcGetter(t => DateFromTime(t))),
+        new("getUTCDay", 0, UtcGetter(t => WeekDay(t))),
+        new("getUTCFullYear", 0, UtcGetter(YearFromTime)),
+        new("getUTCHours", 0, UtcGetter(t => HourFromTime(t))),
+        new("getUTCMilliseconds", 0, UtcGetter(t => MsFromTime(t))),
+        new("getUTCMinutes", 0, UtcGetter(t => MinFromTime(t))),
+        new("getUTCMonth", 0, UtcGetter(t => MonthFromTime(t))),
+        new("getUTCSeconds", 0, UtcGetter(t => SecFromTime(t))),
+        new("setDate", 1, (function, thisValue, arguments, _) => SetDate(function, thisValue, arguments, utc: false)),
+        new("setFullYear", 3, (function, thisValue, arguments, _) => SetFullYear(function, thisValue, arguments, utc: false)),
+        new("setHours", 4, (function, thisValue, arguments, _) => SetHours(function, thisValue, arguments, utc: false)),
+        new("setMilliseconds", 1, (function, thisValue, arguments, _) => SetMilliseconds(function, thisValue, arguments, utc: false)),
+        new("setMinutes", 3, (function, thisValue, arguments, _) => SetMinutes(function, thisValue, arguments, utc: false)),
+        new("setMonth", 2, (function, thisValue, arguments, _) => SetMonth(function, thisValue, arguments, utc: false)),
+        new("setSeconds", 2, (function, thisValue, arguments, _) => SetSeconds(function, thisValue, arguments, utc: false)),
+        new("setTime", 1, SetTime),
+        new("setUTCDate", 1, (function, thisValue, arguments, _) => SetDate(function, thisValue, arguments, utc: true)),
+        new("setUTCFullYear", 3, (function, thisValue, arguments, _) => SetFullYear(function, thisValue, arguments, utc: true)),
+        new("setUTCHours", 4, (function, thisValue, arguments, _) => SetHours(function, thisValue, arguments, utc: true)),
+        new("setUTCMilliseconds", 1, (function, thisValue, arguments, _) => SetMilliseconds(function, thisValue, arguments, utc: true)),
+        new("setUTCMinutes", 3, (function, thisValue, arguments, _) => SetMinutes(function, thisValue, arguments, utc: true)),
+        new("setUTCMonth", 2, (function, thisValue, arguments, _) => SetMonth(function, thisValue, arguments, utc: true)),
+        new("setUTCSeconds", 2, (function, thisValue, arguments, _) => SetSeconds(function, thisValue, arguments, utc: true)),
+        new("toDateString", 0, ToDateString),
+        new("toISOString", 0, ToIsoString),
+        new("toJSON", 1, ToJson),
+        new("toTemporalInstant", 0, ToTemporalInstant),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods2 =
+    [
+        new("toLocaleDateString", 0, ToDateString),
+        new("toLocaleString", 0, ToStringImpl),
+        new("toLocaleTimeString", 0, ToTimeString),
+        new("toString", 0, ToStringImpl),
+        new("toTimeString", 0, ToTimeString),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods3 =
+    [
+        new("valueOf", 0, GetTime),
+        new(WellKnownSymbols.ToPrimitive, 1, ToPrimitive, PropertyFlags.Configurable),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods4 =
+    [
+        new("getYear", 0, GetYear),
+        new("setYear", 1, SetYear),
+    ];
+
     public static JsBuiltinFunction Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
         var prototype = intrinsics.DatePrototype;
         var constructor = realm.CreateBuiltinFunction("Date", 7, Construct, isConstructor: true);
         constructor.DefineBuiltIn("prototype", prototype, PropertyFlags.None);
-        realm.DefineMethod(constructor, "now", 0, Now);
-        realm.DefineMethod(constructor, "parse", 1, Parse);
-        realm.DefineMethod(constructor, "UTC", 7, Utc);
+        realm.DefineMethods(constructor, ConstructorMethods);
 
         prototype.DefineBuiltIn("constructor", constructor);
-        realm.DefineMethod(prototype, "getDate", 0, LocalGetter(t => DateFromTime(t)));
-        realm.DefineMethod(prototype, "getDay", 0, LocalGetter(t => WeekDay(t)));
-        realm.DefineMethod(prototype, "getFullYear", 0, LocalGetter(YearFromTime));
-        realm.DefineMethod(prototype, "getHours", 0, LocalGetter(t => HourFromTime(t)));
-        realm.DefineMethod(prototype, "getMilliseconds", 0, LocalGetter(t => MsFromTime(t)));
-        realm.DefineMethod(prototype, "getMinutes", 0, LocalGetter(t => MinFromTime(t)));
-        realm.DefineMethod(prototype, "getMonth", 0, LocalGetter(t => MonthFromTime(t)));
-        realm.DefineMethod(prototype, "getSeconds", 0, LocalGetter(t => SecFromTime(t)));
-        realm.DefineMethod(prototype, "getTime", 0, GetTime);
-        realm.DefineMethod(prototype, "getTimezoneOffset", 0, GetTimezoneOffset);
-        realm.DefineMethod(prototype, "getUTCDate", 0, UtcGetter(t => DateFromTime(t)));
-        realm.DefineMethod(prototype, "getUTCDay", 0, UtcGetter(t => WeekDay(t)));
-        realm.DefineMethod(prototype, "getUTCFullYear", 0, UtcGetter(YearFromTime));
-        realm.DefineMethod(prototype, "getUTCHours", 0, UtcGetter(t => HourFromTime(t)));
-        realm.DefineMethod(prototype, "getUTCMilliseconds", 0, UtcGetter(t => MsFromTime(t)));
-        realm.DefineMethod(prototype, "getUTCMinutes", 0, UtcGetter(t => MinFromTime(t)));
-        realm.DefineMethod(prototype, "getUTCMonth", 0, UtcGetter(t => MonthFromTime(t)));
-        realm.DefineMethod(prototype, "getUTCSeconds", 0, UtcGetter(t => SecFromTime(t)));
-        realm.DefineMethod(prototype, "setDate", 1, (function, thisValue, arguments, _) => SetDate(function, thisValue, arguments, utc: false));
-        realm.DefineMethod(prototype, "setFullYear", 3, (function, thisValue, arguments, _) => SetFullYear(function, thisValue, arguments, utc: false));
-        realm.DefineMethod(prototype, "setHours", 4, (function, thisValue, arguments, _) => SetHours(function, thisValue, arguments, utc: false));
-        realm.DefineMethod(prototype, "setMilliseconds", 1, (function, thisValue, arguments, _) => SetMilliseconds(function, thisValue, arguments, utc: false));
-        realm.DefineMethod(prototype, "setMinutes", 3, (function, thisValue, arguments, _) => SetMinutes(function, thisValue, arguments, utc: false));
-        realm.DefineMethod(prototype, "setMonth", 2, (function, thisValue, arguments, _) => SetMonth(function, thisValue, arguments, utc: false));
-        realm.DefineMethod(prototype, "setSeconds", 2, (function, thisValue, arguments, _) => SetSeconds(function, thisValue, arguments, utc: false));
-        realm.DefineMethod(prototype, "setTime", 1, SetTime);
-        realm.DefineMethod(prototype, "setUTCDate", 1, (function, thisValue, arguments, _) => SetDate(function, thisValue, arguments, utc: true));
-        realm.DefineMethod(prototype, "setUTCFullYear", 3, (function, thisValue, arguments, _) => SetFullYear(function, thisValue, arguments, utc: true));
-        realm.DefineMethod(prototype, "setUTCHours", 4, (function, thisValue, arguments, _) => SetHours(function, thisValue, arguments, utc: true));
-        realm.DefineMethod(prototype, "setUTCMilliseconds", 1, (function, thisValue, arguments, _) => SetMilliseconds(function, thisValue, arguments, utc: true));
-        realm.DefineMethod(prototype, "setUTCMinutes", 3, (function, thisValue, arguments, _) => SetMinutes(function, thisValue, arguments, utc: true));
-        realm.DefineMethod(prototype, "setUTCMonth", 2, (function, thisValue, arguments, _) => SetMonth(function, thisValue, arguments, utc: true));
-        realm.DefineMethod(prototype, "setUTCSeconds", 2, (function, thisValue, arguments, _) => SetSeconds(function, thisValue, arguments, utc: true));
-        realm.DefineMethod(prototype, "toDateString", 0, ToDateString);
-        realm.DefineMethod(prototype, "toISOString", 0, ToIsoString);
-        realm.DefineMethod(prototype, "toJSON", 1, ToJson);
-        realm.DefineMethod(prototype, "toTemporalInstant", 0, ToTemporalInstant);
+        realm.DefineMethods(prototype, PrototypeMethods);
 
         // Without Intl, the locale-sensitive methods use the formats of toString (ECMA-402 replaces them)
-        realm.DefineMethod(prototype, "toLocaleDateString", 0, ToDateString);
-        realm.DefineMethod(prototype, "toLocaleString", 0, ToStringImpl);
-        realm.DefineMethod(prototype, "toLocaleTimeString", 0, ToTimeString);
-        realm.DefineMethod(prototype, "toString", 0, ToStringImpl);
-        realm.DefineMethod(prototype, "toTimeString", 0, ToTimeString);
+        realm.DefineMethods(prototype, PrototypeMethods2);
         var toUtcString = realm.DefineEagerMethod(prototype, "toUTCString", 0, ToUtcStringImpl);
-        realm.DefineMethod(prototype, "valueOf", 0, GetTime);
-        realm.DefineMethod(prototype, WellKnownSymbols.ToPrimitive, 1, ToPrimitive, PropertyFlags.Configurable);
+        realm.DefineMethods(prototype, PrototypeMethods3);
 
         // Annex B
-        realm.DefineMethod(prototype, "getYear", 0, GetYear);
-        realm.DefineMethod(prototype, "setYear", 1, SetYear);
+        realm.DefineMethods(prototype, PrototypeMethods4);
         prototype.DefineBuiltIn("toGMTString", toUtcString);
 
         intrinsics.AddGlobal("Date", constructor);

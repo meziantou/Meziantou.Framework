@@ -8,24 +8,34 @@ internal static class PromiseBuiltins
     private static readonly PropertyKey ValueKey = new("value");
     private static readonly PropertyKey ReasonKey = new("reason");
 
+    private static readonly BuiltinMethodTable ConstructorMethods =
+    [
+        new("all", 1, All),
+        new("allSettled", 1, AllSettled),
+        new("any", 1, Any),
+        new("race", 1, Race),
+        new("reject", 1, Reject),
+        new("resolve", 1, Resolve),
+        new("try", 1, Try),
+        new("withResolvers", 0, WithResolvers),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("catch", 1, Catch),
+        new("finally", 1, Finally),
+    ];
+
     public static JsFunction Initialize(Intrinsics intrinsics, JsObject prototype, out JsFunction then)
     {
         var realm = intrinsics.Realm;
         var constructor = realm.CreateBuiltinFunction("Promise", 1, Construct, isConstructor: true);
         constructor.DefineBuiltIn("prototype", prototype, PropertyFlags.None);
-        realm.DefineMethod(constructor, "all", 1, All);
-        realm.DefineMethod(constructor, "allSettled", 1, AllSettled);
-        realm.DefineMethod(constructor, "any", 1, Any);
-        realm.DefineMethod(constructor, "race", 1, Race);
-        realm.DefineMethod(constructor, "reject", 1, Reject);
-        realm.DefineMethod(constructor, "resolve", 1, Resolve);
-        realm.DefineMethod(constructor, "try", 1, Try);
-        realm.DefineMethod(constructor, "withResolvers", 0, WithResolvers);
+        realm.DefineMethods(constructor, ConstructorMethods);
         realm.DefineAccessor(constructor, WellKnownSymbols.Species, static (_, thisValue, _, _) => thisValue, setter: null);
 
         prototype.DefineBuiltIn("constructor", constructor);
-        realm.DefineMethod(prototype, "catch", 1, Catch);
-        realm.DefineMethod(prototype, "finally", 1, Finally);
+        realm.DefineMethods(prototype, PrototypeMethods);
         then = realm.DefineEagerMethod(prototype, "then", 2, Then);
         prototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Promise", PropertyFlags.Configurable);
 

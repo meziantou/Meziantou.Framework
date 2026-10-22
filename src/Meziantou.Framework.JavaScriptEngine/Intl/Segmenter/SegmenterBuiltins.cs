@@ -119,6 +119,18 @@ internal sealed class JsSegmentIteratorObject(JsObject prototype, JsSegmentsObje
 /// <summary>Intl.Segmenter (https://tc39.es/ecma402/#segmenter-objects).</summary>
 internal static class SegmenterBuiltins
 {
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("resolvedOptions", 0, ResolvedOptions),
+        new("segment", 1, Segment),
+    ];
+
+    private static readonly BuiltinMethodTable SegmentsPrototypeMethods =
+    [
+        new("containing", 1, Containing),
+        new(WellKnownSymbols.Iterator, 0, SegmentsIterator),
+    ];
+
     public static JsFunction Initialize(Intrinsics intrinsics, JsObject intl, JsObject prototype, JsObject segmentsPrototype, JsObject segmentIteratorPrototype)
     {
         var realm = intrinsics.Realm;
@@ -127,11 +139,9 @@ internal static class SegmenterBuiltins
         realm.DefineMethod(constructor, "supportedLocalesOf", 1, SupportedLocalesOf);
         prototype.DefineBuiltIn("constructor", constructor);
         prototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Intl.Segmenter", PropertyFlags.Configurable);
-        realm.DefineMethod(prototype, "resolvedOptions", 0, ResolvedOptions);
-        realm.DefineMethod(prototype, "segment", 1, Segment);
+        realm.DefineMethods(prototype, PrototypeMethods);
 
-        realm.DefineMethod(segmentsPrototype, "containing", 1, Containing);
-        realm.DefineMethod(segmentsPrototype, WellKnownSymbols.Iterator, 0, SegmentsIterator);
+        realm.DefineMethods(segmentsPrototype, SegmentsPrototypeMethods);
 
         realm.DefineMethod(segmentIteratorPrototype, "next", 0, Next);
         segmentIteratorPrototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Segmenter String Iterator", PropertyFlags.Configurable);

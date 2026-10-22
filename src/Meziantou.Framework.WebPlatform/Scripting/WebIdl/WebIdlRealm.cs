@@ -453,6 +453,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         if ((binding.Flags & InterfaceBindingFlags.Namespace) != InterfaceBindingFlags.None)
         {
             var namespaceObject = Adapter.CreateObject(ObjectPrototype);
+            ReserveLearnedProperties(namespaceObject, binding.PrototypePropertyCount);
             Adapter.DefineOwnProperty(namespaceObject, Adapter.GetWellKnownSymbol(JsWellKnownSymbol.ToStringTag), JsPropertyDescriptor<TValue>.Data(Key(binding.Name), writable: false, enumerable: false, configurable: true));
             _interfaceObjects[binding.Name] = (namespaceObject, namespaceObject);
             var previousDefiningNamespace = _definingInterface;
@@ -471,6 +472,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                 DefineCssParserStreamSources(namespaceObject);
             }
 
+            binding.PrototypePropertyCount = Math.Max(binding.PrototypePropertyCount, Adapter.GetPropertyCount(namespaceObject));
             return (namespaceObject, namespaceObject);
         }
 
@@ -490,11 +492,15 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             parentPrototype = ObjectPrototype;
         }
 
+        // The interface objects and the prototypes get their properties after their creation: their storage is allocated once
+        // with the sizes that the previous realms learned
         var prototype = Adapter.CreateObject(parentPrototype);
+        ReserveLearnedProperties(prototype, binding.PrototypePropertyCount);
         var construct = Adapter.CreateFunction("construct", 2, (_, arguments) => Construct(binding, arguments[0], arguments[1]));
         var isHtmlConstructor = (binding.Flags & InterfaceBindingFlags.HtmlConstructor) != InterfaceBindingFlags.None;
         var interfaceObject = Adapter.Call(_makeInterface ??= EvaluateBuiltIn(MakeInterfaceScript), Adapter.Undefined, [Key(binding.Name), Adapter.FromNumber(binding.ConstructorLength), construct, parentInterfaceObject, prototype, Adapter.FromBoolean(isHtmlConstructor), Key(binding.ClassString ?? binding.Name)]);
         _interfaceObjects[binding.ClassString ?? binding.Name] = (interfaceObject, prototype);
+        ReserveLearnedProperties(interfaceObject, binding.InterfaceObjectPropertyCount);
 
         // https://webidl.spec.whatwg.org/#Global: the regular attributes and operations of a global interface are properties of the global object
         var instanceTarget = (binding.Flags & InterfaceBindingFlags.Global) != InterfaceBindingFlags.None ? Global : prototype;
@@ -536,7 +542,19 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             DefineTemplatePatchingMembers(prototype);
         }
 
+        binding.InterfaceObjectPropertyCount = Math.Max(binding.InterfaceObjectPropertyCount, Adapter.GetPropertyCount(interfaceObject));
+        binding.PrototypePropertyCount = Math.Max(binding.PrototypePropertyCount, Adapter.GetPropertyCount(prototype));
         return (interfaceObject, prototype);
+    }
+
+    /// <summary>Prepares an object for the number of properties that the same object had in the previous realms (0: not learned yet).</summary>
+    private void ReserveLearnedProperties(TValue obj, int learnedCount)
+    {
+        var count = learnedCount - Adapter.GetPropertyCount(obj);
+        if (count > 0)
+        {
+            Adapter.ReserveProperties(obj, count);
+        }
     }
 
     // ----------------------------------------------------------------------------------------------------------------

@@ -6,19 +6,29 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// <summary>BigInt (https://tc39.es/ecma262/#sec-bigint-objects).</summary>
 internal static class BigIntBuiltins
 {
+    private static readonly BuiltinMethodTable ConstructorMethods =
+    [
+        new("asIntN", 2, AsIntN),
+        new("asUintN", 2, AsUintN),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("toLocaleString", 0, ToLocaleString),
+        new("toString", 0, ToString),
+        new("valueOf", 0, ValueOf),
+    ];
+
     public static JsFunction Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
         var prototype = intrinsics.BigIntPrototype;
         var constructor = realm.CreateBuiltinFunction("BigInt", 1, Construct, isConstructor: true);
         constructor.DefineBuiltIn("prototype", prototype, PropertyFlags.None);
-        realm.DefineMethod(constructor, "asIntN", 2, AsIntN);
-        realm.DefineMethod(constructor, "asUintN", 2, AsUintN);
+        realm.DefineMethods(constructor, ConstructorMethods);
 
         prototype.DefineBuiltIn("constructor", constructor);
-        realm.DefineMethod(prototype, "toLocaleString", 0, ToLocaleString);
-        realm.DefineMethod(prototype, "toString", 0, ToString);
-        realm.DefineMethod(prototype, "valueOf", 0, ValueOf);
+        realm.DefineMethods(prototype, PrototypeMethods);
         prototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "BigInt", PropertyFlags.Configurable);
 
         intrinsics.AddGlobal("BigInt", constructor);

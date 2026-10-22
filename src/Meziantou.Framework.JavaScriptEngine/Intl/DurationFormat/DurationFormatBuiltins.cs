@@ -70,6 +70,13 @@ internal static class DurationFormatBuiltins
     private static readonly string[] TimeStyles = ["long", "short", "narrow", "numeric", "2-digit"];
     private static readonly string[] SubsecondStyles = ["long", "short", "narrow", "numeric"];
 
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("resolvedOptions", 0, ResolvedOptions),
+        new("format", 1, Format),
+        new("formatToParts", 1, FormatToParts),
+    ];
+
     public static JsFunction Initialize(Intrinsics intrinsics, JsObject intl, JsObject prototype)
     {
         var realm = intrinsics.Realm;
@@ -78,9 +85,7 @@ internal static class DurationFormatBuiltins
         realm.DefineMethod(constructor, "supportedLocalesOf", 1, SupportedLocalesOf);
         prototype.DefineBuiltIn("constructor", constructor);
         prototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Intl.DurationFormat", PropertyFlags.Configurable);
-        realm.DefineMethod(prototype, "resolvedOptions", 0, ResolvedOptions);
-        realm.DefineMethod(prototype, "format", 1, Format);
-        realm.DefineMethod(prototype, "formatToParts", 1, FormatToParts);
+        realm.DefineMethods(prototype, PrototypeMethods);
         intl.DefineBuiltIn("DurationFormat", constructor);
         return constructor;
     }

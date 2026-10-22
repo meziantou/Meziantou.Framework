@@ -5,18 +5,50 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// <summary>Temporal.PlainYearMonth (https://tc39.es/proposal-temporal/#sec-temporal-plainyearmonth-objects).</summary>
 internal static class TemporalPlainYearMonthBuiltins
 {
+    private static readonly BuiltinMethodTable ConstructorMethods =
+    [
+        new("from", 1, (_, _, arguments, _) => ToTemporalYearMonth(Argument(arguments, 0), Argument(arguments, 1))),
+        new("compare", 2, (_, _, arguments, _) =>
+        {
+            var one = ToTemporalYearMonth(Argument(arguments, 0));
+            var two = ToTemporalYearMonth(Argument(arguments, 1));
+            return CompareIsoDate(one.IsoDate, two.IsoDate);
+        }),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("with", 1, With),
+        new("add", 1, (_, thisValue, arguments, _) => AddDurationToYearMonth(subtract: false, ThisPlainYearMonth(thisValue), Argument(arguments, 0), Argument(arguments, 1))),
+        new("subtract", 1, (_, thisValue, arguments, _) => AddDurationToYearMonth(subtract: true, ThisPlainYearMonth(thisValue), Argument(arguments, 0), Argument(arguments, 1))),
+        new("until", 1, (_, thisValue, arguments, _) => DifferenceTemporalPlainYearMonth(DifferenceOperation.Until, ThisPlainYearMonth(thisValue), Argument(arguments, 0), Argument(arguments, 1))),
+        new("since", 1, (_, thisValue, arguments, _) => DifferenceTemporalPlainYearMonth(DifferenceOperation.Since, ThisPlainYearMonth(thisValue), Argument(arguments, 0), Argument(arguments, 1))),
+        new("equals", 1, (_, thisValue, arguments, _) =>
+        {
+            var yearMonth = ThisPlainYearMonth(thisValue);
+            var other = ToTemporalYearMonth(Argument(arguments, 0));
+            if (CompareIsoDate(yearMonth.IsoDate, other.IsoDate) != 0)
+                return false;
+
+            return CalendarEquals(yearMonth.Calendar, other.Calendar);
+        }),
+        new("toString", 0, (_, thisValue, arguments, _) =>
+        {
+            var yearMonth = ThisPlainYearMonth(thisValue);
+            var resolvedOptions = GetOptionsObject(Argument(arguments, 0));
+            var showCalendar = GetTemporalShowCalendarNameOption(resolvedOptions);
+            return TemporalYearMonthToString(yearMonth, showCalendar);
+        }),
+        new("toLocaleString", 0, (_, thisValue, _, _) => TemporalYearMonthToString(ThisPlainYearMonth(thisValue), ShowCalendarOption.Auto)),
+        new("toJSON", 0, (_, thisValue, _, _) => TemporalYearMonthToString(ThisPlainYearMonth(thisValue), ShowCalendarOption.Auto)),
+    ];
+
     public static JsBuiltinFunction Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
         var prototype = intrinsics.TemporalPlainYearMonthPrototype;
         var constructor = TemporalBuiltinHelpers.CreateConstructor(intrinsics, "PlainYearMonth", 2, Construct, prototype);
-        realm.DefineMethod(constructor, "from", 1, (_, _, arguments, _) => ToTemporalYearMonth(Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(constructor, "compare", 2, (_, _, arguments, _) =>
-        {
-            var one = ToTemporalYearMonth(Argument(arguments, 0));
-            var two = ToTemporalYearMonth(Argument(arguments, 1));
-            return CompareIsoDate(one.IsoDate, two.IsoDate);
-        });
+        realm.DefineMethods(constructor, ConstructorMethods);
 
         Func<JsValue, (string Calendar, IsoDate Date)> getDate = value =>
         {
@@ -33,29 +65,7 @@ internal static class TemporalPlainYearMonthBuiltins
         TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "daysInMonth", getDate, d => d.DaysInMonth);
         TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "monthsInYear", getDate, d => d.MonthsInYear);
         TemporalBuiltinHelpers.DefineCalendarGetter(realm, prototype, "inLeapYear", getDate, d => d.InLeapYear);
-        realm.DefineMethod(prototype, "with", 1, With);
-        realm.DefineMethod(prototype, "add", 1, (_, thisValue, arguments, _) => AddDurationToYearMonth(subtract: false, ThisPlainYearMonth(thisValue), Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(prototype, "subtract", 1, (_, thisValue, arguments, _) => AddDurationToYearMonth(subtract: true, ThisPlainYearMonth(thisValue), Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(prototype, "until", 1, (_, thisValue, arguments, _) => DifferenceTemporalPlainYearMonth(DifferenceOperation.Until, ThisPlainYearMonth(thisValue), Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(prototype, "since", 1, (_, thisValue, arguments, _) => DifferenceTemporalPlainYearMonth(DifferenceOperation.Since, ThisPlainYearMonth(thisValue), Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(prototype, "equals", 1, (_, thisValue, arguments, _) =>
-        {
-            var yearMonth = ThisPlainYearMonth(thisValue);
-            var other = ToTemporalYearMonth(Argument(arguments, 0));
-            if (CompareIsoDate(yearMonth.IsoDate, other.IsoDate) != 0)
-                return false;
-
-            return CalendarEquals(yearMonth.Calendar, other.Calendar);
-        });
-        realm.DefineMethod(prototype, "toString", 0, (_, thisValue, arguments, _) =>
-        {
-            var yearMonth = ThisPlainYearMonth(thisValue);
-            var resolvedOptions = GetOptionsObject(Argument(arguments, 0));
-            var showCalendar = GetTemporalShowCalendarNameOption(resolvedOptions);
-            return TemporalYearMonthToString(yearMonth, showCalendar);
-        });
-        realm.DefineMethod(prototype, "toLocaleString", 0, (_, thisValue, _, _) => TemporalYearMonthToString(ThisPlainYearMonth(thisValue), ShowCalendarOption.Auto));
-        realm.DefineMethod(prototype, "toJSON", 0, (_, thisValue, _, _) => TemporalYearMonthToString(ThisPlainYearMonth(thisValue), ShowCalendarOption.Auto));
+        realm.DefineMethods(prototype, PrototypeMethods);
         TemporalBuiltinHelpers.DefineValueOf(realm, prototype, "PlainYearMonth");
         realm.DefineMethod(prototype, "toPlainDate", 1, (_, thisValue, arguments, _) =>
         {

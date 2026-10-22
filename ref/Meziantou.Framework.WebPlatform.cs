@@ -12807,6 +12807,7 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         Meziantou.Framework.WebPlatform.Scripting.JsErrorInformation GetErrorInformation(TValue error);
         TValue GetGlobalObject(object realm);
         bool GetOwnProperty(TValue obj, TValue key, out Meziantou.Framework.WebPlatform.Scripting.JsPropertyDescriptor<TValue> descriptor);
+        public int GetPropertyCount(TValue obj) => throw null;
         TValue GetPrototypeOf(TValue obj);
         public object? GetSharedDataBlock(TValue sharedArrayBuffer) => throw null;
         TValue GetWellKnownSymbol(Meziantou.Framework.WebPlatform.Scripting.JsWellKnownSymbol symbol);

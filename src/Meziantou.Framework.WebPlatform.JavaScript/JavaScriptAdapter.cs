@@ -423,6 +423,8 @@ internal readonly struct JavaScriptAdapter(JavaScriptAdapterState state) : IJsAd
 
     public void ReserveProperties(object obj, int count) => ((JsObject)obj).ReserveProperties(count);
 
+    public int GetPropertyCount(object obj) => ((JsObject)obj).OwnPropertyCount;
+
     public bool TryMakePrototypeImmutable(object obj)
     {
         if (obj is not JsProxy)

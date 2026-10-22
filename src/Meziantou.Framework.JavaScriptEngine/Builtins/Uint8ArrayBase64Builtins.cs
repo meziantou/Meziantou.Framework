@@ -19,17 +19,27 @@ internal static class Uint8ArrayBase64Builtins
         StopBeforePartial,
     }
 
+    private static readonly BuiltinMethodTable ConstructorMethods =
+    [
+        new("fromBase64", 1, FromBase64),
+        new("fromHex", 1, FromHex),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("setFromBase64", 1, SetFromBase64),
+        new("setFromHex", 1, SetFromHex),
+        new("toBase64", 0, ToBase64),
+        new("toHex", 0, ToHex),
+    ];
+
     public static void Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
         var constructor = intrinsics.GetTypedArrayConstructor(TypedArrayElementType.Uint8);
         var prototype = intrinsics.GetTypedArrayPrototype(TypedArrayElementType.Uint8);
-        realm.DefineMethod(constructor, "fromBase64", 1, FromBase64);
-        realm.DefineMethod(constructor, "fromHex", 1, FromHex);
-        realm.DefineMethod(prototype, "setFromBase64", 1, SetFromBase64);
-        realm.DefineMethod(prototype, "setFromHex", 1, SetFromHex);
-        realm.DefineMethod(prototype, "toBase64", 0, ToBase64);
-        realm.DefineMethod(prototype, "toHex", 0, ToHex);
+        realm.DefineMethods(constructor, ConstructorMethods);
+        realm.DefineMethods(prototype, PrototypeMethods);
     }
 
     private static JsValue Arg(ReadOnlySpan<JsValue> arguments, int index) => arguments.Length > index ? arguments[index] : default;

@@ -5,33 +5,43 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// <summary>Temporal.PlainDate (https://tc39.es/proposal-temporal/#sec-temporal-plaindate-objects).</summary>
 internal static class TemporalPlainDateBuiltins
 {
+    private static readonly BuiltinMethodTable ConstructorMethods =
+    [
+        new("from", 1, (_, _, arguments, _) => ToTemporalDate(Argument(arguments, 0), Argument(arguments, 1))),
+        new("compare", 2, Compare),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("toPlainYearMonth", 0, ToPlainYearMonth),
+        new("toPlainMonthDay", 0, ToPlainMonthDay),
+        new("add", 1, (_, thisValue, arguments, _) => AddDurationToDate(subtract: false, ThisPlainDate(thisValue), Argument(arguments, 0), Argument(arguments, 1))),
+        new("subtract", 1, (_, thisValue, arguments, _) => AddDurationToDate(subtract: true, ThisPlainDate(thisValue), Argument(arguments, 0), Argument(arguments, 1))),
+        new("with", 1, With),
+        new("withCalendar", 1, WithCalendar),
+        new("until", 1, (_, thisValue, arguments, _) => DifferenceTemporalPlainDate(DifferenceOperation.Until, ThisPlainDate(thisValue), Argument(arguments, 0), Argument(arguments, 1))),
+        new("since", 1, (_, thisValue, arguments, _) => DifferenceTemporalPlainDate(DifferenceOperation.Since, ThisPlainDate(thisValue), Argument(arguments, 0), Argument(arguments, 1))),
+        new("equals", 1, EqualsMethod),
+        new("toPlainDateTime", 0, ToPlainDateTime),
+        new("toZonedDateTime", 1, ToZonedDateTime),
+        new("toString", 0, ToStringMethod),
+        new("toLocaleString", 0, (_, thisValue, _, _) => TemporalDateToString(ThisPlainDate(thisValue), ShowCalendarOption.Auto)),
+        new("toJSON", 0, (_, thisValue, _, _) => TemporalDateToString(ThisPlainDate(thisValue), ShowCalendarOption.Auto)),
+    ];
+
     public static JsBuiltinFunction Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
         var prototype = intrinsics.TemporalPlainDatePrototype;
         var constructor = TemporalBuiltinHelpers.CreateConstructor(intrinsics, "PlainDate", 3, Construct, prototype);
-        realm.DefineMethod(constructor, "from", 1, (_, _, arguments, _) => ToTemporalDate(Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(constructor, "compare", 2, Compare);
+        realm.DefineMethods(constructor, ConstructorMethods);
 
         TemporalBuiltinHelpers.DefineDateGetters(realm, prototype, value =>
         {
             var date = ThisPlainDate(value);
             return (date.Calendar, date.IsoDate);
         });
-        realm.DefineMethod(prototype, "toPlainYearMonth", 0, ToPlainYearMonth);
-        realm.DefineMethod(prototype, "toPlainMonthDay", 0, ToPlainMonthDay);
-        realm.DefineMethod(prototype, "add", 1, (_, thisValue, arguments, _) => AddDurationToDate(subtract: false, ThisPlainDate(thisValue), Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(prototype, "subtract", 1, (_, thisValue, arguments, _) => AddDurationToDate(subtract: true, ThisPlainDate(thisValue), Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(prototype, "with", 1, With);
-        realm.DefineMethod(prototype, "withCalendar", 1, WithCalendar);
-        realm.DefineMethod(prototype, "until", 1, (_, thisValue, arguments, _) => DifferenceTemporalPlainDate(DifferenceOperation.Until, ThisPlainDate(thisValue), Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(prototype, "since", 1, (_, thisValue, arguments, _) => DifferenceTemporalPlainDate(DifferenceOperation.Since, ThisPlainDate(thisValue), Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(prototype, "equals", 1, EqualsMethod);
-        realm.DefineMethod(prototype, "toPlainDateTime", 0, ToPlainDateTime);
-        realm.DefineMethod(prototype, "toZonedDateTime", 1, ToZonedDateTime);
-        realm.DefineMethod(prototype, "toString", 0, ToStringMethod);
-        realm.DefineMethod(prototype, "toLocaleString", 0, (_, thisValue, _, _) => TemporalDateToString(ThisPlainDate(thisValue), ShowCalendarOption.Auto));
-        realm.DefineMethod(prototype, "toJSON", 0, (_, thisValue, _, _) => TemporalDateToString(ThisPlainDate(thisValue), ShowCalendarOption.Auto));
+        realm.DefineMethods(prototype, PrototypeMethods);
         TemporalBuiltinHelpers.DefineValueOf(realm, prototype, "PlainDate");
         return constructor;
     }

@@ -68,6 +68,25 @@ public sealed class ContentSecurityPolicyEvalTests : IDisposable
         Assert.Equal("https://example.com/:9:5;https://example.com/:12:9;", document.Title);
     }
 
+    [Theory]
+    [InlineData("https://user:pass@example.org/a.js?query#fragment", "https://example.org/a.js")]
+    [InlineData("wss://example.org/a.js?query", "wss://example.org/a.js")]
+    [InlineData("ws://example.org/a.js", "ws://example.org/a.js")]
+    [InlineData("webpack://example/a.js", "webpack")]
+    public void Eval_Violation_SourceFileIsStrippedWithoutItsQuery(string sourceUrl, string expected)
+    {
+        // The trusted code compiled by eval() has a sourceURL comment, and its call of eval() with a string is a violation
+        var document = Load($$"""
+            <script>
+            document.addEventListener("securitypolicyviolation", e => document.title += e.sourceFile + ";");
+            const policy = trustedTypes.createPolicy("p", { createScript: x => x });
+            try { eval(policy.createScript("eval('1');\n//# sourceURL={{sourceUrl}}")); } catch { }
+            </script>
+            """, "require-trusted-types-for 'script'");
+
+        Assert.Equal(expected + ";", document.Title);
+    }
+
     [Fact]
     public void Eval_WithoutReportSample_HasNoSample()
     {

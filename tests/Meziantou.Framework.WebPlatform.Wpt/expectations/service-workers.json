@@ -877,7 +877,6 @@
     "total": 2
   },
   "service-workers/service-worker/register-closed-window.https.html": {
-    "harness": "ERROR",
     "total": 1
   },
   "service-workers/service-worker/register-default-scope.https.html": {

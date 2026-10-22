@@ -123,9 +123,11 @@ internal sealed class JsPromise : JsObject
     /// PerformPromiseThen(promise, onFulfilled, onRejected) without a result capability, whose handlers are .NET
     /// continuations: the fast path of <c>await</c>. The continuation runs in a promise job; an exception it throws is
     /// reported as the exception of the job. The handlers of the specification are built-in functions, so the host state is
-    /// captured here (HostMakeJobCallback) and restored when the continuation runs (HostCallJobCallback).
+    /// captured here (HostMakeJobCallback) and restored when the continuation runs (HostCallJobCallback). The job runs in
+    /// <paramref name="realm"/> (by default, the current realm): the realm of the built-in functions that the specification
+    /// creates for the handlers.
     /// </summary>
-    public static void PerformPromiseThen(JsPromise promise, PromiseContinuation onFulfilled, PromiseContinuation onRejected, object? state)
+    public static void PerformPromiseThen(JsPromise promise, PromiseContinuation onFulfilled, PromiseContinuation onRejected, object? state, JsRealm? realm = null)
     {
         var engine = JsEngine.Current!;
         var reaction = new PromiseReaction
@@ -134,6 +136,7 @@ internal sealed class JsPromise : JsObject
             NativeOnRejected = onRejected,
             NativeState = state,
             NativeHostDefined = engine.MakeContinuationHostDefined(),
+            NativeRealm = realm ?? engine.CurrentRealm,
         };
 
         promise.AddReaction(engine, reaction);
@@ -232,7 +235,7 @@ internal sealed class JsPromise : JsObject
     private static void EnqueueReactionJob(JsEngine engine, PromiseReaction reaction, JsValue argument, bool fulfill)
     {
         var handler = fulfill ? reaction.OnFulfilled : reaction.OnRejected;
-        var realm = handler is { } callback ? GetHandlerRealm(engine, callback.Callback) : null;
+        var realm = handler is { } callback ? GetHandlerRealm(engine, callback.Callback) : reaction.NativeRealm;
         engine.EnqueuePromiseJob(fulfill ? FulfillReactionJobAction : RejectReactionJobAction, reaction, argument, realm);
     }
 
@@ -349,6 +352,9 @@ internal sealed class PromiseReaction
 
     /// <summary>The [[HostDefined]] value of the .NET continuations (<see cref="JsHost.MakeContinuationHostDefined"/>), or null.</summary>
     public object? NativeHostDefined { get; init; }
+
+    /// <summary>The realm of the job of a .NET continuation (the realm of the handler function that it replaces).</summary>
+    public JsRealm? NativeRealm { get; init; }
 }
 
 /// <summary>

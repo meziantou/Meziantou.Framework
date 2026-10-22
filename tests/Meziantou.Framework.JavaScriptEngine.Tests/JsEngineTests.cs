@@ -393,6 +393,22 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void HostHooks_AwaitContinuationRunsInTheRealmOfTheAsyncFunction()
+    {
+        // The awaited promise is rejected by another realm: the promise of the async function is rejected in its own realm
+        var host = new RecordingHost();
+        using var engine = new JsEngine(new JsEngineOptions { Host = host });
+        var otherRealm = engine.CreateRealm();
+        var functionRealm = engine.CreateRealm();
+        functionRealm.GlobalObject.SetProperty("p", otherRealm.Execute("var reject; new Promise((_, r) => reject = r)"));
+        functionRealm.Execute("(async () => { await p; })();");
+        otherRealm.Execute("reject(1);");
+        engine.RunJobs();
+        Assert.Equal(JsPromiseRejectionOperation.Reject, host.Rejections[^1]);
+        Assert.Same(functionRealm, host.RejectionRealms[^1]);
+    }
+
+    [Fact]
     public void HostCodeForEval_IsUsedByEvalAndTheFunctionConstructor()
     {
         using var engine = new JsEngine(new JsEngineOptions { Host = new TrustedCodeHost() });
@@ -645,11 +661,17 @@ public sealed class JsEngineTests
     {
         public List<JsPromiseRejectionOperation> Rejections { get; } = [];
 
+        public List<JsRealm?> RejectionRealms { get; } = [];
+
         public List<string> Compilations { get; } = [];
 
         public int Callbacks { get; private set; }
 
-        public override void PromiseRejectionTracker(JsEngine engine, JsObject promise, JsPromiseRejectionOperation operation) => Rejections.Add(operation);
+        public override void PromiseRejectionTracker(JsEngine engine, JsObject promise, JsPromiseRejectionOperation operation)
+        {
+            Rejections.Add(operation);
+            RejectionRealms.Add(engine.CurrentRealm);
+        }
 
         public override void EnsureCanCompileStrings(JsEngine engine, JsRealm realm, IReadOnlyList<string> parameterStrings, string bodyString, string codeString, JsCompilationType compilationType, IReadOnlyList<JsValue> parameterArgs, JsValue bodyArg)
             => Compilations.Add(compilationType + "|" + bodyString);

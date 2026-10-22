@@ -222,7 +222,7 @@
     }
   },
   "permissions-policy/payment-extension-allowed-by-permissions-policy-attribute.https.sub.html": {
-    "harness": "ERROR",
+    "harness": "TIMEOUT",
     "total": 2,
     "failures": {
       "WebAuthn \"payment\" extension can be enabled in cross-origin iframe using allow=\"payment\" attribute": "NOTRUN",

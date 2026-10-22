@@ -157,6 +157,26 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
     }
 
     [Fact]
+    public void UnhandledRejections_OfAnAsyncFunctionAreReportedToItsGlobal()
+    {
+        // The async function of the frame awaits a promise that the main window rejects: its promise belongs to the frame
+        var document = Load("""
+            <iframe></iframe>
+            <script>
+              const frame = frames[0];
+              let reject;
+              const promise = new Promise((_, r) => reject = r);
+              window.onunhandledrejection = () => document.title += 'window;';
+              frame.onunhandledrejection = e => { document.title += 'frame ' + e.reason + ';'; e.preventDefault(); };
+              frame.eval('(async p => { await p; })')(promise);
+              setTimeout(() => reject('boom'), 0);
+            </script>
+            """);
+        Assert.Equal("frame boom;", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
     public void EventHandlers_UseTheScopeOfTheElementTheFormAndTheDocument()
     {
         var document = Load("""

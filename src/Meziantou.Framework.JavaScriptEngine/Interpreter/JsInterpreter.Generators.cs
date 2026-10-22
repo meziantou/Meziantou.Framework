@@ -133,7 +133,9 @@ internal static partial class JsInterpreter
             return;
         }
 
-        JsPromise.PerformPromiseThen(promise, onFulfilled, onRejected, state);
+        // The continuations are the closures of Await, created in the realm of the frame: the job runs in this realm (e.g.
+        // the HostPromiseRejectionTracker of the promise of the async function uses it), not in the one that settles the promise
+        JsPromise.PerformPromiseThen(promise, onFulfilled, onRejected, state, frame.Realm);
     }
 
     // ------------------------------------------------------------------------------------------------------------------

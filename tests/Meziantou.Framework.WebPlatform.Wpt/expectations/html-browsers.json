@@ -299,14 +299,14 @@
     }
   },
   "html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-traverse-navigation-cross-origin-redirect-no-bfcache.https.sub.html": {
-    "harness": "ERROR",
+    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
       "pageswap on traverse navigation from script": "TIMEOUT"
     }
   },
   "html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-traverse-navigation-no-bfcache.https.html": {
-    "harness": "ERROR",
+    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
       "pageswap on traverse navigation from script": "TIMEOUT"

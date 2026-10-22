@@ -458,6 +458,77 @@ public interface IJsAdapter<TValue>
         var constructor = Get(GetGlobalObject(CurrentRealm), FromString(JsBufferSource.GetName(kind)));
         return Construct(constructor, [buffer, FromNumber(byteOffset), FromNumber(length)], constructor);
     }
+
+    /// <summary>
+    /// Creates a built-in function object that is a constructor in the current realm (e.g. an interface object,
+    /// https://webidl.spec.whatwg.org/#interface-object): its <c>name</c> and <c>length</c> properties are set, it has no
+    /// <c>prototype</c> property, and <c>Function.prototype.toString</c> returns its NativeFunction representation
+    /// (<c>function name() { [native code] }</c>). [[Call]] and [[Construct]] call <paramref name="constructor"/>; NewTarget
+    /// is undefined for [[Call]]. The default implementation returns a Proxy of a script function.
+    /// </summary>
+    TValue CreateConstructor(string name, int length, JsHostConstructor<TValue> constructor)
+    {
+        ArgumentNullException.ThrowIfNull(constructor);
+        var adapter = this;
+        var construct = CreateFunction(name, 2, (_, arguments) =>
+        {
+            var array = arguments[1];
+            var count = (int)adapter.ToNumber(adapter.Get(array, adapter.FromString("length")));
+            var items = new TValue[count];
+            for (var i = 0; i < count; i++)
+            {
+                items[i] = adapter.Get(array, adapter.FromString(i.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            }
+
+            return constructor(items, arguments[0]);
+        });
+
+        // A Proxy: the [[Construct]] of an ordinary function would get NewTarget.prototype before calling the constructor
+        var create = EvaluateBuiltIn(CurrentRealm, """
+            (function (name, length, construct) {
+              'use strict';
+              const f = function () {};
+              Object.defineProperty(f, 'length', { value: length });
+              Object.defineProperty(f, 'name', { value: name });
+              return new Proxy(f, {
+                apply: (target, thisArgument, args) => construct(undefined, args),
+                construct: (target, args, newTarget) => construct(newTarget, args),
+              });
+            })
+            """);
+        return Call(create, Undefined, [FromString(name), FromNumber(length), construct]);
+    }
+
+    /// <summary>
+    /// Creates the JavaScript object of a .NET platform object in the current realm, as <see cref="CreatePlatformObject"/>
+    /// with a handler, that also has a [[Call]] internal method (<paramref name="call"/>) and an [[IsHTMLDDA]] internal slot
+    /// (https://tc39.es/ecma262/#sec-IsHTMLDDA-internal-slot): <c>document.all</c>, whose typeof is "undefined", that is
+    /// falsy and loosely equal to null and undefined. The default implementation returns a Proxy of a function whose target
+    /// is a platform object: it is not an [[IsHTMLDDA]] object, and <see cref="TryGetPlatformObject"/> does not return its
+    /// .NET object.
+    /// </summary>
+    TValue CreateHtmlDdaPlatformObject(TValue prototype, object target, IJsHostObjectHandler<TValue> handler, JsHostFunction<TValue> call)
+    {
+        var platformObject = CreatePlatformObject(prototype, target, handler);
+        var create = EvaluateBuiltIn(CurrentRealm, """
+            (function (target, call) {
+              return new Proxy(() => {}, {
+                apply(t, thisArg, args) { return call(...args); },
+                get(t, p, r) { return Reflect.get(target, p, target); },
+                set(t, p, v, r) { return Reflect.set(target, p, v, target); },
+                has(t, p) { return Reflect.has(target, p); },
+                ownKeys(t) { return Reflect.ownKeys(target); },
+                getOwnPropertyDescriptor(t, p) { return Reflect.getOwnPropertyDescriptor(target, p); },
+                defineProperty(t, p, d) { return Reflect.defineProperty(target, p, d); },
+                deleteProperty(t, p) { return Reflect.deleteProperty(target, p); },
+                getPrototypeOf(t) { return Reflect.getPrototypeOf(target); },
+                setPrototypeOf(t, proto) { return Reflect.setPrototypeOf(target, proto); },
+                preventExtensions(t) { return false; },
+              });
+            })
+            """);
+        return Call(create, Undefined, [platformObject, CreateFunction("call", 0, call)]);
+    }
 }
 
 /// <summary>A JavaScript function in a boxed union value (a member type that is a callback function).</summary>
@@ -466,6 +537,9 @@ internal sealed record JsFunctionValue<TValue>(TValue Function)
 
 /// <summary>A built-in function implemented in .NET: returns the result of a call with <paramref name="thisValue"/> and <paramref name="arguments"/>.</summary>
 public delegate TValue JsHostFunction<TValue>(TValue thisValue, ReadOnlySpan<TValue> arguments);
+
+/// <summary>A built-in constructor implemented in .NET (<see cref="IJsAdapter{TValue}.CreateConstructor"/>): <paramref name="newTarget"/> is undefined when it is called without <c>new</c>.</summary>
+public delegate TValue JsHostConstructor<TValue>(ReadOnlySpan<TValue> arguments, TValue newTarget);
 
 /// <summary>The internal slots of the built-in objects read by the structured serialization (<see cref="IJsAdapter{TValue}.HasInternalSlot"/>).</summary>
 public enum JsInternalSlot

@@ -140,11 +140,13 @@ namespace Meziantou.Framework.JavaScriptEngine
 
     public class JsHostObject : Meziantou.Framework.JavaScriptEngine.JsObject
     {
+        public bool HasCallInternalMethod { get => throw null; set { } }
         public bool HasImmutablePrototype { get => throw null; set { } }
         public bool IsHtmlDdaObject { get => throw null; set { } }
         public object? Target { get => throw null; }
         public JsHostObject(Meziantou.Framework.JavaScriptEngine.JsObject? prototype, object? target = null) { }
         protected JsHostObject(Meziantou.Framework.JavaScriptEngine.JsObject? prototype, object? target, bool hasOrdinaryInternalMethods) { }
+        protected virtual Meziantou.Framework.JavaScriptEngine.JsValue CallCore(Meziantou.Framework.JavaScriptEngine.JsValue thisValue, System.ReadOnlySpan<Meziantou.Framework.JavaScriptEngine.JsValue> arguments) => throw null;
         protected virtual bool DefineOwnPropertyCore(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, in Meziantou.Framework.JavaScriptEngine.JsPropertyDescriptor descriptor) => throw null;
         protected virtual bool DeleteCore(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key) => throw null;
         protected virtual Meziantou.Framework.JavaScriptEngine.JsValue GetCore(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, Meziantou.Framework.JavaScriptEngine.JsValue receiver) => throw null;

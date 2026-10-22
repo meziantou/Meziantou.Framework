@@ -72,16 +72,10 @@
     "total": 1
   },
   "workers/Worker-location.sub.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "Test WorkerLocation properties.": "FAIL"
-    }
+    "total": 1
   },
   "workers/Worker-location.sub.any.js#sharedworker": {
-    "total": 1,
-    "failures": {
-      "Test WorkerLocation properties.": "FAIL"
-    }
+    "total": 1
   },
   "workers/Worker-messageport.html": {
     "total": 4

@@ -534,11 +534,15 @@ for each engine: the calls to the adapter are direct calls that can be inlined, 
   abstract operations `ToNumber`, `ToString`, `ToBoolean`, `ToBigInt` (https://tc39.es/ecma262/#sec-type-conversion).
 - Objects: the internal methods (`Get`, `Set`, `DefineOwnProperty`, `GetOwnProperty`, `HasProperty`, `Delete`,
   `OwnKeys`, `GetPrototypeOf`, `SetPrototypeOf`), the creation of ordinary objects, arrays and built-in functions
-  (`CreateFunction`: a function implemented in .NET), `Call` and `Construct`.
+  (`CreateFunction`: a function implemented in .NET; `CreateConstructor`: a built-in constructor, used for the interface
+  objects and the legacy factory functions such as `Image`), `Call` and `Construct`.
 - Platform objects: `CreatePlatformObject` creates the JavaScript object of a .NET object. When the bindings pass an
   `IJsHostObjectHandler<TValue>`, the object is a host exotic object: its internal methods call the handler first (the
   indexed and named properties of the legacy platform objects), and the `Ordinary*` methods perform the ordinary
-  internal methods, bypassing the handler. The named properties object of the window (`WindowProperties`, between
+  internal methods, bypassing the handler. `CreateHtmlDdaPlatformObject` creates `document.all`, a legacy platform
+  object with a [[Call]] internal method and an [[IsHTMLDDA]] internal slot (typeof is "undefined", it is falsy and
+  loosely equal to null); the default implementation is a `Proxy` of a function, which cannot be an [[IsHTMLDDA]]
+  object. The named properties object of the window (`WindowProperties`, between
   `Window.prototype` and `EventTarget.prototype`) is a `Proxy` created by the bindings, as its prototype is immutable.
 - Immutable prototypes (https://webidl.spec.whatwg.org/#es-immutable-prototype): the global object of a window, a worker
   or a worklet, the interface prototype object of its interface and the ones of the inherited interfaces (e.g.
@@ -550,8 +554,8 @@ for each engine: the calls to the adapter are direct calls that can be inlined, 
 - Errors: `CreateException` returns the .NET exception that throws a JavaScript value in the engine, and
   `TryGetThrownValue` converts an exception of the engine back to the thrown value.
 - Realms: `CurrentRealm`, `RunInRealm`, `GetGlobalObject`, and `Evaluate`, which evaluates code in a realm as an
-  indirect eval. The bindings define a few helpers in JavaScript (e.g. the interface objects, which are constructors, and
-  the `Proxy` of `HTMLAllCollection`): the engine must support ECMAScript 2020.
+  indirect eval. The bindings define a few helpers in JavaScript (e.g. the named properties object of the window), and
+  the default implementations of some primitives are written in JavaScript: the engine must support ECMAScript 2020.
 - Buffer sources (https://webidl.spec.whatwg.org/#idl-buffer-source-types): `TryGetBufferSource` returns the kind
   (`ArrayBuffer`, `SharedArrayBuffer`, a typed array or `DataView`) and a view of the bytes of an object, without running
   JavaScript code; the bindings pass the view to the .NET members (`ReadOnlySpan<byte>`, `Span<byte>` for the members that

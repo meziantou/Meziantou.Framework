@@ -1,10 +1,6 @@
 {
   "html/obsolete/requirements-for-implementations/other-elements-attributes-and-apis/document-all.html": {
-    "total": 2,
-    "failures": {
-      "'unusual behaviors' of document.all": "FAIL",
-      "'unusual behaviors' of document.all with assignment": "FAIL"
-    }
+    "total": 2
   },
   "html/obsolete/requirements-for-implementations/other-elements-attributes-and-apis/document-applets.html": {
     "total": 1

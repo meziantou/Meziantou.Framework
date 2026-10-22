@@ -319,6 +319,27 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void HostObjectsCanBeCallable()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        var host = new CallableHostObject(realm.ObjectPrototype);
+        realm.GlobalObject.SetProperty("host", host);
+        Assert.Equal("object", realm.Execute("typeof host").AsString());
+        Assert.Throws<JsException>(() => realm.Execute("host()"));
+
+        host.HasCallInternalMethod = true;
+        Assert.True(host.IsCallable);
+        Assert.False(host.IsConstructor);
+        Assert.Equal("function,called 2,called 1,true", realm.Execute("typeof host + ',' + host(1, 2) + ',' + Reflect.apply(host, null, ['x']) + ',' + (Function.prototype.toString.call(host) === 'function () { [native code] }')").AsString());
+        Assert.Throws<JsException>(() => realm.Execute("new host()"));
+
+        host.IsHtmlDdaObject = true;
+        Assert.Equal("undefined,false,true,called 0", realm.Execute("typeof host + ',' + Boolean(host) + ',' + (host == undefined) + ',' + host()").AsString());
+    }
+
+    [Fact]
     public void BuffersShareTheirMemory()
     {
         using var engine = new JsEngine();
@@ -602,6 +623,11 @@ public sealed class JsEngineTests
 
             return base.GetOwnPropertyCore(key, out descriptor);
         }
+    }
+
+    private sealed class CallableHostObject(JsObject prototype) : JsHostObject(prototype)
+    {
+        protected override JsValue CallCore(JsValue thisValue, ReadOnlySpan<JsValue> arguments) => "called " + arguments.Length.ToString(System.Globalization.CultureInfo.InvariantCulture);
     }
 
     private sealed class TrustedCodeHost : JsHost

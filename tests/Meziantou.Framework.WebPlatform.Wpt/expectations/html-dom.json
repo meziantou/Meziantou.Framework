@@ -2028,16 +2028,7 @@
     "total": 298
   },
   "html/dom/idlharness.https.html?include=HTML.+": {
-    "total": 3903,
-    "failures": {
-      "HTMLAllCollection interface: calling item(optional DOMString) on document.all with too few arguments must throw TypeError": "FAIL",
-      "HTMLAllCollection interface: calling namedItem(DOMString) on document.all with too few arguments must throw TypeError": "FAIL",
-      "HTMLAllCollection interface: document.all must inherit property \"item(optional DOMString)\" with the proper type": "FAIL",
-      "HTMLAllCollection interface: document.all must inherit property \"length\" with the proper type": "FAIL",
-      "HTMLAllCollection interface: document.all must inherit property \"namedItem(DOMString)\" with the proper type": "FAIL",
-      "HTMLAllCollection must be primary interface of document.all": "FAIL",
-      "Stringification of document.all": "FAIL"
-    }
+    "total": 3903
   },
   "html/dom/partial-updates/tentative/chained-streaming-templates-with-custom-element.html": {
     "total": 1

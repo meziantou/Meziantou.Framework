@@ -12784,9 +12784,11 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         public TValue CreateArrayBuffer(System.ReadOnlySpan<byte> bytes) => throw null;
         public TValue CreateArrayBufferView(Meziantou.Framework.WebPlatform.Scripting.JsBufferKind kind, TValue buffer, int byteOffset, int length) => throw null;
         public TValue? CreateArrayBufferWithData(byte[] data, string detachKey) => throw null;
+        public TValue CreateConstructor(string name, int length, Meziantou.Framework.WebPlatform.Scripting.JsHostConstructor<TValue> constructor) => throw null;
         TValue CreateDate(double timeValue);
         System.Exception CreateException(TValue value);
         TValue CreateFunction(string name, int length, Meziantou.Framework.WebPlatform.Scripting.JsHostFunction<TValue> function);
+        public TValue CreateHtmlDdaPlatformObject(TValue prototype, object target, Meziantou.Framework.WebPlatform.Scripting.IJsHostObjectHandler<TValue> handler, Meziantou.Framework.WebPlatform.Scripting.JsHostFunction<TValue> call) => throw null;
         TValue CreateObject(TValue prototype);
         TValue CreatePlatformObject(TValue prototype, object target, Meziantou.Framework.WebPlatform.Scripting.IJsHostObjectHandler<TValue>? handler);
         public TValue? CreateSharedArrayBuffer(object dataBlock) => throw null;
@@ -12919,6 +12921,8 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         public static bool operator ==(Meziantou.Framework.WebPlatform.Scripting.JsErrorInformation left, Meziantou.Framework.WebPlatform.Scripting.JsErrorInformation right) => throw null;
         public static bool operator !=(Meziantou.Framework.WebPlatform.Scripting.JsErrorInformation left, Meziantou.Framework.WebPlatform.Scripting.JsErrorInformation right) => throw null;
     }
+
+    public delegate TValue JsHostConstructor<TValue>(System.ReadOnlySpan<TValue> arguments, TValue newTarget);
 
     public delegate TValue JsHostFunction<TValue>(TValue thisValue, System.ReadOnlySpan<TValue> arguments);
 

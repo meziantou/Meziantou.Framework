@@ -58,8 +58,10 @@ Console.WriteLine(document.Body!.InnerHtml); // <ul id="list"><li>a</li><li>b</l
   Standard: the code and the original arguments of `eval` and of the `Function` constructors for the content security
   policies and Trusted Types (`HostEnsureCanCompileStrings`, `HostGetCodeForEval`, see
   [Compilation of strings](browsing-context.md#compilation-of-strings-and-of-webassembly)), the incumbent settings object
-  and the active script of the promise jobs (`HostMakeJobCallback`, `HostCallJobCallback`), the rejection tracking
-  (`HostPromiseRejectionTracker`), the module loading and `import.meta`. The functions of the WebIDL bindings run in the
+  and the active script of the promise jobs and the continuation state of the schedulers (`HostMakeJobCallback`,
+  `HostCallJobCallback`), the rejection tracking (`HostPromiseRejectionTracker`), the generic and timeout jobs (the
+  cleanup of a `FinalizationRegistry`, `Atomics.waitAsync()`: tasks and timers of the event loop of the realm,
+  `HostEnqueueGenericJob`, `HostEnqueueTimeoutJob`), the module loading and `import.meta`. The functions of the WebIDL bindings run in the
   realm of their caller.
 - The `console` namespace of the [Console Standard](https://console.spec.whatwg.org/) is implemented by the WebIDL
   bindings (`Scripting/WebIdl/WebIdlRealm.Console.cs`): its formatter works on the JavaScript values. The messages are

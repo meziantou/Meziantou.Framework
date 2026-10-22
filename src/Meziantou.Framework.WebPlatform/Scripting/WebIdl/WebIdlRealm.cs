@@ -132,13 +132,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             Adapter.Delete(Global, Key("SharedArrayBuffer"));
         }
 
-        // The schedulers are exposed in the windows and in the workers: the realms of the worklets, which run on the event loop
-        // of their document, keep their Promise.prototype.then
         var isWindowOrWorker = IsExposed(ExposureSet.Window | ExposureSet.DedicatedWorker | ExposureSet.SharedWorker | ExposureSet.ServiceWorker);
-        if (Features.PrioritizedTaskSchedulingEnabled && isWindowOrWorker)
-        {
-            DefineContinuationStatePropagation();
-        }
 
         // The global object gets an interface object per exposed interface, and the members of its interface
         Adapter.ReserveProperties(Global, WebIdlBindings<TAdapter, TValue>.Interfaces.Count + 256);

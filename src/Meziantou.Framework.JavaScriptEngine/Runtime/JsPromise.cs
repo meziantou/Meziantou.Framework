@@ -122,18 +122,21 @@ internal sealed class JsPromise : JsObject
     /// <summary>
     /// PerformPromiseThen(promise, onFulfilled, onRejected) without a result capability, whose handlers are .NET
     /// continuations: the fast path of <c>await</c>. The continuation runs in a promise job; an exception it throws is
-    /// reported as the exception of the job.
+    /// reported as the exception of the job. The handlers of the specification are built-in functions, so the host state is
+    /// captured here (HostMakeJobCallback) and restored when the continuation runs (HostCallJobCallback).
     /// </summary>
     public static void PerformPromiseThen(JsPromise promise, PromiseContinuation onFulfilled, PromiseContinuation onRejected, object? state)
     {
+        var engine = JsEngine.Current!;
         var reaction = new PromiseReaction
         {
             NativeOnFulfilled = onFulfilled,
             NativeOnRejected = onRejected,
             NativeState = state,
+            NativeHostDefined = engine.MakeContinuationHostDefined(),
         };
 
-        promise.AddReaction(JsEngine.Current!, reaction);
+        promise.AddReaction(engine, reaction);
     }
 
     /// <summary>PromiseResolve(%Promise%, value) for the %Promise% of the realm: the promise of <c>await</c>.</summary>
@@ -251,7 +254,17 @@ internal sealed class JsPromise : JsObject
     {
         if (reaction.NativeOnFulfilled is not null)
         {
-            (fulfill ? reaction.NativeOnFulfilled : reaction.NativeOnRejected!)(reaction.NativeState, argument);
+            var continuation = fulfill ? reaction.NativeOnFulfilled : reaction.NativeOnRejected!;
+            if (reaction.NativeHostDefined is { } hostDefined)
+            {
+                var engine = JsEngine.Current!;
+                engine.HostHooks.CallContinuation(engine, hostDefined, new JsContinuation(continuation, reaction.NativeState, argument));
+            }
+            else
+            {
+                continuation(reaction.NativeState, argument);
+            }
+
             return;
         }
 
@@ -333,6 +346,9 @@ internal sealed class PromiseReaction
     public PromiseContinuation? NativeOnRejected { get; init; }
 
     public object? NativeState { get; init; }
+
+    /// <summary>The [[HostDefined]] value of the .NET continuations (<see cref="JsHost.MakeContinuationHostDefined"/>), or null.</summary>
+    public object? NativeHostDefined { get; init; }
 }
 
 /// <summary>

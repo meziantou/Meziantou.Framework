@@ -2128,17 +2128,13 @@ context.EventLoop.RunUntilIdle();
   abort source (the promise is rejected when the signal is aborted); elsewhere it is a `user-visible` continuation.
   The state is the one of the scheduler that posted the task: a task of another window that calls `yield()` of this
   window inherits nothing.
-- **Propagation of the scheduling state.** The specification attaches the state to the promise reactions when they are
-  created (HostMakeJobCallback) and restores it when they run (HostCallJobCallback). The script engine implements these
-  hooks for the incumbent settings object and the active script, but the scheduling state of a task is not attached to
-  the job callbacks yet, so: the state of a task is set while its callback and the microtasks of its microtask checkpoint
-  run; the microtasks of `queueMicrotask()` and the reactions created with `then()` (and `catch()`, `finally()`,
-  `Promise.all()`...: a built-in function replaces `Promise.prototype.then`, once a scheduler was used in the event
-  loop) restore the state they were created with; a continuation of `yield()` restores the state that `yield()`
-  inherited. The reactions of `await` are created by the engine: an `await` of a promise that another task settles
-  (a timer, a fetch) continues with the state of that task, i.e. without state in most cases, and the `yield()` that
-  follows has the default priority and no abort source
-  (`scheduler/tentative/yield/yield-inherit-across-promises.any.js` fails).
+- **Propagation of the scheduling state.** The state of a task is set while its callback and the microtasks of its
+  microtask checkpoint run. The promise reactions capture the state of the event loop when they are created
+  (HostMakeJobCallback: `then()`, and the reactions that the engine creates for `await`, the async generators...) and
+  restore it when they run (HostCallJobCallback), so an `await` of a promise that another task settles (a timer, a
+  fetch) continues with the state of the code that awaited it. The microtasks of `queueMicrotask()` restore the state
+  they were created with, and a continuation of `yield()` restores the state that `yield()` inherited. The reactions
+  capture nothing until a scheduler is used by a global object of the script engine.
 - **Documents that are not fully active.** The tasks of the scheduler of a document that is no longer fully active
   (e.g. its `iframe` was removed) never run, and `postTask()` and `yield()` reject with a `NotSupportedError`, as in the
   browsers.

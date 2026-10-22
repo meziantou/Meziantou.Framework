@@ -464,6 +464,82 @@ public sealed class PromiseTests
     }
 
     [Fact]
+    public void JobCallback_HostDefinedStateIsCapturedByNativeReactions()
+    {
+        using var test = new CollectionsTestEngine();
+        var hooks = new RecordingHostHooks { CurrentState = "registration" };
+        test.Engine.HostHooks = hooks;
+        var states = new List<string?>();
+        JsPromise.PerformPromiseThen(Resolved(test, 1), (_, _) => states.Add(hooks.CurrentState), (_, _) => states.Add("rejected"), state: null);
+        hooks.CurrentState = null;
+        JsPromise.PerformPromiseThen(Resolved(test, 2), (_, _) => states.Add(hooks.CurrentState ?? "none"), (_, _) => states.Add("rejected"), state: null);
+        hooks.CurrentState = "other";
+        test.Engine.RunJobs();
+
+        // A null [[HostDefined]] value calls the continuation directly: it sees the state of the code that runs the jobs
+        Assert.Equal(["registration", "other"], states);
+        Assert.Equal(1, hooks.ContinuationCalls);
+        Assert.Equal("other", hooks.CurrentState);
+    }
+
+    [Fact]
+    public void JobCallback_AwaitRestoresTheStateOfTheAwait()
+    {
+        using var test = new CollectionsTestEngine();
+        var hooks = new RecordingHostHooks();
+        test.Engine.HostHooks = hooks;
+        test.Realm.GlobalObject.SetProperty("getState", test.Function((_, _) => hooks.CurrentState is { } state ? JsValue.FromString(state) : JsValue.Null));
+        test.Realm.Execute("""
+            var states = [];
+            var resolve;
+            var pending = new Promise(r => resolve = r);
+            async function run(name) {
+                states.push(name + ':' + getState());
+                await pending;
+                states.push(name + ':' + getState());
+                await null;
+                states.push(name + ':' + getState());
+            }
+            """);
+        hooks.CurrentState = "first";
+        test.Realm.Execute("run('a')");
+        hooks.CurrentState = "second";
+        test.Realm.Execute("run('b')");
+        hooks.CurrentState = "resolver";
+        test.Realm.Execute("resolve()");
+        test.Engine.RunJobs();
+        Assert.Equal("a:first,b:second,a:first,b:second,a:first,b:second", test.Realm.Execute("states.join()").AsString());
+        Assert.Equal("resolver", hooks.CurrentState);
+    }
+
+    [Fact]
+    public void HostHooks_GenericAndTimeoutJobsAreScheduledByTheHost()
+    {
+        using var test = new CollectionsTestEngine();
+        var hooks = new JobSchedulingHost();
+        test.Engine.HostHooks = hooks;
+        var other = test.Engine.CreateRealm();
+        test.Engine.EnqueueGenericJob(static (state, _) => ((CollectionsTestEngine)state!).Log.Add("generic:" + ReferenceEquals(JsEngine.Current!.CurrentRealm, ((CollectionsTestEngine)state).Realm)), test, default, other);
+        test.Engine.EnqueueTimeoutJob(static (state, _) => throw new JsException(JsValue.FromString("timeout")), test, default, test.Realm, TimeSpan.FromMilliseconds(10));
+
+        // The engine does not run them: the host does
+        test.Engine.RunJobs();
+        Assert.Empty(test.Log);
+        Assert.HasCount(2, hooks.Jobs);
+        Assert.Same(other, hooks.Jobs[0].Job.Realm);
+        Assert.Equal(TimeSpan.Zero, hooks.Jobs[0].Delay);
+        Assert.Same(test.Realm, hooks.Jobs[1].Job.Realm);
+        Assert.Equal(TimeSpan.FromMilliseconds(10), hooks.Jobs[1].Delay);
+
+        hooks.Jobs[0].Job.Run();
+        Assert.Equal(["generic:False"], test.Log);
+        Assert.Same(test.Realm, test.Engine.CurrentRealm);
+
+        hooks.Jobs[1].Job.Run();
+        Assert.Equal("timeout", Assert.Single(hooks.Exceptions).Value.AsString());
+    }
+
+    [Fact]
     public void NativeReactions_AwaitFastPath()
     {
         using var test = new CollectionsTestEngine();
@@ -633,6 +709,38 @@ public sealed class PromiseTests
                 CurrentState = previous;
             }
         }
+
+        public int ContinuationCalls { get; private set; }
+
+        public override object? MakeContinuationHostDefined(JsEngine engine) => CurrentState;
+
+        public override void CallContinuation(JsEngine engine, object hostDefined, JsContinuation continuation)
+        {
+            ContinuationCalls++;
+            var previous = CurrentState;
+            CurrentState = (string)hostDefined;
+            try
+            {
+                continuation.Invoke();
+            }
+            finally
+            {
+                CurrentState = previous;
+            }
+        }
+
+        public override void ReportJobException(JsEngine engine, JsException exception) => Exceptions.Add(exception);
+    }
+
+    private sealed class JobSchedulingHost : JsHost
+    {
+        public List<(JsHostJob Job, TimeSpan Delay)> Jobs { get; } = [];
+
+        public List<JsException> Exceptions { get; } = [];
+
+        public override void EnqueueGenericJob(JsEngine engine, JsHostJob job) => Jobs.Add((job, TimeSpan.Zero));
+
+        public override void EnqueueTimeoutJob(JsEngine engine, JsHostJob job, TimeSpan delay) => Jobs.Add((job, delay));
 
         public override void ReportJobException(JsEngine engine, JsException exception) => Exceptions.Add(exception);
     }

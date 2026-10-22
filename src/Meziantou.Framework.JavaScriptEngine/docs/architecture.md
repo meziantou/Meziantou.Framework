@@ -166,9 +166,13 @@ from any thread) / `EnqueueTimeoutJob` go through the host hooks (`JsHost`, `eng
 implementations queue the jobs in the engine. `engine.RunJobs()` runs the promise jobs first, then the generic jobs and
 the due timeout jobs (on the `TimeProvider` of the options), until the queue is empty; it clears the WeakRef kept
 objects after each job. A job exception goes to `JsHost.ReportJobException` (default: rethrown by `RunJobs`).
-`EnterNestedJobQueue()` redirects the new jobs to a separate queue until it is disposed. The other hooks:
+`EnterNestedJobQueue()` redirects the new jobs to a separate queue until it is disposed. A host that has its own event
+loop overrides `EnqueueGenericJob` / `EnqueueTimeoutJob`: it gets a `JsHostJob`, which it runs later with `Run()` (in
+the realm of the job; the promise jobs it enqueues wait for the next `RunJobs`). The other hooks:
 HostPromiseRejectionTracker, HostMakeJobCallback / HostCallJobCallback (a host state captured by `then` and restored when
-the reaction runs).
+the reaction runs). The .NET continuations (below) have no function object: `MakeContinuationHostDefined` captures their
+host state, and `CallContinuation` restores it around `JsContinuation.Invoke()`; when it returns null (the default),
+nothing is allocated and the continuation is called directly.
 
 `JsPromise` (`Runtime/JsPromise.cs`) has the promise abstract operations: `PromiseCapability.Create(C)` /
 `CreateIntrinsic(realm)` (NewPromiseCapability; the capabilities of %Promise% do not create the resolving functions

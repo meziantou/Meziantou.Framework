@@ -41,10 +41,11 @@ internal sealed class JavaScriptHost(JavaScriptScriptEngine owner) : JsHost
     }
 
     /// <summary>
-    /// https://html.spec.whatwg.org/multipage/webappapis.html#hostmakejobcallback: the incumbent global object and the
-    /// active script, restored when the callback is called.
+    /// https://html.spec.whatwg.org/multipage/webappapis.html#hostmakejobcallback: the incumbent global object, the active
+    /// script and the continuation state of the event loop (https://wicg.github.io/scheduling-apis/#sec-patches-html-hostmakejobcallback),
+    /// restored when the callback is called.
     /// </summary>
-    public override JsJobCallback MakeJobCallback(JsEngine engine, JsObject callback) => new(callback, new JobCallbackState(owner.GetIncumbentGlobal(), engine.GetActiveScriptOrModule()));
+    public override JsJobCallback MakeJobCallback(JsEngine engine, JsObject callback) => new(callback, new JobCallbackState(owner.GetIncumbentGlobal(), engine.GetActiveScriptOrModule(), CaptureContinuationState()));
 
     /// <summary>https://html.spec.whatwg.org/multipage/webappapis.html#hostcalljobcallback</summary>
     public override JsValue CallJobCallback(JsEngine engine, in JsJobCallback jobCallback, JsValue thisValue, ReadOnlySpan<JsValue> arguments)
@@ -55,6 +56,13 @@ internal sealed class JavaScriptHost(JavaScriptScriptEngine owner) : JsHost
         // Prepare to run a callback with the incumbent settings object (the backup incumbent settings object stack), and
         // push the script execution context of the active script
         owner.BackupIncumbentGlobals.Push(state.Incumbent);
+        var continuationState = state.ContinuationState;
+        var previousContinuationState = continuationState?.EventLoop.CurrentContinuationState;
+        if (continuationState is not null)
+        {
+            continuationState.EventLoop.CurrentContinuationState = continuationState.State;
+        }
+
         try
         {
             if (state.ActiveScript is null)
@@ -65,11 +73,86 @@ internal sealed class JavaScriptHost(JavaScriptScriptEngine owner) : JsHost
         }
         finally
         {
+            if (continuationState is not null)
+            {
+                continuationState.EventLoop.CurrentContinuationState = previousContinuationState;
+            }
+
             owner.BackupIncumbentGlobals.Pop();
         }
     }
 
-    private sealed record JobCallbackState(GlobalScope? Incumbent, JsScriptOrModule? ActiveScript);
+    /// <summary>
+    /// HostMakeJobCallback for the handlers of the engine (e.g. the continuation of an <c>await</c>): only the continuation
+    /// state is captured, as the code they resume has its own script (the incumbent and the active script come from it).
+    /// Nothing is captured until a scheduler is used.
+    /// </summary>
+    public override object? MakeContinuationHostDefined(JsEngine engine) => CaptureContinuationState();
+
+    /// <summary>HostCallJobCallback for the handlers of the engine: restores the continuation state captured by <see cref="MakeContinuationHostDefined"/>.</summary>
+    public override void CallContinuation(JsEngine engine, object hostDefined, JsContinuation continuation)
+    {
+        var snapshot = (ContinuationStateSnapshot)hostDefined;
+        var eventLoop = snapshot.EventLoop;
+        var previousContinuationState = eventLoop.CurrentContinuationState;
+        eventLoop.CurrentContinuationState = snapshot.State;
+        try
+        {
+            continuation.Invoke();
+        }
+        finally
+        {
+            eventLoop.CurrentContinuationState = previousContinuationState;
+        }
+    }
+
+    private ContinuationStateSnapshot? CaptureContinuationState()
+    {
+        if (!owner.PropagatesContinuationState)
+            return null;
+
+        return owner.Agent.CurrentRealm?.GlobalScope.EventLoop.CaptureContinuationState();
+    }
+
+    private sealed record JobCallbackState(GlobalScope? Incumbent, JsScriptOrModule? ActiveScript, ContinuationStateSnapshot? ContinuationState);
+
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/webappapis.html#hostenqueuegenericjob: queues a global task on the JavaScript
+    /// engine task source of the global object of the realm. It can be called from any thread (e.g. the agent that calls
+    /// <c>Atomics.notify()</c>).
+    /// </summary>
+    public override void EnqueueGenericJob(JsEngine engine, JsHostJob job)
+    {
+        if (owner.GetEventLoop(job.Realm) is { } eventLoop)
+        {
+            eventLoop.QueueTask(() => RunJob(job));
+            return;
+        }
+
+        base.EnqueueGenericJob(engine, job);
+    }
+
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/webappapis.html#hostenqueuetimeoutjob: queues a global task on the JavaScript
+    /// engine task source after the timeout (a timer of the event loop, which wakes up the thread of a worker).
+    /// </summary>
+    public override void EnqueueTimeoutJob(JsEngine engine, JsHostJob job, TimeSpan delay)
+    {
+        if (owner.GetEventLoop(job.Realm) is { } eventLoop)
+        {
+            eventLoop.QueueTimer(delay, () => RunJob(job));
+            return;
+        }
+
+        base.EnqueueTimeoutJob(engine, job, delay);
+    }
+
+    /// <summary>Runs a job in a task: the event loop performs a microtask checkpoint afterwards.</summary>
+    private void RunJob(JsHostJob job)
+    {
+        using var scope = owner.EnterJavaScript();
+        job.Run();
+    }
 
     /// <summary>The exception thrown by a microtask queued by the host is reported to the global object of the current realm.</summary>
     public override void ReportJobException(JsEngine engine, JsException exception) => owner.ReportException(realm: null, exception);

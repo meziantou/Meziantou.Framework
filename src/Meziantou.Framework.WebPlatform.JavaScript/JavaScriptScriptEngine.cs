@@ -27,6 +27,9 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
     private static readonly ConcurrentDictionary<string, JsPreparedScript> PreparedScripts = new(StringComparer.Ordinal);
 
     private readonly ConditionalWeakTable<ClassicScript, JsPreparedScript> _parsedScripts = [];
+
+    // The event loops of the realms, read from any thread (the jobs of the engine can be queued by other agents)
+    private readonly ConditionalWeakTable<JsRealm, DomEventLoop> _eventLoops = [];
     private int _executionDepth;
 
     /// <summary>Creates a script engine.</summary>
@@ -71,11 +74,15 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
             RealmFactory = state.CreateRealm,
             RealmCreated = realm =>
             {
+                _eventLoops.AddOrUpdate((JsRealm)realm.EngineRealm, realm.GlobalScope.EventLoop);
                 InitializeRealm(realm);
                 OnRealmCreated(realm.GlobalScope, (JsObject)realm.Global);
             },
         };
     }
+
+    /// <summary>Gets the event loop of the global object of a realm (from any thread), or null.</summary>
+    internal DomEventLoop? GetEventLoop(JsRealm? realm) => realm is not null && _eventLoops.TryGetValue(realm, out var eventLoop) ? eventLoop : null;
 
     /// <summary>Gets the JavaScript engine (the agent of the windows).</summary>
     public JsEngine Engine { get; }

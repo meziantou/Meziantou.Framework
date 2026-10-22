@@ -46,6 +46,11 @@ namespace Meziantou.Framework.JavaScriptEngine
         Function = 2,
     }
 
+    public ref struct JsContinuation
+    {
+        public void Invoke() { }
+    }
+
     public sealed class JsEngine : System.IDisposable
     {
         public Meziantou.Framework.JavaScriptEngine.JsRealm? CurrentRealm { get => throw null; }
@@ -130,12 +135,22 @@ namespace Meziantou.Framework.JavaScriptEngine
 
     public class JsHost
     {
+        public virtual void CallContinuation(Meziantou.Framework.JavaScriptEngine.JsEngine engine, object hostDefined, Meziantou.Framework.JavaScriptEngine.JsContinuation continuation) { }
         public virtual Meziantou.Framework.JavaScriptEngine.JsValue CallJobCallback(Meziantou.Framework.JavaScriptEngine.JsEngine engine, in Meziantou.Framework.JavaScriptEngine.JsJobCallback jobCallback, Meziantou.Framework.JavaScriptEngine.JsValue thisValue, System.ReadOnlySpan<Meziantou.Framework.JavaScriptEngine.JsValue> arguments) => throw null;
+        public virtual void EnqueueGenericJob(Meziantou.Framework.JavaScriptEngine.JsEngine engine, Meziantou.Framework.JavaScriptEngine.JsHostJob job) { }
+        public virtual void EnqueueTimeoutJob(Meziantou.Framework.JavaScriptEngine.JsEngine engine, Meziantou.Framework.JavaScriptEngine.JsHostJob job, System.TimeSpan delay) { }
         public virtual void EnsureCanCompileStrings(Meziantou.Framework.JavaScriptEngine.JsEngine engine, Meziantou.Framework.JavaScriptEngine.JsRealm realm, System.Collections.Generic.IReadOnlyList<string> parameterStrings, string bodyString, string codeString, Meziantou.Framework.JavaScriptEngine.JsCompilationType compilationType, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.JavaScriptEngine.JsValue> parameterArgs, Meziantou.Framework.JavaScriptEngine.JsValue bodyArg) { }
         public virtual string? GetCodeForEval(Meziantou.Framework.JavaScriptEngine.JsEngine engine, Meziantou.Framework.JavaScriptEngine.JsValue argument) => throw null;
+        public virtual object? MakeContinuationHostDefined(Meziantou.Framework.JavaScriptEngine.JsEngine engine) => throw null;
         public virtual Meziantou.Framework.JavaScriptEngine.JsJobCallback MakeJobCallback(Meziantou.Framework.JavaScriptEngine.JsEngine engine, Meziantou.Framework.JavaScriptEngine.JsObject callback) => throw null;
         public virtual void PromiseRejectionTracker(Meziantou.Framework.JavaScriptEngine.JsEngine engine, Meziantou.Framework.JavaScriptEngine.JsObject promise, Meziantou.Framework.JavaScriptEngine.JsPromiseRejectionOperation operation) { }
         public virtual void ReportJobException(Meziantou.Framework.JavaScriptEngine.JsEngine engine, Meziantou.Framework.JavaScriptEngine.JsException exception) { }
+    }
+
+    public sealed class JsHostJob
+    {
+        public Meziantou.Framework.JavaScriptEngine.JsRealm? Realm { get => throw null; }
+        public void Run() { }
     }
 
     public class JsHostObject : Meziantou.Framework.JavaScriptEngine.JsObject

@@ -50,7 +50,10 @@ public sealed class Scheduler
     internal Scheduler(GlobalScope global)
     {
         _global = global;
-        global.EventLoop.PropagatesContinuationState = true;
+        if (global.ScriptEngine is { } scriptEngine)
+        {
+            scriptEngine.PropagatesContinuationState = true;
+        }
     }
 
     /// <summary>Whether the tasks of the scheduler are runnable: the document of its window is fully active, or its worker is not closing.</summary>

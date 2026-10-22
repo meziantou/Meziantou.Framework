@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 783 | 882 | 0 | 89% |
+| [Stable](#stable-tests) | 784 | 882 | 0 | 89% |
 | [Tentative](#tentative-tests) | 3 | 13 | 0 | 23% |
 | [Reftests](#reftests) | 2 | 2 | 0 | 100% |
-| **All** | **788** | **897** | **0** | **88%** |
+| **All** | **789** | **897** | **0** | **88%** |
 
 ## Stable tests
 
@@ -737,7 +737,7 @@
 | [`securitypolicyviolation/securitypolicyviolation-block-image.sub.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/securitypolicyviolation-block-image.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the source location of a violation is the location of the script that runs when the request is checked, not of the script that started the request: the image is fetched later (in a microtask), so the line and column of the violation are not the ones of the `src` setter or of `appendChild()` |
 | [`securitypolicyviolation/source-file-blob-scheme.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/source-file-blob-scheme.html) | Pass | 1 / 1 |  |  |
 | [`securitypolicyviolation/source-file-data-scheme.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/source-file-data-scheme.html) | Pass | 1 / 1 |  |  |
-| [`securitypolicyviolation/source-file.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/source-file.html) | Fail | 14 / 17 | BUG | the source file of the violations of the code compiled by `eval()` with a `//# sourceURL=` comment: a `ws:` or `wss:` URL is reported as its scheme, and the query of the URL is not removed (3 subtests of 17) |
+| [`securitypolicyviolation/source-file.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/source-file.html) | Pass | 17 / 17 |  |  |
 | [`securitypolicyviolation/style-sample-no-opt-in.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/style-sample-no-opt-in.html) | Pass | 2 / 2 |  |  |
 | [`securitypolicyviolation/style-sample.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/style-sample.html) | Pass | 2 / 2 |  |  |
 | [`securitypolicyviolation/targeting-for-inline-handler-connected-after-set.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/targeting-for-inline-handler-connected-after-set.html) | Pass | 1 / 1 |  |  |

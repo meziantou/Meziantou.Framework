@@ -146,7 +146,7 @@
 | [`elements/the-innertext-and-outertext-properties/outertext-setter.html`](https://wpt.fyi/results/html/dom/elements/the-innertext-and-outertext-properties/outertext-setter.html) | Pass | 43 / 43 |  |  |
 | [`historical.html`](https://wpt.fyi/results/html/dom/historical.html) | Pass | 13 / 13 |  |  |
 | [`idlharness.any.js`](https://wpt.fyi/results/html/dom/idlharness.any.js) | Pass | 808 / 808 |  |  |
-| [`idlharness.https.html`](https://wpt.fyi/results/html/dom/idlharness.https.html) | Fail | 5,978 / 6,007 | JS ENGINE, NOT IMPLEMENTED | `document.all` cannot be `[[IsHTMLDDA]]` (typeof); `NotRestoredReasons` |
+| [`idlharness.https.html`](https://wpt.fyi/results/html/dom/idlharness.https.html) | Fail | 5,985 / 6,007 | NOT IMPLEMENTED | `NotRestoredReasons` |
 | [`reflection-embedded.html`](https://wpt.fyi/results/html/dom/reflection-embedded.html) | Pass | 9,429 / 9,429 |  |  |
 | [`reflection-forms-weekmonth.html`](https://wpt.fyi/results/html/dom/reflection-forms-weekmonth.html) | Pass | 1,618 / 1,618 |  |  |
 | [`reflection-forms.html`](https://wpt.fyi/results/html/dom/reflection-forms.html) | Pass | 8,817 / 8,817 |  |  |

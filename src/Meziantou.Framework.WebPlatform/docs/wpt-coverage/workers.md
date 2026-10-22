@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 258 | 288 | 0 | 90% |
+| [Stable](#stable-tests) | 259 | 288 | 0 | 90% |
 | [Tentative](#tentative-tests) | 0 | 8 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **258** | **296** | **0** | **87%** |
+| **All** | **259** | **296** | **0** | **88%** |
 
 ## Stable tests
 
@@ -36,7 +36,7 @@
 | [`Worker-creation-happens-in-parallel.https.html`](https://wpt.fyi/results/workers/Worker-creation-happens-in-parallel.https.html) | Pass | 1 / 1 |  |  |
 | [`Worker-custom-event.any.js`](https://wpt.fyi/results/workers/Worker-custom-event.any.js) | Pass | 2 / 2 |  |  |
 | [`Worker-formdata.any.js`](https://wpt.fyi/results/workers/Worker-formdata.any.js) | Pass | 1 / 1 |  |  |
-| [`Worker-location.sub.any.js`](https://wpt.fyi/results/workers/Worker-location.sub.any.js) | Fail | 0 / 2 | JS ENGINE | the interface objects of the workers are JavaScript functions: `String(WorkerLocation)` is their source text, not `function WorkerLocation() { [native code] }` |
+| [`Worker-location.sub.any.js`](https://wpt.fyi/results/workers/Worker-location.sub.any.js) | Pass | 2 / 2 |  |  |
 | [`Worker-messageport.html`](https://wpt.fyi/results/workers/Worker-messageport.html) | Pass | 4 / 4 |  |  |
 | [`Worker-multi-port.html`](https://wpt.fyi/results/workers/Worker-multi-port.html) | Pass | 9 / 9 |  |  |
 | [`Worker-nested-importScripts-error.html`](https://wpt.fyi/results/workers/Worker-nested-importScripts-error.html) | Pass | 1 / 1 |  |  |

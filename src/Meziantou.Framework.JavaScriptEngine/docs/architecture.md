@@ -314,7 +314,7 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
   fast paths (it must not override the methods that read or write properties).
   `JsHostObject.HasCallInternalMethod` gives a host object a [[Call]] internal method (`CallCore`, which runs in the
   realm of the caller), and `IsHtmlDdaObject` an [[IsHTMLDDA]] internal slot: both are used by `document.all`.
-- Benchmarks (`benchmarks/Meziantou.Framework.JavaScriptEngine.Benchmarks`, net10.0): `quick [workload|file.js]` (vs Jint),
+- Benchmarks (`benchmarks/Meziantou.Framework.JavaScriptEngine.Benchmarks`, net10.0): `quick [workload|file.js]`,
   `profile <workload|file.js|Parse|CreateRealm> <seconds>` (allocations, GC, CPU time per run), `harness <testharness.js>`,
   `dump <workload|file.js>` (the bytecode), and BenchmarkDotNet (`EngineBenchmarks`, `ParseBenchmarks`). Run them with
   `DOTNET_TieredCompilation=0` for steady-state timings of short runs.

@@ -5,7 +5,7 @@ using Meziantou.Framework.JavaScriptEngine.Benchmarks;
 
 // Usage:
 //   dotnet run -c Release -f net10.0 -- [BenchmarkDotNet arguments]   runs the benchmarks
-//   dotnet run -c Release -f net10.0 -- quick [workload] [iterations]  times the workloads with both engines (a quick, noisy comparison)
+//   dotnet run -c Release -f net10.0 -- quick [workload] [iterations]  times the workloads (a quick, noisy measurement)
 //   dotnet run -c Release -f net10.0 -- profile <workload or file> <seconds>   runs a workload (a script that defines run()) in a loop (to attach a profiler)
 //   dotnet run -c Release -f net10.0 -- dump <workload or file>         prints the bytecode of a workload
 if (args is ["dump", var dumpWorkload])
@@ -107,7 +107,6 @@ if (args is ["harness", var harnessPath, ..])
     var harnessCode = File.ReadAllText(harnessPath);
     var iterations = args.Length > 2 ? int.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 50;
     var prepared = JsPreparedScript.Parse(harnessCode);
-    var jintPrepared = Jint.Engine.PrepareScript(harnessCode);
     var mine = Measure(() =>
     {
         using var engine = new JsEngine();
@@ -119,17 +118,7 @@ if (args is ["harness", var harnessPath, ..])
         if (realm.Execute("globalThis.passed").AsNumber() != 40)
             throw new InvalidOperationException("The tests did not pass");
     }, iterations);
-    var theirs = Measure(() =>
-    {
-        using var engine = new Jint.Engine();
-        engine.Execute("globalThis.self = globalThis;");
-        engine.Execute(jintPrepared);
-        engine.Execute(Workloads.HarnessTests);
-        engine.Advanced.ProcessTasks();
-        if (Jint.JsValueExtensions.AsNumber(engine.Evaluate("globalThis.passed")) != 40)
-            throw new InvalidOperationException("The tests did not pass with Jint");
-    }, iterations);
-    Console.WriteLine($"{"Harness",-14} {mine,10:F3} ms  Jint {theirs,10:F3} ms  ratio {mine / theirs,6:F2}");
+    Console.WriteLine($"{"Harness",-14} {mine,10:F3} ms");
     return 0;
 }
 
@@ -158,27 +147,21 @@ if (args is ["quick", ..])
             run = realm.GlobalObject.GetProperty("run");
         }
 
-        using var jint = new Jint.Engine();
-        jint.Execute(code);
-        var jintRun = jint.GetValue("run");
         var mine = Measure(() => engine.Call(run, JsValue.Undefined), iterations);
-        var theirs = Measure(() => jint.Invoke(jintRun), iterations);
-        Console.WriteLine($"{name,-14} {mine,10:F3} ms  Jint {theirs,10:F3} ms  ratio {mine / theirs,6:F2}");
+        Console.WriteLine($"{name,-14} {mine,10:F3} ms");
     }
 
     // The fixed costs: an engine and a realm that runs a tiny script, and the parsing of a large script
     if (ReferenceEquals(workloads, Workloads.All) && filter is null or "CreateRealm")
     {
         var mine = Measure(() => { using var engine = new JsEngine(); engine.CreateRealm().Execute("1 + 1"); }, iterations);
-        var theirs = Measure(() => { using var engine = new Jint.Engine(); engine.Evaluate("1 + 1"); }, iterations);
-        Console.WriteLine($"{"CreateRealm",-14} {mine,10:F3} ms  Jint {theirs,10:F3} ms  ratio {mine / theirs,6:F2}");
+        Console.WriteLine($"{"CreateRealm",-14} {mine,10:F3} ms");
     }
 
     if (ReferenceEquals(workloads, Workloads.All) && filter is null or "Parse")
     {
         var mine = Measure(() => JsPreparedScript.Parse(Workloads.LargeScript), iterations);
-        var theirs = Measure(() => Jint.Engine.PrepareScript(Workloads.LargeScript), iterations);
-        Console.WriteLine($"{"Parse",-14} {mine,10:F3} ms  Jint {theirs,10:F3} ms  ratio {mine / theirs,6:F2}");
+        Console.WriteLine($"{"Parse",-14} {mine,10:F3} ms");
     }
 
     return 0;

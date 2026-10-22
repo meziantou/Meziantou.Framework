@@ -71,6 +71,7 @@
     <Project Path="../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
     <Project Path="../src/Meziantou.Framework.Toml.SourceGenerator/Meziantou.Framework.Toml.SourceGenerator.csproj" />
     <Project Path="../src/Meziantou.Framework.Toml/Meziantou.Framework.Toml.csproj" />
+    <Project Path="../src/Meziantou.Framework.Unicode.Dictionaries/Meziantou.Framework.Unicode.Dictionaries.csproj" />
     <Project Path="../src/Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
     <Project Path="../src/Meziantou.Framework.Unix.ControlGroups/Meziantou.Framework.Unix.ControlGroups.csproj" />
     <Project Path="../src/Meziantou.Framework.Uri/Meziantou.Framework.Uri.csproj" />

@@ -6,7 +6,8 @@ An ECMAScript engine written in .NET: a hand-written parser, a bytecode compiler
 2025, ECMA-402 (`Intl`) and `Temporal`, and the stage 3 proposals `import defer` and source phase imports (the module
 sources are given by the host). It uses no reflection: it is trimming- and Native AOT-compatible, and its results do not
 depend on the globalization settings of the process (the Unicode, time zone and CLDR data are part of the library, and
-so are the word lists of ICU that `Intl.Segmenter` uses for Chinese, Japanese, Thai, Lao, Khmer and Burmese).
+the word lists of ICU that `Intl.Segmenter` uses for Chinese, Japanese, Thai, Lao, Khmer and Burmese come from
+[Meziantou.Framework.Unicode.Dictionaries](../Meziantou.Framework.Unicode.Dictionaries/readme.md)).
 
 It is the script engine of [Meziantou.Framework.WebPlatform](../Meziantou.Framework.WebPlatform/readme.md), through
 [Meziantou.Framework.WebPlatform.JavaScript](../Meziantou.Framework.WebPlatform.JavaScript/readme.md).

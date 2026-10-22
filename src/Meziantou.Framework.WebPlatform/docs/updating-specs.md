@@ -39,12 +39,12 @@ Sources:
 - `cldr`: the delimiters (the quotation marks) of the locales of the [Unicode CLDR](https://cldr.unicode.org/), from the JSON
   distribution [unicode-org/cldr-json](https://github.com/unicode-org/cldr-json) (`cldr-misc-full/main/*/delimiters.json`,
   Unicode License v3: `LICENSE`), for the quotation marks of `quotes: auto` (`LanguageQuotes.g.cs`)
-- `icu`: data of [ICU](https://github.com/unicode-org/icu) (Unicode License v3: `LICENSE`), pinned to a release tag: the word
-  lists of the Southeast Asian scripts (`icu4c/source/data/brkitr/dictionaries/{thai,lao,burmese,khmer}dict.txt`) and the model
+- `icu`: data of [ICU](https://github.com/unicode-org/icu) (Unicode License v3: `LICENSE`), pinned to a release tag: the model
   of the Japanese phrases (`icu4c/source/data/brkitr/adaboost/jaml.txt`), compiled by `SegmentationGenerator` for the line
-  breaking (see [layout.md](layout.md#line-breaking)). The break engines that use them (`SoutheastAsianWordBreaker`,
-  `JapanesePhraseBreaker`) are manual ports of `dictbe.cpp` and `mlbe.cpp` of the same release: a new release needs their
-  changes to be ported
+  breaking (see [layout.md](layout.md#line-breaking)). The break engine that uses it (`JapanesePhraseBreaker`) is a manual
+  port of `mlbe.cpp` of the same release: a new release needs its changes to be ported. The word lists of the Southeast
+  Asian scripts and their break engines are in Meziantou.Framework.Unicode.Dictionaries, which has its own pin of ICU
+  (`tools/Meziantou.Framework.Unicode.Dictionaries.Generator/data-versions.json`)
 - `publicsuffix`: the [Public Suffix List](https://publicsuffix.org/list/) (`public_suffix_list.dat`, Mozilla Public
   License 2.0), for the public suffixes and the registrable domains of the hosts (`Urls/PublicSuffixList.g.cs`). It is
   also the source of the list of `Meziantou.Framework.Uri` (`tools/Meziantou.Framework.Uri.PublicSuffix.Generator`, whose
@@ -94,9 +94,8 @@ Sources:
     the dictionaries (`HyphenationDictionary.Dictionaries.g.cs`) and the license notices of the sources (`LICENSES.txt`). See
     [layout.md](layout.md#hyphenation). To add a language, add its files to `sources.json` and to the `Dictionaries` of the
     generator after checking its license, then run `update hyphenation`.
-  - `SegmentationGenerator` compiles the word lists of the `icu` source into the embedded resources
-    `Unicode/Segmentation/*.dict` (a trie per script, compressed with Brotli and compared after decompression by `--check`),
-    the model of the Japanese phrases into `JapanesePhraseBreaker.Model.g.cs`, and the license notices into `LICENSES.txt`.
+  - `SegmentationGenerator` compiles the model of the Japanese phrases of the `icu` source into
+    `JapanesePhraseBreaker.Model.g.cs`, and the license notices into `LICENSES.txt`.
   - `UserAgentStyleSheetGenerator` generates the user agent style sheets: HTML from the CSS blocks of the rendering
     section of the HTML source, MathML from the appendix of MathML Core, whose rules are included from the files of
     `user-agent-stylesheet`.

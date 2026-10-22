@@ -128,99 +128,13 @@ SPDX-License-Identifier: Unicode-3.0
 - License: Unicode License V3 (<https://github.com/unicode-org/icu/blob/release-78.3/LICENSE>, reproduced in the
   [Unicode Character Database](#unicode-character-database) section)
 - Version: release-78.3 (commit 21d1eb0f306e1141c10931e914dfc038c06121da)
-- Used for: the word breaking of the Southeast Asian scripts (`Unicode/Segmentation/SoutheastAsianWordBreaker.cs`) and
-  the phrase breaking of Japanese (`Unicode/Segmentation/JapanesePhraseBreaker*.cs`), ports of the dictionary break
-  engines of ICU (`icu4c/source/common/dictbe.cpp`, `mlbe.cpp`), and their data: the word lists
-  (`Unicode/Segmentation/*.dict`, from `icu4c/source/data/brkitr/dictionaries/*dict.txt`) and the model of the Japanese
-  phrase breaking (from `icu4c/source/data/brkitr/adaboost/jaml.txt`), converted by `tools/Meziantou.Framework.WebPlatform.SpecGen`. The headers of the
-  source files are reproduced in `segmentation/LICENSES.txt` in the package
-  (`Unicode/Segmentation/LICENSES.txt` in the repository).
-
-The word lists of Lao and Burmese are distributed by ICU under the following additional licenses:
-
-```
-Lao Word Break Dictionary Data (laodict.txt)
-
- # Copyright (C) 2016 and later: Unicode, Inc. and others.
- # License & terms of use: http://www.unicode.org/copyright.html
- # Copyright (c) 2015 International Business Machines Corporation
- # and others. All Rights Reserved.
- #
- # Project: https://github.com/rober42539/lao-dictionary
- # Dictionary: https://github.com/rober42539/lao-dictionary/laodict.txt
- # License: https://github.com/rober42539/lao-dictionary/LICENSE.txt
- #          (copied below)
- #
- #	This file is derived from the above dictionary version of Nov 22, 2020
- #  ----------------------------------------------------------------------
- #  Copyright (C) 2013 Brian Eugene Wilson, Robert Martin Campbell.
- #  All rights reserved.
- #
- #  Redistribution and use in source and binary forms, with or without
- #  modification, are permitted provided that the following conditions are met:
- #
- #  Redistributions of source code must retain the above copyright notice, this
- #  list of conditions and the following disclaimer. Redistributions in binary
- #  form must reproduce the above copyright notice, this list of conditions and
- #  the following disclaimer in the documentation and/or other materials
- #  provided with the distribution.
- #
- # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- # FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- # COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- # INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- # (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- # SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- # HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- # STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- # OF THE POSSIBILITY OF SUCH DAMAGE.
- #  --------------------------------------------------------------------------
-```
-
-```
-Burmese Word Break Dictionary Data (burmesedict.txt)
-
- #  Copyright (c) 2014 International Business Machines Corporation
- #  and others. All Rights Reserved.
- #
- #  This list is part of a project hosted at:
- #    github.com/kanyawtech/myanmar-karen-word-lists
- #
- #  --------------------------------------------------------------------------
- #  Copyright (c) 2013, LeRoy Benjamin Sharon
- #  All rights reserved.
- #
- #  Redistribution and use in source and binary forms, with or without
- #  modification, are permitted provided that the following conditions
- #  are met: Redistributions of source code must retain the above
- #  copyright notice, this list of conditions and the following
- #  disclaimer.  Redistributions in binary form must reproduce the
- #  above copyright notice, this list of conditions and the following
- #  disclaimer in the documentation and/or other materials provided
- #  with the distribution.
- #
- #    Neither the name Myanmar Karen Word Lists, nor the names of its
- #    contributors may be used to endorse or promote products derived
- #    from this software without specific prior written permission.
- #
- #  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
- #  CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
- #  INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- #  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS
- #  BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- #  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
- #  TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- #  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- #  ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
- #  TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
- #  THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- #  SUCH DAMAGE.
- #  --------------------------------------------------------------------------
-```
+- Used for: the phrase breaking of Japanese (`Unicode/Segmentation/JapanesePhraseBreaker*.cs`), a port of the machine
+  learning break engine of ICU (`icu4c/source/common/mlbe.cpp`), and its data: the model of the Japanese phrase breaking
+  (from `icu4c/source/data/brkitr/adaboost/jaml.txt`), converted by `tools/Meziantou.Framework.WebPlatform.SpecGen`. The
+  header of the source file is reproduced in `segmentation/LICENSES.txt` in the package
+  (`Unicode/Segmentation/LICENSES.txt` in the repository). The word breaking of the Southeast Asian scripts uses the
+  dictionary break engines and the word lists of ICU of the Meziantou.Framework.Unicode.Dictionaries package, which has
+  their notices.
 
 ---
 

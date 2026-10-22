@@ -1,0 +1,93 @@
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: '0 0 * * 0' # once a week
+  push:
+    branches:
+      - main
+    paths:
+      - 'tools/Meziantou.Framework.Unicode.Dictionaries.Generator/**'
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  update_file:
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Setup .NET
+        uses: $/.github/actions/setup-dotnet
+      - run: |
+          # Built first and run with --no-build: `dotnet run` exits 1 for a build or restore failure, which is
+          # also how the generator reports "files updated", so a broken build would otherwise be committed as
+          # an empty update.
+          dotnet build tools/Meziantou.Framework.Unicode.Dictionaries.Generator --configuration Release
+          if ($LASTEXITCODE -ne 0) {
+            throw "The Unicode dictionaries generator failed to build (exit code $LASTEXITCODE)"
+          }
+
+          # --update moves the pinned ICU release (tools/Meziantou.Framework.Unicode.Dictionaries.Generator/data-versions.json)
+          # to the latest one before generating.
+          dotnet run --project tools/Meziantou.Framework.Unicode.Dictionaries.Generator --configuration Release --no-build -- --update
+          # The generator reports its result through the exit code: 0 when the files were already up to
+          # date, 1 when it updated them. Any other code is a failure and must not be committed.
+          if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 1) {
+            throw "The Unicode dictionaries generator failed with exit code $LASTEXITCODE"
+          }
+          if ($LASTEXITCODE -eq 1) {
+            $branch = "update-unicode-dictionaries"
+            $title = "Update the ICU word lists of Meziantou.Framework.Unicode.Dictionaries"
+
+            # Pull requests created with GITHUB_TOKEN run no workflow, so this is the only test run the new data
+            # gets before it is merged: the pull request is opened as a draft when the tests fail. The word
+            # segmentation of Intl.Segmenter (JavaScriptEngine) and the line breaking of WebPlatform use the lists.
+            dotnet test --project "$PWD/tests/Meziantou.Framework.Unicode.Dictionaries.Tests/Meziantou.Framework.Unicode.Dictionaries.Tests.csproj" --configuration Release
+            $testsPassed = $LASTEXITCODE -eq 0
+            dotnet test --project "$PWD/tests/Meziantou.Framework.JavaScriptEngine.Tests/Meziantou.Framework.JavaScriptEngine.Tests.csproj" --configuration Release
+            $testsPassed = $testsPassed -and $LASTEXITCODE -eq 0
+
+            git config --global user.email "git@meziantou.net"
+            git config --global user.name "meziantou"
+            git checkout -b $branch
+            git add .
+            # An unchanged tree must never reach the force-push below: it would reset the shared branch and
+            # wipe the diff of a pull request that is already open, while the step still reported success.
+            git diff --cached --quiet
+            if ($LASTEXITCODE -eq 0) {
+              throw "The generator reported an update but nothing changed in the tracked files"
+            }
+            git commit -m $title
+            git push origin $branch --force
+            $runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            if ($testsPassed) {
+              $body = "$title`n`nThe Meziantou.Framework.Unicode.Dictionaries and Meziantou.Framework.JavaScriptEngine tests pass with the new data.`n`nCreated by: $runUrl"
+            } else {
+              $body = "$title`n`n**The Meziantou.Framework.Unicode.Dictionaries or Meziantou.Framework.JavaScriptEngine tests fail with the new data**. See the test output of the run.`n`nCreated by: $runUrl"
+            }
+
+            # The branch is reused every week, so update the pull request when one is already open
+            $openPr = gh pr list --head $branch --state open --json number --jq '.[0].number // empty'
+            if ($openPr) {
+              gh pr edit $openPr --title $title --body $body
+              if ($testsPassed) {
+                gh pr ready $openPr
+              } else {
+                gh pr ready $openPr --undo
+              }
+            } elseif ($testsPassed) {
+              gh pr create --title $title --body $body --base main --head $branch
+            } else {
+              gh pr create --title $title --body $body --base main --head $branch --draft
+            }
+          }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

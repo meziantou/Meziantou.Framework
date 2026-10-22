@@ -70,9 +70,6 @@ internal sealed class CldrChunkedFile
         return chunk;
     }
 
-    /// <summary>Decompresses a chunk without keeping it, for a chunk that is read once into another structure.</summary>
-    public byte[] ReadChunk(int index) => Volatile.Read(ref _chunks[index]) ?? Decompress(ReadCompressedChunk(index));
-
     /// <summary>Gets the compressed size of a chunk, in bytes.</summary>
     public int GetCompressedChunkLength(int index) => (int)(_offsets[index + 1] - _offsets[index]);
 

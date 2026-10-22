@@ -8,7 +8,7 @@ characters of their scripts, Hangul, spaces, punctuation, digits, Latin letters,
 exercise the dictionary break engines; the others are random characters, which exercise the word rules.
 
 Regenerate with the word lists of the ICU data release pinned in
-`tools/Meziantou.Framework.JavaScriptEngine.Data.Generator/data-versions.json` (`data/brkitr/dictionaries/*.txt` of
+`tools/Meziantou.Framework.Unicode.Dictionaries.Generator/data-versions.json` (`data/brkitr/dictionaries/*.txt` of
 `icu4c-<version>-data.zip`):
 
 ```

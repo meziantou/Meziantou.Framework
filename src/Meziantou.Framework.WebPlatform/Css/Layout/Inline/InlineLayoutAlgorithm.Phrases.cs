@@ -9,7 +9,7 @@ namespace Meziantou.Framework.WebPlatform.Css.Layout;
 // detect phrase boundaries. If a word-separator character, other space separator, or U+200B ZERO WIDTH SPACE character does
 // not already occur at that boundary, then the UA must insert a virtual expandable separator", which word-space-transform
 // replaces by a space. The phrases of Japanese are the ones of word-break: auto-phrase (JapanesePhraseBreaker); the phrases of
-// Thai, Lao, Burmese and Khmer are their words (SoutheastAsianWordBreaker), as in the WPT tests.
+// Thai, Lao, Burmese and Khmer are their words (the dictionary break engines of ICU, LineBreaker.GetWordBreakEngine), as in the WPT tests.
 internal sealed partial class InlineLayoutAlgorithm
 {
     /// <summary>
@@ -50,7 +50,7 @@ internal sealed partial class InlineLayoutAlgorithm
 
         var span = CollectionsMarshal.AsSpan(text);
         var codePoints = new List<int>();
-        var boundaries = new List<int>();
+        var boundaries = Array.Empty<int>();
         var start = 0;
         while (start < span.Length)
         {
@@ -84,29 +84,32 @@ internal sealed partial class InlineLayoutAlgorithm
 
                 start = end;
             }
-            else if (SoutheastAsianWordBreaker.GetDictionaryScript(codePoint) is var script and not UnicodeScript.Unknown)
+            else if (LineBreaker.GetWordBreakEngine(codePoint) is { } engine)
             {
                 // A run of the letters of a Southeast Asian script: its word boundaries
-                var breaker = SoutheastAsianWordBreaker.Get(script);
                 var end = start;
-                while (end < span.Length && breaker.Handles(GraphemeClusters.ReadCodePoint(span, end, out var codePointLength)))
+                while (end < span.Length && engine.Handles(GraphemeClusters.ReadCodePoint(span, end, out var codePointLength)))
                 {
                     end += codePointLength;
                 }
 
-                boundaries.Clear();
-                breaker.FindBreaks(span, start, end, boundaries);
-                var language = script switch
+                if (boundaries.Length < end - start)
                 {
-                    UnicodeScript.Thai => ContentLanguage.Thai,
-                    UnicodeScript.Lao => ContentLanguage.Lao,
-                    UnicodeScript.Myanmar => ContentLanguage.Burmese,
+                    boundaries = new int[end - start];
+                }
+
+                var count = engine.FindBreaks(span[start..end], boundaries);
+                var language = engine.DictionaryKind switch
+                {
+                    IcuWordDictionaryKind.Thai => ContentLanguage.Thai,
+                    IcuWordDictionaryKind.Lao => ContentLanguage.Lao,
+                    IcuWordDictionaryKind.Burmese => ContentLanguage.Burmese,
                     _ => ContentLanguage.Khmer,
                 };
 
-                foreach (var boundary in boundaries)
+                foreach (var boundary in boundaries.AsSpan(0, count))
                 {
-                    Add(boundary, language);
+                    Add(start + boundary, language);
                 }
 
                 start = end;

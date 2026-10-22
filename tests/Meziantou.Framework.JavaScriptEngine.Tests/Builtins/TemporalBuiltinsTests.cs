@@ -237,6 +237,69 @@ public sealed class TemporalBuiltinsTests
         Assert.Equal("", Evaluate(code));
     }
 
+    [Theory]
+    [InlineData("chinese")]
+    [InlineData("dangi")]
+    public void Calendars_EastAsianArithmeticAcrossTheRange(string calendar)
+    {
+        var code = $$"""
+            const min = Temporal.PlainDate.from('-271821-04-19').withCalendar('{{calendar}}');
+            const max = Temporal.PlainDate.from('+275760-09-13').withCalendar('{{calendar}}');
+            const results = [];
+            for (const [one, two] of [[min, max], [max, min]]) {
+                const months = one.until(two, { largestUnit: 'months' });
+                const years = one.until(two, { largestUnit: 'years' });
+                results.push(months.toString(), years.toString(), one.add(months).equals(two), one.add(years).equals(two), one.add({ months: months.months }).toString());
+            }
+
+            results.join(' ')
+            """;
+        Assert.Equal($"P6772638M13D P547581Y4M13D true true +275760-08-31[u-ca={calendar}] -P6772638M13D -P547581Y4M13D true true -271821-05-02[u-ca={calendar}]", Evaluate(code));
+    }
+
+    [Theory]
+    [InlineData("chinese")]
+    [InlineData("dangi")]
+    public void Calendars_EastAsianAddMonthsAcrossTheDataBounds(string calendar)
+    {
+        // The months from 1880 to 2120 (the data covers 1900 to 2102) are the same when they are added at once, or
+        // when the days of each month are added one month after the other
+        var code = $$"""
+            const errors = [];
+            const start = Temporal.PlainDate.from({ calendar: '{{calendar}}', year: 1880, month: 1, day: 1 });
+            let expected = start;
+            for (let i = 0; i < 2980; i++) {
+                if (!start.add({ months: i }).equals(expected)) errors.push('add ' + i);
+                if (start.until(expected, { largestUnit: 'months' }).months !== i) errors.push('until ' + i);
+                if (expected.until(start, { largestUnit: 'months' }).months !== -i) errors.push('back ' + i);
+                expected = expected.add({ days: expected.daysInMonth });
+            }
+
+            errors.push(expected.year);
+            errors.join()
+            """;
+        Assert.Equal("2120", Evaluate(code));
+    }
+
+    [Fact]
+    public void Calendars_EastAsianYearsFollowEachOther()
+    {
+        // The month arithmetic of the calendars counts the mean synodic months between the new years: it requires that
+        // every year ends on the new year of the next year
+        foreach (var calendar in new[] { EastAsianTemporalCalendar.CreateChinese(), EastAsianTemporalCalendar.CreateDangi() })
+        {
+            var newYear = calendar.ToRataDie(-300_000, 1, 1);
+            for (long year = -300_000; year < 300_000; year++)
+            {
+                var nextNewYear = calendar.ToRataDie(year + 1, 1, 1);
+                if (newYear + calendar.DaysInYear(year) != nextNewYear)
+                    Assert.Fail($"The year {year} of the calendar {calendar.Id} does not end on the next new year");
+
+                newYear = nextNewYear;
+            }
+        }
+    }
+
     private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => now;

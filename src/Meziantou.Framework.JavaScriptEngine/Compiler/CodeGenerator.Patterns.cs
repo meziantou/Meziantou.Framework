@@ -98,11 +98,12 @@ internal sealed partial class CodeGenerator
         }
 
         // In an assignment, a reference target is evaluated before the value; so is the binding of a var resolved at runtime
-        // (KeyedBindingInitialization: ResolveBinding precedes GetV)
-        if ((isAssignment && target is not ObjectPattern and not ArrayPattern && (target is not Identifier identifierTarget || _analysis.References[identifierTarget].IsDynamic))
+        // (KeyedBindingInitialization: ResolveBinding precedes GetV), and an undeclared identifier in strict code (PutValue
+        // throws when it was unresolvable)
+        if ((isAssignment && target is not ObjectPattern and not ArrayPattern && (target is not Identifier identifierTarget || _analysis.References[identifierTarget].IsDynamic || (IsStrict && _analysis.References[identifierTarget].IsGlobal)))
             || (!isAssignment && !isDeclaration && target is Identifier varTarget && _analysis.References[varTarget].IsDynamic))
         {
-            var kind = EmitReferenceBase(target);
+            var kind = EmitReferenceBase(target, valueMayRunCode: true);
             emitValue();
             if (withDefault is not null)
             {

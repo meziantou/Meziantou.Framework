@@ -38,11 +38,32 @@ internal static partial class JsInterpreter
             obj.SetOwnSlot(new PropertyKey((uint)i), arguments[i], PropertyFlags.Default);
         }
 
-        obj.DefineBuiltIn("length", arguments.Length);
+        DefineArgumentsProperties(obj, frame, arguments.Length, mapped);
+        return obj;
+    }
+
+    /// <summary>The value of the arguments own property of a sloppy function: a new arguments object of a running call (its indices are not mapped).</summary>
+    internal static JsValue CreateArgumentsCopy(Frame frame)
+    {
+        var arguments = frame.Arguments;
+        var obj = new JsObject(frame.Realm.Intrinsics.ObjectPrototype, ObjectClass.Arguments);
+        for (var i = 0; i < arguments.Length; i++)
+        {
+            obj.SetOwnSlot(new PropertyKey((uint)i), arguments[i], PropertyFlags.Default);
+        }
+
+        DefineArgumentsProperties(obj, frame, arguments.Length, exposeCallee: true);
+        return obj;
+    }
+
+    private static void DefineArgumentsProperties(JsObject obj, Frame frame, int length, bool exposeCallee)
+    {
+        var intrinsics = frame.Realm.Intrinsics;
+        obj.DefineBuiltIn("length", length);
         obj.DefineBuiltIn(WellKnownSymbols.Iterator, intrinsics.ArrayPrototypeValues);
 
         // A function with a mapped arguments object (sloppy, simple parameters) exposes itself as callee
-        if (mapped)
+        if (exposeCallee)
         {
             obj.DefineBuiltIn("callee", frame.Function is { } function ? new JsValue(function) : default);
         }
@@ -50,8 +71,6 @@ internal static partial class JsInterpreter
         {
             obj.DefineBuiltInAccessor("callee", intrinsics.ThrowTypeError, intrinsics.ThrowTypeError, PropertyFlags.None);
         }
-
-        return obj;
     }
 
     /// <summary>import.meta: the object of the module of the running code.</summary>

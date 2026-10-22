@@ -386,11 +386,12 @@ internal static partial class JsInterpreter
         }
         else if ((template.Flags & FunctionTemplateFlags.Constructor) != 0 && !template.IsClassConstructor)
         {
-            // Non-strict functions have caller and arguments own properties (null): an extension the spec allows
+            // Non-strict functions have caller and arguments own properties, accessors that read the running frames: an
+            // extension the spec allows, that the browsers implement
             if (!template.IsStrict)
             {
-                closure.DefineBuiltIn("arguments", JsValue.Null, PropertyFlags.None);
-                closure.DefineBuiltIn("caller", JsValue.Null, PropertyFlags.None);
+                closure.DefineBuiltInAccessor("arguments", intrinsics.FunctionArgumentsProperty, PropertyFlags.None);
+                closure.DefineBuiltInAccessor("caller", intrinsics.FunctionCallerProperty, PropertyFlags.None);
             }
 
             // MakeConstructor

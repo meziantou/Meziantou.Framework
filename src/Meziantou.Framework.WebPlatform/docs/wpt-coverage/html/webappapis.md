@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 306 | 337 | 1 | 91% |
+| [Stable](#stable-tests) | 307 | 337 | 1 | 91% |
 | [Tentative](#tentative-tests) | 2 | 6 | 0 | 33% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **308** | **343** | **1** | **90%** |
+| **All** | **309** | **343** | **1** | **90%** |
 
 ## Stable tests
 
@@ -270,7 +270,7 @@
 | [`scripting/processing-model-2/compile-error-same-origin-with-hash.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/compile-error-same-origin-with-hash.html) | Pass | 2 / 2 |  |  |
 | [`scripting/processing-model-2/compile-error-same-origin.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/compile-error-same-origin.html) | Pass | 2 / 2 |  |  |
 | [`scripting/processing-model-2/compile-error.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/compile-error.html) | Pass | 2 / 2 |  |  |
-| [`scripting/processing-model-2/integration-with-the-javascript-agent-formalism/atomics-wait-async.https.any.js`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/integration-with-the-javascript-agent-formalism/atomics-wait-async.https.any.js) | Timeout | 2 / 4 | JS ENGINE | `Atomics.waitAsync()` in a dedicated worker: the timeout never resolves the promise (the window variant passes) |
+| [`scripting/processing-model-2/integration-with-the-javascript-agent-formalism/atomics-wait-async.https.any.js`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/integration-with-the-javascript-agent-formalism/atomics-wait-async.https.any.js) | Pass | 4 / 4 |  |  |
 | [`scripting/processing-model-2/integration-with-the-javascript-agent-formalism/requires-failure.https.any.js`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/integration-with-the-javascript-agent-formalism/requires-failure.https.any.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the Window agent's [[CanBlock]] is not false, so `Atomics.wait()` does not throw a `TypeError` on the main thread |
 | [`scripting/processing-model-2/integration-with-the-javascript-agent-formalism/requires-success.any.js`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/integration-with-the-javascript-agent-formalism/requires-success.any.js) | Pass | 2 / 2 |  |  |
 | [`scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-detached-iframe.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-detached-iframe.html) | Pass | 14 / 14 |  |  |

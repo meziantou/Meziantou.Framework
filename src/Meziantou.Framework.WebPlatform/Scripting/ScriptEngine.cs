@@ -169,6 +169,14 @@ public abstract class ScriptEngine
     protected internal virtual IDisposable EnterNestedMicrotaskQueue() => EmptyScope.Instance;
 
     /// <summary>
+    /// Gets whether a scheduler was created for a global object of the engine (<see cref="GlobalScope.Scheduler"/>): the job
+    /// callbacks of the engine then capture the continuation state of the event loop (HostMakeJobCallback), and restore it
+    /// when they are called (HostCallJobCallback), so that <c>scheduler.yield()</c> inherits the scheduling state of the code
+    /// that created the promise reaction (https://wicg.github.io/scheduling-apis/#sec-patches-html-hostmakejobcallback).
+    /// </summary>
+    internal bool PropagatesContinuationState { get; set; }
+
+    /// <summary>
     /// Gets whether a script is running, i.e. whether the JavaScript execution context stack is not empty. The library
     /// performs a microtask checkpoint after running a script or a callback only when no script is running
     /// (https://html.spec.whatwg.org/multipage/webappapis.html#clean-up-after-running-script).

@@ -46,6 +46,11 @@ namespace Meziantou.Framework.JavaScriptEngine
         Function = 2,
     }
 
+    public ref struct JsContinuation
+    {
+        public void Invoke() { }
+    }
+
     public sealed class JsEngine : System.IDisposable
     {
         public Meziantou.Framework.JavaScriptEngine.JsRealm? CurrentRealm { get => throw null; }
@@ -130,22 +135,34 @@ namespace Meziantou.Framework.JavaScriptEngine
 
     public class JsHost
     {
+        public virtual void CallContinuation(Meziantou.Framework.JavaScriptEngine.JsEngine engine, object hostDefined, Meziantou.Framework.JavaScriptEngine.JsContinuation continuation) { }
         public virtual Meziantou.Framework.JavaScriptEngine.JsValue CallJobCallback(Meziantou.Framework.JavaScriptEngine.JsEngine engine, in Meziantou.Framework.JavaScriptEngine.JsJobCallback jobCallback, Meziantou.Framework.JavaScriptEngine.JsValue thisValue, System.ReadOnlySpan<Meziantou.Framework.JavaScriptEngine.JsValue> arguments) => throw null;
+        public virtual void EnqueueGenericJob(Meziantou.Framework.JavaScriptEngine.JsEngine engine, Meziantou.Framework.JavaScriptEngine.JsHostJob job) { }
+        public virtual void EnqueueTimeoutJob(Meziantou.Framework.JavaScriptEngine.JsEngine engine, Meziantou.Framework.JavaScriptEngine.JsHostJob job, System.TimeSpan delay) { }
         public virtual void EnsureCanCompileStrings(Meziantou.Framework.JavaScriptEngine.JsEngine engine, Meziantou.Framework.JavaScriptEngine.JsRealm realm, System.Collections.Generic.IReadOnlyList<string> parameterStrings, string bodyString, string codeString, Meziantou.Framework.JavaScriptEngine.JsCompilationType compilationType, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.JavaScriptEngine.JsValue> parameterArgs, Meziantou.Framework.JavaScriptEngine.JsValue bodyArg) { }
         public virtual string? GetCodeForEval(Meziantou.Framework.JavaScriptEngine.JsEngine engine, Meziantou.Framework.JavaScriptEngine.JsValue argument) => throw null;
+        public virtual object? MakeContinuationHostDefined(Meziantou.Framework.JavaScriptEngine.JsEngine engine) => throw null;
         public virtual Meziantou.Framework.JavaScriptEngine.JsJobCallback MakeJobCallback(Meziantou.Framework.JavaScriptEngine.JsEngine engine, Meziantou.Framework.JavaScriptEngine.JsObject callback) => throw null;
         public virtual void PromiseRejectionTracker(Meziantou.Framework.JavaScriptEngine.JsEngine engine, Meziantou.Framework.JavaScriptEngine.JsObject promise, Meziantou.Framework.JavaScriptEngine.JsPromiseRejectionOperation operation) { }
         public virtual void ReportJobException(Meziantou.Framework.JavaScriptEngine.JsEngine engine, Meziantou.Framework.JavaScriptEngine.JsException exception) { }
     }
 
+    public sealed class JsHostJob
+    {
+        public Meziantou.Framework.JavaScriptEngine.JsRealm? Realm { get => throw null; }
+        public void Run() { }
+    }
+
     public class JsHostObject : Meziantou.Framework.JavaScriptEngine.JsObject
     {
+        public bool HasCallInternalMethod { get => throw null; set { } }
         public bool HasImmutablePrototype { get => throw null; set { } }
         public bool IsHtmlDdaObject { get => throw null; set { } }
         public string? ModuleSourceClassName { get => throw null; set { } }
         public object? Target { get => throw null; }
         public JsHostObject(Meziantou.Framework.JavaScriptEngine.JsObject? prototype, object? target = null) { }
         protected JsHostObject(Meziantou.Framework.JavaScriptEngine.JsObject? prototype, object? target, bool hasOrdinaryInternalMethods) { }
+        protected virtual Meziantou.Framework.JavaScriptEngine.JsValue CallCore(Meziantou.Framework.JavaScriptEngine.JsValue thisValue, System.ReadOnlySpan<Meziantou.Framework.JavaScriptEngine.JsValue> arguments) => throw null;
         protected virtual bool DefineOwnPropertyCore(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, in Meziantou.Framework.JavaScriptEngine.JsPropertyDescriptor descriptor) => throw null;
         protected virtual bool DeleteCore(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key) => throw null;
         protected virtual Meziantou.Framework.JavaScriptEngine.JsValue GetCore(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, Meziantou.Framework.JavaScriptEngine.JsValue receiver) => throw null;
@@ -346,6 +363,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public override int GetHashCode() => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsValue ToJsValue() => throw null;
         public override string ToString() => throw null;
+        public bool TryGetArrayIndex(out uint index) => throw null;
         public static bool operator ==(Meziantou.Framework.JavaScriptEngine.JsPropertyKey left, Meziantou.Framework.JavaScriptEngine.JsPropertyKey right) => throw null;
         public static bool operator !=(Meziantou.Framework.JavaScriptEngine.JsPropertyKey left, Meziantou.Framework.JavaScriptEngine.JsPropertyKey right) => throw null;
         public static implicit operator Meziantou.Framework.JavaScriptEngine.JsPropertyKey(Meziantou.Framework.JavaScriptEngine.JsSymbol symbol) => throw null;
@@ -388,6 +406,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public Meziantou.Framework.JavaScriptEngine.JsValue Execute(Meziantou.Framework.JavaScriptEngine.JsPreparedScript script, object? hostDefined = null, bool mutedErrors = false) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsSourceTextModule ParseModule(string code, string? url = null, object? hostDefined = null) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsSourceTextModule ParseModule(string code, string? url, object? hostDefined, int lineOffset, int columnOffset) => throw null;
+        public void SetGlobalThis(Meziantou.Framework.JavaScriptEngine.JsObject thisValue) { }
     }
 
     public sealed class JsScript : Meziantou.Framework.JavaScriptEngine.JsScriptOrModule

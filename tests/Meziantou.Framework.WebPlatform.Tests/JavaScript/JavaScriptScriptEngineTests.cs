@@ -157,6 +157,26 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
     }
 
     [Fact]
+    public void UnhandledRejections_OfAnAsyncFunctionAreReportedToItsGlobal()
+    {
+        // The async function of the frame awaits a promise that the main window rejects: its promise belongs to the frame
+        var document = Load("""
+            <iframe></iframe>
+            <script>
+              const frame = frames[0];
+              let reject;
+              const promise = new Promise((_, r) => reject = r);
+              window.onunhandledrejection = () => document.title += 'window;';
+              frame.onunhandledrejection = e => { document.title += 'frame ' + e.reason + ';'; e.preventDefault(); };
+              frame.eval('(async p => { await p; })')(promise);
+              setTimeout(() => reject('boom'), 0);
+            </script>
+            """);
+        Assert.Equal("frame boom;", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
     public void EventHandlers_UseTheScopeOfTheElementTheFormAndTheDocument()
     {
         var document = Load("""
@@ -314,6 +334,50 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
             </script>
             """);
         Assert.Equal("true,true,true,true,true,false,,img,true,[object HTMLCollection],2,true,true,true,false,true,true,false,false,theform logoid logo body two frame,,true,,,img", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
+    public void DocumentAll_IsAnHtmlDdaObject()
+    {
+        var document = Load("""
+            <img id=logo><img name=two><img name=two>
+            <script>
+              const all = document.all;
+              const results = [typeof all, Boolean(all), all == null, all == undefined, all === undefined, !all, all ? 'truthy' : 'falsy'];
+              results.push(Object.getPrototypeOf(all) === HTMLAllCollection.prototype, Object.prototype.toString.call(all), all instanceof HTMLAllCollection);
+              results.push(all.length === document.getElementsByTagName('*').length, all[0].localName, all.logo.localName, all.two.length);
+              results.push(all('logo').localName, all(0).localName, all(), all('missing'), all.item('logo').localName, all.namedItem('two').length);
+              results.push(Reflect.apply(all, null, ['logo']).id, Object.keys(all).includes('logo'), document.all === all);
+              document.title = results.join();
+            </script>
+            """);
+        Assert.Equal("undefined,false,true,true,false,true,falsy,true,[object HTMLAllCollection],true,true,html,img,2,img,html,,,img,2,logo,false,true", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
+    public void InterfaceObjects_AreBuiltInFunctions()
+    {
+        var document = Load("""
+            <script>
+              const results = [String(Node), String(HTMLElement), String(Image), Function.prototype.toString.call(DOMException)];
+              results.push(Node.name, Node.length, Event.length, Object.getPrototypeOf(Element) === Node, Element.prototype.constructor === Element);
+              results.push(Object.getOwnPropertyDescriptor(Node, 'prototype').writable, Object.prototype.hasOwnProperty.call(Node, 'caller'));
+              try { Event('x'); } catch (e) { results.push(e.constructor.name); }
+              try { new Node(); } catch (e) { results.push(e.constructor.name); }
+              class MyEvent extends Event { }
+              const event = new MyEvent('x');
+              results.push(event instanceof MyEvent, event.type);
+              class MyImage extends Image { }
+              const image = new MyImage(1, 2);
+              results.push(image instanceof MyImage, image.width, new Image() instanceof HTMLImageElement, Image.prototype === HTMLImageElement.prototype);
+              customElements.define('my-element', class extends HTMLElement { });
+              results.push(document.createElement('my-element') instanceof HTMLElement);
+              document.title = results.join();
+            </script>
+            """);
+        Assert.Equal("function Node() { [native code] },function HTMLElement() { [native code] },function Image() { [native code] },function DOMException() { [native code] },Node,0,1,true,true,false,false,TypeError,TypeError,true,x,true,1,true,true,true", document.Title);
         Assert.Empty(_errors);
     }
 

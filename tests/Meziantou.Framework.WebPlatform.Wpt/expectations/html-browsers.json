@@ -299,14 +299,14 @@
     }
   },
   "html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-traverse-navigation-cross-origin-redirect-no-bfcache.https.sub.html": {
-    "harness": "ERROR",
+    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
       "pageswap on traverse navigation from script": "TIMEOUT"
     }
   },
   "html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-traverse-navigation-no-bfcache.https.html": {
-    "harness": "ERROR",
+    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
       "pageswap on traverse navigation from script": "TIMEOUT"
@@ -460,8 +460,7 @@
     "failures": {
       "Child document attempts to navigate cross-origin parent via location": "FAIL",
       "Child document attempts to navigate cross-origin parent via location.href": "FAIL",
-      "Child document attempts to navigate cross-origin parent via location.replace()": "FAIL",
-      "Child document attempts to navigate cross-origin parent via non-standard location property": "FAIL"
+      "Child document attempts to navigate cross-origin parent via location.replace()": "FAIL"
     }
   },
   "html/browsers/browsing-the-web/navigating-across-documents/child-navigates-parent-same-origin.window.js": {
@@ -1510,7 +1509,6 @@
   "html/browsers/history/the-location-interface/allow_prototype_cycle_through_location.sub.html": {
     "total": 4,
     "failures": {
-      "cross-origin location has null prototype": "FAIL",
       "cross-origin, but joined via document.domain, location cycle": "FAIL",
       "same-origin, different-window location cycle": "FAIL",
       "same-origin, same-window location cycle": "FAIL"
@@ -1574,11 +1572,7 @@
     "total": 1
   },
   "html/browsers/history/the-location-interface/location-prevent-extensions.html": {
-    "total": 2,
-    "failures": {
-      "Object.preventExtensions throws a TypeError": "FAIL",
-      "Reflect.preventExtensions returns false": "FAIL"
-    }
+    "total": 2
   },
   "html/browsers/history/the-location-interface/location-protocol-setter-non-broken-weird.html": {
     "total": 5
@@ -1599,58 +1593,19 @@
     "total": 4
   },
   "html/browsers/history/the-location-interface/location-prototype-setting-cross-origin-domain.sub.html": {
-    "total": 8,
-    "failures": {
-      "Cross-origin via document.domain: setting the prototype to an empty object via Object.setPrototypeOf should throw a TypeError": "FAIL",
-      "Cross-origin via document.domain: setting the prototype to an empty object via Reflect.setPrototypeOf should return false": "FAIL",
-      "Cross-origin via document.domain: setting the prototype to an empty object via __proto__ should throw a \"SecurityError\" DOMException": "FAIL",
-      "Cross-origin via document.domain: setting the prototype to its original value via __proto__ should throw a \"SecurityError\" since it ends up in CrossOriginGetOwnProperty": "FAIL",
-      "Cross-origin via document.domain: the prototype is null": "FAIL",
-      "Cross-origin via document.domain: the prototype must still be its original value": "FAIL"
-    }
+    "total": 8
   },
   "html/browsers/history/the-location-interface/location-prototype-setting-cross-origin.sub.html": {
-    "total": 8,
-    "failures": {
-      "Cross-origin: setting the prototype to an empty object via Object.setPrototypeOf should throw a TypeError": "FAIL",
-      "Cross-origin: setting the prototype to an empty object via Reflect.setPrototypeOf should return false": "FAIL",
-      "Cross-origin: setting the prototype to an empty object via __proto__ should throw a \"SecurityError\" DOMException": "FAIL",
-      "Cross-origin: setting the prototype to null via __proto__ should throw a \"SecurityError\" since it ends up in CrossOriginGetOwnProperty": "FAIL",
-      "Cross-origin: the prototype is null": "FAIL",
-      "Cross-origin: the prototype must still be null": "FAIL"
-    }
+    "total": 8
   },
   "html/browsers/history/the-location-interface/location-prototype-setting-goes-cross-origin-domain.sub.html": {
-    "total": 12,
-    "failures": {
-      "Became cross-origin via document.domain: setting the prototype to an empty object via Object.setPrototypeOf should throw a TypeError": "FAIL",
-      "Became cross-origin via document.domain: setting the prototype to an empty object via Reflect.setPrototypeOf should return false": "FAIL",
-      "Became cross-origin via document.domain: setting the prototype to an empty object via __proto__ should throw a \"SecurityError\" DOMException": "FAIL",
-      "Became cross-origin via document.domain: setting the prototype to null via __proto__ should throw a \"SecurityError\" since it ends up in CrossOriginGetOwnProperty": "FAIL",
-      "Became cross-origin via document.domain: setting the prototype to the original value from before going cross-origin via Object.setPrototypeOf should throw a TypeError": "FAIL",
-      "Became cross-origin via document.domain: setting the prototype to the original value from before going cross-origin via Reflect.setPrototypeOf should return false": "FAIL",
-      "Became cross-origin via document.domain: setting the prototype to the original value from before going cross-origin via __proto__ should throw a \"SecurityError\" DOMException": "FAIL",
-      "Became cross-origin via document.domain: the prototype is now null": "FAIL",
-      "Became cross-origin via document.domain: the prototype must still be null": "FAIL"
-    }
+    "total": 12
   },
   "html/browsers/history/the-location-interface/location-prototype-setting-same-origin-domain.sub.html": {
-    "total": 8,
-    "failures": {
-      "Same-origin-domain: setting the prototype to an empty object via Object.setPrototypeOf should throw a TypeError": "FAIL",
-      "Same-origin-domain: setting the prototype to an empty object via Reflect.setPrototypeOf should return false": "FAIL",
-      "Same-origin-domain: setting the prototype to an empty object via __proto__ should throw a TypeError": "FAIL",
-      "Same-origin-domain: the prototype must still be its original value": "FAIL"
-    }
+    "total": 8
   },
   "html/browsers/history/the-location-interface/location-prototype-setting-same-origin.html": {
-    "total": 8,
-    "failures": {
-      "Same-origin: setting the prototype to an empty object via Object.setPrototypeOf should throw a TypeError": "FAIL",
-      "Same-origin: setting the prototype to an empty object via Reflect.setPrototypeOf should return false": "FAIL",
-      "Same-origin: setting the prototype to an empty object via __proto__ should throw a TypeError": "FAIL",
-      "Same-origin: the prototype must still be its original value": "FAIL"
-    }
+    "total": 8
   },
   "html/browsers/history/the-location-interface/location-stringifier.html": {
     "total": 6
@@ -1905,180 +1860,67 @@
     "total": 9
   },
   "html/browsers/origin/cross-origin-objects/cross-origin-due-to-document-domain-only.html": {
-    "total": 1,
-    "failures": {
-      "Cross-origin due to document.domain": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/origin/cross-origin-objects/cross-origin-objects-function-caching.html": {
     "total": 4
   },
   "html/browsers/origin/cross-origin-objects/cross-origin-objects-function-length.html": {
-    "total": 4,
-    "failures": {
-      "Cross-origin Window accessors have correct 'length'": "FAIL",
-      "Cross-origin Window methods have correct 'length'": "FAIL"
-    }
+    "total": 4
   },
   "html/browsers/origin/cross-origin-objects/cross-origin-objects-function-name.html": {
-    "total": 4,
-    "failures": {
-      "Cross-origin Window accessors have correct 'name'": "FAIL",
-      "Cross-origin Window methods have correct 'name'": "FAIL"
-    }
+    "total": 4
   },
   "html/browsers/origin/cross-origin-objects/cross-origin-objects-on-new-window.html": {
-    "total": 1,
-    "failures": {
-      "Cross-origin object identity preserved across document.domain": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/origin/cross-origin-objects/cross-origin-objects.html": {
-    "total": 90,
+    "harness": "ERROR",
+    "total": 102,
     "failures": {
-      "Basic sanity-checking (cross-origin)": "FAIL",
-      "Basic sanity-checking (cross-site)": "FAIL",
-      "Basic sanity-checking (same-origin + document.domain)": "FAIL",
-      "Can only enumerate safelisted enumerable properties (cross-origin)": "FAIL",
-      "Can only enumerate safelisted enumerable properties (cross-site)": "FAIL",
-      "Can only enumerate safelisted enumerable properties (same-origin + document.domain)": "FAIL",
-      "Cross-origin Window accessors get local Function.prototype (cross-origin)": "FAIL",
-      "Cross-origin Window accessors get local Function.prototype (cross-site)": "FAIL",
-      "Cross-origin Window accessors get local Function.prototype (same-origin + document.domain)": "FAIL",
-      "Cross-origin functions get local Function.prototype (cross-origin)": "FAIL",
-      "Cross-origin functions get local Function.prototype (cross-site)": "FAIL",
-      "Cross-origin functions get local Function.prototype (same-origin + document.domain)": "FAIL",
-      "Only certain properties are accessible cross-origin (cross-origin)": "FAIL",
-      "Only certain properties are accessible cross-origin (cross-site)": "FAIL",
-      "Only certain properties are accessible cross-origin (same-origin + document.domain)": "FAIL",
       "Only certain properties are usable as cross-origin this objects (cross-origin)": "FAIL",
       "Only certain properties are usable as cross-origin this objects (cross-site)": "FAIL",
-      "Only certain properties are usable as cross-origin this objects (same-origin + document.domain)": "FAIL",
-      "Same-origin observers get different accessors for cross-origin Location (cross-origin)": "FAIL",
-      "Same-origin observers get different accessors for cross-origin Location (cross-site)": "FAIL",
-      "Same-origin observers get different accessors for cross-origin Location (same-origin + document.domain)": "FAIL",
-      "Same-origin observers get different accessors for cross-origin Window (cross-origin)": "FAIL",
-      "Same-origin observers get different accessors for cross-origin Window (cross-site)": "FAIL",
-      "Same-origin observers get different accessors for cross-origin Window (same-origin + document.domain)": "FAIL",
-      "Same-origin observers get different functions for cross-origin objects (cross-origin)": "FAIL",
-      "Same-origin observers get different functions for cross-origin objects (cross-site)": "FAIL",
-      "Same-origin observers get different functions for cross-origin objects (same-origin + document.domain)": "FAIL",
-      "[[DefineOwnProperty]] Should throw for cross-origin objects (cross-origin)": "FAIL",
-      "[[DefineOwnProperty]] Should throw for cross-origin objects (cross-site)": "FAIL",
-      "[[DefineOwnProperty]] Should throw for cross-origin objects (same-origin + document.domain)": "FAIL",
-      "[[Delete]] Should throw on cross-origin objects (cross-origin)": "FAIL",
-      "[[Delete]] Should throw on cross-origin objects (cross-site)": "FAIL",
-      "[[Delete]] Should throw on cross-origin objects (same-origin + document.domain)": "FAIL",
-      "[[GetOwnProperty]] - Property descriptors for cross-origin properties should be set up correctly (cross-origin)": "FAIL",
-      "[[GetOwnProperty]] - Property descriptors for cross-origin properties should be set up correctly (cross-site)": "FAIL",
-      "[[GetOwnProperty]] - Property descriptors for cross-origin properties should be set up correctly (same-origin + document.domain)": "FAIL",
-      "[[GetPrototypeOf]] should return null (cross-origin)": "FAIL",
-      "[[GetPrototypeOf]] should return null (cross-site)": "FAIL",
-      "[[GetPrototypeOf]] should return null (same-origin + document.domain)": "FAIL",
-      "[[OwnPropertyKeys]] should not reorder where 'then' appears if it's a named subframe, nor add another copy of 'then' (cross-origin)": "FAIL",
-      "[[OwnPropertyKeys]] should not reorder where 'then' appears if it's a named subframe, nor add another copy of 'then' (cross-site)": "FAIL",
-      "[[OwnPropertyKeys]] should not reorder where 'then' appears if it's a named subframe, nor add another copy of 'then' (same-origin + document.domain)": "FAIL",
-      "[[OwnPropertyKeys]] should place the symbols after the property names after the subframe indices (cross-origin)": "FAIL",
-      "[[OwnPropertyKeys]] should place the symbols after the property names after the subframe indices (cross-site)": "FAIL",
-      "[[OwnPropertyKeys]] should place the symbols after the property names after the subframe indices (same-origin + document.domain)": "FAIL",
-      "[[OwnPropertyKeys]] should return all properties from cross-origin objects (cross-origin)": "FAIL",
-      "[[OwnPropertyKeys]] should return all properties from cross-origin objects (cross-site)": "FAIL",
-      "[[OwnPropertyKeys]] should return all properties from cross-origin objects (same-origin + document.domain)": "FAIL",
-      "[[OwnPropertyKeys]] should return the right symbol-named properties for cross-origin objects (cross-origin)": "FAIL",
-      "[[OwnPropertyKeys]] should return the right symbol-named properties for cross-origin objects (cross-site)": "FAIL",
-      "[[OwnPropertyKeys]] should return the right symbol-named properties for cross-origin objects (same-origin + document.domain)": "FAIL",
-      "[[PreventExtensions]] should return false cross-origin objects (cross-origin)": "FAIL",
-      "[[PreventExtensions]] should return false cross-origin objects (cross-site)": "FAIL",
-      "[[PreventExtensions]] should return false cross-origin objects (same-origin + document.domain)": "FAIL",
-      "[[SetPrototypeOf]] should return false (cross-origin)": "FAIL",
-      "[[SetPrototypeOf]] should return false (cross-site)": "FAIL",
-      "[[SetPrototypeOf]] should return false (same-origin + document.domain)": "FAIL",
-      "{}.toString.call() does the right thing on cross-origin objects (cross-origin)": "FAIL",
-      "{}.toString.call() does the right thing on cross-origin objects (cross-site)": "FAIL",
-      "{}.toString.call() does the right thing on cross-origin objects (same-origin + document.domain)": "FAIL"
+      "Only certain properties are usable as cross-origin this objects (same-origin + document.domain)": "FAIL"
     }
   },
   "html/browsers/origin/cross-origin-objects/location-properties-smoke-test.window.js?assign": {
-    "total": 1,
-    "failures": {
-      "Verifying that cross-origin access of 'assign' is restricted": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/origin/cross-origin-objects/location-properties-smoke-test.window.js?customproperty": {
-    "total": 1,
-    "failures": {
-      "Verifying that cross-origin access of 'customproperty' is restricted": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/origin/cross-origin-objects/location-properties-smoke-test.window.js?hash": {
-    "total": 1,
-    "failures": {
-      "Verifying that cross-origin access of 'hash' is restricted": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/origin/cross-origin-objects/location-properties-smoke-test.window.js?host": {
-    "total": 1,
-    "failures": {
-      "Verifying that cross-origin access of 'host' is restricted": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/origin/cross-origin-objects/location-properties-smoke-test.window.js?hostname": {
-    "total": 1,
-    "failures": {
-      "Verifying that cross-origin access of 'hostname' is restricted": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/origin/cross-origin-objects/location-properties-smoke-test.window.js?pathname": {
-    "total": 1,
-    "failures": {
-      "Verifying that cross-origin access of 'pathname' is restricted": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/origin/cross-origin-objects/location-properties-smoke-test.window.js?port": {
-    "total": 1,
-    "failures": {
-      "Verifying that cross-origin access of 'port' is restricted": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/origin/cross-origin-objects/location-properties-smoke-test.window.js?protocol": {
-    "total": 1,
-    "failures": {
-      "Verifying that cross-origin access of 'protocol' is restricted": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/origin/cross-origin-objects/location-properties-smoke-test.window.js?reload": {
-    "total": 1,
-    "failures": {
-      "Verifying that cross-origin access of 'reload' is restricted": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/origin/cross-origin-objects/location-properties-smoke-test.window.js?search": {
-    "total": 1,
-    "failures": {
-      "Verifying that cross-origin access of 'search' is restricted": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/origin/cross-origin-objects/location-properties-smoke-test.window.js?toString": {
-    "total": 1,
-    "failures": {
-      "Verifying that cross-origin access of 'toString' is restricted": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/origin/cross-origin-objects/location-properties-smoke-test.window.js?valueOf": {
-    "total": 1,
-    "failures": {
-      "Verifying that cross-origin access of 'valueOf' is restricted": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/origin/cross-origin-objects/window-location-and-location-href-cross-realm-set.html": {
-    "total": 11,
-    "failures": {
-      "Cross-origin location.href getter throws SecurityError in lexical realm": "FAIL",
-      "Cross-origin location.href setter throws TypeError in lexical realm on invalid |this| value": "FAIL",
-      "Cross-origin location.href setter throws TypeError in lexical realm on non-coercible URL argument": "FAIL",
-      "Cross-origin window.location setter throws TypeError in lexical realm on invalid |this| value": "FAIL",
-      "Cross-origin window.location setter throws TypeError in lexical realm on non-coercible URL argument": "FAIL"
-    }
+    "total": 11
   },
   "html/browsers/origin/inheritance/about-blank-iframe.html": {
     "total": 1
@@ -2318,11 +2160,7 @@
     "total": 4
   },
   "html/browsers/origin/relaxing-the-same-origin-restriction/document_domain_access_details.sub.html": {
-    "total": 12,
-    "failures": {
-      "Access evolves correctly for cross-origin objects when we join up via document.domain and then diverge again.": "FAIL",
-      "Access is revoked to Location object when we stop being same effective script origin due to document.domain.": "FAIL"
-    }
+    "total": 12
   },
   "html/browsers/origin/relaxing-the-same-origin-restriction/document_domain_setter.html": {
     "total": 3
@@ -2673,28 +2511,13 @@
     "total": 10
   },
   "html/browsers/the-window-object/window-indexed-properties-delete-no-cache.html": {
-    "total": 2,
-    "failures": {
-      "Absence of index '0' is not cached": "FAIL",
-      "Presence of index '0' is not cached": "FAIL"
-    }
+    "total": 2
   },
   "html/browsers/the-window-object/window-indexed-properties-strict.html": {
-    "total": 6,
-    "failures": {
-      "Borderline numeric key: 2 ** 32 - 2 is an index (strict mode)": "FAIL",
-      "Indexed properties of the window object (strict mode) 1": "FAIL",
-      "Indexed properties of the window object (strict mode) 2": "FAIL"
-    }
+    "total": 6
   },
   "html/browsers/the-window-object/window-indexed-properties.html": {
-    "total": 7,
-    "failures": {
-      "Borderline numeric key: 2 ** 32 - 2 is an index": "FAIL",
-      "Ensure indexed properties have the correct configuration": "FAIL",
-      "Indexed properties of the window object (non-strict mode) 1": "FAIL",
-      "Indexed properties of the window object (non-strict mode) 2": "FAIL"
-    }
+    "total": 7
   },
   "html/browsers/the-window-object/window-open-defaults.window.js": {
     "total": 1
@@ -2706,22 +2529,13 @@
     "total": 1
   },
   "html/browsers/the-window-object/window-open-noopener.html?_parent": {
-    "total": 1,
-    "failures": {
-      "noopener window.open targeting _parent": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/the-window-object/window-open-noopener.html?_self": {
-    "total": 1,
-    "failures": {
-      "noopener window.open targeting _self": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/the-window-object/window-open-noopener.html?_top": {
-    "total": 1,
-    "failures": {
-      "noopener window.open targeting _top": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/the-window-object/window-open-noopener.html?indexed": {
     "total": 9
@@ -2767,15 +2581,7 @@
     "total": 1
   },
   "html/browsers/the-window-object/window-properties.https.html": {
-    "total": 181,
-    "failures": {
-      "Window readonly getter in detached iframe: frames": "FAIL",
-      "Window readonly getter in detached iframe: self": "FAIL",
-      "Window readonly getter in detached iframe: window": "FAIL",
-      "Window readonly getter in iframe: frames": "FAIL",
-      "Window readonly getter in iframe: self": "FAIL",
-      "Window readonly getter in iframe: window": "FAIL"
-    }
+    "total": 181
   },
   "html/browsers/the-window-object/window-prototype-chain.html": {
     "total": 5
@@ -2804,11 +2610,7 @@
     "total": 8
   },
   "html/browsers/the-windowproxy-exotic-object/windowproxy-prevent-extensions.html": {
-    "total": 2,
-    "failures": {
-      "Object.preventExtensions throws a TypeError": "FAIL",
-      "Reflect.preventExtensions returns false": "FAIL"
-    }
+    "total": 2
   },
   "html/browsers/the-windowproxy-exotic-object/windowproxy-prototype-setting-cross-origin-domain.sub.html": {
     "total": 8
@@ -2989,11 +2791,7 @@
     "total": 2
   },
   "html/browsers/windows/nested-browsing-contexts/window-top.html": {
-    "total": 3,
-    "failures": {
-      "One nested iframe": "FAIL",
-      "Two nested iframes": "FAIL"
-    }
+    "total": 3
   },
   "html/browsers/windows/noreferrer-null-opener.html": {
     "total": 1

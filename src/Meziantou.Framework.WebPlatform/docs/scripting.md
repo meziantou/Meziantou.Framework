@@ -58,8 +58,10 @@ Console.WriteLine(document.Body!.InnerHtml); // <ul id="list"><li>a</li><li>b</l
   Standard: the code and the original arguments of `eval` and of the `Function` constructors for the content security
   policies and Trusted Types (`HostEnsureCanCompileStrings`, `HostGetCodeForEval`, see
   [Compilation of strings](browsing-context.md#compilation-of-strings-and-of-webassembly)), the incumbent settings object
-  and the active script of the promise jobs (`HostMakeJobCallback`, `HostCallJobCallback`), the rejection tracking
-  (`HostPromiseRejectionTracker`), the module loading and `import.meta`. The functions of the WebIDL bindings run in the
+  and the active script of the promise jobs and the continuation state of the schedulers (`HostMakeJobCallback`,
+  `HostCallJobCallback`), the rejection tracking (`HostPromiseRejectionTracker`), the generic and timeout jobs (the
+  cleanup of a `FinalizationRegistry`, `Atomics.waitAsync()`: tasks and timers of the event loop of the realm,
+  `HostEnqueueGenericJob`, `HostEnqueueTimeoutJob`), the module loading and `import.meta`. The functions of the WebIDL bindings run in the
   realm of their caller.
 - The `console` namespace of the [Console Standard](https://console.spec.whatwg.org/) is implemented by the WebIDL
   bindings (`Scripting/WebIdl/WebIdlRealm.Console.cs`): its formatter works on the JavaScript values. The messages are
@@ -140,7 +142,7 @@ are called on the thread of the worker. The global object of a realm is a `Globa
 | `OnDocumentActivated(Document)` | A document becomes the active document of its browsing context (the window of an initial `about:blank` document is reused by a same-origin document). |
 | `DestroyRealm(GlobalScope)` | The browsing context is discarded (e.g. its `iframe` is removed), the worker ends, or the global scopes of the worklets of a document are terminated. |
 | `CreateWorkerScriptEngine(CancellationToken)` | A worker is created: the engine of the new agent, used on the thread of the worker (null by default: the workers do not run scripts). The token is canceled when the worker is terminated: the engine aborts the running script. |
-| `OnChildNavigablesChanged(Window)` | An `iframe` is inserted or removed: the indexed properties of the `WindowProxy` (`window[0]`) changed. |
+| `OnChildNavigablesChanged(Window)` | An `iframe` is inserted or removed: the indexed properties of the `WindowProxy` (`window[0]`) changed (the `WindowProxy` of `JavaScriptScriptEngine` reads them when they are accessed). |
 | `ExecuteClassicScript(ClassicScript)` | A classic script runs ("run a classic script"): a `script` element, a `javascript:` URL, a string passed to `setTimeout()`, the script of a worker or of `importScripts()`. It returns the completion value (a .NET `string` for a JavaScript string), or throws. The source text of an inline script created by the HTML parser starts at `SourceTextLine`/`SourceTextColumn` in its document: `JavaScriptScriptEngine` parses it with these offsets, so the lines and the columns of its errors and of the violations of the content security policies are the ones in the document. |
 | `ParseClassicScript(ClassicScript)` | The script of a worker is fetched: the engine returns its parse error, if any (the worker object then fires an `error` event), or null (the default: the parse errors are thrown by `ExecuteClassicScript`). |
 | `CompileEventHandler(EventHandlerSource)` | An event handler content attribute is used for the first time (lazily). |
@@ -534,11 +536,15 @@ for each engine: the calls to the adapter are direct calls that can be inlined, 
   abstract operations `ToNumber`, `ToString`, `ToBoolean`, `ToBigInt` (https://tc39.es/ecma262/#sec-type-conversion).
 - Objects: the internal methods (`Get`, `Set`, `DefineOwnProperty`, `GetOwnProperty`, `HasProperty`, `Delete`,
   `OwnKeys`, `GetPrototypeOf`, `SetPrototypeOf`), the creation of ordinary objects, arrays and built-in functions
-  (`CreateFunction`: a function implemented in .NET), `Call` and `Construct`.
+  (`CreateFunction`: a function implemented in .NET; `CreateConstructor`: a built-in constructor, used for the interface
+  objects and the legacy factory functions such as `Image`), `Call` and `Construct`.
 - Platform objects: `CreatePlatformObject` creates the JavaScript object of a .NET object. When the bindings pass an
   `IJsHostObjectHandler<TValue>`, the object is a host exotic object: its internal methods call the handler first (the
   indexed and named properties of the legacy platform objects), and the `Ordinary*` methods perform the ordinary
-  internal methods, bypassing the handler. The named properties object of the window (`WindowProperties`, between
+  internal methods, bypassing the handler. `CreateHtmlDdaPlatformObject` creates `document.all`, a legacy platform
+  object with a [[Call]] internal method and an [[IsHTMLDDA]] internal slot (typeof is "undefined", it is falsy and
+  loosely equal to null); the default implementation is a `Proxy` of a function, which cannot be an [[IsHTMLDDA]]
+  object. The named properties object of the window (`WindowProperties`, between
   `Window.prototype` and `EventTarget.prototype`) is a `Proxy` created by the bindings, as its prototype is immutable.
 - Immutable prototypes (https://webidl.spec.whatwg.org/#es-immutable-prototype): the global object of a window, a worker
   or a worklet, the interface prototype object of its interface and the ones of the inherited interfaces (e.g.
@@ -550,8 +556,8 @@ for each engine: the calls to the adapter are direct calls that can be inlined, 
 - Errors: `CreateException` returns the .NET exception that throws a JavaScript value in the engine, and
   `TryGetThrownValue` converts an exception of the engine back to the thrown value.
 - Realms: `CurrentRealm`, `RunInRealm`, `GetGlobalObject`, and `Evaluate`, which evaluates code in a realm as an
-  indirect eval. The bindings define a few helpers in JavaScript (e.g. the interface objects, which are constructors, and
-  the `Proxy` of `HTMLAllCollection`): the engine must support ECMAScript 2020.
+  indirect eval. The bindings define a few helpers in JavaScript (e.g. the named properties object of the window), and
+  the default implementations of some primitives are written in JavaScript: the engine must support ECMAScript 2020.
 - Buffer sources (https://webidl.spec.whatwg.org/#idl-buffer-source-types): `TryGetBufferSource` returns the kind
   (`ArrayBuffer`, `SharedArrayBuffer`, a typed array or `DataView`) and a view of the bytes of an object, without running
   JavaScript code; the bindings pass the view to the .NET members (`ReadOnlySpan<byte>`, `Span<byte>` for the members that
@@ -576,8 +582,11 @@ reference and cache data per object.
 A `WebIdlAgent<TAdapter, TValue>` holds the realms and the JavaScript objects of the .NET objects (one wrapper per
 object, shared by the realms of the agent). The script engine creates it with its adapter and an `IWebIdlHost`, which
 reports the exceptions of the callbacks and performs a microtask checkpoint after a callback when no script is running.
-`WebIdlAgent.GetRealm(window)` creates the realm of a window: it defines the interface objects on the global object and
-makes the global object the JavaScript object of the window.
+`WebIdlAgent.GetRealm(window)` creates the realm of a window: it defines the interface objects on the global object, and
+sets the `WindowProxy` of the browsing context (`IJsAdapter.CreateWindowProxy`, an exotic object whose internal methods
+call an `IJsWindowProxyHandler`) as the this value of the global code (`IJsAdapter.TrySetGlobalThis`). The JavaScript
+object of a window is its `WindowProxy` for every realm; the `Location` objects are created by
+`IJsAdapter.CreateCrossOriginPlatformObject`. An engine that does not support them exposes a window by its global object.
 
 ```csharp
 sealed class MyScriptEngine : ScriptEngine, IWebIdlHost

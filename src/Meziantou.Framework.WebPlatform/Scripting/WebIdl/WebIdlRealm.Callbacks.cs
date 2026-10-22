@@ -58,9 +58,6 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
         var callbackRealm = Agent.GetAssociatedRealm(function) ?? this;
 
-        // A window this value (e.g. the current target of an event listener, the window of a timer) is the global object
-        // for a callback of its realm, and the WindowProxy for the other callbacks
-        thisValue = callbackRealm.AdaptWindowValue(thisValue);
         using var authorCode = Html.AuthorCodeScope.Enter();
         Agent.Host.OnCallbackInvoking();
 

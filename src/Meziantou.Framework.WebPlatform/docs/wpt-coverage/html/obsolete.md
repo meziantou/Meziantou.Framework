@@ -6,16 +6,16 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 14 | 15 | 0 | 93% |
+| [Stable](#stable-tests) | 15 | 15 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 2 | 2 | 0 | 100% |
-| **All** | **16** | **17** | **0** | **94%** |
+| **All** | **17** | **17** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`requirements-for-implementations/other-elements-attributes-and-apis/document-all.html`](https://wpt.fyi/results/html/obsolete/requirements-for-implementations/other-elements-attributes-and-apis/document-all.html) | Fail | 0 / 2 | JS ENGINE | `document.all` cannot be an `[[IsHTMLDDA]]` object (typeof, falsiness) |
+| [`requirements-for-implementations/other-elements-attributes-and-apis/document-all.html`](https://wpt.fyi/results/html/obsolete/requirements-for-implementations/other-elements-attributes-and-apis/document-all.html) | Pass | 2 / 2 |  |  |
 | [`requirements-for-implementations/other-elements-attributes-and-apis/document-applets.html`](https://wpt.fyi/results/html/obsolete/requirements-for-implementations/other-elements-attributes-and-apis/document-applets.html) | Pass | 1 / 1 |  |  |
 | [`requirements-for-implementations/other-elements-attributes-and-apis/document-color-01.html`](https://wpt.fyi/results/html/obsolete/requirements-for-implementations/other-elements-attributes-and-apis/document-color-01.html) | Pass | 6 / 6 |  |  |
 | [`requirements-for-implementations/other-elements-attributes-and-apis/document-color-02.html`](https://wpt.fyi/results/html/obsolete/requirements-for-implementations/other-elements-attributes-and-apis/document-color-02.html) | Pass | 7 / 7 |  |  |

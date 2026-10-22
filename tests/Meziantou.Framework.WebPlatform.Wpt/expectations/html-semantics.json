@@ -6962,13 +6962,7 @@
     "total": 10
   },
   "html/semantics/links/links-created-by-a-and-area-elements/htmlanchorelement_noopener.html": {
-    "harness": "TIMEOUT",
-    "total": 5,
-    "failures": {
-      "Check that rel=noopener with target=_parent does a normal load": "TIMEOUT",
-      "Check that rel=noopener with target=_self does a normal load": "TIMEOUT",
-      "Check that rel=noopener with target=_top does a normal load": "TIMEOUT"
-    }
+    "total": 5
   },
   "html/semantics/links/links-created-by-a-and-area-elements/non-parsable-url-getter-setter.window.js": {
     "total": 38

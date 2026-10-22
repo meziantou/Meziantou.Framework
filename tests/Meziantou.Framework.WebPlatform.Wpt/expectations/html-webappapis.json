@@ -859,12 +859,7 @@
     "total": 2
   },
   "html/webappapis/scripting/processing-model-2/integration-with-the-javascript-agent-formalism/atomics-wait-async.https.any.js#dedicatedworker": {
-    "harness": "TIMEOUT",
-    "total": 2,
-    "failures": {
-      "Atomics.waitAsync notification in a DedicatedWorkerGlobalScope": "NOTRUN",
-      "Atomics.waitAsync timeout in a DedicatedWorkerGlobalScope": "TIMEOUT"
-    }
+    "total": 2
   },
   "html/webappapis/scripting/processing-model-2/integration-with-the-javascript-agent-formalism/requires-failure.https.any.js": {
     "total": 1,

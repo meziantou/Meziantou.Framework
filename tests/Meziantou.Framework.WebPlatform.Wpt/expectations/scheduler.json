@@ -240,20 +240,10 @@
     "total": 8
   },
   "scheduler/tentative/yield/yield-inherit-across-promises.any.js": {
-    "total": 8,
-    "failures": {
-      "yield() inherits abort across promises": "FAIL",
-      "yield() inherits priority (signal) across promises (user-blocking)": "FAIL",
-      "yield() inherits priority (string) across promises (user-blocking)": "FAIL"
-    }
+    "total": 8
   },
   "scheduler/tentative/yield/yield-inherit-across-promises.any.js#dedicatedworker": {
-    "total": 8,
-    "failures": {
-      "yield() inherits abort across promises": "FAIL",
-      "yield() inherits priority (signal) across promises (user-blocking)": "FAIL",
-      "yield() inherits priority (string) across promises (user-blocking)": "FAIL"
-    }
+    "total": 8
   },
   "scheduler/tentative/yield/yield-inherit-across-settled-promises.any.js": {
     "total": 9

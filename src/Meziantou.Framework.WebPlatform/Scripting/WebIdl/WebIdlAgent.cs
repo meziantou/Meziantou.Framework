@@ -178,9 +178,15 @@ public sealed class WebIdlAgent<TAdapter, TValue>
         Wrappers.AddOrUpdate(global, realm.Global);
         Adapter.RunInRealm(engineRealm, () =>
         {
+            // https://html.spec.whatwg.org/multipage/document-sequences.html#creating-a-new-browsing-context: the this value of
+            // the global code of a window is the WindowProxy of its browsing context
+            if (global is Window window && realm.GetWindowProxy(window) is var windowProxy && !ReferenceEquals(windowProxy, realm.Global))
+            {
+                Adapter.TrySetGlobalThis(engineRealm, windowProxy);
+            }
+
             realm.Initialize();
             RealmCreated?.Invoke(realm);
-            realm.SyncFrames();
             return realm;
         });
 

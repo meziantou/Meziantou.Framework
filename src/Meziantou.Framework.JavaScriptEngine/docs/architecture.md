@@ -118,7 +118,10 @@ entry point), `engine.CurrentRealm` is the realm of the running execution contex
 switches the current realm to the realm of the function (`JsBuiltinFunction.Call`), and checks the recursion limit.
 
 `JsRealm` owns the `Intrinsics` and the global object. `Intrinsics` is a partial class: the prototype objects are
-created first (constructor of `Intrinsics`), then `Initialize` calls each built-in.
+created first (constructor of `Intrinsics`), then `Initialize` calls each built-in. `JsRealm.GlobalThis` is the this
+value of the global code ([[GlobalThisValue]]): the global object, unless the host sets another object with
+`SetGlobalThis` (the WindowProxy of a browser window); the code reads it at run time (`LoadGlobalThis`, the this of the
+sloppy functions called without this value, the indirect evals).
 
 ### Writing a built-in
 
@@ -166,9 +169,13 @@ from any thread) / `EnqueueTimeoutJob` go through the host hooks (`JsHost`, `eng
 implementations queue the jobs in the engine. `engine.RunJobs()` runs the promise jobs first, then the generic jobs and
 the due timeout jobs (on the `TimeProvider` of the options), until the queue is empty; it clears the WeakRef kept
 objects after each job. A job exception goes to `JsHost.ReportJobException` (default: rethrown by `RunJobs`).
-`EnterNestedJobQueue()` redirects the new jobs to a separate queue until it is disposed. The other hooks:
+`EnterNestedJobQueue()` redirects the new jobs to a separate queue until it is disposed. A host that has its own event
+loop overrides `EnqueueGenericJob` / `EnqueueTimeoutJob`: it gets a `JsHostJob`, which it runs later with `Run()` (in
+the realm of the job; the promise jobs it enqueues wait for the next `RunJobs`). The other hooks:
 HostPromiseRejectionTracker, HostMakeJobCallback / HostCallJobCallback (a host state captured by `then` and restored when
-the reaction runs).
+the reaction runs). The .NET continuations (below) have no function object: `MakeContinuationHostDefined` captures their
+host state, and `CallContinuation` restores it around `JsContinuation.Invoke()`; when it returns null (the default),
+nothing is allocated and the continuation is called directly.
 
 `JsPromise` (`Runtime/JsPromise.cs`) has the promise abstract operations: `PromiseCapability.Create(C)` /
 `CreateIntrinsic(realm)` (NewPromiseCapability; the capabilities of %Promise% do not create the resolving functions
@@ -305,6 +312,8 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
   learns its size the same way.
 - Host objects: `JsHostObject(prototype, target, hasOrdinaryInternalMethods: true)` creates a host object that uses the
   fast paths (it must not override the methods that read or write properties).
+  `JsHostObject.HasCallInternalMethod` gives a host object a [[Call]] internal method (`CallCore`, which runs in the
+  realm of the caller), and `IsHtmlDdaObject` an [[IsHTMLDDA]] internal slot: both are used by `document.all`.
 - Benchmarks (`benchmarks/Meziantou.Framework.JavaScriptEngine.Benchmarks`, net10.0): `quick [workload|file.js]` (vs Jint),
   `profile <workload|file.js|Parse|CreateRealm> <seconds>` (allocations, GC, CPU time per run), `harness <testharness.js>`,
   `dump <workload|file.js>` (the bytecode), and BenchmarkDotNet (`EngineBenchmarks`, `ParseBenchmarks`). Run them with

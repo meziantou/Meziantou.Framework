@@ -98,6 +98,19 @@ public sealed class WorkerTests : IDisposable
     }
 
     [Fact]
+    public async Task Worker_InterfaceObjectsAreBuiltInFunctions()
+    {
+        AddScript("https://example.com/dir/worker.js", """
+            postMessage([String(WorkerLocation), String(DedicatedWorkerGlobalScope), location instanceof WorkerLocation].join());
+            """);
+        var document = Load("<script>new Worker('worker.js').onmessage = e => document.title = e.data;</script>");
+
+        var title = await WaitForTitleAsync(document);
+        Assert.Equal("function WorkerLocation() { [native code] },function DedicatedWorkerGlobalScope() { [native code] },true", title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
     public async Task Worker_UnhandledError_IsFiredAtTheWorker()
     {
         AddScript("https://example.com/dir/worker.js", "throw new TypeError('boom');");

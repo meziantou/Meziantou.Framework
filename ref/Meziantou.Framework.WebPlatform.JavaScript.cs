@@ -29,8 +29,6 @@ namespace Meziantou.Framework.WebPlatform.JavaScript
         protected internal override Meziantou.Framework.WebPlatform.Scripting.ScriptLocation? GetCurrentScriptLocation() => throw null;
         protected internal override bool IsPromiseHandled(object promise) => throw null;
         protected internal override void LoadModuleScriptGraph(Meziantou.Framework.WebPlatform.Scripting.ModuleScript script, System.Action<bool> onComplete) { }
-        protected internal override void OnChildNavigablesChanged(Meziantou.Framework.WebPlatform.Dom.Window window) { }
-        protected internal override void OnDocumentActivated(Meziantou.Framework.WebPlatform.Dom.Document document) { }
         protected virtual void OnRealmCreated(Meziantou.Framework.WebPlatform.Dom.GlobalScope global, Meziantou.Framework.JavaScriptEngine.JsObject globalObject) { }
         protected internal override object? ParseClassicScript(Meziantou.Framework.WebPlatform.Scripting.ClassicScript script) => throw null;
         protected internal override void PerformMicrotaskCheckpoint() { }

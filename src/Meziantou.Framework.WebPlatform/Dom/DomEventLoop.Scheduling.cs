@@ -30,21 +30,33 @@ public sealed partial class DomEventLoop
     /// <summary>https://wicg.github.io/scheduling-apis/#event-loop-next-enqueue-order</summary>
     private long _nextSchedulerEnqueueOrder = 1;
 
+    /// <summary>The last snapshot of <see cref="CurrentContinuationState"/>: the promise reactions created with the same state share it.</summary>
+    private ContinuationStateSnapshot? _continuationStateSnapshot;
+
     /// <summary>
     /// https://wicg.github.io/scheduling-apis/#event-loop-current-continuation-state: the scheduling states that
     /// <see cref="Scheduler.Yield"/> inherits. The state of a task of a scheduler is set while the task and the microtasks of
-    /// its microtask checkpoint run: the script engines do not call the host when a promise reaction is created and run
-    /// (HostMakeJobCallback and HostCallJobCallback), so a reaction has the state of the task that runs it instead of the
-    /// state of the code that created it. The microtasks of <c>queueMicrotask()</c> and the reactions of <c>then()</c> restore
-    /// the state they were created with.
+    /// its microtask checkpoint run. The promise reactions (HostMakeJobCallback and HostCallJobCallback, see
+    /// <see cref="CaptureContinuationState"/>) and the microtasks of <c>queueMicrotask()</c> restore the state they were
+    /// created with.
     /// </summary>
     internal SchedulerContinuationState? CurrentContinuationState { get; set; }
 
     /// <summary>
-    /// Whether a scheduler of a global object of the event loop was used (<see cref="GlobalScope.Scheduler"/>): the promise
-    /// reactions that the scripts create then capture the continuation state.
+    /// Returns the current continuation state, captured by a job callback (https://wicg.github.io/scheduling-apis/#sec-patches-html-hostmakejobcallback).
+    /// A continuation state is immutable: the snapshot is its clone.
     /// </summary>
-    internal bool PropagatesContinuationState { get; set; }
+    internal ContinuationStateSnapshot CaptureContinuationState()
+    {
+        var state = CurrentContinuationState;
+        var snapshot = _continuationStateSnapshot;
+        if (snapshot is null || !ReferenceEquals(snapshot.State, state))
+        {
+            _continuationStateSnapshot = snapshot = new ContinuationStateSnapshot(this, state);
+        }
+
+        return snapshot;
+    }
 
     internal long GetNextSchedulerEnqueueOrder() => _nextSchedulerEnqueueOrder++;
 
@@ -122,4 +134,12 @@ public sealed partial class DomEventLoop
             CurrentContinuationState = continuationState;
         }
     }
+}
+
+/// <summary>The continuation state captured by a job callback, and the event loop whose state it restores when the callback is called.</summary>
+internal sealed class ContinuationStateSnapshot(DomEventLoop eventLoop, SchedulerContinuationState? state)
+{
+    public DomEventLoop EventLoop { get; } = eventLoop;
+
+    public SchedulerContinuationState? State { get; } = state;
 }

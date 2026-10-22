@@ -12784,12 +12784,16 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         public TValue CreateArrayBuffer(System.ReadOnlySpan<byte> bytes) => throw null;
         public TValue CreateArrayBufferView(Meziantou.Framework.WebPlatform.Scripting.JsBufferKind kind, TValue buffer, int byteOffset, int length) => throw null;
         public TValue? CreateArrayBufferWithData(byte[] data, string detachKey) => throw null;
+        public TValue CreateConstructor(string name, int length, Meziantou.Framework.WebPlatform.Scripting.JsHostConstructor<TValue> constructor) => throw null;
+        public TValue? CreateCrossOriginPlatformObject(TValue prototype, object target, Meziantou.Framework.WebPlatform.Scripting.IJsCrossOriginObjectHandler<TValue> handler) => throw null;
         TValue CreateDate(double timeValue);
         System.Exception CreateException(TValue value);
         TValue CreateFunction(string name, int length, Meziantou.Framework.WebPlatform.Scripting.JsHostFunction<TValue> function);
+        public TValue CreateHtmlDdaPlatformObject(TValue prototype, object target, Meziantou.Framework.WebPlatform.Scripting.IJsHostObjectHandler<TValue> handler, Meziantou.Framework.WebPlatform.Scripting.JsHostFunction<TValue> call) => throw null;
         TValue CreateObject(TValue prototype);
         TValue CreatePlatformObject(TValue prototype, object target, Meziantou.Framework.WebPlatform.Scripting.IJsHostObjectHandler<TValue>? handler);
         public TValue? CreateSharedArrayBuffer(object dataBlock) => throw null;
+        public TValue? CreateWindowProxy(Meziantou.Framework.WebPlatform.Scripting.IJsWindowProxyHandler<TValue> handler) => throw null;
         public void DefineLazyAccessorProperty(TValue obj, TValue key, Meziantou.Framework.WebPlatform.Scripting.IJsLazyAccessor<TValue> factory, bool hasSetter, bool enumerable, bool configurable) { }
         public void DefineLazyAccessorProperty(TValue obj, TValue key, System.Func<TValue> getterFactory, System.Func<TValue>? setterFactory, bool enumerable, bool configurable) { }
         public void DefineLazyDataProperty(TValue obj, TValue key, Meziantou.Framework.WebPlatform.Scripting.IJsLazyValue<TValue> factory, bool writable, bool enumerable, bool configurable) { }
@@ -12853,6 +12857,15 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         public bool TryMakePrototypeImmutable(TValue obj) => throw null;
         [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0011", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public bool TrySetErrorStack(TValue error, string stack) => throw null;
+        public bool TrySetGlobalThis(object realm, TValue thisValue) => throw null;
+    }
+
+    public interface IJsCrossOriginObjectHandler<TValue> where TValue : class
+    {
+        System.Exception CreateSecurityError();
+        Meziantou.Framework.WebPlatform.Scripting.JsPropertyDescriptor<TValue> GetCrossOriginOwnProperty(TValue key);
+        System.Collections.Generic.IReadOnlyList<TValue> GetCrossOriginOwnPropertyKeys();
+        bool IsSameOrigin();
     }
 
     public interface IJsHostObjectHandler<TValue> where TValue : class
@@ -12874,6 +12887,13 @@ namespace Meziantou.Framework.WebPlatform.Scripting
     public interface IJsLazyValue<TValue> where TValue : class
     {
         TValue CreateValue();
+    }
+
+    public interface IJsWindowProxyHandler<TValue> : Meziantou.Framework.WebPlatform.Scripting.IJsCrossOriginObjectHandler<TValue> where TValue : class
+    {
+        int ChildCount { get; }
+        TValue Window { get; }
+        TValue? GetChild(int index);
     }
 
     public interface IWebIdlHost
@@ -12923,6 +12943,8 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         public static bool operator ==(Meziantou.Framework.WebPlatform.Scripting.JsErrorInformation left, Meziantou.Framework.WebPlatform.Scripting.JsErrorInformation right) => throw null;
         public static bool operator !=(Meziantou.Framework.WebPlatform.Scripting.JsErrorInformation left, Meziantou.Framework.WebPlatform.Scripting.JsErrorInformation right) => throw null;
     }
+
+    public delegate TValue JsHostConstructor<TValue>(System.ReadOnlySpan<TValue> arguments, TValue newTarget);
 
     public delegate TValue JsHostFunction<TValue>(TValue thisValue, System.ReadOnlySpan<TValue> arguments);
 
@@ -13147,7 +13169,6 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         public TValue GetWindowProxy(Meziantou.Framework.WebPlatform.Dom.Window window) => throw null;
         public TValue GetWrapper(object target, TValue? prototype = default) => throw null;
         public TResult Run<TResult>(System.Func<TResult> action) => throw null;
-        public void SyncFrames() { }
         public string ToDomString(TValue value) => throw null;
         public TValue ToJs(object? value) => throw null;
         public TValue ToJsError(System.Exception exception) => throw null;

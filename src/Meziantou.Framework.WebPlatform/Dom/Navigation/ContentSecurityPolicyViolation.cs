@@ -152,21 +152,37 @@ internal sealed class ContentSecurityPolicyViolation
 
     /// <summary>
     /// https://w3c.github.io/webappsec-csp/#strip-url-for-use-in-reports: the scheme of a URL that is not an HTTP(S) URL,
-    /// else the URL without its fragment and its credentials.
+    /// else the URL without its fragment and its credentials. As in the browsers, the <c>ws</c> and <c>wss</c> URLs are kept
+    /// (https://github.com/w3c/webappsec-csp/issues/735): the URL of a WebSocket request is an HTTP(S) URL, so only a source
+    /// file (a <c>//# sourceURL=</c> comment) can have these schemes.
     /// </summary>
-    public static string StripUrlForUseInReports(UrlRecord url)
+    public static string StripUrlForUseInReports(UrlRecord url) => StripUrlForUseInReports(url, excludeQuery: false);
+
+    private static string StripUrlForUseInReports(UrlRecord url, bool excludeQuery)
     {
-        if (url.Scheme is not ("http" or "https"))
+        if (url.Scheme is not ("http" or "https" or "ws" or "wss"))
             return url.Scheme;
 
-        if (url.Username.Length == 0 && url.Password.Length == 0)
+        if (url.Username.Length == 0 && url.Password.Length == 0 && (!excludeQuery || url.Query is null))
             return url.Serialize(excludeFragment: true);
 
         var stripped = url.Clone();
         stripped.Username = "";
         stripped.Password = "";
+        if (excludeQuery)
+        {
+            stripped.Query = null;
+        }
+
         return stripped.Serialize(excludeFragment: true);
     }
+
+    /// <summary>
+    /// The source file stripped for use in the reports, or null. Its query is removed too, as in Chromium
+    /// (https://crbug.com/1074317): the script may have been fetched after redirects, whose URLs must not leak
+    /// (https://w3c.github.io/webappsec-csp/#create-violation-for-global, step 2).
+    /// </summary>
+    private string? GetStrippedSourceFile() => SourceFile is { } sourceFile ? StripUrlForUseInReports(sourceFile, excludeQuery: true) : null;
 
     /// <summary>The referrer stripped for use in the reports (https://w3c.github.io/webappsec-csp/#strip-url-for-use-in-reports), or the empty string.</summary>
     private string GetStrippedReferrer() => Referrer.Length > 0 && UrlParser.Parse(Referrer, baseUrl: null) is { } referrer ? StripUrlForUseInReports(referrer) : "";
@@ -221,7 +237,7 @@ internal sealed class ContentSecurityPolicyViolation
             ViolatedDirective = EffectiveDirective,
             OriginalPolicy = Policy.Serialized,
             Disposition = Disposition,
-            SourceFile = SourceFile is { } sourceFile ? StripUrlForUseInReports(sourceFile) : "",
+            SourceFile = GetStrippedSourceFile() ?? "",
             StatusCode = (ushort)Status,
             LineNumber = (uint)LineNumber,
             ColumnNumber = (uint)ColumnNumber,
@@ -274,7 +290,7 @@ internal sealed class ContentSecurityPolicyViolation
                 BlockedUrl = GetBlockedUri(),
                 EffectiveDirective = EffectiveDirective,
                 OriginalPolicy = Policy.Serialized,
-                SourceFile = SourceFile is { } file ? StripUrlForUseInReports(file) : null,
+                SourceFile = GetStrippedSourceFile(),
                 Sample = Sample,
                 Disposition = Disposition,
                 StatusCode = (ushort)Status,
@@ -326,9 +342,9 @@ internal sealed class ContentSecurityPolicyViolation
             writer.WriteString("disposition", Disposition == SecurityPolicyViolationEventDisposition.Report ? "report" : "enforce");
             writer.WriteNumber("status-code", Status);
             writer.WriteString("script-sample", Sample);
-            if (SourceFile is { } sourceFile)
+            if (GetStrippedSourceFile() is { } sourceFile)
             {
-                writer.WriteString("source-file", StripUrlForUseInReports(sourceFile));
+                writer.WriteString("source-file", sourceFile);
                 writer.WriteNumber("line-number", LineNumber);
                 writer.WriteNumber("column-number", ColumnNumber);
             }

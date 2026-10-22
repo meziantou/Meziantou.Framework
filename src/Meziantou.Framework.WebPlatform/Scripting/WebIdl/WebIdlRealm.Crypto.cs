@@ -32,9 +32,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         // WorkerGlobalScope on its prototype
         DefineAttribute(Window is null ? GetPrototype("WorkerGlobalScope") : Global, "crypto", static (realm, thisValue) =>
         {
-            if (realm.Unwrap(realm.ThisOrGlobal(thisValue)) is not GlobalScope global)
-                throw realm.CreateTypeError("Illegal invocation: 'this' does not implement interface WindowOrWorkerGlobalScope");
-
+            var global = realm.ThisGlobalScope(thisValue);
             var targetRealm = ReferenceEquals(global, realm.GlobalScope) ? realm : realm.Agent.TryGetRealm(global) ?? realm;
             return targetRealm.Adapter.Get(targetRealm.GetWebCrypto(), targetRealm.Key("crypto"));
         }, setter: null);

@@ -27,30 +27,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     /// <summary>The constructor steps of an interface: returns the new .NET object.</summary>
     internal delegate object ConstructorSteps(WebIdlRealm<TAdapter, TValue> realm, ReadOnlySpan<TValue> arguments);
 
-    // Creates an interface object (https://webidl.spec.whatwg.org/#interface-object): a constructor calling construct(NewTarget, args)
-    private const string MakeInterfaceScript = """
-            (function (name, length, construct, parent, prototype, htmlConstructor, classString) {
-              // Strict: the function has no own caller and arguments properties (an extension of the engines for the
-              // sloppy functions), as the built-in function objects
-              'use strict';
-              let f = function (...args) { return construct(new.target, args); };
-              Object.defineProperty(f, 'length', { value: length });
-              Object.defineProperty(f, 'name', { value: name });
-              Object.defineProperty(f, 'prototype', { value: prototype, writable: false, enumerable: false, configurable: false });
-              if (parent) Object.setPrototypeOf(f, parent);
-
-              // The [[Construct]] of an ordinary function gets NewTarget.prototype before running the function: the
-              // HTML element constructors must get it only once, after their checks
-              if (htmlConstructor) f = new Proxy(f, { construct: (target, args, newTarget) => construct(newTarget, args) });
-              Object.defineProperty(prototype, 'constructor', { value: f, writable: true, enumerable: false, configurable: true });
-              Object.defineProperty(prototype, Symbol.toStringTag, { value: classString, writable: false, enumerable: false, configurable: true });
-              return f;
-            })
-            """;
-
     private readonly Dictionary<string, (TValue InterfaceObject, TValue Prototype)> _interfaceObjects = new(StringComparer.Ordinal);
-    private TValue? _makeInterface;
-    private TValue? _syncFrames;
     private TValue? _createPromiseCapability;
     private TValue? _markAsHandled;
     private TValue? _waitForAll;
@@ -155,13 +132,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             Adapter.Delete(Global, Key("SharedArrayBuffer"));
         }
 
-        // The schedulers are exposed in the windows and in the workers: the realms of the worklets, which run on the event loop
-        // of their document, keep their Promise.prototype.then
         var isWindowOrWorker = IsExposed(ExposureSet.Window | ExposureSet.DedicatedWorker | ExposureSet.SharedWorker | ExposureSet.ServiceWorker);
-        if (Features.PrioritizedTaskSchedulingEnabled && isWindowOrWorker)
-        {
-            DefineContinuationStatePropagation();
-        }
 
         // The global object gets an interface object per exposed interface, and the members of its interface
         Adapter.ReserveProperties(Global, WebIdlBindings<TAdapter, TValue>.Interfaces.Count + 256);
@@ -504,9 +475,18 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         // with the sizes that the previous realms learned
         var prototype = Adapter.CreateObject(parentPrototype);
         ReserveLearnedProperties(prototype, binding.PrototypePropertyCount);
-        var construct = Adapter.CreateFunction("construct", 2, (_, arguments) => Construct(binding, arguments[0], arguments[1]));
-        var isHtmlConstructor = (binding.Flags & InterfaceBindingFlags.HtmlConstructor) != InterfaceBindingFlags.None;
-        var interfaceObject = Adapter.Call(_makeInterface ??= EvaluateBuiltIn(MakeInterfaceScript), Adapter.Undefined, [Key(binding.Name), Adapter.FromNumber(binding.ConstructorLength), construct, parentInterfaceObject, prototype, Adapter.FromBoolean(isHtmlConstructor), Key(binding.ClassString ?? binding.Name)]);
+        // https://webidl.spec.whatwg.org/#create-an-interface-object: a built-in function object (its [[Construct]] does not
+        // read NewTarget.prototype before the constructor steps, as the HTML element constructors require)
+        var interfaceObject = Adapter.CreateConstructor(binding.Name, binding.ConstructorLength, (arguments, newTarget) => Construct(binding, newTarget, arguments));
+        // The [[Prototype]] of the interface object is the interface object of the parent (or %AbstractModuleSource%)
+        if (!Adapter.IsUndefined(parentInterfaceObject))
+        {
+            Adapter.SetPrototypeOf(interfaceObject, parentInterfaceObject);
+        }
+
+        Adapter.DefineOwnProperty(interfaceObject, Key("prototype"), JsPropertyDescriptor<TValue>.Data(prototype, writable: false, enumerable: false, configurable: false));
+        Adapter.DefineOwnProperty(prototype, Key("constructor"), JsPropertyDescriptor<TValue>.Data(interfaceObject, writable: true, enumerable: false, configurable: true));
+        Adapter.DefineOwnProperty(prototype, Adapter.GetWellKnownSymbol(JsWellKnownSymbol.ToStringTag), JsPropertyDescriptor<TValue>.Data(Key(binding.ClassString ?? binding.Name), writable: false, enumerable: false, configurable: true));
         _interfaceObjects[binding.ClassString ?? binding.Name] = (interfaceObject, prototype);
         ReserveLearnedProperties(interfaceObject, binding.InterfaceObjectPropertyCount);
 
@@ -609,20 +589,27 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
         if (_definingInterface is { } interfaceName)
         {
-            if (IsCrossOriginProperty(interfaceName, name, CrossOriginAccess.Get))
+            var isCrossOriginGetter = IsCrossOriginProperty(interfaceName, name, CrossOriginAccess.Get);
+            if (isCrossOriginGetter)
             {
                 var crossOriginGetter = getter;
                 getter = (realm, thisValue) => AllowCrossOriginAccess(() => crossOriginGetter(realm, thisValue));
             }
 
-            if (setter is not null && IsCrossOriginProperty(interfaceName, name, CrossOriginAccess.Set))
+            var isCrossOriginSetter = setter is not null && IsCrossOriginProperty(interfaceName, name, CrossOriginAccess.Set);
+            if (isCrossOriginSetter)
             {
-                var crossOriginSetter = setter;
+                var crossOriginSetter = setter!;
                 setter = (realm, thisValue, value) => AllowCrossOriginAccess(() =>
                 {
                     crossOriginSetter(realm, thisValue, value);
                     return true;
                 });
+            }
+
+            if (isCrossOriginGetter || isCrossOriginSetter)
+            {
+                _crossOriginMembers[(interfaceName, name)] = new CrossOriginMember(isCrossOriginGetter ? getter : null, isCrossOriginSetter ? setter : null, Operation: null, Length: 0, CEReactions: false);
             }
         }
 
@@ -726,6 +713,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                     s_crossOriginAccessAllowed = false;
                 }
             };
+            _crossOriginMembers[(interfaceName, name)] = new CrossOriginMember(Getter: null, Setter: null, operation, length, ceReactions);
         }
 
         // Most operations are never used: their functions are created on first access, in this realm
@@ -1143,7 +1131,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     }
 
     /// <summary>The [[Construct]] of the interface objects (https://webidl.spec.whatwg.org/#es-interface-call).</summary>
-    private TValue Construct(InterfaceBinding<TAdapter, TValue> binding, TValue newTarget, TValue argumentsArray)
+    private TValue Construct(InterfaceBinding<TAdapter, TValue> binding, TValue newTarget, ReadOnlySpan<TValue> arguments)
     {
         if (Adapter.IsUndefined(newTarget))
             throw CreateTypeError($"Failed to construct '{binding.Name}': Please use the 'new' operator");
@@ -1155,7 +1143,6 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             throw CreateTypeError("Illegal constructor");
 
         // The constructors use the associated document of the current global object (e.g. new Text())
-        var arguments = ToArgumentArray(argumentsArray);
         var previousDocument = Document.CurrentGlobalDocumentOrNull;
         Document.CurrentGlobalDocument = GlobalScope.EnvironmentDocument;
         object instance;
@@ -1181,49 +1168,6 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         return GetWrapper(instance, prototype);
     }
 
-    private TValue[] ToArgumentArray(TValue array)
-    {
-        var length = (int)Adapter.ToNumber(Adapter.Get(array, Key("length")));
-        var result = new TValue[length];
-        for (var i = 0; i < length; i++)
-        {
-            result[i] = Adapter.Get(array, Adapter.FromString(i.ToString(System.Globalization.CultureInfo.InvariantCulture)));
-        }
-
-        return result;
-    }
-
-    // ----------------------------------------------------------------------------------------------------------------
-    // WindowProxy (https://html.spec.whatwg.org/multipage/nav-history-apis.html#windowproxy-getownproperty)
-    // ----------------------------------------------------------------------------------------------------------------
-
-    /// <summary>Defines the indexed properties of the global object of a window: the windows of the document-tree child navigables.</summary>
-    public void SyncFrames()
-    {
-        if (Window is not { } window)
-            return;
-
-        if (_syncFrames is null)
-        {
-            var frame = Adapter.CreateFunction("frame", 1, (_, arguments) => window[(int)Adapter.ToNumber(arguments[0])] is { } frameWindow ? ToJs(frameWindow) : Adapter.Undefined);
-            var create = EvaluateBuiltIn("""
-                (function (frame, global) {
-                  return function (count) {
-                    for (let i = 0; i < count; i++) {
-                      if (!Object.prototype.hasOwnProperty.call(global, i)) {
-                        Object.defineProperty(global, i, { get: function () { return frame(i); }, enumerable: true, configurable: true });
-                      }
-                    }
-                    for (let i = count; Object.prototype.hasOwnProperty.call(global, i); i++) delete global[i];
-                  };
-                })
-                """);
-            _syncFrames = Adapter.Call(create, Adapter.Undefined, [frame, Global]);
-        }
-
-        Adapter.Call(_syncFrames, Adapter.Undefined, [Adapter.FromNumber(window.Length)]);
-    }
-
     // ----------------------------------------------------------------------------------------------------------------
     // Wrappers
     // ----------------------------------------------------------------------------------------------------------------
@@ -1232,9 +1176,9 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     public TValue GetWrapper(object target, TValue? prototype = null)
     {
         ArgumentNullException.ThrowIfNull(target);
-        // The global object for the code of the realm of the window, else the WindowProxy of its browsing context
+        // A window is exposed by the WindowProxy of its browsing context, in every realm
         if (target is Window window)
-            return GetWindowValue(window, (Agent.Host.IsScriptRunning ? Agent.CurrentRealm : null) ?? this);
+            return GetWindowProxy(window);
 
         if (Agent.Wrappers.TryGetValue(target, out var wrapper))
             return wrapper;
@@ -1243,16 +1187,23 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         if (prototype is null && target is Node node && node.CreationRealmWindow is { } nodeWindow && !ReferenceEquals(nodeWindow, Window))
             return Agent.GetRealm(nodeWindow).GetWrapper(target);
 
+        // The Location object of a window is created in the realm of the window (e.g. by the cross-origin location getter
+        // that another realm uses)
+        if (prototype is null && target is Location { Window: var locationWindow } && !ReferenceEquals(locationWindow, Window))
+            return Agent.GetRealm(locationWindow).GetWrapper(target);
+
         // An object created by the user agent for another window (e.g. the MediaQueryList of its matchMedia()) is created in the realm of that window
         if (prototype is null && target is IRealmBoundPlatformObject { RealmWindow: { } realmWindow } && !ReferenceEquals(realmWindow, Window))
             return Agent.GetRealm(realmWindow).GetWrapper(target);
 
         var binding = WebIdlBindings<TAdapter, TValue>.GetInterface(target.GetType()) ?? throw new InvalidOperationException($"The type '{target.GetType()}' is not an IDL interface");
-        wrapper = CreatePlatformObject(prototype ?? EnsureInterfaceObject(binding).Prototype, target, GetLegacyPlatformObjectHandler(binding));
-        if (target is HtmlAllCollection all)
+        prototype ??= EnsureInterfaceObject(binding).Prototype;
+        wrapper = target switch
         {
-            wrapper = CreateHtmlAllCollectionWrapper(all, wrapper);
-        }
+            HtmlAllCollection all => CreateHtmlAllCollectionObject(all, prototype, GetLegacyPlatformObjectHandler(binding)!),
+            Location location => CreateLocationObject(prototype, location),
+            _ => CreatePlatformObject(prototype, target, GetLegacyPlatformObjectHandler(binding)),
+        };
 
         if ((binding.Flags & InterfaceBindingFlags.ModuleSource) != InterfaceBindingFlags.None)
         {
@@ -1262,7 +1213,20 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         }
 
         Agent.Wrappers.AddOrUpdate(target, wrapper);
-        DefineUnforgeableMembers(binding, wrapper);
+        if (target is Location)
+        {
+            // The internal methods of a Location object depend on the current realm: its members are defined in its realm
+            // (the first access may come from the code of another origin)
+            Adapter.RunInRealm(EngineRealm, () =>
+            {
+                DefineUnforgeableMembers(binding, wrapper);
+                return wrapper;
+            });
+        }
+        else
+        {
+            DefineUnforgeableMembers(binding, wrapper);
+        }
 
         // https://drafts.csswg.org/css-view-transitions-1/#viewtransition-ready-promise: "the ready promise and update callback
         // done promise are immediately created, so rejections will cause unhandledrejections unless they're handled, even if the
@@ -1328,8 +1292,8 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         // non-configurable own properties of the Location objects
         if (binding.Name == "Location")
         {
-            Adapter.DefineOwnProperty(instance, Key("valueOf"), JsPropertyDescriptor<TValue>.Data(Adapter.Get(ObjectPrototype, Key("valueOf")), writable: false, enumerable: false, configurable: false));
-            Adapter.DefineOwnProperty(instance, _toPrimitiveSymbol ??= EvaluateBuiltIn("Symbol.toPrimitive"), JsPropertyDescriptor<TValue>.Data(Adapter.Undefined, writable: false, enumerable: false, configurable: false));
+            Adapter.OrdinaryDefineOwnProperty(instance, Key("valueOf"), JsPropertyDescriptor<TValue>.Data(Adapter.Get(ObjectPrototype, Key("valueOf")), writable: false, enumerable: false, configurable: false));
+            Adapter.OrdinaryDefineOwnProperty(instance, _toPrimitiveSymbol ??= EvaluateBuiltIn("Symbol.toPrimitive"), JsPropertyDescriptor<TValue>.Data(Adapter.Undefined, writable: false, enumerable: false, configurable: false));
         }
     }
 
@@ -1347,46 +1311,36 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     }
 
     /// <summary>
-    /// document.all has a custom [[Call]] internal method (https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#HTMLAllCollection-call).
-    /// It is exposed through a Proxy of a function. The [[IsHTMLDDA]] slot (falsy, typeof "undefined") cannot be emulated.
+    /// document.all is an [[IsHTMLDDA]] object with a custom [[Call]] internal method
+    /// (https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#HTMLAllCollection-call).
     /// </summary>
-    private TValue CreateHtmlAllCollectionWrapper(HtmlAllCollection target, TValue platformObject)
+    private TValue CreateHtmlAllCollectionObject(HtmlAllCollection target, TValue prototype, LegacyPlatformObjectHandler<TAdapter, TValue> handler)
     {
-        var call = Adapter.CreateFunction("call", 0, (_, arguments) =>
+        return Adapter.RunInRealm(EngineRealm, () =>
         {
-            try
+            var obj = Adapter.CreateHtmlDdaPlatformObject(prototype, target, handler, (_, arguments) =>
             {
-                if (arguments.Length == 0 || Adapter.IsUndefined(arguments[0]))
-                    return Adapter.Null;
+                try
+                {
+                    if (arguments.Length == 0 || Adapter.IsUndefined(arguments[0]))
+                        return Adapter.Null;
 
-                return ToJs(target.Item(ToDomString(arguments[0])));
-            }
-            catch (Exception ex) when (!Adapter.TryGetThrownValue(ex, out TValue? _))
+                    return ToJs(target.Item(ToDomString(arguments[0])));
+                }
+                catch (Exception ex) when (!Adapter.TryGetThrownValue(ex, out TValue? _))
+                {
+                    throw ToJsException(ex);
+                }
+            });
+
+            // The fallback of the adapters that do not support it is a Proxy, whose target is the platform object
+            if (!Adapter.TryGetPlatformObject(obj, out _))
             {
-                throw ToJsException(ex);
+                Agent.CallableWrapperTargets.AddOrUpdate(obj, target);
             }
+
+            return obj;
         });
-
-        var create = EvaluateBuiltIn("""
-            (function (target, call) {
-              return new Proxy(() => {}, {
-                apply(t, thisArg, args) { return call(...args); },
-                get(t, p, r) { return Reflect.get(target, p, target); },
-                set(t, p, v, r) { return Reflect.set(target, p, v, target); },
-                has(t, p) { return Reflect.has(target, p); },
-                ownKeys(t) { return Reflect.ownKeys(target); },
-                getOwnPropertyDescriptor(t, p) { return Reflect.getOwnPropertyDescriptor(target, p); },
-                defineProperty(t, p, d) { return Reflect.defineProperty(target, p, d); },
-                deleteProperty(t, p) { return Reflect.deleteProperty(target, p); },
-                getPrototypeOf(t) { return Reflect.getPrototypeOf(target); },
-                setPrototypeOf(t, proto) { return Reflect.setPrototypeOf(target, proto); },
-                preventExtensions(t) { return false; },
-              });
-            })
-            """);
-        var proxy = Adapter.Call(create, Adapter.Undefined, [platformObject, call]);
-        Agent.CallableWrapperTargets.AddOrUpdate(proxy, target);
-        return proxy;
     }
 
     /// <summary>Returns whether a .NET object is a value of the engine (see <see cref="IJsAdapter{TValue}.IsValue"/>).</summary>
@@ -1442,6 +1396,23 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         }
 
         throw CreateTypeError($"Illegal invocation: 'this' does not implement interface {binding.Name}");
+    }
+
+    /// <summary>
+    /// Returns the global object of the <c>this</c> value of a member of WindowOrWorkerGlobalScope implemented by hand, with
+    /// the security check of the members of a Window (https://html.spec.whatwg.org/multipage/nav-history-apis.html#integration-with-idl).
+    /// </summary>
+    internal GlobalScope ThisGlobalScope(TValue thisValue)
+    {
+        if (Unwrap(ThisOrGlobal(thisValue)) is not GlobalScope global)
+            throw CreateTypeError("Illegal invocation: 'this' does not implement interface WindowOrWorkerGlobalScope");
+
+        if (global is Dom.Window)
+        {
+            CheckCrossOriginAccess(global);
+        }
+
+        return global;
     }
 
     /// <summary>
@@ -1948,13 +1919,18 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     {
         Adapter.DefineLazyDataProperty(Global, Key(name), () => Adapter.RunInRealm(EngineRealm, () =>
         {
-            var function = Adapter.CreateFunction(name, 0, (_, arguments) =>
+            TValue? function = null;
+            function = Adapter.CreateConstructor(name, 0, (arguments, newTarget) =>
             {
+                if (Adapter.IsUndefined(newTarget))
+                    throw CreateTypeError($"Failed to construct '{name}': Please use the 'new' operator");
+
                 var previousDocument = Document.CurrentGlobalDocumentOrNull;
                 Document.CurrentGlobalDocument = GlobalScope.EnvironmentDocument;
+                TValue result;
                 try
                 {
-                    return factory(this, arguments);
+                    result = factory(this, arguments);
                 }
                 catch (Exception ex) when (!Adapter.TryGetThrownValue(ex, out TValue? _))
                 {
@@ -1964,24 +1940,21 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                 {
                     Document.CurrentGlobalDocumentOrNull = previousDocument;
                 }
+
+                // The prototype of the object is the one of NewTarget (e.g. a subclass)
+                if (!ReferenceEquals(newTarget, function))
+                {
+                    var newTargetPrototype = Adapter.Get(newTarget, Key("prototype"));
+                    if (Adapter.IsObject(newTargetPrototype))
+                    {
+                        Adapter.SetPrototypeOf(result, newTargetPrototype);
+                    }
+                }
+
+                return result;
             });
-            var constructor = EvaluateBuiltIn("""
-                (function (name, factory, prototype) {
-                  'use strict';
-                  let f;
-                  f = { [name]: function (...args) {
-                    if (new.target === undefined) throw new TypeError("Failed to construct '" + name + "': Please use the 'new' operator");
-                    const result = factory(...args);
-                    // The prototype of the object is the one of NewTarget (e.g. a subclass)
-                    const newTargetPrototype = new.target.prototype;
-                    if (new.target !== f && newTargetPrototype !== null && (typeof newTargetPrototype === 'object' || typeof newTargetPrototype === 'function')) Object.setPrototypeOf(result, newTargetPrototype);
-                    return result;
-                  } }[name];
-                  Object.defineProperty(f, 'prototype', { value: prototype, writable: false, enumerable: false, configurable: false });
-                  return f;
-                })
-                """);
-            return Adapter.Call(constructor, Adapter.Undefined, [Key(name), function, GetPrototype(interfaceName)]);
+            Adapter.DefineOwnProperty(function, Key("prototype"), JsPropertyDescriptor<TValue>.Data(GetPrototype(interfaceName), writable: false, enumerable: false, configurable: false));
+            return function;
         }), writable: true, enumerable: false, configurable: true);
     }
 }

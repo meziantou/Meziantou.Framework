@@ -7,9 +7,9 @@
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 24 | 24 | 0 | 100% |
-| [Tentative](#tentative-tests) | 13 | 15 | 0 | 87% |
+| [Tentative](#tentative-tests) | 14 | 15 | 0 | 93% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **37** | **39** | **0** | **95%** |
+| **All** | **38** | **39** | **0** | **97%** |
 
 ## Stable tests
 
@@ -50,7 +50,7 @@
 | [`tentative/yield/yield-abort.any.js`](https://wpt.fyi/results/scheduler/tentative/yield/yield-abort.any.js) | Pass | 6 / 6 |  |  |
 | [`tentative/yield/yield-cross-origin-propagation.html`](https://wpt.fyi/results/scheduler/tentative/yield/yield-cross-origin-propagation.html) | Pass | 1 / 1 |  |  |
 | [`tentative/yield/yield-inherit-abort-across-settled-promises.any.js`](https://wpt.fyi/results/scheduler/tentative/yield/yield-inherit-abort-across-settled-promises.any.js) | Pass | 16 / 16 |  |  |
-| [`tentative/yield/yield-inherit-across-promises.any.js`](https://wpt.fyi/results/scheduler/tentative/yield/yield-inherit-across-promises.any.js) | Fail | 10 / 16 | NOT IMPLEMENTED | the scheduling state of a task is not attached to the job callbacks (HostMakeJobCallback and HostCallJobCallback), so the continuation of an `await` of a promise settled by a timer or a fetch task runs without the state of the task, and the `yield()` that follows is a `user-visible` continuation |
+| [`tentative/yield/yield-inherit-across-promises.any.js`](https://wpt.fyi/results/scheduler/tentative/yield/yield-inherit-across-promises.any.js) | Pass | 16 / 16 |  |  |
 | [`tentative/yield/yield-inherit-across-settled-promises.any.js`](https://wpt.fyi/results/scheduler/tentative/yield/yield-inherit-across-settled-promises.any.js) | Pass | 18 / 18 |  |  |
 | [`tentative/yield/yield-priority-idle-callbacks.html`](https://wpt.fyi/results/scheduler/tentative/yield/yield-priority-idle-callbacks.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `requestIdleCallback()` (Cooperative Scheduling of Background Tasks), whose callbacks have the `background` scheduling state |
 | [`tentative/yield/yield-priority-posttask.any.js`](https://wpt.fyi/results/scheduler/tentative/yield/yield-priority-posttask.any.js) | Pass | 6 / 6 |  |  |

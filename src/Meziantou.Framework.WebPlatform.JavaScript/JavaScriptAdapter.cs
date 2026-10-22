@@ -193,6 +193,16 @@ internal readonly struct JavaScriptAdapter(JavaScriptAdapterState state) : IJsAd
         }, runInCallerRealm: true);
     }
 
+    public object CreateConstructor(string name, int length, JsHostConstructor<object> constructor)
+    {
+        ArgumentNullException.ThrowIfNull(constructor);
+        return Realm.CreateConstructor(name, length, (_, arguments, newTarget) =>
+        {
+            using var bindingArguments = new BindingArguments(arguments);
+            return ToJs(constructor(bindingArguments.Span, newTarget is null ? UndefinedValue.Instance : newTarget));
+        });
+    }
+
     public object Call(object function, object thisValue, ReadOnlySpan<object> arguments)
     {
         using var engineArguments = new EngineArguments(arguments);
@@ -210,6 +220,24 @@ internal readonly struct JavaScriptAdapter(JavaScriptAdapterState state) : IJsAd
         var prototypeObject = prototype as JsObject;
         return handler is null ? new JavaScriptPlatformObject(prototypeObject, target) : new JavaScriptLegacyPlatformObject(prototypeObject, target, handler);
     }
+
+    public object? CreateCrossOriginPlatformObject(object prototype, object target, IJsCrossOriginObjectHandler<object> handler) => new JavaScriptCrossOriginPlatformObject(Engine, prototype as JsObject, target, handler);
+
+    public object? CreateWindowProxy(IJsWindowProxyHandler<object> handler)
+    {
+        using var scope = Engine.Enter();
+        return new JavaScriptWindowProxy(Engine, handler);
+    }
+
+    public bool TrySetGlobalThis(object realm, object thisValue)
+    {
+        using var scope = Engine.Enter();
+        ((JsRealm)realm).SetGlobalThis((JsObject)thisValue);
+        return true;
+    }
+
+    public object CreateHtmlDdaPlatformObject(object prototype, object target, IJsHostObjectHandler<object> handler, JsHostFunction<object> call) =>
+        new JavaScriptHtmlDdaPlatformObject(prototype as JsObject, target, handler, call);
 
     public bool TryGetPlatformObject(object value, [NotNullWhen(true)] out object? target)
     {
@@ -465,7 +493,7 @@ internal class JavaScriptPlatformObject(JsObject? prototype, object target, bool
 /// The JavaScript object of a legacy platform object (https://webidl.spec.whatwg.org/#es-legacy-platform-objects): a host
 /// exotic object whose internal methods call the handler first.
 /// </summary>
-internal sealed class JavaScriptLegacyPlatformObject(JsObject? prototype, object target, IJsHostObjectHandler<object> handler) : JavaScriptPlatformObject(prototype, target, hasOrdinaryInternalMethods: false)
+internal class JavaScriptLegacyPlatformObject(JsObject? prototype, object target, IJsHostObjectHandler<object> handler) : JavaScriptPlatformObject(prototype, target, hasOrdinaryInternalMethods: false)
 {
     protected override bool GetOwnPropertyCore(JsPropertyKey key, out JsPropertyDescriptor descriptor)
     {
@@ -520,5 +548,28 @@ internal sealed class JavaScriptLegacyPlatformObject(JsObject? prototype, object
 
         result.AddRange(ordinaryKeys);
         return result;
+    }
+}
+
+/// <summary>
+/// The JavaScript object of <c>document.all</c> (https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#the-htmlallcollection-interface):
+/// a legacy platform object with a [[Call]] internal method and an [[IsHTMLDDA]] internal slot.
+/// </summary>
+internal sealed class JavaScriptHtmlDdaPlatformObject : JavaScriptLegacyPlatformObject
+{
+    private readonly JsHostFunction<object> _call;
+
+    public JavaScriptHtmlDdaPlatformObject(JsObject? prototype, object target, IJsHostObjectHandler<object> handler, JsHostFunction<object> call)
+        : base(prototype, target, handler)
+    {
+        _call = call;
+        HasCallInternalMethod = true;
+        IsHtmlDdaObject = true;
+    }
+
+    protected override JsValue CallCore(JsValue thisValue, ReadOnlySpan<JsValue> arguments)
+    {
+        using var bindingArguments = new BindingArguments(arguments);
+        return ToJs(_call(ToObject(thisValue), bindingArguments.Span));
     }
 }

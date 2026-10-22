@@ -2888,12 +2888,7 @@
     "total": 1
   },
   "content-security-policy/securitypolicyviolation/source-file.html": {
-    "total": 17,
-    "failures": {
-      "Basic WS URL": "FAIL",
-      "Basic WSS URL": "FAIL",
-      "Query": "FAIL"
-    }
+    "total": 17
   },
   "content-security-policy/securitypolicyviolation/style-sample-no-opt-in.html": {
     "total": 2

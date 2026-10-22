@@ -45,6 +45,16 @@ public class JsHostObject : JsObject
         set => Flags = value ? Flags | ObjectFlags.IsHtmlDda : Flags & ~ObjectFlags.IsHtmlDda;
     }
 
+    /// <summary>
+    /// Gets or sets whether the object has a [[Call]] internal method, implemented by <see cref="CallCore"/> (e.g. the legacy
+    /// caller of <c>document.all</c>): typeof is "function" unless it is an [[IsHTMLDDA]] object. It has no [[Construct]].
+    /// </summary>
+    public bool HasCallInternalMethod
+    {
+        get => IsCallable;
+        set => Flags = value ? Flags | ObjectFlags.Callable : Flags & ~ObjectFlags.Callable;
+    }
+
     /// <summary>Gets or sets whether the prototype of the object cannot be changed (an immutable prototype exotic object, e.g. <c>Object.prototype</c> or a <c>Window</c>).</summary>
     public bool HasImmutablePrototype { get; set; }
 
@@ -98,6 +108,9 @@ public class JsHostObject : JsObject
 
     /// <summary>[[OwnPropertyKeys]]</summary>
     protected virtual IReadOnlyList<JsPropertyKey> OwnPropertyKeysCore() => OrdinaryOwnPropertyKeys();
+
+    /// <summary>[[Call]], when <see cref="HasCallInternalMethod"/> is true. It runs in the realm of the caller.</summary>
+    protected virtual JsValue CallCore(JsValue thisValue, ReadOnlySpan<JsValue> arguments) => ThrowHelper.ThrowTypeError<JsValue>("object is not a function");
 
     // ------------------------------------------------------------------------------------------------------------------
     // Ordinary internal methods
@@ -168,6 +181,14 @@ public class JsHostObject : JsObject
     internal sealed override bool Set(in PropertyKey key, JsValue value, JsValue receiver) => SetCore(new JsPropertyKey(key), value, receiver);
 
     internal sealed override bool Delete(in PropertyKey key) => DeleteCore(new JsPropertyKey(key));
+
+    internal sealed override JsValue Call(JsValue thisValue, ReadOnlySpan<JsValue> arguments)
+    {
+        if (!IsCallable)
+            return ThrowHelper.ThrowTypeError<JsValue>("object is not a function");
+
+        return CallCore(thisValue, arguments);
+    }
 
     internal sealed override List<PropertyKey> OwnPropertyKeys()
     {

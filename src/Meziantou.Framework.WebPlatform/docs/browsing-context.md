@@ -272,16 +272,22 @@ disposed. `BrowsingContext.IsAuxiliary` and `BrowsingContext.Opener` expose it f
   [Reporting API](#reporting-api)): a response blocked by the `Cross-Origin-Resource-Policy` check (type `corp`, also for
   the opaque responses of `Cache.match()`), and a document or a dedicated worker without a compatible embedder policy
   (type `navigation` or `worker initialization`, reported to the container document or to the owner).
-- The window of a browsing context is its `WindowProxy` for the scripts of the other windows (e.g. the value returned by
-  `window.open()`, `iframe.contentWindow`, `event.source`): one object per browsing context, which stays the same when
-  the browsing context navigates. For a cross-origin caller, only the cross-origin properties (`location`, `postMessage`,
-  `closed`, `close()`, `frames`, `parent`, `top`, `opener`, the child windows...) are accessible, the others throw a
-  `SecurityError`, and its prototype is null. For the scripts of the window itself, the window is its global object
-  (the engines have no global `this` distinct from the global object, so `window === this` at the top level of a script).
+- The window of a browsing context is its `WindowProxy` (https://html.spec.whatwg.org/multipage/nav-history-apis.html#the-windowproxy-exotic-object),
+  for every script, including the scripts of the window itself (`window`, `self`, `globalThis` and the `this` of the
+  global code are the `WindowProxy`, the global object of the realm is the `Window`): one object per browsing context,
+  which stays the same when the browsing context navigates (e.g. the value returned by `window.open()`,
+  `iframe.contentWindow`, `event.source`). Its indexed properties are the windows of the child navigables (read-only,
+  they cannot be defined or deleted), it cannot be made non-extensible, and its prototype cannot be changed. For a
+  cross-origin caller, only the cross-origin properties (`location`, `postMessage`, `closed`, `close()`, `frames`,
+  `parent`, `top`, `opener`, the child windows...) are accessible, the others throw a `SecurityError`, and its prototype is
+  null. The functions and the accessors of the cross-origin properties are created for each realm that reads them
+  (https://html.spec.whatwg.org/multipage/nav-history-apis.html#crossoriginpropertydescriptormap): they have the
+  `Function.prototype` of the caller, and they run the steps of the IDL member even when the window replaced it. The
+  `Location` objects are cross-origin objects too (only `href` can be set, and `replace()` called, cross-origin); as in
+  the browsers, their `[LegacyUnforgeable]` members stay non-configurable for the same-origin callers (the
+  specification reports the members of [[DefaultProperties]] as configurable).
   The `WindowProxy` of a discarded browsing context (a removed iframe, a closed popup) keeps its last window
-  (`contentWindow.self === contentWindow` still holds, `closed` is true). The global object is an ordinary object: for
-  the scripts of the window itself, its indexed properties are configurable accessor properties, it can be made
-  non-extensible, and its prototype can be changed, unlike the `WindowProxy` that the other realms use.
+  (`contentWindow.self === contentWindow` still holds, `closed` is true).
 
 The history traversal (`history.back()`, `history.go()`) loads the URL of an entry of another document again (there is
 no back/forward cache), and the new document replaces the document of the entry.
@@ -2128,17 +2134,13 @@ context.EventLoop.RunUntilIdle();
   abort source (the promise is rejected when the signal is aborted); elsewhere it is a `user-visible` continuation.
   The state is the one of the scheduler that posted the task: a task of another window that calls `yield()` of this
   window inherits nothing.
-- **Propagation of the scheduling state.** The specification attaches the state to the promise reactions when they are
-  created (HostMakeJobCallback) and restores it when they run (HostCallJobCallback). The script engine implements these
-  hooks for the incumbent settings object and the active script, but the scheduling state of a task is not attached to
-  the job callbacks yet, so: the state of a task is set while its callback and the microtasks of its microtask checkpoint
-  run; the microtasks of `queueMicrotask()` and the reactions created with `then()` (and `catch()`, `finally()`,
-  `Promise.all()`...: a built-in function replaces `Promise.prototype.then`, once a scheduler was used in the event
-  loop) restore the state they were created with; a continuation of `yield()` restores the state that `yield()`
-  inherited. The reactions of `await` are created by the engine: an `await` of a promise that another task settles
-  (a timer, a fetch) continues with the state of that task, i.e. without state in most cases, and the `yield()` that
-  follows has the default priority and no abort source
-  (`scheduler/tentative/yield/yield-inherit-across-promises.any.js` fails).
+- **Propagation of the scheduling state.** The state of a task is set while its callback and the microtasks of its
+  microtask checkpoint run. The promise reactions capture the state of the event loop when they are created
+  (HostMakeJobCallback: `then()`, and the reactions that the engine creates for `await`, the async generators...) and
+  restore it when they run (HostCallJobCallback), so an `await` of a promise that another task settles (a timer, a
+  fetch) continues with the state of the code that awaited it. The microtasks of `queueMicrotask()` restore the state
+  they were created with, and a continuation of `yield()` restores the state that `yield()` inherited. The reactions
+  capture nothing until a scheduler is used by a global object of the script engine.
 - **Documents that are not fully active.** The tasks of the scheduler of a document that is no longer fully active
   (e.g. its `iframe` was removed) never run, and `postTask()` and `yield()` reject with a `NotSupportedError`, as in the
   browsers.

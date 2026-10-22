@@ -67,10 +67,10 @@ public sealed partial class JsEngine
     internal void EnqueuePromiseJob(JsJobAction action, object? state, JsValue argument, JsRealm? realm) => HostHooks.EnqueuePromiseJob(this, new JsJob(action, state, argument, realm));
 
     /// <summary>HostEnqueueGenericJob(job, realm): it can be called from any thread.</summary>
-    internal void EnqueueGenericJob(JsJobAction action, object? state, JsValue argument, JsRealm realm) => HostHooks.EnqueueGenericJob(this, new JsJob(action, state, argument, realm));
+    internal void EnqueueGenericJob(JsJobAction action, object? state, JsValue argument, JsRealm realm) => HostHooks.EnqueueGenericJob(this, new JsHostJob(this, new JsJob(action, state, argument, realm)));
 
     /// <summary>HostEnqueueTimeoutJob(timeoutJob, realm, milliseconds)</summary>
-    internal void EnqueueTimeoutJob(JsJobAction action, object? state, JsValue argument, JsRealm realm, TimeSpan delay) => HostHooks.EnqueueTimeoutJob(this, new JsJob(action, state, argument, realm), delay);
+    internal void EnqueueTimeoutJob(JsJobAction action, object? state, JsValue argument, JsRealm realm, TimeSpan delay) => HostHooks.EnqueueTimeoutJob(this, new JsHostJob(this, new JsJob(action, state, argument, realm)), delay);
 
     /// <summary>The default implementation of HostEnqueuePromiseJob: adds the job to the current job queue.</summary>
     internal void EnqueuePromiseJobCore(in JsJob job) => _jobQueue.PromiseJobs.Enqueue(job);
@@ -106,6 +106,9 @@ public sealed partial class JsEngine
 
     /// <summary>HostCallJobCallback(jobCallback, V, argumentsList)</summary>
     internal JsValue CallJobCallback(in JsJobCallback jobCallback, JsValue thisValue, ReadOnlySpan<JsValue> arguments) => HostHooks.CallJobCallback(this, jobCallback, thisValue, arguments);
+
+    /// <summary>HostMakeJobCallback for a handler created by the engine (see <see cref="JsHost.MakeContinuationHostDefined"/>).</summary>
+    internal object? MakeContinuationHostDefined() => HostHooks.MakeContinuationHostDefined(this);
 
     /// <summary>HostPromiseRejectionTracker(promise, operation)</summary>
     internal void TrackPromiseRejection(JsPromise promise, JsPromiseRejectionOperation operation) => HostHooks.PromiseRejectionTracker(this, promise, operation);
@@ -153,7 +156,7 @@ public sealed partial class JsEngine
         }
     }
 
-    private void RunJob(in JsJob job)
+    internal void RunJob(in JsJob job)
     {
         var previousRealm = CurrentRealm;
         if (job.Realm is not null)

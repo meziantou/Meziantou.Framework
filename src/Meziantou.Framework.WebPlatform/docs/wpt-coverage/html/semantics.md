@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 2,046 | 2,174 | 31 | 95% |
+| [Stable](#stable-tests) | 2,047 | 2,174 | 31 | 96% |
 | [Tentative](#tentative-tests) | 57 | 197 | 31 | 34% |
 | [Reftests](#reftests) | 310 | 418 | 61 | 87% |
-| **All** | **2,413** | **2,789** | **123** | **91%** |
+| **All** | **2,414** | **2,789** | **123** | **91%** |
 
 ## Stable tests
 
@@ -1437,7 +1437,7 @@
 | [`links/links-created-by-a-and-area-elements/html-hyperlink-element-utils-href.html`](https://wpt.fyi/results/html/semantics/links/links-created-by-a-and-area-elements/html-hyperlink-element-utils-href.html) | Pass | 2 / 2 |  |  |
 | [`links/links-created-by-a-and-area-elements/htmlanchorelement_attribute-getter-setter.html`](https://wpt.fyi/results/html/semantics/links/links-created-by-a-and-area-elements/htmlanchorelement_attribute-getter-setter.html) | Pass | 15 / 15 |  |  |
 | [`links/links-created-by-a-and-area-elements/htmlanchorelement_getter.html`](https://wpt.fyi/results/html/semantics/links/links-created-by-a-and-area-elements/htmlanchorelement_getter.html) | Pass | 10 / 10 |  |  |
-| [`links/links-created-by-a-and-area-elements/htmlanchorelement_noopener.html`](https://wpt.fyi/results/html/semantics/links/links-created-by-a-and-area-elements/htmlanchorelement_noopener.html) | Timeout | 2 / 5 | JS ENGINE | the global `this` of a window is its global object, not its `WindowProxy` (the realms have no global this value distinct from the global object), so the `this` that the navigated popup passes to `opener.target1Loaded()` is not the object returned by `window.open()` and the test lookup throws |
+| [`links/links-created-by-a-and-area-elements/htmlanchorelement_noopener.html`](https://wpt.fyi/results/html/semantics/links/links-created-by-a-and-area-elements/htmlanchorelement_noopener.html) | Pass | 5 / 5 |  |  |
 | [`links/links-created-by-a-and-area-elements/non-parsable-url-getter-setter.window.js`](https://wpt.fyi/results/html/semantics/links/links-created-by-a-and-area-elements/non-parsable-url-getter-setter.window.js) | Pass | 38 / 38 |  |  |
 | [`links/links-created-by-a-and-area-elements/non-special-opaque-path-url-getter-setter.window.js`](https://wpt.fyi/results/html/semantics/links/links-created-by-a-and-area-elements/non-special-opaque-path-url-getter-setter.window.js) | Pass | 38 / 38 |  |  |
 | [`links/links-created-by-a-and-area-elements/non-special-url-getter-setter.window.js`](https://wpt.fyi/results/html/semantics/links/links-created-by-a-and-area-elements/non-special-url-getter-setter.window.js) | Pass | 38 / 38 |  |  |

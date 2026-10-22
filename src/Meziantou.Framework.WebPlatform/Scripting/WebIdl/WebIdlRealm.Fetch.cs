@@ -79,7 +79,16 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                 }
             }));
 
-            Define("isWindow", 1, (_, args) => adapter.FromBoolean(Adapter.IsObject(args[0]) && Unwrap(args[0]) is Window));
+            // Whether the this value of fetch() is a window, with the security check of the members of a Window (a cross-origin
+            // window throws a "SecurityError" DOMException)
+            Define("isWindow", 1, (_, args) =>
+            {
+                if (!Adapter.IsObject(args[0]) || Unwrap(args[0]) is not Window window)
+                    return adapter.FromBoolean(false);
+
+                CheckCrossOriginAccess(window);
+                return adapter.FromBoolean(true);
+            });
             Define("isAbortSignal", 1, (_, args) => adapter.FromBoolean(Adapter.IsObject(args[0]) && Unwrap(args[0]) is AbortSignal));
             Define("isHeaders", 1, (_, args) => adapter.FromBoolean(Adapter.IsObject(args[0]) && Unwrap(args[0]) is Headers));
             Define("isBlob", 1, (_, args) => adapter.FromBoolean(Adapter.IsObject(args[0]) && Unwrap(args[0]) is Blob));

@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 224 | 283 | 4 | 80% |
+| [Stable](#stable-tests) | 225 | 283 | 4 | 81% |
 | [Tentative](#tentative-tests) | 0 | 11 | 0 | 0% |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
-| **All** | **225** | **295** | **4** | **77%** |
+| **All** | **226** | **295** | **4** | **78%** |
 
 ## Stable tests
 
@@ -206,7 +206,7 @@
 | [`service-worker/referer.https.html`](https://wpt.fyi/results/service-workers/service-worker/referer.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/referrer-policy-header.https.html`](https://wpt.fyi/results/service-workers/service-worker/referrer-policy-header.https.html) | Pass | 3 / 3 |  |  |
 | [`service-worker/referrer-toplevel-script-fetch.https.html`](https://wpt.fyi/results/service-workers/service-worker/referrer-toplevel-script-fetch.https.html) | Pass | 2 / 2 |  |  |
-| [`service-worker/register-closed-window.https.html`](https://wpt.fyi/results/service-workers/service-worker/register-closed-window.https.html) | Error | 1 / 1 | BUG | `register()` is rejected (an InvalidStateError) in the closed window and the subtest passes, but the iframe of the test does not handle the rejection and its `unhandledrejection` event is fired at the window of the test (a harness error) instead of the iframe |
+| [`service-worker/register-closed-window.https.html`](https://wpt.fyi/results/service-workers/service-worker/register-closed-window.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/register-default-scope.https.html`](https://wpt.fyi/results/service-workers/service-worker/register-default-scope.https.html) | Pass | 3 / 3 |  |  |
 | [`service-worker/register-same-scope-different-script-url.https.html`](https://wpt.fyi/results/service-workers/service-worker/register-same-scope-different-script-url.https.html) | Pass | 5 / 5 |  |  |
 | [`service-worker/register-wait-forever-in-install-worker.https.html`](https://wpt.fyi/results/service-workers/service-worker/register-wait-forever-in-install-worker.https.html) | Pass | 1 / 1 |  |  |

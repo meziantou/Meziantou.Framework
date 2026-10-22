@@ -114,6 +114,50 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void SetGlobalThis()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        var thisValue = realm.CreateObject();
+        realm.SetGlobalThis(thisValue);
+        realm.GlobalObject.SetProperty("thisValue", thisValue);
+        Assert.Same(thisValue, realm.GlobalThis.TryGetObject());
+
+        // The global object keeps the global bindings: only the this value of the global code changes
+        Assert.Equal("true,true,true,true,true,true,false,1,undefined", realm.Execute("""
+            var declared = 1;
+            function sloppy() { return this; }
+            function strict() { 'use strict'; return this; }
+            [
+              this === thisValue, globalThis === thisValue, sloppy() === thisValue, (0, eval)('this') === thisValue,
+              Function('return this')() === thisValue, (() => this)() === thisValue, strict() === thisValue,
+              declared, typeof thisValue.declared,
+            ].join()
+            """).AsString());
+
+        Assert.True(realm.GlobalObject.TryGetOwnProperty("globalThis", out var descriptor));
+        Assert.Same(thisValue, descriptor.Value.TryGetObject());
+        Assert.True(descriptor.Writable);
+        Assert.False(descriptor.Enumerable);
+        Assert.True(descriptor.Configurable);
+    }
+
+    [Theory]
+    [InlineData("0", true, 0u)]
+    [InlineData("4294967294", true, 4294967294u)]
+    [InlineData("4294967295", false, 0u)]
+    [InlineData("01", false, 0u)]
+    [InlineData("-0", false, 0u)]
+    [InlineData("a", false, 0u)]
+    public void PropertyKey_TryGetArrayIndex(string name, bool isIndex, uint expectedIndex)
+    {
+        var key = new JsPropertyKey(name);
+        Assert.Equal(isIndex, key.TryGetArrayIndex(out var index));
+        Assert.Equal(expectedIndex, index);
+    }
+
+    [Fact]
     public void ReserveProperties()
     {
         using var engine = new JsEngine();
@@ -275,6 +319,27 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void HostObjectsCanBeCallable()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        var host = new CallableHostObject(realm.ObjectPrototype);
+        realm.GlobalObject.SetProperty("host", host);
+        Assert.Equal("object", realm.Execute("typeof host").AsString());
+        Assert.Throws<JsException>(() => realm.Execute("host()"));
+
+        host.HasCallInternalMethod = true;
+        Assert.True(host.IsCallable);
+        Assert.False(host.IsConstructor);
+        Assert.Equal("function,called 2,called 1,true", realm.Execute("typeof host + ',' + host(1, 2) + ',' + Reflect.apply(host, null, ['x']) + ',' + (Function.prototype.toString.call(host) === 'function () { [native code] }')").AsString());
+        Assert.Throws<JsException>(() => realm.Execute("new host()"));
+
+        host.IsHtmlDdaObject = true;
+        Assert.Equal("undefined,false,true,called 0", realm.Execute("typeof host + ',' + Boolean(host) + ',' + (host == undefined) + ',' + host()").AsString());
+    }
+
+    [Fact]
     public void BuffersShareTheirMemory()
     {
         using var engine = new JsEngine();
@@ -325,6 +390,22 @@ public sealed class JsEngineTests
         Assert.Equal([JsPromiseRejectionOperation.Reject, JsPromiseRejectionOperation.Handle], host.Rejections);
         Assert.Equal(["IndirectEval|1 + 1", "Function|return a"], host.Compilations.Select(c => c.Replace("DirectEval", "IndirectEval", StringComparison.Ordinal)));
         Assert.Equal(1, host.Callbacks);
+    }
+
+    [Fact]
+    public void HostHooks_AwaitContinuationRunsInTheRealmOfTheAsyncFunction()
+    {
+        // The awaited promise is rejected by another realm: the promise of the async function is rejected in its own realm
+        var host = new RecordingHost();
+        using var engine = new JsEngine(new JsEngineOptions { Host = host });
+        var otherRealm = engine.CreateRealm();
+        var functionRealm = engine.CreateRealm();
+        functionRealm.GlobalObject.SetProperty("p", otherRealm.Execute("var reject; new Promise((_, r) => reject = r)"));
+        functionRealm.Execute("(async () => { await p; })();");
+        otherRealm.Execute("reject(1);");
+        engine.RunJobs();
+        Assert.Equal(JsPromiseRejectionOperation.Reject, host.Rejections[^1]);
+        Assert.Same(functionRealm, host.RejectionRealms[^1]);
     }
 
     [Fact]
@@ -618,6 +699,11 @@ public sealed class JsEngineTests
         }
     }
 
+    private sealed class CallableHostObject(JsObject prototype) : JsHostObject(prototype)
+    {
+        protected override JsValue CallCore(JsValue thisValue, ReadOnlySpan<JsValue> arguments) => "called " + arguments.Length.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
+
     private sealed class TrustedCodeHost : JsHost
     {
         public override string? GetCodeForEval(JsEngine engine, JsValue argument)
@@ -633,11 +719,17 @@ public sealed class JsEngineTests
     {
         public List<JsPromiseRejectionOperation> Rejections { get; } = [];
 
+        public List<JsRealm?> RejectionRealms { get; } = [];
+
         public List<string> Compilations { get; } = [];
 
         public int Callbacks { get; private set; }
 
-        public override void PromiseRejectionTracker(JsEngine engine, JsObject promise, JsPromiseRejectionOperation operation) => Rejections.Add(operation);
+        public override void PromiseRejectionTracker(JsEngine engine, JsObject promise, JsPromiseRejectionOperation operation)
+        {
+            Rejections.Add(operation);
+            RejectionRealms.Add(engine.CurrentRealm);
+        }
 
         public override void EnsureCanCompileStrings(JsEngine engine, JsRealm realm, IReadOnlyList<string> parameterStrings, string bodyString, string codeString, JsCompilationType compilationType, IReadOnlyList<JsValue> parameterArgs, JsValue bodyArg)
             => Compilations.Add(compilationType + "|" + bodyString);

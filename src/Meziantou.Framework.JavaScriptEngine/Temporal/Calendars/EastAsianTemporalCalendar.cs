@@ -192,6 +192,46 @@ internal sealed class EastAsianTemporalCalendar : NonIsoTemporalCalendar
         return yearData.NewYear + yearData.DaysBeforeMonth(month) + day - 1;
     }
 
+    /// <summary>
+    /// Gets the index of the first month of a year: the number of mean synodic months between the new moon of
+    /// 2000-01-06 and the new year, rounded. The new moons of the data are much closer than half a month to the mean
+    /// ones, and every year ends on the new year of the next year, so the months between two years are the difference
+    /// of their indexes.
+    /// </summary>
+    private long MonthIndex(long year)
+    {
+        var difference = (GetYear(year).NewYear * MillisecondsPerDay) - UtcNewMoon;
+        return TemporalMath.FloorDivide(difference + (MeanSynodicMonthLength / 2), MeanSynodicMonthLength);
+    }
+
+    protected override long MonthsBetweenYears(long fromYear, long toYear) => MonthIndex(toYear) - MonthIndex(fromYear);
+
+    protected override (long Year, int Month) AddMonths(long year, int month, long months)
+    {
+        if (Math.Abs(months) > 2 * 13 * MaxYear)
+            return ThrowOutOfRange<(long, int)>();
+
+        // The ISO year of the mean new moon of the month is the year of the month or the next one (a year starts in
+        // January or February), then step to the year that contains the month
+        var index = MonthIndex(year) + month - 1 + months;
+        var newMoon = UtcNewMoon + (index * MeanSynodicMonthLength);
+        var resolvedYear = IsoYear(TemporalMath.FloorDivide(newMoon, MillisecondsPerDay));
+        var yearIndex = MonthIndex(resolvedYear);
+        while (yearIndex > index)
+        {
+            resolvedYear--;
+            yearIndex = MonthIndex(resolvedYear);
+        }
+
+        while (yearIndex + MonthsInYear(resolvedYear) <= index)
+        {
+            yearIndex += MonthsInYear(resolvedYear);
+            resolvedYear++;
+        }
+
+        return (CheckYear(resolvedYear), (int)(index - yearIndex) + 1);
+    }
+
     public override int MonthsInYear(long year) => GetYear(year).MonthsInYear;
 
     public override int DaysInMonth(long year, int month) => GetYear(year).DaysInMonth(month);

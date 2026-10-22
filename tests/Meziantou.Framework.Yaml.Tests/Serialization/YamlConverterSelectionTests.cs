@@ -223,6 +223,21 @@ public sealed class YamlConverterSelectionTests
         AssertNullableValuesUsePlus1000Converter(options);
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void NonGenericRuntimeConverterForUnderlyingType_HandlesNullableValues(bool useSourceGeneration, bool useFactory)
+    {
+        YamlConverter converter = useFactory ? new UntypedPlus1000Int32ConverterFactory() : new UntypedPlus1000Int32Converter();
+        var options = useSourceGeneration
+            ? NullableRuntimeConverterYamlContext.Default.CreateOptions(o => o with { Converters = [converter] })
+            : new YamlSerializerOptions { Converters = [converter] };
+
+        AssertNullableValuesUsePlus1000Converter(options);
+    }
+
     private static void AssertNullableValuesUsePlus1000Converter(YamlSerializerOptions options)
     {
         Assert.Equal("null\n", YamlSerializer.Serialize<int?>(null, options));
@@ -353,6 +368,27 @@ internal sealed class Plus1000Int32Converter : YamlConverter<int>
     }
 
     public override void Write(YamlWriter writer, int value) => writer.WriteScalar(value + 1000);
+}
+
+internal sealed class UntypedPlus1000Int32Converter : YamlConverter
+{
+    public override bool CanConvert(Type typeToConvert) => typeToConvert == typeof(int);
+
+    public override object? Read(YamlReader reader, Type typeToConvert)
+    {
+        var value = int.Parse(reader.ScalarValue!, CultureInfo.InvariantCulture);
+        reader.Skip();
+        return value + 1000;
+    }
+
+    public override void Write(YamlWriter writer, object? value) => writer.WriteScalar((int)value! + 1000);
+}
+
+internal sealed class UntypedPlus1000Int32ConverterFactory : YamlConverterFactory
+{
+    public override bool CanConvert(Type typeToConvert) => typeToConvert == typeof(int);
+
+    public override YamlConverter CreateConverter(Type typeToConvert, YamlSerializerOptions options) => new UntypedPlus1000Int32Converter();
 }
 
 internal sealed class NullableInt32Holder

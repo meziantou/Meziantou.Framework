@@ -318,8 +318,9 @@ internal static class DateTimeFormatter
                         _ => "eras/eraAbbr/",
                     };
 
+                    var eraData = time.IsGregorianEra ? data.Gregorian : data;
                     var era = time.Era.ToString(CultureInfo.InvariantCulture);
-                    return data.GetString(path + era) ?? data.GetString("eras/eraAbbr/" + era) ?? era;
+                    return eraData.GetString(path + era) ?? eraData.GetString("eras/eraAbbr/" + era) ?? era;
                 }
 
             case 'y':

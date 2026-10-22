@@ -27,6 +27,9 @@ internal struct DateTimeLocalTime
     /// <summary>Gets or sets the index of the era in the CLDR data of the calendar, or -1 when the calendar has no era.</summary>
     public int Era { get; set; }
 
+    /// <summary>Gets or sets whether <see cref="Era"/> is an era of the Gregorian calendar (the eras a calendar inherits: calendarData inheritEras).</summary>
+    public bool IsGregorianEra { get; set; }
+
     /// <summary>Gets or sets the year of the era (or the year of the calendar when it has no era).</summary>
     public long Year { get; set; }
 
@@ -189,26 +192,25 @@ internal static class DateTimeLocalTimeCalculator
         }
     }
 
-    // The eras of the Japanese calendar before Meiji 6 are the historical eras of CLDR (as ICU), from their first day
+    // The eras of the Japanese calendar before Meiji 6 are the eras of CLDR (as ICU), from their first day. The dates
+    // before the first era of CLDR (Meiji since CLDR 49, Taika before) use the Gregorian eras (inheritEras).
     private static void SetJapaneseEra(ref DateTimeLocalTime result, CalendarDate date, long epochDays)
     {
-        var eras = GetJapaneseEras();
-        if (date.Era is "ce" or "bce" && eras.Length > 0)
+        if (date.Era is "ce" or "bce")
         {
-            var index = eras[0].Index;
-            var start = eras[0].StartDays;
+            var eras = GetJapaneseEras();
             for (var i = eras.Length - 1; i >= 0; i--)
             {
                 if (epochDays >= eras[i].StartDays)
                 {
-                    index = eras[i].Index;
-                    start = eras[i].StartDays;
-                    break;
+                    result.Era = eras[i].Index;
+                    result.Year = date.Year - CalendarMath.YearFromDays(eras[i].StartDays) + 1;
+                    return;
                 }
             }
 
-            result.Era = index;
-            result.Year = date.Year - CalendarMath.YearFromDays(start) + 1;
+            result.Era = GetEraIndex("gregory", date.Era);
+            result.IsGregorianEra = true;
             return;
         }
 

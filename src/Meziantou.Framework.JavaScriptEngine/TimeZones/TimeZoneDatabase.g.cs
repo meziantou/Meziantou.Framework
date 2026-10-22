@@ -8,5 +8,5 @@ internal sealed partial class TimeZoneDatabase
     public const string EmbeddedTzdataVersion = "2026e";
 
     /// <summary>The release of CLDR whose windowsZones.xml is embedded in tzdb.bin.</summary>
-    public const string EmbeddedCldrVersion = "release-48-2";
+    public const string EmbeddedCldrVersion = "release-49";
 }

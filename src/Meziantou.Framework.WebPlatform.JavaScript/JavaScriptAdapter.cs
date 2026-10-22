@@ -355,6 +355,16 @@ internal readonly struct JavaScriptAdapter(JavaScriptAdapterState state) : IJsAd
 
     public bool TrySetErrorStack(object error, string stack) => error is JsObject obj && obj.TrySetErrorStack(stack);
 
+    public object? GetAbstractModuleSource() => Realm.AbstractModuleSource;
+
+    public void SetModuleSourceClassName(object obj, string className)
+    {
+        if (obj is JsHostObject hostObject)
+        {
+            hostObject.ModuleSourceClassName = className;
+        }
+    }
+
     public bool TryGetBufferSource(object value, out WebIdlBufferKind kind, out bool isShared, out Memory<byte> bytes)
     {
         if (value is JsObject obj && JsBinaryData.TryGetBufferSource(obj, out var engineKind, out isShared, out bytes))

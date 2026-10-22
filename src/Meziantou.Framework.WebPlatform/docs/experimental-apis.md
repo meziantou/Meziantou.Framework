@@ -145,3 +145,12 @@ The properties of `CssStyleProperties` that the browsers implement but no specif
   because the web-platform-tests still use it. Use `FitTolerance`.
 - `WebkitBoxDirection`: `-webkit-box-direction`, a property of the legacy `-webkit-box` layout that the
   [Compatibility Standard](https://compat.spec.whatwg.org/) does not define.
+
+<a id="WEBPLATEXP0014"></a>
+
+## WEBPLATEXP0014: Source phase imports
+
+`IJsAdapter<TValue>.GetAbstractModuleSource()` and `SetModuleSourceClassName()`: `WebAssembly.Module` extends the
+`%AbstractModuleSource%` intrinsic of the [source phase imports proposal](https://github.com/tc39/proposal-source-phase-imports)
+(TC39), as the [ESM integration of WebAssembly](https://github.com/WebAssembly/esm-integration) defines, and its instances
+are module source objects. Only the script engine adapters implement or call them.

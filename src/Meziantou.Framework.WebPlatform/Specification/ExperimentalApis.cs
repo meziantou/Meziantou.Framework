@@ -50,4 +50,7 @@ internal static class ExperimentalApis
 
     /// <summary>The CSS properties that the browsers implement but no specification defines (e.g. <c>flow-tolerance</c>, the former name of <c>fit-tolerance</c>).</summary>
     public const string NonStandardCssProperties = "WEBPLATEXP0013";
+
+    /// <summary>The source phase imports (https://github.com/tc39/proposal-source-phase-imports) and the module source of <c>WebAssembly.Module</c> (https://github.com/WebAssembly/esm-integration).</summary>
+    public const string SourcePhaseImports = "WEBPLATEXP0014";
 }

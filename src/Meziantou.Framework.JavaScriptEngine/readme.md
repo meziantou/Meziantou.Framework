@@ -3,10 +3,10 @@
 An ECMAScript engine written in .NET: a hand-written parser, a bytecode compiler and an interpreter. It is validated by
 [test262](https://github.com/tc39/test262), the conformance suite of ECMAScript: see
 [the test262 results](../../tests/Meziantou.Framework.JavaScriptEngine.Test262/summary.md). It implements ECMAScript
-2025, ECMA-402 (`Intl`) and `Temporal`, and the stage 3 proposals `import defer` and source phase imports (without
-module sources). It uses no reflection: it is trimming- and Native AOT-compatible, and its results do not depend on the
-globalization settings of the process (the Unicode, time zone and CLDR data are part of the library, and so are the
-word lists of ICU that `Intl.Segmenter` uses for Chinese, Japanese, Thai, Lao, Khmer and Burmese).
+2025, ECMA-402 (`Intl`) and `Temporal`, and the stage 3 proposals `import defer` and source phase imports (the module
+sources are given by the host). It uses no reflection: it is trimming- and Native AOT-compatible, and its results do not
+depend on the globalization settings of the process (the Unicode, time zone and CLDR data are part of the library, and
+so are the word lists of ICU that `Intl.Segmenter` uses for Chinese, Japanese, Thai, Lao, Khmer and Burmese).
 
 It is the script engine of [Meziantou.Framework.WebPlatform](../Meziantou.Framework.WebPlatform/readme.md), through
 [Meziantou.Framework.WebPlatform.JavaScript](../Meziantou.Framework.WebPlatform.JavaScript/readme.md).
@@ -83,6 +83,11 @@ engine.RunJobs();
 Assert.Equal(49, realm.Execute("result").AsNumber());
 ```
 <!-- endref -->
+
+The value of a source phase import (`import source x from` and `import.source()`) is the module source of the module
+(`JsModule.ModuleSource`), set by the module loader: a `JsHostObject` that extends `JsRealm.AbstractModuleSource` and
+whose `ModuleSourceClassName` is set (e.g. `WebAssembly.Module`). The source phase import of a module that has no module
+source, such as a JavaScript module, throws a SyntaxError.
 
 ## Documentation
 

@@ -86,6 +86,23 @@ public sealed class WebAssemblyTests : IDisposable
     }
 
     [Fact]
+    public async Task Module_IsAModuleSource()
+    {
+        var bytes = Wasm("(module)");
+        var result = await RunAsync($$"""
+            async () => {
+              const module = new WebAssembly.Module({{bytes}});
+              const AbstractModuleSource = Object.getPrototypeOf(WebAssembly.Module);
+              const getToStringTag = Object.getOwnPropertyDescriptor(AbstractModuleSource.prototype, Symbol.toStringTag).get;
+              return [AbstractModuleSource.name, typeof globalThis.AbstractModuleSource, Object.getPrototypeOf(WebAssembly.Module.prototype) === AbstractModuleSource.prototype,
+                module instanceof AbstractModuleSource, getToStringTag.call(module), getToStringTag.call({})].join('|');
+            }
+            """);
+
+        Assert.Equal("AbstractModuleSource|undefined|true|true|WebAssembly.Module|", result);
+    }
+
+    [Fact]
     public async Task Compile_RejectsAnInvalidModule()
     {
         var result = await RunAsync("""

@@ -26,6 +26,12 @@ internal enum InterfaceBindingFlags
 
     /// <summary>[SecureContext]: the interface is only exposed in a secure context.</summary>
     SecureContext = 64,
+
+    /// <summary>
+    /// The instances are module source objects (https://tc39.es/proposal-source-phase-imports/#sec-module-source-objects): the
+    /// interface extends %AbstractModuleSource% and the class string is the [[ModuleSourceClassName]] of the instances.
+    /// </summary>
+    ModuleSource = 128,
 }
 
 /// <summary>

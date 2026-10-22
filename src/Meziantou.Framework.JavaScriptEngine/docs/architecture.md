@@ -204,7 +204,10 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
 - `Intl/Locale/LocaleInfo.cs`: the available calendars, collations, currencies, numbering systems and units
   (Intl.supportedValuesOf), and the regional preferences of a locale (calendars, hour cycles, week, time zones).
 - `Intl/NumberFormat/IntlDecimal.cs`: the Intl mathematical values (exact decimal values, with negative zero, NaN and
-  the infinities): from a Number (its exact binary value), a BigInt, or a string (ToIntlMathematicalValue).
+  the infinities): from a Number, a BigInt, or a string (ToIntlMathematicalValue). Since Intl.NumberFormat v3, a Number
+  is converted with Number::toString, so its shortest round-tripping decimal is rounded (`FromNumber`:
+  `(1.005).toLocaleString("en", { maximumFractionDigits: 2 })` is "1.01", as in browsers); RelativeTimeFormat keeps
+  the exact binary value of the spec text (`FromDouble`, ℝ(value)).
   `DigitOptions` is SetNumberFormatDigitOptions and FormatNumericToString (ToRawPrecision, ToRawFixed, the rounding
   modes, increments and priorities): Intl.PluralRules and Intl.NumberFormat share it, and so can the other services
   that format numbers.

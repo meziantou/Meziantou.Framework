@@ -24,7 +24,8 @@ internal enum UnsignedRoundingMode : byte
 /// <summary>
 /// An Intl mathematical value (https://tc39.es/ecma402/#intl-mathematical-value): an exact decimal number
 /// (coefficient \u00D7 10^exponent with its sign, which keeps negative zero), not-a-number, or an infinity. A Number is
-/// converted with its exact binary value, as ToRawPrecision and ToRawFixed require.
+/// converted with its shortest round-tripping decimal where ECMA-402 uses ToIntlMathematicalValue
+/// (<see cref="FromNumber"/>), and with its exact binary value where it uses \u211D(x) (<see cref="FromDouble"/>).
 /// </summary>
 internal readonly struct IntlDecimal
 {
@@ -92,6 +93,48 @@ internal readonly struct IntlDecimal
         }
     }
 
+    /// <summary>
+    /// The value of a Number as ToIntlMathematicalValue computes it: the decimal value of Number::toString(x, 10), the
+    /// shortest decimal that round-trips (0.1 is 0.1, not 0.1000000000000000055511151231257827...).
+    /// </summary>
+    public static IntlDecimal FromNumber(double value)
+    {
+        // NaN, the infinities, the zeros and the integers that are exactly representable have the same value either way
+        if (!double.IsFinite(value) || (Math.Abs(value) < 9007199254740992 && value == Math.Truncate(value)))
+            return FromDouble(value);
+
+        // "R" gives the shortest round-tripping digits (at most 17, so they fit in a ulong), as Number::toString does
+        Span<char> buffer = stackalloc char[32];
+        Math.Abs(value).TryFormat(buffer, out var written, "R", CultureInfo.InvariantCulture);
+        ulong coefficient = 0;
+        var exponent = 0;
+        var fraction = false;
+        for (var i = 0; i < written; i++)
+        {
+            var c = buffer[i];
+            if (char.IsAsciiDigit(c))
+            {
+                coefficient = (coefficient * 10) + (ulong)(c - '0');
+                if (fraction)
+                {
+                    exponent--;
+                }
+            }
+            else if (c == '.')
+            {
+                fraction = true;
+            }
+            else
+            {
+                exponent += int.Parse(buffer[(i + 1)..written], NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
+                break;
+            }
+        }
+
+        return new IntlDecimal(value < 0, coefficient, exponent);
+    }
+
+    /// <summary>The exact binary value of a Number (\u211D(x)).</summary>
     public static IntlDecimal FromDouble(double value)
     {
         if (double.IsNaN(value))

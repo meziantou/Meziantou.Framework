@@ -237,7 +237,7 @@ internal static class NumberFormatBuiltins
     internal static IntlDecimal ToIntlMathematicalValue(JsValue value)
     {
         if (value.IsNumber)
-            return IntlDecimal.FromDouble(value.NumberValue);
+            return IntlDecimal.FromNumber(value.NumberValue);
 
         var primitive = JsOperations.ToPrimitive(value, JsOperations.PreferredType.Number);
         if (primitive.IsBigInt)
@@ -246,11 +246,7 @@ internal static class NumberFormatBuiltins
         if (primitive.IsString)
             return IntlDecimal.Parse(JsOperations.ToString(primitive));
 
-        var x = JsOperations.ToNumber(primitive);
-        if (x == 0 && double.IsNegative(x))
-            return IntlDecimal.FromDouble(x);
-
-        return IntlDecimal.Parse(NumberFormatting.ToString(x));
+        return IntlDecimal.FromNumber(JsOperations.ToNumber(primitive));
     }
 
     /// <summary>get Intl.NumberFormat.prototype.format</summary>

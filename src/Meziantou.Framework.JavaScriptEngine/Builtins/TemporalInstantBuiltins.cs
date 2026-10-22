@@ -5,13 +5,10 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// <summary>Temporal.Instant (https://tc39.es/proposal-temporal/#sec-temporal-instant-objects).</summary>
 internal static class TemporalInstantBuiltins
 {
-    public static JsBuiltinFunction Initialize(Intrinsics intrinsics)
-    {
-        var realm = intrinsics.Realm;
-        var prototype = intrinsics.TemporalInstantPrototype;
-        var constructor = TemporalBuiltinHelpers.CreateConstructor(intrinsics, "Instant", 1, Construct, prototype);
-        realm.DefineMethod(constructor, "from", 1, (_, _, arguments, _) => ToTemporalInstant(Argument(arguments, 0)));
-        realm.DefineMethod(constructor, "fromEpochMilliseconds", 1, (_, _, arguments, _) =>
+    private static readonly BuiltinMethodTable ConstructorMethods =
+    [
+        new("from", 1, (_, _, arguments, _) => ToTemporalInstant(Argument(arguments, 0))),
+        new("fromEpochMilliseconds", 1, (_, _, arguments, _) =>
         {
             var epochMilliseconds = JsOperations.ToNumber(Argument(arguments, 0));
             var milliseconds = BigIntOperations.NumberToBigInt(epochMilliseconds);
@@ -20,31 +17,44 @@ internal static class TemporalInstantBuiltins
                 return ThrowHelper.ThrowRangeError<JsValue>("The epoch milliseconds are outside the range of Temporal.Instant");
 
             return CreateTemporalInstant((Int128)epochNanoseconds);
-        });
-        realm.DefineMethod(constructor, "fromEpochNanoseconds", 1, (_, _, arguments, _) => CreateTemporalInstant(TemporalBuiltinHelpers.ToEpochNanoseconds(Argument(arguments, 0))));
-        realm.DefineMethod(constructor, "compare", 2, (_, _, arguments, _) =>
+        }),
+        new("fromEpochNanoseconds", 1, (_, _, arguments, _) => CreateTemporalInstant(TemporalBuiltinHelpers.ToEpochNanoseconds(Argument(arguments, 0)))),
+        new("compare", 2, (_, _, arguments, _) =>
         {
             var one = ToTemporalInstant(Argument(arguments, 0));
             var two = ToTemporalInstant(Argument(arguments, 1));
             return one.EpochNanoseconds.CompareTo(two.EpochNanoseconds);
-        });
+        }),
+    ];
 
-        realm.DefineAccessor(prototype, "epochMilliseconds", (_, thisValue, _, _) => TemporalBuiltinHelpers.EpochMilliseconds(ThisInstant(thisValue).EpochNanoseconds), setter: null);
-        realm.DefineAccessor(prototype, "epochNanoseconds", (_, thisValue, _, _) => TemporalBuiltinHelpers.BigInt(ThisInstant(thisValue).EpochNanoseconds), setter: null);
-        realm.DefineMethod(prototype, "add", 1, (_, thisValue, arguments, _) => AddDurationToInstant(subtract: false, ThisInstant(thisValue), Argument(arguments, 0)));
-        realm.DefineMethod(prototype, "subtract", 1, (_, thisValue, arguments, _) => AddDurationToInstant(subtract: true, ThisInstant(thisValue), Argument(arguments, 0)));
-        realm.DefineMethod(prototype, "until", 1, (_, thisValue, arguments, _) => DifferenceTemporalInstant(DifferenceOperation.Until, ThisInstant(thisValue), Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(prototype, "since", 1, (_, thisValue, arguments, _) => DifferenceTemporalInstant(DifferenceOperation.Since, ThisInstant(thisValue), Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(prototype, "round", 1, Round);
-        realm.DefineMethod(prototype, "equals", 1, (_, thisValue, arguments, _) =>
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("add", 1, (_, thisValue, arguments, _) => AddDurationToInstant(subtract: false, ThisInstant(thisValue), Argument(arguments, 0))),
+        new("subtract", 1, (_, thisValue, arguments, _) => AddDurationToInstant(subtract: true, ThisInstant(thisValue), Argument(arguments, 0))),
+        new("until", 1, (_, thisValue, arguments, _) => DifferenceTemporalInstant(DifferenceOperation.Until, ThisInstant(thisValue), Argument(arguments, 0), Argument(arguments, 1))),
+        new("since", 1, (_, thisValue, arguments, _) => DifferenceTemporalInstant(DifferenceOperation.Since, ThisInstant(thisValue), Argument(arguments, 0), Argument(arguments, 1))),
+        new("round", 1, Round),
+        new("equals", 1, (_, thisValue, arguments, _) =>
         {
             var instant = ThisInstant(thisValue);
             var other = ToTemporalInstant(Argument(arguments, 0));
             return instant.EpochNanoseconds == other.EpochNanoseconds;
-        });
-        realm.DefineMethod(prototype, "toString", 0, ToStringMethod);
-        realm.DefineMethod(prototype, "toLocaleString", 0, (_, thisValue, _, _) => TemporalInstantToString(ThisInstant(thisValue).EpochNanoseconds, timeZone: null, PrecisionAuto));
-        realm.DefineMethod(prototype, "toJSON", 0, (_, thisValue, _, _) => TemporalInstantToString(ThisInstant(thisValue).EpochNanoseconds, timeZone: null, PrecisionAuto));
+        }),
+        new("toString", 0, ToStringMethod),
+        new("toLocaleString", 0, (_, thisValue, _, _) => TemporalInstantToString(ThisInstant(thisValue).EpochNanoseconds, timeZone: null, PrecisionAuto)),
+        new("toJSON", 0, (_, thisValue, _, _) => TemporalInstantToString(ThisInstant(thisValue).EpochNanoseconds, timeZone: null, PrecisionAuto)),
+    ];
+
+    public static JsBuiltinFunction Initialize(Intrinsics intrinsics)
+    {
+        var realm = intrinsics.Realm;
+        var prototype = intrinsics.TemporalInstantPrototype;
+        var constructor = TemporalBuiltinHelpers.CreateConstructor(intrinsics, "Instant", 1, Construct, prototype);
+        realm.DefineMethods(constructor, ConstructorMethods);
+
+        realm.DefineAccessor(prototype, "epochMilliseconds", (_, thisValue, _, _) => TemporalBuiltinHelpers.EpochMilliseconds(ThisInstant(thisValue).EpochNanoseconds), setter: null);
+        realm.DefineAccessor(prototype, "epochNanoseconds", (_, thisValue, _, _) => TemporalBuiltinHelpers.BigInt(ThisInstant(thisValue).EpochNanoseconds), setter: null);
+        realm.DefineMethods(prototype, PrototypeMethods);
         TemporalBuiltinHelpers.DefineValueOf(realm, prototype, "Instant");
         realm.DefineMethod(prototype, "toZonedDateTimeISO", 1, (_, thisValue, arguments, _) =>
         {

@@ -295,4 +295,20 @@ internal sealed class ShapeRoots
 /// <summary>The storage of the named properties of an object: a shared <see cref="Shape"/>, or a <see cref="PropertyTable"/> of its own (dictionary mode).</summary>
 internal abstract class PropertyMap
 {
+    private int _cacheHash;
+
+    /// <summary>Gets a hash of the identity of the map for the megamorphic inline caches (<see cref="MegamorphicCache"/>); never 0.</summary>
+    public int CacheHash
+    {
+        get
+        {
+            var hash = _cacheHash;
+            if (hash == 0)
+            {
+                _cacheHash = hash = RuntimeHelpers.GetHashCode(this) | 1;
+            }
+
+            return hash;
+        }
+    }
 }

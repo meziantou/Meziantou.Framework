@@ -251,6 +251,7 @@ namespace Meziantou.Framework.JavaScriptEngine
     {
         public bool IsCallable { get => throw null; }
         public bool IsConstructor { get => throw null; }
+        public int OwnPropertyCount { get => throw null; }
         public bool ContainsProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key) => throw null;
         public void DefineLazyAccessorProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, System.Func<Meziantou.Framework.JavaScriptEngine.JsValue> getterFactory, System.Func<Meziantou.Framework.JavaScriptEngine.JsValue>? setterFactory, bool enumerable, bool configurable) { }
         public void DefineLazyAccessorProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, System.Func<object?, Meziantou.Framework.JavaScriptEngine.JsValue> getterFactory, object? getterState, System.Func<object?, Meziantou.Framework.JavaScriptEngine.JsValue>? setterFactory, object? setterState, bool enumerable, bool configurable) { }

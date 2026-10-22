@@ -5,8 +5,9 @@ namespace Meziantou.Framework.JavaScriptEngine;
 // The job queue of the agent (https://tc39.es/ecma262/#sec-jobs) and the [[KeptAlive]] list of the WeakRefs.
 public sealed partial class JsEngine
 {
-    // The generic jobs can be enqueued from any thread: they wait here until RunJobs moves them to the current queue
-    private readonly ConcurrentQueue<JsJob> _genericJobInbox = new();
+    // The generic jobs can be enqueued from any thread: they wait here until RunJobs moves them to the current queue (created
+    // by the first one: most engines never get one)
+    private ConcurrentQueue<JsJob>? _genericJobInbox;
     private readonly Lock _timeoutJobsLock = new();
     private PriorityQueue<JsJob, (long DueTimestamp, long Sequence)>? _timeoutJobs;
     private long _timeoutJobSequence;
@@ -17,7 +18,7 @@ public sealed partial class JsEngine
     internal JsHost HostHooks { get; set; }
 
     /// <summary>Gets whether a job is ready to run (a promise job, or a generic job); the timeout jobs whose delay has not elapsed are not counted.</summary>
-    internal bool HasPendingJobs => _jobQueue.PromiseJobs.Count > 0 || _jobQueue.Tasks.Count > 0 || !_genericJobInbox.IsEmpty;
+    internal bool HasPendingJobs => _jobQueue.PromiseJobs.Count > 0 || _jobQueue.Tasks.Count > 0 || Volatile.Read(ref _genericJobInbox) is { IsEmpty: false };
 
     /// <summary>
     /// Runs the jobs until the queue is empty: the promise jobs first (in the order they were enqueued), then the generic
@@ -75,7 +76,17 @@ public sealed partial class JsEngine
     internal void EnqueuePromiseJobCore(in JsJob job) => _jobQueue.PromiseJobs.Enqueue(job);
 
     /// <summary>The default implementation of HostEnqueueGenericJob (thread-safe).</summary>
-    internal void EnqueueGenericJobCore(in JsJob job) => _genericJobInbox.Enqueue(job);
+    internal void EnqueueGenericJobCore(in JsJob job)
+    {
+        var inbox = Volatile.Read(ref _genericJobInbox);
+        if (inbox is null)
+        {
+            Interlocked.CompareExchange(ref _genericJobInbox, new ConcurrentQueue<JsJob>(), comparand: null);
+            inbox = _genericJobInbox;
+        }
+
+        inbox.Enqueue(job);
+    }
 
     /// <summary>The default implementation of HostEnqueueTimeoutJob: the job runs from <see cref="RunJobs"/> once the delay has elapsed.</summary>
     internal void EnqueueTimeoutJobCore(in JsJob job, TimeSpan delay)
@@ -113,9 +124,12 @@ public sealed partial class JsEngine
 
         if (queue.Tasks.Count == 0)
         {
-            while (_genericJobInbox.TryDequeue(out var genericJob))
+            if (Volatile.Read(ref _genericJobInbox) is { } inbox)
             {
-                queue.Tasks.Enqueue(genericJob);
+                while (inbox.TryDequeue(out var genericJob))
+                {
+                    queue.Tasks.Enqueue(genericJob);
+                }
             }
 
             EnqueueDueTimeoutJobs(queue);

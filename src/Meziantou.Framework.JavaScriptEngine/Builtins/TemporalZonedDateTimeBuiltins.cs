@@ -5,18 +5,85 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// <summary>Temporal.ZonedDateTime (https://tc39.es/proposal-temporal/#sec-temporal-zoneddatetime-objects).</summary>
 internal static class TemporalZonedDateTimeBuiltins
 {
+    private static readonly BuiltinMethodTable ConstructorMethods =
+    [
+        new("from", 1, (_, _, arguments, _) => ToTemporalZonedDateTime(Argument(arguments, 0), Argument(arguments, 1))),
+        new("compare", 2, (_, _, arguments, _) =>
+        {
+            var one = ToTemporalZonedDateTime(Argument(arguments, 0));
+            var two = ToTemporalZonedDateTime(Argument(arguments, 1));
+            return one.EpochNanoseconds.CompareTo(two.EpochNanoseconds);
+        }),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("with", 1, With),
+        new("withPlainTime", 0, WithPlainTime),
+        new("withTimeZone", 1, (_, thisValue, arguments, _) =>
+        {
+            var zonedDateTime = ThisZonedDateTime(thisValue);
+            var timeZone = ToTemporalTimeZoneIdentifier(Argument(arguments, 0));
+            return CreateTemporalZonedDateTime(zonedDateTime.EpochNanoseconds, timeZone, zonedDateTime.Calendar);
+        }),
+        new("withCalendar", 1, (_, thisValue, arguments, _) =>
+        {
+            var zonedDateTime = ThisZonedDateTime(thisValue);
+            var calendar = ToTemporalCalendarIdentifier(Argument(arguments, 0));
+            return CreateTemporalZonedDateTime(zonedDateTime.EpochNanoseconds, zonedDateTime.TimeZone, calendar);
+        }),
+        new("add", 1, (_, thisValue, arguments, _) => AddDurationToZonedDateTime(subtract: false, ThisZonedDateTime(thisValue), Argument(arguments, 0), Argument(arguments, 1))),
+        new("subtract", 1, (_, thisValue, arguments, _) => AddDurationToZonedDateTime(subtract: true, ThisZonedDateTime(thisValue), Argument(arguments, 0), Argument(arguments, 1))),
+        new("until", 1, (_, thisValue, arguments, _) => DifferenceTemporalZonedDateTime(DifferenceOperation.Until, ThisZonedDateTime(thisValue), Argument(arguments, 0), Argument(arguments, 1))),
+        new("since", 1, (_, thisValue, arguments, _) => DifferenceTemporalZonedDateTime(DifferenceOperation.Since, ThisZonedDateTime(thisValue), Argument(arguments, 0), Argument(arguments, 1))),
+        new("round", 1, Round),
+        new("equals", 1, (_, thisValue, arguments, _) =>
+        {
+            var zonedDateTime = ThisZonedDateTime(thisValue);
+            var other = ToTemporalZonedDateTime(Argument(arguments, 0));
+            if (zonedDateTime.EpochNanoseconds != other.EpochNanoseconds)
+                return false;
+
+            if (!TimeZoneEquals(zonedDateTime.TimeZone, other.TimeZone))
+                return false;
+
+            return CalendarEquals(zonedDateTime.Calendar, other.Calendar);
+        }),
+        new("toString", 0, ToStringMethod),
+        new("toLocaleString", 0, (_, thisValue, _, _) => TemporalZonedDateTimeToString(ThisZonedDateTime(thisValue), PrecisionAuto, ShowCalendarOption.Auto, ShowTimeZoneOption.Auto, showOffset: true)),
+        new("toJSON", 0, (_, thisValue, _, _) => TemporalZonedDateTimeToString(ThisZonedDateTime(thisValue), PrecisionAuto, ShowCalendarOption.Auto, ShowTimeZoneOption.Auto, showOffset: true)),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods2 =
+    [
+        new("startOfDay", 0, (_, thisValue, _, _) =>
+        {
+            var zonedDateTime = ThisZonedDateTime(thisValue);
+            var isoDateTime = GetIsoDateTime(zonedDateTime);
+            var epochNanoseconds = GetStartOfDay(zonedDateTime.TimeZone, isoDateTime.Date);
+            return CreateTemporalZonedDateTime(epochNanoseconds, zonedDateTime.TimeZone, zonedDateTime.Calendar);
+        }),
+        new("getTimeZoneTransition", 1, GetTimeZoneTransition),
+        new("toInstant", 0, (_, thisValue, _, _) => CreateTemporalInstant(ThisZonedDateTime(thisValue).EpochNanoseconds)),
+        new("toPlainDate", 0, (_, thisValue, _, _) =>
+        {
+            var zonedDateTime = ThisZonedDateTime(thisValue);
+            return CreateTemporalDate(GetIsoDateTime(zonedDateTime).Date, zonedDateTime.Calendar);
+        }),
+        new("toPlainTime", 0, (_, thisValue, _, _) => CreateTemporalTime(GetIsoDateTime(ThisZonedDateTime(thisValue)).Time)),
+        new("toPlainDateTime", 0, (_, thisValue, _, _) =>
+        {
+            var zonedDateTime = ThisZonedDateTime(thisValue);
+            return CreateTemporalDateTime(GetIsoDateTime(zonedDateTime), zonedDateTime.Calendar);
+        }),
+    ];
+
     public static JsBuiltinFunction Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
         var prototype = intrinsics.TemporalZonedDateTimePrototype;
         var constructor = TemporalBuiltinHelpers.CreateConstructor(intrinsics, "ZonedDateTime", 2, Construct, prototype);
-        realm.DefineMethod(constructor, "from", 1, (_, _, arguments, _) => ToTemporalZonedDateTime(Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(constructor, "compare", 2, (_, _, arguments, _) =>
-        {
-            var one = ToTemporalZonedDateTime(Argument(arguments, 0));
-            var two = ToTemporalZonedDateTime(Argument(arguments, 1));
-            return one.EpochNanoseconds.CompareTo(two.EpochNanoseconds);
-        });
+        realm.DefineMethods(constructor, ConstructorMethods);
 
         realm.DefineAccessor(prototype, "calendarId", (_, thisValue, _, _) => ThisZonedDateTime(thisValue).Calendar, setter: null);
         realm.DefineAccessor(prototype, "timeZoneId", (_, thisValue, _, _) => ThisZonedDateTime(thisValue).TimeZone.Identifier, setter: null);
@@ -55,61 +122,9 @@ internal static class TemporalZonedDateTimeBuiltins
             return FormatUtcOffsetNanoseconds(GetOffsetNanosecondsFor(zonedDateTime.TimeZone, zonedDateTime.EpochNanoseconds));
         }, setter: null);
 
-        realm.DefineMethod(prototype, "with", 1, With);
-        realm.DefineMethod(prototype, "withPlainTime", 0, WithPlainTime);
-        realm.DefineMethod(prototype, "withTimeZone", 1, (_, thisValue, arguments, _) =>
-        {
-            var zonedDateTime = ThisZonedDateTime(thisValue);
-            var timeZone = ToTemporalTimeZoneIdentifier(Argument(arguments, 0));
-            return CreateTemporalZonedDateTime(zonedDateTime.EpochNanoseconds, timeZone, zonedDateTime.Calendar);
-        });
-        realm.DefineMethod(prototype, "withCalendar", 1, (_, thisValue, arguments, _) =>
-        {
-            var zonedDateTime = ThisZonedDateTime(thisValue);
-            var calendar = ToTemporalCalendarIdentifier(Argument(arguments, 0));
-            return CreateTemporalZonedDateTime(zonedDateTime.EpochNanoseconds, zonedDateTime.TimeZone, calendar);
-        });
-        realm.DefineMethod(prototype, "add", 1, (_, thisValue, arguments, _) => AddDurationToZonedDateTime(subtract: false, ThisZonedDateTime(thisValue), Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(prototype, "subtract", 1, (_, thisValue, arguments, _) => AddDurationToZonedDateTime(subtract: true, ThisZonedDateTime(thisValue), Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(prototype, "until", 1, (_, thisValue, arguments, _) => DifferenceTemporalZonedDateTime(DifferenceOperation.Until, ThisZonedDateTime(thisValue), Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(prototype, "since", 1, (_, thisValue, arguments, _) => DifferenceTemporalZonedDateTime(DifferenceOperation.Since, ThisZonedDateTime(thisValue), Argument(arguments, 0), Argument(arguments, 1)));
-        realm.DefineMethod(prototype, "round", 1, Round);
-        realm.DefineMethod(prototype, "equals", 1, (_, thisValue, arguments, _) =>
-        {
-            var zonedDateTime = ThisZonedDateTime(thisValue);
-            var other = ToTemporalZonedDateTime(Argument(arguments, 0));
-            if (zonedDateTime.EpochNanoseconds != other.EpochNanoseconds)
-                return false;
-
-            if (!TimeZoneEquals(zonedDateTime.TimeZone, other.TimeZone))
-                return false;
-
-            return CalendarEquals(zonedDateTime.Calendar, other.Calendar);
-        });
-        realm.DefineMethod(prototype, "toString", 0, ToStringMethod);
-        realm.DefineMethod(prototype, "toLocaleString", 0, (_, thisValue, _, _) => TemporalZonedDateTimeToString(ThisZonedDateTime(thisValue), PrecisionAuto, ShowCalendarOption.Auto, ShowTimeZoneOption.Auto, showOffset: true));
-        realm.DefineMethod(prototype, "toJSON", 0, (_, thisValue, _, _) => TemporalZonedDateTimeToString(ThisZonedDateTime(thisValue), PrecisionAuto, ShowCalendarOption.Auto, ShowTimeZoneOption.Auto, showOffset: true));
+        realm.DefineMethods(prototype, PrototypeMethods);
         TemporalBuiltinHelpers.DefineValueOf(realm, prototype, "ZonedDateTime");
-        realm.DefineMethod(prototype, "startOfDay", 0, (_, thisValue, _, _) =>
-        {
-            var zonedDateTime = ThisZonedDateTime(thisValue);
-            var isoDateTime = GetIsoDateTime(zonedDateTime);
-            var epochNanoseconds = GetStartOfDay(zonedDateTime.TimeZone, isoDateTime.Date);
-            return CreateTemporalZonedDateTime(epochNanoseconds, zonedDateTime.TimeZone, zonedDateTime.Calendar);
-        });
-        realm.DefineMethod(prototype, "getTimeZoneTransition", 1, GetTimeZoneTransition);
-        realm.DefineMethod(prototype, "toInstant", 0, (_, thisValue, _, _) => CreateTemporalInstant(ThisZonedDateTime(thisValue).EpochNanoseconds));
-        realm.DefineMethod(prototype, "toPlainDate", 0, (_, thisValue, _, _) =>
-        {
-            var zonedDateTime = ThisZonedDateTime(thisValue);
-            return CreateTemporalDate(GetIsoDateTime(zonedDateTime).Date, zonedDateTime.Calendar);
-        });
-        realm.DefineMethod(prototype, "toPlainTime", 0, (_, thisValue, _, _) => CreateTemporalTime(GetIsoDateTime(ThisZonedDateTime(thisValue)).Time));
-        realm.DefineMethod(prototype, "toPlainDateTime", 0, (_, thisValue, _, _) =>
-        {
-            var zonedDateTime = ThisZonedDateTime(thisValue);
-            return CreateTemporalDateTime(GetIsoDateTime(zonedDateTime), zonedDateTime.Calendar);
-        });
+        realm.DefineMethods(prototype, PrototypeMethods2);
         return constructor;
     }
 

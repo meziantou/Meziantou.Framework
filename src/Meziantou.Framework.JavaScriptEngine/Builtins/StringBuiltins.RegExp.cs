@@ -10,16 +10,21 @@ internal static class StringRegExpBuiltins
 {
     private static readonly PropertyKey FlagsKey = new("flags");
 
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("match", 1, Match),
+        new("matchAll", 1, MatchAll),
+        new("replace", 2, Replace),
+        new("replaceAll", 2, ReplaceAll),
+        new("search", 1, Search),
+        new("split", 2, Split),
+    ];
+
     public static void Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
         var prototype = intrinsics.StringPrototype;
-        realm.DefineMethod(prototype, "match", 1, Match);
-        realm.DefineMethod(prototype, "matchAll", 1, MatchAll);
-        realm.DefineMethod(prototype, "replace", 2, Replace);
-        realm.DefineMethod(prototype, "replaceAll", 2, ReplaceAll);
-        realm.DefineMethod(prototype, "search", 1, Search);
-        realm.DefineMethod(prototype, "split", 2, Split);
+        realm.DefineMethods(prototype, PrototypeMethods);
     }
 
     private static JsValue RequireObjectCoercible(JsValue thisValue, string methodName)

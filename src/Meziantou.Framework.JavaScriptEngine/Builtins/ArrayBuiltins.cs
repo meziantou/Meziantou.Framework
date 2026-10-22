@@ -11,52 +11,62 @@ internal static class ArrayBuiltins
     private static readonly PropertyKey ToStringKey = new("toString");
     private static readonly PropertyKey ToLocaleStringKey = new("toLocaleString");
 
+    private static readonly BuiltinMethodTable ConstructorMethods =
+    [
+        new("from", 1, From),
+        new("isArray", 1, (_, _, a, _) => JsOperations.IsArray(Arg(a, 0))),
+        new("of", 0, Of),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("at", 1, At),
+        new("concat", 1, Concat),
+        new("copyWithin", 2, CopyWithin),
+        new("entries", 0, (f, t, _, _) => JsArrayIterator.Create(f.Realm, JsOperations.ToObject(t), ArrayIteratorKind.Entries)),
+        new("every", 1, Every),
+        new("fill", 1, Fill),
+        new("filter", 1, Filter),
+        new("find", 1, (_, t, a, _) => FindViaPredicate(t, a, ascending: true, "find").Value),
+        new("findIndex", 1, (_, t, a, _) => FindViaPredicate(t, a, ascending: true, "findIndex").Index),
+        new("findLast", 1, (_, t, a, _) => FindViaPredicate(t, a, ascending: false, "findLast").Value),
+        new("findLastIndex", 1, (_, t, a, _) => FindViaPredicate(t, a, ascending: false, "findLastIndex").Index),
+        new("flat", 0, Flat),
+        new("flatMap", 1, FlatMap),
+        new("forEach", 1, ForEach),
+        new("includes", 1, Includes),
+        new("indexOf", 1, IndexOf),
+        new("join", 1, Join),
+        new("keys", 0, (f, t, _, _) => JsArrayIterator.Create(f.Realm, JsOperations.ToObject(t), ArrayIteratorKind.Keys)),
+        new("lastIndexOf", 1, LastIndexOf),
+        new("map", 1, Map),
+        new("pop", 0, Pop),
+        new("push", 1, Push),
+        new("reduce", 1, (_, t, a, _) => Reduce(t, a, ascending: true)),
+        new("reduceRight", 1, (_, t, a, _) => Reduce(t, a, ascending: false)),
+        new("reverse", 0, Reverse),
+        new("shift", 0, Shift),
+        new("slice", 2, Slice),
+        new("some", 1, Some),
+        new("sort", 1, Sort),
+        new("splice", 2, Splice),
+        new("toLocaleString", 0, ToLocaleString),
+        new("toReversed", 0, ToReversed),
+        new("toSorted", 1, ToSorted),
+        new("toSpliced", 2, ToSpliced),
+    ];
+
     public static (JsFunction Constructor, JsFunction Values, JsFunction ToStringFunction) Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
         var prototype = intrinsics.ArrayPrototype;
         var constructor = realm.CreateBuiltinFunction("Array", 1, Construct, isConstructor: true);
         constructor.DefineBuiltIn("prototype", prototype, PropertyFlags.None);
-        realm.DefineMethod(constructor, "from", 1, From);
-        realm.DefineMethod(constructor, "isArray", 1, (_, _, a, _) => JsOperations.IsArray(Arg(a, 0)));
-        realm.DefineMethod(constructor, "of", 0, Of);
+        realm.DefineMethods(constructor, ConstructorMethods);
         realm.DefineAccessor(constructor, WellKnownSymbols.Species, (_, t, _, _) => t, setter: null);
 
         prototype.DefineBuiltIn("constructor", constructor);
-        realm.DefineMethod(prototype, "at", 1, At);
-        realm.DefineMethod(prototype, "concat", 1, Concat);
-        realm.DefineMethod(prototype, "copyWithin", 2, CopyWithin);
-        realm.DefineMethod(prototype, "entries", 0, (f, t, _, _) => JsArrayIterator.Create(f.Realm, JsOperations.ToObject(t), ArrayIteratorKind.Entries));
-        realm.DefineMethod(prototype, "every", 1, Every);
-        realm.DefineMethod(prototype, "fill", 1, Fill);
-        realm.DefineMethod(prototype, "filter", 1, Filter);
-        realm.DefineMethod(prototype, "find", 1, (_, t, a, _) => FindViaPredicate(t, a, ascending: true, "find").Value);
-        realm.DefineMethod(prototype, "findIndex", 1, (_, t, a, _) => FindViaPredicate(t, a, ascending: true, "findIndex").Index);
-        realm.DefineMethod(prototype, "findLast", 1, (_, t, a, _) => FindViaPredicate(t, a, ascending: false, "findLast").Value);
-        realm.DefineMethod(prototype, "findLastIndex", 1, (_, t, a, _) => FindViaPredicate(t, a, ascending: false, "findLastIndex").Index);
-        realm.DefineMethod(prototype, "flat", 0, Flat);
-        realm.DefineMethod(prototype, "flatMap", 1, FlatMap);
-        realm.DefineMethod(prototype, "forEach", 1, ForEach);
-        realm.DefineMethod(prototype, "includes", 1, Includes);
-        realm.DefineMethod(prototype, "indexOf", 1, IndexOf);
-        realm.DefineMethod(prototype, "join", 1, Join);
-        realm.DefineMethod(prototype, "keys", 0, (f, t, _, _) => JsArrayIterator.Create(f.Realm, JsOperations.ToObject(t), ArrayIteratorKind.Keys));
-        realm.DefineMethod(prototype, "lastIndexOf", 1, LastIndexOf);
-        realm.DefineMethod(prototype, "map", 1, Map);
-        realm.DefineMethod(prototype, "pop", 0, Pop);
-        realm.DefineMethod(prototype, "push", 1, Push);
-        realm.DefineMethod(prototype, "reduce", 1, (_, t, a, _) => Reduce(t, a, ascending: true));
-        realm.DefineMethod(prototype, "reduceRight", 1, (_, t, a, _) => Reduce(t, a, ascending: false));
-        realm.DefineMethod(prototype, "reverse", 0, Reverse);
-        realm.DefineMethod(prototype, "shift", 0, Shift);
-        realm.DefineMethod(prototype, "slice", 2, Slice);
-        realm.DefineMethod(prototype, "some", 1, Some);
-        realm.DefineMethod(prototype, "sort", 1, Sort);
-        realm.DefineMethod(prototype, "splice", 2, Splice);
-        realm.DefineMethod(prototype, "toLocaleString", 0, ToLocaleString);
-        realm.DefineMethod(prototype, "toReversed", 0, ToReversed);
-        realm.DefineMethod(prototype, "toSorted", 1, ToSorted);
-        realm.DefineMethod(prototype, "toSpliced", 2, ToSpliced);
+        realm.DefineMethods(prototype, PrototypeMethods);
         var toString = realm.DefineEagerMethod(prototype, "toString", 0, ToString);
         realm.DefineMethod(prototype, "unshift", 1, Unshift);
         var values = realm.DefineEagerMethod(prototype, "values", 0, (f, t, _, _) => JsArrayIterator.Create(f.Realm, JsOperations.ToObject(t), ArrayIteratorKind.Values));
@@ -80,7 +90,9 @@ internal static class ArrayBuiltins
 
     private static JsObject CreateUnscopables()
     {
+        // A table of its own: the shapes of an object that no other object looks like would not be shared
         var unscopables = new JsObject(prototype: null);
+        unscopables.UsePropertyTable(16);
         foreach (var name in (ReadOnlySpan<string>)["at", "copyWithin", "entries", "fill", "find", "findIndex", "findLast", "findLastIndex", "flat", "flatMap", "includes", "keys", "toReversed", "toSorted", "toSpliced", "values"])
         {
             unscopables.CreateDataPropertyOrThrow(name, JsValue.True);

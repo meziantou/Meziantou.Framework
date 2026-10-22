@@ -5,13 +5,18 @@ namespace Meziantou.Framework.JavaScriptEngine.Intl;
 /// <summary>The Intl object (https://tc39.es/ecma402/#intl-object).</summary>
 internal static class IntlBuiltins
 {
+    private static readonly BuiltinMethodTable IntlMethods =
+    [
+        new("getCanonicalLocales", 1, GetCanonicalLocales),
+        new("supportedValuesOf", 1, SupportedValuesOf),
+    ];
+
     public static JsObject Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
         var intl = new JsObject(intrinsics.ObjectPrototype);
         intl.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Intl", PropertyFlags.Configurable);
-        realm.DefineMethod(intl, "getCanonicalLocales", 1, GetCanonicalLocales);
-        realm.DefineMethod(intl, "supportedValuesOf", 1, SupportedValuesOf);
+        realm.DefineMethods(intl, IntlMethods);
         intrinsics.AddGlobal("Intl", intl);
         return intl;
     }

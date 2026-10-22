@@ -110,6 +110,14 @@ internal static class DateTimeFormatBuiltins
     private static readonly ConcurrentDictionary<(string Locale, string Key), IReadOnlyList<string?>> LocaleData = new();
     private static readonly string?[] HourCycleLocaleData = [null, "h11", "h12", "h23", "h24"];
 
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("formatToParts", 1, FormatToParts),
+        new("formatRange", 2, FormatRange),
+        new("formatRangeToParts", 2, FormatRangeToParts),
+        new("resolvedOptions", 0, ResolvedOptions),
+    ];
+
     public static JsFunction Initialize(Intrinsics intrinsics, JsObject intl)
     {
         var realm = intrinsics.Realm;
@@ -120,10 +128,7 @@ internal static class DateTimeFormatBuiltins
         prototype.DefineBuiltIn("constructor", constructor);
         prototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Intl.DateTimeFormat", PropertyFlags.Configurable);
         realm.DefineAccessor(prototype, "format", GetFormat, setter: null);
-        realm.DefineMethod(prototype, "formatToParts", 1, FormatToParts);
-        realm.DefineMethod(prototype, "formatRange", 2, FormatRange);
-        realm.DefineMethod(prototype, "formatRangeToParts", 2, FormatRangeToParts);
-        realm.DefineMethod(prototype, "resolvedOptions", 0, ResolvedOptions);
+        realm.DefineMethods(prototype, PrototypeMethods);
         intl.DefineBuiltIn("DateTimeFormat", constructor);
         return constructor;
     }

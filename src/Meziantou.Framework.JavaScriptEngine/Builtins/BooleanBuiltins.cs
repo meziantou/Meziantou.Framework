@@ -3,6 +3,12 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// <summary>The Boolean constructor and Boolean.prototype (https://tc39.es/ecma262/#sec-boolean-objects).</summary>
 internal static class BooleanBuiltins
 {
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("toString", 0, ToString),
+        new("valueOf", 0, ValueOf),
+    ];
+
     public static JsBuiltinFunction Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
@@ -10,8 +16,7 @@ internal static class BooleanBuiltins
         var constructor = realm.CreateBuiltinFunction("Boolean", 1, Construct, isConstructor: true);
         constructor.DefineBuiltIn("prototype", prototype, PropertyFlags.None);
         prototype.DefineBuiltIn("constructor", constructor);
-        realm.DefineMethod(prototype, "toString", 0, ToString);
-        realm.DefineMethod(prototype, "valueOf", 0, ValueOf);
+        realm.DefineMethods(prototype, PrototypeMethods);
         intrinsics.AddGlobal("Boolean", constructor);
         return constructor;
     }

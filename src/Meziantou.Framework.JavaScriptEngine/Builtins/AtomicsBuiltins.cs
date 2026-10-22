@@ -22,24 +22,29 @@ internal static class AtomicsBuiltins
         Xor,
     }
 
+    private static readonly BuiltinMethodTable AtomicsMethods =
+    [
+        new("add", 3, (_, _, arguments, _) => ReadModifyWrite(arguments, Operation.Add)),
+        new("and", 3, (_, _, arguments, _) => ReadModifyWrite(arguments, Operation.And)),
+        new("compareExchange", 4, CompareExchange),
+        new("exchange", 3, (_, _, arguments, _) => ReadModifyWrite(arguments, Operation.Exchange)),
+        new("isLockFree", 1, IsLockFree),
+        new("load", 2, Load),
+        new("notify", 3, Notify),
+        new("or", 3, (_, _, arguments, _) => ReadModifyWrite(arguments, Operation.Or)),
+        new("pause", 0, Pause),
+        new("store", 3, Store),
+        new("sub", 3, (_, _, arguments, _) => ReadModifyWrite(arguments, Operation.Sub)),
+        new("wait", 4, (function, _, arguments, _) => DoWait(function.Realm, arguments, isAsync: false)),
+        new("waitAsync", 4, (function, _, arguments, _) => DoWait(function.Realm, arguments, isAsync: true)),
+        new("xor", 3, (_, _, arguments, _) => ReadModifyWrite(arguments, Operation.Xor)),
+    ];
+
     public static JsObject Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
         var atomics = new JsObject(intrinsics.ObjectPrototype);
-        realm.DefineMethod(atomics, "add", 3, (_, _, arguments, _) => ReadModifyWrite(arguments, Operation.Add));
-        realm.DefineMethod(atomics, "and", 3, (_, _, arguments, _) => ReadModifyWrite(arguments, Operation.And));
-        realm.DefineMethod(atomics, "compareExchange", 4, CompareExchange);
-        realm.DefineMethod(atomics, "exchange", 3, (_, _, arguments, _) => ReadModifyWrite(arguments, Operation.Exchange));
-        realm.DefineMethod(atomics, "isLockFree", 1, IsLockFree);
-        realm.DefineMethod(atomics, "load", 2, Load);
-        realm.DefineMethod(atomics, "notify", 3, Notify);
-        realm.DefineMethod(atomics, "or", 3, (_, _, arguments, _) => ReadModifyWrite(arguments, Operation.Or));
-        realm.DefineMethod(atomics, "pause", 0, Pause);
-        realm.DefineMethod(atomics, "store", 3, Store);
-        realm.DefineMethod(atomics, "sub", 3, (_, _, arguments, _) => ReadModifyWrite(arguments, Operation.Sub));
-        realm.DefineMethod(atomics, "wait", 4, (function, _, arguments, _) => DoWait(function.Realm, arguments, isAsync: false));
-        realm.DefineMethod(atomics, "waitAsync", 4, (function, _, arguments, _) => DoWait(function.Realm, arguments, isAsync: true));
-        realm.DefineMethod(atomics, "xor", 3, (_, _, arguments, _) => ReadModifyWrite(arguments, Operation.Xor));
+        realm.DefineMethods(atomics, AtomicsMethods);
         atomics.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Atomics", PropertyFlags.Configurable);
         intrinsics.AddGlobal("Atomics", atomics);
         return atomics;

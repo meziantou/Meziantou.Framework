@@ -8,6 +8,31 @@ internal static class SetBuiltins
     private static readonly PropertyKey HasKey = new("has");
     private static readonly PropertyKey KeysKey = new("keys");
 
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("add", 1, Add),
+        new("clear", 0, Clear),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods2 =
+    [
+        new("delete", 1, Delete),
+        new("difference", 1, Difference),
+        new("entries", 0, static (_, thisValue, _, _) => CreateSetIterator(thisValue, CollectionIteratorKind.Entries, "entries")),
+        new("forEach", 1, ForEach),
+        new("has", 1, Has),
+        new("intersection", 1, Intersection),
+        new("isDisjointFrom", 1, IsDisjointFrom),
+        new("isSubsetOf", 1, IsSubsetOf),
+        new("isSupersetOf", 1, IsSupersetOf),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods3 =
+    [
+        new("symmetricDifference", 1, SymmetricDifference),
+        new("union", 1, Union),
+    ];
+
     public static JsFunction Initialize(Intrinsics intrinsics, JsObject prototype, JsObject iteratorPrototype)
     {
         var realm = intrinsics.Realm;
@@ -15,23 +40,13 @@ internal static class SetBuiltins
         constructor.DefineBuiltIn("prototype", prototype, PropertyFlags.None);
         realm.DefineAccessor(constructor, WellKnownSymbols.Species, static (_, thisValue, _, _) => thisValue, setter: null);
 
-        realm.DefineMethod(prototype, "add", 1, Add);
-        realm.DefineMethod(prototype, "clear", 0, Clear);
+        realm.DefineMethods(prototype, PrototypeMethods);
         prototype.DefineBuiltIn("constructor", constructor);
-        realm.DefineMethod(prototype, "delete", 1, Delete);
-        realm.DefineMethod(prototype, "difference", 1, Difference);
-        realm.DefineMethod(prototype, "entries", 0, static (_, thisValue, _, _) => CreateSetIterator(thisValue, CollectionIteratorKind.Entries, "entries"));
-        realm.DefineMethod(prototype, "forEach", 1, ForEach);
-        realm.DefineMethod(prototype, "has", 1, Has);
-        realm.DefineMethod(prototype, "intersection", 1, Intersection);
-        realm.DefineMethod(prototype, "isDisjointFrom", 1, IsDisjointFrom);
-        realm.DefineMethod(prototype, "isSubsetOf", 1, IsSubsetOf);
-        realm.DefineMethod(prototype, "isSupersetOf", 1, IsSupersetOf);
+        realm.DefineMethods(prototype, PrototypeMethods2);
         var values = realm.CreateBuiltinFunction("values", 0, static (_, thisValue, _, _) => CreateSetIterator(thisValue, CollectionIteratorKind.Values, "values"));
         prototype.DefineBuiltIn("keys", values);
         realm.DefineAccessor(prototype, "size", GetSize, setter: null);
-        realm.DefineMethod(prototype, "symmetricDifference", 1, SymmetricDifference);
-        realm.DefineMethod(prototype, "union", 1, Union);
+        realm.DefineMethods(prototype, PrototypeMethods3);
         prototype.DefineBuiltIn("values", values);
         prototype.DefineBuiltIn(WellKnownSymbols.Iterator, values);
         prototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Set", PropertyFlags.Configurable);

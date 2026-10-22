@@ -9,6 +9,17 @@ internal static class MapBuiltins
     private static readonly PropertyKey ZeroKey = new(0);
     private static readonly PropertyKey OneKey = new(1);
 
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("forEach", 1, ForEach),
+        new("get", 1, Get),
+        new("getOrInsert", 2, GetOrInsert),
+        new("getOrInsertComputed", 2, GetOrInsertComputed),
+        new("has", 1, Has),
+        new("keys", 0, static (_, thisValue, _, _) => CreateMapIterator(thisValue, CollectionIteratorKind.Keys)),
+        new("set", 2, Set),
+    ];
+
     public static JsFunction Initialize(Intrinsics intrinsics, JsObject prototype, JsObject iteratorPrototype)
     {
         var realm = intrinsics.Realm;
@@ -21,13 +32,7 @@ internal static class MapBuiltins
         prototype.DefineBuiltIn("constructor", constructor);
         realm.DefineMethod(prototype, "delete", 1, Delete);
         var entries = realm.DefineEagerMethod(prototype, "entries", 0, static (_, thisValue, _, _) => CreateMapIterator(thisValue, CollectionIteratorKind.Entries));
-        realm.DefineMethod(prototype, "forEach", 1, ForEach);
-        realm.DefineMethod(prototype, "get", 1, Get);
-        realm.DefineMethod(prototype, "getOrInsert", 2, GetOrInsert);
-        realm.DefineMethod(prototype, "getOrInsertComputed", 2, GetOrInsertComputed);
-        realm.DefineMethod(prototype, "has", 1, Has);
-        realm.DefineMethod(prototype, "keys", 0, static (_, thisValue, _, _) => CreateMapIterator(thisValue, CollectionIteratorKind.Keys));
-        realm.DefineMethod(prototype, "set", 2, Set);
+        realm.DefineMethods(prototype, PrototypeMethods);
         realm.DefineAccessor(prototype, "size", GetSize, setter: null);
         realm.DefineMethod(prototype, "values", 0, static (_, thisValue, _, _) => CreateMapIterator(thisValue, CollectionIteratorKind.Values));
         prototype.DefineBuiltIn(WellKnownSymbols.Iterator, entries);

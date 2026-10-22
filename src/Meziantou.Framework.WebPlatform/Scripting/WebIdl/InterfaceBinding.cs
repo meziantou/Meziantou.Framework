@@ -108,6 +108,15 @@ internal sealed class InterfaceBinding<TAdapter, TValue>
     /// <summary>Defines the constants, attributes and operations on the interface object, the prototype and the instance target (the global object for [Global]).</summary>
     public required Action<WebIdlRealm<TAdapter, TValue>, TValue, TValue, TValue> DefineMembers { get; init; }
 
+    /// <summary>
+    /// Gets or sets the number of properties of the interface object once its members are defined (learned by the first realm
+    /// of the process: the next ones allocate the storage of the properties once). The realms of several threads can set it.
+    /// </summary>
+    public int InterfaceObjectPropertyCount { get; set; }
+
+    /// <summary>Gets or sets the number of properties of the interface prototype object once its members are defined (see <see cref="InterfaceObjectPropertyCount"/>).</summary>
+    public int PrototypePropertyCount { get; set; }
+
     /// <summary>Defines the [LegacyUnforgeable] members on a new instance (https://webidl.spec.whatwg.org/#LegacyUnforgeable), or null.</summary>
     public Action<WebIdlRealm<TAdapter, TValue>, TValue>? DefineUnforgeableMembers { get; init; }
 

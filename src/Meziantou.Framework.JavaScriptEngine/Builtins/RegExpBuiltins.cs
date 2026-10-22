@@ -17,6 +17,24 @@ internal static class RegExpBuiltins
     private static readonly PropertyKey ConstructorKey = new("constructor");
     private static readonly PropertyKey ZeroKey = new(0u);
 
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new(WellKnownSymbols.Match, 1, SymbolMatch),
+        new(WellKnownSymbols.MatchAll, 1, SymbolMatchAll),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods2 =
+    [
+        new(WellKnownSymbols.Replace, 2, SymbolReplace),
+        new(WellKnownSymbols.Search, 1, SymbolSearch),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods3 =
+    [
+        new("test", 1, Test),
+        new("toString", 0, ToString),
+    ];
+
     public static (JsFunction Constructor, JsObject Prototype, JsFunction Exec, JsObject IteratorPrototype) Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
@@ -35,16 +53,13 @@ internal static class RegExpBuiltins
         realm.DefineAccessor(prototype, "global", (f, t, _, _) => HasFlag(f, t, 'g'), setter: null);
         realm.DefineAccessor(prototype, "hasIndices", (f, t, _, _) => HasFlag(f, t, 'd'), setter: null);
         realm.DefineAccessor(prototype, "ignoreCase", (f, t, _, _) => HasFlag(f, t, 'i'), setter: null);
-        realm.DefineMethod(prototype, WellKnownSymbols.Match, 1, SymbolMatch);
-        realm.DefineMethod(prototype, WellKnownSymbols.MatchAll, 1, SymbolMatchAll);
+        realm.DefineMethods(prototype, PrototypeMethods);
         realm.DefineAccessor(prototype, "multiline", (f, t, _, _) => HasFlag(f, t, 'm'), setter: null);
-        realm.DefineMethod(prototype, WellKnownSymbols.Replace, 2, SymbolReplace);
-        realm.DefineMethod(prototype, WellKnownSymbols.Search, 1, SymbolSearch);
+        realm.DefineMethods(prototype, PrototypeMethods2);
         realm.DefineAccessor(prototype, "source", GetSource, setter: null);
         realm.DefineMethod(prototype, WellKnownSymbols.Split, 2, SymbolSplit);
         realm.DefineAccessor(prototype, "sticky", (f, t, _, _) => HasFlag(f, t, 'y'), setter: null);
-        realm.DefineMethod(prototype, "test", 1, Test);
-        realm.DefineMethod(prototype, "toString", 0, ToString);
+        realm.DefineMethods(prototype, PrototypeMethods3);
         realm.DefineAccessor(prototype, "unicode", (f, t, _, _) => HasFlag(f, t, 'u'), setter: null);
         realm.DefineAccessor(prototype, "unicodeSets", (f, t, _, _) => HasFlag(f, t, 'v'), setter: null);
         realm.DefineMethod(prototype, "compile", 2, Compile);

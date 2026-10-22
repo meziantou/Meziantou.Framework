@@ -14,8 +14,7 @@ public sealed partial class JsRealm
             GlobalObject = new JsObject(Intrinsics.ObjectPrototype);
             GlobalThis = new JsValue(GlobalObject);
             GlobalEnvironment = new Interpreter.GlobalEnvironment(this);
-            Intrinsics.Initialize();
-            Intrinsics.DefineGlobalBindings(GlobalObject);
+            Intrinsics.Initialize(GlobalObject);
         }
         finally
         {
@@ -228,6 +227,22 @@ public sealed partial class JsRealm
     internal void DefineMethod(JsObject target, PropertyKey name, int length, BuiltinFunctionCallback callback, PropertyFlags flags = PropertyFlags.BuiltIn)
     {
         target.DefineLazy(name, new LazyBuiltinMethod(this, name, length, callback), flags);
+    }
+
+    /// <summary>
+    /// Defines the built-in methods of a static table, in order. Their function objects are created on first access (<see
+    /// cref="LazyBuiltinMethodTable"/>): the realm allocates one object for the table, not one per method.
+    /// </summary>
+    internal void DefineMethods(JsObject target, BuiltinMethodTable methodTable)
+    {
+        var methods = methodTable.Methods;
+        var table = new LazyBuiltinMethodTable(this, methods);
+        target.ReservePropertiesForBuiltIns(methodTable);
+        for (var i = 0; i < methods.Length; i++)
+        {
+            ref readonly var method = ref methods[i];
+            target.DefineLazy(method.Name, table, i, method.Flags);
+        }
     }
 
     /// <summary>

@@ -133,6 +133,13 @@ internal sealed class ListPatterns
 /// <summary>Intl.ListFormat (https://tc39.es/ecma402/#listformat-objects).</summary>
 internal static class ListFormatBuiltins
 {
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("format", 1, Format),
+        new("formatToParts", 1, FormatToParts),
+        new("resolvedOptions", 0, ResolvedOptions),
+    ];
+
     public static JsFunction Initialize(Intrinsics intrinsics, JsObject intl, JsObject prototype)
     {
         var realm = intrinsics.Realm;
@@ -141,9 +148,7 @@ internal static class ListFormatBuiltins
         realm.DefineMethod(constructor, "supportedLocalesOf", 1, SupportedLocalesOf);
         prototype.DefineBuiltIn("constructor", constructor);
         prototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Intl.ListFormat", PropertyFlags.Configurable);
-        realm.DefineMethod(prototype, "format", 1, Format);
-        realm.DefineMethod(prototype, "formatToParts", 1, FormatToParts);
-        realm.DefineMethod(prototype, "resolvedOptions", 0, ResolvedOptions);
+        realm.DefineMethods(prototype, PrototypeMethods);
         intl.DefineBuiltIn("ListFormat", constructor);
         return constructor;
     }

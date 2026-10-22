@@ -325,6 +325,13 @@ public interface IJsAdapter<TValue>
     }
 
     /// <summary>
+    /// Gets the number of own properties of an object, without running code: the bindings remember the sizes of the objects
+    /// they create, and call <see cref="ReserveProperties(TValue, int)"/> with them in the next realms. The default
+    /// implementation returns 0 (unknown).
+    /// </summary>
+    int GetPropertyCount(TValue obj) => 0;
+
+    /// <summary>
     /// Makes an object an immutable prototype exotic object (https://tc39.es/ecma262/#sec-immutable-prototype-exotic-objects),
     /// if the engine supports it: its [[SetPrototypeOf]] only accepts its current prototype. A proxy is left unchanged (its
     /// handler defines its [[SetPrototypeOf]]). Returns false when the engine does not support it: the bindings then replace

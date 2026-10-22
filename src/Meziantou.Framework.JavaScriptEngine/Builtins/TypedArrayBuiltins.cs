@@ -11,14 +11,54 @@ internal static class TypedArrayBuiltins
 {
     private static readonly PropertyKey ToLocaleStringKey = new("toLocaleString");
 
+    private static readonly BuiltinMethodTable ConstructorMethods =
+    [
+        new("from", 1, From),
+        new("of", 0, Of),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("copyWithin", 2, CopyWithin),
+        new("entries", 0, Entries),
+        new("every", 1, Every),
+        new("fill", 1, Fill),
+        new("filter", 1, Filter),
+        new("find", 1, Find),
+        new("findIndex", 1, FindIndex),
+        new("findLast", 1, FindLast),
+        new("findLastIndex", 1, FindLastIndex),
+        new("forEach", 1, ForEach),
+        new("includes", 1, Includes),
+        new("indexOf", 1, IndexOf),
+        new("join", 1, Join),
+        new("keys", 0, Keys),
+        new("lastIndexOf", 1, LastIndexOf),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods2 =
+    [
+        new("map", 1, Map),
+        new("reduce", 1, Reduce),
+        new("reduceRight", 1, ReduceRight),
+        new("reverse", 0, Reverse),
+        new("set", 1, Set),
+        new("slice", 2, Slice),
+        new("some", 1, Some),
+        new("sort", 1, Sort),
+        new("subarray", 2, Subarray),
+        new("toLocaleString", 0, ToLocaleString),
+        new("toReversed", 0, ToReversed),
+        new("toSorted", 1, ToSorted),
+    ];
+
     public static JsBuiltinFunction Initialize(Intrinsics intrinsics, JsFunction[] constructors)
     {
         var realm = intrinsics.Realm;
         var prototype = intrinsics.TypedArrayPrototype;
         var constructor = realm.CreateBuiltinFunction("TypedArray", 0, ConstructAbstract, isConstructor: true);
         constructor.DefineBuiltIn("prototype", prototype, PropertyFlags.None);
-        realm.DefineMethod(constructor, "from", 1, From);
-        realm.DefineMethod(constructor, "of", 0, Of);
+        realm.DefineMethods(constructor, ConstructorMethods);
         realm.DefineAccessor(constructor, WellKnownSymbols.Species, GetSpecies, setter: null);
 
         prototype.DefineBuiltIn("constructor", constructor);
@@ -26,34 +66,9 @@ internal static class TypedArrayBuiltins
         realm.DefineAccessor(prototype, "buffer", GetBuffer, setter: null);
         realm.DefineAccessor(prototype, "byteLength", GetByteLength, setter: null);
         realm.DefineAccessor(prototype, "byteOffset", GetByteOffset, setter: null);
-        realm.DefineMethod(prototype, "copyWithin", 2, CopyWithin);
-        realm.DefineMethod(prototype, "entries", 0, Entries);
-        realm.DefineMethod(prototype, "every", 1, Every);
-        realm.DefineMethod(prototype, "fill", 1, Fill);
-        realm.DefineMethod(prototype, "filter", 1, Filter);
-        realm.DefineMethod(prototype, "find", 1, Find);
-        realm.DefineMethod(prototype, "findIndex", 1, FindIndex);
-        realm.DefineMethod(prototype, "findLast", 1, FindLast);
-        realm.DefineMethod(prototype, "findLastIndex", 1, FindLastIndex);
-        realm.DefineMethod(prototype, "forEach", 1, ForEach);
-        realm.DefineMethod(prototype, "includes", 1, Includes);
-        realm.DefineMethod(prototype, "indexOf", 1, IndexOf);
-        realm.DefineMethod(prototype, "join", 1, Join);
-        realm.DefineMethod(prototype, "keys", 0, Keys);
-        realm.DefineMethod(prototype, "lastIndexOf", 1, LastIndexOf);
+        realm.DefineMethods(prototype, PrototypeMethods);
         realm.DefineAccessor(prototype, "length", GetLength, setter: null);
-        realm.DefineMethod(prototype, "map", 1, Map);
-        realm.DefineMethod(prototype, "reduce", 1, Reduce);
-        realm.DefineMethod(prototype, "reduceRight", 1, ReduceRight);
-        realm.DefineMethod(prototype, "reverse", 0, Reverse);
-        realm.DefineMethod(prototype, "set", 1, Set);
-        realm.DefineMethod(prototype, "slice", 2, Slice);
-        realm.DefineMethod(prototype, "some", 1, Some);
-        realm.DefineMethod(prototype, "sort", 1, Sort);
-        realm.DefineMethod(prototype, "subarray", 2, Subarray);
-        realm.DefineMethod(prototype, "toLocaleString", 0, ToLocaleString);
-        realm.DefineMethod(prototype, "toReversed", 0, ToReversed);
-        realm.DefineMethod(prototype, "toSorted", 1, ToSorted);
+        realm.DefineMethods(prototype, PrototypeMethods2);
 
         // %TypedArray%.prototype.toString is %Array.prototype.toString%
         prototype.DefineBuiltIn("toString", intrinsics.ArrayPrototypeToString);

@@ -259,22 +259,37 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
   `InlineCache`: the objects are flagged `InlineCacheHolder` (the positions of their properties are remembered: a
   removal, a reconfiguration or a compaction increments the epoch) or `InlineCachePrototype` (the absence of a property
   is remembered: any change does). The global lexical declarations increment `GlobalEnvironment.LexicalVersion`. A site
-  that missed 16 times becomes megamorphic (not cached).
+  keeps up to 4 entries (`PropertyCacheEntry.Next`, the most recent first: the dispatch loop checks the first one, the
+  miss path the others); with more receivers, or after 16 misses, it becomes megamorphic: Get and Set then use the cache
+  of the engine (`MegamorphicCache`, found by the map, the prototype and the key), the other instructions are not cached.
+- Elements: the dense storage doubles when it grows. The storages of the large object heap (85 KB and more) have the
+  sizes of the shared array pools: they are rented, and the storage that a growth replaces goes back to the pool (the
+  storage never leaves its object). An array whose length is known (`new Array(n)`, the result of `map`) grows faster
+  up to its length once it has 1024 elements.
 - Iteration: `IteratorStepValue` calls the native step of the built-in next methods (`JsBuiltinFunction.IteratorStep`:
   no result object), and `GetIterator` of an array iterates the array without an iterator object while
   `Intrinsics.IsArrayIterationIntact()` (the iterator object is created if something needs it). for-in enumerates the
   shapes (`ForInEnumerator`).
 - Realms: the rarely used built-ins (Intl, Temporal, the binary data built-ins, RegExp, Date, the collections, WeakRef,
-  FinalizationRegistry, DisposableStack, AsyncDisposableStack) are created on first use: a lazy global (`AddLazyGlobal`,
-  in the order of the eager globals) and intrinsics whose getters call `EnsureXxx`; the `AddGlobal` calls of their
-  `Initialize` methods are ignored once the global bindings are defined. `JsRealm.DefineMethod` and `DefineAccessor`
-  create the function objects on first access (`LazyBuiltinMethod`, `LazyBuiltinAccessorPair`); use
+  FinalizationRegistry, Promise, the generators and async functions, the iterator helper prototypes, DisposableStack,
+  AsyncDisposableStack) are created on first use: a lazy global (`AddLazyGlobal`, in the order of the eager globals) and
+  intrinsics whose getters call `EnsureXxx`; the `AddGlobal` calls of their `Initialize` methods are ignored once the
+  intrinsics are initialized (the globals are defined directly on the global object while they are). The built-in
+  methods are in static tables (`BuiltinMethodTable`, a collection expression of `BuiltinMethod` in the built-in class,
+  shared by the realms of the process): `JsRealm.DefineMethods` defines them in order, and their function objects are
+  created on first access (one `LazyBuiltinMethodTable` per object and table: the slot of a lazy property has its cell
+  and an index, `LazyCell.Evaluate(index)`). A table entry is static: it cannot capture a local, use `DefineMethod` for
+  that. `DefineAccessor` creates the accessor functions on first access (`LazyBuiltinAccessorPair`); use
   `DefineEagerMethod` when a built-in needs the function object (an intrinsic, a function shared by two properties, an
   iterator step). The evaluation of a lazy property does not invalidate the inline caches (they evaluate a lazy
   property before remembering it).
 - Property tables (`Runtime/PropertyTable.cs`): 32-byte entries, an open-addressing index above 8 properties. An object
   with lazy properties (prototypes, global objects) uses a table, not a chain of shapes; a host can size it once with
-  `JsObject.ReserveProperties`.
+  `JsObject.ReserveProperties` (and read the size of an object with `JsObject.OwnPropertyCount`, as the WebIDL bindings
+  of WebPlatform do). A `BuiltinMethodTable` learns the number of properties of the objects that get its methods
+  (`PropertyTable.CapacityHint`): the next realms allocate their tables once, at their final size
+  (`JsObject.ReservePropertiesForBuiltIns`, also called before the constants of Math and Number). The global object
+  learns its size the same way.
 - Host objects: `JsHostObject(prototype, target, hasOrdinaryInternalMethods: true)` creates a host object that uses the
   fast paths (it must not override the methods that read or write properties).
 - Benchmarks (`benchmarks/Meziantou.Framework.JavaScriptEngine.Benchmarks`, net10.0): `quick [workload|file.js]` (vs Jint),

@@ -13,44 +13,65 @@ internal static partial class IteratorBuiltins
     private static readonly PropertyKey ReturnKey = new("return");
     private static readonly PropertyKey ConstructorKey = new("constructor");
 
+    private static readonly BuiltinMethodTable ConstructorMethods =
+    [
+        new("concat", 0, Concat),
+        new("from", 1, From),
+    ];
+
+    private static readonly BuiltinMethodTable PrototypeMethods =
+    [
+        new("drop", 1, Drop),
+        new("every", 1, Every),
+        new("filter", 1, Filter),
+        new("find", 1, Find),
+        new("flatMap", 1, FlatMap),
+        new("forEach", 1, ForEach),
+        new("join", 1, Join),
+        new("map", 1, Map),
+        new("reduce", 1, Reduce),
+        new("some", 1, Some),
+        new("take", 1, Take),
+        new("toArray", 0, ToArray),
+        new(WellKnownSymbols.Iterator, 0, (_, thisValue, _, _) => thisValue),
+        new(WellKnownSymbols.Dispose, 0, Dispose),
+    ];
+
+    private static readonly BuiltinMethodTable HelperPrototypeMethods =
+    [
+        new("next", 0, HelperNext),
+        new("return", 0, HelperReturn),
+    ];
+
+    private static readonly BuiltinMethodTable WrapPrototypeMethods =
+    [
+        new("next", 0, WrapNext),
+        new("return", 0, WrapReturn),
+    ];
+
     public static JsFunction Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
         var prototype = intrinsics.IteratorPrototype;
         var constructor = realm.CreateBuiltinFunction("Iterator", 0, Construct, isConstructor: true);
         constructor.DefineBuiltIn("prototype", prototype, PropertyFlags.None);
-        realm.DefineMethod(constructor, "concat", 0, Concat);
-        realm.DefineMethod(constructor, "from", 1, From);
+        realm.DefineMethods(constructor, ConstructorMethods);
 
         realm.DefineAccessor(prototype, ConstructorKey, (f, _, _, _) => f.Realm.Intrinsics.IteratorConstructor, (f, t, a, _) => SetterThatIgnoresPrototypeProperties(f, t, ConstructorKey, a));
         realm.DefineAccessor(prototype, WellKnownSymbols.ToStringTag, (_, _, _, _) => "Iterator", (f, t, a, _) => SetterThatIgnoresPrototypeProperties(f, t, WellKnownSymbols.ToStringTag, a));
-        realm.DefineMethod(prototype, "drop", 1, Drop);
-        realm.DefineMethod(prototype, "every", 1, Every);
-        realm.DefineMethod(prototype, "filter", 1, Filter);
-        realm.DefineMethod(prototype, "find", 1, Find);
-        realm.DefineMethod(prototype, "flatMap", 1, FlatMap);
-        realm.DefineMethod(prototype, "forEach", 1, ForEach);
-        realm.DefineMethod(prototype, "join", 1, Join);
-        realm.DefineMethod(prototype, "map", 1, Map);
-        realm.DefineMethod(prototype, "reduce", 1, Reduce);
-        realm.DefineMethod(prototype, "some", 1, Some);
-        realm.DefineMethod(prototype, "take", 1, Take);
-        realm.DefineMethod(prototype, "toArray", 0, ToArray);
-        realm.DefineMethod(prototype, WellKnownSymbols.Iterator, 0, (_, thisValue, _, _) => thisValue);
-        realm.DefineMethod(prototype, WellKnownSymbols.Dispose, 0, Dispose);
+        realm.DefineMethods(prototype, PrototypeMethods);
         InitializeProposals(realm, constructor, prototype);
-
-        var helperPrototype = intrinsics.IteratorHelperPrototype;
-        realm.DefineMethod(helperPrototype, "next", 0, HelperNext);
-        realm.DefineMethod(helperPrototype, "return", 0, HelperReturn);
-        helperPrototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Iterator Helper", PropertyFlags.Configurable);
-
-        var wrapPrototype = intrinsics.WrapForValidIteratorPrototype;
-        realm.DefineMethod(wrapPrototype, "next", 0, WrapNext);
-        realm.DefineMethod(wrapPrototype, "return", 0, WrapReturn);
 
         intrinsics.AddGlobal("Iterator", constructor);
         return constructor;
+    }
+
+    /// <summary>Defines the properties of %IteratorHelperPrototype% and %WrapForValidIteratorPrototype% (created on first use).</summary>
+    public static void InitializeHelpers(JsRealm realm, JsObject helperPrototype, JsObject wrapPrototype)
+    {
+        realm.DefineMethods(helperPrototype, HelperPrototypeMethods);
+        helperPrototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Iterator Helper", PropertyFlags.Configurable);
+        realm.DefineMethods(wrapPrototype, WrapPrototypeMethods);
     }
 
     private static JsValue Arg(ReadOnlySpan<JsValue> arguments, int index) => arguments.Length > index ? arguments[index] : default;

@@ -27,9 +27,9 @@ internal sealed partial class Intrinsics
     public JsObject AsyncDisposableStackPrototype => EnsureDisposableStacks()._asyncDisposableStackPrototype!;
 
     /// <summary>
-    /// The explicit resource management built-ins (SuppressedError, DisposableStack, AsyncDisposableStack,
-    /// %AsyncIteratorPrototype%[@@asyncDispose]), then the ES2026 additions to the earlier built-ins. It runs after
-    /// InitializeArray and InitializePromise. DisposableStack and AsyncDisposableStack are created on first use.
+    /// The explicit resource management built-ins (SuppressedError, DisposableStack, AsyncDisposableStack), then the ES2026
+    /// additions to the earlier built-ins. It runs after InitializeArray and InitializePromise. DisposableStack and
+    /// AsyncDisposableStack are created on first use, %AsyncIteratorPrototype%[@@asyncDispose] with the generators.
     /// </summary>
     partial void InitializeDisposable()
     {
@@ -37,7 +37,6 @@ internal sealed partial class Intrinsics
         SuppressedError = SuppressedErrorBuiltins.Initialize(this, SuppressedErrorPrototype);
         AddLazyGlobal("DisposableStack", static intrinsics => intrinsics.DisposableStack);
         AddLazyGlobal("AsyncDisposableStack", static intrinsics => intrinsics.AsyncDisposableStack);
-        AsyncIteratorDisposeBuiltins.Initialize(this);
         InitializeEs2026Additions();
     }
 

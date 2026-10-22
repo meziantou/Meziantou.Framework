@@ -88,6 +88,25 @@ public sealed class IntlTests
         Assert.Equal(exact, (x.IsNegative ? "-" : "") + FormatExact(x));
     }
 
+    // ToIntlMathematicalValue converts a Number with Number::toString: the shortest decimal that round-trips
+    [Theory]
+    [InlineData(0.1, "1e-1")]
+    [InlineData(1.005, "1005e-3")]
+    [InlineData(-1.5, "-15e-1")]
+    [InlineData(-0.0, "-0e0")]
+    [InlineData(123.0, "123e0")]
+    [InlineData(1e21, "1e21")]
+    [InlineData(18446744073709551616.0, "18446744073709552e3")]
+    [InlineData(1.7976931348623157e308, "17976931348623157e292")]
+    [InlineData(5e-324, "5e-324")]
+    public void IntlDecimal_FromNumber(double value, string expected)
+    {
+        var x = Meziantou.Framework.JavaScriptEngine.Intl.IntlDecimal.FromNumber(value);
+        Assert.Equal(expected, x.ToString());
+        Assert.Equal(value, x.ToDouble());
+        Assert.Equal(0, x.CompareValue(Meziantou.Framework.JavaScriptEngine.Intl.IntlDecimal.Parse(NumberFormatting.ToString(value))));
+    }
+
     private static string FormatExact(Meziantou.Framework.JavaScriptEngine.Intl.IntlDecimal x)
     {
         var digits = x.Coefficient.ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -135,6 +154,20 @@ public sealed class IntlTests
             """));
     }
 
+    // select and selectRange use ToIntlMathematicalValue: a Number is rounded from its shortest decimal, and a BigInt is accepted
+    [Fact]
+    public void PluralRules_IntlMathematicalValue()
+    {
+        Assert.Equal("other|one|one|other", Evaluate("""
+            [
+                new Intl.PluralRules("en", { maximumFractionDigits: 2 }).select(1.005),
+                new Intl.PluralRules("en", { maximumFractionDigits: 2 }).select(1.004),
+                new Intl.PluralRules("en").select(1n),
+                new Intl.PluralRules("en").selectRange(1n, 2n),
+            ].join("|")
+            """));
+    }
+
     [Theory]
     [InlineData("en-US", "{}", "1234567.891", "1,234,567.891")]
     [InlineData("de-DE", "{}", "1234567.891", "1.234.567,891")]
@@ -153,7 +186,7 @@ public sealed class IntlTests
     [InlineData("en-US", "{ notation: 'scientific' }", "123456", "1.235E5")]
     [InlineData("en-US", "{ notation: 'engineering' }", "0.000123", "123E-6")]
     [InlineData("en-US", "{ signDisplay: 'exceptZero' }", "-0", "0")]
-    [InlineData("en-US", "{ maximumFractionDigits: 20 }", "0.1", "0.10000000000000000555")]
+    [InlineData("en-US", "{ maximumFractionDigits: 20 }", "0.1", "0.1")]
     [InlineData("en-US", "{ maximumSignificantDigits: 2, roundingMode: 'floor' }", "-123", "-130")]
     [InlineData("en-US", "{ minimumFractionDigits: 2, maximumFractionDigits: 2, roundingIncrement: 5 }", "1.234", "1.25")]
     [InlineData("en-US", "{}", "'1e1000'", "\u221E")]
@@ -170,6 +203,34 @@ public sealed class IntlTests
     public void NumberFormat(string locale, string options, string value, string expected)
     {
         Assert.Equal(expected, Evaluate($"new Intl.NumberFormat('{locale}', {options}).format({value})"));
+    }
+
+    // ToIntlMathematicalValue converts a Number with Number::toString, so 1.005 (1.00499999999999989... in binary) rounds
+    // up as in browsers; toFixed keeps the exact binary value of ECMA-262
+    [Fact]
+    public void NumberFormat_NumberUsesShortestDecimal()
+    {
+        Assert.Equal("1.01|0.02|0.1|18,446,744,073,709,552,000|1.01|integer:1,decimal:.,fraction:01|1.01\u20132.68|0|1.00", Evaluate("""
+            const nf = new Intl.NumberFormat("en", { maximumFractionDigits: 2 });
+            let mismatches = 0;
+            for (let k = 0; k < 100000; k++) {
+                const x = k / 1000;
+                if (nf.format(x) !== nf.format(String(x)))
+                    mismatches++;
+            }
+
+            [
+                (1.005).toLocaleString("en", { maximumFractionDigits: 2 }),
+                nf.format(0.015),
+                new Intl.NumberFormat("en", { maximumSignificantDigits: 21 }).format(0.1),
+                (2 ** 64).toLocaleString("en"),
+                nf.format(new Number(1.005)),
+                nf.formatToParts(1.005).map(p => p.type + ":" + p.value).join(),
+                nf.formatRange(1.005, 2.675),
+                mismatches,
+                (1.005).toFixed(2),
+            ].join("|")
+            """));
     }
 
     [Fact]
@@ -214,6 +275,7 @@ public sealed class IntlTests
     [InlineData("en", "{}", 1234.5, "seconds", "in 1,234.5 seconds")]
     [InlineData("pl", "{}", 5, "year", "za 5 lat")]
     [InlineData("en-u-nu-arab", "{ style: 'narrow' }", 2, "hour", "in \u0662h")]
+    [InlineData("en", "{}", 1.0005, "day", "in 1 day")] // PartitionRelativeTimePattern formats the exact value (1.000499999...)
     public void RelativeTimeFormat(string locale, string options, double value, string unit, string expected)
     {
         Assert.Equal(expected, Evaluate($"new Intl.RelativeTimeFormat('{locale}', {options}).format({value.ToString(System.Globalization.CultureInfo.InvariantCulture)}, '{unit}')"));

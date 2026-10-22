@@ -1,3 +1,7 @@
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.ExceptionServices;
+
 namespace Meziantou.Framework.JavaScriptEngine;
 
 /// <summary>The operations on iterator objects (https://tc39.es/ecma262/#sec-operations-on-iterator-objects).</summary>
@@ -48,10 +52,9 @@ internal static class IteratorOperations
         {
             result = value is { } v ? JsOperations.Call(record.NextMethod, record.Iterator, [v]) : JsOperations.Call(record.NextMethod, record.Iterator, []);
         }
-        catch (JsException)
+        catch (JsException) when (SetDone(record))
         {
-            record.Done = true;
-            throw;
+            throw new UnreachableException();
         }
 
         if (result.Cell is not JsObject resultObject)
@@ -79,10 +82,9 @@ internal static class IteratorOperations
             {
                 hasElement = record.StepArray(out value);
             }
-            catch (JsException)
+            catch (JsException) when (SetDone(record))
             {
-                record.Done = true;
-                throw;
+                throw new UnreachableException();
             }
 
             if (!hasElement)
@@ -101,10 +103,9 @@ internal static class IteratorOperations
             {
                 hasValue = nativeNext.CallIteratorStep(record.Iterator, out value);
             }
-            catch (JsException)
+            catch (JsException) when (SetDone(record))
             {
-                record.Done = true;
-                throw;
+                throw new UnreachableException();
             }
 
             if (!hasValue)
@@ -121,10 +122,9 @@ internal static class IteratorOperations
         {
             done = IteratorComplete(result);
         }
-        catch (JsException)
+        catch (JsException) when (SetDone(record))
         {
-            record.Done = true;
-            throw;
+            throw new UnreachableException();
         }
 
         if (done)
@@ -138,10 +138,9 @@ internal static class IteratorOperations
         {
             value = IteratorValue(result);
         }
-        catch (JsException)
+        catch (JsException) when (SetDone(record))
         {
-            record.Done = true;
-            throw;
+            throw new UnreachableException();
         }
 
         return true;
@@ -180,6 +179,37 @@ internal static class IteratorOperations
         {
             // The original exception is rethrown by the caller
         }
+    }
+
+    /// <summary>
+    /// IteratorClose(iteratorRecord, completion) for the throw completion of <paramref name="exception"/>, then throws it
+    /// again. It is called after the catch block of the exception, not in it: an exception thrown in a catch block is
+    /// dispatched above the frames of the exception being handled, which overflows the stack when the exception leaves a
+    /// deep recursion through such blocks (and the return method would run with no stack left).
+    /// </summary>
+    [DoesNotReturn]
+    public static void IteratorCloseAndRethrow(IteratorRecord record, JsException exception)
+    {
+        IteratorCloseOnThrow(record);
+        ExceptionDispatchInfo.Throw(exception);
+    }
+
+    /// <inheritdoc cref="IteratorCloseAndRethrow(IteratorRecord, JsException)"/>
+    [DoesNotReturn]
+    public static T IteratorCloseAndRethrow<T>(IteratorRecord record, JsException exception)
+    {
+        IteratorCloseAndRethrow(record, exception);
+        return default;
+    }
+
+    /// <summary>
+    /// An exception filter that sets [[Done]] of an iterator record and does not catch the exception (a catch block that
+    /// rethrows nests the exception dispatch, see <see cref="IteratorCloseAndRethrow"/>).
+    /// </summary>
+    internal static bool SetDone(IteratorRecord record)
+    {
+        record.Done = true;
+        return false;
     }
 
     /// <summary>IteratorToList(iteratorRecord)</summary>

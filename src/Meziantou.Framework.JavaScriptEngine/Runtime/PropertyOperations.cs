@@ -367,6 +367,7 @@ internal static class PropertyOperations
         var iteratorRecord = IteratorOperations.GetIterator(iterable);
         while (IteratorOperations.IteratorStepValue(iteratorRecord, out var next))
         {
+            JsException? exception = null;
             try
             {
                 if (next.Cell is not JsObject entry)
@@ -379,10 +380,14 @@ internal static class PropertyOperations
                 var value = entry.Get(new PropertyKey(1u));
                 adder(key, value);
             }
-            catch (JsException)
+            catch (JsException ex)
             {
-                IteratorOperations.IteratorCloseOnThrow(iteratorRecord);
-                throw;
+                exception = ex;
+            }
+
+            if (exception is not null)
+            {
+                IteratorOperations.IteratorCloseAndRethrow(iteratorRecord, exception);
             }
         }
     }
@@ -416,7 +421,8 @@ internal static class PropertyOperations
             if (!IteratorOperations.IteratorStepValue(iteratorRecord, out var value))
                 return groups;
 
-            int index;
+            var index = 0;
+            JsException? exception = null;
             try
             {
                 var key = callbackFunction.Call(JsValue.Undefined, [value, k]);
@@ -445,10 +451,14 @@ internal static class PropertyOperations
                     }
                 }
             }
-            catch (JsException)
+            catch (JsException ex)
             {
-                IteratorOperations.IteratorCloseOnThrow(iteratorRecord);
-                throw;
+                exception = ex;
+            }
+
+            if (exception is not null)
+            {
+                IteratorOperations.IteratorCloseAndRethrow(iteratorRecord, exception);
             }
 
             groups[index].Value.Add(value);

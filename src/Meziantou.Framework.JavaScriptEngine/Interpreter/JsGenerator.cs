@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace Meziantou.Framework.JavaScriptEngine.Interpreter;
 
 internal enum GeneratorState
@@ -54,15 +56,9 @@ internal sealed class JsGenerator(JsObject prototype, Frame frame) : JsObject(pr
                 result = JsInterpreter.ResumeGenerator(Frame, value, kind);
             }
         }
-        catch (JsException)
+        catch (Exception ex) when (ex is JsException or JsTerminationException && SetCompleted())
         {
-            State = GeneratorState.Completed;
-            throw;
-        }
-        catch (JsTerminationException)
-        {
-            State = GeneratorState.Completed;
-            throw;
+            throw new UnreachableException();
         }
 
         if (Frame.State == FrameState.SuspendedYield)
@@ -73,6 +69,17 @@ internal sealed class JsGenerator(JsObject prototype, Frame frame) : JsObject(pr
 
         State = GeneratorState.Completed;
         return IteratorOperations.CreateIteratorResultObject(realm, result, done: true);
+    }
+
+    /// <summary>
+    /// An exception filter that completes the generator when its code throws, and does not catch the exception: a catch
+    /// block that rethrows nests the exception dispatch in each .NET level of a deep recursion through generators, which
+    /// overflows the stack.
+    /// </summary>
+    private bool SetCompleted()
+    {
+        State = GeneratorState.Completed;
+        return false;
     }
 }
 

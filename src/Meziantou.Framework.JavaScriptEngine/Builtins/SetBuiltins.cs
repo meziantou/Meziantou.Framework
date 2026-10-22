@@ -94,14 +94,19 @@ internal static class SetBuiltins
         var iteratorRecord = IteratorOperations.GetIterator(iterable);
         while (IteratorOperations.IteratorStepValue(iteratorRecord, out var next))
         {
+            JsException? exception = null;
             try
             {
                 adder.Call(target, [next]);
             }
-            catch (JsException)
+            catch (JsException ex)
             {
-                IteratorOperations.IteratorCloseOnThrow(iteratorRecord);
-                throw;
+                exception = ex;
+            }
+
+            if (exception is not null)
+            {
+                IteratorOperations.IteratorCloseAndRethrow(iteratorRecord, exception);
             }
         }
     }

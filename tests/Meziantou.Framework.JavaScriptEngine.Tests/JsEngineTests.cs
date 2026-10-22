@@ -368,6 +368,18 @@ public sealed class JsEngineTests
         realm.Execute("var o = { m: probe };\no.\n  m();", "method.js");
         Assert.Equal(new JsSourceLocation("method.js", 3, 3), location);
         Assert.Null(engine.GetActiveScriptOrModule());
+
+        // The script of a dynamic function is the script that created it, not the script that calls it
+        realm.Execute("var dynamic = new Function('probe()'); var dynamicGenerator = new (function* () {}).constructor('probe()');", "creator.js");
+        realm.Execute("dynamic();", "caller.js");
+        Assert.Equal("creator.js", url);
+        realm.Execute("dynamicGenerator().next();", "caller.js");
+        Assert.Equal("creator.js", url);
+
+        // A dynamic function created by the host has no script: the script of its caller is the active one
+        realm.GlobalObject.SetProperty("hostDynamic", engine.Construct(realm.Execute("Function"), ["probe()"]));
+        realm.Execute("hostDynamic();", "caller.js");
+        Assert.Equal("caller.js", url);
     }
 
     [Fact]
@@ -429,6 +441,52 @@ public sealed class JsEngineTests
         Assert.Equal("RangeError", realm.Execute("""
             const value = { toString() { return convert(value); } };
             try { convert(value); } catch (e) { e.name }
+            """).AsString());
+    }
+
+    // Each operation calls recurse() again (through the host function convert) from a place where the error leaves a
+    // .NET catch block of the engine: the generators, the steps of the iterators and the closing of the iterators
+    [Theory]
+    [InlineData("function* g() { yield convert(step); } g().next();")]
+    [InlineData("Array.from({ [Symbol.iterator]() { return { next() { return convert(step); } }; } });")]
+    [InlineData("const a = [0]; Object.defineProperty(a, 0, { get() { return convert(step); } }); new Set(a);")]
+    [InlineData("new Set(Array.prototype.values.call({ length: 1, get 0() { return convert(step); } }));")]
+    [InlineData("Array.from({ [Symbol.iterator]() { return { next() { return { get done() { return convert(step); } }; } }; } });")]
+    [InlineData("Array.from({ [Symbol.iterator]() { return { next() { return { done: false, get value() { return convert(step); } }; } }; } });")]
+    [InlineData("Array.from([1], () => convert(step));")]
+    [InlineData("new Map([{ get 0() { return convert(step); } }]);")]
+    [InlineData("new WeakMap([{ get 0() { return convert(step); } }]);")]
+    [InlineData("Map.groupBy([1], () => convert(step));")]
+    [InlineData("class S extends Set { add() { return convert(step); } } new S([1]);")]
+    [InlineData("Object.fromEntries([{ get 0() { return convert(step); } }]);")]
+    [InlineData("Object.groupBy([1], () => convert(step));")]
+    [InlineData("[1].values().take({ valueOf() { return convert(step); } });")]
+    [InlineData("[1].values().forEach(() => convert(step));")]
+    [InlineData("[1].values().join({ toString() { return convert(step); } });")]
+    [InlineData("[{ toString() { return convert(step); } }].values().join();")]
+    [InlineData("[1].values().map(() => convert(step)).next();")]
+    [InlineData("[1].values().flatMap(() => ({ next() { return convert(step); } })).next();")]
+    [InlineData("[1].values().flatMap(() => ({ get [Symbol.iterator]() { return convert(step); } })).next();")]
+    [InlineData("const h = [1].values().flatMap(() => ({ next() { return { value: 1, done: false }; }, return() { return convert(step); } })); h.next(); h.return();")]
+    [InlineData("Iterator.zip([{ next() { return convert(step); } }]).next();")]
+    [InlineData("Iterator.zip([{ next() { return { done: true }; } }, { next() { return convert(step); } }], { mode: 'strict' }).next();")]
+    [InlineData("Iterator.zip({ [Symbol.iterator]() { return { next() { return convert(step); } }; } });")]
+    [InlineData("Iterator.zip([{ get [Symbol.iterator]() { return convert(step); } }]);")]
+    [InlineData("Iterator.zip([], { mode: 'longest', padding: { get [Symbol.iterator]() { return convert(step); } } });")]
+    [InlineData("Iterator.zip([[]], { mode: 'longest', padding: { [Symbol.iterator]() { return { next() { return convert(step); } }; } } });")]
+    [InlineData("Iterator.zip([[]], { mode: 'longest', padding: { [Symbol.iterator]() { return { next() { return { value: 1, done: false }; }, return() { return convert(step); } }; } } });")]
+    [InlineData("Iterator.zipKeyed({ get a() { return convert(step); } });")]
+    [InlineData("Iterator.zipKeyed({ a: [] }, { mode: 'longest', padding: { get a() { return convert(step); } } });")]
+    public void DeepRecursionThroughBuiltinsThrowsARangeError(string operation)
+    {
+        using var engine = new JsEngine(new JsEngineOptions { RecursionLimit = int.MaxValue });
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        realm.GlobalObject.SetProperty("convert", realm.CreateFunction("convert", 1, (_, arguments) => engine.ToString(arguments[0])));
+        Assert.Equal("RangeError", realm.Execute($$"""
+            const step = { toString() { recurse(); return ''; } };
+            function recurse() { {{operation}} }
+            try { recurse(); } catch (e) { e.name }
             """).AsString());
     }
 

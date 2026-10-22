@@ -939,6 +939,11 @@ internal static class SqlFunctions
         {
             throw new TdsQueryEngineException($"{functionName} input is not a valid JSON document: {ex.Message}");
         }
+        catch (ArgumentException ex)
+        {
+            // The text contains an unpaired surrogate, which cannot be transcoded to UTF-8
+            throw new TdsQueryEngineException($"{functionName} input is not a valid JSON document: {ex.Message}");
+        }
     }
 
     private static string? JsonNodeToSqlScalarString(JsonNode? node, string functionName, string path, JsonPathEvaluationMode mode)
@@ -967,8 +972,9 @@ internal static class SqlFunctions
             document = JsonDocument.Parse(json);
             return true;
         }
-        catch (JsonException)
+        catch (Exception ex) when (ex is JsonException or ArgumentException)
         {
+            // ArgumentException: the text contains an unpaired surrogate, which cannot be transcoded to UTF-8
             document = null;
             return false;
         }

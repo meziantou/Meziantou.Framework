@@ -119,7 +119,9 @@ internal static partial class JsInterpreter
         };
 
         var prototype = ObjectOperations.GetPrototypeFromConstructor(newTarget, fallback);
-        var closure = CreateClosure(realm, template, realm.GlobalEnvironment, script: null);
+        // OrdinaryFunctionCreate: the [[ScriptOrModule]] of the function is the active script or module (the code that
+        // created it, not the code that calls it: import() resolves its specifiers from it)
+        var closure = CreateClosure(realm, template, realm.GlobalEnvironment, realm.Engine.FindActiveScriptOrModule());
         closure.SetPrototypeDirect(prototype);
         return closure;
     }

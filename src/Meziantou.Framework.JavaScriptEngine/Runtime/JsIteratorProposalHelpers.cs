@@ -154,23 +154,28 @@ internal sealed class JsZipIteratorHelper : JsIteratorHelper
         var results = new JsValue[iterCount];
         for (var i = 0; i < iterCount; i++)
         {
-            JsValue result;
+            JsValue result = default;
             if (_iters[i] is not { } iter)
             {
                 result = _padding[i];
             }
             else
             {
-                bool hasValue;
+                var hasValue = false;
+                JsException? exception = null;
                 try
                 {
                     hasValue = IteratorOperations.IteratorStepValue(iter, out result);
                 }
-                catch (JsException)
+                catch (JsException ex)
+                {
+                    exception = ex;
+                }
+
+                if (exception is not null)
                 {
                     _openIters.Remove(iter);
-                    IteratorBuiltins.IteratorCloseAllOnThrow(_openIters);
-                    throw;
+                    IteratorBuiltins.IteratorCloseAllAndRethrow(_openIters, exception);
                 }
 
                 if (!hasValue)
@@ -191,16 +196,20 @@ internal sealed class JsZipIteratorHelper : JsIteratorHelper
                             for (var k = 1; k < iterCount; k++)
                             {
                                 var other = _iters[k]!;
-                                bool open;
+                                var open = false;
                                 try
                                 {
                                     open = IteratorBuiltins.IteratorStep(other);
                                 }
-                                catch (JsException)
+                                catch (JsException ex)
+                                {
+                                    exception = ex;
+                                }
+
+                                if (exception is not null)
                                 {
                                     _openIters.Remove(other);
-                                    IteratorBuiltins.IteratorCloseAllOnThrow(_openIters);
-                                    throw;
+                                    IteratorBuiltins.IteratorCloseAllAndRethrow(_openIters, exception);
                                 }
 
                                 if (open)

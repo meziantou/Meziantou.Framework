@@ -1,3 +1,6 @@
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.ExceptionServices;
+
 namespace Meziantou.Framework.JavaScriptEngine;
 
 /// <summary>
@@ -65,6 +68,14 @@ internal static partial class IteratorBuiltins
         }
     }
 
+    /// <summary>IteratorCloseAll(iters, completion) for the throw completion of <paramref name="exception"/>, then throws it again (after the catch block, see <see cref="IteratorOperations.IteratorCloseAndRethrow(IteratorRecord, JsException)"/>).</summary>
+    [DoesNotReturn]
+    internal static void IteratorCloseAllAndRethrow(List<IteratorRecord> iterators, JsException exception)
+    {
+        IteratorCloseAllOnThrow(iterators);
+        ExceptionDispatchInfo.Throw(exception);
+    }
+
     /// <summary>IteratorCloseAll(iters, ThrowCompletion(a newly created TypeError object))</summary>
     internal static void IteratorCloseAllAndThrowTypeError(List<IteratorRecord> iterators, string message)
     {
@@ -124,73 +135,78 @@ internal static partial class IteratorBuiltins
         var inputIter = IteratorOperations.GetIterator(iterables);
         while (true)
         {
-            JsValue next;
+            var hasNext = false;
+            JsValue next = default;
+            JsException? exception = null;
             try
             {
-                if (!IteratorOperations.IteratorStepValue(inputIter, out next))
-                    break;
+                hasNext = IteratorOperations.IteratorStepValue(inputIter, out next);
             }
-            catch (JsException)
+            catch (JsException ex)
             {
-                IteratorCloseAllOnThrow(iters);
-                throw;
+                exception = ex;
             }
+
+            if (exception is not null)
+            {
+                IteratorCloseAllAndRethrow(iters, exception);
+            }
+
+            if (!hasNext)
+                break;
 
             try
             {
                 iters.Add(GetIteratorFlattenable(next, iterateStrings: false));
             }
-            catch (JsException)
+            catch (JsException ex)
+            {
+                exception = ex;
+            }
+
+            if (exception is not null)
             {
                 IteratorCloseAllOnThrow(iters);
-                IteratorOperations.IteratorCloseOnThrow(inputIter);
-                throw;
+                IteratorOperations.IteratorCloseAndRethrow(inputIter, exception);
             }
         }
 
         var padding = new JsValue[iters.Count];
         if (mode == ZipMode.Longest && !paddingOption.IsUndefined)
         {
-            IteratorRecord paddingIter;
+            JsException? exception = null;
             try
             {
-                paddingIter = IteratorOperations.GetIterator(paddingOption);
+                ReadZipPadding(paddingOption, padding);
             }
-            catch (JsException)
+            catch (JsException ex)
             {
-                IteratorCloseAllOnThrow(iters);
-                throw;
-            }
-
-            var usingIterator = true;
-            for (var i = 0; i < padding.Length && usingIterator; i++)
-            {
-                try
-                {
-                    usingIterator = IteratorOperations.IteratorStepValue(paddingIter, out padding[i]);
-                }
-                catch (JsException)
-                {
-                    IteratorCloseAllOnThrow(iters);
-                    throw;
-                }
+                exception = ex;
             }
 
-            if (usingIterator)
+            if (exception is not null)
             {
-                try
-                {
-                    IteratorOperations.IteratorClose(paddingIter);
-                }
-                catch (JsException)
-                {
-                    IteratorCloseAllOnThrow(iters);
-                    throw;
-                }
+                IteratorCloseAllAndRethrow(iters, exception);
             }
         }
 
         return new JsZipIteratorHelper(function.Realm.Intrinsics.IteratorHelperPrototype, iters, mode, padding, keys: null);
+    }
+
+    /// <summary>Reads the padding option of Iterator.zip in the longest mode: the first values of the padding iterable.</summary>
+    private static void ReadZipPadding(JsValue paddingOption, JsValue[] padding)
+    {
+        var paddingIter = IteratorOperations.GetIterator(paddingOption);
+        var usingIterator = true;
+        for (var i = 0; i < padding.Length && usingIterator; i++)
+        {
+            usingIterator = IteratorOperations.IteratorStepValue(paddingIter, out padding[i]);
+        }
+
+        if (usingIterator)
+        {
+            IteratorOperations.IteratorClose(paddingIter);
+        }
     }
 
     /// <summary>Iterator.zipKeyed(iterables [, options])</summary>
@@ -205,6 +221,7 @@ internal static partial class IteratorBuiltins
         var allKeys = iterables.OwnPropertyKeys();
         foreach (var key in allKeys)
         {
+            JsException? exception = null;
             try
             {
                 if (!iterables.GetOwnProperty(key, out var descriptor) || !descriptor.Enumerable)
@@ -217,10 +234,14 @@ internal static partial class IteratorBuiltins
                 keys.Add(key);
                 iters.Add(GetIteratorFlattenable(value, iterateStrings: false));
             }
-            catch (JsException)
+            catch (JsException ex)
             {
-                IteratorCloseAllOnThrow(iters);
-                throw;
+                exception = ex;
+            }
+
+            if (exception is not null)
+            {
+                IteratorCloseAllAndRethrow(iters, exception);
             }
         }
 
@@ -229,14 +250,19 @@ internal static partial class IteratorBuiltins
         {
             for (var i = 0; i < padding.Length; i++)
             {
+                JsException? exception = null;
                 try
                 {
                     padding[i] = paddingObject.Get(keys[i]);
                 }
-                catch (JsException)
+                catch (JsException ex)
                 {
-                    IteratorCloseAllOnThrow(iters);
-                    throw;
+                    exception = ex;
+                }
+
+                if (exception is not null)
+                {
+                    IteratorCloseAllAndRethrow(iters, exception);
                 }
             }
         }

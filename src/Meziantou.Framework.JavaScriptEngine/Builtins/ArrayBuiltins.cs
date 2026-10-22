@@ -184,9 +184,9 @@ internal static class ArrayBuiltins
             {
                 if (k >= MaxSafeInteger)
                 {
-                    var exception = ThrowHelper.CreateException(ErrorType.TypeError, "The length of the array exceeds 2^53-1");
+                    var lengthError = ThrowHelper.CreateException(ErrorType.TypeError, "The length of the array exceeds 2^53-1");
                     IteratorOperations.IteratorCloseOnThrow(iteratorRecord);
-                    throw exception;
+                    throw lengthError;
                 }
 
                 if (!IteratorOperations.IteratorStepValue(iteratorRecord, out var next))
@@ -195,15 +195,20 @@ internal static class ArrayBuiltins
                     return array;
                 }
 
+                JsException? exception = null;
                 try
                 {
                     var mappedValue = mapper is null ? next : mapper.Call(thisArg, [next, (double)k]);
                     ArrayOperations.CreateElement(array, k, mappedValue);
                 }
-                catch (JsException)
+                catch (JsException ex)
                 {
-                    IteratorOperations.IteratorCloseOnThrow(iteratorRecord);
-                    throw;
+                    exception = ex;
+                }
+
+                if (exception is not null)
+                {
+                    IteratorOperations.IteratorCloseAndRethrow(iteratorRecord, exception);
                 }
             }
         }

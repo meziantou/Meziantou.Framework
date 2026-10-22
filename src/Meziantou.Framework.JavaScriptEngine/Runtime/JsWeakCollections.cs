@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 
 namespace Meziantou.Framework.JavaScriptEngine;
 
@@ -137,19 +138,26 @@ internal sealed class JsFinalizationRegistry : JsObject
             if (!_cells.Remove(cell))
                 continue;
 
+            JsException? exception = null;
             try
             {
                 engine.CallJobCallback(CleanupCallback, JsValue.Undefined, [cell.HeldValue]);
             }
-            catch (JsException)
+            catch (JsException ex)
             {
-                // The error is reported by the job; the other cells are cleaned up by another job
+                exception = ex;
+            }
+
+            if (exception is not null)
+            {
+                // The error is reported by the job; the other cells are cleaned up by another job. The exception is
+                // rethrown after the catch block: a throw in a catch block nests the exception dispatch.
                 if (!_collectedCells.IsEmpty)
                 {
                     ScheduleCleanup();
                 }
 
-                throw;
+                ExceptionDispatchInfo.Throw(exception);
             }
         }
     }

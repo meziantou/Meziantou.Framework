@@ -82,6 +82,7 @@ internal static class MapBuiltins
         var adderFunction = adder.AsObject();
         while (IteratorOperations.IteratorStepValue(iteratorRecord, out var next))
         {
+            JsException? exception = null;
             try
             {
                 if (next.Cell is not JsObject entry)
@@ -94,10 +95,14 @@ internal static class MapBuiltins
                 var value = entry.Get(OneKey);
                 adderFunction.Call(target, [key, value]);
             }
-            catch (JsException)
+            catch (JsException ex)
             {
-                IteratorOperations.IteratorCloseOnThrow(iteratorRecord);
-                throw;
+                exception = ex;
+            }
+
+            if (exception is not null)
+            {
+                IteratorOperations.IteratorCloseAndRethrow(iteratorRecord, exception);
             }
         }
     }
@@ -129,15 +134,20 @@ internal static class MapBuiltins
             if (!IteratorOperations.IteratorStepValue(iteratorRecord, out var value))
                 break;
 
-            JsValue key;
+            JsValue key = default;
+            JsException? exception = null;
             try
             {
                 key = callbackFunction.Call(JsValue.Undefined, [value, k]);
             }
-            catch (JsException)
+            catch (JsException ex)
             {
-                IteratorOperations.IteratorCloseOnThrow(iteratorRecord);
-                throw;
+                exception = ex;
+            }
+
+            if (exception is not null)
+            {
+                IteratorOperations.IteratorCloseAndRethrow(iteratorRecord, exception);
             }
 
             // AddValueToKeyedGroup(groups, key, value)

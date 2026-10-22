@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 
 namespace Meziantou.Framework.JavaScriptEngine;
@@ -117,10 +118,9 @@ internal static partial class IteratorBuiltins
         {
             done = IteratorOperations.IteratorComplete(result);
         }
-        catch (JsException)
+        catch (JsException) when (IteratorOperations.SetDone(record))
         {
-            record.Done = true;
-            throw;
+            throw new UnreachableException();
         }
 
         if (done)
@@ -289,15 +289,20 @@ internal static partial class IteratorBuiltins
     /// <summary>The validation of the limit of take and drop.</summary>
     private static double GetLimitArgument(JsObject iterator, JsValue limit, string methodName)
     {
-        double numLimit;
+        var numLimit = 0d;
+        JsException? exception = null;
         try
         {
             numLimit = JsOperations.ToNumber(limit);
         }
-        catch (JsException)
+        catch (JsException ex)
         {
-            IteratorOperations.IteratorCloseOnThrow(new IteratorRecord(iterator, JsValue.Undefined));
-            throw;
+            exception = ex;
+        }
+
+        if (exception is not null)
+        {
+            IteratorOperations.IteratorCloseAndRethrow(new IteratorRecord(iterator, JsValue.Undefined), exception);
         }
 
         if (double.IsNaN(numLimit) || (double.IsFinite(numLimit) && numLimit > MaxSafeInteger))
@@ -358,15 +363,17 @@ internal static partial class IteratorBuiltins
     /// <summary>Calls the function of a consuming method; an exception closes the iterator (IfAbruptCloseIterator).</summary>
     private static JsValue CallClosing(IteratorRecord iterated, JsObject callback, ReadOnlySpan<JsValue> arguments)
     {
+        JsException exception;
         try
         {
             return callback.Call(JsValue.Undefined, arguments);
         }
-        catch (JsException)
+        catch (JsException ex)
         {
-            IteratorOperations.IteratorCloseOnThrow(iterated);
-            throw;
+            exception = ex;
         }
+
+        return IteratorOperations.IteratorCloseAndRethrow<JsValue>(iterated, exception);
     }
 
     /// <summary>Iterator.prototype.reduce(reducer [, initialValue])</summary>
@@ -502,14 +509,20 @@ internal static partial class IteratorBuiltins
         }
         else
         {
+            separator = "";
+            JsException? exception = null;
             try
             {
                 separator = JsOperations.ToString(separatorArgument);
             }
-            catch (JsException)
+            catch (JsException ex)
             {
-                IteratorOperations.IteratorCloseOnThrow(new IteratorRecord(obj, JsValue.Undefined));
-                throw;
+                exception = ex;
+            }
+
+            if (exception is not null)
+            {
+                IteratorOperations.IteratorCloseAndRethrow(new IteratorRecord(obj, JsValue.Undefined), exception);
             }
         }
 
@@ -518,6 +531,7 @@ internal static partial class IteratorBuiltins
         var first = true;
         while (IteratorOperations.IteratorStepValue(iterated, out var value))
         {
+            JsException? exception = null;
             try
             {
                 var str = value.IsNullOrUndefined ? "" : JsOperations.ToString(value);
@@ -531,10 +545,14 @@ internal static partial class IteratorBuiltins
                 first = false;
                 result.Append(str);
             }
-            catch (JsException)
+            catch (JsException ex)
             {
-                IteratorOperations.IteratorCloseOnThrow(iterated);
-                throw;
+                exception = ex;
+            }
+
+            if (exception is not null)
+            {
+                IteratorOperations.IteratorCloseAndRethrow(iterated, exception);
             }
         }
 

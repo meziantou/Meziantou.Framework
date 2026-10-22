@@ -42,15 +42,17 @@ internal abstract class JsUnderlyingIteratorHelper(JsObject prototype, IteratorR
     /// <summary>Calls the function of the helper; an exception closes the underlying iterator (IfAbruptCloseIterator).</summary>
     protected JsValue CallClosing(JsObject function, JsValue value, double counter)
     {
+        JsException exception;
         try
         {
             return function.Call(JsValue.Undefined, [value, counter]);
         }
-        catch (JsException)
+        catch (JsException ex)
         {
-            IteratorOperations.IteratorCloseOnThrow(Iterated);
-            throw;
+            exception = ex;
         }
+
+        return IteratorOperations.IteratorCloseAndRethrow<JsValue>(Iterated, exception);
     }
 }
 
@@ -155,15 +157,21 @@ internal sealed class JsFlatMapIteratorHelper(JsObject prototype, IteratorRecord
         {
             if (_inner is { } inner)
             {
-                bool hasValue;
+                var hasValue = false;
+                value = default;
+                JsException? exception = null;
                 try
                 {
                     hasValue = IteratorOperations.IteratorStepValue(inner, out value);
                 }
-                catch (JsException)
+                catch (JsException ex)
                 {
-                    IteratorOperations.IteratorCloseOnThrow(Iterated);
-                    throw;
+                    exception = ex;
+                }
+
+                if (exception is not null)
+                {
+                    IteratorOperations.IteratorCloseAndRethrow(Iterated, exception);
                 }
 
                 if (hasValue)
@@ -179,14 +187,19 @@ internal sealed class JsFlatMapIteratorHelper(JsObject prototype, IteratorRecord
             }
 
             var mapped = CallClosing(mapper, item, _counter);
+            JsException? flattenException = null;
             try
             {
                 _inner = IteratorBuiltins.GetIteratorFlattenable(mapped, iterateStrings: false);
             }
-            catch (JsException)
+            catch (JsException ex)
             {
-                IteratorOperations.IteratorCloseOnThrow(Iterated);
-                throw;
+                flattenException = ex;
+            }
+
+            if (flattenException is not null)
+            {
+                IteratorOperations.IteratorCloseAndRethrow(Iterated, flattenException);
             }
 
             _counter++;
@@ -197,14 +210,19 @@ internal sealed class JsFlatMapIteratorHelper(JsObject prototype, IteratorRecord
     {
         if (_inner is { } inner)
         {
+            JsException? exception = null;
             try
             {
                 IteratorOperations.IteratorClose(inner);
             }
-            catch (JsException)
+            catch (JsException ex)
             {
-                IteratorOperations.IteratorCloseOnThrow(Iterated);
-                throw;
+                exception = ex;
+            }
+
+            if (exception is not null)
+            {
+                IteratorOperations.IteratorCloseAndRethrow(Iterated, exception);
             }
         }
 

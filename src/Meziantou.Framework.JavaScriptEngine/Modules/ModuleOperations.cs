@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Meziantou.Framework.JavaScriptEngine.Interpreter;
 
 namespace Meziantou.Framework.JavaScriptEngine.Modules;
@@ -186,15 +187,24 @@ internal static class ModuleOperations
         {
             InnerModuleLinking(cyclic, stack, 0);
         }
-        catch (JsException)
+        catch (JsException) when (ResetLinkingModules(stack))
         {
-            foreach (var m in stack)
-            {
-                m.Status = JsModuleStatus.Unlinked;
-            }
-
-            throw;
+            throw new UnreachableException();
         }
+    }
+
+    /// <summary>
+    /// An exception filter that resets the status of the modules being linked when the linking fails, and does not catch
+    /// the exception (a catch block that rethrows nests the exception dispatch).
+    /// </summary>
+    private static bool ResetLinkingModules(List<JsSourceTextModule> stack)
+    {
+        foreach (var m in stack)
+        {
+            m.Status = JsModuleStatus.Unlinked;
+        }
+
+        return false;
     }
 
     /// <summary>InnerModuleLinking(module, stack, index)</summary>

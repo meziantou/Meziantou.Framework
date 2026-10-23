@@ -272,6 +272,9 @@ bilevel-images/pdfjs/test/pdfs/bug1795263.pdf#477: 125dc338cac25e412fbe37de8e956
 bilevel-images/pdfjs/test/pdfs/bug1795263.pdf#478: 728058c5118e63dca9a60fff36657fbb
 bilevel-images/pdfjs/test/pdfs/bug1795263.pdf#479: 16031e9ef565e150154a5356048bf05f
 bilevel-images/pdfjs/test/pdfs/bug1795263.pdf#480: e7b7cabc7e4e9cce24d70b9d638d36df
+bilevel-images/pdfjs/test/pdfs/bug1815476.pdf#47: 7c72d6b40218e5c2a7285fe386b723e5
+bilevel-images/pdfjs/test/pdfs/bug1815476.pdf#48: 84d7ccd075a96b6203bd60a3ae80fc07
+bilevel-images/pdfjs/test/pdfs/bug1815476.pdf#50: 9997844416c17c7219ab02150661a6cf
 bilevel-images/pdfjs/test/pdfs/ccitt_EndOfBlock_false.pdf#10: b771a298d7a1d98368e88b18d5e0fabc
 bilevel-images/pdfjs/test/pdfs/ccitt_EndOfBlock_false.pdf#11: b771a298d7a1d98368e88b18d5e0fabc
 bilevel-images/pdfjs/test/pdfs/ccitt_EndOfBlock_false.pdf#6: e36f750d7917176a3a0904356e8c4a94

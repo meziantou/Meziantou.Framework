@@ -624,7 +624,11 @@
         "encryption.r2"
       ],
       "expected": {
-        "exception": "UnsupportedPdfFeatureException"
+        "pages": 1,
+        "repaired": false,
+        "text": [
+          "Hello, World"
+        ]
       }
     },
     {
@@ -643,7 +647,11 @@
         "encryption.r3"
       ],
       "expected": {
-        "exception": "UnsupportedPdfFeatureException"
+        "pages": 1,
+        "repaired": false,
+        "text": [
+          "Hello, World"
+        ]
       }
     },
     {
@@ -662,7 +670,11 @@
         "encryption.r4"
       ],
       "expected": {
-        "exception": "UnsupportedPdfFeatureException"
+        "pages": 1,
+        "repaired": false,
+        "text": [
+          "Hello, World"
+        ]
       }
     },
     {
@@ -681,7 +693,11 @@
         "encryption.r6"
       ],
       "expected": {
-        "exception": "UnsupportedPdfFeatureException"
+        "pages": 1,
+        "repaired": false,
+        "text": [
+          "Hello, World"
+        ]
       }
     },
     {
@@ -700,7 +716,12 @@
         "encryption.r6"
       ],
       "expected": {
-        "exception": "UnsupportedPdfFeatureException"
+        "pages": 1,
+        "repaired": false,
+        "text": [
+          "Hello, World"
+        ],
+        "password": "user"
       }
     }
   ],

@@ -35,6 +35,13 @@ public sealed class QpdfTool
     /// <returns>The result: exit code 0 without warning, 3 with warnings, 2 with errors.</returns>
     public Task<ProcessResult> CheckAsync(string path, CancellationToken cancellationToken) => ProcessRunner.RunAsync(Path, ["--check", path], cancellationToken);
 
+    /// <summary>Runs <c>qpdf --check</c> on an encrypted file, and <c>--show-encryption</c>.</summary>
+    /// <param name="path">The file.</param>
+    /// <param name="password">The user or owner password.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>The result: exit code 0 without warning, 3 with warnings, 2 with errors; the output describes the encryption.</returns>
+    public Task<ProcessResult> CheckAsync(string path, string password, CancellationToken cancellationToken) => ProcessRunner.RunAsync(Path, ["--check", "--show-encryption", "--password=" + password, path], cancellationToken);
+
     /// <summary>Gets the objects of a file as qpdf reads them (<c>--json=2 --json-key=qpdf</c>).</summary>
     /// <param name="path">The file.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>

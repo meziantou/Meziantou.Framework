@@ -177,13 +177,18 @@ public sealed class PdfReaderTests
         Assert.Throws<InvalidPdfContentException>(() => PdfDocument.Open("%PDF-1.7\nnothing"u8.ToArray()));
     }
 
-    [Fact]
-    public void EncryptedDocumentsAreNotSupportedYet()
+    [Theory]
+    [InlineData("<< /Filter /Adobe.PubSec /V 4 /R 4 >>", typeof(UnsupportedPdfFeatureException))]
+    [InlineData("<< /Filter /Standard /V 3 /R 3 >>", typeof(UnsupportedPdfFeatureException))]
+    [InlineData("<< /Filter /Standard /V 1 /R 2 >>", typeof(InvalidPdfContentException))]
+    [InlineData("<< /Filter /Standard /V 1 /R 2 /O <00> /U <00> /P -4 >>", typeof(InvalidPdfContentException))]
+    [InlineData("<< /Filter /Standard /V 4 /R 4 /StmF /Unknown /O <00> /U <00> /P -4 >>", typeof(InvalidPdfContentException))]
+    public void UnsupportedOrInvalidEncryptionIsReported(string encrypt, Type exception)
     {
         var file = HandWrittenPdf.CreateSimple();
-        file.Trailer = "<< /Size {size} /Root 1 0 R /Encrypt << /Filter /Standard /V 1 /R 2 >> >>";
+        file.Trailer = "<< /Size {size} /Root 1 0 R /Encrypt " + encrypt + " >>";
 
-        Assert.Throws<UnsupportedPdfFeatureException>(() => PdfDocument.Open(file.ToArray()));
+        Assert.Equal(exception, Assert.ThrowsAny<PdfException>(() => PdfDocument.Open(file.ToArray())).GetType());
     }
 
     [Fact]

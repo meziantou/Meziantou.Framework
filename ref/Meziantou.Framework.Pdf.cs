@@ -187,11 +187,14 @@ namespace Meziantou.Framework.Pdf
     public sealed class PdfDocument
     {
         public Meziantou.Framework.Pdf.Objects.PdfDictionary Catalog { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfEncryption? Encryption { get => throw null; set { } }
         public Meziantou.Framework.Pdf.PdfDocumentInformation Information { get => throw null; }
+        public bool IsEncrypted { get => throw null; }
         public bool IsRepaired { get => throw null; }
         public Meziantou.Framework.Pdf.Objects.PdfIndirectObjectCollection Objects { get => throw null; }
         public Meziantou.Framework.Pdf.PdfOutlineCollection Outlines { get => throw null; }
         public Meziantou.Framework.Pdf.PdfPageCollection Pages { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfPermissions Permissions { get => throw null; }
         public Meziantou.Framework.Pdf.Objects.PdfDictionary Trailer { get => throw null; }
         public Meziantou.Framework.Pdf.PdfVersion Version { get => throw null; set { } }
         public Meziantou.Framework.Pdf.PdfForm CreateForm(Meziantou.Framework.Pdf.PdfRectangle boundingBox, Meziantou.Framework.Pdf.PdfMatrix? matrix = null, Meziantou.Framework.Pdf.PdfTransparencyGroup? group = null) => throw null;
@@ -227,6 +230,24 @@ namespace Meziantou.Framework.Pdf
         public string? Title { get => throw null; set { } }
         public string? GetText(string key) => throw null;
         public void SetText(string key, string? value) { }
+    }
+
+    public sealed class PdfEncryption
+    {
+        public Meziantou.Framework.Pdf.PdfEncryptionAlgorithm Algorithm { get => throw null; init { } }
+        public bool EncryptMetadata { get => throw null; init { } }
+        public string? OwnerPassword { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfPermissions Permissions { get => throw null; init { } }
+        public string? UserPassword { get => throw null; }
+        public PdfEncryption(string userPassword, string ownerPassword) { }
+    }
+
+    public enum PdfEncryptionAlgorithm
+    {
+        Rc4With40BitKey = 0,
+        Rc4With128BitKey = 1,
+        AesWith128BitKey = 2,
+        AesWith256BitKey = 3,
     }
 
     public class PdfException : System.Exception
@@ -431,6 +452,12 @@ namespace Meziantou.Framework.Pdf
         public void RemoveAt(int index) { }
     }
 
+    public sealed class PdfPasswordException : Meziantou.Framework.Pdf.PdfException
+    {
+        public PdfPasswordException(string? message) { }
+        public PdfPasswordException(string? message, System.Exception? innerException) { }
+    }
+
     public sealed class PdfPatch
     {
         public System.ReadOnlySpan<Meziantou.Framework.Pdf.PdfPoint> BoundaryPoints { get => throw null; }
@@ -441,6 +468,21 @@ namespace Meziantou.Framework.Pdf
 
     public abstract class PdfPattern
     {
+    }
+
+    [System.Flags]
+    public enum PdfPermissions
+    {
+        None = 0,
+        Print = 4,
+        Modify = 8,
+        CopyContent = 16,
+        Annotate = 32,
+        FillForms = 256,
+        ExtractForAccessibility = 512,
+        Assemble = 1024,
+        PrintHighQuality = 2048,
+        All = 3900,
     }
 
     public readonly struct PdfPoint : System.IEquatable<Meziantou.Framework.Pdf.PdfPoint>

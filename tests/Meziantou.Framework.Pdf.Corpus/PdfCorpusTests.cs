@@ -44,12 +44,12 @@ public sealed class PdfCorpusTests
 
     public static TheoryData<string> PdfBox => GetFiles("pdfbox");
 
-    /// <summary>Gets the pages of the reference tests of pdf.js (the <c>eq</c> tests of its manifest): one page per file, the first one it tests.</summary>
-    public static TheoryData<string, int> PdfJsReferencePages
+    /// <summary>Gets the pages of the reference tests of pdf.js (the <c>eq</c> tests of its manifest): one page per file, the first one it tests, with the password of the test.</summary>
+    public static TheoryData<string, int, string?> PdfJsReferencePages
     {
         get
         {
-            var data = new TheoryData<string, int>();
+            var data = new TheoryData<string, int, string?>();
             var manifest = RepositoryPaths.External / "pdfjs" / "test" / "test_manifest.json";
             if (!File.Exists(manifest))
                 return data;
@@ -66,7 +66,7 @@ public sealed class PdfCorpusTests
                 var id = "pdfjs/test/" + file;
                 if (files.Contains(id) && added.Add(id))
                 {
-                    data.Add(id, test.TryGetProperty("firstPage", out var firstPage) ? firstPage.GetInt32() - 1 : 0);
+                    data.Add(id, test.TryGetProperty("firstPage", out var firstPage) ? firstPage.GetInt32() - 1 : 0, test.TryGetProperty("password", out var password) ? password.GetString() : null);
                 }
             }
 
@@ -110,7 +110,7 @@ public sealed class PdfCorpusTests
         {
             document = PdfDocument.Open(CorpusFiles.Read(id), Options);
         }
-        catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException or PdfResourceLimitException)
+        catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException or PdfResourceLimitException or PdfPasswordException)
         {
             // The files that cannot be opened are checked by the other tests
             return;
@@ -127,7 +127,7 @@ public sealed class PdfCorpusTests
             {
                 outcome = Convert.ToHexStringLower(SHA256.HashData(stream.GetDecodedData()).AsSpan(0, 16));
             }
-            catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException or PdfResourceLimitException)
+            catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException or PdfResourceLimitException or PdfPasswordException)
             {
                 outcome = ex.GetType().Name;
                 details = ex.ToString();
@@ -144,7 +144,7 @@ public sealed class PdfCorpusTests
     /// </summary>
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(PdfJsReferencePages), DisableDiscoveryEnumeration = true)]
-    public async Task PdfJsRenderedPages(string id, int page)
+    public async Task PdfJsRenderedPages(string id, int page, string? password)
     {
         var data = CorpusFiles.Read(id);
         var expectationId = "rendering/" + id + "#" + page.ToString(CultureInfo.InvariantCulture);
@@ -155,7 +155,7 @@ public sealed class PdfCorpusTests
         try
         {
             // The pages of a file whose page tree cannot be read are missing
-            var document = PdfDocument.Open(data, Options);
+            var document = PdfDocument.Open(data, new PdfReadOptions { MaxDecodedStreamLength = Options.MaxDecodedStreamLength, Password = password });
             if (page < document.Pages.Count)
             {
                 image = PdfRenderer.RenderPage(document.Pages[page], new PdfRenderOptions { Dpi = RenderedDpi });
@@ -165,7 +165,7 @@ public sealed class PdfCorpusTests
                 outcome = "MissingPage";
             }
         }
-        catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException or PdfResourceLimitException)
+        catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException or PdfResourceLimitException or PdfPasswordException)
         {
             outcome = ex.GetType().Name;
             details = ex.ToString();
@@ -174,7 +174,7 @@ public sealed class PdfCorpusTests
         Assert.True(stopwatch.Elapsed < MaxDuration, $"Rendering the page took {stopwatch.Elapsed}");
         using (image)
         {
-            var difference = image is not null && OperatingSystem.IsWindows() ? await CompareWithPdfiumAsync(data, page, image) : null;
+            var difference = image is not null && OperatingSystem.IsWindows() ? await CompareWithPdfiumAsync(data, page, password, image) : null;
             var isRecordedAsDifferent = CorpusExpectations.GetExpectedOutcome(expectationId) == "Different";
             if (CorpusExpectations.UpdateMode || outcome is not null)
             {
@@ -208,13 +208,13 @@ public sealed class PdfCorpusTests
     private static TheoryData<string> GetFiles(string suite) => new(CorpusFiles.GetFiles(suite));
 
     /// <summary>Gets the part of the pixels of a page that differ from the image PDFium renders; <see langword="null"/> when PDFium does not render it.</summary>
-    private static async Task<double?> CompareWithPdfiumAsync(byte[] data, int page, Image<Rgba32> image)
+    private static async Task<double?> CompareWithPdfiumAsync(byte[] data, int page, string? password, Image<Rgba32> image)
     {
         var pdfium = await PdfiumTool.LocateAsync(XunitCancellationToken);
         var directory = Path.Combine(Path.GetTempPath(), "pdf-corpus-rendering", Guid.NewGuid().ToString("N"));
         try
         {
-            var path = await pdfium.RenderPageAsync(data, page, RenderedDpi / 72, directory, XunitCancellationToken);
+            var path = await pdfium.RenderPageAsync(data, page, RenderedDpi / 72, directory, password, XunitCancellationToken);
             if (path is null)
                 return null;
 
@@ -272,7 +272,7 @@ public sealed class PdfCorpusTests
         {
             Read(data);
         }
-        catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException or PdfResourceLimitException)
+        catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException or PdfResourceLimitException or PdfPasswordException)
         {
             outcome = ex.GetType().Name;
             details = ex.ToString();

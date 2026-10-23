@@ -1,6 +1,7 @@
 using System.Text;
 using Meziantou.Framework.Pdf.Filters;
 using Meziantou.Framework.Pdf.Objects;
+using Meziantou.Framework.Pdf.Security;
 
 namespace Meziantou.Framework.Pdf.Parsing;
 
@@ -18,6 +19,7 @@ internal sealed class PdfFileReader : IPdfObjectLoader
     private readonly PdfReadOptions _options;
     private readonly Dictionary<int, ObjectStreamData> _objectStreams = [];
     private PdfRecoveryScanner? _scanner;
+    private int _encryptObjectNumber = -1;
 
     private PdfFileReader(ReadOnlyMemory<byte> data, PdfReadOptions options, PdfIndirectObjectCollection objects)
     {
@@ -49,6 +51,9 @@ internal sealed class PdfFileReader : IPdfObjectLoader
 
     public ReadOnlyMemory<byte> Data => _data;
 
+    /// <summary>Gets the security handler of an encrypted file, which decrypts the objects when they are loaded.</summary>
+    public StandardSecurityHandler? Security { get; private set; }
+
     public static PdfFileReader Open(ReadOnlyMemory<byte> data, PdfReadOptions options)
     {
         var objects = new PdfIndirectObjectCollection();
@@ -60,9 +65,12 @@ internal sealed class PdfFileReader : IPdfObjectLoader
             reader.Repair();
         }
 
+        // The objects are decrypted from the first one that is loaded after the encryption dictionary
+        reader.InitializeSecurity();
         if (reader.Trailer.GetResolved(PdfNames.Root) is not PdfDictionary && !reader.IsRepaired)
         {
             reader.Repair();
+            reader.InitializeSecurity();
         }
 
         if (reader.Trailer.GetResolved(PdfNames.Root) is not PdfDictionary)
@@ -102,6 +110,24 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         }
 
         return PdfNull.Instance;
+    }
+
+    /// <summary>Authenticates the password of an encrypted file (7.6): the encryption dictionary is not encrypted itself.</summary>
+    private void InitializeSecurity()
+    {
+        if (Security is not null || Trailer[PdfNames.Encrypt] is not { } encrypt)
+            return;
+
+        if (encrypt is PdfReference reference)
+        {
+            _encryptObjectNumber = reference.ObjectNumber;
+        }
+
+        if (PdfReference.ResolveIfReference(encrypt) is not PdfDictionary dictionary)
+            throw new InvalidPdfContentException("The /Encrypt entry of the trailer is not a dictionary");
+
+        var id = Trailer.GetResolved(PdfNames.ID) is PdfArray ids && ids.TryGetResolved<PdfString>(0, out var first) ? first.Span : [];
+        Security = StandardSecurityHandler.Open(dictionary, id, _options.Password);
     }
 
     private void ReadHeader()
@@ -514,6 +540,11 @@ internal sealed class PdfFileReader : IPdfObjectLoader
             var value = parser.ParseIndirectObject(out var foundNumber, out var foundGeneration);
             if (value is null || foundNumber != number || (generation is { } expected && foundGeneration != expected))
                 return null;
+
+            if (Security is not null && number != _encryptObjectNumber)
+            {
+                value = Security.Decrypt(value, number, foundGeneration);
+            }
 
             return value;
         }

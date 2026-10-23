@@ -64,7 +64,7 @@ public sealed class PdfFixtureTests
             return;
         }
 
-        var document = PdfDocument.Open(data);
+        var document = PdfDocument.Open(data, new PdfReadOptions { Password = expected?.Password });
         if (expected is null)
             return;
 
@@ -94,7 +94,7 @@ public sealed class PdfFixtureTests
         }
 
         // Every fixture that can be read can be written in full and read back with the same text
-        var saved = PdfDocument.Open(document.ToByteArray());
+        var saved = PdfDocument.Open(document.ToByteArray(), new PdfReadOptions { Password = expected.Password });
         Assert.False(saved.IsRepaired);
         Assert.Equal(document.Pages.Select(page => page.ExtractText()), saved.Pages.Select(page => page.ExtractText()));
     }

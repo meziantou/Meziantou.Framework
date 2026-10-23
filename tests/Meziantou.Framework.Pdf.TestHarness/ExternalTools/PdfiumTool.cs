@@ -28,16 +28,17 @@ public sealed class PdfiumTool
     /// <param name="page">The page index, from 0.</param>
     /// <param name="scale">The scale: 1 renders one pixel per point.</param>
     /// <param name="directory">The directory the file and the image are written to.</param>
+    /// <param name="password">The password of an encrypted file, or <see langword="null"/>.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <returns>The path of the PNG file, or <see langword="null"/> when PDFium does not render the page.</returns>
-    public async Task<string?> RenderPageAsync(byte[] data, int page, double scale, string directory, CancellationToken cancellationToken)
+    public async Task<string?> RenderPageAsync(byte[] data, int page, double scale, string directory, string? password, CancellationToken cancellationToken)
     {
         Directory.CreateDirectory(directory);
         var path = Path.Combine(directory, Guid.NewGuid().ToString("N") + ".pdf");
         await File.WriteAllBytesAsync(path, data, cancellationToken).ConfigureAwait(false);
 
         // The tool writes the image next to the file it is given
-        string[] arguments = ["--png", "--scale=" + scale.ToString(CultureInfo.InvariantCulture), "--pages=" + page.ToString(CultureInfo.InvariantCulture), path];
+        string[] arguments = ["--png", "--scale=" + scale.ToString(CultureInfo.InvariantCulture), "--pages=" + page.ToString(CultureInfo.InvariantCulture), .. password is null ? Array.Empty<string>() : ["--password=" + password], path];
         await ProcessRunner.RunAsync(PdfiumTestPath, arguments, cancellationToken).ConfigureAwait(false);
         var output = path + "." + page.ToString(CultureInfo.InvariantCulture) + ".png";
         return File.Exists(output) ? output : null;

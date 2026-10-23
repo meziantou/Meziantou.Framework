@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using Meziantou.Framework.Pdf.Filters;
 using Meziantou.Framework.Pdf.Objects;
+using Meziantou.Framework.Pdf.Security;
 
 namespace Meziantou.Framework.Pdf.Writing;
 
@@ -18,6 +19,11 @@ internal sealed class PdfFileWriter
     private readonly PdfDocument _document;
     private readonly PdfSaveOptions _options;
     private readonly PdfByteWriter _output;
+
+    // The security handler that encrypts the strings and streams of the objects, and the first part of the file
+    // identifier its keys depend on (7.6.3.3)
+    private StandardSecurityHandler? _security;
+    private byte[]? _firstId;
 
     private PdfFileWriter(PdfDocument document, PdfSaveOptions options, PdfByteWriter output)
     {
@@ -86,7 +92,16 @@ internal sealed class PdfFileWriter
             Visit(queue.Dequeue().Value!);
         }
 
-        var references = new RenumberingReferenceWriter(numbers, objects);
+        // The encryption: the keys of the file the document was read from, or new keys; the encryption dictionary is an
+        // object of the writer, numbered after the objects of the document
+        var writerObjects = new PdfIndirectObjectCollection();
+        if (_document.Encryption is { } encryption)
+        {
+            _firstId = GetOriginalFirstId() ?? RandomNumberGenerator.GetBytes(16);
+            _security = encryption.Handler ?? StandardSecurityHandler.Create(encryption, _firstId);
+        }
+
+        var references = new RenumberingReferenceWriter(numbers, objects, writerObjects);
         var useObjectStreams = _options.UseObjectStreams;
         var version = GetVersion(useObjectStreams);
         WriteHeader(version);
@@ -123,6 +138,16 @@ internal sealed class PdfFileWriter
             WriteObjectStream(containerNumber, batch, references);
         }
 
+        // The encryption dictionary is not encrypted, and not in an object stream (7.5.7)
+        PdfReference? encryptReference = null;
+        long encryptOffset = 0;
+        if (_security is not null)
+        {
+            encryptReference = new PdfReference(writerObjects, nextNumber++, 0);
+            encryptOffset = _output.Length;
+            WriteIndirectObject(encryptReference.ObjectNumber, 0, _security.Dictionary, references, encrypt: false);
+        }
+
         var root = trailer[PdfNames.Root];
         var info = trailer[PdfNames.Info];
         var id = ComputeId(_output.WrittenSpan, isUpdate: false);
@@ -144,13 +169,19 @@ internal sealed class PdfFileWriter
             }
 
             entries[xrefNumber] = (1, xrefOffset, 0);
+            if (encryptReference is not null)
+            {
+                entries[encryptReference.ObjectNumber] = (1, encryptOffset, 0);
+            }
+
             var dictionary = CreateTrailer(size, root, info, id);
+            dictionary[PdfNames.Encrypt] = encryptReference;
             WriteXrefStream(xrefNumber, dictionary, [(0, size)], entries, references);
             WriteStartXref(xrefOffset);
         }
         else
         {
-            var size = ordered.Count + 1;
+            var size = nextNumber;
             var xrefOffset = _output.Length;
             _output.WriteAscii("xref\n0 ");
             _output.WriteInteger(size);
@@ -158,11 +189,13 @@ internal sealed class PdfFileWriter
             _output.WriteAscii("0000000000 65535 f \n");
             for (var number = 1; number < size; number++)
             {
-                WriteTableEntry(offsets[number], 0);
+                WriteTableEntry(number == encryptReference?.ObjectNumber ? encryptOffset : offsets[number], 0);
             }
 
+            var dictionary = CreateTrailer(size, root, info, id);
+            dictionary[PdfNames.Encrypt] = encryptReference;
             _output.WriteAscii("trailer\n");
-            PdfObjectSerializer.Write(_output, CreateTrailer(size, root, info, id), references);
+            PdfObjectSerializer.Write(_output, dictionary, references);
             _output.WriteNewLine();
             WriteStartXref(xrefOffset);
         }
@@ -178,6 +211,11 @@ internal sealed class PdfFileWriter
         {
             _document.Catalog[PdfNames.Version] = PdfName.Create(requested.ToString());
         }
+
+        // The objects of the update are encrypted with the keys of the file, whose encryption cannot change
+        _security = reader.Security;
+        if (_document.Encryption?.Handler != _security || (_security is null && _document.Encryption is not null))
+            throw new InvalidOperationException("The encryption of a document cannot change in an incremental update: the document must be saved in full");
 
         var objects = _document.Objects;
         var changed = objects.Entries
@@ -261,6 +299,22 @@ internal sealed class PdfFileWriter
             version = PdfVersion.Pdf15;
         }
 
+        // The revisions of the standard security handler: 3 needs PDF 1.4, 4 needs PDF 1.6, 6 needs PDF 2.0
+        var encryptionVersion = _security?.Algorithm switch
+        {
+            PdfEncryptionAlgorithm.Rc4With128BitKey => PdfVersion.Pdf14,
+            PdfEncryptionAlgorithm.AesWith128BitKey => PdfVersion.Pdf16,
+            PdfEncryptionAlgorithm.AesWith256BitKey => PdfVersion.Pdf20,
+            _ => version,
+        };
+        if (encryptionVersion > version)
+        {
+            if (_options.Version is not null)
+                throw new InvalidOperationException($"The encryption needs PDF {encryptionVersion} or later, the requested version is {version}");
+
+            version = encryptionVersion;
+        }
+
         return version;
     }
 
@@ -272,23 +326,33 @@ internal sealed class PdfFileWriter
         _output.Write(BinaryMarker);
     }
 
-    private void WriteIndirectObject(int number, int generation, PdfObject value, ReferenceWriter references)
+    private void WriteIndirectObject(int number, int generation, PdfObject value, ReferenceWriter references, bool encrypt = true)
     {
         _output.WriteInteger(number);
         _output.WriteSpace();
         _output.WriteInteger(generation);
         _output.WriteAscii(" obj\n");
+
+        // The strings and streams of an object are encrypted with the key of its number and generation (7.6.2)
+        var security = encrypt ? _security : null;
+        PdfStringTransform? encryptString = security is null ? null : text => security.EncryptString(text, number, generation);
         if (value is PdfStream stream)
         {
             var (dictionary, data) = PrepareStream(stream);
-            PdfObjectSerializer.Write(_output, dictionary, references);
+            if (security is not null && security.GetStreamMethod(dictionary) is var method and not CryptMethod.None)
+            {
+                data = security.EncryptStream(data.Span, method, number, generation);
+                dictionary[PdfNames.Length] = PdfInteger.Get(data.Length);
+            }
+
+            PdfObjectSerializer.Write(_output, dictionary, references, encryptString);
             _output.WriteAscii("\nstream\n");
             _output.Write(data.Span);
             _output.WriteAscii("\nendstream");
         }
         else
         {
-            PdfObjectSerializer.Write(_output, value, references);
+            PdfObjectSerializer.Write(_output, value, references, encryptString);
         }
 
         _output.WriteAscii("\nendobj\n");
@@ -371,7 +435,7 @@ internal sealed class PdfFileWriter
         }
 
         var stream = new PdfStream(dictionary, data);
-        WriteIndirectObject(number, 0, stream, references);
+        WriteIndirectObject(number, 0, stream, references, encrypt: false);
     }
 
     private static PdfDictionary CreateTrailer(int size, PdfObject? root, PdfObject? info, PdfArray id)
@@ -399,12 +463,28 @@ internal sealed class PdfFileWriter
     {
         var hash = PdfString.FromBytes(MD5.HashData(content), hexadecimal: true);
         var first = hash;
-        if ((isUpdate || _document.Reader is not null) && _document.Trailer.GetResolved(PdfNames.ID) is PdfArray existing && existing.TryGetResolved<PdfString>(0, out var original))
+        if (_firstId is not null)
         {
-            first = PdfString.FromBytes(original.Span, hexadecimal: true);
+            first = PdfString.FromBytes(_firstId, hexadecimal: true);
+        }
+        else if ((isUpdate || _document.Reader is not null) && GetOriginalFirstId() is { } original)
+        {
+            first = PdfString.FromBytes(original, hexadecimal: true);
         }
 
         return new PdfArray(first, hash);
+    }
+
+    /// <summary>Gets the first part of the identifier of the file the document was read from; empty for an encrypted file without identifier, whose keys use an empty one.</summary>
+    private byte[]? GetOriginalFirstId()
+    {
+        if (_document.Reader is null)
+            return null;
+
+        if (_document.Trailer.GetResolved(PdfNames.ID) is PdfArray existing && existing.TryGetResolved<PdfString>(0, out var original))
+            return original.Span.ToArray();
+
+        return _document.Reader.Security is not null ? [] : null;
     }
 
     private void WriteTableEntry(long offset, int generation)

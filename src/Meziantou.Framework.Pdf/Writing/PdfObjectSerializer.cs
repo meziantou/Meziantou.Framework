@@ -1,5 +1,6 @@
 using System.Text;
 using Meziantou.Framework.Pdf.Objects;
+using Meziantou.Framework.Pdf.Security;
 
 namespace Meziantou.Framework.Pdf.Writing;
 
@@ -25,7 +26,11 @@ internal static class PdfObjectSerializer
     }
 
     /// <summary>Writes an object. A stream is written as its dictionary followed by the <c>stream</c> keyword, without its data (the file writer writes the data).</summary>
-    public static void Write(PdfByteWriter writer, PdfObject value, ReferenceWriter references) => Write(writer, value, references, depth: 0);
+    /// <param name="writer">The writer.</param>
+    /// <param name="value">The object.</param>
+    /// <param name="references">The writer of the references.</param>
+    /// <param name="encryptString">The encryption of the strings of the object, or <see langword="null"/>.</param>
+    public static void Write(PdfByteWriter writer, PdfObject value, ReferenceWriter references, PdfStringTransform? encryptString = null) => Write(writer, value, references, encryptString, depth: 0);
 
     public static void WriteName(PdfByteWriter writer, PdfName name)
     {
@@ -114,7 +119,7 @@ internal static class PdfObjectSerializer
         writer.WriteByte((byte)')');
     }
 
-    private static void Write(PdfByteWriter writer, PdfObject value, ReferenceWriter references, int depth)
+    private static void Write(PdfByteWriter writer, PdfObject value, ReferenceWriter references, PdfStringTransform? encryptString, int depth)
     {
         if (depth > MaxDepth)
             throw new InvalidOperationException("The object is nested too deeply to be written");
@@ -136,6 +141,9 @@ internal static class PdfObjectSerializer
             case PdfName name:
                 WriteName(writer, name);
                 break;
+            case PdfString text when encryptString is not null:
+                WriteString(writer, encryptString(text.Span), hexadecimal: true);
+                break;
             case PdfString text:
                 WriteString(writer, text.Span, text.IsHexadecimal);
                 break;
@@ -151,16 +159,16 @@ internal static class PdfObjectSerializer
                         writer.WriteSpace();
                     }
 
-                    Write(writer, array[i], references, depth + 1);
+                    Write(writer, array[i], references, encryptString, depth + 1);
                 }
 
                 writer.WriteByte((byte)']');
                 break;
             case PdfDictionary dictionary:
-                WriteDictionary(writer, dictionary, references, depth);
+                WriteDictionary(writer, dictionary, references, encryptString, depth);
                 break;
             case PdfStream stream:
-                WriteDictionary(writer, stream.Dictionary, references, depth);
+                WriteDictionary(writer, stream.Dictionary, references, encryptString, depth);
                 writer.WriteAscii(" stream");
                 break;
             default:
@@ -168,7 +176,7 @@ internal static class PdfObjectSerializer
         }
     }
 
-    private static void WriteDictionary(PdfByteWriter writer, PdfDictionary dictionary, ReferenceWriter references, int depth)
+    private static void WriteDictionary(PdfByteWriter writer, PdfDictionary dictionary, ReferenceWriter references, PdfStringTransform? encryptString, int depth)
     {
         writer.WriteAscii("<<");
         var first = true;
@@ -182,7 +190,10 @@ internal static class PdfObjectSerializer
             first = false;
             WriteName(writer, entry.Key);
             writer.WriteSpace();
-            Write(writer, entry.Value, references, depth + 1);
+
+            // The signature of a signature dictionary is not encrypted (7.6.2)
+            var encrypt = encryptString is not null && !StandardSecurityHandler.IsSignatureContents(dictionary, entry.Key) ? encryptString : null;
+            Write(writer, entry.Value, references, encrypt, depth + 1);
         }
 
         writer.WriteAscii(">>");

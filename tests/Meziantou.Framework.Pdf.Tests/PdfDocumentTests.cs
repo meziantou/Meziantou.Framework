@@ -120,6 +120,161 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void Example_Encryption()
+    {
+        #region Pdf_Encryption
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder()
+            .DrawText("Confidential", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 24, 60, 700);
+
+        // AES-256 by default: the user password opens the document with the permissions, the owner password with all
+        document.Encryption = new PdfEncryption("user password", "owner password")
+        {
+            Permissions = PdfPermissions.Print | PdfPermissions.PrintHighQuality,
+        };
+        var file = document.ToByteArray();
+
+        var read = PdfDocument.Open(file, new PdfReadOptions { Password = "user password" });
+        var text = read.Pages[0].ExtractText();
+        var canCopy = read.Permissions.HasFlag(PdfPermissions.CopyContent);
+        #endregion
+
+        Assert.True(read.IsEncrypted);
+        Assert.Equal("Confidential", text);
+        Assert.False(canCopy);
+        Assert.Throws<PdfPasswordException>(() => PdfDocument.Open(file));
+    }
+
+    [Theory]
+    [InlineData(PdfEncryptionAlgorithm.Rc4With40BitKey, false)]
+    [InlineData(PdfEncryptionAlgorithm.Rc4With128BitKey, false)]
+    [InlineData(PdfEncryptionAlgorithm.AesWith128BitKey, false)]
+    [InlineData(PdfEncryptionAlgorithm.AesWith128BitKey, true)]
+    [InlineData(PdfEncryptionAlgorithm.AesWith256BitKey, false)]
+    [InlineData(PdfEncryptionAlgorithm.AesWith256BitKey, true)]
+    public void EncryptedDocumentsAreReadWithTheirPasswords(PdfEncryptionAlgorithm algorithm, bool objectStreams)
+    {
+        var document = new PdfDocument();
+        document.Information.Title = "Secret title";
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Secret text", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 24, 60, 700);
+        document.Encryption = new PdfEncryption("user", "owner") { Algorithm = algorithm, Permissions = PdfPermissions.Print | PdfPermissions.Annotate };
+        var file = document.ToByteArray(new PdfSaveOptions { UseObjectStreams = objectStreams, CompressStreams = false });
+
+        // Neither the strings nor the streams are in clear
+        var text = Encoding.Latin1.GetString(file);
+        Assert.DoesNotContain("Secret", text, StringComparison.Ordinal);
+        Assert.Contains("/Encrypt", text, StringComparison.Ordinal);
+
+        var user = PdfDocument.Open(file, new PdfReadOptions { Password = "user" });
+        Assert.True(user.IsEncrypted);
+        Assert.Equal("Secret title", user.Information.Title);
+        Assert.Equal("Secret text", user.Pages[0].ExtractText());
+        Assert.Equal(PdfPermissions.Print | PdfPermissions.Annotate, user.Permissions);
+        Assert.Equal(algorithm, user.Encryption!.Algorithm);
+        Assert.Null(user.Encryption.UserPassword);
+
+        var owner = PdfDocument.Open(file, new PdfReadOptions { Password = "owner" });
+        Assert.Equal("Secret text", owner.Pages[0].ExtractText());
+        Assert.Equal(PdfPermissions.All, owner.Permissions);
+
+        Assert.Throws<PdfPasswordException>(() => PdfDocument.Open(file));
+        Assert.Throws<PdfPasswordException>(() => PdfDocument.Open(file, new PdfReadOptions { Password = "wrong" }));
+    }
+
+    [Fact]
+    public void TheEncryptionOfADocumentReadIsKeptReplacedOrRemoved()
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Text", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 24, 60, 700);
+        document.Encryption = new PdfEncryption("", "owner") { Algorithm = PdfEncryptionAlgorithm.AesWith128BitKey };
+        var file = document.ToByteArray();
+
+        // A full save keeps the keys of the file; an incremental update encrypts its objects with them
+        var read = PdfDocument.Open(file);
+        read.Information.Title = "Updated";
+        var kept = PdfDocument.Open(read.ToByteArray(), new PdfReadOptions { Password = "owner" });
+        Assert.True(kept.IsEncrypted);
+        Assert.Equal("Updated", kept.Information.Title);
+        Assert.Equal(PdfEncryptionAlgorithm.AesWith128BitKey, kept.Encryption!.Algorithm);
+
+        using var update = new MemoryStream();
+        read.SaveIncremental(update);
+        var updated = PdfDocument.Open(update.ToArray());
+        Assert.True(updated.IsEncrypted);
+        Assert.Equal("Updated", updated.Information.Title);
+        Assert.Equal("Text", updated.Pages[0].ExtractText());
+
+        // The encryption can be replaced or removed by a full save only
+        read.Encryption = new PdfEncryption("new", "");
+        Assert.Throws<InvalidOperationException>(() => read.SaveIncremental(new MemoryStream()));
+        var replaced = PdfDocument.Open(read.ToByteArray(), new PdfReadOptions { Password = "new" });
+        Assert.Equal(PdfEncryptionAlgorithm.AesWith256BitKey, replaced.Encryption!.Algorithm);
+        Assert.Equal(PdfVersion.Pdf20, replaced.Version);
+
+        read.Encryption = null;
+        var removed = PdfDocument.Open(read.ToByteArray());
+        Assert.False(removed.IsEncrypted);
+        Assert.Null(removed.Encryption);
+        Assert.Equal("Text", removed.Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void AMissingKeyLengthIsRecovered()
+    {
+        // Revision 3 without /Length is a 40-bit key; some writers omit it for a 128-bit key. The entry is renamed in
+        // place, so that the offsets of the file do not change.
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Text", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 24, 60, 700);
+        document.Encryption = new PdfEncryption("", "owner") { Algorithm = PdfEncryptionAlgorithm.Rc4With128BitKey };
+        var file = Encoding.Latin1.GetString(document.ToByteArray(new PdfSaveOptions { UseObjectStreams = false }));
+        Assert.Contains("/Length 128", file, StringComparison.Ordinal);
+
+        var read = PdfDocument.Open(Encoding.Latin1.GetBytes(file.Replace("/Length 128", "/Wength 128", StringComparison.Ordinal)));
+
+        Assert.Equal("Text", read.Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void TheMetadataCanBeLeftInClear()
+    {
+        var document = new PdfDocument();
+        document.Information.Title = "Visible";
+        document.UpdateXmpMetadata();
+        document.Encryption = new PdfEncryption("user", "owner") { EncryptMetadata = false };
+
+        var file = document.ToByteArray();
+
+        Assert.Contains("<x:xmpmeta", Encoding.Latin1.GetString(file), StringComparison.Ordinal);
+        var read = PdfDocument.Open(file, new PdfReadOptions { Password = "user" });
+        Assert.False(read.Encryption!.EncryptMetadata);
+        Assert.Contains("Visible", Encoding.UTF8.GetString(read.GetXmpMetadata()!), StringComparison.Ordinal);
+        Assert.Equal("Visible", read.Information.Title);
+    }
+
+    [Fact]
+    public void PasswordsOfRevision6AreNormalized()
+    {
+        // SASLprep: the ligature U+FB01 is "fi", and the soft hyphen is removed
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4);
+        document.Encryption = new PdfEncryption("\uFB01le\u00AD", "");
+
+        var file = document.ToByteArray();
+
+        Assert.True(PdfDocument.Open(file, new PdfReadOptions { Password = "file" }).IsEncrypted);
+    }
+
+    [Fact]
+    public void TheVersionOfTheEncryptionCannotBeLowered()
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4);
+        document.Encryption = new PdfEncryption("", "owner");
+
+        Assert.Throws<InvalidOperationException>(() => document.ToByteArray(new PdfSaveOptions { Version = PdfVersion.Pdf17 }));
+    }
+
+    [Fact]
     public void Example_OutlineAndLinks()
     {
         #region Pdf_OutlineAndLinks

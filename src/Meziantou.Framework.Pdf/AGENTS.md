@@ -22,6 +22,14 @@ the XML documentation and `readme.md` consistent in the same change.
   through `InternalsVisibleTo`). JBIG2 follows T.88 with the context bit order of its figures: the typical prediction
   contexts alias the contexts of particular templates, so the order matters. Both were checked pixel by pixel against
   MuPDF, Poppler and PDFium on the corpora (`expectations/bilevel-images.txt` of the corpus tests records the digests).
+- **Encryption** (`Security/`): the standard security handler (7.6.4), revisions 2 to 6. The reader decrypts each
+  object when it is loaded (`PdfFileReader.Security`), except the encryption dictionary, the cross-reference streams,
+  the metadata when `/EncryptMetadata` is false and the signature of a signature dictionary; the objects of an object
+  stream are decrypted with their container. The writer encrypts the strings through the serializer and the streams
+  after compression, with the keys of the file the document was read from or new ones (`PdfEncryption.Handler`). RC4 is
+  implemented here (the base class library has none); the passwords of revision 6 go through SASLprep with the managed
+  normalization of `Meziantou.Framework.Unicode`, so that the reading does not depend on ICU. Every variant is checked
+  against qpdf in both directions (interop tests).
 - **Graphics objects** (`Graphics/`): the values that do not belong to a document (`PdfFunction`, `PdfShading`,
   `PdfExtGState`, `PdfShadingPattern`, `PdfSoftMask`) create their objects in each document that uses them, once
   (`PdfDocument.SharedResources`); the objects with content (`PdfForm`, `PdfTilingPattern`) belong to their document and

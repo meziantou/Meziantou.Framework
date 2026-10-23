@@ -54,6 +54,10 @@ public sealed partial class PdfDocument
         }
 
         Version = version;
+        if (reader.Security is { } security)
+        {
+            Encryption = new PdfEncryption(security);
+        }
     }
 
     /// <summary>Gets the indirect objects of the document.</summary>
@@ -64,6 +68,22 @@ public sealed partial class PdfDocument
 
     /// <summary>Gets the document catalog (ISO 32000-2, 7.7.2).</summary>
     public PdfDictionary Catalog => Trailer.Get<PdfDictionary>(PdfNames.Root) ?? throw new InvalidOperationException("The document has no catalog: the /Root entry of the trailer is missing");
+
+    /// <summary>Gets a value indicating whether the file the document was read from is encrypted (ISO 32000-2, 7.6).</summary>
+    public bool IsEncrypted => Reader?.Security is not null;
+
+    /// <summary>
+    /// Gets the operations the password the document was opened with allows: every operation for the owner password or
+    /// a file that is not encrypted, the permissions of the file for the user password. The library does not enforce them.
+    /// </summary>
+    public PdfPermissions Permissions => Reader?.Security is { IsOwner: false } security ? security.Permissions : PdfPermissions.All;
+
+    /// <summary>
+    /// Gets or sets the encryption the document is saved with, or <see langword="null"/> to save it without encryption.
+    /// A document read from an encrypted file has the encryption of the file, which a full save keeps unless it is
+    /// replaced or removed; an incremental save cannot change it.
+    /// </summary>
+    public PdfEncryption? Encryption { get; set; }
 
     /// <summary>Gets or sets the version of the document: the version of the header, or of the <c>/Version</c> entry of the catalog when it is later.</summary>
     public PdfVersion Version { get; set; }
@@ -110,6 +130,7 @@ public sealed partial class PdfDocument
     /// <exception cref="InvalidPdfContentException">The data is not a PDF document, or it cannot be recovered.</exception>
     /// <exception cref="UnsupportedPdfFeatureException">The document uses a feature the library does not support.</exception>
     /// <exception cref="PdfResourceLimitException">The document exceeds a limit of the options.</exception>
+    /// <exception cref="PdfPasswordException">The document is encrypted, and <see cref="PdfReadOptions.Password"/> is neither its user nor its owner password.</exception>
     public static PdfDocument Open(byte[] data, PdfReadOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(data);
@@ -123,13 +144,11 @@ public sealed partial class PdfDocument
     /// <exception cref="InvalidPdfContentException">The data is not a PDF document, or it cannot be recovered.</exception>
     /// <exception cref="UnsupportedPdfFeatureException">The document uses a feature the library does not support.</exception>
     /// <exception cref="PdfResourceLimitException">The document exceeds a limit of the options.</exception>
+    /// <exception cref="PdfPasswordException">The document is encrypted, and <see cref="PdfReadOptions.Password"/> is neither its user nor its owner password.</exception>
     public static PdfDocument Open(ReadOnlyMemory<byte> data, PdfReadOptions? options = null)
     {
         options ??= PdfReadOptions.Default;
         var reader = PdfFileReader.Open(data, options);
-        if (reader.Trailer.ContainsKey(PdfNames.Encrypt))
-            throw new UnsupportedPdfFeatureException("The document is encrypted: encryption is not supported yet");
-
         return new PdfDocument(reader);
     }
 
@@ -140,6 +159,7 @@ public sealed partial class PdfDocument
     /// <exception cref="InvalidPdfContentException">The data is not a PDF document, or it cannot be recovered.</exception>
     /// <exception cref="UnsupportedPdfFeatureException">The document uses a feature the library does not support.</exception>
     /// <exception cref="PdfResourceLimitException">The document exceeds a limit of the options.</exception>
+    /// <exception cref="PdfPasswordException">The document is encrypted, and <see cref="PdfReadOptions.Password"/> is neither its user nor its owner password.</exception>
     public static PdfDocument Open(Stream stream, PdfReadOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(stream);
@@ -155,6 +175,7 @@ public sealed partial class PdfDocument
     /// <exception cref="InvalidPdfContentException">The data is not a PDF document, or it cannot be recovered.</exception>
     /// <exception cref="UnsupportedPdfFeatureException">The document uses a feature the library does not support.</exception>
     /// <exception cref="PdfResourceLimitException">The document exceeds a limit of the options.</exception>
+    /// <exception cref="PdfPasswordException">The document is encrypted, and <see cref="PdfReadOptions.Password"/> is neither its user nor its owner password.</exception>
     public static PdfDocument Open(string path, PdfReadOptions? options = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
@@ -169,6 +190,7 @@ public sealed partial class PdfDocument
     /// <exception cref="InvalidPdfContentException">The data is not a PDF document, or it cannot be recovered.</exception>
     /// <exception cref="UnsupportedPdfFeatureException">The document uses a feature the library does not support.</exception>
     /// <exception cref="PdfResourceLimitException">The document exceeds a limit of the options.</exception>
+    /// <exception cref="PdfPasswordException">The document is encrypted, and <see cref="PdfReadOptions.Password"/> is neither its user nor its owner password.</exception>
     public static async Task<PdfDocument> OpenAsync(Stream stream, PdfReadOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
@@ -185,6 +207,7 @@ public sealed partial class PdfDocument
     /// <exception cref="InvalidPdfContentException">The data is not a PDF document, or it cannot be recovered.</exception>
     /// <exception cref="UnsupportedPdfFeatureException">The document uses a feature the library does not support.</exception>
     /// <exception cref="PdfResourceLimitException">The document exceeds a limit of the options.</exception>
+    /// <exception cref="PdfPasswordException">The document is encrypted, and <see cref="PdfReadOptions.Password"/> is neither its user nor its owner password.</exception>
     public static async Task<PdfDocument> OpenAsync(string path, PdfReadOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);

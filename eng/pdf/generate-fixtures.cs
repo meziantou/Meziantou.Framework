@@ -44,13 +44,13 @@ Recipe[] recipes =
     ("linearized", "linearized", ["--linearize", "--deterministic-id"]),
 ];
 
-(string Name, string Feature, string[] Arguments)[] encryptions =
+(string Name, string Feature, string? Password, string[] Arguments)[] encryptions =
 [
-    ("rc4-40", "encryption.r2", ["--allow-weak-crypto", "--encrypt", "", "owner", "40", "--"]),
-    ("rc4-128", "encryption.r3", ["--allow-weak-crypto", "--encrypt", "", "owner", "128", "--use-aes=n", "--"]),
-    ("aes-128", "encryption.r4", ["--encrypt", "", "owner", "128", "--use-aes=y", "--"]),
-    ("aes-256", "encryption.r6", ["--encrypt", "", "owner", "256", "--"]),
-    ("aes-256-user-password", "encryption.r6", ["--encrypt", "user", "owner", "256", "--"]),
+    ("rc4-40", "encryption.r2", null, ["--allow-weak-crypto", "--encrypt", "", "owner", "40", "--"]),
+    ("rc4-128", "encryption.r3", null, ["--allow-weak-crypto", "--encrypt", "", "owner", "128", "--use-aes=n", "--"]),
+    ("aes-128", "encryption.r4", null, ["--encrypt", "", "owner", "128", "--use-aes=y", "--"]),
+    ("aes-256", "encryption.r6", null, ["--encrypt", "", "owner", "256", "--"]),
+    ("aes-256-user-password", "encryption.r6", "user", ["--encrypt", "user", "owner", "256", "--"]),
 ];
 
 var manifest = new PdfFixtureManifest
@@ -104,7 +104,8 @@ foreach (var recipe in recipes)
     }
 }
 
-foreach (var (name, feature, arguments) in encryptions)
+var simple = recipes.Single(recipe => recipe.Name == "simple");
+foreach (var (name, feature, password, arguments) in encryptions)
 {
     var relativePath = "encryption/simple-" + name + ".pdf";
     Directory.CreateDirectory((outputRoot / relativePath).Parent);
@@ -117,7 +118,7 @@ foreach (var (name, feature, arguments) in encryptions)
         Kind = "encrypted",
         Provenance = new PdfFixtureProvenance { Origin = "tool", License = "CC0-1.0", Author = Author, Source = "structure/simple.pdf", Tool = "qpdf " + QpdfTool.Version + " " + string.Join(' ', allArguments) },
         Features = ["encryption", feature],
-        Expected = new PdfFixtureExpectation { Exception = "UnsupportedPdfFeatureException" },
+        Expected = new PdfFixtureExpectation { Pages = simple.Expected.Pages, Repaired = false, Text = simple.Expected.Text, Password = password },
     });
 }
 

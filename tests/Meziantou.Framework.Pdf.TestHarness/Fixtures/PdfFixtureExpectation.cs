@@ -22,4 +22,7 @@ public sealed class PdfFixtureExpectation
 
     /// <summary>Gets or sets the name of the exception the library must throw for an invalid fixture.</summary>
     public string? Exception { get; set; }
+
+    /// <summary>Gets or sets the password that opens an encrypted fixture, when it is not the empty user password.</summary>
+    public string? Password { get; set; }
 }

@@ -12,7 +12,9 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   codecs of `Meziantou.Framework.Imaging`
 - **Writer**: full saves (the objects reachable from the catalog, renumbered, with object streams and a
   cross-reference stream, or a cross-reference table) and incremental updates that keep the bytes of the original file;
-  the output depends only on the document and the options
+  the output depends only on the document and the options, except the random keys and vectors of the encryption
+- **Encryption**: the standard security handler, revisions 2 to 6 (RC4 with 40-bit and 128-bit keys, AES-128,
+  AES-256), with crypt filters, for reading (`PdfReadOptions.Password`) and writing (`PdfDocument.Encryption`)
 - **Document API**: pages (`PdfDocument.Pages`), a content builder for paths, colors, text, images and marked content
   (`PdfPage.CreateContentBuilder`), shadings and functions (`PdfShading`, `PdfFunction`), patterns, form XObjects,
   transparency (`PdfExtGState`: alpha, blend modes, soft masks; transparency groups), the standard 14 fonts and embedded TrueType and OpenType fonts, images (`PdfImage`: JPEG files as they are, other images
@@ -112,6 +114,32 @@ var text = document.Pages[0].ExtractText();
 ```
 <!-- endref -->
 
+## Encrypt a document
+
+`PdfDocument.Encryption` encrypts the strings and streams of the document when it is saved, with AES-256 by default.
+A document read from an encrypted file keeps its encryption: set the property to `null` to save it in clear, or to
+another `PdfEncryption` to change its passwords. `PdfDocument.Permissions` gives the operations the password the
+document was opened with allows; the library does not enforce them.
+
+<!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_Encryption;format=md-fenced-code-block;dedent=true -->
+```csharp
+var document = new PdfDocument();
+document.Pages.Add(PdfSize.A4).CreateContentBuilder()
+    .DrawText("Confidential", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 24, 60, 700);
+
+// AES-256 by default: the user password opens the document with the permissions, the owner password with all
+document.Encryption = new PdfEncryption("user password", "owner password")
+{
+    Permissions = PdfPermissions.Print | PdfPermissions.PrintHighQuality,
+};
+var file = document.ToByteArray();
+
+var read = PdfDocument.Open(file, new PdfReadOptions { Password = "user password" });
+var text = read.Pages[0].ExtractText();
+var canCopy = read.Permissions.HasFlag(PdfPermissions.CopyContent);
+```
+<!-- endref -->
+
 ## Modify a document incrementally
 
 An incremental update appends the objects that changed to the original file: the bytes of the original are kept, so
@@ -168,18 +196,20 @@ document.Catalog[PdfName.Create("ViewerPreferences")] = document.Objects.Add(vie
 | Situation | Exception |
 | --- | --- |
 | The data is not a PDF document, or it is damaged beyond repair | `InvalidPdfContentException` |
-| The document uses a feature the library does not support (encryption, CMYK JPEG images), or a font cannot be embedded (CFF2 or bitmap outlines, a license that does not allow it) | `UnsupportedPdfFeatureException` |
+| The document uses a feature the library does not support (a security handler other than the standard one, CMYK JPEG images), or a font cannot be embedded (CFF2 or bitmap outlines, a license that does not allow it) | `UnsupportedPdfFeatureException` |
 | The document exceeds a limit of `PdfReadOptions` (decoded length of a stream, nesting depth) | `PdfResourceLimitException` |
+| The document is encrypted, and `PdfReadOptions.Password` is neither its user nor its owner password | `PdfPasswordException` |
 
-The three exceptions derive from `PdfException`. A reference to an object that does not exist is the null object, as the
+The four exceptions derive from `PdfException`. A reference to an object that does not exist is the null object, as the
 specification says; a content stream that cannot be decoded throws when its data is read.
 
 ## Limitations
 
-- Encrypted documents are not read yet, and the library does not encrypt.
+- The public-key security handlers (certificates) are not supported; the writer encrypts the embedded files with the
+  method of the other streams.
 - The standard 14 fonts show the text of `WinAnsiEncoding` (or the encodings of Symbol and ZapfDingbats); an embedded
   font shows any text it has the glyphs of. The fonts with CFF2 outlines, and the instances of variable fonts, are not
   embedded. PDF/A, Tagged PDF and PDF/UA are not supported yet.
-- Pages are not rendered.
+- Pages are rendered by `Meziantou.Framework.Pdf.Rendering`.
 - The text extraction follows the order of the content and joins the glyphs into lines by their positions; it does
   not detect columns.

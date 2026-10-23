@@ -8,14 +8,11 @@ rendering/pdfjs/test/pdfs/bug1669099.pdf#0: Different
 rendering/pdfjs/test/pdfs/bug1671312_ArialNarrow.pdf#0: Different
 rendering/pdfjs/test/pdfs/bug1671312_reduced.pdf#0: Different
 rendering/pdfjs/test/pdfs/bug1743245.pdf#0: Different
-rendering/pdfjs/test/pdfs/bug1782186.pdf#0: UnsupportedPdfFeatureException
 rendering/pdfjs/test/pdfs/bug1799927.pdf#0: Different
 rendering/pdfjs/test/pdfs/bug1802506.pdf#0: Different
-rendering/pdfjs/test/pdfs/bug1815476.pdf#0: UnsupportedPdfFeatureException
 rendering/pdfjs/test/pdfs/bug1872721.pdf#0: Different
 rendering/pdfjs/test/pdfs/bug1947248_forms.pdf#0: Different
 rendering/pdfjs/test/pdfs/ccitt_EndOfBlock_false.pdf#0: Different
-rendering/pdfjs/test/pdfs/empty_protected.pdf#0: UnsupportedPdfFeatureException
 rendering/pdfjs/test/pdfs/endchar.pdf#0: Different
 rendering/pdfjs/test/pdfs/freeculture.pdf#0: Different
 rendering/pdfjs/test/pdfs/function_based_shading_cmyk.pdf#0: Different
@@ -45,12 +42,10 @@ rendering/pdfjs/test/pdfs/issue15441.pdf#0: Different
 rendering/pdfjs/test/pdfs/issue15443.pdf#0: Different
 rendering/pdfjs/test/pdfs/issue15594_reduced.pdf#0: Different
 rendering/pdfjs/test/pdfs/issue15716.pdf#0: Different
-rendering/pdfjs/test/pdfs/issue15893_reduced.pdf#0: UnsupportedPdfFeatureException
+rendering/pdfjs/test/pdfs/issue15893_reduced.pdf#0: Different
 rendering/pdfjs/test/pdfs/issue15977_reduced.pdf#0: Different
 rendering/pdfjs/test/pdfs/issue16038.pdf#0: Different
 rendering/pdfjs/test/pdfs/issue16263.pdf#0: Different
-rendering/pdfjs/test/pdfs/issue17069.pdf#0: UnsupportedPdfFeatureException
-rendering/pdfjs/test/pdfs/issue17215.pdf#0: UnsupportedPdfFeatureException
 rendering/pdfjs/test/pdfs/issue18072.pdf#0: Different
 rendering/pdfjs/test/pdfs/issue1905.pdf#0: Different
 rendering/pdfjs/test/pdfs/issue19083.pdf#0: Different
@@ -60,9 +55,7 @@ rendering/pdfjs/test/pdfs/issue19517.pdf#0: Different
 rendering/pdfjs/test/pdfs/issue19550.pdf#0: Different
 rendering/pdfjs/test/pdfs/issue19634.pdf#0: Different
 rendering/pdfjs/test/pdfs/issue21068.pdf#0: Different
-rendering/pdfjs/test/pdfs/issue21579.pdf#0: UnsupportedPdfFeatureException
 rendering/pdfjs/test/pdfs/issue2177.pdf#0: Different
-rendering/pdfjs/test/pdfs/issue3371.pdf#0: UnsupportedPdfFeatureException
 rendering/pdfjs/test/pdfs/issue4260_reduced.pdf#0: Different
 rendering/pdfjs/test/pdfs/issue6127.pdf#0: Different
 rendering/pdfjs/test/pdfs/issue6132.pdf#0: Different
@@ -80,6 +73,5 @@ rendering/pdfjs/test/pdfs/jpx_smaskindata.pdf#0: Different
 rendering/pdfjs/test/pdfs/jpx_subsampling.pdf#0: Different
 rendering/pdfjs/test/pdfs/large_jpeg_downscale.pdf#0: Different
 rendering/pdfjs/test/pdfs/pr12564.pdf#0: Different
-rendering/pdfjs/test/pdfs/saslprep-r6.pdf#0: UnsupportedPdfFeatureException
 rendering/pdfjs/test/pdfs/standard_fonts.pdf#0: Different
 rendering/pdfjs/test/pdfs/transfer_maps.pdf#0: Different

@@ -68,7 +68,7 @@ internal static class PdfFilterPipeline
                 "ASCIIHexDecode" => AsciiHexFilter.Decode(input, limit),
                 "ASCII85Decode" => Ascii85Filter.Decode(input, limit),
                 "RunLengthDecode" => RunLengthFilter.Decode(input, limit),
-                "Crypt" => DecodeCrypt(input, filterParameters),
+                "Crypt" => DecodeCrypt(input),
                 "DCTDecode" => ImageFilters.DecodeDct(input, limit),
                 "JPXDecode" => ImageFilters.DecodeJpx(input, limit),
                 "CCITTFaxDecode" => CcittFaxFilter.Decode(input, filterParameters, limit),
@@ -100,13 +100,10 @@ internal static class PdfFilterPipeline
         }
     }
 
-    private static byte[] DecodeCrypt(ReadOnlySpan<byte> input, PdfDictionary? parameters)
+    private static byte[] DecodeCrypt(ReadOnlySpan<byte> input)
     {
-        // The Identity crypt filter leaves the data as it is; the others are applied when the document is decrypted
-        var name = parameters?.GetName(PdfNames.Name);
-        if (name is null || name == PdfNames.Identity)
-            return input.ToArray();
-
-        throw new UnsupportedPdfFeatureException($"The crypt filter '{name.Value}' is not supported");
+        // The crypt filters are applied when the objects of an encrypted document are loaded (7.6.6): the data is
+        // already decrypted, and the Identity crypt filter leaves it as it is
+        return input.ToArray();
     }
 }

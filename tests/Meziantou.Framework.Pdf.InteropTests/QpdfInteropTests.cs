@@ -49,6 +49,73 @@ public sealed class QpdfInteropTests
     }
 
     [Theory]
+    [InlineData(PdfEncryptionAlgorithm.Rc4With40BitKey, "R = 2")]
+    [InlineData(PdfEncryptionAlgorithm.Rc4With128BitKey, "R = 3")]
+    [InlineData(PdfEncryptionAlgorithm.AesWith128BitKey, "R = 4")]
+    [InlineData(PdfEncryptionAlgorithm.AesWith256BitKey, "R = 6")]
+    public async Task EncryptedDocumentsPassTheCheck(PdfEncryptionAlgorithm algorithm, string revision)
+    {
+        var qpdf = await QpdfTool.LocateAsync(XunitCancellationToken);
+        foreach (var objectStreams in new[] { true, false })
+        {
+            var document = new PdfDocument();
+            document.Information.Title = "Encrypted";
+            document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Encrypted text", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 24, 60, 700);
+            document.Encryption = new PdfEncryption("user", "owner") { Algorithm = algorithm, Permissions = PdfPermissions.Print };
+            var path = Path.Combine(AppContext.BaseDirectory, "InteropOutput", "encrypted-" + algorithm + "-" + objectStreams + ".pdf");
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            await File.WriteAllBytesAsync(path, document.ToByteArray(new PdfSaveOptions { UseObjectStreams = objectStreams }), XunitCancellationToken);
+
+            foreach (var password in new[] { "user", "owner" })
+            {
+                var result = await qpdf.CheckAsync(path, password, XunitCancellationToken);
+
+                Assert.Equal(0, result.ExitCode, password + ": " + result.StandardOutputText + result.StandardError);
+                Assert.Contains(revision, result.StandardOutputText, StringComparison.Ordinal);
+                Assert.Contains("No syntax or stream encoding errors found", result.StandardOutputText, StringComparison.Ordinal);
+            }
+
+            Assert.Contains("print low resolution: allowed", (await qpdf.CheckAsync(path, "user", XunitCancellationToken)).StandardOutputText, StringComparison.Ordinal);
+            Assert.Contains("Incorrect password supplied", (await qpdf.CheckAsync(path, "wrong", XunitCancellationToken)).StandardOutputText, StringComparison.Ordinal);
+        }
+    }
+
+    [Theory]
+    [InlineData("rc4-40", new[] { "--allow-weak-crypto", "--encrypt", "user", "owner", "40", "--" })]
+    [InlineData("rc4-128", new[] { "--allow-weak-crypto", "--encrypt", "user", "owner", "128", "--use-aes=n", "--" })]
+    [InlineData("aes-128", new[] { "--encrypt", "user", "owner", "128", "--use-aes=y", "--" })]
+    [InlineData("aes-128-cleartext-metadata", new[] { "--encrypt", "user", "owner", "128", "--use-aes=y", "--cleartext-metadata", "--" })]
+    [InlineData("aes-256-r5", new[] { "--encrypt", "user", "owner", "256", "--force-R5", "--" })]
+    [InlineData("aes-256", new[] { "--encrypt", "user", "owner", "256", "--" })]
+    [InlineData("aes-256-objstm", new[] { "--encrypt", "user", "owner", "256", "--", "--object-streams=generate" })]
+    public async Task DocumentsEncryptedByQpdfAreRead(string name, string[] arguments)
+    {
+        var qpdf = await QpdfTool.LocateAsync(XunitCancellationToken);
+        var path = Path.Combine(AppContext.BaseDirectory, "InteropOutput", "qpdf-encrypted-" + name + ".pdf");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        await qpdf.RewriteAsync(InteropDocuments.GetFixturePath("structure/navigation.pdf"), path, arguments, XunitCancellationToken);
+        var original = PdfDocument.Open(File.ReadAllBytes(InteropDocuments.GetFixturePath("structure/navigation.pdf")));
+
+        foreach (var password in new[] { "user", "owner" })
+        {
+            var document = PdfDocument.Open(File.ReadAllBytes(path), new PdfReadOptions { Password = password });
+
+            Assert.True(document.IsEncrypted);
+            Assert.Equal(original.Pages.Select(page => page.ExtractText()), document.Pages.Select(page => page.ExtractText()));
+            Assert.Equal(original.Outlines.Select(item => item.Title), document.Outlines.Select(item => item.Title));
+            Assert.Equal("A note", document.Pages[0].Annotations[2].Contents);
+
+            // Saved again with the keys of the file
+            var saved = Path.ChangeExtension(path, "." + password + ".resaved.pdf");
+            await File.WriteAllBytesAsync(saved, document.ToByteArray(), XunitCancellationToken);
+            var result = await qpdf.CheckAsync(saved, "user", XunitCancellationToken);
+            Assert.Equal(0, result.ExitCode, result.StandardOutputText + result.StandardError);
+        }
+
+        Assert.Throws<PdfPasswordException>(() => PdfDocument.Open(File.ReadAllBytes(path)));
+    }
+
+    [Theory]
     [MemberData(nameof(ValidFixtures))]
     public async Task FixturesPassTheCheck(string fixture)
     {

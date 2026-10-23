@@ -2,8 +2,7 @@ pdfbox/pdfbox/src/test/resources/org/apache/pdfbox/encryption/AES128ExposedMeta.
 pdfbox/pdfbox/src/test/resources/org/apache/pdfbox/encryption/AES256ExposedMeta.pdf: UnsupportedPdfFeatureException
 pdfbox/pdfbox/src/test/resources/org/apache/pdfbox/encryption/AESkeylength128.pdf: UnsupportedPdfFeatureException
 pdfbox/pdfbox/src/test/resources/org/apache/pdfbox/encryption/AESkeylength256.pdf: UnsupportedPdfFeatureException
-pdfbox/pdfbox/src/test/resources/org/apache/pdfbox/encryption/PasswordSample-128bit.pdf: UnsupportedPdfFeatureException
-pdfbox/pdfbox/src/test/resources/org/apache/pdfbox/encryption/PasswordSample-256bit.pdf: UnsupportedPdfFeatureException
-pdfbox/pdfbox/src/test/resources/org/apache/pdfbox/encryption/PasswordSample-40bit.pdf: UnsupportedPdfFeatureException
+pdfbox/pdfbox/src/test/resources/org/apache/pdfbox/encryption/PasswordSample-128bit.pdf: PdfPasswordException
+pdfbox/pdfbox/src/test/resources/org/apache/pdfbox/encryption/PasswordSample-256bit.pdf: PdfPasswordException
+pdfbox/pdfbox/src/test/resources/org/apache/pdfbox/encryption/PasswordSample-40bit.pdf: PdfPasswordException
 pdfbox/pdfbox/src/test/resources/org/apache/pdfbox/pdfparser/PDFBOX-6041-example.pdf: InvalidPdfContentException
-pdfbox/pdfbox/src/test/resources/org/apache/pdfbox/pdmodel/documentinterchange/logicalstructure/PDFBOX-2725-878725.pdf: UnsupportedPdfFeatureException

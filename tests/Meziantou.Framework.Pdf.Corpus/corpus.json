@@ -27,7 +27,7 @@
     "repository": "apache/pdfbox",
     "commit": "99c16b1752d0b24e2c26788ff68686211b0bcef0",
     "license": "Apache-2.0",
-    "paths": ["LICENSE.txt", "NOTICE.txt", "pdfbox/src/test/resources"]
+    "paths": ["LICENSE.txt", "NOTICE.txt", "pdfbox/src/test/resources", "examples/src/test/resources/org/apache/pdfbox/examples/signature"]
   },
   "verapdf": {
     "repository": "veraPDF/veraPDF-corpus",

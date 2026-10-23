@@ -51,6 +51,9 @@ internal sealed class PdfFileReader : IPdfObjectLoader
 
     public ReadOnlyMemory<byte> Data => _data;
 
+    /// <summary>Gets the options the file was read with, among them the password of an encrypted file.</summary>
+    public PdfReadOptions Options => _options;
+
     /// <summary>Gets the security handler of an encrypted file, which decrypts the objects when they are loaded.</summary>
     public StandardSecurityHandler? Security { get; private set; }
 

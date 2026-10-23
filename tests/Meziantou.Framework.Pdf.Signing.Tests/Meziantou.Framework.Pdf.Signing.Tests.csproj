@@ -1,0 +1,14 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <!--
+    Unit tests of Meziantou.Framework.Pdf.Signing: documents signed with certificates created by the tests and stamped by
+    a time stamp authority of the tests (no network), then checked by the verifier.
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Pdf.Signing.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf.Signing\Meziantou.Framework.Pdf.Signing.csproj" />
+  </ItemGroup>
+</Project>

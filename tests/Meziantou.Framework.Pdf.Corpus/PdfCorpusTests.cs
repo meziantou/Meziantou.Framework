@@ -5,6 +5,7 @@ using System.Text.Json;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Pdf.Objects;
 using Meziantou.Framework.Pdf.Rendering;
+using Meziantou.Framework.Pdf.Signing;
 using Meziantou.Framework.Pdf.TestHarness;
 using Meziantou.Framework.Pdf.TestHarness.ExternalTools;
 
@@ -75,6 +76,13 @@ public sealed class PdfCorpusTests
             return data;
         }
     }
+
+    public static TheoryData<string> SignedFiles => new(CorpusFiles.Suites.SelectMany(CorpusFiles.GetFiles).Where(id => CorpusFiles.Read(id).AsSpan().IndexOf("/ByteRange"u8) >= 0));
+
+    /// <summary>Gets the documents the signature tests of Apache PDFBox sign, with the keystore of the tests.</summary>
+    public static TheoryData<string> PdfBoxSignatureSamples => new(CorpusFiles.GetFiles("pdfbox").Where(id => id.StartsWith(PdfBoxSignatureDirectory + "sign_me", StringComparison.Ordinal)));
+
+    private static string PdfBoxSignatureDirectory => "pdfbox/examples/src/test/resources/org/apache/pdfbox/examples/signature/";
 
     public static TheoryData<string> BilevelImageFiles => new(CorpusFiles.Suites.SelectMany(CorpusFiles.GetFiles).Where(id => HasBilevelFilter(CorpusFiles.Read(id))));
 
@@ -203,6 +211,55 @@ public sealed class PdfCorpusTests
                 CorpusExpectations.Check(expectationId, outcome, details);
             }
         }
+    }
+
+    /// <summary>
+    /// The signatures of the signed files of the corpora are checked: the outcome of each one (valid, or what fails) is
+    /// recorded in <c>expectations/signatures.txt</c>.
+    /// </summary>
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(SignedFiles), DisableDiscoveryEnumeration = true)]
+    public void Signatures(string id)
+    {
+        IReadOnlyList<PdfSignatureInfo> signatures;
+        try
+        {
+            signatures = PdfSignatureVerifier.Verify(CorpusFiles.Read(id), Options);
+        }
+        catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException or PdfResourceLimitException or PdfPasswordException)
+        {
+            CorpusExpectations.Check("signatures/" + id, ex.GetType().Name, ex.ToString());
+            return;
+        }
+
+        CorpusExpectations.Check("signatures/" + id, null, details: null);
+        for (var i = 0; i < signatures.Count; i++)
+        {
+            var signature = signatures[i];
+            var outcome = signature.Error is not null ? "Error"
+                : signature.IsValid ? (signature.CoversWholeDocument ? "Valid" : "ValidRevision")
+                : $"Invalid(intact={signature.IsDocumentIntact},signature={signature.IsSignatureValid},timestamp={signature.IsTimestampValid?.ToString() ?? "none"})";
+            CorpusExpectations.Check("signatures/" + id + "#" + i.ToString(CultureInfo.InvariantCulture), outcome == "Valid" ? null : outcome, signature.Error);
+        }
+    }
+
+    /// <summary>The documents of the signature tests of Apache PDFBox are signed with the keystore of these tests, and the signatures are checked.</summary>
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(PdfBoxSignatureSamples), DisableDiscoveryEnumeration = true)]
+    public void PdfBoxSamplesAreSigned(string id)
+    {
+        using var certificate = System.Security.Cryptography.X509Certificates.X509CertificateLoader.LoadPkcs12FromFile(RepositoryPaths.External / PdfBoxSignatureDirectory / "keystore.p12", "123456");
+        // The protected document has the password of the PDFBox test, a space
+        var options = new PdfReadOptions { MaxDecodedStreamLength = Options.MaxDecodedStreamLength, Password = id.EndsWith("_protected.pdf", StringComparison.Ordinal) ? " " : null };
+        var document = PdfDocument.Open(CorpusFiles.Read(id), options);
+
+        var signed = PdfSigner.Sign(document, new PdfSignatureOptions(certificate) { Reason = "Corpus" });
+
+        var signatures = PdfSignatureVerifier.Verify(signed, options);
+        var signature = signatures[^1];
+        Assert.True(signature.IsValid, signature.Error);
+        Assert.True(signature.CoversWholeDocument);
+        Assert.Equal(certificate.Thumbprint, signature.Certificate!.Thumbprint);
     }
 
     [Fact]

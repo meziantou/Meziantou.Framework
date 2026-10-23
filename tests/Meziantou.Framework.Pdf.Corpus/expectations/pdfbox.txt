@@ -1,3 +1,4 @@
+pdfbox/examples/src/test/resources/org/apache/pdfbox/examples/signature/sign_me_protected.pdf: PdfPasswordException
 pdfbox/pdfbox/src/test/resources/org/apache/pdfbox/encryption/AES128ExposedMeta.pdf: UnsupportedPdfFeatureException
 pdfbox/pdfbox/src/test/resources/org/apache/pdfbox/encryption/AES256ExposedMeta.pdf: UnsupportedPdfFeatureException
 pdfbox/pdfbox/src/test/resources/org/apache/pdfbox/encryption/AESkeylength128.pdf: UnsupportedPdfFeatureException

@@ -13,6 +13,9 @@ internal sealed class StandardSecurityHandler
 {
     private const int PermissionsReservedBits = unchecked((int)0xFFFFF0C0);
 
+    // The /Type of a signature dictionary is optional: its byte range identifies it
+    private static readonly PdfName ByteRangeName = PdfName.Create("ByteRange");
+
     private readonly byte[] _fileKey;
     private readonly int _revision;
     private readonly CryptMethod _stringMethod;
@@ -345,7 +348,7 @@ internal sealed class StandardSecurityHandler
     public byte[] EncryptStream(ReadOnlySpan<byte> data, CryptMethod method, int number, int generation) => Apply(method, data, number, generation, encrypt: true);
 
     /// <summary>Gets a value indicating whether the strings of a dictionary are not encrypted: the signature of a signature dictionary (7.6.2).</summary>
-    public static bool IsSignatureContents(PdfDictionary dictionary, PdfName key) => key == PdfNames.Contents && dictionary.GetName(PdfNames.Type)?.Value is "Sig" or "DocTimeStamp";
+    public static bool IsSignatureContents(PdfDictionary dictionary, PdfName key) => key == PdfNames.Contents && (dictionary.GetName(PdfNames.Type)?.Value is "Sig" or "DocTimeStamp" || dictionary.ContainsKey(ByteRangeName));
 
     private PdfObject Transform(PdfObject value, int number, int generation, bool encrypt, int depth)
     {

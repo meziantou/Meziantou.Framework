@@ -438,6 +438,15 @@ public sealed partial class Selection
                 return start < end ? value[start..end] : null;
             }
 
+            case Html.IEditableTextControl { IsTextEditor: true } control:
+            {
+                // The inputs whose selection is not exposed to the scripts (number and email): the selected text they show
+                var value = control.EditValue;
+                var start = Math.Min(control.EditSelectionStart, value.Length);
+                var end = Math.Min(control.EditSelectionEnd, value.Length);
+                return start < end ? value[start..end] : null;
+            }
+
             default:
                 return null;
         }

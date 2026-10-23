@@ -171,7 +171,7 @@ internal static class HtmlElementStates
         {
             return PlaceholderApplies(type)
                 && element.HasAttributeWithLocalName("placeholder")
-                && input.Value.Length == 0;
+                && input.VisibleValue.Length == 0;
         }
 
         if (element is HtmlTextAreaElement textArea)

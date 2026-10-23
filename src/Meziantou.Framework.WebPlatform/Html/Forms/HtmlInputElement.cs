@@ -52,6 +52,9 @@ public partial class HtmlInputElement : IEditableTextControl
     private InputType _type = InputType.Text;
     private string _value = "";
     private bool _dirtyValue;
+
+    // Whether the value was last changed by a user edit, as opposed to a change made by a script (tooLong and tooShort only apply to these values)
+    private bool _valueEditedByUser;
     private bool _checkedness;
     private bool _dirtyCheckedness;
     private bool _indeterminate;
@@ -121,6 +124,7 @@ public partial class HtmlInputElement : IEditableTextControl
         TextControlEditing.ClearHistory(this);
         UserValidity = false;
         _dirtyValue = false;
+        _valueEditedByUser = false;
         _dirtyCheckedness = false;
         _value = GetAttributeValue("value") ?? "";
         SetCheckedness(HasAttributeWithLocalName("checked"));
@@ -208,6 +212,7 @@ public partial class HtmlInputElement : IEditableTextControl
         {
             _value = GetAttributeValue("value") ?? "";
             _dirtyValue = false;
+            _valueEditedByUser = false;
         }
         else if (oldMode == InputValueMode.Value && newMode == InputValueMode.Value && !_dirtyValue)
         {
@@ -246,6 +251,7 @@ public partial class HtmlInputElement : IEditableTextControl
         input._type = _type;
         input._value = _value;
         input._dirtyValue = _dirtyValue;
+        input._valueEditedByUser = _valueEditedByUser;
         input._checkedness = _checkedness;
         input._dirtyCheckedness = _dirtyCheckedness;
         input._indeterminate = _indeterminate;
@@ -288,6 +294,7 @@ public partial class HtmlInputElement : IEditableTextControl
                     var oldValue = _value;
                     _value = value;
                     _dirtyValue = true;
+                    _valueEditedByUser = false;
                     SanitizeValue();
                     NodeDocument.IncrementElementStateVersion();
                     TextControlEditing.ClearHistory(this);
@@ -1016,6 +1023,20 @@ public partial class HtmlInputElement : IEditableTextControl
         if (_value.Length == 0)
             return flags;
 
+        // tooLong and tooShort (https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#suffering-from-being-too-long)
+        if (_dirtyValue && _valueEditedByUser && MaxLengthApplies)
+        {
+            if (GetAttributeValue("maxlength") is { } maxLength && Microsyntaxes.TryParseNonNegativeInteger(maxLength, out var maximum) && _value.Length > maximum)
+            {
+                flags |= ValidityFlags.TooLong;
+            }
+
+            if (GetAttributeValue("minlength") is { } minLength && Microsyntaxes.TryParseNonNegativeInteger(minLength, out var minimum) && _value.Length < minimum)
+            {
+                flags |= ValidityFlags.TooShort;
+            }
+        }
+
         // typeMismatch
         if (_type == InputType.Email)
         {
@@ -1252,6 +1273,9 @@ public partial class HtmlInputElement : IEditableTextControl
     /// <summary>Whether the type of the input allows text entry (the priority candidates of the scroll anchoring, https://drafts.csswg.org/css-scroll-anchoring/#anchor-priority-candidates).</summary>
     internal bool AllowsTextEntry => SelectionApplies(_type) || _type is InputType.Email or InputType.Number;
 
+    /// <summary>Whether the maxlength and minlength attributes apply to the type of the input (https://html.spec.whatwg.org/multipage/input.html#input-type-attr-summary).</summary>
+    private bool MaxLengthApplies => SelectionApplies(_type) || _type == InputType.Email;
+
     private static bool SelectionApplies(InputType type) => type is InputType.Text or InputType.Search or InputType.Url or InputType.Tel or InputType.Password;
 
     private bool SelectApplies => SelectionApplies(_type) || _type is InputType.Email or InputType.Date or InputType.Month or InputType.Week or InputType.Time or InputType.DateTimeLocal or InputType.Number or InputType.Color or InputType.File;
@@ -1280,6 +1304,7 @@ public partial class HtmlInputElement : IEditableTextControl
         var (oldStart, oldEnd) = (_selectionStart, _selectionEnd);
         _value = value;
         _dirtyValue = true;
+        _valueEditedByUser = true;
         SanitizeValue();
         NodeDocument.IncrementElementStateVersion();
         var length = _value.Length;
@@ -1406,6 +1431,7 @@ public partial class HtmlInputElement : IEditableTextControl
             {
                 input._value = value;
                 input._dirtyValue = true;
+                input._valueEditedByUser = false;
                 input.SanitizeValue();
                 TextControlEditing.ClearHistory(input);
             }

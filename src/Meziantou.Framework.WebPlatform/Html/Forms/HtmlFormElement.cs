@@ -854,7 +854,7 @@ public partial class HtmlFormElement
                         break;
 
                     case HtmlTextAreaElement textArea:
-                        entries.Add(FormData.CreateEntry(name, textArea.Value));
+                        entries.Add(FormData.CreateEntry(name, textArea.WrappedValue));
                         break;
 
                     case HtmlButtonElement button:

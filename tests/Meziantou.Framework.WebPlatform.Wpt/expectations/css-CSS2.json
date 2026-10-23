@@ -1317,7 +1317,7 @@
     "reftest": "PASS"
   },
   "css/CSS2/bidi-text/bidi-breaking-003.xht": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/bidi-text/bidi-glyph-mirroring-001.xht": {
     "reftest": "PASS"

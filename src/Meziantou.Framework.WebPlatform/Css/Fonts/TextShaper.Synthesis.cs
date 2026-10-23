@@ -114,7 +114,7 @@ internal static partial class TextShaper
                 for (var i = start; i < end && supported; i++)
                 {
                     var codePoint = codePoints[i].CodePoint;
-                    if (codePoints[i].Cluster != codePoints[i].Index || codePoint == '\n' || UnicodeProperties.IsDefaultIgnorable(codePoint))
+                    if (codePoints[i].Cluster != codePoints[i].Index || IsLineSeparator(codePoint) || UnicodeProperties.IsDefaultIgnorable(codePoint))
                         continue;
 
                     supported = font.Font.WouldSubstitute(codePoints[i].Script, feature, font.GetGlyph(codePoint));

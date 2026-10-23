@@ -323,8 +323,8 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
 
 - `tests/Meziantou.Framework.JavaScriptEngine.Tests`: unit tests (xUnit, the repo's `Assert`).
 - `tests/Meziantou.Framework.JavaScriptEngine.Test262`: the conformance runner. Fetch the suites with
-  `dotnet run eng/javascriptengine/fetch-tests.cs`. `test262-skip.txt` lists the areas not run yet;
-  `expectations/<area>.txt` the known failures (`<id>:<mode>`, optional `# reason`). Update with
+  `dotnet run eng/javascriptengine/fetch-tests.cs`. `test262-skip.txt` lists the tests that are not run (with the
+  reason); `expectations/<area>.txt` the known failures (`<id>:<mode>`, optional `# reason`). Update with
   `TEST262_UPDATE_EXPECTATIONS=1 dotnet test -f net10.0` (one target framework: the processes of the target frameworks
   run concurrently). Filter with `TEST262_FILTER=a|b` (substrings of the test ids). The update also regenerates
   `summary.md`.

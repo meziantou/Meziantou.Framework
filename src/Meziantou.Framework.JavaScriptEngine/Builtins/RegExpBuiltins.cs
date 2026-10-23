@@ -907,6 +907,7 @@ internal static class RegExpBuiltins
 
             if (position >= nextSourcePosition)
             {
+                StringOperations.CheckLength((long)builder.Length + (position - nextSourcePosition) + replacement.Length);
                 builder.Append(input, nextSourcePosition, position - nextSourcePosition).Append(replacement);
                 nextSourcePosition = position + matched.Length;
             }
@@ -915,6 +916,7 @@ internal static class RegExpBuiltins
         if (nextSourcePosition >= length)
             return builder.ToString();
 
+        StringOperations.CheckLength((long)builder.Length + (length - nextSourcePosition));
         return builder.Append(input, nextSourcePosition, length - nextSourcePosition).ToString();
     }
 
@@ -969,19 +971,19 @@ internal static class RegExpBuiltins
                     break;
 
                 case '`':
-                    builder.Append(input, 0, position);
+                    AppendChecked(builder, input.AsSpan(0, position));
                     i += 2;
                     break;
 
                 case '&':
-                    builder.Append(matched);
+                    AppendChecked(builder, matched);
                     i += 2;
                     break;
 
                 case '\'':
                     {
                         var tailPosition = Math.Min(position + matched.Length, input.Length);
-                        builder.Append(input, tailPosition, input.Length - tailPosition);
+                        AppendChecked(builder, input.AsSpan(tailPosition));
                         i += 2;
                         break;
                     }
@@ -1001,7 +1003,7 @@ internal static class RegExpBuiltins
                             var capture = captures[index - 1];
                             if (!capture.IsUndefined)
                             {
-                                builder.Append(capture.AsString());
+                                AppendChecked(builder, capture.AsString());
                             }
                         }
                         else
@@ -1027,7 +1029,7 @@ internal static class RegExpBuiltins
                         var capture = namedCaptures.Get(groupName);
                         if (!capture.IsUndefined)
                         {
-                            builder.Append(JsOperations.ToString(capture));
+                            AppendChecked(builder, JsOperations.ToString(capture));
                         }
 
                         i = greaterThan + 1;
@@ -1042,6 +1044,13 @@ internal static class RegExpBuiltins
         }
 
         return builder.ToString();
+    }
+
+    /// <summary>Appends a part of a replacement, or throws a RangeError when the string would be too long.</summary>
+    private static void AppendChecked(StringBuilder builder, ReadOnlySpan<char> value)
+    {
+        StringOperations.CheckLength((long)builder.Length + value.Length);
+        builder.Append(value);
     }
 
     /// <summary>RegExp.prototype[%Symbol.search%](string)</summary>

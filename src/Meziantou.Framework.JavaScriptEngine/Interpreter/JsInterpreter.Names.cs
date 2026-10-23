@@ -206,7 +206,7 @@ internal static partial class JsInterpreter
                         var bindingObject = objectEnvironment.BindingObject;
                         if (!bindingObject.HasProperty(key))
                         {
-                            if (frame.Code.IsStrict)
+                            if (frame.IsStrict)
                             {
                                 ThrowHelper.ThrowReferenceError($"{key} is not defined");
                             }
@@ -357,6 +357,29 @@ internal static partial class JsInterpreter
     }
 
     /// <summary>Initializes a binding found by name: the function declarations of sloppy eval code, the this binding initialized by super() in eval code.</summary>
+    /// <summary>
+    /// BindThisValue of the this environment of eval code (super() in a direct eval): the binding named "this" of the
+    /// enclosing derived constructor. It is read without the TDZ check.
+    /// </summary>
+    private static void BindThisName(Frame frame, JsValue value)
+    {
+        for (var environment = frame.Environment; environment is not null; environment = environment.Outer)
+        {
+            if (environment is DeclarativeEnvironment declarative && declarative.Info.IndexOf("this") is var index and >= 0)
+            {
+                if (!declarative.Slots[index].IsHole)
+                {
+                    ThrowHelper.ThrowReferenceError("Super constructor may only be called once");
+                }
+
+                declarative.Slots[index] = value;
+                return;
+            }
+        }
+
+        throw new InvalidOperationException("super() in eval code without the this binding of a derived constructor");
+    }
+
     private static void InitializeName(Frame frame, in PropertyKey key, JsValue value)
     {
         var name = key.AsString();
@@ -500,11 +523,11 @@ internal static partial class JsInterpreter
 
                     break;
                 case GlobalEnvironment:
-                    return frame.Code.IsStrict ? ResolveGlobalBinding(frame.Realm, key) : new JsValue(frame.Realm.GlobalEnvironment);
+                    return frame.IsStrict ? ResolveGlobalBinding(frame.Realm, key) : new JsValue(frame.Realm.GlobalEnvironment);
             }
         }
 
-        return frame.Code.IsStrict ? ResolveGlobalBinding(frame.Realm, key) : new JsValue(frame.Realm.GlobalEnvironment);
+        return frame.IsStrict ? ResolveGlobalBinding(frame.Realm, key) : new JsValue(frame.Realm.GlobalEnvironment);
     }
 
     /// <summary>HasBinding of the global environment: the global environment when it has the binding, undefined when the reference is unresolvable.</summary>
@@ -541,7 +564,7 @@ internal static partial class JsInterpreter
                     var bindingObject = objectEnvironment.BindingObject;
                     if (!bindingObject.HasProperty(key))
                     {
-                        if (frame.Code.IsStrict)
+                        if (frame.IsStrict)
                         {
                             ThrowHelper.ThrowReferenceError($"{key} is not defined");
                         }

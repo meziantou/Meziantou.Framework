@@ -23,6 +23,7 @@ internal sealed class Frame
     internal void Initialize(FunctionTemplate code, JsRealm realm, Environment environment, ReadOnlySpan<JsValue> arguments)
     {
         Code = code;
+        IsStrict = code.IsStrict;
         Realm = realm;
         Environment = environment;
         ArgumentCount = arguments.Length;
@@ -51,6 +52,12 @@ internal sealed class Frame
     internal static int GetValueCount(FunctionTemplate code, int argumentCount) => code.RegisterCount + argumentCount + code.MaxStack;
 
     public FunctionTemplate Code { get; private set; } = null!;
+
+    /// <summary>
+    /// Gets or sets whether the running code is strict: the code of the template, or a class definition (its heritage and
+    /// computed keys) in sloppy code, between <see cref="OpCode.EnterStrictCode"/> and <see cref="OpCode.ExitStrictCode"/>.
+    /// </summary>
+    public bool IsStrict { get; set; }
 
     public JsRealm Realm { get; private set; } = null!;
 

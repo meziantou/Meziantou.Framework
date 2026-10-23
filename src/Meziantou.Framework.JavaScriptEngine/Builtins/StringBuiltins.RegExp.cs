@@ -111,6 +111,7 @@ internal static class StringRegExpBuiltins
             replacement = RegExpBuiltins.GetSubstitution(searchString, input, position, [], namedCaptures: null, template!);
         }
 
+        StringOperations.CheckLength((long)input.Length - searchString.Length + replacement.Length);
         return string.Concat(input.AsSpan(0, position), replacement, input.AsSpan(position + searchString.Length));
     }
 
@@ -169,12 +170,14 @@ internal static class StringRegExpBuiltins
                 replacement = RegExpBuiltins.GetSubstitution(searchString, input, matchPosition, [], namedCaptures: null, template!);
             }
 
+            StringOperations.CheckLength((long)result.Length + replacement.Length);
             result.Append(replacement);
             endOfLastMatch = matchPosition + searchLength;
         }
 
         if (endOfLastMatch < input.Length)
         {
+            StringOperations.CheckLength((long)result.Length + (input.Length - endOfLastMatch));
             result.Append(input, endOfLastMatch, input.Length - endOfLastMatch);
         }
 

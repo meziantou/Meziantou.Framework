@@ -970,6 +970,8 @@ internal sealed partial class CodeGenerator
             _builder.Emit(OpCode.Pop);
         }
 
+        // The completion value of the statement is the one of the catch block, not the one of the try block
+        ResetCompletion();
         EmitStatement(handler.Body, labels: null);
         ExitScope(catchScope);
     }

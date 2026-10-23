@@ -31,10 +31,13 @@ internal sealed partial class ScopeAnalyzer
 
     public FunctionInfo Root { get; private set; } = null!;
 
+    /// <summary>Gets the context of the direct eval call whose code is analyzed (null for the other programs).</summary>
+    public EvalContext? EvalContext { get; private init; }
+
     /// <summary>Analyzes a program; its nested functions are compiled on their first call (except <paramref name="eagerFunction"/>).</summary>
-    public static ScopeAnalyzer Analyze(Program program, ProgramKind kind, bool isStrict, FunctionNode? eagerFunction = null)
+    public static ScopeAnalyzer Analyze(Program program, ProgramKind kind, bool isStrict, FunctionNode? eagerFunction = null, EvalContext? evalContext = null)
     {
-        var analyzer = new ScopeAnalyzer(kind) { _eagerFunction = eagerFunction };
+        var analyzer = new ScopeAnalyzer(kind) { _eagerFunction = eagerFunction, EvalContext = evalContext };
 
         // About one reference per 10 characters of source: the lists do not grow from scratch
         analyzer._pending.EnsureCapacity(Math.Max(16, (program.End - program.Start) / 10));

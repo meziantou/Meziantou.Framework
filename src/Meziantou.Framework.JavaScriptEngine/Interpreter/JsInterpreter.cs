@@ -83,6 +83,9 @@ internal static partial class JsInterpreter
                     frame.Sp = frame.StackBase + handler.StackDepth;
                     frame.Values[frame.Sp++] = exception;
                     frame.Pc = handler.Target;
+
+                    // A handler is never in the strict code of a class definition (statements cannot be in it)
+                    frame.IsStrict = frame.Code.IsStrict;
                     if (handler.EnvironmentRegister >= 0)
                     {
                         frame.Environment = (Environment)frame.Values[handler.EnvironmentRegister].Cell!;
@@ -965,6 +968,9 @@ internal static partial class JsInterpreter
             OpCode.LoadImportMeta => ExecuteLoadImportMeta(frame, sp),
             OpCode.BindThis => ExecuteBindThis(frame, sp),
             OpCode.CheckThisUninitialized => ExecuteCheckThisUninitialized(frame, sp),
+            OpCode.BindThisName => ExecuteBindThisName(frame, sp),
+            OpCode.EnterStrictCode => ExecuteSetStrictCode(frame, sp, isStrict: true),
+            OpCode.ExitStrictCode => ExecuteSetStrictCode(frame, sp, frame.Code.IsStrict),
             OpCode.Divide => ExecuteBinary(frame, sp, op),
             OpCode.Exponentiate => ExecuteBinary(frame, sp, op),
             OpCode.LeftShift => ExecuteBinary(frame, sp, op),

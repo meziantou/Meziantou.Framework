@@ -9,6 +9,9 @@ internal sealed partial class LayoutEngine
 {
     private Dictionary<Element, ScrollState>? _scrollStates;
 
+    /// <summary>The scrolling boxes of the pseudo-elements that are scroll containers (e.g. a <c>::before</c> with <c>overflow: scroll</c>).</summary>
+    private Dictionary<(Element Element, string PseudoElement), ScrollState>? _pseudoElementScrollStates;
+
     /// <summary>The scroll positions of the elements that stopped being scroll containers but still generate a box (see <see cref="DiscardScrollStates"/>).</summary>
     private Dictionary<Element, PhysicalOffset>? _savedScrollPositions;
     private ScrollState? _viewportScrollState;
@@ -38,6 +41,22 @@ internal sealed partial class LayoutEngine
 
         EnsureContentsLaidOut(element);
         return TryGetScrollState(element) is { Fragment: not null } state ? state : null;
+    }
+
+    /// <summary>Returns the scrolling box of a pseudo-element that is a scroll container in the last layout, without computing the layout, or null.</summary>
+    internal ScrollState? TryGetScrollState(Element element, string pseudoElement)
+        => _pseudoElementScrollStates is not null && _pseudoElementScrollStates.TryGetValue((element, pseudoElement), out var state) ? state : null;
+
+    private ScrollState GetOrCreateScrollState(Element element, string pseudoElement)
+    {
+        _pseudoElementScrollStates ??= [];
+        if (!_pseudoElementScrollStates.TryGetValue((element, pseudoElement), out var state))
+        {
+            state = new ScrollState(element) { PseudoElement = pseudoElement };
+            _pseudoElementScrollStates.Add((element, pseudoElement), state);
+        }
+
+        return state;
     }
 
     private ScrollState GetOrCreateScrollState(Element element)
@@ -117,6 +136,31 @@ internal sealed partial class LayoutEngine
             }
         }
 
+        if (_pseudoElementScrollStates is not null)
+        {
+            List<(Element, string)>? removedPseudoElements = null;
+            foreach (var (key, state) in _pseudoElementScrollStates)
+            {
+                if (state.LayoutVersion != _fragmentIndexVersion)
+                {
+                    state.Fragment = null;
+                    state.SmoothScroll = null;
+                    state.UserGestureStart = null;
+                    state.UserGestureHeld = false;
+                    ResolvePendingPromises(state);
+                    (removedPseudoElements ??= []).Add(key);
+                }
+            }
+
+            if (removedPseudoElements is not null)
+            {
+                foreach (var key in removedPseudoElements)
+                {
+                    _pseudoElementScrollStates.Remove(key);
+                }
+            }
+        }
+
         if (_scrollStates is null)
             return;
 
@@ -171,9 +215,11 @@ internal sealed partial class LayoutEngine
             state.UserGestureVersion++;
         }
 
+        // (the scroll-behavior of a pseudo-element is the one of its box)
         var smooth = behavior == ScrollBehavior.Smooth
             || (behavior == ScrollBehavior.Auto && associatedElement is not null && Cascade.ComputedStyleDeclarations.IsBeingRendered(associatedElement)
-                && _document.GetStyleEngine().GetStyle(associatedElement).Layout.Overflow.SmoothScrolling);
+                && _document.GetStyleEngine().GetStyle(associatedElement).Layout.Overflow.SmoothScrolling)
+            || (behavior == ScrollBehavior.Auto && state.PseudoElement is not null && state.ContainerStyle is { Overflow.SmoothScrolling: true });
         var eventLoop = _document.EventLoop;
 
         // A smooth scroll to the position an ongoing smooth scroll goes to does not restart it, as in the browsers (WPT
@@ -418,6 +464,14 @@ internal sealed partial class LayoutEngine
         if (_scrollStates is not null)
         {
             foreach (var state in _scrollStates.Values.ToArray())
+            {
+                yield return state;
+            }
+        }
+
+        if (_pseudoElementScrollStates is not null)
+        {
+            foreach (var state in _pseudoElementScrollStates.Values.ToArray())
             {
                 yield return state;
             }

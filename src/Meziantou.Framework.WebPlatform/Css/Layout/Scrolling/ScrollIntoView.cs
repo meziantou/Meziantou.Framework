@@ -113,7 +113,7 @@ internal static class ScrollIntoView
 
                 // The scrollport, in the coordinates of the document
                 var scrollport = GetScrollport(document, scrollContainer, state);
-                var associatedElement = state.Element ?? document.DocumentElement;
+                var associatedElement = state.GetAssociatedElement(document);
                 var delta = GetScrollDelta(rect, scrollport, state.WritingDirection, block, inline);
                 if (isFixedInViewport)
                 {
@@ -194,10 +194,14 @@ internal static class ScrollIntoView
         }
 
         var scrollport = state.Scrollport.Translate(origin);
-        var associatedElement = state.Element ?? document.DocumentElement;
+        var associatedElement = state.GetAssociatedElement(document);
         if (associatedElement is not null && Cascade.ComputedStyleDeclarations.IsBeingRendered(associatedElement))
         {
             scrollport = ApplyScrollPadding(scrollport, document.GetStyleEngine().GetStyle(associatedElement).Layout.Overflow.ScrollPadding);
+        }
+        else if (state.PseudoElement is not null && state.ContainerStyle is { } containerStyle)
+        {
+            scrollport = ApplyScrollPadding(scrollport, containerStyle.Overflow.ScrollPadding);
         }
 
         return scrollport;

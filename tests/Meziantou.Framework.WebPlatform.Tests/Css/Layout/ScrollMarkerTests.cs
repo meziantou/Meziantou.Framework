@@ -273,6 +273,17 @@ public sealed class ScrollMarkerTests : IDisposable
     }
 
     [Fact]
+    public void Group_ThatIsAScrollContainer_ScrollsToItsActiveMarker()
+    {
+        var document = Parse(Carousel + "<style>#scroller::scroll-marker-group { display: grid; grid-auto-flow: column; width: 20px; overflow-x: scroll; scrollbar-width: none }</style>");
+        var scroller = Get(document, "scroller");
+        scroller.ScrollTop = 200;
+        RunFrames();
+        Assert.Equal("rgb(0, 128, 0)", GetStyle(document, "c", "::scroll-marker", "background-color"));
+        Assert.Equal(40, document.GetLayoutEngine().TryGetScrollState(scroller, "scroll-marker-group")!.Offset.X);
+    }
+
+    [Fact]
     public void ColumnMarkers_OfAFieldset_ScrollTheColumnsOfItsContentBox()
     {
         var document = Parse("""

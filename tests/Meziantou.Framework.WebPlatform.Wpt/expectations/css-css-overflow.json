@@ -15,7 +15,7 @@
     "total": 1
   },
   "css/css-overflow/before-after-pseudo-element-scrolling.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/button-with-scrollable-descendant.html": {
     "reftest": "PASS"
@@ -1996,7 +1996,7 @@
     "reftest": "PASS"
   },
   "css/css-overflow/scroll-markers/scroll-marker-group-keeps-active-in-view.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "PASS"
   },
   "css/css-overflow/scroll-markers/scroll-marker-group-layout-parent.html": {
     "reftest": "PASS"
@@ -2029,7 +2029,7 @@
     "total": 1
   },
   "css/css-overflow/scroll-markers/scroll-marker-group-snap-aligns-to-active.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/scroll-markers/scroll-marker-group-style-and-scroll-container-query.html": {
     "total": 2

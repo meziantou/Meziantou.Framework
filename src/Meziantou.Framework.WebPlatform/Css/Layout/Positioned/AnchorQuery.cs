@@ -684,14 +684,15 @@ internal sealed class AnchorQuery
     {
         PhysicalRect? result = null;
         if (includeSelf && fragment is BoxFragment self && IsFragmentOf(self, box))
-            return new PhysicalRect(offset, fragment.Size);
+            return GetTransformedRect(self).Translate(offset);
 
         foreach (var child in fragment.ChildrenSpan)
         {
             var childOffset = offset + child.Offset;
             if (child is BoxFragment childBox && IsFragmentOf(childBox, box))
             {
-                var childRect = new PhysicalRect(childOffset, child.Size);
+                // (each fragment of a box fragmented by a multi-column container is transformed with its own reference box)
+                var childRect = GetTransformedRect(childBox).Translate(childOffset);
                 result = result is { } existing ? existing.Union(childRect) : childRect;
                 continue;
             }
@@ -718,5 +719,8 @@ internal sealed class AnchorQuery
 
             return false;
         }
+
+        static PhysicalRect GetTransformedRect(BoxFragment fragment)
+            => fragment.Box.Style.Layout.HasTransform && LayoutTransforms.GetMatrix(fragment) is { } matrix ? LayoutTransforms.TransformRect(fragment.LocalRect, matrix) : fragment.LocalRect;
     }
 }

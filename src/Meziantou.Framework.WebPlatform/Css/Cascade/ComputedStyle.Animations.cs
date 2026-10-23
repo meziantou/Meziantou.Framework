@@ -97,6 +97,11 @@ internal sealed partial class ComputedStyle
             if (IsRevertKeyword(declared.Value))
                 return underlying;
 
+            if (keyframe.IsAttrTainted)
+            {
+                Rare.CustomPropertyTainted = true;
+            }
+
             return ComputeCustomProperty(name, new CascadedValue(declared, 0, keyframe.Source), registration, rollbacks: 0);
         });
 

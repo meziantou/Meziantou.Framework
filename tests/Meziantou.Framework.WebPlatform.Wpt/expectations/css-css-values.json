@@ -153,10 +153,7 @@
     "total": 14
   },
   "css/css-values/attr-security-transition-2.html": {
-    "total": 1,
-    "failures": {
-      "CSS Values and Units Test: attr() tainted value from a transition": "FAIL"
-    }
+    "total": 1
   },
   "css/css-values/attr-security-transition-interpolated.html": {
     "total": 3

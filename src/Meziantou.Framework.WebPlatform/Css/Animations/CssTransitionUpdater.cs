@@ -113,7 +113,7 @@ internal static class CssTransitionUpdater
                 {
                     transitions ??= document.Animations.GetOrCreateTransitions(element, pseudoElement);
                     RemoveCompleted(transitions, property, changes);
-                    transitions.Running[property] = StartTransition(style, property, beforeValue, afterValue, parameters, beforeValue, reversingShorteningFactor: 1);
+                    transitions.Running[property] = StartTransition(style, property, beforeValue, afterValue, parameters, beforeValue, reversingShorteningFactor: 1, IsTainted(before, property), IsTainted(after, property));
                     changed = true;
                     continue;
                 }
@@ -162,11 +162,11 @@ internal static class CssTransitionUpdater
                         Delay = parameters.Delay < 0 ? parameters.Delay * factor : parameters.Delay,
                     };
 
-                    transitions!.Running[property] = StartTransition(style, property, currentValue, afterValue, shortened, running.EndValue, factor);
+                    transitions!.Running[property] = StartTransition(style, property, currentValue, afterValue, shortened, running.EndValue, factor, IsTainted(style, property), IsTainted(after, property));
                 }
                 else
                 {
-                    transitions!.Running[property] = StartTransition(style, property, currentValue, afterValue, parameters, currentValue, reversingShorteningFactor: 1);
+                    transitions!.Running[property] = StartTransition(style, property, currentValue, afterValue, parameters, currentValue, reversingShorteningFactor: 1, IsTainted(style, property), IsTainted(after, property));
                 }
             }
         }
@@ -274,7 +274,7 @@ internal static class CssTransitionUpdater
         return result;
     }
 
-    private static CssTransition StartTransition(ComputedStyle style, string property, string startValue, string endValue, TransitionParameters parameters, string reversingAdjustedStartValue, double reversingShorteningFactor)
+    private static CssTransition StartTransition(ComputedStyle style, string property, string startValue, string endValue, TransitionParameters parameters, string reversingAdjustedStartValue, double reversingShorteningFactor, bool startTainted, bool endTainted)
     {
         var element = style.Element;
         var document = element.NodeDocument;
@@ -294,6 +294,7 @@ internal static class CssTransitionUpdater
             {
                 Offset = 0,
                 ComputedOffset = 0,
+                IsAttrTainted = startTainted,
                 Properties = { new(property, startValue) },
                 Longhands = { [property] = new CssLonghandValue(property, startValue) },
             },
@@ -301,6 +302,7 @@ internal static class CssTransitionUpdater
             {
                 Offset = 1,
                 ComputedOffset = 1,
+                IsAttrTainted = endTainted,
                 Properties = { new(property, endValue) },
                 Longhands = { [property] = new CssLonghandValue(property, endValue) },
             },
@@ -363,6 +365,9 @@ internal static class CssTransitionUpdater
 
         return allowDiscrete || !CssInterpolation.Prepare(context, property, from, to).IsDiscrete;
     }
+
+    /// <summary>Whether the value of a custom property is attr()-tainted (https://drafts.csswg.org/css-values-5/#attr-security): so are the values of its transition.</summary>
+    private static bool IsTainted(ComputedStyle style, string property) => CssPropertyRegistry.IsCustomProperty(property) && style.IsCustomPropertyTainted(property);
 
     private static string GetValue(ComputedStyle style, string property) => CssPropertyRegistry.IsCustomProperty(property) ? style.GetCustomPropertyValue(property) ?? "" : style.GetComputedValue(property);
 

@@ -12,7 +12,7 @@
     "reftest": "PASS"
   },
   "css/css-multicol/abspos-containing-block-outside-spanner.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-multicol/abspos-multicol-in-second-outer-clipped.html": {
     "reftest": "FAIL"

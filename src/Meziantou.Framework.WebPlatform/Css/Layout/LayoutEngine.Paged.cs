@@ -737,12 +737,14 @@ internal sealed partial class LayoutEngine
         if (geometry.Style is { } style && viewport is { IsEmpty: false })
         {
             // As in the browsers, the background of the page box covers the whole page, its margins included (whatever its
-            // background-clip); its borders are in the page margins
-            var background = new ContainerBox(ContainerBoxKind.Normal, style, Display.Block, style.Element, StyleEngine.PageContextPseudoElement);
-            var backgroundFragment = new BoxFragment(background, geometry.PageSize, default, default, default, children: null);
+            // background-clip), and its images are positioned in the page box (see Painter.PaintBackground); its borders are in
+            // the page margins
+            var borderBox = geometry.BorderBox;
+            var backgroundStyle = style.CreateOverriddenStyle([("border-top-style", "none"), ("border-right-style", "none"), ("border-bottom-style", "none"), ("border-left-style", "none")]);
+            var background = new ContainerBox(ContainerBoxKind.Normal, backgroundStyle, Display.Block, style.Element, StyleEngine.PageContextPseudoElement);
+            var backgroundFragment = new BoxFragment(background, borderBox.Size, geometry.Border, geometry.Padding, geometry.Margin, children: null) { Offset = borderBox.Offset };
             var borderStyle = style.CreateOverriddenStyle([("background-color", "transparent"), ("background-image", "none")]);
             var pageBox = new ContainerBox(ContainerBoxKind.Normal, borderStyle, Display.Block, style.Element, StyleEngine.PageContextPseudoElement);
-            var borderBox = geometry.BorderBox;
             var pageBoxFragment = new BoxFragment(pageBox, borderBox.Size, geometry.Border, geometry.Padding, geometry.Margin, children: null) { Offset = borderBox.Offset };
             var sheet = new BoxFragment(viewport, geometry.PageSize, default, default, default, [backgroundFragment, pageBoxFragment]);
             builder.AddList(Painter.Paint(this, _document, sheet, PhysicalOffset.Zero, DisplayColor.Transparent));

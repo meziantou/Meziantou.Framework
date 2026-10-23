@@ -187,7 +187,13 @@ internal sealed partial class Painter
             return;
 
         var style = GetDecorationStyle(fragment);
-        PaintBackground(fragment, style, GetSnappedBorderBox(fragment, offset), fragment.Border, fragment.Padding, GetDecorationBox(fragment).Translate(offset), GetBackgroundBleedInset(fragment));
+
+        // https://drafts.csswg.org/css-page-3/#painting: as in the browsers, the background of a page box covers the whole page
+        // sheet (its margins included, whatever its background-clip); its images are positioned in the page box
+        PhysicalRect? paintingBox = fragment.Box.PseudoElement == Cascade.StyleEngine.PageContextPseudoElement && fragment.Parent is BoxFragment sheet
+            ? new PhysicalRect(offset - fragment.Offset, sheet.Size)
+            : null;
+        PaintBackground(fragment, style, GetSnappedBorderBox(fragment, offset), fragment.Border, fragment.Padding, GetDecorationBox(fragment).Translate(offset), GetBackgroundBleedInset(fragment), paintingBox);
     }
 
     /// <summary>

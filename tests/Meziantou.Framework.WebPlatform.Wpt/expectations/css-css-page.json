@@ -336,7 +336,7 @@
     "reftest": "PASS"
   },
   "css/css-page/page-background-005-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/page-background-image-print.html": {
     "reftest": "PASS"

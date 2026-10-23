@@ -324,7 +324,7 @@
     "reftest": "PASS"
   },
   "css/css-anchor-position/anchor-position-inline-008.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-anchor-position/anchor-position-multicol-001.html": {
     "total": 4

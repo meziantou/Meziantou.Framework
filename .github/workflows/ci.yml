@@ -567,7 +567,21 @@ jobs:
 
       - name: Fetch the test262 test suites
         if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.JavaScriptEngine.Test262')
-        run: dotnet run eng/javascriptengine/fetch-tests.cs
+        run: dotnet run eng/javascriptengine/fetch-tests.cs -- test262 test262-parser-tests
+
+      # The Web Tooling Benchmark tests read the benchmark and its npm packages, pinned in
+      # tests/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark/web-tooling-benchmark.json
+      - name: Restore the Web Tooling Benchmark
+        if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark')
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: tests/Meziantou.Framework.JavaScriptEngine.External/web-tooling-benchmark
+          key: javascriptengine-web-tooling-benchmark-${{ hashFiles('tests/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark/web-tooling-benchmark.json') }}
+          restore-keys: javascriptengine-web-tooling-benchmark-
+
+      - name: Fetch the Web Tooling Benchmark
+        if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark')
+        run: dotnet run eng/javascriptengine/fetch-tests.cs -- web-tooling-benchmark
 
       - name: Build
         if: steps.build-project.outputs.has-project == 'true'

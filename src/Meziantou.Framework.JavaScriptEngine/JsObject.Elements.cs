@@ -393,12 +393,18 @@ public partial class JsObject
         if (index >= (uint)Array.MaxLength / 2)
             return false;
 
-        // Close to the end: grow. Further away (up to twice the current length): grow only when the current storage is
-        // at least half full, so that a sequence of writes at exponentially increasing indices stays sparse.
+        // Close to the end: grow, unless the last elements are nearly all holes. Further away (up to twice the current
+        // length): grow only when the current storage is at least half full. So the writes at exponentially increasing
+        // indices stay sparse: the reverse mappings of a flags enum compiled by TypeScript (E[1], E[2], E[4]...) would
+        // otherwise double the storage at each write, up to a billion elements for E[1 << 29].
         if (index > (uint)currentLength + 1024)
         {
             if (index > (uint)currentLength * 2 || !IsMostlyFilled())
                 return false;
+        }
+        else if (currentLength >= 1024 && IsEndMostlyHoles())
+        {
+            return false;
         }
 
         var newLength = (int)Math.Min(Math.Max(Math.Max((long)currentLength * 2, (long)index + 1), 4), Array.MaxLength);
@@ -460,5 +466,22 @@ public partial class JsObject
         }
 
         return capacity > 0;
+    }
+
+    // Whether more than 7/8 of the last 1024 elements of the storage are holes: a bounded check, as each write that stays
+    // sparse checks it again
+    private bool IsEndMostlyHoles()
+    {
+        var capacity = DenseCapacity;
+        var start = Math.Max(capacity - 1024, 0);
+        var minElements = (capacity - start) / 8;
+        var elements = 0;
+        for (var i = start; i < capacity; i++)
+        {
+            if (!IsDenseHole(i) && ++elements >= minElements)
+                return false;
+        }
+
+        return true;
     }
 }

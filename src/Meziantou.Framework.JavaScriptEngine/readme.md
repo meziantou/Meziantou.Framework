@@ -2,7 +2,9 @@
 
 An ECMAScript engine written in .NET: a hand-written parser, a bytecode compiler and an interpreter. It is validated by
 [test262](https://github.com/tc39/test262), the conformance suite of ECMAScript: see
-[the test262 results](../../tests/Meziantou.Framework.JavaScriptEngine.Test262/summary.md). It implements ECMAScript
+[the test262 results](../../tests/Meziantou.Framework.JavaScriptEngine.Test262/summary.md), and by the
+[Web Tooling Benchmark](../../tests/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark/readme.md) (babel,
+TypeScript, prettier, terser... give the same results as in Node.js). It implements ECMAScript
 2025, ECMA-402 (`Intl`) and `Temporal`, the stage 3 proposals `import defer`, source phase imports (the module
 sources are given by the host), [immutable `ArrayBuffer`](https://github.com/tc39/proposal-immutable-arraybuffer)
 (`transferToImmutable`, `sliceToImmutable`), Await Dictionary (`Promise.allKeyed` and `Promise.allSettledKeyed`) and

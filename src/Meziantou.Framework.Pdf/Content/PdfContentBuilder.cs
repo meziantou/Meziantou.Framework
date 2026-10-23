@@ -569,6 +569,68 @@ public sealed class PdfContentBuilder
         return RestoreGraphicsState();
     }
 
+    /// <summary>Paints a form XObject (<c>Do</c>). The form is added to the resources.</summary>
+    /// <param name="form">The form, of the document of the builder.</param>
+    /// <returns>The builder.</returns>
+    /// <exception cref="ArgumentException">The form belongs to another document.</exception>
+    public PdfContentBuilder DrawForm(PdfForm form)
+    {
+        ArgumentNullException.ThrowIfNull(form);
+        if (form.Document != _document)
+            throw new ArgumentException("The form belongs to another document", nameof(form));
+
+        EnsureNotInText();
+        WriteName(AddResource(PdfNames.XObject, "Fm", form.Reference));
+        return Operator("Do");
+    }
+
+    /// <summary>Sets the parameters of a graphics state parameter dictionary (<c>gs</c>), such as the transparency. The dictionary is added to the resources.</summary>
+    /// <param name="graphicsState">The parameters.</param>
+    /// <returns>The builder.</returns>
+    public PdfContentBuilder SetGraphicsState(PdfExtGState graphicsState)
+    {
+        ArgumentNullException.ThrowIfNull(graphicsState);
+        WriteName(AddResource(PdfNames.ExtGState, "GS", graphicsState.GetReference(_document)));
+        return Operator("gs");
+    }
+
+    /// <summary>Paints a shading over the clipping region (<c>sh</c>). The shading is added to the resources.</summary>
+    /// <param name="shading">The shading, in the current user space.</param>
+    /// <returns>The builder.</returns>
+    public PdfContentBuilder PaintShading(PdfShading shading)
+    {
+        ArgumentNullException.ThrowIfNull(shading);
+        EnsureNotInText();
+        WriteName(AddResource(PdfNames.Shading, "Sh", shading.GetReference(_document)));
+        return Operator("sh");
+    }
+
+    /// <summary>Sets a colored pattern as the nonstroking color (<c>/Pattern cs</c>, <c>scn</c>). The pattern is added to the resources.</summary>
+    /// <param name="pattern">The pattern: a shading pattern or a colored tiling pattern.</param>
+    /// <returns>The builder.</returns>
+    /// <exception cref="ArgumentException">The pattern is an uncolored tiling pattern, or it belongs to another document.</exception>
+    public PdfContentBuilder SetFillPattern(PdfPattern pattern) => SetPattern(pattern, color: null, stroke: false);
+
+    /// <summary>Sets a colored pattern as the stroking color (<c>/Pattern CS</c>, <c>SCN</c>). The pattern is added to the resources.</summary>
+    /// <param name="pattern">The pattern: a shading pattern or a colored tiling pattern.</param>
+    /// <returns>The builder.</returns>
+    /// <exception cref="ArgumentException">The pattern is an uncolored tiling pattern, or it belongs to another document.</exception>
+    public PdfContentBuilder SetStrokePattern(PdfPattern pattern) => SetPattern(pattern, color: null, stroke: true);
+
+    /// <summary>Sets an uncolored tiling pattern, painted with a color, as the nonstroking color. The pattern is added to the resources.</summary>
+    /// <param name="pattern">The uncolored pattern.</param>
+    /// <param name="color">The color the cell is painted with.</param>
+    /// <returns>The builder.</returns>
+    /// <exception cref="ArgumentException">The pattern is colored, or it belongs to another document.</exception>
+    public PdfContentBuilder SetFillPattern(PdfTilingPattern pattern, PdfColor color) => SetPattern(pattern, color, stroke: false);
+
+    /// <summary>Sets an uncolored tiling pattern, painted with a color, as the stroking color. The pattern is added to the resources.</summary>
+    /// <param name="pattern">The uncolored pattern.</param>
+    /// <param name="color">The color the cell is painted with.</param>
+    /// <returns>The builder.</returns>
+    /// <exception cref="ArgumentException">The pattern is colored, or it belongs to another document.</exception>
+    public PdfContentBuilder SetStrokePattern(PdfTilingPattern pattern, PdfColor color) => SetPattern(pattern, color, stroke: true);
+
     /// <summary>Paints an external object of the resources by its name (<c>Do</c>).</summary>
     /// <param name="name">The name of the object in the <c>/XObject</c> resources.</param>
     /// <returns>The builder.</returns>
@@ -657,7 +719,7 @@ public sealed class PdfContentBuilder
     }
 
     /// <summary>Adds an object to a category of the resources and returns its name; an object already there keeps its name.</summary>
-    internal string AddResource(PdfName category, string prefix, PdfReference reference)
+    internal string AddResource(PdfName category, string prefix, PdfObject reference)
     {
         if (_resources.Get<PdfDictionary>(category) is not { } dictionary)
         {
@@ -808,6 +870,55 @@ public sealed class PdfContentBuilder
         }
 
         return this;
+    }
+
+    private PdfContentBuilder SetPattern(PdfPattern pattern, PdfColor? color, bool stroke)
+    {
+        ArgumentNullException.ThrowIfNull(pattern);
+        var isUncolored = pattern is PdfTilingPattern { IsColored: false };
+        if (isUncolored != color.HasValue)
+            throw new ArgumentException(isUncolored ? "An uncolored tiling pattern needs a color" : "A colored pattern has its own colors", nameof(pattern));
+
+        if (pattern is PdfTilingPattern tiling && tiling.Document != _document)
+            throw new ArgumentException("The pattern belongs to another document", nameof(pattern));
+
+        var name = AddResource(PdfNames.Pattern, "P", pattern.GetReference(_document));
+        WriteName(color is { } value ? GetPatternColorSpace(value.ColorSpace) : "Pattern");
+        Operator(stroke ? "CS" : "cs");
+
+        // An uncolored pattern is in a pattern color space whose underlying color space is that of the color (8.7.3.3)
+        if (color is { } components)
+        {
+            foreach (var component in components.GetComponents())
+            {
+                _buffer.WriteNumber(component);
+                _buffer.WriteSpace();
+            }
+        }
+
+        WriteName(name);
+        return Operator(stroke ? "SCN" : "scn");
+    }
+
+    /// <summary>Gets the name of the color space resource <c>[/Pattern /DeviceX]</c>, adding it when the resources do not have it.</summary>
+    private string GetPatternColorSpace(PdfDeviceColorSpace colorSpace)
+    {
+        var underlying = colorSpace switch
+        {
+            PdfDeviceColorSpace.Gray => PdfNames.DeviceGray,
+            PdfDeviceColorSpace.Rgb => PdfNames.DeviceRGB,
+            _ => PdfNames.DeviceCMYK,
+        };
+        if (_resources.Get<PdfDictionary>(PdfNames.ColorSpace) is { } colorSpaces)
+        {
+            foreach (var entry in colorSpaces)
+            {
+                if (PdfReference.ResolveIfReference(entry.Value) is PdfArray { Count: 2 } array && array[0].Equals(PdfNames.Pattern) && array[1].Equals(underlying))
+                    return entry.Key.Value;
+            }
+        }
+
+        return AddResource(PdfNames.ColorSpace, "CS", new PdfArray(PdfNames.Pattern, underlying));
     }
 
     private void WriteText(string text)

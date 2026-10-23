@@ -7,7 +7,7 @@ namespace Meziantou.Framework.Pdf.InteropTests;
 /// <summary>The documents the interop tests give to the external tools: documents the library writes, and the fixtures.</summary>
 internal static class InteropDocuments
 {
-    public static readonly string[] WrittenNames = ["text", "graphics", "images", "navigation", "metadata", "fonts"];
+    public static readonly string[] WrittenNames = ["text", "graphics", "images", "navigation", "metadata", "fonts", "advanced-graphics"];
 
     /// <summary>The embedded fonts of the "fonts" document, and the text of its page for each one.</summary>
     public static readonly (string Font, string Text)[] EmbeddedFonts =
@@ -132,6 +132,9 @@ internal static class InteropDocuments
                 document.Information.ModificationDate = new DateTimeOffset(2024, 5, 6, 7, 8, 9, TimeSpan.Zero);
                 document.UpdateXmpMetadata();
                 break;
+            case "advanced-graphics":
+                CreateAdvancedGraphics(document);
+                break;
             case "fonts":
                 foreach (var (font, text) in EmbeddedFonts)
                 {
@@ -144,5 +147,121 @@ internal static class InteropDocuments
         }
 
         return document;
+    }
+
+    /// <summary>The pages of the "advanced-graphics" document, 200 x 200 points each, and the colors expected at points of each page.</summary>
+    public static readonly (string Name, (double X, double Y, byte R, byte G, byte B, int Tolerance)[] Samples)[] AdvancedGraphicsPages =
+    [
+        ("axial", [(10, 100, 242, 0, 13, 30), (190, 100, 13, 0, 242, 30), (100, 100, 128, 0, 128, 30)]),
+        ("radial", [(100, 100, 255, 255, 255, 30), (100, 195, 13, 13, 13, 30)]),
+        ("alpha", [(100, 100, 128, 128, 128, 12), (10, 10, 255, 255, 255, 2)]),
+        ("multiply", [(100, 100, 0, 255, 0, 12), (190, 190, 255, 255, 0, 2)]),
+        ("colored-tiling", [(5, 5, 255, 0, 0, 2), (15, 5, 255, 255, 255, 2), (25, 25, 255, 0, 0, 2)]),
+        ("uncolored-tiling", [(5, 5, 0, 0, 255, 2), (15, 15, 255, 255, 255, 2)]),
+        ("shading-pattern", [(10, 100, 0, 0, 0, 30), (190, 100, 255, 255, 255, 30)]),
+        ("soft-mask", [(50, 100, 255, 0, 0, 12), (150, 100, 255, 255, 255, 12)]),
+        ("forms", [(25, 25, 0, 255, 0, 2), (125, 125, 0, 255, 0, 2), (75, 75, 255, 255, 255, 2)]),
+        ("group", [(60, 100, 128, 128, 128, 12), (100, 100, 128, 128, 128, 12), (190, 190, 255, 255, 255, 2)]),
+        ("meshes", [(20, 20, 255, 0, 0, 12), (150, 50, 0, 255, 0, 12), (50, 150, 0, 0, 255, 12), (150, 150, 255, 255, 0, 12)]),
+        ("function-based", [(190, 10, 242, 0, 13, 30), (10, 190, 13, 0, 242, 30)]),
+        ("sampled", [(10, 100, 242, 13, 0, 30), (190, 100, 13, 242, 0, 30)]),
+    ];
+
+    private static void CreateAdvancedGraphics(PdfDocument document)
+    {
+        var size = new PdfSize(200, 200);
+        var red = PdfColor.FromRgb(1, 0, 0);
+        var green = PdfColor.FromRgb(0, 1, 0);
+        var blue = PdfColor.FromRgb(0, 0, 1);
+        var yellow = PdfColor.FromRgb(1, 1, 0);
+        foreach (var (name, _) in AdvancedGraphicsPages)
+        {
+            var builder = document.Pages.Add(size).CreateContentBuilder();
+            switch (name)
+            {
+                case "axial":
+                    builder.PaintShading(PdfShading.Axial(PdfDeviceColorSpace.Rgb, 0, 0, 200, 0, PdfFunction.Exponential(red, blue), extendStart: true, extendEnd: true));
+                    break;
+                case "radial":
+                    builder.SetFillGray(0).Rectangle(0, 0, 200, 200).Fill()
+                        .PaintShading(PdfShading.Radial(PdfDeviceColorSpace.Gray, 100, 100, 0, 100, 100, 100, PdfFunction.Exponential(PdfColor.White, PdfColor.Black)));
+                    break;
+                case "alpha":
+                    builder.SetGraphicsState(new PdfExtGState { FillAlpha = 0.5 }).SetFillGray(0).Rectangle(50, 50, 100, 100).Fill();
+                    break;
+                case "multiply":
+                    builder.SetFillRgb(1, 1, 0).Rectangle(0, 0, 200, 200).Fill()
+                        .SetGraphicsState(new PdfExtGState { BlendMode = PdfBlendMode.Multiply })
+                        .SetFillRgb(0, 1, 1).Rectangle(50, 50, 100, 100).Fill();
+                    break;
+                case "colored-tiling":
+                    {
+                        var pattern = document.CreateTilingPattern(new PdfRectangle(0, 0, 20, 20), 20, 20);
+                        pattern.CreateContentBuilder().SetFillRgb(1, 0, 0).Rectangle(0, 0, 10, 10).Rectangle(10, 10, 10, 10).Fill();
+                        builder.SetFillPattern(pattern).Rectangle(0, 0, 200, 200).Fill();
+                        break;
+                    }
+
+                case "uncolored-tiling":
+                    {
+                        var pattern = document.CreateTilingPattern(new PdfRectangle(0, 0, 20, 20), 20, 20, isColored: false);
+                        pattern.CreateContentBuilder().Rectangle(0, 0, 10, 10).Fill();
+                        builder.SetFillPattern(pattern, blue).Rectangle(0, 0, 200, 200).Fill();
+                        break;
+                    }
+
+                case "shading-pattern":
+                    builder.SetFillPattern(new PdfShadingPattern(PdfShading.Axial(PdfDeviceColorSpace.Gray, 0, 0, 1, 0, PdfFunction.Exponential(PdfColor.Black, PdfColor.White)), new PdfMatrix(200, 0, 0, 200, 0, 0)))
+                        .Rectangle(0, 0, 200, 200).Fill();
+                    break;
+                case "soft-mask":
+                    {
+                        var mask = document.CreateForm(new PdfRectangle(0, 0, 200, 200), group: new PdfTransparencyGroup { ColorSpace = PdfDeviceColorSpace.Gray });
+                        mask.CreateContentBuilder().SetFillGray(1).Rectangle(0, 0, 100, 200).Fill();
+                        builder.SetGraphicsState(new PdfExtGState { SoftMask = PdfSoftMask.FromLuminosity(mask) })
+                            .SetFillRgb(1, 0, 0).Rectangle(0, 0, 200, 200).Fill();
+                        break;
+                    }
+
+                case "forms":
+                    {
+                        var form = document.CreateForm(new PdfRectangle(0, 0, 50, 50));
+                        form.CreateContentBuilder().SetFillRgb(0, 1, 0).Rectangle(0, 0, 50, 50).Fill();
+                        builder.DrawForm(form).SaveGraphicsState().Translate(100, 100).DrawForm(form).RestoreGraphicsState();
+                        break;
+                    }
+
+                case "group":
+                    {
+                        // Two overlapping black squares in an isolated group painted at half opacity: the overlap is not darker
+                        var group = document.CreateForm(new PdfRectangle(0, 0, 200, 200), group: new PdfTransparencyGroup { Isolated = true });
+                        group.CreateContentBuilder().SetFillGray(0).Rectangle(40, 40, 80, 120).Fill().Rectangle(80, 40, 80, 120).Fill();
+                        builder.SetGraphicsState(new PdfExtGState { FillAlpha = 0.5 }).DrawForm(group);
+                        break;
+                    }
+
+                case "meshes":
+                    {
+                        PdfPoint[] boundary = [new(100, 0), new(100, 33), new(100, 67), new(100, 100), new(133, 100), new(167, 100), new(200, 100), new(200, 67), new(200, 33), new(200, 0), new(167, 0), new(133, 0)];
+                        PdfPoint[] tensor = [.. boundary.Select(point => new PdfPoint(point.X, point.Y + 100))];
+                        builder
+                            .PaintShading(PdfShading.TriangleMesh(PdfDeviceColorSpace.Rgb, [(new PdfMeshVertex(0, 0, red), new PdfMeshVertex(100, 0, red), new PdfMeshVertex(0, 100, red)), (new PdfMeshVertex(100, 0, red), new PdfMeshVertex(100, 100, red), new PdfMeshVertex(0, 100, red))]))
+                            .PaintShading(PdfShading.CoonsPatchMesh(PdfDeviceColorSpace.Rgb, [new PdfPatch(boundary, [green, green, green, green])]))
+                            .PaintShading(PdfShading.LatticeMesh(PdfDeviceColorSpace.Rgb, 2, [new(0, 100, blue), new(100, 100, blue), new(0, 200, blue), new(100, 200, blue)]))
+                            .PaintShading(PdfShading.TensorPatchMesh(PdfDeviceColorSpace.Rgb, [new PdfPatch(tensor, [yellow, yellow, yellow, yellow])]));
+                        break;
+                    }
+
+                case "function-based":
+                    // r = x, g = 0, b = y over the unit square, scaled to the page
+                    builder.PaintShading(PdfShading.FunctionBased(PdfDeviceColorSpace.Rgb, PdfFunction.PostScript("{ exch 0 3 -1 roll }", [0, 1, 0, 1], [0, 1, 0, 1, 0, 1]), matrix: new PdfMatrix(200, 0, 0, 200, 0, 0)));
+                    break;
+                case "sampled":
+                    builder.PaintShading(PdfShading.Axial(PdfDeviceColorSpace.Rgb, 0, 0, 200, 0, PdfFunction.Sampled([2], 8, [0, 1], [0, 1, 0, 1, 0, 1], [255, 0, 0, 0, 255, 0]), extendStart: true, extendEnd: true));
+                    break;
+                default:
+                    throw new InvalidOperationException("Unknown page " + name);
+            }
+        }
     }
 }

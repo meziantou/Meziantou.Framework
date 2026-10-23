@@ -17,6 +17,10 @@ the XML documentation and `readme.md` consistent in the same change.
   repository are `Meziantou.Framework.Imaging` (the image codecs and the ICC profiles) and `Meziantou.Framework.Fonts`
   (the fonts to embed: the reader, the shaper and the internal subsetter, through `InternalsVisibleTo`), with exact
   versions (`UseExactProjectReferenceVersions` in the project file, as Imaging does with Fonts).
+- **Graphics objects** (`Graphics/`): the values that do not belong to a document (`PdfFunction`, `PdfShading`,
+  `PdfExtGState`, `PdfShadingPattern`, `PdfSoftMask`) create their objects in each document that uses them, once
+  (`PdfDocument.SharedResources`); the objects with content (`PdfForm`, `PdfTilingPattern`) belong to their document and
+  are created by it. The meshes are written with 32-bit coordinates and 16-bit components mapped by `/Decode`.
 - **Embedded fonts** (`Fonts/EmbeddedPdfFont.cs`, `Fonts/EmbeddedFontUsage.cs`): a `Type0` font with `Identity-H`
   codes that are the glyph identifiers (the subset keeps them: CID = GID), a `ToUnicode` CMap of the glyphs that show
   one cluster, and `/ActualText` around the texts whose glyphs cannot give them back. The content builder shapes the

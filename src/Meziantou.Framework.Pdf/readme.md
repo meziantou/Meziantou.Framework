@@ -12,7 +12,8 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   cross-reference stream, or a cross-reference table) and incremental updates that keep the bytes of the original file;
   the output depends only on the document and the options
 - **Document API**: pages (`PdfDocument.Pages`), a content builder for paths, colors, text, images and marked content
-  (`PdfPage.CreateContentBuilder`), the standard 14 fonts and embedded TrueType and OpenType fonts, images (`PdfImage`: JPEG files as they are, other images
+  (`PdfPage.CreateContentBuilder`), shadings and functions (`PdfShading`, `PdfFunction`), patterns, form XObjects,
+  transparency (`PdfExtGState`: alpha, blend modes, soft masks; transparency groups), the standard 14 fonts and embedded TrueType and OpenType fonts, images (`PdfImage`: JPEG files as they are, other images
   of `Meziantou.Framework.Imaging` with their alpha channel and ICC profile), the document information and the XMP
   metadata, the outline (bookmarks), links and annotations, text extraction (`PdfPage.ExtractText`)
 
@@ -58,6 +59,44 @@ document.Pages.Add(PdfSize.A4).CreateContentBuilder()
 
 // The document embeds the glyphs it shows, with their text
 var pdf = document.ToByteArray();
+```
+<!-- endref -->
+
+## Gradients, patterns and transparency
+
+`PdfShading` creates the smooth shadings of ISO 32000-2 (function-based, axial, radial, and the four kinds of meshes),
+painted with `PaintShading` or used as a color by a `PdfShadingPattern`. `PdfFunction` creates the functions they use
+(sampled, exponential, stitching and PostScript calculator functions; `PdfFunction.Gradient` for the stops of a
+gradient). `PdfDocument.CreateForm` creates a form XObject, a content painted several times or a transparency group,
+and `PdfDocument.CreateTilingPattern` a tiling pattern. `PdfExtGState` sets the alpha, the blend mode and the soft mask.
+
+<!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_AdvancedGraphics;format=md-fenced-code-block;dedent=true -->
+```csharp
+var document = new PdfDocument();
+var builder = document.Pages.Add(PdfSize.A4).CreateContentBuilder();
+
+// A gradient from red to blue, painted in a rectangle
+var gradient = PdfShading.Axial(PdfDeviceColorSpace.Rgb, 50, 0, 250, 0,
+    PdfFunction.Gradient((0, PdfColor.FromRgb(1, 0, 0)), (1, PdfColor.FromRgb(0, 0, 1))));
+builder.SaveGraphicsState()
+    .Rectangle(50, 600, 200, 100).Clip().EndPath()
+    .PaintShading(gradient)
+    .RestoreGraphicsState();
+
+// A form painted twice, the second time at half opacity with the Multiply blend mode
+var logo = document.CreateForm(new PdfRectangle(0, 0, 100, 100));
+logo.CreateContentBuilder().SetFillRgb(1, 0.8, 0).Circle(50, 50, 50).Fill();
+builder.DrawForm(logo)
+    .SaveGraphicsState()
+    .SetGraphicsState(new PdfExtGState { FillAlpha = 0.5, BlendMode = PdfBlendMode.Multiply })
+    .Translate(50, 0)
+    .DrawForm(logo)
+    .RestoreGraphicsState();
+
+// A checkerboard: a tiling pattern used as the fill color
+var checkerboard = document.CreateTilingPattern(new PdfRectangle(0, 0, 20, 20), 20, 20);
+checkerboard.CreateContentBuilder().SetFillGray(0).Rectangle(0, 0, 10, 10).Rectangle(10, 10, 10, 10).Fill();
+builder.SetFillPattern(checkerboard).Rectangle(300, 600, 200, 100).Fill();
 ```
 <!-- endref -->
 

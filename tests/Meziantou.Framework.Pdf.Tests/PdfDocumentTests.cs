@@ -52,6 +52,43 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void Example_AdvancedGraphics()
+    {
+        #region Pdf_AdvancedGraphics
+        var document = new PdfDocument();
+        var builder = document.Pages.Add(PdfSize.A4).CreateContentBuilder();
+
+        // A gradient from red to blue, painted in a rectangle
+        var gradient = PdfShading.Axial(PdfDeviceColorSpace.Rgb, 50, 0, 250, 0,
+            PdfFunction.Gradient((0, PdfColor.FromRgb(1, 0, 0)), (1, PdfColor.FromRgb(0, 0, 1))));
+        builder.SaveGraphicsState()
+            .Rectangle(50, 600, 200, 100).Clip().EndPath()
+            .PaintShading(gradient)
+            .RestoreGraphicsState();
+
+        // A form painted twice, the second time at half opacity with the Multiply blend mode
+        var logo = document.CreateForm(new PdfRectangle(0, 0, 100, 100));
+        logo.CreateContentBuilder().SetFillRgb(1, 0.8, 0).Circle(50, 50, 50).Fill();
+        builder.DrawForm(logo)
+            .SaveGraphicsState()
+            .SetGraphicsState(new PdfExtGState { FillAlpha = 0.5, BlendMode = PdfBlendMode.Multiply })
+            .Translate(50, 0)
+            .DrawForm(logo)
+            .RestoreGraphicsState();
+
+        // A checkerboard: a tiling pattern used as the fill color
+        var checkerboard = document.CreateTilingPattern(new PdfRectangle(0, 0, 20, 20), 20, 20);
+        checkerboard.CreateContentBuilder().SetFillGray(0).Rectangle(0, 0, 10, 10).Rectangle(10, 10, 10, 10).Fill();
+        builder.SetFillPattern(checkerboard).Rectangle(300, 600, 200, 100).Fill();
+        #endregion
+
+        var page = PdfDocument.Open(document.ToByteArray()).Pages[0];
+        Assert.Equal(["Sh1"], page.Resources!.Get<PdfDictionary>(PdfNames.Shading)!.Keys.Select(key => key.Value));
+        Assert.Equal(["Fm1"], page.Resources.Get<PdfDictionary>(PdfNames.XObject)!.Keys.Select(key => key.Value));
+        Assert.Equal(["P1"], page.Resources.Get<PdfDictionary>(PdfNames.Pattern)!.Keys.Select(key => key.Value));
+    }
+
+    [Fact]
     public void Example_ReadDocument()
     {
         var file = HandWrittenPdf.CreateSimple("Some text").ToArray();

@@ -77,6 +77,22 @@ public sealed partial class PdfDocument
     /// <summary>Gets the document information dictionary (ISO 32000-2, 14.3.3): title, author, dates.</summary>
     public PdfDocumentInformation Information => _information ??= new PdfDocumentInformation(this);
 
+    /// <summary>Creates a form XObject (ISO 32000-2, 8.10): a content painted with <see cref="PdfContentBuilder.DrawForm"/>, or the group of a soft mask.</summary>
+    /// <param name="boundingBox">The bounding box of the form, in its own coordinate space: the content is clipped to it.</param>
+    /// <param name="matrix">The matrix from the space of the form to the user space it is painted in; <see langword="null"/> for the identity.</param>
+    /// <param name="group">The attributes of the transparency group of the form; <see langword="null"/> when it is not a group.</param>
+    /// <returns>The form.</returns>
+    public PdfForm CreateForm(PdfRectangle boundingBox, PdfMatrix? matrix = null, PdfTransparencyGroup? group = null) => new(this, boundingBox, matrix, group);
+
+    /// <summary>Creates a tiling pattern (ISO 32000-2, 8.7.3).</summary>
+    /// <param name="cell">The bounding box of the cell, in the pattern space: the content of the cell is clipped to it.</param>
+    /// <param name="xStep">The horizontal spacing of the cells.</param>
+    /// <param name="yStep">The vertical spacing of the cells.</param>
+    /// <param name="isColored"><see langword="true"/> when the cell sets its colors; <see langword="false"/> for a stencil painted with the color given when the pattern is set.</param>
+    /// <param name="matrix">The matrix from the pattern space to the default coordinate space of the page; <see langword="null"/> for the identity.</param>
+    /// <returns>The pattern.</returns>
+    public PdfTilingPattern CreateTilingPattern(PdfRectangle cell, double xStep, double yStep, bool isColored = true, PdfMatrix? matrix = null) => new(this, cell, xStep, yStep, isColored, matrix);
+
     /// <summary>Gets the top-level items of the document outline, the bookmarks (ISO 32000-2, 12.3.3).</summary>
     public PdfOutlineCollection Outlines => _outlines ??= PdfOutlineCollection.Load(this);
 

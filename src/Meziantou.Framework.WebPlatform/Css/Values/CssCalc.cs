@@ -172,6 +172,13 @@ internal static class CssCalc
         if (typeUnit is null)
             return null;
 
+        // The intermediate values of a computed value may have types that are not a single unit (calc((1px * 1px - 2px * 3px) / 1px)):
+        // the calculation is resolved when all its values are known
+        if (!context.KeepRelativeUnits && root is not CssCalcNumericNode && evaluator.TryResolve(root, out var resolved))
+        {
+            root = new CssCalcNumericNode(resolved, typeUnit);
+        }
+
         return new CssCalcValue(root, typeUnit, evaluator.PercentagesAreUnresolved);
     }
 
@@ -949,6 +956,76 @@ internal static class CssCalc
             return false;
         }
 
+        /// <summary>
+        /// Computes the value of a calculation whose values are all known, in the canonical unit of its type (each numeric value is in the
+        /// canonical unit of its type). Returns false when the calculation contains a value that is not known.
+        /// </summary>
+        public bool TryResolve(CssCalcNode node, out double value)
+        {
+            value = 0;
+            switch (node)
+            {
+                case CssCalcNumericNode numeric when IsResolvable(numeric):
+                    value = numeric.Value;
+                    return true;
+
+                case CssCalcNegateNode negate when TryResolve(negate.Child, out var negated):
+                    value = -negated;
+                    return true;
+
+                case CssCalcInvertNode invert when TryResolve(invert.Child, out var inverted):
+                    value = 1 / inverted;
+                    return true;
+
+                case CssCalcSumNode sum:
+                    foreach (var child in sum.Children)
+                    {
+                        if (!TryResolve(child, out var term))
+                            return false;
+
+                        value += term;
+                    }
+
+                    return true;
+
+                case CssCalcProductNode product:
+                    value = 1;
+                    foreach (var child in product.Children)
+                    {
+                        if (!TryResolve(child, out var factor))
+                            return false;
+
+                        value *= factor;
+                    }
+
+                    return true;
+
+                case CssCalcFunctionNode { Kind: not (CssCalcFunctionKind.Random or CssCalcFunctionKind.CalcSize or CssCalcFunctionKind.CalcMix) } function:
+                {
+                    var arguments = new List<CssCalcNode?>(function.Arguments.Count);
+                    foreach (var argument in function.Arguments)
+                    {
+                        if (argument is null)
+                        {
+                            arguments.Add(null);
+                            continue;
+                        }
+
+                        if (!TryResolve(argument, out var argumentValue) || GetUnitOfType(argument.Type) is not { } argumentUnit)
+                            return false;
+
+                        arguments.Add(new CssCalcNumericNode(argumentValue, argumentUnit));
+                    }
+
+                    value = Compute(function.Kind, function.Strategy, arguments, function.NoClamp).Value;
+                    return true;
+                }
+
+                default:
+                    return false;
+            }
+        }
+
         /// <summary>Whether the numeric value of the node is known, so it can be used to compute a function.</summary>
         private bool IsResolvable(CssCalcNode? node) => node is CssCalcNumericNode numeric && (numeric.Unit != "%" || _percentHint == CssCalcType.NoHint) && !IsRelativeUnit(numeric.Unit);
 
@@ -1609,6 +1686,13 @@ internal static class CssCalc
         {
             if (type.PercentHint != CssCalcType.NoHint && type.PercentHint != _percentHint)
                 return null;
+
+            // When the percentages resolve against another type, they have that type (https://drafts.csswg.org/css-values-4/#calc-type-checking):
+            // calc(10% / 1px) is a <number> where percentages are lengths
+            if (type.HasPercent && _percentHint is not CssCalcType.NoHint and not CssCalcType.NumberHint && !type.ExponentsEqual(CssCalcType.FromUnit("%")))
+            {
+                type = type.WithPercentHint(_percentHint);
+            }
 
             var found = -1;
             for (var i = 0; i < CssCalcType.BaseTypeCount; i++)

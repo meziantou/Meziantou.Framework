@@ -54,10 +54,7 @@
     "total": 3
   },
   "css/css-transitions/after-change-style-inherited-try-fallback.html": {
-    "total": 1,
-    "failures": {
-      "Position fallback correctly applied to after-change style": "FAIL"
-    }
+    "total": 1
   },
   "css/css-transitions/after-change-style-inherited.html": {
     "total": 6

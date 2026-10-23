@@ -1138,7 +1138,21 @@ internal sealed partial class StyleEngine
             {
                 if (mayHaveTransitions)
                 {
-                    changed = CssTransitionUpdater.Update(style, beforeChange, transitionChanges);
+                    // The computed values of an anchor-positioned element include the declarations of the position option applied by
+                    // its layout (https://drafts.csswg.org/css-anchor-position-1/#fallback-apply): the before-change style was laid out
+                    // with them, and the after-change style keeps them while the position options are the same (the layout resolves
+                    // them again, see CssTransitionUpdater.UpdateFromLayout)
+                    ComputedStyle? afterChange = null;
+                    if (_document.LayoutEngineOrNull?.GetAppliedPositionOption(element, pseudoElement, fallbacks: null) is { } option)
+                    {
+                        beforeChange = beforeChange?.WithPositionOption(option, beforeChange);
+                        if (_document.LayoutEngineOrNull.GetAppliedPositionOption(element, pseudoElement, style.GetComputedValue("position-try-fallbacks")) is not null)
+                        {
+                            afterChange = style.WithPositionOption(option, style).CreateAfterChangeStyle();
+                        }
+                    }
+
+                    changed = CssTransitionUpdater.Update(style, beforeChange, transitionChanges, afterChange);
                 }
 
                 if (mayHaveAnimations)

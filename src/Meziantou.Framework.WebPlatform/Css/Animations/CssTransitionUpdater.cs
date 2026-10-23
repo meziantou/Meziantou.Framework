@@ -49,7 +49,11 @@ internal static class CssTransitionUpdater
     /// may compute the style again (<paramref name="changes"/> is not null), the canceled transitions are only pending
     /// cancellation, and the changes are recorded so that they can be undone (see <see cref="TransitionChanges"/>).
     /// </summary>
-    public static bool Update(ComputedStyle style, ComputedStyle? before, TransitionChanges? changes)
+    /// <param name="style">The new style of the element.</param>
+    /// <param name="before">The before-change style, or null.</param>
+    /// <param name="changes">The changes recorded for the layout, or null.</param>
+    /// <param name="afterChange">The after-change style, or null for the after-change style of <paramref name="style"/>.</param>
+    public static bool Update(ComputedStyle style, ComputedStyle? before, TransitionChanges? changes, ComputedStyle? afterChange = null)
     {
         var element = style.Element;
         var pseudoElement = style.PseudoElement;
@@ -75,7 +79,7 @@ internal static class CssTransitionUpdater
         if (matching.Count == 0 && transitions is null)
             return false;
 
-        var after = style.CreateAfterChangeStyle();
+        var after = afterChange ?? style.CreateAfterChangeStyle();
         var context = new CssInterpolationContext(after);
         var candidates = new SortedSet<string>(matching.Keys, StringComparer.Ordinal);
         if (transitions is not null)

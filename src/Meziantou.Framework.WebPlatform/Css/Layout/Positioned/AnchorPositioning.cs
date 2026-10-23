@@ -230,6 +230,8 @@ internal static class AnchorPositioning
         }
 
         state.TransitionValues = transitionValues;
+        state.OptionDeclarations = layout.ComputesTransitionValues ? layout.GetDeclarations(chosen.Option) : null;
+        state.OptionFallbacks = baseStyle.GetComputedValue("position-try-fallbacks");
         box.Style = chosen.Style;
         state.UsedOption = chosen.Option.Text;
         // The anchors of the options tried by the previous passes still influence the position of a box with position options
@@ -783,17 +785,22 @@ internal static class AnchorPositioning
 
         /// <summary>Returns the style of the box with the declarations of a position option (https://drafts.csswg.org/css-anchor-position-1/#apply-a-position-option).</summary>
         private ComputedStyle ApplyOption(PositionOption option)
+            => GetDeclarations(option) is { } declarations ? _baseStyle.WithPositionOption(declarations, _baseStyle) : _baseStyle;
+
+        /// <summary>Returns the declarations of a position option in the position fallback origin, or null for the base styles.</summary>
+        public List<CssLonghandValue>? GetDeclarations(PositionOption option)
         {
             if (option.IsBase)
-                return _baseStyle;
+                return null;
 
             if (option.PositionArea is { } positionArea)
-                return _baseStyle.WithPositionOption([new CssLonghandValue("position-area", positionArea)], _baseStyle);
+                return [new CssLonghandValue("position-area", positionArea)];
 
+            List<CssLonghandValue>? declarations = null;
             var style = _baseStyle;
             if (option.Rule is { } rule)
             {
-                var declarations = new List<CssLonghandValue>(rule.Style.Declarations.Count);
+                declarations = new List<CssLonghandValue>(rule.Style.Declarations.Count);
                 foreach (var declaration in rule.Style.Declarations)
                 {
                     declarations.Add(declaration.Value);
@@ -804,10 +811,10 @@ internal static class AnchorPositioning
 
             if (option.Tactics.Count > 0)
             {
-                style = _baseStyle.WithPositionOption(TryTactics.Apply(style, option.Tactics, containingBlock), _baseStyle);
+                declarations = TryTactics.Apply(style, option.Tactics, containingBlock);
             }
 
-            return style;
+            return declarations;
         }
     }
 

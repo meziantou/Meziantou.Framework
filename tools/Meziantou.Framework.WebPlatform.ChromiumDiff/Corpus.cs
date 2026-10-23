@@ -4,28 +4,42 @@ using System.Text;
 
 namespace ChromiumDiff;
 
-internal sealed record Input(string Id, string Html);
+/// <summary>An input of the differential testing.</summary>
+/// <param name="Id">The identifier of the input in the reports and in known-differences.json.</param>
+/// <param name="Html">The markup.</param>
+/// <param name="Fragments">Whether the input is also parsed as a fragment in every context element (not the real-world pages).</param>
+internal sealed record Input(string Id, string Html, bool Fragments = true);
 
 /// <summary>The inputs of the differential testing.</summary>
 internal static class Corpus
 {
-    public static IEnumerable<Input> Load(string root, bool pages, IEnumerable<string> directories)
+    /// <summary>
+    /// Returns the inputs of the tree construction tests (<paramref name="tests"/>), of the seeds of the webplatform-html
+    /// fuzzing target, of the pages of pages.txt (<paramref name="pages"/>), and of the files of <paramref name="directories"/>.
+    /// </summary>
+    public static IEnumerable<Input> Load(string root, bool tests, bool pages, IEnumerable<string> directories)
     {
-        // The documents of the tree construction tests (html5lib format) of WPT. The fragment tests and the tests that
-        // require the scripting flag are not documents parsed with scripting disabled.
-        var resources = Path.Combine(root, "tests", "Meziantou.Framework.WebPlatform.External", "wpt", "html", "syntax", "parsing", "resources");
-        if (!Directory.Exists(resources))
-            throw new InvalidOperationException($"'{resources}' does not exist: run 'dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate -- fetch-tests'");
-
-        foreach (var file in Directory.EnumerateFiles(resources, "*.dat").Order(StringComparer.Ordinal))
+        if (tests)
         {
-            var index = 0;
-            foreach (var (data, isDocument) in ReadTreeConstructionTests(file))
+            // The inputs of the tree construction tests (html5lib format) of WPT: each one is parsed as a document and as a
+            // fragment, with the scripting disabled and enabled, whatever the context and the scripting of the test
+            var resources = Path.Combine(root, "tests", "Meziantou.Framework.WebPlatform.External", "wpt", "html", "syntax", "parsing", "resources");
+            if (!Directory.Exists(resources))
+                throw new InvalidOperationException($"'{resources}' does not exist: run 'dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate -- fetch-tests'");
+
+            foreach (var file in Directory.EnumerateFiles(resources, "*.dat").Order(StringComparer.Ordinal))
             {
-                index++;
-                if (isDocument)
+                var index = 0;
+                foreach (var data in ReadTreeConstructionTests(file))
+                {
+                    index++;
                     yield return new Input($"{Path.GetFileName(file)}#{index}", data);
+                }
             }
+
+            var seeds = Path.Combine(root, "fuzz", "Meziantou.Framework.WebPlatform.Fuzz", "Seeds", "html");
+            foreach (var file in Directory.EnumerateFiles(seeds, "*", SearchOption.AllDirectories).Order(StringComparer.Ordinal))
+                yield return new Input("seeds/" + Path.GetRelativePath(seeds, file).Replace('\\', '/'), Encoding.UTF8.GetString(File.ReadAllBytes(file)));
         }
 
         if (pages)
@@ -41,7 +55,7 @@ internal static class Corpus
         }
     }
 
-    private static IEnumerable<(string Data, bool IsDocument)> ReadTreeConstructionTests(string file)
+    private static IEnumerable<string> ReadTreeConstructionTests(string file)
     {
         var lines = File.ReadAllText(file).Split('\n');
         for (var i = 0; i < lines.Length; i++)
@@ -53,21 +67,14 @@ internal static class Corpus
             for (i++; i < lines.Length && lines[i] != "#errors"; i++)
                 data.Add(lines[i]);
 
-            var isDocument = true;
-            for (; i < lines.Length && lines[i] != "#document"; i++)
-            {
-                if (lines[i] is "#document-fragment" or "#script-on")
-                    isDocument = false;
-            }
-
-            yield return (string.Join('\n', data), isDocument);
+            yield return string.Join('\n', data);
         }
     }
 
     private static IEnumerable<Input> LoadPages(string root)
     {
         foreach (var page in GetPages(root))
-            yield return new Input(page.Url, Encoding.UTF8.GetString(File.ReadAllBytes(page.Path)));
+            yield return new Input(page.Url, Encoding.UTF8.GetString(File.ReadAllBytes(page.Path)), Fragments: false);
     }
 
     /// <summary>Returns the pages of pages.txt and the paths of their HTML files, downloaded once in artifacts/chromium-diff/pages.</summary>

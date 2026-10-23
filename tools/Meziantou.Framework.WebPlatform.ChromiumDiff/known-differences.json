@@ -1,18 +1,420 @@
-{
-  "html5test-com.dat#14": "Chromium deviation: <![CDATA[ in an SVG title (an HTML integration point) is parsed as a bogus comment. The markup declaration open state only checks that the adjusted current node is not in the HTML namespace (the html5lib test expects a text node)",
-  "html5test-com.dat#15": "Chromium deviation: <![CDATA[ in an SVG foreignObject (an HTML integration point) is parsed as a bogus comment (the html5lib test expects a text node)",
-  "html5test-com.dat#18": "Chromium deviation: <![CDATA[ in a MathML mtext (a MathML text integration point) is parsed as a bogus comment (the html5lib test expects a text node)",
-  "noscript01.dat#13": "Chromium deviation: a comment after an ignored <head> start tag in the 'in head noscript' insertion mode is inserted after the noscript element instead of in it (processed with the 'in head' rules, it is inserted in the current node)",
-  "plain-text-unsafe.dat#24": "Chromium deviation: a U+FFFD character does not set the frameset-ok flag to \"not ok\", so the frameset start tag replaces the body",
-  "plain-text-unsafe.dat#25": "Chromium deviation: a U+0000 NULL after a less-than sign in body (emitted by the data state, which the 'in body' insertion mode ignores) is inserted as U+FFFD (the html5lib test expects it to be ignored)",
-  "plain-text-unsafe.dat#26": "Chromium deviation: <![CDATA[ in an SVG foreignObject (an HTML integration point) is parsed as a bogus comment (the html5lib test expects a text node, without the U+0000 NULL)",
-  "search-element.dat#4": "Chromium deviation: search is not in the special category, so the adoption agency algorithm and the end tags that close the elements up to a special one (li, dd, dt, unknown elements) do not stop at it (TreeConstructionTests.ParseWhereChromiumDiffers)",
-  "search-element.dat#5": "Chromium deviation: search is not in the special category, so the adoption agency algorithm and the end tags that close the elements up to a special one (li, dd, dt, unknown elements) do not stop at it (TreeConstructionTests.ParseWhereChromiumDiffers)",
-  "search-element.dat#6": "Chromium deviation: search is not in the special category, so the adoption agency algorithm and the end tags that close the elements up to a special one (li, dd, dt, unknown elements) do not stop at it (TreeConstructionTests.ParseWhereChromiumDiffers)",
-  "search-element.dat#7": "Chromium deviation: search is not in the special category, so the adoption agency algorithm and the end tags that close the elements up to a special one (li, dd, dt, unknown elements) do not stop at it (TreeConstructionTests.ParseWhereChromiumDiffers)",
-  "search-element.dat#8": "Chromium deviation: search is not in the special category, so the adoption agency algorithm and the end tags that close the elements up to a special one (li, dd, dt, unknown elements) do not stop at it (TreeConstructionTests.ParseWhereChromiumDiffers)",
-  "tests19.dat#48": "Chromium deviation: a U+FFFD character does not set the frameset-ok flag to \"not ok\", so the frameset start tag replaces the body (TreeConstructionTests.ParseWhereChromiumDiffers)",
-  "tests19.dat#49": "Chromium deviation: a U+FFFD character does not set the frameset-ok flag to \"not ok\", so the frameset start tag replaces the body (TreeConstructionTests.ParseWhereChromiumDiffers)",
-  "tests19.dat#50": "Chromium deviation: a U+FFFD character does not set the frameset-ok flag to \"not ok\", so the frameset start tag replaces the body (TreeConstructionTests.ParseWhereChromiumDiffers)",
-  "tests19.dat#51": "Chromium deviation: a U+FFFD character does not set the frameset-ok flag to \"not ok\", so the frameset start tag replaces the body (TreeConstructionTests.ParseWhereChromiumDiffers)"
-}
+[
+  {
+    "reason": "Chromium and WebKit deviation: <![CDATA[ in an HTML integration point (SVG foreignObject, desc, title) or a MathML text integration point (mi, mo, mn, ms, mtext) is parsed as a bogus comment. The markup declaration open state only checks that the adjusted current node is not in the HTML namespace (the html5lib tests expect a CDATA section, as Firefox)",
+    "differences": [
+      "html5test-com.dat#14",
+      "html5test-com.dat#15",
+      "html5test-com.dat#18",
+      "plain-text-unsafe.dat#23",
+      "plain-text-unsafe.dat#26"
+    ],
+    "reproductions": [
+      {
+        "mode": "",
+        "input": "<svg><foreignObject><![CDATA[x]]>"
+      },
+      {
+        "mode": "",
+        "input": "<svg><desc><![CDATA[x]]>"
+      },
+      {
+        "mode": "",
+        "input": "<svg><title><![CDATA[x]]>"
+      },
+      {
+        "mode": "",
+        "input": "<math><mo><![CDATA[x]]>"
+      }
+    ],
+    "patterns": [
+      {
+        "mode": "",
+        "pattern": "(?i).*<(foreignobject|desc|title|mi|mo|mn|ms|mtext)\\b.*<!\\[CDATA\\[.*"
+      }
+    ]
+  },
+  {
+    "reason": "Chromium and WebKit deviation: <![CDATA[ is parsed as a bogus comment in a fragment whose context element is an SVG or MathML element, when the stack of open elements has only the html element. The adjusted current node is then the context element, which is not in the HTML namespace, so it is a CDATA section (as in Firefox)",
+    "differences": [
+      "html5test-com.dat#20",
+      "tests10.dat#2"
+    ],
+    "reproductions": [
+      {
+        "mode": "fragment(svg ",
+        "input": "<![CDATA[x]]>"
+      },
+      {
+        "mode": "fragment(math ",
+        "input": "<![CDATA[x]]>"
+      }
+    ],
+    "patterns": [
+      {
+        "mode": "fragment(svg ",
+        "pattern": ".*<!\\[CDATA\\[.*"
+      },
+      {
+        "mode": "fragment(math ",
+        "pattern": ".*<!\\[CDATA\\[.*"
+      }
+    ]
+  },
+  {
+    "reason": "Chromium deviation: Chromium handles U+0000 in its input preprocessor instead of in the tokenizer and the tree builder. It drops the NULs in the data state (a NUL in a text, or before a <frameset> that the NUL would prevent), in the RCDATA state of a fragment whose context element is title or textarea, and in the foreign content of a fragment whose context element is an SVG or MathML element; it inserts U+FFFD after a less-than sign in body where the 'in body' insertion mode ignores the NUL (the html5lib tests expect U+FFFD or nothing)",
+    "differences": [
+      "domjs-unsafe.dat#4",
+      "domjs-unsafe.dat#5",
+      "domjs-unsafe.dat#6",
+      "domjs-unsafe.dat#7",
+      "domjs-unsafe.dat#8",
+      "domjs-unsafe.dat#15",
+      "domjs-unsafe.dat#16",
+      "domjs-unsafe.dat#17",
+      "pending-spec-changes-plain-text-unsafe.dat#1",
+      "plain-text-unsafe.dat#2",
+      "plain-text-unsafe.dat#3",
+      "plain-text-unsafe.dat#4",
+      "plain-text-unsafe.dat#5",
+      "plain-text-unsafe.dat#6",
+      "plain-text-unsafe.dat#7",
+      "plain-text-unsafe.dat#8",
+      "plain-text-unsafe.dat#9",
+      "plain-text-unsafe.dat#10",
+      "plain-text-unsafe.dat#11",
+      "plain-text-unsafe.dat#12",
+      "plain-text-unsafe.dat#13",
+      "plain-text-unsafe.dat#14",
+      "plain-text-unsafe.dat#15",
+      "plain-text-unsafe.dat#16",
+      "plain-text-unsafe.dat#17",
+      "plain-text-unsafe.dat#18",
+      "plain-text-unsafe.dat#19",
+      "plain-text-unsafe.dat#20",
+      "plain-text-unsafe.dat#21",
+      "plain-text-unsafe.dat#22",
+      "plain-text-unsafe.dat#23",
+      "plain-text-unsafe.dat#25",
+      "plain-text-unsafe.dat#32",
+      "plain-text-unsafe.dat#33",
+      "plain-text-unsafe.dat#34",
+      "plain-text-unsafe.dat#35",
+      "plain-text-unsafe.dat#36",
+      "plain-text-unsafe.dat#37",
+      "plain-text-unsafe.dat#38",
+      "plain-text-unsafe.dat#39",
+      "plain-text-unsafe.dat#40",
+      "plain-text-unsafe.dat#41",
+      "plain-text-unsafe.dat#42",
+      "plain-text-unsafe.dat#43",
+      "plain-text-unsafe.dat#44",
+      "plain-text-unsafe.dat#45",
+      "plain-text-unsafe.dat#46",
+      "plain-text-unsafe.dat#47",
+      "plain-text-unsafe.dat#48",
+      "plain-text-unsafe.dat#49",
+      "plain-text-unsafe.dat#50",
+      "plain-text-unsafe.dat#51",
+      "plain-text-unsafe.dat#52",
+      "plain-text-unsafe.dat#53"
+    ],
+    "patterns": [
+      {
+        "mode": "",
+        "pattern": ".*\u0000.*"
+      }
+    ]
+  },
+  {
+    "reason": "Chromium deviation: an ignored <head> start tag in the 'in head noscript' insertion mode closes the noscript element, so the following comments and meta, link, noscript elements are inserted after it instead of in it (processed with the 'in head' rules, they are inserted in the current node)",
+    "differences": [
+      "noscript01.dat#13"
+    ],
+    "reproductions": [
+      {
+        "mode": "",
+        "input": "<noscript><head><noscript>"
+      }
+    ],
+    "patterns": [
+      {
+        "mode": "",
+        "pattern": "(?i).*<noscript\\b.*<head\\b.*"
+      }
+    ]
+  },
+  {
+    "reason": "Chromium deviation: a U+FFFD character (e.g. a character reference to U+0000) does not set the frameset-ok flag to \"not ok\", so the frameset start tag replaces the body (TreeConstructionTests.ParseWhereChromiumDiffers)",
+    "differences": [
+      "plain-text-unsafe.dat#24",
+      "tests19.dat#48",
+      "tests19.dat#49",
+      "tests19.dat#50",
+      "tests19.dat#51"
+    ],
+    "reproductions": [
+      {
+        "mode": "",
+        "input": "&#0<frameset>"
+      }
+    ],
+    "patterns": [
+      {
+        "mode": "",
+        "pattern": "(?i).*(&#0*;?|&#x0*;?|�).*<frameset.*"
+      }
+    ]
+  },
+  {
+    "reason": "Chromium deviation: search is not in the special category, so the adoption agency algorithm and the end tags that close the elements up to a special one (li, dd, dt, unknown elements) do not stop at it (TreeConstructionTests.ParseWhereChromiumDiffers)",
+    "differences": [
+      "search-element.dat#4",
+      "search-element.dat#5",
+      "search-element.dat#6",
+      "search-element.dat#7",
+      "search-element.dat#8"
+    ],
+    "reproductions": [
+      {
+        "mode": "",
+        "input": "<i><search></i>x"
+      },
+      {
+        "mode": "",
+        "input": "<font><search></font>x"
+      },
+      {
+        "mode": "",
+        "input": "<option><search></option><"
+      }
+    ],
+    "patterns": [
+      {
+        "mode": "",
+        "pattern": "(?i).*<search\\b.*"
+      }
+    ]
+  },
+  {
+    "reason": "Chromium and WebKit deviation: in a fragment whose context element is a MathML or SVG element, an end tag when the stack of open elements has only the html element is processed with the rules of the current insertion mode (e.g. the adoption agency algorithm removes the formatting element from the list of active formatting elements). The adjusted current node is the context element, so the rules for foreign content apply, and they ignore the end tag (fragment case), as in Firefox",
+    "differences": [
+      "tricky01.dat#3"
+    ],
+    "reproductions": [
+      {
+        "mode": "fragment(math ",
+        "input": "<strong><a></strong></a><big>"
+      },
+      {
+        "mode": "fragment(math ",
+        "input": "<listing><s></listing></s>&"
+      },
+      {
+        "mode": "fragment(svg ",
+        "input": "<strong><a></strong></a><big>"
+      },
+      {
+        "mode": "fragment(svg ",
+        "input": "<listing><s></listing></s>&"
+      }
+    ],
+    "patterns": [
+      {
+        "mode": "fragment(math ",
+        "pattern": "(?i).*<(a|b|big|code|em|font|i|nobr|s|small|strike|strong|tt|u)\\b[^>]*>.*</(\\w+)>.*</\\1>.*"
+      },
+      {
+        "mode": "fragment(svg ",
+        "pattern": "(?i).*<(a|b|big|code|em|font|i|nobr|s|small|strike|strong|tt|u)\\b[^>]*>.*</(\\w+)>.*</\\1>.*"
+      }
+    ]
+  },
+  {
+    "reason": "Chromium deviation: the input, keygen and textarea start tags in a fragment whose context element is select are inserted. There is no select element in select scope (fragment case), so they are ignored (as in the html5lib test tests_innerHTML_1.dat#76, Firefox and WebKit)",
+    "differences": [
+      "html5test-com.dat#26 fragment(select)",
+      "pending-spec-changes.dat#1 fragment(select)",
+      "seeds/1.html fragment(select)",
+      "template.dat#116 fragment(select)",
+      "template.dat#119 fragment(select)",
+      "tests19.dat#69 fragment(select)",
+      "tests2.dat#41 fragment(select)",
+      "tests25.dat#13 fragment(select)",
+      "tests7.dat#17 fragment(select)",
+      "tests7.dat#23 fragment(select)",
+      "tests_innerHTML_1.dat#76 fragment(select)",
+      "void-in-phrasing.dat#7 fragment(select)",
+      "void-in-phrasing.dat#11 fragment(select)",
+      "webkit01.dat#51 fragment(select)",
+      "webkit01.dat#52 fragment(select)",
+      "webkit02.dat#11 fragment(select)",
+      "webkit02.dat#44 fragment(select)"
+    ],
+    "reproductions": [
+      {
+        "mode": "fragment(select)",
+        "input": "<input>"
+      }
+    ],
+    "patterns": [
+      {
+        "mode": "fragment(select)",
+        "pattern": "(?i).*<(input|keygen|textarea)\\b.*"
+      }
+    ]
+  },
+  {
+    "reason": "Chromium, Firefox and WebKit deviation: in a fragment whose context element is template, the form element pointer is set and used as when there is no template element on the stack of open elements (the context element is not on the stack). The html5lib tests (template.dat#120) expect the rules for a template element on the stack: the form element pointer is not set, so a form start tag in a form is inserted",
+    "differences": [
+      "template.dat#120 fragment(template)",
+      "template.dat#123 fragment(template)",
+      "template.dat#124 fragment(template)",
+      "tests16.dat#197 fragment(template)",
+      "tests20.dat#46 fragment(template)",
+      "tests20.dat#47 fragment(template)",
+      "tests20.dat#48 fragment(template)",
+      "tests6.dat#2 fragment(template)",
+      "tests6.dat#13 fragment(template)"
+    ],
+    "reproductions": [
+      {
+        "mode": "fragment(template)",
+        "input": "<form><form>"
+      }
+    ],
+    "patterns": [
+      {
+        "mode": "fragment(template)",
+        "pattern": "(?i).*</?form\\b.*"
+      }
+    ]
+  },
+  {
+    "reason": "Chromium deviation: in a fragment whose context element is colgroup, the characters in a table row or a table section of a template element are ignored (the 'in column group' insertion mode ignores them when the current node is not a colgroup element, but the insertion mode is the one of the template contents), as in Firefox and WebKit",
+    "differences": [
+      "template.dat#99 fragment(colgroup)"
+    ],
+    "reproductions": [
+      {
+        "mode": "fragment(colgroup)",
+        "input": "<template><tr>y"
+      },
+      {
+        "mode": "fragment(colgroup)",
+        "input": "<template><tr> "
+      }
+    ],
+    "patterns": [
+      {
+        "mode": "fragment(colgroup)",
+        "pattern": "(?i).*<template\\b.*"
+      }
+    ]
+  },
+  {
+    "reason": "Chromium deviation: a formatting element with an is attribute is not reconstructed (the reconstruction of the active formatting elements creates the element for its token, whatever its attributes), as in Firefox and WebKit",
+    "reproductions": [
+      {
+        "mode": "",
+        "input": "<strong><font is></strong><"
+      },
+      {
+        "mode": "",
+        "input": "<mtext><strike is></mtext>>"
+      }
+    ],
+    "patterns": [
+      {
+        "mode": "",
+        "pattern": "(?i).*<(a|b|big|code|em|font|i|nobr|s|small|strike|strong|tt|u)[\\s/][^>]*\\bis\\b.*"
+      }
+    ]
+  },
+  {
+    "reason": "Chromium and WebKit deviation: they adjust the case of the SVG tag names in the end tags (</foreignobject> becomes </foreignObject>), so an end tag in foreign content does not close the element whose lowercase local name is the tag name of the token (an HTML foreignobject or clippath element, or a MathML one). The end tags are not adjusted (as in Firefox)",
+    "reproductions": [
+      {
+        "mode": "",
+        "input": "<foreignobject><svg></foreignobject>>"
+      },
+      {
+        "mode": "",
+        "input": "<clippath><svg></clippath>>"
+      }
+    ],
+    "patterns": [
+      {
+        "mode": "",
+        "pattern": "(?i).*</(altglyph|altglyphdef|altglyphitem|animatecolor|animatemotion|animatetransform|clippath|fe[a-z]+|foreignobject|glyphref|lineargradient|radialgradient|textpath)\\b.*"
+      }
+    ]
+  },
+  {
+    "reason": "Chromium and WebKit deviation: in a fragment whose context element is template, after an element processed with the rules of the 'in head' insertion mode (base, bgsound, title...), the tokens are processed as in the 'in body' insertion mode: the table elements are ignored, and </p> and </br> insert an element. The 'in template' insertion mode inserts the table elements and ignores the end tags (as Firefox)",
+    "reproductions": [
+      {
+        "mode": "fragment(template)",
+        "input": "<title></title><td>"
+      },
+      {
+        "mode": "fragment(template)",
+        "input": "<base><caption>"
+      },
+      {
+        "mode": "fragment(template)",
+        "input": "<bgsound></p>"
+      }
+    ],
+    "patterns": [
+      {
+        "mode": "fragment(template)",
+        "pattern": "(?i)<(base|basefont|bgsound|link|meta|noframes|script|style|template|title)\\b.*"
+      }
+    ]
+  },
+  {
+    "reason": "Chromium and WebKit deviation: the whitespace characters in table text whose current node is a template element are inserted after the reconstruction of the active formatting elements. The 'in table text' insertion mode inserts them without reconstruction (as Firefox)",
+    "reproductions": [
+      {
+        "mode": "",
+        "input": "<template><tr><b><tbody> "
+      }
+    ],
+    "patterns": [
+      {
+        "mode": "",
+        "pattern": "(?i).*<template\\b.*<(tr|tbody|thead|tfoot)\\b.*(\\s|&#x?[0-9a-f]+;?)"
+      }
+    ]
+  },
+  {
+    "reason": "Chromium deviation: in a template element, an end tag form whose form element is not the current node is ignored. When there is a template element on the stack of open elements, the end tag pops the elements until the form element is popped if it is in scope (as Firefox and WebKit)",
+    "reproductions": [
+      {
+        "mode": "",
+        "input": "<template><form><div></form>x"
+      }
+    ],
+    "patterns": [
+      {
+        "mode": "",
+        "pattern": "(?i).*<template\\b.*<form\\b.*</form\\b.*"
+      }
+    ]
+  },
+  {
+    "reason": "Library deviation: an option element in a selectedcontent element is not an option of the select element (see whatwg/html#13038), so it is not replaced by the clone of the selected option; Chromium replaces the contents of the selectedcontent element",
+    "reproductions": [
+      {
+        "mode": "",
+        "input": "<select><selectedcontent><option>"
+      }
+    ],
+    "patterns": [
+      {
+        "mode": "",
+        "pattern": "(?i).*<selectedcontent\\b.*<option\\b.*"
+      }
+    ]
+  }
+]

@@ -1,19 +1,22 @@
-using System.Diagnostics;
-using System.Text;
-using System.Text.Json;
 using ChromiumDiff;
-using Meziantou.Framework.WebPlatform;
-using Microsoft.Playwright;
 
 // Differential testing of the HTML parser: each input of the corpus is parsed by Chromium (Playwright) and by the
-// library, and the trees are compared (html5lib format). The differences that are deviations of Chromium from the HTML
-// Standard are listed with their reason in known-differences.json.
+// library, as a document and as a fragment in many context elements, with the scripting disabled and enabled, and the
+// trees (html5lib format), the serializations and the trees of the serializations are compared (see TreeComparison.cs).
+// The differences that are deviations of Chromium from the HTML Standard are listed with their reason in
+// known-differences.json.
 //
 // Usage:
 //   ChromiumDiff install [--with-deps]                installs the Chromium build of Playwright (and its system dependencies)
-//   ChromiumDiff [--filter <text>] [--pages]          compares the trees of the corpus: the tree construction tests, the
-//                [--corpus <dir>] [--report <file>]   pages of pages.txt (--pages, downloaded once) and the files of the
-//                [--exclude-nul]                      --corpus directories (without the inputs that contain U+0000)
+//   ChromiumDiff [--filter <text>] [--pages]          compares the trees of the corpus: the tree construction tests and the
+//                [--corpus <dir>] [--report <file>]   seeds of the fuzzing target (unless --no-tests), the pages of
+//                [--exclude-nul] [--no-tests]         pages.txt (--pages, downloaded once, only parsed as documents), the
+//                [--generate <count>] [--seed <n>]    files of the --corpus directories (without the inputs that contain
+//                [--documents | --fragments]          U+0000 with --exclude-nul), and <count> generated inputs; only as
+//                [--context <name>]...                documents or as fragments, in the given contexts (e.g. "td",
+//                [--parallelism <n>]                  "svg path", "body quirks"); --browser compares with
+//                [--browser chromium|firefox|webkit]  another browser, to triage the differences; --minimize
+//                [--minimize]                         reduces the input of each unexpected difference
 //   ChromiumDiff --layout [--filter <text>]           compares the layout of the pages of pages.txt (with --pages or
 //                [--pages] [--corpus <dir>]           without --corpus) and of the HTML files of the --corpus directories
 //                [--record] [--tolerance <px>]        (see LayoutComparison.cs); --record records the subresources of
@@ -39,6 +42,15 @@ var maxDifferences = 10;
 string? jsonReportPath = null;
 string? inspect = null;
 string[]? inspectedProperties = null;
+var tests = true;
+var generate = 0;
+var seed = 1;
+var documents = true;
+var fragments = true;
+HashSet<string>? contexts = null;
+int? parallelism = null;
+var browser = "chromium";
+var minimize = false;
 var corpusDirectories = new List<string>();
 for (var i = 0; i < args.Length; i++)
 {
@@ -88,6 +100,33 @@ for (var i = 0; i < args.Length; i++)
         case "--json":
             jsonReportPath = args[++i];
             break;
+        case "--no-tests":
+            tests = false;
+            break;
+        case "--generate":
+            generate = int.Parse(args[++i], System.Globalization.CultureInfo.InvariantCulture);
+            break;
+        case "--seed":
+            seed = int.Parse(args[++i], System.Globalization.CultureInfo.InvariantCulture);
+            break;
+        case "--documents":
+            fragments = false;
+            break;
+        case "--fragments":
+            documents = false;
+            break;
+        case "--context":
+            (contexts ??= new HashSet<string>(StringComparer.Ordinal)).Add(args[++i]);
+            break;
+        case "--minimize":
+            minimize = true;
+            break;
+        case "--browser":
+            browser = args[++i];
+            break;
+        case "--parallelism":
+            parallelism = int.Parse(args[++i], System.Globalization.CultureInfo.InvariantCulture);
+            break;
         default:
             Console.Error.WriteLine($"Unknown argument '{args[i]}'");
             return 1;
@@ -115,93 +154,29 @@ if (layout)
     return await LayoutComparison.RunAsync(root, layoutOptions);
 }
 
-var knownDifferencesPath = Path.Combine(root, "tools", "Meziantou.Framework.WebPlatform.ChromiumDiff", "known-differences.json");
-var knownDifferences = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(knownDifferencesPath)) ?? [];
-
-var inputs = Corpus.Load(root, pages, corpusDirectories)
-    .Where(input => filter is null || input.Id.Contains(filter, StringComparison.Ordinal))
-    .Where(input => !excludeNul || !input.Html.Contains('\0', StringComparison.Ordinal))
-    .ToList();
-Console.WriteLine($"{inputs.Count} input(s)");
-
-using var playwright = await Playwright.CreateAsync();
-await using var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions { Headless = true });
-Console.WriteLine($"Chromium {browser.Version}");
-
-// The scripts are disabled, so the scripting flag of the parser is disabled as in the library (noscript elements are
-// parsed as normal elements), and the document is the result of the parser only
-var context = await browser.NewContextAsync(new BrowserNewContextOptions { JavaScriptEnabled = false });
-var page = await context.NewPageAsync();
-var dumpScript = ReadResource("dump.js");
-byte[] currentInput = [];
-string? currentUrl = null;
-await context.RouteAsync("**/*", async route =>
+var treeOptions = new TreeComparisonOptions
 {
-    if (route.Request.Url == currentUrl && route.Request.IsNavigationRequest)
-    {
-        await route.FulfillAsync(new RouteFulfillOptions { Status = 200, ContentType = "text/html; charset=utf-8", BodyBytes = currentInput });
-    }
-    else
-    {
-        // The subresources and the other navigations (e.g. a meta refresh, an iframe) are not loaded
-        await route.AbortAsync();
-    }
-});
+    Filter = filter,
+    ReportPath = reportPath,
+    Tests = tests,
+    Pages = pages,
+    ExcludeNul = excludeNul,
+    Generate = generate,
+    Seed = seed,
+    Documents = documents,
+    Fragments = fragments,
+    Contexts = contexts,
+    Browser = browser,
+    Minimize = minimize,
+};
 
-var differences = new List<(Input Input, string Diff)>();
-var stopwatch = Stopwatch.StartNew();
-var index = 0;
-foreach (var input in inputs)
+if (parallelism is { } value)
 {
-    index++;
-    currentInput = Encoding.UTF8.GetBytes(input.Html);
-    currentUrl = $"https://chromium-diff.test/{index}";
-    await page.GotoAsync(currentUrl, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
-    var chromium = await page.EvaluateAsync<string>(dumpScript);
-
-    var document = HtmlDocumentParser.ParseDocument(input.Html);
-    var webPlatform = TreeDumper.Dump(document);
-    if (!string.Equals(chromium, webPlatform, StringComparison.Ordinal))
-    {
-        differences.Add((input, TreeDumper.Diff(chromium, webPlatform)));
-    }
+    treeOptions.Parallelism = value;
 }
 
-Console.WriteLine($"Compared {inputs.Count} input(s) in {stopwatch.Elapsed.TotalSeconds:F1} s");
-
-var report = new StringBuilder();
-var unexpected = differences.Where(d => !knownDifferences.ContainsKey(d.Input.Id)).ToList();
-foreach (var (input, diff) in unexpected)
-{
-    report.Append("UNEXPECTED DIFFERENCE ").Append(input.Id).Append('\n');
-    report.Append("  input: ").Append(JsonSerializer.Serialize(input.Html.Length > 500 ? input.Html[..500] + "…" : input.Html)).Append('\n');
-    report.Append(diff).Append('\n');
-}
-
-// A known difference that is no longer different must be removed from the list (only for the inputs that were compared)
-var comparedIds = inputs.Select(input => input.Id).ToHashSet(StringComparer.Ordinal);
-var differentIds = differences.Select(d => d.Input.Id).ToHashSet(StringComparer.Ordinal);
-var stale = knownDifferences.Keys.Where(id => comparedIds.Contains(id) && !differentIds.Contains(id)).Order(StringComparer.Ordinal).ToList();
-foreach (var id in stale)
-{
-    report.Append("STALE KNOWN DIFFERENCE ").Append(id).Append(" (the trees are now the same: remove it from known-differences.json)\n");
-}
-
-Console.Write(report);
-if (reportPath is not null)
-{
-    await File.WriteAllTextAsync(reportPath, report.ToString());
-}
-
-Console.WriteLine($"{differences.Count} difference(s): {differences.Count - unexpected.Count} known, {unexpected.Count} unexpected; {stale.Count} stale known difference(s)");
-return unexpected.Count == 0 && stale.Count == 0 ? 0 : 1;
-
-static string ReadResource(string name)
-{
-    using var stream = typeof(TreeDumper).Assembly.GetManifestResourceStream(name) ?? throw new InvalidOperationException($"Resource '{name}' not found");
-    using var reader = new StreamReader(stream);
-    return reader.ReadToEnd();
-}
+treeOptions.CorpusDirectories.AddRange(corpusDirectories);
+return await TreeComparison.RunAsync(root, treeOptions);
 
 static string FindRoot()
 {

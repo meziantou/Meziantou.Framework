@@ -1,5 +1,7 @@
-// Serializes the document in the html5lib tree format (see TreeDumper.cs, which must produce the same output)
-() => {
+// The functions shared by document.js and fragments.js (TreeComparison.CreateScript prepends this file to them)
+
+// Serializes the children of a node in the html5lib tree format (see TreeDumper.cs, which must produce the same output)
+const dumpTree = root => {
   const html = 'http://www.w3.org/1999/xhtml';
   const elementPrefixes = { 'http://www.w3.org/2000/svg': 'svg ', 'http://www.w3.org/1998/Math/MathML': 'math ' };
   const attributePrefixes = { 'http://www.w3.org/1999/xlink': 'xlink ', 'http://www.w3.org/XML/1998/namespace': 'xml ', 'http://www.w3.org/2000/xmlns/': 'xmlns ' };
@@ -47,6 +49,24 @@
         break;
     }
   };
-  dumpChildren(document, 0);
+  dumpChildren(root, 0);
   return lines.join('\n');
-}
+};
+
+// Serializes a document as the HTML fragment serialization algorithm serializes its children, with the serializable
+// shadow roots (see TreeComparison.SerializeDocument, which must produce the same output)
+const serializeDocument = document => Array.from(document.childNodes, node => {
+  switch (node.nodeType) {
+    case Node.DOCUMENT_TYPE_NODE:
+      return '<!DOCTYPE ' + node.name + '>';
+    case Node.COMMENT_NODE:
+      return '<!--' + node.data + '-->';
+    case Node.ELEMENT_NODE: {
+      const endTag = '</' + node.localName + '>';
+      const tags = node.cloneNode(false).outerHTML;
+      return tags.slice(0, tags.length - endTag.length) + node.getHTML({ serializableShadowRoots: true }) + endTag;
+    }
+    default:
+      return '';
+  }
+}).join('');

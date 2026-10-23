@@ -1,0 +1,24 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.3	2.0	FALSE	FALSE	FALSE		[Annot]			Clause 12.5.6.21 and Table 403. NOT markup annot. 
+Subtype	name	1.3	2.0	TRUE	FALSE	FALSE		[TrapNet]			Clause 14.11.6
+Rect	rectangle	1.3	2.0	TRUE	FALSE	FALSE					
+Contents	string	1.3	2.0	FALSE	FALSE	FALSE					
+P	dictionary	1.3	2.0	FALSE	TRUE	FALSE				[PageObject]	
+NM	string	1.4	2.0	FALSE	FALSE	FALSE					
+M	date;string	1.3	2.0	FALSE	FALSE	FALSE					
+F	bitmask	1.3	2.0	TRUE	FALSE	FALSE			[fn:Eval(fn:BitsClear(1,2) && fn:BitSet(3) && fn:BitsClear(4,6) && fn:BitSet(7) && fn:BitsClear(8,32))]		Table 167
+AP	dictionary	1.3	2.0	TRUE	FALSE	FALSE				[AppearanceTrapNet]	
+AS	name	1.3	2.0	TRUE	FALSE	FALSE					
+Border	array	1.3	2.0	FALSE	FALSE	FALSE	[0 0 1]			[ArrayOf_4AnnotBorderCharacteristics]	
+C	array	1.3	2.0	FALSE	FALSE	FALSE				[ArrayOf_4NumbersColorAnnotation]	
+StructParent	integer	1.3	2.0	FALSE	FALSE	FALSE					Table 359
+OC	dictionary	1.5	2.0	FALSE	FALSE	FALSE				[OptContentGroup,OptContentMembership]	
+AF	array	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)	2.0	FALSE	FALSE	FALSE				[ArrayOfAFFileSpecifications]	
+ca	number	2.0	2.0	FALSE	FALSE	FALSE	@CA	[fn:Eval((@ca>=0.0) && (@ca<=1.0))]			https://github.com/pdf-association/pdf-issues/issues/577
+CA	number	2.0	2.0	FALSE	FALSE	FALSE	1.0	[fn:Eval((@CA>=0.0) && (@CA<=1.0))]			
+BM	name	2.0	2.0	FALSE	FALSE	FALSE	Normal	[fn:Deprecated(1.4,Compatible),Normal,Multiply,Screen,Difference,Darken,Lighten,ColorDodge,ColorBurn,Exclusion,HardLight,Overlay,SoftLight,Luminosity,Hue,Saturation,Color]			Table 134 and Table 135
+Lang	string	2.0	2.0	FALSE	FALSE	FALSE					
+LastModified	date	1.4	2.0	fn:IsRequired(fn:Not(fn:IsPresent(Version)) && fn:Not(fn:IsPresent(AnnotStates)))	FALSE	FALSE					
+Version	array	1.3	2.0	fn:IsRequired(fn:IsPDFVersion(1.3) || fn:SinceVersion(1.4,(fn:IsPresent(AnnotStates) && fn:Not(fn:IsPresent(LastModified)))))	FALSE	FALSE				[ArrayOfTrapNetVersionObjects]	
+AnnotStates	array	1.3	2.0	fn:IsRequired(fn:IsPDFVersion(1.3) || fn:SinceVersion(1.4,(fn:IsPresent(Version) && fn:Not(fn:IsPresent(LastModified)))))	FALSE	FALSE				[ArrayOfAnnotStates]	
+FontFauxing	array	1.3	2.0	FALSE	FALSE	FALSE				[ArrayOfFonts]	

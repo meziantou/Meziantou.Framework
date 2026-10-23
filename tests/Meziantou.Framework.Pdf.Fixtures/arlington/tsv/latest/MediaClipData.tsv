@@ -1,0 +1,11 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		FALSE	FALSE	FALSE		[MediaClip]			Table 284 and Table 285
+S	name	1.5		TRUE	FALSE	FALSE		[MCD]			
+N	string-text	1.5		FALSE	FALSE	FALSE					
+D	dictionary;stream;string	1.5		TRUE	[FALSE];[TRUE];[FALSE]	FALSE				[FileSpecification];[XObjectFormType1];[]	
+CT	string-ascii	1.5		FALSE	FALSE	FALSE					should conform to the content type specification described in RFC 2045
+P	dictionary	1.5		FALSE	FALSE	FALSE				[MediaPermissions]	
+Alt	array	1.5		FALSE	FALSE	FALSE				[ArrayOfStringsText]	
+PL	dictionary	1.5		FALSE	FALSE	FALSE				[MediaPlayers]	
+MH	dictionary	1.5		FALSE	FALSE	FALSE				[MediaClipDataMHBE]	
+BE	dictionary	1.5		FALSE	FALSE	FALSE				[MediaClipDataMHBE]	

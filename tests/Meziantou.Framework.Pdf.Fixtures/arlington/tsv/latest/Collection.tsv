@@ -1,0 +1,11 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.7		FALSE	FALSE	FALSE		[Collection]			Table 153
+Schema	dictionary	1.7		FALSE	FALSE	FALSE				[CollectionSchema]	
+D	string-byte	1.7		fn:IsRequired(fn:SinceVersion(2.0,fn:IsEncryptedWrapper()))	FALSE	FALSE					
+View	name	1.7		fn:IsRequired(fn:SinceVersion(2.0,fn:IsEncryptedWrapper()))	FALSE	FALSE	D	[D,T,H,fn:IsPDFVersion(1.7,fn:Extension(ADBE_Extn3,C)),fn:SinceVersion(2.0,C)]	[fn:Eval(fn:SinceVersion(2.0,((fn:IsEncryptedWrapper() && (@View==H)) || (fn:IsPresent(Navigator) && (@View==C)) || (@View!=C))))]		
+Navigator	dictionary	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		fn:IsRequired(@View==C)	TRUE	FALSE				[Navigator]	
+Colors	dictionary	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE				[CollectionColors]	
+Sort	dictionary	1.7		FALSE	FALSE	FALSE				[CollectionSort]	
+Folders	dictionary	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	TRUE	FALSE				[CollectionFolder]	
+Split	dictionary	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE				[CollectionSplit]	
+Resources	name-tree	fn:Extension(ADBE_Extn3,1.7)	2.0	FALSE	TRUE	FALSE				[Stream]	Adobe Extension Level 3 only

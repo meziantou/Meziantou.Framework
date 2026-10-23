@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+WhitePoint	array	1.1		TRUE	FALSE	FALSE				[WhitepointArray]	Table 62
+BlackPoint	array	1.1		FALSE	FALSE	FALSE	[0.0 0.0 0.0]			[BlackpointArray]	
+Gamma	number	1.1		FALSE	FALSE	FALSE	1	[fn:Eval(@Gamma>0)]			

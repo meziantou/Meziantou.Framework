@@ -1,0 +1,27 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!--
+    Test-framework-agnostic support of the Meziantou.Framework.Pdf tests: the fixture manifest, the validator of the
+    vendored Arlington PDF Model, the expansion of the PDFium test templates, and the external tools (qpdf, Arlington
+    TestGrammar, Poppler, MuPDF, veraPDF) downloaded from the release pinned by the Meziantou.Prebuilt package.
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf\Meziantou.Framework.Pdf.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Meziantou.Prebuilt" Version="3.11.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The process runner of the Imaging harness: no shell, binary output, posix_spawn on macOS before .NET 11 -->
+    <Compile Include="..\Meziantou.Framework.Imaging.TestHarness\ExternalTools\ProcessRunner.cs" Link="ExternalTools\Shared\ProcessRunner.cs" />
+    <Compile Include="..\Meziantou.Framework.Imaging.TestHarness\ExternalTools\ProcessResult.cs" Link="ExternalTools\Shared\ProcessResult.cs" />
+    <Compile Include="..\Meziantou.Framework.Imaging.TestHarness\ExternalTools\PosixSpawnProcess.cs" Link="ExternalTools\Shared\PosixSpawnProcess.cs" />
+  </ItemGroup>
+</Project>

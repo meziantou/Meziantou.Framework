@@ -1,0 +1,17 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		TRUE	FALSE	FALSE		[Filespec]			Table 43 and https://github.com/pdf-association/pdf-issues/issues/298
+FS	name	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		FALSE	FALSE	FALSE		[URL,*]			
+F	string	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		fn:IsRequired(fn:Not(fn:IsPresent(DOS)) && fn:Not(fn:IsPresent(Mac)) && fn:Not(fn:IsPresent(Unix)))	FALSE	FALSE					
+UF	string-text	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		FALSE	FALSE	FALSE					
+DOS	string-byte	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)	2.0	FALSE	FALSE	FALSE					
+Mac	string-byte	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)	2.0	FALSE	FALSE	FALSE					
+Unix	string-byte	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)	2.0	FALSE	FALSE	FALSE					
+ID	array	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		FALSE	FALSE	FALSE				[ArrayOf_2StringsByte]	
+V	boolean	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		FALSE	FALSE	FALSE	false				
+EF	dictionary	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		TRUE	FALSE	FALSE				[AFFileSpecEF]	
+RF	dictionary	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		FALSE	FALSE	FALSE				[FileSpecRF]	
+Desc	string-text	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		FALSE	FALSE	FALSE					
+CI	dictionary	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		FALSE	TRUE	FALSE				[CollectionItem]	
+Thumb	stream	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		FALSE	TRUE	FALSE				[Thumbnail]	
+AFRelationship	name	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		TRUE	FALSE	FALSE	Unspecified	[Source,Data,Alternative,Supplement,fn:SinceVersion(2.0,EncryptedPayload),fn:SinceVersion(2.0,FormData),fn:SinceVersion(2.0,Schema),Unspecified,fn:Extension(C2PA,C2PA_Manifest)]			
+EP	dictionary	2.0		fn:IsRequired(@AFRelationship==EncryptedPayload)	FALSE	FALSE				[EncryptedPayload]	

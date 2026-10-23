@@ -1,0 +1,11 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Extension(ISO_21812,1.7)		TRUE	FALSE	FALSE		[CIP4_MediaIntent]			ISO 21812-1:2019 Table 21
+CIP4_BackCoating	name	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE		[Aqueous,Gloss,Matte,Primer,RubResistant,Satin,UV,Varnish,WaterResistant]			
+CIP4_Coating	name	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE		[None,Coated,Gloss,Matte,Satin]			
+CIP4_ISOPaperSubstrate	name	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE		[PS1,PS2,PS3,PS4,PS5,PS6,PS7,PS8]			
+CIP4_LABColorValue	array	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[ArrayOfCIP4_LABColorValue]	specify an array of number that defines the CIELAB colour value of the media, computed as specified in TAPPI T527
+CIP4_MediaColor	name	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE		[Black,Silver,Gray,White,Maroon,Red,Purple,Fuchsia,Green,Lime,Olive,Yellow,Navy,Blue,Teal,Aqua]			as per https://www.w3.org/TR/html4/types.html#h-6.5
+CIP4_MediaColorDetails	string	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					
+CIP4_MediaQuality	string	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					
+CIP4_MediaTypeDetails	name	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					extendible
+CIP4_Weight	number	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE		[fn:Eval(@CIP4_Weight>0)]			in g/m^2

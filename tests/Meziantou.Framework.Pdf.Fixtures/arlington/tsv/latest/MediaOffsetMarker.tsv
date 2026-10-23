@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		FALSE	FALSE	FALSE		[MediaOffset]			Table 296 and Table 299
+S	name	1.5		TRUE	FALSE	FALSE		[M]			
+M	string-text	1.5		TRUE	FALSE	FALSE					

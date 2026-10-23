@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+OCGs	array	1.5		TRUE	FALSE	FALSE				[ArrayOfOCGindirect]	Table 98
+D	dictionary	1.5		TRUE	FALSE	FALSE				[OptContentConfig]	
+Configs	array	1.5		FALSE	FALSE	FALSE				[ArrayOfOCConfig]	

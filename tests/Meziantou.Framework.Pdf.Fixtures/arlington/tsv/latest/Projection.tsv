@@ -1,0 +1,9 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Subtype	name	1.6		TRUE	FALSE	FALSE		[O,P]			Table 316
+CS	name	1.6		FALSE	FALSE	FALSE	ANF	[XNF,ANF]			
+F	number	1.6		FALSE	FALSE	FALSE			[fn:IsMeaningful(@CS==XNF)]		
+N	number	1.6		fn:IsRequired(@Subtype==P)	FALSE	FALSE	0	[fn:Eval(((@Subtype==P) && (@N>0)) || ((@Subtype==O) && (@N>=0)))]	[fn:IsMeaningful(@CS==XNF)]		
+FOV	number	1.6		FALSE	FALSE	FALSE		[fn:Eval((@FOV>=0) && (@FOV<=180))]	[fn:Ignore(@Subtype!=P)]		
+PS	name;number	1.6		FALSE	FALSE	FALSE		[];[fn:Eval(@PS>0)]	[fn:IsMeaningful(@Subtype==P)];[fn:IsMeaningful(@Subtype==P)]		
+OS	number	1.6		FALSE	FALSE	FALSE	1	[fn:Eval(@OS>0)]	[fn:IsMeaningful(@Subtype==O)]		
+OB	name	1.7		FALSE	FALSE	FALSE	Absolute	[W,H,Min,Max,Absolute]	[fn:IsMeaningful(@Subtype==O)]		

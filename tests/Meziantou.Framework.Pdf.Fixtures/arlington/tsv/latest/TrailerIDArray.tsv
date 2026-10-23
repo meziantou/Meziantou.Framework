@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	string-byte	1.1		TRUE	fn:MustBeDirect(fn:IsPresent(trailer::Encrypt))	FALSE			[fn:Eval((fn:StringLength(0)>=16) && fn:AlwaysUnencrypted())]		
+1	string-byte	1.1		TRUE	fn:MustBeDirect(fn:IsPresent(trailer::Encrypt))	FALSE			[fn:Eval((fn:StringLength(1)>=16) && fn:AlwaysUnencrypted())]		

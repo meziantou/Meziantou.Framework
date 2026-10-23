@@ -1,0 +1,10 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Coords	array	1.3		TRUE	FALSE	FALSE				[ArrayOf_4Numbers]	Table 77 and Table 79
+Domain	array	1.3		FALSE	FALSE	FALSE	[0.0 1.0]			[ArrayOf_2Numbers]	
+Function	array;dictionary;stream	1.3		TRUE	[FALSE];[FALSE];[TRUE]	FALSE				[ArrayOfFunctions];[FunctionType2,FunctionType3];[FunctionType0,FunctionType4]	
+Extend	array	1.3		FALSE	FALSE	FALSE	[false false]			[ArrayOf_2Booleans]	
+ShadingType	integer	1.3		TRUE	FALSE	FALSE		[2]			
+ColorSpace	array;name	1.3		TRUE	FALSE	FALSE		[];[DeviceCMYK,DeviceRGB,DeviceGray]		[DeviceGrayColorSpace,DeviceRGBColorSpace,DeviceCMYKColorSpace,CalGrayColorSpace,CalRGBColorSpace,LabColorSpace,ICCBasedColorSpace,IndexedColorSpace,SeparationColorSpace,DeviceNColorSpace];[]	except pattern
+Background	array	1.3		FALSE	FALSE	FALSE				[ArrayOfNumbersGeneral]	
+BBox	rectangle	1.3		FALSE	FALSE	FALSE					
+AntiAlias	boolean	1.3		FALSE	FALSE	FALSE	false				

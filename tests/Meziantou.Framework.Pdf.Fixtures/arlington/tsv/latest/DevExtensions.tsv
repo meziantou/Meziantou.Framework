@@ -1,0 +1,6 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.7		FALSE	fn:MustBeDirect()	FALSE		[DeveloperExtensions]			Table 49
+BaseVersion	name	1.7		TRUE	fn:MustBeDirect()	FALSE		[1.7,2.0]			
+ExtensionLevel	integer	1.7		TRUE	fn:MustBeDirect()	FALSE					
+URL	string	2.0		FALSE	fn:MustBeDirect()	FALSE					
+ExtensionRevision	string-text	2.0		FALSE	fn:MustBeDirect()	FALSE					

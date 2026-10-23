@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.3		TRUE	FALSE	FALSE		[OBJR]			Table 358
+Pg	dictionary	1.3		fn:IsRequired(fn:Not(fn:IsPresent(parent::Pg)))	TRUE	FALSE				[PageObject]	https://github.com/pdf-association/pdf-issues/issues/431
+Obj	array;dictionary;stream	1.3		TRUE	TRUE	FALSE				[_UniversalArray];[_UniversalDictionary];[XObjectFormType1,XObjectImage]	

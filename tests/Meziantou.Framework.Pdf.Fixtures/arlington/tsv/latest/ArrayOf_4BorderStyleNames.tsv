@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	name;null	1.5		TRUE	FALSE	FALSE		[None,Hidden,Dotted,Dashed,Solid,Double,Groove,Ridge,Inset,Outset];[]			
+1	name;null	1.5		TRUE	FALSE	FALSE		[None,Hidden,Dotted,Dashed,Solid,Double,Groove,Ridge,Inset,Outset];[]			
+2	name;null	1.5		TRUE	FALSE	FALSE		[None,Hidden,Dotted,Dashed,Solid,Double,Groove,Ridge,Inset,Outset];[]			
+3	name;null	1.5		TRUE	FALSE	FALSE		[None,Hidden,Dotted,Dashed,Solid,Double,Groove,Ridge,Inset,Outset];[]			

@@ -1,0 +1,39 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>true</IsTrimmable>
+    <RootNamespace>Meziantou.Framework.Pdf</RootNamespace>
+    <Version>1.0.0</Version>
+    <Description>Fully managed PDF library for .NET, written from ISO 32000-2: an object model, a reader that recovers broken files (cross-reference tables and streams, object streams, incremental updates), the standard filters, full and incremental writers, and a document API (pages, content builder, standard 14 fonts, images, metadata, outlines, links, text extraction).</Description>
+    <PackageTags>pdf;pdf-reader;pdf-writer;document;iso-32000</PackageTags>
+
+    <!-- Every public member must be documented -->
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The image codecs (DCTDecode, JPXDecode, the images of the documents) and the ICC profiles -->
+    <ProjectReference Include="..\Meziantou.Framework.Imaging\Meziantou.Framework.Imaging.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The metrics of the standard 14 fonts (Adobe Core14 AFM files, see Fonts/Afm/MustRead.html) -->
+    <EmbeddedResource Include="Fonts\Afm\*.afm" LogicalName="Meziantou.Framework.Pdf.Afm.%(Filename).afm" />
+    <!-- The Adobe Glyph List and the list of ITC Zapf Dingbats (BSD-3-Clause, see Fonts/GlyphList/LICENSE.md) -->
+    <EmbeddedResource Include="Fonts\GlyphList\*.txt" LogicalName="Meziantou.Framework.Pdf.GlyphList.%(Filename).txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Pdf.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Pdf.FuzzTests" />
+  </ItemGroup>
+
+  <!-- The library is released together with Meziantou.Framework.Imaging: it depends on the exact version of that package -->
+  <Target Name="UseExactProjectReferenceVersions" AfterTargets="_GetProjectReferenceVersions">
+    <ItemGroup>
+      <_ExactProjectReferencesWithVersions Include="@(_ProjectReferencesWithVersions)" Condition="'%(Filename)' == 'Meziantou.Framework.Imaging'" ProjectVersion="[%(_ProjectReferencesWithVersions.ProjectVersion)]" />
+      <_ProjectReferencesWithVersions Remove="@(_ExactProjectReferencesWithVersions)" />
+      <_ProjectReferencesWithVersions Include="@(_ExactProjectReferencesWithVersions)" />
+    </ItemGroup>
+  </Target>
+</Project>

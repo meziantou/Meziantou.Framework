@@ -1,0 +1,9 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Linearized	number	1.2		TRUE	fn:MustBeDirect()	FALSE		[1.0]			Table F.1 version - https://github.com/pdf-association/pdf-issues/issues/153 and https://github.com/pdf-association/pdf-issues/issues/331
+L	integer	1.2		TRUE	fn:MustBeDirect()	FALSE		[fn:Eval(@L>0)]			length of file
+H	array	1.2		TRUE	fn:MustBeDirect()	FALSE				[ArrayOf_2Integers,ArrayOf_4Integers]	
+O	integer	1.2		TRUE	fn:MustBeDirect()	FALSE		[fn:Eval(@O>0)]			object number of the first pages page object
+E	integer	1.2		TRUE	fn:MustBeDirect()	FALSE		[fn:Eval((@E>0) && (@E<=@L))]			offset of the end of the first page
+N	integer	1.2		TRUE	fn:MustBeDirect()	FALSE		[fn:Eval(@N>0)]			number of pages
+T	integer	1.2		TRUE	fn:MustBeDirect()	FALSE		[fn:Eval(@T>0)]			
+P	integer	1.2		FALSE	fn:MustBeDirect()	FALSE	0	[fn:Eval(@P>=0)]			page index of first page

@@ -231,3 +231,10 @@ dotnet_diagnostic.CA1034.severity = none
 
 [{src,tests,tools}/Meziantou.Framework.WebPlatform*/**.g.cs]
 generated_code = true
+
+[{src,tests,tools,fuzz,benchmarks,samples}/Meziantou.Framework.Pdf*/**.cs]
+# Meziantou.Framework.Pdf implements ISO 32000-2.
+# CA1720: The names mirror the object types of the specification (e.g. PdfObjectKind.Integer, PdfObjectKind.String).
+dotnet_diagnostic.CA1720.severity = none
+# CA5351: MD5 is required by the specification: the file identifiers (14.4) and the keys of the standard security handler (7.6.4).
+dotnet_diagnostic.CA5351.severity = none

@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	dictionary;string-text	1.5		TRUE	FALSE	FALSE				[OptContentGroup];[]	Table 99
+*	dictionary	1.5		FALSE	FALSE	FALSE				[OptContentGroup]	

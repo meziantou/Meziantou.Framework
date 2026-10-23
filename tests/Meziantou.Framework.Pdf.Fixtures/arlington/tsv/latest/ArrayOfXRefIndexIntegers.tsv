@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0*	integer	1.5		TRUE	fn:MustBeDirect()	FALSE			[fn:Eval(@0*>=0)]		Table 17. Object number (incl. object zero for freelist)
+1*	integer	1.5		TRUE	fn:MustBeDirect()	FALSE			[fn:Eval(@1*>=0)]		Number of entries in subsection

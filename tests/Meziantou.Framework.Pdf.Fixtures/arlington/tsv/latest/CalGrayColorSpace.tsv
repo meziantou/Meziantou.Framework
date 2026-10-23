@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	name	1.1		TRUE	FALSE	FALSE		[CalGray]			Clause 8.6.5.2
+1	dictionary	1.1		TRUE	FALSE	FALSE				[CalGrayDict]	

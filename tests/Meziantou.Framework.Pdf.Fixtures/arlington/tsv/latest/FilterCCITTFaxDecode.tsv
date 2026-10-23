@@ -1,0 +1,10 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+K	integer	1.0		FALSE	FALSE	FALSE	0				Table 11
+EndOfLine	boolean	1.0		FALSE	FALSE	FALSE	false				
+EncodedByteAlign	boolean	1.0		FALSE	FALSE	FALSE	false				
+Columns	integer	1.0		FALSE	FALSE	FALSE	1728	[fn:Eval(@Columns>=0)]			
+Rows	integer	1.0		FALSE	FALSE	FALSE	0	[fn:Eval(@Rows>=0)]			
+EndOfBlock	boolean	1.0		FALSE	FALSE	FALSE	true				
+BlackIs1	boolean	1.0		FALSE	FALSE	FALSE	false				
+DamagedRowsBeforeError	integer	1.0		FALSE	FALSE	FALSE	0	[fn:Eval(@DamagedRowsBeforeError>=0)]	[fn:Ignore((@EndOfLine==false) || (@K<0))]		
+Blackls1	boolean	fn:Extension(Malforms)		FALSE	FALSE	FALSE	false				

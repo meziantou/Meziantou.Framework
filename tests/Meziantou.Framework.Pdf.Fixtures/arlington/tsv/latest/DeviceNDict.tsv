@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Subtype	name	1.6		FALSE	FALSE	FALSE	DeviceN	[DeviceN,NChannel]			Table 70
+Colorants	dictionary	1.3		fn:IsRequired(fn:SinceVersion(1.6,(@Subtype==NChannel)) && fn:HasSpotColorants(parent::1))	FALSE	FALSE				[ColorantsDict]	
+Process	dictionary	1.6		fn:IsRequired((@Subtype==NChannel) && fn:HasProcessColorants(parent::1))	FALSE	FALSE				[DeviceNProcess]	
+MixingHints	dictionary	1.6		FALSE	FALSE	FALSE				[DeviceNMixingHints]	

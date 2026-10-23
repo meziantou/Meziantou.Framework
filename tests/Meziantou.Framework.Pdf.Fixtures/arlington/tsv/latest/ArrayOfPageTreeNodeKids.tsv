@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	dictionary	1.0		FALSE	TRUE	FALSE				[PageTreeNode,PageObject]	Table 30. https://github.com/pdf-association/pdf-issues/issues/271

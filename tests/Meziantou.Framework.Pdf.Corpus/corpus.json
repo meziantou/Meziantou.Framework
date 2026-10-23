@@ -1,0 +1,32 @@
+{
+  "pdfjs": {
+    "repository": "mozilla/pdf.js",
+    "commit": "cfab9b7c8bf494f3b92ff822094b839f0ee530f2",
+    "license": "Apache-2.0",
+    "paths": ["LICENSE", "test/pdfs", "test/test_manifest.json"]
+  },
+  "pdfium": {
+    "repository": "chromium/pdfium",
+    "commit": "a84323421e94f484faca52dd9d027934eba42ab8",
+    "license": "BSD-3-Clause",
+    "paths": ["LICENSE", "testing/resources"]
+  },
+  "qpdf": {
+    "repository": "qpdf/qpdf",
+    "commit": "4eba95899886e851cc41d76886483b347612f2a8",
+    "license": "Apache-2.0",
+    "paths": ["LICENSE.txt", "qpdf/qtest/qpdf"]
+  },
+  "pdf20examples": {
+    "repository": "pdf-association/pdf20examples",
+    "commit": "c20f2c17bfcc4baab7cfe62e70fae64caf14d5fa",
+    "license": "CC-BY-SA-4.0",
+    "paths": ["LICENSE.md", "*.pdf"]
+  },
+  "pdfbox": {
+    "repository": "apache/pdfbox",
+    "commit": "99c16b1752d0b24e2c26788ff68686211b0bcef0",
+    "license": "Apache-2.0",
+    "paths": ["LICENSE.txt", "NOTICE.txt", "pdfbox/src/test/resources"]
+  }
+}

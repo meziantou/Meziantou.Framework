@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		FALSE	FALSE	FALSE		[MediaPlayerInfo]			Table 302
+PID	dictionary	1.5		FALSE	FALSE	FALSE				[SoftwareIdentifier]	
+MH	dictionary	1.5		FALSE	FALSE	FALSE				[_UniversalDictionary]	
+BE	dictionary	1.5		FALSE	FALSE	FALSE				[_UniversalDictionary]	

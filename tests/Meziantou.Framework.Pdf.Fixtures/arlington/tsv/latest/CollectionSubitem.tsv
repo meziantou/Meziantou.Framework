@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.7		FALSE	FALSE	FALSE		[CollectionSubitem]			Table 47
+D	date;number;string-text	1.7		FALSE	FALSE	FALSE					
+P	string-text	1.7		FALSE	FALSE	FALSE					

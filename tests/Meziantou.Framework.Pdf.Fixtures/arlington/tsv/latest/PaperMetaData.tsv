@@ -1,0 +1,13 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Extension(ADBE_Extn3,1.7)	2.0	TRUE	FALSE	FALSE		[PaperMetaData]			Adobe Extension Level 3, Table 8.39b
+Version	number	fn:Extension(ADBE_Extn3,1.7)	2.0	TRUE	FALSE	FALSE		[1]			
+Resolution	number	fn:Extension(ADBE_Extn3,1.7)	2.0	FALSE	FALSE	FALSE	300		[fn:Eval(@Resolution>0)]		
+Caption	string-text	fn:Extension(ADBE_Extn3,1.7)	2.0	FALSE	FALSE	FALSE					
+Symbology	name	fn:Extension(ADBE_Extn3,1.7)	2.0	TRUE	FALSE	FALSE		[PDF417,QRCode,DataMatrix]			
+Width	number	fn:Extension(ADBE_Extn3,1.7)	2.0	TRUE	FALSE	FALSE			[fn:Eval(@Width>0)]		
+Height	number	fn:Extension(ADBE_Extn3,1.7)	2.0	TRUE	FALSE	FALSE			[fn:Eval(@Height>0)]		
+XSymWidth	integer	fn:Extension(ADBE_Extn3,1.7)	2.0	TRUE	FALSE	FALSE			[fn:Eval(@XSymWidth>0)]		
+YSymHeight	integer	fn:Extension(ADBE_Extn3,1.7)	2.0	TRUE	FALSE	FALSE			[fn:Eval(@YSymHeight>0)]		
+ECC	integer	fn:Extension(ADBE_Extn3,1.7)	2.0	fn:IsRequired((@Symbology==PDF417) || (@Symbology==QRCode))	FALSE	FALSE		[fn:Eval((@ECC>=0) && (((@Symbology==PDF417) && (@ECC<=8)) || ((@Symbology==QRCode) && (@ECC<=3))))]			
+nCodeWordRow	number	fn:Extension(ADBE_Extn3,1.7)	1.7	FALSE	FALSE	FALSE	0		[fn:IsMeaningful(@Symbology==PDF417)]		
+nCodeWordCol	number	fn:Extension(ADBE_Extn3,1.7)	1.7	FALSE	FALSE	FALSE	0		[fn:IsMeaningful(@Symbology==PDF417)]		

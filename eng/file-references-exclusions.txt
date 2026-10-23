@@ -3,6 +3,8 @@
 #
 # Vendored files are copies of upstream data: they contain no file references, but some of their comments look like
 # references (e.g. "// Reference: ..." in public_suffix_list.dat).
+src/Meziantou.Framework.Pdf/Fonts/Afm/
+src/Meziantou.Framework.Pdf/Fonts/GlyphList/
 src/Meziantou.Framework.Unicode.Dictionaries/Data/*.dict
 src/Meziantou.Framework.WebPlatform/Unicode/Hyphenation/*.hyph
 tests/Meziantou.Framework.AtlassianDataFormat.Tests/TestData/third-party/
@@ -11,6 +13,7 @@ tests/Meziantou.Framework.Imaging.Fixtures/font-suites/
 tests/Meziantou.Framework.JavaScriptEngine.Tests/Intl/TestData/
 tests/Meziantou.Framework.Language.Css.Tests/files/css-parsing-tests/
 tests/Meziantou.Framework.Language.Toml.Tests/files/toml-test/
+tests/Meziantou.Framework.Pdf.Fixtures/arlington/
 tests/Meziantou.Framework.WebPlatform.SpecData/
 tests/Meziantou.Framework.WebPlatform.Tests/Css/Fonts/Resources/HarfBuzz/
 tests/Meziantou.Framework.Yaml.Tests/files/yaml-test-suite/

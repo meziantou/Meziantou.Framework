@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+N	fn:SinceVersion(1.3,dictionary);stream	1.2		TRUE	[FALSE];[TRUE]	FALSE				[fn:SinceVersion(1.3,AppearanceSubDict)];[XObjectFormType1,XObjectFormPS,XObjectFormPSpassthrough]	Table 170
+R	fn:SinceVersion(1.3,dictionary);stream	1.2		FALSE	[FALSE];[TRUE]	FALSE	[@N];[@N]			[fn:SinceVersion(1.3,AppearanceSubDict)];[XObjectFormType1,XObjectFormPS,XObjectFormPSpassthrough]	
+D	fn:SinceVersion(1.3,dictionary);stream	1.2		FALSE	[FALSE];[TRUE]	FALSE	[@N];[@N]			[fn:SinceVersion(1.3,AppearanceSubDict)];[XObjectFormType1,XObjectFormPS,XObjectFormPSpassthrough]	

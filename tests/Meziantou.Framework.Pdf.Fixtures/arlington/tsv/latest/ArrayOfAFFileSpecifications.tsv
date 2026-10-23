@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	dictionary	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		TRUE	FALSE	FALSE				[AFFileSpecification]	Table 29 and clause 14.13 - always one or more file specification dictionaries
+*	dictionary	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		FALSE	FALSE	FALSE				[AFFileSpecification]	

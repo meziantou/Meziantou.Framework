@@ -1,0 +1,59 @@
+{{header}}
+% The document information dictionary (text strings in PDFDocEncoding and UTF-16BE, dates) and an XMP packet
+{{object 1 0}} <<
+  /Type /Catalog
+  /Pages 2 0 R
+  /Metadata 4 0 R
+>>
+endobj
+{{object 2 0}} <<
+  /Type /Pages
+  /Kids [3 0 R]
+  /Count 1
+>>
+endobj
+{{object 3 0}} <<
+  /Type /Page
+  /Parent 2 0 R
+  /MediaBox [0 0 200 200]
+  /Resources << >>
+>>
+endobj
+{{object 4 0}} <<
+  /Type /Metadata
+  /Subtype /XML
+  {{streamlen}}
+>>
+stream
+<?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/">
+   <dc:title><rdf:Alt><rdf:li xml:lang="x-default">Metadata</rdf:li></rdf:Alt></dc:title>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>
+<?xpacket end="w"?>
+endstream
+endobj
+{{object 5 0}} <<
+  /Title <FEFF004D00E9007400610064006100740061>
+  /Author (Ann\351e \(B\))
+  /Subject (Line 1\nLine 2)
+  /Keywords (pdf, metadata)
+  /Creator (Hand)
+  /Producer (Template)
+  /CreationDate (D:20240229123456+01'00')
+  /ModDate (D:20240301)
+  /Custom (Value)
+>>
+endobj
+{{xref}}
+trailer <<
+  /Root 1 0 R
+  /Info 5 0 R
+  /ID [<00112233445566778899AABBCCDDEEFF> <00112233445566778899AABBCCDDEEFF>]
+  {{trailersize}}
+>>
+{{startxref}}
+%%EOF

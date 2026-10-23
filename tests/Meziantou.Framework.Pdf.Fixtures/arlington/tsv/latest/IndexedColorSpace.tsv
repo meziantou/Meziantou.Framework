@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	name	1.0		TRUE	FALSE	FALSE		[Indexed]			Clause 8.6.6.3
+1	fn:SinceVersion(1.1,array);name	1.0		TRUE	FALSE	FALSE		[];[DeviceCMYK,DeviceRGB,DeviceGray]		[fn:SinceVersion(1.1,DeviceGrayColorSpace),fn:SinceVersion(1.1,DeviceRGBColorSpace),fn:SinceVersion(1.1,DeviceCMYKColorSpace),fn:SinceVersion(1.1,CalGrayColorSpace),fn:SinceVersion(1.1,CalRGBColorSpace),fn:SinceVersion(1.1,LabColorSpace),fn:SinceVersion(1.3,ICCBasedColorSpace),fn:SinceVersion(1.2,SeparationColorSpace),fn:SinceVersion(1.3,DeviceNColorSpace)];[]	cannot be pattern or indexed
+2	integer	1.0		TRUE	FALSE	FALSE		[fn:Eval((@2>=0) && (@2<=255))]			
+3	stream;string	1.0		TRUE	[TRUE];[FALSE]	FALSE				[Stream];[]	

@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+S	name	1.5		FALSE	FALSE	FALSE	S	[C,S]			Table 169
+I	number	1.5		FALSE	FALSE	FALSE	0	[fn:Eval((@I>=0.0) && (@I<=2.0))]	[fn:Ignore(@S!=C)]		

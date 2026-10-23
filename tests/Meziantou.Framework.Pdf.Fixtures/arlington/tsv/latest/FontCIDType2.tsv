@@ -1,0 +1,12 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.2		TRUE	FALSE	FALSE		[Font]			Table 115
+Subtype	name	1.2		TRUE	FALSE	FALSE		[CIDFontType2]			
+BaseFont	name	1.2		TRUE	FALSE	FALSE					
+CIDSystemInfo	dictionary	1.2		TRUE	FALSE	FALSE				[CIDSystemInfo]	
+FontDescriptor	dictionary	1.2		TRUE	fn:MustBeIndirect(fn:BeforeVersion(2.0))	FALSE				[FontDescriptorCIDType2]	https://github.com/pdf-association/pdf-issues/issues/106
+DW	integer;fn:SinceVersion(2.0,number)	1.2		FALSE	FALSE	FALSE	[1000];[1000]				https://github.com/pdf-association/arlington-pdf-model/issues/125
+W	array	1.2		FALSE	FALSE	FALSE				[ArrayOfCIDGlyphMetricsW]	
+DW2	array	1.2		FALSE	FALSE	FALSE	[880 -1000]			[ArrayOf_2Numbers]	
+W2	array	1.2		FALSE	FALSE	FALSE				[ArrayOfCIDGlyphMetricsW2]	
+CIDToGIDMap	name;stream	1.2		fn:IsRequired(fn:SinceVersion(2.0) && fn:IsPresent(FontDescriptor::FontFile2))	[FALSE];[TRUE]	FALSE		[Identity];[]		[];[Stream]	
+ToUnicode	stream	1.2		FALSE	TRUE	FALSE				[ToUnicodeCMapStream]	

@@ -1,0 +1,7 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Recipients	array;string-byte	1.5		TRUE	FALSE	FALSE				[ArrayOfStringsByte];[]	Table 25 and Table 27, https://github.com/pdf-association/pdf-issues/issues/16
+EncryptMetadata	boolean	1.5		FALSE	FALSE	FALSE	true				
+Type	name	1.5		FALSE	FALSE	FALSE		[CryptFilter]			
+CFM	name	1.5		FALSE	FALSE	FALSE	None	[None,fn:Deprecated(2.0,V2),fn:Deprecated(2.0,fn:SinceVersion(1.6,AESV2)),fn:Deprecated(2.0,fn:IsPDFVersion(1.7,fn:Extension(ADBE_Extn3,AESV3))),fn:SinceVersion(2.0,AESV3),fn:SinceVersion(2.0,fn:Extension(ISO_TS_32003,AESV4))]			
+AuthEvent	name	1.5		FALSE	FALSE	FALSE	DocOpen	[DocOpen,EFOpen]			
+Length	integer	1.5	2.0	TRUE	FALSE	FALSE		[fn:RequiredValue(@CFM==AESV2,128),fn:RequiredValue(@CFM==AESV3,256),fn:Eval((@Length>=40) && (@Length<=128) && ((@Length mod 8)==0))]			Expressed in BITS. https://github.com/pdf-association/pdf-issues/issues/184

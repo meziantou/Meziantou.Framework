@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+SW	name	1.3		FALSE	FALSE	FALSE	A	[A,B,S,N]			Table 250
+S	name	1.3		FALSE	FALSE	FALSE	P	[A,P]			
+A	array	1.3		FALSE	FALSE	FALSE	[0.5 0.5]		[fn:Eval((A::@0>=0) && (A::@0<=1) && (A::@1>=0) && (A::@1<=1))]	[ArrayOf_2Numbers]	
+FB	boolean	1.5		FALSE	FALSE	FALSE	false				

@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		FALSE	FALSE	FALSE		[MediaPlayers]			Table 301
+MU	array	1.5		FALSE	FALSE	FALSE				[ArrayOfMediaPlayerInfo]	
+A	array	1.5		FALSE	FALSE	FALSE			[fn:Eval(fn:Ignore(fn:IsPresent(MU) && (fn:ArrayLength(MU)>0)))]	[ArrayOfMediaPlayerInfo]	
+NU	array	1.5		FALSE	FALSE	FALSE				[ArrayOfMediaPlayerInfo]	

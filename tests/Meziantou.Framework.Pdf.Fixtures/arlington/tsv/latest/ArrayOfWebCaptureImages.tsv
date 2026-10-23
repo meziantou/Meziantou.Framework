@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	stream	1.3		FALSE	TRUE	FALSE				[XObjectImage]	Table 388, O cell

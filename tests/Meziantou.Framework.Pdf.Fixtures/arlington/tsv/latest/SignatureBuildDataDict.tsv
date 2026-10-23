@@ -1,0 +1,9 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Name	name	1.5		FALSE	FALSE	FALSE					Adobe _Digital Signature Build Dictionary Specification_ Table 2
+Date	string-text	1.5		FALSE	FALSE	FALSE					
+R	number	1.5		FALSE	FALSE	FALSE					
+PreRelease	boolean	1.5		FALSE	FALSE	FALSE	false				
+OS	array	1.5		FALSE	FALSE	FALSE				[ArrayOfStringsText]	
+NonEFontNoWarn	boolean	1.5		FALSE	FALSE	FALSE					
+TrustedMode	boolean	1.5		FALSE	FALSE	FALSE	false				
+V	number	1.5	1.7	FALSE	FALSE	FALSE					

@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Registry	string-ascii	1.2		TRUE	FALSE	FALSE					Table 114
+Ordering	string-ascii	1.2		TRUE	FALSE	FALSE					
+Supplement	integer	1.2		TRUE	FALSE	FALSE					

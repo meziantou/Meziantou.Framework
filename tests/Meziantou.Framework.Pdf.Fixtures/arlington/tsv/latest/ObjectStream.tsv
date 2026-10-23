@@ -1,0 +1,12 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		TRUE	FALSE	FALSE		[ObjStm]			Table 5 and Table 16
+N	integer	1.5		TRUE	FALSE	FALSE		[fn:Eval(@N>=0)]			
+First	integer	1.5		TRUE	FALSE	FALSE		[fn:Eval(@First>=0)]			
+Extends	stream	1.5		FALSE	TRUE	FALSE			[fn:NoCycle()]	[ObjectStream]	forms a directed acyclic graph
+Length	integer	1.5		TRUE	FALSE	FALSE					
+Filter	array;name	1.5		FALSE	FALSE	FALSE		[];[ASCIIHexDecode,ASCII85Decode,LZWDecode,FlateDecode,RunLengthDecode,Crypt]	[fn:Eval(fn:ArrayLength(DecodeParms)==fn:ArrayLength(Filter))];[]	[ArrayOfCompressionFilterNames];[]	
+DecodeParms	array;dictionary	1.5		FALSE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(DecodeParms)==fn:ArrayLength(Filter))];[]	[ArrayOfDecodeParams];[FilterLZWDecode,FilterFlateDecode,FilterCrypt]	
+F	dictionary;string	1.5		FALSE	FALSE	FALSE				[FileSpecification];[]	
+FFilter	array;name	1.5		FALSE	FALSE	FALSE		[];[ASCIIHexDecode,ASCII85Decode,LZWDecode,FlateDecode,RunLengthDecode,Crypt]	[fn:Eval(fn:ArrayLength(FDecodeParms)==fn:ArrayLength(FFilter))];[]	[ArrayOfCompressionFilterNames];[]	
+FDecodeParms	array;dictionary	1.5		FALSE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(FDecodeParms)==fn:ArrayLength(FFilter))];[]	[ArrayOfDecodeParams];[FilterLZWDecode,FilterFlateDecode,FilterCrypt]	
+DL	integer	1.5		FALSE	FALSE	FALSE		[fn:Eval(@DL>=0)]	[fn:Eval(@DL>=0)]		

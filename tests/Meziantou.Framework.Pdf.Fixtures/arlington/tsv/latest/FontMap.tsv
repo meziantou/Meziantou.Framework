@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	dictionary	1.0		FALSE	FALSE	FALSE				[FontType1,FontTrueType,FontMultipleMaster,FontType3,fn:SinceVersion(1.2,FontType0),fn:SinceVersion(1.2,FontCIDType0),fn:SinceVersion(1.2,FontCIDType2)]	Table 34

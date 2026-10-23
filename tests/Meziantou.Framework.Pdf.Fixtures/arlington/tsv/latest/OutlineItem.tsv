@@ -1,0 +1,13 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Title	string-text	1.0		TRUE	FALSE	FALSE					Table 151
+Parent	dictionary	1.0		TRUE	TRUE	FALSE				[OutlineItem,Outline]	
+Prev	dictionary	1.0		FALSE	TRUE	FALSE				[OutlineItem]	
+Next	dictionary	1.0		FALSE	TRUE	FALSE				[OutlineItem]	
+First	dictionary	1.0		FALSE	TRUE	FALSE				[OutlineItem]	
+Last	dictionary	1.0		FALSE	TRUE	FALSE				[OutlineItem]	
+Count	integer	1.0		FALSE	FALSE	FALSE					
+Dest	array;name;string-byte	1.0		FALSE	FALSE	FALSE			[fn:SinceVersion(1.1,fn:Not(fn:IsPresent(A)))];[fn:SinceVersion(1.1,fn:Not(fn:IsPresent(A)))];[fn:SinceVersion(1.1,fn:Not(fn:IsPresent(A)))]	[DestXYZArray,Dest0Array,Dest1Array,Dest4Array];[];[]	
+A	dictionary	1.1		FALSE	FALSE	FALSE			[fn:Not(fn:IsPresent(Dest))]	[ActionGoTo,ActionGoToR,fn:SinceVersion(1.6,ActionGoToE),fn:SinceVersion(2.0,ActionGoToDp),ActionLaunch,fn:IsPDFVersion(1.2,ActionNOP),fn:IsPDFVersion(1.2,ActionSetState),ActionThread,ActionURI,fn:SinceVersion(1.2,ActionSound),fn:SinceVersion(1.2,ActionMovie),fn:SinceVersion(1.2,ActionHide),fn:SinceVersion(1.2,ActionNamed),fn:SinceVersion(1.2,ActionSubmitForm),fn:SinceVersion(1.2,ActionResetForm),fn:SinceVersion(1.2,ActionImportData),fn:SinceVersion(1.5,ActionSetOCGState),fn:SinceVersion(1.5,ActionRendition),fn:SinceVersion(1.5,ActionTransition),fn:SinceVersion(1.6,ActionGoTo3DView),fn:SinceVersion(1.3,ActionECMAScript),fn:SinceVersion(2.0,ActionRichMediaExecute)]	
+SE	dictionary	1.3		FALSE	TRUE	FALSE				[StructElem]	
+C	array	1.4		FALSE	FALSE	FALSE	[0.0 0.0 0.0]			[ArrayOf_3RGBNumbers]	
+F	bitmask	1.4		FALSE	FALSE	FALSE	0		[fn:Eval(fn:BitsClear(3,32))]		Table 152

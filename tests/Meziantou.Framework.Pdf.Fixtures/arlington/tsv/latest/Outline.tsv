@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.0		FALSE	FALSE	FALSE		[Outlines]			Table 150
+First	dictionary	1.0		FALSE	TRUE	FALSE				[OutlineItem]	
+Last	dictionary	1.0		FALSE	TRUE	FALSE				[OutlineItem]	
+Count	integer	1.0		FALSE	FALSE	FALSE		[fn:Eval(@Count>=0)]			

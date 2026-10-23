@@ -1,0 +1,65 @@
+{{header}}
+% Content streams encoded with the filters that can be written as text, alone and chained
+{{object 1 0}} <<
+  /Type /Catalog
+  /Pages 2 0 R
+>>
+endobj
+{{object 2 0}} <<
+  /Type /Pages
+  /Kids [3 0 R]
+  /Count 1
+>>
+endobj
+{{object 3 0}} <<
+  /Type /Page
+  /Parent 2 0 R
+  /MediaBox [0 0 612 792]
+  /Resources << /Font << /F1 4 0 R >> >>
+  /Contents [5 0 R 6 0 R 7 0 R 8 0 R]
+>>
+endobj
+{{object 4 0}} <<
+  /Type /Font
+  /Subtype /Type1
+  /BaseFont /Courier
+>>
+endobj
+{{object 5 0}} <<
+  /Filter /ASCIIHexDecode
+  {{streamlen}}
+>>
+stream
+4254202F463120313220546620373220373230205464202848657829
+20546A>
+endstream
+endobj
+{{object 6 0}} <<
+  /Filter /ASCII85Decode
+  {{streamlen}}
+>>
+stream
+$8<SS1,'hMA0<9dF(8ou3&N--<,)a~>
+endstream
+endobj
+{{object 7 0}} <<
+  /Filter [/ASCIIHexDecode /RunLengthDecode]
+  {{streamlen}}
+>>
+stream
+FD201730202D3230205464202852756E4C656E6774682920546A0A80>
+endstream
+endobj
+{{object 8 0}} <<
+  /Filter /ASCIIHexDecode
+  /DecodeParms null
+  {{streamlen}}
+>>
+stream
+4554>
+endstream
+endobj
+{{xref}}
+{{trailer}}
+{{startxref}}
+%%EOF

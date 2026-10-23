@@ -1,0 +1,16 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <!--
+    External oracles of Meziantou.Framework.Pdf: qpdf (structure checks and a differential dump of the objects), the
+    Arlington PDF Model checker (TestGrammar) and Poppler (pdftotext, pdfinfo). The tools are downloaded from the release
+    pinned by the Meziantou.Prebuilt package (TestHarness): a download failure or a version mismatch fails the tests.
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Pdf.InteropTests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf\Meziantou.Framework.Pdf.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Pdf.TestHarness\Meziantou.Framework.Pdf.TestHarness.csproj" />
+  </ItemGroup>
+</Project>

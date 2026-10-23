@@ -1,0 +1,21 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <!--
+    No-crash tests of Meziantou.Framework.Pdf over the external corpora pinned in corpus.json (pdf.js, PDFium, qpdf, the
+    PDF Association, Apache PDFBox). They are fetched by 'dotnet run eng/pdf/fetch-tests.cs' into
+    tests/Meziantou.Framework.Pdf.External; without them, the tests are skipped. The documented exceptions a file throws
+    are recorded in expectations/<suite>.txt.
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Pdf.Corpus</RootNamespace>
+    <!-- Each test reads a whole file: the server GC keeps the parallel tests from pausing each other -->
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <!-- Without the fetched corpora, every test is skipped -->
+    <MinimumExpectedTests>0</MinimumExpectedTests>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf\Meziantou.Framework.Pdf.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Pdf.TestHarness\Meziantou.Framework.Pdf.TestHarness.csproj" />
+  </ItemGroup>
+</Project>

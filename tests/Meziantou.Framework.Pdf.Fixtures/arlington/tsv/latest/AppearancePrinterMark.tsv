@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+N	dictionary;stream	1.4		TRUE	[FALSE];[TRUE]	FALSE				[AppearancePrinterMarkSubDict];[XObjectFormPrinterMark]	Table 170
+R	dictionary;stream	1.4		FALSE	[FALSE];[TRUE]	FALSE	[@N];[@N]			[AppearancePrinterMarkSubDict];[XObjectFormPrinterMark]	
+D	dictionary;stream	1.4		FALSE	[FALSE];[TRUE]	FALSE	[@N];[@N]			[AppearancePrinterMarkSubDict];[XObjectFormPrinterMark]	

@@ -1,0 +1,12 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Name	string-text	1.5		FALSE	FALSE	FALSE					Table 99
+Creator	string-text	1.5		FALSE	FALSE	FALSE					
+BaseState	name	1.5		FALSE	FALSE	FALSE	ON	[ON,OFF,Unchanged]			
+ON	array	1.5		FALSE	FALSE	FALSE				[ArrayOfOptContentGroups]	
+OFF	array	1.5		FALSE	FALSE	FALSE				[ArrayOfOptContentGroups]	
+Intent	array;name	1.5		FALSE	FALSE	FALSE	[];[View]	[];[All,Design,View]		[ArrayOfNamesGeneral];[]	
+AS	array	1.5		FALSE	FALSE	FALSE				[ArrayOfOCUsage]	
+Order	array	1.5		FALSE	FALSE	FALSE				[ArrayOfOptContentOrderElements]	
+ListMode	name	1.5		FALSE	FALSE	FALSE	AllPages	[AllPages,VisiblePages]			
+RBGroups	array	1.5		FALSE	FALSE	FALSE				[ArrayOfArraysRBGroups]	
+Locked	array	1.6		FALSE	FALSE	FALSE	[]			[ArrayOfOptContentGroups]	

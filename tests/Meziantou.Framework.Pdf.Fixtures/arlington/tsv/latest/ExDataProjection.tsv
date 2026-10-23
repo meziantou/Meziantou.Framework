@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		TRUE	FALSE	FALSE		[ExData]			Table 332
+Subtype	name	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		TRUE	FALSE	FALSE		[3DM]			
+M3DREF	dictionary	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		TRUE	TRUE	FALSE				[3DMeasure3DC,3DMeasureAD3,3DMeasureLD3,3DMeasurePD3,3DMeasureRD3]	

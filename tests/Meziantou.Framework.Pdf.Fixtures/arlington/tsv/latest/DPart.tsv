@@ -1,0 +1,8 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Eval(fn:Extension(PDF_VT2,1.6) || 2.0)		FALSE	FALSE	FALSE		[DPart]			Table 409
+Parent	dictionary	fn:Eval(fn:Extension(PDF_VT2,1.6) || 2.0)		TRUE	TRUE	FALSE			[fn:Eval(fn:Not(fn:IsPresent(Metadata)))]	[DPart,DPartRoot]	https://github.com/pdf-association/pdf-issues/issues/290
+DParts	array	fn:Eval(fn:Extension(PDF_VT2,1.6) || 2.0)		fn:IsRequired(fn:Not(fn:IsPresent(Start)))	FALSE	FALSE			[fn:Eval(fn:ArrayLength(DParts)>0)]	[ArrayOfDPartArrays]	
+Start	dictionary	fn:Eval(fn:Extension(PDF_VT2,1.6) || 2.0)		fn:IsRequired(fn:Not(fn:IsPresent(DParts)))	TRUE	FALSE				[PageObject]	
+End	dictionary	fn:Eval(fn:Extension(PDF_VT2,1.6) || 2.0)		FALSE	TRUE	FALSE				[PageObject]	
+DPM	dictionary	fn:Eval(fn:Extension(PDF_VT2,1.6) || 2.0)		FALSE	FALSE	FALSE				[DPM]	
+AF	array	2.0		FALSE	FALSE	FALSE				[ArrayOfAFFileSpecifications]	

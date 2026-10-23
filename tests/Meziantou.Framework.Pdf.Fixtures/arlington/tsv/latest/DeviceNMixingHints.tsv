@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Solidities	dictionary	1.6		FALSE	FALSE	FALSE				[Solidities]	Table 72
+PrintingOrder	array	1.6		fn:IsRequired(fn:IsPresent(Solidities))	FALSE	FALSE				[ArrayOfNamesForPrintingOrder]	
+DotGain	dictionary	1.6		FALSE	FALSE	FALSE				[DictionaryOfFunctions]	

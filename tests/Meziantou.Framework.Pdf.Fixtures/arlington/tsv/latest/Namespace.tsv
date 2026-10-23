@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	2.0		FALSE	FALSE	FALSE		[Namespace]			Table 356
+NS	string-text	2.0		TRUE	FALSE	FALSE					
+Schema	dictionary;string	2.0		FALSE	FALSE	FALSE				[FileSpecification];[]	
+RoleMapNS	dictionary	2.0		FALSE	FALSE	FALSE				[RoleMapNS]	

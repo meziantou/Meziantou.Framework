@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	array	1.3		FALSE	FALSE	FALSE				[ArrayOfNumbersGeneral]	

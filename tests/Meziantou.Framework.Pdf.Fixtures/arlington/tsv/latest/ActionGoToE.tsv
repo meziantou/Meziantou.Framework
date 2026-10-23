@@ -1,0 +1,8 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.6		FALSE	FALSE	FALSE		[Action]			Table 196 and Table 204
+S	name	1.6		TRUE	FALSE	FALSE		[GoToE]			
+Next	array;dictionary	1.6		FALSE	FALSE	FALSE				[ArrayOfActions];[ActionGoTo,ActionGoToR,ActionGoToE,fn:SinceVersion(2.0,ActionGoToDp),ActionLaunch,ActionThread,ActionURI,ActionSound,ActionMovie,ActionHide,ActionNamed,ActionSubmitForm,ActionResetForm,ActionImportData,ActionSetOCGState,ActionRendition,ActionTransition,ActionGoTo3DView,ActionECMAScript,fn:SinceVersion(2.0,ActionRichMediaExecute)]	
+F	dictionary;string	1.6		FALSE	FALSE	FALSE				[FileSpecification];[]	
+D	array;name;string-byte	1.6		TRUE	FALSE	FALSE				[DestXYZArray,Dest0Array,Dest1Array,Dest4Array];[];[]	
+NewWindow	boolean	1.6		FALSE	FALSE	FALSE					
+T	dictionary	1.6		fn:IsRequired(fn:Not(fn:IsPresent(F)))	FALSE	FALSE				[Target]	

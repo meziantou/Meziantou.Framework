@@ -1,0 +1,10 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	number	1.1		TRUE	FALSE	FALSE					
+1	number	1.1		TRUE	FALSE	FALSE					
+2	number	1.1		TRUE	FALSE	FALSE					
+3	number	1.1		TRUE	FALSE	FALSE					
+4	number	1.1		TRUE	FALSE	FALSE					
+5	number	1.1		TRUE	FALSE	FALSE					
+6	number	1.1		TRUE	FALSE	FALSE					
+7	number	1.1		TRUE	FALSE	FALSE					
+8	number	1.1		TRUE	FALSE	FALSE					

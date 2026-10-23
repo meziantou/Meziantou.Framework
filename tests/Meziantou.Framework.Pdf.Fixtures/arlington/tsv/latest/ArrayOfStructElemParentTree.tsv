@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	dictionary;null	1.3		FALSE	[TRUE];[FALSE]	FALSE				[StructElem];[]	Table 354 ParentTree only allows null in array. https://github.com/pdf-association/pdf-issues/issues/308

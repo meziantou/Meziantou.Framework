@@ -1,0 +1,23 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+JavaScriptActions	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@JavaScriptActions>=0)]		Table 264
+LaunchActions	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@LaunchActions>=0)]		
+URIActions	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@URIActions>=0)]		
+MovieActions	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@MovieActions>=0)]		
+SoundActions	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@SoundActions>=0)]		
+HideAnnotationActions	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@HideAnnotationActions>=0)]		
+GoToRemoteActions	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@GoToRemoteActions>=0)]		
+AlternateImages	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@AlternateImages>=0)]		
+ExternalStreams	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@ExternalStreams>=0)]		
+TrueTypeFonts	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@TrueTypeFonts>=0)]		
+ExternalRefXobjects	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@ExternalRefXobjects>=0)]		
+ExternalOPIdicts	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@ExternalOPIdicts>=0)]		
+NonEmbeddedFonts	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@NonEmbeddedFonts>=0)]		
+DevDepGS_OP	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@DevDepGS_OP>=0)]		
+DevDepGS_HT	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@DevDepGS_HT>=0)]		
+DevDepGS_TR	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@DevDepGS_TR>=0)]		
+DevDepGS_UCR	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@DevDepGS_UCR>=0)]		
+DevDepGS_BG	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@DevDepGS_BG>=0)]		
+DevDepGS_FL	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@DevDepGS_FL>=0)]		
+Annotations	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@Annotations>=0)]		
+OptionalContent	boolean	1.5		FALSE	FALSE	FALSE					
+Attestation	string-text	1.5		FALSE	FALSE	FALSE					

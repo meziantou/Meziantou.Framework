@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	array;dictionary	1.1		FALSE	FALSE	FALSE				[DestXYZArray,Dest0Array,Dest1Array,Dest4Array];[ActionGoTo,fn:SinceVersion(1.6,ActionGoToE),ActionGoToR,DestDict]	Table 29, Dests cell

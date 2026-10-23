@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+B	dictionary	1.5		FALSE	FALSE	FALSE				[MediaOffsetTime,MediaOffsetMarker,MediaOffsetFrame]	Table 289
+E	dictionary	1.5		FALSE	FALSE	FALSE				[MediaOffsetTime,MediaOffsetMarker,MediaOffsetFrame]	

@@ -1,0 +1,8 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		FALSE	FALSE	FALSE		[Action]			Table 196 and Table 218
+S	name	1.5		TRUE	FALSE	FALSE		[Rendition]			
+Next	array;dictionary	1.5		FALSE	FALSE	FALSE				[ArrayOfActions];[ActionGoTo,ActionGoToR,fn:SinceVersion(1.6,ActionGoToE),fn:SinceVersion(2.0,ActionGoToDp),ActionLaunch,ActionThread,ActionURI,ActionSound,ActionMovie,ActionHide,ActionNamed,ActionSubmitForm,ActionResetForm,ActionImportData,ActionSetOCGState,ActionRendition,ActionTransition,fn:SinceVersion(1.6,ActionGoTo3DView),ActionECMAScript,fn:SinceVersion(2.0,ActionRichMediaExecute)]	
+R	dictionary	1.5		fn:IsRequired((@OP==0) || (@OP==4))	FALSE	FALSE				[RenditionSelector,RenditionMedia]	
+AN	dictionary	1.5		fn:IsRequired((@OP>=0) && (@OP<=4))	TRUE	FALSE				[AnnotScreen]	
+OP	integer	1.5		FALSE	FALSE	FALSE		[fn:Eval((@OP>=0) && (@OP<=4))]			
+JS	stream;string-text	1.5		FALSE	[TRUE];[FALSE]	FALSE				[Stream];[]	

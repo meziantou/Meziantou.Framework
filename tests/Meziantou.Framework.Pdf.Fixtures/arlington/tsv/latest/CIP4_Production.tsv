@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Extension(ISO_21812,1.7)		TRUE	FALSE	FALSE		[CIP4_Production]			ISO 21812-1:2019 Table 24
+CIP4_CopyCount	integer	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE		[fn:Eval(@CIP4_CopyCount>0)]			
+CIP4_DescriptiveName	string	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					
+CIP4_Resource	array	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[ArrayOfCIP4_Resource]	

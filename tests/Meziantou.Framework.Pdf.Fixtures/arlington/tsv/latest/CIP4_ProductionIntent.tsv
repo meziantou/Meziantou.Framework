@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Extension(ISO_21812,1.7)		TRUE	FALSE	FALSE		[CIP4_ProductionIntent]			ISO 21812-1:2019 Table 22
+CIP4_PrintPreference	name	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE		[Balanced,CostEffective,Fastest,HighestQuality]			
+CIP4_PrintProcess	array	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[ArrayOfCIP4_PrintProcess]	

@@ -1,0 +1,6 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Eval(fn:Extension(ETSI_PAdES,1.7) || 2.0)		FALSE	FALSE	FALSE		[DSS]			Table 261 and ETSI EN 319 142-1 (PAdES) https://github.com/pdf-association/arlington-pdf-model/issues/121
+VRI	dictionary	fn:Eval(fn:Extension(ETSI_PAdES,1.7) || 2.0)		FALSE	FALSE	FALSE				[VRIMap]	
+Certs	array	fn:Eval(fn:Extension(ETSI_PAdES,1.7) || 2.0)		FALSE	FALSE	FALSE				[ArrayOfStreamsGeneral]	
+OCSPs	array	fn:Eval(fn:Extension(ETSI_PAdES,1.7) || 2.0)		FALSE	FALSE	FALSE				[ArrayOfStreamsGeneral]	
+CRLs	array	fn:Eval(fn:Extension(ETSI_PAdES,1.7) || 2.0)		FALSE	FALSE	FALSE				[ArrayOfStreamsGeneral]	

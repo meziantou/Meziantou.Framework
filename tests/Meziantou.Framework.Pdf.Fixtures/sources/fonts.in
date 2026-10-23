@@ -1,0 +1,145 @@
+{{header}}
+% Text in the encodings of simple and composite fonts
+{{object 1 0}} <<
+  /Type /Catalog
+  /Pages 2 0 R
+>>
+endobj
+{{object 2 0}} <<
+  /Type /Pages
+  /Kids [3 0 R]
+  /Count 1
+>>
+endobj
+{{object 3 0}} <<
+  /Type /Page
+  /Parent 2 0 R
+  /MediaBox [0 0 612 792]
+  /Resources <<
+    /Font << /WinAnsi 4 0 R /Standard 5 0 R /Symbol 6 0 R /Differences 7 0 R /Composite 8 0 R /MacRoman 11 0 R >>
+  >>
+  /Contents 12 0 R
+>>
+endobj
+{{object 4 0}} <<
+  /Type /Font
+  /Subtype /Type1
+  /BaseFont /Helvetica
+  /Encoding /WinAnsiEncoding
+>>
+endobj
+{{object 5 0}} <<
+  /Type /Font
+  /Subtype /Type1
+  /BaseFont /Courier
+>>
+endobj
+{{object 6 0}} <<
+  /Type /Font
+  /Subtype /Type1
+  /BaseFont /Symbol
+>>
+endobj
+{{object 7 0}} <<
+  /Type /Font
+  /Subtype /Type1
+  /BaseFont /Times-Roman
+  /Encoding << /Type /Encoding /BaseEncoding /WinAnsiEncoding /Differences [65 /Aring /ccedilla 200 /fi /fl] >>
+>>
+endobj
+{{object 8 0}} <<
+  /Type /Font
+  /Subtype /Type0
+  /BaseFont /Unembedded
+  /Encoding /Identity-H
+  /DescendantFonts [9 0 R]
+  /ToUnicode 10 0 R
+>>
+endobj
+{{object 9 0}} <<
+  /Type /Font
+  /Subtype /CIDFontType2
+  /BaseFont /Unembedded
+  /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >>
+  /FontDescriptor 13 0 R
+  /DW 1000
+  /W [1 [500 600] 10 20 400]
+>>
+endobj
+{{object 10 0}} <<
+  {{streamlen}}
+>>
+stream
+/CIDInit /ProcSet findresource begin
+12 dict begin
+begincmap
+/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def
+/CMapName /Adobe-Identity-UCS def
+/CMapType 2 def
+1 begincodespacerange
+<0000> <FFFF>
+endcodespacerange
+2 beginbfchar
+<0001> <004B>
+<0002> <00E9>
+endbfchar
+1 beginbfrange
+<000A> <000C> <03B1>
+endbfrange
+endcmap
+CMapName currentdict /CMap defineresource pop
+end
+end
+endstream
+endobj
+{{object 11 0}} <<
+  /Type /Font
+  /Subtype /TrueType
+  /BaseFont /Arial
+  /Encoding /MacRomanEncoding
+  /FirstChar 32
+  /LastChar 255
+>>
+endobj
+{{object 12 0}} <<
+  {{streamlen}}
+>>
+stream
+BT
+/WinAnsi 12 Tf
+72 720 Td
+(Caf\351 \200 \226 \223quoted\224) Tj
+/Standard 12 Tf
+0 -20 Td
+(It\047s \140quoted\047) Tj
+/Symbol 12 Tf
+0 -20 Td
+(abg \273 p) Tj
+/Differences 12 Tf
+0 -20 Td
+(AB\310\311) Tj
+/Composite 12 Tf
+0 -20 Td
+<0001 0002 000A 000B 000C> Tj
+/MacRoman 12 Tf
+0 -20 Td
+(\212\216\247) Tj
+ET
+endstream
+endobj
+{{object 13 0}} <<
+  /Type /FontDescriptor
+  /FontName /Unembedded
+  /Flags 32
+  /FontBBox [0 -200 1000 900]
+  /ItalicAngle 0
+  /Ascent 900
+  /Descent -200
+  /CapHeight 700
+  /StemV 80
+>>
+endobj
+{{xref}}
+{{trailer}}
+{{startxref}}
+%%EOF

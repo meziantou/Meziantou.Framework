@@ -1,0 +1,6 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.6		FALSE	FALSE	FALSE		[3DBG]			Table 317
+Subtype	name	1.6		FALSE	FALSE	FALSE	SC	[SC]			
+CS	name	1.6		FALSE	FALSE	FALSE	DeviceRGB	[DeviceRGB]			
+C	array	1.6		FALSE	FALSE	FALSE	[1 1 1]			[ArrayOf_3RGBNumbers]	
+EA	boolean	1.6		FALSE	FALSE	FALSE	false				

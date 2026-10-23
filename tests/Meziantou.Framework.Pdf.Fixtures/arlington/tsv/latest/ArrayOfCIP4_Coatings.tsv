@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	name	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE		[Aqueous,Gloss,Matte,Primer,RubResistant,Satin,UV,Varnish,WaterResistant]			ISO 21812-1:2019, Table 15

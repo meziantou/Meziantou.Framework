@@ -1,0 +1,16 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <!--
+    Unit tests of Meziantou.Framework.Pdf: the lexer, the parser, the filters, the writer (exact bytes, round trips),
+    the recovery of broken files, the document API and the text extraction. No external tool and no network.
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Pdf.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf\Meziantou.Framework.Pdf.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.SnapshotTesting\Meziantou.Framework.SnapshotTesting.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Pdf.TestHarness\Meziantou.Framework.Pdf.TestHarness.csproj" />
+  </ItemGroup>
+</Project>

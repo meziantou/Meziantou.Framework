@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	integer	1.3		TRUE	FALSE	FALSE		[fn:Eval(@0>=0)]			number of pages altered
+1	integer	1.3		TRUE	FALSE	FALSE		[fn:Eval(@1>=0)]			number of fields altered
+2	integer	1.3		TRUE	FALSE	FALSE		[fn:Eval(@2>=0)]			number of fields filled in

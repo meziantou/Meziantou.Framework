@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+GTS_Managed	dictionary	fn:Extension(PDF_VT2,1.6)		FALSE	FALSE	FALSE				[_UniversalDictionary]	Clause 14.12.4.2 and ISO 16612-3 PDF/VT
+GTS_Suspect	dictionary	fn:Extension(PDF_VT2,1.6)		FALSE	FALSE	FALSE				[_UniversalDictionary]	PDF/VT
+CIP4_Root	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[CIP4_Root]	ISO 21812-1:2019
+*	array;boolean;date;dictionary;integer;name;number;string-text	fn:Eval(fn:Extension(PDF_VT2,1.6) || 2.0)		FALSE	[FALSE];[FALSE];[FALSE];[FALSE];[FALSE];[FALSE];[FALSE];[FALSE]	FALSE				[_UniversalArray];[];[];[_UniversalDictionary];[];[];[];[]	https://github.com/pdf-association/pdf-issues/issues/86

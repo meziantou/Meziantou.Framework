@@ -1584,6 +1584,12 @@ internal sealed partial class StyleEngine
     private Dictionary<(Element Element, string? PseudoElement), ComputedStyle>? _usedBeforeChangeStyles;
 
     /// <summary>
+    /// Returns the before-change style of the transitions of an element whose style changed since the last invalidation of the
+    /// styles (the layout that follows a style change starts the transitions of the values it resolves), or null.
+    /// </summary>
+    internal ComputedStyle? GetBeforeChangeStyle(Element element, string? pseudoElement) => _usedBeforeChangeStyles?.GetValueOrDefault((element, pseudoElement));
+
+    /// <summary>
     /// The changes of the transitions by the computations of the styles in a size container in this generation, undone when the
     /// styles are discarded (see <see cref="InvalidateQueryContainerDescendants"/>).
     /// </summary>

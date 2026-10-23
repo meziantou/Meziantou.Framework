@@ -68,6 +68,12 @@ internal sealed class AnchorPositionState
 
     /// <summary>Moves the inset-modified containing block with the scrolling of the default anchor box (for the overflow checks).</summary>
     public AnchorPositioning.InsetModifiedContainingBlockFollower? Follower;
+
+    /// <summary>
+    /// The values resolved by the last layout of the properties whose results the layout computes (the anchor functions and the
+    /// declarations of the position option): the before-change values of their transitions (see <see cref="Animations.CssTransitionUpdater.UpdateFromLayout"/>).
+    /// </summary>
+    public Dictionary<string, string>? TransitionValues;
 }
 
 internal sealed partial class LayoutEngine
@@ -88,6 +94,10 @@ internal sealed partial class LayoutEngine
 
         return state;
     }
+
+    /// <summary>Returns the state of an element (or pseudo-element) that was anchor-positioned by the last layout pass, or null.</summary>
+    internal AnchorPositionState? TryGetAnchorPositionState(Element element, string? pseudoElement)
+        => _anchorPositionStates is not null && _anchorPositionStates.TryGetValue((element, pseudoElement), out var state) ? state : null;
 
     /// <summary>
     /// Returns whether an element is relevant to the user because of the anchor positioning (https://drafts.csswg.org/css-anchor-position-1/#anchor-relevance):

@@ -579,6 +579,7 @@ internal static class PositionedLayout
         if (AnchorPositioning.IsAnchorPositioned(candidate.Box))
             return AnchorPositioning.Layout(context, candidate, hostFragment, laidOut, containingBlockRect, containingBlock);
 
+        AnchorPositioning.UpdateTransitionsOfFormerAnchoredBox(context, candidate.Box);
         return LayoutInContainingBlock(context, candidate, containingBlockRect, containingBlock, anchor: null).Fragment;
     }
 

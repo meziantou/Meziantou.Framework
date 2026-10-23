@@ -126,9 +126,10 @@ internal sealed partial class ComputedStyle
     /// to the current time" (https://drafts.csswg.org/css-transitions-1/#before-change-style). The animated values of the style
     /// were computed when it was (e.g. by the last rendering update, before a transition ended).
     /// </summary>
-    internal ComputedStyle WithCurrentAnimations()
+    /// <param name="includeNewAnimations">Whether the style is created even when the element had no animations when it was computed (the layout started some).</param>
+    internal ComputedStyle WithCurrentAnimations(bool includeNewAnimations = false)
     {
-        if (_effects is null)
+        if (_effects is null && !includeNewAnimations)
             return this;
 
         _cascadedShared = true;

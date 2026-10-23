@@ -3927,6 +3927,10 @@ that are 0, the default alignment of `position-area`, the center of the default 
   (`SessionHistoryEntry.ScrollPositionData`) and restored by the traversals when `history.scrollRestoration` is `auto`, and by
   the navigation API (`NavigateEvent.scroll()`, `scroll: "after-transition"`); the `top` fragment scrolls to the beginning of
   the document.
+- The boxes of the pseudo-elements that are scroll containers (e.g. a `::before` with `overflow: scroll`, a
+  `::scroll-marker-group`) have their own scrolling box (`ScrollState.PseudoElement`, kept by element and pseudo-element): its
+  scroll events target the originating element, its `scroll-behavior` and `scroll-padding` are the ones of the box. The wheel
+  scrolls the ones at its position first (the target of the event is their originating element).
 - The scrolls of the user (the wheel, a panning touch, the keys, the scrollbars; see [User input](browsing-context.md#user-input))
   scroll the nearest scrolling box that can scroll in their direction (`LayoutEngine.ScrollByUser`, `LayoutEngine.UserScrolling.cs`,
   by kind of `UserScrollKind`): the keys and the presses on the track of a scrollbar are relative scrolls from the destination
@@ -4273,7 +4277,8 @@ only implementation) where the specification is silent or differs. The selectors
     of a smooth scroll in progress), or the nearest one after it when it is closer and less than half a scrollport away;
     the positions that the scroll range cannot reach are distributed over min(1/8 of the scrollport, half the range) at each
     end of the range. The last target wins a tie. When the focused marker stops being active, the focus moves to the new
-    active marker.
+    active marker. A group that is a scroll container scrolls to its new active marker (as Chrome: at the nearest edge, or
+    aligned with its `scroll-snap-align` when the group is a scroll snap container, with the `scroll-behavior` of the group).
   - **Buttons**: a button is enabled when a scroll by one page in its direction (87.5% of the scrollport, or the scrollport
     less 40px when that is larger, snapped as a relative scroll) changes the position rounded to the pixel; the buttons of
     an element that is not a scroll container are disabled.
@@ -4281,8 +4286,7 @@ only implementation) where the specification is silent or differs. The selectors
   are the originating element). Their inertness is the one of their scroll container, or `interactivity: inert` on the
   group (its markers are then inert whatever the inertness of their originating element) or on the pseudo-element itself;
   `interactivity` has no other effect yet.
-- Not done: the scrolling of a `::scroll-marker-group` that is a scroll container (the pseudo-element boxes have no scrolling
-  box: the active marker is not scrolled into view); `::scroll-button(prev | next)`; the accessibility roles of the modes
+- Not done: `::scroll-button(prev | next)`; the accessibility roles of the modes
   (the `tabs` mode does not hide the inactive panels); the `::column` pseudo-element only gives the `scroll-snap-align` of
   the scroll targets of the column markers and of the column snap areas (no box, no `getComputedStyle(element, "::column")` of a column,
   no `::column::scroll-marker` in `getComputedStyle()`), and the columns of a multi-column container that is fragmented by

@@ -211,6 +211,7 @@ internal sealed class ContentSecurityPolicyViolation
     /// <summary>https://w3c.github.io/webappsec-csp/#report-violation, step 3: the task that fires the event and sends or queues the reports.</summary>
     private void ReportTask()
     {
+        NotifyHost();
         if (HasNoGlobal)
         {
             SendReports();
@@ -247,6 +248,27 @@ internal sealed class ContentSecurityPolicyViolation
         }));
 
         SendReports();
+    }
+
+    /// <summary>Gives the violation to <see cref="BrowsingContextOptions.ContentSecurityPolicyViolation"/>, for the global object of the violation.</summary>
+    private void NotifyHost()
+    {
+        GlobalScope? global = Environment.WorkerGlobal ?? (GlobalScope?)Environment.RelevantWindow;
+        if (global?.Options.ContentSecurityPolicyViolation is not { } callback)
+            return;
+
+        callback(global, new ContentSecurityPolicyViolationReport(
+            StripUrlForUseInReports(Url),
+            GetStrippedReferrer(),
+            GetBlockedUri(),
+            EffectiveDirective,
+            Policy.Serialized,
+            Disposition,
+            GetStrippedSourceFile(),
+            Status,
+            LineNumber,
+            ColumnNumber,
+            Sample));
     }
 
     /// <summary>

@@ -10,7 +10,8 @@
 // and with the integrity hashes of the package-lock.json of the suite (lockfileVersion 1), like 'npm ci --ignore-scripts'
 // would do for these packages and their dependencies. 'a>b' is the package 'b' as 'a' sees it (a nested dependency).
 //
-// The arguments restrict the suites to fetch: 'dotnet run eng/javascriptengine/fetch-tests.cs -- web-tooling-benchmark'.
+// Without arguments, every suite is fetched except the ones marked "optional" (parse-number-fxx-test-data). The arguments
+// name the suites to fetch, optional or not: dotnet run eng/javascriptengine/fetch-tests.cs parse-number-fxx-test-data
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Security.Cryptography;
@@ -23,12 +24,20 @@ string[] pinsPaths =
     Path.Combine(root, "tests", "Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark", "web-tooling-benchmark.json"),
 ];
 var externalPath = Path.Combine(root, "tests", "Meziantou.Framework.JavaScriptEngine.External");
-foreach (var pinsPath in pinsPaths)
+var pinsDocuments = pinsPaths.Select(path => JsonDocument.Parse(File.ReadAllText(path))).ToArray();
+var requestedSuites = args.ToHashSet(StringComparer.Ordinal);
+foreach (var name in requestedSuites)
 {
-    using var pins = JsonDocument.Parse(File.ReadAllText(pinsPath));
+    if (!pinsDocuments.Any(pins => pins.RootElement.TryGetProperty(name, out _)))
+        throw new InvalidOperationException($"'{name}' is not a suite of {string.Join(" or ", pinsPaths)}");
+}
+
+foreach (var pins in pinsDocuments)
+{
     foreach (var suite in pins.RootElement.EnumerateObject())
     {
-        if (args.Length > 0 && !args.Contains(suite.Name, StringComparer.Ordinal))
+        var optional = suite.Value.TryGetProperty("optional", out var optionalValue) && optionalValue.GetBoolean();
+        if (requestedSuites.Count > 0 ? !requestedSuites.Contains(suite.Name) : optional)
             continue;
 
         var repository = suite.Value.GetProperty("repository").GetString()!;

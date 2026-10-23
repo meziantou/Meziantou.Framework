@@ -1445,6 +1445,13 @@ block anything. A request is blocked when an enforced policy does not allow it:
 - The violations are also reported for a request that is blocked as mixed content (e.g. a `ws:` WebSocket of an
   `https:` document whose policy has `connect-src 'none'`), as in the browsers.
 
+The host is notified of each violation, whatever the disposition of the policy, by `BrowsingContextOptions.ContentSecurityPolicyViolation`
+(a `ContentSecurityPolicyViolationReport`: the stripped document and blocked URLs, the effective directive, the policy,
+its disposition, the source location and the sample). It is invoked in the task that fires the `securitypolicyviolation`
+event, on the thread of the event loop of the global object, and plays the role of the developer console of a browser.
+The violations of a navigation response check (`frame-ancestors`, `sandbox`) are given too, with the global scope of the
+document that reports them.
+
 CSP Embedded Enforcement (the `csp` attribute of the `iframe` element, the `Sec-Required-CSP` and `Allow-CSP-From`
 headers, https://w3c.github.io/webappsec-cspee/) is not implemented. The Trusted Types directives are described in
 [trusted-types.md](trusted-types.md).

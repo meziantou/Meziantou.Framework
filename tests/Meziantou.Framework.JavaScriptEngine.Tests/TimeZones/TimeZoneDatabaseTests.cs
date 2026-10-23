@@ -31,7 +31,11 @@ public sealed class TimeZoneDatabaseTests
     [InlineData("Etc/GMT+5", "Etc/GMT+5", "Etc/GMT+5")]
     [InlineData("Europe/Amsterdam", "Europe/Amsterdam", "Europe/Amsterdam")]
     [InlineData("US/Pacific", "US/Pacific", "America/Los_Angeles")]
-    [InlineData("est5edt", "EST5EDT", "EST5EDT")]
+    [InlineData("est5edt", "EST5EDT", "America/New_York")]
+    [InlineData("CST6CDT", "CST6CDT", "America/Chicago")]
+    [InlineData("MST7MDT", "MST7MDT", "America/Denver")]
+    [InlineData("PST8PDT", "PST8PDT", "America/Los_Angeles")]
+    [InlineData("CET", "CET", "Europe/Brussels")]
     public void TryGetTimeZone(string id, string expectedIdentifier, string expectedPrimary)
     {
         Assert.True(TimeZoneDatabase.Default.TryGetTimeZone(id, out var result));

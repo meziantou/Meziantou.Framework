@@ -43,6 +43,19 @@ internal sealed class TzdbSource
     public const string BackzoneFile = "backzone";
     public const string ZoneTabFile = "zone.tab";
 
+    /// <summary>
+    /// The Zones of the tz source that ECMA-402 keeps as Links to a geographical zone. tzdata 2026d made the System V
+    /// names Zones again (they were links from 2024b to 2026c); TC39-TG2 decided to keep them as aliases, as browsers
+    /// and test262 do (https://github.com/tc39/ecma402/issues/1103).
+    /// </summary>
+    public static readonly IReadOnlyDictionary<string, string> Ecma402Links = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["EST5EDT"] = "America/New_York",
+        ["CST6CDT"] = "America/Chicago",
+        ["MST7MDT"] = "America/Denver",
+        ["PST8PDT"] = "America/Los_Angeles",
+    };
+
     private static readonly string[] MonthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     private static readonly string[] WeekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -76,7 +89,27 @@ internal sealed class TzdbSource
         }
 
         source.ParseFile(readFile(BackzoneFile), packratList);
+        source.ApplyEcma402Links();
         return source;
+    }
+
+    /// <summary>Replaces the Zones of <see cref="Ecma402Links"/> by Links (the zic input then contains the links too).</summary>
+    private void ApplyEcma402Links()
+    {
+        foreach (var (name, target) in Ecma402Links)
+        {
+            if (!Zones.ContainsKey(target))
+                throw new InvalidDataException($"The target of the ECMA-402 link {name} is not a zone: {target}");
+
+            if (Zones.Remove(name))
+            {
+                Links.Add(name, target);
+            }
+            else if (!Links.ContainsKey(name))
+            {
+                throw new InvalidDataException("Unknown ECMA-402 link: " + name);
+            }
+        }
     }
 
     /// <summary>Gets the zic input equivalent to the source (the kept lines).</summary>

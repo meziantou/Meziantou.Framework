@@ -2001,8 +2001,16 @@ public sealed partial class BrowsingContext : IDisposable
             _ = TextDirectives.RemoveFragmentDirective(url);
         }
 
-        // There is no MIME type sniffing: a response without a valid Content-Type is an HTML document
+        // https://mimesniff.spec.whatwg.org/#mime-type-sniffing-algorithm: a Content-Type that gives no MIME type (e.g. */*) is
+        // sniffed from the bytes of the resource (an HTML document, else a text or binary resource). A response without
+        // Content-Type is an HTML document (the handlers of the tests often omit it).
         var mimeType = resource.MimeType;
+        if (mimeType is null && HeaderList.Get(resource.Headers, "Content-Type") is not null)
+        {
+            var sniffedType = EmbeddedResources.SniffType(resource.ContentBytes is { } contentBytes ? contentBytes.Span : System.Text.Encoding.UTF8.GetBytes(resource.Content ?? ""));
+            mimeType = Infra.MimeType.Parse(sniffedType == "image/*" ? "application/octet-stream" : sniffedType);
+        }
+
         var contentType = mimeType?.Essence ?? "text/html";
         var charset = mimeType?.GetParameter("charset");
         if (HeaderList.Get(resource.Headers, "Last-Modified") is { } lastModified)

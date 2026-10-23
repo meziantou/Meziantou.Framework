@@ -328,6 +328,9 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
   `TEST262_UPDATE_EXPECTATIONS=1 dotnet test -f net10.0` (one target framework: the processes of the target frameworks
   run concurrently). Filter with `TEST262_FILTER=a|b` (substrings of the test ids). The update also regenerates
   `summary.md`.
+- `tests/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark`: real-world programs (V8's Web Tooling Benchmark:
+  babel, typescript, prettier, terser...) whose results are compared with the results of Node.js. The same fetch script
+  downloads the benchmark and its npm packages; see the readme of the project.
 
 ## Conventions and pitfalls
 

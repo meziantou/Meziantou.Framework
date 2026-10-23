@@ -24,7 +24,7 @@
     "reftest": "FAIL"
   },
   "css/css-page/body-background-vlr-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/body-background-vrl-print.html": {
     "reftest": "FAIL"

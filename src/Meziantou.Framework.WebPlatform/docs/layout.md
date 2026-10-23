@@ -3085,7 +3085,8 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   ([CSS Position 3](https://drafts.csswg.org/css-position-3/#fixed-pos): positioned in the page area of each page, as in the
   first one; the pages added by the absolutely positioned boxes alternate between left and right pages, with the block
   sizes of their page areas); the absolutely positioned boxes whose containing block is the initial containing block are on the page of
-  their position in the content, unbroken, when they fit in the rest of it with their descendants and their contents
+  their position (in the content for a box at its static position in the block axis or anchored, else in the initial
+  containing block, whose pages follow each other by the block sizes of their page areas), unbroken, when they fit in the rest of it with their descendants and their contents
   have no forced page break, else they are fragmented apart from their position in the initial containing block
   (`PageBreakRules.InitialContainingBlock`; the pages they reach are added; as in Blink, the page names of their contents
   break the pages only when the box is at its static position in the block axis); the absolutely positioned boxes

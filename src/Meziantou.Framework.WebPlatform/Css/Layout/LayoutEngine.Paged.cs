@@ -263,6 +263,27 @@ internal sealed partial class LayoutEngine
                 sizes = computed;
             }
 
+            // The page and the offset of an absolutely positioned box of the initial containing block: a box placed by its insets
+            // in the block axis is in the initial containing block, the page area of the first page (the pages follow it by
+            // their block sizes, whatever the breaks of the content), a box at its static position or anchored follows the
+            // content at its position
+            (int Index, double Offset) MapPlacedBox(BoxFragment box, double position)
+            {
+                var anchor = box.Box.Style.Layout.Anchor;
+                if (segment is not null || PageBreakRules.IsAtStaticBlockPosition(box) || box.Box.Style.PositionBaseStyle is not null || anchor.UsesAnchorFunctions
+                    || anchor.PositionArea is not null || anchor.PositionAnchor is PositionAnchorKind.Auto or PositionAnchorKind.Name or PositionAnchorKind.MatchParent)
+                    return map.Map(position);
+
+                var pageIndex = 0;
+                while (pageIndex < sizes.Count - 1 && position >= sizes[pageIndex] - 0.01)
+                {
+                    position -= sizes[pageIndex];
+                    pageIndex++;
+                }
+
+                return (pageIndex, position);
+            }
+
             // (a box placed on its page that does not fit in the rest of the page is fragmented apart by a new layout)
             var hasNewFragmentedBox = false;
             if (placedBoxes is not null && pass < FloatPusher.MaxPasses)
@@ -270,7 +291,7 @@ internal sealed partial class LayoutEngine
                 foreach (var box in placedBoxes)
                 {
                     var (top, bottom, _) = FragmentationFlow.GetBlockRange(box, icbSize, writingDirection, parentTop: 0);
-                    var (index, offset) = map.Map(top);
+                    var (index, offset) = MapPlacedBox(box, top);
                     if (index < baseIndex)
                         continue;
 
@@ -421,7 +442,7 @@ internal sealed partial class LayoutEngine
                         foreach (var box in placedBoxes)
                         {
                             var logical = writingDirection.ToLogical(box.Offset - box.RelativeOffset, icbSize, box.Size);
-                            var (boxIndex, offset) = map.Map(logical.Block);
+                            var (boxIndex, offset) = MapPlacedBox(box, logical.Block);
                             if (Math.Clamp(boxIndex, 0, fragmentainers.Count - 1) == index)
                             {
                                 builder.AddChild(box, new LogicalOffset(logical.Inline, boxIndex == index ? offset : logical.Block - fragmentainers[index].Start + fragmentainers[index].DisplayOffset));

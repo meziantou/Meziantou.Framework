@@ -57,21 +57,27 @@ internal static class ContentSecurityPolicyReportHash
     /// <summary>https://w3c.github.io/webappsec-csp/#potentially-report-hash</summary>
     private static void ReportHash(FetchRequest request, FetchResponse response, Document client, List<string> directive, ContentSecurityPolicy policy)
     {
-        // Steps 1-5
+        // Steps 1-5: the strongest algorithm of the keywords
         var algorithm = "";
         foreach (var expression in directive)
         {
-            if (InfraAscii.EqualsIgnoreAsciiCase(expression, "'report-sha256'"))
+            if (InfraAscii.EqualsIgnoreAsciiCase(expression, "'report-sha512'"))
             {
-                algorithm = "sha256";
+                algorithm = "sha512";
             }
             else if (InfraAscii.EqualsIgnoreAsciiCase(expression, "'report-sha384'"))
             {
-                algorithm = "sha384";
+                if (algorithm is not "sha512")
+                {
+                    algorithm = "sha384";
+                }
             }
-            else if (InfraAscii.EqualsIgnoreAsciiCase(expression, "'report-sha512'"))
+            else if (InfraAscii.EqualsIgnoreAsciiCase(expression, "'report-sha256'"))
             {
-                algorithm = "sha512";
+                if (algorithm.Length == 0)
+                {
+                    algorithm = "sha256";
+                }
             }
         }
 

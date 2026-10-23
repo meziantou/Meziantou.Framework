@@ -1646,8 +1646,9 @@ when several policies are violated, each one reports its violation (in the order
 - A script whose policy has a `'report-sha256'`, `'report-sha384'` or `'report-sha512'` source expression in the
   directive that applies to it (`script-src-elem`, `script-src`, `default-src`, or `worker-src` for a worker) queues a
   `csp-hash` report with the hash of its body (the empty string for a response that is not CORS-same-origin) when its
-  policy has a `report-to` directive (https://w3c.github.io/webappsec-csp/#potentially-report-hash). These reports are
-  not visible to the observers.
+  policy has a `report-to` directive (https://w3c.github.io/webappsec-csp/#potentially-report-hash). The strongest
+  algorithm of the keywords is used, and nothing is reported for a script that fails its integrity metadata (as in the
+  browsers). These reports are not visible to the observers.
 - Nothing is reported for a document that has no browsing context (no event loop).
 
 ### Compilation of strings and of WebAssembly
@@ -1661,6 +1662,10 @@ allows `'unsafe-eval'`, or `'trusted-types-eval'` when Trusted Types are enforce
   sample (with `'report-sample'`) is the first 40 characters of the code (the source text of the function, e.g.
   `function anonymous(a\n) {\nreturn a\n}`, for the constructors). The Trusted Types checks of the code run first (see
   [trusted-types.md](trusted-types.md)).
+- The tentative `'eval-sha256-…'`, `'eval-sha384-…'` and `'eval-sha512-…'` source expressions (not in CSP3) allow the
+  code whose UTF-8 hash matches; a source list that has some ignores `'unsafe-eval'`. The deprecated `report-uri` report
+  of a blocked compilation has an `eval-hash` field (the SHA-256 hash of the code). The `evalHash` and `urlHash`
+  attributes of the violation events and the `'url-sha256-…'` sources of `script-src` are not implemented.
 - The string handlers of `setTimeout()` and `setInterval()` are checked when the timer is created, as in the browsers: a
   blocked string creates no timer (the method returns `0`), the violation is reported and no exception is thrown nor
   reported. The HTML Standard checks the string when the timer runs (on each run of an interval) and reports the

@@ -16,9 +16,11 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// The navigations are checked by the fetch directives of their request (<c>frame-src</c>, <c>object-src</c>), by the
 /// pre-navigation checks (<see cref="ShouldBlockNavigationRequest"/>, <c>form-action</c>), and by the navigation response
 /// checks (<see cref="ShouldBlockNavigationResponse"/>, <c>frame-ancestors</c>); the <c>base-uri</c> directive by
-/// <see cref="IsBaseAllowed"/>. The Trusted Types directives are handled by <see cref="TrustedTypesDirectives"/>.
+/// <see cref="IsBaseAllowed"/>. The Trusted Types directives are handled by <see cref="TrustedTypesDirectives"/>, and the
+/// required policies of CSP Embedded Enforcement (the <c>csp</c> attribute of the iframe elements) by
+/// <see cref="IsValidRequiredPolicy"/>, <see cref="IsResponseBlockedByRequiredPolicy"/> and <see cref="Subsumes"/>.
 /// </summary>
-internal sealed class ContentSecurityPolicy
+internal sealed partial class ContentSecurityPolicy
 {
     /// <summary>A cryptographic nonce metadata that matches any nonce-source (see <see cref="Scripting.ModuleFetchOptions.IsUnknownReferrer"/>).</summary>
     public const string AnyNonce = "\0any";
@@ -67,7 +69,13 @@ internal sealed class ContentSecurityPolicy
             if (token.Length == 0 || !Ascii.IsValid(token))
                 continue;
 
+            // As in the browsers, a directive that contains a character that the grammar does not allow in a directive name or
+            // value (https://w3c.github.io/webappsec-csp/#grammardef-serialized-policy: a control character, e.g. U+000B VT,
+            // which is not ASCII whitespace) is ignored
             var values = InfraString.SplitOnAsciiWhitespace(token);
+            if (values.Exists(value => value.AsSpan().ContainsAnyInRange('\0', ' ') || value.Contains('\x7F', StringComparison.Ordinal)))
+                continue;
+
             var name = InfraAscii.ToAsciiLowercase(values[0]);
 
             // The first directive with a given name is used
@@ -364,9 +372,10 @@ internal sealed class ContentSecurityPolicy
     /// allowed. The policies of the source of the navigation have no navigation response check (the <c>frame-ancestors</c>
     /// check of the "source" type allows it). The violations have no global object: no event is fired, and the reports of the
     /// <c>report-uri</c> directive are sent from the origin of the response, with <paramref name="reportingDocument"/> (the
-    /// container document) as the environment of the fetch.
+    /// container document) as the environment of the fetch. The report of the <c>report-to</c> directive is sent to the
+    /// endpoint of the response (<paramref name="responseHeaders"/>), as in Chromium.
     /// </summary>
-    public static bool ShouldBlockNavigationResponse(IReadOnlyList<ContentSecurityPolicy> responsePolicies, OriginRecord selfOrigin, UrlRecord responseUrl, int responseStatus, BrowsingContext target, Document reportingDocument)
+    public static bool ShouldBlockNavigationResponse(IReadOnlyList<ContentSecurityPolicy> responsePolicies, OriginRecord selfOrigin, UrlRecord responseUrl, int responseStatus, IReadOnlyList<KeyValuePair<string, string>> responseHeaders, BrowsingContext target, Document reportingDocument)
     {
         if (responseUrl.Scheme is "about" or "blob" or "data" || target.Parent is null)
             return false;
@@ -377,7 +386,7 @@ internal sealed class ContentSecurityPolicy
             if (policy.GetDirectiveValue("frame-ancestors") is not { } sourceList || DoAncestorsMatchSourceList(target, sourceList, selfOrigin))
                 continue;
 
-            var violation = ContentSecurityPolicyViolation.CreateWithoutGlobal(reportingDocument, policy, "frame-ancestors", responseUrl, responseStatus);
+            var violation = ContentSecurityPolicyViolation.CreateWithoutGlobal(reportingDocument, policy, "frame-ancestors", responseUrl, responseStatus, responseHeaders);
             violation.ResourceUrl = responseUrl;
             violation.Report();
             if (!policy.ReportOnly)

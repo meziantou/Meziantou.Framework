@@ -3783,6 +3783,17 @@ that are 0, the default alignment of `position-area`, the center of the default 
   style whose anchor functions are resolved replace its animation and transition values, `ComputedStyle.ResolvedAnchorProperties`).
   The functions of both values are resolved against the current layout (the specification resolves each value when it is
   computed): the result is the same while the anchors do not move.
+- **Transitions of the resolved values** (https://github.com/w3c/csswg-drafts/issues/9598: the anchor functions and the declarations
+  of the position option are resolved at computed-value time): `AnchorPositioning.Layout` keeps the values of the after-change style
+  resolved by the last layout (`AnchorPositionState.TransitionValues`: the properties that accept the anchor functions and the
+  declarations of the option), and `CssTransitionUpdater.UpdateFromLayout` starts the transitions of the values that changed while
+  the declared values did not (the anchor moved, `position-anchor`, `anchor-name` or the tree scope of a name changed, another
+  position option applies); the box is then laid out again with the new transitions (`ComputedStyle.WithCurrentAnimations`). A box
+  that becomes anchor-positioned transitions from its before-change style (`StyleEngine.GetBeforeChangeStyle`), one that stops
+  being anchor-positioned from its last resolved values. These transitions are `CssTransition.IsStartedByLayout`: the style changes
+  do not replace them (the layout does, when the resolved after-change value changes). The style engine includes the declarations
+  of the option applied by the last layout in the before-change and after-change styles of the transitions
+  (`LayoutEngine.GetAppliedPositionOption`), while `position-try-fallbacks` is the same.
 - **Anchored container queries** ([CSS Anchor Positioning 2](https://drafts.csswg.org/css-anchor-position-2/#anchored-container-queries),
   `LayoutEngine.AnchoredQueries.cs`): `container-type: anchored` (which applies style containment) makes an anchor-positioned box a
   query container of `@container anchored(fallback: ...)` (`ContainerQueryParser.ParseAnchoredQuery`: the boolean syntax, the
@@ -3797,12 +3808,10 @@ that are 0, the default alignment of `position-area`, the center of the default 
   before-change styles: the transitions compare with the styles before the change), its contents are built again
   (`BoxTree.RebuildContents`) and it is laid out again with the same option (no loop: the option is not chosen again).
   `getComputedStyle()` lays out the document when an ancestor is an anchored container.
-- Not done: the transitions when the resolved value of an anchor function changes while the computed value does not (e.g. the anchor
-  moved, `position-anchor` or `anchor-name` changed) and the transitions of the properties set by a position option (the anchor
-  functions and the position options are applied at layout time, not at computed-value time with the style and layout
-  interleaving), the tree scopes of the anchor names of an interpolated value (the names resolve in the tree of the declaration of
-  the after-change value), `inherit` of an anchor function (the children inherit the unresolved function), the containing block
-  chain of the column spanners (it should skip to the multi-column container).
+- Not done: the anchor functions and the position options are applied at layout time, not at computed-value time with the style
+  and layout interleaving: the tree scopes of the anchor names of an interpolated value (the names resolve in the tree of the
+  declaration of the after-change value), `inherit` of an anchor function or of a declaration of a position option (the children
+  inherit the unresolved function, or the value without the option).
 
 ### Overflow and scrolling (`Css/Layout/Scrolling/`)
 
@@ -4837,11 +4846,13 @@ something asks for the display list (`LayoutEngine.PaintCount` for the tests).
   expanded beyond the border edge by `overflow-clip-margin` are shaped as the spread of a box shadow, from the border edge:
   the outset-adjusted radii; the contour of the box when its corners are shaped by `corner-shape`); the nested documents
   (`iframe`...) are clipped to the content edge curve too. The contents of a replaced
-  box are clipped by its own clip (`includeSelf`): the user agent style sheet has `img, video, canvas { overflow: clip;
-  overflow-clip-margin: content-box }` ([CSS Overflow 4](https://drafts.csswg.org/css-overflow-4/#overflow-control), the
-  rule of the browsers), so an image overflowing its content box (`object-fit: cover`) is clipped to it unless the author
-  sets `overflow: visible`; the contents of the other replaced boxes (`embed`, `object`, the generated images) are always
-  clipped to the content box.
+  box are clipped by its own clip (`includeSelf`): the user agent style sheet has `img, video, canvas { overflow: clip }` and
+  `iframe, embed, object { overflow: clip !important; overflow-clip-margin: content-box !important }`
+  ([CSS Overflow 4](https://drafts.csswg.org/css-overflow-4/#overflow-control), the rules of the browsers), and the box of
+  `overflow-clip-margin` defaults to the content box of the replaced elements (not of an `img` rendered as its alternative text,
+  nor of the form controls), so an image overflowing its content box (`object-fit: cover`) is clipped to it unless the author
+  sets `overflow: visible`; the contents of the other replaced boxes (the generated images) are always clipped to the content
+  box, and an outermost `svg` element to its overflow clip edge.
 - **Pixel snapping.** The geometry of the layout (and of the CSSOM View) keeps its fractional positions; the painter snaps
   what it paints to the device pixels of the viewport (`ViewportOptions.DevicePixelRatio`), as Blink does: the border boxes
   of the backgrounds, the borders, the outlines and the shadows, the overflow clips, the replaced content rectangles, the

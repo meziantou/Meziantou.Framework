@@ -56,6 +56,7 @@ public sealed class JsEngineTests
     [InlineData("delete globalThis.Set; new Map([[1, 2]]).size + Object.getPrototypeOf(new Map().keys())[Symbol.toStringTag]", "1Map Iterator")]
     [InlineData("new Date(0).toLocaleDateString('en', { timeZone: 'UTC' }) + '|' + Object.getOwnPropertyNames(Date.prototype).includes('toLocaleTimeString')", "1/1/1970|true")]
     [InlineData("typeof new WeakRef({}).deref() + '|' + typeof new FinalizationRegistry(() => {}).register", "object|function")]
+    [InlineData("var r = new ShadowRealm(); [Object.prototype.toString.call(r), r.evaluate('var x = 1; x + 1'), r.evaluate('typeof x'), typeof x].join()", "[object ShadowRealm],2,number,undefined")]
     [InlineData("typeof new DisposableStack().use + '|' + typeof AsyncDisposableStack.prototype.disposeAsync + '|' + new SuppressedError(1, 2).suppressed", "function|function|2")]
     [InlineData("var d = Object.getOwnPropertyDescriptor(Array.prototype, 'map'); [typeof d.value, d.value.name, d.value.length, d.writable, d.enumerable, d.configurable, d.value === [].map].join()", "function,map,1,true,false,true,true")]
     [InlineData("var d = Object.getOwnPropertyDescriptor(Map.prototype, 'size'); [typeof d.get, d.get.name, d.get.length, d.set, d.get === Object.getOwnPropertyDescriptor(Map.prototype, 'size').get].join()", "function,get size,0,,true")]
@@ -71,6 +72,17 @@ public sealed class JsEngineTests
         var result = realm.Execute(code);
         using var scope = engine.Enter();
         Assert.Equal(expected, JsOperations.ToString(result));
+    }
+
+    [Fact]
+    public void ShadowRealmsAreNotAddedToTheRealmsOfTheEngine()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var result = realm.Execute("var r = new ShadowRealm(); var add = r.evaluate('(a, b) => a + b'); add(1, 2)");
+        using var scope = engine.Enter();
+        Assert.Equal("3", JsOperations.ToString(result));
+        Assert.Single(engine.Realms);
     }
 
     [Fact]

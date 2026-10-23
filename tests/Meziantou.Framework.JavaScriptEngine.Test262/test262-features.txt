@@ -1,11 +1,10 @@
 # The test262 features (the 'features' of the frontmatter) that the engine does not implement on purpose: the tests
 # that use one of them are not run, and are counted as excluded in summary.md.
 
-# Proposals below stage 4 (see test262's features.txt). The stage-3 proposals that are implemented anyway are not listed:
-# Intl.Era-monthcode, Intl.Locale-info, Intl.NumberFormat-v3, legacy-regexp, error-stack-accessor (used by
-# Meziantou.Framework.WebPlatform), Iterator.prototype.join, import-defer, immutable-arraybuffer, source-phase-imports
-# and source-phase-imports-module-source (the host gives the module source of '<module source>').
-ShadowRealm
+# Proposals below stage 4 (see test262's features.txt). The proposals below stage 4 that are implemented anyway are not
+# listed: Intl.Era-monthcode, Intl.Locale-info, Intl.NumberFormat-v3, legacy-regexp, error-stack-accessor (used by
+# Meziantou.Framework.WebPlatform), Iterator.prototype.join, import-defer, immutable-arraybuffer, source-phase-imports,
+# source-phase-imports-module-source (the host gives the module source of '<module source>') and ShadowRealm.
 decorators
 export-defer
 import-text

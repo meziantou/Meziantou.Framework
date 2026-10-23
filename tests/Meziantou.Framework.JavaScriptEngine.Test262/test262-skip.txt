@@ -1,4 +1,8 @@
-# The tests that are not run yet: a path, a directory (ending with '/'), or a pattern ('*' matches within a segment,
-# '**' across segments). Each milestone of the engine removes the entries of the areas it implements.
-staging/
+# The tests that are not run: a path, a directory (ending with '/'), or a pattern ('*' matches within a segment,
+# '**' across segments), with the reason.
 
+# A chain of 100,000 WeakMap entries (each value is the key of the next one). The forced collection of $262.gc() takes
+# about a minute: the .NET GC rescans the dependent handles of ConditionalWeakTable until no new one is promoted, so the
+# time grows with the square of the length of the chain. With the server GC, the pause also stops the tests that run in
+# parallel until they time out. The test passes when it runs alone.
+staging/sm/regress/regress-1507322-deep-weakmap.js

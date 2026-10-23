@@ -4116,6 +4116,9 @@ internal readonly struct CascadedValue
     /// <summary>The application of the mixin of the declaration, or null: the value is substituted in its frame (see <see cref="CssMixinApplication"/>).</summary>
     public CssMixinApplication? Mixin => Source?.Mixin;
 
+    /// <summary>The namespace prefixes declared by the style sheet of the declaration, or null.</summary>
+    public IReadOnlyDictionary<string, string>? NamespacePrefixes => Source?.NamespacePrefixes;
+
     /// <summary>
     /// The precedence of the declaration of the value: the rank of the winning declaration, or, when it rolls back the cascade
     /// (revert, revert-layer, revert-rule), of the declaration it rolls back to (-1 when there is none).
@@ -4169,12 +4172,15 @@ internal readonly struct CascadedValue
 /// <summary>The rarely used state of a cascaded value: the values that roll back the cascade, and the declarations of the ::part() rules.</summary>
 internal sealed record CascadedValueExtra(long Position, Func<string, CascadedValue>? RollBackSubstitution, Element? OriginatingElement, bool Important = false);
 
-/// <summary>The base URL, the tree scope and the mixin of the declarations of a rule (see <see cref="CascadedValue"/>).</summary>
-internal sealed record CascadedValueSource(string? BaseUrl, Node? TreeScope, CssMixinApplication? Mixin)
+/// <summary>
+/// The base URL, the tree scope and the mixin of the declarations of a rule (see <see cref="CascadedValue"/>), and the namespace
+/// prefixes declared by the @namespace rules of its style sheet (the prefixes of attr(), https://drafts.csswg.org/css-values-5/#attr-notation).
+/// </summary>
+internal sealed record CascadedValueSource(string? BaseUrl, Node? TreeScope, CssMixinApplication? Mixin, IReadOnlyDictionary<string, string>? NamespacePrefixes = null)
 {
-    /// <summary>Returns the source, or null when the base URL, the tree scope and the mixin are null.</summary>
-    public static CascadedValueSource? Create(string? baseUrl, Node? treeScope, CssMixinApplication? mixin)
-        => baseUrl is null && treeScope is null && mixin is null ? null : new(baseUrl, treeScope, mixin);
+    /// <summary>Returns the source, or null when the base URL, the tree scope, the mixin and the namespace prefixes are null.</summary>
+    public static CascadedValueSource? Create(string? baseUrl, Node? treeScope, CssMixinApplication? mixin, IReadOnlyDictionary<string, string>? namespacePrefixes = null)
+        => baseUrl is null && treeScope is null && mixin is null && namespacePrefixes is null ? null : new(baseUrl, treeScope, mixin, namespacePrefixes);
 }
 
 /// <summary>

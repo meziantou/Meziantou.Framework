@@ -102,13 +102,13 @@
     "reftest": "PASS"
   },
   "css/css-values/attr-namespace-case-sensitivity.xhtml": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-values/attr-namespace-non-existing.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-values/attr-namespace-valid.xhtml": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-values/attr-namespace-wildcard.html": {
     "reftest": "PASS"

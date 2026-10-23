@@ -43,6 +43,9 @@ internal sealed class CascadeRuleCollector
     /// <summary>The application of the mixin whose @result rules are being added, or null.</summary>
     private CssMixinApplication? _currentMixin;
 
+    /// <summary>The namespace prefixes declared by the style sheet whose rules are added, or null.</summary>
+    private IReadOnlyDictionary<string, string>? _namespacePrefixes;
+
     /// <param name="environment">The environment the media queries are evaluated against.</param>
     /// <param name="origin">The origin of the rules.</param>
     /// <param name="treeRoot">The root of the tree of the style sheets (the scoping root of the @scope rules without prelude of the constructed style sheets).</param>
@@ -132,7 +135,24 @@ internal sealed class CascadeRuleCollector
             ShadowRoot shadowRoot => shadowRoot.Host,
             _ => null,
         };
+        _namespacePrefixes = GetNamespacePrefixes(sheet.RuleList);
         AddRules(sheet.RuleList, _layers.Root, scope: null, containers: null, parentSelectors: null, ownerParent, baseUrl);
+        _namespacePrefixes = null;
+    }
+
+    /// <summary>Returns the prefixes declared by the @namespace rules of a style sheet, or null when there is none.</summary>
+    private static Dictionary<string, string>? GetNamespacePrefixes(List<CssRule> rules)
+    {
+        Dictionary<string, string>? result = null;
+        foreach (var rule in rules)
+        {
+            if (rule is CssNamespaceRule { Prefix.Length: > 0 } namespaceRule)
+            {
+                (result ??= new(StringComparer.Ordinal))[namespaceRule.Prefix] = namespaceRule.NamespaceUri;
+            }
+        }
+
+        return result;
     }
 
     public void AddRules(List<CssRule> rules, string? baseUrl) => AddRules(rules, _layers.Root, scope: null, containers: null, parentSelectors: null, ownerParent: null, baseUrl);
@@ -350,7 +370,10 @@ internal sealed class CascadeRuleCollector
                                 importParentSelectors = null;
                             }
 
+                            var namespacePrefixes = _namespacePrefixes;
+                            _namespacePrefixes = GetNamespacePrefixes(importedSheet.RuleList);
                             AddRules(importedSheet.RuleList, importLayer, importScope, containers, importParentSelectors, ownerParent, importedSheet.BaseUrl ?? baseUrl);
+                            _namespacePrefixes = namespacePrefixes;
                         }
                     }
 
@@ -647,6 +670,7 @@ internal sealed class CascadeRuleCollector
             BaseUrl = baseUrl,
             TreeScope = _treeRoot,
             Mixin = _currentMixin,
+            NamespacePrefixes = _namespacePrefixes,
             HasImportant = hasImportant,
             HasNormal = hasNormal,
             StartingStyle = _inStartingStyle,
@@ -687,6 +711,7 @@ internal sealed class CascadeRuleCollector
                 BaseUrl = rule.BaseUrl,
                 TreeScope = rule.TreeScope,
                 Mixin = rule.Mixin,
+                NamespacePrefixes = rule.NamespacePrefixes,
                 HasImportant = rule.HasImportant,
                 HasNormal = rule.HasNormal,
                 StartingStyle = rule.StartingStyle,

@@ -1124,7 +1124,7 @@ internal sealed partial class ComputedStyle
     /// Returns the context of the substitution of a cascaded value: the element, or the frame of the application of the mixin
     /// of the declaration, whose variables are its parameters and its local variables.
     /// </summary>
-    private SubstitutionContext GetSubstitutionContext(CascadedValue cascaded) => cascaded.Mixin is { } mixin ? GetMixinFrame(mixin).Context : new SubstitutionContext(this, cascaded.TreeScope, AttrElement: cascaded.OriginatingElement);
+    private SubstitutionContext GetSubstitutionContext(CascadedValue cascaded) => cascaded.Mixin is { } mixin ? GetMixinFrame(mixin).Context : new SubstitutionContext(this, cascaded.TreeScope, AttrElement: cascaded.OriginatingElement, NamespacePrefixes: cascaded.NamespacePrefixes);
 
     /// <summary>Returns the frame of the application of a mixin for the element (created on first use).</summary>
     private CssFunctionFrame GetMixinFrame(CssMixinApplication mixin)

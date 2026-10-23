@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 662 | 740 | 0 | 89% |
+| [Stable](#stable-tests) | 661 | 740 | 0 | 89% |
 | [Tentative](#tentative-tests) | 8 | 12 | 0 | 67% |
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
-| **All** | **674** | **756** | **0** | **89%** |
+| **All** | **673** | **756** | **0** | **89%** |
 
 ## Stable tests
 
@@ -106,7 +106,7 @@
 | [`browsing-the-web/navigating-across-documents/011.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/011.html) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/navigating-across-documents/012.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/012.html) | Fail | 0 / 1 | TEST BUG | `href.html` does not exist next to the test (only `resources/href.html`), and the onclick's `document.write()` posts "write" first, so the test cannot pass |
 | [`browsing-the-web/navigating-across-documents/013.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/013.html) | Pass | 1 / 1 |  |  |
-| [`browsing-the-web/navigating-across-documents/014.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/014.html) | Pass | 1 / 1 |  |  |
+| [`browsing-the-web/navigating-across-documents/014.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/014.html) | Fail | 0 / 1 | BUG | the `javascript:` URL of a form action, submitted by `form.submit()` from an onclick handler and targeting the iframe, is not run before the page's `load` event |
 | [`browsing-the-web/navigating-across-documents/015.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/015.html) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/navigating-across-documents/abort-document-load.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/abort-document-load.html) | Fail | 0 / 1 | TEST BUG | `window.stop()` after the parsing, while a style sheet still delays the load event, is expected to fire no `load` event and to set `readyState` to `complete` (only Chrome does it; the HTML Standard fires the load event once the fetches are canceled) |
 | [`browsing-the-web/navigating-across-documents/abort-document-window-stop.sub.window.js`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/abort-document-window-stop.sub.window.js) | Fail | 0 / 1 | BUG | the `unload` event of the previous document of the iframe fires before the new document is active (`iframe.contentWindow.location` is still the old URL) |

@@ -8,8 +8,8 @@
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 2,074 | 2,174 | 31 | 97% |
 | [Tentative](#tentative-tests) | 57 | 197 | 31 | 34% |
-| [Reftests](#reftests) | 317 | 418 | 61 | 89% |
-| **All** | **2,448** | **2,789** | **123** | **92%** |
+| [Reftests](#reftests) | 315 | 418 | 61 | 88% |
+| **All** | **2,446** | **2,789** | **123** | **92%** |
 
 ## Stable tests
 
@@ -2408,8 +2408,8 @@
 | [`document-metadata/the-style-element/update-style-block-ascii-case-insensitive.html`](https://wpt.fyi/results/html/semantics/document-metadata/the-style-element/update-style-block-ascii-case-insensitive.html) | Pass | 1 / 1 |  |  |
 | [`embedded-content/media-elements/track/track-element/track-cue-rendering-after-controls-added.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/track/track-element/track-cue-rendering-after-controls-added.html) | Pass | 1 / 1 |  |  |
 | [`embedded-content/media-elements/track/track-element/track-cue-rendering-after-controls-removed.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/track/track-element/track-cue-rendering-after-controls-removed.html) | Pass | 1 / 1 |  |  |
-| [`embedded-content/media-elements/track/track-element/track-cue-rendering-line-doesnt-fit.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/track/track-element/track-cue-rendering-line-doesnt-fit.html) | Pass | 1 / 1 |  |  |
-| [`embedded-content/media-elements/track/track-element/track-cue-rendering-transformed-video.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/track/track-element/track-cue-rendering-transformed-video.html) | Pass | 1 / 1 |  |  |
+| [`embedded-content/media-elements/track/track-element/track-cue-rendering-line-doesnt-fit.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/track/track-element/track-cue-rendering-line-doesnt-fit.html) | Timeout | 0 / 1 | TEST BUG | the test calls `waitForActiveCueAndTakeScreenshot()` without `track` element (the track is created by `addTextTrack()`): the helper reports a failed precondition, which only ends the test when the `playing` event is fired before `DOMContentLoaded` (the page then shows the error message, as its reference does); here, as in Firefox and Safari, the event is fired later and the test times out |
+| [`embedded-content/media-elements/track/track-element/track-cue-rendering-transformed-video.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/track/track-element/track-cue-rendering-transformed-video.html) | Timeout | 0 / 1 | TEST BUG | the test calls `waitForActiveCueAndTakeScreenshot()` without `track` element (the track is created by `addTextTrack()`): the helper reports a failed precondition, which only ends the test when the `playing` event is fired before `DOMContentLoaded` (the page then shows the error message, as its reference does); here, as in Firefox and Safari, the event is fired later and the test times out |
 | [`embedded-content/media-elements/track/track-element/track-webvtt-non-snap-to-lines.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/track/track-element/track-webvtt-non-snap-to-lines.html) | Pass | 1 / 1 |  |  |
 | [`embedded-content/media-elements/track/track-element/track-webvtt-two-cue-layout-after-first-end.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/track/track-element/track-webvtt-two-cue-layout-after-first-end.html) | Pass | 1 / 1 |  |  |
 | [`embedded-content/the-audio-element/audio_001.htm`](https://wpt.fyi/results/html/semantics/embedded-content/the-audio-element/audio_001.htm) | Pass | 1 / 1 |  |  |

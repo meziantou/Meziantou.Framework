@@ -109,7 +109,7 @@ internal static class EmbeddedResources
 
     /// <summary>
     /// The computed MIME type of a resource without a Content-Type (https://mimesniff.spec.whatwg.org/#rules-for-sniffing-the-mime-type):
-    /// an HTML document, an image (e.g. <c>image/png</c>), or else text or binary.
+    /// an HTML or XML document, an image (e.g. <c>image/png</c>), or else text or binary.
     /// </summary>
     public static string SniffType(ReadOnlySpan<byte> bytes)
     {
@@ -128,6 +128,10 @@ internal static class EmbeddedResources
 
         if (text.StartsWith("<!--"u8))
             return "text/html";
+
+        // https://mimesniff.spec.whatwg.org/#rules-for-identifying-an-unknown-mime-type: the XML signature
+        if (text.StartsWith("<?xml"u8))
+            return "text/xml";
 
         if (ImageHeaders.TryGetImageInfo(bytes, "", out _))
             return "image/*";

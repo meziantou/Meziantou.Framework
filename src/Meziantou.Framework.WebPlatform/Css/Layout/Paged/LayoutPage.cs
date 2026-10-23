@@ -86,9 +86,10 @@ internal sealed record PageGeometry(ComputedStyle? Style, PhysicalSize PageSize,
     /// placed in the page sheet as a block box in its containing block (https://drafts.csswg.org/css2/#blockwidth): its
     /// automatic margins share what remains (they may be negative, https://github.com/w3c/csswg-drafts/issues/8508), and when
     /// no margin is automatic (over-constrained), the page sheet is resized to contain the page box with its margins, as in
-    /// Blink.
+    /// Blink. The page margins that are not automatic stay within the printable area of the sheet with
+    /// <c>page-margin-safety</c> (https://drafts.csswg.org/css-page-3/#page-margin-safety).
     /// </summary>
-    public static PageGeometry Resolve(ComputedStyle? style, string size, string orientation, PrintOptions options, StyleEngine? styleEngine)
+    public static PageGeometry Resolve(ComputedStyle? style, string size, string orientation, string marginSafety, PrintOptions options, StyleEngine? styleEngine)
     {
         var pageSize = GetPageSize(style, size, options, styleEngine);
         if (style is null)
@@ -99,15 +100,16 @@ internal sealed record PageGeometry(ComputedStyle? Style, PhysicalSize PageSize,
         var padding = new Sides<double>(box.Padding.Top.Resolve(pageSize.Height), box.Padding.Right.Resolve(pageSize.Width), box.Padding.Bottom.Resolve(pageSize.Height), box.Padding.Left.Resolve(pageSize.Width));
         var border = box.BorderWidth;
         var borderBox = layout.BoxSizing == BoxSizing.BorderBox;
-        var (width, left, right) = ResolveAxis(pageSize.Width, box.Margin.Left, box.Margin.Right, box.Width, box.MinWidth, box.MaxWidth, border.Left + border.Right + padding.Left + padding.Right, borderBox);
-        var (height, top, bottom) = ResolveAxis(pageSize.Height, box.Margin.Top, box.Margin.Bottom, box.Height, box.MinHeight, box.MaxHeight, border.Top + border.Bottom + padding.Top + padding.Bottom, borderBox);
+        var inset = options.SafePrintableInset;
+        var (width, left, right) = ResolveAxis(pageSize.Width, box.Margin.Left, box.Margin.Right, box.Width, box.MinWidth, box.MaxWidth, border.Left + border.Right + padding.Left + padding.Right, borderBox, marginSafety, GetSafePrintableInset(inset, pageSize.Width));
+        var (height, top, bottom) = ResolveAxis(pageSize.Height, box.Margin.Top, box.Margin.Bottom, box.Height, box.MinHeight, box.MaxHeight, border.Top + border.Bottom + padding.Top + padding.Bottom, borderBox, marginSafety, GetSafePrintableInset(inset, pageSize.Height));
         return new PageGeometry(style, new PhysicalSize(width, height), new Sides<double>(top, right, bottom, left), border, padding, orientation is "rotate-left" or "rotate-right" ? orientation : "upright");
 
         // The size of the page sheet and the page margins in an axis
-        static (double Sheet, double Start, double End) ResolveAxis(double sheet, LengthPercentageAuto marginStart, LengthPercentageAuto marginEnd, Size size, Size minSize, Size maxSize, double edges, bool borderBox)
+        static (double Sheet, double Start, double End) ResolveAxis(double sheet, LengthPercentageAuto marginStart, LengthPercentageAuto marginEnd, Size size, Size minSize, Size maxSize, double edges, bool borderBox, string marginSafety, double inset)
         {
-            var start = marginStart.Resolve(sheet);
-            var end = marginEnd.Resolve(sheet);
+            var start = ApplyMarginSafety(marginStart.Resolve(sheet), inset, marginSafety);
+            var end = ApplyMarginSafety(marginEnd.Resolve(sheet), inset, marginSafety);
             if (size.TryResolve(sheet) is not { } specified)
                 return (sheet, start, end);
 
@@ -135,6 +137,30 @@ internal sealed record PageGeometry(ComputedStyle? Style, PhysicalSize PageSize,
             // (over-constrained: the page sheet is resized)
             return (Math.Max(0, start + content + edges + end), start, end);
         }
+    }
+
+    /// <summary>
+    /// Returns the safe printable inset of the edges of the sheet in an axis: an inset whose two edges cover the sheet leaves no
+    /// printable area, it is ignored (the content makes progress).
+    /// </summary>
+    internal static double GetSafePrintableInset(double inset, double sheetSize) => inset > 0 && 2 * inset < sheetSize ? inset : 0;
+
+    /// <summary>
+    /// Returns the used value of a margin adjacent to an edge of the page sheet (https://drafts.csswg.org/css-page-3/#page-margin-safety):
+    /// with <c>clamp</c>, at least the safe printable inset; with <c>add</c>, the margin plus the inset.
+    /// </summary>
+    internal static double ApplyMarginSafety(double margin, double inset, string marginSafety)
+    {
+        if (inset == 0)
+            return margin;
+
+        if (marginSafety.Equals("clamp", StringComparison.OrdinalIgnoreCase))
+            return Math.Max(margin, inset);
+
+        if (marginSafety.Equals("add", StringComparison.OrdinalIgnoreCase))
+            return margin + inset;
+
+        return margin;
     }
 
     /// <summary>

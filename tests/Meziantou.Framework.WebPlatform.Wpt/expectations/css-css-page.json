@@ -741,13 +741,13 @@
     "reftest": "PASS"
   },
   "css/css-page/tentative/safe-printable-inset-001-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/tentative/safe-printable-inset-002-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/tentative/safe-printable-inset-003-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/tentative/safe-printable-inset-large-crash-print.html": {
     "reftest": "PASS"

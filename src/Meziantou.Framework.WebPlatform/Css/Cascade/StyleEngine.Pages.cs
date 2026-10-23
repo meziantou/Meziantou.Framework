@@ -22,18 +22,20 @@ internal sealed partial class StyleEngine
     /// <summary>
     /// Returns the style of the page context of a page: the declarations of the matching @page rules of the document (of the
     /// properties that apply to the page context, see <see cref="Om.CssStyleDeclaration.AppliesToPageContext"/>). The
-    /// descriptors that are not properties are returned apart: <c>size</c> (see <see cref="GetPageSizeLengths"/>) and
-    /// <c>page-orientation</c>.
+    /// descriptors that are not properties are returned apart: <c>size</c> (see <see cref="GetPageSizeLengths"/>),
+    /// <c>page-orientation</c> and <c>page-margin-safety</c>.
     /// </summary>
     /// <param name="page">The page.</param>
     /// <param name="defaultMargins">The margins of the page when no @page rule sets them (top, right, bottom, left, in CSS px).</param>
     /// <param name="size">Receives the value of the <c>size</c> descriptor (<c>auto</c> when it is not declared).</param>
     /// <param name="orientation">Receives the value of the <c>page-orientation</c> descriptor (<c>upright</c> when it is not declared).</param>
+    /// <param name="marginSafety">Receives the value of the <c>page-margin-safety</c> descriptor (<c>auto</c> when it is not declared).</param>
     /// <returns>The style, or null when the document has no root element.</returns>
-    public ComputedStyle? GetPageStyle(PageSelection page, ReadOnlySpan<double> defaultMargins, out string size, out string orientation)
+    public ComputedStyle? GetPageStyle(PageSelection page, ReadOnlySpan<double> defaultMargins, out string size, out string orientation, out string marginSafety)
     {
         size = "auto";
         orientation = "upright";
+        marginSafety = "auto";
         if (_document.DocumentElement is not { } root)
             return null;
 
@@ -59,7 +61,10 @@ internal sealed partial class StyleEngine
                 case "page-orientation":
                     orientation = declaration.Value.Value;
                     continue;
-                case "marks" or "bleed" or "page-margin-safety":
+                case "page-margin-safety":
+                    marginSafety = declaration.Value.Value;
+                    continue;
+                case "marks" or "bleed":
                     continue;
             }
 
@@ -106,8 +111,10 @@ internal sealed partial class StyleEngine
     /// <param name="page">The page.</param>
     /// <param name="pageStyle">The style of the page context of the page.</param>
     /// <param name="marginName">The name of the margin box (e.g. <c>top-left</c>).</param>
-    public ComputedStyle GetPageMarginStyle(PageSelection page, ComputedStyle pageStyle, string marginName)
+    /// <param name="marginSafety">Receives the value of the <c>page-margin-safety</c> descriptor of the margin rules (<c>auto</c> when it is not declared).</param>
+    public ComputedStyle GetPageMarginStyle(PageSelection page, ComputedStyle pageStyle, string marginName, out string marginSafety)
     {
+        marginSafety = "auto";
         var cascaded = new Dictionary<string, CascadedValue>(StringComparer.Ordinal);
         var (textAlign, verticalAlign) = marginName switch
         {
@@ -132,6 +139,12 @@ internal sealed partial class StyleEngine
         var rank = 1L;
         foreach (var (declaration, _, baseUrl) in GetPageDeclarations(page, marginName))
         {
+            if (declaration.Name == "page-margin-safety")
+            {
+                marginSafety = declaration.Value.Value;
+                continue;
+            }
+
             if (!Om.CssStyleDeclaration.AppliesToMarginBox(declaration.Name))
                 continue;
 

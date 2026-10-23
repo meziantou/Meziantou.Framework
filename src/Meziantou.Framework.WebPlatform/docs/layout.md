@@ -3026,6 +3026,13 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   [csswg-drafts#8508](https://github.com/w3c/csswg-drafts/issues/8508)), and when no margin is automatic the page sheet is
   resized to the margin box of the page box ("the containing block is resized to coincide with the margin edges of the page
   box"). `page-orientation` rotates the printed page (see [Printing](rendering.md#printing)), not its layout.
+- **Printable area** ([`page-margin-safety`](https://drafts.csswg.org/css-page-3/#page-margin-safety)): `PrintOptions.SafePrintableInset`
+  is the unprintable region along the edges of the sheet (0 by default; the WPT runner reads it from
+  `<meta name=safe-printable-inset>`, in centimeters, as the runner of Chromium). With `clamp`, the page margins that are not
+  automatic are at least the inset; with `add`, the inset is added to them. In the margin rules (where the descriptor is
+  also accepted), only the margins of a page-margin box that face an edge of the sheet are adjusted: an automatic margin
+  is the inset when the size of the box is automatic, and a centered box moves away from the edge until its margin
+  reaches the inset (as far as the opposite margin allows). An inset whose two edges cover the sheet is ignored.
 - **Pagination** (the fragmentation of the multi-column containers, see above, with the page areas as fragmentainers): the
   root element is laid out in the initial containing block (the page area of the first page) as a strip, which is as tall
   as the margin box of the root element. Its possible breaks are collected with the rules of the pages (`PageBreakRules`,

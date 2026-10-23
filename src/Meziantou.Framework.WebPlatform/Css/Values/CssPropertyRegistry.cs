@@ -304,6 +304,12 @@ internal static partial class CssPropertyRegistry
             name = "font-width";
         }
 
+        // https://drafts.csswg.org/css-page-3/#page-margin-safety: page-margin-safety is also a descriptor of the margin rules
+        if (name == "page-margin-safety" && atRule.Length > 1 && Om.CssRuleParser.IsMarginRuleName(atRule[1..]))
+        {
+            atRule = "@page";
+        }
+
         return DescriptorsByName.Value.GetValueOrDefault(atRule + " " + name);
     }
 

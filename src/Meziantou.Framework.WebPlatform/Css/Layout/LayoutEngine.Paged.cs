@@ -89,7 +89,7 @@ internal sealed partial class LayoutEngine
         var counters = new PageCounters(_document.DocumentElement is { } root ? styleEngine.GetStyle(root) : null);
         for (var i = 0; i < pages.Count; i++)
         {
-            pages[i].MarginBoxes = PageMarginBoxes.Layout(context, pages[i], selections[i], pages.Count, counters.Next(pages[i].Geometry.Style));
+            pages[i].MarginBoxes = PageMarginBoxes.Layout(context, pages[i], selections[i], pages.Count, counters.Next(pages[i].Geometry.Style), _printSession!.Options.SafePrintableInset);
         }
 
         _pages = pages;
@@ -104,8 +104,8 @@ internal sealed partial class LayoutEngine
         {
             var session = _printSession!;
             var styleEngine = _document.GetStyleEngine();
-            var style = styleEngine.GetPageStyle(selection, session.DefaultMargins, out var size, out var orientation);
-            geometry = PageGeometry.Resolve(style, size, orientation, session.Options, styleEngine);
+            var style = styleEngine.GetPageStyle(selection, session.DefaultMargins, out var size, out var orientation, out var marginSafety);
+            geometry = PageGeometry.Resolve(style, size, orientation, marginSafety, session.Options, styleEngine);
             geometries[selection] = geometry;
         }
 

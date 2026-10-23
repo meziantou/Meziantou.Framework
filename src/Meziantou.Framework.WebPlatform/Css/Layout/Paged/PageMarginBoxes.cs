@@ -23,9 +23,12 @@ internal static class PageMarginBoxes
     ];
 
     /// <summary>A margin box being placed: its style, its box and its outer rectangle in the page box.</summary>
-    private sealed class MarginBox(string name, ComputedStyle style)
+    private sealed class MarginBox(string name, ComputedStyle style, string marginSafety)
     {
         public string Name { get; } = name;
+
+        /// <summary>The value of <c>page-margin-safety</c> of the box (https://drafts.csswg.org/css-page-3/#page-margin-safety).</summary>
+        public string MarginSafety { get; } = marginSafety;
 
         /// <summary>
         /// The side of the box toward the edge of the page in each axis where the box fills the page margin (the depth of the
@@ -63,7 +66,8 @@ internal static class PageMarginBoxes
     /// <param name="selection">The page, as the page selectors see it.</param>
     /// <param name="pageCount">The number of pages of the document (the <c>pages</c> counter).</param>
     /// <param name="counters">The counters of the page context of the page (see <see cref="PageCounters"/>).</param>
-    public static List<BoxFragment>? Layout(LayoutContext context, LayoutPage page, PageSelection selection, int pageCount, IReadOnlyDictionary<string, long> counters)
+    /// <param name="safePrintableInset">The safe printable inset of the sheet (https://drafts.csswg.org/css-page-3/#page-margin-safety).</param>
+    public static List<BoxFragment>? Layout(LayoutContext context, LayoutPage page, PageSelection selection, int pageCount, IReadOnlyDictionary<string, long> counters, double safePrintableInset)
     {
         if (page.Geometry.Style is not { } pageStyle)
             return null;
@@ -73,7 +77,7 @@ internal static class PageMarginBoxes
         CounterStyleResolver? counterStyles = null;
         foreach (var name in Names)
         {
-            var style = styleEngine.GetPageMarginStyle(selection, pageStyle, name);
+            var style = styleEngine.GetPageMarginStyle(selection, pageStyle, name, out var marginSafety);
             var content = style.GetComputedValue("content");
             if (content is "none" or "normal" || GenerateContent(style, content, PageCounters.ForMarginBox(counters, style), pageCount, ref counterStyles, styleEngine) is not { } text)
                 continue;
@@ -84,7 +88,7 @@ internal static class PageMarginBoxes
                 box.AppendChild(new TextRun(style, style.Element, style.PseudoElement, TextRunKind.Generated, node: null, text, 0, text.Length));
             }
 
-            boxes[name] = new MarginBox(name, style) { Box = box };
+            boxes[name] = new MarginBox(name, style, marginSafety) { Box = box };
         }
 
         if (boxes.Count == 0)
@@ -111,7 +115,7 @@ internal static class PageMarginBoxes
         var result = new List<BoxFragment>(boxes.Count);
         foreach (var name in Names)
         {
-            if (boxes.TryGetValue(name, out var box) && LayoutBox(context, box) is { } fragment)
+            if (boxes.TryGetValue(name, out var box) && LayoutBox(context, box, PageGeometry.GetSafePrintableInset(safePrintableInset, width), PageGeometry.GetSafePrintableInset(safePrintableInset, height)) is { } fragment)
             {
                 result.Add(fragment);
             }
@@ -350,9 +354,11 @@ internal static class PageMarginBoxes
     /// <summary>
     /// Lays out a margin box in its outer rectangle: its margins are in it (the automatic margins center a box whose size is
     /// specified), and its contents are aligned in its content box by <c>vertical-align</c> (<c>top</c>, <c>middle</c>,
-    /// <c>center</c> or <c>bottom</c>, https://drafts.csswg.org/css-page-3/#margin-text-alignment).
+    /// <c>center</c> or <c>bottom</c>, https://drafts.csswg.org/css-page-3/#margin-text-alignment). The margins adjacent to an
+    /// edge of the page sheet stay within its printable area with <c>page-margin-safety</c>
+    /// (https://drafts.csswg.org/css-page-3/#page-margin-safety).
     /// </summary>
-    private static BoxFragment? LayoutBox(LayoutContext context, MarginBox box)
+    private static BoxFragment? LayoutBox(LayoutContext context, MarginBox box, double horizontalInset, double verticalInset)
     {
         if (box.Box is not { } layoutBox)
             return null;
@@ -368,6 +374,8 @@ internal static class PageMarginBoxes
         var edgesY = boxStyle.BorderWidth.Top + boxStyle.BorderWidth.Bottom + boxStyle.Padding.Top.Resolve(containingBlock.Height) + boxStyle.Padding.Bottom.Resolve(containingBlock.Height);
         var borderBox = box.Style.Layout.BoxSizing == BoxSizing.BorderBox;
         var (outerX, outerY) = box.OuterSides;
+        var safety = box.MarginSafety;
+        var hasSafety = safety.Equals("clamp", StringComparison.OrdinalIgnoreCase) || safety.Equals("add", StringComparison.OrdinalIgnoreCase);
         // (the intrinsic sizes are the sizes of the contents: min-content, max-content, fit-content in the outer rectangle)
         double? specifiedWidth = boxStyle.Width.TryResolve(containingBlock.Width) is { } w ? w + (borderBox ? 0 : edgesX) : null;
         if (specifiedWidth is null && boxStyle.Width.IsIntrinsic && box.Style.Layout.WritingMode != WritingMode.HorizontalTb)
@@ -388,14 +396,14 @@ internal static class PageMarginBoxes
             };
         }
 
-        var (left, width) = Resolve(rect.Width, containingBlock.Width, marginLeft, marginRight, specifiedWidth, outerX);
+        var (left, width) = Resolve(rect.Width, containingBlock.Width, marginLeft, marginRight, specifiedWidth, outerX, hasSafety ? horizontalInset : 0, safety);
         double? specifiedHeight = boxStyle.Height.TryResolve(containingBlock.Height) is { } h ? h + (borderBox ? 0 : edgesY) : null;
         if (specifiedHeight is null && boxStyle.Height.IsIntrinsic)
         {
             specifiedHeight = context.LayoutBox(layoutBox, ConstraintSpace.ForContentBox(WritingDirection.HorizontalLtr, containingBlock.Width, containingBlock.Height) with { FixedInlineSize = width }).Size.Height;
         }
 
-        var (top, height) = Resolve(rect.Height, containingBlock.Height, marginTop, marginBottom, specifiedHeight, outerY);
+        var (top, height) = Resolve(rect.Height, containingBlock.Height, marginTop, marginBottom, specifiedHeight, outerY, hasSafety ? verticalInset : 0, safety);
         var space = ConstraintSpace.ForContentBox(WritingDirection.HorizontalLtr, containingBlock.Width, containingBlock.Height) with { FixedInlineSize = width, FixedBlockSize = height };
         var fragment = context.LayoutBox(layoutBox, space);
         fragment.Offset = new PhysicalOffset(rect.X + left, rect.Y + top);
@@ -444,20 +452,40 @@ internal static class PageMarginBoxes
         return fragment;
 
         // The margins and the size of the box in an axis of its outer rectangle: an automatic size fills it, the automatic
-        // margins of a box with a specified size share what remains
-        static (double Start, double Size) Resolve(double outer, double basis, LengthPercentageAuto start, LengthPercentageAuto end, double? size, int outerSide)
+        // margins of a box with a specified size share what remains. The margin on the side of the edge of the sheet (if any)
+        // is adjusted by page-margin-safety: an automatic margin is the safe printable inset when the size is automatic, and
+        // takes from the opposite automatic margin what it lacks to reach the inset when both margins share what remains.
+        static (double Start, double Size) Resolve(double outer, double basis, LengthPercentageAuto start, LengthPercentageAuto end, double? size, int outerSide, double inset, string safety)
         {
+            var startInset = outerSide < 0 ? inset : 0;
+            var endInset = outerSide > 0 ? inset : 0;
+            var startMargin = start.IsAuto ? startInset : PageGeometry.ApplyMarginSafety(start.Resolve(basis), startInset, safety);
+            var endMargin = end.IsAuto ? endInset : PageGeometry.ApplyMarginSafety(end.Resolve(basis), endInset, safety);
             if (size is not { } specified)
-                return (start.Resolve(basis), Math.Max(0, outer - start.Resolve(basis) - end.Resolve(basis)));
+                return (startMargin, Math.Max(0, outer - startMargin - endMargin));
 
             var remaining = outer - specified;
             if (start.IsAuto && end.IsAuto)
-                return (remaining / 2, specified);
+            {
+                var half = remaining / 2;
+                var (resolvedStart, resolvedEnd) = (half, half);
+                if (resolvedStart < startInset)
+                {
+                    var moved = Math.Min(startInset - resolvedStart, Math.Max(0, resolvedEnd));
+                    resolvedStart += moved;
+                }
+                else if (resolvedEnd < endInset)
+                {
+                    resolvedStart -= Math.Min(endInset - resolvedEnd, Math.Max(0, resolvedStart));
+                }
+
+                return (resolvedStart, specified);
+            }
 
             if (start.IsAuto || (!end.IsAuto && outerSide < 0))
-                return (remaining - end.Resolve(basis), specified);
+                return (remaining - endMargin, specified);
 
-            return (start.Resolve(basis), specified);
+            return (startMargin, specified);
         }
     }
 }

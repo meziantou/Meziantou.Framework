@@ -133,6 +133,9 @@ internal static class DataViewBuiltins
     /// <summary>SetViewValue(view, requestIndex, isLittleEndian, type, value)</summary>
     private static JsValue SetViewValue(JsDataView view, JsValue requestIndex, JsValue littleEndian, TypedArrayElementType type, JsValue value)
     {
+        if (view.ViewedArrayBuffer.IsImmutable)
+            return ThrowHelper.ThrowTypeError<JsValue>("Cannot write to a DataView backed by an immutable ArrayBuffer");
+
         var getIndex = JsOperations.ToIndex(requestIndex);
         var numericValue = BinaryDataOperations.ToNumericForElementType(type, value);
         var isLittleEndian = JsOperations.ToBoolean(littleEndian);

@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace Meziantou.Framework.JavaScriptEngine;
 
 /// <summary>
@@ -188,9 +190,10 @@ internal sealed class JsTypedArray : JsObject, IArrayIteratorSource
         return GetElement(validIndex);
     }
 
-    /// <summary>TypedArraySetElement(O, index, value): converts the value, then writes it when the index is a valid integer index.</summary>
+    /// <summary>TypedArraySetElement(O, index, value): converts the value, then writes it when the index is a valid integer index. The buffer must not be immutable.</summary>
     public void SetElementFromValue(double index, JsValue value)
     {
+        Debug.Assert(!ViewedArrayBuffer.IsImmutable);
         var numericValue = BinaryDataOperations.ToNumericForElementType(ElementType, value);
         if (IsValidIntegerIndex(index, out var validIndex))
         {
@@ -246,13 +249,16 @@ internal sealed class JsTypedArray : JsObject, IArrayIteratorSource
     // Internal methods
     // ------------------------------------------------------------------------------------------------------------------
 
+    /// <summary>The attributes of the elements: an element of an immutable buffer is neither writable nor configurable.</summary>
+    private PropertyFlags ElementFlags => ViewedArrayBuffer.IsImmutable ? PropertyFlags.Enumerable : PropertyFlags.Default;
+
     internal override bool GetOwnProperty(in PropertyKey key, out PropertyDescriptor descriptor)
     {
         if (key.IsArrayIndex)
         {
             if (IsValidIntegerIndex(key.ArrayIndex))
             {
-                descriptor = PropertyDescriptor.Data(GetElement((int)key.ArrayIndex), PropertyFlags.Default);
+                descriptor = PropertyDescriptor.Data(GetElement((int)key.ArrayIndex), ElementFlags);
                 return true;
             }
 
@@ -264,7 +270,7 @@ internal sealed class JsTypedArray : JsObject, IArrayIteratorSource
         {
             if (IsValidIntegerIndex(index, out var validIndex))
             {
-                descriptor = PropertyDescriptor.Data(GetElement(validIndex), PropertyFlags.Default);
+                descriptor = PropertyDescriptor.Data(GetElement(validIndex), ElementFlags);
                 return true;
             }
 
@@ -287,8 +293,16 @@ internal sealed class JsTypedArray : JsObject, IArrayIteratorSource
     {
         if (TryGetNumericIndex(key, out var index))
         {
-            if (!IsValidIntegerIndex(index, out _))
+            if (!IsValidIntegerIndex(index, out var validIndex))
                 return false;
+
+            if (ViewedArrayBuffer.IsImmutable)
+            {
+                // Redefining an immutable element fails unless the descriptor changes nothing (the value must be the
+                // same value: it is not converted)
+                var current = PropertyDescriptor.Data(GetElement(validIndex), ElementFlags);
+                return ValidateAndApplyPropertyDescriptor(obj: null, key, extensible: false, descriptor, hasCurrent: true, current);
+            }
 
             if (descriptor.HasConfigurable && !descriptor.Configurable)
                 return false;
@@ -326,7 +340,7 @@ internal sealed class JsTypedArray : JsObject, IArrayIteratorSource
 
     internal override bool Set(in PropertyKey key, JsValue value, JsValue receiver)
     {
-        if (key.IsArrayIndex && ReferenceEquals(receiver.Cell, this))
+        if (key.IsArrayIndex && ReferenceEquals(receiver.Cell, this) && !ViewedArrayBuffer.IsImmutable)
         {
             var numericValue = BinaryDataOperations.ToNumericForElementType(ElementType, value);
             if (IsValidIntegerIndex(key.ArrayIndex))
@@ -339,6 +353,10 @@ internal sealed class JsTypedArray : JsObject, IArrayIteratorSource
 
         if (TryGetNumericIndex(key, out var index))
         {
+            // The assignments to the elements of an immutable buffer fail (TypeError in strict mode code)
+            if (ViewedArrayBuffer.IsImmutable)
+                return false;
+
             if (ReferenceEquals(receiver.Cell, this))
             {
                 SetElementFromValue(index, value);

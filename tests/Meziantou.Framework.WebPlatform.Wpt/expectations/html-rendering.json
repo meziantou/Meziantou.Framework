@@ -6,74 +6,7 @@
     "reftest": "PASS"
   },
   "html/rendering/bidi-rendering/unicode-bidi-ua-rules-iso-8859-8.html": {
-    "total": 67,
-    "failures": {
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <address>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <article>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <aside>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <blockquote>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <caption>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <center>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <col>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <colgroup>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <dd>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <dir>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <div>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <dl>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <dt>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <figcaption>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <figure>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <footer>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <form>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <h1>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <h2>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <h3>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <h4>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <h5>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <h6>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <header>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <hgroup>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <hr>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=checkbox>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=color>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=date>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=datetime-local>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=email>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=file>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=hidden>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=image>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=number>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=password>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=radio>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=range>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=search>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=tel>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=text>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=time>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <input type=url>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <legend>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <li>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <listing>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <main>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <menu>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <nav>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <ol>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <p>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <plaintext>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <pre>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <search>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <section>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <summary>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <table>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <tbody>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <td>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <tfoot>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <th>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <thead>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <tr>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <ul>": "FAIL",
-      "ISO-8859-8 UA stylesheet rule for unicode-bidi, for <xmp>": "FAIL"
-    }
+    "total": 67
   },
   "html/rendering/bidi-rendering/unicode-bidi-ua-rules.html": {
     "total": 130
@@ -133,7 +66,10 @@
     "total": 1
   },
   "html/rendering/non-replaced-elements/flow-content-0/search-styles-iso-8859-8.html": {
-    "total": 11
+    "total": 11,
+    "failures": {
+      "<search> - unicode-bidi": "FAIL"
+    }
   },
   "html/rendering/non-replaced-elements/flow-content-0/search-styles.html": {
     "total": 10
@@ -462,7 +398,7 @@
     "reftest": "PASS"
   },
   "html/rendering/non-replaced-elements/the-br-element/br-and-wbr-with-non-inline-display.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/rendering/non-replaced-elements/the-br-element/br-clear-presentational-hints.html": {
     "reftest": "PASS"
@@ -747,7 +683,7 @@
     "reftest": "PASS"
   },
   "html/rendering/non-replaced-elements/the-page/Document-documentElement-remove-clears-content.html": {
-    "reftest": "ERROR"
+    "reftest": "PASS"
   },
   "html/rendering/non-replaced-elements/the-page/body-margin-1a.html": {
     "reftest": "PASS"
@@ -1116,7 +1052,7 @@
     "reftest": "PASS"
   },
   "html/rendering/replaced-elements/the-select-element/select-1-line-height.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/rendering/replaced-elements/the-select-element/select-adopted.html": {
     "reftest": "PASS"
@@ -1179,11 +1115,7 @@
     "total": 1
   },
   "html/rendering/the-css-user-agent-style-sheet-and-presentational-hints/no-help-cursor-on-links-wrapped-in-svg.historical.html": {
-    "total": 2,
-    "failures": {
-      "Unvisited help links must have pointer cursor, not help cursor": "FAIL",
-      "Visited help links must have pointer cursor, not help cursor": "FAIL"
-    }
+    "total": 2
   },
   "html/rendering/the-css-user-agent-style-sheet-and-presentational-hints/no-help-cursor-on-links.historical.html": {
     "total": 2
@@ -1222,13 +1154,13 @@
     "total": 2
   },
   "html/rendering/the-details-element/details-page-break-after-1-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/rendering/the-details-element/details-page-break-after-2-print.html": {
     "reftest": "PASS"
   },
   "html/rendering/the-details-element/details-page-break-before-1-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/rendering/the-details-element/details-page-break-before-2-print.html": {
     "reftest": "PASS"
@@ -1371,7 +1303,7 @@
     "reftest": "PASS"
   },
   "html/rendering/widgets/button-layout/propagate-text-decoration.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/rendering/widgets/button-layout/scrollable-button-centering.html": {
     "reftest": "PASS"
@@ -1501,13 +1433,7 @@
     "total": 1
   },
   "html/rendering/widgets/shadow-dom.html": {
-    "total": 9,
-    "failures": {
-      "<audio controls=\"\"></audio> has a shadow tree with no slots": "FAIL",
-      "<audio></audio> has a shadow tree with no slots": "FAIL",
-      "<video controls=\"\"></video> has a shadow tree with no slots": "FAIL",
-      "<video></video> has a shadow tree with no slots": "FAIL"
-    }
+    "total": 9
   },
   "html/rendering/widgets/text-control-client-width.html": {
     "total": 2

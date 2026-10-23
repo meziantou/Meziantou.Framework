@@ -263,9 +263,45 @@ public partial class HtmlSelectElement
         UpdateDescendantSelectedContentElements();
     }
 
+    // A pending update of the descendant selectedcontent elements: queued in a microtask (by removing or moving an option), or
+    // left to the post-connection steps of the inserted options (when inserting an option changes the selectedness). Updating
+    // the descendant selectedcontent elements performs it, so that each mutation updates them once
+    // (WPT html/semantics/forms/the-select-element/customizable-select/selectedcontent-queued-update.html).
+    private bool _selectedContentUpdateQueued;
+    private bool _selectedContentUpdatePending;
+
+    internal bool HasPendingSelectedContentUpdate => _selectedContentUpdateQueued || _selectedContentUpdatePending;
+
+    /// <summary>Leaves the update of the descendant selectedcontent elements to the post-connection steps of an inserted option.</summary>
+    internal void SetSelectedContentUpdatePending() => _selectedContentUpdatePending = true;
+
+    /// <summary>Queues a microtask to update the descendant selectedcontent elements, unless one is already queued (synchronously in a document without an event loop).</summary>
+    internal void QueueSelectedContentUpdate()
+    {
+        if (NodeDocument.EventLoop is not { } eventLoop)
+        {
+            UpdateDescendantSelectedContentElements();
+            return;
+        }
+
+        if (_selectedContentUpdateQueued)
+            return;
+
+        _selectedContentUpdateQueued = true;
+        eventLoop.QueueMicrotask(() =>
+        {
+            if (_selectedContentUpdateQueued)
+            {
+                UpdateDescendantSelectedContentElements();
+            }
+        });
+    }
+
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#update-a-select's-descendant-selectedcontent-elements</summary>
     internal void UpdateDescendantSelectedContentElements()
     {
+        _selectedContentUpdateQueued = false;
+        _selectedContentUpdatePending = false;
         if (IsMultiple)
             return;
 
@@ -488,13 +524,29 @@ public partial class HtmlOptionElement
             }
         }
 
-        UpdateNearestAncestorSelect();
+        // The update of the selectedcontent elements is left to the post-connection steps, which run once the tree is in a
+        // consistent state (they do not run in a disconnected tree)
+        if (IsConnected)
+        {
+            foreach (var changedSelect in UpdateNearestAncestorSelect())
+            {
+                changedSelect.SetSelectedContentUpdatePending();
+            }
+        }
+        else
+        {
+            UpdateNearestAncestorSelect();
+        }
     }
 
+    /// <summary>The post-connection steps perform the pending update of the selectedcontent elements of the select.</summary>
     internal override void PostConnectionSteps()
     {
         base.PostConnectionSteps();
-        UpdateDescendantSelectedContentElements();
+        if (CachedNearestAncestorSelect is { HasPendingSelectedContentUpdate: true } select)
+        {
+            select.UpdateDescendantSelectedContentElements();
+        }
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#the-option-element (moving steps)</summary>
@@ -510,19 +562,11 @@ public partial class HtmlOptionElement
         QueueSelectedContentUpdates(UpdateNearestAncestorSelect());
     }
 
-    /// <summary>Queues a microtask to update the descendant selectedcontent elements of each select (synchronously in a document without an event loop).</summary>
-    private void QueueSelectedContentUpdates(List<HtmlSelectElement> selects)
+    private static void QueueSelectedContentUpdates(List<HtmlSelectElement> selects)
     {
         foreach (var select in selects)
         {
-            if (NodeDocument.EventLoop is { } eventLoop)
-            {
-                eventLoop.QueueMicrotask(select.UpdateDescendantSelectedContentElements);
-            }
-            else
-            {
-                select.UpdateDescendantSelectedContentElements();
-            }
+            select.QueueSelectedContentUpdate();
         }
     }
 
@@ -574,6 +618,16 @@ public partial class HtmlSelectedContentElement
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#selectedcontent-disabled</summary>
     internal bool Disabled { get; private set; }
 
+    // The select returned by the last disabledness recalculation
+    private HtmlSelectElement? _nearestSelectAncestor;
+
+    // Whether the element was inserted in a document and its post-connection steps have not updated it yet: an update of its
+    // select made in between (e.g. by the post-connection steps of an option inserted before it) leaves nothing to do
+    private bool _postConnectionUpdatePending;
+
+    // Whether the moving steps queued an update that has not run yet
+    private bool _moveUpdateQueued;
+
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#recalculate-a-selectedcontent-element's-disabledness</summary>
     private HtmlSelectElement? RecalculateDisabledness()
     {
@@ -600,6 +654,7 @@ public partial class HtmlSelectedContentElement
             }
         }
 
+        _nearestSelectAncestor = nearestSelectAncestor;
         return nearestSelectAncestor;
     }
 
@@ -607,42 +662,78 @@ public partial class HtmlSelectedContentElement
     {
         base.InsertionSteps();
         RecalculateDisabledness();
+        _postConnectionUpdatePending = IsConnected;
     }
 
+    /// <summary>
+    /// The post-connection steps; the update is left to a pending update of the select's descendant selectedcontent elements,
+    /// which updates this element too.
+    /// </summary>
     internal override void PostConnectionSteps()
     {
         base.PostConnectionSteps();
+        var pending = _postConnectionUpdatePending;
+        _postConnectionUpdatePending = false;
         var select = RecalculateDisabledness();
-        if (Disabled || select is null || select.IsMultiple)
+        if (!pending || Disabled || select is null || select.IsMultiple || select.HasPendingSelectedContentUpdate)
             return;
 
         Update(select);
     }
 
+    /// <summary>The removing steps: removing an ancestor select may enable the element (WPT selectedcontent-nested-select.html).</summary>
+    internal override void RemovingSteps(bool isSubtreeRoot, Node oldAncestor)
+    {
+        base.RemovingSteps(isSubtreeRoot, oldAncestor);
+        RecalculateDisabledness();
+    }
+
     /// <summary>
-    /// The moving steps (https://github.com/whatwg/html/pull/12263): a selectedcontent element moved in a select is updated in
-    /// a microtask.
+    /// The moving steps (https://github.com/whatwg/html/pull/12263): a selectedcontent element moved to another select is updated
+    /// in a microtask, which finds the select of the element when it runs. Moving it again before the microtask runs queues no
+    /// other update.
     /// </summary>
     internal override void MovingSteps(bool isSubtreeRoot, Node oldAncestor)
     {
         base.MovingSteps(isSubtreeRoot, oldAncestor);
+        var oldSelect = _nearestSelectAncestor;
+        var wasDisabled = Disabled;
         var select = RecalculateDisabledness();
         if (Disabled || select is null || select.IsMultiple)
             return;
 
-        if (NodeDocument.EventLoop is { } eventLoop)
-        {
-            eventLoop.QueueMicrotask(() => Update(select));
-        }
-        else
+        // The content is up to date when the element stays in the same select (e.g. an ancestor of the select is moved)
+        if (!wasDisabled && ReferenceEquals(select, oldSelect))
+            return;
+
+        if (NodeDocument.EventLoop is not { } eventLoop)
         {
             Update(select);
+            return;
         }
+
+        if (_moveUpdateQueued)
+            return;
+
+        _moveUpdateQueued = true;
+        eventLoop.QueueMicrotask(() =>
+        {
+            if (!_moveUpdateQueued)
+                return;
+
+            _moveUpdateQueued = false;
+            if (RecalculateDisabledness() is { IsMultiple: false } currentSelect && !Disabled)
+            {
+                Update(currentSelect);
+            }
+        });
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#update-a-selectedcontent</summary>
     internal void Update(HtmlSelectElement select)
     {
+        _postConnectionUpdatePending = false;
+        _moveUpdateQueued = false;
         if (Disabled)
             return;
 
@@ -696,14 +787,7 @@ public partial class Document
         {
             if (select.RunSelectednessSettingAlgorithm())
             {
-                if (EventLoop is { } eventLoop)
-                {
-                    eventLoop.QueueMicrotask(select.UpdateDescendantSelectedContentElements);
-                }
-                else
-                {
-                    select.UpdateDescendantSelectedContentElements();
-                }
+                select.QueueSelectedContentUpdate();
             }
         }
     }

@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 307 | 337 | 1 | 91% |
+| [Stable](#stable-tests) | 309 | 337 | 1 | 92% |
 | [Tentative](#tentative-tests) | 2 | 6 | 0 | 33% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **309** | **343** | **1** | **90%** |
+| **All** | **311** | **343** | **1** | **91%** |
 
 ## Stable tests
 
@@ -151,7 +151,7 @@
 | [`dynamic-markup-insertion/opening-the-input-stream/abort.sub.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort.sub.window.js) | Fail | 4 / 5 | TEST RUNNER | the `resources/slow-png.py` handler is not emulated |
 | [`dynamic-markup-insertion/opening-the-input-stream/aborted-parser.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/aborted-parser.window.js) | Pass | 2 / 2 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/active.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/active.window.js) | Pass | 7 / 7 |  |  |
-| [`dynamic-markup-insertion/opening-the-input-stream/bailout-exception-vs-return-origin.sub.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/bailout-exception-vs-return-origin.sub.window.js) | Fail | 2 / 6 | BUG | `document.open()` does not throw a `SecurityError` on a document that is same origin-domain (via `document.domain`) but not same origin with the entry document |
+| [`dynamic-markup-insertion/opening-the-input-stream/bailout-exception-vs-return-origin.sub.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/bailout-exception-vs-return-origin.sub.window.js) | Pass | 6 / 6 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/bailout-exception-vs-return-xml.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/bailout-exception-vs-return-xml.window.js) | Pass | 4 / 4 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/bailout-side-effects-ignore-opens-during-unload.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/bailout-side-effects-ignore-opens-during-unload.window.js) | Pass | 3 / 3 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/bailout-side-effects-same-origin-domain.sub.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/bailout-side-effects-same-origin-domain.sub.window.js) | Pass | 1 / 1 |  |  |
@@ -160,7 +160,7 @@
 | [`dynamic-markup-insertion/opening-the-input-stream/beforeunload.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/beforeunload.window.js) | Pass | 1 / 1 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/crbug-583445-regression.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/crbug-583445-regression.window.js) | Pass | 1 / 1 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/custom-element.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/custom-element.window.js) | Pass | 2 / 2 |  |  |
-| [`dynamic-markup-insertion/opening-the-input-stream/document-open-cancels-javascript-url-navigation.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/document-open-cancels-javascript-url-navigation.html) | Fail | 0 / 1 | BUG | `document.open()` does not cancel the pending `javascript:` URL navigation of the iframe, which later replaces the written content |
+| [`dynamic-markup-insertion/opening-the-input-stream/document-open-cancels-javascript-url-navigation.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/document-open-cancels-javascript-url-navigation.html) | Pass | 1 / 1 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/document.open-01.xhtml`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/document.open-01.xhtml) | Pass | 1 / 1 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/document.open-02.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/document.open-02.html) | Pass | 2 / 2 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/document.open-03.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/document.open-03.html) | Pass | 1 / 1 |  |  |

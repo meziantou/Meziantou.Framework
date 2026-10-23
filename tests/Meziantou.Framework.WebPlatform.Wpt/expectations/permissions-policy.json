@@ -116,11 +116,7 @@
     "total": 1
   },
   "permissions-policy/experimental-features/unload-allowed-headerless.tentative.window.js?urlType=blank": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "'unload' Policy : allowed in headerless doc when allowed in main frame.": "TIMEOUT"
-    }
+    "total": 1
   },
   "permissions-policy/experimental-features/unload-allowed-headerless.tentative.window.js?urlType=blob": {
     "total": 1
@@ -141,11 +137,7 @@
     "total": 1
   },
   "permissions-policy/experimental-features/unload-disallowed-headerless.tentative.window.js?urlType=blank": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "'unload' Policy : disallowed in headerless doc when disallowed in main frame.": "TIMEOUT"
-    }
+    "total": 1
   },
   "permissions-policy/experimental-features/unload-disallowed-headerless.tentative.window.js?urlType=blob": {
     "total": 1

@@ -557,6 +557,10 @@ internal sealed partial class ComputedStyle
 
         if (physical == "line-height" && value != "normal")
         {
+            // https://drafts.csswg.org/cssom/#resolved-values: "the used value" (a drop-down box ignores line-height)
+            if (LayoutStyle.IgnoresLineHeight(this))
+                return "normal";
+
             // https://html.spec.whatwg.org/multipage/rendering.html#the-input-element-as-a-text-entry-widget: "the used value of
             // the 'line-height' property must be a length value that is no smaller than what the used value would be for
             // 'line-height: normal'"

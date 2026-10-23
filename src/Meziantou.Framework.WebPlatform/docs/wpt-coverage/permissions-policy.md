@@ -7,9 +7,9 @@
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 37 | 94 | 0 | 39% |
-| [Tentative](#tentative-tests) | 12 | 21 | 0 | 57% |
+| [Tentative](#tentative-tests) | 14 | 21 | 0 | 67% |
 | [Reftests](#reftests) | 0 | 1 | 0 | 0% |
-| **All** | **49** | **116** | **0** | **42%** |
+| **All** | **51** | **116** | **0** | **44%** |
 
 ## Stable tests
 
@@ -121,11 +121,11 @@
 | [`experimental-features/unload-allowed-by-default.tentative.window.js`](https://wpt.fyi/results/permissions-policy/experimental-features/unload-allowed-by-default.tentative.window.js) | Pass | 1 / 1 |  |  |
 | [`experimental-features/unload-allowed-embed.tentative.window.js`](https://wpt.fyi/results/permissions-policy/experimental-features/unload-allowed-embed.tentative.window.js) | Pass | 1 / 1 |  |  |
 | [`experimental-features/unload-allowed-frameset.tentative.window.js`](https://wpt.fyi/results/permissions-policy/experimental-features/unload-allowed-frameset.tentative.window.js) | Pass | 1 / 1 |  |  |
-| [`experimental-features/unload-allowed-headerless.tentative.window.js`](https://wpt.fyi/results/permissions-policy/experimental-features/unload-allowed-headerless.tentative.window.js) | Timeout | 3 / 4 | BUG | the `blank` variant times out: the remote context of the popup writes its executor into the `about:blank` iframe with `document.open()`/`write()` from a promise job for which no entry settings object is tracked, so the URL of the iframe document is not set to the URL of the caller (https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#document-open-steps, step 12) and `new URL(path, location)` throws in dispatcher.js |
+| [`experimental-features/unload-allowed-headerless.tentative.window.js`](https://wpt.fyi/results/permissions-policy/experimental-features/unload-allowed-headerless.tentative.window.js) | Pass | 4 / 4 |  |  |
 | [`experimental-features/unload-allowed-object.tentative.window.js`](https://wpt.fyi/results/permissions-policy/experimental-features/unload-allowed-object.tentative.window.js) | Pass | 1 / 1 |  |  |
 | [`experimental-features/unload-disallowed-embed.tentative.window.js`](https://wpt.fyi/results/permissions-policy/experimental-features/unload-disallowed-embed.tentative.window.js) | Pass | 1 / 1 |  |  |
 | [`experimental-features/unload-disallowed-frameset.tentative.window.js`](https://wpt.fyi/results/permissions-policy/experimental-features/unload-disallowed-frameset.tentative.window.js) | Pass | 1 / 1 |  |  |
-| [`experimental-features/unload-disallowed-headerless.tentative.window.js`](https://wpt.fyi/results/permissions-policy/experimental-features/unload-disallowed-headerless.tentative.window.js) | Timeout | 3 / 4 | BUG | the `blank` variant times out: the remote context of the popup writes its executor into the `about:blank` iframe with `document.open()`/`write()` from a promise job for which no entry settings object is tracked, so the URL of the iframe document is not set to the URL of the caller (https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#document-open-steps, step 12) and `new URL(path, location)` throws in dispatcher.js |
+| [`experimental-features/unload-disallowed-headerless.tentative.window.js`](https://wpt.fyi/results/permissions-policy/experimental-features/unload-disallowed-headerless.tentative.window.js) | Pass | 4 / 4 |  |  |
 | [`experimental-features/unload-disallowed-object.tentative.window.js`](https://wpt.fyi/results/permissions-policy/experimental-features/unload-disallowed-object.tentative.window.js) | Pass | 1 / 1 |  |  |
 | [`experimental-features/unload-disallowed-subframe.tentative.window.js`](https://wpt.fyi/results/permissions-policy/experimental-features/unload-disallowed-subframe.tentative.window.js) | Pass | 1 / 1 |  |  |
 | [`experimental-features/unload-disallowed.tentative.window.js`](https://wpt.fyi/results/permissions-policy/experimental-features/unload-disallowed.tentative.window.js) | Pass | 1 / 1 |  |  |

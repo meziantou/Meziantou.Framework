@@ -442,8 +442,9 @@ internal sealed partial class WebIdlBindingsGenerator
             behavior.Add("ReportExceptions");
             behavior.Add("IgnoreInactive");
         }
-        else if (delegateType == typeof(FunctionCallback) || delegateType == typeof(Action) || delegateType == typeof(FrameRequestCallback) || delegateType == typeof(MutationCallback) || delegateType == typeof(ResizeObserverCallback) || delegateType == typeof(IntersectionObserverCallback))
+        else if (delegateType == typeof(FunctionCallback) || delegateType == typeof(Action) || delegateType == typeof(FrameRequestCallback) || delegateType == typeof(MutationCallback) || delegateType == typeof(ResizeObserverCallback) || delegateType == typeof(IntersectionObserverCallback) || delegateType == typeof(BlobCallback))
         {
+            // https://html.spec.whatwg.org/multipage/canvas.html#dom-canvas-toblob: the callback is invoked with "report"
             behavior.Add("ReportExceptions");
         }
 

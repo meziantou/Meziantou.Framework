@@ -840,7 +840,7 @@ public sealed class BoxTreeTests : IDisposable
     [InlineData("<div id=t>a</div>", "Box", false)]
     [InlineData("<div style='display: none'><p id=t>a</p></div>", "DisplayNone", false)]
     [InlineData("<div id=t style='display: contents'>a</div>", "Contents", false)]
-    [InlineData("<video><p id=t>a</p></video>", "ReplacedContents", false)]
+    [InlineData("<video><p id=t>a</p></video>", "NoStyle", false)]
     [InlineData("<select><option id=t>a</option></select>", "ReplacedContents", false)]
     [InlineData("<select style='appearance: base-select'><option id=t>a</option></select>", "DisplayNone", false)]
     [InlineData("<select multiple style='appearance: base-select'><option id=t>a</option></select>", "Box", false)]

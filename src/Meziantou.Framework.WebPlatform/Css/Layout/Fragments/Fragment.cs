@@ -1194,14 +1194,21 @@ internal sealed class BoxFragment : Fragment
                         boxInk = LayoutTransforms.TransformRect(boxInk, matrix);
                     }
 
-                    // (the floats of a line-clamp container are clipped to its block-end content edge, see IsLineClampContainer)
-                    var translated = boxScrollable.Translate(offset);
-                    if (floatClip is { } clampClip && box.Box.IsOutOfFlow && !PositionedLayout.IsAbsolutelyPositioned(box.Box))
+                    // "Border boxes with zero area do not affect the scrollable overflow area": as in the browsers, this applies to
+                    // the positioned boxes, without contents that overflow them (the position of the other boxes contributes,
+                    // see Unite)
+                    if (boxScrollable != box.BorderBoxRect || (box.Size.Width > 0 && box.Size.Height > 0) || !box.Box.Style.Layout.IsPositioned)
                     {
-                        translated = Clip(translated, clampClip, clipX: true, clipY: true);
+                        // (the floats of a line-clamp container are clipped to its block-end content edge, see IsLineClampContainer)
+                        var translated = boxScrollable.Translate(offset);
+                        if (floatClip is { } clampClip && box.Box.IsOutOfFlow && !PositionedLayout.IsAbsolutelyPositioned(box.Box))
+                        {
+                            translated = Clip(translated, clampClip, clipX: true, clipY: true);
+                        }
+
+                        scrollable = Unite(scrollable, translated);
                     }
 
-                    scrollable = Unite(scrollable, translated);
                     ink = ink.Union(boxInk.Translate(offset));
                     break;
 

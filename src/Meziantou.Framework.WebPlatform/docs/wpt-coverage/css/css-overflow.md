@@ -176,7 +176,7 @@
 | [`scrollable-overflow-height-with-flex-item-margin-inline-end.html`](https://wpt.fyi/results/css/css-overflow/scrollable-overflow-height-with-flex-item-margin-inline-end.html) | Pass | 8 / 8 |  |  |
 | [`scrollable-overflow-padding-inline.html`](https://wpt.fyi/results/css/css-overflow/scrollable-overflow-padding-inline.html) | Pass | 6 / 6 |  |  |
 | [`scrollable-overflow-padding-input.html`](https://wpt.fyi/results/css/css-overflow/scrollable-overflow-padding-input.html) | Pass | 5 / 5 |  |  |
-| [`scrollable-overflow-padding.html`](https://wpt.fyi/results/css/css-overflow/scrollable-overflow-padding.html) | Fail | 27 / 30 | TEST BUG | a `vertical-rl` container (labeled `VLR + RTL`) expects a box moved leftwards, into the reachable scrollable overflow, not to contribute to it |
+| [`scrollable-overflow-padding.html`](https://wpt.fyi/results/css/css-overflow/scrollable-overflow-padding.html) | Fail | 29 / 30 | TEST BUG | a `vertical-rl` container (labeled `VLR + RTL`) expects a box moved leftwards, into the reachable scrollable overflow, not to contribute to it |
 | [`scrollable-overflow-relative-positioned-block-in-inline-002.html`](https://wpt.fyi/results/css/css-overflow/scrollable-overflow-relative-positioned-block-in-inline-002.html) | Pass | 1 / 1 |  |  |
 | [`scrollable-overflow-relative-positioned-block-in-inline.html`](https://wpt.fyi/results/css/css-overflow/scrollable-overflow-relative-positioned-block-in-inline.html) | Pass | 1 / 1 |  |  |
 | [`scrollable-overflow-self-collapsing.html`](https://wpt.fyi/results/css/css-overflow/scrollable-overflow-self-collapsing.html) | Pass | 3 / 3 |  |  |

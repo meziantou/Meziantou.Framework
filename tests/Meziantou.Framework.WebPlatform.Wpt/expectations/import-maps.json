@@ -174,11 +174,6 @@
     "total": 5
   },
   "import-maps/type-whitespace.html": {
-    "total": 4,
-    "failures": {
-      "type=\" importmap \"": "FAIL",
-      "type=\" importmap\"": "FAIL",
-      "type=\"importmap \"": "FAIL"
-    }
+    "total": 4
   }
 }

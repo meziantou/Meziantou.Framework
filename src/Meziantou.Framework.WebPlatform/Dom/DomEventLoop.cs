@@ -641,6 +641,7 @@ public sealed partial class DomEventLoop
             if (reference.TryGetTarget(out var document) && document.IsFullyActive && !document.IsSkippedByRenderingUpdate(renderingUpdate))
             {
                 document.GetStyleEngine().CheckEnvironment();
+                document.CheckAutoSizesImages();
             }
         }
 

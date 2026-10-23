@@ -11973,7 +11973,7 @@
     "reftest": "PASS"
   },
   "css/CSS2/pagination/table-page-break-inside-avoid-5-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/pagination/table-page-break-inside-avoid-6-print.html": {
     "reftest": "PASS"

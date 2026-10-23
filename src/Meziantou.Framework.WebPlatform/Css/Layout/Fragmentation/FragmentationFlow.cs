@@ -2482,9 +2482,9 @@ internal sealed class FragmentationFlow
                 break;
             }
 
-            // (as in Blink, the values of the items of a flex or grid container propagate through its borders and paddings, not
-            // the ones of the children of a block container)
-            if (_writingDirection.ToLogical(box.Border.Add(box.Padding)).BlockStart != 0 || GetFirstInFlowChild(box) is not { } first)
+            // (as in Blink, the values of the items of a flex or grid container and of the first row of a table propagate through
+            // its borders and paddings, not the ones of the children of a block container)
+            if ((box.Box.Kind != ContainerBoxKind.TableGrid && _writingDirection.ToLogical(box.Border.Add(box.Padding)).BlockStart != 0) || GetFirstInFlowChild(box) is not { } first)
                 break;
 
             fragment = first;
@@ -2531,7 +2531,7 @@ internal sealed class FragmentationFlow
                 break;
             }
 
-            if (_writingDirection.ToLogical(box.Border.Add(box.Padding)).BlockEnd != 0 || GetLastInFlowChild(box) is not { } last)
+            if ((box.Box.Kind != ContainerBoxKind.TableGrid && _writingDirection.ToLogical(box.Border.Add(box.Padding)).BlockEnd != 0) || GetLastInFlowChild(box) is not { } last)
                 break;
 
             fragment = last;

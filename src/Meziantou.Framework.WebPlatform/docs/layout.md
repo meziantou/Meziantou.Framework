@@ -2638,7 +2638,7 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
   and there is no break between the block-start edge of the fieldset and it. A
   break is forced by `break-before`/`break-after: column | always | all` (propagated from the first/last in-flow children through
   the block containers without borders and paddings, and, as in Blink, from the items of the first/last line or track of a
-  flex or grid container whatever its borders and paddings; not out of a box with layout containment), violates the rules (`BreakAppeal.Avoid`)
+  flex or grid container and from the first/last row of a table whatever its borders and paddings; not out of a box with layout containment), violates the rules (`BreakAppeal.Avoid`)
   with `avoid`/`avoid-column`, `break-inside: avoid` on an ancestor, `orphans` and `widows` (`LineBreakInfo`: as in Blink, the
   line boxes before a break are counted in the fragmentainer, the fragment of the block container; when no break has
   `orphans` line boxes before it and `widows` after it, the first break with enough line boxes before it is taken); the

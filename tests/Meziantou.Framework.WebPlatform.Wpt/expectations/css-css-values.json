@@ -836,10 +836,7 @@
     "total": 13
   },
   "css/css-values/if-conditionals.html": {
-    "total": 203,
-    "failures": {
-      "CSS Values and Units Test: CSS inline if() function 1": "FAIL"
-    }
+    "total": 203
   },
   "css/css-values/if-cycle.html": {
     "total": 46

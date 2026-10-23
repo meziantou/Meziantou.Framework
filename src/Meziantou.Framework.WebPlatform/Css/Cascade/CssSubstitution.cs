@@ -66,9 +66,10 @@ internal static class CssSubstitution
             return null;
 
         // A value that only contains whitespace after substitution (e.g. the value of an empty custom property, which is a
-        // space) is serialized as a space, like an empty value; an empty if() branch is empty
+        // space) is serialized as a space, like an empty value; an empty if() branch is empty. The trailing whitespace of a
+        // substituted value is kept (if(style(--x): a ) is "a ")
         var result = builder.ToString();
-        var trimmed = result.Trim();
+        var trimmed = result.TrimStart();
         if (trimmed.Length == 0 && result.Length > 0)
             return " ";
 
@@ -498,7 +499,9 @@ internal static class CssSubstitution
                 return null;
 
             tainted |= builder.Tainted;
-            return builder.ToString().Trim();
+
+            // The whitespace after the colon is not part of the value, unlike the whitespace before the closing parenthesis
+            return builder.ToString().TrimStart();
         }
 
         return null;

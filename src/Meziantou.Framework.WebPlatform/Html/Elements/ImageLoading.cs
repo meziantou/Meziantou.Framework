@@ -126,6 +126,9 @@ public partial class HtmlImageElement
     private ImageRequest? _pendingRequest;
     private int _updateGeneration;
     private bool _updatePending;
+
+    /// <summary>https://html.spec.whatwg.org/multipage/images.html#last-auto-sizes-width: a length in CSS pixels, or null.</summary>
+    internal double? LastAutoSizesWidth { get; set; }
     private bool _loadEventQueued;
     private bool _delayingTheLoadEvent;
 
@@ -433,6 +436,8 @@ public partial class HtmlImageElement
         {
             UpdateImageData();
         }
+
+        LastAutoSizesWidth = null;
     }
 
     /// <summary>
@@ -466,7 +471,8 @@ public partial class HtmlImageElement
     /// Update the image data (https://html.spec.whatwg.org/multipage/images.html#update-the-image-data). Nothing happens in a
     /// document that is not fully active (e.g. a document without browsing context).
     /// </summary>
-    internal void UpdateImageData()
+    /// <param name="maybeOmitEvents">The "maybe omit events" flag: no event is fired when the same URL is selected again.</param>
+    internal void UpdateImageData(bool maybeOmitEvents = false)
     {
         var document = NodeDocument;
         if (!document.IsFullyActive || document.EventLoop is not { } eventLoop)
@@ -492,7 +498,7 @@ public partial class HtmlImageElement
                 return;
 
             _updatePending = false;
-            UpdateImageDataSteps(document);
+            UpdateImageDataSteps(document, maybeOmitEvents);
             InvalidateRendering();
         });
     }
@@ -591,11 +597,16 @@ public partial class HtmlImageElement
         FireImageEvent("load");
     }
 
-    private void UpdateImageDataSteps(Document document)
+    private void UpdateImageDataSteps(Document document, bool maybeOmitEvents)
     {
         if (UsesSrcsetOrPicture())
         {
             document.MayHaveImagesReactingToEnvironment = true;
+        }
+
+        if (SrcsetParser.AllowsAutoSizes(this))
+        {
+            document.AddAutoSizesImage(this);
         }
 
         var (selectedSource, density) = SelectImageSource();
@@ -639,6 +650,21 @@ public partial class HtmlImageElement
         }
 
         var urlString = url.Serialize();
+
+        // The same image is selected again after a change of the layout: its events are omitted, and the image data of the
+        // current request is kept with the new pixel density
+        if (maybeOmitEvents && _pendingRequest is null && urlString == _currentRequest.CurrentUrl && _currentRequest.State == ImageRequestState.CompletelyAvailable)
+        {
+            var current = _currentRequest;
+            if (density != current.CurrentPixelDensity)
+            {
+                _currentRequest = new ImageRequest(urlString, density) { State = ImageRequestState.CompletelyAvailable, NaturalSize = current.NaturalSize, Image = current.Image, Key = current.Key };
+            }
+
+            SetDelayingTheLoadEvent(false);
+            return;
+        }
+
         if (_pendingRequest is not null && _pendingRequest.CurrentUrl == urlString)
         {
             SetDelayingTheLoadEvent(false);
@@ -684,6 +710,20 @@ public partial class HtmlImageElement
         {
             RejectDecodes();
         }
+    }
+
+    /// <summary>
+    /// Updates the image data when the concrete object size width of the rendered image is not its last auto-sizes width (see
+    /// <see cref="Document.CheckAutoSizesImages"/>).
+    /// </summary>
+    internal void CheckAutoSizesWidth()
+    {
+        if (_updatePending || SrcsetParser.GetAutoSizesWidth(this) is not { } width || width == LastAutoSizesWidth)
+            return;
+
+        // The source selection sets it too, unless no source uses sizes=auto
+        LastAutoSizesWidth = width;
+        UpdateImageData(maybeOmitEvents: true);
     }
 
     /// <summary>Whether the element uses srcset or picture (https://html.spec.whatwg.org/multipage/images.html#use-srcset-or-picture).</summary>
@@ -1255,9 +1295,18 @@ internal static class SrcsetParser
 
             double? autoSize = null;
             var isAuto = values[^1] is CssPreservedToken { Type: CssTokenType.Ident } autoToken && InfraAscii.EqualsIgnoreAsciiCase(autoToken.Token.Value, "auto");
-            if (isAuto)
+            // The concrete object size width of an image that is being rendered, else its last auto-sizes width
+            if (isAuto && image is not null && AllowsAutoSizes(image))
             {
-                autoSize = image is not null && AllowsAutoSizes(image) && Css.Cascade.ComputedStyleDeclarations.IsBeingRendered(image) ? GetConcreteObjectWidth(image) : null;
+                autoSize = GetAutoSizesWidth(image);
+                if (autoSize is not null)
+                {
+                    image.LastAutoSizesWidth = autoSize;
+                }
+                else
+                {
+                    autoSize = image.LastAutoSizesWidth;
+                }
             }
 
             // A negative length is invalid; the result of a math function is clamped, but an infinite or NaN result is
@@ -1294,6 +1343,9 @@ internal static class SrcsetParser
 
         return defaultSize;
     }
+
+    /// <summary>The width of <c>sizes=auto</c>: the concrete object size width of an image that allows auto-sizes and is being rendered, else null.</summary>
+    internal static double? GetAutoSizesWidth(HtmlImageElement image) => AllowsAutoSizes(image) && Css.Cascade.ComputedStyleDeclarations.IsBeingRendered(image) ? GetConcreteObjectWidth(image) : null;
 
     /// <summary>https://html.spec.whatwg.org/multipage/images.html#allows-auto-sizes</summary>
     internal static bool AllowsAutoSizes(HtmlImageElement image)
@@ -1659,6 +1711,41 @@ public partial class Document
                 image.ReactToEnvironmentChanges();
             }
         });
+    }
+
+    private List<WeakReference<HtmlImageElement>>? _autoSizesImages;
+
+    /// <summary>Registers an img element that allows auto-sizes, whose concrete object size is checked when the rendering is updated.</summary>
+    internal void AddAutoSizesImage(HtmlImageElement image)
+    {
+        _autoSizesImages ??= [];
+        foreach (var reference in _autoSizesImages)
+        {
+            if (reference.TryGetTarget(out var registered) && ReferenceEquals(registered, image))
+                return;
+        }
+
+        _autoSizesImages.Add(new WeakReference<HtmlImageElement>(image));
+    }
+
+    /// <summary>
+    /// The relevant mutation of the img elements that allow auto-sizes (https://html.spec.whatwg.org/multipage/images.html#relevant-mutations):
+    /// the element starts being rendered, or its concrete object size width changes. The image data is updated with the "maybe
+    /// omit events" flag.
+    /// </summary>
+    internal void CheckAutoSizesImages()
+    {
+        if (_autoSizesImages is not { } images)
+            return;
+
+        images.RemoveAll(reference => !reference.TryGetTarget(out var image) || !ReferenceEquals(image.NodeDocument, this) || !SrcsetParser.AllowsAutoSizes(image));
+        foreach (var reference in images.ToArray())
+        {
+            if (reference.TryGetTarget(out var image) && image.IsConnected)
+            {
+                image.CheckAutoSizesWidth();
+            }
+        }
     }
 }
 

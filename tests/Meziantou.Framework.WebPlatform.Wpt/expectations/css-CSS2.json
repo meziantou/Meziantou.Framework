@@ -4761,13 +4761,13 @@
     "reftest": "PASS"
   },
   "css/CSS2/floats/float-nowrap-7.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/floats/float-nowrap-8.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/floats/float-nowrap-9.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/floats/float-nowrap-hyphen-rewind-1.html": {
     "reftest": "PASS"

@@ -579,7 +579,8 @@ internal sealed partial class InlineLayoutAlgorithm
                 }
 
                 // (the float fits in the space of the line, whatever the space the line breaking uses to balance the lines)
-                if (_deferredFloats.Count > 0 || (end.Width > 0 && end.Width + item.InlineSize > (reduction > 0 ? space : available)))
+                var floatSpace = reduction > 0 ? space : available;
+                if (_deferredFloats.Count > 0 || (end.Width > 0 && (end.Width + item.InlineSize > floatSpace || !ContentAfterFloatFits(position, floatSpace - item.InlineSize, isFirstLine))))
                 {
                     _deferredFloats.Add(end.Item);
                 }
@@ -668,6 +669,18 @@ internal sealed partial class InlineLayoutAlgorithm
             _lineFits = end.Width <= available + FitTolerance;
             return (end, line, opportunity, blockOffset);
         }
+    }
+
+    /// <summary>
+    /// Whether the line that starts at <paramref name="position"/>, whose float met by the line breaking is flagged as placed,
+    /// fits in <paramref name="availableSize"/> (the space next to the float): the content after the float up to the next
+    /// soft wrap opportunity must fit next to it, else the float is placed below the line, as in Firefox (WPT
+    /// css/CSS2/floats/float-nowrap-7.html: a float inside unbreakable text that overflows the line is not placed beside it).
+    /// </summary>
+    private bool ContentAfterFloatFits(LinePosition position, double availableSize, bool isFirstLine)
+    {
+        var end = BreakLine(position, availableSize, isFirstLine, IntrinsicSizeMode.None);
+        return end.Width <= availableSize + FitTolerance;
     }
 
     /// <summary>

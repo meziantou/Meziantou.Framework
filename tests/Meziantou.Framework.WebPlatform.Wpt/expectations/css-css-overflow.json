@@ -927,7 +927,7 @@
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-with-floats-010.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-with-floats-011.html": {
     "reftest": "PASS"

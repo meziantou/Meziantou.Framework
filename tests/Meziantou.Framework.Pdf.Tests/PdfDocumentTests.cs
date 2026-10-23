@@ -219,6 +219,32 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void TamperedPermissionsOfRevision6AreNotTrusted()
+    {
+        // /P is outside the encryption: revision 6 repeats it in /Perms, encrypted with the file key
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4);
+        document.Encryption = new PdfEncryption("", "owner") { Permissions = PdfPermissions.Print };
+        var file = Encoding.Latin1.GetString(document.ToByteArray(new PdfSaveOptions { UseObjectStreams = false }));
+        Assert.Contains("/P -3900", file, StringComparison.Ordinal);
+
+        var read = PdfDocument.Open(Encoding.Latin1.GetBytes(file.Replace("/P -3900", "/P -0001", StringComparison.Ordinal)));
+
+        Assert.Equal(PdfPermissions.None, read.Permissions);
+        Assert.Equal(PdfPermissions.Print, PdfDocument.Open(Encoding.Latin1.GetBytes(file)).Permissions);
+    }
+
+    [Fact]
+    public void ThePasswordsOfTheLegacyAlgorithmsArePdfDocEncoded()
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4);
+        document.Encryption = new PdfEncryption("中文", "owner") { Algorithm = PdfEncryptionAlgorithm.AesWith128BitKey };
+
+        Assert.Throws<ArgumentException>(() => document.ToByteArray());
+    }
+
+    [Fact]
     public void AMissingKeyLengthIsRecovered()
     {
         // Revision 3 without /Length is a 40-bit key; some writers omit it for a 128-bit key. The entry is renamed in

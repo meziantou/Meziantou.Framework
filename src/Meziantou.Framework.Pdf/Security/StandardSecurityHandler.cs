@@ -183,6 +183,17 @@ internal sealed class StandardSecurityHandler
                 throw new PdfPasswordException("The password is not the user or the owner password of the document");
         }
 
+        // AES-256 needs the 32-byte key of revisions 5 and 6
+        if (revision < 5 && (stringMethod == CryptMethod.AesV3 || streamMethod == CryptMethod.AesV3 || embeddedFileMethod == CryptMethod.AesV3 || cryptFilters.ContainsValue(CryptMethod.AesV3)))
+            throw new InvalidPdfContentException($"The crypt filter AESV3 needs the revision 5 or 6 of the standard security handler, not {revision}");
+
+        // Revisions 5 and 6 protect the permissions with the file key (7.6.4.4.12): permissions that do not match are
+        // not trusted, and none is granted
+        if (revision >= 5 && !ArePermissionsAuthentic(dictionary, fileKey, permissions, encryptMetadata))
+        {
+            permissions = PermissionsReservedBits;
+        }
+
         return new StandardSecurityHandler(CopyDirect(dictionary), fileKey, revision, permissions, encryptMetadata, stringMethod, streamMethod, embeddedFileMethod, cryptFilters, isOwner);
     }
 
@@ -262,6 +273,10 @@ internal sealed class StandardSecurityHandler
         {
             encryptMetadata = true;
         }
+
+        // The passwords of revisions 2 to 4 are in PDFDocEncoding: another character would be replaced, and weaken them
+        if (!IsLegacyPassword(userPassword) || !IsLegacyPassword(ownerPassword))
+            throw new ArgumentException("A password of the RC4 and AES-128 algorithms can only have the characters of PDFDocEncoding: use AES-256 for other characters", nameof(encryption));
 
         var ownerKey = ComputeOwnerKey(GetLegacyPasswordBytes(ownerPassword), revision, keyLength);
         var ownerEntry = ComputeOwnerEntry(ownerKey, GetLegacyPasswordBytes(userPassword), revision);
@@ -453,8 +468,17 @@ internal sealed class StandardSecurityHandler
 
         var length = (data.Length - 16) / 16 * 16;
         using var aes = Aes.Create();
-        aes.Key = key;
-        var plain = aes.DecryptCbc(data.Slice(16, length), data[..16], PaddingMode.None);
+        byte[] plain;
+        try
+        {
+            aes.Key = key;
+            plain = aes.DecryptCbc(data.Slice(16, length), data[..16], PaddingMode.None);
+        }
+        catch (CryptographicException ex)
+        {
+            throw new InvalidPdfContentException("The data cannot be decrypted", ex);
+        }
+
         var padding = plain[^1];
         if (padding is >= 1 and <= 16 && padding <= plain.Length && plain.AsSpan(plain.Length - padding).IndexOfAnyExcept(padding) < 0)
             return plain[..^padding];
@@ -532,6 +556,31 @@ internal sealed class StandardSecurityHandler
         }
 
         return (PdfDictionary)Copy(dictionary, 0);
+    }
+
+    private static bool IsLegacyPassword(string password)
+    {
+        foreach (var c in password)
+        {
+            if (!PdfTextStringEncoding.TryEncodePdfDocEncoding(c, out _))
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>Algorithm 13: the <c>/Perms</c> entry, decrypted with the file key, holds the permissions and the metadata flag.</summary>
+    private static bool ArePermissionsAuthentic(PdfDictionary dictionary, byte[] fileKey, int permissions, bool encryptMetadata)
+    {
+        if (!dictionary.TryGetResolved<PdfString>(PdfName.Create("Perms"), out var perms) || perms.Span.Length < 16)
+            return false;
+
+        using var aes = Aes.Create();
+        aes.Key = fileKey;
+        var value = aes.DecryptEcb(perms.Span[..16], PaddingMode.None);
+        return value[9] == 'a' && value[10] == 'd' && value[11] == 'b'
+            && BinaryPrimitives.ReadInt32LittleEndian(value) == permissions
+            && value[8] == (encryptMetadata ? 'T' : 'F');
     }
 
     /// <summary>The password of revisions 2 to 4 (7.6.4.3.2): its characters in PDFDocEncoding, padded or truncated to 32 bytes.</summary>

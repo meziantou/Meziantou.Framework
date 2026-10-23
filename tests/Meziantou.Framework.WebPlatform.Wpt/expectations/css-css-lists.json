@@ -519,13 +519,13 @@
     "reftest": "PASS"
   },
   "css/css-lists/marker-counter.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/marker-dynamic-content-change.html": {
     "reftest": "PASS"
   },
   "css/css-lists/marker-quotes.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/marker-webkit-text-fill-color.html": {
     "reftest": "PASS"

@@ -30,7 +30,8 @@ internal sealed partial class StyleEngine
         "line-height", "white-space-collapse", "text-wrap-mode", "color", "text-combine-upright", "text-orientation", "unicode-bidi", "direction", "content",
         "hyphens", "hyphenate-character", "hyphenate-limit-chars", "letter-spacing", "line-break", "overflow-wrap", "tab-size", "text-transform",
         "word-break", "word-spacing", "text-autospace", "text-spacing-trim", "text-decoration-skip-ink", "text-emphasis-color",
-        "text-emphasis-position", "text-emphasis-style", "text-shadow", "text-underline-position", "cursor",
+        "text-emphasis-position", "text-emphasis-style", "text-shadow", "text-underline-position", "cursor", "quotes", "counter-increment",
+        "counter-reset", "counter-set",
     }.ToFrozenSet(StringComparer.Ordinal);
 
     private static readonly FrozenSet<string> FirstLineProperties = new[]
@@ -3304,12 +3305,6 @@ internal sealed partial class StyleEngine
     }
 
     /// <summary>
-    /// Returns whether a property applies to ::marker (https://drafts.csswg.org/css-pseudo-4/#marker-pseudo): the font
-    /// properties (and line-height, a longhand of font), white-space, color, text-combine-upright, unicode-bidi, direction,
-    /// content, the animation and transition properties, and, as in browsers, the inherited text and text decoration
-    /// properties, cursor and the custom properties.
-    /// </summary>
-    /// <summary>
     /// Returns the filter of the properties that apply to a pseudo-element (::marker, ::first-line and ::first-letter), or
     /// null when all the properties apply. The declarations and the animations of the other properties are ignored.
     /// </summary>
@@ -3321,6 +3316,13 @@ internal sealed partial class StyleEngine
         _ => null,
     };
 
+    /// <summary>
+    /// Returns whether a property applies to ::marker (https://drafts.csswg.org/css-pseudo-4/#marker-pseudo): the font
+    /// properties (and line-height, a longhand of font), white-space, color, text-combine-upright, unicode-bidi, direction,
+    /// content, the animation and transition properties, and, as in browsers, the inherited text and text decoration
+    /// properties, cursor and the custom properties. As in Firefox, quotes (WPT css/css-pseudo/parsing/marker-supported-properties.html)
+    /// and the counter properties (WPT css/css-lists/marker-counter.html) apply too.
+    /// </summary>
     private static bool IsMarkerProperty(string name) => name.StartsWith("font-", StringComparison.Ordinal)
         || name.StartsWith("animation", StringComparison.Ordinal)
         || name.StartsWith("transition", StringComparison.Ordinal)

@@ -826,16 +826,13 @@
     "total": 98,
     "failures": {
       "Animation of list-style in ::marker": "FAIL",
-      "Animation of quotes in ::marker": "FAIL",
-      "Transition of list-style in ::marker": "FAIL",
-      "Transition of quotes in ::marker": "FAIL"
+      "Transition of list-style in ::marker": "FAIL"
     }
   },
   "css/css-pseudo/parsing/marker-supported-properties.html": {
     "total": 68,
     "failures": {
-      "Property list-style value 'inside url('foo') decimal' in ::marker": "FAIL",
-      "Property quotes value '\"«\" \"»\"' in ::marker": "FAIL"
+      "Property list-style value 'inside url('foo') decimal' in ::marker": "FAIL"
     }
   },
   "css/css-pseudo/parsing/tree-abiding-pseudo-elements.html": {

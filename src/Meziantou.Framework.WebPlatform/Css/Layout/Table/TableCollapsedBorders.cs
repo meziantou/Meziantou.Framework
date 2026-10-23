@@ -27,10 +27,19 @@ internal sealed class TableCollapsedBorders
     private readonly int _rows;
     private readonly int _columns;
 
-    private TableCollapsedBorders(int rows, int columns)
+    /// <summary>
+    /// The grid line whose segments each grid line uses: the first of the lines that are only separated by collapsed tracks
+    /// (https://drafts.csswg.org/css-tables-3/#visible-track), which are one line once the tracks are removed.
+    /// </summary>
+    private readonly int[] _rowLines;
+    private readonly int[] _columnLines;
+
+    private TableCollapsedBorders(int rows, int columns, int[] rowLines, int[] columnLines)
     {
         _rows = rows;
         _columns = columns;
+        _rowLines = rowLines;
+        _columnLines = columnLines;
         _inlineEdges = new Edge[rows * (columns + 1)];
         _blockEdges = new Edge[(rows + 1) * columns];
     }
@@ -80,6 +89,12 @@ internal sealed class TableCollapsedBorders
     /// <summary>Returns the resolved border of the segment of the grid line before the row <paramref name="line"/> (the last line is <see cref="RowCount"/>) in a column.</summary>
     internal Edge GetBlockSegment(int line, int column) => GetBlockEdge(line, column);
 
+    /// <summary>Returns the column line whose segments a column line uses: the first of the lines that only collapsed columns separate from it.</summary>
+    internal int GetMergedColumnLine(int line) => _columnLines[line];
+
+    /// <summary>Returns the row line whose segments a row line uses: the first of the lines that only collapsed rows separate from it.</summary>
+    internal int GetMergedRowLine(int line) => _rowLines[line];
+
     /// <summary>Returns whether a resolved border takes precedence over another one (the conflict resolution, for the corners of the painting).</summary>
     internal static int Compare(Edge a, Edge b) => Wins(a, b) ? 1 : Wins(b, a) ? -1 : 0;
 
@@ -88,7 +103,23 @@ internal sealed class TableCollapsedBorders
     {
         var rows = model.Rows.Count;
         var columns = model.Columns.Count;
-        var borders = new TableCollapsedBorders(rows, columns);
+
+        // https://drafts.csswg.org/css-tables-3/#visible-track: the collapsed tracks are removed, the borders of their boxes are
+        // not harmonized with the others, and the lines on both sides of them are one line (WPT
+        // css/CSS2/tables/border-collapse-visibility-collapse-002.tentative.html)
+        var collapsedRows = new bool[rows];
+        for (var row = 0; row < rows; row++)
+        {
+            collapsedRows[row] = model.Rows[row].IsCollapsed;
+        }
+
+        var collapsedColumns = new bool[columns];
+        for (var column = 0; column < columns; column++)
+        {
+            collapsedColumns[column] = model.Columns[column].IsCollapsed;
+        }
+
+        var borders = new TableCollapsedBorders(rows, columns, GetMergedLines(collapsedRows), GetMergedLines(collapsedColumns));
         var tableSides = GetSides(grid, writingDirection);
         // A table without slots has no border (as in the browsers, WPT css/css-tables/tentative/tbody-height-redistribution.html)
         if (rows == 0 || columns == 0)
@@ -103,7 +134,7 @@ internal sealed class TableCollapsedBorders
                 continue;
 
             var source = columnBox.Box.Display.Internal == DisplayInternal.TableColumnGroup ? Source.ColumnGroup : Source.Column;
-            if (source == Source.ColumnGroup)
+            if (source == Source.ColumnGroup && !AreAllCollapsed(collapsedColumns, columnBox.StartColumn, Math.Min(columns, columnBox.StartColumn + columnBox.ColumnCount)))
             {
                 borders.ApplyBox(GetSides(columnBox.Box, writingDirection), source, 0, rows, columnBox.StartColumn, Math.Min(columns, columnBox.StartColumn + columnBox.ColumnCount));
             }
@@ -118,13 +149,16 @@ internal sealed class TableCollapsedBorders
             var sides = GetSides(columnBox.Box, writingDirection);
             for (var column = columnBox.StartColumn; column < Math.Min(columns, columnBox.StartColumn + columnBox.ColumnCount); column++)
             {
-                borders.ApplyBox(sides, Source.Column, 0, rows, column, column + 1);
+                if (!collapsedColumns[column])
+                {
+                    borders.ApplyBox(sides, Source.Column, 0, rows, column, column + 1);
+                }
             }
         }
 
         foreach (var section in model.Sections)
         {
-            if (section.Box is { } sectionBox && section.RowCount > 0)
+            if (section.Box is { } sectionBox && section.RowCount > 0 && !AreAllCollapsed(collapsedRows, section.StartRow, section.EndRow))
             {
                 borders.ApplyBox(GetSides(sectionBox, writingDirection), Source.RowGroup, section.StartRow, section.EndRow, 0, columns);
             }
@@ -132,12 +166,19 @@ internal sealed class TableCollapsedBorders
 
         for (var row = 0; row < rows; row++)
         {
-            borders.ApplyBox(GetSides(model.Rows[row].Box, writingDirection), Source.Row, row, row + 1, 0, columns);
+            if (!collapsedRows[row])
+            {
+                borders.ApplyBox(GetSides(model.Rows[row].Box, writingDirection), Source.Row, row, row + 1, 0, columns);
+            }
         }
 
         foreach (var cell in model.Cells)
         {
-            borders.ApplyBox(GetSides(cell.Box, writingDirection), Source.Cell, cell.Row, cell.EndRow + 1, cell.Column, Math.Min(columns, cell.EndColumn + 1));
+            var endColumn = Math.Min(columns, cell.EndColumn + 1);
+            if (!AreAllCollapsed(collapsedRows, cell.Row, Math.Min(rows, cell.EndRow + 1)) && !AreAllCollapsed(collapsedColumns, cell.Column, endColumn))
+            {
+                borders.ApplyBox(GetSides(cell.Box, writingDirection), Source.Cell, cell.Row, cell.EndRow + 1, cell.Column, endColumn);
+            }
         }
 
         // The used borders of the cells: the half of the widest segment of each side
@@ -177,9 +218,32 @@ internal sealed class TableCollapsedBorders
         return borders;
     }
 
-    private ref Edge GetInlineEdge(int row, int line) => ref _inlineEdges[(row * (_columns + 1)) + line];
+    private ref Edge GetInlineEdge(int row, int line) => ref _inlineEdges[(row * (_columns + 1)) + _columnLines[line]];
 
-    private ref Edge GetBlockEdge(int line, int column) => ref _blockEdges[(line * _columns) + column];
+    private ref Edge GetBlockEdge(int line, int column) => ref _blockEdges[(_rowLines[line] * _columns) + column];
+
+    /// <summary>Returns, for each grid line of the tracks, the first of the lines that only collapsed tracks separate from it.</summary>
+    private static int[] GetMergedLines(bool[] collapsedTracks)
+    {
+        var lines = new int[collapsedTracks.Length + 1];
+        for (var line = 1; line < lines.Length; line++)
+        {
+            lines[line] = collapsedTracks[line - 1] ? lines[line - 1] : line;
+        }
+
+        return lines;
+    }
+
+    private static bool AreAllCollapsed(bool[] collapsedTracks, int start, int end)
+    {
+        for (var track = start; track < end; track++)
+        {
+            if (!collapsedTracks[track])
+                return false;
+        }
+
+        return true;
+    }
 
     /// <summary>Applies the borders of a box that covers the given rows and columns to the segments of its sides.</summary>
     private void ApplyBox(LogicalSides<Edge> sides, Source source, int startRow, int endRow, int startColumn, int endColumn)

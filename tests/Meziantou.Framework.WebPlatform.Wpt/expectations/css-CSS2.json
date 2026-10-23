@@ -16011,7 +16011,7 @@
     "reftest": "PASS"
   },
   "css/CSS2/tables/border-collapse-visibility-collapse-002.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/tables/border-conflict-element-001a.xht": {
     "reftest": "PASS"

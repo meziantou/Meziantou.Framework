@@ -504,10 +504,7 @@
     "reftest": "PASS"
   },
   "css/css-lists/list-style-type-transition-tree-scope-custom-ident.html": {
-    "total": 1,
-    "failures": {
-      "Transition when an author-defined list-style-type moves to another tree scope": "FAIL"
-    }
+    "total": 1
   },
   "css/css-lists/list-style-type-transition-tree-scope-keyword.html": {
     "total": 1

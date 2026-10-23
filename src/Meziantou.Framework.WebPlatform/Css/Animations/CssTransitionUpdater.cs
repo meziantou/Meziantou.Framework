@@ -108,7 +108,7 @@ internal static class CssTransitionUpdater
             if (running is null && before is not null && parameters is { CombinedDuration: > 0 } && !style.IsAnimatedByAnimations(property) && !IsInheritedFromTransition(style, before, property))
             {
                 var beforeValue = GetValue(before, property);
-                if (!string.Equals(beforeValue, afterValue, StringComparison.Ordinal) && (completed is null || !string.Equals(completed, afterValue, StringComparison.Ordinal))
+                if ((!string.Equals(beforeValue, afterValue, StringComparison.Ordinal) || HasTreeScopedNameChanged(before, after, property, afterValue)) && (completed is null || !string.Equals(completed, afterValue, StringComparison.Ordinal))
                     && IsTransitionable(context, property, beforeValue, afterValue, parameters.AllowDiscrete))
                 {
                     transitions ??= document.Animations.GetOrCreateTransitions(element, pseudoElement);
@@ -368,6 +368,31 @@ internal static class CssTransitionUpdater
 
     /// <summary>Whether the value of a custom property is attr()-tainted (https://drafts.csswg.org/css-values-5/#attr-security): so are the values of its transition.</summary>
     private static bool IsTainted(ComputedStyle style, string property) => CssPropertyRegistry.IsCustomProperty(property) && style.IsCustomPropertyTainted(property);
+
+    /// <summary>
+    /// Whether the counter style name of <c>list-style-type</c> is declared in another tree: the computed value of an
+    /// author-defined name is a tree-scoped reference (https://drafts.csswg.org/css-scoping/#shadow-names), the same name in
+    /// another tree is another value. The names of the predefined counter styles are keywords.
+    /// </summary>
+    private static bool HasTreeScopedNameChanged(ComputedStyle before, ComputedStyle after, string property, string value)
+    {
+        if (property != "list-style-type" || value is "none" or "" || value[0] is '"' or '\'' || CounterStyle.Predefined.ContainsKey(CounterStyle.NormalizeName(value)))
+            return false;
+
+        return !ReferenceEquals(GetTreeScope(before, property), GetTreeScope(after, property));
+
+        // (an inherited value keeps the tree of its declaration)
+        static Dom.Node? GetTreeScope(ComputedStyle style, string property)
+        {
+            for (var current = style; current is not null; current = current.Parent)
+            {
+                if (current.TryGetCascadedValue(property, out var cascaded) && cascaded.Value.Value.Trim() is not ("inherit" or "unset"))
+                    return cascaded.TreeScope;
+            }
+
+            return null;
+        }
+    }
 
     private static string GetValue(ComputedStyle style, string property) => CssPropertyRegistry.IsCustomProperty(property) ? style.GetCustomPropertyValue(property) ?? "" : style.GetComputedValue(property);
 

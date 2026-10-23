@@ -926,8 +926,9 @@ internal sealed class BoxFragment : Fragment
     /// <summary>
     /// The overflow clip edge (https://drafts.csswg.org/css-overflow-3/#overflow-clip-edge), in the coordinates of the fragment:
     /// for a scroll container, its padding box (clamped by <c>overflow-clip-margin</c>, which can only shrink it); for
-    /// <c>overflow: clip</c> and paint containment, the box of <c>overflow-clip-margin</c> (the padding box by default) extended
-    /// by its length (https://drafts.csswg.org/css-overflow-4/#overflow-clip-margin). Only the axes that clip are clipped.
+    /// <c>overflow: clip</c> and paint containment, the box of <c>overflow-clip-margin</c> extended by its length
+    /// (https://drafts.csswg.org/css-overflow-4/#overflow-clip-margin: the box "defaults to padding-box on non-replaced elements,
+    /// or content-box on replaced elements"). Only the axes that clip are clipped.
     /// </summary>
     public PhysicalRect OverflowClipRect
     {
@@ -952,7 +953,7 @@ internal sealed class BoxFragment : Fragment
             double GetEdge(OverflowClipMargin margin, PhysicalSide side)
             {
                 // "the border-box value ignores any specified offset" for a scroll container
-                var box = margin.Box ?? VisualBox.PaddingBox;
+                var box = margin.Box ?? (IsReplacedElement() ? VisualBox.ContentBox : VisualBox.PaddingBox);
                 var rect = box switch
                 {
                     VisualBox.ContentBox => ContentBoxRect,
@@ -969,6 +970,26 @@ internal sealed class BoxFragment : Fragment
                 };
             }
         }
+    }
+
+    /// <summary>
+    /// Whether the box is a replaced element (https://drafts.csswg.org/css-display-3/#replaced-element): an atomic box of an
+    /// embedded content element or a generated image, but not a form control (its parts are not a replaced content).
+    /// </summary>
+    private bool IsReplacedElement()
+    {
+        if (Box.Kind != ContainerBoxKind.Replaced)
+            return false;
+
+        if (Box.PseudoElement is not null)
+            return true;
+
+        return Box.Element switch
+        {
+            Dom.HtmlInputElement input => input.InputType == Dom.InputType.Image,
+            Dom.HtmlTextAreaElement or Dom.HtmlSelectElement or Dom.HtmlMeterElement or Dom.HtmlProgressElement => false,
+            _ => true,
+        };
     }
 
     /// <summary>

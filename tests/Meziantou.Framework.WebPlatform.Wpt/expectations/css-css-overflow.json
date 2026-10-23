@@ -1341,7 +1341,7 @@
     "reftest": "PASS"
   },
   "css/css-overflow/overflow-clip-margin-svg.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/overflow-clip-margin-visual-box-and-value-with-border-radius.html": {
     "reftest": "FAIL"
@@ -1401,7 +1401,7 @@
     "reftest": "PASS"
   },
   "css/css-overflow/overflow-img-scroll-non-replaced.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/overflow-img-scroll-replaced.html": {
     "reftest": "PASS"

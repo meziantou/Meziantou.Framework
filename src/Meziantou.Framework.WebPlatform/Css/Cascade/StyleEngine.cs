@@ -2679,7 +2679,9 @@ internal sealed partial class StyleEngine
     /// the rules of the author win, as over the declarations of a shadow tree of the user agent), the replaced elements
     /// clip their contents to their content box unless the author sets <c>overflow: visible</c>
     /// (https://drafts.csswg.org/css-overflow-4/#overflow-control: "Host languages should define UA style sheet rules that apply a
-    /// default value of clip to such elements and set their overflow-clip-margin to content-box", the rules of the browsers), the default style
+    /// default value of clip to such elements and set their overflow-clip-margin to content-box", the rules of the browsers; the
+    /// box of overflow-clip-margin "defaults to padding-box on non-replaced elements, or content-box on replaced elements", which
+    /// gives the same clip without applying it to an img element rendered as its alternative text, a non-replaced box), the default style
     /// of the markers (https://drafts.csswg.org/css-lists/#ua-stylesheet), the default style of ::backdrop
     /// (https://drafts.csswg.org/css-position-4/#backdrop), the default styles of the scroll navigation controls
     /// (https://drafts.csswg.org/css-overflow-5/#scroll-navigation: a ::scroll-marker has "a default style like the HTML a
@@ -2711,7 +2713,7 @@ internal sealed partial class StyleEngine
         textarea { display: inline-block; overflow-wrap: break-word; }
         details::details-content { display: block; }
         details:not([open])::details-content { content-visibility: hidden; }
-        img, video, canvas { overflow: clip; overflow-clip-margin: content-box; }
+        img, video, canvas { overflow: clip; }
         ::backdrop { position: fixed; inset: 0; }
         ::scroll-marker-group { display: block; }
         ::scroll-marker, ::column::scroll-marker { color: LinkText; text-decoration: underline; cursor: pointer; }

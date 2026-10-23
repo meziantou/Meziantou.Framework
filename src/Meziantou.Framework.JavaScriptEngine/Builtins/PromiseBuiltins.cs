@@ -11,7 +11,9 @@ internal static class PromiseBuiltins
     private static readonly BuiltinMethodTable ConstructorMethods =
     [
         new("all", 1, All),
+        new("allKeyed", 1, AllKeyed),
         new("allSettled", 1, AllSettled),
+        new("allSettledKeyed", 1, AllSettledKeyed),
         new("any", 1, Any),
         new("race", 1, Race),
         new("reject", 1, Reject),
@@ -218,6 +220,93 @@ internal static class PromiseBuiltins
         var state = element.Combinator;
         state.Values[element.Index] = obj;
         return state.ElementSettled(fulfill: true);
+    }
+
+    /// <summary>Promise.allKeyed(promises) (https://tc39.es/proposal-await-dictionary/#sec-promise.allkeyed)</summary>
+    private static JsValue AllKeyed(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
+    {
+        return RunKeyedCombinator(function, thisValue, GetArgument(arguments, 0), settled: false);
+    }
+
+    /// <summary>Promise.allSettledKeyed(promises) (https://tc39.es/proposal-await-dictionary/#sec-promise.allsettledkeyed)</summary>
+    private static JsValue AllSettledKeyed(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
+    {
+        return RunKeyedCombinator(function, thisValue, GetArgument(arguments, 0), settled: true);
+    }
+
+    /// <summary>The steps shared by Promise.allKeyed and allSettledKeyed.</summary>
+    private static JsValue RunKeyedCombinator(JsBuiltinFunction function, JsValue thisValue, JsValue promises, bool settled)
+    {
+        var capability = PromiseCapability.Create(thisValue);
+        var constructor = thisValue.AsObject();
+        JsValue promiseResolve;
+        try
+        {
+            promiseResolve = PromiseCapability.GetPromiseResolve(constructor);
+        }
+        catch (JsException exception)
+        {
+            return RejectCapability(capability, exception);
+        }
+
+        if (promises.Cell is not JsObject promisesObject)
+        {
+            capability.Reject(function.Realm.CreateError(ErrorType.TypeError, $"{JsOperations.DescribeForError(promises)} is not an object"));
+            return capability.Promise;
+        }
+
+        try
+        {
+            return PerformPromiseAllKeyed(promisesObject, constructor, capability, promiseResolve, settled);
+        }
+        catch (JsException exception)
+        {
+            return RejectCapability(capability, exception);
+        }
+    }
+
+    /// <summary>PerformPromiseAllKeyed(variant, promises, constructor, resultCapability, promiseResolve)</summary>
+    private static JsValue PerformPromiseAllKeyed(JsObject promises, JsObject constructor, PromiseCapability capability, JsValue promiseResolve, bool settled)
+    {
+        var allKeys = promises.OwnPropertyKeys();
+        var keys = new List<PropertyKey>();
+        var state = new CombinatorState(capability) { Keys = keys };
+        var index = 0;
+        foreach (var key in allKeys)
+        {
+            if (!promises.GetOwnProperty(key, out var descriptor) || !descriptor.Enumerable)
+                continue;
+
+            var propertyValue = promises.Get(key);
+            keys.Add(key);
+            state.Values.Add(JsValue.Undefined);
+            var nextPromise = JsOperations.Call(promiseResolve, constructor, [propertyValue]);
+            JsValue onFulfilled;
+            JsValue onRejected;
+            if (settled)
+            {
+                var alreadyCalled = new AlreadyCalledRecord();
+                onFulfilled = CreateElementFunction(state, index, alreadyCalled, AllSettledResolveElement);
+                onRejected = CreateElementFunction(state, index, alreadyCalled, AllSettledRejectElement);
+            }
+            else
+            {
+                onFulfilled = CreateElementFunction(state, index, alreadyCalled: null, AllResolveElement);
+                onRejected = capability.RejectFunction;
+            }
+
+            state.RemainingElements++;
+            JsOperations.Invoke(nextPromise, ThenKey, [onFulfilled, onRejected]);
+            index++;
+        }
+
+        state.RemainingElements--;
+        if (state.RemainingElements == 0)
+        {
+            capability.Resolve(state.CreateResult(JsEngine.Current!.CurrentRealm!));
+        }
+
+        return capability.Promise;
     }
 
     /// <summary>Promise.any(iterable)</summary>
@@ -428,7 +517,25 @@ internal static class PromiseBuiltins
 
         public int RemainingElements { get; set; } = 1;
 
+        /// <summary>The keys of the values of Promise.allKeyed and allSettledKeyed, null for the other combinators.</summary>
+        public List<PropertyKey>? Keys { get; init; }
+
         public ReadOnlySpan<JsValue> ValuesAsSpan() => System.Runtime.InteropServices.CollectionsMarshal.AsSpan(Values);
+
+        /// <summary>The array of the values, or CreateKeyedPromiseCombinatorResultObject(entries) for the keyed combinators.</summary>
+        public JsObject CreateResult(JsRealm realm)
+        {
+            if (Keys is null)
+                return JsArray.Create(realm, ValuesAsSpan());
+
+            var obj = new JsObject(prototype: null);
+            for (var i = 0; i < Keys.Count; i++)
+            {
+                obj.CreateDataPropertyOrThrow(Keys[i], Values[i]);
+            }
+
+            return obj;
+        }
 
         /// <summary>Decrements remainingElementsCount; when it reaches 0, resolves (all, allSettled) or rejects (any) the capability.</summary>
         public JsValue ElementSettled(bool fulfill)
@@ -441,7 +548,7 @@ internal static class PromiseBuiltins
             var realm = JsEngine.Current!.CurrentRealm!;
             if (fulfill)
             {
-                Capability.Resolve(JsArray.Create(realm, ValuesAsSpan()));
+                Capability.Resolve(CreateResult(realm));
             }
             else
             {

@@ -1120,4 +1120,12 @@ public sealed class InlineFormattingContextTests : IDisposable
         Assert.Equal(3, texts.Count);
         Assert.True(texts.Single(text => text.Start == 2).ShapedText!.IsRightToLeft);
     }
+
+    [Fact]
+    public void Wrap_EndOfAnIsolateBeforeTheBreakStaysOnTheLine()
+    {
+        var document = Parse("<div style='width: 100px'><span id=a style='unicode-bidi: isolate; border-right: 1px solid'>XXXX XXXX </span><span>YYY</span></div>");
+        var fragment = Assert.Single(GetFragments(document, "a"));
+        Assert.Equal(new PhysicalRect(0, 0, 91, 10), fragment.GetRectInRoot());
+    }
 }

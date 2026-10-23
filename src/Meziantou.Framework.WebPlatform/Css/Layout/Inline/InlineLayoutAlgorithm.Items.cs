@@ -1201,6 +1201,22 @@ internal sealed partial class InlineLayoutAlgorithm
             _lineBreaker.FindOpportunities(_text.AsSpan(0, _length), CollectionsMarshalAsSpan(_breakRuns), opportunities);
         }
 
+        // The control codes that close an isolate or an embedding (the end of an inline box with unicode-bidi) are combining marks
+        // for the line breaking: a soft wrap opportunity before one (e.g. after the last space of the box) is after it, so that the
+        // end of the box stays on the line
+        for (var i = 0; i < opportunities.Length; i++)
+        {
+            if (_text[i] is (char)0x202C or (char)0x2069 && opportunities[i] is not (LineBreakOpportunity.None or LineBreakOpportunity.Mandatory))
+            {
+                if (i + 1 < opportunities.Length && opportunities[i + 1] == LineBreakOpportunity.None)
+                {
+                    opportunities[i + 1] = opportunities[i];
+                }
+
+                opportunities[i] = LineBreakOpportunity.None;
+            }
+        }
+
         // https://drafts.csswg.org/css-text-4/#line-break-details: "For Web-compatibility there is a soft wrap opportunity before
         // and after each replaced element or other atomic inline, even when adjacent to a character that would normally
         // suppress them, including U+00A0 NO-BREAK SPACE. However, with the exception of U+00A0 NO-BREAK SPACE, there must be

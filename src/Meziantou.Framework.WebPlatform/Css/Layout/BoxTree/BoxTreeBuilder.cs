@@ -1533,7 +1533,7 @@ internal sealed partial class BoxTreeBuilder
     }
 
     /// <summary>Whether a function is an &lt;image&gt; (https://drafts.csswg.org/css-images-4/#image-values, https://drafts.fxtf.org/filter-effects/#FilterCSSImageValue).</summary>
-    private static bool IsImageFunction(string name)
+    internal static bool IsImageFunction(string name)
     {
         name = InfraAscii.ToAsciiLowercase(name);
         return name.EndsWith("gradient", StringComparison.Ordinal) || name is "url" or "src" or "image" or "image-set" or "-webkit-image-set" or "cross-fade" or "-webkit-cross-fade" or "element" or "paint" or "filter";

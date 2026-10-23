@@ -3099,8 +3099,8 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
 - **Page-margin boxes** (`PageMarginBoxes`, [§4](https://drafts.csswg.org/css-page-3/#margin-boxes)): the sixteen boxes of
   the margin rules (`@top-left-corner`... `@left-top`) whose `content` is not `none` nor `normal`, styled by the margin rules
   of the matching `@page` rules (`StyleEngine.GetPageMarginStyle`: they inherit from the page context, with the default
-  `text-align` and `vertical-align` of each box). Their content is the strings, the quotes and the counters (`counter()`,
-  `counters()`, with a counter style) of `content`. The corner boxes fill the corners of the page margins; the three boxes
+  `text-align` and `vertical-align` of each box). Their content is the strings, the quotes, the counters (`counter()`,
+  `counters()`, with a counter style) and the images (replaced boxes, as in `::before`) of `content`. The corner boxes fill the corners of the page margins; the three boxes
   of an edge share its length ([§4.2.2](https://drafts.csswg.org/css-page-3/#variable-auto-sizing)), as in Blink: when the
   middle box B is generated, it is centered and the boxes at the ends A and C have the same size: an imaginary box twice as
   large as A, then as C, shares the edge with B, and the larger of the two keeps B centered (a specified size is a
@@ -3123,8 +3123,7 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   nested (`counters()` shows one value).
 - Not done: the layout of the content of a page whose page area has another inline size than the strip when the page does
   not start before a block box of the block flow of the root element (it is laid out in the inline size of the strip), the
-  images of the `content` of the page-margin boxes
-  (`content: url()`), the nested documents of the `iframe` elements (they are painted as on the screen), `window.print()`,
+  nested documents of the `iframe` elements (they are painted as on the screen), `window.print()`,
   `beforeprint` and `afterprint`.
 
 ### Gap decorations (`Css/Layout/Gaps/`)

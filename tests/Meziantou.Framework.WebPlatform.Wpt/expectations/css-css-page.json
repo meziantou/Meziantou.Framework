@@ -126,7 +126,7 @@
     "reftest": "PASS"
   },
   "css/css-page/margin-boxes/content-003-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/margin-boxes/content-004-print.html": {
     "reftest": "PASS"

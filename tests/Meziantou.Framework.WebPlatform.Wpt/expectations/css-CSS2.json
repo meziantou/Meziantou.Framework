@@ -1173,7 +1173,7 @@
     "reftest": "PASS"
   },
   "css/CSS2/bidi-text/bidi-011.xht": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/bidi-text/bidi-box-model-001.xht": {
     "reftest": "PASS"

@@ -1529,6 +1529,31 @@ internal sealed partial class InlineLayoutAlgorithm
         }
 
         _bidi.Resolve(text, classes, BidiControls.GetParagraphDirection(unicodeBidi, isRightToLeft));
+
+        // The formatting characters removed by rule X9 at the start of a text have the level of the text after them rather than
+        // the level of the character before them: an inline box that starts with them has no fragment of its own at the level
+        // of the content before it (WPT css/CSS2/bidi-text/bidi-011.xht)
+        foreach (ref readonly var item in Items)
+        {
+            if (item.Kind != InlineItemKind.Text)
+                continue;
+
+            var textStart = item.Start;
+            while (textStart < item.End && _bidi.IsRemovedByRuleX9(textStart))
+            {
+                textStart++;
+            }
+
+            if (textStart > item.Start && textStart < item.End)
+            {
+                var textLevel = _bidi.Levels[textStart];
+                for (var i = item.Start; i < textStart; i++)
+                {
+                    _bidi.SetRemovedLevel(i, textLevel);
+                }
+            }
+        }
+
         var levels = _bidi.Levels;
 
         _splitItems.Clear();

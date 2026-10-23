@@ -432,7 +432,8 @@ internal static class CssSubstitution
             {
                 value.Append(token.Token.Value);
             }
-            else if (CustomPropertySyntax.ComputeGrammar(context.Style, "<integer>", CssSerializer.SerializeValue([argument], property: null), baseUrl: null) is { } integer)
+            // The font-relative lengths of a font property refer to the font of the parent (https://drafts.csswg.org/css-values-4/#font-relative-lengths)
+            else if (CustomPropertySyntax.ComputeGrammar(context.Style, "<integer>", CssSerializer.SerializeValue([argument], property: null), baseUrl: null, fontSizeContext: s_computedProperty.Property?.StartsWith("font-", StringComparison.Ordinal) == true) is { } integer)
             {
                 value.Append(integer);
             }

@@ -1425,11 +1425,7 @@
     "total": 23
   },
   "css/css-values/using-font-relative-units-in-font-properties.html": {
-    "total": 9,
-    "failures": {
-      "Property font-palette value 'ident(\"--test-\" calc(1em / 1px))'": "FAIL",
-      "Property font-variant-alternates value 'stylistic(ident(\"test-\" calc(1em / 1px)))'": "FAIL"
-    }
+    "total": 9
   },
   "css/css-values/various-values-important.html": {
     "total": 4

@@ -462,8 +462,11 @@ internal static partial class CssValueComputer
     // Generic computation
     // ----------------------------------------------------------------------------------------------------------------
 
-    /// <summary>Computes the lengths, angles, times, colors, URLs and math functions of a value.</summary>
-    public static string ComputeGeneric(ComputedStyle style, CssPropertyDefinition? property, string value, string? baseUrl, bool? hasColors = null)
+    /// <summary>
+    /// Computes the lengths, angles, times, colors, URLs and math functions of a value. The font-relative lengths refer to the font
+    /// of the parent in the font properties, or when <c>fontSizeContext</c> is true.
+    /// </summary>
+    public static string ComputeGeneric(ComputedStyle style, CssPropertyDefinition? property, string value, string? baseUrl, bool? hasColors = null, bool fontSizeContext = false)
     {
         // Most values are a keyword (e.g. block, none, auto): an identifier in lowercase is its own computed value, unless it
         // is a color, or a family name of font-family (serialized as a family name)
@@ -475,7 +478,7 @@ internal static partial class CssValueComputer
         var context = new ComputationContext(style, hasColors ?? (property is not null && HasColorType(property)), baseUrl)
         {
             PercentageUnit = property is null ? null : GetPercentageUnit(property),
-            FontSizeContext = property is not null && property.Name.StartsWith("font-", StringComparison.Ordinal),
+            FontSizeContext = fontSizeContext || (property is not null && property.Name.StartsWith("font-", StringComparison.Ordinal)),
         };
         var transformed = Transform(values, context);
         return ComputeGradients(CssSerializer.SerializeValue(transformed, property));

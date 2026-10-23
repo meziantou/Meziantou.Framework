@@ -68,7 +68,13 @@ internal static class FunctionBuiltins
 
         var boundArguments = arguments.Length > 1 ? arguments[1..].ToArray() : [];
         var bound = JsBoundFunction.Create(function.Realm.Engine, target, Arg(arguments, 0), boundArguments);
+        CopyNameAndLength(bound, target, "bound ", boundArguments.Length);
+        return bound;
+    }
 
+    /// <summary>CopyNameAndLength(F, Target, prefix, argCount) (https://tc39.es/proposal-shadowrealm/#sec-copynameandlength)</summary>
+    internal static void CopyNameAndLength(JsObject function, JsObject target, string prefix = "", int argumentCount = 0)
+    {
         double length = 0;
         if (target.HasOwnProperty(LengthKey))
         {
@@ -83,17 +89,16 @@ internal static class FunctionBuiltins
                 else if (!double.IsNegativeInfinity(number))
                 {
                     var targetLengthAsInt = JsOperations.ToIntegerOrInfinity(targetLength);
-                    length = Math.Max(targetLengthAsInt - boundArguments.Length, 0);
+                    length = Math.Max(targetLengthAsInt - argumentCount, 0);
                 }
             }
         }
 
-        bound.DefineBuiltIn(LengthKey, length, PropertyFlags.Configurable);
+        function.DefineBuiltIn(LengthKey, length, PropertyFlags.Configurable);
 
         var targetName = target.Get(NameKey);
         var name = targetName.Cell is JsString nameString ? nameString.ToString() : "";
-        bound.DefineBuiltIn(NameKey, "bound " + name, PropertyFlags.Configurable);
-        return bound;
+        function.DefineBuiltIn(NameKey, prefix + name, PropertyFlags.Configurable);
     }
 
     /// <summary>Function.prototype.call(thisArg, ...args)</summary>

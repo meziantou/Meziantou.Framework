@@ -115,6 +115,7 @@ internal sealed partial class Intrinsics
         InitializeProxy();
         InitializeCollections();
         InitializeWeakRefs();
+        InitializeShadowRealm();
         InitializePromise();
         InitializeGenerators();
         InitializeAsyncFunctions();
@@ -157,6 +158,8 @@ internal sealed partial class Intrinsics
     partial void InitializeCollections();
 
     partial void InitializeWeakRefs();
+
+    partial void InitializeShadowRealm();
 
     partial void InitializePromise();
 

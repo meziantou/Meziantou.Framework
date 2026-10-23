@@ -153,6 +153,7 @@
     <Project Path="src/Meziantou.Framework.ObjectMethodExecutor/Meziantou.Framework.ObjectMethodExecutor.csproj" />
     <Project Path="src/Meziantou.Framework.OpenTelemetryCollector.InMemory/Meziantou.Framework.OpenTelemetryCollector.InMemory.csproj" />
     <Project Path="src/Meziantou.Framework.OpenTelemetryCollector/Meziantou.Framework.OpenTelemetryCollector.csproj" />
+    <Project Path="src/Meziantou.Framework.Pdf.Rendering/Meziantou.Framework.Pdf.Rendering.csproj" />
     <Project Path="src/Meziantou.Framework.Pdf/Meziantou.Framework.Pdf.csproj" />
     <Project Path="src/Meziantou.Framework.PooledMemoryStream/Meziantou.Framework.PooledMemoryStream.csproj" />
     <Project Path="src/Meziantou.Framework.PostgreSqlServer/Meziantou.Framework.PostgreSqlServer.csproj" />
@@ -333,6 +334,7 @@
     <Project Path="tests/Meziantou.Framework.OpenTelemetry.Tests/Meziantou.Framework.OpenTelemetry.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Pdf.Corpus/Meziantou.Framework.Pdf.Corpus.csproj" />
     <Project Path="tests/Meziantou.Framework.Pdf.InteropTests/Meziantou.Framework.Pdf.InteropTests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Pdf.Rendering.Tests/Meziantou.Framework.Pdf.Rendering.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Pdf.TestHarness/Meziantou.Framework.Pdf.TestHarness.csproj" />
     <Project Path="tests/Meziantou.Framework.Pdf.Tests/Meziantou.Framework.Pdf.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.PooledMemoryStream.Tests/Meziantou.Framework.PooledMemoryStream.Tests.csproj" />

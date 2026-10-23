@@ -219,7 +219,7 @@ internal sealed class TextExtractor
     /// <summary>Replaces the glyphs of the sequence that has a replacement text by the text, from the start of the first glyph to the end of the last one.</summary>
     private void EndActualText(ref TextGraphicsState state)
     {
-        var text = _actualText!;
+        var text = _actualText;
         _actualText = null;
         if (_glyphs.Count > _actualTextStart)
         {

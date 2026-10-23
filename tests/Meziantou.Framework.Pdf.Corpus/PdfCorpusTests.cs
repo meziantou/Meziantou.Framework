@@ -1,6 +1,12 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Security.Cryptography;
+using System.Text.Json;
+using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Pdf.Objects;
+using Meziantou.Framework.Pdf.Rendering;
+using Meziantou.Framework.Pdf.TestHarness;
+using Meziantou.Framework.Pdf.TestHarness.ExternalTools;
 
 namespace Meziantou.Framework.Pdf.Corpus;
 
@@ -14,6 +20,14 @@ public sealed class PdfCorpusTests
     private const int MaxPages = 50;
     private const int MaxRoundTripLength = 8 * 1024 * 1024;
     private static readonly TimeSpan MaxDuration = TimeSpan.FromSeconds(60);
+
+    // The pages are compared with PDFium at half the resolution of a point: one pixel per two points
+    private const double RenderedDpi = 36;
+
+    // A page matches PDFium when at most this part of its pixels differ. The update mode records the pages above it; a
+    // page that is not recorded fails above twice that, so that a change of antialiasing does not change the outcome.
+    private const double MaxDifferentPixels = 0.05;
+    private const int MaxChannelDifference = 48;
 
     private static readonly PdfReadOptions Options = new()
     {
@@ -29,6 +43,36 @@ public sealed class PdfCorpusTests
     public static TheoryData<string> Pdf20Examples => GetFiles("pdf20examples");
 
     public static TheoryData<string> PdfBox => GetFiles("pdfbox");
+
+    /// <summary>Gets the pages of the reference tests of pdf.js (the <c>eq</c> tests of its manifest): one page per file, the first one it tests.</summary>
+    public static TheoryData<string, int> PdfJsReferencePages
+    {
+        get
+        {
+            var data = new TheoryData<string, int>();
+            var manifest = RepositoryPaths.External / "pdfjs" / "test" / "test_manifest.json";
+            if (!File.Exists(manifest))
+                return data;
+
+            var files = CorpusFiles.GetFiles("pdfjs").ToHashSet(StringComparer.Ordinal);
+            var added = new HashSet<string>(StringComparer.Ordinal);
+            using var document = JsonDocument.Parse(File.ReadAllText(manifest));
+            foreach (var test in document.RootElement.EnumerateArray())
+            {
+                // The linked tests name a file that the test suite of pdf.js downloads
+                if (test.GetProperty("type").GetString() != "eq" || test.TryGetProperty("link", out _) || test.GetProperty("file").GetString() is not { } file)
+                    continue;
+
+                var id = "pdfjs/test/" + file;
+                if (files.Contains(id) && added.Add(id))
+                {
+                    data.Add(id, test.TryGetProperty("firstPage", out var firstPage) ? firstPage.GetInt32() - 1 : 0);
+                }
+            }
+
+            return data;
+        }
+    }
 
     public static TheoryData<string> BilevelImageFiles => new(CorpusFiles.Suites.SelectMany(CorpusFiles.GetFiles).Where(id => HasBilevelFilter(CorpusFiles.Read(id))));
 
@@ -93,6 +137,68 @@ public sealed class PdfCorpusTests
         }
     }
 
+    /// <summary>
+    /// The pages of the reference tests of pdf.js are rendered without exception, and as PDFium renders them: the pages
+    /// that differ are recorded in <c>expectations/rendering.txt</c>. The pixels are compared on Windows, where the
+    /// expectations are recorded: the fonts that replace the fonts that are not embedded are those of the system.
+    /// </summary>
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(PdfJsReferencePages), DisableDiscoveryEnumeration = true)]
+    public async Task PdfJsRenderedPages(string id, int page)
+    {
+        var data = CorpusFiles.Read(id);
+        var expectationId = "rendering/" + id + "#" + page.ToString(CultureInfo.InvariantCulture);
+        var stopwatch = Stopwatch.StartNew();
+        Image<Rgba32>? image = null;
+        string? outcome = null;
+        string? details = null;
+        try
+        {
+            // The pages of a file whose page tree cannot be read are missing
+            var document = PdfDocument.Open(data, Options);
+            if (page < document.Pages.Count)
+            {
+                image = PdfRenderer.RenderPage(document.Pages[page], new PdfRenderOptions { Dpi = RenderedDpi });
+            }
+            else
+            {
+                outcome = "MissingPage";
+            }
+        }
+        catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException or PdfResourceLimitException)
+        {
+            outcome = ex.GetType().Name;
+            details = ex.ToString();
+        }
+
+        Assert.True(stopwatch.Elapsed < MaxDuration, $"Rendering the page took {stopwatch.Elapsed}");
+        using (image)
+        {
+            var difference = image is not null && OperatingSystem.IsWindows() ? await CompareWithPdfiumAsync(data, page, image) : null;
+            var isRecordedAsDifferent = CorpusExpectations.GetExpectedOutcome(expectationId) == "Different";
+            if (CorpusExpectations.UpdateMode || outcome is not null)
+            {
+                CorpusExpectations.Check(expectationId, outcome ?? (difference > MaxDifferentPixels || (difference is null && isRecordedAsDifferent) ? "Different" : null), details);
+            }
+            else if (difference is { } ratio)
+            {
+                if (isRecordedAsDifferent)
+                {
+                    Assert.True(ratio > MaxDifferentPixels / 5, $"UNEXPECTED SUCCESS: {ratio:P2} of the pixels differ from PDFium: remove '{expectationId}' from expectations/rendering.txt");
+                }
+                else
+                {
+                    Assert.True(ratio <= MaxDifferentPixels * 2, $"REGRESSION: {ratio:P2} of the pixels differ from PDFium");
+                }
+            }
+            else if (!isRecordedAsDifferent)
+            {
+                // Where the pixels are not compared, the page is rendered without exception
+                CorpusExpectations.Check(expectationId, outcome, details);
+            }
+        }
+    }
+
     [Fact]
     public void EverySuiteHasATest()
     {
@@ -100,6 +206,55 @@ public sealed class PdfCorpusTests
     }
 
     private static TheoryData<string> GetFiles(string suite) => new(CorpusFiles.GetFiles(suite));
+
+    /// <summary>Gets the part of the pixels of a page that differ from the image PDFium renders; <see langword="null"/> when PDFium does not render it.</summary>
+    private static async Task<double?> CompareWithPdfiumAsync(byte[] data, int page, Image<Rgba32> image)
+    {
+        var pdfium = await PdfiumTool.LocateAsync(XunitCancellationToken);
+        var directory = Path.Combine(Path.GetTempPath(), "pdf-corpus-rendering", Guid.NewGuid().ToString("N"));
+        try
+        {
+            var path = await pdfium.RenderPageAsync(data, page, RenderedDpi / 72, directory, XunitCancellationToken);
+            if (path is null)
+                return null;
+
+            using var reference = Image.Load<Rgba32>(path);
+            if (Math.Abs(reference.Width - image.Width) > 1 || Math.Abs(reference.Height - image.Height) > 1)
+                return 1;
+
+            var width = Math.Min(reference.Width, image.Width);
+            var height = Math.Min(reference.Height, image.Height);
+            var ours = image.Frames[0];
+            var theirs = reference.Frames[0];
+            long different = 0;
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    // PDFium leaves the background of a page with transparency transparent: the paper is white
+                    var expected = theirs[x, y];
+                    var actual = ours[x, y];
+                    if (IsDifferent(actual.R, OverWhite(expected.R, expected.A)) || IsDifferent(actual.G, OverWhite(expected.G, expected.A)) || IsDifferent(actual.B, OverWhite(expected.B, expected.A)))
+                    {
+                        different++;
+                    }
+                }
+            }
+
+            return (double)different / ((long)width * height);
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+
+        static int OverWhite(byte value, byte alpha) => ((value * alpha) + (255 * (255 - alpha)) + 127) / 255;
+
+        static bool IsDifferent(int actual, int expected) => Math.Abs(actual - expected) > MaxChannelDifference;
+    }
 
     private static bool HasBilevelFilter(byte[] data)
     {

@@ -860,6 +860,31 @@ public sealed class FontTests
     }
 
     [Fact]
+    public void TheAccentedGlyphsOfCffAreGivenToTheCallersThatAcceptThem()
+    {
+        // The PDF renderer draws the base character and the accent of the deprecated form of endchar itself
+        var cff = new FontCffWriter();
+        cff.CharStrings.Add(new FontCharstring().Op(FontCharstring.RMoveTo, 0, 0).Op(FontCharstring.RLineTo, 10, 0, 0, 10).Op(FontCharstring.EndChar, 120, 180, 65, 194).ToArray());
+        cff.CharStrings.Add(new FontCharstring().Op(FontCharstring.RMoveTo, 0, 0).Op(FontCharstring.RLineTo, 10, 0).Op(FontCharstring.EndChar).ToArray());
+        var builder = new FontBuilder { CmapFormats = FontCmapFormats.Format4, UnitsPerEm = 1000 };
+        builder.AddGlyph(FontGlyph.Empty(500));
+        builder.AddGlyph(FontGlyph.Empty(500));
+        cff.Apply(builder);
+        var data = builder.RawTables["CFF "];
+        var table = CffTable.Read(data);
+
+        var sink = new FontTestSupport.SvgPathSink();
+        var budget = new GlyphBudget(FontResourceLimits.Default);
+        var accented = table.DecodeWithAccentedGlyphs(data, 0, sink, ref budget);
+        Assert.Equal(new CffAccentedGlyph(120, 180, 65, 194), accented);
+        Assert.Equal("M0,0L10,0L10,10L0,0Z", sink.ToString());
+
+        sink = new FontTestSupport.SvgPathSink();
+        Assert.Null(table.DecodeWithAccentedGlyphs(data, 1, sink, ref budget));
+        Assert.Equal("M0,0L10,0L0,0Z", sink.ToString());
+    }
+
+    [Fact]
     public void TheWorkOfACharstringIsLimited()
     {
         // One operation per operator and per segment: rmoveto, rlineto and its two lines, endchar.

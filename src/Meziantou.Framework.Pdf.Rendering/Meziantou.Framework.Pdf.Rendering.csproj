@@ -1,0 +1,40 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>true</IsTrimmable>
+    <RootNamespace>Meziantou.Framework.Pdf.Rendering</RootNamespace>
+    <Version>1.0.0</Version>
+    <Description>Fully managed renderer of the pages of PDF documents to images, written from ISO 32000-2: paths, text (embedded TrueType, CFF, Type 1 and Type 3 fonts, substituted fonts), images of every filter and color space, shadings, patterns, transparency groups, soft masks, blend modes, optional content and annotation appearances.</Description>
+    <PackageTags>pdf;pdf-renderer;rasterizer;rendering;iso-32000</PackageTags>
+
+    <!-- Every public member must be documented -->
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The objects, the filters and the content streams (internal types, through InternalsVisibleTo) -->
+    <ProjectReference Include="..\Meziantou.Framework.Pdf\Meziantou.Framework.Pdf.csproj" />
+    <!-- The canvas the pages are drawn on, the image codecs and the ICC profiles -->
+    <ProjectReference Include="..\Meziantou.Framework.Imaging\Meziantou.Framework.Imaging.csproj" />
+    <!-- The outlines of the TrueType and CFF fonts, and the system fonts (internal types, through InternalsVisibleTo) -->
+    <ProjectReference Include="..\Meziantou.Framework.Fonts\Meziantou.Framework.Fonts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Pdf.Rendering.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The fonts that replace the standard fonts: Liberation, subset by eng/pdf/update-substitution-fonts.cs -->
+    <EmbeddedResource Include="Fonts\Substitution\*.woff2" LogicalName="Meziantou.Framework.Pdf.Rendering.Fonts.%(Filename).woff2" />
+  </ItemGroup>
+
+  <!-- The library is released together with the libraries whose internal types it uses: it depends on their exact versions -->
+  <Target Name="UseExactProjectReferenceVersions" AfterTargets="_GetProjectReferenceVersions">
+    <ItemGroup>
+      <_ExactProjectReferencesWithVersions Include="@(_ProjectReferencesWithVersions)" Condition="'%(Filename)' == 'Meziantou.Framework.Pdf' OR '%(Filename)' == 'Meziantou.Framework.Imaging' OR '%(Filename)' == 'Meziantou.Framework.Fonts'" ProjectVersion="[%(_ProjectReferencesWithVersions.ProjectVersion)]" />
+      <_ProjectReferencesWithVersions Remove="@(_ExactProjectReferencesWithVersions)" />
+      <_ProjectReferencesWithVersions Include="@(_ExactProjectReferencesWithVersions)" />
+    </ItemGroup>
+  </Target>
+</Project>

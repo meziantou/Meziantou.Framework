@@ -119,7 +119,7 @@ internal static class Jbig2SymbolDictionary
                     }
                     else
                     {
-                        bitmap = DecodeAggregate(data, huffman, decoder, textContexts, bits, aggregateInstancesTable, aggregateInstancesContexts, symbols, symbolCodeLength, width, height, refinementTemplate, refinementAdaptivePixels, contexts, tables, budget, length + offset);
+                        bitmap = DecodeAggregate(data, huffman, decoder, textContexts, bits, aggregateInstancesTable, aggregateInstancesContexts, symbols, symbolCodeLength, width, height, refinementTemplate, refinementAdaptivePixels, contexts, budget, length + offset);
                     }
 
                     symbols.Add(bitmap);
@@ -194,7 +194,7 @@ internal static class Jbig2SymbolDictionary
     }
 
     /// <summary>Decodes a symbol that refines or aggregates other symbols (6.5.8.2).</summary>
-    private static Jbig2Bitmap DecodeAggregate(byte[] data, bool huffman, Jbig2ArithmeticDecoder? decoder, Jbig2TextRegionContexts? textContexts, Jbig2BitReader? bits, Jbig2HuffmanTable? aggregateInstancesTable, byte[] aggregateInstancesContexts, List<Jbig2Bitmap> symbols, int symbolCodeLength, int width, int height, int refinementTemplate, (int X, int Y)[] refinementAdaptivePixels, Jbig2RetainedContexts contexts, Queue<Jbig2HuffmanTable> tables, Jbig2Budget budget, int end)
+    private static Jbig2Bitmap DecodeAggregate(byte[] data, bool huffman, Jbig2ArithmeticDecoder? decoder, Jbig2TextRegionContexts? textContexts, Jbig2BitReader? bits, Jbig2HuffmanTable? aggregateInstancesTable, byte[] aggregateInstancesContexts, List<Jbig2Bitmap> symbols, int symbolCodeLength, int width, int height, int refinementTemplate, (int X, int Y)[] refinementAdaptivePixels, Jbig2RetainedContexts contexts, Jbig2Budget budget, int end)
     {
         var instances = huffman ? aggregateInstancesTable!.DecodeValue(bits!) : decoder!.DecodeInteger(aggregateInstancesContexts) ?? throw OutOfBand();
         if (instances < 1)

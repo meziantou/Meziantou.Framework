@@ -28,6 +28,9 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.Pdf.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Pdf.FuzzTests" />
+    <!-- The renderer reads the content streams, the fonts and the images with the internal types -->
+    <InternalsVisibleTo Include="Meziantou.Framework.Pdf.Rendering" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Pdf.Rendering.Tests" />
   </ItemGroup>
 
   <!-- The library is released together with Meziantou.Framework.Imaging and Meziantou.Framework.Fonts, whose internal types it uses: it depends on the exact versions of those packages -->

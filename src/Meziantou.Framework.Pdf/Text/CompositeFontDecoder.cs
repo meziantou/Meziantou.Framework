@@ -35,6 +35,9 @@ internal sealed class CompositeFontDecoder : PdfFontDecoder
 
     public override (uint Code, int Length) ReadCode(ReadOnlySpan<byte> data) => _encoding.ReadCode(data);
 
+    /// <summary>Gets the CID of a code (9.7.6).</summary>
+    public int GetCid(uint code) => _encoding.GetCid(code);
+
     public override double GetWidth(uint code) => _widths.TryGetValue(_encoding.GetCid(code), out var width) ? width : _defaultWidth;
 
     public override string? GetText(uint code) => ToUnicode?.GetUnicode(code);

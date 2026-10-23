@@ -1,7 +1,8 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
   <!--
     No-crash tests of Meziantou.Framework.Pdf over the external corpora pinned in corpus.json (pdf.js, PDFium, qpdf, the
-    PDF Association, Apache PDFBox). They are fetched by 'dotnet run eng/pdf/fetch-tests.cs' into
+    PDF Association, Apache PDFBox), and the pages of the reference tests of pdf.js rendered by
+    Meziantou.Framework.Pdf.Rendering and compared with PDFium. They are fetched by 'dotnet run eng/pdf/fetch-tests.cs' into
     tests/Meziantou.Framework.Pdf.External; without them, the tests are skipped. The documented exceptions a file throws
     are recorded in expectations/<suite>.txt.
   -->
@@ -16,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf\Meziantou.Framework.Pdf.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf.Rendering\Meziantou.Framework.Pdf.Rendering.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Pdf.TestHarness\Meziantou.Framework.Pdf.TestHarness.csproj" />
   </ItemGroup>
 </Project>

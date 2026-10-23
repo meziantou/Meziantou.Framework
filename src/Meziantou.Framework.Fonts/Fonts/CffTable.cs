@@ -343,6 +343,38 @@ internal sealed class CffTable
         }
     }
 
+    /// <summary>
+    /// Decodes the outline of a glyph of a CFF table that is not CFF2 into a sink, accepting the deprecated form of
+    /// <c>endchar</c> that makes a glyph of two others, which the fonts embedded in PDF files use.
+    /// </summary>
+    /// <param name="table">The table.</param>
+    /// <param name="glyphId">The glyph.</param>
+    /// <param name="sink">The sink.</param>
+    /// <param name="budget">The complexity budget of the glyph.</param>
+    /// <returns>The components of the glyph when it is made of two others, which the caller draws; <see langword="null"/> otherwise.</returns>
+    /// <exception cref="InvalidFontException">The charstring of the glyph is malformed.</exception>
+    /// <exception cref="UnsupportedFontFeatureException">The charstring uses a feature that is not supported.</exception>
+    /// <exception cref="FontResourceLimitException">The glyph exceeds the complexity limit.</exception>
+    public CffAccentedGlyph? DecodeWithAccentedGlyphs(ReadOnlySpan<byte> table, int glyphId, OutlineSink sink, ref GlyphBudget budget)
+    {
+        if (_variationStoreIndexes is not null)
+        {
+            Decode(table, glyphId, sink, ref budget);
+            return null;
+        }
+
+        if ((uint)glyphId >= (uint)_charStrings.Count)
+            return null;
+
+        var fontDict = GetFontDict(table, glyphId);
+        if ((uint)fontDict >= (uint)_localSubroutines.Length)
+            throw FontErrors.InvalidTable(FontTags.Cff, "selects a font DICT that does not exist for a glyph.");
+
+        var interpreter = new CffCharstringInterpreter(table, _globalSubroutines, _localSubroutines[fontDict], sink, ref budget) { AllowsAccentedGlyphs = true };
+        interpreter.Run(_charStrings.Get(table, glyphId));
+        return interpreter.AccentedGlyph;
+    }
+
     private int GetFontDict(ReadOnlySpan<byte> table, int glyphId)
     {
         if (_fdSelect < 0)

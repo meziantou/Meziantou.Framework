@@ -1,0 +1,15 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <!--
+    Unit tests of Meziantou.Framework.Pdf.Rendering: documents written with the API of Meziantou.Framework.Pdf or by hand,
+    rendered, and the colors of their pixels checked. No external tool and no network.
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Pdf.Rendering.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf.Rendering\Meziantou.Framework.Pdf.Rendering.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Pdf.TestHarness\Meziantou.Framework.Pdf.TestHarness.csproj" />
+  </ItemGroup>
+</Project>

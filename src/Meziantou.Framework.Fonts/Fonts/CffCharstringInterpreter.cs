@@ -96,6 +96,15 @@ internal ref struct CffCharstringInterpreter
         _regionCount = -1;
     }
 
+    /// <summary>
+    /// Gets or initializes a value indicating whether the deprecated form of <c>endchar</c> that makes a glyph of two
+    /// others is accepted: its components are then in <see cref="AccentedGlyph"/>. It is rejected otherwise.
+    /// </summary>
+    public bool AllowsAccentedGlyphs { get; init; }
+
+    /// <summary>Gets the components of the glyph when its charstring made it of two others.</summary>
+    public CffAccentedGlyph? AccentedGlyph { get; private set; }
+
     /// <summary>Runs the charstring of a glyph.</summary>
     public void Run(ReadOnlySpan<byte> charstring)
     {
@@ -340,6 +349,14 @@ internal ref struct CffCharstringInterpreter
                 // endchar. Four arguments make a glyph of two other glyphs, a deprecated form of Type 1.
                 case 14:
                     SkipWidth(stack, _count is 1 or 5);
+                    if (_count >= 4 && AllowsAccentedGlyphs)
+                    {
+                        AccentedGlyph = new CffAccentedGlyph(stack[_count - 4], stack[_count - 3], (int)stack[_count - 2], (int)stack[_count - 1]);
+                        _count = 0;
+                        ClosePath();
+                        return true;
+                    }
+
                     if (_count >= 4)
                         throw FontErrors.Unsupported("The font builds an accented glyph with the deprecated 'seac' form of the endchar operator, which is not supported.", "CFF seac");
 

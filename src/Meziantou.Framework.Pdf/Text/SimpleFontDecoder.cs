@@ -111,6 +111,9 @@ internal sealed class SimpleFontDecoder : PdfFontDecoder
 
     public override (uint Code, int Length) ReadCode(ReadOnlySpan<byte> data) => (data[0], 1);
 
+    /// <summary>Gets the glyph name of a code in the encoding of the font: its base encoding and its differences.</summary>
+    public string? GetGlyphName(uint code) => code < 256 ? _glyphNames[code] : null;
+
     public override double GetWidth(uint code) => code < 256 ? _widths[code] : 0;
 
     public override string? GetText(uint code)

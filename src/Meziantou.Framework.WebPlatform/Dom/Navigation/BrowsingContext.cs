@@ -1100,12 +1100,40 @@ public sealed partial class BrowsingContext : IDisposable
                 // The location of the script that started the navigation, for the violations of the content security policies
                 // (the navigation runs in a task)
                 var scriptLocation = sourceDocument is { ContentSecurityPoliciesOrNull: not null, RelevantWindow.ScriptEngine: { } sourceEngine } ? sourceEngine.GetCurrentScriptLocation() : null;
+
+                // https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate, steps 18 and 19: the navigation is the
+                // ongoing navigation of the navigable, which a later navigation cancels, and a navigation of a child navigable
+                // delays the load event of its parent. As in the browsers, a javascript: URL of a cross origin-domain document,
+                // which does nothing, does not abort the ongoing navigation.
+                var javaScriptNavigationId = 0;
+                if (sourceDocument is null || Document.IsSameOriginDomain(sourceDocument, activeDocument))
+                {
+                    CancelOngoingNavigation();
+                    javaScriptNavigationId = Interlocked.Increment(ref s_nextNavigationId);
+                    _ongoingNavigation = javaScriptNavigationId;
+                    _javaScriptUrlNavigationId = javaScriptNavigationId;
+                    if (Parent is not null)
+                    {
+                        IsDelayingLoadEvents = true;
+                    }
+                }
+
                 activeDocument.QueueGlobalTask(() =>
                 {
-                    if (generation == _javaScriptUrlNavigationGeneration)
+                    if (javaScriptNavigationId != 0 && _ongoingNavigation != javaScriptNavigationId)
+                        return;
+
+                    if (generation != _javaScriptUrlNavigationGeneration)
                     {
-                        NavigateToJavaScriptUrl(engine, url, sourceDocument, initiatorOrigin, initialInsertion, sourceElement, scriptLocation, isFormSubmission);
+                        if (javaScriptNavigationId != 0)
+                        {
+                            EndNavigationWithoutDocument();
+                        }
+
+                        return;
                     }
+
+                    NavigateToJavaScriptUrl(engine, url, sourceDocument, initiatorOrigin, initialInsertion, sourceElement, scriptLocation, isFormSubmission, isOngoingNavigation: javaScriptNavigationId != 0);
                 });
             }
 
@@ -1257,6 +1285,18 @@ public sealed partial class BrowsingContext : IDisposable
     // Incremented to cancel the pending javascript: URL navigations
     private int _javaScriptUrlNavigationGeneration;
 
+    // The identifier of the last javascript: URL navigation (see IsJavaScriptUrlNavigationOngoing)
+    private int _javaScriptUrlNavigationId;
+
+    /// <summary>
+    /// Whether the ongoing navigation is a javascript: URL navigation, whose script has not run yet: as in the browsers, a
+    /// form submission planned before it still navigates the navigable (the script may not create a document).
+    /// </summary>
+    internal bool IsJavaScriptUrlNavigationOngoing => _ongoingNavigation != 0 && _ongoingNavigation == _javaScriptUrlNavigationId;
+
+    /// <summary>Whether the navigable is navigating to another document (the ongoing navigation is not a javascript: URL navigation).</summary>
+    internal bool IsCrossDocumentNavigationOngoing => _ongoingNavigation != 0 && _ongoingNavigation != _javaScriptUrlNavigationId;
+
     /// <summary>
     /// Whether the text directives are enabled (<see cref="WebPlatformFeatures.TextDirectivesEnabled"/>): the fragment
     /// directive is then removed from the URLs the navigable is navigated to.
@@ -1289,13 +1329,22 @@ public sealed partial class BrowsingContext : IDisposable
     internal void CancelPendingJavaScriptUrlNavigations() => _javaScriptUrlNavigationGeneration++;
 
     /// <summary>https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate-to-a-javascript:-url</summary>
-    private void NavigateToJavaScriptUrl(Scripting.ScriptEngine engine, UrlRecord url, Document? sourceDocument, Document? initiatorOrigin, bool initialInsertion, Element? sourceElement, Scripting.ScriptLocation? scriptLocation, bool isFormSubmission)
+    private void NavigateToJavaScriptUrl(Scripting.ScriptEngine engine, UrlRecord url, Document? sourceDocument, Document? initiatorOrigin, bool initialInsertion, Element? sourceElement, Scripting.ScriptLocation? scriptLocation, bool isFormSubmission, bool isOngoingNavigation)
     {
         if (IsDestroyed)
             return;
 
-        // The ongoing navigation is canceled after the origin check (the specification cancels it first, but the browsers
-        // do not abort a navigation of a document because a cross-origin document tried to run a javascript: URL in it)
+        // The ongoing navigation is set to null. The canceled navigation no longer delays the load event of the parent document
+        // (e.g. when the javascript: URL is blocked, or evaluates to a value that is not a string).
+        if (isOngoingNavigation)
+        {
+            CancelOngoingNavigation();
+            EndNavigationWithoutDocument();
+        }
+
+        // The navigation of a cross origin-domain document is not the ongoing navigation: it is canceled after the origin
+        // check (the browsers do not abort a navigation of a document because a cross-origin document tried to run a
+        // javascript: URL in it)
         var document = Document;
         if (sourceDocument is not null && !Document.IsSameOriginDomain(sourceDocument, document))
             return;
@@ -1305,10 +1354,11 @@ public sealed partial class BrowsingContext : IDisposable
         if (sourceDocument is not null && (sourceDocument.ActiveSandboxingFlags & SandboxingFlags.Scripts) != SandboxingFlags.None)
             return;
 
-        // The canceled navigation no longer delays the load event of the parent document (e.g. when the javascript: URL is
-        // blocked, or evaluates to a value that is not a string)
-        CancelOngoingNavigation();
-        EndNavigationWithoutDocument();
+        if (!isOngoingNavigation)
+        {
+            CancelOngoingNavigation();
+            EndNavigationWithoutDocument();
+        }
 
         // https://w3c.github.io/webappsec-csp/#should-block-navigation-request: the pre-navigation checks (the Trusted Types
         // default policy may convert the script, and the form-action directive of a form submission), then the inline checks of
@@ -1961,6 +2011,7 @@ public sealed partial class BrowsingContext : IDisposable
     private void EndNavigationWithoutDocument()
     {
         _ongoingNavigation = 0;
+        Document.FireSuppressedContainerLoadEvent();
         if (IsDelayingLoadEvents)
         {
             IsDelayingLoadEvents = false;

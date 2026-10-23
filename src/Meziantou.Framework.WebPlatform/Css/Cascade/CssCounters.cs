@@ -363,29 +363,30 @@ internal sealed class CssCounters
 
     /// <summary>
     /// https://drafts.csswg.org/css-lists-3/#instantiate-counter: the initial value of a reversed counter instantiated without
-    /// initial value, computed from the increments of the boxes of its scope (the element, its descendants, and its following
-    /// siblings and their descendants, except the scopes of the nested counters of the same name).
+    /// initial value, computed from the increments of the boxes of its scope (the box, its descendants, and its following
+    /// siblings and their descendants, except the scopes of the nested counters of the same name). The boxes of the ::marker,
+    /// ::before and ::after pseudo-elements are in the tree order of the boxes.
     /// </summary>
     private int ComputeReversedInitialValue(Element element, string? pseudoElement, string name)
     {
         var state = new ReversedCounterState(name);
-
-        // The scope of a counter of a pseudo-element is not walked (only its following siblings would be)
-        if (pseudoElement is not null || VisitReversedCounterScope(element, isOriginator: true, state) != ScopeWalk.Stop)
+        if (VisitReversedCounterScope(element, pseudoElement, isOriginator: true, state) != ScopeWalk.Stop)
         {
-            if (HtmlElement.GetFlatTreeParent(element) is Element parent)
+            // The siblings of a pseudo-element box are the boxes of the children of its originating element
+            var parent = pseudoElement is null ? HtmlElement.GetFlatTreeParent(element) as Element : element;
+            if (parent is not null)
             {
                 var following = false;
-                foreach (var sibling in HtmlElement.GetFlatTreeChildren(parent))
+                foreach (var sibling in GetChildBoxes(parent))
                 {
                     if (!following)
                     {
-                        following = ReferenceEquals(sibling, element);
+                        following = ReferenceEquals(sibling.Element, element) && sibling.PseudoElement == pseudoElement;
                         continue;
                     }
 
                     // A sibling that instantiates a counter of the same name replaces the counter
-                    if (sibling is Element siblingElement && VisitReversedCounterScope(siblingElement, isOriginator: false, state) != ScopeWalk.Continue)
+                    if (VisitReversedCounterScope(sibling.Element, sibling.PseudoElement, isOriginator: false, state) != ScopeWalk.Continue)
                         break;
                 }
             }
@@ -394,14 +395,14 @@ internal sealed class CssCounters
         return (int)Math.Clamp((long)state.Value + state.LastNonZeroIncrementNegated, int.MinValue, int.MaxValue);
     }
 
-    private ScopeWalk VisitReversedCounterScope(Element element, bool isOriginator, ReversedCounterState state)
+    private ScopeWalk VisitReversedCounterScope(Element element, string? pseudoElement, bool isOriginator, ReversedCounterState state)
     {
-        var style = _engine.GetStyle(element);
+        var style = pseudoElement is null ? _engine.GetStyle(element) : _engine.GetStyle(element, pseudoElement);
         var display = style.GetComputedValue("display");
         if (display == "none")
             return ScopeWalk.Continue;
 
-        // A nested counter of the same name: its scope is the element, its descendants and its following siblings
+        // A nested counter of the same name: its scope is the box, its descendants and its following siblings
         if (!isOriginator && ParseCounters(style.GetComputedValue("counter-reset"), defaultValue: 0).Exists(c => c.Name == state.Name))
             return ScopeWalk.EndSiblings;
 
@@ -412,7 +413,7 @@ internal sealed class CssCounters
         {
             increment = increments[explicitIncrement].Value;
         }
-        else if (state.Name == "list-item" && display.Contains("list-item", StringComparison.Ordinal))
+        else if (state.Name == "list-item" && pseudoElement is null or "before" or "after" && display.Contains("list-item", StringComparison.Ordinal))
         {
             // The implicit increment of a list item for a reversed counter
             increment = -1;
@@ -436,15 +437,12 @@ internal sealed class CssCounters
 
         // https://drafts.csswg.org/css-contain-2/#containment-style: the increments in the sub-tree of an element with style
         // containment are scoped to it: they do not change the counter
-        if (display != "contents" && style.Layout.HasStyleContainment)
+        if (pseudoElement is not null || (display != "contents" && style.Layout.HasStyleContainment))
             return ScopeWalk.Continue;
 
-        foreach (var child in HtmlElement.GetFlatTreeChildren(element))
+        foreach (var child in GetChildBoxes(element))
         {
-            if (child is not Element childElement)
-                continue;
-
-            var result = VisitReversedCounterScope(childElement, isOriginator: false, state);
+            var result = VisitReversedCounterScope(child.Element, child.PseudoElement, isOriginator: false, state);
             if (result == ScopeWalk.Stop)
                 return ScopeWalk.Stop;
 
@@ -453,6 +451,26 @@ internal sealed class CssCounters
         }
 
         return ScopeWalk.Continue;
+    }
+
+    /// <summary>The boxes of the children of an element, in the tree order of <see cref="Process"/>: its ::marker, its ::before, its children, then its ::after.</summary>
+    private IEnumerable<(Element Element, string? PseudoElement)> GetChildBoxes(Element element)
+    {
+        var display = _engine.GetStyle(element).GetComputedValue("display");
+        if (display != "contents" && display.Contains("list-item", StringComparison.Ordinal))
+            yield return (element, "marker");
+
+        if (HasGeneratedContent(element, "before"))
+            yield return (element, "before");
+
+        foreach (var child in HtmlElement.GetFlatTreeChildren(element))
+        {
+            if (child is Element childElement)
+                yield return (childElement, null);
+        }
+
+        if (HasGeneratedContent(element, "after"))
+            yield return (element, "after");
     }
 
     /// <summary>

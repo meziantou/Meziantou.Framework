@@ -123,7 +123,7 @@
     "reftest": "PASS"
   },
   "css/css-lists/counter-reset-reversed-nested.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/counter-reset-reversed-not-list-item-start.html": {
     "reftest": "PASS"
@@ -132,13 +132,13 @@
     "reftest": "PASS"
   },
   "css/css-lists/counter-reset-reversed-pseudo-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/counter-reset-reversed-pseudo-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/counter-reset-reversed-pseudo-003.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/counter-reset-reversed-siblings-001a.html": {
     "reftest": "PASS"

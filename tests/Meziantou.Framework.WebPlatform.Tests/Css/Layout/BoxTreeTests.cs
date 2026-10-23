@@ -268,6 +268,18 @@ public sealed class BoxTreeTests : IDisposable
         """);
 
     [Fact]
+    public void Counters_ReversedInitialValueCountsPseudoElements() => AssertBody("<style>#d { counter-reset: reversed(c); counter-increment: c -1 } #d::before { content: counter(c); counter-increment: c -2 } p::after { content: counter(c); counter-increment: c -3 }</style><div id=d><p></p></div>", """
+        block <body> block-children
+          block <div#d> block-children
+            block anonymous inline-children
+              inline <div#d>::before
+                generated-text "6"
+            block <p> inline-children
+              inline <p>::after
+                generated-text "3"
+        """);
+
+    [Fact]
     public void FirstLetter() => AssertBody("<style>p::first-letter { color: red }</style><p id=p> \"Hello</p><p id=q><span>Wo</span>rld</p>", """
         block <body> block-children
           block <p#p> inline-children

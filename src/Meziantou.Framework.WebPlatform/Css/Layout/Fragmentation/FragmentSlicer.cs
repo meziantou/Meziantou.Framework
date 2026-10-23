@@ -538,6 +538,18 @@ internal sealed class FragmentSlicer
             var sliceBottom = index > borderBoxLast || index < first ? sliceTop
                 : index == borderBoxLast ? Math.Max(sliceTop, endIndex == index ? endOffset : map.GetOffsetIn(index, bottom))
                 : Math.Max(sliceTop, closeOffsets?[index] ?? GetBreakEnd(map, index));
+            if (!clone && endEdges > 0.01 && index >= first && index < borderBoxLast && !ReferenceEquals(parentMap, map) && parentMap.GetRange(index) is (_, var edgesBreak)
+                && edgesBreak >= bottom - endEdges - 0.01 && edgesBreak < bottom - 0.01)
+            {
+                // (a box broken before its block-end edges ends at the break, as in Blink)
+                sliceBottom = Math.Max(sliceTop, parentMap.GetOffsetIn(index, edgesBreak));
+            }
+            else if (index == first && index < borderBoxLast && startEdges > 0.01)
+            {
+                // (the first fragment of a broken box contains its block-start edges, e.g. a fieldset whose legend is shorter than its border)
+                sliceBottom = Math.Max(sliceBottom, Math.Min(_fragmentainers[index].BlockSize, topOffset + startEdges));
+            }
+
             var isPastEnd = index > borderBoxLast || index < first;
             var border = box.Border;
             var padding = box.Padding;

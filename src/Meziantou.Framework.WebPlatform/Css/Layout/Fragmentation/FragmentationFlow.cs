@@ -1378,6 +1378,7 @@ internal sealed class FragmentationFlow
             OwnCloneStart = clones ? edges.BlockStart : 0,
             OwnCloneEnd = clones ? edges.BlockEnd : 0,
             ShrinksAtBreaks = clones && layout.BoxSizing == BoxSizing.BorderBox,
+            BlockEndEdges = clones ? 0 : edges.BlockEnd,
         };
 
         var item = CreateContentItem(box, top, bottom, clones ? context with { CloneOwner = group } : context);
@@ -2968,6 +2969,12 @@ internal sealed class ParallelGroup(BoxFragment container, double[] trackStarts,
 
     /// <summary>Whether the edges that the box repeats are taken from its block size (<c>box-sizing: border-box</c>), else they are added to it.</summary>
     public bool ShrinksAtBreaks { get; init; }
+
+    /// <summary>
+    /// The block-end border and padding of the box of the group when it does not repeat them: as in Blink, there is no break
+    /// inside them (the box breaks before them when they do not fit).
+    /// </summary>
+    public double BlockEndEdges { get; init; }
 
     /// <summary>The nearest box around the group that repeats its edges until it ends (see <see cref="OwnCloneStart"/>; its edges are in <see cref="CloneStart"/> and <see cref="CloneEnd"/>), or null.</summary>
     public ParallelGroup? CloneOwner { get; init; }

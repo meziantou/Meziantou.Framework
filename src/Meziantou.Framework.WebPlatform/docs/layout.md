@@ -2735,7 +2735,9 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     fragmentainers, whatever the breaks of its contents: the block size it has left is what its fragments did not consume),
     and its contents have their own flow, which is broken at the end of each fragmentainer and continues after the end of the
     box; the flow of the container breaks beside the contents that overflow the box. The box extends over monolithic contents
-    that overflow the fragmentainer, up to its block size. When the box fits in the fragmentainer, its first content is placed
+    that overflow the fragmentainer, up to its block size. As in Blink, its block-end border and padding (when it does not
+    repeat them) are not broken: the box breaks before them (its fragment ends there) when its content progresses, and its
+    first fragment contains its block-start border and padding. When the box fits in the fragmentainer, its first content is placed
     with it even when it is monolithic and overflows the fragmentainer
     ([csswg-drafts#6056](https://github.com/w3c/csswg-drafts/issues/6056), `ParallelItem.LeadingMonolithicEnd`: the box is not
     pushed because of its first line or monolithic child; also for the items with a definite block size). A box with

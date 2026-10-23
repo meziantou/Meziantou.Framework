@@ -774,6 +774,15 @@ internal static partial class ColumnBreaker
                 if (repeatsOwnEdges && position <= _position + Epsilon)
                     return;
 
+                // (no break inside the block-end edges of the box: a break before them, when the content progresses)
+                var groupEnd = group.TrackEnds[^1];
+                if (group.BlockEndEdges > Epsilon && position > groupEnd - group.BlockEndEdges + Epsilon && position < groupEnd - Epsilon)
+                {
+                    position = groupEnd - group.BlockEndEdges;
+                    if (position <= _position + Epsilon)
+                        return;
+                }
+
                 Record(new BreakCandidate(position, position, group.Avoid ? BreakAppeal.Avoid : BreakAppeal.Perfect)
                 {
                     AvoidDepth = group.AvoidDepth,

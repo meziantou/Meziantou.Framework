@@ -465,7 +465,7 @@
     "reftest": "PASS"
   },
   "css/css-break/fieldset-003.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/fieldset-004.html": {
     "reftest": "PASS"

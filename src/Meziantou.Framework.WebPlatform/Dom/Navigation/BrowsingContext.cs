@@ -1412,7 +1412,10 @@ public sealed partial class BrowsingContext : IDisposable
         var parameters = new DocumentParameters
         {
             HistoryHandling = NavigationHistoryBehavior.Replace,
-            Referrer = sourceDocument?.Url ?? "",
+
+            // The navigation params have no request (https://html.spec.whatwg.org/multipage/browsing-the-web.html#evaluate-a-javascript:-url
+            // questions the resulting null referrer): as in Chrome and Safari, the document keeps the referrer of the previous document
+            Referrer = document.Referrer,
             ReferrerPolicy = document.ReferrerPolicy,
             OriginDocument = initiatorOrigin ?? Document.GetOriginDocument(document),
             AboutBaseUrl = document.AboutBaseUrl,

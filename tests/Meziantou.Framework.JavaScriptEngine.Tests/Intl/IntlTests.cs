@@ -101,6 +101,7 @@ public sealed class IntlTests
     [InlineData(18446744073709551616.0, "18446744073709552e3")]
     [InlineData(1.7976931348623157e308, "17976931348623157e292")]
     [InlineData(5e-324, "5e-324")]
+    [InlineData(2.9802322387695312e-8, "29802322387695312e-24")]
     public void IntlDecimal_FromNumber(double value, string expected)
     {
         var x = Meziantou.Framework.JavaScriptEngine.Intl.IntlDecimal.FromNumber(value);

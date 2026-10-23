@@ -2,7 +2,8 @@ namespace Meziantou.Framework.JavaScriptEngine;
 
 /// <summary>
 /// The ArrayBuffer constructor and prototype (https://tc39.es/ecma262/#sec-arraybuffer-objects) and the
-/// SharedArrayBuffer constructor and prototype (https://tc39.es/ecma262/#sec-sharedarraybuffer-objects).
+/// SharedArrayBuffer constructor and prototype (https://tc39.es/ecma262/#sec-sharedarraybuffer-objects), with the
+/// immutable ArrayBuffers of the Immutable ArrayBuffer proposal (https://tc39.es/proposal-immutable-arraybuffer/).
 /// </summary>
 internal static class ArrayBufferBuiltins
 {
@@ -12,8 +13,10 @@ internal static class ArrayBufferBuiltins
     [
         new("resize", 1, Resize),
         new("slice", 2, Slice),
+        new("sliceToImmutable", 2, SliceToImmutable),
         new("transfer", 0, Transfer),
         new("transferToFixedLength", 0, TransferToFixedLength),
+        new("transferToImmutable", 0, TransferToImmutable),
     ];
 
     public static JsBuiltinFunction Initialize(Intrinsics intrinsics)
@@ -28,6 +31,7 @@ internal static class ArrayBufferBuiltins
         prototype.DefineBuiltIn("constructor", constructor);
         realm.DefineAccessor(prototype, "byteLength", GetByteLength, setter: null);
         realm.DefineAccessor(prototype, "detached", GetDetached, setter: null);
+        realm.DefineAccessor(prototype, "immutable", GetImmutable, setter: null);
         realm.DefineAccessor(prototype, "maxByteLength", GetMaxByteLength, setter: null);
         realm.DefineAccessor(prototype, "resizable", GetResizable, setter: null);
         realm.DefineMethods(prototype, PrototypeMethods);
@@ -132,6 +136,12 @@ internal static class ArrayBufferBuiltins
         return ThisArrayBuffer(thisValue, "detached").IsDetached;
     }
 
+    /// <summary>get ArrayBuffer.prototype.immutable</summary>
+    private static JsValue GetImmutable(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
+    {
+        return ThisArrayBuffer(thisValue, "immutable").IsImmutable;
+    }
+
     /// <summary>get ArrayBuffer.prototype.maxByteLength</summary>
     private static JsValue GetMaxByteLength(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
@@ -185,6 +195,9 @@ internal static class ArrayBufferBuiltins
         if (newBuffer.IsDetached)
             return ThrowHelper.ThrowTypeError<JsValue>("The species constructor of ArrayBuffer.prototype.slice returned a detached ArrayBuffer");
 
+        if (newBuffer.IsImmutable)
+            return ThrowHelper.ThrowTypeError<JsValue>("The species constructor of ArrayBuffer.prototype.slice returned an immutable ArrayBuffer");
+
         if (ReferenceEquals(newBuffer, buffer))
             return ThrowHelper.ThrowTypeError<JsValue>("The species constructor of ArrayBuffer.prototype.slice returned the same ArrayBuffer");
 
@@ -205,37 +218,78 @@ internal static class ArrayBufferBuiltins
         return newBuffer;
     }
 
+    /// <summary>ArrayBuffer.prototype.sliceToImmutable(start, end)</summary>
+    private static JsValue SliceToImmutable(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
+    {
+        var buffer = ThisArrayBuffer(thisValue, "sliceToImmutable");
+        if (buffer.IsDetached)
+            return ThrowHelper.ThrowTypeError<JsValue>("Cannot slice a detached ArrayBuffer");
+
+        // ResolveBounds(len, start, end)
+        long length = buffer.ByteLength;
+        var first = BinaryDataOperations.ClampRelativeIndex(JsOperations.ToIntegerOrInfinity(Arg(arguments, 0)), length);
+        var final = BinaryDataOperations.ToClampedIndex(Arg(arguments, 1), length, length);
+        var newLength = Math.Max(final - first, 0);
+
+        // The conversions of the arguments may have detached or resized the buffer
+        if (buffer.IsDetached)
+            return ThrowHelper.ThrowTypeError<JsValue>("Cannot slice a detached ArrayBuffer");
+
+        if (buffer.ByteLength < final)
+            return ThrowHelper.ThrowRangeError<JsValue>("The ArrayBuffer was shrunk below the end of the slice");
+
+        Span<byte> source = newLength == 0 ? [] : buffer.GetSpan().Slice((int)first, (int)newLength);
+        return JsArrayBuffer.CreateImmutable(function.Realm, newLength, source);
+    }
+
     /// <summary>ArrayBuffer.prototype.transfer([newLength])</summary>
     private static JsValue Transfer(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
-        return CopyAndDetach(function.Realm, thisValue, Arg(arguments, 0), preserveResizability: true, "transfer");
+        return CopyAndDetach(function.Realm, thisValue, Arg(arguments, 0), CopyAndDetachMode.PreserveResizability, "transfer");
     }
 
     /// <summary>ArrayBuffer.prototype.transferToFixedLength([newLength])</summary>
     private static JsValue TransferToFixedLength(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
-        return CopyAndDetach(function.Realm, thisValue, Arg(arguments, 0), preserveResizability: false, "transferToFixedLength");
+        return CopyAndDetach(function.Realm, thisValue, Arg(arguments, 0), CopyAndDetachMode.FixedLength, "transferToFixedLength");
     }
 
-    /// <summary>ArrayBufferCopyAndDetach(arrayBuffer, newLength, preserveResizability)</summary>
-    private static JsArrayBuffer CopyAndDetach(JsRealm realm, JsValue thisValue, JsValue newLength, bool preserveResizability, string method)
+    /// <summary>ArrayBuffer.prototype.transferToImmutable([newLength])</summary>
+    private static JsValue TransferToImmutable(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
+    {
+        return CopyAndDetach(function.Realm, thisValue, Arg(arguments, 0), CopyAndDetachMode.Immutable, "transferToImmutable");
+    }
+
+    /// <summary>ArrayBufferCopyAndDetach(arrayBuffer, newLength, mode)</summary>
+    private static JsArrayBuffer CopyAndDetach(JsRealm realm, JsValue thisValue, JsValue newLength, CopyAndDetachMode mode, string method)
     {
         var buffer = ThisArrayBuffer(thisValue, method);
         var newByteLength = newLength.IsUndefined ? buffer.ByteLength : JsOperations.ToIndex(newLength);
         if (buffer.IsDetached)
             return ThrowHelper.ThrowTypeError<JsArrayBuffer>("Cannot transfer a detached ArrayBuffer");
 
-        var newMaxByteLength = preserveResizability ? buffer.MaxByteLength : null;
+        if (buffer.IsImmutable)
+            return ThrowHelper.ThrowTypeError<JsArrayBuffer>("Cannot transfer an immutable ArrayBuffer");
+
         if (!buffer.DetachKey.IsUndefined)
             return ThrowHelper.ThrowTypeError<JsArrayBuffer>("Cannot transfer an ArrayBuffer that has a detach key");
 
+        var newMaxByteLength = mode is CopyAndDetachMode.PreserveResizability ? buffer.MaxByteLength : null;
         if (newByteLength > newMaxByteLength)
             return ThrowHelper.ThrowRangeError<JsArrayBuffer>("The byte length of the ArrayBuffer exceeds its maximum byte length");
 
         if (newByteLength > BinaryDataOperations.MaxByteLength)
             return ThrowHelper.ThrowRangeError<JsArrayBuffer>("Array buffer allocation failed");
 
-        return buffer.TransferAndDetach(realm, (int)newByteLength, newMaxByteLength);
+        return buffer.TransferAndDetach(realm, (int)newByteLength, newMaxByteLength, immutable: mode is CopyAndDetachMode.Immutable);
+    }
+
+    /// <summary>The preserveResizability argument of ArrayBufferCopyAndDetach.</summary>
+    private enum CopyAndDetachMode
+    {
+        PreserveResizability,
+        FixedLength,
+        Immutable,
     }
 
     // ------------------------------------------------------------------------------------------------------------------

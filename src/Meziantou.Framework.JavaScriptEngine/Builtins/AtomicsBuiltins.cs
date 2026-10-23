@@ -56,10 +56,10 @@ internal static class AtomicsBuiltins
     // Validation
     // ------------------------------------------------------------------------------------------------------------------
 
-    /// <summary>ValidateIntegerTypedArray(typedArray, waitable): the typed array and its length.</summary>
-    private static JsTypedArray ValidateIntegerTypedArray(JsValue value, bool waitable, out int length)
+    /// <summary>ValidateIntegerTypedArray(typedArray, waitable, accessMode): the typed array and its length; <paramref name="write"/> is the write access mode.</summary>
+    private static JsTypedArray ValidateIntegerTypedArray(JsValue value, bool waitable, out int length, bool write = false)
     {
-        var typedArray = TypedArrayBuiltins.ValidateTypedArray(value, out length);
+        var typedArray = TypedArrayBuiltins.ValidateTypedArray(value, out length, write);
         var type = typedArray.ElementType;
         if (waitable)
         {
@@ -84,10 +84,10 @@ internal static class AtomicsBuiltins
         return ((int)accessIndex * typedArray.ElementSize) + typedArray.ByteOffset;
     }
 
-    /// <summary>ValidateAtomicAccessOnIntegerTypedArray(typedArray, requestIndex)</summary>
-    private static int ValidateAtomicAccessOnIntegerTypedArray(JsValue value, JsValue requestIndex, out JsTypedArray typedArray)
+    /// <summary>ValidateAtomicAccessOnIntegerTypedArray(typedArray, requestIndex, false, accessMode): <paramref name="write"/> is the write access mode.</summary>
+    private static int ValidateAtomicAccessOnIntegerTypedArray(JsValue value, JsValue requestIndex, out JsTypedArray typedArray, bool write = false)
     {
-        typedArray = ValidateIntegerTypedArray(value, waitable: false, out var length);
+        typedArray = ValidateIntegerTypedArray(value, waitable: false, out var length, write);
         return ValidateAtomicAccess(typedArray, length, requestIndex);
     }
 
@@ -379,7 +379,7 @@ internal static class AtomicsBuiltins
     /// <summary>AtomicReadModifyWrite(typedArray, index, value, op): Atomics.add, and, exchange, or, sub and xor.</summary>
     private static JsValue ReadModifyWrite(ReadOnlySpan<JsValue> arguments, Operation operation)
     {
-        var byteIndexInBuffer = ValidateAtomicAccessOnIntegerTypedArray(Arg(arguments, 0), Arg(arguments, 1), out var typedArray);
+        var byteIndexInBuffer = ValidateAtomicAccessOnIntegerTypedArray(Arg(arguments, 0), Arg(arguments, 1), out var typedArray, write: true);
         var value = ToOperand(typedArray, Arg(arguments, 2));
         RevalidateAtomicAccess(typedArray, byteIndexInBuffer);
         var previous = GetModifySetValueInBuffer(typedArray.ViewedArrayBuffer, byteIndexInBuffer, typedArray.ElementSize, ToBits(typedArray, value), operation);
@@ -389,7 +389,7 @@ internal static class AtomicsBuiltins
     /// <summary>Atomics.compareExchange(typedArray, index, expectedValue, replacementValue)</summary>
     private static JsValue CompareExchange(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
-        var byteIndexInBuffer = ValidateAtomicAccessOnIntegerTypedArray(Arg(arguments, 0), Arg(arguments, 1), out var typedArray);
+        var byteIndexInBuffer = ValidateAtomicAccessOnIntegerTypedArray(Arg(arguments, 0), Arg(arguments, 1), out var typedArray, write: true);
         var expected = ToOperand(typedArray, Arg(arguments, 2));
         var replacement = ToOperand(typedArray, Arg(arguments, 3));
         RevalidateAtomicAccess(typedArray, byteIndexInBuffer);
@@ -415,7 +415,7 @@ internal static class AtomicsBuiltins
     /// <summary>Atomics.store(typedArray, index, value)</summary>
     private static JsValue Store(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
-        var byteIndexInBuffer = ValidateAtomicAccessOnIntegerTypedArray(Arg(arguments, 0), Arg(arguments, 1), out var typedArray);
+        var byteIndexInBuffer = ValidateAtomicAccessOnIntegerTypedArray(Arg(arguments, 0), Arg(arguments, 1), out var typedArray, write: true);
         var value = ToOperand(typedArray, Arg(arguments, 2));
         RevalidateAtomicAccess(typedArray, byteIndexInBuffer);
         StoreInBuffer(typedArray.ViewedArrayBuffer, byteIndexInBuffer, typedArray.ElementSize, ToBits(typedArray, value));

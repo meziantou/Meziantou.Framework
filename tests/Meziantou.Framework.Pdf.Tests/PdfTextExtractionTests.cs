@@ -67,7 +67,7 @@ public sealed class PdfTextExtractionTests
             .Add(5, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
         for (var i = 0; i < 20; i++)
         {
-            var content = (i < 19 ? $"/X{i + 1} Do /X{i + 1} Do " : "") + "BT /F1 1 Tf (" + new string('x', 2000) + ") Tj ET";
+            var content = (i < 19 ? $"/X{i + 1} Do /X{i + 1} Do " : "") + "BT /F1 1 Tf (" + new string('x', 5000) + ") Tj ET";
             file.Add(10 + i, HandWrittenPdf.Stream(content, " /Type /XObject /Subtype /Form /Resources 4 0 R"));
         }
 

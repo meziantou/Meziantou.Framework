@@ -13,9 +13,10 @@ internal sealed class TextExtractor
 {
     private const int MaxFormDepth = 16;
 
-    // The operators and glyphs a page may run: a form can paint other forms several times each, so the work grows
-    // with the product of the counts of each level, not with the size of the file
-    private const long MaxOperations = 20_000_000;
+    // The work a page may do, in units: four bytes of content parsed, an operator, a glyph or an element of a TJ array.
+    // A form can paint other forms several times each, so the work grows with the product of the counts of each level,
+    // not with the size of the file.
+    private const long MaxOperations = 200_000_000;
 
     private readonly List<TextGlyph> _glyphs = [];
     private readonly Dictionary<PdfStream, byte[]?> _formData = new(ReferenceEqualityComparer.Instance);
@@ -52,6 +53,7 @@ internal sealed class TextExtractor
 
     private void Run(byte[] content, PdfDictionary? resources, ref TextGraphicsState state, int depth)
     {
+        Charge((content.Length / 4) + 1);
         var reader = new ContentStreamReader(content);
         var operands = new List<PdfObject>();
         var stack = new Stack<TextGraphicsState>();
@@ -126,6 +128,7 @@ internal sealed class TextExtractor
                 case "TJ" when operands.Count >= 1 && operands[^1] is PdfArray array:
                     foreach (var item in array)
                     {
+                        Charge(1);
                         switch (item)
                         {
                             case PdfString segment:

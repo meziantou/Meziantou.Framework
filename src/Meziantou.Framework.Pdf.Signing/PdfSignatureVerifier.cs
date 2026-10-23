@@ -84,19 +84,20 @@ public static class PdfSignatureVerifier
 
         try
         {
-            var ranges = ReadByteRanges(signature, file.Length);
-            info.ByteRanges = ranges;
-            info.CoversWholeDocument = ranges.Count > 0 && ranges[0].Offset == 0 && ranges[^1].Offset + ranges[^1].Length == file.Length;
-            var data = new byte[ranges.Sum(range => range.Length)];
-            var position = 0;
-            foreach (var (offset, length) in ranges)
-            {
-                file.AsSpan((int)offset, (int)length).CopyTo(data.AsSpan(position));
-                position += (int)length;
-            }
-
             if (!signature.TryGetResolved<PdfString>(PdfNames.Contents, out var contents))
                 throw new InvalidPdfContentException("The signature has no /Contents");
+
+            var ranges = ReadByteRanges(signature, file);
+            info.ByteRanges = ranges;
+
+            // The ranges cover the revision from its first byte; the whole file when the last one ends at its end
+            info.CoversWholeDocument = ranges[1].Offset + ranges[1].Length == file.Length;
+            if (!IsContentsGap(file, ranges, contents.Span))
+                throw new InvalidPdfContentException("The bytes the /ByteRange leaves out are not the /Contents of the signature");
+
+            var data = new byte[ranges[0].Length + ranges[1].Length];
+            file.AsSpan(0, (int)ranges[0].Length).CopyTo(data);
+            file.AsSpan((int)ranges[1].Offset, (int)ranges[1].Length).CopyTo(data.AsSpan((int)ranges[0].Length));
 
             var encoded = TrimPadding(contents.Span);
             switch (info.SubFilter)
@@ -123,26 +124,90 @@ public static class PdfSignatureVerifier
         return info;
     }
 
-    private static List<(long Offset, long Length)> ReadByteRanges(PdfDictionary signature, long fileLength)
+    /// <summary>
+    /// Reads the byte ranges (12.8.1): two ranges, from the start of the file to the <c>/Contents</c> of the signature
+    /// and from its end, so that the signature covers every byte of its revision but itself.
+    /// </summary>
+    private static List<(long Offset, long Length)> ReadByteRanges(PdfDictionary signature, byte[] file)
     {
-        if (signature.GetResolved(ByteRangeName) is not PdfArray array || array.Count == 0 || array.Count % 2 != 0)
-            throw new InvalidPdfContentException("The signature has no valid /ByteRange");
+        if (signature.GetResolved(ByteRangeName) is not PdfArray { Count: 4 } array)
+            throw new InvalidPdfContentException("The /ByteRange of the signature does not have two ranges");
 
-        var result = new List<(long, long)>();
-        long end = 0;
-        for (var i = 0; i < array.Count; i += 2)
+        var values = new long[4];
+        for (var i = 0; i < 4; i++)
         {
-            if (!array.TryGetResolved<PdfInteger>(i, out var offset) || !array.TryGetResolved<PdfInteger>(i + 1, out var length))
+            if (!array.TryGetResolved<PdfInteger>(i, out var value))
                 throw new InvalidPdfContentException("The /ByteRange of the signature has a value that is not an integer");
 
-            if (offset.Value < end || length.Value < 0 || offset.Value + length.Value > fileLength || offset.Value + length.Value > int.MaxValue)
-                throw new InvalidPdfContentException("The /ByteRange of the signature is outside the file or not in order");
-
-            end = offset.Value + length.Value;
-            result.Add((offset.Value, length.Value));
+            values[i] = value.Value;
         }
 
-        return result;
+        // Each value is checked alone, so that no sum overflows
+        var (offset1, length1, offset2, length2) = (values[0], values[1], values[2], values[3]);
+        if (offset1 != 0 || length1 <= 0 || length1 > file.Length || offset2 < length1 || offset2 > file.Length || length2 <= 0 || length2 > file.Length - offset2)
+            throw new InvalidPdfContentException("The /ByteRange of the signature is outside the file, not in order, or does not start at the start of the file");
+
+        return [(offset1, length1), (offset2, length2)];
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether the bytes between the ranges are the hexadecimal string of the <c>/Contents</c> of
+    /// this signature, and nothing else: a gap that left out other bytes would let them change without the signature.
+    /// </summary>
+    private static bool IsContentsGap(byte[] file, List<(long Offset, long Length)> ranges, ReadOnlySpan<byte> contents)
+    {
+        // The gap is the string with its delimiters, or only its digits between the delimiters some writers sign
+        var start = (int)ranges[0].Length;
+        var end = (int)ranges[1].Offset;
+        ReadOnlySpan<byte> digits;
+        if (end - start >= 2 && file[start] == '<' && file[end - 1] == '>')
+        {
+            digits = file.AsSpan(start + 1, end - start - 2);
+        }
+        else if (start > 0 && end < file.Length && file[start - 1] == '<' && file[end] == '>')
+        {
+            digits = file.AsSpan(start, end - start);
+        }
+        else
+        {
+            return false;
+        }
+
+        var decoded = new byte[(digits.Length + 1) / 2];
+        var count = 0;
+        var high = -1;
+        foreach (var b in digits)
+        {
+            if (b is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n' or (byte)'\f' or 0)
+                continue;
+
+            var digit = b switch
+            {
+                >= (byte)'0' and <= (byte)'9' => b - '0',
+                >= (byte)'a' and <= (byte)'f' => b - 'a' + 10,
+                >= (byte)'A' and <= (byte)'F' => b - 'A' + 10,
+                _ => -1,
+            };
+            if (digit < 0)
+                return false;
+
+            if (high < 0)
+            {
+                high = digit;
+            }
+            else
+            {
+                decoded[count++] = (byte)((high << 4) | digit);
+                high = -1;
+            }
+        }
+
+        if (high >= 0)
+        {
+            decoded[count++] = (byte)(high << 4);
+        }
+
+        return decoded.AsSpan(0, count).SequenceEqual(contents);
     }
 
     /// <summary>The signature of <c>/Contents</c> without the zeros of the space reserved after it.</summary>

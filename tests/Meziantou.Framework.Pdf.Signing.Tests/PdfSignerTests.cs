@@ -182,6 +182,13 @@ public sealed class PdfSignerTests
         var outOfFile = Encoding.Latin1.GetBytes(signed.Replace("/ByteRange [0 ", "/ByteRange [0 9", StringComparison.Ordinal).Remove(signed.IndexOf("/ByteRange [0 ", StringComparison.Ordinal) + 30, 1));
         Assert.NotNull(PdfSignatureVerifier.Verify(outOfFile).Single().Error);
         Assert.Empty(PdfSignatureVerifier.Verify(CreateDocument().ToByteArray()));
+
+        // The bytes left out must be the signature itself: a gap that also leaves out other bytes could hide them
+        var ranges = PdfSignatureVerifier.Verify(Encoding.Latin1.GetBytes(signed)).Single().ByteRanges;
+        var original = $"[0 {ranges[0].Length} {ranges[1].Offset} {ranges[1].Length}";
+        var wider = $"[0 {ranges[0].Length - 2} {ranges[1].Offset} {ranges[1].Length}".PadRight(original.Length);
+        var wrapped = Encoding.Latin1.GetBytes(signed.Replace("/ByteRange " + original, "/ByteRange " + wider, StringComparison.Ordinal));
+        Assert.Contains("are not the /Contents", PdfSignatureVerifier.Verify(wrapped).Single().Error, StringComparison.Ordinal);
     }
 
     private static PdfDocument CreateDocument()

@@ -1398,7 +1398,7 @@
     "reftest": "PASS"
   },
   "css/css-values/urls/referrer-policy/unsafe-url/url-image-referrer-policy-external-stylesheet.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-values/urls/referrer-policy/unsafe-url/url-image-referrer-policy-same-origin.html": {
     "reftest": "PASS"

@@ -728,6 +728,9 @@ public partial class Document
             if (BrowsingContext is null || RelevantWindow is not { } window)
                 return;
 
+            // The navigable is navigating away from the document (e.g. a form submitted while it was parsed), not by a navigation
+            // started by the load event handlers
+            var isNavigatingAway = BrowsingContext is { IsCrossDocumentNavigationOngoing: true };
             FireSvgLoadEvents();
             var marked = MarkLoadEventStart();
             window.FireLegacyTargetOverrideEvent(new Event("load"));
@@ -756,7 +759,7 @@ public partial class Document
 
             // https://html.spec.whatwg.org/multipage/nav-history-apis.html#fire-a-page-transition-event
             window.FireLegacyTargetOverrideEvent(new PageTransitionEvent("pageshow", new PageTransitionEventInit { Persisted = false, Bubbles = true, Cancelable = true }));
-            CompletelyFinishLoading(isContainerLoadEventFired);
+            CompletelyFinishLoading(isContainerLoadEventFired, isNavigatingAway);
         });
     }
 
@@ -794,7 +797,7 @@ public partial class Document
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/document-lifecycle.html#completely-finish-loading</summary>
-    private void CompletelyFinishLoading(bool isContainerLoadEventFired)
+    private void CompletelyFinishLoading(bool isContainerLoadEventFired, bool isNavigatingAway)
     {
         CompletelyLoaded = true;
 
@@ -822,7 +825,7 @@ public partial class Document
                 // As in the browsers, the container does not get the load event of a document that its navigable is navigating
                 // away from (e.g. a form submitted while the document was parsed replaces it before its load event). The event
                 // is fired if the navigation ends without replacing the document.
-                if (BrowsingContext is { IsCrossDocumentNavigationOngoing: true })
+                if (isNavigatingAway && BrowsingContext is { IsCrossDocumentNavigationOngoing: true })
                 {
                     IsContainerLoadEventPending = true;
                 }

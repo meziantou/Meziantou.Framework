@@ -2727,7 +2727,8 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     container; a forced break before an item that overlaps the previous one (a negative margin) is taken after the
     previous item, and the item starts the next fragmentainer at the offset its margin gives it, before the start of the
     fragmentainer (`FragmentationFlow.GetForcedStart`: its position in the strip is before the break).
-  - **Boxes whose block size does not follow their contents** (a specified block size, a box as tall as its `max-height`;
+  - **Boxes whose block size does not follow their contents** (a specified block size, a box as tall as its `max-height`,
+    an item of a grid lanes container whose lanes are rows that is shorter than its contents, as a grid item in a fixed row;
     also the flex and grid containers, and the anonymous content box of a fieldset that is one; not the ones that contain a
     column spanner): "content overflowing the content edge of a fixed-size box is considered parallel to the content after the
     fixed-size box". The box is a track of one item in the flow of its container (`FragmentationFlow.TryAddDefiniteBox`,

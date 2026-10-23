@@ -585,6 +585,14 @@ internal sealed class FragmentationFlow
                 && Math.Abs(box.IntrinsicBlockSize - _writingDirection.ToLogical(box.Size).Block) < Epsilon);
         }
 
+        // An item of a grid lanes container whose lanes are rows, shorter than its contents (stretched in a row that does not
+        // follow them): as an item of a grid in a fixed row, it does not grow when its contents are pushed by the breaks
+        if (box.Parent is BoxFragment { Box.Display.Inside: DisplayInside.GridLanes } lanes && GridLayoutAlgorithm.GetLaneAxis(lanes.Box.Style.Layout) == GridAxis.Rows
+            && box.IntrinsicBlockSize > _writingDirection.ToLogical(box.Size).Block + Epsilon)
+        {
+            return true;
+        }
+
         var maxSize = style.GetMaxSize(horizontal: !_writingDirection.IsHorizontal);
         if (maxSize.IsNone)
             return false;

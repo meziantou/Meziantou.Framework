@@ -27,6 +27,9 @@ internal sealed partial class ContentRenderer
     private readonly PdfDocument _document;
     private readonly Stack<RenderGraphicsState> _savedStates = new();
     private readonly OptionalContent _optionalContent;
+
+    // The images of the brushes of patterns, disposed when the drawing that uses them is done
+    private readonly List<IDisposable> _brushImages = [];
     private readonly int _depth;
     private RenderGraphicsState _state;
 

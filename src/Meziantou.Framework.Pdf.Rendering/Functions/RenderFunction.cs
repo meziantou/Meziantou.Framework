@@ -11,6 +11,9 @@ internal abstract class RenderFunction
     // The samples of a sampled function
     private const long MaxSamples = 1 << 24;
 
+    /// <summary>The largest number of inputs or outputs of a function, and of colorants of a color space: their values are on the stack.</summary>
+    public const int MaxComponents = 32;
+
     private readonly double[] _domain;
     private readonly double[]? _range;
 
@@ -33,6 +36,9 @@ internal abstract class RenderFunction
         value = value is null ? null : PdfReference.ResolveIfReference(value);
         if (value is PdfArray array)
         {
+            if (array.Count is 0 or > MaxComponents)
+                throw new InvalidPdfContentException("An array of functions has no function or too many functions");
+
             var functions = new RenderFunction[array.Count];
             for (var i = 0; i < array.Count; i++)
             {
@@ -49,7 +55,7 @@ internal abstract class RenderFunction
             _ => throw new InvalidPdfContentException("A function is not a dictionary or a stream"),
         };
         var domain = ReadNumbers(dictionary.Get<PdfArray>(PdfName.Create("Domain"))) ?? throw new InvalidPdfContentException("A function has no /Domain");
-        if (domain.Length < 2 || domain.Length % 2 != 0)
+        if (domain.Length < 2 || domain.Length % 2 != 0 || domain.Length / 2 > MaxComponents)
             throw new InvalidPdfContentException("The /Domain of a function is invalid");
 
         var range = ReadNumbers(dictionary.Get<PdfArray>(PdfName.Create("Range")));
@@ -57,6 +63,9 @@ internal abstract class RenderFunction
         {
             range = null;
         }
+
+        if (range?.Length / 2 > MaxComponents)
+            throw new InvalidPdfContentException("A function has too many outputs");
 
         return dictionary.GetInteger(PdfName.Create("FunctionType"), -1) switch
         {
@@ -181,8 +190,8 @@ internal abstract class RenderFunction
     {
         var c0 = ReadNumbers(dictionary.Get<PdfArray>(PdfName.Create("C0"))) ?? [0];
         var c1 = ReadNumbers(dictionary.Get<PdfArray>(PdfName.Create("C1"))) ?? [1];
-        if (c0.Length != c1.Length)
-            throw new InvalidPdfContentException("The /C0 and /C1 of an exponential function do not have the same length");
+        if (c0.Length != c1.Length || c0.Length > MaxComponents)
+            throw new InvalidPdfContentException("The /C0 and /C1 of an exponential function do not have the same length, or are too long");
 
         return new ExponentialFunction(domain, range, c0, c1, dictionary.GetNumber(PdfNames.N, 1));
     }

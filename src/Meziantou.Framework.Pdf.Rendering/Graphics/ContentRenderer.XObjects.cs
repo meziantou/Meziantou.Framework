@@ -109,11 +109,13 @@ internal sealed partial class ContentRenderer
         if (image is null)
             return;
 
-        _cache.Track(image);
-        var alpha = _state.FillAlpha;
-        var blend = _state.BlendMode;
-        var origin = new PointD(Math.Floor(area.X), Math.Floor(area.Y));
-        PaintWithState(canvas, target => DrawBlended(target, blend, c => c.DrawImage(image.Frames[0], origin, alpha)), ToPixelBounds(area, margin: 1));
+        using (image)
+        {
+            var alpha = _state.FillAlpha;
+            var blend = _state.BlendMode;
+            var origin = new PointD(Math.Floor(area.X), Math.Floor(area.Y));
+            PaintWithState(canvas, target => DrawBlended(target, blend, c => c.DrawImage(image.Frames[0], origin, alpha)), ToPixelBounds(area, margin: 1));
+        }
     }
 
     /// <summary>Gets the bounds of the clipping region, in device space.</summary>
@@ -172,12 +174,21 @@ internal sealed partial class ContentRenderer
         if (image.IsStencil)
         {
             // A stencil mask: the fill color (or pattern) painted through the alpha of the mask
-            var brush = CreateBrush(stroke: false, deviceBounds: null);
-            if (brush is null)
-                return;
+            var mark = _brushImages.Count;
+            try
+            {
+                var brush = CreateBrush(stroke: false, deviceBounds: null);
+                if (brush is null)
+                    return;
 
-            var frame = image.Image.Frames[0];
-            PaintWithState(canvas, target => target.Mask(mask => mask.DrawImage(frame, transform, sampling), content => content.Fill(brush), MaskMode.Alpha), bounds);
+                var frame = image.Image.Frames[0];
+                PaintWithState(canvas, target => target.Mask(mask => mask.DrawImage(frame, transform, sampling), content => content.Fill(brush), MaskMode.Alpha), bounds);
+            }
+            finally
+            {
+                ReleaseBrushImages(mark);
+            }
+
             return;
         }
 

@@ -384,6 +384,48 @@ public sealed class PdfRendererTests
     }
 
     [Fact]
+    public void ColorSpacesAndFunctionsWithTooManyComponentsAreSkipped()
+    {
+        // A DeviceN color space of 1000 colorants, and a function of 1000 outputs: their values would not fit the stack.
+        // The color spaces are not set, and the page is rendered.
+        var document = new PdfDocument();
+        var page = document.Pages.Add(Size);
+        page.CreateContentBuilder().AppendRawContent("1 0 0 rg 0 0 100 100 re f /CS0 cs 0 sc 0 0 50 100 re f /CS1 cs 0 sc 50 0 50 100 re f"u8);
+        var names = new PdfArray();
+        for (var i = 0; i < 1000; i++)
+        {
+            names.Add(PdfName.Create("Ink" + i.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        }
+
+        var outputs = new PdfArray();
+        for (var i = 0; i < 1000; i++)
+        {
+            outputs.Add(PdfInteger.Get(0));
+        }
+
+        var function = new PdfDictionary
+        {
+            [PdfName.Create("FunctionType")] = PdfInteger.Get(2),
+            [PdfName.Create("Domain")] = PdfArray.FromNumbers(0, 1),
+            [PdfName.Create("C0")] = outputs,
+            [PdfName.Create("C1")] = outputs,
+            [PdfName.Create("N")] = PdfInteger.Get(1),
+        };
+        var resources = page.Dictionary.Get<PdfDictionary>(PdfNames.Resources) ?? new PdfDictionary();
+        page.Dictionary[PdfNames.Resources] = resources;
+        resources[PdfNames.ColorSpace] = new PdfDictionary
+        {
+            [PdfName.Create("CS0")] = new PdfArray(PdfName.Create("DeviceN"), names, PdfName.Create("DeviceRGB"), function),
+            [PdfName.Create("CS1")] = new PdfArray(PdfName.Create("Separation"), PdfName.Create("Ink"), PdfName.Create("DeviceRGB"), function),
+        };
+
+        using var image = Render(document);
+
+        Assert.Equal(100, image.Width);
+        Assert.Equal(100, image.Height);
+    }
+
+    [Fact]
     public void WorkIsBounded()
     {
         // A form that paints itself through another form: the nesting is bounded, and the operators are counted

@@ -14,6 +14,9 @@ internal sealed class TrueTypeFontProgram
 {
     private const int MaxGlyphs = 65536;
 
+    // The codes a cmap subtable maps: overlapping segments or groups cannot make the reading longer
+    private const int MaxCmapCodes = 1 << 20;
+
     private readonly byte[] _loca;
     private readonly byte[] _glyf;
     private readonly byte[] _hmtx;
@@ -200,6 +203,7 @@ internal sealed class TrueTypeFontProgram
     {
         var span = cmap.AsSpan();
         var map = new Dictionary<int, int>();
+        var work = 0;
         switch (BinaryPrimitives.ReadUInt16BigEndian(span[offset..]))
         {
             case 0:
@@ -229,6 +233,9 @@ internal sealed class TrueTypeFontProgram
                         var rangeOffset = BinaryPrimitives.ReadUInt16BigEndian(span[rangeOffsetPosition..]);
                         for (var code = start; code <= end && code != 0xFFFF; code++)
                         {
+                            if (++work > MaxCmapCodes)
+                                return map;
+
                             int glyph;
                             if (rangeOffset == 0)
                             {
@@ -284,6 +291,9 @@ internal sealed class TrueTypeFontProgram
                         var startGlyph = BinaryPrimitives.ReadUInt32BigEndian(span[(group + 8)..]);
                         for (var code = start; code <= end && code - start < MaxGlyphs && code <= 0x10FFFF; code++)
                         {
+                            if (++work > MaxCmapCodes)
+                                return map;
+
                             map.TryAdd((int)code, (int)(startGlyph + (code - start)));
                         }
                     }

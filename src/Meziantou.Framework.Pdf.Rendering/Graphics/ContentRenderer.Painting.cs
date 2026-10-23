@@ -36,11 +36,29 @@ internal sealed partial class ContentRenderer
         if (ToPixelBounds(deviceBounds, margin + 1) is not { } bounds)
             return;
 
-        var brush = CreateBrush(stroke, deviceBounds);
-        if (brush is null)
-            return;
+        var mark = _brushImages.Count;
+        try
+        {
+            var brush = CreateBrush(stroke, deviceBounds);
+            if (brush is null)
+                return;
 
-        PaintWithState(canvas, target => draw(target, brush), bounds);
+            PaintWithState(canvas, target => draw(target, brush), bounds);
+        }
+        finally
+        {
+            ReleaseBrushImages(mark);
+        }
+    }
+
+    /// <summary>Disposes of the images of the brushes created since a mark: a pattern does not keep its image for the rest of the page.</summary>
+    private void ReleaseBrushImages(int mark)
+    {
+        for (var i = _brushImages.Count - 1; i >= mark; i--)
+        {
+            _brushImages[i].Dispose();
+            _brushImages.RemoveAt(i);
+        }
     }
 
     /// <summary>Gets the pixels of the device a rectangle covers, with a margin around it; <see langword="null"/> when none is on the device.</summary>
@@ -151,7 +169,7 @@ internal sealed partial class ContentRenderer
                     if (image is null)
                         return null;
 
-                    _cache.Track(image);
+                    _brushImages.Add(image);
                     return new ImageBrush(image.Frames[0]) { Transform = AffineTransform.CreateTranslation(Math.Floor(area.X), Math.Floor(area.Y)), WrapMode = ImageWrapMode.Transparent, Opacity = alpha, BlendMode = blend };
                 }
 
@@ -199,7 +217,9 @@ internal sealed partial class ContentRenderer
         var originX = xStep > 0 ? 0 : xStep;
         var originY = yStep > 0 ? 0 : yStep;
         var toTile = PdfMatrix.CreateTranslation(-originX, -originY) * PdfMatrix.CreateScale(scaleX, scaleY);
-        var tile = _cache.Track(new Image<Rgba32>(width, height, _cache.Options.Configuration));
+        _cache.Charge(((long)width * height / 256) + 1);
+        var tile = new Image<Rgba32>(width, height, _cache.Options.Configuration);
+        _brushImages.Add(tile);
         tile.Draw(canvas =>
         {
             // The cell is painted at each step that overlaps the tile, so that a cell larger than the step wraps around

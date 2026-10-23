@@ -227,8 +227,9 @@ internal static class ShadingRasterizer
         var lookup = context.Function is not null ? CreateMeshLookup(context, mesh.Domain) : null;
         foreach (var triangle in mesh.Triangles)
         {
+            // A triangle costs the pixels of its bounds, which the next triangle pays for
             cache.Charge(4);
-            context.FillTriangle(triangle, colorCount, values =>
+            var pixels = context.FillTriangle(triangle, colorCount, values =>
             {
                 if (lookup is not null)
                 {
@@ -238,6 +239,7 @@ internal static class ShadingRasterizer
 
                 return ToPixel(context.ColorSpace.ToRgb(values));
             });
+            cache.Charge(pixels / 64);
         }
     }
 
@@ -283,7 +285,8 @@ internal static class ShadingRasterizer
         }
 
         /// <summary>Fills a triangle of shading space with the colors interpolated between its vertices (Gouraud shading).</summary>
-        public void FillTriangle(MeshTriangle triangle, int colorCount, Func<double[], Rgba32> color)
+        /// <returns>The pixels of the bounds of the triangle, which were tested.</returns>
+        public long FillTriangle(MeshTriangle triangle, int colorCount, Func<double[], Rgba32> color)
         {
             var (ax, ay) = shadingToDevice.Transform(triangle.A.X, triangle.A.Y);
             var (bx, by) = shadingToDevice.Transform(triangle.B.X, triangle.B.Y);
@@ -296,7 +299,7 @@ internal static class ShadingRasterizer
             cy -= top;
             var area = ((bx - ax) * (cy - ay)) - ((cx - ax) * (by - ay));
             if (Math.Abs(area) < 1e-9)
-                return;
+                return 0;
 
             var minX = Math.Max(0, (int)Math.Floor(Math.Min(ax, Math.Min(bx, cx))));
             var maxX = Math.Min(width - 1, (int)Math.Ceiling(Math.Max(ax, Math.Max(bx, cx))));
@@ -333,6 +336,8 @@ internal static class ShadingRasterizer
                     pixels[(y * width) + x] = color(values);
                 }
             }
+
+            return maxX < minX || maxY < minY ? 0 : (long)(maxX - minX + 1) * (maxY - minY + 1);
         }
     }
 }

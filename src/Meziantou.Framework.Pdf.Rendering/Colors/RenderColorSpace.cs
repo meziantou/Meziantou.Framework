@@ -159,6 +159,9 @@ internal abstract class RenderColorSpace
                     if (array.Count < 4 || array.GetResolved(1) is not PdfArray names)
                         throw new InvalidPdfContentException("A DeviceN color space is incomplete");
 
+                    if (names.Count > RenderFunction.MaxComponents)
+                        throw new InvalidPdfContentException("A DeviceN color space has too many colorants");
+
                     var alternate = Read(array.GetResolved(2), resources, cache, depth + 1);
                     var paintsNothing = names.Count > 0 && names.All(item => PdfReference.ResolveIfReference(item) is PdfName { Value: "None" });
                     return new DeviceNSpace(Math.Max(1, names.Count), alternate, RenderFunction.Read(array.GetResolved(3)), paintsNothing);

@@ -65,7 +65,7 @@ internal static class MeshReader
                     // used); flags 1 and 2 make a triangle of the vertex and two vertices of the previous triangle
                     var pending = new List<MeshVertex>(3);
                     MeshTriangle? last = null;
-                    while (reader.HasData && items++ < maxItems)
+                    while (reader.HasData && items++ < maxItems && mesh.Triangles.Count < maxItems)
                     {
                         var flag = reader.Read(bitsPerFlag);
                         var vertex = ReadVertex();
@@ -98,8 +98,11 @@ internal static class MeshReader
                     if (perRow < 2)
                         throw new InvalidPdfContentException("A lattice-form mesh has fewer than two vertices per row");
 
+                    if (perRow > maxItems)
+                        throw new PdfResourceLimitException("A lattice-form mesh has too many vertices per row");
+
                     MeshVertex[]? previous = null;
-                    while (reader.HasData && items < maxItems)
+                    while (reader.HasData && items < maxItems && mesh.Triangles.Count < maxItems)
                     {
                         var row = new MeshVertex[perRow];
                         for (var i = 0; i < perRow; i++)
@@ -131,7 +134,7 @@ internal static class MeshReader
                     var tensor = type == 7;
                     (double X, double Y)[]? previousPoints = null;
                     double[][]? previousColors = null;
-                    while (reader.HasData && items++ < maxItems)
+                    while (reader.HasData && items++ < maxItems && mesh.Triangles.Count < maxItems)
                     {
                         var flag = reader.Read(bitsPerFlag);
                         var points = new (double X, double Y)[16];

@@ -16,6 +16,9 @@ internal static class PdfImageDecoder
     // The pixels of an image: the limit of a frame of Imaging
     private const long MaxPixels = 100_000_000;
 
+    // The samples of an image of several components, unpacked
+    private const long MaxSamples = 256_000_000;
+
     public static DecodedImage? Decode(PdfStream stream, PdfDictionary? resources, RenderCache cache)
     {
         var dictionary = stream.Dictionary;
@@ -124,8 +127,13 @@ internal static class PdfImageDecoder
         }
 
         // The samples, unpacked: one per component, rows on whole bytes
+        var sampleCount = (long)width * height * components;
+        if (sampleCount > MaxSamples)
+            throw new PdfResourceLimitException($"The image has {sampleCount} samples");
+
+        cache.Charge(sampleCount / 256);
         var rowBytes = (((long)width * components * bitsPerComponent) + 7) / 8;
-        var samples = new int[width * height * components];
+        var samples = new int[sampleCount];
         var maxValue = (1 << bitsPerComponent) - 1;
         for (var y = 0; y < height; y++)
         {

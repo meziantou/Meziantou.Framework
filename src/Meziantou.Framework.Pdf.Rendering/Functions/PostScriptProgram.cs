@@ -43,7 +43,7 @@ internal sealed class PostScriptProgram
         var count = 0;
         foreach (var input in inputs)
         {
-            stack[count++] = input;
+            Push(stack, ref count, input);
         }
 
         Run(0, _instructions.Length, stack, ref count);

@@ -80,6 +80,9 @@ internal sealed class ContentSecurityPolicyViolation
     /// <summary>A sample of the code or of the value that caused the violation, or the empty string (https://w3c.github.io/webappsec-csp/#violation-sample).</summary>
     public string Sample { get; set; } = "";
 
+    /// <summary>The <c>eval-sha256-…</c> hash of the code whose compilation is blocked (the tentative eval-hash field of the deprecated report), or null.</summary>
+    public string? EvalHash { get; set; }
+
     /// <summary>
     /// https://w3c.github.io/webappsec-csp/#create-violation-for-global: a violation of <paramref name="policy"/> for the
     /// global object of <paramref name="environment"/> (see <see cref="Environment"/>), with the location of the running
@@ -389,6 +392,11 @@ internal sealed class ContentSecurityPolicyViolation
             writer.WriteString("disposition", Disposition == SecurityPolicyViolationEventDisposition.Report ? "report" : "enforce");
             writer.WriteNumber("status-code", Status);
             writer.WriteString("script-sample", Sample);
+            if (EvalHash is not null)
+            {
+                writer.WriteString("eval-hash", EvalHash);
+            }
+
             if (GetStrippedSourceFile() is { } sourceFile)
             {
                 writer.WriteString("source-file", sourceFile);

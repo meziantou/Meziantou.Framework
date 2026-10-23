@@ -703,4 +703,38 @@ public sealed class InterpreterTests
         thread.Join();
         Assert.True(error is null or JsException);
     }
+
+    [Theory]
+    [InlineData("o", ".f()", "[object Object]")]
+    [InlineData("o", ".o", "[object Object]")]
+    [InlineData("o", "['o']", "[object Object]")]
+    [InlineData("o.g", "()", "function g() { return g; }")]
+    [InlineData("o", "?.f()", "[object Object]")]
+    [InlineData("0", " + 1", "5000")]
+    [InlineData("0", " || 0", "0")]
+    public void LongChain_RunsOnASmallStack(string start, string link, string expected)
+    {
+        // A chain nests on its left operand, as deep as it is long (a line of @babel/standalone chains 650 calls): the
+        // compiler handles the chains in a loop, on the stack of a secondary thread (1 MB on Windows)
+        const int Length = 5_000;
+        string? result = null;
+        Exception? error = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                using var engine = new JsEngine();
+                var code = "var o = { f() { return this; }, g: function g() { return g; } }; o.o = o; String(" + start + string.Concat(Enumerable.Repeat(link, Length)) + ")";
+                result = engine.CreateRealm().Execute(code).AsString();
+            }
+            catch (JsException ex)
+            {
+                error = ex;
+            }
+        }, maxStackSize: 1024 * 1024);
+        thread.Start();
+        thread.Join();
+        Assert.Null(error);
+        Assert.Equal(expected, result);
+    }
 }

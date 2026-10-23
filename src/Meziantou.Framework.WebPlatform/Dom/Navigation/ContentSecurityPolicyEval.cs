@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
 using Meziantou.Framework.WebPlatform.Infra;
 
 namespace Meziantou.Framework.WebPlatform.Dom;
@@ -129,13 +130,44 @@ internal static class ContentSecurityPolicyEval
             if (ContainsExpression(sourceList, "'trusted-types-eval'") && TrustedTypesAlgorithms.DoesSinkTypeRequireTrustedTypes(TrustedTypePolicyFactory.GetDirectives(document), includeReportOnlyPolicies: false))
                 continue;
 
+            // The tentative 'eval-sha256-…' expressions (https://github.com/w3c/webappsec-csp/issues/655): they allow the code whose
+            // hash matches, and 'unsafe-eval' does not apply to a source list that has some, as 'unsafe-inline' with hashes
+            var hasEvalHashes = false;
+            var codeBytes = sourceString is null ? null : System.Text.Encoding.UTF8.GetBytes(sourceString);
+            var matchesHash = false;
+            foreach (var item in sourceList)
+            {
+                if (TryGetEvalHash(item, out var algorithm, out var expected))
+                {
+                    hasEvalHashes = true;
+                    if (codeBytes is not null)
+                    {
+                        var actual = algorithm switch
+                        {
+                            "sha256" => SHA256.HashData(codeBytes),
+                            "sha384" => SHA384.HashData(codeBytes),
+                            _ => SHA512.HashData(codeBytes),
+                        };
+                        matchesHash |= Convert.ToBase64String(actual) == expected;
+                    }
+                }
+            }
+
+            if (matchesHash)
+                continue;
+
             // Step 5.3.3
-            if (ContainsExpression(sourceList, "'unsafe-eval'"))
+            if (!hasEvalHashes && ContainsExpression(sourceList, "'unsafe-eval'"))
                 continue;
 
             // Steps 5.3.4 to 5.3.8
             var violation = ContentSecurityPolicyViolation.Create(document, policy, "script-src");
             violation.Resource = "eval";
+            if (codeBytes is not null)
+            {
+                violation.EvalHash = "eval-sha256-" + Convert.ToBase64String(SHA256.HashData(codeBytes));
+            }
+
             if (ContainsExpression(sourceList, "'report-sample'"))
             {
                 violation.Sample = ContentSecurityPolicyViolation.ClipSample(sourceString ?? "");
@@ -181,6 +213,27 @@ internal static class ContentSecurityPolicyEval
         }
 
         return blocked;
+    }
+
+    private static bool TryGetEvalHash(string item, out string algorithm, out string value)
+    {
+        algorithm = "";
+        value = "";
+        if (item.Length < 2 || item[0] != '\'' || item[^1] != '\'')
+            return false;
+
+        var inner = item.AsSpan(1, item.Length - 2);
+        foreach (var candidate in (ReadOnlySpan<string>)["sha256", "sha384", "sha512"])
+        {
+            if (inner.Length > candidate.Length + 6 && inner.StartsWith("eval-", StringComparison.OrdinalIgnoreCase) && inner[5..].StartsWith(candidate, StringComparison.OrdinalIgnoreCase) && inner[5 + candidate.Length] == '-')
+            {
+                algorithm = candidate;
+                value = inner[(6 + candidate.Length)..].ToString();
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>The value of the <c>script-src</c> directive of the policy, else of its <c>default-src</c> directive, or null.</summary>

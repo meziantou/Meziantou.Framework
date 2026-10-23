@@ -22,6 +22,9 @@ internal enum LinkResourceKind
 
     /// <summary>https://html.spec.whatwg.org/multipage/links.html#link-type-prefetch</summary>
     Prefetch,
+
+    /// <summary>https://html.spec.whatwg.org/multipage/links.html#rel-icon: only checked against the content security policies of the document (the library does not render the icons).</summary>
+    Icon,
 }
 
 /// <summary>
@@ -215,6 +218,7 @@ public partial class HtmlLinkElement
         var isPreload = false;
         var isModulePreload = false;
         var isPrefetch = false;
+        var isIcon = false;
         foreach (var token in (GetAttributeValue("rel") ?? "").Split([' ', '\t', '\n', '\f', '\r'], StringSplitOptions.RemoveEmptyEntries))
         {
             isStyleSheet |= InfraAscii.EqualsIgnoreAsciiCase(token, "stylesheet");
@@ -222,6 +226,7 @@ public partial class HtmlLinkElement
             isPreload |= InfraAscii.EqualsIgnoreAsciiCase(token, "preload");
             isModulePreload |= InfraAscii.EqualsIgnoreAsciiCase(token, "modulepreload");
             isPrefetch |= InfraAscii.EqualsIgnoreAsciiCase(token, "prefetch");
+            isIcon |= InfraAscii.EqualsIgnoreAsciiCase(token, "icon");
         }
 
         LinkResourceKind kind;
@@ -269,6 +274,13 @@ public partial class HtmlLinkElement
         {
             // https://html.spec.whatwg.org/multipage/links.html#link-type-prefetch: the destination is the empty string
             kind = LinkResourceKind.Prefetch;
+        }
+        else if (isIcon && environmentDocument.ContentSecurityPoliciesOrNull is { Count: > 0 })
+        {
+            // The icon of a document with content security policies: its fetch is blocked by img-src (nothing is rendered, so
+            // the icon is not fetched when it is allowed)
+            kind = LinkResourceKind.Icon;
+            destination = RequestDestination.Image;
         }
         else
         {
@@ -477,6 +489,12 @@ public partial class HtmlLinkElement
             {
                 FireEvent(new Event(success ? "load" : "error"));
             }
+        }
+
+        if (linkResource.Kind == LinkResourceKind.Icon)
+        {
+            ContentSecurityPolicy.ShouldBlockRequest(document, linkResource.Url, RequestDestination.Image);
+            return;
         }
 
         if (linkResource.Kind == LinkResourceKind.ModulePreload)

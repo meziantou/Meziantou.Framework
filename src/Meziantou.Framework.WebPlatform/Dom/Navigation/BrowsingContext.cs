@@ -1507,6 +1507,12 @@ public sealed partial class BrowsingContext : IDisposable
     {
         var initiatorOrigin = sourceDocument is null ? null : Document.GetOriginDocument(sourceDocument);
 
+        // A traversal to an about: document gives it the initiator origin of its document state, not the origin of the active document
+        if (traversalEntry?.DocumentState is { HasInitiatorOrigin: true } storedState && url.Scheme == "about")
+        {
+            initiatorOrigin = storedState.InitiatorOriginDocument;
+        }
+
         // https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate: "If sourceDocument is navigable's container
         // document, then reserve deferred fetch quota for navigable's container given url's origin"
         // (https://fetch.spec.whatwg.org/#reserve-deferred-fetch-quota). As in Chromium (the only implementation, and the
@@ -2639,6 +2645,11 @@ public sealed partial class BrowsingContext : IDisposable
         if (document.UrlRecord.Scheme is "about" or "data")
         {
             entry.DocumentState.HistoryPolicyContainer = PolicyContainer.Clone(document);
+            if (document.UrlRecord.Scheme == "about" && parameters is not null)
+            {
+                entry.DocumentState.HasInitiatorOrigin = true;
+                entry.DocumentState.InitiatorOriginDocument = parameters.OpaqueOrigin ? null : parameters.OriginDocument;
+            }
         }
         else if (document.UrlRecord.Scheme == "blob")
         {

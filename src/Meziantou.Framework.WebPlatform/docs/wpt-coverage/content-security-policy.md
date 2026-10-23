@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 809 | 882 | 0 | 92% |
-| [Tentative](#tentative-tests) | 3 | 13 | 0 | 23% |
+| [Stable](#stable-tests) | 822 | 882 | 0 | 93% |
+| [Tentative](#tentative-tests) | 7 | 13 | 0 | 54% |
 | [Reftests](#reftests) | 2 | 2 | 0 | 100% |
-| **All** | **814** | **897** | **0** | **91%** |
+| **All** | **831** | **897** | **0** | **93%** |
 
 ## Stable tests
 
@@ -96,7 +96,7 @@
 | [`font-src/font-mismatch-blocked.sub.html`](https://wpt.fyi/results/content-security-policy/font-src/font-mismatch-blocked.sub.html) | Pass | 1 / 1 |  |  |
 | [`font-src/font-none-blocked.sub.html`](https://wpt.fyi/results/content-security-policy/font-src/font-none-blocked.sub.html) | Pass | 1 / 1 |  |  |
 | [`font-src/font-self-allowed.html`](https://wpt.fyi/results/content-security-policy/font-src/font-self-allowed.html) | Pass | 1 / 1 |  |  |
-| [`font-src/font-stylesheet-font-blocked.sub.html`](https://wpt.fyi/results/content-security-policy/font-src/font-stylesheet-font-blocked.sub.html) | Timeout | 0 / 1 | BUG | the font faces of a style sheet are only fetched when a text uses them: the font of `fonts.css` is not used, so it is not fetched and no violation is reported |
+| [`font-src/font-stylesheet-font-blocked.sub.html`](https://wpt.fyi/results/content-security-policy/font-src/font-stylesheet-font-blocked.sub.html) | Pass | 1 / 1 |  |  |
 | [`form-action/form-action-self-allowed-target-blank.html`](https://wpt.fyi/results/content-security-policy/form-action/form-action-self-allowed-target-blank.html) | Pass | 1 / 1 |  |  |
 | [`form-action/form-action-src-allowed-target-blank.sub.html`](https://wpt.fyi/results/content-security-policy/form-action/form-action-src-allowed-target-blank.sub.html) | Pass | 1 / 1 |  |  |
 | [`form-action/form-action-src-allowed-target-frame.sub.html`](https://wpt.fyi/results/content-security-policy/form-action/form-action-src-allowed-target-frame.sub.html) | Pass | 1 / 1 |  |  |
@@ -445,7 +445,7 @@
 | [`generic/wildcard-host-part-002.sub.window.js`](https://wpt.fyi/results/content-security-policy/generic/wildcard-host-part-002.sub.window.js) | Pass | 5 / 5 |  |  |
 | [`generic/wildcard-host-part.sub.window.js`](https://wpt.fyi/results/content-security-policy/generic/wildcard-host-part.sub.window.js) | Pass | 5 / 5 |  |  |
 | [`img-src/icon-allowed.sub.html`](https://wpt.fyi/results/content-security-policy/img-src/icon-allowed.sub.html) | Pass | 1 / 1 |  |  |
-| [`img-src/icon-blocked.sub.html`](https://wpt.fyi/results/content-security-policy/img-src/icon-blocked.sub.html) | Timeout | 1 / 2 | NOT IMPLEMENTED | the icons (`<link rel=icon>`) are not fetched |
+| [`img-src/icon-blocked.sub.html`](https://wpt.fyi/results/content-security-policy/img-src/icon-blocked.sub.html) | Pass | 2 / 2 |  |  |
 | [`img-src/img-src-4_1.sub.html`](https://wpt.fyi/results/content-security-policy/img-src/img-src-4_1.sub.html) | Pass | 3 / 3 |  |  |
 | [`img-src/img-src-full-host-wildcard-blocked.sub.html`](https://wpt.fyi/results/content-security-policy/img-src/img-src-full-host-wildcard-blocked.sub.html) | Pass | 1 / 1 |  |  |
 | [`img-src/img-src-host-partial-wildcard-allowed.sub.html`](https://wpt.fyi/results/content-security-policy/img-src/img-src-host-partial-wildcard-allowed.sub.html) | Pass | 1 / 1 |  |  |
@@ -464,8 +464,8 @@
 | [`inheritance/blob-url-inherits-from-initiator.sub.html`](https://wpt.fyi/results/content-security-policy/inheritance/blob-url-inherits-from-initiator.sub.html) | Pass | 2 / 2 |  |  |
 | [`inheritance/document-write-iframe.html`](https://wpt.fyi/results/content-security-policy/inheritance/document-write-iframe.html) | Pass | 3 / 3 |  |  |
 | [`inheritance/frame-src-javascript-url.html`](https://wpt.fyi/results/content-security-policy/inheritance/frame-src-javascript-url.html) | Pass | 1 / 1 |  |  |
-| [`inheritance/history-iframe.sub.html`](https://wpt.fyi/results/content-security-policy/inheritance/history-iframe.sub.html) | Fail | 7 / 8 | BUG | a traversal to an `about:blank` session history entry whose document was discarded gets the origin of the active document (the initiator of the traversal) instead of the initiator origin of its document state, so the popup or the iframe is cross-origin with the test |
-| [`inheritance/history.sub.html`](https://wpt.fyi/results/content-security-policy/inheritance/history.sub.html) | Fail | 5 / 6 | BUG | a traversal to an `about:blank` session history entry whose document was discarded gets the origin of the active document (the initiator of the traversal) instead of the initiator origin of its document state, so the popup or the iframe is cross-origin with the test |
+| [`inheritance/history-iframe.sub.html`](https://wpt.fyi/results/content-security-policy/inheritance/history-iframe.sub.html) | Pass | 8 / 8 |  |  |
+| [`inheritance/history.sub.html`](https://wpt.fyi/results/content-security-policy/inheritance/history.sub.html) | Pass | 6 / 6 |  |  |
 | [`inheritance/iframe-all-local-schemes-inherit-self.sub.html`](https://wpt.fyi/results/content-security-policy/inheritance/iframe-all-local-schemes-inherit-self.sub.html) | Pass | 6 / 6 |  |  |
 | [`inheritance/iframe-all-local-schemes.sub.html`](https://wpt.fyi/results/content-security-policy/inheritance/iframe-all-local-schemes.sub.html) | Pass | 10 / 10 |  |  |
 | [`inheritance/iframe-srcdoc-history-inheritance.html`](https://wpt.fyi/results/content-security-policy/inheritance/iframe-srcdoc-history-inheritance.html) | Pass | 1 / 1 |  |  |
@@ -539,15 +539,15 @@
 | [`parsing/keyword-source-with-trailing-characters.html`](https://wpt.fyi/results/content-security-policy/parsing/keyword-source-with-trailing-characters.html) | Pass | 6 / 6 |  |  |
 | [`plugin-types/plugin-types-does-not-block-pdf-embed.html`](https://wpt.fyi/results/content-security-policy/plugin-types/plugin-types-does-not-block-pdf-embed.html) | Pass | 1 / 1 |  |  |
 | [`plugin-types/plugin-types-ignored.html`](https://wpt.fyi/results/content-security-policy/plugin-types/plugin-types-ignored.html) | Pass | 1 / 1 |  |  |
-| [`report-hash/default-src.https.window.js`](https://wpt.fyi/results/content-security-policy/report-hash/default-src.https.window.js) | Fail | 6 / 8 | BUG | a `csp-hash` report is also generated for a script blocked by its integrity metadata (the tests expect no report), and `script-src-sha512.https.window.js` expects the SHA-512 hash of the `report-sha512` keyword while the reported hash is always SHA-256; the other subtests pass |
-| [`report-hash/multiple-policies.https.sub.html`](https://wpt.fyi/results/content-security-policy/report-hash/multiple-policies.https.sub.html) | Fail | 6 / 8 | BUG | a `csp-hash` report is also generated for a script blocked by its integrity metadata (the tests expect no report), and `script-src-sha512.https.window.js` expects the SHA-512 hash of the `report-sha512` keyword while the reported hash is always SHA-256; the other subtests pass |
-| [`report-hash/reportonly-default-src.https.window.js`](https://wpt.fyi/results/content-security-policy/report-hash/reportonly-default-src.https.window.js) | Fail | 6 / 8 | BUG | a `csp-hash` report is also generated for a script blocked by its integrity metadata (the tests expect no report), and `script-src-sha512.https.window.js` expects the SHA-512 hash of the `report-sha512` keyword while the reported hash is always SHA-256; the other subtests pass |
-| [`report-hash/reportonly-script-src-elem.https.window.js`](https://wpt.fyi/results/content-security-policy/report-hash/reportonly-script-src-elem.https.window.js) | Fail | 6 / 8 | BUG | a `csp-hash` report is also generated for a script blocked by its integrity metadata (the tests expect no report), and `script-src-sha512.https.window.js` expects the SHA-512 hash of the `report-sha512` keyword while the reported hash is always SHA-256; the other subtests pass |
-| [`report-hash/reportonly-script-src-none.https.window.js`](https://wpt.fyi/results/content-security-policy/report-hash/reportonly-script-src-none.https.window.js) | Fail | 6 / 8 | BUG | a `csp-hash` report is also generated for a script blocked by its integrity metadata (the tests expect no report), and `script-src-sha512.https.window.js` expects the SHA-512 hash of the `report-sha512` keyword while the reported hash is always SHA-256; the other subtests pass |
-| [`report-hash/reportonly-script-src.https.window.js`](https://wpt.fyi/results/content-security-policy/report-hash/reportonly-script-src.https.window.js) | Fail | 6 / 8 | BUG | a `csp-hash` report is also generated for a script blocked by its integrity metadata (the tests expect no report), and `script-src-sha512.https.window.js` expects the SHA-512 hash of the `report-sha512` keyword while the reported hash is always SHA-256; the other subtests pass |
-| [`report-hash/script-src-elem.https.window.js`](https://wpt.fyi/results/content-security-policy/report-hash/script-src-elem.https.window.js) | Fail | 6 / 8 | BUG | a `csp-hash` report is also generated for a script blocked by its integrity metadata (the tests expect no report), and `script-src-sha512.https.window.js` expects the SHA-512 hash of the `report-sha512` keyword while the reported hash is always SHA-256; the other subtests pass |
-| [`report-hash/script-src-sha512.https.window.js`](https://wpt.fyi/results/content-security-policy/report-hash/script-src-sha512.https.window.js) | Fail | 2 / 8 | BUG | a `csp-hash` report is also generated for a script blocked by its integrity metadata (the tests expect no report), and `script-src-sha512.https.window.js` expects the SHA-512 hash of the `report-sha512` keyword while the reported hash is always SHA-256; the other subtests pass |
-| [`report-hash/script-src.https.window.js`](https://wpt.fyi/results/content-security-policy/report-hash/script-src.https.window.js) | Fail | 6 / 8 | BUG | a `csp-hash` report is also generated for a script blocked by its integrity metadata (the tests expect no report), and `script-src-sha512.https.window.js` expects the SHA-512 hash of the `report-sha512` keyword while the reported hash is always SHA-256; the other subtests pass |
+| [`report-hash/default-src.https.window.js`](https://wpt.fyi/results/content-security-policy/report-hash/default-src.https.window.js) | Pass | 8 / 8 |  |  |
+| [`report-hash/multiple-policies.https.sub.html`](https://wpt.fyi/results/content-security-policy/report-hash/multiple-policies.https.sub.html) | Pass | 8 / 8 |  |  |
+| [`report-hash/reportonly-default-src.https.window.js`](https://wpt.fyi/results/content-security-policy/report-hash/reportonly-default-src.https.window.js) | Pass | 8 / 8 |  |  |
+| [`report-hash/reportonly-script-src-elem.https.window.js`](https://wpt.fyi/results/content-security-policy/report-hash/reportonly-script-src-elem.https.window.js) | Pass | 8 / 8 |  |  |
+| [`report-hash/reportonly-script-src-none.https.window.js`](https://wpt.fyi/results/content-security-policy/report-hash/reportonly-script-src-none.https.window.js) | Pass | 8 / 8 |  |  |
+| [`report-hash/reportonly-script-src.https.window.js`](https://wpt.fyi/results/content-security-policy/report-hash/reportonly-script-src.https.window.js) | Pass | 8 / 8 |  |  |
+| [`report-hash/script-src-elem.https.window.js`](https://wpt.fyi/results/content-security-policy/report-hash/script-src-elem.https.window.js) | Pass | 8 / 8 |  |  |
+| [`report-hash/script-src-sha512.https.window.js`](https://wpt.fyi/results/content-security-policy/report-hash/script-src-sha512.https.window.js) | Pass | 8 / 8 |  |  |
+| [`report-hash/script-src.https.window.js`](https://wpt.fyi/results/content-security-policy/report-hash/script-src.https.window.js) | Pass | 8 / 8 |  |  |
 | [`reporting-api/dedicated-worker-correct-url-in-report.html`](https://wpt.fyi/results/content-security-policy/reporting-api/dedicated-worker-correct-url-in-report.html) | Pass | 4 / 4 |  |  |
 | [`reporting-api/report-to-directive-allowed-in-meta.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/report-to-directive-allowed-in-meta.https.sub.html) | Pass | 4 / 4 |  |  |
 | [`reporting-api/reporting-api-doesnt-send-reports-without-violation.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-doesnt-send-reports-without-violation.https.sub.html) | Pass | 2 / 2 |  |  |
@@ -911,10 +911,10 @@
 | [`script-src/tentative/script-url-blocked-report-contains-hash.https.html`](https://wpt.fyi/results/content-security-policy/script-src/tentative/script-url-blocked-report-contains-hash.https.html) | Error | 0 / 1 | NOT IMPLEMENTED | the URL hash sources of `script-src` (`'url-sha256-…'`, tentative) and their reports |
 | [`script-src/tentative/url-hash-in-header-and-meta.https.html`](https://wpt.fyi/results/content-security-policy/script-src/tentative/url-hash-in-header-and-meta.https.html) | Fail | 4 / 6 | NOT IMPLEMENTED | the URL hash sources of `script-src` (`'url-sha256-…'`, tentative) and their reports |
 | [`securitypolicyviolation/linenumber.tentative.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/linenumber.tentative.html) | Pass | 1 / 1 |  |  |
-| [`unsafe-eval/tentative/eval-allowed-by-hash-long-script.sub.html`](https://wpt.fyi/results/content-security-policy/unsafe-eval/tentative/eval-allowed-by-hash-long-script.sub.html) | Error | 0 / 1 | NOT IMPLEMENTED | the tentative `'eval-sha256-…'` source expressions (not in CSP3), which allow the compilation of a string whose hash matches, and the `eval-hash` field of the reports |
-| [`unsafe-eval/tentative/eval-allowed-by-hash.sub.html`](https://wpt.fyi/results/content-security-policy/unsafe-eval/tentative/eval-allowed-by-hash.sub.html) | Error | 0 / 1 | NOT IMPLEMENTED | the tentative `'eval-sha256-…'` source expressions (not in CSP3), which allow the compilation of a string whose hash matches, and the `eval-hash` field of the reports |
-| [`unsafe-eval/tentative/eval-blocked-report-contains-hash.html`](https://wpt.fyi/results/content-security-policy/unsafe-eval/tentative/eval-blocked-report-contains-hash.html) | Fail | 1 / 2 | NOT IMPLEMENTED | the tentative `'eval-sha256-…'` source expressions (not in CSP3), which allow the compilation of a string whose hash matches, and the `eval-hash` field of the reports |
-| [`unsafe-eval/tentative/eval-hashes-override-unsafe-eval.sub.html`](https://wpt.fyi/results/content-security-policy/unsafe-eval/tentative/eval-hashes-override-unsafe-eval.sub.html) | Fail | 0 / 3 | NOT IMPLEMENTED | the tentative `'eval-sha256-…'` source expressions (not in CSP3), which allow the compilation of a string whose hash matches, and the `eval-hash` field of the reports |
+| [`unsafe-eval/tentative/eval-allowed-by-hash-long-script.sub.html`](https://wpt.fyi/results/content-security-policy/unsafe-eval/tentative/eval-allowed-by-hash-long-script.sub.html) | Pass | 1 / 1 |  |  |
+| [`unsafe-eval/tentative/eval-allowed-by-hash.sub.html`](https://wpt.fyi/results/content-security-policy/unsafe-eval/tentative/eval-allowed-by-hash.sub.html) | Pass | 1 / 1 |  |  |
+| [`unsafe-eval/tentative/eval-blocked-report-contains-hash.html`](https://wpt.fyi/results/content-security-policy/unsafe-eval/tentative/eval-blocked-report-contains-hash.html) | Pass | 2 / 2 |  |  |
+| [`unsafe-eval/tentative/eval-hashes-override-unsafe-eval.sub.html`](https://wpt.fyi/results/content-security-policy/unsafe-eval/tentative/eval-hashes-override-unsafe-eval.sub.html) | Pass | 1 / 1 |  |  |
 
 ## Reftests
 

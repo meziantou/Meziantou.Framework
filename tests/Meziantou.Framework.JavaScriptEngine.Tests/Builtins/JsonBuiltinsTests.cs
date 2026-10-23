@@ -321,6 +321,215 @@ public sealed class JsonBuiltinsTests
         Assert.Equal("TypeError", realm.GetErrorName(() => realm.Call("JSON.rawJSON", new JsSymbol("s"))));
     }
 
+    // The files of JSONTestSuite that are not UTF-8 text without a BOM: invalid UTF-8 sequences, UTF-16, a BOM. The suite
+    // tests how a parser handles these bytes, but a host decodes them before JSON.parse sees them (the invalid sequences
+    // become U+FFFD and the BOM is removed), so these files only test the byte decoding.
+    private static readonly HashSet<string> JsonTestSuiteDecodingOnlyFiles = new(StringComparer.Ordinal)
+    {
+        "i_string_UTF-16LE_with_BOM.json",
+        "i_string_UTF-8_invalid_sequence.json",
+        "i_string_UTF8_surrogate_U+D800.json",
+        "i_string_invalid_utf-8.json",
+        "i_string_iso_latin_1.json",
+        "i_string_lone_utf8_continuation_byte.json",
+        "i_string_not_in_unicode_range.json",
+        "i_string_overlong_sequence_2_bytes.json",
+        "i_string_overlong_sequence_6_bytes.json",
+        "i_string_overlong_sequence_6_bytes_null.json",
+        "i_string_truncated-utf-8.json",
+        "i_string_utf16BE_no_BOM.json",
+        "i_string_utf16LE_no_BOM.json",
+        "i_structure_UTF-8_BOM_empty_object.json",
+        "n_array_a_invalid_utf8.json",
+        "n_array_invalid_utf8.json",
+        "n_number_invalid-utf-8-in-bigger-int.json",
+        "n_number_invalid-utf-8-in-exponent.json",
+        "n_number_invalid-utf-8-in-int.json",
+        "n_number_real_with_invalid_utf8_after_e.json",
+        "n_object_lone_continuation_byte_in_key_and_trailing_comma.json",
+        "n_string_invalid-utf-8-in-escape.json",
+        "n_string_invalid_utf8_after_escape.json",
+        "n_structure_UTF8_BOM_no_data.json",
+        "n_structure_incomplete_UTF8_BOM.json",
+        "n_structure_lone-invalid-utf-8.json",
+        "n_structure_single_eacute.json",
+    };
+
+    /// <summary>
+    /// Parses the files of JSONTestSuite (<c>JSONTestSuite/README.md</c>): the <c>y_</c> files must parse, the <c>n_</c>
+    /// files must throw a SyntaxError, and every result must be the one V8 gives (<c>Corpus/JSONTestSuiteV8.md</c>), which
+    /// sets the result of the implementation-defined <c>i_</c> files. The values of the <c>y_</c> files must also survive
+    /// JSON.stringify and JSON.parse.
+    /// </summary>
+    [Fact]
+    public void JsonTestSuite_MatchesV8()
+    {
+        const string ResourcePrefix = "JSONTestSuite.";
+        var assembly = typeof(JsonBuiltinsTests).Assembly;
+        var expectations = new Dictionary<string, string?>(StringComparer.Ordinal);
+        using (var stream = assembly.GetManifestResourceStream("Meziantou.Framework.JavaScriptEngine.Tests.Corpus.JSONTestSuiteV8.jsonl")!)
+        using (var reader = new StreamReader(stream))
+        {
+            while (reader.ReadLine() is { } line)
+            {
+                if (line.Length == 0)
+                    continue;
+
+                using var document = System.Text.Json.JsonDocument.Parse(line);
+                var root = document.RootElement;
+                expectations.Add(root.GetProperty("f").GetString()!, root.TryGetProperty("r", out var result) ? result.GetString() : null);
+            }
+        }
+
+        using var realm = new TestRealm();
+        realm.Realm.Execute("""
+            // JSON.stringify writes null for the infinite numbers and 0 for -0: write them as { number: '...' }
+            const replacer = (key, value) => typeof value === 'number' && (!Number.isFinite(value) || Object.is(value, -0)) ? { number: Object.is(value, -0) ? '-0' : String(value) } : value;
+
+            // -0 becomes 0 through JSON.stringify: the numbers are compared with ===. The loops are not callbacks of
+            // built-ins (Array.prototype.every): each call of a callback uses much more of the .NET stack than a call
+            // of a function, and i_structure_500_nested_arrays.json is 500 levels deep.
+            function same(a, b) {
+              if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) {
+                return a === b;
+              }
+
+              if (Array.isArray(a) !== Array.isArray(b) || Object.getPrototypeOf(a) !== Object.getPrototypeOf(b)) {
+                return false;
+              }
+
+              const keysA = Object.keys(a);
+              const keysB = Object.keys(b);
+              if (keysA.length !== keysB.length) {
+                return false;
+              }
+
+              for (let i = 0; i < keysA.length; i++) {
+                if (keysA[i] !== keysB[i] || !same(a[keysA[i]], b[keysB[i]])) {
+                  return false;
+                }
+              }
+
+              return true;
+            }
+
+            function parse(text, reviver) {
+              try {
+                return [JSON.parse(text, reviver)];
+              } catch (e) {
+                if (e instanceof SyntaxError) {
+                  return undefined;
+                }
+
+                throw e;
+              }
+            }
+
+            // The value as V8 records it (undefined for a SyntaxError), and whether it survives JSON.stringify and JSON.parse.
+            // With a reviver, the parser also records the source of the values (a code path of its own): the reviver must
+            // see the same values, and the source of the primitive values.
+            globalThis.parseJsonTestSuiteFile = function (text) {
+              let sourcesMatch = true;
+              const revived = parse(text, function (key, value, context) {
+                if (typeof value !== 'object' || value === null) {
+                  sourcesMatch &&= typeof context.source === 'string' && Object.is(JSON.parse(context.source), value);
+                }
+
+                return value;
+              });
+              const parsed = parse(text);
+              if (parsed === undefined) {
+                return revived === undefined ? undefined : 'parsed with a reviver only';
+              }
+
+              if (revived === undefined || !same(parsed[0], revived[0]) || !sourcesMatch) {
+                return 'different with a reviver';
+              }
+
+              const value = parsed[0];
+              return [JSON.stringify(value, replacer), same(value, JSON.parse(JSON.stringify(value)))];
+            };
+            """);
+
+        var names = assembly.GetManifestResourceNames().Where(name => name.StartsWith(ResourcePrefix, StringComparison.Ordinal)).Select(name => name[ResourcePrefix.Length..]).Order(StringComparer.Ordinal).ToList();
+        Assert.Equal(expectations.Keys.Order(StringComparer.Ordinal), names);
+
+        var failures = new List<string>();
+        var decodingOnlyFiles = new List<string>();
+        foreach (var name in names)
+        {
+            byte[] bytes;
+            using (var stream = assembly.GetManifestResourceStream(ResourcePrefix + name)!)
+            {
+                bytes = new byte[stream.Length];
+                stream.ReadExactly(bytes);
+            }
+
+            // The UTF-8 decode of the Encoding Standard, as TextDecoder and fetch do: the BOM is removed and the invalid
+            // sequences become U+FFFD
+            var hasBom = bytes.AsSpan().StartsWith((ReadOnlySpan<byte>)[0xEF, 0xBB, 0xBF]);
+            if (hasBom || !System.Text.Unicode.Utf8.IsValid(bytes))
+            {
+                decodingOnlyFiles.Add(name);
+            }
+
+            var text = Encoding.UTF8.GetString(bytes.AsSpan(hasBom ? 3 : 0));
+            var expected = expectations[name];
+            if ((name.StartsWith("y_", StringComparison.Ordinal) && expected is null) || (name.StartsWith("n_", StringComparison.Ordinal) && expected is not null))
+            {
+                failures.Add($"{name}: V8 does not give the result of the suite");
+            }
+
+            JsValue result;
+            try
+            {
+                result = realm.Call("parseJsonTestSuiteFile", text);
+            }
+            catch (JsException ex)
+            {
+                // No call of a function here: the catch block runs on top of the frames of the exception, which may be a
+                // RangeError of a full stack
+                failures.Add($"{name}: {JsOperations.ToString(ex.Value.AsObject().Get(new PropertyKey("name")))}: {JsOperations.ToString(ex.Value.AsObject().Get(new PropertyKey("message")))}");
+                continue;
+            }
+
+            if (result.IsUndefined)
+            {
+                if (expected is not null)
+                {
+                    failures.Add($"{name}: unexpected SyntaxError, expected {expected}");
+                }
+
+                continue;
+            }
+
+            if (result.IsString)
+            {
+                failures.Add($"{name}: {result.AsString()}");
+                continue;
+            }
+
+            var actual = result.AsObject().Get(new PropertyKey(0)).AsString();
+            if (expected is null)
+            {
+                failures.Add($"{name}: expected a SyntaxError, got {actual}");
+            }
+            else if (actual != expected)
+            {
+                failures.Add($"{name}: expected {expected}, got {actual}");
+            }
+
+            if (name.StartsWith("y_", StringComparison.Ordinal) && !result.AsObject().Get(new PropertyKey(1)).AsBoolean())
+            {
+                failures.Add($"{name}: the value changes through JSON.stringify and JSON.parse");
+            }
+        }
+
+        Assert.HasCount(318, names);
+        Assert.Equal(JsonTestSuiteDecodingOnlyFiles.Order(StringComparer.Ordinal), decodingOnlyFiles);
+        Assert.Empty(failures);
+    }
+
     [Fact]
     public void JsonObject()
     {

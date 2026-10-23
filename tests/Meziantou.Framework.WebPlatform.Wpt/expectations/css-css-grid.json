@@ -4733,13 +4733,13 @@
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/baseline/column-grid-lanes-item-baseline-subgrid-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/baseline/column-grid-lanes-item-baseline-subgrid-002.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/baseline/column-grid-lanes-item-baseline-subgrid-003.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/baseline/column-grid-lanes-item-baseline-subgrid-004.html": {
     "reftest": "PASS"

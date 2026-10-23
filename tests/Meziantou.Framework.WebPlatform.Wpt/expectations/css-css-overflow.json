@@ -1446,7 +1446,7 @@
     "total": 1
   },
   "css/css-overflow/overflow-replaced-element-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/overflow-rtl-scroll-left.html": {
     "total": 1

@@ -330,6 +330,60 @@ public sealed class PromiseTests
     }
 
     [Fact]
+    public void AllKeyed_FulfillsWithNullPrototypeObject()
+    {
+        using var test = new CollectionsTestEngine();
+        var promises = test.Object(("b", Resolved(test, 1)), ("a", 2));
+        var result = (JsPromise)CollectionsTestEngine.Invoke(test.Global("Promise"), "allKeyed", promises).AsObject();
+        test.Engine.RunJobs();
+        Assert.Equal(PromiseState.Fulfilled, result.State);
+        var obj = result.Result.AsObject();
+        Assert.Null(obj.GetPrototypeOf());
+        Assert.Equal(["b", "a"], obj.OwnPropertyKeys().Select(key => key.ToString()));
+        Assert.Equal(1, CollectionsTestEngine.Get(obj, "b").AsNumber());
+        Assert.Equal(2, CollectionsTestEngine.Get(obj, "a").AsNumber());
+    }
+
+    [Fact]
+    public void AllKeyed_RejectsWithFirstRejection()
+    {
+        using var test = new CollectionsTestEngine();
+        var promises = test.Object(("a", Resolved(test, 1)), ("b", Rejected(test, 2)));
+        var result = (JsPromise)CollectionsTestEngine.Invoke(test.Global("Promise"), "allKeyed", promises).AsObject();
+        test.Engine.RunJobs();
+        Assert.Equal(PromiseState.Rejected, result.State);
+        Assert.Equal(2, result.Result.AsNumber());
+    }
+
+    [Fact]
+    public void AllKeyed_NotAnObject_Rejects()
+    {
+        using var test = new CollectionsTestEngine();
+        var result = (JsPromise)CollectionsTestEngine.Invoke(test.Global("Promise"), "allKeyed", 1).AsObject();
+        test.Engine.RunJobs();
+        Assert.Equal(PromiseState.Rejected, result.State);
+        test.AssertError(ErrorType.TypeError, result.Result);
+    }
+
+    [Fact]
+    public void AllSettledKeyed_ReportsEachOutcome()
+    {
+        using var test = new CollectionsTestEngine();
+        var promises = test.Object(("ok", Resolved(test, 1)), ("ko", Rejected(test, 2)));
+        var result = (JsPromise)CollectionsTestEngine.Invoke(test.Global("Promise"), "allSettledKeyed", promises).AsObject();
+        test.Engine.RunJobs();
+        Assert.Equal(PromiseState.Fulfilled, result.State);
+        var obj = result.Result.AsObject();
+        Assert.Null(obj.GetPrototypeOf());
+        var ok = CollectionsTestEngine.Get(obj, "ok");
+        Assert.Equal("fulfilled", CollectionsTestEngine.Get(ok, "status").AsString());
+        Assert.Equal(1, CollectionsTestEngine.Get(ok, "value").AsNumber());
+        var ko = CollectionsTestEngine.Get(obj, "ko");
+        Assert.Equal("rejected", CollectionsTestEngine.Get(ko, "status").AsString());
+        Assert.Equal(2, CollectionsTestEngine.Get(ko, "reason").AsNumber());
+    }
+
+    [Fact]
     public void Any_FulfillsWithFirstFulfillment()
     {
         using var test = new CollectionsTestEngine();

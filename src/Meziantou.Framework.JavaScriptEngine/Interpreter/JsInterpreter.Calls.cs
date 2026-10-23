@@ -545,8 +545,14 @@ internal static partial class JsInterpreter
     /// <summary>InitializeInstanceElements(O, constructor): the private methods, then the fields.</summary>
     public static void InitializeInstanceElements(JsObject obj, JsClosure constructor)
     {
-        if (constructor.PrivateMethods is { } methods)
+        if (constructor.PrivateMethods is { Count: > 0 } methods)
         {
+            // Non-extensible Applies to Private (https://github.com/tc39/proposal-nonextensible-applies-to-private)
+            if (!obj.IsExtensible())
+            {
+                ThrowHelper.ThrowTypeError("Cannot add private methods to a non-extensible object");
+            }
+
             foreach (var method in methods)
             {
                 PrivateMethodOrAccessorAdd(obj, method);
@@ -577,6 +583,12 @@ internal static partial class JsInterpreter
 
     private static void PrivateFieldAdd(JsObject obj, PrivateName name, JsValue value)
     {
+        // Non-extensible Applies to Private (https://github.com/tc39/proposal-nonextensible-applies-to-private)
+        if (!obj.IsExtensible())
+        {
+            ThrowHelper.ThrowTypeError($"Cannot add {name} to a non-extensible object");
+        }
+
         var elements = obj.PrivateElements ??= new PrivateElementTable();
         if (elements.Contains(name))
         {

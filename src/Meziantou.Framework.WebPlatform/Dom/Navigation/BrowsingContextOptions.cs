@@ -227,6 +227,16 @@ public sealed partial class BrowsingContextOptions
     public Action<GlobalScope, Scripting.ConsoleMessage>? ConsoleMessage { get; init; }
 
     /// <summary>
+    /// Gets or sets the callback invoked when a content security policy is violated (the policies of the
+    /// <c>Content-Security-Policy</c> and <c>Content-Security-Policy-Report-Only</c> headers and of the <c>meta</c> elements, including
+    /// the Trusted Types directives), whatever the disposition of the policy: see
+    /// <see cref="ContentSecurityPolicyViolationReport.Disposition"/>. It is invoked with the <c>securitypolicyviolation</c> event, in the
+    /// task that fires it, so it plays the role of the developer console of a browser. The callback is invoked on the thread of the
+    /// event loop of the global object: the workers run on their own threads. It is not invoked for a document without browsing context.
+    /// </summary>
+    public Action<GlobalScope, ContentSecurityPolicyViolationReport>? ContentSecurityPolicyViolation { get; init; }
+
+    /// <summary>
     /// Gets or sets the clock of the timers of the windows (<c>setTimeout()</c>, <c>requestAnimationFrame()</c>...) and of
     /// <c>performance.now()</c>: it is set as the <see cref="DomEventLoop.TimeProvider"/> of the event loop of the thread
     /// when the browsing context is created. Use a fake clock (e.g. <c>FakeTimeProvider</c>) to run the timers without

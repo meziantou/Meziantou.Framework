@@ -223,6 +223,25 @@ public sealed class ContentSecurityPolicyTests : IDisposable
     }
 
     [Fact]
+    public void Violation_HostCallback_ReceivesEnforcedAndReportOnlyViolations()
+    {
+        var violations = new List<ContentSecurityPolicyViolationReport>();
+        Load("<img src=https://other.example/a.png#fragment>", headers: [new("Content-Security-Policy", "img-src 'self'"), new("Content-Security-Policy-Report-Only", "img-src 'none'")], violations: violations);
+
+        Assert.Equal(2, violations.Count);
+        var enforced = Assert.Single(violations, v => v.Disposition is SecurityPolicyViolationEventDisposition.Enforce);
+        Assert.Equal("https://example.com/", enforced.DocumentUrl);
+        Assert.Equal("https://other.example/a.png", enforced.BlockedUrl);
+        Assert.Equal("img-src", enforced.EffectiveDirective);
+        Assert.Equal("img-src 'self'", enforced.OriginalPolicy);
+        Assert.Equal(200, enforced.StatusCode);
+        Assert.Equal("", enforced.Sample);
+
+        var reportOnly = Assert.Single(violations, v => v.Disposition is SecurityPolicyViolationEventDisposition.Report);
+        Assert.Equal("img-src 'none'", reportOnly.OriginalPolicy);
+    }
+
+    [Fact]
     public void Violation_ReportUri_SendsTheDeprecatedReport()
     {
         Load("<img src=https://other.example/a.png#fragment>", headers: [new("Content-Security-Policy", "img-src 'self'; report-uri /report1 https://reports.example/report2")]);
@@ -699,9 +718,9 @@ public sealed class ContentSecurityPolicyTests : IDisposable
         return ContentSecurityPolicy.ShouldBlockRequest([policy], origin, UrlParser.Parse(url, baseUrl: null)!, destination, initiator, parserInserted);
     }
 
-    private Document Load(string html, IReadOnlyList<KeyValuePair<string, string>>? headers = null, Dictionary<string, string>? redirects = null, Dictionary<string, DocumentResource>? frames = null)
+    private Document Load(string html, IReadOnlyList<KeyValuePair<string, string>>? headers = null, Dictionary<string, string>? redirects = null, Dictionary<string, DocumentResource>? frames = null, List<ContentSecurityPolicyViolationReport>? violations = null)
     {
-        var context = _contexts.Create(new BrowsingContextOptions { ScriptEngine = _engine, DocumentLoader = new Loader(this, html, headers ?? [], redirects ?? [], frames ?? []) });
+        var context = _contexts.Create(new BrowsingContextOptions { ScriptEngine = _engine, DocumentLoader = new Loader(this, html, headers ?? [], redirects ?? [], frames ?? []), ContentSecurityPolicyViolation = violations is null ? null : (_, violation) => violations.Add(violation) });
         context.Navigate("https://example.com/");
         _contexts.EventLoop.RunUntilIdle();
         return context.Document;

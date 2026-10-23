@@ -370,6 +370,7 @@ internal sealed partial class InlineLayoutAlgorithm
         _blockSpaceAdvance = null;
         _blockEllipsis = null;
         _blockEllipsisText = null;
+        _blockEllipsisHang = 0;
         _blockEllipsisIsLegacy = false;
         _hidesLines = false;
         _lineWidthLimits.Clear();
@@ -416,8 +417,34 @@ internal sealed partial class InlineLayoutAlgorithm
     private LineEllipsis CreateBlockEllipsis(TextOverflowSide ellipsis)
     {
         _blockEllipsisText = ellipsis.Kind == TextOverflowKind.String ? ellipsis.String : null;
-        return LineEllipsis.Create(_block, _block.Style, _blockEllipsisText, _block.Style.Layout.Direction == Direction.Rtl);
+        var isRightToLeft = _block.Style.Layout.Direction == Direction.Rtl;
+        var result = LineEllipsis.Create(_block, _block.Style, _blockEllipsisText, isRightToLeft);
+
+        // https://drafts.csswg.org/css-text-4/#hanging-punctuation-property: the last character of the ellipsis is at the end of the
+        // last line of the block container: a closing bracket or quote hangs with hanging-punctuation: last, a stop or a comma with
+        // force-end; its advance is not reserved at the end of the line
+        _blockEllipsisHang = 0;
+        var hanging = _block.Style.Layout.Text.HangingPunctuation;
+        var text = LineEllipsis.GetText(_block.Style, _blockEllipsisText);
+        if (hanging != HangingPunctuation.None && text.Length > 0)
+        {
+            var last = char.IsLowSurrogate(text[^1]) && text.Length > 1 ? text[^2..] : text[^1..];
+            var codePoint = char.ConvertToUtf32(last, 0);
+            if (((hanging & HangingPunctuation.Last) != HangingPunctuation.None && TextSpacingClasses.IsClosingBracketOrQuote(codePoint))
+                || ((hanging & HangingPunctuation.ForceEnd) != HangingPunctuation.None && TextSpacingClasses.IsStopOrComma(codePoint)))
+            {
+                _blockEllipsisHang = Math.Min(result.InlineSize, LineEllipsis.Create(_block, _block.Style, last, isRightToLeft).InlineSize);
+            }
+        }
+
+        return result;
     }
+
+    /// <summary>The advance of the end of the block overflow ellipsis that hangs (see <see cref="CreateBlockEllipsis"/>).</summary>
+    private double _blockEllipsisHang;
+
+    /// <summary>The space that the block overflow ellipsis takes at the end of its line: its advance, but its part that hangs.</summary>
+    private double GetBlockEllipsisReservedSize(LineEllipsis? ellipsis) => ellipsis is null ? 0 : Math.Max(0, ellipsis.InlineSize - _blockEllipsisHang);
 
     /// <summary>The state of the lines of a formatting context.</summary>
     [StructLayout(LayoutKind.Auto)]
@@ -550,8 +577,8 @@ internal sealed partial class InlineLayoutAlgorithm
         while (true)
         {
             var opportunity = GetLineOpportunity(blockOffset, bandSize);
-            var space = opportunity.Size - indent - (_blockEllipsis?.InlineSize ?? 0);
-            var available = Math.Min(opportunity.Size, limit) - indent - (_blockEllipsis?.InlineSize ?? 0);
+            var space = opportunity.Size - indent - GetBlockEllipsisReservedSize(_blockEllipsis);
+            var available = Math.Min(opportunity.Size, limit) - indent - GetBlockEllipsisReservedSize(_blockEllipsis);
             if (reduction > 0)
             {
                 available = Math.Max(available - reduction, Math.Min(keptWidth, space));

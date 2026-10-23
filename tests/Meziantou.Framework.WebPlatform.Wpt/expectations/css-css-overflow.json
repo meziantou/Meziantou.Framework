@@ -234,7 +234,7 @@
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/block-ellipsis-035.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/block-ellipsis-036.html": {
     "reftest": "PASS"

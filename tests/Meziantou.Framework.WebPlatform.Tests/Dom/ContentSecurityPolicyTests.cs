@@ -56,6 +56,10 @@ public sealed class ContentSecurityPolicyTests : IDisposable
     [InlineData("script-src 'none'", "https://example.com/a.png", false)]
     // The first directive with a name is used, and the names are case-insensitive
     [InlineData("IMG-SRC 'none'; img-src *", "https://example.com/a.png", true)]
+    // A directive that contains a control character (which is not ASCII whitespace) is ignored
+    [InlineData("img-src 'none'\u000B", "https://example.com/a.png", false)]
+    [InlineData("img-src 'none' http:\u0001", "https://example.com/a.png", false)]
+    [InlineData("img-src 'none'; media-src 'self'\u007F", "https://example.com/a.png", true)]
     public void Image(string policy, string url, bool blocked)
     {
         Assert.Equal(blocked, ShouldBlock(policy, url, RequestDestination.Image));
@@ -220,6 +224,25 @@ public sealed class ContentSecurityPolicyTests : IDisposable
         Assert.Contains("img-src 'self' enforce", document.Title, StringComparison.Ordinal);
         Assert.Contains("img-src 'none' report", document.Title, StringComparison.Ordinal);
         Assert.Empty(Requests);
+    }
+
+    [Fact]
+    public void Violation_HostCallback_ReceivesEnforcedAndReportOnlyViolations()
+    {
+        var violations = new List<ContentSecurityPolicyViolationReport>();
+        Load("<img src=https://other.example/a.png#fragment>", headers: [new("Content-Security-Policy", "img-src 'self'"), new("Content-Security-Policy-Report-Only", "img-src 'none'")], violations: violations);
+
+        Assert.Equal(2, violations.Count);
+        var enforced = Assert.Single(violations, v => v.Disposition is SecurityPolicyViolationEventDisposition.Enforce);
+        Assert.Equal("https://example.com/", enforced.DocumentUrl);
+        Assert.Equal("https://other.example/a.png", enforced.BlockedUrl);
+        Assert.Equal("img-src", enforced.EffectiveDirective);
+        Assert.Equal("img-src 'self'", enforced.OriginalPolicy);
+        Assert.Equal(200, enforced.StatusCode);
+        Assert.Equal("", enforced.Sample);
+
+        var reportOnly = Assert.Single(violations, v => v.Disposition is SecurityPolicyViolationEventDisposition.Report);
+        Assert.Equal("img-src 'none'", reportOnly.OriginalPolicy);
     }
 
     [Fact]
@@ -621,6 +644,150 @@ public sealed class ContentSecurityPolicyTests : IDisposable
         Assert.Equal("frame", document.BrowsingContext!.Children[0].Document.Title);
     }
 
+    [Fact]
+    public void FrameAncestors_ReportTo_SentToTheEndpointOfTheResponse()
+    {
+        var document = Load("<iframe src=https://other.example/frame.html></iframe>", frames: new()
+        {
+            ["https://other.example/frame.html"] = Frame("<title>frame</title>", ("Reporting-Endpoints", "group=\"https://other.example/reports\""), ("Content-Security-Policy", "frame-ancestors 'none'; report-to group")),
+        });
+
+        Assert.Equal("", document.BrowsingContext!.Children[0].Document.Title);
+        var report = Assert.Single(_requests, r => r.Destination == RequestDestination.Report);
+        Assert.Equal("https://other.example/reports", report.Url);
+        using var json = System.Text.Json.JsonDocument.Parse(report.Body!.Value);
+        var entry = Assert.Single(json.RootElement.EnumerateArray());
+        Assert.Equal("csp-violation", entry.GetProperty("type").GetString());
+        Assert.Equal("https://other.example/frame.html", entry.GetProperty("url").GetString());
+        Assert.Equal("frame-ancestors", entry.GetProperty("body").GetProperty("effectiveDirective").GetString());
+    }
+
+    [Theory]
+    [InlineData("script-src 'self'", "script-src 'self'")]
+    [InlineData("not-a-directive https://whatever.not-a-tld", "not-a-directive https://whatever.not-a-tld")]
+    // The invalid values: empty, a list of policies, an invalid directive name, a report directive, a line break
+    [InlineData("", null)]
+    [InlineData("script-src 'self', object-src 'none'", null)]
+    [InlineData("media-src%20https://example.com", null)]
+    [InlineData("script-src 'self'; report-uri /report", null)]
+    [InlineData("script-src 'self'; report-to group", null)]
+    [InlineData("style-src&#10;'unsafe-inline'", null)]
+    public void EmbeddedEnforcement_SecRequiredCspHeader(string csp, string? expected)
+    {
+        Load($"""<iframe csp="{csp}" src=https://other.example/frame.html></iframe>""", frames: new() { ["https://other.example/frame.html"] = Frame("<title>frame</title>", ("Allow-CSP-From", "*")) });
+
+        var request = Assert.Single(_requests, r => r.Url == "https://other.example/frame.html");
+        Assert.Equal(expected, request.Headers.FirstOrDefault(header => header.Key == "Sec-Required-CSP").Value);
+    }
+
+    [Fact]
+    public void EmbeddedEnforcement_SecRequiredCspHeader_TooLong()
+    {
+        var csp = "style-src " + string.Join(' ', Enumerable.Repeat("a", 2044));
+        Load($"""<iframe csp="{csp}" src=https://other.example/frame.html></iframe>""", frames: new() { ["https://other.example/frame.html"] = Frame("<title>frame</title>", ("Allow-CSP-From", "*")) });
+
+        var request = Assert.Single(_requests, r => r.Url == "https://other.example/frame.html");
+        Assert.DoesNotContain(request.Headers, header => header.Key == "Sec-Required-CSP");
+    }
+
+    [Theory]
+    // The response accepts the required policy with an Allow-CSP-From header (* or the origin of the embedder)...
+    [InlineData("Allow-CSP-From", "*", false, true)]
+    [InlineData("Allow-CSP-From", "https://example.com", false, true)]
+    [InlineData("Allow-CSP-From", "https://other.example", true, false)]
+    // ... or with policies at least as strict as the required policy, which is then not added to its policies
+    [InlineData("Content-Security-Policy", "default-src 'none'", false, false)]
+    [InlineData("Content-Security-Policy", "img-src 'none'; script-src 'none'", false, false)]
+    [InlineData("Content-Security-Policy", "default-src 'self'", true, false)]
+    [InlineData("Content-Security-Policy-Report-Only", "img-src 'none'", true, false)]
+    [InlineData("X-Header", "value", true, false)]
+    public void EmbeddedEnforcement_Response(string headerName, string headerValue, bool blocked, bool enforcesRequiredPolicy)
+    {
+        var document = Load("""<iframe csp="img-src 'none'" src=https://other.example/frame.html></iframe>""", frames: new() { ["https://other.example/frame.html"] = Frame("<title>frame</title>", (headerName, headerValue)) });
+
+        var frame = document.BrowsingContext!.Children[0].Document;
+        Assert.Equal(blocked ? "" : "frame", frame.Title);
+
+        // A blocked response is replaced by an error document, whose origin is opaque
+        Assert.Equal(blocked, frame.Origin.IsOpaque);
+        Assert.Equal(enforcesRequiredPolicy, frame.ContentSecurityPoliciesOrNull?.Exists(policy => policy.Serialized == "img-src 'none'") ?? false);
+    }
+
+    [Fact]
+    public void EmbeddedEnforcement_EnforcedPolicyBlocksTheRequestsOfTheFrame()
+    {
+        Load("""<iframe csp="img-src 'none'" src=https://other.example/frame.html></iframe>""", frames: new() { ["https://other.example/frame.html"] = Frame("<img src=https://other.example/a.png>", ("Allow-CSP-From", "*")) });
+
+        Assert.DoesNotContain(_requests, r => r.Url == "https://other.example/a.png");
+    }
+
+    [Theory]
+    // The required CSP of a nested frame without csp attribute is the one of its container document
+    [InlineData("", "script-src 'unsafe-inline'; style-src 'self'")]
+    // A csp attribute must be subsumed by the required CSP of the container document, else that one is used
+    [InlineData("script-src 'unsafe-inline'; style-src 'none'", "script-src 'unsafe-inline'; style-src 'none'")]
+    [InlineData("script-src 'unsafe-inline'", "script-src 'unsafe-inline'; style-src 'self'")]
+    public void EmbeddedEnforcement_NestedFrame(string innerCsp, string expected)
+    {
+        Load("""<iframe csp="script-src 'unsafe-inline'; style-src 'self'" src=https://other.example/outer.html></iframe>""", frames: new()
+        {
+            ["https://other.example/outer.html"] = Frame($"""<iframe csp="{innerCsp}" src=https://third.example/inner.html></iframe>""", ("Allow-CSP-From", "*")),
+            ["https://third.example/inner.html"] = Frame("<title>inner</title>", ("Allow-CSP-From", "*")),
+        });
+
+        var request = Assert.Single(_requests, r => r.Url == "https://third.example/inner.html");
+        Assert.Equal(expected, request.Headers.FirstOrDefault(header => header.Key == "Sec-Required-CSP").Value);
+    }
+
+    [Fact]
+    public void EmbeddedEnforcement_LocalScheme_EnforcesTheRequiredPolicy()
+    {
+        var document = Load("""<iframe csp="script-src 'none'" srcdoc="<title>srcdoc</title><script>document.title = 'ran'</script>"></iframe>""");
+
+        // The documents of the local schemes inherit the policies of their embedder: the embedder can restrict them further
+        var frame = document.BrowsingContext!.Children[0].Document;
+        Assert.Equal("srcdoc", frame.Title);
+        Assert.Equal("script-src 'none'", frame.RequiredContentSecurityPolicy);
+    }
+
+    [Theory]
+    [InlineData("style-src 'none'", "", false)]
+    [InlineData("style-src 'none'; script-src 'unsafe-inline'", "style-src 'none'; script-src 'unsafe-inline'", true)]
+    [InlineData("script-src 'nonce-abc' 'nonce-123'", "script-src 'nonce-xyz'", true)]
+    [InlineData("style-src 'none'; script-src 'none'", "style-src 'none'; script-src 'self' 'nonce-abc'", false)]
+    // A required default-src directive constrains every fetch directive of the response
+    [InlineData("default-src 'none'", "img-src 'none'|script-src 'unsafe-inline'", false)]
+    [InlineData("default-src 'none'", "default-src 'none'", true)]
+    // The intersection of the policies of the response is compared
+    [InlineData("style-src http://*.example.com:*", "style-src http://*.com:*|style-src http://*.com http://*.example.com:*", false)]
+    [InlineData("style-src http://*.example.com", "style-src http://*.example.com:*|style-src http://*.com", true)]
+    [InlineData("img-src 'none'", "img-src http://*.one.com|img-src https://two.com", true)]
+    // The secure upgrades of the schemes and of the default ports
+    [InlineData("img-src http://b.com:80", "img-src https://b.com", true)]
+    [InlineData("img-src http://b.com", "img-src https://b.com:36", false)]
+    [InlineData("img-src http:", "img-src https://c.com:* https://b.com http://c.com", true)]
+    [InlineData("img-src http: wss:", "img-src https: ws:", false)]
+    // The paths, and the wildcards
+    [InlineData("img-src http://b.com/", "img-src http://b.com", true)]
+    [InlineData("img-src http://b.com/path.html", "img-src http://b.com", false)]
+    [InlineData("img-src *", "img-src data:", false)]
+    [InlineData("img-src http://*.a.com", "img-src http://a.com", false)]
+    // 'self' is the origin of the response
+    [InlineData("img-src 'self'", "img-src https://example.com", true)]
+    [InlineData("img-src https://example.com", "img-src 'self'", true)]
+    // The keywords: 'unsafe-inline' is ineffective with a nonce or a hash, and 'strict-dynamic' ignores the URL expressions
+    [InlineData("style-src 'self'", "style-src 'unsafe-inline' 'sha256-abc123'", false)]
+    [InlineData("style-src 'self' 'sha256-abc123'", "style-src 'self' 'unsafe-inline' 'sha256-abc123'", true)]
+    [InlineData("style-src 'self'", "style-src 'self' 'unsafe-eval'", false)]
+    [InlineData("script-src 'strict-dynamic' 'nonce-abc'", "script-src https://example.com 'strict-dynamic' 'nonce-abc'", true)]
+    [InlineData("script-src 'nonce-abc'", "script-src 'strict-dynamic' 'nonce-abc'", false)]
+    public void EmbeddedEnforcement_Subsumption(string required, string returned, bool subsumes)
+    {
+        var origin = OriginRecord.FromUrl(UrlParser.Parse("https://example.com/", baseUrl: null)!);
+        var policies = returned.Length == 0 ? [] : returned.Split('|').Select(policy => ContentSecurityPolicy.Parse(policy, reportOnly: false, fromMeta: false)).ToList();
+        Assert.Equal(subsumes, ContentSecurityPolicy.Subsumes(ContentSecurityPolicy.Parse(required, reportOnly: false, fromMeta: false), policies, origin));
+    }
+
     [Theory]
     [InlineData("base-uri 'self'", "https://other.example/base/", "https://example.com/;https://other.example/base/ base-uri;")]
     [InlineData("base-uri 'self'", "/base/", "https://example.com/base/;")]
@@ -699,9 +866,9 @@ public sealed class ContentSecurityPolicyTests : IDisposable
         return ContentSecurityPolicy.ShouldBlockRequest([policy], origin, UrlParser.Parse(url, baseUrl: null)!, destination, initiator, parserInserted);
     }
 
-    private Document Load(string html, IReadOnlyList<KeyValuePair<string, string>>? headers = null, Dictionary<string, string>? redirects = null, Dictionary<string, DocumentResource>? frames = null)
+    private Document Load(string html, IReadOnlyList<KeyValuePair<string, string>>? headers = null, Dictionary<string, string>? redirects = null, Dictionary<string, DocumentResource>? frames = null, List<ContentSecurityPolicyViolationReport>? violations = null)
     {
-        var context = _contexts.Create(new BrowsingContextOptions { ScriptEngine = _engine, DocumentLoader = new Loader(this, html, headers ?? [], redirects ?? [], frames ?? []) });
+        var context = _contexts.Create(new BrowsingContextOptions { ScriptEngine = _engine, DocumentLoader = new Loader(this, html, headers ?? [], redirects ?? [], frames ?? []), ContentSecurityPolicyViolation = violations is null ? null : (_, violation) => violations.Add(violation) });
         context.Navigate("https://example.com/");
         _contexts.EventLoop.RunUntilIdle();
         return context.Document;

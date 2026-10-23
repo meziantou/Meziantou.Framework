@@ -214,10 +214,59 @@ public sealed class TreeConstructionTests
         """)]
     // A U+FFFD character token (not a NUL) sets the frameset-ok flag to "not ok" (Chromium ignores U+FFFD as it ignores U+0000)
     [InlineData("\U0000FFFD<frameset><frame>", "| <html>\n|   <head>\n|   <body>\n|     \"\U0000FFFD\"\n")]
+    // A formatting element with an is attribute is reconstructed as the other ones (Chromium does not reconstruct it)
+    [InlineData("<strong><font is></strong>x", "| <html>\n|   <head>\n|   <body>\n|     <strong>\n|       <font>\n|         is=\"\"\n|     <font>\n|       is=\"\"\n|       \"x\"\n")]
+    // The end tags are not adjusted in foreign content, so </foreignobject> closes the HTML foreignobject element (Chromium and
+    // WebKit adjust it to </foreignObject>)
+    [InlineData("<foreignobject><svg></foreignobject>x", "| <html>\n|   <head>\n|   <body>\n|     <foreignobject>\n|       <svg svg>\n|     \"x\"\n")]
+    // The whitespace in table text is inserted without reconstructing the active formatting elements (Chromium and WebKit
+    // insert it in a new b element)
+    [InlineData("<template><tr><b><tbody> ", "| <html>\n|   <head>\n|     <template>\n|       content\n|         <tr>\n|         <b>\n|         \" \"\n|   <body>\n")]
     public void ParseWhereChromiumDiffers(string input, string expectedTree)
     {
         var document = HtmlDocumentParser.ParseDocument(input);
         Assert.Equal(expectedTree.ReplaceLineEndings("\n"), TreeDumper.Dump(document));
+    }
+
+    // Found by comparing the fragments with Chromium (tools/Meziantou.Framework.WebPlatform.ChromiumDiff); the context is the
+    // namespace prefix (svg, math) and the local name of the context element, followed by its attributes (name=value)
+    [Theory]
+    // The start tag token of the context element has the attributes of the element, so an annotation-xml context element
+    // whose encoding is text/html or application/xhtml+xml is an HTML integration point
+    [InlineData("math annotation-xml encoding=text/html", "<a>x", "| <a>\n|   \"x\"\n")]
+    [InlineData("math annotation-xml encoding=APPLICATION/XHTML+XML", "<a>x", "| <a>\n|   \"x\"\n")]
+    [InlineData("math annotation-xml encoding=text/plain", "<a>x", "| <math a>\n|   \"x\"\n")]
+    [InlineData("math annotation-xml", "<a>x", "| <math a>\n|   \"x\"\n")]
+    // The adjusted current node is the context element when the stack of open elements has only the html element, so this is a
+    // CDATA section in an SVG or MathML context (Chromium and WebKit parse a bogus comment)
+    [InlineData("svg path", "<![CDATA[x]]>", "| \"x\"\n")]
+    // An end tag in foreign content is ignored when the stack of open elements has only the html element, so the a element stays
+    // in the list of active formatting elements (Chromium and WebKit run the adoption agency algorithm)
+    [InlineData("math math", "<strong><a></strong></a><big>", "| <strong>\n|   <a>\n| <a>\n|   <big>\n")]
+    // The characters in a table row of a template are inserted in the template contents (Chromium ignores them in a colgroup context)
+    [InlineData("colgroup", "<template><tr>y", "| <template>\n|   content\n|     <tr>\n|     \"y\"\n")]
+    // The 'in template' insertion mode inserts the table elements after an element processed with the 'in head' rules
+    // (Chromium and WebKit ignore them)
+    [InlineData("template", "<title></title><td>", "| <title>\n| <td>\n")]
+    public void ParseFragmentFoundByChromiumDiff(string context, string input, string expectedTree)
+    {
+        var document = HtmlDocumentParser.ParseDocument("<!DOCTYPE html>");
+        var parts = context.Split(' ');
+        var (namespaceUri, nameIndex) = parts[0] switch
+        {
+            "svg" => ("http://www.w3.org/2000/svg", 1),
+            "math" => ("http://www.w3.org/1998/Math/MathML", 1),
+            _ => ("http://www.w3.org/1999/xhtml", 0),
+        };
+        var element = document.CreateElementNS(namespaceUri, parts[nameIndex]);
+        foreach (var attribute in parts.Skip(nameIndex + 1))
+        {
+            var separator = attribute.IndexOf('=', StringComparison.Ordinal);
+            element.SetAttribute(attribute[..separator], attribute[(separator + 1)..]);
+        }
+
+        element.InnerHtml = input;
+        Assert.Equal(expectedTree, TreeDumper.Dump(element is HtmlTemplateElement template ? template.Content : element));
     }
 }
 

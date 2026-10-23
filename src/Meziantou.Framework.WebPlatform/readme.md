@@ -310,9 +310,10 @@ See [docs/rendering.md](docs/rendering.md) for what is painted, and [Printing](d
   attributes, `javascript:` URLs), `'unsafe-eval'`/`'wasm-unsafe-eval'` (`eval()` and the `Function` constructors), the
   navigation and document directives (`frame-src`, `form-action`, `frame-ancestors`, `base-uri`, `object-src`,
   `worker-src`), `upgrade-insecure-requests`, the inheritance of the policies and the Trusted Types directives,
-  with their violation reports (`securitypolicyviolation`, `report-uri`, and `report-to` with the Reporting API): no CSP
-  Embedded Enforcement (the `csp` attribute of the `iframe` element). The Reporting API only generates the CSP, COEP
-  and test reports (no deprecation, intervention, COOP or Document Policy reports).
+  with their violation reports (`securitypolicyviolation`, `report-uri`, and `report-to` with the Reporting API), and CSP
+  Embedded Enforcement (the `csp` attribute of the `iframe` element, `Sec-Required-CSP` and `Allow-CSP-From`). The
+  Reporting API only generates the CSP, COEP and test reports (no deprecation, intervention, COOP or Document Policy
+  reports).
 - Streams cannot be transferred, and the tentative `URLPattern` methods `compareComponent()` and `generate()` are not
   implemented.
 - **Experimental APIs.** The public APIs of the tentative features (proposals that no specification defines yet, e.g.

@@ -137,6 +137,148 @@ internal static partial class WptPythonHandlers
             response.Content = "<!DOCTYPE html><title>Echo.</title>";
         },
 
+        // content-security-policy/embedded-enforcement/support/echo-allow-csp-from.py: a document with the Allow-CSP-From header
+        // of the allow_csp_from parameter, which posts the violations of its policies, the load of an image and its id to the
+        // top-level window
+        ["/content-security-policy/embedded-enforcement/support/echo-allow-csp-from.py"] = (request, response, _) =>
+        {
+            response.Add("Content-Type", "text/html");
+            if (request.Get("allow_csp_from") is { } allowCspFrom)
+            {
+                response.Add("Allow-CSP-From", allowCspFrom);
+            }
+
+            var id = request.Get("id");
+            response.Body = Encoding.UTF8.GetBytes($$"""
+
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>This page enforces embedder's policies</title>
+                    <script nonce="123">
+                        document.addEventListener("securitypolicyviolation", function(e) {
+                            var response = {};
+                            response["id"] = "{{DecodeUtf8(id ?? "")}}";
+                            response["securitypolicyviolation"] = true;
+                            response["blockedURI"] = e.blockedURI;
+                            response["lineNumber"] = e.lineNumber;
+                            window.top.postMessage(response, '*');
+                        });
+                    </script>
+                </head>
+                <body>
+                    <script nonce="123">
+                        let img = document.createElement('img');
+                        img.src = "../../support/pass.png";
+                        img.onload = function() { window.top.postMessage("img loaded", '*'); }
+                        document.body.appendChild(img);
+                    </script>
+                    <style>
+                        body {
+                            background-color: maroon;
+                        }
+                    </style>
+                    <script nonce="123">
+                        var response = {};
+                        response["id"] = "{{DecodeUtf8(id ?? "")}}";
+                        response["loaded"] = true;
+                        window.top.postMessage(response, '*');
+                    </script>
+                    <script>
+                        // Inline script which might be blocked by CSP.
+                        navigator.userAgent;
+                    </script>
+                </body>
+                </html>
+
+                """);
+        },
+
+        // content-security-policy/embedded-enforcement/support/echo-policy-multiple.py: a document with the
+        // Content-Security-Policy headers of the policy, policy2 and policy3 parameters, which posts its id to the top-level window
+        ["/content-security-policy/embedded-enforcement/support/echo-policy-multiple.py"] = (request, response, _) =>
+        {
+            response.Add("Content-Type", "text/html");
+            foreach (var name in (ReadOnlySpan<string>)["policy", "policy2", "policy3"])
+            {
+                if (request.Get(name) is { } policy)
+                {
+                    response.Add("Content-Security-Policy", policy);
+                }
+            }
+
+            response.Body = Encoding.UTF8.GetBytes($$"""
+
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>This page sets given CSP upon itself.</title>
+                </head>
+                <body>
+                    <script nonce="abc">
+                        var response = {};
+                        response["id"] = "{{DecodeUtf8(request.Get("id") ?? "")}}";
+                        response["loaded"] = true;
+                        window.top.postMessage(response, '*');
+                    </script>
+                </body>
+                </html>
+
+                """);
+        },
+
+        // content-security-policy/embedded-enforcement/support/echo-required-csp.py: a document that posts the
+        // Sec-Required-CSP header of its request (and the header that a line break in it would inject) to its parent, forwards
+        // the messages of its child, and creates a child iframe with the csp attribute of the second_level_iframe_csp parameter
+        ["/content-security-policy/embedded-enforcement/support/echo-required-csp.py"] = (request, response, _) =>
+        {
+            var message = "{\"test_header_injection\": " + JsonOrNull(request.Header("Test-Header-Injection")) + ", \"required_csp\": " + JsonOrNull(request.Header("Sec-Required-CSP")) + "}";
+            var secondLevelIframe = "";
+            if (request.Has("include_second_level_iframe"))
+            {
+                secondLevelIframe = request.Get("second_level_iframe_csp") is { Length: > 0 } secondLevelCsp
+                    ? $$"""
+                        <script>
+                                    var i2 = document.createElement('iframe');
+                                    i2.src = 'echo-required-csp.py';
+                                    i2.csp = "{{secondLevelCsp}}";
+                                    document.body.appendChild(i2);
+                                    </script>
+                        """
+                    : """
+                        <script>
+                                    var i2 = document.createElement('iframe');
+                                    i2.src = 'echo-required-csp.py';
+                                    document.body.appendChild(i2);
+                                    </script>
+                        """;
+            }
+
+            response.Add("Content-Type", "text/html");
+            response.Add("Allow-CSP-From", "*");
+            response.Content = $$"""
+
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <script>
+                      window.addEventListener('message', function(e) {
+                        window.parent.postMessage(e.data, '*');
+                      });
+
+                      window.parent.postMessage({{message}}, '*');
+                    </script>
+                </head>
+                <body>
+                {{secondLevelIframe}}
+                </body>
+                </html>
+
+                """;
+
+            static string JsonOrNull(string? value) => value is null ? "null" : JsonSerializer.Serialize(value);
+        },
+
         // content-security-policy/parsing/support/csp.py: a document whose policy is the policy parameter, which posts the
         // result of the load of an image to its parent
         ["/content-security-policy/parsing/support/csp.py"] = (request, response, _) =>

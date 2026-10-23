@@ -80,6 +80,20 @@ public partial class HtmlIFrameElement
     }
 
     /// <summary>
+    /// Gets or sets the value of the <c>csp</c> content attribute (https://w3c.github.io/webappsec-cspee/#dom-htmliframeelement-csp):
+    /// a policy that the documents loaded into the iframe must enforce (CSP Embedded Enforcement). A valid value is sent in
+    /// the <c>Sec-Required-CSP</c> header of the requests of the navigations of the iframe, and a response that does not
+    /// accept it (with an <c>Allow-CSP-From</c> header, or with policies at least as strict) is blocked.
+    /// </summary>
+    /// <seealso href="https://w3c.github.io/webappsec-cspee/#dom-htmliframeelement-csp"/>
+    [IdlMember("csp", "https://w3c.github.io/webappsec-cspee/#dom-htmliframeelement-csp")]
+    public string Csp
+    {
+        get => Reflection.GetString(this, "csp");
+        set => Reflection.SetString(this, "csp", value);
+    }
+
+    /// <summary>
     /// Gets the policy object of the iframe (https://w3c.github.io/webappsec-permissions-policy/#dom-htmliframeelement-permissionspolicy):
     /// the features that a document loaded into the iframe would be allowed to use, according to the permissions policy of
     /// the document of the iframe and to its <c>allow</c>, <c>allowfullscreen</c>, <c>src</c>, <c>srcdoc</c> and

@@ -115,17 +115,22 @@ internal sealed class ContentSecurityPolicyViolation
     /// response check (https://w3c.github.io/webappsec-csp/#should-block-navigation-response), whose URL and status are the
     /// ones of the response (there is no document yet). No event is fired; the reports of the <c>report-uri</c> directive are
     /// sent from the origin of the response, with <paramref name="reportingEnvironment"/> as the environment of the fetches
-    /// (its event loop and its loader), as in the browsers.
+    /// (its event loop and its loader), as in the browsers. The report of the <c>report-to</c> directive is sent to the
+    /// endpoint of the response (its <c>Reporting-Endpoints</c> or <c>Report-To</c> header, <paramref name="responseHeaders"/>).
     /// </summary>
-    public static ContentSecurityPolicyViolation CreateWithoutGlobal(Document reportingEnvironment, ContentSecurityPolicy policy, string directive, UrlRecord url, int status)
+    public static ContentSecurityPolicyViolation CreateWithoutGlobal(Document reportingEnvironment, ContentSecurityPolicy policy, string directive, UrlRecord url, int status, IReadOnlyList<KeyValuePair<string, string>> responseHeaders)
     {
         return new ContentSecurityPolicyViolation(reportingEnvironment, policy, directive)
         {
             HasNoGlobal = true,
             _url = url,
             Status = status,
+            _responseHeaders = responseHeaders,
         };
     }
+
+    // The headers of the response of a violation without global object, whose endpoints receive the report-to report
+    private IReadOnlyList<KeyValuePair<string, string>>? _responseHeaders;
 
     /// <summary>Sets the source file, the line number and the column number of the violation (https://w3c.github.io/webappsec-csp/#create-violation-for-global, step 2).</summary>
     public void SetSourceLocation(Scripting.ScriptLocation location)
@@ -211,6 +216,7 @@ internal sealed class ContentSecurityPolicyViolation
     /// <summary>https://w3c.github.io/webappsec-csp/#report-violation, step 3: the task that fires the event and sends or queues the reports.</summary>
     private void ReportTask()
     {
+        NotifyHost();
         if (HasNoGlobal)
         {
             SendReports();
@@ -249,11 +255,33 @@ internal sealed class ContentSecurityPolicyViolation
         SendReports();
     }
 
+    /// <summary>Gives the violation to <see cref="BrowsingContextOptions.ContentSecurityPolicyViolation"/>, for the global object of the violation.</summary>
+    private void NotifyHost()
+    {
+        GlobalScope? global = Environment.WorkerGlobal ?? (GlobalScope?)Environment.RelevantWindow;
+        if (global?.Options.ContentSecurityPolicyViolation is not { } callback)
+            return;
+
+        callback(global, new ContentSecurityPolicyViolationReport(
+            StripUrlForUseInReports(Url),
+            GetStrippedReferrer(),
+            GetBlockedUri(),
+            EffectiveDirective,
+            Policy.Serialized,
+            Disposition,
+            GetStrippedSourceFile(),
+            Status,
+            LineNumber,
+            ColumnNumber,
+            Sample));
+    }
+
     /// <summary>
     /// https://w3c.github.io/webappsec-csp/#report-violation, steps 3.4 and 3.5: the reports of the <c>report-uri</c> directive,
     /// unless the policy has a <c>report-to</c> directive, and the report of the <c>report-to</c> directive, which is queued
-    /// for the global object of the violation: a violation without global object (<see cref="CreateWithoutGlobal"/>, e.g.
-    /// <c>frame-ancestors</c>) has no settings object to generate it, so it only sends the <c>report-uri</c> reports.
+    /// for the global object of the violation. A violation without global object (<see cref="CreateWithoutGlobal"/>, e.g.
+    /// <c>frame-ancestors</c>) has no settings object to generate it: as in Chromium, the report is sent to the endpoint of the
+    /// response (it is not visible to the reporting observers).
     /// </summary>
     private void SendReports()
     {
@@ -280,10 +308,9 @@ internal sealed class ContentSecurityPolicyViolation
         }
 
         // Step 3.5: the report-to directive, whose value is a single token (the next ones are ignored, as in the browsers)
-        if (reportTo is [var group, ..] && !HasNoGlobal)
+        if (reportTo is [var group, ..])
         {
-            GlobalScope? global = Environment.WorkerGlobal ?? (GlobalScope?)Environment.RelevantWindow;
-            global?.GenerateAndQueueReport(new CspViolationReportBody
+            var body = new CspViolationReportBody
             {
                 DocumentUrl = StripUrlForUseInReports(Url),
                 Referrer = GetStrippedReferrer(),
@@ -296,7 +323,27 @@ internal sealed class ContentSecurityPolicyViolation
                 StatusCode = (ushort)Status,
                 LineNumber = SourceFile is null ? null : (uint)LineNumber,
                 ColumnNumber = SourceFile is null ? null : (uint)ColumnNumber,
-            }, "csp-violation", group);
+            };
+
+            if (!HasNoGlobal)
+            {
+                GlobalScope? global = Environment.WorkerGlobal ?? (GlobalScope?)Environment.RelevantWindow;
+                global?.GenerateAndQueueReport(body, "csp-violation", group);
+            }
+            else if (_responseHeaders is not null && Environment.EventLoop is { } eventLoop && ReportingEndpoint.Process(_responseHeaders, Url)?.Find(endpoint => endpoint.Name == group) is { } endpoint)
+            {
+                var report = new QueuedReport
+                {
+                    Body = body,
+                    Url = StripUrlForUseInReports(Url),
+                    UserAgent = Navigator.DefaultUserAgent,
+                    Destination = group,
+                    Type = "csp-violation",
+                    Timestamp = eventLoop.TimeProvider.GetUtcNow(),
+                };
+
+                GlobalScope.DeliverReports(Environment, Environment.BrowsingContext, endpoint, Url.SerializeOrigin(), [report], processResponse: null);
+            }
         }
     }
 

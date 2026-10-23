@@ -32,10 +32,11 @@ public sealed partial class BrowsingContext
     /// response of a navigation of a child navigable is blocked (an error document is created instead), in the order of the
     /// specification: by the <c>frame-ancestors</c> directives of the policies of the response
     /// (https://w3c.github.io/webappsec-csp/#should-block-navigation-response), by the embedder policy of the container
-    /// document (<see cref="IsBlockedByEmbedderPolicy"/>, whose violations are reported), or by its <c>X-Frame-Options</c>
-    /// header (https://html.spec.whatwg.org/multipage/document-lifecycle.html#the-x-frame-options-header).
+    /// document (<see cref="IsBlockedByEmbedderPolicy"/>, whose violations are reported), by its <c>X-Frame-Options</c>
+    /// header (https://html.spec.whatwg.org/multipage/document-lifecycle.html#the-x-frame-options-header), or by the required
+    /// CSP of the navigation (https://w3c.github.io/webappsec-cspee/#process-response).
     /// </summary>
-    private bool IsNavigationResponseBlocked(UrlRecord responseUrl, IReadOnlyList<KeyValuePair<string, string>> headers, int status, bool checkResourcePolicy)
+    private bool IsNavigationResponseBlocked(UrlRecord responseUrl, IReadOnlyList<KeyValuePair<string, string>> headers, int status, bool checkResourcePolicy, DocumentParameters parameters)
     {
         if (Parent is null || Container?.NodeDocument is not { } containerDocument)
             return false;
@@ -45,13 +46,50 @@ public sealed partial class BrowsingContext
 
         var policies = ContentSecurityPolicy.ParseResponsePolicies(headers);
         var responseOrigin = OriginRecord.FromUrl(responseUrl);
-        if (policies is not null && ContentSecurityPolicy.ShouldBlockNavigationResponse(policies, responseOrigin, responseUrl, status, this, containerDocument))
+        if (policies is not null && ContentSecurityPolicy.ShouldBlockNavigationResponse(policies, responseOrigin, responseUrl, status, headers, this, containerDocument))
             return true;
 
         if (IsBlockedByEmbedderPolicy(responseUrl, headers, checkResourcePolicy))
             return true;
 
-        return !CheckXFrameOptions(headers, policies, responseOrigin);
+        if (!CheckXFrameOptions(headers, policies, responseOrigin))
+            return true;
+
+        // The origin of the request of the navigation is the origin of its initiator
+        return parameters.RequiredContentSecurityPolicy is { } requiredPolicy
+            && ContentSecurityPolicy.IsResponseBlockedByRequiredPolicy(responseUrl, headers, policies, requiredPolicy, parameters.InitiatorOrigin?.Serialize() ?? "null");
+    }
+
+    /// <summary>
+    /// https://w3c.github.io/webappsec-cspee/#required-csp: the required CSP of the navigable, for a navigation of a child
+    /// navigable: the value of the <c>csp</c> attribute of its iframe container when it is valid, else the required CSP of
+    /// the container document. Null for a top-level navigable.
+    /// </summary>
+    private string? GetRequiredContentSecurityPolicy()
+    {
+        if (Parent is null || Container is not { } container)
+            return null;
+
+        var containerDocument = container.NodeDocument;
+        if (container is HtmlIFrameElement && container.GetAttributeValue("csp") is { } value && ContentSecurityPolicy.IsValidRequiredPolicy(value, containerDocument))
+            return value;
+
+        return containerDocument.RequiredContentSecurityPolicy;
+    }
+
+    /// <summary>
+    /// https://w3c.github.io/webappsec-cspee/#html-integration ("creating a policy container from a fetch response"): the
+    /// required CSP of the navigation params when the document must add it to its CSP list, i.e. when the policies of its
+    /// response do not subsume it (a document of a local scheme has no such policy), or null.
+    /// </summary>
+    private static ContentSecurityPolicy? GetEnforcedRequiredContentSecurityPolicy(Document document, DocumentParameters parameters)
+    {
+        if (parameters.RequiredContentSecurityPolicy is not { } serializedPolicy || parameters.IsNetworkError)
+            return null;
+
+        var requiredPolicy = ContentSecurityPolicy.Parse(serializedPolicy, reportOnly: false, fromMeta: false);
+        var responsePolicies = parameters.PolicyContainer is null ? ContentSecurityPolicy.ParseResponsePolicies(parameters.Headers) : null;
+        return ContentSecurityPolicy.Subsumes(requiredPolicy, responsePolicies, OriginRecord.FromUrl(document.UrlRecord)) ? null : requiredPolicy;
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/document-lifecycle.html#check-a-navigation-response's-adherence-to-x-frame-options</summary>

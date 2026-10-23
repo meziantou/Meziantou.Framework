@@ -223,8 +223,9 @@
   script runs, and the times of the performance timeline (the steps of a navigation or of a fetch, see
   [Performance timeline](browsing-context.md#performance-timeline)) differ. `Date` uses the same clock (`JavaScriptScriptEngineOptions.TimeProvider`: each read of `Date.now()` advances it by 1 ms), in UTC. Microtasks of the DOM and promise jobs share the job queue of the engine.
 - Content Security Policy is partially implemented: the library applies the fetch, navigation and document directives (see
-  [Content security policy](browsing-context.md#content-security-policy)), the `upgrade-insecure-requests` directive and
-  the Trusted Types directives (see
+  [Content security policy](browsing-context.md#content-security-policy)), the `upgrade-insecure-requests` directive, the
+  required policies of CSP Embedded Enforcement (see [CSP Embedded Enforcement](browsing-context.md#csp-embedded-enforcement))
+  and the Trusted Types directives (see
   [trusted-types.md](trusted-types.md)) of the `Content-Security-Policy` and `Content-Security-Policy-Report-Only`
   headers (the `.headers` files and the `pipe=header()` query parameter) and of the
   `<meta http-equiv="Content-Security-Policy">` elements, and reports their violations (`securitypolicyviolation` events

@@ -783,16 +783,29 @@ internal sealed partial class HtmlTreeBuilder
         ReferenceEquals(node.NamespaceUri, Namespaces.MathML) && node.TagId is TagId.Mi or TagId.Mo or TagId.Mn or TagId.Ms or TagId.Mtext;
 
     /// <summary>https://html.spec.whatwg.org/multipage/parsing.html#html-integration-point</summary>
-    private static bool IsHtmlIntegrationPoint(Element node)
+    private bool IsHtmlIntegrationPoint(Element node)
     {
         if (ReferenceEquals(node.NamespaceUri, Namespaces.MathML))
-            return node.TagId == TagId.AnnotationXml && node is MathMLElement { IsHtmlIntegrationPoint: true };
+        {
+            if (node.TagId != TagId.AnnotationXml)
+                return false;
+
+            // The start tag token of the context element of the fragment parsing algorithm has the attributes of the element
+            if (ReferenceEquals(node, ContextElement))
+                return IsHtmlEncoding(node.GetAttribute("encoding"));
+
+            return node is MathMLElement { IsHtmlIntegrationPoint: true };
+        }
 
         if (ReferenceEquals(node.NamespaceUri, Namespaces.Svg))
             return node.LocalName is "foreignObject" or "desc" or "title";
 
         return false;
     }
+
+    // The encoding attribute of the annotation-xml elements that are HTML integration points
+    private static bool IsHtmlEncoding(string? encoding) =>
+        encoding is not null && (InfraAscii.EqualsIgnoreAsciiCase(encoding, "text/html") || InfraAscii.EqualsIgnoreAsciiCase(encoding, "application/xhtml+xml"));
 
     // ----------------------------------------------------------------------------------------------------------------
     // Implied end tags
@@ -1005,8 +1018,7 @@ internal sealed partial class HtmlTreeBuilder
 
         if (element is MathMLElement mathElement && mathElement.TagId == TagId.AnnotationXml)
         {
-            var encoding = token.GetAttribute("encoding");
-            mathElement.IsHtmlIntegrationPoint = encoding is not null && (InfraAscii.EqualsIgnoreAsciiCase(encoding, "text/html") || InfraAscii.EqualsIgnoreAsciiCase(encoding, "application/xhtml+xml"));
+            mathElement.IsHtmlIntegrationPoint = IsHtmlEncoding(token.GetAttribute("encoding"));
         }
 
         // https://html.spec.whatwg.org/multipage/semantics.html#contributes-a-script-blocking-style-sheet: the style sheets of

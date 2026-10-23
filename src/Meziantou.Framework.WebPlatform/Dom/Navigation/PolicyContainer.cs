@@ -24,6 +24,12 @@ internal sealed class PolicyContainer
     /// <summary>The Trusted Types directives of the policies of the CSP list (see <see cref="Document.TrustedTypesDirectives"/>), or null when there are none.</summary>
     public IReadOnlyList<TrustedTypesDirectives>? TrustedTypesDirectives { get; init; }
 
+    /// <summary>
+    /// The required CSP of the policy container (https://w3c.github.io/webappsec-cspee/#policy-container-required-csp): the
+    /// serialized policy that the documents of the child navigables of the document must enforce, or null.
+    /// </summary>
+    public string? RequiredContentSecurityPolicy { get; init; }
+
     /// <summary>Whether the container holds no policy.</summary>
     public bool IsEmpty => ContentSecurityPolicies is null && TrustedTypesDirectives is null;
 
@@ -40,6 +46,7 @@ internal sealed class PolicyContainer
             ContentSecurityPolicies = policies is { Count: > 0 } ? [.. policies] : null,
             ContentSecurityPolicySelfOrigin = document.ContentSecurityPolicySelfOrigin,
             TrustedTypesDirectives = trustedTypesDirectives is { Count: > 0 } ? [.. trustedTypesDirectives] : null,
+            RequiredContentSecurityPolicy = document.RequiredContentSecurityPolicy,
         };
     }
 

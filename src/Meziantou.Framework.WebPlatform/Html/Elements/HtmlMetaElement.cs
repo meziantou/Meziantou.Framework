@@ -29,7 +29,7 @@ public sealed partial class HtmlMetaElement
         else if (InfraAscii.EqualsIgnoreAsciiCase(httpEquiv, "refresh") && GetAttributeValue("content") is { Length: > 0 } content)
         {
             // https://html.spec.whatwg.org/multipage/semantics.html#attr-meta-http-equiv-refresh
-            document.RunSharedDeclarativeRefreshSteps(content);
+            document.RunSharedDeclarativeRefreshSteps(content, isMeta: true);
         }
         else if (InfraAscii.EqualsIgnoreAsciiCase(httpEquiv, "delegate-ch") || InfraAscii.EqualsIgnoreAsciiCase(httpEquiv, "accept-ch"))
         {

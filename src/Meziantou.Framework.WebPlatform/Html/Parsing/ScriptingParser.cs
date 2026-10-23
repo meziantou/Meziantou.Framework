@@ -99,7 +99,11 @@ internal abstract class ScriptingParser
     /// Aborts the parser (https://html.spec.whatwg.org/multipage/parsing.html#abort-a-parser): it stops parsing, and does not
     /// run the steps of "the end".
     /// </summary>
-    public void Abort()
+    /// <param name="updateReadiness">
+    /// Whether the readiness of the document is updated to "interactive", then to "complete" (the parser of a document that is
+    /// aborted, e.g. by <c>window.stop()</c>). The parser replaced by the one of <c>document.open()</c> does not update it.
+    /// </param>
+    public void Abort(bool updateReadiness = false)
     {
         if (IsFinished)
             return;
@@ -113,6 +117,18 @@ internal abstract class ScriptingParser
         Document.NoStyleSheetBlockingScriptsCallback = null;
 
         Finish();
+        if (updateReadiness && _runTheEnd)
+        {
+            // The pending content is thrown away (the parser may be running a script), and the open elements are popped
+            Document.UpdateReadiness(DocumentReadyState.Interactive);
+            AbortTreeConstruction();
+            Document.UpdateReadiness(DocumentReadyState.Complete);
+        }
+    }
+
+    /// <summary>Stops the tree construction: the pending content is thrown away, and the open elements are popped.</summary>
+    protected virtual void AbortTreeConstruction()
+    {
     }
 
     private void Continue()
@@ -160,7 +176,13 @@ internal abstract class ScriptingParser
                         continue;
                     }
 
-                    if (!RunTreeConstruction())
+                    var consumed = RunTreeConstruction();
+
+                    // A script run by the tree construction aborted the parser (e.g. window.stop())
+                    if (IsFinished)
+                        return;
+
+                    if (!consumed)
                     {
                         // A script-created parser waits for document.write() or document.close()
                         if (IsWaitingForInput)
@@ -254,6 +276,8 @@ internal sealed class HtmlScriptingParser(Document document, HtmlTreeBuilder bui
     protected override bool IsWaitingForInput => TreeBuilder.IsWaitingForInput;
 
     protected override bool IsExecutingScript => TreeBuilder.ScriptNestingLevel > 0;
+
+    protected override void AbortTreeConstruction() => TreeBuilder.Abort();
 
     // The speculative parser that runs while the parser waits for the pending parsing-blocking script
     private SpeculativeHtmlParser? _speculativeParser;

@@ -1100,12 +1100,40 @@ public sealed partial class BrowsingContext : IDisposable
                 // The location of the script that started the navigation, for the violations of the content security policies
                 // (the navigation runs in a task)
                 var scriptLocation = sourceDocument is { ContentSecurityPoliciesOrNull: not null, RelevantWindow.ScriptEngine: { } sourceEngine } ? sourceEngine.GetCurrentScriptLocation() : null;
+
+                // https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate, steps 18 and 19: the navigation is the
+                // ongoing navigation of the navigable, which a later navigation cancels, and a navigation of a child navigable
+                // delays the load event of its parent. As in the browsers, a javascript: URL of a cross origin-domain document,
+                // which does nothing, does not abort the ongoing navigation.
+                var javaScriptNavigationId = 0;
+                if (sourceDocument is null || Document.IsSameOriginDomain(sourceDocument, activeDocument))
+                {
+                    CancelOngoingNavigation();
+                    javaScriptNavigationId = Interlocked.Increment(ref s_nextNavigationId);
+                    _ongoingNavigation = javaScriptNavigationId;
+                    _javaScriptUrlNavigationId = javaScriptNavigationId;
+                    if (Parent is not null)
+                    {
+                        IsDelayingLoadEvents = true;
+                    }
+                }
+
                 activeDocument.QueueGlobalTask(() =>
                 {
-                    if (generation == _javaScriptUrlNavigationGeneration)
+                    if (javaScriptNavigationId != 0 && _ongoingNavigation != javaScriptNavigationId)
+                        return;
+
+                    if (generation != _javaScriptUrlNavigationGeneration)
                     {
-                        NavigateToJavaScriptUrl(engine, url, sourceDocument, initiatorOrigin, initialInsertion, sourceElement, scriptLocation, isFormSubmission);
+                        if (javaScriptNavigationId != 0)
+                        {
+                            EndNavigationWithoutDocument();
+                        }
+
+                        return;
                     }
+
+                    NavigateToJavaScriptUrl(engine, url, sourceDocument, initiatorOrigin, initialInsertion, sourceElement, scriptLocation, isFormSubmission, isOngoingNavigation: javaScriptNavigationId != 0);
                 });
             }
 
@@ -1149,6 +1177,7 @@ public sealed partial class BrowsingContext : IDisposable
         _isTraversalOngoing = traversalEntry is not null;
         var navigationId = Interlocked.Increment(ref s_nextNavigationId);
         _ongoingNavigation = navigationId;
+        _ongoingNavigationSourceDocument = traversalEntry is null ? sourceDocument : null;
         if (_containerResourceTiming is { NavigationId: 0 } containerResourceTiming)
         {
             containerResourceTiming.NavigationId = navigationId;
@@ -1257,6 +1286,35 @@ public sealed partial class BrowsingContext : IDisposable
     // Incremented to cancel the pending javascript: URL navigations
     private int _javaScriptUrlNavigationGeneration;
 
+    // The identifier of the last javascript: URL navigation (see IsJavaScriptUrlNavigationOngoing)
+    private int _javaScriptUrlNavigationId;
+
+    /// <summary>
+    /// Whether the ongoing navigation is a javascript: URL navigation, whose script has not run yet: as in the browsers, a
+    /// form submission planned before it still navigates the navigable (the script may not create a document).
+    /// </summary>
+    internal bool IsJavaScriptUrlNavigationOngoing => _ongoingNavigation != 0 && _ongoingNavigation == _javaScriptUrlNavigationId;
+
+    // The source document of the ongoing navigation (null for a traversal or a reload): the client of its request
+    private Document? _ongoingNavigationSourceDocument;
+
+    /// <summary>
+    /// Cancels the ongoing navigation when its request was made by a document whose fetches are canceled
+    /// (https://html.spec.whatwg.org/multipage/document-lifecycle.html#abort-a-document: the fetches in the context of the
+    /// document, e.g. the navigation of an iframe by its parent document stopped by <c>window.stop()</c>), as in Chrome.
+    /// </summary>
+    internal void CancelNavigationFetchedBy(Document document)
+    {
+        if (!IsCrossDocumentNavigationOngoing || !ReferenceEquals(_ongoingNavigationSourceDocument, document) || _isTraversalOngoing)
+            return;
+
+        CancelOngoingNavigation();
+        EndNavigationWithoutDocument();
+    }
+
+    /// <summary>Whether the navigable is navigating to another document (the ongoing navigation is not a javascript: URL navigation).</summary>
+    internal bool IsCrossDocumentNavigationOngoing => _ongoingNavigation != 0 && _ongoingNavigation != _javaScriptUrlNavigationId;
+
     /// <summary>
     /// Whether the text directives are enabled (<see cref="WebPlatformFeatures.TextDirectivesEnabled"/>): the fragment
     /// directive is then removed from the URLs the navigable is navigated to.
@@ -1289,13 +1347,22 @@ public sealed partial class BrowsingContext : IDisposable
     internal void CancelPendingJavaScriptUrlNavigations() => _javaScriptUrlNavigationGeneration++;
 
     /// <summary>https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate-to-a-javascript:-url</summary>
-    private void NavigateToJavaScriptUrl(Scripting.ScriptEngine engine, UrlRecord url, Document? sourceDocument, Document? initiatorOrigin, bool initialInsertion, Element? sourceElement, Scripting.ScriptLocation? scriptLocation, bool isFormSubmission)
+    private void NavigateToJavaScriptUrl(Scripting.ScriptEngine engine, UrlRecord url, Document? sourceDocument, Document? initiatorOrigin, bool initialInsertion, Element? sourceElement, Scripting.ScriptLocation? scriptLocation, bool isFormSubmission, bool isOngoingNavigation)
     {
         if (IsDestroyed)
             return;
 
-        // The ongoing navigation is canceled after the origin check (the specification cancels it first, but the browsers
-        // do not abort a navigation of a document because a cross-origin document tried to run a javascript: URL in it)
+        // The ongoing navigation is set to null. The canceled navigation no longer delays the load event of the parent document
+        // (e.g. when the javascript: URL is blocked, or evaluates to a value that is not a string).
+        if (isOngoingNavigation)
+        {
+            CancelOngoingNavigation();
+            EndNavigationWithoutDocument();
+        }
+
+        // The navigation of a cross origin-domain document is not the ongoing navigation: it is canceled after the origin
+        // check (the browsers do not abort a navigation of a document because a cross-origin document tried to run a
+        // javascript: URL in it)
         var document = Document;
         if (sourceDocument is not null && !Document.IsSameOriginDomain(sourceDocument, document))
             return;
@@ -1305,10 +1372,11 @@ public sealed partial class BrowsingContext : IDisposable
         if (sourceDocument is not null && (sourceDocument.ActiveSandboxingFlags & SandboxingFlags.Scripts) != SandboxingFlags.None)
             return;
 
-        // The canceled navigation no longer delays the load event of the parent document (e.g. when the javascript: URL is
-        // blocked, or evaluates to a value that is not a string)
-        CancelOngoingNavigation();
-        EndNavigationWithoutDocument();
+        if (!isOngoingNavigation)
+        {
+            CancelOngoingNavigation();
+            EndNavigationWithoutDocument();
+        }
 
         // https://w3c.github.io/webappsec-csp/#should-block-navigation-request: the pre-navigation checks (the Trusted Types
         // default policy may convert the script, and the form-action directive of a form submission), then the inline checks of
@@ -1362,7 +1430,10 @@ public sealed partial class BrowsingContext : IDisposable
         var parameters = new DocumentParameters
         {
             HistoryHandling = NavigationHistoryBehavior.Replace,
-            Referrer = sourceDocument?.Url ?? "",
+
+            // The navigation params have no request (https://html.spec.whatwg.org/multipage/browsing-the-web.html#evaluate-a-javascript:-url
+            // questions the resulting null referrer): as in Chrome and Safari, the document keeps the referrer of the previous document
+            Referrer = document.Referrer,
             ReferrerPolicy = document.ReferrerPolicy,
             OriginDocument = initiatorOrigin ?? Document.GetOriginDocument(document),
             AboutBaseUrl = document.AboutBaseUrl,
@@ -1375,7 +1446,8 @@ public sealed partial class BrowsingContext : IDisposable
             PolicyContainer = PolicyContainer.Clone(document),
         };
 
-        LoadDocument(document.UrlRecord, parameters, DocumentResource.Create(result, "text/html;charset=utf-8"));
+        // The body of the response is the UTF-8 encoding of the result: its lone surrogates become U+FFFD
+        LoadDocument(document.UrlRecord, parameters, DocumentResource.Create(Infra.InfraString.ToScalarValueString(result), "text/html;charset=utf-8"));
     }
 
     /// <summary>
@@ -1404,6 +1476,7 @@ public sealed partial class BrowsingContext : IDisposable
         }
 
         _ongoingNavigation = 0;
+        _ongoingNavigationSourceDocument = null;
         _isTraversalOngoing = false;
         if (_loaderCancellation is { } cancellation)
         {
@@ -1960,6 +2033,7 @@ public sealed partial class BrowsingContext : IDisposable
     private void EndNavigationWithoutDocument()
     {
         _ongoingNavigation = 0;
+        Document.FireSuppressedContainerLoadEvent();
         if (IsDelayingLoadEvents)
         {
             IsDelayingLoadEvents = false;
@@ -2443,7 +2517,7 @@ public sealed partial class BrowsingContext : IDisposable
         if (oldDocument is not null)
         {
             FirePageSwap(oldDocument, document, historyHandling, traversalEntry);
-            UnloadDocumentAndDescendants(oldDocument);
+            UnloadDocumentAndDescendants(oldDocument, includeInitialAboutBlank: true);
 
             // https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigation-params-unload-timing: the times of the unload
             // event of the previous document are exposed to a document of the same origin, when no redirect is cross-origin
@@ -2613,7 +2687,7 @@ public sealed partial class BrowsingContext : IDisposable
     /// </summary>
     private void FirePageSwap(Document oldDocument, Document newDocument, NavigationHistoryBehavior historyHandling, SessionHistoryEntry? traversalEntry)
     {
-        if (oldDocument.IsInitialAboutBlank || oldDocument.IsUnloaded || oldDocument.RelevantWindow is not { } oldWindow || !ReferenceEquals(oldWindow.Document, oldDocument))
+        if (oldDocument.IsUnloaded || oldDocument.RelevantWindow is not { } oldWindow || !ReferenceEquals(oldWindow.Document, oldDocument))
             return;
 
         var navigationType = traversalEntry is null
@@ -2684,11 +2758,12 @@ public sealed partial class BrowsingContext : IDisposable
     /// </summary>
     /// <param name="document">The document to unload.</param>
     /// <param name="includeInitialAboutBlank">
-    /// Whether <paramref name="document"/> is unloaded when it is an initial about:blank document. A navigation does not
-    /// unload it: its window may be reused by the new document, and it was never shown. When its top-level traversable is
-    /// closed, the browsers fire the pagehide and unload events at it (its page showing flag is not set, so the specification
-    /// fires no pagehide). The initial about:blank documents of the descendant navigables are always unloaded, as in the
-    /// browsers (e.g. <c>visibilitychange</c> is fired at the empty frames of a removed frame).
+    /// Whether <paramref name="document"/> is unloaded when it is an initial about:blank document. As in the browsers, a
+    /// navigation unloads it (before the new document reuses its window, if it does), and so does the closing of its
+    /// top-level traversable: the pagehide and unload events are fired at it (its page showing flag is not set, so the
+    /// specification fires no pagehide). The initial about:blank documents of the descendant navigables are always unloaded,
+    /// as in the browsers (e.g. <c>visibilitychange</c> is fired at the empty frames of a removed frame). The removal of a
+    /// container does not unload it (see <see cref="UnloadRemovedChildNavigables"/>).
     /// </param>
     private static void UnloadDocumentAndDescendants(Document document, bool includeInitialAboutBlank = false)
     {

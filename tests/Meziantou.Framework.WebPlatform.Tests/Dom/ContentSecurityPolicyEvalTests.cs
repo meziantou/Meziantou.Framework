@@ -265,6 +265,24 @@ public sealed class ContentSecurityPolicyEvalTests : IDisposable
         Assert.Equal(expected, document.Title);
     }
 
+    [Theory]
+    [InlineData(true, false, "ran;")]
+    [InlineData(false, false, "EvalError;")]
+    [InlineData(false, true, "EvalError;")]
+    [InlineData(true, true, "ran;")]
+    public void Eval_EvalHash(bool matchingHash, bool unsafeEval, string expected)
+    {
+        var code = "document.title += 'ran;'";
+        var hash = Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(matchingHash ? code : "other")));
+        var document = Load($$"""
+            <script>
+            try { eval("{{code}}"); } catch (e) { document.title += e.constructor.name + ";"; }
+            </script>
+            """, $"script-src 'unsafe-inline' 'eval-sha256-{hash}'" + (unsafeEval ? " 'unsafe-eval'" : ""));
+
+        Assert.Equal(expected, document.Title);
+    }
+
     private Document Load(string html, string policy, bool reportOnly = false)
     {
         var context = _contexts.Create(new BrowsingContextOptions

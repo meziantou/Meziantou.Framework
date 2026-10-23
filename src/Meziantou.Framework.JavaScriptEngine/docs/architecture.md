@@ -332,6 +332,9 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
   against a sample of parse-number-fxx-test-data (`Tests/Corpus/ParseNumberFxx.md`). The whole corpus (5.3 million
   lines) is an optional suite: `dotnet run eng/javascriptengine/fetch-tests.cs parse-number-fxx-test-data`, then
   `NumberBuiltinsTests.ParseNumberFxx_FullCorpus` checks it.
+- `tests/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark`: real-world programs (V8's Web Tooling Benchmark:
+  babel, typescript, prettier, terser...) whose results are compared with the results of Node.js. The same fetch script
+  downloads the benchmark and its npm packages; see the readme of the project.
 
 ## Conventions and pitfalls
 

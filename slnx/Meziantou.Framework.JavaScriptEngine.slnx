@@ -18,6 +18,7 @@
   <Folder Name="/tests/">
     <Project Path="../tests/Meziantou.Framework.JavaScriptEngine.Test262/Meziantou.Framework.JavaScriptEngine.Test262.csproj" />
     <Project Path="../tests/Meziantou.Framework.JavaScriptEngine.Tests/Meziantou.Framework.JavaScriptEngine.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="../tools/Meziantou.Framework.JavaScriptEngine.Data.Generator/Meziantou.Framework.JavaScriptEngine.Data.Generator.csproj" />

@@ -355,6 +355,36 @@ public sealed class ArrayBuiltinsTests
         Assert.Equal("c", CallArray(context, "at", context.Array("a", "b", "c"), -1).AsString());
     }
 
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("[]")]
+    public void Sparse_PowersOfTwo_StaySparse(string initializer)
+    {
+        // The reverse mappings of a flags enum compiled by TypeScript: each write is at the end of the storage
+        using var engine = new JsEngine();
+        var result = engine.CreateRealm().Execute("var E = " + initializer + "; for (var i = 0; i < 30; i++) E[E['F' + i] = 2 ** i] = 'F' + i; E");
+        using (engine.Enter())
+        {
+            var obj = result.AsObject();
+            Assert.True(obj.DenseCapacity <= 4096, $"DenseCapacity: {obj.DenseCapacity}");
+            Assert.Equal("F29", obj.Get(new PropertyKey(1u << 29)).AsString());
+            Assert.Equal("F0", obj.Get(new PropertyKey(1)).AsString());
+        }
+    }
+
+    [Fact]
+    public void Dense_SequentialWritesWithGaps_StayDense()
+    {
+        using var engine = new JsEngine();
+        var result = engine.CreateRealm().Execute("var a = []; for (var i = 0; i < 100000; i += 4) a[i] = i; a");
+        using (engine.Enter())
+        {
+            var array = result.AsObject();
+            Assert.True(array.DenseCapacity >= 99997, $"DenseCapacity: {array.DenseCapacity}");
+            Assert.Equal(99996, array.Get(new PropertyKey(99996)).AsNumber());
+        }
+    }
+
     [Fact]
     public void Sparse_HugeIndices()
     {

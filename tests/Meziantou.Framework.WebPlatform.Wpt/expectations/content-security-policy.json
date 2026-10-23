@@ -260,11 +260,7 @@
     "total": 1
   },
   "content-security-policy/font-src/font-stylesheet-font-blocked.sub.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Test font does not load if it does not match font-src.": "TIMEOUT"
-    }
+    "total": 1
   },
   "content-security-policy/form-action/form-action-self-allowed-target-blank.html": {
     "total": 1
@@ -1508,11 +1504,7 @@
     "total": 1
   },
   "content-security-policy/img-src/icon-blocked.sub.html": {
-    "harness": "TIMEOUT",
-    "total": 2,
-    "failures": {
-      "Test that spv event is fired": "NOTRUN"
-    }
+    "total": 2
   },
   "content-security-policy/img-src/img-src-4_1.sub.html": {
     "total": 3
@@ -1572,16 +1564,10 @@
     "total": 1
   },
   "content-security-policy/inheritance/history-iframe.sub.html": {
-    "total": 8,
-    "failures": {
-      "History navigation in iframe: \"about:blank\" document is navigated back from history cross-origin.": "FAIL"
-    }
+    "total": 8
   },
   "content-security-policy/inheritance/history.sub.html": {
-    "total": 6,
-    "failures": {
-      "History navigation: \"about:blank\" document is navigated back from history cross-origin.": "FAIL"
-    }
+    "total": 6
   },
   "content-security-policy/inheritance/iframe-all-local-schemes-inherit-self.sub.html": {
     "total": 6
@@ -1843,71 +1829,31 @@
     "total": 1
   },
   "content-security-policy/report-hash/default-src.https.window.js": {
-    "total": 8,
-    "failures": {
-      "Reporting endpoints received no report for failed integrity check with sha256.": "FAIL",
-      "Reporting endpoints received no report for failed integrity check with sha512.": "FAIL"
-    }
+    "total": 8
   },
   "content-security-policy/report-hash/multiple-policies.https.sub.html": {
-    "total": 8,
-    "failures": {
-      "Reporting endpoints received no report for failed integrity check with sha256.": "FAIL",
-      "Reporting endpoints received no report for failed integrity check with sha512.": "FAIL"
-    }
+    "total": 8
   },
   "content-security-policy/report-hash/reportonly-default-src.https.window.js": {
-    "total": 8,
-    "failures": {
-      "Reporting endpoints received no report for failed integrity check with sha256.": "FAIL",
-      "Reporting endpoints received no report for failed integrity check with sha512.": "FAIL"
-    }
+    "total": 8
   },
   "content-security-policy/report-hash/reportonly-script-src-elem.https.window.js": {
-    "total": 8,
-    "failures": {
-      "Reporting endpoints received no report for failed integrity check with sha256.": "FAIL",
-      "Reporting endpoints received no report for failed integrity check with sha512.": "FAIL"
-    }
+    "total": 8
   },
   "content-security-policy/report-hash/reportonly-script-src-none.https.window.js": {
-    "total": 8,
-    "failures": {
-      "Reporting endpoints received no report for failed integrity check with sha256.": "FAIL",
-      "Reporting endpoints received no report for failed integrity check with sha512.": "FAIL"
-    }
+    "total": 8
   },
   "content-security-policy/report-hash/reportonly-script-src.https.window.js": {
-    "total": 8,
-    "failures": {
-      "Reporting endpoints received no report for failed integrity check with sha256.": "FAIL",
-      "Reporting endpoints received no report for failed integrity check with sha512.": "FAIL"
-    }
+    "total": 8
   },
   "content-security-policy/report-hash/script-src-elem.https.window.js": {
-    "total": 8,
-    "failures": {
-      "Reporting endpoints received no report for failed integrity check with sha256.": "FAIL",
-      "Reporting endpoints received no report for failed integrity check with sha512.": "FAIL"
-    }
+    "total": 8
   },
   "content-security-policy/report-hash/script-src-sha512.https.window.js": {
-    "total": 8,
-    "failures": {
-      "Reporting endpoints received hash for cross-origin CORS script.": "FAIL",
-      "Reporting endpoints received hash for same-origin CORS script.": "FAIL",
-      "Reporting endpoints received hash for same-origin no-CORS script.": "FAIL",
-      "Reporting endpoints received no report for failed integrity check with sha256.": "FAIL",
-      "Reporting endpoints received no report for failed integrity check with sha512.": "FAIL",
-      "Reporting endpoints received the right hash for same-origin CORS script with integrity.": "FAIL"
-    }
+    "total": 8
   },
   "content-security-policy/report-hash/script-src.https.window.js": {
-    "total": 8,
-    "failures": {
-      "Reporting endpoints received no report for failed integrity check with sha256.": "FAIL",
-      "Reporting endpoints received no report for failed integrity check with sha512.": "FAIL"
-    }
+    "total": 8
   },
   "content-security-policy/reporting-api/dedicated-worker-correct-url-in-report.html": {
     "total": 4
@@ -2862,32 +2808,16 @@
     "total": 1
   },
   "content-security-policy/unsafe-eval/tentative/eval-allowed-by-hash-long-script.sub.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "Expecting alerts: [\"PASS, long text that exceeds the 40 character limit used for report snippets\"]": "FAIL"
-    }
+    "total": 1
   },
   "content-security-policy/unsafe-eval/tentative/eval-allowed-by-hash.sub.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "Expecting alerts: [\"PASS (1 of 2)\",\"PASS (2 of 2)\"]": "FAIL"
-    }
+    "total": 1
   },
   "content-security-policy/unsafe-eval/tentative/eval-blocked-report-contains-hash.html": {
-    "total": 2,
-    "failures": {
-      "Violation report status OK.": "FAIL"
-    }
+    "total": 2
   },
   "content-security-policy/unsafe-eval/tentative/eval-hashes-override-unsafe-eval.sub.html": {
-    "total": 3,
-    "failures": {
-      "Expecting logs: [\"PASS EvalError\",\"PASS EvalError\", \"violated-directive=script-src\"]": "FAIL",
-      "eval-blocked": "FAIL",
-      "eval-blocked 1": "FAIL"
-    }
+    "total": 1
   },
   "content-security-policy/unsafe-hashes/javascript_src_allowed-href.html": {
     "total": 1

@@ -103,6 +103,11 @@ public partial class Document
 
         _cssResourcesVersion = version;
         CssImageFetching.FetchUsedImages(this, _fetchedCssImages ??= []);
+        if (ContentSecurityPoliciesOrNull is { Count: > 0 })
+        {
+            Fonts.CheckContentSecurityPolicy();
+        }
+
         if (_fonts is not null || ReadyState == DocumentReadyState.Complete)
         {
             Fonts.OnRenderingUpdate();

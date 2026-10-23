@@ -131,6 +131,8 @@ public sealed class FontFace
     private Document? _document;
     private string? _baseUrl;
     private CssFontFaceRule? _rule;
+    private bool _cspChecked;
+    private HashSet<string>? _blockedUrls;
 
     /// <summary>Creates a font face whose source is a list of URLs (the value of the <c>src</c> descriptor of @font-face, e.g. <c>url(font.woff)</c>).</summary>
     /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontface-fontface"/>
@@ -191,6 +193,31 @@ public sealed class FontFace
         _urls = rule.Style.GetPropertyValue("src");
         _baseUrl = rule.ParentStyleSheet?.BaseUrl ?? document.DocumentBaseUrl.Serialize();
         Scripting.PromiseSlots.Register(_fontStatusPromise.Task);
+    }
+
+    /// <summary>
+    /// Reports the violations of the content security policies by the URLs of the sources of the src descriptor, which the
+    /// browsers check when the rule is added, although the font is only fetched when a text uses it. A blocked source is
+    /// skipped when the font is loaded (its violation is reported once).
+    /// </summary>
+    internal void CheckContentSecurityPolicy()
+    {
+        if (_cspChecked || _document is not { ContentSecurityPoliciesOrNull: { Count: > 0 } } document || _urls is null)
+            return;
+
+        _cspChecked = true;
+        var baseUrl = _baseUrl is { } value ? UrlParser.Parse(value, baseUrl: null) : null;
+        foreach (var source in GetSources())
+        {
+            if (source.Url is not { } text || UrlParser.Parse(text, baseUrl) is not { } url || url.Scheme is "data")
+                continue;
+
+            if (ContentSecurityPolicy.ShouldBlockRequest(document, url, RequestDestination.Font, reportViolations: false))
+            {
+                (_blockedUrls ??= []).Add(url.Serialize());
+                ContentSecurityPolicy.ShouldBlockRequest(document, url, RequestDestination.Font);
+            }
+        }
     }
 
     /// <summary>The @font-face rule of a CSS-connected font face, or null.</summary>
@@ -660,6 +687,12 @@ public sealed class FontFace
 
         var baseUrl = _baseUrl is { } value ? UrlParser.Parse(value, baseUrl: null) : null;
         if (sources[index] is not { Url: { } source, Modifiers: { } modifiers } || UrlParser.Parse(source, baseUrl) is not { } url)
+        {
+            LoadSource(sources, index + 1);
+            return;
+        }
+
+        if (_blockedUrls is not null && _blockedUrls.Contains(url.Serialize()))
         {
             LoadSource(sources, index + 1);
             return;

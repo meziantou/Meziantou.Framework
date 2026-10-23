@@ -67,7 +67,7 @@ internal static class NumberFormatting
     /// </summary>
     public static void GetShortestDigits(double value, out string digits, out int n)
     {
-        var text = value.ToString("R", CultureInfo.InvariantCulture);
+        var text = value.ToString(GetShortestRoundTripFormat(value), CultureInfo.InvariantCulture);
         var exponent = 0;
         var exponentIndex = text.IndexOfAny(['E', 'e']);
         if (exponentIndex >= 0)
@@ -95,6 +95,20 @@ internal static class NumberFormatting
 
         digits = allDigits;
         n = integerDigits + exponent - leadingZeros;
+    }
+
+    /// <summary>The format that gives the shortest decimal digits that round-trip a finite number.</summary>
+    internal static string GetShortestRoundTripFormat(double value)
+    {
+#if !NET11_0_OR_GREATER
+        // .NET 10 formats 2^-25 and 2^-958 with "R" as 2.980232238769531E-08 and 4.104536801298376E-289, which parse to the
+        // previous numbers. Their shortest round-tripping digits are 17 digits, as .NET 11 gives. Every power of two (the
+        // numbers whose previous number is closer than the next one) was checked: no other number is affected.
+        if (Math.Abs(value) is 2.9802322387695312E-08 or 4.1045368012983762E-289)
+            return "G17";
+#endif
+
+        return "R";
     }
 
     /// <summary>Number::toString(x, radix) (https://tc39.es/ecma262/#sec-numeric-types-number-tostring).</summary>

@@ -207,24 +207,7 @@ public abstract partial class GlobalScope
     /// </summary>
     private void AttemptToDeliverReports(ReportingEndpoint endpoint, string origin, List<QueuedReport> reports)
     {
-        var request = new FetchRequest(endpoint.Url)
-        {
-            Method = "POST",
-            Origin = origin,
-            HeaderList = [new("Content-Type", "application/reports+json")],
-            Client = EnvironmentDocument,
-            ServiceWorkersMode = ServiceWorkersMode.None,
-            Referrer = "no-referrer",
-            Destination = RequestDestination.Report,
-            Mode = RequestMode.Cors,
-            UnsafeRequest = true,
-            CredentialsMode = FetchCredentialsMode.SameOrigin,
-            Keepalive = true,
-            KeepaliveBrowsingContext = _reportingBrowsingContext,
-            Body = SerializeReports(reports),
-        };
-
-        Fetching.Fetch(request, response =>
+        DeliverReports(EnvironmentDocument, _reportingBrowsingContext, endpoint, origin, reports, response =>
         {
             if (HeaderList.IsOkStatus(response.Status))
                 return;
@@ -237,13 +220,42 @@ public abstract partial class GlobalScope
             {
                 endpoint.Failures++;
             }
-        }, EventLoop.QueueTask);
+        });
+    }
+
+    /// <summary>
+    /// https://w3c.github.io/reporting/#try-delivery: POSTs reports to an endpoint, with <paramref name="client"/> as the
+    /// environment of the request (see <see cref="AttemptToDeliverReports"/>). <paramref name="processResponse"/> runs in a
+    /// task of the event loop of the client.
+    /// </summary>
+    internal static void DeliverReports(Document client, BrowsingContext? keepaliveBrowsingContext, ReportingEndpoint endpoint, string origin, List<QueuedReport> reports, Action<FetchResponse>? processResponse)
+    {
+        if (client.EventLoop is not { } eventLoop)
+            return;
+
+        var request = new FetchRequest(endpoint.Url)
+        {
+            Method = "POST",
+            Origin = origin,
+            HeaderList = [new("Content-Type", "application/reports+json")],
+            Client = client,
+            ServiceWorkersMode = ServiceWorkersMode.None,
+            Referrer = "no-referrer",
+            Destination = RequestDestination.Report,
+            Mode = RequestMode.Cors,
+            UnsafeRequest = true,
+            CredentialsMode = FetchCredentialsMode.SameOrigin,
+            Keepalive = true,
+            KeepaliveBrowsingContext = keepaliveBrowsingContext,
+            Body = SerializeReports(reports, eventLoop.TimeProvider.GetUtcNow()),
+        };
+
+        Fetching.Fetch(request, response => processResponse?.Invoke(response), eventLoop.QueueTask);
     }
 
     /// <summary>https://w3c.github.io/reporting/#serialize-a-list-of-reports-to-json</summary>
-    private byte[] SerializeReports(List<QueuedReport> reports)
+    private static byte[] SerializeReports(List<QueuedReport> reports, DateTimeOffset now)
     {
-        var now = EventLoop.TimeProvider.GetUtcNow();
         var buffer = new System.Buffers.ArrayBufferWriter<byte>();
         using (var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping }))
         {

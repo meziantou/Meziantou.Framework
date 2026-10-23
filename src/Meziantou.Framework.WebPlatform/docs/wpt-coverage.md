@@ -48,10 +48,10 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 24,519 | 29,245 | 2,985 | 93% |
+| [Stable](#stable-tests) | 24,499 | 29,245 | 2,985 | 93% |
 | [Tentative](#tentative-tests) | 1,096 | 2,996 | 830 | 51% |
-| [Reftests](#reftests) | 27,192 | 28,735 | 226 | 95% |
-| **All** | **52,807** | **60,976** | **4,041** | **93%** |
+| [Reftests](#reftests) | 27,179 | 28,735 | 226 | 95% |
+| **All** | **52,774** | **60,976** | **4,041** | **93%** |
 
 ## Stable tests
 
@@ -86,7 +86,7 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`contacts`](wpt-coverage/contacts.md) | 0 | 1 | 1 | – |
 | [`content-dpr`](wpt-coverage/content-dpr.md) | 0 | 1 | 1 | – |
 | [`content-index`](wpt-coverage/content-index.md) | 0 | 2 | 2 | – |
-| [`content-security-policy`](wpt-coverage/content-security-policy.md) | 784 | 882 | 0 | 89% |
+| [`content-security-policy`](wpt-coverage/content-security-policy.md) | 809 | 882 | 0 | 92% |
 | [`contenteditable`](wpt-coverage/contenteditable.md) | 0 | 2 | 2 | – |
 | [`cookies`](wpt-coverage/cookies.md) | 71 | 76 | 0 | 93% |
 | [`cookiestore`](wpt-coverage/cookiestore.md) | 39 | 47 | 0 | 83% |
@@ -220,25 +220,25 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`hr-time`](wpt-coverage/hr-time.md) | 13 | 13 | 0 | 100% |
 | [`html-aam`](wpt-coverage/html-aam.md) | 24 | 26 | 0 | 92% |
 | [`html-media-capture`](wpt-coverage/html-media-capture.md) | 0 | 2 | 2 | – |
-| [`html/browsers`](wpt-coverage/html/browsers.md) | 662 | 740 | 0 | 89% |
+| [`html/browsers`](wpt-coverage/html/browsers.md) | 649 | 740 | 0 | 88% |
 | [`html/canvas`](wpt-coverage/html/canvas.md) | 3,034 | 3,139 | 0 | 97% |
 | [`html/cross-origin-embedder-policy`](wpt-coverage/html/cross-origin-embedder-policy.md) | 52 | 71 | 0 | 73% |
 | [`html/cross-origin-opener-policy`](wpt-coverage/html/cross-origin-opener-policy.md) | 67 | 114 | 0 | 59% |
 | [`html/dom`](wpt-coverage/html/dom.md) | 205 | 211 | 0 | 97% |
 | [`html/editing`](wpt-coverage/html/editing.md) | 113 | 122 | 0 | 93% |
-| [`html/infrastructure`](wpt-coverage/html/infrastructure.md) | 59 | 66 | 0 | 89% |
+| [`html/infrastructure`](wpt-coverage/html/infrastructure.md) | 58 | 66 | 0 | 88% |
 | [`html/interaction`](wpt-coverage/html/interaction.md) | 55 | 58 | 0 | 95% |
 | [`html/links`](wpt-coverage/html/links.md) | 6 | 6 | 0 | 100% |
 | [`html/meta`](wpt-coverage/html/meta.md) | 1 | 1 | 0 | 100% |
 | [`html/obsolete`](wpt-coverage/html/obsolete.md) | 15 | 15 | 0 | 100% |
-| [`html/rendering`](wpt-coverage/html/rendering.md) | 143 | 150 | 0 | 95% |
+| [`html/rendering`](wpt-coverage/html/rendering.md) | 141 | 150 | 0 | 94% |
 | [`html/scripting`](wpt-coverage/html/scripting.md) | 3 | 3 | 0 | 100% |
 | [`html/select`](wpt-coverage/html/select.md) | 1 | 1 | 0 | 100% |
-| [`html/semantics`](wpt-coverage/html/semantics.md) | 2,074 | 2,174 | 31 | 97% |
+| [`html/semantics`](wpt-coverage/html/semantics.md) | 2,047 | 2,174 | 31 | 96% |
 | [`html/syntax`](wpt-coverage/html/syntax.md) | 105 | 106 | 0 | 99% |
 | [`html/the-xhtml-syntax`](wpt-coverage/html/the-xhtml-syntax.md) | 13 | 13 | 0 | 100% |
 | [`html/user-activation`](wpt-coverage/html/user-activation.md) | 15 | 18 | 0 | 83% |
-| [`html/webappapis`](wpt-coverage/html/webappapis.md) | 309 | 337 | 1 | 92% |
+| [`html/webappapis`](wpt-coverage/html/webappapis.md) | 307 | 337 | 1 | 91% |
 | [`idle-detection`](wpt-coverage/idle-detection.md) | 0 | 10 | 10 | – |
 | [`imagebitmap-renderingcontext`](wpt-coverage/imagebitmap-renderingcontext.md) | 14 | 14 | 0 | 100% |
 | [`import-maps`](wpt-coverage/import-maps.md) | 48 | 49 | 0 | 98% |
@@ -400,7 +400,7 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`x-frame-options`](wpt-coverage/x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](wpt-coverage/xhr.md) | 316 | 328 | 0 | 96% |
 | [`xml`](wpt-coverage/xml.md) | 0 | 11 | 11 | – |
-| **Total (343 sections)** | **24,519** | **29,245** | **2,985** | **93%** |
+| **Total (343 sections)** | **24,499** | **29,245** | **2,985** | **93%** |
 
 ## Tentative tests
 
@@ -677,9 +677,9 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`html/infrastructure`](wpt-coverage/html/infrastructure.md#reftests) | 0 | 1 | 1 | – |
 | [`html/interaction`](wpt-coverage/html/interaction.md#reftests) | 1 | 1 | 0 | 100% |
 | [`html/obsolete`](wpt-coverage/html/obsolete.md#reftests) | 2 | 2 | 0 | 100% |
-| [`html/rendering`](wpt-coverage/html/rendering.md#reftests) | 311 | 322 | 0 | 97% |
+| [`html/rendering`](wpt-coverage/html/rendering.md#reftests) | 305 | 322 | 0 | 95% |
 | [`html/select`](wpt-coverage/html/select.md#reftests) | 1 | 1 | 0 | 100% |
-| [`html/semantics`](wpt-coverage/html/semantics.md#reftests) | 317 | 418 | 61 | 89% |
+| [`html/semantics`](wpt-coverage/html/semantics.md#reftests) | 310 | 418 | 61 | 87% |
 | [`html/syntax`](wpt-coverage/html/syntax.md#reftests) | 22 | 22 | 0 | 100% |
 | [`html/the-xhtml-syntax`](wpt-coverage/html/the-xhtml-syntax.md#reftests) | 2 | 2 | 0 | 100% |
 | [`infrastructure`](wpt-coverage/infrastructure.md#reftests) | 0 | 61 | 61 | – |
@@ -704,4 +704,4 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`webgl`](wpt-coverage/webgl.md#reftests) | 0 | 2 | 2 | – |
 | [`webvtt`](wpt-coverage/webvtt.md#reftests) | 169 | 251 | 0 | 67% |
 | [`xml`](wpt-coverage/xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (129 sections)** | **27,192** | **28,735** | **226** | **95%** |
+| **Total (129 sections)** | **27,179** | **28,735** | **226** | **95%** |

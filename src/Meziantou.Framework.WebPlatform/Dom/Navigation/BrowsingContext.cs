@@ -1237,12 +1237,16 @@ public sealed partial class BrowsingContext : IDisposable
         // The sandboxing flags of the new document are the ones of the container when the navigation starts: a later
         // change of the sandbox attribute applies to the next navigation
         var targetSandboxingFlags = GetIframeSandboxingFlags();
+
+        // https://w3c.github.io/webappsec-cspee/#html-integration: the required CSP of the target snapshot params (the csp
+        // attribute of the iframe when the navigation starts)
+        var requiredPolicy = GetRequiredContentSecurityPolicy();
         QueueTask(() =>
         {
             if (_ongoingNavigation != navigationId || IsDestroyed)
                 return;
 
-            StartLoadingDocument(navigationId, url, sourceDocument, sourceHasTransientActivation, historyHandling, srcdoc, referrerPolicy, iframeElementReferrerPolicy, targetSandboxingFlags, blobUrlEntry, postResource, traversalEntry, response, isFormSubmission: formData is not null, fragmentDirective, userInvolvement);
+            StartLoadingDocument(navigationId, url, sourceDocument, sourceHasTransientActivation, historyHandling, srcdoc, referrerPolicy, iframeElementReferrerPolicy, targetSandboxingFlags, requiredPolicy, blobUrlEntry, postResource, traversalEntry, response, isFormSubmission: formData is not null, fragmentDirective, userInvolvement);
         });
     }
 
@@ -1490,7 +1494,7 @@ public sealed partial class BrowsingContext : IDisposable
     /// the srcdoc and about:blank documents are created immediately, the other documents are provided by
     /// <see cref="BrowsingContextOptions.DocumentLoader"/>, possibly asynchronously.
     /// </summary>
-    private void StartLoadingDocument(int navigationId, UrlRecord url, Document? sourceDocument, bool sourceHasTransientActivation, NavigationHistoryBehavior historyHandling, string? srcdoc, string referrerPolicy, string iframeElementReferrerPolicy, SandboxingFlags targetSandboxingFlags, FileApi.BlobUrlEntry? blobUrlEntry, PostResource? postResource, SessionHistoryEntry? traversalEntry, DocumentResource? fetchedResponse, bool isFormSubmission, string? fragmentDirective = null, UserNavigationInvolvement userInvolvement = UserNavigationInvolvement.None)
+    private void StartLoadingDocument(int navigationId, UrlRecord url, Document? sourceDocument, bool sourceHasTransientActivation, NavigationHistoryBehavior historyHandling, string? srcdoc, string referrerPolicy, string iframeElementReferrerPolicy, SandboxingFlags targetSandboxingFlags, string? requiredPolicy, FileApi.BlobUrlEntry? blobUrlEntry, PostResource? postResource, SessionHistoryEntry? traversalEntry, DocumentResource? fetchedResponse, bool isFormSubmission, string? fragmentDirective = null, UserNavigationInvolvement userInvolvement = UserNavigationInvolvement.None)
     {
         var initiatorOrigin = sourceDocument is null ? null : Document.GetOriginDocument(sourceDocument);
 
@@ -1541,6 +1545,16 @@ public sealed partial class BrowsingContext : IDisposable
         // documents of the local schemes get a clone of the policy container stored in the session history entry, else of
         // the one of their initiator (the parent for a srcdoc document)
         var historyPolicyContainer = traversalEntry?.DocumentState.HistoryPolicyContainer;
+
+        // A document of a local scheme loaded again from the session history keeps the required CSP it enforced (as in
+        // Chromium): it is in its history policy container, or in the document state of a blob: document. A later change
+        // of the csp attribute applies to the documents that are fetched again.
+        if (traversalEntry is not null && url.Scheme is "about" or "blob" or "data")
+        {
+            requiredPolicy = historyPolicyContainer is null ? traversalEntry.DocumentState.HistoryRequiredContentSecurityPolicy : null;
+        }
+
+        parameters.RequiredContentSecurityPolicy = requiredPolicy;
 
         DocumentResource resource;
         if (srcdoc is null && IsNavigationRequestBlockedByContentSecurityPolicy(url, sourceDocument, isFormSubmission))
@@ -1687,6 +1701,12 @@ public sealed partial class BrowsingContext : IDisposable
             if (postResource is not null)
             {
                 request.HeaderList.Add(new("Content-Type", postResource.ContentType));
+            }
+
+            // https://w3c.github.io/webappsec-cspee/#abstract-opdef-set-the-sec-required-csp-header
+            if (requiredPolicy is not null)
+            {
+                request.HeaderList.Add(new("Sec-Required-CSP", requiredPolicy));
             }
 
             // https://wicg.github.io/nav-speculation/prefetch.html#wait-for-a-matching-prefetch-record: the navigation uses the
@@ -1955,7 +1975,7 @@ public sealed partial class BrowsingContext : IDisposable
         // The opener policy and the cross-origin resource policy of the responses of the fetch of a navigation are checked by
         // ProcessNavigationResponse. The response of a child navigable is checked by the frame-ancestors directives of its
         // policies, by the embedder policy of its container document and by its X-Frame-Options header.
-        if (!parameters.OpaqueOrigin && (IsNavigationResponseBlocked(url, resource.Headers, resource.StatusCode, checkResourcePolicy: !checkedByNavigationFetch) || (!checkedByNavigationFetch && !ApplyOpenerPolicy(url, parameters, resource.Headers))))
+        if (!parameters.OpaqueOrigin && (IsNavigationResponseBlocked(url, resource.Headers, resource.StatusCode, checkResourcePolicy: !checkedByNavigationFetch, parameters) || (!checkedByNavigationFetch && !ApplyOpenerPolicy(url, parameters, resource.Headers))))
         {
             // A network error: an error document, whose origin is opaque
             resource = new DocumentResource("");
@@ -2317,6 +2337,14 @@ public sealed partial class BrowsingContext : IDisposable
             sandboxingFlags |= GetContentSecurityPolicySandboxingFlags(inheritedPolicyContainer);
         }
 
+        // https://w3c.github.io/webappsec-cspee/#html-integration: the required CSP is enforced by the document, unless the
+        // policies of its response subsume it (its sandbox directive applies to the document)
+        var enforcedRequiredPolicy = GetEnforcedRequiredContentSecurityPolicy(document, parameters);
+        if (enforcedRequiredPolicy?.GetDirectiveValue("sandbox") is { } requiredSandbox)
+        {
+            sandboxingFlags |= Sandboxing.ParseSandboxingDirective(string.Join(' ', requiredSandbox));
+        }
+
         document.ActiveSandboxingFlags = sandboxingFlags;
 
         // https://html.spec.whatwg.org/multipage/webappapis.html#concept-environment-script: scripting is disabled when the
@@ -2378,6 +2406,16 @@ public sealed partial class BrowsingContext : IDisposable
         else
         {
             document.AddContentSecurityPolicies(parameters.Headers);
+        }
+
+        if (enforcedRequiredPolicy is not null)
+        {
+            document.AddContentSecurityPolicy(enforcedRequiredPolicy.Serialized, reportOnly: false);
+        }
+
+        if (parameters.RequiredContentSecurityPolicy is { } requiredPolicy && !parameters.IsNetworkError)
+        {
+            document.RequiredContentSecurityPolicy = requiredPolicy;
         }
 
         foreach (var (name, value) in parameters.Headers)
@@ -2591,6 +2629,10 @@ public sealed partial class BrowsingContext : IDisposable
         if (document.UrlRecord.Scheme is "about" or "data")
         {
             entry.DocumentState.HistoryPolicyContainer = PolicyContainer.Clone(document);
+        }
+        else if (document.UrlRecord.Scheme == "blob")
+        {
+            entry.DocumentState.HistoryRequiredContentSecurityPolicy = parameters?.RequiredContentSecurityPolicy;
         }
 
         document.LatestEntry = entry;
@@ -3414,5 +3456,11 @@ public sealed partial class BrowsingContext : IDisposable
         /// of the document replaced by the result of a <c>javascript:</c> URL. Null for the policies of the response headers.
         /// </summary>
         public PolicyContainer? PolicyContainer { get; set; }
+
+        /// <summary>
+        /// The required CSP of the navigation params (https://w3c.github.io/webappsec-cspee/#navigation-params-required-csp):
+        /// the serialized policy that the document must enforce, or null.
+        /// </summary>
+        public string? RequiredContentSecurityPolicy { get; set; }
     }
 }

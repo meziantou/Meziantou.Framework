@@ -4,7 +4,8 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>$(LatestTargetFramework)</TargetFramework>
     <RootNamespace>ChromiumDiff</RootNamespace>
-    <NoWarn>$(NoWarn);CA1303;CA1515;CA2007;CA1031</NoWarn>
+    <!-- CA5394: the generated inputs come from a seeded Random, so that a seed gives the same inputs -->
+    <NoWarn>$(NoWarn);CA1303;CA1515;CA2007;CA1031;CA5394</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Playwright" Version="1.63.0" />
@@ -13,7 +14,9 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="dump.js" LogicalName="dump.js" />
+    <EmbeddedResource Include="tree.js" LogicalName="tree.js" />
+    <EmbeddedResource Include="document.js" LogicalName="document.js" />
+    <EmbeddedResource Include="fragments.js" LogicalName="fragments.js" />
     <EmbeddedResource Include="layout.js" LogicalName="layout.js" />
     <EmbeddedResource Include="styles.js" LogicalName="styles.js" />
     <EmbeddedResource Include="inspect.js" LogicalName="inspect.js" />

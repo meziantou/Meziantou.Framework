@@ -2093,12 +2093,7 @@
   "html/browsers/sandboxing/sandbox-inherited-from-required-csp.html": {
     "total": 7,
     "failures": {
-      "about:blank": "FAIL",
-      "blob URL": "FAIL",
-      "cross-origin": "FAIL",
-      "initial empty document": "FAIL",
-      "same-origin": "FAIL",
-      "srcdoc": "FAIL"
+      "initial empty document": "FAIL"
     }
   },
   "html/browsers/sandboxing/sandbox-initial-empty-document-toward-same-origin.html": {

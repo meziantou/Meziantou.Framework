@@ -3,7 +3,8 @@
 // Materializes tests/Meziantou.Framework.JavaScriptEngine.External/<suite> at the commits and paths pinned in
 // tests/Meziantou.Framework.JavaScriptEngine.Test262/test262.json (test262 and test262-parser-tests). Each suite is a
 // shallow, blob-less, sparse git clone, so changing the commit only downloads the files that changed. A stamp file makes
-// a run with unchanged pins a no-op.
+// a run with unchanged pins a no-op. The suites marked "optional" (parse-number-fxx-test-data) are only fetched when
+// named on the command line: dotnet run eng/javascriptengine/fetch-tests.cs parse-number-fxx-test-data
 using System.Diagnostics;
 using System.Text.Json;
 
@@ -11,8 +12,19 @@ var root = FindRoot(Environment.CurrentDirectory) ?? FindRoot(AppContext.BaseDir
 var pinsPath = Path.Combine(root, "tests", "Meziantou.Framework.JavaScriptEngine.Test262", "test262.json");
 var externalPath = Path.Combine(root, "tests", "Meziantou.Framework.JavaScriptEngine.External");
 using var pins = JsonDocument.Parse(File.ReadAllText(pinsPath));
+var requestedSuites = args.ToHashSet(StringComparer.Ordinal);
+foreach (var name in requestedSuites)
+{
+    if (!pins.RootElement.TryGetProperty(name, out _))
+        throw new InvalidOperationException($"'{name}' is not a suite of {pinsPath}");
+}
+
 foreach (var suite in pins.RootElement.EnumerateObject())
 {
+    var optional = suite.Value.TryGetProperty("optional", out var optionalValue) && optionalValue.GetBoolean();
+    if (optional && !requestedSuites.Contains(suite.Name))
+        continue;
+
     var repository = suite.Value.GetProperty("repository").GetString()!;
     var commit = suite.Value.GetProperty("commit").GetString()!;
     var paths = suite.Value.GetProperty("paths").EnumerateArray().Select(p => p.GetString()!).ToArray();

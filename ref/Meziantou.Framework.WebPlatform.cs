@@ -3104,6 +3104,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.SystemClipboard? Clipboard { get => throw null; init { } }
         public System.Func<Meziantou.Framework.WebPlatform.Dom.Document, Meziantou.Framework.WebPlatform.Dom.ClipboardAccess, bool>? ClipboardPermission { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.GlobalScope, Meziantou.Framework.WebPlatform.Scripting.ConsoleMessage>? ConsoleMessage { get => throw null; init { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.GlobalScope, Meziantou.Framework.WebPlatform.Dom.ContentSecurityPolicyViolationReport>? ContentSecurityPolicyViolation { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.CookieJar? CookieJar { get => throw null; init { } }
         public bool DeclarativeRefreshEnabled { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.DocumentLoader? DocumentLoader { get => throw null; init { } }
@@ -3658,6 +3659,22 @@ namespace Meziantou.Framework.WebPlatform.Dom
     public sealed class CompositionEventInit : Meziantou.Framework.WebPlatform.Dom.UIEventInit
     {
         public string Data { get => throw null; init { } }
+    }
+
+    public sealed class ContentSecurityPolicyViolationReport
+    {
+        public string BlockedUrl { get => throw null; }
+        public int ColumnNumber { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.SecurityPolicyViolationEventDisposition Disposition { get => throw null; }
+        public string DocumentUrl { get => throw null; }
+        public string EffectiveDirective { get => throw null; }
+        public int LineNumber { get => throw null; }
+        public string OriginalPolicy { get => throw null; }
+        public string Referrer { get => throw null; }
+        public string Sample { get => throw null; }
+        public string? SourceFile { get => throw null; }
+        public int StatusCode { get => throw null; }
+        public override string ToString() => throw null;
     }
 
     public sealed class ConvertCoordinateOptions
@@ -6066,6 +6083,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.Document? ContentDocument { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Window? ContentWindow { get => throw null; }
         public bool Credentialless { get => throw null; set { } }
+        public string Csp { get => throw null; set { } }
         public string FrameBorder { get => throw null; set { } }
         public string Height { get => throw null; set { } }
         public string Loading { get => throw null; set { } }

@@ -328,6 +328,10 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
   `TEST262_UPDATE_EXPECTATIONS=1 dotnet test -f net10.0` (one target framework: the processes of the target frameworks
   run concurrently). Filter with `TEST262_FILTER=a|b` (substrings of the test ids). The update also regenerates
   `summary.md`.
+- The number conversions (StringToNumber, parseFloat, the numeric literals, JSON.parse, Number::toString) are checked
+  against a sample of parse-number-fxx-test-data (`Tests/Corpus/ParseNumberFxx.md`). The whole corpus (5.3 million
+  lines) is an optional suite: `dotnet run eng/javascriptengine/fetch-tests.cs parse-number-fxx-test-data`, then
+  `NumberBuiltinsTests.ParseNumberFxx_FullCorpus` checks it.
 
 ## Conventions and pitfalls
 

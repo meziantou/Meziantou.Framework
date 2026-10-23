@@ -966,8 +966,22 @@ public partial class HtmlInputElement : IEditableTextControl
         if (_type is not (InputType.File or InputType.Color) && !OriginRecord.IsSameOrigin(NodeDocument.Origin, NodeDocument.TopLevelOrigin))
             throw new DomException("showPicker() cannot be called in a cross-origin iframe", "SecurityError");
 
-        // There is no transient user activation
-        throw new DomException("showPicker() requires a user activation", "NotAllowedError");
+        if (NodeDocument.RelevantWindow is not { HasTransientActivation: true })
+            throw new DomException("showPicker() requires a user activation", "NotAllowedError");
+
+        ShowPickerIfApplicable();
+    }
+
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/input.html#show-the-picker,-if-applicable: the user activation is consumed; there
+    /// is no picker user interface (the user does not choose a value).
+    /// </summary>
+    private void ShowPickerIfApplicable()
+    {
+        if (NodeDocument.RelevantWindow is not { HasTransientActivation: true } window || !IsMutable)
+            return;
+
+        window.ConsumeUserActivation();
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -1257,6 +1271,11 @@ public partial class HtmlInputElement : IEditableTextControl
                     resetForm.ResetForm();
                 }
 
+                break;
+
+            // https://html.spec.whatwg.org/multipage/input.html#color-state-(type=color):input-activation-behavior
+            case InputType.Color or InputType.File:
+                ShowPickerIfApplicable();
                 break;
         }
 

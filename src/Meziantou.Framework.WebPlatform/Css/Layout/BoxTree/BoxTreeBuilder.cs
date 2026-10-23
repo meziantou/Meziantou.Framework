@@ -1419,7 +1419,9 @@ internal sealed partial class BoxTreeBuilder
         if (content is "none")
             return;
 
-        var outside = style.Layout.Text.ListStylePosition == ListStylePosition.Outside;
+        // https://drafts.csswg.org/css-lists-3/#list-style-position-property: "If the list item is an inline box, this value is
+        // equivalent to inside"
+        var outside = style.Layout.Text.ListStylePosition == ListStylePosition.Outside && parent.Display is not { Outside: DisplayOutside.Inline, Inside: DisplayInside.Flow };
         var display = outside ? new Display(DisplayBox.Normal, DisplayOutside.Inline, DisplayInside.FlowRoot) : Display.Inline;
         ContainerBox box;
         if (content is not ("normal" or ""))

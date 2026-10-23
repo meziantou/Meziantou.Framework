@@ -255,13 +255,13 @@
     "reftest": "FAIL"
   },
   "css/css-lists/inline-list-marker.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/inline-list-with-table-child.html": {
     "reftest": "PASS"
   },
   "css/css-lists/inline-list.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/li-counter-increment-computed-style.html": {
     "total": 1

@@ -344,6 +344,7 @@ internal static class CssCalc
         private readonly CssAnchorFunctions _anchorFunctions;
         private readonly Func<CssFunction, double?>? _resolveAnchorFunction;
         private readonly Func<CssFunction, string>? _serializeAnchorFunction;
+        private readonly CssCalcContext _context;
 
         // The base type percentages resolve to (CssCalcType.NoHint when a percentage is its own type)
         private readonly sbyte _percentHint;
@@ -354,6 +355,7 @@ internal static class CssCalc
 
         public Evaluator(CssCalcContext context)
         {
+            _context = context;
             _resolveDimension = context.ResolveDimension;
             _resolveTreeCountingFunction = context.ResolveTreeCountingFunction;
             _resolveRandomBaseValue = context.ResolveRandomBaseValue;
@@ -630,6 +632,8 @@ internal static class CssCalc
             var arguments = ValueMatcher.SplitAtCommas(values);
             var nodes = new List<CssCalcNode>(arguments.Count);
             var weights = new List<double?>(arguments.Count);
+            List<CssCalcNode?>? weightNodes = null;
+            var hasUnknownWeight = false;
             foreach (var argument in arguments)
             {
                 var end = argument.FindLastIndex(v => v is not CssPreservedToken { Type: CssTokenType.Whitespace });
@@ -637,12 +641,28 @@ internal static class CssCalc
                     return null;
 
                 double? weight = null;
+                CssCalcNode? weightNode = null;
                 if (argument[end] is CssPreservedToken { Type: CssTokenType.Percentage } percentage && ValueMatcher.RemoveWhitespace(argument).Count > 1)
                 {
                     if (percentage.Token.NumericValue is < 0 or > 100)
                         return null;
 
                     weight = percentage.Token.NumericValue;
+                    weightNode = new CssCalcNumericNode(weight.Value, "%");
+                }
+                else if (argument[end] is CssFunction weightFunction && GetKind(weightFunction.Name) is { } weightKind and not CssCalcFunctionKind.CalcSize && ValueMatcher.RemoveWhitespace(argument).Count > 1
+                    && ParseWeight(weightFunction, weightKind, depth) is { } parsedWeight)
+                {
+                    // A <percentage [0,100]> math function: it is clamped when it is known (at computed-value time)
+                    weightNode = parsedWeight;
+                    if (parsedWeight is CssCalcNumericNode { Value: var weightValue } && (!_keepRelativeUnits || weightValue is >= 0 and <= 100))
+                    {
+                        weight = double.IsNaN(weightValue) ? 0 : Math.Clamp(weightValue, 0, 100);
+                    }
+                    else
+                    {
+                        hasUnknownWeight = true;
+                    }
                 }
                 else
                 {
@@ -655,6 +675,8 @@ internal static class CssCalc
 
                 nodes.Add(node);
                 weights.Add(weight);
+                weightNodes ??= [];
+                weightNodes.Add(weightNode);
             }
 
             var type = nodes[0].Type;
@@ -666,6 +688,10 @@ internal static class CssCalc
 
             if (GetUnitOfType(type) is not { } typeUnit)
                 return null;
+
+            // The weights that are not known yet (e.g. calc(50% * sibling-index())) are normalized at computed-value time
+            if (hasUnknownWeight)
+                return new CssCalcFunctionNode(CssCalcFunctionKind.CalcMix, CssCalcRoundingStrategy.Nearest, [.. nodes], type) { UnresolvedWeights = weightNodes };
 
             // The weights are normalized
             var specified = weights.Sum(weight => weight ?? 0);
@@ -683,10 +709,21 @@ internal static class CssCalc
                 }
             }
 
+            // The result is a zero of the type of the first value (a percentage is its own type there: calc-mix(1% 0%, 3px 0%) is 0%)
             if (items.Count == 0)
-                return new CssCalcNumericNode(0, nodes[0] is CssCalcNumericNode first ? first.Unit : typeUnit);
+            {
+                var zeroUnit = nodes[0] switch
+                {
+                    CssCalcNumericNode first => first.Unit,
+                    { Type: { PercentHint: CssCalcType.NoHint } firstType } when firstType.ExponentsEqual(CssCalcType.FromUnit("%")) => "%",
+                    _ => GetUnitOfType(nodes[0].Type) ?? typeUnit,
+                };
 
-            if (items.TrueForAll(IsResolvable) && items.Select(item => ((CssCalcNumericNode)item!).Unit).Distinct(StringComparer.Ordinal).Count() == 1)
+                return new CssCalcNumericNode(0, zeroUnit);
+            }
+
+            // The values of the same unit are combined (calc-mix(10% 50%, 30% 50%) is 20%)
+            if (items.TrueForAll(item => item is CssCalcNumericNode) && items.Select(item => ((CssCalcNumericNode)item!).Unit).Distinct(StringComparer.Ordinal).Count() == 1)
             {
                 var sum = 0d;
                 for (var i = 0; i < items.Count; i++)
@@ -698,6 +735,24 @@ internal static class CssCalc
             }
 
             return new CssCalcFunctionNode(CssCalcFunctionKind.CalcMix, CssCalcRoundingStrategy.Nearest, items, type) { Weights = itemWeights };
+        }
+
+        /// <summary>Parses a weight of calc-mix(), a &lt;percentage&gt; math function (the percentages are their own type there).</summary>
+        private CssCalcNode? ParseWeight(CssFunction function, CssCalcFunctionKind kind, int depth)
+        {
+            var evaluator = new Evaluator(new CssCalcContext
+            {
+                KeepRelativeUnits = _context.KeepRelativeUnits,
+                ResolveDimension = _context.ResolveDimension,
+                ResolveTreeCountingFunction = _context.ResolveTreeCountingFunction,
+                ResolveRandomBaseValue = _context.ResolveRandomBaseValue,
+            });
+
+            var node = evaluator.ParseFunction(function, kind, depth + 1);
+            if (node is null || evaluator.GetUnitOfType(node.Type) is not "%")
+                return null;
+
+            return evaluator.TryResolve(node, out var value) ? new CssCalcNumericNode(value, "%") : node;
         }
 
         private bool IsLengthPercentage(CssCalcType type) => GetUnitOfType(type) is "px" || (GetUnitOfType(type) is "%" && _percentHint == CssCalcType.NoHint);
@@ -1786,6 +1841,40 @@ internal static class CssCalc
                 return;
             }
 
+            case CssCalcFunctionNode { Kind: CssCalcFunctionKind.CalcMix, UnresolvedWeights: { } unresolvedWeights } calcMix:
+            {
+                builder.Append("calc-mix(");
+                for (var i = 0; i < calcMix.Arguments.Count; i++)
+                {
+                    if (i > 0)
+                    {
+                        builder.Append(", ");
+                    }
+
+                    AppendNode(builder, calcMix.Arguments[i]!, omitParentheses: true);
+                    switch (unresolvedWeights[i])
+                    {
+                        case CssCalcNumericNode { Value: >= 0 and <= 100 } weight:
+                            builder.Append(' ').Append(CssSerializer.SerializeNumber(weight.Value)).Append('%');
+                            break;
+
+                        case CssCalcFunctionNode weight:
+                            builder.Append(' ');
+                            AppendNode(builder, weight, omitParentheses: true);
+                            break;
+
+                        case { } weight:
+                            builder.Append(" calc(");
+                            AppendNode(builder, weight, omitParentheses: true);
+                            builder.Append(')');
+                            break;
+                    }
+                }
+
+                builder.Append(')');
+                return;
+            }
+
             case CssCalcFunctionNode { Kind: CssCalcFunctionKind.CalcSize } calcSize:
             {
                 builder.Append("calc-size(");
@@ -2316,4 +2405,7 @@ internal sealed class CssCalcFunctionNode(CssCalcFunctionKind kind, CssCalcRound
 
     /// <summary>The normalized weights of the values of calc-mix(), in percent.</summary>
     public List<double>? Weights { get; init; }
+
+    /// <summary>The weights of the values of calc-mix() as specified (null when omitted), when one of them is not known yet.</summary>
+    public List<CssCalcNode?>? UnresolvedWeights { get; init; }
 }

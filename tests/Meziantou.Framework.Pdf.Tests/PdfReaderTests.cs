@@ -245,4 +245,23 @@ public sealed class PdfReaderTests
 
         Assert.Equal("q Q", Encoding.ASCII.GetString(document.Pages[0].GetContentData()));
     }
+
+    [Fact]
+    public void ChainOfLengthReferencesDoesNotRecurseWithoutBound()
+    {
+        // Each stream has its length in the next stream object: reading one would read them all, recursively
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Contents 4 0 R >>");
+        const int Count = 5000;
+        for (var i = 0; i < Count; i++)
+        {
+            file.Add(4 + i, "<< /Length " + (5 + i).ToString(System.Globalization.CultureInfo.InvariantCulture) + " 0 R >>\nstream\nq Q\nendstream");
+        }
+
+        var document = PdfDocument.Open(file.ToArray());
+
+        Assert.Equal("q Q", Encoding.ASCII.GetString(document.Pages[0].GetContentData()));
+    }
 }

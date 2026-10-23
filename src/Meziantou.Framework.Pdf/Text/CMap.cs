@@ -10,7 +10,10 @@ namespace Meziantou.Framework.Pdf.Text;
 /// </summary>
 internal sealed class CMap
 {
-    private const int MaxRangeEntries = 65536;
+    // The entries of a CMap and of the CMaps it uses, together: code space ranges, mappings of single codes, ranges and
+    // the items of their arrays. The code space ranges are tried for each code: they have a smaller limit of their own.
+    private const int MaxEntries = 65536;
+    private const int MaxCodeSpaceRanges = 256;
     private const int MaxUseCMapDepth = 8;
 
     private readonly List<(int Length, uint Low, uint High)> _codeSpaces = [];
@@ -18,6 +21,8 @@ internal sealed class CMap
     private readonly List<(uint Low, uint High, string Start)> _unicodeRanges = [];
     private readonly Dictionary<uint, int> _cids = [];
     private readonly List<(uint Low, uint High, int Start)> _cidRanges = [];
+    private int _entryCount;
+    private int _shortestCodeLength = 1;
 
     private CMap()
     {
@@ -28,7 +33,12 @@ internal sealed class CMap
 
     public bool IsVertical { get; private set; }
 
-    public static CMap Identity(bool vertical) => new() { IsIdentity = true, IsVertical = vertical, _codeSpaces = { (2, 0, 0xFFFF) } };
+    public static CMap Identity(bool vertical)
+    {
+        var cmap = new CMap { IsIdentity = true, IsVertical = vertical, _codeSpaces = { (2, 0, 0xFFFF) } };
+        cmap.Finish();
+        return cmap;
+    }
 
     public static CMap Parse(PdfStream stream, int depth = 0)
     {
@@ -44,6 +54,7 @@ internal sealed class CMap
             cmap.IsVertical = true;
         }
 
+        cmap.Finish();
         return cmap;
     }
 
@@ -62,7 +73,7 @@ internal sealed class CMap
         }
 
         // No code space range: the shortest code of the CMap, or one byte (9.7.6.3)
-        var shortest = _codeSpaces.Count > 0 ? Math.Min(_codeSpaces.Min(c => c.Length), data.Length) : 1;
+        var shortest = Math.Min(_shortestCodeLength, data.Length);
         value = 0;
         for (var i = 0; i < shortest; i++)
         {
@@ -77,21 +88,19 @@ internal sealed class CMap
         if (_unicode.TryGetValue(code, out var text))
             return text;
 
-        foreach (var (low, high, start) in _unicodeRanges)
+        if (FindRange(_unicodeRanges, code) is { } index)
         {
-            if (code >= low && code <= high)
-            {
-                // The last character of the destination string is incremented (9.10.3)
-                var offset = (int)(code - low);
-                if (start.Length == 0)
-                    return null;
+            // The last character of the destination string is incremented (9.10.3)
+            var (low, _, start) = _unicodeRanges[index];
+            var offset = (int)(code - low);
+            if (start.Length == 0)
+                return null;
 
-                var last = start[^1] + offset;
-                if (last > 0xFFFF)
-                    return null;
+            var last = start[^1] + offset;
+            if (last > 0xFFFF)
+                return null;
 
-                return string.Concat(start.AsSpan(0, start.Length - 1), ((char)last).ToString());
-            }
+            return string.Concat(start.AsSpan(0, start.Length - 1), ((char)last).ToString());
         }
 
         return null;
@@ -105,30 +114,100 @@ internal sealed class CMap
         if (_cids.TryGetValue(code, out var cid))
             return cid;
 
-        foreach (var (low, high, start) in _cidRanges)
-        {
-            if (code >= low && code <= high)
-                return start + (int)(code - low);
-        }
+        if (FindRange(_cidRanges, code) is { } index)
+            return _cidRanges[index].Start + (int)(code - _cidRanges[index].Low);
 
         return 0;
     }
 
+    /// <summary>Finds the range that contains a code in ranges sorted by their first code.</summary>
+    private static int? FindRange<T>(List<(uint Low, uint High, T Start)> ranges, uint code)
+    {
+        var low = 0;
+        var high = ranges.Count - 1;
+        var found = -1;
+        while (low <= high)
+        {
+            var middle = low + ((high - low) / 2);
+            if (ranges[middle].Low <= code)
+            {
+                found = middle;
+                low = middle + 1;
+            }
+            else
+            {
+                high = middle - 1;
+            }
+        }
+
+        // Ranges may overlap: the nearest ones before the position are tried too
+        for (var i = found; i >= 0 && i > found - 8; i--)
+        {
+            if (code >= ranges[i].Low && code <= ranges[i].High)
+                return i;
+        }
+
+        return null;
+    }
+
+    private void Finish()
+    {
+        _unicodeRanges.Sort((a, b) => a.Low.CompareTo(b.Low));
+        _cidRanges.Sort((a, b) => a.Low.CompareTo(b.Low));
+        _shortestCodeLength = _codeSpaces.Count > 0 ? _codeSpaces.Min(c => c.Length) : 1;
+    }
+
+    private bool TryCharge()
+    {
+        if (_entryCount >= MaxEntries)
+            return false;
+
+        _entryCount++;
+        return true;
+    }
+
     private void Merge(CMap parent)
     {
-        _codeSpaces.AddRange(parent._codeSpaces);
+        foreach (var range in parent._codeSpaces)
+        {
+            if (_codeSpaces.Count < MaxCodeSpaceRanges && TryCharge())
+            {
+                _codeSpaces.Add(range);
+            }
+        }
+
         foreach (var (key, value) in parent._unicode)
         {
-            _unicode.TryAdd(key, value);
+            if (!_unicode.ContainsKey(key) && TryCharge())
+            {
+                _unicode.Add(key, value);
+            }
         }
 
-        _unicodeRanges.AddRange(parent._unicodeRanges);
+        foreach (var range in parent._unicodeRanges)
+        {
+            if (TryCharge())
+            {
+                _unicodeRanges.Add(range);
+            }
+        }
+
         foreach (var (key, value) in parent._cids)
         {
-            _cids.TryAdd(key, value);
+            if (!_cids.ContainsKey(key) && TryCharge())
+            {
+                _cids.Add(key, value);
+            }
         }
 
-        _cidRanges.AddRange(parent._cidRanges);
+        foreach (var range in parent._cidRanges)
+        {
+            if (TryCharge())
+            {
+                _cidRanges.Add(range);
+            }
+        }
+
         IsVertical |= parent.IsVertical;
     }
 
@@ -137,7 +216,6 @@ internal sealed class CMap
         var lexer = new PdfLexer(data);
         var parser = new PdfObjectParser(lexer, objects: null, maxDepth: 32);
         var operands = new List<PdfObject>();
-        var entries = 0;
         while (true)
         {
             var token = lexer.Next();
@@ -174,7 +252,7 @@ internal sealed class CMap
                 case "endcodespacerange":
                     for (var i = 0; i + 1 < operands.Count; i += 2)
                     {
-                        if (operands[i] is PdfString low && operands[i + 1] is PdfString high && low.Span.Length is >= 1 and <= 4)
+                        if (operands[i] is PdfString low && operands[i + 1] is PdfString high && low.Span.Length is >= 1 and <= 4 && _codeSpaces.Count < MaxCodeSpaceRanges && TryCharge())
                         {
                             _codeSpaces.Add((low.Span.Length, ToCode(low.Span), ToCode(high.Span)));
                         }
@@ -183,7 +261,7 @@ internal sealed class CMap
                     operands.Clear();
                     break;
                 case "endbfchar":
-                    for (var i = 0; i + 1 < operands.Count && entries < MaxRangeEntries; i += 2, entries++)
+                    for (var i = 0; i + 1 < operands.Count && TryCharge(); i += 2)
                     {
                         if (operands[i] is PdfString code)
                         {
@@ -203,7 +281,7 @@ internal sealed class CMap
                     operands.Clear();
                     break;
                 case "endbfrange":
-                    for (var i = 0; i + 2 < operands.Count && entries < MaxRangeEntries; i += 3, entries++)
+                    for (var i = 0; i + 2 < operands.Count && TryCharge(); i += 3)
                     {
                         if (operands[i] is not PdfString lowString || operands[i + 1] is not PdfString highString)
                             continue;
@@ -219,7 +297,7 @@ internal sealed class CMap
                                 _unicodeRanges.Add((low, high, DecodeUtf16(start.Span)));
                                 break;
                             case PdfArray array:
-                                for (var j = 0; j < array.Count && low + (uint)j <= high; j++)
+                                for (var j = 0; j < array.Count && low + (uint)j <= high && TryCharge(); j++)
                                 {
                                     if (array[j] is PdfString item)
                                     {
@@ -234,7 +312,7 @@ internal sealed class CMap
                     operands.Clear();
                     break;
                 case "endcidchar":
-                    for (var i = 0; i + 1 < operands.Count && entries < MaxRangeEntries; i += 2, entries++)
+                    for (var i = 0; i + 1 < operands.Count && TryCharge(); i += 2)
                     {
                         if (operands[i] is PdfString code && operands[i + 1] is PdfInteger cid)
                         {
@@ -245,7 +323,7 @@ internal sealed class CMap
                     operands.Clear();
                     break;
                 case "endcidrange":
-                    for (var i = 0; i + 2 < operands.Count && entries < MaxRangeEntries; i += 3, entries++)
+                    for (var i = 0; i + 2 < operands.Count && TryCharge(); i += 3)
                     {
                         if (operands[i] is PdfString low && operands[i + 1] is PdfString high && operands[i + 2] is PdfInteger start)
                         {

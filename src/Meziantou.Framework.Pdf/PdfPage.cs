@@ -131,6 +131,7 @@ public sealed class PdfPage
 
     /// <summary>Extracts the text of the page, in the order of the content, with a line break between the lines.</summary>
     /// <returns>The text.</returns>
+    /// <exception cref="PdfResourceLimitException">The content runs more operators and glyphs than the limit (forms that paint forms).</exception>
     public string ExtractText() => TextExtractor.Extract(this);
 
     internal IEnumerable<PdfStream> GetContentStreams()

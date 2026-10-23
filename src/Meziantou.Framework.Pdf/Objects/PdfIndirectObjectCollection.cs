@@ -10,8 +10,11 @@ namespace Meziantou.Framework.Pdf.Objects;
 /// </remarks>
 public sealed class PdfIndirectObjectCollection
 {
+    private const int MaxLoadDepth = 32;
+
     private readonly Dictionary<int, IndirectObjectEntry> _entries = [];
     private int _maxObjectNumber;
+    private int _loadDepth;
 
     internal PdfIndirectObjectCollection()
     {
@@ -161,7 +164,14 @@ public sealed class PdfIndirectObjectCollection
         if (Loader is null)
             return PdfNull.Instance;
 
+        // Reading an object can resolve another one (the /Length of a stream), which can resolve another one: a chain
+        // of such objects is cut, so that a file cannot make the reader recurse without bound. The object stays
+        // unloaded, and a later resolution from a shallower place reads it.
+        if (_loadDepth >= MaxLoadDepth)
+            return PdfNull.Instance;
+
         entry.State = IndirectObjectState.Loading;
+        _loadDepth++;
         PdfObject value;
         try
         {
@@ -171,6 +181,10 @@ public sealed class PdfIndirectObjectCollection
         {
             entry.State = IndirectObjectState.Unloaded;
             throw;
+        }
+        finally
+        {
+            _loadDepth--;
         }
 
         entry.Value = value;

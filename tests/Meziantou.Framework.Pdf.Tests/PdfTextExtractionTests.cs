@@ -56,6 +56,45 @@ public sealed class PdfTextExtractionTests
     }
 
     [Fact]
+    public void FormsThatPaintFormsSeveralTimesAreBounded()
+    {
+        // Each form paints the next one twice: the work doubles at each of the 16 levels
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Resources 4 0 R /Contents 10 0 R >>")
+            .Add(4, "<< /Font << /F1 5 0 R >> /XObject << " + string.Concat(Enumerable.Range(0, 20).Select(i => $"/X{i} {10 + i} 0 R ")) + ">> >>")
+            .Add(5, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+        for (var i = 0; i < 20; i++)
+        {
+            var content = (i < 19 ? $"/X{i + 1} Do /X{i + 1} Do " : "") + "BT /F1 1 Tf (" + new string('x', 2000) + ") Tj ET";
+            file.Add(10 + i, HandWrittenPdf.Stream(content, " /Type /XObject /Subtype /Form /Resources 4 0 R"));
+        }
+
+        var document = PdfDocument.Open(file.ToArray());
+
+        Assert.Throws<PdfResourceLimitException>(() => document.Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void CMapWithManyRangesIsBounded()
+    {
+        var ranges = string.Concat(Enumerable.Range(0, 100_000).Select(i => $"<{i:X4}> <{i:X4}> "));
+        var toUnicode = "1 begincodespacerange " + ranges + "endcodespacerange 1 beginbfrange " + string.Concat(Enumerable.Range(0, 100_000).Select(i => $"<{i:X4}> <{i:X4}> <0041> ")) + "endbfrange";
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>")
+            .Add(4, "<< /Type /Font /Subtype /Type0 /BaseFont /X /Encoding /Identity-H /DescendantFonts [<< /Type /Font /Subtype /CIDFontType2 /BaseFont /X /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> >>] /ToUnicode 6 0 R >>")
+            .Add(5, HandWrittenPdf.Stream("BT /F1 12 Tf <0000 0001 FFFF> Tj ET"))
+            .Add(6, HandWrittenPdf.Stream(toUnicode));
+
+        var document = PdfDocument.Open(file.ToArray());
+
+        Assert.Equal("AA", document.Pages[0].ExtractText());
+    }
+
+    [Fact]
     public void TextWrittenByTheBuilder()
     {
         var document = new PdfDocument();

@@ -13,7 +13,13 @@ internal sealed class TextExtractor
 {
     private const int MaxFormDepth = 16;
 
+    // The operators and glyphs a page may run: a form can paint other forms several times each, so the work grows
+    // with the product of the counts of each level, not with the size of the file
+    private const long MaxOperations = 20_000_000;
+
     private readonly List<TextGlyph> _glyphs = [];
+    private readonly Dictionary<PdfStream, byte[]?> _formData = new(ReferenceEqualityComparer.Instance);
+    private long _operations;
     private readonly Dictionary<PdfDictionary, PdfFontDecoder> _decoders = new(ReferenceEqualityComparer.Instance);
     private readonly HashSet<PdfStream> _activeForms = new(ReferenceEqualityComparer.Instance);
 
@@ -51,6 +57,7 @@ internal sealed class TextExtractor
         var stack = new Stack<TextGraphicsState>();
         while (reader.TryRead(operands, out var name))
         {
+            Charge(1);
             switch (name)
             {
                 case "q":
@@ -151,15 +158,22 @@ internal sealed class TextExtractor
                 state.Ctm = new PdfMatrix(matrix.GetNumber(0), matrix.GetNumber(1), matrix.GetNumber(2), matrix.GetNumber(3), matrix.GetNumber(4), matrix.GetNumber(5)) * state.Ctm;
             }
 
-            byte[] data;
-            try
+            if (!_formData.TryGetValue(form, out var data))
             {
-                data = form.GetDecodedData();
+                try
+                {
+                    data = form.GetDecodedData();
+                }
+                catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException)
+                {
+                    data = null;
+                }
+
+                _formData[form] = data;
             }
-            catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException)
-            {
+
+            if (data is null)
                 return;
-            }
 
             Run(data, form.Dictionary.Get<PdfDictionary>(PdfNames.Resources) ?? resources, ref state, depth + 1);
         }
@@ -191,6 +205,7 @@ internal sealed class TextExtractor
 
         while (bytes.Length > 0)
         {
+            Charge(1);
             var (code, length) = font.ReadCode(bytes);
             bytes = bytes[length..];
 
@@ -220,6 +235,13 @@ internal sealed class TextExtractor
             _glyphs.Add(new TextGlyph(text, x, y, endX, endY, size, Math.Atan2(directionY, directionX)));
             Advance(ref state, advanceX, advanceY);
         }
+    }
+
+    private void Charge(long count)
+    {
+        _operations += count;
+        if (_operations > MaxOperations)
+            throw new PdfResourceLimitException($"The content of the page runs more than {MaxOperations} operators and glyphs");
     }
 
     private static void Advance(ref TextGraphicsState state, double x, double y) => state.TextMatrix = PdfMatrix.CreateTranslation(x, y) * state.TextMatrix;

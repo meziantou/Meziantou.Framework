@@ -68,6 +68,8 @@ internal static class OpenTypeTag
     public const uint DefaultScript = 0x44464C54; // DFLT
     public const uint LatinScript = 0x6C61746E; // latn
     public const uint VerticalKerning = 0x766B726E; // vkrn
+    public const uint Halt = 0x68616C74; // halt
+    public const uint Vhal = 0x7668616C; // vhal
     public const uint RightToLeftMirroredForms = 0x72746C6D; // rtlm
 
     // The registered variation axes (https://learn.microsoft.com/typography/opentype/spec/dvaraxisreg)

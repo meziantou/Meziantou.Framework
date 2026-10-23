@@ -966,7 +966,7 @@
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-008.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-009.html": {
     "reftest": "PASS"

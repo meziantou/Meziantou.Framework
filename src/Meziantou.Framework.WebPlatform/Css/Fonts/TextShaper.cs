@@ -218,6 +218,11 @@ internal static partial class TextShaper
         var orientation = options.Orientation;
         MatchedFont? previousFont = null;
         var scripts = new ScriptItemizer(stackalloc int[ScriptItemizer.MaxBrackets], stackalloc UnicodeScript[ScriptItemizer.MaxBrackets]);
+        if (options.Context.Script != UnicodeScript.Unknown)
+        {
+            scripts.Start(options.Context.Script);
+        }
+
         var index = 0;
         while (index < text.Length)
         {
@@ -341,6 +346,9 @@ internal static partial class TextShaper
         private readonly Span<UnicodeScript> _bracketScripts = bracketScripts;
         private UnicodeScript _current = UnicodeScript.Common;
         private int _bracketCount;
+
+        /// <summary>Sets the script of the text before the characters: the Common and Inherited characters at the start take it.</summary>
+        public void Start(UnicodeScript script) => _current = script is UnicodeScript.Hiragana or UnicodeScript.Katakana ? UnicodeScript.KatakanaOrHiragana : script;
 
         /// <summary>The script of the next base character.</summary>
         public UnicodeScript Next(int codePoint)

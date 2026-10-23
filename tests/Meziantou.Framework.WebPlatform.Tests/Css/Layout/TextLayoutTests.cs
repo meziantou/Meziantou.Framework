@@ -31,9 +31,17 @@ public sealed class TextLayoutTests : IDisposable
         return fonts;
     });
 
-    private Document Load(string html, bool punctuationFont = true)
+    /// <summary>The subset of Noto Sans CJK JP of the web-platform-tests (with the halt feature) as an installed font.</summary>
+    private static readonly Lazy<InstalledFontCollection> CjkFonts = new(() =>
     {
-        var context = _contexts.Create(new BrowsingContextOptions { TimeProvider = _clock, Viewport = new ViewportOptions { Width = 800, Height = 600 }, InstalledFonts = punctuationFont ? PunctuationFonts.Value : null });
+        var fonts = new InstalledFontCollection();
+        Assert.True(fonts.Add(File.ReadAllBytes(TestPaths.External("wpt", "fonts", "noto", "cjk", "NotoSansCJKjp-Regular-subset-halt.otf"))));
+        return fonts;
+    });
+
+    private Document Load(string html, bool punctuationFont = true, bool cjkFont = false)
+    {
+        var context = _contexts.Create(new BrowsingContextOptions { TimeProvider = _clock, Viewport = new ViewportOptions { Width = 800, Height = 600 }, InstalledFonts = cjkFont ? CjkFonts.Value : punctuationFont ? PunctuationFonts.Value : null });
         var document = context.Navigate("https://example.com/", _ => html);
         _contexts.EventLoop.RunUntilIdle();
         return document;
@@ -642,5 +650,24 @@ public sealed class TextLayoutTests : IDisposable
         Assert.Equal(10, GetRect(document, "a").Height);
         Assert.True(GetRect(document, "b").Height > 10);
         Assert.Equal(10, GetRect(document, "c").Height);
+    }
+
+    [Theory]
+    [InlineData("ja", 20)]
+    [InlineData("zh-hans", 10)]
+    public void TextSpacingTrim_ProportionalClosingQuoteDoesNotTrimTheNextOpening(string language, double width)
+    {
+        // The quotes of the Japanese convention are proportional, the ones of the Chinese convention are fullwidth
+        var document = Load($"<!DOCTYPE html><style>body {{ margin: 0; font: 20px/1 'Noto Sans CJK JP' }}</style><div lang={language}>\u56FD\u2019<span id=s>\uFF08</span>\u56FD</div>", cjkFont: true);
+        Assert.Equal(width, GetRect(document, "s").Width);
+    }
+
+    [Fact]
+    public void TextSpacingTrim_PunctuationTakesTheScriptOfTheParagraph()
+    {
+        // The quote alone in its element takes the script of the text around it (Han): the language system of Chinese selects its
+        // fullwidth glyph, whose blank half is trimmed after the opening parenthesis
+        var document = Load("<!DOCTYPE html><style>body { margin: 0; font: 20px/1 'Noto Sans CJK JP' }</style><div lang=zh-hans>\u56FD\uFF08<span id=s>\u2018</span>\u56FD</div>", cjkFont: true);
+        Assert.Equal(10, GetRect(document, "s").Width);
     }
 }

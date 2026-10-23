@@ -1,11 +1,13 @@
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
+using System.Text;
 using Meziantou.Framework.WebPlatform.Unicode;
 using FontException = Meziantou.Framework.Fonts.FontException;
 using GlyphBuffer = Meziantou.Framework.Fonts.GlyphBuffer;
 using LayoutQueries = Meziantou.Framework.Fonts.LayoutQueries;
 using SharedGlyphPosition = Meziantou.Framework.Fonts.GlyphPosition;
 using SharedTextShaper = Meziantou.Framework.Fonts.TextShaper;
+using ShapingFeature = Meziantou.Framework.Fonts.ShapingFeature;
 
 namespace Meziantou.Framework.WebPlatform.Css.Fonts;
 
@@ -32,6 +34,7 @@ internal sealed partial class OpenTypeFont
 {
     private readonly ConcurrentDictionary<int, bool> _verticalAlternates = new();
     private readonly ConcurrentDictionary<uint, bool> _positioningFeatures = new();
+    private readonly ConcurrentDictionary<(int CodePoint, bool IsVertical, string? Language), (ushort Glyph, double Offset, double Advance)> _halfWidthAdjustments = new();
 
     /// <summary>
     /// Whether the <c>vert</c> feature of the font (of any script) substitutes a glyph by a single substitution: a character
@@ -55,6 +58,40 @@ internal sealed partial class OpenTypeFont
 
     /// <summary>Whether the GPOS table of the font has a feature, in any script and language system.</summary>
     public bool HasPositioningFeature(uint feature) => _positioningFeatures.GetOrAdd(feature, static (feature, face) => LayoutQueries.HasFeature(face, isPositioning: true, feature), Face);
+
+    /// <summary>
+    /// The adjustment of the glyph of a fullwidth character by the <c>halt</c> feature (<c>vhal</c> for the upright glyphs of
+    /// vertical text) along the inline axis, in font units: the change of its offset and of its advance (negative: the blank
+    /// half is removed). The character is shaped alone, with and without the feature: the adjustment is empty when the feature
+    /// does not change its glyph, and null when the glyph shaped alone is not <paramref name="glyph"/>.
+    /// </summary>
+    public (double Offset, double Advance)? GetHalfWidthAdjustment(int codePoint, ushort glyph, bool isVertical, string? language)
+    {
+        var result = _halfWidthAdjustments.GetOrAdd((codePoint, isVertical, language), static (key, font) =>
+        {
+            try
+            {
+                Span<char> text = stackalloc char[2];
+                var length = new Rune(key.CodePoint).EncodeToUtf16(text);
+                var feature = key.IsVertical ? OpenTypeTag.Vhal : OpenTypeTag.Halt;
+                var full = font.Shape(text[..length], UnicodeScript.Han, isVertical: key.IsVertical, language: key.Language);
+                var half = font.Shape(text[..length], UnicodeScript.Han, isVertical: key.IsVertical, language: key.Language, features: [new ShapingFeature(feature, 1)]);
+                if (full.Length != 1 || half.Length != 1 || full.Info[0].Glyph != half.Info[0].Glyph)
+                    return default;
+
+                var (before, after) = (full.Positions[0], half.Positions[0]);
+                return key.IsVertical
+                    ? ((ushort)full.Info[0].Glyph, -(after.YOffset - before.YOffset), -(after.YAdvance - before.YAdvance))
+                    : ((ushort)full.Info[0].Glyph, after.XOffset - before.XOffset, after.XAdvance - before.XAdvance);
+            }
+            catch (FontException)
+            {
+                return default;
+            }
+        }, this);
+
+        return result.Glyph == glyph && glyph != 0 ? (result.Offset, result.Advance) : null;
+    }
 
     /// <summary>
     /// The kerning of a pair of glyphs in font units (the adjustment of the advance of the first glyph and of the position of
@@ -107,11 +144,11 @@ internal sealed partial class OpenTypeFont
     /// the shaping): the glyphs, in the order of the text, and their positions in font units.
     /// </summary>
     /// <exception cref="FontException">The layout tables of the font are malformed.</exception>
-    internal GlyphBuffer Shape(ReadOnlySpan<char> text, UnicodeScript script, bool isRightToLeft = false, bool isVertical = false, string? language = null, FontVariationInstance? instance = null)
+    internal GlyphBuffer Shape(ReadOnlySpan<char> text, UnicodeScript script, bool isRightToLeft = false, bool isVertical = false, string? language = null, FontVariationInstance? instance = null, ReadOnlySpan<ShapingFeature> features = default)
     {
         var buffer = new GlyphBuffer(Meziantou.Framework.Fonts.FontResourceLimits.Default);
         SharedTextShaper.AddText(buffer, text);
-        SharedTextShaper.Shape(buffer, instance?.Face ?? Face, ShapingWorkspace.GetScript(script), language is null ? [] : Meziantou.Framework.Fonts.OpenTypeLanguage.GetTags(language), isRightToLeft, [], isVertical);
+        SharedTextShaper.Shape(buffer, instance?.Face ?? Face, ShapingWorkspace.GetScript(script), language is null ? [] : Meziantou.Framework.Fonts.OpenTypeLanguage.GetTags(language), isRightToLeft, features, isVertical);
         if (isRightToLeft)
         {
             buffer.Reverse();

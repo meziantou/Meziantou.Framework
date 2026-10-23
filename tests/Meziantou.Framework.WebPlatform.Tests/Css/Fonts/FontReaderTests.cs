@@ -536,4 +536,20 @@ public sealed class FontReaderTests
             }
         }
     }
+
+    [Theory]
+    [InlineData(0xFF1A, "ja", false, -250, -500)]
+    [InlineData(0xFF1A, "zh-hans", false, 0, -500)]
+    [InlineData(0xFF08, "ja", false, -500, -500)]
+    [InlineData(0xFF08, "ja", true, -500, -500)]
+    [InlineData(0xFF1A, "zh-hans", true, 0, 0)]
+    public void HalfWidthAdjustment(int codePoint, string language, bool isVertical, double offset, double advance)
+    {
+        var font = LoadFace(TestPaths.External("wpt", "fonts", "noto", "cjk", "NotoSansCJKjp-Regular-subset-halt.otf"));
+        var glyph = (ushort)font.Shape(char.ConvertFromUtf32(codePoint), UnicodeScript.Han, isVertical: isVertical, language: language).Info[0].Glyph;
+        Assert.Equal((offset, advance), font.GetHalfWidthAdjustment(codePoint, glyph, isVertical, language));
+
+        // The adjustment of another glyph is unknown
+        Assert.Null(font.GetHalfWidthAdjustment(codePoint, (ushort)(glyph + 1), isVertical, language));
+    }
 }

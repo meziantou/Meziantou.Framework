@@ -1275,6 +1275,10 @@ internal sealed partial class CodeGenerator
             }
         }
 
+        // A direct eval in eval code (not in a function of it) has the context of the outer eval
+        if (thisFunction.Kind == FunctionInfoKind.Eval && _analysis.EvalContext is { } outerContext)
+            return outerContext with { IsStrict = IsStrict, PrivateNames = [.. privateNames, .. outerContext.PrivateNames] };
+
         return new EvalContext(
             IsStrict: IsStrict,
             AllowNewTarget: isFunction,
@@ -1337,8 +1341,9 @@ internal sealed partial class CodeGenerator
 
     private void EmitSuperCall(CallExpression call)
     {
-        // The active function (its prototype is the super constructor) and new.target
+        // The super constructor (the prototype of the active function, read before the arguments) and new.target
         EmitLoadSpecial(call, VariableKind.ActiveFunction, checkInitialized: false);
+        _builder.Emit(OpCode.LoadSuperBase);
         EmitLoadSpecial(call, VariableKind.NewTarget, checkInitialized: false);
         if (call.Arguments.Exists(a => a is SpreadElement))
         {
@@ -1370,11 +1375,7 @@ internal sealed partial class CodeGenerator
         }
         else if (thisReference.Kind == SpecialReferenceKind.Dynamic)
         {
-            _builder.Emit(OpCode.LoadNameOrUndefined, GetNameKey("this"));
-            _builder.Emit(OpCode.CheckThisUninitialized);
-            _builder.Emit(OpCode.Pop);
-            _builder.Emit(OpCode.Dup);
-            _builder.Emit(OpCode.InitializeName, GetNameKey("this"));
+            _builder.Emit(OpCode.BindThisName);
         }
         else
         {

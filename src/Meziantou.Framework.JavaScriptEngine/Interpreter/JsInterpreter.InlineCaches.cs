@@ -423,7 +423,7 @@ internal static partial class JsInterpreter
             }
         }
 
-        SetPropertyOfValue(target, key, value, frame.Code.IsStrict);
+        SetPropertyOfValue(target, key, value, frame.IsStrict);
     }
 
     /// <summary>Finds where a Set stores a property, for an inline cache (before the Set); null when the access cannot be cached.</summary>

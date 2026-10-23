@@ -316,15 +316,16 @@ internal static partial class JsInterpreter
     // super
     // ------------------------------------------------------------------------------------------------------------------
 
-    /// <summary>super(...args) (https://tc39.es/ecma262/#sec-super-keyword-runtime-semantics-evaluation): the result is the new this.</summary>
-    private static JsValue SuperCall(JsValue activeFunction, JsValue newTarget, JsValue[] arguments)
+    /// <summary>
+    /// super(...args) (https://tc39.es/ecma262/#sec-super-keyword-runtime-semantics-evaluation): the result is the new this.
+    /// The super constructor (GetSuperConstructor) is read before the arguments are evaluated.
+    /// </summary>
+    private static JsValue SuperCall(JsValue superConstructor, JsValue newTarget, JsValue[] arguments)
     {
-        var function = activeFunction.AsObject();
-        var superConstructor = function.GetPrototypeOf();
-        if (superConstructor is not { IsConstructor: true })
-            return ThrowHelper.ThrowTypeError<JsValue>("Super constructor " + (superConstructor is null ? "null" : "") + " of anonymous class is not a constructor");
+        if (superConstructor.Cell is not JsObject { IsConstructor: true } constructor)
+            return ThrowHelper.ThrowTypeError<JsValue>("Super constructor " + (superConstructor.IsNull ? "null" : "") + " of anonymous class is not a constructor");
 
-        return superConstructor.Construct(arguments, newTarget.AsObject());
+        return constructor.Construct(arguments, newTarget.AsObject());
     }
 
     /// <summary>The object on which super.x is looked up (the prototype of the home object): ToObject of the base of the reference.</summary>

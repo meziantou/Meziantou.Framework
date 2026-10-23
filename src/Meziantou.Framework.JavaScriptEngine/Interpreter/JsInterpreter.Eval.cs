@@ -53,7 +53,7 @@ internal static partial class JsInterpreter
         try
         {
             program = JsParser.ParseScript(source, options);
-            template = CodeGenerator.CompileProgram(program, source, ProgramKind.Eval, program.IsStrict || (context?.IsStrict ?? false));
+            template = CodeGenerator.CompileProgram(program, source, ProgramKind.Eval, program.IsStrict || (context?.IsStrict ?? false), context);
         }
         catch (JsSyntaxErrorException ex)
         {

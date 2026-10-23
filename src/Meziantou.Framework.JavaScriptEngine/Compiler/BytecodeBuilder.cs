@@ -616,7 +616,8 @@ internal sealed class BytecodeBuilder
             OpCode.GlobalDeclarationInstantiation or OpCode.EvalDeclarationInstantiation => 0,
             OpCode.InitializeGlobalLexical or OpCode.InitializeGlobalFunction or OpCode.SetGlobalVar or OpCode.SetVarBinding => -1,
             OpCode.SaveEnvironment or OpCode.RestoreEnvironment => 0,
-            OpCode.BindThis or OpCode.CheckThisUninitialized => 0,
+            OpCode.BindThis or OpCode.CheckThisUninitialized or OpCode.BindThisName => 0,
+            OpCode.EnterStrictCode or OpCode.ExitStrictCode => 0,
             _ => throw new ArgumentOutOfRangeException(nameof(op), op, "Unknown opcode"),
         };
     }

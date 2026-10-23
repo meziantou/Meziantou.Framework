@@ -177,6 +177,15 @@ internal enum OpCode
     /// <summary>value -> value: ReferenceError when the value is not a hole (super() when the this binding in the environment is already initialized)</summary>
     CheckThisUninitialized,
 
+    /// <summary>->: the code that follows is strict (the class definitions of sloppy code: all parts of a class are strict)</summary>
+    EnterStrictCode,
+
+    /// <summary>->: the code that follows has the strictness of the function again</summary>
+    ExitStrictCode,
+
+    /// <summary>value -> value: binds the this binding found by name (super() in eval code); ReferenceError when it is already bound</summary>
+    BindThisName,
+
     // ---- Operators ---------------------------------------------------------------------------------------------------
 
     /// <summary>a b -> a + b</summary>
@@ -466,10 +475,10 @@ internal enum OpCode
     /// <summary>constructor argumentsArray -> object</summary>
     NewSpread,
 
-    /// <summary>(argc) arg1..N -> this: super(...) (binds this, initializes the fields)</summary>
+    /// <summary>(argc) superConstructor newTarget arg1..N -> this: super(...) (binds this, initializes the fields)</summary>
     SuperCall,
 
-    /// <summary>argumentsArray -> this</summary>
+    /// <summary>superConstructor newTarget argumentsArray -> this</summary>
     SuperCallSpread,
 
     /// <summary>-> array: the arguments of a derived default constructor (forwarded to super)</summary>

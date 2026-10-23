@@ -23,16 +23,19 @@ internal sealed partial class CodeGenerator
         _scope = function.Scope;
     }
 
-    private bool IsStrict => _function.IsStrict;
+    // The depth of the class definitions of sloppy code being compiled: their code is strict
+    private int _classStrictDepth;
+
+    private bool IsStrict => _function.IsStrict || _classStrictDepth > 0;
 
     // ------------------------------------------------------------------------------------------------------------------
     // Entry points
     // ------------------------------------------------------------------------------------------------------------------
 
-    /// <summary>Compiles a script, a module or eval code.</summary>
-    public static FunctionTemplate CompileProgram(Program program, SourceText source, ProgramKind kind, bool isStrict)
+    /// <summary>Compiles a script, a module or eval code (with the context of the call, for a direct eval).</summary>
+    public static FunctionTemplate CompileProgram(Program program, SourceText source, ProgramKind kind, bool isStrict, EvalContext? evalContext = null)
     {
-        var analysis = ScopeAnalyzer.Analyze(program, kind, isStrict);
+        var analysis = ScopeAnalyzer.Analyze(program, kind, isStrict, evalContext: evalContext);
         var generator = new CodeGenerator(analysis, source, analysis.Root);
         return generator.CompileProgramBody(program, kind);
     }
@@ -320,6 +323,15 @@ internal sealed partial class CodeGenerator
         EmitTdzInitialization(scope);
         EmitSpecialBindings();
 
+        // The instance fields of a base class are initialized before the parameters are evaluated ([[Construct]] step 8.b)
+        if (info.Kind == FunctionInfoKind.ClassConstructor && !node.IsDerivedConstructor)
+        {
+            EmitLoadThis(node, checkInitialized: false);
+            _builder.Emit(OpCode.LoadFunction);
+            _builder.Emit(OpCode.InitializeInstanceElements);
+            _builder.Emit(OpCode.Pop);
+        }
+
         // The arguments object
         if (info.ArgumentsVariable is { } arguments && (arguments.IsReferenced || info.HasDirectEval))
         {
@@ -372,15 +384,6 @@ internal sealed partial class CodeGenerator
             {
                 EmitFunctionDeclarations(body.Body, info.BodyVarScope ?? scope, isGlobal: false);
             }
-        }
-
-        // The instance fields of a base class are initialized when the constructor starts
-        if (info.Kind == FunctionInfoKind.ClassConstructor && !node.IsDerivedConstructor)
-        {
-            EmitLoadThis(node, checkInitialized: false);
-            _builder.Emit(OpCode.LoadFunction);
-            _builder.Emit(OpCode.InitializeInstanceElements);
-            _builder.Emit(OpCode.Pop);
         }
     }
 

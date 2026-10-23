@@ -446,6 +446,16 @@ internal sealed partial class Parser
             return expression;
 
         var result = ParseSubscripts(expression, start, noCalls: false, noIn);
+        if (errors is not null && !ReferenceEquals(result, expression))
+        {
+            // A literal with a subscript ({a = 0}.x) is not converted to a pattern: its errors are errors now
+            if (errors.ShorthandAssign >= start)
+                Raise(errors.ShorthandAssign, "Invalid shorthand property initializer");
+
+            if (errors.DoubleProto >= start)
+                Raise(errors.DoubleProto, "Duplicate __proto__ fields are not allowed in object literals");
+        }
+
         if (errors is not null && result.Type == NodeType.MemberExpression)
         {
             if (errors.ParenthesizedAssign >= result.Start)

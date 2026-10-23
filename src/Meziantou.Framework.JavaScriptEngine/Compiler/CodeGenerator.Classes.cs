@@ -8,6 +8,22 @@ internal sealed partial class CodeGenerator
     private void EmitClass(ClassNode node, string name)
     {
         _builder.SetPosition(node.Start);
+
+        // All parts of a class are strict: the heritage and the computed keys run as strict code in sloppy code too
+        if (!_function.IsStrict && _classStrictDepth++ == 0)
+        {
+            _builder.Emit(OpCode.EnterStrictCode);
+        }
+
+        EmitClassDefinition(node, name);
+        if (!_function.IsStrict && --_classStrictDepth == 0)
+        {
+            _builder.Emit(OpCode.ExitStrictCode);
+        }
+    }
+
+    private void EmitClassDefinition(ClassNode node, string name)
+    {
         var outerScope = _scope;
         var classScope = _analysis.Scopes[node];
         EnterScope(classScope);
@@ -110,6 +126,7 @@ internal sealed partial class CodeGenerator
         {
             flags |= FunctionTemplateFlags.DerivedConstructor;
             builder.Emit(OpCode.LoadFunction);
+            builder.Emit(OpCode.LoadSuperBase);
             builder.Emit(OpCode.LoadNewTarget);
             builder.Emit(OpCode.LoadAllArguments);
             builder.Emit(OpCode.SuperCallSpread);

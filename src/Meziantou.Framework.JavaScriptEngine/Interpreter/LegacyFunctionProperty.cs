@@ -27,7 +27,8 @@ internal sealed class LegacyFunctionProperty(JsRealm realm, bool isCaller) : Acc
     /// The function that made the innermost running call of <paramref name="function"/>, or null when the function is not
     /// running. The built-in functions have no frame: the caller is the function that called them. Only a sloppy function
     /// of the same realm is revealed: never a strict function, a class, a method, an arrow function, a generator, an async
-    /// function or the code of a script (null).
+    /// function or the code of a script (null). The frames of eval code are skipped: the caller of a function called by eval
+    /// code is the function that runs the eval.
     /// </summary>
     private static JsValue GetCaller(JsClosure function)
     {
@@ -40,7 +41,13 @@ internal sealed class LegacyFunctionProperty(JsRealm realm, bool isCaller) : Acc
             if (!ReferenceEquals(frames[i].Function, function))
                 continue;
 
-            if (i > 0 && frames[i - 1].Function is { } caller && caller.HasLegacyCallerAndArguments && ReferenceEquals(caller.Realm, function.Realm))
+            var callerIndex = i - 1;
+            while (callerIndex >= 0 && (frames[callerIndex].Code.Flags & Compiler.FunctionTemplateFlags.EvalCode) != 0)
+            {
+                callerIndex--;
+            }
+
+            if (callerIndex >= 0 && frames[callerIndex].Function is { } caller && caller.HasLegacyCallerAndArguments && ReferenceEquals(caller.Realm, function.Realm))
                 return caller;
 
             return JsValue.Null;

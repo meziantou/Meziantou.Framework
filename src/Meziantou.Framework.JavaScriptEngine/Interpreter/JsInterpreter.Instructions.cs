@@ -30,7 +30,7 @@ internal static partial class JsInterpreter
         }
 
         var key = keyValue.IsNumber ? PropertyKey.FromDouble(keyValue.NumberValue) : JsOperations.ToPropertyKey(keyValue);
-        SetPropertyOfValue(target, key, value, frame.Code.IsStrict);
+        SetPropertyOfValue(target, key, value, frame.IsStrict);
     }
 
 
@@ -377,6 +377,23 @@ internal static partial class JsInterpreter
             ThrowHelper.ThrowReferenceError("Super constructor may only be called once");
         }
 
+        frame.Pc = pc;
+        return sp;
+    }
+
+    private static int ExecuteSetStrictCode(Frame frame, int sp, bool isStrict)
+    {
+        var pc = frame.Pc + 1;
+        frame.IsStrict = isStrict;
+        frame.Pc = pc;
+        return sp;
+    }
+
+    private static int ExecuteBindThisName(Frame frame, int sp)
+    {
+        var values = frame.Values;
+        var pc = frame.Pc + 1;
+        BindThisName(frame, values[sp - 1]);
         frame.Pc = pc;
         return sp;
     }
@@ -792,7 +809,7 @@ internal static partial class JsInterpreter
         var value = values[--sp];
         var superBase = ToSuperBaseObject(values[--sp]);
         var thisValue = values[sp - 1];
-        SetSuper(superBase, key, value, thisValue, frame.Code.IsStrict);
+        SetSuper(superBase, key, value, thisValue, frame.IsStrict);
         values[sp - 1] = value;
         frame.Pc = pc;
         return sp;
@@ -806,7 +823,7 @@ internal static partial class JsInterpreter
         var superBase = ToSuperBaseObject(values[--sp]);
         var key = JsOperations.ToPropertyKey(values[--sp]);
         var thisValue = values[sp - 1];
-        SetSuper(superBase, key, value, thisValue, frame.Code.IsStrict);
+        SetSuper(superBase, key, value, thisValue, frame.IsStrict);
         values[sp - 1] = value;
         frame.Pc = pc;
         return sp;
@@ -901,9 +918,9 @@ internal static partial class JsInterpreter
         }
 
         var newTarget = values[--sp];
-        var activeFunction = values[--sp];
+        var superConstructor = values[--sp];
         frame.Sp = sp;
-        values[sp++] = SuperCall(activeFunction, newTarget, arguments);
+        values[sp++] = SuperCall(superConstructor, newTarget, arguments);
         frame.Pc = pc;
         return sp;
     }

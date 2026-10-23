@@ -219,6 +219,8 @@ internal static partial class CssValueComputer
                 return CssPropertyRules.CanonicalizeOverflowClipMargin(ComputeGeneric(style, property, value, baseUrl));
             case "position-area":
                 return CssPropertyRules.ComputePositionArea(value);
+            case "position-try-fallbacks":
+                return CssPropertyRules.ComputePositionTryFallbacks(value);
             case "float":
                 return style.GetComputedValue("position") is "absolute" or "fixed" ? "none" : value;
             case "outline-color" when value == "auto":

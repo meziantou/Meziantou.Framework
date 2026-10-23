@@ -172,6 +172,18 @@ internal static class SelectActions
                 return true;
             }
 
+            // As in the browsers, the type-ahead of a closed drop-down box picks the option whose label starts with the typed characters
+            if (!canceled && IsTypeAheadKey(key))
+            {
+                var selected = select.GetListOfOptions().Find(static option => option.Selectedness);
+                if (FindTypeAheadOption(select, selected, key, static option => !option.IsDisabled) is { } match)
+                {
+                    select.PickOption(match, @event: null, canceled: false);
+                }
+
+                return true;
+            }
+
             return false;
         }
 
@@ -238,14 +250,21 @@ internal static class SelectActions
             return true;
         }
 
-        if (!canceled && key.Length > 0 && (key.Length == 1 || (key.Length == 2 && char.IsSurrogatePair(key, 0))))
+        if (!canceled && IsTypeAheadKey(key))
         {
-            TypeAhead(select, option, key);
+            if (FindTypeAheadOption(select, option, key, static option => FocusModel.IsFocusableArea(option)) is { } match)
+            {
+                FocusOption(match);
+            }
+
             return true;
         }
 
         return false;
     }
+
+    /// <summary>Whether the key value is a character (one code point).</summary>
+    private static bool IsTypeAheadKey(string key) => key.Length == 1 || (key.Length == 2 && char.IsSurrogatePair(key, 0));
 
     /// <summary>
     /// The keys of a list box with base appearance, on its focused option: Enter and the space key toggle the option of a
@@ -293,11 +312,8 @@ internal static class SelectActions
     {
         if (!select.IsMultiple)
         {
-            if (!option.Selectedness)
-            {
-                select.PickOption(option, @event: null, canceled: false);
-            }
-
+            // Picking the selected option sets its dirtiness
+            select.PickOption(option, @event: null, canceled: false);
             return;
         }
 
@@ -504,19 +520,19 @@ internal static class SelectActions
     }
 
     /// <summary>
-    /// The type-ahead of the picker: the typed characters, within a delay, are the prefix of the label of the option to
-    /// focus, searched from the option after the focused one (from the focused one while the prefix grows).
+    /// The type-ahead: the typed characters, within a delay, are the prefix of the label of the option to focus (or to pick),
+    /// searched from the option after the current one (from the current one while the prefix grows).
     /// </summary>
-    private static void TypeAhead(HtmlSelectElement select, HtmlOptionElement? current, string key)
+    private static HtmlOptionElement? FindTypeAheadOption(HtmlSelectElement select, HtmlOptionElement? current, string key, Predicate<HtmlOptionElement> isCandidate)
     {
         var now = select.NodeDocument.RelevantWindow?.Performance.Now() ?? 0;
         var search = select.TypeAheadText is { } previous && now - select.TypeAheadTime <= TypeAheadTimeout ? previous + key : key;
         select.TypeAheadText = search;
         select.TypeAheadTime = now;
 
-        var options = select.GetListOfOptions().FindAll(static option => FocusModel.IsFocusableArea(option));
+        var options = select.GetListOfOptions().FindAll(isCandidate);
         if (options.Count == 0)
-            return;
+            return null;
 
         // A repeated character cycles through the options that start with it
         var repeated = search.Length > key.Length && search.Replace(key, "", StringComparison.OrdinalIgnoreCase).Length == 0;
@@ -526,11 +542,10 @@ internal static class SelectActions
         {
             var candidate = options[(Math.Max(start, 0) + i) % options.Count];
             if (candidate.GetLabel(includeAltText: false).StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            {
-                FocusOption(candidate);
-                return;
-            }
+                return candidate;
         }
+
+        return null;
     }
 
     /// <summary>Picks the option before or after the selected option of a drop-down box whose options are not rendered.</summary>

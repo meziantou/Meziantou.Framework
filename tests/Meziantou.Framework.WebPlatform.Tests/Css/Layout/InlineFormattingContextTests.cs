@@ -233,6 +233,16 @@ public sealed class InlineFormattingContextTests : IDisposable
         Assert.Equal(hyphenWidth, Assert.Single(GetTextFragments(document, "d"), fragment => fragment.IsHyphen).GetRectInRoot().Width);
     }
 
+    [Theory]
+    [InlineData("zh-Latn-pinyin", "manual", "ab-|-cd")] // the hyphen between two syllables of Pinyin starts the next line too
+    [InlineData("zh-Latn-pinyin", "none", "ab-|cd")]
+    [InlineData("en", "manual", "ab-|cd")]
+    public void Hyphens_PinyinRepeatsTheHyphen(string language, string hyphens, string expected)
+    {
+        var document = Parse($"<div id=d lang={language} style='width: 30px; hyphens: {hyphens}'>ab-cd</div>");
+        Assert.Equal(expected, string.Join("|", GetLines(document, "d")));
+    }
+
     [Fact]
     public void HyphensAuto_LanguageOfTheInlineBox()
     {

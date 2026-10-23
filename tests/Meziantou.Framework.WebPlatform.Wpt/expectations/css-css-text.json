@@ -305,7 +305,7 @@
     "reftest": "PASS"
   },
   "css/css-text/hyphens/i18n/hyphens-i18n-auto-004.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/hyphens/i18n/hyphens-i18n-auto-005.html": {
     "reftest": "FAIL"
@@ -323,7 +323,7 @@
     "reftest": "PASS"
   },
   "css/css-text/hyphens/i18n/hyphens-i18n-manual-004.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/hyphens/i18n/hyphens-i18n-manual-005.html": {
     "reftest": "FAIL"

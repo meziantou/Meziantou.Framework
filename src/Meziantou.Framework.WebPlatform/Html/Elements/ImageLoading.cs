@@ -1673,6 +1673,10 @@ public partial class Document
             {
                 _checksEnvironmentOfImages = true;
                 eventLoop.AddDocumentWithImagesReactingToEnvironment(this);
+
+                // The environment of the source selection is the one the changes are detected from: the styles of the document
+                // may not have been computed yet (e.g. a nested document whose container is resized before it is rendered)
+                GetStyleEngine().CheckEnvironment();
             }
         }
     }

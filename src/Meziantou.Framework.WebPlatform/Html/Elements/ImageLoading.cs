@@ -385,7 +385,9 @@ public partial class HtmlImageElement
         if (@namespace is not null)
             return;
 
-        if (localName is "src" or "srcset" or "width" or "sizes"
+        // The width attribute is not a relevant mutation itself: only the change of the concrete object size it causes on an
+        // image that allows auto-sizes is
+        if (localName is "src" or "srcset" or "sizes"
             || (localName == "crossorigin" && GetCorsSettingsState(oldValue) != GetCorsSettingsState(value))
             || (localName == "referrerpolicy" && GetReferrerPolicyState(oldValue) != GetReferrerPolicyState(value)))
         {

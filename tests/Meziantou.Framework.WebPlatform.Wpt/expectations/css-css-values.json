@@ -27,19 +27,7 @@
     "reftest": "PASS"
   },
   "css/css-values/animations/calc-interpolation.html": {
-    "total": 140,
-    "failures": {
-      "CSS Animations: property <left> from [0px] to [calc(infinity * 1px)] at (-0.25) should be [-3.4028234663852886e+38px]": "FAIL",
-      "CSS Animations: property <left> from [0px] to [calc(infinity * 1px)] at (0.25) should be [3.4028234663852886e+38px]": "FAIL",
-      "CSS Animations: property <left> from [0px] to [calc(infinity * 1px)] at (0.5) should be [3.4028234663852886e+38px]": "FAIL",
-      "CSS Animations: property <left> from [0px] to [calc(infinity * 1px)] at (0.75) should be [3.4028234663852886e+38px]": "FAIL",
-      "CSS Animations: property <left> from [0px] to [calc(infinity * 1px)] at (1.25) should be [3.4028234663852886e+38px]": "FAIL",
-      "Web Animations: property <left> from [0px] to [calc(infinity * 1px)] at (-0.25) should be [-3.4028234663852886e+38px]": "FAIL",
-      "Web Animations: property <left> from [0px] to [calc(infinity * 1px)] at (0.25) should be [3.4028234663852886e+38px]": "FAIL",
-      "Web Animations: property <left> from [0px] to [calc(infinity * 1px)] at (0.5) should be [3.4028234663852886e+38px]": "FAIL",
-      "Web Animations: property <left> from [0px] to [calc(infinity * 1px)] at (0.75) should be [3.4028234663852886e+38px]": "FAIL",
-      "Web Animations: property <left> from [0px] to [calc(infinity * 1px)] at (1.25) should be [3.4028234663852886e+38px]": "FAIL"
-    }
+    "total": 140
   },
   "css/css-values/animations/line-height-lh-transition.html": {
     "total": 1

@@ -324,6 +324,9 @@ internal static partial class CssValueComputer
         if (IsLowercaseIdentifier(value))
             return ComputeGenericProperty(style, property, value, baseUrl);
 
+        if (t_keepsInfiniteCalculations)
+            return ComputeGenericProperty(style, property, value, baseUrl);
+
         var engine = style.Engine;
         if (engine.ContextFreeValues.TryGetValue(property, value, baseUrl, out var memoized))
             return memoized;
@@ -646,12 +649,30 @@ internal static partial class CssValueComputer
         }
     }
 
+    [ThreadStatic]
+    private static bool t_keepsInfiniteCalculations;
+
+    /// <summary>
+    /// Whether the infinite results of the calculations are kept (e.g. calc(infinity * 1px)) instead of being clamped to the largest
+    /// finite values: the values of the keyframes of the animations are interpolated before they are clamped, as in the browsers
+    /// (WPT css/css-values/animations/calc-interpolation.html). The values computed while it is set are not memoized.
+    /// </summary>
+    internal static bool KeepsInfiniteCalculations
+    {
+        get => t_keepsInfiniteCalculations;
+        set => t_keepsInfiniteCalculations = value;
+    }
+
     /// <summary>
     /// Serializes the result of a top-level calculation (https://drafts.csswg.org/css-values-4/#calc-ieee): NaN computes to
     /// zero and the infinite values to the largest finite values (of a single-precision number, as in the browsers).
     /// </summary>
     private static string SerializeComputedCalculation(CssCalcValue result)
     {
+        // The values of the keyframes of an animation are interpolated before they are clamped (calc(infinity * 1px) stays infinite)
+        if (t_keepsInfiniteCalculations && result.IsNumeric && double.IsInfinity(result.Value) && result.Unit.Length > 0)
+            return result.Serialize();
+
         // A zero dimension added to a percentage is not kept in the computed value, as in the browsers (calc(10% + 0px) is 10%: WPT
         // css/css-flexbox/parsing/flex-basis-computed.html)
         if (result.Root is CssCalcSumNode { Children: [CssCalcNumericNode first, CssCalcNumericNode second] }

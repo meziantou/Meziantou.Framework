@@ -830,7 +830,11 @@ internal abstract class FormattingContext
             ratioBlockSize = (inlineIsAutomatic ? GetNaturalBlockSize(box, contentInlineSize) : null) is { } naturalBlockSize
                 ? naturalBlockSize + paddingAndBorder.BlockSum()
                 : blockRatio.ToBlock(inlineSize);
-            specifiedBlockSize = blockSizing.Clamp(ratioBlockSize.Value, transferredMin, transferredMax);
+
+            // The basis auto of calc-size() is the automatic size: the block size transferred through the aspect ratio
+            // (https://drafts.csswg.org/css-values-5/#calc-size)
+            var ratioPreferredBlockSize = preferredBlockSize.Kind == SizeKind.CalcSize && (blockSizing with { ContentSize = ratioBlockSize.Value }).Resolve(preferredBlockSize, SizingProperty.Preferred) is { } calcSize ? calcSize : ratioBlockSize.Value;
+            specifiedBlockSize = blockSizing.Clamp(ratioPreferredBlockSize, transferredMin, transferredMax);
         }
 
         // https://quirks.spec.whatwg.org/#the-html-element-fills-the-viewport-quirk and

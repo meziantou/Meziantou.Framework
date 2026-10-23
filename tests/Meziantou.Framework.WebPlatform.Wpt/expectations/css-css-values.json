@@ -477,7 +477,7 @@
     "reftest": "PASS"
   },
   "css/css-values/calc-size/calc-size-aspect-ratio-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-values/calc-size/calc-size-aspect-ratio-003.html": {
     "reftest": "PASS"

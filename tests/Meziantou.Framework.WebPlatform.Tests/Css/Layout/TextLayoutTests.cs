@@ -223,6 +223,15 @@ public sealed class TextLayoutTests : IDisposable
     }
 
     [Fact]
+    public void TextAutospace_AroundARightToLeftRun()
+    {
+        // The spacing after the last letter of the right-to-left run is between the run and the ideograph that follows it
+        var document = Parse("<div id=d>水<span id=s>אב</span><span id=e>水</span></div>");
+        Assert.Equal(11.25, GetRect(document, "s").X);
+        Assert.Equal(11.25, Assert.Single(GetTextFragments(document, "e")).Size.Width);
+    }
+
+    [Fact]
     public void HangingPunctuation_First()
     {
         var document = Parse("<div id=d style='width: 100px; hanging-punctuation: first'>\"XX</div>");

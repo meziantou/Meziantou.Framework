@@ -62,7 +62,8 @@ internal sealed partial class InlineLayoutAlgorithm
         ref readonly var item = ref Items[index];
         var text = style.Layout.Text;
         var autospace = text.TextAutospace & (TextAutospace.IdeographAlpha | TextAutospace.IdeographNumeric);
-        if (text.TextSpacingTrim == TextSpacingTrim.SpaceAll && autospace == TextAutospace.None)
+        var movedAutospace = GetAutospaceBeforeItem(index);
+        if (text.TextSpacingTrim == TextSpacingTrim.SpaceAll && autospace == TextAutospace.None && movedAutospace == 0)
             return shaped;
 
         // Most texts have no CJK character: the spacing only applies to the fullwidth punctuation (trimming) and around the
@@ -70,7 +71,11 @@ internal sealed partial class InlineLayoutAlgorithm
         var characters = _text.AsSpan(item.Start, item.End - item.Start);
         bool spacesAll;
         var punctuation = -1;
-        if (characters.IndexOfAnyInRange((char)0x2018, char.MaxValue) < 0 && !characters.Contains((char)0xB7))
+        if (movedAutospace != 0)
+        {
+            spacesAll = true;
+        }
+        else if (characters.IndexOfAnyInRange((char)0x2018, char.MaxValue) < 0 && !characters.Contains((char)0xB7))
         {
             if (autospace == TextAutospace.None || !IsIdeographOrMarkAfter(index))
                 return shaped;
@@ -126,6 +131,11 @@ internal sealed partial class InlineLayoutAlgorithm
         bool SetSpacing(int position)
         {
             var (b, trimAfter, autospaceAfter) = GetItemSpacing(position, index, style, shaped);
+            if (position == itemStart)
+            {
+                b += movedAutospace;
+            }
+
             before[position - itemStart] = b;
             after[position - itemStart] = trimAfter + autospaceAfter;
             return b != 0 || trimAfter != 0 || autospaceAfter != 0;
@@ -282,7 +292,9 @@ internal sealed partial class InlineLayoutAlgorithm
                 var nextStyle = Items[next.Item].Style;
                 if (IsAutospaceBoundary(first, style, next.CodePoint, nextStyle, autospace, vertical))
                 {
-                    autospaceAfter = GetIdeographicAdvance(style) / 8;
+                    // (the spacing after the last character of a run before a run of a lower bidi embedding level is before the
+                    // first character of the next run, see GetAutospaceBeforeItem)
+                    autospaceAfter = Items[next.Item].BidiLevel < item.BidiLevel ? 0 : GetIdeographicAdvance(style) / 8;
                 }
                 else if ((autospace & TextAutospace.Replace) != TextAutospace.None && codePoint == ' ' && position > 0)
                 {
@@ -297,6 +309,46 @@ internal sealed partial class InlineLayoutAlgorithm
         }
 
         return (before, trimAfter, autospaceAfter);
+    }
+
+    /// <summary>
+    /// The inter-script spacing of <c>text-autospace</c> before the first character of a text item that follows a run of a higher
+    /// bidi embedding level (e.g. an ideograph after Hebrew letters in a left-to-right paragraph): the spacing after the last
+    /// character of the run, which is on the side of the run that is away from the item (the left of the last letter of a
+    /// right-to-left run), is between the run and the item on the line (https://drafts.csswg.org/css-text-4/#inter-script-spacing:
+    /// "between adjacent characters"), as in Chrome. Returns 0 otherwise.
+    /// </summary>
+    private double GetAutospaceBeforeItem(int itemIndex)
+    {
+        ref readonly var item = ref Items[itemIndex];
+        if (item.Kind != InlineItemKind.Text || item.Start >= item.End)
+            return 0;
+
+        var (previous, previousItem) = GetAdjacentCharacter(item.Start, itemIndex, forward: false);
+        if (previous < 0 || Items[previousItem].BidiLevel <= item.BidiLevel)
+            return 0;
+
+        var previousStyle = Items[previousItem].Style;
+        var autospace = previousStyle.Layout.Text.TextAutospace;
+        var codePoint = GetCodePointAt(_text.AsSpan(0, _length), item.Start);
+        if ((autospace & (TextAutospace.IdeographAlpha | TextAutospace.IdeographNumeric)) == TextAutospace.None || Unicode.CharacterProperties.IsMark(codePoint))
+            return 0;
+
+        // (the spacing is after the base of the marks that end the run)
+        var position = Items[previousItem].End - (previous > char.MaxValue ? 2 : 1);
+        while (Unicode.CharacterProperties.IsMark(previous))
+        {
+            var (before, beforeItem) = GetAdjacentCharacter(position, previousItem, forward: false);
+            if (before < 0)
+                return 0;
+
+            position = (beforeItem == previousItem ? position : Items[beforeItem].End) - (before > char.MaxValue ? 2 : 1);
+            (previous, previousItem) = (before, beforeItem);
+        }
+
+        return IsAutospaceBoundary(previous, Items[previousItem].Style, codePoint, item.Style, autospace, previousStyle.Layout.IsVerticalWritingMode)
+            ? GetIdeographicAdvance(previousStyle) / 8
+            : 0;
     }
 
     /// <summary>
@@ -613,14 +665,15 @@ internal sealed partial class InlineLayoutAlgorithm
         if (item.Kind != InlineItemKind.Text || item.HasFlag(InlineItemFlags.Tab) || position >= item.End)
             return default;
 
+        // The inter-script spacing moved before the first character of the item is "between adjacent characters on the same line"
+        var spacing = position == item.Start ? -GetAutospaceBeforeItem(itemIndex) : 0;
         var codePoint = GetCodePointAt(_text.AsSpan(0, _length), position);
         if (codePoint < 0x22 || (codePoint < 0xB7 && item.Style.Layout.Text.HangingPunctuation == HangingPunctuation.None))
-            return default;
+            return spacing == 0 ? default : new LineEdgeSpacing(position, spacing, 0, 0, 0);
 
         var style = item.Style;
         var text = style.Layout.Text;
         var shaped = item.Shaped!;
-        var spacing = 0d;
         if (TextSpacingClasses.GetFullwidthPunctuation(codePoint, PunctuationConvention.Japanese) == FullwidthPunctuation.Opening)
         {
             var trimmed = text.TextSpacingTrim switch
@@ -636,7 +689,7 @@ internal sealed partial class InlineLayoutAlgorithm
             // The spacing applied with the item (the opening punctuation after another punctuation)
             var itemSpacing = GetItemSpacing(position, itemIndex, style, shaped).Before;
             var desired = trimmed ? GetHalfWidthSpacing(shaped, position - item.Start, codePoint, FullwidthPunctuation.Opening).Before : 0;
-            spacing = desired - itemSpacing;
+            spacing += desired - itemSpacing;
         }
 
         // "An opening bracket, quote, or ideographic space at the start of the first formatted line of an element hangs": not

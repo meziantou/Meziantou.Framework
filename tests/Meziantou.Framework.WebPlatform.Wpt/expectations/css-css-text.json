@@ -3187,7 +3187,7 @@
     "reftest": "PASS"
   },
   "css/css-text/text-autospace/text-autospace-mixed-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/text-autospace/text-autospace-no-001.html": {
     "reftest": "PASS"

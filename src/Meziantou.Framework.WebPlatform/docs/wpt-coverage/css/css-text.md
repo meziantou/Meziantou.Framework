@@ -8,8 +8,8 @@
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 332 | 342 | 0 | 97% |
 | [Tentative](#tentative-tests) | 18 | 18 | 0 | 100% |
-| [Reftests](#reftests) | 1,455 | 1,510 | 0 | 96% |
-| **All** | **1,805** | **1,870** | **0** | **97%** |
+| [Reftests](#reftests) | 1,459 | 1,510 | 0 | 97% |
+| **All** | **1,809** | **1,870** | **0** | **97%** |
 
 ## Stable tests
 
@@ -470,13 +470,13 @@
 | [`hyphens/i18n/hyphens-i18n-auto-001.html`](https://wpt.fyi/results/css/css-text/hyphens/i18n/hyphens-i18n-auto-001.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the Dutch hyphenation patterns of hyph-utf8 have no hyphenation opportunity before the diminutive suffix of `cafeetje` (only `ca-feetje`), so its spelling change at the break (`café-tje`, implemented for the soft hyphens, `hyphens-i18n-manual-001`) is not used; no browser passes |
 | [`hyphens/i18n/hyphens-i18n-auto-002.html`](https://wpt.fyi/results/css/css-text/hyphens/i18n/hyphens-i18n-auto-002.html) | Fail | 0 / 1 | NOT IMPLEMENTED | there is no Hungarian hyphenation dictionary (the patterns of hyph-utf8 are under copyleft licenses), so `Összeg` is not hyphenated automatically (the spelling change `Ösz-szeg` is implemented for the soft hyphens, `hyphens-i18n-manual-002`); no browser passes |
 | [`hyphens/i18n/hyphens-i18n-auto-003.html`](https://wpt.fyi/results/css/css-text/hyphens/i18n/hyphens-i18n-auto-003.html) | Pass | 1 / 1 |  |  |
-| [`hyphens/i18n/hyphens-i18n-auto-004.html`](https://wpt.fyi/results/css/css-text/hyphens/i18n/hyphens-i18n-auto-004.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the repetition of the hyphen at the start of the next line in Pinyin (`àizēng‐` `‐fēnmíng`): the line is broken after the hyphen and the next line starts with `fēnmíng`; no browser passes |
+| [`hyphens/i18n/hyphens-i18n-auto-004.html`](https://wpt.fyi/results/css/css-text/hyphens/i18n/hyphens-i18n-auto-004.html) | Pass | 1 / 1 |  |  |
 | [`hyphens/i18n/hyphens-i18n-auto-005.html`](https://wpt.fyi/results/css/css-text/hyphens/i18n/hyphens-i18n-auto-005.html) | Fail | 0 / 1 | NOT IMPLEMENTED | there is no Uyghur hyphenation dictionary (hyph-utf8 has none), so the word is not hyphenated automatically; no browser passes |
 | [`hyphens/i18n/hyphens-i18n-auto-006.html`](https://wpt.fyi/results/css/css-text/hyphens/i18n/hyphens-i18n-auto-006.html) | Fail | 0 / 1 | NOT IMPLEMENTED | there is no Cree hyphenation dictionary (hyph-utf8 has none), so the syllabics are not hyphenated automatically (the hyphen after the Canadian syllabics is U+1400 CANADIAN SYLLABICS HYPHEN); the runner has no font for the Canadian syllabics; no browser passes |
 | [`hyphens/i18n/hyphens-i18n-manual-001.html`](https://wpt.fyi/results/css/css-text/hyphens/i18n/hyphens-i18n-manual-001.html) | Pass | 1 / 1 |  |  |
 | [`hyphens/i18n/hyphens-i18n-manual-002.html`](https://wpt.fyi/results/css/css-text/hyphens/i18n/hyphens-i18n-manual-002.html) | Pass | 1 / 1 |  |  |
 | [`hyphens/i18n/hyphens-i18n-manual-003.html`](https://wpt.fyi/results/css/css-text/hyphens/i18n/hyphens-i18n-manual-003.html) | Pass | 1 / 1 |  |  |
-| [`hyphens/i18n/hyphens-i18n-manual-004.html`](https://wpt.fyi/results/css/css-text/hyphens/i18n/hyphens-i18n-manual-004.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the repetition of the hyphen at the start of the next line in Pinyin (`àizēng‐` `‐fēnmíng`): the line is broken after the hyphen, at the opportunity of UAX #14, and the next line starts with `fēnmíng`; no browser passes |
+| [`hyphens/i18n/hyphens-i18n-manual-004.html`](https://wpt.fyi/results/css/css-text/hyphens/i18n/hyphens-i18n-manual-004.html) | Pass | 1 / 1 |  |  |
 | [`hyphens/i18n/hyphens-i18n-manual-005.html`](https://wpt.fyi/results/css/css-text/hyphens/i18n/hyphens-i18n-manual-005.html) | Fail | 0 / 1 | TEST RUNNER | the Uyghur word fits in the `4ch` of the box with the Arabic fallback font of the runner (Scheherazade, narrower than the fonts of the browsers), so it is not broken at the soft hyphen (where the hyphen would be U+0640 ARABIC TATWEEL); no browser passes |
 | [`hyphens/lang-tag-case-insensitive.html`](https://wpt.fyi/results/css/css-text/hyphens/lang-tag-case-insensitive.html) | Pass | 1 / 1 |  |  |
 | [`hyphens/shy-styling-001.html`](https://wpt.fyi/results/css/css-text/hyphens/shy-styling-001.html) | Pass | 1 / 1 |  |  |
@@ -821,7 +821,7 @@
 | [`line-breaking/line-breaking-replaced-004.html`](https://wpt.fyi/results/css/css-text/line-breaking/line-breaking-replaced-004.html) | Pass | 1 / 1 |  |  |
 | [`line-breaking/line-breaking-replaced-005.html`](https://wpt.fyi/results/css/css-text/line-breaking/line-breaking-replaced-005.html) | Pass | 1 / 1 |  |  |
 | [`line-breaking/line-breaking-replaced-006.html`](https://wpt.fyi/results/css/css-text/line-breaking/line-breaking-replaced-006.html) | Pass | 1 / 1 |  |  |
-| [`line-breaking/line-breaking-text-001.html`](https://wpt.fyi/results/css/css-text/line-breaking/line-breaking-text-001.html) | Fail | 0 / 1 | BUG | the line breaking differs from the reference |
+| [`line-breaking/line-breaking-text-001.html`](https://wpt.fyi/results/css/css-text/line-breaking/line-breaking-text-001.html) | Fail | 0 / 1 | TEST BUG | the reference does not match the test at this revision: it has a second box (Thai, CJK and Latin text broken by `<br>`) that the test does not have, and its `border: 1px silver` has no border style where the test draws `1px solid silver` borders; the line breaks of the box of the test (`abc-def:` then `break`) are the ones of the reference |
 | [`line-breaking/segment-break-transformation-currency-001.html`](https://wpt.fyi/results/css/css-text/line-breaking/segment-break-transformation-currency-001.html) | Pass | 1 / 1 |  |  |
 | [`line-breaking/segment-break-transformation-ignorable-1.html`](https://wpt.fyi/results/css/css-text/line-breaking/segment-break-transformation-ignorable-1.html) | Pass | 1 / 1 |  |  |
 | [`line-breaking/segment-break-transformation-punctuation-001.html`](https://wpt.fyi/results/css/css-text/line-breaking/segment-break-transformation-punctuation-001.html) | Pass | 1 / 1 |  |  |
@@ -1107,7 +1107,7 @@
 | [`text-autospace/text-autospace-ideogram-alpha-001.html`](https://wpt.fyi/results/css/css-text/text-autospace/text-autospace-ideogram-alpha-001.html) | Pass | 1 / 1 |  |  |
 | [`text-autospace/text-autospace-ideograph-numeric-001.html`](https://wpt.fyi/results/css/css-text/text-autospace/text-autospace-ideograph-numeric-001.html) | Pass | 1 / 1 |  |  |
 | [`text-autospace/text-autospace-ligature-001.html`](https://wpt.fyi/results/css/css-text/text-autospace/text-autospace-ligature-001.html) | Pass | 1 / 1 |  |  |
-| [`text-autospace/text-autospace-mixed-001.html`](https://wpt.fyi/results/css/css-text/text-autospace/text-autospace-mixed-001.html) | Fail | 0 / 1 | BUG | the inter-script spacing after the last character of a right-to-left run (Hebrew letters before an ideograph) is added after it in its direction, on the left of the run, instead of between the run and the ideograph that follows it on the line (passes in Chrome only) |
+| [`text-autospace/text-autospace-mixed-001.html`](https://wpt.fyi/results/css/css-text/text-autospace/text-autospace-mixed-001.html) | Pass | 1 / 1 |  |  |
 | [`text-autospace/text-autospace-no-001.html`](https://wpt.fyi/results/css/css-text/text-autospace/text-autospace-no-001.html) | Pass | 1 / 1 |  |  |
 | [`text-autospace/text-autospace-preformatted-001.html`](https://wpt.fyi/results/css/css-text/text-autospace/text-autospace-preformatted-001.html) | Pass | 1 / 1 |  |  |
 | [`text-autospace/text-autospace-supplementary-ideograph.html`](https://wpt.fyi/results/css/css-text/text-autospace/text-autospace-supplementary-ideograph.html) | Pass | 1 / 1 |  |  |
@@ -1196,7 +1196,7 @@
 | [`text-justify/text-justify-none-001.html`](https://wpt.fyi/results/css/css-text/text-justify/text-justify-none-001.html) | Pass | 1 / 1 |  |  |
 | [`text-justify/text-justify-word-separators.html`](https://wpt.fyi/results/css/css-text/text-justify/text-justify-word-separators.html) | Pass | 1 / 1 |  |  |
 | [`text-spacing-trim/text-spacing-trim-001.html`](https://wpt.fyi/results/css/css-text/text-spacing-trim/text-spacing-trim-001.html) | Pass | 4 / 4 |  |  |
-| [`text-spacing-trim/text-spacing-trim-colon-001.html`](https://wpt.fyi/results/css/css-text/text-spacing-trim/text-spacing-trim-colon-001.html) | Fail | 0 / 4 | NOT IMPLEMENTED | the fullwidth punctuation trimmed by `text-spacing-trim` keeps the glyph of the font with its advance reduced by half: the `halt`, `vhal` and `chws` features of the font are not applied, and the ink of the colons and of the quotation marks (which is not in the same half of the em box in the Chinese and Japanese conventions) is 1px or more away from the `halt` glyphs of the reference (passes in Chrome only) |
+| [`text-spacing-trim/text-spacing-trim-colon-001.html`](https://wpt.fyi/results/css/css-text/text-spacing-trim/text-spacing-trim-colon-001.html) | Fail | 2 / 4 | BUG | in vertical text, the lines where a fullwidth parenthesis is next to a fullwidth colon or semicolon (`国：（国`, `国）：国`, `国；（国`, `国）；国`) differ from the reference, which trims the parenthesis with `vhal` only where the colon or the semicolon is rotated: Chrome classifies these characters from their glyphs in the vertical flow (an upright colon or semicolon that `vhal` does not change is neither a closing nor a middle dot punctuation), and keeps a semicolon without vertical alternate upright where the engine rotates it (UTR #50 `Tr`); the horizontal variants pass (passes in Chrome only) |
 | [`text-spacing-trim/text-spacing-trim-dot-001.html`](https://wpt.fyi/results/css/css-text/text-spacing-trim/text-spacing-trim-dot-001.html) | Pass | 4 / 4 |  |  |
 | [`text-spacing-trim/text-spacing-trim-dynamic-001.html`](https://wpt.fyi/results/css/css-text/text-spacing-trim/text-spacing-trim-dynamic-001.html) | Pass | 2 / 2 |  |  |
 | [`text-spacing-trim/text-spacing-trim-end-001.html`](https://wpt.fyi/results/css/css-text/text-spacing-trim/text-spacing-trim-end-001.html) | Pass | 4 / 4 |  |  |
@@ -1205,7 +1205,7 @@
 | [`text-spacing-trim/text-spacing-trim-fallback-002.html`](https://wpt.fyi/results/css/css-text/text-spacing-trim/text-spacing-trim-fallback-002.html) | Pass | 4 / 4 |  |  |
 | [`text-spacing-trim/text-spacing-trim-feature-001.html`](https://wpt.fyi/results/css/css-text/text-spacing-trim/text-spacing-trim-feature-001.html) | Pass | 8 / 8 |  |  |
 | [`text-spacing-trim/text-spacing-trim-narrow-001.html`](https://wpt.fyi/results/css/css-text/text-spacing-trim/text-spacing-trim-narrow-001.html) | Pass | 3 / 3 |  |  |
-| [`text-spacing-trim/text-spacing-trim-quote-001.html`](https://wpt.fyi/results/css/css-text/text-spacing-trim/text-spacing-trim-quote-001.html) | Fail | 0 / 9 | NOT IMPLEMENTED | the fullwidth punctuation trimmed by `text-spacing-trim` keeps the glyph of the font with its advance reduced by half: the `halt`, `vhal` and `chws` features of the font are not applied, and the ink of the colons and of the quotation marks (which is not in the same half of the em box in the Chinese and Japanese conventions) is 1px or more away from the `halt` glyphs of the reference (passes in Chrome only) |
+| [`text-spacing-trim/text-spacing-trim-quote-001.html`](https://wpt.fyi/results/css/css-text/text-spacing-trim/text-spacing-trim-quote-001.html) | Pass | 9 / 9 |  |  |
 | [`text-spacing-trim/text-spacing-trim-space-all-001.html`](https://wpt.fyi/results/css/css-text/text-spacing-trim/text-spacing-trim-space-all-001.html) | Pass | 2 / 2 |  |  |
 | [`text-spacing-trim/text-spacing-trim-span-001.html`](https://wpt.fyi/results/css/css-text/text-spacing-trim/text-spacing-trim-span-001.html) | Pass | 12 / 12 |  |  |
 | [`text-spacing-trim/text-spacing-trim-start-001.html`](https://wpt.fyi/results/css/css-text/text-spacing-trim/text-spacing-trim-start-001.html) | Fail | 4 / 12 | TEST BUG | the last row expects the line `国国国国“` to be broken before the opening quotation mark that ends the text, so that it starts a line and is trimmed (its reference sets it with `halt` without a break); UAX #14 forbids that break since Unicode 15.1 (rule LB19a: `× QU (eot)`, the quotation mark is not surrounded by East Asian characters), so the quotation mark stays after the last ideograph with its full width (passes in Chrome only) |

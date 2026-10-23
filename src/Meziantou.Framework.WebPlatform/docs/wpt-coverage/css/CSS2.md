@@ -8,8 +8,8 @@
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 63 | 63 | 0 | 100% |
 | [Tentative](#tentative-tests) | 2 | 2 | 0 | 100% |
-| [Reftests](#reftests) | 6,190 | 6,267 | 0 | 99% |
-| **All** | **6,255** | **6,332** | **0** | **99%** |
+| [Reftests](#reftests) | 6,202 | 6,267 | 0 | 99% |
+| **All** | **6,267** | **6,332** | **0** | **99%** |
 
 ## Stable tests
 
@@ -477,7 +477,7 @@
 | [`bidi-text/bidi-009b.xht`](https://wpt.fyi/results/css/CSS2/bidi-text/bidi-009b.xht) | Pass | 1 / 1 |  |  |
 | [`bidi-text/bidi-010a.xht`](https://wpt.fyi/results/css/CSS2/bidi-text/bidi-010a.xht) | Pass | 1 / 1 |  |  |
 | [`bidi-text/bidi-010b.xht`](https://wpt.fyi/results/css/CSS2/bidi-text/bidi-010b.xht) | Pass | 1 / 1 |  |  |
-| [`bidi-text/bidi-011.xht`](https://wpt.fyi/results/css/CSS2/bidi-text/bidi-011.xht) | Fail | 0 / 1 | BUG | the U+202E RIGHT-TO-LEFT OVERRIDE character at the start of the inline box has the embedding level of the text before the box (the formatting characters retained by rule X9 take the level of the preceding character), so the box has two fragments on the line: an empty one with its left border and padding where the character is, and the reversed text at the end of the line with its right border; the reference (and Chrome) has one box around the reversed text. Fails in Firefox and Safari |
+| [`bidi-text/bidi-011.xht`](https://wpt.fyi/results/css/CSS2/bidi-text/bidi-011.xht) | Pass | 1 / 1 |  |  |
 | [`bidi-text/bidi-box-model-001.xht`](https://wpt.fyi/results/css/CSS2/bidi-text/bidi-box-model-001.xht) | Pass | 1 / 1 |  |  |
 | [`bidi-text/bidi-box-model-002.xht`](https://wpt.fyi/results/css/CSS2/bidi-text/bidi-box-model-002.xht) | Pass | 1 / 1 |  |  |
 | [`bidi-text/bidi-box-model-003.xht`](https://wpt.fyi/results/css/CSS2/bidi-text/bidi-box-model-003.xht) | Pass | 1 / 1 |  |  |
@@ -525,7 +525,7 @@
 | [`bidi-text/bidi-box-model-045.xht`](https://wpt.fyi/results/css/CSS2/bidi-text/bidi-box-model-045.xht) | Pass | 1 / 1 |  |  |
 | [`bidi-text/bidi-breaking-001.xht`](https://wpt.fyi/results/css/CSS2/bidi-text/bidi-breaking-001.xht) | Pass | 1 / 1 |  |  |
 | [`bidi-text/bidi-breaking-002.xht`](https://wpt.fyi/results/css/CSS2/bidi-text/bidi-breaking-002.xht) | Pass | 1 / 1 |  |  |
-| [`bidi-text/bidi-breaking-003.xht`](https://wpt.fyi/results/css/CSS2/bidi-text/bidi-breaking-003.xht) | Fail | 0 / 1 | BUG | a U+2029 PARAGRAPH SEPARATOR in a `white-space: pre` text is painted as the box of a missing glyph at the end of its line (it ends the bidi paragraph and should not be visible; left to the text lane; Chrome and Firefox fail too) |
+| [`bidi-text/bidi-breaking-003.xht`](https://wpt.fyi/results/css/CSS2/bidi-text/bidi-breaking-003.xht) | Pass | 1 / 1 |  |  |
 | [`bidi-text/bidi-glyph-mirroring-001.xht`](https://wpt.fyi/results/css/CSS2/bidi-text/bidi-glyph-mirroring-001.xht) | Pass | 1 / 1 |  |  |
 | [`bidi-text/bidi-glyph-mirroring-002.xht`](https://wpt.fyi/results/css/CSS2/bidi-text/bidi-glyph-mirroring-002.xht) | Pass | 1 / 1 |  |  |
 | [`bidi-text/bidi-inline-001.xht`](https://wpt.fyi/results/css/CSS2/bidi-text/bidi-inline-001.xht) | Pass | 1 / 1 |  |  |
@@ -1667,9 +1667,9 @@
 | [`floats/float-nowrap-4.html`](https://wpt.fyi/results/css/CSS2/floats/float-nowrap-4.html) | Pass | 1 / 1 |  |  |
 | [`floats/float-nowrap-5.html`](https://wpt.fyi/results/css/CSS2/floats/float-nowrap-5.html) | Pass | 1 / 1 |  |  |
 | [`floats/float-nowrap-6.html`](https://wpt.fyi/results/css/CSS2/floats/float-nowrap-6.html) | Pass | 1 / 1 |  |  |
-| [`floats/float-nowrap-7.html`](https://wpt.fyi/results/css/CSS2/floats/float-nowrap-7.html) | Fail | 0 / 1 | BUG | a float inside a `white-space: nowrap` text that overflows its container is placed on the first line, beside the start of the text; the reference (the behavior of Firefox) places it below the line that the unbreakable text overflows (Chrome and Safari fail too) |
-| [`floats/float-nowrap-8.html`](https://wpt.fyi/results/css/CSS2/floats/float-nowrap-8.html) | Fail | 0 / 1 | BUG | a float inside a `white-space: nowrap` text that overflows its container is placed on the first line, beside the start of the text; the reference (the behavior of Firefox) places it below the line that the unbreakable text overflows (Chrome and Safari fail too) |
-| [`floats/float-nowrap-9.html`](https://wpt.fyi/results/css/CSS2/floats/float-nowrap-9.html) | Fail | 0 / 1 | BUG | a float inside a `white-space: nowrap` text that overflows its container is placed on the first line, beside the start of the text; the reference (the behavior of Firefox) places it below the line that the unbreakable text overflows (Chrome and Safari fail too) |
+| [`floats/float-nowrap-7.html`](https://wpt.fyi/results/css/CSS2/floats/float-nowrap-7.html) | Pass | 1 / 1 |  |  |
+| [`floats/float-nowrap-8.html`](https://wpt.fyi/results/css/CSS2/floats/float-nowrap-8.html) | Pass | 1 / 1 |  |  |
+| [`floats/float-nowrap-9.html`](https://wpt.fyi/results/css/CSS2/floats/float-nowrap-9.html) | Pass | 1 / 1 |  |  |
 | [`floats/float-nowrap-hyphen-rewind-1.html`](https://wpt.fyi/results/css/CSS2/floats/float-nowrap-hyphen-rewind-1.html) | Pass | 1 / 1 |  |  |
 | [`floats/float-paint-relayout.html`](https://wpt.fyi/results/css/CSS2/floats/float-paint-relayout.html) | Pass | 1 / 1 |  |  |
 | [`floats/float-root.html`](https://wpt.fyi/results/css/CSS2/floats/float-root.html) | Pass | 1 / 1 |  |  |
@@ -1724,8 +1724,8 @@
 | [`floats/floats-wrap-bfc-with-margin-003.tentative.html`](https://wpt.fyi/results/css/CSS2/floats/floats-wrap-bfc-with-margin-003.tentative.html) | Pass | 1 / 1 |  |  |
 | [`floats/floats-wrap-bfc-with-margin-004.html`](https://wpt.fyi/results/css/CSS2/floats/floats-wrap-bfc-with-margin-004.html) | Pass | 1 / 1 |  |  |
 | [`floats/floats-wrap-bfc-with-margin-005.html`](https://wpt.fyi/results/css/CSS2/floats/floats-wrap-bfc-with-margin-005.html) | Pass | 1 / 1 |  |  |
-| [`floats/floats-wrap-bfc-with-margin-006.tentative.html`](https://wpt.fyi/results/css/CSS2/floats/floats-wrap-bfc-with-margin-006.tentative.html) | Fail | 0 / 1 | BUG | a block formatting context root with a negative margin on the side opposite to the float is expected to overlap the float with its margin area only and to stay beside it; the negative margin widens its border box, which no longer fits beside the float: the box is moved below the float (tentative tests, fail in every browser) |
-| [`floats/floats-wrap-bfc-with-margin-007.tentative.html`](https://wpt.fyi/results/css/CSS2/floats/floats-wrap-bfc-with-margin-007.tentative.html) | Fail | 0 / 1 | BUG | a block formatting context root with a negative margin on the side opposite to the float is expected to overlap the float with its margin area only and to stay beside it; the negative margin widens its border box, which no longer fits beside the float: the box is moved below the float (tentative tests, fail in every browser) |
+| [`floats/floats-wrap-bfc-with-margin-006.tentative.html`](https://wpt.fyi/results/css/CSS2/floats/floats-wrap-bfc-with-margin-006.tentative.html) | Fail | 0 / 1 | TEST BUG | the first block formatting context root of the test (auto width, a margin on the side opposite to the float more negative than the space beside it) is expected to stay beside the float with a border box widened by its negative margin; this contradicts the non-tentative css/CSS2/floats/floats-wrap-bfc-with-margin-001.html (interoperable in Chrome, Edge and Firefox), where an auto-width root whose negative margin on either side, including the side opposite to the float, inflates its border box past the space beside the float is moved below the float; the behavior is unspecified (https://github.com/w3c/csswg-drafts/issues/8142 asks to specify the one of -001); fails in every browser |
+| [`floats/floats-wrap-bfc-with-margin-007.tentative.html`](https://wpt.fyi/results/css/CSS2/floats/floats-wrap-bfc-with-margin-007.tentative.html) | Fail | 0 / 1 | TEST BUG | the first block formatting context root of the test (auto width, a margin on the side opposite to the float more negative than the space beside it) is expected to stay beside the float with a border box widened by its negative margin; this contradicts the non-tentative css/CSS2/floats/floats-wrap-bfc-with-margin-001.html (interoperable in Chrome, Edge and Firefox), where an auto-width root whose negative margin on either side, including the side opposite to the float, inflates its border box past the space beside the float is moved below the float; the behavior is unspecified (https://github.com/w3c/csswg-drafts/issues/8142 asks to specify the one of -001); fails in every browser |
 | [`floats/floats-wrap-bfc-with-margin-008.tentative.html`](https://wpt.fyi/results/css/CSS2/floats/floats-wrap-bfc-with-margin-008.tentative.html) | Pass | 1 / 1 |  |  |
 | [`floats/floats-wrap-bfc-with-margin-009.tentative.html`](https://wpt.fyi/results/css/CSS2/floats/floats-wrap-bfc-with-margin-009.tentative.html) | Pass | 1 / 1 |  |  |
 | [`floats/floats-wrap-bfc-with-margin-010.html`](https://wpt.fyi/results/css/CSS2/floats/floats-wrap-bfc-with-margin-010.html) | Pass | 1 / 1 |  |  |
@@ -1742,7 +1742,7 @@
 | [`floats/floats-wrap-top-below-inline-003l.xht`](https://wpt.fyi/results/css/CSS2/floats/floats-wrap-top-below-inline-003l.xht) | Pass | 1 / 1 |  |  |
 | [`floats/floats-wrap-top-below-inline-003r.xht`](https://wpt.fyi/results/css/CSS2/floats/floats-wrap-top-below-inline-003r.xht) | Pass | 1 / 1 |  |  |
 | [`floats/floats-zero-height-wrap-001.xht`](https://wpt.fyi/results/css/CSS2/floats/floats-zero-height-wrap-001.xht) | Pass | 1 / 1 |  |  |
-| [`floats/floats-zero-height-wrap-002.xht`](https://wpt.fyi/results/css/CSS2/floats/floats-zero-height-wrap-002.xht) | Fail | 0 / 1 | BUG | a line box beside a float whose height is 0 (but that has a width): the line is not shortened by the float (a float without block size does not intrude into the band of the line); Chrome moves the content of the line beside it (Firefox and Safari fail too) |
+| [`floats/floats-zero-height-wrap-002.xht`](https://wpt.fyi/results/css/CSS2/floats/floats-zero-height-wrap-002.xht) | Pass | 1 / 1 |  |  |
 | [`floats/intrinsic-size-float-and-line.html`](https://wpt.fyi/results/css/CSS2/floats/intrinsic-size-float-and-line.html) | Pass | 1 / 1 |  |  |
 | [`floats/negative-block-margin-pushing-float-out-of-block-formatting-context.html`](https://wpt.fyi/results/css/CSS2/floats/negative-block-margin-pushing-float-out-of-block-formatting-context.html) | Pass | 1 / 1 |  |  |
 | [`floats/negative-margin-float-positioning.html`](https://wpt.fyi/results/css/CSS2/floats/negative-margin-float-positioning.html) | Pass | 1 / 1 |  |  |
@@ -4005,13 +4005,13 @@
 | [`pagination/block-page-break-inside-avoid-8-print.html`](https://wpt.fyi/results/css/CSS2/pagination/block-page-break-inside-avoid-8-print.html) | Pass | 1 / 1 |  |  |
 | [`pagination/block-page-break-inside-avoid-9-print.html`](https://wpt.fyi/results/css/CSS2/pagination/block-page-break-inside-avoid-9-print.html) | Pass | 1 / 1 |  |  |
 | [`pagination/float-page-break-inside-avoid-1-print.html`](https://wpt.fyi/results/css/CSS2/pagination/float-page-break-inside-avoid-1-print.html) | Pass | 1 / 1 |  |  |
-| [`pagination/float-page-break-inside-avoid-2-print.html`](https://wpt.fyi/results/css/CSS2/pagination/float-page-break-inside-avoid-2-print.html) | Fail | 0 / 1 | BUG | a float with `page-break-inside: avoid` taller than the page, beside another float, is broken at the end of the first page as expected, but its fragment in the second page keeps the inline offset of the first one (beside the first float, which ended), where the reference places it at the inline-start edge of the page (a float placed again in each fragmentainer) |
+| [`pagination/float-page-break-inside-avoid-2-print.html`](https://wpt.fyi/results/css/CSS2/pagination/float-page-break-inside-avoid-2-print.html) | Pass | 1 / 1 |  |  |
 | [`pagination/float-page-break-inside-avoid-3-print.html`](https://wpt.fyi/results/css/CSS2/pagination/float-page-break-inside-avoid-3-print.html) | Pass | 1 / 1 |  |  |
 | [`pagination/float-page-break-inside-avoid-4-print.html`](https://wpt.fyi/results/css/CSS2/pagination/float-page-break-inside-avoid-4-print.html) | Pass | 1 / 1 |  |  |
-| [`pagination/float-page-break-inside-avoid-5-print.html`](https://wpt.fyi/results/css/CSS2/pagination/float-page-break-inside-avoid-5-print.html) | Fail | 0 / 1 | BUG | floats with `page-break-inside: avoid` that do not fit in the rest of the page are pushed to the next pages one at a time (3 pages), where the reference places them on two pages |
-| [`pagination/float-page-break-inside-avoid-6-print.html`](https://wpt.fyi/results/css/CSS2/pagination/float-page-break-inside-avoid-6-print.html) | Fail | 0 / 1 | BUG | a float with `page-break-inside: avoid` taller than the page: it is sliced as monolithic content, where the reference breaks it at the end of the first page (with its border) |
-| [`pagination/float-page-break-inside-avoid-7-print.html`](https://wpt.fyi/results/css/CSS2/pagination/float-page-break-inside-avoid-7-print.html) | Fail | 0 / 1 | BUG | a float with `page-break-inside: avoid` in a block whose content after it is broken: the float is placed on the first page with the line beside it, where the reference moves the line after the float to the next page |
-| [`pagination/float-page-break-inside-avoid-8-print.html`](https://wpt.fyi/results/css/CSS2/pagination/float-page-break-inside-avoid-8-print.html) | Fail | 0 / 1 | BUG | a float with `page-break-inside: avoid` in a block whose content after it is broken: the float is placed on the first page with the line beside it, where the reference moves the line after the float to the next page |
+| [`pagination/float-page-break-inside-avoid-5-print.html`](https://wpt.fyi/results/css/CSS2/pagination/float-page-break-inside-avoid-5-print.html) | Pass | 1 / 1 |  |  |
+| [`pagination/float-page-break-inside-avoid-6-print.html`](https://wpt.fyi/results/css/CSS2/pagination/float-page-break-inside-avoid-6-print.html) | Pass | 1 / 1 |  |  |
+| [`pagination/float-page-break-inside-avoid-7-print.html`](https://wpt.fyi/results/css/CSS2/pagination/float-page-break-inside-avoid-7-print.html) | Pass | 1 / 1 |  |  |
+| [`pagination/float-page-break-inside-avoid-8-print.html`](https://wpt.fyi/results/css/CSS2/pagination/float-page-break-inside-avoid-8-print.html) | Fail | 0 / 1 | BUG | a float with `page-break-inside: avoid` that does not fit at the start of a block with a definite block size (the block crosses the end of the first page): the float is pushed, but the flow breaks before the block, which starts the second page with the float and the lines `X` and `Y` beside it, where the reference keeps the lines at the start of the block in the first page (laid out without the float) and only pushes the float to the second page |
 | [`pagination/float-page-break-inside-avoid-9-print.html`](https://wpt.fyi/results/css/CSS2/pagination/float-page-break-inside-avoid-9-print.html) | Pass | 1 / 1 |  |  |
 | [`pagination/inline-page-break-inside-avoid-1-print.html`](https://wpt.fyi/results/css/CSS2/pagination/inline-page-break-inside-avoid-1-print.html) | Pass | 1 / 1 |  |  |
 | [`pagination/row-page-break-inside-avoid-1-print.html`](https://wpt.fyi/results/css/CSS2/pagination/row-page-break-inside-avoid-1-print.html) | Pass | 1 / 1 |  |  |
@@ -4028,7 +4028,7 @@
 | [`pagination/table-page-break-inside-avoid-2-print.html`](https://wpt.fyi/results/css/CSS2/pagination/table-page-break-inside-avoid-2-print.html) | Pass | 1 / 1 |  |  |
 | [`pagination/table-page-break-inside-avoid-3-print.html`](https://wpt.fyi/results/css/CSS2/pagination/table-page-break-inside-avoid-3-print.html) | Pass | 1 / 1 |  |  |
 | [`pagination/table-page-break-inside-avoid-4-print.html`](https://wpt.fyi/results/css/CSS2/pagination/table-page-break-inside-avoid-4-print.html) | Pass | 1 / 1 |  |  |
-| [`pagination/table-page-break-inside-avoid-5-print.html`](https://wpt.fyi/results/css/CSS2/pagination/table-page-break-inside-avoid-5-print.html) | Fail | 0 / 1 | BUG | a table row group with `page-break-inside: avoid` taller than the page: its rows are placed on 3 pages, where the reference expects 4 (a row that does not fit after the avoided group is not pushed to the next page) |
+| [`pagination/table-page-break-inside-avoid-5-print.html`](https://wpt.fyi/results/css/CSS2/pagination/table-page-break-inside-avoid-5-print.html) | Pass | 1 / 1 |  |  |
 | [`pagination/table-page-break-inside-avoid-6-print.html`](https://wpt.fyi/results/css/CSS2/pagination/table-page-break-inside-avoid-6-print.html) | Pass | 1 / 1 |  |  |
 | [`pagination/table-page-break-inside-avoid-7-print.html`](https://wpt.fyi/results/css/CSS2/pagination/table-page-break-inside-avoid-7-print.html) | Pass | 1 / 1 |  |  |
 | [`pagination/table-page-break-inside-avoid-8-print.html`](https://wpt.fyi/results/css/CSS2/pagination/table-page-break-inside-avoid-8-print.html) | Pass | 1 / 1 |  |  |
@@ -4999,7 +4999,7 @@
 | [`selectors/first-letter-selector-028.xht`](https://wpt.fyi/results/css/CSS2/selectors/first-letter-selector-028.xht) | Pass | 1 / 1 |  |  |
 | [`selectors/first-line-001.xht`](https://wpt.fyi/results/css/CSS2/selectors/first-line-001.xht) | Pass | 1 / 1 |  |  |
 | [`selectors/first-line-floats-001.xht`](https://wpt.fyi/results/css/CSS2/selectors/first-line-floats-001.xht) | Pass | 1 / 1 |  |  |
-| [`selectors/first-line-floats-002.xht`](https://wpt.fyi/results/css/CSS2/selectors/first-line-floats-002.xht) | Fail | 0 / 1 | BUG | the text of a float inside nested inline boxes of the first line gets the color of `::first-line` in the reference (Firefox); `::first-line` does not apply to the contents of the floats (CSS Pseudo: a float is not part of the first formatted line), as in Chrome and Safari |
+| [`selectors/first-line-floats-002.xht`](https://wpt.fyi/results/css/CSS2/selectors/first-line-floats-002.xht) | Fail | 0 / 1 | TEST BUG | the reference expects the text of a float inside nested inline boxes of the first line to get the color of `::first-line` (the behavior of Firefox); the first formatted line represents the inline-level content of the first line box, which a float is not (https://drafts.csswg.org/css-pseudo-4/#first-formatted-line), and the portion of an element that does not occur on the first line inherits from its non-pseudo parent (https://drafts.csswg.org/css-pseudo-4/#first-line-inheritance): the float is red, as in Chrome and Safari |
 | [`selectors/first-line-floats-003.xht`](https://wpt.fyi/results/css/CSS2/selectors/first-line-floats-003.xht) | Pass | 1 / 1 |  |  |
 | [`selectors/first-line-floats-004.xht`](https://wpt.fyi/results/css/CSS2/selectors/first-line-floats-004.xht) | Pass | 1 / 1 |  |  |
 | [`selectors/first-line-inherit-001.xht`](https://wpt.fyi/results/css/CSS2/selectors/first-line-inherit-001.xht) | Pass | 1 / 1 |  |  |
@@ -5175,7 +5175,7 @@
 | [`syntax/character-encoding-036.xht`](https://wpt.fyi/results/css/CSS2/syntax/character-encoding-036.xht) | Pass | 1 / 1 |  |  |
 | [`syntax/character-encoding-037.xht`](https://wpt.fyi/results/css/CSS2/syntax/character-encoding-037.xht) | Pass | 1 / 1 |  |  |
 | [`syntax/character-encoding-041.xht`](https://wpt.fyi/results/css/CSS2/syntax/character-encoding-041.xht) | Pass | 1 / 1 |  |  |
-| [`syntax/characters-0080-009F-001.xht`](https://wpt.fyi/results/css/CSS2/syntax/characters-0080-009F-001.xht) | Fail | 0 / 1 | BUG | the test uses identifiers made of the C1 control characters U+0080 to U+009F (counter names): the tokenizer follows the non-ASCII ident code points of CSS Syntax 3, which exclude them, so the declarations are dropped (the browsers still accept every code point from U+0080) |
+| [`syntax/characters-0080-009F-001.xht`](https://wpt.fyi/results/css/CSS2/syntax/characters-0080-009F-001.xht) | Fail | 0 / 1 | TEST BUG | the test uses identifiers made of the C1 control characters U+0080 to U+009F (counter names), valid in the CSS 2 grammar; CSS Syntax 3, which supersedes the tokenizer of CSS 2, restricts the non-ASCII ident code points to the ones of the valid custom element names, which exclude U+0080 to U+00B6 (https://drafts.csswg.org/css-syntax-3/#non-ascii-ident-code-point, also tested by css/css-syntax/non-ascii-codepoints.html): the declarations are invalid and dropped (the browsers still accept every code point from U+0080) |
 | [`syntax/charset-attr-001.xht`](https://wpt.fyi/results/css/CSS2/syntax/charset-attr-001.xht) | Pass | 1 / 1 |  |  |
 | [`syntax/colors-001.xht`](https://wpt.fyi/results/css/CSS2/syntax/colors-001.xht) | Pass | 1 / 1 |  |  |
 | [`syntax/colors-002.xht`](https://wpt.fyi/results/css/CSS2/syntax/colors-002.xht) | Pass | 1 / 1 |  |  |
@@ -5364,7 +5364,7 @@
 | [`tables/border-collapse-offset-001.xht`](https://wpt.fyi/results/css/CSS2/tables/border-collapse-offset-001.xht) | Pass | 1 / 1 |  |  |
 | [`tables/border-collapse-offset-002.xht`](https://wpt.fyi/results/css/CSS2/tables/border-collapse-offset-002.xht) | Pass | 1 / 1 |  |  |
 | [`tables/border-collapse-visibility-collapse-001.tentative.html`](https://wpt.fyi/results/css/CSS2/tables/border-collapse-visibility-collapse-001.tentative.html) | Pass | 1 / 1 |  |  |
-| [`tables/border-collapse-visibility-collapse-002.tentative.html`](https://wpt.fyi/results/css/CSS2/tables/border-collapse-visibility-collapse-002.tentative.html) | Fail | 0 / 1 | BUG | the collapsed borders of the rows and the columns with `visibility: collapse`: the 100px borders of the visible row and columns beside the collapsed ones are both kept (the table is 200px tall instead of 100px); the borders of a collapsed track should not be harmonized with the visible ones (tentative test; Firefox fails too) |
+| [`tables/border-collapse-visibility-collapse-002.tentative.html`](https://wpt.fyi/results/css/CSS2/tables/border-collapse-visibility-collapse-002.tentative.html) | Pass | 1 / 1 |  |  |
 | [`tables/border-conflict-element-001a.xht`](https://wpt.fyi/results/css/CSS2/tables/border-conflict-element-001a.xht) | Pass | 1 / 1 |  |  |
 | [`tables/border-conflict-element-001b.xht`](https://wpt.fyi/results/css/CSS2/tables/border-conflict-element-001b.xht) | Pass | 1 / 1 |  |  |
 | [`tables/border-conflict-element-001c.xht`](https://wpt.fyi/results/css/CSS2/tables/border-conflict-element-001c.xht) | Pass | 1 / 1 |  |  |

@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 287 | 319 | 0 | 90% |
+| [Stable](#stable-tests) | 288 | 319 | 0 | 90% |
 | [Tentative](#tentative-tests) | 39 | 42 | 0 | 93% |
 | [Reftests](#reftests) | 5 | 5 | 0 | 100% |
-| **All** | **331** | **366** | **0** | **90%** |
+| **All** | **332** | **366** | **0** | **91%** |
 
 ## Stable tests
 
@@ -93,7 +93,7 @@
 | [`the-stylepropertymap/properties/accent-color.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/accent-color.html) | Pass | 38 / 38 |  |  |
 | [`the-stylepropertymap/properties/alignment-baseline.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/alignment-baseline.html) | Pass | 39 / 39 |  |  |
 | [`the-stylepropertymap/properties/all.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/all.html) | Pass | 31 / 31 |  |  |
-| [`the-stylepropertymap/properties/anchor-scope.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/anchor-scope.html) | Fail | 34 / 35 | BUG | the computed value `--a` of `anchor-scope` (a list of one `<dashed-ident>`) is reified as `CSSStyleValue` instead of `CSSKeywordValue`: the items of a list that is not the whole grammar (`none \| all \| <anchor-name>#`) are not reified (Chrome throws a TypeError when the keyword is set) |
+| [`the-stylepropertymap/properties/anchor-scope.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/anchor-scope.html) | Pass | 35 / 35 |  |  |
 | [`the-stylepropertymap/properties/animation-delay.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/animation-delay.html) | Pass | 31 / 31 |  |  |
 | [`the-stylepropertymap/properties/animation-direction.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/animation-direction.html) | Pass | 35 / 35 |  |  |
 | [`the-stylepropertymap/properties/animation-duration.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/animation-duration.html) | Pass | 32 / 32 |  |  |
@@ -135,7 +135,7 @@
 | [`the-stylepropertymap/properties/caret-color.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/caret-color.html) | Pass | 38 / 38 |  |  |
 | [`the-stylepropertymap/properties/center-coordinate.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/center-coordinate.html) | Pass | 62 / 62 |  |  |
 | [`the-stylepropertymap/properties/clear.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/clear.html) | Pass | 35 / 35 |  |  |
-| [`the-stylepropertymap/properties/clip-path.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/clip-path.html) | Fail | 39 / 40 | NOT IMPLEMENTED | `inset()` for the legacy `clip` property, which the test expects to parse (the library accepts only `rect()` and `auto`) |
+| [`the-stylepropertymap/properties/clip-path.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/clip-path.html) | Fail | 39 / 40 | TEST BUG | `runUnsupportedPropertyTests('clip', ['inset(...)'])` names the legacy `clip` property, whose grammar is `<rect()> \| auto` (https://drafts.csswg.org/css-masking-1/#propdef-clip): `inset()` is a `<basic-shape>` of `clip-path`, which the rest of the file tests |
 | [`the-stylepropertymap/properties/clip-rule.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/clip-rule.html) | Pass | 33 / 33 |  |  |
 | [`the-stylepropertymap/properties/clip.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/clip.html) | Pass | 33 / 33 |  |  |
 | [`the-stylepropertymap/properties/color-interpolation.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/color-interpolation.html) | Pass | 34 / 34 |  |  |
@@ -163,7 +163,7 @@
 | [`the-stylepropertymap/properties/fill-color.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/fill-color.html) | Pass | 37 / 37 |  |  |
 | [`the-stylepropertymap/properties/fill-opacity.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/fill-opacity.html) | Pass | 31 / 31 |  |  |
 | [`the-stylepropertymap/properties/fill-rule.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/fill-rule.html) | Pass | 33 / 33 |  |  |
-| [`the-stylepropertymap/properties/fill.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/fill.html) | Fail | 1 / 2 | NOT IMPLEMENTED | the multi-value `fill` (`red gray`), which the test expects to parse |
+| [`the-stylepropertymap/properties/fill.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/fill.html) | Fail | 1 / 2 | TEST BUG | the test expects `red gray` to be a valid value of `fill`: `<paint>` is `none \| <image> \| <svg-paint>` (https://drafts.csswg.org/fill-stroke-3/#typedef-paint), and SVG 2 only accepts a fallback color after a URL (https://svgwg.org/svg2-draft/painting.html#SpecifyingPaint) |
 | [`the-stylepropertymap/properties/filter.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/filter.html) | Pass | 34 / 34 |  |  |
 | [`the-stylepropertymap/properties/flex-basis.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/flex-basis.html) | Pass | 36 / 36 |  |  |
 | [`the-stylepropertymap/properties/flex-direction.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/flex-direction.html) | Pass | 35 / 35 |  |  |
@@ -181,7 +181,7 @@
 | [`the-stylepropertymap/properties/font-language-override.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/font-language-override.html) | Pass | 33 / 33 |  |  |
 | [`the-stylepropertymap/properties/font-optical-sizing.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/font-optical-sizing.html) | Pass | 33 / 33 |  |  |
 | [`the-stylepropertymap/properties/font-palette.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/font-palette.html) | Fail | 34 / 35 | TEST BUG | the test expects `font-palette: Augusta` to be a valid value (reified as a `CSSStyleValue`): a palette name is a `<dashed-ident>` (`<palette-identifier>`, https://drafts.csswg.org/css-fonts-4/#typedef-font-palette-palette-identifier), so the declaration is invalid; fails in Chrome and Safari too |
-| [`the-stylepropertymap/properties/font-presentation.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/font-presentation.html) | Fail | 26 / 34 | NOT IMPLEMENTED | the `font-presentation` property |
+| [`the-stylepropertymap/properties/font-presentation.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/font-presentation.html) | Fail | 26 / 34 | TEST BUG | `font-presentation` is the name of an early draft of `font-variant-emoji` (https://drafts.csswg.org/css-fonts-4/#propdef-font-variant-emoji): no specification defines it |
 | [`the-stylepropertymap/properties/font-size-adjust.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/font-size-adjust.html) | Pass | 32 / 32 |  |  |
 | [`the-stylepropertymap/properties/font-size.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/font-size.html) | Pass | 41 / 41 |  |  |
 | [`the-stylepropertymap/properties/font-stretch.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/font-stretch.html) | Fail | 31 / 40 | TEST BUG | the test expects the computed value of the `font-stretch` keywords to be reified as keywords, but they compute to percentages (https://drafts.csswg.org/css-fonts-4/#font-stretch-prop), reified as `CSSUnitValue`; fails in Chrome and Safari too |
@@ -244,7 +244,7 @@
 | [`the-stylepropertymap/properties/outline-width.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/outline-width.html) | Pass | 34 / 34 |  |  |
 | [`the-stylepropertymap/properties/overflow-anchor.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/overflow-anchor.html) | Pass | 33 / 33 |  |  |
 | [`the-stylepropertymap/properties/overflow-clip-margin.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/overflow-clip-margin.html) | Fail | 29 / 36 | BUG | `overflow-clip-margin` is a shorthand of the `overflow-clip-margin-*` longhands (CSS Overflow 4), reified as `CSSStyleValue`: the test expects a `<visual-box>` keyword to be a `CSSKeywordValue` and a length a `CSSUnitValue`; fails in Chrome and Safari too |
-| [`the-stylepropertymap/properties/overflow-wrap.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/overflow-wrap.html) | Fail | 33 / 35 | NOT IMPLEMENTED | `overflow-wrap: break-spaces`, which the test expects to parse |
+| [`the-stylepropertymap/properties/overflow-wrap.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/overflow-wrap.html) | Fail | 33 / 35 | TEST BUG | `break-spaces` is not a value of `overflow-wrap` (`normal \| break-word \| anywhere`, https://drafts.csswg.org/css-text-4/#propdef-overflow-wrap): it is a value of `white-space-collapse` |
 | [`the-stylepropertymap/properties/overflow.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/overflow.html) | Pass | 72 / 72 |  |  |
 | [`the-stylepropertymap/properties/overscroll-behavior.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/overscroll-behavior.html) | Pass | 68 / 68 |  |  |
 | [`the-stylepropertymap/properties/padding.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/padding.html) | Pass | 124 / 124 |  |  |
@@ -277,11 +277,11 @@
 | [`the-stylepropertymap/properties/stroke-dasharray.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/stroke-dasharray.html) | Pass | 33 / 33 |  |  |
 | [`the-stylepropertymap/properties/stroke-dashoffset.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/stroke-dashoffset.html) | Pass | 31 / 31 |  |  |
 | [`the-stylepropertymap/properties/stroke-linecap.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/stroke-linecap.html) | Pass | 34 / 34 |  |  |
-| [`the-stylepropertymap/properties/stroke-linejoin.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/stroke-linejoin.html) | Fail | 38 / 39 | NOT IMPLEMENTED | the CSS Fill and Stroke 3 value `stroke-linejoin: stupid` |
+| [`the-stylepropertymap/properties/stroke-linejoin.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/stroke-linejoin.html) | Fail | 38 / 39 | TEST BUG | `stupid` is the value of an early draft, renamed `fallback`: `[ crop \| arcs \| miter ] \|\| [ bevel \| round \| fallback ]` (https://drafts.csswg.org/fill-stroke-3/#propdef-stroke-linejoin) |
 | [`the-stylepropertymap/properties/stroke-miterlimit.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/stroke-miterlimit.html) | Pass | 31 / 31 |  |  |
 | [`the-stylepropertymap/properties/stroke-opacity.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/stroke-opacity.html) | Pass | 31 / 31 |  |  |
 | [`the-stylepropertymap/properties/stroke-width.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/stroke-width.html) | Pass | 31 / 31 |  |  |
-| [`the-stylepropertymap/properties/stroke.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/stroke.html) | Fail | 1 / 2 | NOT IMPLEMENTED | the multi-value `stroke` (`red gray`), which the test expects to parse |
+| [`the-stylepropertymap/properties/stroke.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/stroke.html) | Fail | 1 / 2 | TEST BUG | the test expects `red gray` to be a valid value of `stroke`: `<paint>` is `none \| <image> \| <svg-paint>` (https://drafts.csswg.org/fill-stroke-3/#typedef-paint), and SVG 2 only accepts a fallback color after a URL (https://svgwg.org/svg2-draft/painting.html#SpecifyingPaint) |
 | [`the-stylepropertymap/properties/tab-size.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/tab-size.html) | Pass | 31 / 31 |  |  |
 | [`the-stylepropertymap/properties/table-layout.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/table-layout.html) | Pass | 33 / 33 |  |  |
 | [`the-stylepropertymap/properties/text-align-last.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/text-align-last.html) | Pass | 38 / 38 |  |  |
@@ -293,7 +293,7 @@
 | [`the-stylepropertymap/properties/text-decoration-color.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/text-decoration-color.html) | Pass | 37 / 37 |  |  |
 | [`the-stylepropertymap/properties/text-decoration-line.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/text-decoration-line.html) | Pass | 38 / 38 |  |  |
 | [`the-stylepropertymap/properties/text-decoration-skip-ink.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/text-decoration-skip-ink.html) | Pass | 33 / 33 |  |  |
-| [`the-stylepropertymap/properties/text-decoration-skip.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/text-decoration-skip.html) | Fail | 31 / 39 | BUG, NOT IMPLEMENTED | `text-decoration-skip` is a shorthand (CSS Text Decoration 4), reified as `CSSStyleValue`: the test expects `none` to be a `CSSKeywordValue`; fails in Chrome and Safari too; the CSS Text Decoration 4 values of `text-decoration-skip` (`objects`, `spaces`, `edges`, `box-decoration`) |
+| [`the-stylepropertymap/properties/text-decoration-skip.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/text-decoration-skip.html) | Fail | 31 / 39 | TEST BUG | the test uses the longhand `text-decoration-skip` of an early draft (`objects`, `spaces`, `edges`, `box-decoration`): it is now a shorthand of `text-decoration-skip-self`, `-box`, `-spaces` and `-ink` whose grammar is `none \| auto` (https://drafts.csswg.org/css-text-decor-4/#propdef-text-decoration-skip), reified as a `CSSStyleValue` like the other shorthands |
 | [`the-stylepropertymap/properties/text-decoration-style.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/text-decoration-style.html) | Pass | 36 / 36 |  |  |
 | [`the-stylepropertymap/properties/text-decoration-thickness.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/text-decoration-thickness.html) | Pass | 32 / 32 |  |  |
 | [`the-stylepropertymap/properties/text-decoration.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/text-decoration.html) | Pass | 3 / 3 |  |  |
@@ -302,7 +302,7 @@
 | [`the-stylepropertymap/properties/text-indent.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/text-indent.html) | Pass | 34 / 34 |  |  |
 | [`the-stylepropertymap/properties/text-justify.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/text-justify.html) | Pass | 35 / 35 |  |  |
 | [`the-stylepropertymap/properties/text-orientation.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/text-orientation.html) | Pass | 34 / 34 |  |  |
-| [`the-stylepropertymap/properties/text-overflow.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/text-overflow.html) | Fail | 36 / 37 | NOT IMPLEMENTED | `fade()` |
+| [`the-stylepropertymap/properties/text-overflow.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/text-overflow.html) | Fail | 36 / 37 | TEST BUG | `fade()` takes a single `<length-percentage>` (https://drafts.csswg.org/css-overflow-4/#funcdef-text-overflow-fade): `fade(1px, 50%)` is invalid, where the test expects it to be a valid value |
 | [`the-stylepropertymap/properties/text-rendering.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/text-rendering.html) | Pass | 35 / 35 |  |  |
 | [`the-stylepropertymap/properties/text-shadow.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/text-shadow.html) | Pass | 34 / 34 |  |  |
 | [`the-stylepropertymap/properties/text-size-adjust.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/text-size-adjust.html) | Fail | 32 / 33 | TEST BUG | the test expects a negative percentage set on `text-size-adjust` (`<percentage [0,∞]>`) to be kept as a `CSSUnitValue`; a `CSSUnitValue` outside of the range of the property is wrapped in a `CSSMathSum` (https://drafts.css-houdini.org/css-typed-om-1/#create-an-internal-representation), as the tests of the other properties expect; fails in Chrome and Safari too |
@@ -313,7 +313,7 @@
 | [`the-stylepropertymap/properties/touch-action.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/touch-action.html) | Pass | 43 / 43 |  |  |
 | [`the-stylepropertymap/properties/transform-box.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/transform-box.html) | Pass | 34 / 34 |  |  |
 | [`the-stylepropertymap/properties/transform-interpolated.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/transform-interpolated.html) | Pass | 1 / 1 |  |  |
-| [`the-stylepropertymap/properties/transform-style.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/transform-style.html) | Fail | 33 / 34 | NOT IMPLEMENTED | `transform-style: auto` |
+| [`the-stylepropertymap/properties/transform-style.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/transform-style.html) | Fail | 33 / 34 | TEST BUG | `auto` is not a value of `transform-style` (`flat \| preserve-3d`, https://drafts.csswg.org/css-transforms-2/#propdef-transform-style) |
 | [`the-stylepropertymap/properties/transform.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/transform.html) | Pass | 33 / 33 |  |  |
 | [`the-stylepropertymap/properties/transition-delay.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/transition-delay.html) | Pass | 31 / 31 |  |  |
 | [`the-stylepropertymap/properties/transition-duration.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/transition-duration.html) | Pass | 31 / 31 |  |  |
@@ -331,7 +331,7 @@
 | [`the-stylepropertymap/properties/will-change.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/will-change.html) | Pass | 34 / 34 |  |  |
 | [`the-stylepropertymap/properties/word-break.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/word-break.html) | Pass | 34 / 34 |  |  |
 | [`the-stylepropertymap/properties/word-spacing.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/word-spacing.html) | Pass | 32 / 32 |  |  |
-| [`the-stylepropertymap/properties/word-wrap.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/word-wrap.html) | Fail | 33 / 35 | NOT IMPLEMENTED | `word-wrap: break-spaces`, which the test expects to parse |
+| [`the-stylepropertymap/properties/word-wrap.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/word-wrap.html) | Fail | 33 / 35 | TEST BUG | `break-spaces` is not a value of `word-wrap`, the legacy name of `overflow-wrap` (`normal \| break-word \| anywhere`, https://drafts.csswg.org/css-text-4/#propdef-overflow-wrap): it is a value of `white-space-collapse` |
 | [`the-stylepropertymap/properties/writing-mode.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/writing-mode.html) | Pass | 36 / 36 |  |  |
 | [`the-stylepropertymap/properties/z-index.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/z-index.html) | Pass | 32 / 32 |  |  |
 
@@ -357,14 +357,14 @@
 | [`stylevalue-subclasses/cssTransformValue.tentative.html`](https://wpt.fyi/results/css/css-typed-om/stylevalue-subclasses/cssTransformValue.tentative.html) | Pass | 8 / 8 |  |  |
 | [`stylevalue-subclasses/cssTranslate.tentative.html`](https://wpt.fyi/results/css/css-typed-om/stylevalue-subclasses/cssTranslate.tentative.html) | Pass | 23 / 23 |  |  |
 | [`stylevalue-subclasses/numeric-objects/add-two-types.tentative.any.js`](https://wpt.fyi/results/css/css-typed-om/stylevalue-subclasses/numeric-objects/add-two-types.tentative.any.js) | Pass | 84 / 84 |  |  |
-| [`stylevalue-subclasses/numeric-objects/arithmetic.tentative.any.js`](https://wpt.fyi/results/css/css-typed-om/stylevalue-subclasses/numeric-objects/arithmetic.tentative.any.js) | Fail | 67 / 201 | NOT IMPLEMENTED | the `CSS` namespace (the `CSS.px()`... factory functions of the CSS Typed OM) is only exposed in the windows, not in the workers |
+| [`stylevalue-subclasses/numeric-objects/arithmetic.tentative.any.js`](https://wpt.fyi/results/css/css-typed-om/stylevalue-subclasses/numeric-objects/arithmetic.tentative.any.js) | Fail | 67 / 201 | TEST BUG | the `.any.js` worker variants use the `CSS` namespace (`CSS.px()`...), which is not exposed in the workers: `namespace CSS` is `[Exposed=Window]` (https://drafts.csswg.org/cssom-1/#namespacedef-css) and the partial namespace of the numeric factory functions (https://drafts.css-houdini.org/css-typed-om-1/#numeric-factory) adds no exposure |
 | [`stylevalue-subclasses/numeric-objects/create-a-type.tentative.any.js`](https://wpt.fyi/results/css/css-typed-om/stylevalue-subclasses/numeric-objects/create-a-type.tentative.any.js) | Pass | 24 / 24 |  |  |
 | [`stylevalue-subclasses/numeric-objects/cssMathValue.tentative.html`](https://wpt.fyi/results/css/css-typed-om/stylevalue-subclasses/numeric-objects/cssMathValue.tentative.html) | Pass | 23 / 23 |  |  |
 | [`stylevalue-subclasses/numeric-objects/cssnumericvalue-multiply-two-types.tentative.any.js`](https://wpt.fyi/results/css/css-typed-om/stylevalue-subclasses/numeric-objects/cssnumericvalue-multiply-two-types.tentative.any.js) | Pass | 21 / 21 |  |  |
 | [`stylevalue-subclasses/numeric-objects/equals.tentative.html`](https://wpt.fyi/results/css/css-typed-om/stylevalue-subclasses/numeric-objects/equals.tentative.html) | Pass | 11 / 11 |  |  |
 | [`stylevalue-subclasses/numeric-objects/numeric-factory.tentative.html`](https://wpt.fyi/results/css/css-typed-om/stylevalue-subclasses/numeric-objects/numeric-factory.tentative.html) | Pass | 34 / 34 |  |  |
 | [`stylevalue-subclasses/numeric-objects/parse.tentative.html`](https://wpt.fyi/results/css/css-typed-om/stylevalue-subclasses/numeric-objects/parse.tentative.html) | Pass | 23 / 23 |  |  |
-| [`stylevalue-subclasses/numeric-objects/to.tentative.any.js`](https://wpt.fyi/results/css/css-typed-om/stylevalue-subclasses/numeric-objects/to.tentative.any.js) | Fail | 21 / 57 | NOT IMPLEMENTED | the `CSS` namespace (the `CSS.px()`... factory functions of the CSS Typed OM) is only exposed in the windows, not in the workers |
+| [`stylevalue-subclasses/numeric-objects/to.tentative.any.js`](https://wpt.fyi/results/css/css-typed-om/stylevalue-subclasses/numeric-objects/to.tentative.any.js) | Fail | 21 / 57 | TEST BUG | the `.any.js` worker variants use the `CSS` namespace (`CSS.px()`...), which is not exposed in the workers: `namespace CSS` is `[Exposed=Window]` (https://drafts.csswg.org/cssom-1/#namespacedef-css) and the partial namespace of the numeric factory functions (https://drafts.css-houdini.org/css-typed-om-1/#numeric-factory) adds no exposure |
 | [`stylevalue-subclasses/numeric-objects/toSum.tentative.html`](https://wpt.fyi/results/css/css-typed-om/stylevalue-subclasses/numeric-objects/toSum.tentative.html) | Pass | 11 / 11 |  |  |
 | [`the-stylepropertymap/computed/computed.tentative.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/computed/computed.tentative.html) | Pass | 7 / 7 |  |  |
 | [`the-stylepropertymap/computed/getAll.tentative.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/computed/getAll.tentative.html) | Pass | 6 / 6 |  |  |

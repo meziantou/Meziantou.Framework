@@ -8,8 +8,8 @@
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 88 | 90 | 0 | 98% |
 | [Tentative](#tentative-tests) | 0 | 1 | 0 | 0% |
-| [Reftests](#reftests) | 458 | 467 | 0 | 98% |
-| **All** | **546** | **558** | **0** | **98%** |
+| [Reftests](#reftests) | 459 | 467 | 0 | 98% |
+| **All** | **547** | **558** | **0** | **98%** |
 
 ## Stable tests
 
@@ -120,7 +120,7 @@
 | [`abspos-after-spanner.html`](https://wpt.fyi/results/css/css-multicol/abspos-after-spanner.html) | Pass | 1 / 1 |  |  |
 | [`abspos-autopos-contained-by-viewport-000.html`](https://wpt.fyi/results/css/css-multicol/abspos-autopos-contained-by-viewport-000.html) | Pass | 1 / 1 |  |  |
 | [`abspos-autopos-contained-by-viewport-001.html`](https://wpt.fyi/results/css/css-multicol/abspos-autopos-contained-by-viewport-001.html) | Pass | 1 / 1 |  |  |
-| [`abspos-containing-block-outside-spanner.html`](https://wpt.fyi/results/css/css-multicol/abspos-containing-block-outside-spanner.html) | Fail | 0 / 1 | BUG | the containing block of an absolutely positioned box in a column spanner: a positioned ancestor of the spanner inside the multi-column container is used, but the spanner is laid out in the content box of the container, outside of that ancestor (the test expects the boxes in the corners of the initial containing block) |
+| [`abspos-containing-block-outside-spanner.html`](https://wpt.fyi/results/css/css-multicol/abspos-containing-block-outside-spanner.html) | Pass | 1 / 1 |  |  |
 | [`abspos-multicol-in-second-outer-clipped.html`](https://wpt.fyi/results/css/css-multicol/abspos-multicol-in-second-outer-clipped.html) | Fail | 0 / 1 | NOT IMPLEMENTED | an absolutely positioned multi-column container is monolithic in the columns of its containing block: only the in-flow nested multi-column containers are fragmented by the outer columns (its 300px of content overflow the first outer column) |
 | [`always-balancing-before-column-span.html`](https://wpt.fyi/results/css/css-multicol/always-balancing-before-column-span.html) | Pass | 1 / 1 |  |  |
 | [`ancestor-toggle-spanner-001.html`](https://wpt.fyi/results/css/css-multicol/ancestor-toggle-spanner-001.html) | Pass | 1 / 1 |  |  |

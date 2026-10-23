@@ -655,7 +655,7 @@
     "reftest": "PASS"
   },
   "css/css-page/page-size-012-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/page-size-013-print.html": {
     "reftest": "PASS"

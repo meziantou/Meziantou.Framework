@@ -4405,7 +4405,8 @@ positions are negative in `vertical-rl` and `direction: rtl`).
   perpendicular to the one of its containing block establishes an independent formatting context; its available inline space is
   the block size of the containing block, or the fallback of [§7.3](https://drafts.csswg.org/css-writing-modes-4/#orthogonal-auto)
   (see [Formatting contexts](#formatting-contexts)); its `auto` inline size is its fit-content size and its block size is the
-  size of its contents; its contributions to the intrinsic sizes of its parent are measured by laying it out
+  size of its contents (the `auto` margins of a block-level box in normal flow, in the inline axis of its containing block,
+  are resolved with that block size); its contributions to the intrinsic sizes of its parent are measured by laying it out
   (`IntrinsicSizing.GetContribution`). An `inline` box whose writing mode differs from its parent's computes to `inline-block`
   (the cascade).
 - **Text**: the shaping orientation comes from `writing-mode` and `text-orientation` (`mixed`, `upright`, `sideways`; the

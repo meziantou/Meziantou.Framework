@@ -1187,6 +1187,14 @@ internal abstract class FormattingContext
         }
 
         var size = writingDirection.ToPhysical(new LogicalSize(inlineSize, finalBlockSize));
+
+        // The auto margins of an orthogonal block-level box in normal flow, in the inline axis of its containing block (its block
+        // axis), are resolved with its block size (https://drafts.csswg.org/css2/#blockwidth)
+        if (isOrthogonal && space.FixedInlineSize is null && box.IsBlockLevel && box.IsInFlow && !space.IsInlineSizeIndefinite && !space.AutoInlineSizeIsFitContent && double.IsFinite(space.AvailableInlineSize))
+        {
+            margin = ResolveAutoInlineMargins(boxModel, containingBlock, margin, space.AvailableInlineSize, containingBlock.ToLogical(size).Inline, isAutoInlineSize: false, justification);
+        }
+
         var fragment = new BoxFragment(box, size, border, padding, margin, builder.Build(size))
         {
             FirstBaseline = result.FirstBaseline + edges.BlockStart + contentAlignmentOffset,

@@ -603,7 +603,9 @@ internal static partial class CssValueComputer
                 }
                 else if (name is "url" or "src" && ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.String } url])
                 {
-                    return Raw(CssSerializer.SerializeUrl(ResolveUrl(url.Token.Value, context)));
+                    // The computed src() keeps its function around the resolved URL (like a src() whose string is computed from string())
+                    var resolvedUrl = CssSerializer.SerializeUrl(ResolveUrl(url.Token.Value, context));
+                    return Raw(name == "src" ? "src(" + resolvedUrl + ")" : resolvedUrl);
                 }
                 else if (name is "url" or "src" && ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.String } modifiedUrl, .. var urlModifiers] && CssUrlModifiers.Canonicalize(urlModifiers) is { } modifiers)
                 {

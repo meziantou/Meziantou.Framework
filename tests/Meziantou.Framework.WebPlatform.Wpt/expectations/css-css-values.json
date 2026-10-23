@@ -165,10 +165,7 @@
     "total": 1
   },
   "css/css-values/attr-security.html": {
-    "total": 32,
-    "failures": {
-      "'background-image: src(\"https://does-not-exist.test/404.png\")' with data-foo=\"https://does-not-exist.test/404.png\"": "FAIL"
-    }
+    "total": 32
   },
   "css/css-values/attr-serialization.html": {
     "total": 1

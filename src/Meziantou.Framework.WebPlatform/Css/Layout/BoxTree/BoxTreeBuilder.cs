@@ -1388,8 +1388,8 @@ internal sealed partial class BoxTreeBuilder
         if (display.IsListItem)
         {
             // A ::before or ::after pseudo-element that is a list item has a marker (https://drafts.csswg.org/css-pseudo-4/#marker-pseudo:
-            // "::before::marker"), which cannot be styled: it inherits from the pseudo-element
-            BuildMarker(element, contents, pseudoElement, style);
+            // "::before::marker"), which inherits from the pseudo-element
+            BuildMarker(element, contents, pseudoElement);
         }
 
         AppendContent(contents, style, element, pseudoElement, content);
@@ -1409,13 +1409,13 @@ internal sealed partial class BoxTreeBuilder
     /// <param name="element">The list item, or the originating element of the pseudo-element that is a list item.</param>
     /// <param name="parent">The box of the contents of the list item.</param>
     /// <param name="originatingPseudoElement">The ::before or ::after pseudo-element that is the list item, or null for the element.</param>
-    /// <param name="originatingStyle">The style of the pseudo-element that is the list item, or null for the element.</param>
-    private void BuildMarker(Element element, ContainerBox parent, string? originatingPseudoElement = null, ComputedStyle? originatingStyle = null)
+    private void BuildMarker(Element element, ContainerBox parent, string? originatingPseudoElement = null)
     {
-        // The marker of a pseudo-element is an anonymous box of the pseudo-element (its texts are generated content of it)
+        // The marker of a pseudo-element (::before::marker, which inherits from it) is a box of the pseudo-element (its texts
+        // are generated content of it)
         var name = originatingPseudoElement ?? "marker";
-        var style = originatingStyle is null ? _engine.GetStyle(element, name) : GetAnonymousStyle(originatingStyle).GetDerivedStyle(PseudoElementMarkerStyle, 0, static (style, _) => style.WithOverrides(PseudoElementMarkerStyle));
-        var content = originatingStyle is null ? style.GetComputedValue("content") : "normal";
+        var style = _engine.GetStyle(element, originatingPseudoElement is null ? name : originatingPseudoElement + "::marker");
+        var content = style.GetComputedValue("content");
         if (content is "none")
             return;
 
@@ -1463,16 +1463,6 @@ internal sealed partial class BoxTreeBuilder
 
         FixupContainer(box);
     }
-
-    /// <summary>The declarations of the user agent style sheet for the markers (https://drafts.csswg.org/css-lists-3/#ua-stylesheet), for the marker of a pseudo-element.</summary>
-    private static readonly CssLonghandValue[] PseudoElementMarkerStyle =
-    [
-        new("unicode-bidi", "isolate"),
-        new("font-variant-numeric", "tabular-nums"),
-        new("white-space-collapse", "preserve"),
-        new("text-wrap-mode", "nowrap"),
-        new("text-transform", "none"),
-    ];
 
     /// <summary>The marker string of a list item (https://drafts.csswg.org/css-lists-3/#marker-string), or null when list-style-type is none.</summary>
     private string? GetMarkerString(Element element, ComputedStyle style, string? originatingPseudoElement = null)

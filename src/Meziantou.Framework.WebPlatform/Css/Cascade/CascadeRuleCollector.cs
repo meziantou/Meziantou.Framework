@@ -607,6 +607,14 @@ internal sealed class CascadeRuleCollector
                         break;
                     }
 
+                    // https://drafts.csswg.org/css-pseudo-4/#marker-pseudo: the ::marker of a ::before or ::after that is a list item
+                    // ("before::marker", see StyleEngine.IsMarker)
+                    if (pseudoElement is "before" or "after" && pseudo.Name == "marker")
+                    {
+                        pseudoElement += "::marker";
+                        break;
+                    }
+
                     // The pseudo-elements of the element-backed ::picker(select) (e.g. "picker::before" with the argument of the
                     // picker, see StyleEngine.SelectPickerPrefix)
                     if (pseudoElement == "picker" && pseudo.Name is "before" or "after" or "backdrop" or "first-line" or "first-letter")

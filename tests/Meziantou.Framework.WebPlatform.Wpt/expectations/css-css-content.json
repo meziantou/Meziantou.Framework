@@ -12,7 +12,7 @@
     "reftest": "PASS"
   },
   "css/css-content/attr-chained-pseudo-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-content/computed-value.html": {
     "total": 1

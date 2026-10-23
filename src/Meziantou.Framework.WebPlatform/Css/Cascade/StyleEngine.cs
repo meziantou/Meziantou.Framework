@@ -1226,6 +1226,10 @@ internal sealed partial class StyleEngine
     /// </summary>
     private ComputedStyle GetPseudoElementParentStyle(Element element, string pseudoElement)
     {
+        // The ::marker of a ::before or ::after pseudo-element inherits from it
+        if (pseudoElement is BeforeMarker or AfterMarker)
+            return GetStyle(element, pseudoElement[..^MarkerSuffix.Length]);
+
         if (Layout.ViewTransitionPseudoTree.IsViewTransitionPseudoElement(pseudoElement) && Layout.ViewTransitionPseudoTree.GetParent(_document.GetViewTransitionPseudoTree(element), pseudoElement) is { } parent)
             return GetStyle(element, parent);
 
@@ -1313,6 +1317,17 @@ internal sealed partial class StyleEngine
     /// (https://drafts.csswg.org/css-scoping/#flat-tree), that is the assigned slot of a slotted element or the shadow host
     /// of the children of a shadow root; the parent element otherwise.
     /// </summary>
+    /// <summary>The names of the <c>::before::marker</c> and <c>::after::marker</c> pseudo-elements (https://drafts.csswg.org/css-pseudo-4/#marker-pseudo).</summary>
+    internal const string BeforeMarker = "before" + MarkerSuffix;
+
+    /// <inheritdoc cref="BeforeMarker"/>
+    internal const string AfterMarker = "after" + MarkerSuffix;
+
+    private const string MarkerSuffix = "::marker";
+
+    /// <summary>Whether a pseudo-element is a <c>::marker</c>: of an element, or of its <c>::before</c> or <c>::after</c> pseudo-element.</summary>
+    internal static bool IsMarker(string? pseudoElement) => pseudoElement is "marker" or BeforeMarker or AfterMarker;
+
     /// <summary>The name of the <c>::details-content</c> pseudo-element (https://drafts.csswg.org/css-pseudo-4/#details-content-pseudo).</summary>
     internal const string DetailsContent = "details-content";
 
@@ -3310,7 +3325,7 @@ internal sealed partial class StyleEngine
     /// </summary>
     internal static Func<string, bool>? GetPseudoElementPropertyFilter(string? pseudoElement) => pseudoElement switch
     {
-        "marker" => IsMarkerProperty,
+        "marker" or BeforeMarker or AfterMarker => IsMarkerProperty,
         "first-line" or DetailsContentPrefix + "first-line" or SelectPickerPrefix + "first-line" => IsFirstLineProperty,
         "first-letter" or DetailsContentPrefix + "first-letter" or SelectPickerPrefix + "first-letter" => IsFirstLetterProperty,
         _ => null,

@@ -537,7 +537,7 @@
     "reftest": "PASS"
   },
   "css/css-lists/nested-marker-styling.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/nested-marker.html": {
     "reftest": "PASS"

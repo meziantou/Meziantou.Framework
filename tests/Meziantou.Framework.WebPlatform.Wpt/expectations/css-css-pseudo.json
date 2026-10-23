@@ -718,7 +718,7 @@
     "reftest": "PASS"
   },
   "css/css-pseudo/marker-font-variant-numeric-normal.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-pseudo/marker-hit-testing.html": {
     "total": 20

@@ -259,6 +259,18 @@ public sealed class BoxTreeTests : IDisposable
         """);
 
     [Fact]
+    public void ListItems_MarkerOfAPseudoElementIsStyled() => AssertBody("<style>div::before { content: 'a'; display: list-item; list-style-position: inside } div::before::marker { content: 'm' }</style><div id=d>b</div>", """
+        block <body> block-children
+          block <div#d> block-children
+            block list-item <div#d>::before inline-children
+              inline <div#d>::before
+                generated-text "m"
+              generated-text "a"
+            block anonymous inline-children
+              text "b"
+        """);
+
+    [Fact]
     public void Counters_PseudoElementWithoutBoxDoesNotChangeTheCounters() => AssertBody("<style>#d::before { content: 'x'; display: none; counter-increment: c 10 } p::before { content: counter(c) }</style><div id=d><p></p></div>", """
         block <body> block-children
           block <div#d> block-children

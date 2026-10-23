@@ -1408,7 +1408,7 @@ internal static partial class CssValueComputer
 
         // https://drafts.csswg.org/css-lists-3/#list-style-position-property: an inside marker is an inline box, an outside
         // marker is a block container (display does not apply to ::marker)
-        if (style.PseudoElement == "marker")
+        if (StyleEngine.IsMarker(style.PseudoElement))
             return style.GetComputedValue("list-style-position") == "outside" ? "inline-block" : "inline";
 
         // https://drafts.csswg.org/css-position-4/#top-styling: "If its specified display property is contents, it computes to block"

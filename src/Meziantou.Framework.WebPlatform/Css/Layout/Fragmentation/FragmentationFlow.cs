@@ -2248,7 +2248,7 @@ internal sealed class FragmentationFlow
         {
             // https://drafts.csswg.org/css-break-3/#break-margins: "When a forced break occurs there, adjoining margins before the break
             // are truncated, but margins after the break are preserved"
-            var marginStart = next is BoxFragment nextBox ? Math.Max(0, nextBox.Margin.Get(_writingDirection.BlockStart)) : 0;
+            var marginStart = next is BoxFragment nextBox ? GetCollapsedBlockStartMargin(nextBox) : 0;
             AddCandidate(new BreakCandidate(Math.Max(previousBottom, nextTop - marginStart), previousBottom, BreakAppeal.Forced), context);
             return;
         }
@@ -2258,6 +2258,45 @@ internal sealed class FragmentationFlow
             + (next is BoxFragment followingBox ? Math.Max(0, followingBox.Margin.Get(_writingDirection.BlockStart)) : 0);
         var avoid = context.Avoid || IsAvoidBreak(after) || IsAvoidBreak(before);
         AddCandidate(new BreakCandidate(nextTop, previousBottom, avoid ? BreakAppeal.Avoid : BreakAppeal.Perfect) { IsBetweenMargins = nextTop - previousBottom <= margins + Epsilon }, context);
+    }
+
+    /// <summary>
+    /// Returns the positive block-start margin of a box after a forced break, collapsed with the block-start margins of its first
+    /// in-flow descendants that collapse through its block-start edge (https://drafts.csswg.org/css2/#collapsing-margins): the
+    /// margin of a first child that is at the block-start edge of its parent (without border nor padding) collapsed with it.
+    /// </summary>
+    private double GetCollapsedBlockStartMargin(BoxFragment box)
+    {
+        var side = _writingDirection.BlockStart;
+        var margin = Math.Max(0, box.Margin.Get(side));
+        while (box.Border.Get(side) + box.Padding.Get(side) <= Epsilon && GetFirstInFlowChild(box) is BoxFragment child
+            && GetBlockStartOffset(box, child) <= Epsilon)
+        {
+            margin = Math.Max(margin, child.Margin.Get(side));
+            box = child;
+        }
+
+        return margin;
+
+        static Fragment? GetFirstInFlowChild(BoxFragment box)
+        {
+            var children = box.ChildrenSpan;
+            for (var i = 0; i < box.InFlowChildCount && i < children.Length; i++)
+            {
+                if (children[i] is not BoxFragment { Box.Style.Layout.IsOutOfFlow: true })
+                    return children[i];
+            }
+
+            return null;
+        }
+
+        double GetBlockStartOffset(BoxFragment parent, Fragment child) => side switch
+        {
+            PhysicalSide.Top => child.Offset.Y,
+            PhysicalSide.Left => child.Offset.X,
+            PhysicalSide.Right => parent.Size.Width - child.Offset.X - child.Size.Width,
+            _ => parent.Size.Height - child.Offset.Y - child.Size.Height,
+        };
     }
 
     /// <summary>

@@ -1155,7 +1155,14 @@ internal sealed class BoxFragment : Fragment
                         boxInk = LayoutTransforms.TransformRect(boxInk, matrix);
                     }
 
-                    scrollable = Unite(scrollable, boxScrollable.Translate(offset));
+                    // "Border boxes with zero area do not affect the scrollable overflow area": as in the browsers, this applies to
+                    // the positioned boxes, without contents that overflow them (the position of the other boxes contributes,
+                    // see Unite)
+                    if (boxScrollable != box.BorderBoxRect || (box.Size.Width > 0 && box.Size.Height > 0) || !box.Box.Style.Layout.IsPositioned)
+                    {
+                        scrollable = Unite(scrollable, boxScrollable.Translate(offset));
+                    }
+
                     ink = ink.Union(boxInk.Translate(offset));
                     break;
 

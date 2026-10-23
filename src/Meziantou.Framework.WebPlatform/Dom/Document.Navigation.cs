@@ -271,6 +271,11 @@ public partial class Document
         {
             foreach (var child in children.ToArray())
             {
+                if (abortFetches)
+                {
+                    child.CancelNavigationFetchedBy(this);
+                }
+
                 child.Document.AbortDocumentAndDescendants(abortFetches);
             }
         }
@@ -284,7 +289,7 @@ public partial class Document
         if (ActiveParser is { } parser)
         {
             ActiveParserWasAborted = true;
-            parser.Abort();
+            parser.Abort(updateReadiness: true);
         }
     }
 
@@ -574,6 +579,10 @@ public partial class Document
 
             PendingTextDirectives = null;
         });
+
+        // As in the browsers, the load event is queued once the parsing is finished: the specification spins the event loop
+        // first (https://html.spec.whatwg.org/multipage/parsing.html#the-end, steps 7 to 9), which lets the tasks that other
+        // documents queue meanwhile (e.g. a message) run before it
         _parsingFinished = true;
         TryQueueLoadEvent();
     }
@@ -711,6 +720,9 @@ public partial class Document
             if (BrowsingContext is null || RelevantWindow is not { } window)
                 return;
 
+            // The navigable is navigating away from the document (e.g. a form submitted while it was parsed), not by a navigation
+            // started by the load event handlers
+            var isNavigatingAway = BrowsingContext is { IsCrossDocumentNavigationOngoing: true };
             FireSvgLoadEvents();
             var marked = MarkLoadEventStart();
             window.FireLegacyTargetOverrideEvent(new Event("load"));
@@ -739,7 +751,7 @@ public partial class Document
 
             // https://html.spec.whatwg.org/multipage/nav-history-apis.html#fire-a-page-transition-event
             window.FireLegacyTargetOverrideEvent(new PageTransitionEvent("pageshow", new PageTransitionEventInit { Persisted = false, Bubbles = true, Cancelable = true }));
-            CompletelyFinishLoading(isContainerLoadEventFired);
+            CompletelyFinishLoading(isContainerLoadEventFired, isNavigatingAway);
         });
     }
 
@@ -777,7 +789,7 @@ public partial class Document
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/document-lifecycle.html#completely-finish-loading</summary>
-    private void CompletelyFinishLoading(bool isContainerLoadEventFired)
+    private void CompletelyFinishLoading(bool isContainerLoadEventFired, bool isNavigatingAway)
     {
         CompletelyLoaded = true;
 
@@ -802,12 +814,38 @@ public partial class Document
         {
             if (!isContainerLoadEventFired)
             {
-                FireContainerLoadEvent();
+                // As in the browsers, the container does not get the load event of a document that its navigable is navigating
+                // away from (e.g. a form submitted while the document was parsed replaces it before its load event). The event
+                // is fired if the navigation ends without replacing the document.
+                if (isNavigatingAway && BrowsingContext is { IsCrossDocumentNavigationOngoing: true })
+                {
+                    IsContainerLoadEventPending = true;
+                }
+                else
+                {
+                    FireContainerLoadEvent();
+                }
             }
 
             ReadyForPostLoadTasks = true;
             container.NodeDocument.TryQueueLoadEvent();
         });
+    }
+
+    /// <summary>
+    /// Whether the load event of the container was not fired because the navigable was navigating away from the document
+    /// (see <see cref="FireSuppressedContainerLoadEvent"/>).
+    /// </summary>
+    private bool IsContainerLoadEventPending { get; set; }
+
+    /// <summary>Fires the load event of the container that was not fired while the navigable was navigating away from the document.</summary>
+    internal void FireSuppressedContainerLoadEvent()
+    {
+        if (!IsContainerLoadEventPending || BrowsingContext?.Container is not { } container)
+            return;
+
+        IsContainerLoadEventPending = false;
+        container.NodeDocument.QueueGlobalTask(FireContainerLoadEvent);
     }
 
     /// <summary>Fires the load event of the navigable container of the document (the iframe load event steps).</summary>

@@ -185,9 +185,8 @@ public partial class HtmlElement
     /// an exception, in which case <paramref name="exception"/> is the exception.
     /// </summary>
     /// <param name="forceHide">
-    /// Whether the popover attribute and connection checks are skipped. The removing steps run once the element is
-    /// disconnected, and the attribute change steps run once the popover attribute is removed: as in browsers, they hide the
-    /// popover, which the checks would otherwise prevent.
+    /// Whether the popover attribute check is skipped. The attribute change steps run once the popover attribute is removed:
+    /// as in browsers, they hide the popover, which the check would otherwise prevent.
     /// </param>
     internal bool CheckPopoverValidity(bool expectedToBeShowing, Document? expectedDocument, bool forceHide, out DomException? exception)
     {
@@ -201,7 +200,8 @@ public partial class HtmlElement
         if (IsPopoverShowing != expectedToBeShowing)
             return false;
 
-        if (!forceHide && (!IsConnected || !NodeDocument.IsFullyActive))
+        // A showing popover can be hidden once it is disconnected or its document is no longer fully active
+        if (!expectedToBeShowing && (!IsConnected || !NodeDocument.IsFullyActive))
         {
             exception = DomException.InvalidState("The popover is not connected to a fully active document");
             return false;
@@ -395,7 +395,7 @@ public partial class HtmlElement
                     document.HidePopoverStackUntil(this, PopoverState.Auto, focusPreviousElement, fireEvents);
                 }
 
-                if (!CheckPopoverValidity(expectedToBeShowing: true, expectedDocument: null, forceHide, out exception))
+                if (!CheckPopoverValidity(expectedToBeShowing: true, document, forceHide, out exception))
                 {
                     if (throwExceptions && exception is not null)
                         throw exception;
@@ -407,7 +407,7 @@ public partial class HtmlElement
             if (fireEvents)
             {
                 FireEvent(new ToggleEvent("beforetoggle", new ToggleEventInit { OldState = "open", NewState = "closed", Source = source }));
-                if (!CheckPopoverValidity(expectedToBeShowing: true, expectedDocument: null, forceHide, out exception))
+                if (!CheckPopoverValidity(expectedToBeShowing: true, document, forceHide, out exception))
                 {
                     if (throwExceptions && exception is not null)
                         throw exception;
@@ -420,6 +420,7 @@ public partial class HtmlElement
             data.Trigger = null;
             data.OpenedInPopoverMode = PopoverState.None;
             data.IsShowing = false;
+
             NodeDocument.IncrementElementStateVersion();
             if (ReferenceEquals(this, document.HintStackParent) || document.GetShowingPopoverList(PopoverState.Hint).Count == 0)
             {
@@ -447,7 +448,8 @@ public partial class HtmlElement
                 data.Hiding = false;
             }
 
-            if (data.CloseWatcher is { } closeWatcher)
+            // A popover that an event handler showed again (e.g. in another document) keeps the close watcher of that show
+            if (!data.IsShowing && data.CloseWatcher is { } closeWatcher)
             {
                 closeWatcher.Destroy();
                 data.CloseWatcher = null;

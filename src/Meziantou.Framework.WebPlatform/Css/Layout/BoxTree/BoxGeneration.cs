@@ -15,7 +15,7 @@ internal enum BoxGenerationKind : byte
 
     /// <summary>
     /// The element is in the contents of a replaced element or of a form control rendered as an atomic box (e.g. the
-    /// fallback content of a <c>video</c>, the options of a <c>select</c>), or it is a <c>::before</c>/<c>::after</c>/<c>::marker</c>
+    /// options of a <c>select</c>), or it is a <c>::before</c>/<c>::after</c>/<c>::marker</c>
     /// of such an element: it does not generate boxes (see <see cref="BoxGenerationInfo.ReplacedAncestor"/>).
     /// </summary>
     ReplacedContents,

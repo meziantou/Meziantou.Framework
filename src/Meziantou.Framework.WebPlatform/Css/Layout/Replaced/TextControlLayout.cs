@@ -38,13 +38,14 @@ internal static class TextControlLayout
 
     /// <summary>
     /// Returns the text of the inner editor of a text control: its API value (the line breaks of a <c>textarea</c> are line
-    /// feeds), a bullet for each code unit of the value of a password field.
+    /// feeds; the input of the user when the value sanitization changed it, for number and email fields), a bullet for each
+    /// code unit of the value of a password field.
     /// </summary>
     public static string GetValue(Element element) => element switch
     {
         HtmlTextAreaElement textArea => textArea.Value,
         HtmlInputElement { InputType: InputType.Password } password => new string((char)0x2022, password.Value.Length),
-        HtmlInputElement input => input.Value,
+        HtmlInputElement input => input.VisibleValue,
         _ => "",
     };
 

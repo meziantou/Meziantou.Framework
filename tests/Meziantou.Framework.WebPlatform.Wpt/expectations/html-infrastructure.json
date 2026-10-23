@@ -192,11 +192,7 @@
     "total": 3
   },
   "html/infrastructure/urls/base-url/document-base-url-window-initiator-is-not-opener.https.window.js": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "window.open() gets base url from initiator not opener.": "TIMEOUT"
-    }
+    "total": 1
   },
   "html/infrastructure/urls/base-url/document-base-url-window-open-about-blank.https.window.js": {
     "total": 1

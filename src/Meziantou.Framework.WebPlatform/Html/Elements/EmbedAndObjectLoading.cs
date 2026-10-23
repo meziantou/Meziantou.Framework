@@ -109,7 +109,7 @@ internal static class EmbeddedResources
 
     /// <summary>
     /// The computed MIME type of a resource without a Content-Type (https://mimesniff.spec.whatwg.org/#rules-for-sniffing-the-mime-type):
-    /// an HTML document, an image (e.g. <c>image/png</c>), or else text or binary.
+    /// an HTML or XML document, an image (e.g. <c>image/png</c>), or else text or binary.
     /// </summary>
     public static string SniffType(ReadOnlySpan<byte> bytes)
     {
@@ -128,6 +128,10 @@ internal static class EmbeddedResources
 
         if (text.StartsWith("<!--"u8))
             return "text/html";
+
+        // https://mimesniff.spec.whatwg.org/#rules-for-identifying-an-unknown-mime-type: the XML signature
+        if (text.StartsWith("<?xml"u8))
+            return "text/xml";
 
         if (ImageHeaders.TryGetImageInfo(bytes, "", out _))
             return "image/*";
@@ -430,6 +434,9 @@ public partial class HtmlObjectElement
     private int _updateGeneration;
     private Document? _delayedDocument;
 
+    // Whether the element represents its fallback content because it was not being rendered
+    private bool _isFallbackWhileNotRendered;
+
     /// <summary>https://html.spec.whatwg.org/multipage/document-sequences.html#content-navigable</summary>
     internal BrowsingContext? ContentNavigable { get; set; }
 
@@ -496,6 +503,20 @@ public partial class HtmlObjectElement
         }
     }
 
+    /// <summary>
+    /// Determines again what the element represents when it represents its fallback content because it was not being rendered,
+    /// and it is now ("whenever [...] the element changes from being rendered to not being rendered, or vice versa"): the
+    /// styles of the printing render it (see <see cref="Document.UpdatePrintResources"/>).
+    /// </summary>
+    internal void UpdateIfRendered()
+    {
+        if (_isFallbackWhileNotRendered && ComputedStyleDeclarations.IsBeingRendered(this))
+        {
+            _isFallbackWhileNotRendered = false;
+            QueueUpdate();
+        }
+    }
+
     /// <summary>Called when the element is popped off the stack of open elements of an HTML or XML parser.</summary>
     internal void OnPoppedOffStackOfOpenElements()
     {
@@ -527,6 +548,7 @@ public partial class HtmlObjectElement
     private void DetermineWhatTheElementRepresents(int generation)
     {
         var document = NodeDocument;
+        _isFallbackWhileNotRendered = false;
 
         // The element is determined once it is popped off the stack of open elements (the specification shows the fallback
         // content until then, which would load the nested elements)
@@ -540,6 +562,7 @@ public partial class HtmlObjectElement
             || document.BrowsingContext is null || !document.IsFullyActive || !ComputedStyleDeclarations.IsBeingRendered(this))
         {
             Fallback();
+            _isFallbackWhileNotRendered = IsConnected && document.BrowsingContext is not null && !ComputedStyleDeclarations.IsBeingRendered(this);
             return;
         }
 

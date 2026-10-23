@@ -988,8 +988,8 @@ public sealed class BrowsingContextTests
 
     [Theory]
     [InlineData(null, "text/html")]
-    [InlineData("invalid", "text/html")]
-    [InlineData("*/*", "text/html")]
+    [InlineData("invalid", "text/plain")]
+    [InlineData("*/*", "text/plain")]
     [InlineData("TEXT/XML", "text/xml")]
     [InlineData("application/xhtml+xml; charset=utf-8", "application/xhtml+xml")]
     [InlineData("text/plain, application/xml", "application/xml")]
@@ -999,6 +999,18 @@ public sealed class BrowsingContextTests
         using var context = new BrowsingContext();
         var document = context.Navigate("https://example.com/", _ => new DocumentResource("<root/>") { Headers = contentType is null ? [] : [new("content-type", contentType)] });
         Assert.Equal(expected, document.ContentType);
+    }
+
+    [Theory]
+    [InlineData("invalid")]
+    [InlineData("*/*")]
+    public void Navigate_DocumentResource_ContentTypeWithoutMimeType_SniffsHtml(string contentType)
+    {
+        // https://mimesniff.spec.whatwg.org/#rules-for-identifying-an-unknown-mime-type: a Content-Type that gives no MIME type is sniffed
+        using var context = new BrowsingContext();
+        var document = context.Navigate("https://example.com/", _ => new DocumentResource("  <!DOCTYPE html><p>sniffed</p>") { Headers = [new("content-type", contentType)] });
+        Assert.Equal("text/html", document.ContentType);
+        Assert.Equal("sniffed", document.QuerySelector("p")!.TextContent);
     }
 
     [Fact]

@@ -18,7 +18,7 @@ internal interface IEditableTextControl
     /// <summary>Whether the value is obscured (the Password state): its text cannot be cut nor copied.</summary>
     bool IsPassword { get; }
 
-    /// <summary>The API value of the control.</summary>
+    /// <summary>The text shown in the control: its API value, or the input of the user that the value sanitization changed (number and email).</summary>
     string EditValue { get; }
 
     /// <summary>The start of the selection in the API value (the caret of the types whose selection is not exposed, e.g. email).</summary>
@@ -33,7 +33,7 @@ internal interface IEditableTextControl
 
     /// <summary>
     /// Sets the value and the selection as an edit of the user: the dirty value flag is set, and the selection is not reset.
-    /// Returns the value after the value sanitization algorithm.
+    /// Returns the text shown in the control after the edit.
     /// </summary>
     string ApplyUserEdit(string value, int selectionStart, int selectionEnd, string direction);
 

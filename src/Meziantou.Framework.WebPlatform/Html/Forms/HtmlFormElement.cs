@@ -634,8 +634,8 @@ public partial class HtmlFormElement
                 _plannedNavigations.Remove(plannedNavigation);
 
                 // As in browsers, a navigation of the target navigable that started after the submission (e.g. a location
-                // navigation) takes precedence
-                if (targetNavigable.OngoingNavigationId > lastNavigationId)
+                // navigation) takes precedence, except a javascript: URL navigation, which the form navigation cancels
+                if (targetNavigable.OngoingNavigationId > lastNavigationId && !targetNavigable.IsJavaScriptUrlNavigationOngoing)
                     return;
 
                 targetNavigable.Navigate(url, formDocument, historyHandling, referrerPolicy: referrerPolicy, postResource: postResource, userInvolvement: userInvolvement, sourceElement: submitter, formData: formData);
@@ -854,7 +854,7 @@ public partial class HtmlFormElement
                         break;
 
                     case HtmlTextAreaElement textArea:
-                        entries.Add(FormData.CreateEntry(name, textArea.Value));
+                        entries.Add(FormData.CreateEntry(name, textArea.WrappedValue));
                         break;
 
                     case HtmlButtonElement button:

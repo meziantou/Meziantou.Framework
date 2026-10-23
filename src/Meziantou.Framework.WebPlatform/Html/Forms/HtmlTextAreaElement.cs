@@ -1,4 +1,6 @@
+using System.Text;
 using Meziantou.Framework.WebPlatform.Html;
+using Meziantou.Framework.WebPlatform.Infra;
 
 namespace Meziantou.Framework.WebPlatform.Dom;
 
@@ -7,6 +9,9 @@ public partial class HtmlTextAreaElement : IEditableTextControl
 {
     // The raw value; null when the dirty value flag is false (the raw value is then the child text content)
     private string? _rawValue;
+
+    // Whether the raw value was last changed by a user edit, as opposed to a change made by a script (tooLong and tooShort only apply to these values)
+    private bool _valueEditedByUser;
     private int _selectionStart;
     private int _selectionEnd;
     private string _selectionDirection = "none";
@@ -18,6 +23,52 @@ public partial class HtmlTextAreaElement : IEditableTextControl
     private string ApiValue => NormalizeNewlines(RawValue);
 
     private static string NormalizeNewlines(string value) => value.Contains('\r', StringComparison.Ordinal) ? value.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n') : value;
+
+    /// <summary>The value of the element: the API value with the textarea wrapping transformation applied.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#textarea-wrapping-transformation"/>
+    internal string WrappedValue
+    {
+        get
+        {
+            var value = ApiValue;
+            if (GetAttributeValue("wrap") is not { } wrap || !InfraAscii.EqualsIgnoreAsciiCase(wrap, "hard"))
+                return value;
+
+            var width = (int)Math.Min(Cols, int.MaxValue);
+            var result = new StringBuilder(value.Length + (value.Length / width));
+            var lineStart = 0;
+            while (lineStart <= value.Length)
+            {
+                var lineEnd = value.AsSpan(lineStart).IndexOf('\n');
+                lineEnd = lineEnd < 0 ? value.Length : lineStart + lineEnd;
+
+                // Break the lines longer than the character width after their last space that fits, or at the character width
+                var start = lineStart;
+                while (lineEnd - start > width)
+                {
+                    var breakIndex = value.AsSpan(start, width).LastIndexOf(' ');
+                    var length = breakIndex >= 0 ? breakIndex + 1 : width;
+                    if (breakIndex < 0 && char.IsSurrogatePair(value[start + length - 1], value[start + length]))
+                    {
+                        length = length > 1 ? length - 1 : 2;
+                    }
+
+                    result.Append(value, start, length).Append('\n');
+                    start += length;
+                }
+
+                result.Append(value, start, lineEnd - start);
+                if (lineEnd < value.Length)
+                {
+                    result.Append('\n');
+                }
+
+                lineStart = lineEnd + 1;
+            }
+
+            return result.ToString();
+        }
+    }
 
     /// <summary>Gets the type of the control, always <c>textarea</c>.</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-type"/>
@@ -43,6 +94,7 @@ public partial class HtmlTextAreaElement : IEditableTextControl
         {
             var oldApiValue = ApiValue;
             _rawValue = value ?? "";
+            _valueEditedByUser = false;
             NodeDocument.IncrementElementStateVersion();
             TextControlEditing.ClearHistory(this);
             if (ApiValue != oldApiValue)
@@ -63,6 +115,7 @@ public partial class HtmlTextAreaElement : IEditableTextControl
     {
         UserValidity = false;
         _rawValue = null;
+        _valueEditedByUser = false;
         TextControlEditing.ClearHistory(this);
         NodeDocument.IncrementElementStateVersion();
         _selectionStart = _selectionEnd = 0;
@@ -95,7 +148,9 @@ public partial class HtmlTextAreaElement : IEditableTextControl
     internal override void CloningSteps(Node copy, bool subtree)
     {
         base.CloningSteps(copy, subtree);
-        ((HtmlTextAreaElement)copy)._rawValue = _rawValue;
+        var textArea = (HtmlTextAreaElement)copy;
+        textArea._rawValue = _rawValue;
+        textArea._valueEditedByUser = _valueEditedByUser;
     }
 
     internal bool IsMutable => !Css.Selectors.HtmlElementStates.IsActuallyDisabled(this) && !HasAttributeWithLocalName("readonly");
@@ -104,11 +159,26 @@ public partial class HtmlTextAreaElement : IEditableTextControl
 
     private protected override ValidityFlags ComputeValidity()
     {
-        // tooLong and tooShort only apply to values edited by the user
-        if (HasAttributeWithLocalName("required") && IsMutable && ApiValue.Length == 0)
+        var length = ApiValue.Length;
+        if (HasAttributeWithLocalName("required") && IsMutable && length == 0)
             return ValidityFlags.ValueMissing;
 
-        return ValidityFlags.None;
+        // tooLong and tooShort (https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#suffering-from-being-too-long)
+        var flags = ValidityFlags.None;
+        if (_rawValue is not null && _valueEditedByUser && length != 0)
+        {
+            if (GetAttributeValue("maxlength") is { } maxLength && Microsyntaxes.TryParseNonNegativeInteger(maxLength, out var maximum) && length > maximum)
+            {
+                flags |= ValidityFlags.TooLong;
+            }
+
+            if (GetAttributeValue("minlength") is { } minLength && Microsyntaxes.TryParseNonNegativeInteger(minLength, out var minimum) && length < minimum)
+            {
+                flags |= ValidityFlags.TooShort;
+            }
+        }
+
+        return flags;
     }
 
     bool IEditableTextControl.IsTextEditor => true;
@@ -132,6 +202,7 @@ public partial class HtmlTextAreaElement : IEditableTextControl
     string IEditableTextControl.ApplyUserEdit(string value, int selectionStart, int selectionEnd, string direction)
     {
         _rawValue = value;
+        _valueEditedByUser = true;
         NodeDocument.IncrementElementStateVersion();
         var length = ApiValue.Length;
         TextControlSelection.SetUserSelection(Selection, Math.Min(selectionStart, length), Math.Min(selectionEnd, length), direction);
@@ -202,6 +273,7 @@ public partial class HtmlTextAreaElement : IEditableTextControl
             set
             {
                 textArea._rawValue = value;
+                textArea._valueEditedByUser = false;
                 textArea.NodeDocument.IncrementElementStateVersion();
                 TextControlEditing.ClearHistory(textArea);
             }

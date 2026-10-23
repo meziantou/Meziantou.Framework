@@ -51,6 +51,16 @@ public partial class Document
             return;
 
         CssImageFetching.FetchUsedImages(this, _fetchedCssImages ??= []);
+
+        // https://html.spec.whatwg.org/multipage/iframe-embed-object.html#the-object-element: the object elements that only the
+        // styles of the printing render load their resource (the tasks of the event loop run before the pages are painted)
+        foreach (var node in Descendants())
+        {
+            if (node is HtmlObjectElement obj)
+            {
+                obj.UpdateIfRendered();
+            }
+        }
         if (_fonts is not null || ReadyState == DocumentReadyState.Complete)
         {
             Fonts.OnRenderingUpdate();

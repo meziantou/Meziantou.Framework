@@ -33,7 +33,7 @@ internal sealed partial class LayoutEngine
             return _displayList;
 
         if (EnsureLayout() is null)
-            return null;
+            return GetEmptyCanvasDisplayList();
 
         // The painting reads the styles and the fragments of the layout it paints: a change of a version (e.g. the version of
         // the style sheets of the document) in the middle of the painting would start a new generation of styles, and the parts of the
@@ -42,7 +42,7 @@ internal sealed partial class LayoutEngine
         // up to date with the generation of styles that is painted (the steps that follow a layout may have started a new one)
         using var suspension = _document.GetStyleEngine().SuspendUpdates();
         if (EnsureLayout() is not { } root)
-            return null;
+            return GetEmptyCanvasDisplayList();
 
         // A change of the DOM that changes neither the styles nor the layout can change the painting (e.g. an attribute of a filter
         // primitive or of the content of a mask element, which have no box)
@@ -162,6 +162,27 @@ internal sealed partial class LayoutEngine
     /// (https://drafts.csswg.org/css-color-adjust-1/#color-scheme-effect: "the embedded document's canvas [...] must be opaque", so
     /// a dark document is readable in a light page; as in the browsers, the initial about:blank document stays transparent).
     /// </summary>
+    /// <summary>
+    /// Returns the display list of the viewport of a document of a browsing context that has no document element: the viewport
+    /// only shows the canvas, which has no background (https://drafts.csswg.org/css-backgrounds-3/#special-backgrounds), or null
+    /// when the document is not rendered.
+    /// </summary>
+    private DisplayList? GetEmptyCanvasDisplayList()
+    {
+        if (_document.DocumentElement is not null || _document.BrowsingContext is null || !_document.IsFullyActive)
+            return null;
+
+        var builder = new DisplayListBuilder();
+        var baseColor = GetCanvasBaseColor();
+        if (!baseColor.IsTransparent)
+        {
+            builder.Add(new DrawPaintItem(new DisplayPaint(baseColor)));
+        }
+
+        var environment = _document.GetStyleEngine().Environment;
+        return builder.ToDisplayList(new PhysicalSize(environment.Width, environment.Height));
+    }
+
     internal DisplayColor GetCanvasBaseColor()
     {
         if (_document.BrowsingContext is { Parent: null })

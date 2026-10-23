@@ -129,6 +129,17 @@ internal sealed partial class Painter
         if (_appliedDecorations.TryGetValue(parent, out var cached))
             return cached;
 
+        var result = CollectAppliedDecorations(parent);
+        _appliedDecorations[parent] = result;
+        return result;
+    }
+
+    /// <summary>
+    /// Returns the decorations applied to the contents of a box: its decorations and the ones of its ancestors that propagate to
+    /// it (see <see cref="GetAppliedDecorations(TextFragment)"/>), the outermost first.
+    /// </summary>
+    private List<AppliedDecoration>? CollectAppliedDecorations(ContainerBox parent)
+    {
         List<AppliedDecoration>? result = null;
         var quirks = _document.Mode == DocumentMode.Quirks;
         for (var box = parent; box is not null && box.Kind != ContainerBoxKind.Viewport; box = box.SplitInlineParent ?? box.Parent)
@@ -147,7 +158,7 @@ internal sealed partial class Painter
                 }
             }
 
-            if (box.IsAtomicInline || box.IsOutOfFlow || box.Style.Layout.IsFloating || box.IsBlockLevel && box.Kind == ContainerBoxKind.Replaced)
+            if (StopsDecorationPropagation(box))
                 break;
 
             // https://drafts.csswg.org/css-text-decor-3/#line-decoration: "When specified on or propagated to a ruby container, text
@@ -158,8 +169,21 @@ internal sealed partial class Painter
 
         // The outermost decorations are painted first
         result?.Reverse();
-        _appliedDecorations[parent] = result;
         return result;
+    }
+
+    /// <summary>
+    /// Returns whether the decorations of the ancestors of a box do not propagate into it: an atomic inline, a float, an
+    /// out-of-flow box or a block-level replaced box. As in the browsers, a button whose computed <c>display</c> is <c>inline</c>
+    /// is not an atomic inline for the propagation, although it is laid out as an inline-block
+    /// (https://html.spec.whatwg.org/multipage/rendering.html#button-layout).
+    /// </summary>
+    private static bool StopsDecorationPropagation(ContainerBox box)
+    {
+        if (box.IsAtomicInline)
+            return !(box.PseudoElement is null && box.Element is HtmlButtonElement or HtmlInputElement { InputType: InputType.Button or InputType.Submit or InputType.Reset } && box.Style.Layout.Display == Display.Inline);
+
+        return box.IsOutOfFlow || box.Style.Layout.IsFloating || (box.IsBlockLevel && box.Kind == ContainerBoxKind.Replaced);
     }
 
     /// <summary>Returns the lines of <c>text-decoration-line</c>.</summary>
@@ -304,6 +328,47 @@ internal sealed partial class Painter
                     ? -(fontUnits.StrikeoutPosition * metrics.Scale) + (fontUnits.StrikeoutThickness * metrics.Scale / 2)
                     : -metrics.XHeight / 2;
                 PaintDecorationLine(line, center - (thickness / 2), thickness, decoration.Style, decorationPaint, outwards: 1, source, skippedSpaces);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Paints the decoration lines of a line of text of a control that is not laid out in an inline formatting context (the label
+    /// of a button, see <see cref="PaintControlText"/>): the lines at the positions of the font of the control (the underline at
+    /// its underline position, without <c>text-underline-position</c> nor <c>text-underline-offset</c>), along the text.
+    /// </summary>
+    private void PaintControlDecorations(Element element, ComputedStyle style, in TextLine line, List<AppliedDecoration>? decorations, TextDecorationLines lines)
+    {
+        if (decorations is null || line.InlineEnd <= line.InlineStart)
+            return;
+
+        var metrics = line.Metrics;
+        var fontUnits = metrics.FontUnitMetrics;
+        foreach (var decoration in decorations)
+        {
+            var applied = decoration.Lines & lines;
+            if (applied == TextDecorationLines.None || decoration.Color.IsTransparent)
+                continue;
+
+            var paint = new DisplayPaint(decoration.Color);
+            var thickness = GetDecorationThickness(decoration.DecoratingStyle, metrics, line.FontSize, style.UsedFontScale);
+            if ((applied & TextDecorationLines.Underline) != TextDecorationLines.None)
+            {
+                var top = fontUnits.UnderlinePosition != 0 ? -fontUnits.UnderlinePosition * metrics.Scale : Math.Max(1, Math.Ceiling(thickness / 2));
+                PaintDecorationLine(line, top, thickness, decoration.Style, paint, outwards: 1, element);
+            }
+
+            if ((applied & TextDecorationLines.Overline) != TextDecorationLines.None)
+            {
+                PaintDecorationLine(line, -metrics.Ascent - thickness, thickness, decoration.Style, paint, outwards: -1, element);
+            }
+
+            if ((applied & TextDecorationLines.LineThrough) != TextDecorationLines.None)
+            {
+                var center = fontUnits.StrikeoutPosition != 0
+                    ? -(fontUnits.StrikeoutPosition * metrics.Scale) + (fontUnits.StrikeoutThickness * metrics.Scale / 2)
+                    : -metrics.XHeight / 2;
+                PaintDecorationLine(line, center - (thickness / 2), thickness, decoration.Style, paint, outwards: 1, element);
             }
         }
     }
@@ -624,7 +689,7 @@ internal sealed partial class Painter
             }
 
             // The decorations do not propagate to the atomic inlines, to the floats and to the out-of-flow boxes
-            if (!isRoot && parent is BoxFragment { Box: { } box } && (box.IsAtomicInline || box.IsOutOfFlow || box.Style.Layout.IsFloating || (box.IsBlockLevel && box.Kind == ContainerBoxKind.Replaced)))
+            if (!isRoot && parent is BoxFragment { Box: { } box } && StopsDecorationPropagation(box))
                 return;
 
             foreach (var child in parent.ChildrenSpan)

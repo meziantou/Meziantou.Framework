@@ -186,6 +186,46 @@ internal static partial class CssPropertyRules
         }
     }
 
+    /// <summary>
+    /// https://drafts.csswg.org/css-anchor-position-1/#position-try-fallbacks: the &lt;position-area&gt; entries compute as the
+    /// position-area property (e.g. self-block-start span-self-inline-end is self-start span-self-end).
+    /// </summary>
+    internal static string ComputePositionTryFallbacks(string value)
+    {
+        if (value == "none")
+            return value;
+
+        var entries = value.Split(',', StringSplitOptions.TrimEntries);
+        var changed = false;
+        for (var i = 0; i < entries.Length; i++)
+        {
+            var keywords = entries[i].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (keywords.Length is 0 or > 2 || Array.Exists(keywords, static keyword => !IsPositionAreaKeyword(keyword)))
+                continue;
+
+            var computed = ComputePositionArea(entries[i]);
+            if (computed != entries[i])
+            {
+                entries[i] = computed;
+                changed = true;
+            }
+        }
+
+        return changed ? string.Join(", ", entries) : value;
+    }
+
+    /// <summary>Returns whether a keyword is a &lt;position-area&gt; keyword, as opposed to a &lt;dashed-ident&gt; or a &lt;try-tactic&gt; of position-try-fallbacks.</summary>
+    private static bool IsPositionAreaKeyword(string keyword)
+    {
+        if (keyword is "center" or "span-all" or "left" or "right" or "top" or "bottom" or "start" or "end" or "self-start" or "self-end")
+            return true;
+
+        var name = keyword.StartsWith("span-", StringComparison.Ordinal) ? keyword[5..] : keyword;
+        name = name.StartsWith("self-", StringComparison.Ordinal) ? name[5..] : name;
+        return name is "left" or "right" or "top" or "bottom" or "start" or "end"
+            or "x-start" or "x-end" or "y-start" or "y-end" or "block-start" or "block-end" or "inline-start" or "inline-end";
+    }
+
     private enum PositionAreaAxis
     {
         Center,

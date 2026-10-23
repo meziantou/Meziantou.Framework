@@ -438,17 +438,160 @@ internal static partial class Reflection
         return EncodingParseAndSerializeUrl(element.NodeDocument, value) ?? value;
     }
 
-    /// <summary>https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fe-autocomplete</summary>
+    /// <summary>
+    /// The IDL-exposed autofill value computed by the autofill processing model
+    /// (https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#autofill-processing-model).
+    /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fe-autocomplete"/>
     public static string GetIdlExposedAutofillValue(Element element)
     {
-        // The complete autofill processing model is part of the forms implementation; the value is the normalized
-        // content attribute when it is a single token.
-        var value = element.GetAttributeValue("autocomplete");
-        if (value is null)
+        // The default value is the empty string
+        if (element.GetAttributeValue("autocomplete") is not { } value)
             return "";
 
         var tokens = InfraString.SplitOnAsciiWhitespace(value);
-        return tokens.Count == 1 ? InfraAscii.ToAsciiLowercase(tokens[0]) : "";
+        if (tokens.Count == 0)
+            return "";
+
+        var index = tokens.Count - 1;
+        if (GetAutofillFieldCategory(tokens[index]) is not { } fieldAndCategory)
+            return "";
+
+        var (field, category) = fieldAndCategory;
+
+        // The autocomplete attribute of a hidden input wears the autofill anchor mantle
+        if (category is AutofillFieldCategory.Off or AutofillFieldCategory.Automatic)
+            return tokens.Count > 1 || element is HtmlInputElement { InputType: InputType.Hidden } ? "" : field;
+
+        var idlValue = new List<string>(capacity: tokens.Count) { field };
+        if (category == AutofillFieldCategory.Credential)
+        {
+            if (index == 0)
+                return field;
+
+            index--;
+            if (GetAutofillFieldCategory(tokens[index]) is not { Category: AutofillFieldCategory.Normal or AutofillFieldCategory.Contact } previous)
+                return "";
+
+            category = previous.Category;
+            idlValue.Insert(0, previous.Field);
+        }
+
+        if (index == 0)
+            return string.Join(' ', idlValue);
+
+        index--;
+        if (category == AutofillFieldCategory.Contact && MatchKeyword(tokens[index], "home", "work", "mobile", "fax", "pager") is { } contact)
+        {
+            idlValue.Insert(0, contact);
+            if (index == 0)
+                return string.Join(' ', idlValue);
+
+            index--;
+        }
+
+        if (MatchKeyword(tokens[index], "shipping", "billing") is { } mode)
+        {
+            idlValue.Insert(0, mode);
+            if (index == 0)
+                return string.Join(' ', idlValue);
+
+            index--;
+        }
+
+        if (index != 0 || !tokens[index].StartsWith("section-", StringComparison.OrdinalIgnoreCase))
+            return "";
+
+        idlValue.Insert(0, InfraAscii.ToAsciiLowercase(tokens[index]));
+        return string.Join(' ', idlValue);
+
+        static string? MatchKeyword(string token, params ReadOnlySpan<string> keywords)
+        {
+            foreach (var keyword in keywords)
+            {
+                if (InfraAscii.EqualsIgnoreAsciiCase(token, keyword))
+                    return keyword;
+            }
+
+            return null;
+        }
+    }
+
+    private enum AutofillFieldCategory
+    {
+        Off,
+        Automatic,
+        Normal,
+        Contact,
+        Credential,
+    }
+
+    private static readonly Dictionary<string, AutofillFieldCategory> AutofillFieldCategories = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["off"] = AutofillFieldCategory.Off,
+        ["on"] = AutofillFieldCategory.Automatic,
+        ["name"] = AutofillFieldCategory.Normal,
+        ["honorific-prefix"] = AutofillFieldCategory.Normal,
+        ["given-name"] = AutofillFieldCategory.Normal,
+        ["additional-name"] = AutofillFieldCategory.Normal,
+        ["family-name"] = AutofillFieldCategory.Normal,
+        ["honorific-suffix"] = AutofillFieldCategory.Normal,
+        ["nickname"] = AutofillFieldCategory.Normal,
+        ["organization-title"] = AutofillFieldCategory.Normal,
+        ["username"] = AutofillFieldCategory.Normal,
+        ["new-password"] = AutofillFieldCategory.Normal,
+        ["current-password"] = AutofillFieldCategory.Normal,
+        ["one-time-code"] = AutofillFieldCategory.Normal,
+        ["organization"] = AutofillFieldCategory.Normal,
+        ["street-address"] = AutofillFieldCategory.Normal,
+        ["address-line1"] = AutofillFieldCategory.Normal,
+        ["address-line2"] = AutofillFieldCategory.Normal,
+        ["address-line3"] = AutofillFieldCategory.Normal,
+        ["address-level4"] = AutofillFieldCategory.Normal,
+        ["address-level3"] = AutofillFieldCategory.Normal,
+        ["address-level2"] = AutofillFieldCategory.Normal,
+        ["address-level1"] = AutofillFieldCategory.Normal,
+        ["country"] = AutofillFieldCategory.Normal,
+        ["country-name"] = AutofillFieldCategory.Normal,
+        ["postal-code"] = AutofillFieldCategory.Normal,
+        ["cc-name"] = AutofillFieldCategory.Normal,
+        ["cc-given-name"] = AutofillFieldCategory.Normal,
+        ["cc-additional-name"] = AutofillFieldCategory.Normal,
+        ["cc-family-name"] = AutofillFieldCategory.Normal,
+        ["cc-number"] = AutofillFieldCategory.Normal,
+        ["cc-exp"] = AutofillFieldCategory.Normal,
+        ["cc-exp-month"] = AutofillFieldCategory.Normal,
+        ["cc-exp-year"] = AutofillFieldCategory.Normal,
+        ["cc-csc"] = AutofillFieldCategory.Normal,
+        ["cc-type"] = AutofillFieldCategory.Normal,
+        ["transaction-currency"] = AutofillFieldCategory.Normal,
+        ["transaction-amount"] = AutofillFieldCategory.Normal,
+        ["language"] = AutofillFieldCategory.Normal,
+        ["bday"] = AutofillFieldCategory.Normal,
+        ["bday-day"] = AutofillFieldCategory.Normal,
+        ["bday-month"] = AutofillFieldCategory.Normal,
+        ["bday-year"] = AutofillFieldCategory.Normal,
+        ["sex"] = AutofillFieldCategory.Normal,
+        ["url"] = AutofillFieldCategory.Normal,
+        ["photo"] = AutofillFieldCategory.Normal,
+        ["tel"] = AutofillFieldCategory.Contact,
+        ["tel-country-code"] = AutofillFieldCategory.Contact,
+        ["tel-national"] = AutofillFieldCategory.Contact,
+        ["tel-area-code"] = AutofillFieldCategory.Contact,
+        ["tel-local"] = AutofillFieldCategory.Contact,
+        ["tel-local-prefix"] = AutofillFieldCategory.Contact,
+        ["tel-local-suffix"] = AutofillFieldCategory.Contact,
+        ["tel-extension"] = AutofillFieldCategory.Contact,
+        ["email"] = AutofillFieldCategory.Contact,
+        ["impp"] = AutofillFieldCategory.Contact,
+        ["webauthn"] = AutofillFieldCategory.Credential,
+    };
+
+    /// <summary>Determines a field's category (https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#determine-a-field's-category), with the field name as written in the table.</summary>
+    private static (string Field, AutofillFieldCategory Category)? GetAutofillFieldCategory(string token)
+    {
+        var lookup = AutofillFieldCategories.GetAlternateLookup<ReadOnlySpan<char>>();
+        return lookup.TryGetValue(token, out var field, out var category) ? (field, category) : null;
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#get-html-aware-text-content</summary>

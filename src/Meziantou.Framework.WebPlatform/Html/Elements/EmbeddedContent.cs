@@ -977,14 +977,15 @@ public partial class HtmlScriptElement
         }
         else if (type is not null)
         {
-            typeString = InfraAscii.StripLeadingAndTrailingAsciiWhitespace(type).ToString();
+            typeString = type;
         }
         else
         {
             typeString = "text/" + language;
         }
 
-        if (IsJavaScriptMimeTypeEssenceMatch(typeString))
+        // Only the JavaScript MIME type check strips the whitespace of the type attribute: " module " is not a module.
+        if (IsJavaScriptMimeTypeEssenceMatch(typeString) || (type is not null && IsJavaScriptMimeTypeEssenceMatch(InfraAscii.StripLeadingAndTrailingAsciiWhitespace(type).ToString())))
             return ScriptElementType.Classic;
 
         if (typeString.Equals("module", StringComparison.OrdinalIgnoreCase))

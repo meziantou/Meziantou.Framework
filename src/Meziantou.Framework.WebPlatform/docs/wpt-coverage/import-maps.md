@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 48 | 49 | 0 | 98% |
+| [Stable](#stable-tests) | 49 | 49 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **48** | **49** | **0** | **98%** |
+| **All** | **49** | **49** | **0** | **100%** |
 
 ## Stable tests
 
@@ -63,4 +63,4 @@
 | [`script-supports-importmap.html`](https://wpt.fyi/results/import-maps/script-supports-importmap.html) | Pass | 2 / 2 |  |  |
 | [`static-after-innerText.html`](https://wpt.fyi/results/import-maps/static-after-innerText.html) | Pass | 1 / 1 |  |  |
 | [`static-integrity.html`](https://wpt.fyi/results/import-maps/static-integrity.html) | Pass | 5 / 5 |  |  |
-| [`type-whitespace.html`](https://wpt.fyi/results/import-maps/type-whitespace.html) | Fail | 1 / 4 | BUG | the `type` of a script element is stripped of leading and trailing ASCII whitespace before it is compared with `module` or `importmap`, so `" module "` runs a module script and `" importmap "` an import map (the tests expect them to be ignored) |
+| [`type-whitespace.html`](https://wpt.fyi/results/import-maps/type-whitespace.html) | Pass | 4 / 4 |  |  |

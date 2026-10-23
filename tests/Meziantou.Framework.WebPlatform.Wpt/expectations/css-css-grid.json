@@ -7463,13 +7463,7 @@
     "total": 12
   },
   "css/css-grid/subgrid/subgrid-baseline-009.html": {
-    "total": 12,
-    "failures": {
-      ".item 10": "FAIL",
-      ".item 7": "FAIL",
-      ".item 8": "FAIL",
-      ".item 9": "FAIL"
-    }
+    "total": 12
   },
   "css/css-grid/subgrid/subgrid-baseline-010.html": {
     "total": 2

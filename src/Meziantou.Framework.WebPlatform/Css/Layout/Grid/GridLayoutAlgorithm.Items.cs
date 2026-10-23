@@ -534,7 +534,7 @@ internal sealed partial class GridLayoutAlgorithm
             }
 
             var isContentAligned = contentAlignment != AxisAlignment.Start;
-            if ((alignment is not (AxisAlignment.Baseline or AxisAlignment.LastBaseline) && !isContentAligned) || participant.IsReversed)
+            if (alignment is not (AxisAlignment.Baseline or AxisAlignment.LastBaseline) && !isContentAligned)
             {
                 ClearContentBaseline();
                 continue;
@@ -589,6 +589,15 @@ internal sealed partial class GridLayoutAlgorithm
                 // The baseline from the start edge of the border box in the axis (the baselines of an item whose block flow is opposite
                 // are on the other side: its first baseline aligns with the last baselines, https://drafts.csswg.org/css-align-3/#compatible-baseline-alignment-preferences)
                 var (baseline, flipped) = owner.GetItemBaseline(item, fragment, ownerAxis, last);
+                if (participant.IsReversed)
+                {
+                    // The item of a subgrid whose tracks are in the opposite direction: its baseline is measured from the other side
+                    // (its first baseline aligns with the last baselines of the grid)
+                    baseline = axisSize - baseline;
+                    flipped = !flipped;
+                    (marginStart, marginEnd) = (marginEnd, marginStart);
+                }
+
                 if (flipped)
                 {
                     last = !last;
@@ -618,14 +627,18 @@ internal sealed partial class GridLayoutAlgorithm
                 }
             }
 
-            SetBaselineGroup(item, ownerAxis, group);
-            if (ownerAxis == GridAxis.Columns)
+            // (the baseline of the item of a reversed subgrid is the one of its own direction for the subgrid, which aligns it)
+            if (!participant.IsReversed)
             {
-                item.ColumnBaseline = fromTrackEdge;
-            }
-            else
-            {
-                item.RowBaseline = fromTrackEdge;
+                SetBaselineGroup(item, ownerAxis, group);
+                if (ownerAxis == GridAxis.Columns)
+                {
+                    item.ColumnBaseline = fromTrackEdge;
+                }
+                else
+                {
+                    item.RowBaseline = fromTrackEdge;
+                }
             }
 
             var isEndGroup = group == GridBaselineGroup.End;
@@ -721,8 +734,8 @@ internal sealed partial class GridLayoutAlgorithm
     }
 
     /// <summary>
-    /// Gives the shared baselines of the tracks of each axis to the subgrids subgridded in it (whose lines go in the same direction):
-    /// their items align with the items of the grid.
+    /// Gives the shared baselines of the tracks of each axis to the subgrids subgridded in it (from the other side of the tracks for
+    /// a subgrid whose lines go in the opposite direction): their items align with the items of the grid.
     /// </summary>
     private void PropagateBaselinesToSubgrids()
     {
@@ -733,16 +746,18 @@ internal sealed partial class GridLayoutAlgorithm
 
             foreach (var axis in (ReadOnlySpan<GridAxis>)[GridAxis.Columns, GridAxis.Rows])
             {
-                if (!subgrid.IsSubgriddedIn(axis, out var ownAxis, out var reversed) || reversed || subgrid._input?.Get(ownAxis) is not { } input)
+                if (!subgrid.IsSubgriddedIn(axis, out var ownAxis, out var reversed) || subgrid._input?.Get(ownAxis) is not { } input)
                     continue;
 
+                // (the tracks of a reversed subgrid are in the opposite direction: the baselines shared from the start edges of the
+                // tracks of the grid are shared from their end edges for the subgrid)
                 var (start, end) = axis == GridAxis.Columns ? (_columnStartBaselines, _columnEndBaselines) : (_rowStartBaselines, _rowEndBaselines);
-                input.StartBaselines = Map(start, item.GetStart(axis), item.GetSpan(axis));
-                input.EndBaselines = Map(end, item.GetStart(axis), item.GetSpan(axis));
+                input.StartBaselines = Map(reversed ? end : start, item.GetStart(axis), item.GetSpan(axis), reversed);
+                input.EndBaselines = Map(reversed ? start : end, item.GetStart(axis), item.GetSpan(axis), reversed);
             }
         }
 
-        static Dictionary<int, double>? Map(Dictionary<int, double>? baselines, int start, int span)
+        static Dictionary<int, double>? Map(Dictionary<int, double>? baselines, int start, int span, bool reversed)
         {
             if (baselines is null)
                 return null;
@@ -752,7 +767,7 @@ internal sealed partial class GridLayoutAlgorithm
             {
                 if (key >= start && key < start + span)
                 {
-                    (result ??= [])[key - start] = value;
+                    (result ??= [])[reversed ? span - 1 - (key - start) : key - start] = value;
                 }
             }
 

@@ -117,22 +117,31 @@ internal static class TypedArrayBuiltins
         return typedArray;
     }
 
-    /// <summary>ValidateTypedArray(O, seq-cst) and TypedArrayLength(taRecord)</summary>
-    private static JsTypedArray ValidateTypedArray(JsValue thisValue, string method, out int length)
+    /// <summary>ValidateTypedArray(O, seq-cst, accessMode) and TypedArrayLength(taRecord): <paramref name="write"/> is the write access mode (a TypeError when the buffer is immutable).</summary>
+    private static JsTypedArray ValidateTypedArray(JsValue thisValue, string method, out int length, bool write = false)
     {
         var typedArray = ThisTypedArray(thisValue, method);
+        if (write && typedArray.ViewedArrayBuffer.IsImmutable)
+        {
+            length = 0;
+            return ThrowHelper.ThrowTypeError<JsTypedArray>($"Cannot perform %TypedArray%.prototype.{method} on a TypedArray backed by an immutable ArrayBuffer");
+        }
+
         if (!typedArray.TryGetLength(out length))
             return ThrowHelper.ThrowTypeError<JsTypedArray>($"Cannot perform %TypedArray%.prototype.{method} on a detached or out-of-bounds TypedArray");
 
         return typedArray;
     }
 
-    /// <summary>ValidateTypedArray(O, order) for a value: the typed array and its length.</summary>
-    internal static JsTypedArray ValidateTypedArray(JsValue value, out int length)
+    /// <summary>ValidateTypedArray(O, order, accessMode) for a value: the typed array and its length; <paramref name="write"/> is the write access mode (a TypeError when the buffer is immutable).</summary>
+    internal static JsTypedArray ValidateTypedArray(JsValue value, out int length, bool write = false)
     {
         length = 0;
         if (value.Cell is not JsTypedArray typedArray)
             return ThrowHelper.ThrowTypeError<JsTypedArray>($"{JsOperations.DescribeForError(value)} is not a TypedArray");
+
+        if (write && typedArray.ViewedArrayBuffer.IsImmutable)
+            return ThrowHelper.ThrowTypeError<JsTypedArray>("Cannot write to a TypedArray backed by an immutable ArrayBuffer");
 
         if (!typedArray.TryGetLength(out length))
             return ThrowHelper.ThrowTypeError<JsTypedArray>("Cannot perform the operation on a detached or out-of-bounds TypedArray");
@@ -177,19 +186,19 @@ internal static class TypedArrayBuiltins
         return typedArray;
     }
 
-    /// <summary>TypedArrayCreateFromConstructor(constructor, argumentList)</summary>
-    private static JsTypedArray TypedArrayCreateFromConstructor(JsObject constructor, ReadOnlySpan<JsValue> arguments)
+    /// <summary>TypedArrayCreateFromConstructor(constructor, argumentList, accessMode)</summary>
+    private static JsTypedArray TypedArrayCreateFromConstructor(JsObject constructor, ReadOnlySpan<JsValue> arguments, bool write = false)
     {
         var newTypedArray = JsOperations.Construct(constructor, arguments);
-        var typedArray = ValidateTypedArray(newTypedArray, out var length);
+        var typedArray = ValidateTypedArray(newTypedArray, out var length, write);
         if (arguments.Length == 1 && arguments[0].IsNumber && length < arguments[0].NumberValue)
             return ThrowHelper.ThrowTypeError<JsTypedArray>("The TypedArray created by the constructor is too small");
 
         return typedArray;
     }
 
-    /// <summary>TypedArraySpeciesCreate(exemplar, argumentList)</summary>
-    private static JsTypedArray TypedArraySpeciesCreate(JsRealm realm, JsTypedArray exemplar, ReadOnlySpan<JsValue> arguments)
+    /// <summary>TypedArraySpeciesCreate(exemplar, argumentList, accessMode)</summary>
+    private static JsTypedArray TypedArraySpeciesCreate(JsRealm realm, JsTypedArray exemplar, ReadOnlySpan<JsValue> arguments, bool write = false)
     {
         var defaultConstructor = realm.Intrinsics.GetTypedArrayConstructor(exemplar.ElementType);
         var constructor = ObjectOperations.SpeciesConstructor(exemplar, defaultConstructor);
@@ -201,7 +210,7 @@ internal static class TypedArrayBuiltins
         }
         else
         {
-            result = TypedArrayCreateFromConstructor(constructor, arguments);
+            result = TypedArrayCreateFromConstructor(constructor, arguments, write);
         }
 
         if (result.IsBigInt != exemplar.IsBigInt)
@@ -418,7 +427,7 @@ internal static class TypedArrayBuiltins
         if (usingIterator is not null)
         {
             var values = IteratorOperations.IteratorToList(IteratorOperations.GetIteratorFromMethod(source, usingIterator));
-            var target = TypedArrayCreateFromConstructor(constructor, [values.Count]);
+            var target = TypedArrayCreateFromConstructor(constructor, [values.Count], write: true);
             for (var k = 0; k < values.Count; k++)
             {
                 var value = values[k];
@@ -435,7 +444,7 @@ internal static class TypedArrayBuiltins
 
         var arrayLike = JsOperations.ToObject(source);
         var length = JsOperations.LengthOfArrayLike(arrayLike);
-        var targetObject = TypedArrayCreateFromConstructor(constructor, [(double)length]);
+        var targetObject = TypedArrayCreateFromConstructor(constructor, [(double)length], write: true);
         for (var k = 0L; k < length; k++)
         {
             var key = PropertyKey.FromInteger(k);
@@ -459,7 +468,7 @@ internal static class TypedArrayBuiltins
 
         var length = arguments.Length;
         var items = arguments.ToArray();
-        var newObject = TypedArrayCreateFromConstructor(constructor, [length]);
+        var newObject = TypedArrayCreateFromConstructor(constructor, [length], write: true);
         for (var k = 0; k < length; k++)
         {
             newObject.Set(new PropertyKey((uint)k), items[k], throwOnFailure: true);
@@ -527,7 +536,7 @@ internal static class TypedArrayBuiltins
     /// <summary>%TypedArray%.prototype.copyWithin(target, start [, end])</summary>
     private static JsValue CopyWithin(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
-        var typedArray = ValidateTypedArray(thisValue, "copyWithin", out var length);
+        var typedArray = ValidateTypedArray(thisValue, "copyWithin", out var length, write: true);
         var targetIndex = BinaryDataOperations.ClampRelativeIndex(JsOperations.ToIntegerOrInfinity(Arg(arguments, 0)), length);
         var startIndex = BinaryDataOperations.ClampRelativeIndex(JsOperations.ToIntegerOrInfinity(Arg(arguments, 1)), length);
         var endIndex = BinaryDataOperations.ToClampedIndex(Arg(arguments, 2), length, length);
@@ -622,7 +631,7 @@ internal static class TypedArrayBuiltins
     /// <summary>%TypedArray%.prototype.fill(value [, start [, end]])</summary>
     private static JsValue Fill(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
-        var typedArray = ValidateTypedArray(thisValue, "fill", out var length);
+        var typedArray = ValidateTypedArray(thisValue, "fill", out var length, write: true);
         var value = BinaryDataOperations.ToNumericForElementType(typedArray.ElementType, Arg(arguments, 0));
         var startIndex = BinaryDataOperations.ClampRelativeIndex(JsOperations.ToIntegerOrInfinity(Arg(arguments, 1)), length);
         var endIndex = BinaryDataOperations.ToClampedIndex(Arg(arguments, 2), length, length);
@@ -669,7 +678,7 @@ internal static class TypedArrayBuiltins
             }
         }
 
-        var result = TypedArraySpeciesCreate(function.Realm, typedArray, [kept.Count]);
+        var result = TypedArraySpeciesCreate(function.Realm, typedArray, [kept.Count], write: true);
         for (var n = 0; n < kept.Count; n++)
         {
             result.SetElementFromValue(n, kept[n]);
@@ -828,7 +837,7 @@ internal static class TypedArrayBuiltins
         var typedArray = ValidateTypedArray(thisValue, "map", out var length);
         var callback = RequireCallable(Arg(arguments, 0));
         var thisArg = Arg(arguments, 1);
-        var result = TypedArraySpeciesCreate(function.Realm, typedArray, [length]);
+        var result = TypedArraySpeciesCreate(function.Realm, typedArray, [length], write: true);
         for (var k = 0; k < length; k++)
         {
             var value = GetElement(typedArray, k);
@@ -900,7 +909,7 @@ internal static class TypedArrayBuiltins
     /// <summary>%TypedArray%.prototype.reverse()</summary>
     private static JsValue Reverse(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
-        var typedArray = ValidateTypedArray(thisValue, "reverse", out var length);
+        var typedArray = ValidateTypedArray(thisValue, "reverse", out var length, write: true);
         var elementSize = typedArray.ElementSize;
         var span = typedArray.ViewedArrayBuffer.GetSpan().Slice(typedArray.ByteOffset, length * elementSize);
         Span<byte> temp = stackalloc byte[8];
@@ -920,6 +929,9 @@ internal static class TypedArrayBuiltins
     private static JsValue Set(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
         var target = ThisTypedArray(thisValue, "set");
+        if (target.ViewedArrayBuffer.IsImmutable)
+            return ThrowHelper.ThrowTypeError<JsValue>("Cannot perform %TypedArray%.prototype.set on a TypedArray backed by an immutable ArrayBuffer");
+
         var targetOffset = JsOperations.ToIntegerOrInfinity(Arg(arguments, 1));
         if (targetOffset < 0)
             return ThrowHelper.ThrowRangeError<JsValue>("offset is out of bounds");
@@ -1012,7 +1024,7 @@ internal static class TypedArrayBuiltins
         var startIndex = BinaryDataOperations.ClampRelativeIndex(JsOperations.ToIntegerOrInfinity(Arg(arguments, 0)), sourceLength);
         var endIndex = BinaryDataOperations.ToClampedIndex(Arg(arguments, 1), sourceLength, sourceLength);
         var count = Math.Max(endIndex - startIndex, 0);
-        var result = TypedArraySpeciesCreate(function.Realm, typedArray, [(double)count]);
+        var result = TypedArraySpeciesCreate(function.Realm, typedArray, [(double)count], write: true);
         if (count > 0)
         {
             if (!typedArray.TryGetLength(out sourceLength))
@@ -1065,7 +1077,7 @@ internal static class TypedArrayBuiltins
         if (!comparator.IsUndefined && !comparator.IsCallable)
             return ThrowHelper.ThrowTypeError<JsValue>("The comparison function must be either a function or undefined");
 
-        var typedArray = ValidateTypedArray(thisValue, "sort", out var length);
+        var typedArray = ValidateTypedArray(thisValue, "sort", out var length, write: true);
         if (comparator.IsUndefined)
         {
             SortDefault(typedArray.ElementType, typedArray.ViewedArrayBuffer.GetSpan().Slice(typedArray.ByteOffset, length * typedArray.ElementSize));

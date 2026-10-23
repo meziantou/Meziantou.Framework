@@ -44,11 +44,14 @@ internal static class Uint8ArrayBase64Builtins
 
     private static JsValue Arg(ReadOnlySpan<JsValue> arguments, int index) => arguments.Length > index ? arguments[index] : default;
 
-    /// <summary>ValidateUint8Array(ta)</summary>
-    private static JsTypedArray ValidateUint8Array(JsValue value, string method)
+    /// <summary>ValidateUint8Array(ta, accessMode): <paramref name="write"/> is the write access mode (a TypeError when the buffer is immutable).</summary>
+    private static JsTypedArray ValidateUint8Array(JsValue value, string method, bool write = false)
     {
         if (value.Cell is not JsTypedArray { ElementType: TypedArrayElementType.Uint8 } typedArray)
             return ThrowHelper.ThrowTypeError<JsTypedArray>($"Method Uint8Array.prototype.{method} called on incompatible receiver {JsOperations.DescribeForError(value)}");
+
+        if (write && typedArray.ViewedArrayBuffer.IsImmutable)
+            return ThrowHelper.ThrowTypeError<JsTypedArray>($"Cannot perform Uint8Array.prototype.{method} on a Uint8Array backed by an immutable ArrayBuffer");
 
         return typedArray;
     }
@@ -149,7 +152,7 @@ internal static class Uint8ArrayBase64Builtins
     /// <summary>Uint8Array.prototype.setFromBase64(string [, options])</summary>
     private static JsValue SetFromBase64(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
-        var into = ValidateUint8Array(thisValue, "setFromBase64");
+        var into = ValidateUint8Array(thisValue, "setFromBase64", write: true);
         var str = RequireString(Arg(arguments, 0));
         var options = GetOptionsObject(Arg(arguments, 1));
         var base64Url = GetAlphabetOption(options);
@@ -169,7 +172,7 @@ internal static class Uint8ArrayBase64Builtins
     /// <summary>Uint8Array.prototype.setFromHex(string)</summary>
     private static JsValue SetFromHex(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
-        var into = ValidateUint8Array(thisValue, "setFromHex");
+        var into = ValidateUint8Array(thisValue, "setFromHex", write: true);
         var str = RequireString(Arg(arguments, 0));
         if (!into.TryGetLength(out var byteLength))
             return ThrowHelper.ThrowTypeError<JsValue>("Cannot perform Uint8Array.prototype.setFromHex on a detached or out-of-bounds TypedArray");

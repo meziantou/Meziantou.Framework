@@ -3,7 +3,8 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// <summary>
 /// An ArrayBuffer (https://tc39.es/ecma262/#sec-arraybuffer-objects) or a SharedArrayBuffer
 /// (https://tc39.es/ecma262/#sec-sharedarraybuffer-objects): [[ArrayBufferData]], [[ArrayBufferByteLength]],
-/// [[ArrayBufferMaxByteLength]] and [[ArrayBufferDetachKey]]. The data of an ArrayBuffer is a byte array (its length is
+/// [[ArrayBufferMaxByteLength]], [[ArrayBufferDetachKey]] and the [[ArrayBufferIsImmutable]] of the Immutable ArrayBuffer
+/// proposal (https://tc39.es/proposal-immutable-arraybuffer/). The data of an ArrayBuffer is a byte array (its length is
 /// the capacity of a resizable buffer) or external memory; the data of a SharedArrayBuffer is a <see cref="JsSharedDataBlock"/>.
 /// </summary>
 internal sealed class JsArrayBuffer : JsObject
@@ -32,6 +33,9 @@ internal sealed class JsArrayBuffer : JsObject
 
     /// <summary>Gets whether the buffer is fixed-length (IsFixedLengthArrayBuffer).</summary>
     public bool IsFixedLength => MaxByteLength is null;
+
+    /// <summary>Gets whether the buffer is immutable (IsImmutableBuffer): its data never changes, and it cannot be detached nor resized.</summary>
+    public bool IsImmutable { get; private set; }
 
     /// <summary>Gets the [[ArrayBufferDetachKey]].</summary>
     public JsValue DetachKey { get; set; }
@@ -68,6 +72,19 @@ internal sealed class JsArrayBuffer : JsObject
 
     /// <summary>Creates an ArrayBuffer of the realm with a zeroed data block (AllocateArrayBuffer(%ArrayBuffer%, byteLength)).</summary>
     public static JsArrayBuffer Create(JsRealm realm, double byteLength) => Create(realm.Intrinsics.ArrayBufferPrototype, byteLength);
+
+    /// <summary>
+    /// AllocateImmutableArrayBuffer(%ArrayBuffer%, byteLength, fromBlock, fromIndex, count): creates an immutable
+    /// ArrayBuffer of the realm whose first bytes are a copy of <paramref name="source"/> (the other bytes are zero), or
+    /// throws a RangeError when it cannot be allocated.
+    /// </summary>
+    public static JsArrayBuffer CreateImmutable(JsRealm realm, double byteLength, ReadOnlySpan<byte> source)
+    {
+        var result = Create(realm.Intrinsics.ArrayBufferPrototype, byteLength);
+        source.CopyTo(result.GetSpan());
+        result.IsImmutable = true;
+        return result;
+    }
 
     /// <summary>
     /// Creates an ArrayBuffer of the realm over external memory (the embedding owns the memory: the buffer reads and
@@ -145,13 +162,18 @@ internal sealed class JsArrayBuffer : JsObject
 
     /// <summary>
     /// DetachArrayBuffer(arrayBuffer, key): throws a TypeError when the key is not the [[ArrayBufferDetachKey]] of the
-    /// buffer, or when the buffer is a SharedArrayBuffer.
+    /// buffer, or when the buffer is a SharedArrayBuffer or an immutable ArrayBuffer.
     /// </summary>
     public void Detach(JsValue key = default)
     {
         if (IsShared)
         {
             ThrowHelper.ThrowTypeError("Cannot detach a SharedArrayBuffer");
+        }
+
+        if (IsImmutable)
+        {
+            ThrowHelper.ThrowTypeError("Cannot detach an immutable ArrayBuffer");
         }
 
         if (!JsOperations.SameValue(DetachKey, key))
@@ -207,10 +229,11 @@ internal sealed class JsArrayBuffer : JsObject
     }
 
     /// <summary>
-    /// ArrayBufferCopyAndDetach(arrayBuffer, newLength, preserve-resizability) after the checks: creates a new ArrayBuffer
-    /// with the data (moved without a copy when possible), and detaches this buffer.
+    /// ArrayBufferCopyAndDetach(arrayBuffer, newLength, mode) after the checks: creates a new ArrayBuffer with the data
+    /// (moved without a copy when possible), and detaches this buffer. An immutable result is fixed-length
+    /// (<paramref name="newMaxByteLength"/> is null).
     /// </summary>
-    public JsArrayBuffer TransferAndDetach(JsRealm realm, int newByteLength, int? newMaxByteLength)
+    public JsArrayBuffer TransferAndDetach(JsRealm realm, int newByteLength, int? newMaxByteLength, bool immutable = false)
     {
         JsArrayBuffer result;
         if (_array is { } array && !IsExternal && newByteLength <= array.Length && (newMaxByteLength is not null || newByteLength == array.Length))
@@ -226,6 +249,7 @@ internal sealed class JsArrayBuffer : JsObject
                 _array = array,
                 _byteLength = newByteLength,
                 MaxByteLength = newMaxByteLength,
+                IsImmutable = immutable,
             };
         }
         else
@@ -233,6 +257,7 @@ internal sealed class JsArrayBuffer : JsObject
             result = Create(realm.Intrinsics.ArrayBufferPrototype, newByteLength, newMaxByteLength);
             var source = GetSpan();
             source[..Math.Min(source.Length, newByteLength)].CopyTo(result.GetSpan());
+            result.IsImmutable = immutable;
         }
 
         DetachCore();

@@ -163,6 +163,49 @@ public sealed class BinaryDataTests
     }
 
     [Fact]
+    public void ArrayBuffer_Immutable()
+    {
+        using var context = new FundamentalsTestContext();
+        var buffer = New(context, "ArrayBuffer", 4, Options(context, "maxByteLength", 8));
+        Call(New(context, "Uint8Array", buffer), "set", context.NewArray(1, 2, 3, 4));
+        Assert.False(Get(buffer, "immutable").AsBoolean());
+
+        var immutable = (JsArrayBuffer)Call(buffer, "transferToImmutable").AsObject();
+        Assert.True(Get(buffer, "detached").AsBoolean());
+        Assert.True(Get(immutable, "immutable").AsBoolean());
+        Assert.False(Get(immutable, "resizable").AsBoolean());
+        Assert.Equal(4, Get(immutable, "byteLength").AsNumber());
+
+        // The elements are neither writable nor configurable: the assignments fail, and the methods that write throw
+        var view = New(context, "Uint8Array", immutable);
+        Assert.True(view.GetOwnProperty(new PropertyKey(0u), out var descriptor));
+        Assert.False(descriptor.Writable);
+        Assert.False(descriptor.Configurable);
+        Assert.False(view.Set(new PropertyKey(0u), 9, view));
+        context.AssertThrows(ErrorType.TypeError, () => view.Set(new PropertyKey(0u), 9, throwOnFailure: true));
+        context.AssertThrows(ErrorType.TypeError, () => Call(view, "fill", 0));
+        context.AssertThrows(ErrorType.TypeError, () => Call(view, "set", context.NewArray(0)));
+        context.AssertThrows(ErrorType.TypeError, () => Call(New(context, "DataView", immutable), "setUint8", 0, 0));
+        context.AssertThrows(ErrorType.TypeError, () => Call(context.Global("Atomics"), "store", view, 0, 0));
+        context.AssertThrows(ErrorType.TypeError, () => Call(immutable, "transfer"));
+        context.AssertThrows(ErrorType.TypeError, () => Call(immutable, "resize", 2));
+        context.AssertThrows(ErrorType.TypeError, () => immutable.Detach());
+        Assert.Equal([1, 2, 3, 4], Numbers(view));
+
+        // A frozen view of an immutable buffer
+        Call(context.Global("Object"), "freeze", view);
+        Assert.True(Call(context.Global("Object"), "isFrozen", view).AsBoolean());
+
+        // sliceToImmutable copies a range to a new immutable buffer; slice copies to a mutable one
+        var slice = Call(immutable, "sliceToImmutable", 1, 3).AsObject();
+        Assert.True(Get(slice, "immutable").AsBoolean());
+        Assert.Equal([2, 3], Numbers(New(context, "Uint8Array", slice)));
+        var mutable = Call(immutable, "slice", 1).AsObject();
+        Assert.False(Get(mutable, "immutable").AsBoolean());
+        Assert.Equal([2, 3, 4], Numbers(New(context, "Uint8Array", mutable)));
+    }
+
+    [Fact]
     public void ArrayBuffer_ExternalMemory()
     {
         using var context = new FundamentalsTestContext();

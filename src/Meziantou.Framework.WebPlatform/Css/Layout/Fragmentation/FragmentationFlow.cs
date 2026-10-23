@@ -1090,7 +1090,13 @@ internal sealed class FragmentationFlow
 
         /// <summary>The number of boxes with <c>break-inside: avoid</c> around the contents that are visited (see <see cref="BreakCandidate.AvoidDepth"/>).</summary>
         public int AvoidDepth { get; init; }
+
+        /// <summary>The boxes around the contents that repeat their edges (in <see cref="CloneStart"/> and <see cref="CloneEnd"/>), from the nearest one.</summary>
+        public CloneBox? CloneBoxes { get; init; }
     }
+
+    /// <summary>A box that repeats its edges at the breaks inside its border box (<c>box-decoration-break: clone</c>): the block-end edge of its border box and its edges.</summary>
+    private sealed record CloneBox(double End, double StartEdges, double EndEdges, CloneBox? Next);
 
     /// <summary>Returns the logical block range of a child fragment in the strip (without its relative offset).</summary>
     internal static (double Top, double Bottom, double Inline) GetBlockRange(Fragment child, PhysicalSize parentSize, WritingDirection parentWritingDirection, double parentTop)
@@ -1758,7 +1764,12 @@ internal sealed class FragmentationFlow
 
         if (fragmentation.BoxDecorationBreak == BoxDecorationBreak.Clone)
         {
-            childContext = childContext with { CloneStart = childContext.CloneStart + edges.BlockStart, CloneEnd = childContext.CloneEnd + edges.BlockEnd };
+            childContext = childContext with
+            {
+                CloneStart = childContext.CloneStart + edges.BlockStart,
+                CloneEnd = childContext.CloneEnd + edges.BlockEnd,
+                CloneBoxes = new CloneBox(bottom, edges.BlockStart, edges.BlockEnd, childContext.CloneBoxes),
+            };
         }
 
         if (box.Box.IsOutOfFlow || (_root._pushedFloats is not null && BlockFormattingContext.EstablishesNewFormattingContext(box.Box, box.Box.Parent is { } parentBox ? WritingDirection.FromStyle(parentBox.Style.Layout) : _writingDirection)))
@@ -2316,7 +2327,32 @@ internal sealed class FragmentationFlow
     {
         if (context.CloneStart != 0 || context.CloneEnd != 0)
         {
-            candidate = candidate with { CloneStartEdges = context.CloneStart, CloneEndEdges = context.CloneEnd, Repeated = context.Repeated, CloneOwner = context.CloneOwner };
+            // (as in Blink, a box does not repeat its edges at a break after the end of its border box, in the contents that overflow it:
+            // a range of breaks across the end of the box is split there)
+            if (candidate.IsRange)
+            {
+                for (var cloneBox = context.CloneBoxes; cloneBox is not null; cloneBox = cloneBox.Next)
+                {
+                    if (cloneBox.End > candidate.Position + Epsilon && cloneBox.End < candidate.RangeEnd - Epsilon)
+                    {
+                        AddCandidate(candidate with { RangeEnd = cloneBox.End, ExcludesRangeEnd = false }, context);
+                        AddCandidate(candidate with { Position = cloneBox.End, ContentEnd = cloneBox.End, IncludesRangeStart = true }, context);
+                        return;
+                    }
+                }
+            }
+
+            var (cloneStart, cloneEnd) = (context.CloneStart, context.CloneEnd);
+            for (var cloneBox = context.CloneBoxes; cloneBox is not null; cloneBox = cloneBox.Next)
+            {
+                if (cloneBox.End <= candidate.Position + Epsilon)
+                {
+                    cloneStart -= cloneBox.StartEdges;
+                    cloneEnd -= cloneBox.EndEdges;
+                }
+            }
+
+            candidate = candidate with { CloneStartEdges = Math.Max(0, cloneStart), CloneEndEdges = Math.Max(0, cloneEnd), Repeated = context.Repeated, CloneOwner = context.CloneOwner };
         }
 
         if (context.AvoidDepth != 0)

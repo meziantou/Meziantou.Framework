@@ -2937,7 +2937,8 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
   columns. `box-decoration-break: slice` keeps the block-start border and padding on the first fragment and the block-end ones on
   the fragment where the border box ends ("the box is rendered as if it were not fragmented, and then sliced by the breaks":
   the fragments know the box they make when stitched together, `BoxFragment.StitchedBox`/`StitchedOffset`, which positions
-  their background images and slices their shadows; the corners at the breaks are square); `clone` repeats them on every fragment (the breaker reserves the block-end edges before a
+  their background images and slices their shadows; the corners at the breaks are square); `clone` repeats them on every fragment of its border box (not at the breaks after its end, in the contents
+  that overflow it, as in Blink: `VisitContext.CloneBoxes`; the breaker reserves the block-end edges before a
   break and displays the content after the repeated block-start edges, `FragmentainerBreak.DisplayOffset`; the fragments of
   the contents that are broken end before the repeated block-end edges; as in Blink, a break after the repeated
   block-start edges of a box that starts its fragmentainer is not possible, `BreakCandidate.OnlyEdgesFrom`: the first

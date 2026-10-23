@@ -282,7 +282,7 @@
     "reftest": "PASS"
   },
   "css/css-break/box-decoration-break-clone-037.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/box-decoration-break-clone-inline-001.html": {
     "reftest": "PASS"

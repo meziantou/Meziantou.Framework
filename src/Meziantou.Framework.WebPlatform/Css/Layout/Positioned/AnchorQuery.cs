@@ -564,13 +564,13 @@ internal sealed class AnchorQuery
                 if (LayoutTransforms.ParticipatesIn3DRenderingContext(boxFragment) && current.Parent is { } contextParent && !ReferenceEquals(contextParent, _hostFragment))
                 {
                     // (the offset is part of the accumulated matrix)
-                    var local = matrix is null ? accumulated! : accumulated is null ? matrix : CssTransforms.Multiply(matrix, accumulated);
+                    var local = matrix is null ? accumulated : accumulated is null ? matrix : CssTransforms.Multiply(matrix, accumulated);
                     accumulated = CssTransforms.Multiply([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, current.Offset.X, current.Offset.Y, 0, 1], local);
                     current = current.Parent;
                     continue;
                 }
 
-                rect = LayoutTransforms.TransformRect(rect, matrix is null ? accumulated! : accumulated is null ? matrix : CssTransforms.Multiply(matrix, accumulated));
+                rect = LayoutTransforms.TransformRect(rect, matrix is null ? accumulated : accumulated is null ? matrix : CssTransforms.Multiply(matrix, accumulated));
                 accumulated = null;
             }
 

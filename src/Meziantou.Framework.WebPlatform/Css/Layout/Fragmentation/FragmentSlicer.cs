@@ -162,7 +162,7 @@ internal sealed class FragmentSlicer
             resumedFloats[index] = placed = [];
         }
 
-        var shift = 0d;
+        double shift;
         if (startSide)
         {
             var edge = contentStart;

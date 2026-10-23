@@ -324,7 +324,7 @@ internal static partial class CssValueComputer
         if (IsLowercaseIdentifier(value))
             return ComputeGenericProperty(style, property, value, baseUrl);
 
-        if (t_keepsInfiniteCalculations)
+        if (s_keepsInfiniteCalculations)
             return ComputeGenericProperty(style, property, value, baseUrl);
 
         var engine = style.Engine;
@@ -653,7 +653,7 @@ internal static partial class CssValueComputer
     }
 
     [ThreadStatic]
-    private static bool t_keepsInfiniteCalculations;
+    private static bool s_keepsInfiniteCalculations;
 
     /// <summary>
     /// Whether the infinite results of the calculations are kept (e.g. calc(infinity * 1px)) instead of being clamped to the largest
@@ -662,8 +662,8 @@ internal static partial class CssValueComputer
     /// </summary>
     internal static bool KeepsInfiniteCalculations
     {
-        get => t_keepsInfiniteCalculations;
-        set => t_keepsInfiniteCalculations = value;
+        get => s_keepsInfiniteCalculations;
+        set => s_keepsInfiniteCalculations = value;
     }
 
     /// <summary>
@@ -673,7 +673,7 @@ internal static partial class CssValueComputer
     private static string SerializeComputedCalculation(CssCalcValue result)
     {
         // The values of the keyframes of an animation are interpolated before they are clamped (calc(infinity * 1px) stays infinite)
-        if (t_keepsInfiniteCalculations && result.IsNumeric && double.IsInfinity(result.Value) && result.Unit.Length > 0)
+        if (s_keepsInfiniteCalculations && result.IsNumeric && double.IsInfinity(result.Value) && result.Unit.Length > 0)
             return result.Serialize();
 
         // A zero dimension added to a percentage is not kept in the computed value, as in the browsers (calc(10% + 0px) is 10%: WPT

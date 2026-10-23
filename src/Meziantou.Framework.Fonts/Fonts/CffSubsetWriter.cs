@@ -54,6 +54,7 @@ internal static class CffSubsetWriter
         // subroutines, and the local subroutines
         var fonts = new List<(List<(int Operator, double[] Operands)> FontEntries, List<(int Operator, double[] Operands)> PrivateEntries, byte[] Subroutines)>();
         byte[] fdSelect;
+        var copiedLength = 0L;
         if (isCidKeyed)
         {
             var fdArray = CffIndex.Read(table, ToOffset(GetOperand(topEntries, FdArrayOperator, 0)));
@@ -61,6 +62,12 @@ internal static class CffSubsetWriter
             {
                 var fontEntries = ReadDict(fdArray.Get(table, i));
                 fonts.Add(ReadPrivate(table, fontEntries));
+
+                // Font DICTs may share a private DICT and its subroutines, which are copied for each one: their copies
+                // are not larger than the table
+                copiedLength += fonts[^1].Subroutines.Length + 64;
+                if (copiedLength > table.Length + (64L * fonts.Count))
+                    throw FontErrors.InvalidTable(FontTags.Cff, "has font DICTs that share their private DICTs too many times.");
             }
 
             fdSelect = ReadFdSelect(table, ToOffset(GetOperand(topEntries, FdSelectOperator, 0)), glyphCount, fdArray.Count);
@@ -115,10 +122,6 @@ internal static class CffSubsetWriter
             privates.Add([.. dict, .. subroutines]);
         }
 
-        // Font DICTs may share a private DICT and its subroutines, which are copied for each one: their copies are not
-        // larger than the table
-        if (privates.Sum(p => (long)p.Length) > table.Length + (64L * privates.Count))
-            throw FontErrors.InvalidTable(FontTags.Cff, "has font DICTs that share their private DICTs too many times.");
 
         // Every position is written on five bytes: the lengths do not change when the positions are known
         var topWithoutOffsets = new List<(int Operator, double[] Operands)> { (RosOperator, [FirstCustomString, FirstCustomString + 1, 0]) };

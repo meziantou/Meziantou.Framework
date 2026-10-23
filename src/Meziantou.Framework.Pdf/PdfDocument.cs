@@ -1,3 +1,4 @@
+using Meziantou.Framework.Pdf.Fonts;
 using Meziantou.Framework.Pdf.Objects;
 using Meziantou.Framework.Pdf.Parsing;
 using Meziantou.Framework.Pdf.Writing;
@@ -82,6 +83,9 @@ public sealed partial class PdfDocument
     internal PdfFileReader? Reader { get; }
 
     internal Dictionary<object, PdfReference> SharedResources { get; } = [];
+
+    /// <summary>Gets the embedded fonts the content of the document uses, whose objects are written when it is saved.</summary>
+    internal Dictionary<EmbeddedPdfFont, EmbeddedFontUsage> EmbeddedFonts { get; } = [];
 
     /// <summary>Reads a document.</summary>
     /// <param name="data">The content of the file.</param>
@@ -255,10 +259,15 @@ public sealed partial class PdfDocument
         return output;
     }
 
-    /// <summary>Writes what the high-level members keep apart from the objects: the outline.</summary>
+    /// <summary>Writes what the high-level members keep apart from the objects: the outline and the subsets of the embedded fonts.</summary>
     private void PrepareForSave()
     {
         _outlines?.WriteTo(this);
+        foreach (var font in EmbeddedFonts.Values)
+        {
+            font.Write(this);
+        }
+
         if (Reader is not null && Version > Reader.HeaderVersion)
         {
             var current = Catalog.GetName(PdfNames.Version);

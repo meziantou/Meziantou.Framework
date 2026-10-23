@@ -1,8 +1,8 @@
 # Meziantou.Framework.Pdf
 
 A fully managed PDF library: an object model, a reader that repairs broken files, the standard filters, full and
-incremental writers, and a document API (pages, content builder, standard 14 fonts, images, metadata, outline, links,
-text extraction).
+incremental writers, and a document API (pages, content builder, standard 14 fonts and embedded font subsets, images,
+metadata, outline, links, text extraction).
 
 These instructions complete the repository-level `AGENTS.md`. The user guide is [readme.md](readme.md): keep the code,
 the XML documentation and `readme.md` consistent in the same change.
@@ -13,9 +13,15 @@ the XML documentation and `readme.md` consistent in the same change.
   technical notes (CMaps, AFM, Type 1) and the specifications it references. Never copy or port code from other PDF
   libraries (PDFsharp, PdfPig, PeachPDF, pdf.js, PDFium, Poppler, MuPDF, qpdf, PDFBox, ...): they are design references
   and test oracles only. Cite the clause in the comments of the code that implements it.
-- Fully managed, trimmable and NativeAOT-compatible (`IsTrimmable`): no reflection. The only dependency of the
-  repository is `Meziantou.Framework.Imaging` (the image codecs and the ICC profiles), with an exact version
-  (`UseExactProjectReferenceVersions` in the project file, as Imaging does with Fonts).
+- Fully managed, trimmable and NativeAOT-compatible (`IsTrimmable`): no reflection. The dependencies of the
+  repository are `Meziantou.Framework.Imaging` (the image codecs and the ICC profiles) and `Meziantou.Framework.Fonts`
+  (the fonts to embed: the reader, the shaper and the internal subsetter, through `InternalsVisibleTo`), with exact
+  versions (`UseExactProjectReferenceVersions` in the project file, as Imaging does with Fonts).
+- **Embedded fonts** (`Fonts/EmbeddedPdfFont.cs`, `Fonts/EmbeddedFontUsage.cs`): a `Type0` font with `Identity-H`
+  codes that are the glyph identifiers (the subset keeps them: CID = GID), a `ToUnicode` CMap of the glyphs that show
+  one cluster, and `/ActualText` around the texts whose glyphs cannot give them back. The content builder shapes the
+  text and writes `TJ` arrays; the font objects are written when the document is saved, so the subset grows with the
+  content until then. The subsetter lives in `Meziantou.Framework.Fonts` (`FontSubsetter`, `CffSubsetWriter`).
 - Public namespaces: `Meziantou.Framework.Pdf` (document API) and `Meziantou.Framework.Pdf.Objects` (object model).
   Implementation types are `internal`, in sub-namespaces by folder (`Parsing`, `Writing`, `Filters`, `Fonts`, `Text`,
   `Content`, `Metadata`). Every public member is documented (`DisableDocumentationWarnings` is `false`).

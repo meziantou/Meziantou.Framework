@@ -32,6 +32,26 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void Example_EmbeddedFont()
+    {
+        var fontData = File.ReadAllBytes(TestHarness.RepositoryPaths.Fonts / "noto-sans" / "NotoSans-Regular.subset.ttf");
+
+        #region Pdf_EmbeddedFont
+        // A .ttf, .otf, .ttc, .woff or .woff2 file
+        var font = PdfFont.Load(fontData);
+
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder()
+            .DrawText("Office \u2014 AVATAR", font, 24, 60, 700);
+
+        // The document embeds the glyphs it shows, with their text
+        var pdf = document.ToByteArray();
+        #endregion
+
+        Assert.Equal("Office \u2014 AVATAR", PdfDocument.Open(pdf).Pages[0].ExtractText());
+    }
+
+    [Fact]
     public void Example_ReadDocument()
     {
         var file = HandWrittenPdf.CreateSimple("Some text").ToArray();

@@ -12,7 +12,7 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   cross-reference stream, or a cross-reference table) and incremental updates that keep the bytes of the original file;
   the output depends only on the document and the options
 - **Document API**: pages (`PdfDocument.Pages`), a content builder for paths, colors, text, images and marked content
-  (`PdfPage.CreateContentBuilder`), the standard 14 fonts, images (`PdfImage`: JPEG files as they are, other images
+  (`PdfPage.CreateContentBuilder`), the standard 14 fonts and embedded TrueType and OpenType fonts, images (`PdfImage`: JPEG files as they are, other images
   of `Meziantou.Framework.Imaging` with their alpha channel and ICC profile), the document information and the XMP
   metadata, the outline (bookmarks), links and annotations, text extraction (`PdfPage.ExtractText`)
 
@@ -36,6 +36,28 @@ page.CreateContentBuilder()
 
 using var stream = new MemoryStream();
 document.Save(stream);
+```
+<!-- endref -->
+
+## Embed a font
+
+`PdfFont.Load` reads a TrueType or OpenType font. Each document embeds the subset of the glyphs it shows, as a composite
+font whose codes are the glyph identifiers, with a `ToUnicode` CMap so that the text can be extracted and searched.
+The text is shaped with the OpenType layout tables of the font (ligatures, kerning, marks, complex scripts such as
+Arabic or Devanagari) and ordered by the Unicode Bidirectional Algorithm; a text whose glyphs cannot give it back
+(several glyphs for a character, right-to-left text) is marked with its replacement text (`/ActualText`).
+
+<!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_EmbeddedFont;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A .ttf, .otf, .ttc, .woff or .woff2 file
+var font = PdfFont.Load(fontData);
+
+var document = new PdfDocument();
+document.Pages.Add(PdfSize.A4).CreateContentBuilder()
+    .DrawText("Office \u2014 AVATAR", font, 24, 60, 700);
+
+// The document embeds the glyphs it shows, with their text
+var pdf = document.ToByteArray();
 ```
 <!-- endref -->
 
@@ -105,7 +127,7 @@ document.Catalog[PdfName.Create("ViewerPreferences")] = document.Objects.Add(vie
 | Situation | Exception |
 | --- | --- |
 | The data is not a PDF document, or it is damaged beyond repair | `InvalidPdfContentException` |
-| The document uses a feature the library does not support (encryption, the `CCITTFaxDecode` and `JBIG2Decode` filters, CMYK JPEG images) | `UnsupportedPdfFeatureException` |
+| The document uses a feature the library does not support (encryption, the `CCITTFaxDecode` and `JBIG2Decode` filters, CMYK JPEG images), or a font cannot be embedded (CFF2 or bitmap outlines, a license that does not allow it) | `UnsupportedPdfFeatureException` |
 | The document exceeds a limit of `PdfReadOptions` (decoded length of a stream, nesting depth) | `PdfResourceLimitException` |
 
 The three exceptions derive from `PdfException`. A reference to an object that does not exist is the null object, as the
@@ -114,8 +136,9 @@ specification says; a content stream that cannot be decoded throws when its data
 ## Limitations
 
 - Encrypted documents are not read yet, and the library does not encrypt.
-- Fonts other than the standard 14 fonts are not embedded yet: the text the content builder shows must be in
-  `WinAnsiEncoding` (or the encodings of Symbol and ZapfDingbats). PDF/A, Tagged PDF and PDF/UA are not supported yet.
+- The standard 14 fonts show the text of `WinAnsiEncoding` (or the encodings of Symbol and ZapfDingbats); an embedded
+  font shows any text it has the glyphs of. The fonts with CFF2 outlines, and the instances of variable fonts, are not
+  embedded. PDF/A, Tagged PDF and PDF/UA are not supported yet.
 - Pages are not rendered.
 - The text extraction follows the order of the content and joins the glyphs into lines by their positions; it does
   not detect columns.

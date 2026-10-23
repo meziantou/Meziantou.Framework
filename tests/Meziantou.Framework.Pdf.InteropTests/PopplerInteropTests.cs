@@ -23,6 +23,38 @@ public sealed class PopplerInteropTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task EmbeddedFontsAreReadByPoppler(bool objectStreams)
+    {
+        var poppler = await PopplerTool.LocateAsync(XunitCancellationToken);
+        var path = InteropDocuments.Write("fonts", objectStreams);
+
+        var fonts = await poppler.GetFontsAsync(path, XunitCancellationToken);
+        var text = await poppler.ExtractTextAsync(path, XunitCancellationToken);
+
+        // name, type, encoding, emb, sub, uni, object, generation: each font is an embedded subset with a ToUnicode CMap
+        Assert.Equal(InteropDocuments.EmbeddedFonts.Length, fonts.Count);
+        Assert.All(fonts, line => Assert.Matches("^[A-Z]{6}\\+\\S+ +CID (TrueType|Type 0C) +Identity-H +yes yes yes ", line));
+        var expected = InteropDocuments.GetExpectedText("fonts");
+        var pages = Normalize(text).Split("\n\n");
+        Assert.HasCount(expected.Length, pages);
+        for (var i = 0; i < expected.Length; i++)
+        {
+            if (expected[i].Any(c => c is >= (char)0x0600 and <= (char)0x06FF))
+            {
+                // pdftotext writes the right-to-left lines in an order of its own, between directional formatting
+                // characters, whether the text is a replacement text or the text of each glyph: only the characters are compared
+                Assert.Equal(expected[i].Order(), pages[i].Where(c => char.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.Format).Order());
+            }
+            else
+            {
+                Assert.Equal(expected[i], pages[i]);
+            }
+        }
+    }
+
+    [Theory]
     [MemberData(nameof(Written))]
     public async Task PdfinfoReadsTheDocument(string name, bool objectStreams)
     {

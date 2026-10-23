@@ -18,9 +18,16 @@ internal sealed class TextExtractor
     // not with the size of the file.
     private const long MaxOperations = 200_000_000;
 
+    // The glyphs are kept until the text is built: their count bounds the memory, apart from the work
+    private const int MaxGlyphs = 4_000_000;
+
     private readonly List<TextGlyph> _glyphs = [];
     private readonly Dictionary<PdfStream, byte[]?> _formData = new(ReferenceEqualityComparer.Instance);
     private long _operations;
+
+    // The replacement text of the marked-content sequence being read (14.9.4): its glyphs are replaced by it
+    private string? _actualText;
+    private int _actualTextStart;
     private readonly Dictionary<PdfDictionary, PdfFontDecoder> _decoders = new(ReferenceEqualityComparer.Instance);
     private readonly HashSet<PdfStream> _activeForms = new(ReferenceEqualityComparer.Instance);
 
@@ -57,6 +64,10 @@ internal sealed class TextExtractor
         var reader = new ContentStreamReader(content);
         var operands = new List<PdfObject>();
         var stack = new Stack<TextGraphicsState>();
+
+        // The marked-content sequences of this content, and the one that has the replacement text
+        var markedContentDepth = 0;
+        var actualTextDepth = -1;
         while (reader.TryRead(operands, out var name))
         {
             Charge(1);
@@ -142,11 +153,73 @@ internal sealed class TextExtractor
                     }
 
                     break;
+                case "BMC":
+                    markedContentDepth++;
+                    break;
+                case "BDC":
+                    markedContentDepth++;
+                    if (_actualText is null && GetActualText(resources, operands) is { } actualText)
+                    {
+                        _actualText = actualText;
+                        _actualTextStart = _glyphs.Count;
+                        actualTextDepth = markedContentDepth;
+                    }
+
+                    break;
+                case "EMC" when markedContentDepth > 0:
+                    if (markedContentDepth == actualTextDepth)
+                    {
+                        EndActualText(ref state);
+                        actualTextDepth = -1;
+                    }
+
+                    markedContentDepth--;
+                    break;
                 case "Do" when operands.Count >= 1 && operands[^1] is PdfName xobjectName && depth < MaxFormDepth:
                     RunForm(resources, xobjectName, state, depth);
                     break;
             }
         }
+
+        // A sequence the content does not end ends with it
+        if (actualTextDepth >= 0)
+        {
+            EndActualText(ref state);
+        }
+    }
+
+    /// <summary>Gets the replacement text of the property list of a <c>BDC</c> operator: inline, or a resource (14.6.2).</summary>
+    private static string? GetActualText(PdfDictionary? resources, List<PdfObject> operands)
+    {
+        var properties = operands.Count >= 2 ? operands[^1] switch
+        {
+            PdfDictionary dictionary => dictionary,
+            PdfName name => resources?.Get<PdfDictionary>(PdfNames.Properties)?.Get<PdfDictionary>(name),
+            _ => null,
+        } : null;
+        return properties?.GetResolved(PdfNames.ActualText) is PdfString text ? text.ToText() : null;
+    }
+
+    /// <summary>Replaces the glyphs of the sequence that has a replacement text by the text, from the start of the first glyph to the end of the last one.</summary>
+    private void EndActualText(ref TextGraphicsState state)
+    {
+        var text = _actualText!;
+        _actualText = null;
+        if (_glyphs.Count > _actualTextStart)
+        {
+            var first = _glyphs[_actualTextStart];
+            var last = _glyphs[^1];
+            _glyphs.RemoveRange(_actualTextStart, _glyphs.Count - _actualTextStart);
+            _glyphs.Add(first with { Text = text, EndX = last.EndX, EndY = last.EndY });
+            return;
+        }
+
+        // No glyph: the text is at the current point
+        var matrix = new PdfMatrix(state.FontSize * state.HorizontalScaling, 0, 0, state.FontSize, 0, state.Rise) * state.TextMatrix * state.Ctm;
+        var (x, y) = matrix.Transform(0, 0);
+        var (sizeX, sizeY) = matrix.TransformVector(0, 1);
+        var (directionX, directionY) = (state.TextMatrix * state.Ctm).TransformVector(1, 0);
+        AddGlyph(new TextGlyph(text, x, y, x, y, Math.Sqrt((sizeX * sizeX) + (sizeY * sizeY)), Math.Atan2(directionY, directionX)));
     }
 
     private void RunForm(PdfDictionary? resources, PdfName name, TextGraphicsState state, int depth)
@@ -235,9 +308,17 @@ internal sealed class TextExtractor
             var (sizeX, sizeY) = renderingMatrix.TransformVector(0, 1);
             var size = Math.Sqrt((sizeX * sizeX) + (sizeY * sizeY));
             var (directionX, directionY) = (state.TextMatrix * state.Ctm).TransformVector(1, 0);
-            _glyphs.Add(new TextGlyph(text, x, y, endX, endY, size, Math.Atan2(directionY, directionX)));
+            AddGlyph(new TextGlyph(text, x, y, endX, endY, size, Math.Atan2(directionY, directionX)));
             Advance(ref state, advanceX, advanceY);
         }
+    }
+
+    private void AddGlyph(TextGlyph glyph)
+    {
+        if (_glyphs.Count >= MaxGlyphs)
+            throw new PdfResourceLimitException($"The content of the page shows more than {MaxGlyphs} glyphs");
+
+        _glyphs.Add(glyph);
     }
 
     private void Charge(long count)

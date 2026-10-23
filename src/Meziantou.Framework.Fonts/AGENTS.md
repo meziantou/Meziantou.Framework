@@ -1,8 +1,9 @@
 # Meziantou.Framework.Fonts
 
-The OpenType font reader and the text shaper shared by `Meziantou.Framework.Imaging` (which draws text) and
-`Meziantou.Framework.WebPlatform` (which lays out HTML, SVG and MathML text): TrueType, CFF and CFF2 outlines, WOFF
-and WOFF2, variable fonts, color fonts (COLR, CPAL, sbix, CBDT), BASE baselines, and the shaping of complex scripts.
+The OpenType font reader and the text shaper shared by `Meziantou.Framework.Imaging` (which draws text),
+`Meziantou.Framework.WebPlatform` (which lays out HTML, SVG and MathML text) and `Meziantou.Framework.Pdf` (which
+embeds fonts): TrueType, CFF and CFF2 outlines, WOFF and WOFF2, variable fonts, color fonts (COLR, CPAL, sbix, CBDT),
+BASE baselines, the shaping of complex scripts, and the subsetting of TrueType and CFF outlines (`FontSubsetter`).
 
 These instructions complete the repository-level `AGENTS.md`.
 
@@ -10,7 +11,8 @@ These instructions complete the repository-level `AGENTS.md`.
 
 - **The public API is what the packages that use the code need.** A type is `public` when `Meziantou.Framework.Imaging`,
   `Meziantou.Framework.WebPlatform` or `Meziantou.Framework.WebPlatform.Imaging` uses it, and everything else stays
-  `internal` (the tests, the fuzzing and the benchmarks see it through `InternalsVisibleTo`; the libraries do not).
+  `internal` (the tests, the fuzzing and the benchmarks see it through `InternalsVisibleTo`; the libraries do not,
+  except `Meziantou.Framework.Pdf`, which uses the internal subsetter, `FontSubsetter`, and `FontTags`).
   These packages still depend on the exact version of this package (`UseExactProjectReferenceVersions` in their project
   file) and are released together with it. Every public member is documented (`DisableDocumentationWarnings` is
   `false`), and the public API is recorded in `ref/` by the build.

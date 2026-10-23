@@ -1,3 +1,4 @@
+using Meziantou.Framework.Fonts;
 using Meziantou.Framework.Pdf.Fonts;
 using Meziantou.Framework.Pdf.Objects;
 
@@ -10,6 +11,9 @@ namespace Meziantou.Framework.Pdf;
 /// </remarks>
 public abstract class PdfFont
 {
+    // The temporary buffers of the shaping of a text, for the fonts this class loads
+    private const long MaxLiveAllocationBytes = 64L * 1024 * 1024;
+
     private static readonly PdfFont[] StandardFonts = CreateStandardFonts();
 
     private protected PdfFont()
@@ -37,6 +41,51 @@ public abstract class PdfFont
             throw new ArgumentOutOfRangeException(nameof(font), font, "Unknown standard font");
 
         return StandardFonts[(int)font];
+    }
+
+    /// <summary>Loads a TrueType or OpenType font (<c>.ttf</c>, <c>.otf</c>, <c>.ttc</c>, <c>.woff</c>, <c>.woff2</c>) to embed in the documents that use it.</summary>
+    /// <param name="data">The bytes of the font file.</param>
+    /// <param name="faceIndex">The index of the font in a collection (<c>.ttc</c>); 0 for a file of one font.</param>
+    /// <returns>The font.</returns>
+    /// <remarks>
+    /// Each document embeds the subset of the glyphs it shows, in a composite font whose codes are the glyph
+    /// identifiers (ISO 32000-2, 9.7), with a <c>ToUnicode</c> CMap so that the text can be extracted. The text is
+    /// shaped with the OpenType layout tables of the font (ligatures, kerning, marks, complex scripts) and ordered by
+    /// the Unicode Bidirectional Algorithm.
+    /// </remarks>
+    /// <exception cref="InvalidFontException">The file is not a valid font.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="faceIndex"/> is not the index of a font of the file.</exception>
+    /// <exception cref="UnsupportedPdfFeatureException">The outlines of the font cannot be embedded (CFF2 or bitmap fonts), or its license does not allow embedding.</exception>
+    public static PdfFont Load(ReadOnlySpan<byte> data, int faceIndex = 0)
+    {
+        var faces = FontLoader.Load(data, new PooledFontEnvironment(FontResourceLimits.Default, MaxLiveAllocationBytes));
+        if ((uint)faceIndex >= (uint)faces.Length)
+            throw new ArgumentOutOfRangeException(nameof(faceIndex), faceIndex, $"The file has {faces.Length} fonts");
+
+        return FromFace(faces[faceIndex]);
+    }
+
+    /// <summary>Loads a TrueType or OpenType font file to embed in the documents that use it. See <see cref="Load(ReadOnlySpan{byte}, int)"/>.</summary>
+    /// <param name="path">The path of the font file.</param>
+    /// <param name="faceIndex">The index of the font in a collection (<c>.ttc</c>); 0 for a file of one font.</param>
+    /// <returns>The font.</returns>
+    /// <exception cref="InvalidFontException">The file is not a valid font.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="faceIndex"/> is not the index of a font of the file.</exception>
+    /// <exception cref="UnsupportedPdfFeatureException">The outlines of the font cannot be embedded, or its license does not allow embedding.</exception>
+    public static PdfFont Load(string path, int faceIndex = 0)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        return Load(File.ReadAllBytes(path), faceIndex);
+    }
+
+    /// <summary>Creates a font to embed in the documents that use it from a font face. See <see cref="Load(ReadOnlySpan{byte}, int)"/>.</summary>
+    /// <param name="face">The face.</param>
+    /// <returns>The font.</returns>
+    /// <exception cref="UnsupportedPdfFeatureException">The outlines of the font cannot be embedded, or its license does not allow embedding.</exception>
+    public static PdfFont FromFace(FontFace face)
+    {
+        ArgumentNullException.ThrowIfNull(face);
+        return new EmbeddedPdfFont(face);
     }
 
     /// <summary>Indicates whether every character of a text has a glyph in the font.</summary>

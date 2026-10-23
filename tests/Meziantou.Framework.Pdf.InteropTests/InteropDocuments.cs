@@ -7,7 +7,17 @@ namespace Meziantou.Framework.Pdf.InteropTests;
 /// <summary>The documents the interop tests give to the external tools: documents the library writes, and the fixtures.</summary>
 internal static class InteropDocuments
 {
-    public static readonly string[] WrittenNames = ["text", "graphics", "images", "navigation", "metadata"];
+    public static readonly string[] WrittenNames = ["text", "graphics", "images", "navigation", "metadata", "fonts"];
+
+    /// <summary>The embedded fonts of the "fonts" document, and the text of its page for each one.</summary>
+    public static readonly (string Font, string Text)[] EmbeddedFonts =
+    [
+        ("noto-sans/NotoSans-Regular.subset.ttf", "Office AVATAR \u00E9t\u00E9 \u201Cfine\u201D \u2014 1\u20AC"),
+        ("noto-sans-cff/NotoSans-Regular.subset.otf", "Office AVATAR \u00E9t\u00E9 \u201Cfine\u201D \u2014 1\u20AC"),
+        ("noto-sans-cjk/NotoSansCJKjp-Regular.subset.otf", "\u65E5\u672C\u8A9E\u306E\u30C6\u30AD\u30B9\u30C8\u3002"),
+        ("noto-naskh-arabic/NotoNaskhArabic-Regular.subset.ttf", "\u0645\u0631\u062D\u0628\u0627 123"),
+        ("noto-sans-devanagari/NotoSansDevanagari-Regular.ttf", "\u0928\u092E\u0938\u094D\u0924\u0947 \u0915\u093F\u0924\u093E\u092C"),
+    ];
 
     public static TheoryData<string, bool> Written
     {
@@ -46,6 +56,7 @@ internal static class InteropDocuments
         return name switch
         {
             "text" => ["Hello, World\nCaf\u00E9 \u2013 \u20AC10 \u201Cquoted\u201D\nCourier text", "\u03B1\u03B2\u03B3 \u2248 \u03C0"],
+            "fonts" => [.. EmbeddedFonts.Select(font => font.Text)],
             _ => [],
         };
     }
@@ -120,6 +131,13 @@ internal static class InteropDocuments
                 document.Information.CreationDate = new DateTimeOffset(2024, 5, 6, 7, 8, 9, TimeSpan.FromHours(2));
                 document.Information.ModificationDate = new DateTimeOffset(2024, 5, 6, 7, 8, 9, TimeSpan.Zero);
                 document.UpdateXmpMetadata();
+                break;
+            case "fonts":
+                foreach (var (font, text) in EmbeddedFonts)
+                {
+                    document.Pages.Add(PdfSize.A5).CreateContentBuilder().DrawText(text, PdfFont.Load(RepositoryPaths.Fonts / font), 24, 30, 500);
+                }
+
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(name), name, "Unknown document");

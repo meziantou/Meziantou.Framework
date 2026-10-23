@@ -17,4 +17,7 @@ public static class RepositoryPaths
 
     /// <summary>Gets the directory of the TSV files of the vendored Arlington PDF Model.</summary>
     public static FullPath ArlingtonTsv => Fixtures / "arlington" / "tsv" / "latest";
+
+    /// <summary>Gets the directory of the fonts of the fixtures of Meziantou.Framework.Imaging, which the tests of the embedded fonts share.</summary>
+    public static FullPath Fonts => Root / "tests" / "Meziantou.Framework.Imaging.Fixtures" / "fonts";
 }

@@ -1,4 +1,5 @@
 using System.Globalization;
+using Meziantou.Framework.Pdf.Fonts;
 using Meziantou.Framework.Pdf.Objects;
 using Meziantou.Framework.Pdf.Writing;
 
@@ -30,9 +31,11 @@ public sealed class PdfContentBuilder
     private readonly PdfByteWriter _buffer = new(256);
     private int _graphicsStateDepth;
     private int _markedContentDepth;
-    private readonly Stack<PdfFont?> _savedFonts = new();
+    private readonly Stack<(PdfFont? Font, double FontSize, double TextRise)> _savedTextStates = new();
     private bool _inText;
     private PdfFont? _font;
+    private double _fontSize;
+    private double _textRise;
 
     internal PdfContentBuilder(PdfDocument document, PdfDictionary resources, PdfStream stream)
     {
@@ -50,7 +53,7 @@ public sealed class PdfContentBuilder
     {
         EnsureNotInText();
         _graphicsStateDepth++;
-        _savedFonts.Push(_font);
+        _savedTextStates.Push((_font, _fontSize, _textRise));
         return Operator("q");
     }
 
@@ -64,7 +67,7 @@ public sealed class PdfContentBuilder
             throw new InvalidOperationException("No graphics state is saved");
 
         _graphicsStateDepth--;
-        _font = _savedFonts.Pop();
+        (_font, _fontSize, _textRise) = _savedTextStates.Pop();
         return Operator("Q");
     }
 
@@ -389,6 +392,7 @@ public sealed class PdfContentBuilder
         ArgumentNullException.ThrowIfNull(font);
         var name = AddResource(PdfNames.Font, "F", font.GetReference(_document));
         _font = font;
+        _fontSize = size;
         WriteName(name);
         return Operator("Tf", size);
     }
@@ -421,7 +425,11 @@ public sealed class PdfContentBuilder
     /// <summary>Sets the text rise (<c>Ts</c>): the distance to move the baseline up (superscript) or down (subscript).</summary>
     /// <param name="rise">The rise, in unscaled text space units.</param>
     /// <returns>The builder.</returns>
-    public PdfContentBuilder SetTextRise(double rise) => Operator("Ts", rise);
+    public PdfContentBuilder SetTextRise(double rise)
+    {
+        _textRise = rise;
+        return Operator("Ts", rise);
+    }
 
     /// <summary>Moves to the start of the next line, offset from the start of the current line (<c>Td</c>).</summary>
     /// <param name="x">The horizontal offset.</param>
@@ -468,6 +476,9 @@ public sealed class PdfContentBuilder
     public PdfContentBuilder ShowText(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
+        if (_font is EmbeddedPdfFont)
+            return ShowShapedText([text], nextLine: false);
+
         WriteText(text);
         return Operator("Tj");
     }
@@ -480,6 +491,9 @@ public sealed class PdfContentBuilder
     public PdfContentBuilder ShowTextOnNextLine(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
+        if (_font is EmbeddedPdfFont)
+            return ShowShapedText([text], nextLine: true);
+
         WriteText(text);
         return Operator("'");
     }
@@ -492,6 +506,9 @@ public sealed class PdfContentBuilder
     public PdfContentBuilder ShowText(params ReadOnlySpan<PdfTextSegment> segments)
     {
         EnsureFont();
+        if (_font is EmbeddedPdfFont)
+            return ShowShapedText(segments, nextLine: false);
+
         _buffer.WriteByte((byte)'[');
         var first = true;
         foreach (var segment in segments)
@@ -664,6 +681,133 @@ public sealed class PdfContentBuilder
                 return name;
             }
         }
+    }
+
+    /// <summary>
+    /// Shows texts with an embedded font: the glyphs the shaping gives, from left to right, in <c>TJ</c> arrays whose
+    /// numbers move each glyph to its position, and a text rise (<c>Ts</c>) for the glyphs above or below the baseline.
+    /// The text is a replacement text (<c>/ActualText</c>, ISO 32000-2, 14.9.4) when the glyphs cannot give it back.
+    /// </summary>
+    private PdfContentBuilder ShowShapedText(ReadOnlySpan<PdfTextSegment> segments, bool nextLine)
+    {
+        EnsureFont();
+        var font = (EmbeddedPdfFont)_font!;
+
+        // Shape first: a character the font does not have leaves the content unchanged
+        var glyphs = new List<ShapedGlyph>();
+        var pendingAdjustment = 0d;
+        var needsActualText = false;
+        var shapedTexts = new List<ShapedText>();
+        var text = new System.Text.StringBuilder();
+        foreach (var segment in segments)
+        {
+            if (segment.Text is null)
+            {
+                pendingAdjustment += segment.Adjustment;
+                continue;
+            }
+
+            var shaped = font.Shape(segment.Text);
+            shapedTexts.Add(shaped);
+            text.Append(segment.Text);
+            needsActualText |= shaped.NeedsActualText;
+            foreach (var glyph in shaped.Glyphs)
+            {
+                glyphs.Add(glyph with { Adjustment = glyph.Adjustment + pendingAdjustment });
+                pendingAdjustment = 0;
+            }
+
+            pendingAdjustment += shaped.TrailingAdjustment;
+        }
+
+        var usage = font.GetUsage(_document);
+        foreach (var shaped in shapedTexts)
+        {
+            needsActualText |= !usage.Record(shaped);
+        }
+
+        if (needsActualText)
+        {
+            WriteName("Span");
+            PdfObjectSerializer.Write(_buffer, new PdfDictionary { [PdfNames.ActualText] = PdfString.FromText(text.ToString()) }, ReferenceWriter.Identity);
+            _buffer.WriteSpace();
+            Operator("BDC");
+        }
+
+        if (nextLine)
+        {
+            Operator("T*");
+        }
+
+        var rise = 0d;
+        var start = 0;
+        do
+        {
+            // The glyphs at one height: one TJ array
+            var end = start;
+            while (end < glyphs.Count && glyphs[end].Rise == glyphs[start].Rise)
+            {
+                end++;
+            }
+
+            if (end > start && glyphs[start].Rise != rise)
+            {
+                rise = glyphs[start].Rise;
+                Operator("Ts", _textRise + (rise * _fontSize / 1000));
+            }
+
+            _buffer.WriteByte((byte)'[');
+            var inString = false;
+            for (var i = start; i < end; i++)
+            {
+                var glyph = glyphs[i];
+                if (glyph.Adjustment != 0)
+                {
+                    if (inString)
+                    {
+                        _buffer.WriteByte((byte)'>');
+                        inString = false;
+                    }
+
+                    _buffer.WriteNumber(glyph.Adjustment);
+                }
+
+                if (!inString)
+                {
+                    _buffer.WriteByte((byte)'<');
+                    inString = true;
+                }
+
+                _buffer.WriteAscii(glyph.Glyph.ToString("X4", CultureInfo.InvariantCulture));
+            }
+
+            if (inString)
+            {
+                _buffer.WriteByte((byte)'>');
+            }
+
+            if (end == glyphs.Count && pendingAdjustment != 0)
+            {
+                _buffer.WriteNumber(pendingAdjustment);
+            }
+
+            _buffer.WriteAscii("] ");
+            Operator("TJ");
+            start = end;
+        }
+        while (start < glyphs.Count);
+
+        if (rise != 0)
+        {
+            Operator("Ts", _textRise);
+        }
+
+        if (needsActualText)
+        {
+            Operator("EMC");
+        }
+
+        return this;
     }
 
     private void WriteText(string text)

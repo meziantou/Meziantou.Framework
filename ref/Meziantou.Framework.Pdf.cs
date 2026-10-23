@@ -219,8 +219,11 @@ namespace Meziantou.Framework.Pdf
         public abstract double Descent { get; }
         public abstract string PostScriptName { get; }
         public abstract bool CanEncode(string text);
+        public static Meziantou.Framework.Pdf.PdfFont FromFace(Meziantou.Framework.Fonts.FontFace face) => throw null;
         public static Meziantou.Framework.Pdf.PdfFont GetStandardFont(Meziantou.Framework.Pdf.PdfStandardFont font) => throw null;
         public double GetTextWidth(string text, double fontSize) => throw null;
+        public static Meziantou.Framework.Pdf.PdfFont Load(System.ReadOnlySpan<byte> data, int faceIndex = 0) => throw null;
+        public static Meziantou.Framework.Pdf.PdfFont Load(string path, int faceIndex = 0) => throw null;
     }
 
     public sealed class PdfImage

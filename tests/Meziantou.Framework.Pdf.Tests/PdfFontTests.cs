@@ -1,4 +1,8 @@
+using System.Buffers.Binary;
+using Meziantou.Framework.Fonts;
 using Meziantou.Framework.Pdf.Fonts;
+using Meziantou.Framework.Pdf.Objects;
+using Meziantou.Framework.Pdf.TestHarness;
 
 namespace Meziantou.Framework.Pdf.Tests;
 
@@ -113,4 +117,199 @@ public sealed class PdfFontTests
     [InlineData("CourierNew,BoldItalic", "Courier-BoldOblique")]
     [InlineData("Unknown", null)]
     public void StandardFontAliases(string baseFont, string? expected) => Assert.Equal(expected, Fonts.StandardFontMetrics.GetStandardName(baseFont));
+
+    [Theory]
+    [InlineData("noto-sans/NotoSans-Regular.subset.ttf", "Office AVATAR \u00E9t\u00E9 \u201Cfine\u201D \u2014 1\u20AC")]
+    [InlineData("noto-sans-cff/NotoSans-Regular.subset.otf", "Office AVATAR \u00E9t\u00E9 \u201Cfine\u201D \u2014 1\u20AC")]
+    [InlineData("noto-sans-cjk/NotoSansCJKjp-Regular.subset.otf", "\u65E5\u672C\u8A9E\u306E\u30C6\u30AD\u30B9\u30C8\u3002")]
+    [InlineData("noto-naskh-arabic/NotoNaskhArabic-Regular.subset.ttf", "\u0645\u0631\u062D\u0628\u0627 123")]
+    [InlineData("noto-sans-devanagari/NotoSansDevanagari-Regular.ttf", "\u0928\u092E\u0938\u094D\u0924\u0947 \u0915\u093F\u0924\u093E\u092C")]
+    public void EmbeddedFontTextCanBeExtracted(string fontPath, string text)
+    {
+        var font = PdfFont.Load(RepositoryPaths.Fonts / fontPath);
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText(text, font, 12, 50, 800);
+
+        var reopened = PdfDocument.Open(document.ToByteArray());
+
+        Assert.Equal(text, reopened.Pages[0].ExtractText());
+    }
+
+    [Theory]
+    [InlineData("noto-sans/NotoSans-Regular.subset.ttf", "CIDFontType2", "FontFile2")]
+    [InlineData("noto-sans-cff/NotoSans-Regular.subset.otf", "CIDFontType0", "FontFile3")]
+    [InlineData("noto-sans-cjk/NotoSansCJKjp-Regular.subset.otf", "CIDFontType0", "FontFile3")]
+    public void EmbeddedFontObjects(string fontPath, string cidFontType, string fontFileKey)
+    {
+        var font = PdfFont.Load(RepositoryPaths.Fonts / fontPath);
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Hi!", font, 12, 50, 800);
+
+        var reopened = PdfDocument.Open(document.ToByteArray());
+        var type0 = reopened.Pages[0].Resources!.Get<PdfDictionary>(PdfNames.Font)!.Get<PdfDictionary>(PdfName.Create("F1"))!;
+        var cidFont = Assert.IsType<PdfDictionary>(type0.Get<PdfArray>(PdfNames.DescendantFonts)!.GetResolved(0));
+        var descriptor = cidFont.Get<PdfDictionary>(PdfNames.FontDescriptor)!;
+
+        Assert.Equal(PdfNames.Type0, type0.GetName(PdfNames.Subtype));
+        Assert.Equal(PdfNames.IdentityH, type0.GetName(PdfNames.Encoding));
+        Assert.Matches("^[A-Z]{6}\\+" + font.PostScriptName + "$", type0.GetName(PdfNames.BaseFont)!.Value);
+        Assert.Equal(type0.GetName(PdfNames.BaseFont), descriptor.GetName(PdfNames.FontName));
+        Assert.Equal(cidFontType, cidFont.GetName(PdfNames.Subtype)!.Value);
+        Assert.NotNull(type0.Get<PdfStream>(PdfNames.ToUnicode));
+        Assert.NotEmpty(descriptor.Get<PdfStream>(PdfName.Create(fontFileKey))!.GetDecodedData());
+    }
+
+    [Fact]
+    public void EmbeddedFontIsShaped()
+    {
+        var font = PdfFont.Load(RepositoryPaths.Fonts / "noto-sans/NotoSans-Regular.subset.ttf");
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("fi AV", font, 10, 0, 0);
+
+        var content = System.Text.Encoding.Latin1.GetString(PdfDocument.Open(document.ToByteArray()).Pages[0].GetContentData());
+
+        // The ligature is one glyph, and the kerning of AV is a number of the TJ array: four codes for the five characters
+        Assert.Matches("^BT\n/F1 10 Tf\n0 0 Td\n\\[<[0-9A-F]{12}>-?[0-9.]+<[0-9A-F]{4}>\\] TJ\nET\n$", content);
+        Assert.True(font.GetTextWidth("AV", 10) < font.GetTextWidth("A", 10) + font.GetTextWidth("V", 10));
+    }
+
+    [Fact]
+    public void EmbeddedFontWithoutTheGlyph()
+    {
+        var font = PdfFont.Load(RepositoryPaths.Fonts / "noto-sans/NotoSans-Regular.subset.ttf");
+        var document = new PdfDocument();
+        var builder = document.Pages.Add(PdfSize.A4).CreateContentBuilder();
+
+        Assert.True(font.CanEncode("Caf\u00E9\u200D"));
+        Assert.False(font.CanEncode("\u4E2D"));
+        Assert.Throws<ArgumentException>(() => builder.DrawText("A\u4E2D", font, 12, 0, 0));
+        Assert.Empty(document.Pages[0].GetContentData());
+    }
+
+    [Fact]
+    public void EmbeddedFontSubsetGrowsWithTheText()
+    {
+        var font = PdfFont.Load(RepositoryPaths.Fonts / "noto-sans/NotoSans-Regular.subset.ttf");
+        var document = new PdfDocument();
+        var page = document.Pages.Add(PdfSize.A4);
+        page.CreateContentBuilder().DrawText("A", font, 12, 50, 800);
+        var first = document.ToByteArray();
+        page.CreateContentBuilder().DrawText("B", font, 12, 50, 700);
+
+        var second = PdfDocument.Open(document.ToByteArray());
+
+        Assert.Equal("A", PdfDocument.Open(first).Pages[0].ExtractText());
+        Assert.Equal("A\nB", second.Pages[0].ExtractText());
+        Assert.Single(second.Pages[0].Resources!.Get<PdfDictionary>(PdfNames.Font)!);
+    }
+
+    [Fact]
+    public void EmbeddedFontsAreNotSharedBetweenDocuments()
+    {
+        var font = PdfFont.Load(RepositoryPaths.Fonts / "noto-sans/NotoSans-Regular.subset.ttf");
+        var first = new PdfDocument();
+        first.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("One", font, 12, 50, 800);
+        var second = new PdfDocument();
+        second.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Two", font, 12, 50, 800);
+
+        Assert.Equal("One", PdfDocument.Open(first.ToByteArray()).Pages[0].ExtractText());
+        Assert.Equal("Two", PdfDocument.Open(second.ToByteArray()).Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void EmbeddedFontInTextArrays()
+    {
+        var font = PdfFont.Load(RepositoryPaths.Fonts / "noto-sans/NotoSans-Regular.subset.ttf");
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder()
+            .BeginText()
+            .SetFont(font, 12)
+            .SetTextLeading(14)
+            .MoveTextPosition(50, 800)
+            .ShowText(["Ke", 80, "rning"])
+            .ShowTextOnNextLine("Next")
+            .EndText();
+
+        Assert.Equal("Kerning\nNext", PdfDocument.Open(document.ToByteArray()).Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void ReplacementTextOfMarkedContent()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> /Properties << /P0 << /ActualText (named) >> >> >> /Contents 5 0 R >>")
+            .Add(4, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+            .Add(5, HandWrittenPdf.Stream("BT /F1 12 Tf 72 720 Td /Span << /ActualText (Replaced) >> BDC (xyz) Tj EMC ( and ) Tj /Span /P0 BDC (abc) Tj EMC ET"));
+
+        Assert.Equal("Replaced and named", PdfDocument.Open(file.ToArray()).Pages[0].ExtractText());
+    }
+
+    [Theory]
+    [InlineData("noto-sans/NotoSans-Regular.subset.ttf")]
+    [InlineData("noto-sans-cff/NotoSans-Regular.subset.otf")]
+    [InlineData("noto-sans-cjk/NotoSansCJKjp-Regular.subset.otf")]
+    public void SubsetKeepsTheOutlinesOfTheGlyphs(string fontPath)
+    {
+        var face = LoadFace(fontPath);
+        int[] kept = [.. new[] { face.MapCodePoint('A'), face.MapCodePoint(0xE9), face.MapCodePoint(0x672C) }.Where(glyph => glyph != 0)];
+        var removed = face.MapCodePoint('Z');
+
+        // The subset has the tables a PDF reader uses: the other tables of the font are added to read it as a font
+        var tables = new SortedDictionary<uint, byte[]>();
+        foreach (var tag in face.TableTags)
+        {
+            Assert.True(face.TryGetTable(tag, out var table));
+            tables[tag] = table.ToArray();
+        }
+
+        if (face.Outlines == FontOutlineKind.TrueType)
+        {
+            var program = FontSubsetter.SubsetTrueType(face, kept);
+            var count = BinaryPrimitives.ReadUInt16BigEndian(program.AsSpan(4));
+            for (var i = 0; i < count; i++)
+            {
+                var record = program.AsSpan(12 + (i * 16));
+                tables[BinaryPrimitives.ReadUInt32BigEndian(record)] = program.AsSpan((int)BinaryPrimitives.ReadUInt32BigEndian(record[8..]), (int)BinaryPrimitives.ReadUInt32BigEndian(record[12..])).ToArray();
+            }
+        }
+        else
+        {
+            tables[FontTags.Cff] = FontSubsetter.SubsetCff(face, kept, "ABCDEF+Subset");
+        }
+
+        var subset = FontSubsetter.WriteSfnt(face.Outlines == FontOutlineKind.TrueType ? 0x00010000u : FontTags.OpenTypeCff, tables);
+
+        var subsetFace = Assert.Single(FontLoader.Load(subset, face.Data.Environment));
+        using var scratch = new GlyphScratch(face.Data.Environment.CreateAllocator("test"));
+
+        Assert.Equal(face.GlyphCount, subsetFace.GlyphCount);
+        Assert.Equal(face.Outlines, subsetFace.Outlines);
+        foreach (var glyph in FontSubsetter.GetClosure(face, kept))
+        {
+            Assert.Equal(face.GetAdvanceWidth(glyph), subsetFace.GetAdvanceWidth(glyph));
+            Assert.Equal(face.TryGetGlyphBounds(glyph, scratch, out var expected), subsetFace.TryGetGlyphBounds(glyph, scratch, out var actual));
+            Assert.Equal(expected, actual);
+        }
+
+        Assert.True(face.TryGetGlyphBounds(removed, scratch, out _));
+        Assert.False(subsetFace.TryGetGlyphBounds(removed, scratch, out _));
+    }
+
+    [Fact]
+    public void ClosureHasTheComponentsOfCompositeGlyphs()
+    {
+        var face = LoadFace("noto-sans/NotoSans-Regular.subset.ttf");
+        var eacute = face.MapCodePoint(0xE9);
+
+        var closure = FontSubsetter.GetClosure(face, [eacute, -1, face.GlyphCount]);
+
+        Assert.Contains(0, closure);
+        Assert.Contains(eacute, closure);
+        Assert.DoesNotContain(-1, closure);
+        Assert.DoesNotContain(face.GlyphCount, closure);
+    }
+
+    private static FontFace LoadFace(string path) => FontLoader.Load(File.ReadAllBytes(RepositoryPaths.Fonts / path), new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024))[0];
 }

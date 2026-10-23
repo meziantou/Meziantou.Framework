@@ -14,7 +14,7 @@ annotations.
 - edit nodes, tokens and trivia, rebuilding only what changed, and serialize back with `ToFullString()`
 - walk or rewrite the tree with visitors
 
-The .NET dialect's scanner is ported from [dotnet/runtime](https://github.com/dotnet/runtime)'s own `RegexParser`, so its grammar decisions come from the engine rather than being re-derived. See `THIRD-PARTY-NOTICES.TXT`. A differential test runs every sample and several thousand generated patterns through both this parser and `System.Text.RegularExpressions`, asserting they agree on what is valid.
+The .NET dialect's scanner is ported from [dotnet/runtime](https://github.com/dotnet/runtime)'s own `RegexParser`, so its grammar decisions come from the engine rather than being re-derived. See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). A differential test runs every sample and several thousand generated patterns through both this parser and `System.Text.RegularExpressions`, asserting they agree on what is valid.
 
 The other dialects are checked the same way against their engines -- V8 for JavaScript, PCRE2 10.47 for PCRE, and glibc's `regcomp` for POSIX. Several thousand patterns per dialect, with the verdict and the capture groups each engine reported, are replayed by the tests.
 

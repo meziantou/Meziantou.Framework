@@ -1,5 +1,5 @@
 // Portions of this file are derived from dotnet/runtime, licensed to the .NET Foundation under the MIT license.
-// See THIRD-PARTY-NOTICES.TXT in the project root.
+// See THIRD-PARTY-NOTICES.md in the project root.
 //
 // Source: src/libraries/System.Text.RegularExpressions/src/System/Text/RegularExpressions/RegexCharClass.cs
 //         src/libraries/System.Text.RegularExpressions/src/System/Text/RegularExpressions/RegexCharClass.Tables.cs

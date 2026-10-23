@@ -1,29 +1,39 @@
-This package contains code derived from third-party software.
+# Third-Party Notices
 
--------------------------------------------------------------------------------
-.NET Runtime (dotnet/runtime)
-https://github.com/dotnet/runtime
+This project includes third-party software components. The original copyright
+notices and the licenses under which the respective authors made such components
+available are reproduced below.
 
-Commit: 5ec6efc171b19c0e2d591fbd451920e8f43a1552
+---
+
+## .NET Runtime
+
+- Project: .NET Runtime (dotnet/runtime)
+- Source: <https://github.com/dotnet/runtime>
+- License: <https://github.com/dotnet/runtime/blob/main/LICENSE.TXT>
+- Commit: 5ec6efc171b19c0e2d591fbd451920e8f43a1552
 
 Files derived from this project:
-  Internals/PerlStyleRegexParser.cs
-  Internals/PerlStyleRegexParser.Escapes.cs
-  Internals/PerlStyleRegexParser.CharacterClass.cs
-  Internals/RegexCharacterTables.cs
-  Internals/RegexCaptureTable.cs
-  Internals/RegexScanner.cs
-  Internals/NetUnicodeCategoryNames.cs
+
+- `Internals/PerlStyleRegexParser.cs`
+- `Internals/PerlStyleRegexParser.Escapes.cs`
+- `Internals/PerlStyleRegexParser.CharacterClass.cs`
+- `Internals/RegexCharacterTables.cs`
+- `Internals/RegexCaptureTable.cs`
+- `Internals/RegexScanner.cs`
+- `Internals/NetUnicodeCategoryNames.cs`
 
 Derived from:
-  src/libraries/System.Text.RegularExpressions/src/System/Text/RegularExpressions/RegexParser.cs
-  src/libraries/System.Text.RegularExpressions/src/System/Text/RegularExpressions/RegexCharClass.cs
-  src/libraries/System.Text.RegularExpressions/src/System/Text/RegularExpressions/RegexCharClass.Tables.cs
+
+- `src/libraries/System.Text.RegularExpressions/src/System/Text/RegularExpressions/RegexParser.cs`
+- `src/libraries/System.Text.RegularExpressions/src/System/Text/RegularExpressions/RegexCharClass.cs`
+- `src/libraries/System.Text.RegularExpressions/src/System/Text/RegularExpressions/RegexCharClass.Tables.cs`
 
 The scanning logic was adapted to build a round-trippable concrete syntax tree instead of a
 RegexNode tree, to record diagnostics instead of throwing, and to perform no reductions, no
 case folding, and no character-set construction.
 
+```
 The MIT License (MIT)
 
 Copyright (c) .NET Foundation and Contributors
@@ -47,4 +57,4 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
--------------------------------------------------------------------------------
+```

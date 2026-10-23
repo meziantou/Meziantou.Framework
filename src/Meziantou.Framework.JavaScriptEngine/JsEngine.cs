@@ -47,7 +47,7 @@ public sealed partial class JsEngine : IDisposable
     /// <summary>The objects being joined by Array.prototype.join (the cycle detection of the browsers).</summary>
     internal List<JsObject>? ArrayJoinStack { get; set; }
 
-    /// <summary>Gets the realms created by the engine.</summary>
+    /// <summary>Gets the realms created by <see cref="CreateRealm"/> (the realms of the ShadowRealm objects are not included).</summary>
     public IReadOnlyList<JsRealm> Realms => _realms;
 
     /// <summary>Creates a realm with its intrinsics and an ordinary global object.</summary>
@@ -58,6 +58,12 @@ public sealed partial class JsEngine : IDisposable
         _realms.Add(realm);
         return realm;
     }
+
+    /// <summary>
+    /// Creates the realm of a ShadowRealm object (InitializeHostDefinedRealm): an ordinary global object whose properties
+    /// are the ones of ECMAScript. It is not added to <see cref="Realms"/>: it is collected with its ShadowRealm object.
+    /// </summary>
+    internal JsRealm CreateShadowRealm() => new(this);
 
     /// <summary>
     /// Makes the engine the engine of the current thread until the returned scope is disposed. The methods of the objects

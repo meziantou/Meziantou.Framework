@@ -70,6 +70,48 @@ internal static partial class JsInterpreter
         return RunWithDepth(realm.Engine, frame);
     }
 
+    /// <summary>
+    /// PerformShadowRealmEval(sourceText, callerRealm, evalRealm) (https://tc39.es/proposal-shadowrealm/#sec-performshadowrealmeval):
+    /// the code runs as an indirect eval of the ShadowRealm (its lexical declarations are local to the evaluation). A
+    /// SyntaxError is thrown in the caller realm; an exception of the code becomes a TypeError of the caller realm.
+    /// </summary>
+    public static JsValue PerformShadowRealmEval(JsValue sourceText, JsRealm callerRealm, JsRealm evalRealm)
+    {
+        var engine = evalRealm.Engine;
+        var code = sourceText.AsString();
+        engine.HostEnsureCanCompileStrings(evalRealm, [], code, code, JsCompilationType.IndirectEval, [], sourceText);
+
+        var source = new SourceText(code, GetEvalUrl(code));
+        FunctionTemplate template;
+        try
+        {
+            // The script goal: new.target, super() and super properties are early errors
+            var program = JsParser.ParseScript(source, ParserOptions.Script);
+            template = CodeGenerator.CompileProgram(program, source, ProgramKind.Eval, program.IsStrict);
+        }
+        catch (JsSyntaxErrorException ex)
+        {
+            throw ThrowHelper.CreateException(ErrorType.SyntaxError, ex.Message);
+        }
+
+        var frame = new Frame(template, evalRealm, evalRealm.GlobalEnvironment, [])
+        {
+            This = evalRealm.GlobalThis,
+        };
+
+        JsValue result;
+        try
+        {
+            result = RunWithDepth(engine, frame);
+        }
+        catch (JsException ex)
+        {
+            throw JsWrappedFunction.CreateTypeErrorCopy(callerRealm, ex.Value);
+        }
+
+        return JsWrappedFunction.GetWrappedValue(callerRealm, result);
+    }
+
     /// <summary>The URL of eval code: the //# sourceURL= comment of the code, if any.</summary>
     private static string? GetEvalUrl(string code)
     {

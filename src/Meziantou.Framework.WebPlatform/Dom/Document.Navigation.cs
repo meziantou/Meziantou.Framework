@@ -271,6 +271,11 @@ public partial class Document
         {
             foreach (var child in children.ToArray())
             {
+                if (abortFetches)
+                {
+                    child.CancelNavigationFetchedBy(this);
+                }
+
                 child.Document.AbortDocumentAndDescendants(abortFetches);
             }
         }

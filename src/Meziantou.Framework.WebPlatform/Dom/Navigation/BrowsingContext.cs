@@ -1177,6 +1177,7 @@ public sealed partial class BrowsingContext : IDisposable
         _isTraversalOngoing = traversalEntry is not null;
         var navigationId = Interlocked.Increment(ref s_nextNavigationId);
         _ongoingNavigation = navigationId;
+        _ongoingNavigationSourceDocument = traversalEntry is null ? sourceDocument : null;
         if (_containerResourceTiming is { NavigationId: 0 } containerResourceTiming)
         {
             containerResourceTiming.NavigationId = navigationId;
@@ -1293,6 +1294,23 @@ public sealed partial class BrowsingContext : IDisposable
     /// form submission planned before it still navigates the navigable (the script may not create a document).
     /// </summary>
     internal bool IsJavaScriptUrlNavigationOngoing => _ongoingNavigation != 0 && _ongoingNavigation == _javaScriptUrlNavigationId;
+
+    // The source document of the ongoing navigation (null for a traversal or a reload): the client of its request
+    private Document? _ongoingNavigationSourceDocument;
+
+    /// <summary>
+    /// Cancels the ongoing navigation when its request was made by a document whose fetches are canceled
+    /// (https://html.spec.whatwg.org/multipage/document-lifecycle.html#abort-a-document: the fetches in the context of the
+    /// document, e.g. the navigation of an iframe by its parent document stopped by <c>window.stop()</c>), as in Chrome.
+    /// </summary>
+    internal void CancelNavigationFetchedBy(Document document)
+    {
+        if (!IsCrossDocumentNavigationOngoing || !ReferenceEquals(_ongoingNavigationSourceDocument, document) || _isTraversalOngoing)
+            return;
+
+        CancelOngoingNavigation();
+        EndNavigationWithoutDocument();
+    }
 
     /// <summary>Whether the navigable is navigating to another document (the ongoing navigation is not a javascript: URL navigation).</summary>
     internal bool IsCrossDocumentNavigationOngoing => _ongoingNavigation != 0 && _ongoingNavigation != _javaScriptUrlNavigationId;
@@ -1458,6 +1476,7 @@ public sealed partial class BrowsingContext : IDisposable
         }
 
         _ongoingNavigation = 0;
+        _ongoingNavigationSourceDocument = null;
         _isTraversalOngoing = false;
         if (_loaderCancellation is { } cancellation)
         {

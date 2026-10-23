@@ -2486,7 +2486,7 @@ public sealed partial class BrowsingContext : IDisposable
         if (oldDocument is not null)
         {
             FirePageSwap(oldDocument, document, historyHandling, traversalEntry);
-            UnloadDocumentAndDescendants(oldDocument);
+            UnloadDocumentAndDescendants(oldDocument, includeInitialAboutBlank: true);
 
             // https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigation-params-unload-timing: the times of the unload
             // event of the previous document are exposed to a document of the same origin, when no redirect is cross-origin
@@ -2656,7 +2656,7 @@ public sealed partial class BrowsingContext : IDisposable
     /// </summary>
     private void FirePageSwap(Document oldDocument, Document newDocument, NavigationHistoryBehavior historyHandling, SessionHistoryEntry? traversalEntry)
     {
-        if (oldDocument.IsInitialAboutBlank || oldDocument.IsUnloaded || oldDocument.RelevantWindow is not { } oldWindow || !ReferenceEquals(oldWindow.Document, oldDocument))
+        if (oldDocument.IsUnloaded || oldDocument.RelevantWindow is not { } oldWindow || !ReferenceEquals(oldWindow.Document, oldDocument))
             return;
 
         var navigationType = traversalEntry is null
@@ -2727,11 +2727,12 @@ public sealed partial class BrowsingContext : IDisposable
     /// </summary>
     /// <param name="document">The document to unload.</param>
     /// <param name="includeInitialAboutBlank">
-    /// Whether <paramref name="document"/> is unloaded when it is an initial about:blank document. A navigation does not
-    /// unload it: its window may be reused by the new document, and it was never shown. When its top-level traversable is
-    /// closed, the browsers fire the pagehide and unload events at it (its page showing flag is not set, so the specification
-    /// fires no pagehide). The initial about:blank documents of the descendant navigables are always unloaded, as in the
-    /// browsers (e.g. <c>visibilitychange</c> is fired at the empty frames of a removed frame).
+    /// Whether <paramref name="document"/> is unloaded when it is an initial about:blank document. As in the browsers, a
+    /// navigation unloads it (before the new document reuses its window, if it does), and so does the closing of its
+    /// top-level traversable: the pagehide and unload events are fired at it (its page showing flag is not set, so the
+    /// specification fires no pagehide). The initial about:blank documents of the descendant navigables are always unloaded,
+    /// as in the browsers (e.g. <c>visibilitychange</c> is fired at the empty frames of a removed frame). The removal of a
+    /// container does not unload it (see <see cref="UnloadRemovedChildNavigables"/>).
     /// </param>
     private static void UnloadDocumentAndDescendants(Document document, bool includeInitialAboutBlank = false)
     {

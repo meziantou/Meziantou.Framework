@@ -325,7 +325,7 @@ internal sealed class FragmentSlicer
             for (var index = 0; index < childOpenOffsets.Length; index++)
             {
                 // (the contents that overflow the box after its last fragment are not after repeated edges)
-                childOpenOffsets[index] = openOffsets[index] + (index != first && index <= borderBoxLast ? startEdges : 0);
+                childOpenOffsets[index] = openOffsets[index] + (index != first && index <= borderBoxLast && !_flow.StartsInMonolithicSlice(index) ? startEdges : 0);
             }
         }
 
@@ -341,7 +341,7 @@ internal sealed class FragmentSlicer
             childCloseOffsets = new double[openOffsets.Length];
             for (var index = 0; index < childCloseOffsets.Length; index++)
             {
-                childCloseOffsets[index] = (closeOffsets?[index] ?? GetBreakEnd(map, index)) - (index >= first && index < borderBoxLast ? endEdges : 0);
+                childCloseOffsets[index] = (closeOffsets?[index] ?? GetBreakEnd(map, index)) - (index >= first && index < borderBoxLast && !_flow.StartsInMonolithicSlice(index + 1) ? endEdges : 0);
             }
         }
 
@@ -554,13 +554,13 @@ internal sealed class FragmentSlicer
             var border = box.Border;
             var padding = box.Padding;
             var margin = box.Margin;
-            if (isPastEnd || (index != first && !clone))
+            if (isPastEnd || (index != first && (!clone || _flow.StartsInMonolithicSlice(index))))
             {
                 border = border.With(blockStart, 0);
                 padding = padding.With(blockStart, 0);
             }
 
-            if (isPastEnd || (index != borderBoxLast && !clone))
+            if (isPastEnd || (index != borderBoxLast && (!clone || _flow.StartsInMonolithicSlice(index + 1))))
             {
                 border = border.With(blockEnd, 0);
                 padding = padding.With(blockEnd, 0);

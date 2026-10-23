@@ -318,7 +318,7 @@
     "reftest": "PASS"
   },
   "css/css-page/monolithic-overflow-031-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/monolithic-overflow-032-print.tentative.html": {
     "reftest": "FAIL"

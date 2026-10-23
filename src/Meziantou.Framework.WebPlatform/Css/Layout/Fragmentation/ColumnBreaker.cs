@@ -68,6 +68,7 @@ internal static partial class ColumnBreaker
     public static bool FindBreaks(FragmentationFlow flow, double start, double end, in FragmentainerSizes sizes, List<FragmentainerBreak> breaks, out double minimalShortage, out double lastExtent, FlowMap? map = null, int baseIndex = 0)
     {
         breaks.Clear();
+        flow.ClearMonolithicSlices();
         minimalShortage = double.PositiveInfinity;
         lastExtent = 0;
         map ??= new FlowMap();
@@ -106,6 +107,9 @@ internal static partial class ColumnBreaker
     {
         /// <summary>The position of the strip where the content before the break ends (before the margins and the gaps that are truncated at the break).</summary>
         public double ContentEnd { get; init; } = Position;
+
+        /// <summary>Whether the break slices monolithic content that does not fit in an empty page (see <see cref="FragmentationFlow.SlicesMonolithicContent"/>).</summary>
+        public bool IsMonolithicSlice { get; init; }
     }
 
     /// <summary>The progress of the breaker in a parallel flow (see <see cref="FlowCursor"/>, <see cref="NestedColumnsCursor"/>).</summary>
@@ -539,8 +543,8 @@ internal static partial class ColumnBreaker
                 if (blockingGroup is not null)
                 {
                     // (the items of the track that continue are broken beside the monolithic item of the track that overflows)
-                    var blockedInside = limitPosition - blockingGroup.CloneEndEdges - (blockingGroup.HasEnded ? 0 : blockingGroup.OwnCloneEnd);
-                    if (!blockingGroup.HasEnded && blockingGroup.OwnCloneStart + blockingGroup.OwnCloneEnd > 0 && blockingGroup.ClosedTracks < blockingGroup.TrackStarts.Length)
+                    var blockedInside = limitPosition - blockingGroup.CloneEndEdges - (RepeatsOwnEdges(blockingGroup) ? blockingGroup.OwnCloneEnd : 0);
+                    if (RepeatsOwnEdges(blockingGroup) && blockingGroup.ClosedTracks < blockingGroup.TrackStarts.Length)
                     {
                         blockedInside = WithContentProgress(blockingGroup, blockingGroup.ClosedTracks, blockedInside, blockedFrom);
                     }
@@ -559,7 +563,7 @@ internal static partial class ColumnBreaker
                         for (var track = group.ClosedTracks; track < group.TrackStarts.Length; track++)
                         {
                             // (a box that repeats its own edges at the break is broken in its content box)
-                            var repeatsOwnEdges = !group.HasEnded && group.OwnCloneStart + group.OwnCloneEnd > 0;
+                            var repeatsOwnEdges = RepeatsOwnEdges(group);
                             var inside = limitPosition - group.CloneEndEdges - (repeatsOwnEdges ? group.OwnCloneEnd : 0);
                             var end = track + 1 < group.TrackStarts.Length ? group.TrackStarts[track + 1] : group.TrackEnds[track];
                             if (repeatsOwnEdges)
@@ -602,6 +606,7 @@ internal static partial class ColumnBreaker
 
             BreakCandidate next;
             BreakAppeal appeal;
+            var isMonolithicSlice = false;
             if (forced is { } forcedBreak)
             {
                 (next, appeal) = (forcedBreak, BreakAppeal.Perfect);
@@ -627,6 +632,7 @@ internal static partial class ColumnBreaker
                 // The pages slice the monolithic content that does not fit in an empty page (PageBreakRules): the next page shows
                 // the rest of it, as in the browsers (https://drafts.csswg.org/css-break-3/#monolithic-breaking)
                 (next, appeal) = (new BreakCandidate(sliceEnd, sliceEnd, BreakAppeal.LastResort), BreakAppeal.LastResort);
+                isMonolithicSlice = true;
             }
             else if (FindFirstValid(_flow, _candidateIndex, _position, Math.Min(_end, blockedFrom), _overflowStart, _overflowEnd) is { } overflow)
             {
@@ -700,7 +706,12 @@ internal static partial class ColumnBreaker
 
             // (the content before the break ends with the edges that the boxes broken there repeat: they overflow the fragmentainer
             // when the repeated edges do not fit in it)
-            return new AdvanceResult(IsFinished: false, position, displayOffset, appeal, shortage) { ContentEnd = endBeforeBreak + next.CloneEndEdges };
+            if (isMonolithicSlice)
+            {
+                _flow.AddMonolithicSlice(_index);
+            }
+
+            return new AdvanceResult(IsFinished: false, position, displayOffset, appeal, shortage) { ContentEnd = endBeforeBreak + next.CloneEndEdges, IsMonolithicSlice = isMonolithicSlice };
 
             // Records a possible break that fits: the latest one of the best appeal is chosen. The parallel flows that start before the
             // break and are broken by the end of the fragmentainer lower its appeal
@@ -770,7 +781,7 @@ internal static partial class ColumnBreaker
                 if (double.IsNaN(position) || position < _position - Epsilon || (IsBesideOverflow(position) && !besideOverflow))
                     return;
 
-                var repeatsOwnEdges = !group.HasEnded && group.OwnCloneStart + group.OwnCloneEnd > 0;
+                var repeatsOwnEdges = RepeatsOwnEdges(group);
                 if (repeatsOwnEdges && position <= _position + Epsilon)
                     return;
 
@@ -803,6 +814,10 @@ internal static partial class ColumnBreaker
             }
 
             bool IsValid(double position) => !IsBesideOverflow(position) && _flow.ClampToValidPosition(position, _position) is var clamped && !double.IsNaN(clamped) && Math.Abs(clamped - position) < Epsilon;
+
+            // (a box does not repeat its edges at a break that slices its monolithic contents: as in Blink, the page grows over them)
+            bool RepeatsOwnEdges(ParallelGroup group)
+                => !group.HasEnded && group.OwnCloneStart + group.OwnCloneEnd > 0 && !group.Items.Exists(item => item.IsMonolithicSlice && item.AdvancedIndex == _index);
         }
 
         /// <summary>The smallest block size of the content of a fragment of a box whose repeated edges (<c>box-decoration-break: clone</c>) do not fit in a fragmentainer.</summary>
@@ -1096,6 +1111,7 @@ internal static partial class ColumnBreaker
             // (they do in the contents of a box of a block container that are a parallel flow)
             item.Appeal = result.Appeal == BreakAppeal.Forced || (result.Appeal == BreakAppeal.OrphansWidows && !item.IsDefiniteBox) ? BreakAppeal.Perfect : result.Appeal;
             item.AdvancedIndex = _index;
+            item.IsMonolithicSlice = result.IsMonolithicSlice;
             item.IsContentPlaced = result.IsFinished || (!item.IsMonolithic && result.Position >= item.IntrinsicEnd - Epsilon);
             if (item.Appeal != BreakAppeal.LastResort)
                 return;

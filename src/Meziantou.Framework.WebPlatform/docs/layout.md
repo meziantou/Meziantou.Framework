@@ -3075,7 +3075,9 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   printed). The monolithic content (a replaced element, a box with size containment, a line box) that does not fit in an
   empty page is sliced: the next page starts at the end of the page
   (`FragmentationFlow.SlicesMonolithicContent`) and shows the rest of it (`FragmentSlicer` places a copy of its fragment in
-  each next page, at a negative offset; the page area clips it), and the content after it follows it. The content that
+  each next page, at a negative offset; the page area clips it), and the content after it follows it. As in Blink, whose
+  page grows over the monolithic content, the boxes with `box-decoration-break: clone` do not repeat their edges at these
+  slices (`FragmentationFlow.StartsInMonolithicSlice`; a box with a definite block size consumes the whole page). The content that
   overflows a monolithic box (that does not clip it) adds pages, as in the browsers: the flow continues until its end
   (`FragmentationFlow.GetOverflowEnd`, also for an absolutely positioned monolithic box), and the copies of the box are
   placed in these pages.

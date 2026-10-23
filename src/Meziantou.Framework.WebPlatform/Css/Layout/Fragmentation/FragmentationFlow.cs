@@ -352,6 +352,21 @@ internal sealed class FragmentationFlow
 
     private bool _slicesMonolithicContent;
 
+    private HashSet<int>? _monolithicSlices;
+
+    /// <summary>
+    /// Records that the fragmentainer of an index starts in monolithic content sliced by the pages: as in Blink (whose page
+    /// grows over the monolithic content that does not fit), the boxes with <c>box-decoration-break: clone</c> do not repeat
+    /// their edges there.
+    /// </summary>
+    public void AddMonolithicSlice(int index) => (_root._monolithicSlices ??= []).Add(index);
+
+    /// <summary>Returns whether the fragmentainer of an index starts in monolithic content sliced by the pages (see <see cref="AddMonolithicSlice"/>).</summary>
+    public bool StartsInMonolithicSlice(int index) => _root._monolithicSlices?.Contains(index) == true;
+
+    /// <summary>Forgets the slices of the monolithic content (the breaks are found again).</summary>
+    public void ClearMonolithicSlices() => _root._monolithicSlices?.Clear();
+
     /// <summary>Whether the flow is collected with the rules of the pages (see <see cref="PageBreakRules"/>).</summary>
     private bool _isPaged;
 
@@ -3174,6 +3189,9 @@ internal sealed class ParallelItem(FragmentationFlow flow)
 
     /// <summary>The last fragmentainer the flow was advanced in.</summary>
     public int AdvancedIndex { get; set; }
+
+    /// <summary>Whether the flow of the item was broken in the current fragmentainer by a slice of its monolithic content (the state of the breaker).</summary>
+    public bool IsMonolithicSlice { get; set; }
 
     /// <summary>The offset in the current fragmentainer of the end of the monolithic contents of a box that overflow it (see <see cref="IsDefiniteBox"/>), or of the end of an item that overflows it (the item ends there; the other items of its track do not), else 0.</summary>
     public double OverflowExtent { get; set; }

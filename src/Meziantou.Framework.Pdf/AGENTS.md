@@ -22,6 +22,14 @@ the XML documentation and `readme.md` consistent in the same change.
   through `InternalsVisibleTo`). JBIG2 follows T.88 with the context bit order of its figures: the typical prediction
   contexts alias the contexts of particular templates, so the order matters. Both were checked pixel by pixel against
   MuPDF, Poppler and PDFium on the corpora (`expectations/bilevel-images.txt` of the corpus tests records the digests).
+- **Conformance** (`Conformance/`, `Structure/`): the save checks what it can of the PDF/A and PDF/UA levels and writes
+  what they need (output intent, XMP identification with the extension schema of PDF/UA for PDF/A-2 and -3, viewer
+  preferences, annotation flags; PDF/A-4 leaves the document information dictionary out of the trailer). The
+  structure tree keeps its parent tree in objects as the content is tagged (`/StructParents` of the pages,
+  `/StructParent` of the annotations) and writes it as one flat number tree. `ConformanceInteropTests` validates the
+  documents with the veraPDF of the Meziantou.Prebuilt release: the rules they are known to fail are listed in
+  `tests/Meziantou.Framework.Pdf.InteropTests/verapdf-known-failures.txt`, which must stay empty unless a rule cannot
+  be met.
 - **Encryption** (`Security/`): the standard security handler (7.6.4), revisions 2 to 6. The reader decrypts each
   object when it is loaded (`PdfFileReader.Security`), except the encryption dictionary, the cross-reference streams,
   the metadata when `/EncryptMetadata` is false and the signature of a signature dictionary; the objects of an object

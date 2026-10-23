@@ -126,7 +126,7 @@ public sealed class PdfPage
         var streamReference = Document.Objects.Add(stream);
         streams.Add(streamReference);
         Dictionary[PdfNames.Contents] = streams.Count == 1 ? streamReference : new PdfArray(streams);
-        return new PdfContentBuilder(Document, GetOrCreateResources(), stream);
+        return new PdfContentBuilder(Document, GetOrCreateResources(), stream, this);
     }
 
     /// <summary>Extracts the text of the page, in the order of the content, with a line break between the lines.</summary>

@@ -21,6 +21,7 @@ public sealed partial class PdfDocument
     private PdfPageCollection? _pages;
     private PdfDocumentInformation? _information;
     private PdfOutlineCollection? _outlines;
+    private PdfStructureTree? _structureTree;
 
     /// <summary>Initializes a new instance of the <see cref="PdfDocument"/> class: an empty PDF 1.7 document without pages.</summary>
     public PdfDocument()
@@ -84,6 +85,30 @@ public sealed partial class PdfDocument
     /// replaced or removed; an incremental save cannot change it.
     /// </summary>
     public PdfEncryption? Encryption { get; set; }
+
+    /// <summary>
+    /// Gets or sets the PDF/A conformance level the document is saved with. The save checks what it can (no encryption,
+    /// embedded fonts, a structure tree for the level A) and writes the output intent (sRGB) and the XMP identification;
+    /// the content must follow the other rules of the level.
+    /// </summary>
+    public PdfAConformance PdfAConformance { get; set; }
+
+    /// <summary>
+    /// Gets or sets the PDF/UA conformance level the document is saved with. The save checks the structure tree, the
+    /// title, the language and the fonts, and writes the XMP identification and the viewer preferences; every content
+    /// must be tagged or an artifact, and every figure must have an alternate description.
+    /// </summary>
+    public PdfUAConformance PdfUAConformance { get; set; }
+
+    /// <summary>Gets or sets the natural language of the document (<c>/Lang</c> of the catalog, ISO 32000-2, 14.9.2): a BCP 47 tag such as <c>en-US</c>.</summary>
+    public string? Language
+    {
+        get => Catalog.GetText(PdfName.Create("Lang"));
+        set => Catalog[PdfName.Create("Lang")] = value is null ? null : PdfString.FromText(value);
+    }
+
+    /// <summary>Gets the structure tree of the document (ISO 32000-2, 14.7): the logical structure of a tagged document.</summary>
+    public PdfStructureTree StructureTree => _structureTree ??= new PdfStructureTree(this);
 
     /// <summary>Gets or sets the version of the document: the version of the header, or of the <c>/Version</c> entry of the catalog when it is later.</summary>
     public PdfVersion Version { get; set; }
@@ -285,6 +310,8 @@ public sealed partial class PdfDocument
             throw new InvalidOperationException("Only a document read from a file can be saved incrementally");
 
         PrepareForSave();
+        _structureTree?.Write();
+        Conformance.ConformanceWriter.Apply(this);
         var output = new PdfByteWriter(64 * 1024);
         if (incremental)
         {

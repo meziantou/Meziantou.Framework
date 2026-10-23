@@ -13,6 +13,10 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
 - **Writer**: full saves (the objects reachable from the catalog, renumbered, with object streams and a
   cross-reference stream, or a cross-reference table) and incremental updates that keep the bytes of the original file;
   the output depends only on the document and the options, except the random keys and vectors of the encryption
+- **Conformance**: PDF/A-2 (b, u, a), PDF/A-3 (b, u, a) and PDF/A-4 output (`PdfDocument.PdfAConformance`), PDF/UA-1
+  (`PdfDocument.PdfUAConformance`), and Tagged PDF: a structure tree with a role map, alternate descriptions,
+  languages and artifacts (`PdfDocument.StructureTree`, `PdfContentBuilder.BeginStructureElement`); the documents are
+  validated by veraPDF in the tests
 - **Encryption**: the standard security handler, revisions 2 to 6 (RC4 with 40-bit and 128-bit keys, AES-128,
   AES-256), with crypt filters, for reading (`PdfReadOptions.Password`) and writing (`PdfDocument.Encryption`)
 - **Document API**: pages (`PdfDocument.Pages`), a content builder for paths, colors, text, images and marked content
@@ -114,6 +118,62 @@ var text = document.Pages[0].ExtractText();
 ```
 <!-- endref -->
 
+## Tagged PDF and PDF/UA
+
+The structure tree gives the logical structure of the content to assistive technologies: each element has a standard
+type (`Document`, `H1`, `P`, `Figure`, `Table`...), and its content is the marked content the content builder tags
+with it. The content that is not part of the structure, such as page numbers, is an artifact. With PDF/UA, the save
+checks the title, the language and the structure, and writes the identification of the level.
+
+<!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_TaggedDocument;format=md-fenced-code-block;dedent=true -->
+```csharp
+var font = PdfFont.Load(fontData);
+var document = new PdfDocument
+{
+    PdfAConformance = PdfAConformance.PdfA2A,
+    PdfUAConformance = PdfUAConformance.PdfUA1,
+    Language = "en-US",
+};
+document.Information.Title = "Annual report";
+
+// The logical structure: a heading, a paragraph and a figure in a Document element
+var root = document.StructureTree.AddElement("Document");
+var heading = root.AddElement("H1");
+var paragraph = root.AddElement("P");
+var figure = root.AddElement("Figure");
+figure.AlternateDescription = "A blue square";
+
+// The content of each element, and the page number as an artifact
+document.Pages.Add(PdfSize.A4).CreateContentBuilder()
+    .BeginStructureElement(heading).DrawText("AVATAR", font, 24, 60, 760).EndMarkedContent()
+    .BeginStructureElement(paragraph).DrawText("Office", font, 12, 60, 720).EndMarkedContent()
+    .BeginStructureElement(figure).SetFillRgb(0, 0, 1).Rectangle(60, 600, 100, 100).Fill().EndMarkedContent()
+    .BeginArtifact(PdfArtifactType.Pagination).DrawText("1", font, 10, 300, 40).EndMarkedContent();
+
+var pdf = document.ToByteArray();
+```
+<!-- endref -->
+
+## PDF/A
+
+PDF/A is the PDF of long-term archiving. The save checks what the library can check (no encryption, embedded fonts,
+a structure tree for the level A, the version), adds the sRGB output intent, and writes the XMP metadata from the
+document information with the identification of the level. The content must follow the other rules of the level:
+the conformance tests validate the documents the library writes with veraPDF.
+
+<!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_PdfA;format=md-fenced-code-block;dedent=true -->
+```csharp
+// PDF/A embeds the fonts: the standard 14 fonts cannot be used
+var font = PdfFont.Load(fontData);
+var document = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B };
+document.Information.Title = "Archived";
+document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Office", font, 24, 60, 700);
+
+// The save adds the sRGB output intent and the PDF/A identification of the XMP metadata
+var pdf = document.ToByteArray();
+```
+<!-- endref -->
+
 ## Encrypt a document
 
 `PdfDocument.Encryption` encrypts the strings and streams of the document when it is saved, with AES-256 by default.
@@ -209,7 +269,8 @@ specification says; a content stream that cannot be decoded throws when its data
   method of the other streams.
 - The standard 14 fonts show the text of `WinAnsiEncoding` (or the encodings of Symbol and ZapfDingbats); an embedded
   font shows any text it has the glyphs of. The fonts with CFF2 outlines, and the instances of variable fonts, are not
-  embedded. PDF/A, Tagged PDF and PDF/UA are not supported yet.
+  embedded. PDF/A-1, PDF/A-4e and PDF/A-4f, and PDF/UA-2 are not supported; the embedded files of PDF/A-3 cannot be
+  added with the document API.
 - Pages are rendered by `Meziantou.Framework.Pdf.Rendering`.
 - The text extraction follows the order of the content and joins the glyphs into lines by their positions; it does
   not detect columns.

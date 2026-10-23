@@ -1,8 +1,8 @@
 #!/usr/bin/env dotnet
 #:sdk Meziantou.NET.Sdk
 // Materializes tests/Meziantou.Framework.Pdf.External/<suite> at the commits and paths pinned in
-// tests/Meziantou.Framework.Pdf.Corpus/corpus.json (the test files of pdf.js, PDFium, qpdf, the PDF Association and
-// Apache PDFBox). Each suite is a shallow, blob-less, sparse git clone, so changing the commit only downloads the files
+// tests/Meziantou.Framework.Pdf.Corpus/corpus.json (the test files of pdf.js, PDFium, qpdf, the PDF Association,
+// Apache PDFBox and the veraPDF corpus). Each suite is a shallow, blob-less, sparse git clone, so changing the commit only downloads the files
 // that changed. A stamp file makes a run with unchanged pins a no-op. A path may be a pattern ("*.pdf").
 using System.Diagnostics;
 using System.Text.Json;

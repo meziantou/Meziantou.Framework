@@ -14,8 +14,19 @@ internal static class XmpPacketWriter
     private const string DublinCoreNamespace = "http://purl.org/dc/elements/1.1/";
     private const string PdfNamespace = "http://ns.adobe.com/pdf/1.3/";
     private const string XmpNamespace = "http://ns.adobe.com/xap/1.0/";
+    private const string PdfAExtensionNamespace = "http://www.aiim.org/pdfa/ns/extension/";
+    private const string PdfASchemaNamespace = "http://www.aiim.org/pdfa/ns/schema#";
+    private const string PdfAPropertyNamespace = "http://www.aiim.org/pdfa/ns/property#";
 
-    public static byte[] Write(PdfDocumentInformation information, IReadOnlyList<XmpProperty> extraProperties)
+    /// <summary>Writes the packet.</summary>
+    /// <param name="information">The document information.</param>
+    /// <param name="extraProperties">The properties of the conformance levels.</param>
+    /// <param name="describePdfUA">
+    /// Whether the PDF/UA identification is described by an extension schema (ISO 19005-2, 6.6.2.3): PDF/A-2 and PDF/A-3
+    /// only know the schemas of XMP 2005.
+    /// </param>
+    /// <returns>The packet.</returns>
+    public static byte[] Write(PdfDocumentInformation information, IReadOnlyList<XmpProperty> extraProperties, bool describePdfUA = false)
     {
         var settings = new XmlWriterSettings
         {
@@ -40,6 +51,13 @@ internal static class XmpPacketWriter
             foreach (var group in extraProperties.GroupBy(p => (p.Prefix, p.Namespace)))
             {
                 writer.WriteAttributeString("xmlns", group.Key.Prefix, null, group.Key.Namespace);
+            }
+
+            if (describePdfUA)
+            {
+                writer.WriteAttributeString("xmlns", "pdfaExtension", null, PdfAExtensionNamespace);
+                writer.WriteAttributeString("xmlns", "pdfaSchema", null, PdfASchemaNamespace);
+                writer.WriteAttributeString("xmlns", "pdfaProperty", null, PdfAPropertyNamespace);
             }
 
             writer.WriteElementString("dc", "format", DublinCoreNamespace, "application/pdf");
@@ -92,6 +110,11 @@ internal static class XmpPacketWriter
                 writer.WriteElementString(property.Prefix, property.Name, property.Namespace, property.Value);
             }
 
+            if (describePdfUA)
+            {
+                WritePdfUAExtensionSchema(writer);
+            }
+
             writer.WriteEndElement();
             writer.WriteEndElement();
             writer.WriteEndElement();
@@ -102,6 +125,31 @@ internal static class XmpPacketWriter
     }
 
     public static string FormatDate(DateTimeOffset value) => value.ToString("yyyy-MM-dd'T'HH:mm:sszzz", CultureInfo.InvariantCulture);
+
+    private static void WritePdfUAExtensionSchema(XmlWriter writer)
+    {
+        writer.WriteStartElement("pdfaExtension", "schemas", PdfAExtensionNamespace);
+        writer.WriteStartElement("rdf", "Bag", RdfNamespace);
+        writer.WriteStartElement("rdf", "li", RdfNamespace);
+        writer.WriteAttributeString("rdf", "parseType", RdfNamespace, "Resource");
+        writer.WriteElementString("pdfaSchema", "schema", PdfASchemaNamespace, "PDF/UA Universal Accessibility Schema");
+        writer.WriteElementString("pdfaSchema", "namespaceURI", PdfASchemaNamespace, "http://www.aiim.org/pdfua/ns/id/");
+        writer.WriteElementString("pdfaSchema", "prefix", PdfASchemaNamespace, "pdfuaid");
+        writer.WriteStartElement("pdfaSchema", "property", PdfASchemaNamespace);
+        writer.WriteStartElement("rdf", "Seq", RdfNamespace);
+        writer.WriteStartElement("rdf", "li", RdfNamespace);
+        writer.WriteAttributeString("rdf", "parseType", RdfNamespace, "Resource");
+        writer.WriteElementString("pdfaProperty", "name", PdfAPropertyNamespace, "part");
+        writer.WriteElementString("pdfaProperty", "valueType", PdfAPropertyNamespace, "Integer");
+        writer.WriteElementString("pdfaProperty", "category", PdfAPropertyNamespace, "internal");
+        writer.WriteElementString("pdfaProperty", "description", PdfAPropertyNamespace, "Indicates which part of ISO 14289 standard is followed");
+        writer.WriteEndElement();
+        writer.WriteEndElement();
+        writer.WriteEndElement();
+        writer.WriteEndElement();
+        writer.WriteEndElement();
+        writer.WriteEndElement();
+    }
 
     private static void WriteLanguageAlternative(XmlWriter writer, string name, string value)
     {

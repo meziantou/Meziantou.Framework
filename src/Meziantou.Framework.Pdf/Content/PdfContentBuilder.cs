@@ -28,6 +28,7 @@ public sealed class PdfContentBuilder
     private readonly PdfDocument _document;
     private readonly PdfDictionary _resources;
     private readonly PdfStream _stream;
+    private readonly PdfPage? _page;
     private readonly PdfByteWriter _buffer = new(256);
     private int _graphicsStateDepth;
     private int _markedContentDepth;
@@ -37,11 +38,12 @@ public sealed class PdfContentBuilder
     private double _fontSize;
     private double _textRise;
 
-    internal PdfContentBuilder(PdfDocument document, PdfDictionary resources, PdfStream stream)
+    internal PdfContentBuilder(PdfDocument document, PdfDictionary resources, PdfStream stream, PdfPage? page = null)
     {
         _document = document;
         _resources = resources;
         _stream = stream;
+        _page = page;
     }
 
     /// <summary>Gets the number of <see cref="SaveGraphicsState"/> calls that are not matched by a <see cref="RestoreGraphicsState"/> call.</summary>
@@ -666,6 +668,49 @@ public sealed class PdfContentBuilder
         PdfObjectSerializer.Write(_buffer, properties, ReferenceWriter.Identity);
         _buffer.WriteSpace();
         return Operator("BDC");
+    }
+
+    /// <summary>
+    /// Begins the marked content of an element of the structure tree (<c>BDC</c> with a marked-content identifier, ISO
+    /// 32000-2, 14.7.5.2): the content until the matching <see cref="EndMarkedContent"/> belongs to the element.
+    /// </summary>
+    /// <param name="element">The element.</param>
+    /// <returns>The builder.</returns>
+    /// <exception cref="InvalidOperationException">The builder writes the content of a form or a pattern, not of a page.</exception>
+    /// <exception cref="ArgumentException">The element belongs to another document.</exception>
+    public PdfContentBuilder BeginStructureElement(PdfStructureElement element)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        if (_page is null)
+            throw new InvalidOperationException("Only the content of a page can be tagged");
+
+        if (element.Tree != _document.StructureTree)
+            throw new ArgumentException("The element is in the structure tree of another document", nameof(element));
+
+        var mcid = element.Tree.AddMarkedContent(element, _page);
+        return BeginMarkedContent(element.Type, new PdfDictionary { [PdfName.Create("MCID")] = PdfInteger.Get(mcid) });
+    }
+
+    /// <summary>
+    /// Begins an artifact (<c>/Artifact BDC</c>, 14.8.2.2): content that is not part of the logical structure, such as a
+    /// page number or a decoration, until the matching <see cref="EndMarkedContent"/>.
+    /// </summary>
+    /// <param name="type">The kind of artifact.</param>
+    /// <returns>The builder.</returns>
+    public PdfContentBuilder BeginArtifact(PdfArtifactType type = PdfArtifactType.Unspecified)
+    {
+        if (type == PdfArtifactType.Unspecified)
+            return BeginMarkedContent("Artifact");
+
+        var name = type switch
+        {
+            PdfArtifactType.Pagination => "Pagination",
+            PdfArtifactType.Layout => "Layout",
+            PdfArtifactType.Page => "Page",
+            PdfArtifactType.Background => "Background",
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, "The artifact type is not valid."),
+        };
+        return BeginMarkedContent("Artifact", new PdfDictionary { [PdfNames.Type] = PdfName.Create(name) });
     }
 
     /// <summary>Ends the marked-content sequence of the matching <c>BeginMarkedContent</c> call (<c>EMC</c>).</summary>

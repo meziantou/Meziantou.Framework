@@ -44,6 +44,8 @@ public sealed class PdfCorpusTests
 
     public static TheoryData<string> PdfBox => GetFiles("pdfbox");
 
+    public static TheoryData<string> VeraPdf => GetFiles("verapdf");
+
     /// <summary>Gets the pages of the reference tests of pdf.js (the <c>eq</c> tests of its manifest): one page per file, the first one it tests, with the password of the test.</summary>
     public static TheoryData<string, int, string?> PdfJsReferencePages
     {
@@ -95,6 +97,10 @@ public sealed class PdfCorpusTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(PdfBox), DisableDiscoveryEnumeration = true)]
     public void PdfBoxFiles(string id) => Run(id);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(VeraPdf), DisableDiscoveryEnumeration = true)]
+    public void VeraPdfFiles(string id) => Run(id);
 
     /// <summary>
     /// The images of the <c>CCITTFaxDecode</c> and <c>JBIG2Decode</c> filters decode to the data recorded in
@@ -202,7 +208,7 @@ public sealed class PdfCorpusTests
     [Fact]
     public void EverySuiteHasATest()
     {
-        Assert.Equal(["pdfjs", "pdfium", "qpdf", "pdf20examples", "pdfbox"], CorpusFiles.Suites);
+        Assert.Equal(["pdfjs", "pdfium", "qpdf", "pdf20examples", "pdfbox", "verapdf"], CorpusFiles.Suites);
     }
 
     private static TheoryData<string> GetFiles(string suite) => new(CorpusFiles.GetFiles(suite));

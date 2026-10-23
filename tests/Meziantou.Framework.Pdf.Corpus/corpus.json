@@ -28,5 +28,11 @@
     "commit": "99c16b1752d0b24e2c26788ff68686211b0bcef0",
     "license": "Apache-2.0",
     "paths": ["LICENSE.txt", "NOTICE.txt", "pdfbox/src/test/resources"]
+  },
+  "verapdf": {
+    "repository": "veraPDF/veraPDF-corpus",
+    "commit": "bb75f4f0073d9350dfd058c0162a367e6fadf25e",
+    "license": "CC-BY-4.0",
+    "paths": ["README.md", "ISO 32000-1", "ISO 32000-2", "Isartor test files", "PDF_A-1a", "PDF_A-1b", "PDF_A-2a", "PDF_A-2b", "PDF_A-2u", "PDF_A-3b", "PDF_A-4", "PDF_A-4e", "PDF_A-4f", "PDF_UA-1", "PDF_UA-2", "TWG test files"]
   }
 }

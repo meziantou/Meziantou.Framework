@@ -79,7 +79,7 @@ internal sealed class PdfFileWriter
             }
         }
 
-        foreach (var key in new[] { PdfNames.Root, PdfNames.Info })
+        foreach (var key in OmitsInformation() ? new[] { PdfNames.Root } : [PdfNames.Root, PdfNames.Info])
         {
             if (trailer[key] is { } value)
             {
@@ -149,7 +149,7 @@ internal sealed class PdfFileWriter
         }
 
         var root = trailer[PdfNames.Root];
-        var info = trailer[PdfNames.Info];
+        var info = OmitsInformation() ? null : trailer[PdfNames.Info];
         var id = ComputeId(_output.WrittenSpan, isUpdate: false);
         if (useObjectStreams)
         {
@@ -254,7 +254,7 @@ internal sealed class PdfFileWriter
                 entries[i] = (1, offsets[i].Offset, offsets[i].Generation);
             }
 
-            var dictionary = CreateTrailer(size, trailer[PdfNames.Root], trailer[PdfNames.Info], id);
+            var dictionary = CreateTrailer(size, trailer[PdfNames.Root], OmitsInformation() ? null : trailer[PdfNames.Info], id);
             CopyEncrypt(trailer, dictionary);
             dictionary[PdfNames.Prev] = PdfInteger.Get(reader.LastXrefOffset);
             WriteXrefStream(xrefNumber, dictionary, ranges, entries, references);
@@ -278,7 +278,7 @@ internal sealed class PdfFileWriter
                 }
             }
 
-            var dictionary = CreateTrailer(size, trailer[PdfNames.Root], trailer[PdfNames.Info], id);
+            var dictionary = CreateTrailer(size, trailer[PdfNames.Root], OmitsInformation() ? null : trailer[PdfNames.Info], id);
             CopyEncrypt(trailer, dictionary);
             dictionary[PdfNames.Prev] = PdfInteger.Get(reader.LastXrefOffset);
             _output.WriteAscii("trailer\n");
@@ -287,6 +287,12 @@ internal sealed class PdfFileWriter
             WriteStartXref(xrefOffset);
         }
     }
+
+    /// <summary>
+    /// Gets a value indicating whether the document information dictionary is left out of the trailer: PDF/A-4 only
+    /// allows it with page-piece dictionaries (ISO 19005-4, 6.1.3), the XMP metadata has the information.
+    /// </summary>
+    private bool OmitsInformation() => _document.PdfAConformance == PdfAConformance.PdfA4 && !_document.Catalog.ContainsKey(PdfName.Create("PieceInfo"));
 
     private PdfVersion GetVersion(bool useObjectStreams)
     {

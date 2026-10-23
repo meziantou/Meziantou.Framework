@@ -16,6 +16,9 @@ internal sealed partial class CodeGenerator
 
     private ChainContext? _chain;
 
+    // The expressions of the left-nested chains being emitted (EmitBinary, EmitLogical, EmitCallOrMemberChain)
+    private readonly List<Node> _leftNestedExpressions = [];
+
     private void EmitExpression(Node node)
     {
         CompilerStack.EnsureSufficientStack();
@@ -528,10 +531,26 @@ internal sealed partial class CodeGenerator
             return;
         }
 
-        EmitExpression(binary.Left);
-        EmitExpression(binary.Right);
-        _builder.SetPosition(binary.Start);
-        _builder.Emit(GetBinaryOpCode(binary.Operator));
+        // a + b + c...: the chain nests on its left operand, as deep as it is long. The left operands are emitted in a
+        // loop, from the innermost expression.
+        var start = _leftNestedExpressions.Count;
+        for (var current = binary; ; current = (BinaryExpression)current.Left)
+        {
+            _leftNestedExpressions.Add(current);
+            if (current.Left is not BinaryExpression { Left: not PrivateIdentifier })
+                break;
+        }
+
+        EmitExpression(((BinaryExpression)_leftNestedExpressions[^1]).Left);
+        for (var i = _leftNestedExpressions.Count - 1; i >= start; i--)
+        {
+            var current = (BinaryExpression)_leftNestedExpressions[i];
+            EmitExpression(current.Right);
+            _builder.SetPosition(current.Start);
+            _builder.Emit(GetBinaryOpCode(current.Operator));
+        }
+
+        _leftNestedExpressions.RemoveRange(start, _leftNestedExpressions.Count - start);
     }
 
     private static OpCode GetBinaryOpCode(BinaryOperator op)
@@ -586,17 +605,32 @@ internal sealed partial class CodeGenerator
 
     private void EmitLogical(LogicalExpression logical)
     {
-        EmitExpression(logical.Left);
-        var endLabel = _builder.DefineLabel();
-        _builder.EmitJump(logical.Operator switch
+        // a || b || c...: the chain nests on its left operand (see EmitBinary)
+        var start = _leftNestedExpressions.Count;
+        for (var current = logical; ; current = (LogicalExpression)current.Left)
         {
-            LogicalOperator.And => OpCode.JumpIfFalseKeep,
-            LogicalOperator.Or => OpCode.JumpIfTrueKeep,
-            _ => OpCode.JumpIfNotNullishKeep,
-        }, endLabel);
-        _builder.Emit(OpCode.Pop);
-        EmitExpression(logical.Right);
-        _builder.MarkLabel(endLabel);
+            _leftNestedExpressions.Add(current);
+            if (current.Left is not LogicalExpression)
+                break;
+        }
+
+        EmitExpression(((LogicalExpression)_leftNestedExpressions[^1]).Left);
+        for (var i = _leftNestedExpressions.Count - 1; i >= start; i--)
+        {
+            var current = (LogicalExpression)_leftNestedExpressions[i];
+            var endLabel = _builder.DefineLabel();
+            _builder.EmitJump(current.Operator switch
+            {
+                LogicalOperator.And => OpCode.JumpIfFalseKeep,
+                LogicalOperator.Or => OpCode.JumpIfTrueKeep,
+                _ => OpCode.JumpIfNotNullishKeep,
+            }, endLabel);
+            _builder.Emit(OpCode.Pop);
+            EmitExpression(current.Right);
+            _builder.MarkLabel(endLabel);
+        }
+
+        _leftNestedExpressions.RemoveRange(start, _leftNestedExpressions.Count - start);
     }
 
     // ------------------------------------------------------------------------------------------------------------------
@@ -829,23 +863,109 @@ internal sealed partial class CodeGenerator
 
     private void EmitMember(MemberExpression member)
     {
+        if (member.Object is Super)
+        {
+            var kind = EmitReferenceBase(member);
+            if (member.Optional)
+            {
+                EmitOptionalCheck(GetBaseSize(kind));
+            }
+
+            EmitGetReference(member, kind);
+            return;
+        }
+
+        if (GetCallOrMemberOperand(member) is not null)
+        {
+            EmitCallOrMemberChain(member);
+            return;
+        }
+
+        EmitExpression(member.Object);
+        EmitMemberAfterObject(member);
+    }
+
+    /// <summary>Gets the value of a member expression whose object is on the stack.</summary>
+    private void EmitMemberAfterObject(MemberExpression member)
+    {
         // a?.[key]: the object is checked before the key is evaluated
         if (member is { Optional: true, Computed: true })
         {
-            EmitExpression(member.Object);
             EmitOptionalCheck(0);
             EmitExpression(member.Property);
             EmitGetReference(member, TargetKind.Element);
             return;
         }
 
-        var kind = EmitReferenceBase(member);
+        TargetKind kind;
+        if (member.Property is PrivateIdentifier)
+        {
+            kind = TargetKind.Private;
+        }
+        else if (member.Computed)
+        {
+            EmitExpression(member.Property);
+            kind = TargetKind.Element;
+        }
+        else
+        {
+            kind = TargetKind.Property;
+        }
+
         if (member.Optional)
         {
             EmitOptionalCheck(GetBaseSize(kind));
         }
 
         EmitGetReference(member, kind);
+    }
+
+    /// <summary>
+    /// The operand of a call (the object of its callee, or the callee) or of a member expression (its object) when it is a
+    /// call or a member expression itself: <c>a.b().c()...</c> nests on these operands, as deep as the chain is long.
+    /// </summary>
+    private static Node? GetCallOrMemberOperand(Node node)
+    {
+        var operand = node switch
+        {
+            CallExpression { Callee: MemberExpression { Object: not Super } member } => member.Object,
+            CallExpression { Callee: CallExpression callee } => callee,
+            MemberExpression { Object: not Super } member => member.Object,
+            _ => null,
+        };
+
+        return operand is CallExpression { Callee: not Super } or MemberExpression { Object: not Super } ? operand : null;
+    }
+
+    /// <summary>Emits a chain of calls and member expressions in a loop, from its innermost expression (see GetCallOrMemberOperand).</summary>
+    private void EmitCallOrMemberChain(Node node)
+    {
+        var start = _leftNestedExpressions.Count;
+        for (var current = node; current is not null; current = GetCallOrMemberOperand(current))
+        {
+            _leftNestedExpressions.Add(current);
+        }
+
+        EmitExpression(_leftNestedExpressions[^1]);
+        for (var i = _leftNestedExpressions.Count - 2; i >= start; i--)
+        {
+            switch (_leftNestedExpressions[i])
+            {
+                case MemberExpression member:
+                    EmitMemberAfterObject(member);
+                    break;
+                case CallExpression { Callee: MemberExpression member } call:
+                    EmitMemberCalleeAfterObject(member);
+                    EmitCallAfterCallee(call, isDirectEval: false);
+                    break;
+                case CallExpression call:
+                    _builder.Emit(OpCode.PushUndefined);
+                    EmitCallAfterCallee(call, isDirectEval: false);
+                    break;
+            }
+        }
+
+        _leftNestedExpressions.RemoveRange(start, _leftNestedExpressions.Count - start);
     }
 
     /// <summary>The optional part of a chain: when the value (below 'extra' values) is null or undefined, the chain is undefined.</summary>
@@ -1114,31 +1234,7 @@ internal sealed partial class CodeGenerator
                 return;
             case MemberExpression member:
                 EmitExpression(member.Object);
-                if (member.Optional)
-                {
-                    EmitOptionalCheck(0);
-                }
-
-                _builder.Emit(OpCode.Dup);
-                if (member.Property is PrivateIdentifier privateName)
-                {
-                    EmitPrivateOperation(OpCode.GetPrivate, privateName);
-                }
-                else if (member.Computed)
-                {
-                    EmitExpression(member.Property);
-                    _builder.Emit(OpCode.GetElement);
-                }
-                else
-                {
-                    // Dup, GetProperty, Swap
-                    _builder.RemoveLastDup();
-                    _builder.SetPosition(member.Property.Start);
-                    _builder.Emit(OpCode.GetMethod, _builder.AddKey(GetPropertyKey(member.Property)));
-                    return;
-                }
-
-                _builder.Emit(OpCode.Swap);
+                EmitMemberCalleeAfterObject(member);
                 return;
             case Identifier identifier:
                 {
@@ -1163,6 +1259,36 @@ internal sealed partial class CodeGenerator
                 _builder.Emit(OpCode.PushUndefined);
                 return;
         }
+    }
+
+    /// <summary>Emits the function and the this value of a member callee whose object is on the stack.</summary>
+    private void EmitMemberCalleeAfterObject(MemberExpression member)
+    {
+        if (member.Optional)
+        {
+            EmitOptionalCheck(0);
+        }
+
+        _builder.Emit(OpCode.Dup);
+        if (member.Property is PrivateIdentifier privateName)
+        {
+            EmitPrivateOperation(OpCode.GetPrivate, privateName);
+        }
+        else if (member.Computed)
+        {
+            EmitExpression(member.Property);
+            _builder.Emit(OpCode.GetElement);
+        }
+        else
+        {
+            // Dup, GetProperty, Swap
+            _builder.RemoveLastDup();
+            _builder.SetPosition(member.Property.Start);
+            _builder.Emit(OpCode.GetMethod, _builder.AddKey(GetPropertyKey(member.Property)));
+            return;
+        }
+
+        _builder.Emit(OpCode.Swap);
     }
 
     private void EmitCalleeChain(ChainExpression chain)
@@ -1203,8 +1329,20 @@ internal sealed partial class CodeGenerator
             return;
         }
 
+        if (GetCallOrMemberOperand(call) is not null)
+        {
+            EmitCallOrMemberChain(call);
+            return;
+        }
+
         var isDirectEval = call.Callee is Identifier { Name: "eval" } && !call.Optional;
         EmitCallee(call.Callee);
+        EmitCallAfterCallee(call, isDirectEval);
+    }
+
+    /// <summary>Emits the arguments and the call, when the function and the this value are on the stack.</summary>
+    private void EmitCallAfterCallee(CallExpression call, bool isDirectEval)
+    {
         if (call.Optional)
         {
             // callee?.(...): the function is below the this value

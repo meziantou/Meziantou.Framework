@@ -329,8 +329,9 @@ internal sealed class AnchorQuery
         var current = anchor;
         while (true)
         {
+            // (a column spanner is laid out by its multi-column container, https://drafts.csswg.org/css-multicol-1/#column-span)
             ContainerBox next;
-            for (var box = current; ; box = PositionedLayout.GetPositioningParent(box))
+            for (var box = current; ; box = MultiColumnFlow.GetColumnSpannerContainer(box) ?? PositionedLayout.GetPositioningParent(box))
             {
                 if (box is null || ReferenceEquals(box, positioned))
                     return false;

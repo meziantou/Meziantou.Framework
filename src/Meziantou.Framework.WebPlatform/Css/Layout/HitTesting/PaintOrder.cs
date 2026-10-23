@@ -1063,7 +1063,18 @@ internal static class PaintOrder
         if (!markers)
             return;
 
-        if (!line.IsTruncatedByBlockEllipsis)
+        if (truncation is { BlockEllipsis: { } truncatedBlockEllipsis, BlockEllipsisTruncation: { } blockEllipsisTruncation })
+        {
+            // The block ellipsis truncated by text-overflow as the content of the line
+            foreach (var fragment in truncatedBlockEllipsis.Fragments)
+            {
+                if (!blockEllipsisTruncation.IsHidden(fragment))
+                {
+                    output.Add(new PaintItem(fragment) { Truncation = blockEllipsisTruncation });
+                }
+            }
+        }
+        else if (!line.IsTruncatedByBlockEllipsis)
         {
             AddEllipsis(line.BlockEllipsis, output);
         }

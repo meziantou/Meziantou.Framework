@@ -765,7 +765,7 @@
     "total": 1
   },
   "css/css-overflow/line-clamp/line-clamp-text-overflow-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-with-abspos-001.html": {
     "reftest": "PASS"

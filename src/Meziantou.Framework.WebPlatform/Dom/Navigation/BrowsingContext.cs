@@ -2076,6 +2076,7 @@ public sealed partial class BrowsingContext : IDisposable
                 var encoding = WebEncodingId.Utf8;
                 var text = resource.Content ?? Decode(resource.ContentBytes!.Value.Span, charset, out encoding);
                 parameters.ContentType = contentType;
+                parameters.IsTextDocument = true;
                 var textDocument = parser.Parse("<pre style=\"word-wrap: break-word; white-space: pre-wrap;\">\n" + WebUtility.HtmlEncode(text));
                 textDocument.Encoding = encoding;
             }
@@ -2253,6 +2254,9 @@ public sealed partial class BrowsingContext : IDisposable
         document.ReferrerPolicy = parameters.ReferrerPolicy;
         document.ResponseStatus = parameters.Status;
         document.MediaDocumentResource = parameters.MediaDocumentResource;
+
+        // The text documents have no doctype but are in no-quirks mode, as in the browsers
+        document.ParserCannotChangeTheMode |= parameters.IsTextDocument;
 
         // https://w3c.github.io/webappsec-csp/#parse-response-csp: the self-origin of the CSP list is the origin of the URL of
         // the response, also when the document is sandboxed (the documents of the local schemes keep their origin)
@@ -3228,6 +3232,9 @@ public sealed partial class BrowsingContext : IDisposable
     {
         /// <summary>The response of the navigation, for a media document (see <see cref="Document.MediaDocumentResource"/>).</summary>
         public DocumentResource? MediaDocumentResource { get; set; }
+
+        /// <summary>Whether the document shows a text resource (https://html.spec.whatwg.org/multipage/document-lifecycle.html#read-text).</summary>
+        public bool IsTextDocument { get; set; }
 
         /// <summary>
         /// The URL of the document when it is not the URL of the response: the URL of a navigation that uses the response of a

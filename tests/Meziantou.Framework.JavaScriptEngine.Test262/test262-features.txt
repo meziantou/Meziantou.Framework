@@ -4,14 +4,13 @@
 # Proposals below stage 4 (see test262's features.txt). The proposals below stage 4 that are implemented anyway are not
 # listed: Intl.Era-monthcode, Intl.Locale-info, Intl.NumberFormat-v3, legacy-regexp, error-stack-accessor (used by
 # Meziantou.Framework.WebPlatform), Iterator.prototype.join, import-defer, source-phase-imports,
-# source-phase-imports-module-source (the host gives the module source of '<module source>') and ShadowRealm.
+# source-phase-imports-module-source (the host gives the module source of '<module source>'), ShadowRealm,
+# await-dictionary and nonextensible-applies-to-private.
 decorators
 export-defer
 import-text
 import-bytes
 immutable-arraybuffer
-nonextensible-applies-to-private
-await-dictionary
 
 # Proper tail calls are in the specification, but no shipping engine except JavaScriptCore implements them
 tail-call-optimization

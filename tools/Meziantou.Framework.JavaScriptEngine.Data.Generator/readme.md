@@ -30,7 +30,11 @@ The source files `africa`, `antarctica`, `asia`, `australasia`, `europe`, `north
 `etcetera` and `backward` are read in the main data form, then `backzone` with the zic build options
 `PACKRATDATA=backzone PACKRATLIST=zone.tab` (as ICU does, and as ECMA-402 recommends): each country of `zone.tab` has
 its own zone, with its history before 1970 (e.g. `Europe/Amsterdam` is a zone with its LMT offset of +0:19:32, not a
-link to `Europe/Brussels`). The `factory` zone is not included.
+link to `Europe/Brussels`). The `factory` zone is not included. The System V zones `EST5EDT`, `CST6CDT`, `MST7MDT` and
+`PST8PDT` are replaced by links to `America/New_York`, `America/Chicago`, `America/Denver` and `America/Los_Angeles`:
+tzdata 2026d made them zones again (they were links from 2024b to 2026c), but ECMA-402 keeps them as aliases, as
+browsers and test262 do ([tc39/ecma402#1103](https://github.com/tc39/ecma402/issues/1103)). `--verify` compiles the
+source with these links.
 
 For each zone, the file contains the transitions (in seconds, the offsets keep their seconds) until the year after
 the last year a non-recurring rule applies, then the rules whose TO field is `max`: the engine computes the later

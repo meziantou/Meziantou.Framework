@@ -30,6 +30,7 @@ public sealed class TemporalBuiltinsTests
     public void Now_TimeZoneIdIsThePrimaryIdentifier()
     {
         Assert.Equal("Asia/Kolkata", Evaluate("Temporal.Now.timeZoneId()", timeZone: "asia/calcutta"));
+        Assert.Equal("America/Chicago", Evaluate("Temporal.Now.timeZoneId()", timeZone: "CST6CDT"));
     }
 
     [Fact]
@@ -37,6 +38,8 @@ public sealed class TemporalBuiltinsTests
     {
         Assert.Equal("Asia/Calcutta", Evaluate("new Temporal.ZonedDateTime(0n, 'ASIA/CALCUTTA').timeZoneId"));
         Assert.Equal("true", Evaluate("String(new Temporal.ZonedDateTime(0n, 'Asia/Calcutta').equals(new Temporal.ZonedDateTime(0n, 'Asia/Kolkata')))"));
+        Assert.Equal("CST6CDT", Evaluate("new Temporal.ZonedDateTime(0n, 'cst6cdt').timeZoneId"));
+        Assert.Equal("true", Evaluate("String(new Temporal.ZonedDateTime(0n, 'CST6CDT').equals(new Temporal.ZonedDateTime(0n, 'America/Chicago')))"));
         Assert.Equal("+05:30", Evaluate("new Temporal.ZonedDateTime(0n, '+0530').timeZoneId"));
         Assert.Equal("RangeError", ErrorName("new Temporal.ZonedDateTime(0n, 'Mars/Olympus_Mons')"));
     }

@@ -274,8 +274,9 @@ internal sealed partial class LayoutEngine
                     if (index < baseIndex)
                         continue;
 
+                    // (also a box whose content has a forced page break: it is broken there)
                     var extent = GetSubtreeBlockEnd(box, writingDirection, top, bottom) - top;
-                    if ((offset + extent > sizes[Math.Clamp(index - baseIndex, 0, sizes.Count - 1)] + 0.01 || (index - baseIndex >= breaks.Count && top > flow.ContentEnd + 0.01 && offset > sizes[^1] - 0.01))
+                    if ((offset + extent > sizes[Math.Clamp(index - baseIndex, 0, sizes.Count - 1)] + 0.01 || (index - baseIndex >= breaks.Count && top > flow.ContentEnd + 0.01 && offset > sizes[^1] - 0.01) || ContainsForcedPageBreak(rules, box, PageBreakRules.IsAtStaticBlockPosition(box)))
                         && (fragmentedBoxes ??= []).Add(box.Box))
                     {
                         hasNewFragmentedBox = true;
@@ -526,6 +527,35 @@ internal sealed partial class LayoutEngine
                 && !FragmentationFlow.IsMonolithic(box, writingDirection, scrollContainersAreMonolithic: false);
     }
 
+    /// <summary>
+    /// Returns whether the in-flow content of a box has a forced page break between two siblings (or a change of the page name,
+    /// when <paramref name="namesBreak"/>).
+    /// </summary>
+    private static bool ContainsForcedPageBreak(PageBreakRules rules, BoxFragment box, bool namesBreak)
+    {
+        if (box.Box.EstablishesIndependentChildrenLayout || UsedContainment.HasLayoutContainment(box.Box))
+            return false;
+
+        var children = box.ChildrenSpan;
+        BoxFragment? previous = null;
+        for (var i = 0; i < box.InFlowChildCount && i < children.Length; i++)
+        {
+            if (children[i] is not BoxFragment child || child.Box.IsOutOfFlow)
+                continue;
+
+            if (previous is not null && (PageBreakRules.IsForced(previous.Box.Style.Layout.Fragmentation.BreakAfter) || PageBreakRules.IsForced(child.Box.Style.Layout.Fragmentation.BreakBefore)
+                || (namesBreak && !string.Equals(rules.GetEndPageValue(previous), rules.GetStartPageValue(child), StringComparison.Ordinal))))
+                return true;
+
+            if (ContainsForcedPageBreak(rules, child, namesBreak))
+                return true;
+
+            previous = child;
+        }
+
+        return false;
+    }
+
     /// <summary>Returns the block-end edge of a fragment and of its descendants (in the block axis of the strip).</summary>
     private static double GetSubtreeBlockEnd(Fragment fragment, WritingDirection writingDirection, double top, double bottom)
     {
@@ -669,7 +699,8 @@ internal sealed partial class LayoutEngine
     /// page-margin boxes whose <c>z-index</c> is negative, then the document in the page area (its canvas background covers the
     /// padding box of the page box), then the other page-margin boxes. As in Blink, each page-margin box is painted atomically, as a stacking
     /// context, in the order of its <c>z-index</c> (<c>auto</c> is 0), then in the order of the boxes (from the top-left
-    /// corner, clockwise). The display list is in the coordinates of the page box.
+    /// corner, clockwise). The display list is in the coordinates of the page box. A document whose root element generates no
+    /// box has blank pages.
     /// </summary>
     internal DisplayList PaintPage(LayoutPage page)
     {
@@ -681,7 +712,8 @@ internal sealed partial class LayoutEngine
         builder.Add(new DrawPaintItem(new DisplayPaint(DisplayColor.White)));
         List<(BoxFragment Fragment, int ZIndex)>? marginBoxes = null;
         var viewport = _boxTree?.Viewport;
-        if (geometry.Style is { } style && viewport is not null)
+        // (as in Gecko, a document whose root element generates no box prints blank pages, without page boxes)
+        if (geometry.Style is { } style && viewport is { IsEmpty: false })
         {
             // As in the browsers, the background of the page box covers the whole page, its margins included (whatever its
             // background-clip); its borders are in the page margins

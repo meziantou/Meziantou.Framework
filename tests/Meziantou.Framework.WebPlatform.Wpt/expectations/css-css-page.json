@@ -135,7 +135,7 @@
     "reftest": "PASS"
   },
   "css/css-page/margin-boxes/content-006-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/margin-boxes/content-007-print.html": {
     "reftest": "PASS"
@@ -393,7 +393,7 @@
     "reftest": "PASS"
   },
   "css/css-page/page-margin-004-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/page-margin-005-print.html": {
     "reftest": "PASS"
@@ -426,7 +426,7 @@
     "reftest": "PASS"
   },
   "css/css-page/page-name-003-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/page-name-abspos-001-print.html": {
     "reftest": "PASS"
@@ -732,7 +732,7 @@
     "reftest": "PASS"
   },
   "css/css-page/root-element-display-none-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/subpixel-page-size-001-print.html": {
     "reftest": "PASS"

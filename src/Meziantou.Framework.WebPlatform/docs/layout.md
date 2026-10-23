@@ -3031,7 +3031,8 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   `min-*` and `max-*`) when they are not `auto`: the automatic margins share what remains (they may be negative,
   [csswg-drafts#8508](https://github.com/w3c/csswg-drafts/issues/8508)), and when no margin is automatic the page sheet is
   resized to the margin box of the page box ("the containing block is resized to coincide with the margin edges of the page
-  box"). `page-orientation` rotates the printed page (see [Printing](rendering.md#printing)), not its layout.
+  box"). A document whose root element generates no box prints blank pages (no page box is painted, as in Gecko).
+  `page-orientation` rotates the printed page (see [Printing](rendering.md#printing)), not its layout.
 - **Printable area** ([`page-margin-safety`](https://drafts.csswg.org/css-page-3/#page-margin-safety)): `PrintOptions.SafePrintableInset`
   is the unprintable region along the edges of the sheet (0 by default; the WPT runner reads it from
   `<meta name=safe-printable-inset>`, in centimeters, as the runner of Chromium). With `clamp`, the page margins that are not
@@ -3084,9 +3085,10 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   ([CSS Position 3](https://drafts.csswg.org/css-position-3/#fixed-pos): positioned in the page area of each page, as in the
   first one; the pages added by the absolutely positioned boxes alternate between left and right pages, with the block
   sizes of their page areas); the absolutely positioned boxes whose containing block is the initial containing block are on the page of
-  their position in the content, unbroken, when they fit in the rest of it with their descendants, else they are
-  fragmented apart from their position in the initial containing block (`PageBreakRules.InitialContainingBlock`; the pages
-  they reach are added, and the page names of their contents do not break the pages); the absolutely positioned boxes
+  their position in the content, unbroken, when they fit in the rest of it with their descendants and their contents
+  have no forced page break, else they are fragmented apart from their position in the initial containing block
+  (`PageBreakRules.InitialContainingBlock`; the pages they reach are added; as in Blink, the page names of their contents
+  break the pages only when the box is at its static position in the block axis); the absolutely positioned boxes
   whose containing block is in the strip are fragmented as in the columns. The layers adopted by a stacking context split by the pages are painted with its fragment of the same page
   (`PaintOrder`).
 - **Page-margin boxes** (`PageMarginBoxes`, [§4](https://drafts.csswg.org/css-page-3/#margin-boxes)): the sixteen boxes of

@@ -1,3 +1,5 @@
+using Meziantou.Framework.WebPlatform.Css.Layout;
+
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>https://dom.spec.whatwg.org/#callbackdef-eventlistener</summary>
@@ -491,6 +493,7 @@ internal static class EventDispatcher
         var targetOverride = legacyTargetOverride && target is Window window ? window.Document : target;
 
         EventTarget? activationTarget = null;
+        ScrollControlReference? activatedScrollControl = null;
         var originalTarget = target;
         var relatedTarget = Retarget(@event.RelatedTarget, target);
         var clearTargets = false;
@@ -593,6 +596,17 @@ internal static class EventDispatcher
                 clearTargets = true;
             }
 
+            // https://drafts.csswg.org/css-overflow-5/#scroll-marker-activation: a scroll navigation control at the point of a
+            // trusted click is the innermost activation target (the pseudo-elements are not in the event path)
+            if (isActivationEvent && target is Node clickTarget)
+            {
+                activatedScrollControl = ScrollControlActions.GetActivationTarget((MouseEvent)@event, clickTarget);
+                if (activatedScrollControl is not null)
+                {
+                    activationTarget = null;
+                }
+            }
+
             if (activationTarget is not null && activationTarget.HasLegacyPreActivationBehavior)
             {
                 activationTarget.LegacyPreActivationBehavior();
@@ -660,6 +674,11 @@ internal static class EventDispatcher
             {
                 activationTarget.LegacyCanceledActivationBehavior();
             }
+        }
+
+        if (activatedScrollControl is not null && !@event.CanceledFlag)
+        {
+            ScrollControlActions.Activate(activatedScrollControl, byKeyboard: false);
         }
 
         // The default actions of the user agent for the trusted events of the user interactions (focus, sequential navigation)

@@ -66,6 +66,19 @@ internal static class ScrollIntoView
 
         List<Task>? promises = null;
         Fragment child = fragments[0];
+        if (includeSelf && child is BoxFragment { ScrollState: null } targetFragment && BlockFormattingContext.IsFieldset(targetFragment.Box))
+        {
+            // The scrolling box of a fieldset is the one of its anonymous fieldset content box
+            foreach (var content in targetFragment.ChildrenSpan)
+            {
+                if (content is BoxFragment { Box.IsFieldsetContent: true, ScrollState: not null })
+                {
+                    child = content;
+                    break;
+                }
+            }
+        }
+
         var isNearestScrollContainer = snapsToTarget && targetRect is null;
         var document = target.NodeDocument;
         while (true)

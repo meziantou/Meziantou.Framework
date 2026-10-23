@@ -213,13 +213,14 @@ internal sealed partial class LayoutEngine
     /// <summary>
     /// Returns the first element, in tree order, of the contents of a multi-column container that starts in a column or in one of
     /// the columns after it: where the sequential focus navigation continues after the activation of the scroll marker of the
-    /// column (as in Chrome: the first focusable area of the column is the next one).
+    /// column (as in Chrome: the first focusable area of the column is the next one). As in Chrome, a line break is text, not an
+    /// element of the column.
     /// </summary>
     internal Element? GetFirstElementOfColumn(Element container, int index)
     {
         for (var node = container.FirstChild; node is not null; node = node.GetNextInTreeOrder(container))
         {
-            if (node is Element element && GetColumnOf(container, element) is { } column && column >= index)
+            if (node is Element element and not HtmlBRElement && GetColumnOf(container, element) is { } column && column >= index)
                 return element;
         }
 

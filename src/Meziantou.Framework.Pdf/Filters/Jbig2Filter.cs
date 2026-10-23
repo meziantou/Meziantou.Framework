@@ -14,6 +14,10 @@ internal static class Jbig2Filter
         var decoder = new Jbig2Decoder(limit);
         if (parameters?.GetResolved(PdfName.Create("JBIG2Globals")) is PdfStream globals)
         {
+            // The global segments are not an image: a JBIG2Decode filter there would decode its own globals again
+            if (globals.Filters.Any(filter => filter.Value == "JBIG2Decode"))
+                throw new InvalidPdfContentException("The /JBIG2Globals stream uses the JBIG2Decode filter");
+
             decoder.DecodeSegments(globals.GetDecodedData());
         }
 

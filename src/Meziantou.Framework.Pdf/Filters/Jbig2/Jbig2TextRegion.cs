@@ -59,7 +59,7 @@ internal static class Jbig2TextRegion
                     symbol = DecodeRefinedSymbol(p, symbol, budget);
                 }
 
-                budget.ChargeWork((long)symbol.Width * symbol.Height);
+                budget.ChargeWork(symbol.Width, symbol.Height);
                 var width = symbol.Width;
                 var height = symbol.Height;
                 if (!p.Transposed && p.ReferenceCorner is Jbig2ReferenceCorner.TopRight or Jbig2ReferenceCorner.BottomRight)

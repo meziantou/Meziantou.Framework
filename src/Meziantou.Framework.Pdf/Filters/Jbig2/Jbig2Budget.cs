@@ -19,6 +19,9 @@ internal sealed class Jbig2Budget(long maxMemory)
             throw new PdfResourceLimitException($"The JBIG2 bitmaps are larger than the limit of {maxMemory} bytes");
     }
 
+    /// <summary>Charges the work of a bitmap: its pixels, and one more per row, so that rows of no pixel are work too.</summary>
+    public void ChargeWork(long width, long height) => ChargeWork((Math.Max(width, 0) + 1) * Math.Max(height, 1));
+
     public void ChargeWork(long pixels)
     {
         _work += Math.Max(pixels, 1);

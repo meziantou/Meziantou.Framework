@@ -63,7 +63,7 @@ internal static class Jbig2Halftone
         if (patterns.Count == 0)
             throw new InvalidPdfContentException("A JBIG2 halftone region has no pattern");
 
-        budget.ChargeWork((long)gridWidth * gridHeight);
+        budget.ChargeWork(gridWidth, gridHeight);
         var region = new Jbig2Bitmap(info.Width, info.Height, budget);
         if (defaultPixel != 0)
         {
@@ -101,7 +101,8 @@ internal static class Jbig2Halftone
 
         // The gray-scale values: bit planes coded in Gray code, the most significant one first (C.5)
         var bitsPerValue = Jbig2SymbolDictionary.GetSymbolCodeLength(patterns.Count);
-        var values = new int[gridWidth * (long)gridHeight > int.MaxValue ? throw new PdfResourceLimitException("A JBIG2 halftone grid is too large") : gridWidth * gridHeight];
+        budget.ChargeMemory((long)gridWidth * gridHeight * sizeof(int));
+        var values = new int[gridWidth * gridHeight];
         if (bitsPerValue > 0)
         {
             (int X, int Y)[] adaptivePixels = template == 0 ? [(3, -1), (-3, -1), (2, -2), (-2, -2)] : template == 1 ? [(3, -1)] : [(2, -1)];
@@ -152,7 +153,7 @@ internal static class Jbig2Halftone
 
                 var (x, y) = CellPosition(m, n);
                 var value = Math.Min(values[(m * gridWidth) + n], patterns.Count - 1);
-                budget.ChargeWork((long)patternWidth * patternHeight);
+                budget.ChargeWork(patternWidth, patternHeight);
                 region.Combine(patterns[value], x, y, combinationOperator);
             }
         }

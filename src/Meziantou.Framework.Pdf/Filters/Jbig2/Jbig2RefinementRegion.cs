@@ -21,7 +21,7 @@ internal static class Jbig2RefinementRegion
     /// <param name="budget">The budget.</param>
     public static Jbig2Bitmap Decode(Jbig2ArithmeticDecoder decoder, byte[] contexts, int width, int height, int template, Jbig2Bitmap reference, int referenceDx, int referenceDy, bool typicalPrediction, (int X, int Y)[] adaptivePixels, Jbig2Budget budget)
     {
-        budget.ChargeWork((long)width * height);
+        budget.ChargeWork(width, height);
         var bitmap = new Jbig2Bitmap(width, height, budget);
         var typical = 0;
         for (var y = 0; y < height; y++)

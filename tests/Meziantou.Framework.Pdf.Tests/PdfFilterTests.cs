@@ -381,6 +381,21 @@ public sealed class PdfFilterTests
         Assert.Throws<PdfResourceLimitException>(() => Jbig2Filter.Decode([.. Segment(0, 48, [], PageInformation(1_000_000, 1_000_000, flags: 0))], parameters: null, Limit));
     }
 
+    [Fact]
+    public void Jbig2HostileHeadersAreRejected()
+    {
+        // Global segments that are themselves a JBIG2 image with these globals: decoding them would never end
+        var globals = new PdfStream(new PdfDictionary { [PdfNames.Filter] = PdfNames.JBIG2Decode });
+        globals.Dictionary[PdfNames.DecodeParms] = new PdfDictionary { [PdfName.Create("JBIG2Globals")] = globals };
+        globals.SetEncodedData([.. Segment(0, 48, [], PageInformation(8, 8, flags: 0))]);
+
+        // The long form of the referred-to segments: 2^29 - 1 segments in a header of a few bytes
+        byte[] referredCount = [0, 0, 0, 1, 38, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0];
+
+        Assert.Throws<InvalidPdfContentException>(() => Jbig2Filter.Decode([], new PdfDictionary { [PdfName.Create("JBIG2Globals")] = globals }, Limit));
+        Assert.Throws<InvalidPdfContentException>(() => Jbig2Filter.Decode(referredCount, parameters: null, Limit));
+    }
+
     [Theory]
     [InlineData("00101", 1, 5)]
     [InlineData("1000000100", 1, 20)]

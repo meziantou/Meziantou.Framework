@@ -144,6 +144,10 @@ internal sealed class Jbig2Decoder
             throw new InvalidPdfContentException("A JBIG2 segment header has an invalid referred-to segment count");
         }
 
+        // Each referred-to segment number takes at least one byte of the header
+        if (referredCount > reader.Remaining)
+            throw new InvalidPdfContentException("A JBIG2 segment header is truncated");
+
         var referred = new uint[referredCount];
         for (var i = 0; i < referredCount; i++)
         {
@@ -447,16 +451,22 @@ internal sealed class Jbig2Decoder
         }
 
         var combinationOperator = _pageOverridesCombination ? info.CombinationOperator : _pageCombinationOperator;
-        _budget.ChargeWork((long)bitmap.Width * bitmap.Height);
+        _budget.ChargeWork(bitmap.Width, bitmap.Height);
         _page.Combine(bitmap, info.X, info.Y, combinationOperator);
     }
 
+    /// <summary>Gets the results of the segments a segment refers to, each once, in the order of the references.</summary>
     private IEnumerable<SegmentResult> GetReferred(Header header)
     {
+        var seen = new HashSet<uint>();
         foreach (var number in header.Referred)
         {
-            if (_results.TryGetValue(number, out var result))
+            if (seen.Add(number) && _results.TryGetValue(number, out var result))
+            {
+                // The lists of symbols are copied from the results: their references are charged
+                _budget.ChargeMemory(8L * ((result.Symbols?.Count ?? 0) + (result.Patterns?.Count ?? 0)));
                 yield return result;
+            }
         }
     }
 

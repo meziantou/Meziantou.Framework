@@ -30,7 +30,7 @@ internal static class Jbig2GenericRegion
     /// <param name="budget">The budget.</param>
     public static Jbig2Bitmap Decode(Jbig2ArithmeticDecoder decoder, byte[] contexts, int width, int height, int template, bool typicalPrediction, Jbig2Bitmap? skip, (int X, int Y)[] adaptivePixels, Jbig2Budget budget)
     {
-        budget.ChargeWork((long)width * height);
+        budget.ChargeWork(width, height);
         var bitmap = new Jbig2Bitmap(width, height, budget);
         var typical = 0;
         for (var y = 0; y < height; y++)
@@ -63,7 +63,7 @@ internal static class Jbig2GenericRegion
     /// <returns>The bitmap, and the bytes the coding used (an end-of-block code included).</returns>
     public static (Jbig2Bitmap Bitmap, int Length) DecodeMmr(byte[] data, int offset, int length, int width, int height, Jbig2Budget budget)
     {
-        budget.ChargeWork((long)width * height);
+        budget.ChargeWork(width, height);
         var bitmap = new Jbig2Bitmap(width, height, budget);
         if (width == 0 || height == 0)
             return (bitmap, 0);

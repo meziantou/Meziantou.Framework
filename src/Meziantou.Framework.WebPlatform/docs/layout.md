@@ -2789,7 +2789,10 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
   - A float is pushed when it is not at the start of the fragmentainer (the block-start edges repeated by
     `box-decoration-break: clone` do not count) and it is monolithic or has `break-inside: avoid`, or its first content (a
     line box, a monolithic box) does not fit, or its border box fits but not its block-end margin (the margin of a float is
-    not truncated, [csswg-drafts#9191](https://github.com/w3c/csswg-drafts/issues/9191)).
+    not truncated, [csswg-drafts#9191](https://github.com/w3c/csswg-drafts/issues/9191)). As in Gecko, a float with a forced
+    break before it (`break-before`, [CSS 2 §13.3.1](https://drafts.csswg.org/css2/#page-break-props)) is also pushed when it
+    is not at the start of the fragmentainer. The floats inside a float that is pushed are not pushed in the same pass (they
+    move with it).
   - The strip is then laid out again with the float placed at or below the position of the strip where the next
     fragmentainer starts (`LayoutContext.FloatPushes`; the positions of the strip are converted to the block formatting
     context of the float with `LayoutContext.FloatPlacements`): the line boxes and the boxes after the float that are still
@@ -2811,6 +2814,9 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     floats that do not fit in the balanced columns are then pushed.
   - A break in the empty block size of a float at a position where the in-flow content has a possible break is that break
     (between two line boxes: with their `orphans` and `widows`).
+  - As in Blink, a float that continues in a fragmentainer after a break is placed again at its start: its fragment there is
+    moved toward its side, beside the floats of the same side that also continue there before it (the floats that ended no
+    longer push it; the content beside it is not laid out again).
 - **Repeated table headers and footers** ([CSS Tables 3](https://drafts.csswg.org/css-tables-3/#repeated-headers), as in
   Blink in the columns, the only browser that implements them there; `RepeatedSections`): the `table-header-group` and the
   `table-footer-group` of a table that have `break-inside: avoid` and are not taller than a quarter of the fragmentainer

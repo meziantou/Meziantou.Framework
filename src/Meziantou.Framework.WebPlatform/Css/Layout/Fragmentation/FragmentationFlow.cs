@@ -2361,6 +2361,7 @@ internal sealed class FragmentationFlow
             Context = context.FormattingContext,
             BorderBoxEnd = bottom,
             IsUnbreakable = isMonolithic || avoid,
+            HasForcedBreakBefore = IsForcedBreak(GetBreakBefore(box)),
             LeadingEnd = isMonolithic ? bottom : GetLeadingMonolithicEnd(box, top),
             LeadingStart = hasContentBefore ? marginTop : context.LeadingStart,
             LeadingEdges = hasContentBefore ? 0 : context.LeadingEdges,
@@ -2602,6 +2603,9 @@ internal readonly record struct FloatExtent(BoxFragment Fragment, double Start, 
 
     /// <summary>Whether the float is monolithic: it is in one fragmentainer.</summary>
     public bool IsMonolithic { get; init; }
+
+    /// <summary>Whether the float has a forced break before it (<c>break-before</c> of the float or of its first content).</summary>
+    public bool HasForcedBreakBefore { get; init; }
 
     /// <summary>Whether the float was pushed to the start of a fragmentainer (see <see cref="FloatPush"/>).</summary>
     public bool IsPushed { get; init; }

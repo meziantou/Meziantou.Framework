@@ -11904,7 +11904,7 @@
     "reftest": "PASS"
   },
   "css/CSS2/pagination/float-page-break-inside-avoid-2-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/pagination/float-page-break-inside-avoid-3-print.html": {
     "reftest": "PASS"
@@ -11913,13 +11913,13 @@
     "reftest": "PASS"
   },
   "css/CSS2/pagination/float-page-break-inside-avoid-5-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/pagination/float-page-break-inside-avoid-6-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/pagination/float-page-break-inside-avoid-7-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/pagination/float-page-break-inside-avoid-8-print.html": {
     "reftest": "FAIL"

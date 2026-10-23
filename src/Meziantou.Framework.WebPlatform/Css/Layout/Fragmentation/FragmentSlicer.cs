@@ -142,6 +142,59 @@ internal sealed class FragmentSlicer
     }
 
     /// <summary>
+    /// Returns the inline shift of the fragment of a float that continues in a fragmentainer after a break: as in Blink, the
+    /// float is placed again at the start of the fragmentainer, beside the floats of the same side that continue there before
+    /// it (the floats that ended in the previous fragmentainers no longer push it; it is never moved away from its side).
+    /// </summary>
+    private static double GetResumedFloatShift(BoxFragment parent, BoxFragment child, double childInline, int index, ref Dictionary<int, List<(bool StartSide, double MarginStart, double MarginEnd)>>? resumedFloats)
+    {
+        var writingDirection = parent.WritingDirection;
+        var content = writingDirection.ToLogical(parent.Border.Add(parent.Padding));
+        var contentStart = content.InlineStart;
+        var contentEnd = writingDirection.ToLogical(parent.Size).Inline - content.InlineEnd;
+        var margin = writingDirection.ToLogical(child.Margin);
+        var inlineSize = writingDirection.ToLogical(child.Size).Inline;
+        var side = ExclusionSpace.GetFloatSide(child.Box.Style.Layout.Float, writingDirection);
+        var startSide = (side == FloatSide.LineLeft) != writingDirection.IsRightToLeft;
+        resumedFloats ??= [];
+        if (!resumedFloats.TryGetValue(index, out var placed))
+        {
+            resumedFloats[index] = placed = [];
+        }
+
+        var shift = 0d;
+        if (startSide)
+        {
+            var edge = contentStart;
+            foreach (var other in placed)
+            {
+                if (other.StartSide)
+                {
+                    edge = Math.Max(edge, other.MarginEnd);
+                }
+            }
+
+            shift = Math.Min(0, edge + margin.InlineStart - childInline);
+        }
+        else
+        {
+            var edge = contentEnd;
+            foreach (var other in placed)
+            {
+                if (!other.StartSide)
+                {
+                    edge = Math.Min(edge, other.MarginStart);
+                }
+            }
+
+            shift = Math.Max(0, edge - margin.InlineEnd - inlineSize - childInline);
+        }
+
+        placed.Add((startSide, childInline + shift - margin.InlineStart, childInline + shift + inlineSize + margin.InlineEnd));
+        return shift;
+    }
+
+    /// <summary>
     /// Returns the fragments of a monolithic fragment (a monolithic box, a line box) that the pages slice (see
     /// <see cref="FragmentationFlow.SlicesMonolithicContent"/>): the fragment in the page where it starts, and a copy of it in
     /// each next page it or its overflowing contents are in, offset by the block size of the previous pages (the page area clips it).
@@ -353,6 +406,9 @@ internal sealed class FragmentSlicer
         // the child before the end of its sibling, at a negative offset in the fragmentainer when the sibling is broken)
         var siblingEnd = first;
         var isBlockFlow = box.Box.IsBlockContainer && !box.Box.EstablishesIndependentChildrenLayout;
+
+        // The floats that continue in each fragmentainer (placed again at its start, see GetResumedFloatShift)
+        Dictionary<int, List<(bool StartSide, double MarginStart, double MarginEnd)>>? resumedFloats = null;
         for (var i = 0; i < children.Length; i++)
         {
             var child = children[i];
@@ -439,6 +495,7 @@ internal sealed class FragmentSlicer
                 siblingEnd = Math.Max(siblingEnd, slices.BoxEnd);
             }
 
+            var isFloat = slices.Last > slices.First && child is BoxFragment { Box: { IsOutOfFlow: true, Style.Layout.IsFloating: true } };
             for (var index = slices.First; index <= slices.Last; index++)
             {
                 if (!childSlices.TryGetValue(index, out var list))
@@ -447,7 +504,8 @@ internal sealed class FragmentSlicer
                 }
 
                 var (childFragment, childOffset) = slices.Fragments[index - slices.First];
-                list.Add((childFragment, childInline + slices.GetInlineShift(index), childOffset, isInFlow));
+                var floatShift = isFloat && index > slices.First ? GetResumedFloatShift(box, (BoxFragment)child, childInline, index, ref resumedFloats) : 0;
+                list.Add((childFragment, childInline + slices.GetInlineShift(index) + floatShift, childOffset, isInFlow));
             }
 
             firstIndex = Math.Min(firstIndex, slices.First);

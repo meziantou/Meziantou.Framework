@@ -127,6 +127,10 @@ internal static class FloatPusher
             pushes ??= [];
             foreach (var (extent, index, target, placed) in found)
             {
+                // A float inside a float that is pushed moves with it: it is pushed (or not) once its ancestor is placed again
+                if (HasPushedAncestor(extent.Fragment, found))
+                    continue;
+
                 pushes[extent.Fragment.Box] = new FloatPush { TargetIndex = index + 1, MinBlockOffset = placed - extent.Start + target };
                 changed = true;
             }
@@ -135,6 +139,21 @@ internal static class FloatPusher
         return changed;
 
         double GetBlockSize(int index) => blockSizes[Math.Min(index, blockSizes.Count - 1)];
+    }
+
+    /// <summary>Returns whether a float is inside another float that is pushed in the same pass.</summary>
+    private static bool HasPushedAncestor(BoxFragment fragment, List<(FloatExtent Extent, int Index, double Target, double Placed)> found)
+    {
+        for (var ancestor = fragment.Parent; ancestor is not null; ancestor = ancestor.Parent)
+        {
+            foreach (var entry in found)
+            {
+                if (ReferenceEquals(entry.Extent.Fragment, ancestor))
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -164,7 +183,7 @@ internal static class FloatPusher
     /// <summary>Returns whether a float that is at an offset of a fragmentainer is pushed to the next one.</summary>
     private static bool IsPushed(in FloatExtent extent, FlowMap map, int index, double offset, double blockSize, double displayOffset)
     {
-        if (!double.IsFinite(blockSize) || offset + (extent.End - extent.Start) <= blockSize + Epsilon)
+        if (!double.IsFinite(blockSize) || (offset + (extent.End - extent.Start) <= blockSize + Epsilon && !extent.HasForcedBreakBefore))
             return false;
 
         // A float at the start of the fragmentainer (after the edges repeated by the boxes with box-decoration-break: clone)
@@ -174,6 +193,11 @@ internal static class FloatPusher
 
         if (map.GetOffsetIn(index, extent.LeadingStart) <= displayOffset + Epsilon && extent.Start - extent.LeadingStart <= extent.LeadingEdges + Epsilon)
             return false;
+
+        // A float with a forced break before it starts the next fragmentainer (as in Gecko; https://drafts.csswg.org/css2/#page-break-props:
+        // page-break-before applies to the floats, WPT css/CSS2/pagination/page-break-before-020.xht)
+        if (extent.HasForcedBreakBefore)
+            return true;
 
         // A float that is not broken (monolithic, break-inside: avoid); a float whose border box fits but not its block-end
         // margin, which is not truncated (as in Blink, https://github.com/w3c/csswg-drafts/issues/9191); a float whose first

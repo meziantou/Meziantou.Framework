@@ -39,6 +39,13 @@ public partial class Document
     }
 
     /// <summary>
+    /// The required CSP of the policy container of the document (https://w3c.github.io/webappsec-cspee/#policy-container-required-csp):
+    /// the serialized policy required by the <c>csp</c> attribute of the iframe element of an ancestor, which the documents of
+    /// the child navigables of the document must enforce too, or null.
+    /// </summary>
+    internal string? RequiredContentSecurityPolicy { get; set; }
+
+    /// <summary>
     /// Adds a serialized content security policy, or a list of policies separated by commas (the value of a
     /// <c>Content-Security-Policy</c> header, https://w3c.github.io/webappsec-csp/#parse-response-csp). The policy of a
     /// <c>meta</c> element is a single policy. The policies without Trusted Types directive are not added to
@@ -88,6 +95,7 @@ public partial class Document
     {
         ContentSecurityPoliciesOrNull = policyContainer.ContentSecurityPolicies is { } policies ? [.. policies] : null;
         _trustedTypesDirectives = policyContainer.TrustedTypesDirectives is { } directives ? [.. directives] : null;
+        RequiredContentSecurityPolicy = policyContainer.RequiredContentSecurityPolicy;
         if (policyContainer.ContentSecurityPolicySelfOrigin is { } selfOrigin)
         {
             ContentSecurityPolicySelfOrigin = selfOrigin;

@@ -6083,6 +6083,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.Document? ContentDocument { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Window? ContentWindow { get => throw null; }
         public bool Credentialless { get => throw null; set { } }
+        public string Csp { get => throw null; set { } }
         public string FrameBorder { get => throw null; set { } }
         public string Height { get => throw null; set { } }
         public string Loading { get => throw null; set { } }

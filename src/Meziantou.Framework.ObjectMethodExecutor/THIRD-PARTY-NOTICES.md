@@ -1,5 +1,19 @@
-The original version of this code is available on GitHub (https://github.com/dotnet/aspnetcore/tree/23a7696881946e8a1158fc81e2e21a3f2c66a1c4/src/Shared/ObjectMethodExecutor) and licensed under MIT:
+# Third-Party Notices
 
+This project includes third-party software components. The original copyright
+notices and the licenses under which the respective authors made such components
+available are reproduced below.
+
+---
+
+## ASP.NET Core ObjectMethodExecutor
+
+- Project: ASP.NET Core (dotnet/aspnetcore)
+- Source: <https://github.com/dotnet/aspnetcore/tree/23a7696881946e8a1158fc81e2e21a3f2c66a1c4/src/Shared/ObjectMethodExecutor>
+- License: <https://github.com/dotnet/aspnetcore/blob/main/LICENSE.txt>
+- Commit: 23a7696881946e8a1158fc81e2e21a3f2c66a1c4
+
+```
 The MIT License (MIT)
 
 Copyright (c) .NET Foundation and Contributors
@@ -23,3 +37,4 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```

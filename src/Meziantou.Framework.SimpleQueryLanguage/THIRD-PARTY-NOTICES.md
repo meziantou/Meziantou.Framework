@@ -1,5 +1,17 @@
-﻿The original version of this code was written by [Immo Landwerth](https://github.com/terrajobst) for [themesof.net](https://github.com/terrajobst/themesof.net) and licensed under MIT:
+# Third-Party Notices
 
+This project includes third-party software components. The original copyright
+notices and the licenses under which the respective authors made such components
+available are reproduced below.
+
+---
+
+## themesof.net
+
+- Project: themesof.net, written by [Immo Landwerth](https://github.com/terrajobst)
+- Source: <https://github.com/terrajobst/themesof.net>
+
+```
 The MIT License (MIT)
 
 Copyright (c) Immo Landwerth
@@ -21,3 +33,4 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+```

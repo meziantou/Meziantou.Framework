@@ -1375,7 +1375,8 @@ public sealed partial class BrowsingContext : IDisposable
             PolicyContainer = PolicyContainer.Clone(document),
         };
 
-        LoadDocument(document.UrlRecord, parameters, DocumentResource.Create(result, "text/html;charset=utf-8"));
+        // The body of the response is the UTF-8 encoding of the result: its lone surrogates become U+FFFD
+        LoadDocument(document.UrlRecord, parameters, DocumentResource.Create(Infra.InfraString.ToScalarValueString(result), "text/html;charset=utf-8"));
     }
 
     /// <summary>

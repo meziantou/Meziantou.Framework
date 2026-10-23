@@ -7,7 +7,9 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
 - **Reader**: cross-reference tables and streams, hybrid files, object streams, incremental updates, linearized files;
   the files whose cross-reference information is wrong are repaired by scanning them (`PdfDocument.IsRepaired`)
 - **Filters**: `FlateDecode` and `LZWDecode` (with the PNG and TIFF predictors), `ASCIIHexDecode`, `ASCII85Decode`,
-  `RunLengthDecode`; `DCTDecode` and `JPXDecode` through the codecs of `Meziantou.Framework.Imaging`
+  `RunLengthDecode`, `CCITTFaxDecode` (Group 3 and Group 4), `JBIG2Decode` (generic, refinement, text and halftone
+  regions, symbol and pattern dictionaries, arithmetic, MMR and Huffman coding); `DCTDecode` and `JPXDecode` through the
+  codecs of `Meziantou.Framework.Imaging`
 - **Writer**: full saves (the objects reachable from the catalog, renumbered, with object streams and a
   cross-reference stream, or a cross-reference table) and incremental updates that keep the bytes of the original file;
   the output depends only on the document and the options
@@ -166,7 +168,7 @@ document.Catalog[PdfName.Create("ViewerPreferences")] = document.Objects.Add(vie
 | Situation | Exception |
 | --- | --- |
 | The data is not a PDF document, or it is damaged beyond repair | `InvalidPdfContentException` |
-| The document uses a feature the library does not support (encryption, the `CCITTFaxDecode` and `JBIG2Decode` filters, CMYK JPEG images), or a font cannot be embedded (CFF2 or bitmap outlines, a license that does not allow it) | `UnsupportedPdfFeatureException` |
+| The document uses a feature the library does not support (encryption, CMYK JPEG images), or a font cannot be embedded (CFF2 or bitmap outlines, a license that does not allow it) | `UnsupportedPdfFeatureException` |
 | The document exceeds a limit of `PdfReadOptions` (decoded length of a stream, nesting depth) | `PdfResourceLimitException` |
 
 The three exceptions derive from `PdfException`. A reference to an object that does not exist is the null object, as the

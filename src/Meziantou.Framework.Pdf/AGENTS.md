@@ -17,6 +17,11 @@ the XML documentation and `readme.md` consistent in the same change.
   repository are `Meziantou.Framework.Imaging` (the image codecs and the ICC profiles) and `Meziantou.Framework.Fonts`
   (the fonts to embed: the reader, the shaper and the internal subsetter, through `InternalsVisibleTo`), with exact
   versions (`UseExactProjectReferenceVersions` in the project file, as Imaging does with Fonts).
+- **Bilevel filters** (`Filters/CcittFaxFilter.cs`, `Filters/Jbig2/`): `CCITTFaxDecode` reads the rows with the CCITT
+  decoder of the TIFF codec of Imaging, and JBIG2 decodes with the MQ decoder of its JPEG 2000 codec (both internal,
+  through `InternalsVisibleTo`). JBIG2 follows T.88 with the context bit order of its figures: the typical prediction
+  contexts alias the contexts of particular templates, so the order matters. Both were checked pixel by pixel against
+  MuPDF, Poppler and PDFium on the corpora (`expectations/bilevel-images.txt` of the corpus tests records the digests).
 - **Graphics objects** (`Graphics/`): the values that do not belong to a document (`PdfFunction`, `PdfShading`,
   `PdfExtGState`, `PdfShadingPattern`, `PdfSoftMask`) create their objects in each document that uses them, once
   (`PdfDocument.SharedResources`); the objects with content (`PdfForm`, `PdfTilingPattern`) belong to their document and

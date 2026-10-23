@@ -1,7 +1,7 @@
 pdfjs/test/pdfs/PDFBOX-4352-0.pdf: UnsupportedPdfFeatureException
 pdfjs/test/pdfs/REDHAT-1531897-0.pdf: InvalidPdfContentException
 pdfjs/test/pdfs/auth-event-ef-open.pdf: UnsupportedPdfFeatureException
-pdfjs/test/pdfs/bomb_giant.pdf: UnsupportedPdfFeatureException
+pdfjs/test/pdfs/bomb_giant.pdf: PdfResourceLimitException
 pdfjs/test/pdfs/bug1782186.pdf: UnsupportedPdfFeatureException
 pdfjs/test/pdfs/bug1815476.pdf: UnsupportedPdfFeatureException
 pdfjs/test/pdfs/bug900822.pdf: UnsupportedPdfFeatureException

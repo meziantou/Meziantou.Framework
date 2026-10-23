@@ -4,7 +4,7 @@
     <IsTrimmable>true</IsTrimmable>
     <RootNamespace>Meziantou.Framework.Pdf</RootNamespace>
     <Version>1.0.0</Version>
-    <Description>Fully managed PDF library for .NET, written from ISO 32000-2: an object model, a reader that recovers broken files (cross-reference tables and streams, object streams, incremental updates), the standard filters, full and incremental writers, and a document API (pages, content builder, standard 14 fonts and embedded font subsets, shadings, patterns, forms and transparency, images, metadata, outlines, links, text extraction).</Description>
+    <Description>Fully managed PDF library for .NET, written from ISO 32000-2: an object model, a reader that recovers broken files (cross-reference tables and streams, object streams, incremental updates), the standard filters (CCITT and JBIG2 included), full and incremental writers, and a document API (pages, content builder, standard 14 fonts and embedded font subsets, shadings, patterns, forms and transparency, images, metadata, outlines, links, text extraction).</Description>
     <PackageTags>pdf;pdf-reader;pdf-writer;document;iso-32000;font-embedding</PackageTags>
 
     <!-- Every public member must be documented -->

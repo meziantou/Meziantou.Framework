@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
+using Meziantou.Framework.Pdf.Objects;
 
 namespace Meziantou.Framework.Pdf.Corpus;
 
@@ -28,6 +30,8 @@ public sealed class PdfCorpusTests
 
     public static TheoryData<string> PdfBox => GetFiles("pdfbox");
 
+    public static TheoryData<string> BilevelImageFiles => new(CorpusFiles.Suites.SelectMany(CorpusFiles.GetFiles).Where(id => HasBilevelFilter(CorpusFiles.Read(id))));
+
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(PdfJs), DisableDiscoveryEnumeration = true)]
     public void PdfJsFiles(string id) => Run(id);
@@ -48,6 +52,47 @@ public sealed class PdfCorpusTests
     [MemberData(nameof(PdfBox), DisableDiscoveryEnumeration = true)]
     public void PdfBoxFiles(string id) => Run(id);
 
+    /// <summary>
+    /// The images of the <c>CCITTFaxDecode</c> and <c>JBIG2Decode</c> filters decode to the data recorded in
+    /// <c>expectations/bilevel-images.txt</c> (a digest, or the exception): data that was checked pixel by pixel against
+    /// the images MuPDF extracts and the pages Poppler and PDFium render.
+    /// </summary>
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(BilevelImageFiles), DisableDiscoveryEnumeration = true)]
+    public void BilevelImages(string id)
+    {
+        PdfDocument document;
+        try
+        {
+            document = PdfDocument.Open(CorpusFiles.Read(id), Options);
+        }
+        catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException or PdfResourceLimitException)
+        {
+            // The files that cannot be opened are checked by the other tests
+            return;
+        }
+
+        foreach (var reference in document.Objects.GetReferences().ToList())
+        {
+            if (reference.Resolve() is not PdfStream stream || !stream.Filters.Any(filter => filter.Value is "CCITTFaxDecode" or "JBIG2Decode"))
+                continue;
+
+            string outcome;
+            string? details = null;
+            try
+            {
+                outcome = Convert.ToHexStringLower(SHA256.HashData(stream.GetDecodedData()).AsSpan(0, 16));
+            }
+            catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException or PdfResourceLimitException)
+            {
+                outcome = ex.GetType().Name;
+                details = ex.ToString();
+            }
+
+            CorpusExpectations.Check("bilevel-images/" + id + "#" + reference.ObjectNumber.ToString(System.Globalization.CultureInfo.InvariantCulture), outcome, details);
+        }
+    }
+
     [Fact]
     public void EverySuiteHasATest()
     {
@@ -55,6 +100,12 @@ public sealed class PdfCorpusTests
     }
 
     private static TheoryData<string> GetFiles(string suite) => new(CorpusFiles.GetFiles(suite));
+
+    private static bool HasBilevelFilter(byte[] data)
+    {
+        var span = data.AsSpan();
+        return span.IndexOf("JBIG2Decode"u8) >= 0 || span.IndexOf("CCITTFaxDecode"u8) >= 0 || span.IndexOf("/CCF"u8) >= 0;
+    }
 
     private static void Run(string id)
     {

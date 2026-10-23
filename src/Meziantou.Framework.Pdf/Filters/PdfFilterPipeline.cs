@@ -71,7 +71,8 @@ internal static class PdfFilterPipeline
                 "Crypt" => DecodeCrypt(input, filterParameters),
                 "DCTDecode" => ImageFilters.DecodeDct(input, limit),
                 "JPXDecode" => ImageFilters.DecodeJpx(input, limit),
-                "CCITTFaxDecode" or "JBIG2Decode" => throw new UnsupportedPdfFeatureException($"The {filter.Value} filter is not supported yet"),
+                "CCITTFaxDecode" => CcittFaxFilter.Decode(input, filterParameters, limit),
+                "JBIG2Decode" => Jbig2Filter.Decode(input, filterParameters, limit),
                 _ => throw new InvalidPdfContentException($"Unknown filter '{filter.Value}'"),
             };
         }

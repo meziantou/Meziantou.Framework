@@ -59,6 +59,9 @@
     <!-- The rendering backend of Meziantou.Framework.WebPlatform draws with the faces the layout measured the text with -->
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Imaging" />
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Imaging.Tests" />
+    <!-- Meziantou.Framework.Pdf decodes the CCITTFaxDecode filter with the rows of the CCITT decoder of TIFF -->
+    <InternalsVisibleTo Include="Meziantou.Framework.Pdf" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Pdf.Tests" />
   </ItemGroup>
 
   <!-- The library is released together with Meziantou.Framework.Fonts: it depends on the exact version of that package -->

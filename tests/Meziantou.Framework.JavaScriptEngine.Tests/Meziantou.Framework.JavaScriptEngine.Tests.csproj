@@ -6,6 +6,8 @@
   <ItemGroup>
     <EmbeddedResource Include="Corpus/*.jsonl" />
     <EmbeddedResource Include="Corpus/*.txt.gz" LogicalName="Corpus.%(Filename)%(Extension)" />
+    <!-- test_parsing of JSONTestSuite (JSONTestSuite/README.md) -->
+    <EmbeddedResource Include="JSONTestSuite/test_parsing/*.json" LogicalName="JSONTestSuite.%(Filename)%(Extension)" />
     <!-- Test data of CLDR (common/testData and common/uca of the CLDR release) -->
     <EmbeddedResource Include="Intl/TestData/*.gz" LogicalName="Intl.TestData.%(Filename)%(Extension)" />
   </ItemGroup>

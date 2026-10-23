@@ -284,7 +284,7 @@ public partial class Document
         if (ActiveParser is { } parser)
         {
             ActiveParserWasAborted = true;
-            parser.Abort();
+            parser.Abort(updateReadiness: true);
         }
     }
 

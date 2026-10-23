@@ -262,7 +262,30 @@ internal sealed partial class HtmlTreeBuilder
     /// </summary>
     public bool Run()
     {
-        while (!_stopped)
+        _runDepth++;
+        try
+        {
+            return RunCore();
+        }
+        finally
+        {
+            _runDepth--;
+            if (_abortRequested && _runDepth == 0)
+            {
+                _abortRequested = false;
+                Abort();
+            }
+        }
+    }
+
+    // The number of nested Run() calls (document.write() in a script run by the tree construction), and whether Abort() was
+    // called while the tree construction was running
+    private int _runDepth;
+    private bool _abortRequested;
+
+    private bool RunCore()
+    {
+        while (!_stopped && !_abortRequested)
         {
             // https://html.spec.whatwg.org/multipage/parsing.html#tokenization: the tokenizer does not proceed while the
             // parser is paused (e.g. document.write() while a parsing-blocking script is pending)
@@ -348,6 +371,10 @@ internal sealed partial class HtmlTreeBuilder
                 return false;
             }
         }
+
+        // The parser is aborted when the outermost Run() returns
+        if (_abortRequested)
+            return true;
 
         StopParsing();
         return true;
@@ -440,6 +467,13 @@ internal sealed partial class HtmlTreeBuilder
     {
         if (_stopped)
             return;
+
+        // A script run by the tree construction (e.g. window.stop()) aborts the parser once the current token is processed
+        if (_runDepth > 0)
+        {
+            _abortRequested = true;
+            return;
+        }
 
         foreach (var element in _openElements)
         {

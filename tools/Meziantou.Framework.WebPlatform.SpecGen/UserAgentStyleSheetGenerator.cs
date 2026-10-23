@@ -7,7 +7,7 @@ namespace SpecGen;
 /// Generates the user agent style sheet of HTML (Css/Cascade/HtmlUserAgentStyleSheet.g.cs) from the CSS blocks of the
 /// rendering section of the HTML Standard (https://html.spec.whatwg.org/multipage/rendering.html). The blocks are
 /// classified by the paragraph that introduces them: the rules that always apply, the presentational hints, the rules
-/// that only apply in quirks mode or in HTML documents, and the rules of the select element that depend on its appearance.
+/// that only apply in quirks mode, in HTML documents or in the documents in the ISO-8859-8 encoding, and the rules of the select element that depend on its appearance.
 /// </summary>
 internal static partial class UserAgentStyleSheetGenerator
 {
@@ -22,6 +22,7 @@ internal static partial class UserAgentStyleSheetGenerator
             ["PresentationalHints"] = new(),
             ["Quirks"] = new(),
             ["HtmlDocuments"] = new(),
+            ["Iso8859_8"] = new(),
             ["SelectDropDown"] = new(),
             ["SelectNativeAppearance"] = new(),
             ["SelectDropDownNativeAppearance"] = new(),
@@ -61,6 +62,8 @@ internal static partial class UserAgentStyleSheetGenerator
             WriteConstant(writer, "Quirks", "The rules that apply in quirks mode.", blocks["Quirks"]);
             writer.Line();
             WriteConstant(writer, "HtmlDocuments", "The rules that apply in HTML documents.", blocks["HtmlDocuments"]);
+            writer.Line();
+            WriteConstant(writer, "Iso8859_8", "The rules that apply when the character encoding of the document is ISO-8859-8 (https://html.spec.whatwg.org/multipage/rendering.html#bidi-rendering).", blocks["Iso8859_8"]);
             writer.Line();
             WriteConstant(writer, "SelectDropDown", "The rules that apply to the select elements rendered as a drop-down box.", blocks["SelectDropDown"]);
             writer.Line();
@@ -176,9 +179,9 @@ internal static partial class UserAgentStyleSheetGenerator
         if (introduction.Length == 0)
             return "Default";
 
-        // The rules of a specific encoding are not modeled
+        // The rules of the documents in the visual Hebrew encoding
         if (introduction.Contains("ISO-8859-8", StringComparison.Ordinal))
-            return null;
+            return "Iso8859_8";
 
         // The rules of the select element that depend on its appearance and on its rendering as a drop-down box or a list box
         // (https://html.spec.whatwg.org/multipage/rendering.html#the-select-element-2): the cascade checks the condition

@@ -7,6 +7,7 @@ using Meziantou.Framework.WebPlatform.Css.Om;
 using Meziantou.Framework.WebPlatform.Css.Selectors;
 using Meziantou.Framework.WebPlatform.Css.Values;
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.Encodings;
 
 namespace Meziantou.Framework.WebPlatform.Css.Cascade;
 
@@ -21,7 +22,7 @@ namespace Meziantou.Framework.WebPlatform.Css.Cascade;
 /// </remarks>
 internal sealed partial class StyleEngine
 {
-    private static readonly ConcurrentDictionary<(bool Quirks, bool Html, bool Scripting, bool SvgImage, bool ForcedColors), CascadeRuleSet> UserAgentRuleSets = new();
+    private static readonly ConcurrentDictionary<(bool Quirks, bool Html, bool Scripting, bool SvgImage, bool ForcedColors, bool VisualHebrew), CascadeRuleSet> UserAgentRuleSets = new();
     private static readonly Lazy<CascadeRuleSet> PresentationalHintRuleSet = new(CreatePresentationalHintRuleSet);
 
     /// <summary>The properties that apply to ::marker, besides the font, animation, transition and custom properties (see <see cref="IsMarkerProperty"/>).</summary>
@@ -2664,6 +2665,8 @@ internal sealed partial class StyleEngine
     /// The <c>sub</c> and <c>sup</c> elements keep the inherited <c>line-height</c>, as in the browsers (the HTML style sheet
     /// sets <c>line-height: normal</c> on them, which no browser does: a subscript in a paragraph with a large line height
     /// would make its line taller).
+    /// The modal dialogs are visible in a hidden ancestor (<c>dialog:modal { visibility: visible }</c>), as in the browsers: they
+    /// are in the top layer.
     /// The display of the hidden table parts (https://html.spec.whatwg.org/multipage/rendering.html#tables-2:
     /// "colgroup, colgroup[hidden] { display: table-column-group; }"...: they are collapsed, not removed) is repeated with the
     /// specificity of the rule of the hidden attribute, "[hidden]:not([hidden=until-found i]):not(embed) { display: none }",
@@ -2677,6 +2680,7 @@ internal sealed partial class StyleEngine
         details:not([open])::details-content { content-visibility: hidden; }
         img, video, canvas { overflow: clip; overflow-clip-margin: content-box; }
         ::backdrop { position: fixed; inset: 0; }
+        dialog:modal { visibility: visible; }
         ::scroll-marker-group { display: block; }
         ::scroll-marker, ::column::scroll-marker { color: LinkText; text-decoration: underline; cursor: pointer; }
         ::scroll-marker:active, ::column::scroll-marker:active { color: ActiveText; }
@@ -2810,7 +2814,7 @@ internal sealed partial class StyleEngine
     /// the root svg element of a document is the size of the viewport (https://svgwg.org/svg2-draft/geometry.html#Sizing: auto is
     /// 100% for an outermost svg element). The colors of the SVG content are not forced in forced colors mode, but the ones of
     /// the foreign content are (https://drafts.csswg.org/css-color-adjust-1/#forced-color-adjust-prop: "In order to not break
-    /// SVG content, UAs are expected to add the following rules to their UA style sheet").
+    /// SVG content, UAs are expected to add the following rules to their UA style sheet"). The links have the pointer cursor.
     /// </summary>
     private const string SvgUserAgentStyleSheet = """
         @namespace xml url(http://www.w3.org/XML/1998/namespace);
@@ -2820,6 +2824,7 @@ internal sealed partial class StyleEngine
         *[xml|space=preserve] { white-space-collapse: preserve-spaces; }
         svg { forced-color-adjust: preserve-parent-color; }
         foreignObject { forced-color-adjust: auto; }
+        :link, :visited { cursor: pointer; }
         """;
 
     /// <summary>
@@ -2843,11 +2848,19 @@ internal sealed partial class StyleEngine
 
     private static CascadeRuleSet GetUserAgentRuleSet(Document document, MediaEnvironment environment)
     {
-        var key = (document.Mode == DocumentMode.Quirks, document.IsHtmlDocument, environment.ScriptingEnabled, document.SvgImage is not null, environment.ForcedColors);
+        var key = (document.Mode == DocumentMode.Quirks, document.IsHtmlDocument, environment.ScriptingEnabled, document.SvgImage is not null, environment.ForcedColors, document.Encoding == WebEncodingId.Iso8859_8);
         return UserAgentRuleSets.GetOrAdd(key, static key =>
         {
             var collector = new CascadeRuleCollector(new MediaEnvironment { ScriptingEnabled = key.Scripting }, CascadeOrigin.UserAgent, treeRoot: null);
             collector.AddRules(ParseUserAgentStyleSheet(HtmlUserAgentStyleSheet.Default), baseUrl: null);
+
+            // "When the document's character encoding is ISO-8859-8, the following rules are additionally expected to apply,
+            // following those above" (https://html.spec.whatwg.org/multipage/rendering.html#bidi-rendering)
+            if (key.VisualHebrew)
+            {
+                collector.AddRules(ParseUserAgentStyleSheet(HtmlUserAgentStyleSheet.Iso8859_8), baseUrl: null);
+            }
+
             collector.AddRules(ParseUserAgentStyleSheet(BodyMarginStyleSheet), baseUrl: null);
             collector.AddRules(ParseUserAgentStyleSheet(SupplementalStyleSheet), baseUrl: null);
             AddSelectRules(collector);

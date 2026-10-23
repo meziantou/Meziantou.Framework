@@ -21,6 +21,9 @@ internal static class HtmlUserAgentStyleSheet
     /// <summary>The rules that apply in HTML documents.</summary>
     public const string HtmlDocuments = ":is(table, thead, tbody, tfoot, tr) > form { display: none !important; }\u000A";
 
+    /// <summary>The rules that apply when the character encoding of the document is ISO-8859-8 (https://html.spec.whatwg.org/multipage/rendering.html#bidi-rendering).</summary>
+    public const string Iso8859_8 = "address, blockquote, center, div, figure, figcaption, footer, form, header, hr,\u000Alegend, listing, main, p, plaintext, pre, summary, xmp, article, aside,\u000A:heading, hgroup, nav, search, section, table, caption, colgroup, col, thead,\u000Atbody, tfoot, tr, td, th, dir, dd, dl, dt, menu, ol, ul, li, [dir=ltr i],\u000A[dir=rtl i], [dir=auto i], *|* {\u000A  unicode-bidi: bidi-override;\u000A}\u000Ainput:not([type=submit i]):not([type=reset i]):not([type=button i]),\u000Atextarea {\u000A  unicode-bidi: normal;\u000A}\u000A";
+
     /// <summary>The rules that apply to the select elements rendered as a drop-down box.</summary>
     public const string SelectDropDown = "select {\u000A  align-content: center;\u000A}\u000A";
 

@@ -9,6 +9,8 @@ tests/Meziantou.Framework.AtlassianDataFormat.Tests/TestData/third-party/
 tests/Meziantou.Framework.HtmlToMarkdown.Tests/TestData/Specs/
 tests/Meziantou.Framework.Imaging.Fixtures/font-suites/
 tests/Meziantou.Framework.JavaScriptEngine.Tests/Intl/TestData/
+tests/Meziantou.Framework.JavaScriptEngine.Tests/Corpus/ParseNumberFxx.LICENSE.txt
+tests/Meziantou.Framework.JavaScriptEngine.Tests/Corpus/ParseNumberFxx.txt.gz
 tests/Meziantou.Framework.JavaScriptEngine.Tests/JSONTestSuite/test_parsing/
 tests/Meziantou.Framework.Language.Css.Tests/files/css-parsing-tests/
 tests/Meziantou.Framework.Language.Toml.Tests/files/toml-test/

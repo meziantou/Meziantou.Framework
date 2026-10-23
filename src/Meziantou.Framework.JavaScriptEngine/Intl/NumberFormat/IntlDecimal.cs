@@ -103,9 +103,9 @@ internal readonly struct IntlDecimal
         if (!double.IsFinite(value) || (Math.Abs(value) < 9007199254740992 && value == Math.Truncate(value)))
             return FromDouble(value);
 
-        // "R" gives the shortest round-tripping digits (at most 17, so they fit in a ulong), as Number::toString does
+        // The shortest round-tripping digits (at most 17, so they fit in a ulong), as Number::toString gives
         Span<char> buffer = stackalloc char[32];
-        Math.Abs(value).TryFormat(buffer, out var written, "R", CultureInfo.InvariantCulture);
+        Math.Abs(value).TryFormat(buffer, out var written, NumberFormatting.GetShortestRoundTripFormat(value), CultureInfo.InvariantCulture);
         ulong coefficient = 0;
         var exponent = 0;
         var fraction = false;

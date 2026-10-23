@@ -1,4 +1,5 @@
 using Meziantou.Framework.WebPlatform.Css.Cascade;
+using Meziantou.Framework.WebPlatform.Css.Values;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Html;
 
@@ -553,11 +554,24 @@ internal sealed class AnchorQuery
             scrolled += offset;
         }
 
+        // The transforms of the boxes of a 3D rendering context are accumulated (https://drafts.csswg.org/css-transforms-2/#accumulated-3d-transformation-matrix-computation),
+        // the rectangle is flattened when it leaves the context
+        double[]? accumulated = null;
         while (!ReferenceEquals(current, _hostFragment))
         {
-            if (current is BoxFragment boxFragment && boxFragment.Box.Style.Layout.HasTransform && LayoutTransforms.GetMatrix(boxFragment) is { } matrix)
+            if (current is BoxFragment boxFragment && (accumulated is not null || boxFragment.Box.Style.Layout.HasTransform) && LayoutTransforms.GetMatrix(boxFragment) is var matrix && (matrix is not null || accumulated is not null))
             {
-                rect = LayoutTransforms.TransformRect(rect, matrix);
+                if (LayoutTransforms.ParticipatesIn3DRenderingContext(boxFragment) && current.Parent is { } contextParent && !ReferenceEquals(contextParent, _hostFragment))
+                {
+                    // (the offset is part of the accumulated matrix)
+                    var local = matrix is null ? accumulated! : accumulated is null ? matrix : CssTransforms.Multiply(matrix, accumulated);
+                    accumulated = CssTransforms.Multiply([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, current.Offset.X, current.Offset.Y, 0, 1], local);
+                    current = current.Parent;
+                    continue;
+                }
+
+                rect = LayoutTransforms.TransformRect(rect, matrix is null ? accumulated! : accumulated is null ? matrix : CssTransforms.Multiply(matrix, accumulated));
+                accumulated = null;
             }
 
             rect = rect.Translate(current.Offset);

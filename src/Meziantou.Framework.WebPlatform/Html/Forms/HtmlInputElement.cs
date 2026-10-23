@@ -60,6 +60,7 @@ public partial class HtmlInputElement : IEditableTextControl
     // input of the user, which the value sanitization does not change (e.g. "1e" while typing a number, or the leading spaces
     // of an email address). Null when the control shows the value.
     private string? _userInput;
+
     private bool _checkedness;
     private bool _dirtyCheckedness;
     private bool _indeterminate;
@@ -1389,9 +1390,7 @@ public partial class HtmlInputElement : IEditableTextControl
         else if (AllowsTextEntry)
         {
             // The text of the control is selected, but the selection is not exposed to the scripts (e.g. email)
-            _selectionStart = 0;
-            _selectionEnd = VisibleText.Length;
-            _selectionDirection = "none";
+            TextControlSelection.SetUserSelection(Selection, 0, VisibleText.Length, "none");
         }
     }
 

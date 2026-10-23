@@ -114,7 +114,7 @@
     "reftest": "PASS"
   },
   "css/css-page/margin-boxes/auto-margins-003-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/margin-boxes/background-001-print.html": {
     "reftest": "PASS"

@@ -464,7 +464,13 @@ internal static class PageMarginBoxes
             if (size is not { } specified)
                 return (startMargin, Math.Max(0, outer - startMargin - endMargin));
 
+            // https://drafts.csswg.org/css-page-3/#margin-dimension: in the depth of the page margin, when the box with its margins
+            // does not fit, the automatic margins are treated as zero (the safe printable inset); the margins are then
+            // over-constrained and the one on the side of the edge of the sheet is ignored (the box is next to the page area)
             var remaining = outer - specified;
+            if (outerSide != 0 && (start.IsAuto || end.IsAuto) && specified + startMargin + endMargin > outer + 0.01)
+                return outerSide < 0 ? (remaining - endMargin, specified) : (startMargin, specified);
+
             if (start.IsAuto && end.IsAuto)
             {
                 var half = remaining / 2;

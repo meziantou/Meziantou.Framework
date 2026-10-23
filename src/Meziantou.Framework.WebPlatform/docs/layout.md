@@ -3110,7 +3110,8 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   are the intrinsic inline sizes of a box whose inline axis is along it, else its size laid out in the depth of the margin;
   the percentages of a box refer to the width of its edge or corner horizontally and to its height vertically. In the depth
   of the margin, a box fills the page margin (or has its specified or intrinsic size: `max-content`, `fit-content`...); the
-  automatic margins center a box with a specified size, and an over-constrained box is placed next to the page area. The
+  automatic margins center a box with a specified size (they are zero when the box does not fit with them), and an
+  over-constrained box is placed next to the page area. The
   contents are aligned by `vertical-align` (`top`, `middle`, `center`, `bottom`, line-relative in a vertical writing mode).
   Each box is painted atomically, in the order of its `z-index` (the negative ones before the document), then from the
   top-left corner, clockwise (see [Printing](rendering.md#printing)).

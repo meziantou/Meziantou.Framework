@@ -543,8 +543,11 @@ internal sealed partial class GridLayoutAlgorithm
             // https://drafts.csswg.org/css-grid-2/#row-align: "If baseline alignment is specified on a grid item whose size in that
             // axis depends on the size of an intrinsically-sized track [...] that item does not participate in baseline alignment,
             // and instead uses its fallback alignment as if that were originally specified" (flexible tracks count as intrinsic when
-            // the size of the grid container is indefinite)
-            if (isOwn && DependsOnIntrinsicTrack(item, axis, tracks))
+            // the size of the grid container is indefinite). As in the browsers, only a self-aligned item that synthesizes its baseline
+            // has such a cycle: the baseline of its contents does not depend on its size (WPT
+            // css/css-grid/alignment/grid-self-baseline-not-applied-if-sizing-cyclic-dependency-003.html); the shim of a content-aligned
+            // item is in its box, whose size depends on the track (WPT css/css-grid/alignment/grid-baseline-align-cycles-001.html)
+            if (isOwn && DependsOnIntrinsicTrack(item, axis, tracks) && (isContentAligned || SynthesizesBaseline(item, axis, final, alignment == AxisAlignment.LastBaseline)))
             {
                 if (isContentAligned)
                 {
@@ -775,6 +778,16 @@ internal sealed partial class GridLayoutAlgorithm
         }
     }
 
+    /// <summary>Returns whether an item synthesizes its first (last) baseline in an axis: it has no baseline in that axis (an orthogonal item, or an item without a line box).</summary>
+    private bool SynthesizesBaseline(GridItem item, GridAxis axis, bool final, bool last)
+    {
+        if ((axis == GridAxis.Rows) == item.IsOrthogonal)
+            return true;
+
+        var fragment = final ? item.Fragment! : MeasureForBaseline(item, axis);
+        return (last ? fragment.LastBaseline : fragment.FirstBaseline) is null;
+    }
+
     /// <summary>Returns whether the size of an item in an axis depends on the size of an intrinsically-sized track it spans (it then does not participate in baseline alignment).</summary>
     private bool DependsOnIntrinsicTrack(GridItem item, GridAxis axis, GridTrack[] tracks)
     {
@@ -782,7 +795,8 @@ internal sealed partial class GridLayoutAlgorithm
         if (!DependsOnContainingBlock(preferred, inBlockAxis: false) || preferred.IsAuto)
             return false;
 
-        var containerSizeIsIndefinite = (axis == GridAxis.Columns ? _inlineSize : _blockSize) is null;
+        // (the inline size of a container sized to its contents is not definite, even once known)
+        var containerSizeIsIndefinite = axis == GridAxis.Columns ? _inlineSize is null || _content.InlineSizeDependsOnContents : _blockSize is null;
         for (var i = item.GetStart(axis); i < item.GetEnd(axis); i++)
         {
             var track = tracks[i];

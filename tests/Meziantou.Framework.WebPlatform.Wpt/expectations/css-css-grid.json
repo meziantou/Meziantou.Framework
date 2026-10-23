@@ -1844,13 +1844,7 @@
     }
   },
   "css/css-grid/alignment/grid-self-baseline-not-applied-if-sizing-cyclic-dependency-003.html": {
-    "total": 6,
-    "failures": {
-      ".grid 2": "FAIL",
-      ".grid 3": "FAIL",
-      ".grid 5": "FAIL",
-      ".grid 6": "FAIL"
-    }
+    "total": 6
   },
   "css/css-grid/alignment/replaced-alignment-with-aspect-ratio-001.html": {
     "reftest": "PASS"

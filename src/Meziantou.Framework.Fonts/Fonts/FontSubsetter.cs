@@ -113,6 +113,10 @@ internal static class FontSubsetter
             if (data.Length == 0)
                 continue;
 
+            // The glyphs of a valid font do not overlap: the subset is not larger than the table, with the padding
+            if (newGlyf.Count + (long)data.Length > glyf.Length + (3L * closure.Count))
+                throw FontErrors.InvalidTable(FontTags.Glyf, "has glyphs that overlap.");
+
             newGlyf.AddRange(keepHinting ? data : RemoveInstructions(data));
             while (newGlyf.Count % 4 != 0)
             {
@@ -158,8 +162,8 @@ internal static class FontSubsetter
             var maxp = tables[FontTags.Maxp];
             if (maxp.Length >= 32 && BinaryPrimitives.ReadUInt32BigEndian(maxp) == 0x00010000)
             {
-                maxp.AsSpan(14, 18).Clear();
-                BinaryPrimitives.WriteUInt16BigEndian(maxp.AsSpan(14), 2);
+                // maxTwilightPoints to maxSizeOfInstructions; the zones and the components are kept
+                maxp.AsSpan(16, 12).Clear();
             }
         }
 

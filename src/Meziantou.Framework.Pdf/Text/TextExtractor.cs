@@ -21,9 +21,15 @@ internal sealed class TextExtractor
     // The glyphs are kept until the text is built: their count bounds the memory, apart from the work
     private const int MaxGlyphs = 4_000_000;
 
+    // The characters of the texts of the glyphs, replacement texts included: a text painted many times by forms is
+    // counted each time
+    private const long MaxTextLength = 32_000_000;
+
     private readonly List<TextGlyph> _glyphs = [];
     private readonly Dictionary<PdfStream, byte[]?> _formData = new(ReferenceEqualityComparer.Instance);
     private long _operations;
+    private long _textLength;
+    private readonly Dictionary<PdfString, string> _actualTexts = new(ReferenceEqualityComparer.Instance);
 
     // The replacement text of the marked-content sequence being read (14.9.4): its glyphs are replaced by it
     private string? _actualText;
@@ -189,7 +195,7 @@ internal sealed class TextExtractor
     }
 
     /// <summary>Gets the replacement text of the property list of a <c>BDC</c> operator: inline, or a resource (14.6.2).</summary>
-    private static string? GetActualText(PdfDictionary? resources, List<PdfObject> operands)
+    private string? GetActualText(PdfDictionary? resources, List<PdfObject> operands)
     {
         var properties = operands.Count >= 2 ? operands[^1] switch
         {
@@ -197,7 +203,17 @@ internal sealed class TextExtractor
             PdfName name => resources?.Get<PdfDictionary>(PdfNames.Properties)?.Get<PdfDictionary>(name),
             _ => null,
         } : null;
-        return properties?.GetResolved(PdfNames.ActualText) is PdfString text ? text.ToText() : null;
+        if (properties?.GetResolved(PdfNames.ActualText) is not PdfString text)
+            return null;
+
+        // A form painted several times decodes its replacement texts once
+        if (!_actualTexts.TryGetValue(text, out var value))
+        {
+            value = text.ToText();
+            _actualTexts[text] = value;
+        }
+
+        return value;
     }
 
     /// <summary>Replaces the glyphs of the sequence that has a replacement text by the text, from the start of the first glyph to the end of the last one.</summary>
@@ -210,7 +226,7 @@ internal sealed class TextExtractor
             var first = _glyphs[_actualTextStart];
             var last = _glyphs[^1];
             _glyphs.RemoveRange(_actualTextStart, _glyphs.Count - _actualTextStart);
-            _glyphs.Add(first with { Text = text, EndX = last.EndX, EndY = last.EndY });
+            AddGlyph(first with { Text = text, EndX = last.EndX, EndY = last.EndY });
             return;
         }
 
@@ -317,6 +333,10 @@ internal sealed class TextExtractor
     {
         if (_glyphs.Count >= MaxGlyphs)
             throw new PdfResourceLimitException($"The content of the page shows more than {MaxGlyphs} glyphs");
+
+        _textLength += glyph.Text?.Length ?? 0;
+        if (_textLength > MaxTextLength)
+            throw new PdfResourceLimitException($"The text of the page is longer than {MaxTextLength} characters");
 
         _glyphs.Add(glyph);
     }

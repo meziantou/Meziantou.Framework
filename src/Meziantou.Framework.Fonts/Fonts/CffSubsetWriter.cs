@@ -115,6 +115,11 @@ internal static class CffSubsetWriter
             privates.Add([.. dict, .. subroutines]);
         }
 
+        // Font DICTs may share a private DICT and its subroutines, which are copied for each one: their copies are not
+        // larger than the table
+        if (privates.Sum(p => (long)p.Length) > table.Length + (64L * privates.Count))
+            throw FontErrors.InvalidTable(FontTags.Cff, "has font DICTs that share their private DICTs too many times.");
+
         // Every position is written on five bytes: the lengths do not change when the positions are known
         var topWithoutOffsets = new List<(int Operator, double[] Operands)> { (RosOperator, [FirstCustomString, FirstCustomString + 1, 0]) };
         topWithoutOffsets.AddRange(topEntries.Where(e => !NotCopiedTopOperators.Contains(e.Operator)));

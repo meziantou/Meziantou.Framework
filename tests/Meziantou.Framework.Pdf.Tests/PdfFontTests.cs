@@ -298,6 +298,32 @@ public sealed class PdfFontTests
     }
 
     [Fact]
+    public void SubsetOfGlyphsThatOverlapIsBounded()
+    {
+        // The offsets go back and forth: every other glyph is the whole glyf table, and a subset of all of them would be
+        // the table times the glyphs
+        var face = LoadFace("noto-sans/NotoSans-Regular.subset.ttf");
+        var tables = new SortedDictionary<uint, byte[]>();
+        foreach (var tag in face.TableTags)
+        {
+            Assert.True(face.TryGetTable(tag, out var table));
+            tables[tag] = table.ToArray();
+        }
+
+        var loca = new byte[(face.GlyphCount + 1) * 4];
+        for (var glyph = 1; glyph <= face.GlyphCount; glyph += 2)
+        {
+            BinaryPrimitives.WriteUInt32BigEndian(loca.AsSpan(glyph * 4), (uint)tables[FontTags.Glyf].Length);
+        }
+
+        tables[FontTags.Loca] = loca;
+        BinaryPrimitives.WriteInt16BigEndian(tables[FontTags.Head].AsSpan(50), 1);
+        var overlapping = Assert.Single(FontLoader.Load(FontSubsetter.WriteSfnt(0x00010000, tables), face.Data.Environment));
+
+        Assert.Throws<InvalidFontException>(() => FontSubsetter.SubsetTrueType(overlapping, Enumerable.Range(0, face.GlyphCount)));
+    }
+
+    [Fact]
     public void ClosureHasTheComponentsOfCompositeGlyphs()
     {
         var face = LoadFace("noto-sans/NotoSans-Regular.subset.ttf");

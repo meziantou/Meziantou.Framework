@@ -99,6 +99,27 @@ public sealed class PdfTextExtractionTests
     }
 
     [Fact]
+    public void ReplacementTextsPaintedManyTimesAreBounded()
+    {
+        // Each form paints the next one twice, and each has a long replacement text in its resources
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Resources 4 0 R /Contents 10 0 R >>")
+            .Add(4, "<< /Properties << /P0 << /ActualText (" + new string('x', 100_000) + ") >> >> /XObject << " + string.Concat(Enumerable.Range(0, 20).Select(i => $"/X{i} {10 + i} 0 R ")) + ">> >>");
+        for (var i = 0; i < 20; i++)
+        {
+            var content = (i < 19 ? $"/X{i + 1} Do /X{i + 1} Do " : "") + "/Span /P0 BDC EMC";
+            file.Add(10 + i, HandWrittenPdf.Stream(content, " /Type /XObject /Subtype /Form /Resources 4 0 R"));
+        }
+
+        var document = PdfDocument.Open(file.ToArray());
+
+        var exception = Assert.Throws<PdfResourceLimitException>(() => document.Pages[0].ExtractText());
+        Assert.Contains("characters", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void CMapWithManyRangesIsBounded()
     {
         var ranges = string.Concat(Enumerable.Range(0, 100_000).Select(i => $"<{i:X4}> <{i:X4}> "));

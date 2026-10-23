@@ -1120,8 +1120,16 @@ public sealed partial class BrowsingContext : IDisposable
 
                 activeDocument.QueueGlobalTask(() =>
                 {
+                    // As in the browsers, a later javascript: URL navigation does not cancel this one: both scripts run (WPT
+                    // url/javascript-urls.window.js); another navigation cancels it (WPT navigating-across-documents/007.html)
+                    var supersededByJavaScriptUrl = false;
                     if (javaScriptNavigationId != 0 && _ongoingNavigation != javaScriptNavigationId)
-                        return;
+                    {
+                        if (!IsJavaScriptUrlNavigationOngoing || javaScriptNavigationId > _javaScriptUrlNavigationId)
+                            return;
+
+                        supersededByJavaScriptUrl = true;
+                    }
 
                     if (generation != _javaScriptUrlNavigationGeneration)
                     {
@@ -1133,7 +1141,7 @@ public sealed partial class BrowsingContext : IDisposable
                         return;
                     }
 
-                    NavigateToJavaScriptUrl(engine, url, sourceDocument, initiatorOrigin, initialInsertion, sourceElement, scriptLocation, isFormSubmission, isOngoingNavigation: javaScriptNavigationId != 0);
+                    NavigateToJavaScriptUrl(engine, url, sourceDocument, initiatorOrigin, initialInsertion, sourceElement, scriptLocation, isFormSubmission, isOngoingNavigation: javaScriptNavigationId != 0 && !supersededByJavaScriptUrl, supersededByJavaScriptUrl);
                 });
             }
 
@@ -1351,7 +1359,7 @@ public sealed partial class BrowsingContext : IDisposable
     internal void CancelPendingJavaScriptUrlNavigations() => _javaScriptUrlNavigationGeneration++;
 
     /// <summary>https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate-to-a-javascript:-url</summary>
-    private void NavigateToJavaScriptUrl(Scripting.ScriptEngine engine, UrlRecord url, Document? sourceDocument, Document? initiatorOrigin, bool initialInsertion, Element? sourceElement, Scripting.ScriptLocation? scriptLocation, bool isFormSubmission, bool isOngoingNavigation)
+    private void NavigateToJavaScriptUrl(Scripting.ScriptEngine engine, UrlRecord url, Document? sourceDocument, Document? initiatorOrigin, bool initialInsertion, Element? sourceElement, Scripting.ScriptLocation? scriptLocation, bool isFormSubmission, bool isOngoingNavigation, bool supersededByJavaScriptUrl = false)
     {
         if (IsDestroyed)
             return;
@@ -1376,7 +1384,8 @@ public sealed partial class BrowsingContext : IDisposable
         if (sourceDocument is not null && (sourceDocument.ActiveSandboxingFlags & SandboxingFlags.Scripts) != SandboxingFlags.None)
             return;
 
-        if (!isOngoingNavigation)
+        // A navigation superseded by a later javascript: URL navigation leaves the ongoing navigation to it
+        if (!isOngoingNavigation && !supersededByJavaScriptUrl)
         {
             CancelOngoingNavigation();
             EndNavigationWithoutDocument();
@@ -2558,8 +2567,9 @@ public sealed partial class BrowsingContext : IDisposable
             UnloadDocumentAndDescendants(oldDocument, includeInitialAboutBlank: true);
 
             // https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigation-params-unload-timing: the times of the unload
-            // event of the previous document are exposed to a document of the same origin, when no redirect is cross-origin
-            if (document.LoadTimingInfo is { HasCrossOriginRedirects: false } loadTiming && oldDocument.UnloadEventTimes is { Start: not 0 } unloadTimes
+            // event of the previous document are exposed to a document of the same origin, when no redirect is cross-origin. As in
+            // the browsers, the initial about:blank document is not a previous document (its unload event times are 0).
+            if (!oldDocument.IsInitialAboutBlank && document.LoadTimingInfo is { HasCrossOriginRedirects: false } loadTiming && oldDocument.UnloadEventTimes is { Start: not 0 } unloadTimes
                 && OriginRecord.IsSameOrigin(oldDocument.Origin, document.Origin))
             {
                 loadTiming.UnloadEventStart = unloadTimes.Start;

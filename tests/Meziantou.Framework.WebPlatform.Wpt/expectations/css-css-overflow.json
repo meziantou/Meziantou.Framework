@@ -2234,8 +2234,6 @@
   "css/css-overflow/scrollable-overflow-padding.html": {
     "total": 30,
     "failures": {
-      "scrollable-container 26": "FAIL",
-      "scrollable-container 28": "FAIL",
       "scrollable-container 30": "FAIL"
     }
   },

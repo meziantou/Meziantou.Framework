@@ -6,23 +6,23 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 141 | 150 | 0 | 94% |
+| [Stable](#stable-tests) | 143 | 150 | 0 | 95% |
 | [Tentative](#tentative-tests) | 3 | 7 | 0 | 43% |
-| [Reftests](#reftests) | 305 | 322 | 0 | 95% |
-| **All** | **449** | **479** | **0** | **94%** |
+| [Reftests](#reftests) | 311 | 322 | 0 | 97% |
+| **All** | **457** | **479** | **0** | **95%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`bidi-rendering/slot-direction.window.js`](https://wpt.fyi/results/html/rendering/bidi-rendering/slot-direction.window.js) | Pass | 6 / 6 |  |  |
-| [`bidi-rendering/unicode-bidi-ua-rules-iso-8859-8.html`](https://wpt.fyi/results/html/rendering/bidi-rendering/unicode-bidi-ua-rules-iso-8859-8.html) | Fail | 2 / 67 | NOT IMPLEMENTED | the user agent style sheet rules of the documents in the visual `ISO-8859-8` encoding (`unicode-bidi: bidi-override`, https://html.spec.whatwg.org/multipage/rendering.html#bidi-rendering) |
+| [`bidi-rendering/unicode-bidi-ua-rules-iso-8859-8.html`](https://wpt.fyi/results/html/rendering/bidi-rendering/unicode-bidi-ua-rules-iso-8859-8.html) | Pass | 67 / 67 |  |  |
 | [`bidi-rendering/unicode-bidi-ua-rules.html`](https://wpt.fyi/results/html/rendering/bidi-rendering/unicode-bidi-ua-rules.html) | Pass | 130 / 130 |  |  |
 | [`dimension-attributes.html`](https://wpt.fyi/results/html/rendering/dimension-attributes.html) | Pass | 1,720 / 1,720 |  |  |
 | [`non-replaced-elements/flow-content-0/dialog-display.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/flow-content-0/dialog-display.html) | Pass | 1 / 1 |  |  |
 | [`non-replaced-elements/flow-content-0/dialog.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/flow-content-0/dialog.html) | Pass | 6 / 6 |  |  |
 | [`non-replaced-elements/flow-content-0/form-margin-quirk.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/flow-content-0/form-margin-quirk.html) | Pass | 1 / 1 |  |  |
-| [`non-replaced-elements/flow-content-0/search-styles-iso-8859-8.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/flow-content-0/search-styles-iso-8859-8.html) | Pass | 11 / 11 |  |  |
+| [`non-replaced-elements/flow-content-0/search-styles-iso-8859-8.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/flow-content-0/search-styles-iso-8859-8.html) | Fail | 10 / 11 | TEST BUG | the "<search> - unicode-bidi" subtest expects `unicode-bidi: isolate` in an `ISO-8859-8` document; the rendering section of the HTML Standard sets `bidi-override` on `search` (and `*\|*`) in these documents (https://html.spec.whatwg.org/multipage/rendering.html#bidi-rendering), as `unicode-bidi-ua-rules-iso-8859-8.html` checks; the browsers pass it because none of them implements these rules |
 | [`non-replaced-elements/flow-content-0/search-styles.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/flow-content-0/search-styles.html) | Pass | 10 / 10 |  |  |
 | [`non-replaced-elements/flow-content-0/slot-element-default-display.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/flow-content-0/slot-element-default-display.html) | Pass | 1 / 1 |  |  |
 | [`non-replaced-elements/form-controls/input-line-height-computed.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/form-controls/input-line-height-computed.html) | Pass | 12 / 12 |  |  |
@@ -103,7 +103,7 @@
 | [`replaced-elements/attributes-for-embedded-content-and-images/content-aspect-ratio.html`](https://wpt.fyi/results/html/rendering/replaced-elements/attributes-for-embedded-content-and-images/content-aspect-ratio.html) | Pass | 1 / 1 |  |  |
 | [`replaced-elements/attributes-for-embedded-content-and-images/embedded-and-images-presentational-hints-ascii-case-insensitive.html`](https://wpt.fyi/results/html/rendering/replaced-elements/attributes-for-embedded-content-and-images/embedded-and-images-presentational-hints-ascii-case-insensitive.html) | Fail | 2 / 3 | TEST BUG | the HTML Standard does not map `align=absbottom`, while the test expects `vertical-align: bottom`, as the browsers do (whatwg/html#4810) |
 | [`replaced-elements/attributes-for-embedded-content-and-images/img-alt-crash-001.html`](https://wpt.fyi/results/html/rendering/replaced-elements/attributes-for-embedded-content-and-images/img-alt-crash-001.html) | Pass | 1 / 1 |  |  |
-| [`replaced-elements/attributes-for-embedded-content-and-images/img-aspect-ratio-alt-text.html`](https://wpt.fyi/results/html/rendering/replaced-elements/attributes-for-embedded-content-and-images/img-aspect-ratio-alt-text.html) | Fail | 1 / 2 | BUG | an error image with alt text and `height: 100%` is 236.25px tall instead of filling its 200px grid area |
+| [`replaced-elements/attributes-for-embedded-content-and-images/img-aspect-ratio-alt-text.html`](https://wpt.fyi/results/html/rendering/replaced-elements/attributes-for-embedded-content-and-images/img-aspect-ratio-alt-text.html) | Fail | 1 / 2 | TEST BUG | an error image with alt text and `height: 100%` is expected to fill its 200px grid area; the `aspect-ratio: auto 1600 / 900` presentational hint of its `width` and `height` attributes applies to the blockified box of the alt text, which is 236.25px tall, as in Chrome and Firefox |
 | [`replaced-elements/attributes-for-embedded-content-and-images/img-aspect-ratio-lazy.html`](https://wpt.fyi/results/html/rendering/replaced-elements/attributes-for-embedded-content-and-images/img-aspect-ratio-lazy.html) | Pass | 1 / 1 |  |  |
 | [`replaced-elements/attributes-for-embedded-content-and-images/img-aspect-ratio.html`](https://wpt.fyi/results/html/rendering/replaced-elements/attributes-for-embedded-content-and-images/img-aspect-ratio.html) | Pass | 41 / 41 |  |  |
 | [`replaced-elements/attributes-for-embedded-content-and-images/img-empty-alt-replaced-block.html`](https://wpt.fyi/results/html/rendering/replaced-elements/attributes-for-embedded-content-and-images/img-empty-alt-replaced-block.html) | Pass | 1 / 1 |  |  |
@@ -136,7 +136,7 @@
 | [`replaced-elements/svg-inline-sizing/svg-inline.html`](https://wpt.fyi/results/html/rendering/replaced-elements/svg-inline-sizing/svg-inline.html) | Pass | 648 / 648 |  |  |
 | [`the-css-user-agent-style-sheet-and-presentational-hints/getComputedStyle-hidden.html`](https://wpt.fyi/results/html/rendering/the-css-user-agent-style-sheet-and-presentational-hints/getComputedStyle-hidden.html) | Pass | 2 / 2 |  |  |
 | [`the-css-user-agent-style-sheet-and-presentational-hints/mouse-cursor-imagemap.html`](https://wpt.fyi/results/html/rendering/the-css-user-agent-style-sheet-and-presentational-hints/mouse-cursor-imagemap.html) | Pass | 1 / 1 |  |  |
-| [`the-css-user-agent-style-sheet-and-presentational-hints/no-help-cursor-on-links-wrapped-in-svg.historical.html`](https://wpt.fyi/results/html/rendering/the-css-user-agent-style-sheet-and-presentational-hints/no-help-cursor-on-links-wrapped-in-svg.historical.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the user agent style sheet of SVG (`:link, :visited { cursor: pointer }` for the `a` elements of SVG) |
+| [`the-css-user-agent-style-sheet-and-presentational-hints/no-help-cursor-on-links-wrapped-in-svg.historical.html`](https://wpt.fyi/results/html/rendering/the-css-user-agent-style-sheet-and-presentational-hints/no-help-cursor-on-links-wrapped-in-svg.historical.html) | Pass | 2 / 2 |  |  |
 | [`the-css-user-agent-style-sheet-and-presentational-hints/no-help-cursor-on-links.historical.html`](https://wpt.fyi/results/html/rendering/the-css-user-agent-style-sheet-and-presentational-hints/no-help-cursor-on-links.historical.html) | Pass | 2 / 2 |  |  |
 | [`the-details-element/auto-expand-details-text-fragment.html`](https://wpt.fyi/results/html/rendering/the-details-element/auto-expand-details-text-fragment.html) | Pass | 1 / 1 |  |  |
 | [`the-details-element/details-blockification.html`](https://wpt.fyi/results/html/rendering/the-details-element/details-blockification.html) | Pass | 1 / 1 |  |  |
@@ -159,7 +159,7 @@
 | [`widgets/input-text-size.html`](https://wpt.fyi/results/html/rendering/widgets/input-text-size.html) | Pass | 5 / 5 |  |  |
 | [`widgets/placeholder-scroll.html`](https://wpt.fyi/results/html/rendering/widgets/placeholder-scroll.html) | Pass | 2 / 2 |  |  |
 | [`widgets/select-wrap-no-spill.optional.html`](https://wpt.fyi/results/html/rendering/widgets/select-wrap-no-spill.optional.html) | Pass | 1 / 1 |  |  |
-| [`widgets/shadow-dom.html`](https://wpt.fyi/results/html/rendering/widgets/shadow-dom.html) | Fail | 5 / 9 | NOT IMPLEMENTED | the user agent shadow trees of the media elements (their children are not rendered) and of the select element (the children inherit from its `display: contents` slot) |
+| [`widgets/shadow-dom.html`](https://wpt.fyi/results/html/rendering/widgets/shadow-dom.html) | Pass | 9 / 9 |  |  |
 | [`widgets/text-control-client-width.html`](https://wpt.fyi/results/html/rendering/widgets/text-control-client-width.html) | Pass | 2 / 2 |  |  |
 | [`widgets/textarea-cols-rows.html`](https://wpt.fyi/results/html/rendering/widgets/textarea-cols-rows.html) | Pass | 6 / 6 |  |  |
 | [`widgets/textarea-scroll-restoration.html`](https://wpt.fyi/results/html/rendering/widgets/textarea-scroll-restoration.html) | Pass | 2 / 2 |  |  |
@@ -265,7 +265,7 @@
 | [`non-replaced-elements/tables/table-width.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/tables/table-width.html) | Pass | 1 / 1 |  |  |
 | [`non-replaced-elements/tables/tr-transform-and-will-change.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/tables/tr-transform-and-will-change.html) | Pass | 1 / 1 |  |  |
 | [`non-replaced-elements/tables/transformed-tbody-tr-collapsed-border.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/tables/transformed-tbody-tr-collapsed-border.html) | Pass | 1 / 1 |  |  |
-| [`non-replaced-elements/the-br-element/br-and-wbr-with-non-inline-display.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/the-br-element/br-and-wbr-with-non-inline-display.html) | Fail | 0 / 1 | BUG | a `<br>` or `<wbr>` with a non-inline `display`, a `float` or a `clear` does not keep its line breaking behavior |
+| [`non-replaced-elements/the-br-element/br-and-wbr-with-non-inline-display.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/the-br-element/br-and-wbr-with-non-inline-display.html) | Pass | 1 / 1 |  |  |
 | [`non-replaced-elements/the-br-element/br-clear-presentational-hints.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/the-br-element/br-clear-presentational-hints.html) | Pass | 1 / 1 |  |  |
 | [`non-replaced-elements/the-fieldset-and-legend-elements/absolute-fixed-in-legend.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/absolute-fixed-in-legend.html) | Pass | 1 / 1 |  |  |
 | [`non-replaced-elements/the-fieldset-and-legend-elements/empty-scrollable.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/empty-scrollable.html) | Pass | 1 / 1 |  |  |
@@ -297,7 +297,7 @@
 | [`non-replaced-elements/the-fieldset-and-legend-elements/legend-block-margins-2.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-block-margins-2.html) | Pass | 1 / 1 |  |  |
 | [`non-replaced-elements/the-fieldset-and-legend-elements/legend-block-margins.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-block-margins.html) | Pass | 1 / 1 |  |  |
 | [`non-replaced-elements/the-fieldset-and-legend-elements/legend-display-none-rendering.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-display-none-rendering.html) | Pass | 1 / 1 |  |  |
-| [`non-replaced-elements/the-fieldset-and-legend-elements/legend-display-rendering.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-display-rendering.html) | Fail | 0 / 1 | BUG | the annotation of the legend with `display: ruby` is as tall as its content area, 1px shorter than the line of the reference |
+| [`non-replaced-elements/the-fieldset-and-legend-elements/legend-display-rendering.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-display-rendering.html) | Fail | 0 / 1 | BUG | the annotation of the legend with `display: ruby` is as tall as its content area, 1px shorter than the line of the reference (Chrome, Firefox and Safari fail too) |
 | [`non-replaced-elements/the-fieldset-and-legend-elements/legend-float.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-float.html) | Pass | 1 / 1 |  |  |
 | [`non-replaced-elements/the-fieldset-and-legend-elements/legend-in-slot.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-in-slot.html) | Pass | 1 / 1 |  |  |
 | [`non-replaced-elements/the-fieldset-and-legend-elements/legend-list-item-numbering.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/legend-list-item-numbering.html) | Pass | 1 / 1 |  |  |
@@ -318,7 +318,7 @@
 | [`non-replaced-elements/the-hr-element-0/size-with-color-or-noshade.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/the-hr-element-0/size-with-color-or-noshade.html) | Pass | 1 / 1 |  |  |
 | [`non-replaced-elements/the-hr-element-0/size.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/the-hr-element-0/size.html) | Pass | 1 / 1 |  |  |
 | [`non-replaced-elements/the-hr-element-0/width.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/the-hr-element-0/width.html) | Pass | 1 / 1 |  |  |
-| [`non-replaced-elements/the-page/Document-documentElement-remove-clears-content.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/the-page/Document-documentElement-remove-clears-content.html) | Error | 0 / 1 | BUG | the page cannot be rendered: InvalidOperationException: The document is not rendered. |
+| [`non-replaced-elements/the-page/Document-documentElement-remove-clears-content.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/the-page/Document-documentElement-remove-clears-content.html) | Pass | 1 / 1 |  |  |
 | [`non-replaced-elements/the-page/body-margin-1a.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/the-page/body-margin-1a.html) | Pass | 1 / 1 |  |  |
 | [`non-replaced-elements/the-page/body-margin-1b.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/the-page/body-margin-1b.html) | Pass | 1 / 1 |  |  |
 | [`non-replaced-elements/the-page/body-margin-1c.html`](https://wpt.fyi/results/html/rendering/non-replaced-elements/the-page/body-margin-1c.html) | Pass | 1 / 1 |  |  |
@@ -396,7 +396,7 @@
 | [`replaced-elements/the-select-element/select-1-block-size-001-ref.html`](https://wpt.fyi/results/html/rendering/replaced-elements/the-select-element/select-1-block-size-001-ref.html) | Pass | 1 / 1 |  |  |
 | [`replaced-elements/the-select-element/select-1-block-size-001.html`](https://wpt.fyi/results/html/rendering/replaced-elements/the-select-element/select-1-block-size-001.html) | Pass | 1 / 1 |  |  |
 | [`replaced-elements/the-select-element/select-1-block-size.html`](https://wpt.fyi/results/html/rendering/replaced-elements/the-select-element/select-1-block-size.html) | Pass | 1 / 1 |  |  |
-| [`replaced-elements/the-select-element/select-1-line-height.html`](https://wpt.fyi/results/html/rendering/replaced-elements/the-select-element/select-1-line-height.html) | Fail | 0 / 1 | BUG | `line-height: 100px` applies to a drop-down `select` (its computed value is `100px` and the box is 100px tall); the browsers force `line-height: normal` on a drop-down box |
+| [`replaced-elements/the-select-element/select-1-line-height.html`](https://wpt.fyi/results/html/rendering/replaced-elements/the-select-element/select-1-line-height.html) | Pass | 1 / 1 |  |  |
 | [`replaced-elements/the-select-element/select-adopted.html`](https://wpt.fyi/results/html/rendering/replaced-elements/the-select-element/select-adopted.html) | Pass | 1 / 1 |  |  |
 | [`replaced-elements/the-select-element/select-button-min-height-001.html`](https://wpt.fyi/results/html/rendering/replaced-elements/the-select-element/select-button-min-height-001.html) | Pass | 1 / 1 |  |  |
 | [`replaced-elements/the-select-element/select-display-inline.html`](https://wpt.fyi/results/html/rendering/replaced-elements/the-select-element/select-display-inline.html) | Pass | 1 / 1 |  |  |
@@ -421,9 +421,9 @@
 | [`the-details-element/details-display-type-001-ref.html`](https://wpt.fyi/results/html/rendering/the-details-element/details-display-type-001-ref.html) | Pass | 1 / 1 |  |  |
 | [`the-details-element/details-display-type-001.html`](https://wpt.fyi/results/html/rendering/the-details-element/details-display-type-001.html) | Pass | 1 / 1 |  |  |
 | [`the-details-element/details-display-type-002.html`](https://wpt.fyi/results/html/rendering/the-details-element/details-display-type-002.html) | Pass | 1 / 1 |  |  |
-| [`the-details-element/details-page-break-after-1-print.html`](https://wpt.fyi/results/html/rendering/the-details-element/details-page-break-after-1-print.html) | Fail | 0 / 1 | BUG | `break-after: page` on the `summary` of an open `details` element: the break value of the summary is propagated through the anonymous content slot of the details, but the summary is a list item whose marker shifts the content: the second page starts one line lower than the reference |
+| [`the-details-element/details-page-break-after-1-print.html`](https://wpt.fyi/results/html/rendering/the-details-element/details-page-break-after-1-print.html) | Pass | 1 / 1 |  |  |
 | [`the-details-element/details-page-break-after-2-print.html`](https://wpt.fyi/results/html/rendering/the-details-element/details-page-break-after-2-print.html) | Pass | 1 / 1 |  |  |
-| [`the-details-element/details-page-break-before-1-print.html`](https://wpt.fyi/results/html/rendering/the-details-element/details-page-break-before-1-print.html) | Fail | 0 / 1 | BUG | `break-before: page` on the content of an open `details` element: the content after the break starts one line lower on the second page than in the reference |
+| [`the-details-element/details-page-break-before-1-print.html`](https://wpt.fyi/results/html/rendering/the-details-element/details-page-break-before-1-print.html) | Pass | 1 / 1 |  |  |
 | [`the-details-element/details-page-break-before-2-print.html`](https://wpt.fyi/results/html/rendering/the-details-element/details-page-break-before-2-print.html) | Pass | 1 / 1 |  |  |
 | [`the-details-element/details-pseudo-elements-001.html`](https://wpt.fyi/results/html/rendering/the-details-element/details-pseudo-elements-001.html) | Pass | 1 / 1 |  |  |
 | [`the-details-element/details-pseudo-elements-002.html`](https://wpt.fyi/results/html/rendering/the-details-element/details-pseudo-elements-002.html) | Pass | 1 / 1 |  |  |
@@ -446,7 +446,7 @@
 | [`widgets/appearance/appearance-transition-001.html`](https://wpt.fyi/results/html/rendering/widgets/appearance/appearance-transition-001.html) | Pass | 1 / 1 |  |  |
 | [`widgets/appearance/appearance-transition-002.html`](https://wpt.fyi/results/html/rendering/widgets/appearance/appearance-transition-002.html) | Pass | 1 / 1 |  |  |
 | [`widgets/appearance/appearance-transition-003.html`](https://wpt.fyi/results/html/rendering/widgets/appearance/appearance-transition-003.html) | Fail | 0 / 1 | BUG | the `background-color` of a text field with the native appearance is painted (here a light red set only by a CSS transition, the author style being removed): the transition origin does not disable the native appearance, so the widget should keep its native background; only Chrome passes |
-| [`widgets/button-layout/anonymous-button-content-box.html`](https://wpt.fyi/results/html/rendering/widgets/button-layout/anonymous-button-content-box.html) | Fail | 0 / 1 | BUG | the content of a `display: grid` `button` is centered vertically by the `align-content: center` of the user agent style sheet (the row track is centered); the test expects it at the top, as in Chrome and Firefox where only the anonymous button content box of the flow buttons is centered (Safari fails) |
+| [`widgets/button-layout/anonymous-button-content-box.html`](https://wpt.fyi/results/html/rendering/widgets/button-layout/anonymous-button-content-box.html) | Fail | 0 / 1 | TEST BUG | the test expects the content of a `display: grid` `button` at the top, as in Chrome and Firefox; the user agent style sheet of the HTML Standard gives the buttons `align-content: center`, which centers the row track of a grid button (as in Safari) |
 | [`widgets/button-layout/block-in-inline.html`](https://wpt.fyi/results/html/rendering/widgets/button-layout/block-in-inline.html) | Pass | 1 / 1 |  |  |
 | [`widgets/button-layout/button-dynamic-content.html`](https://wpt.fyi/results/html/rendering/widgets/button-layout/button-dynamic-content.html) | Pass | 1 / 1 |  |  |
 | [`widgets/button-layout/centering-001.html`](https://wpt.fyi/results/html/rendering/widgets/button-layout/centering-001.html) | Pass | 1 / 1 |  |  |
@@ -458,7 +458,7 @@
 | [`widgets/button-layout/input-type-button-clip.html`](https://wpt.fyi/results/html/rendering/widgets/button-layout/input-type-button-clip.html) | Pass | 1 / 1 |  |  |
 | [`widgets/button-layout/input-type-button-newline-2.html`](https://wpt.fyi/results/html/rendering/widgets/button-layout/input-type-button-newline-2.html) | Pass | 1 / 1 |  |  |
 | [`widgets/button-layout/input-type-button-newline.html`](https://wpt.fyi/results/html/rendering/widgets/button-layout/input-type-button-newline.html) | Pass | 1 / 1 |  |  |
-| [`widgets/button-layout/propagate-text-decoration.html`](https://wpt.fyi/results/html/rendering/widgets/button-layout/propagate-text-decoration.html) | Fail | 0 / 1 | BUG | the underline of the `u` ancestor is not propagated into a `button` or an `input type=button` whose computed `display` is `inline` (they are laid out as inline-blocks, and the label of an `input` is painted without text decorations) |
+| [`widgets/button-layout/propagate-text-decoration.html`](https://wpt.fyi/results/html/rendering/widgets/button-layout/propagate-text-decoration.html) | Pass | 1 / 1 |  |  |
 | [`widgets/button-layout/scrollable-button-centering.html`](https://wpt.fyi/results/html/rendering/widgets/button-layout/scrollable-button-centering.html) | Pass | 1 / 1 |  |  |
 | [`widgets/button-layout/scrollbars.html`](https://wpt.fyi/results/html/rendering/widgets/button-layout/scrollbars.html) | Pass | 1 / 1 |  |  |
 | [`widgets/field-sizing-input-number-relayout.html`](https://wpt.fyi/results/html/rendering/widgets/field-sizing-input-number-relayout.html) | Pass | 1 / 1 |  |  |
@@ -500,7 +500,7 @@
 | [`widgets/the-select-element/option-rm-label.html`](https://wpt.fyi/results/html/rendering/widgets/the-select-element/option-rm-label.html) | Pass | 1 / 1 |  |  |
 | [`widgets/the-select-element/select-dir-invalidation.html`](https://wpt.fyi/results/html/rendering/widgets/the-select-element/select-dir-invalidation.html) | Pass | 1 / 1 |  |  |
 | [`widgets/the-select-element/select-invalidation.html`](https://wpt.fyi/results/html/rendering/widgets/the-select-element/select-invalidation.html) | Pass | 1 / 1 |  |  |
-| [`widgets/the-select-element/select-label-appearance.html`](https://wpt.fyi/results/html/rendering/widgets/the-select-element/select-label-appearance.html) | Fail | 0 / 1 | BUG | the label of a `<select>` differs from the reference in some appearance modes |
+| [`widgets/the-select-element/select-label-appearance.html`](https://wpt.fyi/results/html/rendering/widgets/the-select-element/select-label-appearance.html) | Fail | 0 / 1 | BUG | the label of a `<select>` differs from the reference in some appearance modes (Chrome, Firefox and Safari fail too) |
 | [`widgets/the-select-element/select-optgroup-dir-invalidation.html`](https://wpt.fyi/results/html/rendering/widgets/the-select-element/select-optgroup-dir-invalidation.html) | Pass | 1 / 1 |  |  |
 | [`widgets/the-select-element/select-size-001.html`](https://wpt.fyi/results/html/rendering/widgets/the-select-element/select-size-001.html) | Pass | 1 / 1 |  |  |
 | [`widgets/the-select-element/select-size-002.html`](https://wpt.fyi/results/html/rendering/widgets/the-select-element/select-size-002.html) | Pass | 1 / 1 |  |  |

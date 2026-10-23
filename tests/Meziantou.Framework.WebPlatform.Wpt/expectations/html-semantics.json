@@ -219,10 +219,7 @@
     "total": 1
   },
   "html/semantics/document-metadata/the-meta-element/pragma-directives/attr-meta-http-equiv-refresh/allow-scripts-flag-changing-1.html": {
-    "total": 1,
-    "failures": {
-      "Meta refresh is blocked by the allow-scripts sandbox flag at its creation time, not when refresh comes due": "FAIL"
-    }
+    "total": 1
   },
   "html/semantics/document-metadata/the-meta-element/pragma-directives/attr-meta-http-equiv-refresh/allow-scripts-flag-changing-2.html": {
     "total": 1
@@ -783,25 +780,16 @@
     "total": 1
   },
   "html/semantics/embedded-content/media-elements/loading-the-media-resource/resource-selection-candidate-moved.html": {
-    "total": 1,
-    "failures": {
-      "moving the candidate source": "FAIL"
-    }
+    "total": 1
   },
   "html/semantics/embedded-content/media-elements/loading-the-media-resource/resource-selection-candidate-remove-addEventListener.html": {
-    "total": 1,
-    "failures": {
-      "removing the candidate source, addEventListener": "FAIL"
-    }
+    "total": 1
   },
   "html/semantics/embedded-content/media-elements/loading-the-media-resource/resource-selection-candidate-remove-no-listener.html": {
     "total": 1
   },
   "html/semantics/embedded-content/media-elements/loading-the-media-resource/resource-selection-candidate-remove-onerror.html": {
-    "total": 1,
-    "failures": {
-      "removing the candidate source, onerror": "FAIL"
-    }
+    "total": 1
   },
   "html/semantics/embedded-content/media-elements/loading-the-media-resource/resource-selection-currentSrc.html": {
     "harness": "ERROR",
@@ -1692,10 +1680,10 @@
     "total": 1
   },
   "html/semantics/embedded-content/media-elements/track/track-element/track-cue-rendering-line-doesnt-fit.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "PASS"
   },
   "html/semantics/embedded-content/media-elements/track/track-element/track-cue-rendering-transformed-video.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "PASS"
   },
   "html/semantics/embedded-content/media-elements/track/track-element/track-cues-add-new-track.html": {
     "total": 1
@@ -2152,10 +2140,7 @@
     "total": 1
   },
   "html/semantics/embedded-content/the-canvas-element/toBlob-cross-realm-callback-report-exception.html": {
-    "total": 1,
-    "failures": {
-      "toBlob() reports the exception from its callback in the callback's global object": "FAIL"
-    }
+    "total": 1
   },
   "html/semantics/embedded-content/the-canvas-element/toBlob.jpeg.html": {
     "total": 1
@@ -2362,7 +2347,7 @@
     "total": 1
   },
   "html/semantics/embedded-content/the-iframe-element/iframe-initially-empty-is-updated.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/semantics/embedded-content/the-iframe-element/iframe-load-event.html": {
     "total": 2
@@ -2803,7 +2788,6 @@
     "total": 4,
     "failures": {
       "same path name, different document fragment": "FAIL",
-      "same path name, no document fragement (intermediary browsing context)": "FAIL",
       "same path name, no document fragment": "FAIL"
     }
   },
@@ -3162,10 +3146,7 @@
     "total": 4
   },
   "html/semantics/embedded-content/the-img-element/relevant-mutations-lazy.html": {
-    "total": 9,
-    "failures": {
-      "width attribute changes": "FAIL"
-    }
+    "total": 9
   },
   "html/semantics/embedded-content/the-img-element/relevant-mutations.html": {
     "total": 113,
@@ -3280,7 +3261,7 @@
     "reftest": "PASS"
   },
   "html/semantics/embedded-content/the-img-element/sizes/sizes-auto-rendering-dynamic.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "PASS"
   },
   "html/semantics/embedded-content/the-img-element/sizes/sizes-auto-rendering.html": {
     "reftest": "PASS"
@@ -3289,16 +3270,7 @@
     "total": 1
   },
   "html/semantics/embedded-content/the-img-element/sizes/sizes-auto-unrendered.html": {
-    "harness": "TIMEOUT",
-    "total": 15,
-    "failures": {
-      "A <source sizes=auto> uses the img last auto-sizes width when unrendered": "NOTRUN",
-      "A display:none sizes=auto image uses its last auto-sizes width on subsequent mutation": "FAIL",
-      "A re-rendered sizes=auto image updates its last auto-sizes width": "TIMEOUT",
-      "Changing the sizes attribute while unrendered still uses the last auto-sizes width": "FAIL",
-      "Removing lazy loading causes an unrendered image to ignore its last auto-sizes width": "NOTRUN",
-      "moveBefore does not reset the last auto-sizes width": "NOTRUN"
-    }
+    "total": 15
   },
   "html/semantics/embedded-content/the-img-element/sizes/sizes-auto.html": {
     "total": 74
@@ -3415,7 +3387,7 @@
     "total": 1
   },
   "html/semantics/embedded-content/the-object-element/object-image-only-for-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/semantics/embedded-content/the-object-element/object-in-display-none-load-event.html": {
     "total": 1
@@ -3433,7 +3405,7 @@
     "total": 1
   },
   "html/semantics/embedded-content/the-object-element/object-svg-only-for-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/semantics/embedded-content/the-object-element/usemap-casing.html": {
     "total": 8
@@ -3638,12 +3610,7 @@
     "total": 28
   },
   "html/semantics/forms/constraints/form-validation-validity-textarea-defaultValue.html": {
-    "total": 5,
-    "failures": {
-      "Calling textarea.replaceChildren() from the input event handler should trigger validation": "FAIL",
-      "Setting textarea.defaultValue from the input event handler should trigger validation": "FAIL",
-      "User keystrokes should trigger validation": "FAIL"
-    }
+    "total": 5
   },
   "html/semantics/forms/constraints/form-validation-validity-tooLong.html": {
     "total": 63
@@ -4153,17 +4120,7 @@
     "total": 4
   },
   "html/semantics/forms/the-form-element/form-autocomplete.html": {
-    "total": 67,
-    "failures": {
-      "Serialize combinations of section, mode, contact, and field": "FAIL",
-      "Serialize combinations of section, mode, contact, field, and credential": "FAIL",
-      "Test 'wearing the autofill anchor mantle' with off/on": "FAIL",
-      "Unknown field": "FAIL",
-      "form autocomplete attribute invalid": "FAIL",
-      "form autocomplete attribute missing": "FAIL",
-      "form autocomplete attribute off": "FAIL",
-      "form autocomplete attribute on": "FAIL"
-    }
+    "total": 67
   },
   "html/semantics/forms/the-form-element/form-checkvalidity.html": {
     "total": 1
@@ -4252,10 +4209,8 @@
   "html/semantics/forms/the-input-element/click-user-gesture.html": {
     "total": 14,
     "failures": {
-      "input[type=color] click() consumes user activation": "FAIL",
       "input[type=date] click() consumes user activation": "FAIL",
       "input[type=datetime-local] click() consumes user activation": "FAIL",
-      "input[type=file] click() consumes user activation": "FAIL",
       "input[type=month] click() consumes user activation": "FAIL",
       "input[type=time] click() consumes user activation": "FAIL",
       "input[type=week] click() consumes user activation": "FAIL"
@@ -4304,19 +4259,13 @@
     "total": 72
   },
   "html/semantics/forms/the-input-element/defaultValue-clobbering.html": {
-    "total": 2,
-    "failures": {
-      "Visible value and validity should not be affected when assigning to the defaultValue property for type=number.": "FAIL"
-    }
+    "total": 2
   },
   "html/semantics/forms/the-input-element/dynamic-value-update.html": {
     "reftest": "PASS"
   },
   "html/semantics/forms/the-input-element/email-set-value.html": {
-    "total": 1,
-    "failures": {
-      "setValue(sanitizedValue) is reflected in visible text field content": "FAIL"
-    }
+    "total": 1
   },
   "html/semantics/forms/the-input-element/email-value-idn.html": {
     "total": 4,
@@ -4558,11 +4507,7 @@
     "reftest": "PASS"
   },
   "html/semantics/forms/the-input-element/number-constraint-validation.html": {
-    "total": 5,
-    "failures": {
-      "Unparsable number user input triggers sanitization and causes badInput to be set.": "FAIL",
-      "Users inputting a parsable but invalid floating point number doesn't trigger sanitization and doesn't set badInput.": "FAIL"
-    }
+    "total": 5
   },
   "html/semantics/forms/the-input-element/number-disabled.html": {
     "total": 1
@@ -4570,8 +4515,6 @@
   "html/semantics/forms/the-input-element/number-invalid-scientific-key-events.html": {
     "total": 4,
     "failures": {
-      "Insert - at start": "FAIL",
-      "Leading '+' with existing 'e'": "FAIL",
       "Reject multiple signs after 'e' (+)": "FAIL",
       "Reject multiple signs after 'e' (-)": "FAIL"
     }
@@ -4722,93 +4665,13 @@
     "total": 4
   },
   "html/semantics/forms/the-input-element/show-picker-disabled-readonly.html": {
-    "total": 44,
-    "failures": {
-      "input[type=button] showPicker() doesn't throw when readonly": "FAIL",
-      "input[type=checkbox] showPicker() doesn't throw when readonly": "FAIL",
-      "input[type=color] showPicker() doesn't throw when readonly": "FAIL",
-      "input[type=file] showPicker() doesn't throw when readonly": "FAIL",
-      "input[type=hidden] showPicker() doesn't throw when readonly": "FAIL",
-      "input[type=image] showPicker() doesn't throw when readonly": "FAIL",
-      "input[type=radio] showPicker() doesn't throw when readonly": "FAIL",
-      "input[type=range] showPicker() doesn't throw when readonly": "FAIL",
-      "input[type=reset] showPicker() doesn't throw when readonly": "FAIL",
-      "input[type=submit] showPicker() doesn't throw when readonly": "FAIL"
-    }
+    "total": 44
   },
   "html/semantics/forms/the-input-element/show-picker-does-not-focus.html": {
-    "total": 22,
-    "failures": {
-      "input[type=button].showPicker() does not focus the element": "FAIL",
-      "input[type=checkbox].showPicker() does not focus the element": "FAIL",
-      "input[type=color].showPicker() does not focus the element": "FAIL",
-      "input[type=date].showPicker() does not focus the element": "FAIL",
-      "input[type=datetime-local].showPicker() does not focus the element": "FAIL",
-      "input[type=email].showPicker() does not focus the element": "FAIL",
-      "input[type=file].showPicker() does not focus the element": "FAIL",
-      "input[type=hidden].showPicker() does not focus the element": "FAIL",
-      "input[type=image].showPicker() does not focus the element": "FAIL",
-      "input[type=month].showPicker() does not focus the element": "FAIL",
-      "input[type=number].showPicker() does not focus the element": "FAIL",
-      "input[type=password].showPicker() does not focus the element": "FAIL",
-      "input[type=radio].showPicker() does not focus the element": "FAIL",
-      "input[type=range].showPicker() does not focus the element": "FAIL",
-      "input[type=reset].showPicker() does not focus the element": "FAIL",
-      "input[type=search].showPicker() does not focus the element": "FAIL",
-      "input[type=submit].showPicker() does not focus the element": "FAIL",
-      "input[type=tel].showPicker() does not focus the element": "FAIL",
-      "input[type=text].showPicker() does not focus the element": "FAIL",
-      "input[type=time].showPicker() does not focus the element": "FAIL",
-      "input[type=url].showPicker() does not focus the element": "FAIL",
-      "input[type=week].showPicker() does not focus the element": "FAIL"
-    }
+    "total": 22
   },
   "html/semantics/forms/the-input-element/show-picker-user-gesture.html": {
-    "total": 63,
-    "failures": {
-      "input[type=button] showPicker() consumes user activation": "FAIL",
-      "input[type=button] showPicker() does not throw when user activation is active": "FAIL",
-      "input[type=checkbox] showPicker() consumes user activation": "FAIL",
-      "input[type=checkbox] showPicker() does not throw when user activation is active": "FAIL",
-      "input[type=color] showPicker() consumes user activation": "FAIL",
-      "input[type=color] showPicker() does not throw when user activation is active": "FAIL",
-      "input[type=date] showPicker() consumes user activation": "FAIL",
-      "input[type=date] showPicker() does not throw when user activation is active": "FAIL",
-      "input[type=datetime-local] showPicker() consumes user activation": "FAIL",
-      "input[type=datetime-local] showPicker() does not throw when user activation is active": "FAIL",
-      "input[type=email] showPicker() consumes user activation": "FAIL",
-      "input[type=email] showPicker() does not throw when user activation is active": "FAIL",
-      "input[type=hidden] showPicker() consumes user activation": "FAIL",
-      "input[type=hidden] showPicker() does not throw when user activation is active": "FAIL",
-      "input[type=image] showPicker() consumes user activation": "FAIL",
-      "input[type=image] showPicker() does not throw when user activation is active": "FAIL",
-      "input[type=month] showPicker() consumes user activation": "FAIL",
-      "input[type=month] showPicker() does not throw when user activation is active": "FAIL",
-      "input[type=number] showPicker() consumes user activation": "FAIL",
-      "input[type=number] showPicker() does not throw when user activation is active": "FAIL",
-      "input[type=password] showPicker() consumes user activation": "FAIL",
-      "input[type=password] showPicker() does not throw when user activation is active": "FAIL",
-      "input[type=radio] showPicker() consumes user activation": "FAIL",
-      "input[type=radio] showPicker() does not throw when user activation is active": "FAIL",
-      "input[type=range] showPicker() consumes user activation": "FAIL",
-      "input[type=range] showPicker() does not throw when user activation is active": "FAIL",
-      "input[type=reset] showPicker() consumes user activation": "FAIL",
-      "input[type=reset] showPicker() does not throw when user activation is active": "FAIL",
-      "input[type=search] showPicker() consumes user activation": "FAIL",
-      "input[type=search] showPicker() does not throw when user activation is active": "FAIL",
-      "input[type=submit] showPicker() consumes user activation": "FAIL",
-      "input[type=submit] showPicker() does not throw when user activation is active": "FAIL",
-      "input[type=tel] showPicker() consumes user activation": "FAIL",
-      "input[type=tel] showPicker() does not throw when user activation is active": "FAIL",
-      "input[type=text] showPicker() consumes user activation": "FAIL",
-      "input[type=text] showPicker() does not throw when user activation is active": "FAIL",
-      "input[type=time] showPicker() consumes user activation": "FAIL",
-      "input[type=time] showPicker() does not throw when user activation is active": "FAIL",
-      "input[type=url] showPicker() consumes user activation": "FAIL",
-      "input[type=url] showPicker() does not throw when user activation is active": "FAIL",
-      "input[type=week] showPicker() consumes user activation": "FAIL",
-      "input[type=week] showPicker() does not throw when user activation is active": "FAIL"
-    }
+    "total": 63
   },
   "html/semantics/forms/the-input-element/telephone.html": {
     "total": 13
@@ -5540,39 +5403,20 @@
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-mutations.html": {
     "total": 8,
     "failures": {
-      "MutationObserver records during parsing of <select> with <selectedcontent>: test6": "FAIL",
-      "MutationObserver records during parsing of <select> with <selectedcontent>: test8": "FAIL"
+      "MutationObserver records during parsing of <select> with <selectedcontent>: test6": "FAIL"
     }
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-nested-select.html": {
-    "total": 2,
-    "failures": {
-      "Removing an ancestor of a nested select enables its selectedcontent element.": "FAIL"
-    }
+    "total": 2
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-nested.html": {
     "total": 1
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-option-insertion.html": {
-    "total": 8,
-    "failures": {
-      "Inserting a select that already contains options updates its selectedcontent once.": "FAIL",
-      "Inserting an option followed by selectedcontent updates selectedcontent once.": "FAIL",
-      "Inserting an option that causes another option to be selected updates selectedcontent.": "FAIL",
-      "Inserting selectedcontent followed by an option that changes selectedness updates every selectedcontent once.": "FAIL",
-      "Inserting selectedcontent followed by an option updates selectedcontent once.": "FAIL"
-    }
+    "total": 8
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-queued-update.html": {
-    "total": 8,
-    "failures": {
-      "A queued update of a moved selectedcontent element does nothing if it was updated in the meantime.": "FAIL",
-      "A queued update of selectedcontent does nothing if it was updated in the meantime.": "FAIL",
-      "Inserting an option performs a pending update of selectedcontent.": "FAIL",
-      "Inserting selectedcontent while an update of its select's selectedcontent elements is queued leaves it to that update.": "FAIL",
-      "Moving a selectedcontent element twice queues a single update.": "FAIL",
-      "Removing options queues a single update of selectedcontent.": "FAIL"
-    }
+    "total": 8
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.optional.html": {
     "total": 2,
@@ -5582,11 +5426,7 @@
     }
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-subtree-mutations.html": {
-    "total": 3,
-    "failures": {
-      "selectedcontent moved into a select that becomes multiple before the microtask runs is not updated.": "FAIL",
-      "selectedcontent stays up to date after an ancestor of the select is moved.": "FAIL"
-    }
+    "total": 3
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent.html": {
     "total": 11
@@ -5781,11 +5621,7 @@
     "reftest": "PASS"
   },
   "html/semantics/forms/the-select-element/select-user-selection-dirtiness.html": {
-    "total": 4,
-    "failures": {
-      "Clicking the selected option in a list box sets its dirtiness": "FAIL",
-      "Typing to select an option in a dropdown box sets its dirtiness": "FAIL"
-    }
+    "total": 4
   },
   "html/semantics/forms/the-select-element/select-validity.html": {
     "total": 6
@@ -5884,10 +5720,7 @@
     "total": 12
   },
   "html/semantics/forms/the-textarea-element/wrap-enumerated-ascii-case-insensitive.html": {
-    "total": 1,
-    "failures": {
-      "keywords": "FAIL"
-    }
+    "total": 1
   },
   "html/semantics/forms/the-textarea-element/wrap-reflect-1a.html": {
     "reftest": "PASS"
@@ -5896,11 +5729,7 @@
     "reftest": "PASS"
   },
   "html/semantics/forms/the-textarea-element/wrapping-transformation.window.js": {
-    "total": 8,
-    "failures": {
-      "Textarea hard-wrapping should honor the col count unconditionally,": "FAIL",
-      "Textarea wrapping transformation: Wrapping happens with LF newlines.": "FAIL"
-    }
+    "total": 8
   },
   "html/semantics/grouping-content/the-dd-element/grouping-dd.html": {
     "total": 1
@@ -6372,10 +6201,7 @@
     "reftest": "PASS"
   },
   "html/semantics/interactive-elements/the-dialog-element/modal-dialog-in-visibility-hidden.html": {
-    "total": 3,
-    "failures": {
-      "Modal dialog should have visibility: visible by default in UA sheet": "FAIL"
-    }
+    "total": 3
   },
   "html/semantics/interactive-elements/the-dialog-element/modal-dialog-scroll-height.html": {
     "total": 1
@@ -6426,7 +6252,7 @@
     "reftest": "PASS"
   },
   "html/semantics/interactive-elements/the-dialog-element/top-layer-containing-block.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/semantics/interactive-elements/the-dialog-element/top-layer-display-none.html": {
     "reftest": "PASS"
@@ -7496,11 +7322,7 @@
       "hidePopover() hides a showing popover=auto once its iframe is removed": "FAIL",
       "hidePopover() hides a showing popover=auto once its iframe navigates away": "FAIL",
       "hidePopover() hides a showing popover=manual once its iframe is removed": "FAIL",
-      "hidePopover() hides a showing popover=manual once its iframe navigates away": "FAIL",
-      "togglePopover() hides a showing popover=auto once its iframe is removed": "FAIL",
-      "togglePopover() hides a showing popover=auto once its iframe navigates away": "FAIL",
-      "togglePopover() hides a showing popover=manual once its iframe is removed": "FAIL",
-      "togglePopover() hides a showing popover=manual once its iframe navigates away": "FAIL"
+      "hidePopover() hides a showing popover=manual once its iframe navigates away": "FAIL"
     }
   },
   "html/semantics/popovers/popover-hint-hierarchy.html": {
@@ -7583,12 +7405,7 @@
     }
   },
   "html/semantics/popovers/popover-move-documents-during-hide.html": {
-    "total": 3,
-    "failures": {
-      "A popover moved and re-shown in another document closes on Escape there": "FAIL",
-      "hidePopover() does not hide a popover moved and re-shown by its child's beforetoggle": "FAIL",
-      "hidePopover() does not hide a popover moved and re-shown by its own beforetoggle": "FAIL"
-    }
+    "total": 3
   },
   "html/semantics/popovers/popover-move-documents.html": {
     "total": 3
@@ -8884,12 +8701,7 @@
     "total": 2
   },
   "html/semantics/scripting-1/the-script-element/module/type.html": {
-    "total": 6,
-    "failures": {
-      "type=\" module \"": "FAIL",
-      "type=\" module\"": "FAIL",
-      "type=\"module \"": "FAIL"
-    }
+    "total": 6
   },
   "html/semantics/scripting-1/the-script-element/moving-between-documents-during-evaluation.html": {
     "total": 1
@@ -9598,10 +9410,7 @@
     "total": 6
   },
   "html/semantics/selectors/pseudo-classes/invalid-after-clone.html": {
-    "total": 1,
-    "failures": {
-      "Cloned invalid inputs / textareas with interactive changes get their validity state copied correctly": "FAIL"
-    }
+    "total": 1
   },
   "html/semantics/selectors/pseudo-classes/link.html": {
     "total": 1
@@ -9736,10 +9545,7 @@
     "total": 11
   },
   "html/semantics/text-level-semantics/the-a-element/a-type.historical.html": {
-    "total": 1,
-    "failures": {
-      "type attribute on anchor doesn't cause document to be loaded as HTML": "FAIL"
-    }
+    "total": 1
   },
   "html/semantics/text-level-semantics/the-a-element/a.text-getter-01.html": {
     "total": 6

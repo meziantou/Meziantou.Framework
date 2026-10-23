@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 58 | 66 | 0 | 88% |
+| [Stable](#stable-tests) | 59 | 66 | 0 | 89% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 0 | 1 | 1 | – |
-| **All** | **58** | **67** | **1** | **88%** |
+| **All** | **59** | **67** | **1** | **89%** |
 
 ## Stable tests
 
@@ -61,7 +61,7 @@
 | [`urls/base-url/document-base-url-changes-about-srcdoc-2.https.html`](https://wpt.fyi/results/html/infrastructure/urls/base-url/document-base-url-changes-about-srcdoc-2.https.html) | Pass | 2 / 2 |  |  |
 | [`urls/base-url/document-base-url-changes-after-nav-about-srcdoc.https.window.js`](https://wpt.fyi/results/html/infrastructure/urls/base-url/document-base-url-changes-after-nav-about-srcdoc.https.window.js) | Fail | 0 / 2 | BUG | after `history.back()` to the `about:srcdoc` entry, the frame reports the base URL of the page it had navigated to instead of the parent's base URL captured at creation |
 | [`urls/base-url/document-base-url-initiated-grand-parent.https.window.js`](https://wpt.fyi/results/html/infrastructure/urls/base-url/document-base-url-initiated-grand-parent.https.window.js) | Pass | 3 / 3 |  |  |
-| [`urls/base-url/document-base-url-window-initiator-is-not-opener.https.window.js`](https://wpt.fyi/results/html/infrastructure/urls/base-url/document-base-url-window-initiator-is-not-opener.https.window.js) | Timeout | 0 / 1 | BUG | navigating the popup's initial `about:blank` document to `about:blank` from an iframe does not unload it (no `pagehide`), so the test never continues |
+| [`urls/base-url/document-base-url-window-initiator-is-not-opener.https.window.js`](https://wpt.fyi/results/html/infrastructure/urls/base-url/document-base-url-window-initiator-is-not-opener.https.window.js) | Pass | 1 / 1 |  |  |
 | [`urls/base-url/document-base-url-window-open-about-blank.https.window.js`](https://wpt.fyi/results/html/infrastructure/urls/base-url/document-base-url-window-open-about-blank.https.window.js) | Pass | 1 / 1 |  |  |
 | [`urls/base-url/initial-about-blank-baseURI.window.js`](https://wpt.fyi/results/html/infrastructure/urls/base-url/initial-about-blank-baseURI.window.js) | Pass | 6 / 6 |  |  |
 | [`urls/base-url/matches-about-blank-base-url.window.js`](https://wpt.fyi/results/html/infrastructure/urls/base-url/matches-about-blank-base-url.window.js) | Pass | 1 / 1 |  |  |

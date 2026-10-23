@@ -552,7 +552,6 @@ public partial class Document
     /// </remarks>
     internal void FinishParsingAfterDeferredScripts()
     {
-        var parsingSession = _parsingSession;
         QueueGlobalTask(() =>
         {
             var marked = MarkDomContentLoadedEventStart();
@@ -579,20 +578,14 @@ public partial class Document
             }
 
             PendingTextDirectives = null;
-
-            // https://html.spec.whatwg.org/multipage/parsing.html#the-end, steps 7 to 9: the event loop spins until nothing
-            // delays the load event, so the tasks queued while parsing (e.g. a planned form navigation of a child navigable,
-            // which delays the load event) run before the load event is queued
-            if (parsingSession == _parsingSession)
-            {
-                _parsingFinished = true;
-                TryQueueLoadEvent();
-            }
         });
-    }
 
-    // Incremented when the script-created parser of document.open() replaces the parser (see ResetParsingState)
-    private int _parsingSession;
+        // As in the browsers, the load event is queued once the parsing is finished: the specification spins the event loop
+        // first (https://html.spec.whatwg.org/multipage/parsing.html#the-end, steps 7 to 9), which lets the tasks that other
+        // documents queue meanwhile (e.g. a message) run before it
+        _parsingFinished = true;
+        TryQueueLoadEvent();
+    }
 
     /// <summary>Whether the DOMContentLoaded event of the document was fired (the end of https://html.spec.whatwg.org/multipage/parsing.html#the-end, step 6).</summary>
     internal bool IsDomContentLoadedFired { get; private set; }
@@ -600,7 +593,6 @@ public partial class Document
     /// <summary>The steps of "the end" run again when the script-created parser of document.open() stops.</summary>
     internal void ResetParsingState()
     {
-        _parsingSession++;
         _parsingFinished = false;
         _loadEventQueued = false;
     }

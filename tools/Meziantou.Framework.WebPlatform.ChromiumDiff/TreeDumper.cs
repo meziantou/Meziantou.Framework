@@ -3,13 +3,13 @@ using Meziantou.Framework.WebPlatform.Dom;
 
 namespace ChromiumDiff;
 
-/// <summary>Serializes a document in the html5lib tree format, with the open shadow roots (the same output as dump.js).</summary>
+/// <summary>Serializes the children of a node in the html5lib tree format, with the shadow roots (the same output as tree.js).</summary>
 internal static class TreeDumper
 {
-    public static string Dump(Document document)
+    public static string Dump(Node root)
     {
         var lines = new List<string>();
-        DumpChildren(lines, document, 0);
+        DumpChildren(lines, root, 0);
         return string.Join('\n', lines);
     }
 

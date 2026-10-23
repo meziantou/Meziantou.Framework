@@ -86,6 +86,7 @@ internal sealed partial class GridLayoutAlgorithm
                 ExtraStart = item.GetExtraStart(axis),
                 ExtraEnd = item.GetExtraEnd(axis),
                 Shim = item.GetShim(axis),
+                ShimVariation = item.GetShimVariation(axis),
             });
         }
     }

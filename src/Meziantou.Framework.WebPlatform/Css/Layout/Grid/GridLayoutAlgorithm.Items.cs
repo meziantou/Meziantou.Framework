@@ -26,6 +26,12 @@ internal sealed partial class GridLayoutAlgorithm
             }
         }
 
+        return LayoutItem(item, space);
+    }
+
+    /// <summary>Lays out an item in a constraint space (the last layout of the item is reused when the constraint space is the same).</summary>
+    private BoxFragment LayoutItem(GridItem item, in ConstraintSpace space)
+    {
         if (item.Fragment is { } cached && item.Space == space)
             return cached;
 
@@ -138,6 +144,20 @@ internal sealed partial class GridLayoutAlgorithm
 
         var contributions = item.Owner.GetContributions(item.Item, item.OwnerAxis);
         var extra = item.ExtraStart + item.ExtraEnd + item.Shim;
+        var value = GetContribution(item, kind, contributions, extra);
+
+        // The shim of an item whose baseline moves with its size, for a contribution of another size than the measured one (as
+        // in Blink: an item whose baseline is synthesized from its end edge contributes the size measured with its baseline)
+        if (item.ShimVariation is { Factor: not 0 } variation)
+        {
+            value = Math.Max(0, value + (variation.Factor * (variation.MeasuredSize - (value - extra))));
+        }
+
+        return value;
+    }
+
+    private double GetContribution(GridSizingItem item, GridContributionKind kind, in GridContributions contributions, double extra)
+    {
         switch (kind)
         {
             case GridContributionKind.Minimum:
@@ -459,6 +479,7 @@ internal sealed partial class GridLayoutAlgorithm
         foreach (var item in _items)
         {
             item.LanesShims = null;
+            SetShimVariation(item, axis, default);
             if (axis == GridAxis.Columns)
             {
                 item.ColumnShim = 0;
@@ -571,6 +592,7 @@ internal sealed partial class GridLayoutAlgorithm
 
             GridBaselineGroup group;
             double fromTrackEdge;
+            (double Factor, double MeasuredSize) shimVariation = default;
             if (isContentAligned && final)
             {
                 // (the final layout of the item has its shim: its baseline is the one that was measured without it)
@@ -592,11 +614,13 @@ internal sealed partial class GridLayoutAlgorithm
                 // The baseline from the start edge of the border box in the axis (the baselines of an item whose block flow is opposite
                 // are on the other side: its first baseline aligns with the last baselines, https://drafts.csswg.org/css-align-3/#compatible-baseline-alignment-preferences)
                 var (baseline, flipped) = owner.GetItemBaseline(item, fragment, ownerAxis, last);
+                var sizeFactor = owner.GetItemBaselineSizeFactor(item, fragment, ownerAxis, last);
                 if (participant.IsReversed)
                 {
                     // The item of a subgrid whose tracks are in the opposite direction: its baseline is measured from the other side
                     // (its first baseline aligns with the last baselines of the grid)
                     baseline = axisSize - baseline;
+                    sizeFactor = 1 - sizeFactor;
                     flipped = !flipped;
                     (marginStart, marginEnd) = (marginEnd, marginStart);
                 }
@@ -609,6 +633,7 @@ internal sealed partial class GridLayoutAlgorithm
                 // The distance of the baseline from the start (end) edge of the track
                 group = last ? GridBaselineGroup.End : GridBaselineGroup.Start;
                 fromTrackEdge = last ? participant.ExtraEnd + marginEnd + (axisSize - baseline) : participant.ExtraStart + marginStart + baseline;
+                shimVariation = (last ? 1 - sizeFactor : sizeFactor, axisSize + marginStart + marginEnd);
                 if (isContentAligned)
                 {
                     // The edge of the box on the side of the baseline is the edge of its area: the box is stretched, or aligned
@@ -641,6 +666,11 @@ internal sealed partial class GridLayoutAlgorithm
                 else
                 {
                     item.RowBaseline = fromTrackEdge;
+                }
+
+                if (!final)
+                {
+                    SetShimVariation(item, ownerAxis, shimVariation);
                 }
             }
 
@@ -733,7 +763,14 @@ internal sealed partial class GridLayoutAlgorithm
     private BoxFragment MeasureForBaseline(GridItem item, GridAxis axis)
     {
         var otherAxis = axis == GridAxis.Columns ? GridAxis.Rows : GridAxis.Columns;
-        return axis == GridAxis.Rows ? LayoutItem(item, GetAreaSize(item, otherAxis), blockArea: null) : LayoutItem(item, inlineArea: null, GetAreaSize(item, otherAxis));
+        if (axis == GridAxis.Columns)
+            return LayoutItem(item, inlineArea: null, GetAreaSize(item, otherAxis));
+
+        // An orthogonal item, whose inline size is in the rows, is measured with no available space in its inline axis: its
+        // automatic inline size is its min-content size, as in Blink (WPT
+        // css/css-grid/alignment/grid-self-baseline-not-applied-if-sizing-cyclic-dependency-002.html)
+        var space = CreateItemSpace(item, GetAreaSize(item, otherAxis), blockArea: null);
+        return LayoutItem(item, item.IsOrthogonal ? space with { OrthogonalFallbackInlineSize = 0 } : space);
     }
 
     /// <summary>
@@ -820,7 +857,24 @@ internal sealed partial class GridLayoutAlgorithm
     private (double Baseline, bool Flipped) GetItemBaseline(GridItem item, BoxFragment fragment, GridAxis axis, bool last)
     {
         var logicalSize = _writingDirection.ToLogical(fragment.Size);
+        return GetItemBaseline(item, fragment, axis, last, axis == GridAxis.Columns ? logicalSize.Inline : logicalSize.Block);
+    }
+
+    /// <summary>
+    /// Returns how much the baseline of an item (<see cref="GetItemBaseline(GridItem, BoxFragment, GridAxis, bool)"/>) moves from the
+    /// start edge of its border box when its size in the axis grows by one: 0 for a baseline measured from that edge, 1 for a
+    /// baseline measured from the other edge (a synthesized baseline at the end edge, or the baseline of a flipped item), 0.5 for a
+    /// central baseline.
+    /// </summary>
+    private double GetItemBaselineSizeFactor(GridItem item, BoxFragment fragment, GridAxis axis, bool last)
+    {
+        var logicalSize = _writingDirection.ToLogical(fragment.Size);
         var size = axis == GridAxis.Columns ? logicalSize.Inline : logicalSize.Block;
+        return GetItemBaseline(item, fragment, axis, last, size + 1).Baseline - GetItemBaseline(item, fragment, axis, last, size).Baseline;
+    }
+
+    private (double Baseline, bool Flipped) GetItemBaseline(GridItem item, BoxFragment fragment, GridAxis axis, bool last, double size)
+    {
         var startSide = axis == GridAxis.Columns ? _writingDirection.InlineStart : _writingDirection.BlockStart;
 
         // The items whose block axis is the axis have baselines in it (the rows for the parallel flows, the columns for the
@@ -870,6 +924,18 @@ internal sealed partial class GridLayoutAlgorithm
         var assumedFlipped = assumedBlockStart != startSide;
         var assumed = assumedBlockStart == PhysicalSide.Left ? 0 : size;
         return (assumedFlipped ? size - assumed : assumed, assumedFlipped);
+    }
+
+    private static void SetShimVariation(GridItem item, GridAxis axis, (double Factor, double MeasuredSize) variation)
+    {
+        if (axis == GridAxis.Columns)
+        {
+            item.ColumnShimVariation = variation;
+        }
+        else
+        {
+            item.RowShimVariation = variation;
+        }
     }
 
     private static void SetBaselineGroup(GridItem item, GridAxis axis, GridBaselineGroup group)

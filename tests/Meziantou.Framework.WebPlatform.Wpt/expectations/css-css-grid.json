@@ -1827,21 +1827,7 @@
     "total": 12
   },
   "css/css-grid/alignment/grid-self-baseline-not-applied-if-sizing-cyclic-dependency-002.html": {
-    "total": 24,
-    "failures": {
-      ".inline-grid 1": "FAIL",
-      ".inline-grid 19": "FAIL",
-      ".inline-grid 2": "FAIL",
-      ".inline-grid 20": "FAIL",
-      ".inline-grid 21": "FAIL",
-      ".inline-grid 22": "FAIL",
-      ".inline-grid 23": "FAIL",
-      ".inline-grid 24": "FAIL",
-      ".inline-grid 3": "FAIL",
-      ".inline-grid 4": "FAIL",
-      ".inline-grid 5": "FAIL",
-      ".inline-grid 6": "FAIL"
-    }
+    "total": 24
   },
   "css/css-grid/alignment/grid-self-baseline-not-applied-if-sizing-cyclic-dependency-003.html": {
     "total": 6

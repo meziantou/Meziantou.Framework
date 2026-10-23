@@ -6686,10 +6686,7 @@
     "total": 4
   },
   "css/css-grid/layout-algorithm/grid-intrinsic-width-minmax-tracks-001.html": {
-    "total": 35,
-    "failures": {
-      ".grid 23": "FAIL"
-    }
+    "total": 35
   },
   "css/css-grid/layout-algorithm/grid-item-margin-auto-columns-rows-001.html": {
     "total": 4

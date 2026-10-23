@@ -180,8 +180,17 @@ internal sealed partial class GridLayoutAlgorithm
                 case GridMinFunction.Auto:
                     // "If the track has an auto min track sizing function and the grid container is being sized under a min-/max-content
                     // constraint, set the track's base size to the maximum of its items' limited min-content contributions [...]
-                    // Otherwise, set the track's base size to the maximum of its items' minimum contributions"
-                    var kind = mode == GridSizingMode.Layout ? GridContributionKind.Minimum : GridContributionKind.LimitedMinContent;
+                    // Otherwise, set the track's base size to the maximum of its items' minimum contributions". Under a max-content
+                    // constraint, the step "For max-content minimums" of the items that span several tracks also applies, as in the
+                    // browsers ("This step is a simplification of the steps below [...] and should yield the same behavior"): the
+                    // base size accommodates the limited max-content contributions (WPT
+                    // css/css-grid/layout-algorithm/grid-intrinsic-width-minmax-tracks-001.html)
+                    var kind = mode switch
+                    {
+                        GridSizingMode.Layout => GridContributionKind.Minimum,
+                        GridSizingMode.MaxContent => GridContributionKind.LimitedMaxContent,
+                        _ => GridContributionKind.LimitedMinContent,
+                    };
                     track.BaseSize = Math.Max(track.BaseSize, GetContribution(item, kind));
                     break;
             }

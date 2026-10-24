@@ -392,6 +392,146 @@ public sealed class PdfRendererTests
     }
 
     [Fact]
+    public void ANonIsolatedGroupMixesWithThePage()
+    {
+        // On red, green multiplied by the backdrop is black: a non-isolated group drawn at an alpha of 0.5 is half black
+        // over red (11.4.8); an isolated group multiplies green by its transparent backdrop, which keeps green
+        foreach (var (isolated, expected) in new[] { (false, (128, 0, 0)), (true, (128, 128, 0)) })
+        {
+            var document = new PdfDocument();
+            var form = document.CreateForm(new PdfRectangle(0, 0, 100, 100), group: new PdfTransparencyGroup { Isolated = isolated });
+            form.CreateContentBuilder().SetGraphicsState(new PdfExtGState { BlendMode = PdfBlendMode.Multiply }).SetFillRgb(0, 1, 0).Rectangle(0, 0, 100, 100).Fill();
+            document.Pages.Add(Size).CreateContentBuilder()
+                .SetFillRgb(1, 0, 0).Rectangle(0, 0, 100, 100).Fill()
+                .SetGraphicsState(new PdfExtGState { FillAlpha = 0.5 }).DrawForm(form);
+
+            using var image = Render(document);
+
+            AssertColor(Pixel(image, 50, 50), expected.Item1, expected.Item2, expected.Item3);
+        }
+    }
+
+    [Fact]
+    public void TheBackdropOfANonIsolatedGroupIsCountedOnce()
+    {
+        // An isolated group of red at 0.5, then a non-isolated group of blue at 0.5 in it, on white: blue over red over
+        // white, (128, 64, 191); without the removal of the backdrop, the red would be composited twice
+        var document = new PdfDocument();
+        var inner = document.CreateForm(new PdfRectangle(0, 0, 100, 100), group: new PdfTransparencyGroup());
+        inner.CreateContentBuilder().SetGraphicsState(new PdfExtGState { FillAlpha = 0.5 }).SetFillRgb(0, 0, 1).Rectangle(0, 0, 100, 100).Fill();
+        var outer = document.CreateForm(new PdfRectangle(0, 0, 100, 100), group: new PdfTransparencyGroup { Isolated = true });
+        outer.CreateContentBuilder()
+            .SaveGraphicsState().SetGraphicsState(new PdfExtGState { FillAlpha = 0.5 }).SetFillRgb(1, 0, 0).Rectangle(0, 0, 100, 100).Fill().RestoreGraphicsState()
+            .SetGraphicsState(new PdfExtGState { BlendMode = PdfBlendMode.Normal, FillAlpha = 0.99 })
+            .DrawForm(inner);
+        document.Pages.Add(Size).CreateContentBuilder().DrawForm(outer);
+
+        using var image = Render(document);
+
+        AssertColor(Pixel(image, 50, 50), 128, 64, 191, tolerance: 3);
+    }
+
+    [Fact]
+    public void TheElementsOfAKnockoutGroupKnockOutOneAnother()
+    {
+        // Red from 0 to 60, then blue from 40 to 100, each at an alpha of 0.5: in a knockout group, blue replaces red
+        static PdfDocument Create(bool isolated, double groupAlpha, PdfColor page)
+        {
+            var document = new PdfDocument();
+            var form = document.CreateForm(new PdfRectangle(0, 0, 100, 100), group: new PdfTransparencyGroup { Isolated = isolated, Knockout = true });
+            form.CreateContentBuilder()
+                .SetGraphicsState(new PdfExtGState { FillAlpha = 0.5 })
+                .SetFillRgb(1, 0, 0).Rectangle(0, 0, 60, 100).Fill()
+                .SetFillRgb(0, 0, 1).Rectangle(40, 0, 60, 100).Fill();
+            document.Pages.Add(Size).CreateContentBuilder()
+                .SetFillColor(page).Rectangle(0, 0, 100, 100).Fill()
+                .SetGraphicsState(new PdfExtGState { FillAlpha = groupAlpha }).DrawForm(form);
+            return document;
+        }
+
+        // Isolated, on white: the overlap is blue at 0.5 over white, where a group that is not knockout gives (128, 64, 191)
+        using (var image = Render(Create(isolated: true, 1, PdfColor.FromRgb(1, 1, 1))))
+        {
+            AssertColor(Pixel(image, 20, 50), 255, 128, 128);
+            AssertColor(Pixel(image, 50, 50), 128, 128, 255);
+            AssertColor(Pixel(image, 80, 50), 128, 128, 255);
+        }
+
+        // Non-isolated, on yellow: each element is composited with yellow, blue over yellow is (128, 128, 128)
+        using (var image = Render(Create(isolated: false, 1, PdfColor.FromRgb(1, 1, 0))))
+        {
+            AssertColor(Pixel(image, 20, 50), 255, 128, 0);
+            AssertColor(Pixel(image, 50, 50), 128, 128, 128);
+        }
+
+        // The group at an alpha of 0.5: half of the result of the group over yellow
+        using (var image = Render(Create(isolated: false, 0.5, PdfColor.FromRgb(1, 1, 0))))
+        {
+            AssertColor(Pixel(image, 50, 50), 191, 191, 64);
+        }
+    }
+
+    [Fact]
+    public void TheStrokeOfAPathDoesNotKnockOutItsFill()
+    {
+        // In a knockout group, a path filled in red and stroked in blue, each at 0.5, is one element: on the inner half
+        // of the stroke, blue over red over white (11.7.4.4)
+        var document = new PdfDocument();
+        var form = document.CreateForm(new PdfRectangle(0, 0, 100, 100), group: new PdfTransparencyGroup { Isolated = true, Knockout = true });
+        form.CreateContentBuilder()
+            .SetGraphicsState(new PdfExtGState { FillAlpha = 0.5, StrokeAlpha = 0.5 })
+            .SetFillRgb(1, 0, 0).SetStrokeRgb(0, 0, 1).SetLineWidth(10)
+            .Rectangle(20, 20, 60, 60).FillAndStroke();
+        document.Pages.Add(Size).CreateContentBuilder().DrawForm(form);
+
+        using var image = Render(document);
+
+        AssertColor(Pixel(image, 22, 50), 128, 64, 191);
+        AssertColor(Pixel(image, 50, 50), 255, 128, 128);
+        AssertColor(Pixel(image, 17, 50), 128, 128, 255);
+    }
+
+    [Fact]
+    public void AKnockoutPageGroupKnocksOutTheObjectsOfThePage()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(Size);
+        page.CreateContentBuilder()
+            .SetGraphicsState(new PdfExtGState { FillAlpha = 0.5 })
+            .SetFillRgb(1, 0, 0).Rectangle(0, 0, 60, 100).Fill()
+            .SetFillRgb(0, 0, 1).Rectangle(40, 0, 60, 100).Fill();
+        page.Dictionary[PdfNames.Group] = new PdfDictionary
+        {
+            [PdfNames.S] = PdfName.Create("Transparency"),
+            [PdfNames.K] = PdfBoolean.True,
+        };
+
+        using var image = Render(document);
+
+        AssertColor(Pixel(image, 20, 50), 255, 128, 128);
+        AssertColor(Pixel(image, 50, 50), 128, 128, 255);
+    }
+
+    [Fact]
+    public void ABlendModeWithASoftMaskMixesWithTheBackdrop()
+    {
+        // On yellow, cyan multiplied by yellow is green, through a luminosity mask that is white on the left half and
+        // black on the right half: the mask is applied after the blend mode (11.6.4.3)
+        var document = new PdfDocument();
+        var maskGroup = document.CreateForm(new PdfRectangle(0, 0, 100, 100), group: new PdfTransparencyGroup { ColorSpace = PdfDeviceColorSpace.Rgb });
+        maskGroup.CreateContentBuilder().SetFillRgb(1, 1, 1).Rectangle(0, 0, 50, 100).Fill();
+        document.Pages.Add(Size).CreateContentBuilder()
+            .SetFillRgb(1, 1, 0).Rectangle(0, 0, 100, 100).Fill()
+            .SetGraphicsState(new PdfExtGState { BlendMode = PdfBlendMode.Multiply, SoftMask = PdfSoftMask.FromLuminosity(maskGroup) })
+            .SetFillRgb(0, 1, 1).Rectangle(0, 0, 100, 100).Fill();
+
+        using var image = Render(document);
+
+        AssertColor(Pixel(image, 25, 50), 0, 255, 0);
+        AssertColor(Pixel(image, 75, 50), 255, 255, 0);
+    }
+
+    [Fact]
     public void OptionalContentThatIsOffIsHidden()
     {
         var document = new PdfDocument();

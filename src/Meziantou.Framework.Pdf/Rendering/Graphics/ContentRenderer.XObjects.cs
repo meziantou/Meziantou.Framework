@@ -41,58 +41,135 @@ internal sealed partial class ContentRenderer
             var dictionary = form.Dictionary;
             PdfRectangle.TryRead(dictionary.Get<PdfArray>(PdfNames.BBox), out var bbox);
             var formMatrix = ReadMatrix(dictionary.Get<PdfArray>(PdfNames.Matrix));
-            var isGroup = dictionary.Get<PdfDictionary>(PdfNames.Group)?.GetName(PdfNames.S)?.Value == "Transparency";
-            var hasTransparency = isGroup && (_state.FillAlpha < 1 || _state.BlendMode != BlendMode.Normal || _state.SoftMask is not null);
-            if (!hasTransparency)
+            var group = dictionary.Get<PdfDictionary>(PdfNames.Group);
+            if (group?.GetName(PdfNames.S)?.Value != "Transparency")
             {
-                // A form without transparency is its content, with the current graphics state
+                // A form that is not a group is its content, with the current graphics state: in a knockout group, each
+                // of its objects is an element of the group
                 var state = _state.Clone();
                 state.Ctm = formMatrix * _state.Ctm;
-                var renderer = new ContentRenderer(_cache, _document, state, _depth + 1, _optionalContent)
-                {
-                    ForcedColor = ForcedColor,
-                    BaseMatrix = state.Ctm,
-                    DeviceSize = DeviceSize,
-                };
-                renderer._activeForms.UnionWith(_activeForms);
+                var renderer = CreateChild(state, isKnockout: IsKnockoutContext, element: _element);
                 renderer.ClipToRectangle(bbox);
                 renderer.Run(canvas, form.GetDecodedData(), dictionary.Get<PdfDictionary>(PdfNames.Resources));
                 return;
             }
 
-            // A transparency group: its content is painted on a layer, which the alpha, the blend mode and the soft
-            // mask of the graphics state composite as one object (11.4)
-            var alpha = _state.FillAlpha;
-            var blend = _state.BlendMode;
-            var ctm = formMatrix * _state.Ctm;
-            if (!TryGetDeviceTransform(ctm, out var groupTransform))
-                return;
-
-            // The layer covers the bounding box of the group, which clips it
-            var groupBounds = bbox.Right > bbox.Left && bbox.Top > bbox.Bottom
-                ? new VectorPathBuilder().AddRectangle(new RectangleD(bbox.Left, bbox.Bottom, bbox.Right - bbox.Left, bbox.Top - bbox.Bottom)).Build().Transform(groupTransform).Bounds
-                : new RectangleD(0, 0, DeviceSize.Width, DeviceSize.Height);
-            if (ToPixelBounds(groupBounds, margin: 1) is not { } pixelBounds)
-                return;
-
-            PaintWithState(canvas, target => target.Layer(alpha, layer =>
-            {
-                var state = new RenderGraphicsState { Ctm = ctm };
-                var renderer = new ContentRenderer(_cache, _document, state, _depth + 1, _optionalContent)
-                {
-                    ForcedColor = ForcedColor,
-                    BaseMatrix = ctm,
-                    DeviceSize = DeviceSize,
-                };
-                renderer._activeForms.UnionWith(_activeForms);
-                renderer.ClipToRectangle(bbox);
-                renderer.Run(layer, form.GetDecodedData(), dictionary.Get<PdfDictionary>(PdfNames.Resources));
-            }, CompositeMode.SourceOver, blend), pixelBounds);
+            // A transparency group is one element of a knockout group
+            PaintElement(canvas, _state.FillAlpha, element => PaintGroup(element, form, group, bbox, formMatrix));
         }
         finally
         {
             _activeForms.Remove(form);
         }
+    }
+
+    /// <summary>
+    /// Paints a transparency group (11.4.8, 11.6.6): its content composited as one object with the alpha, the blend mode
+    /// and the soft mask of the graphics state, isolated or not (<c>/I</c>), knockout or not (<c>/K</c>).
+    /// </summary>
+    private void PaintGroup(DrawingCanvas canvas, PdfStream form, PdfDictionary group, PdfRectangle bbox, PdfMatrix formMatrix)
+    {
+        var dictionary = form.Dictionary;
+        var resources = dictionary.Get<PdfDictionary>(PdfNames.Resources);
+        var isIsolated = group.Get<PdfBoolean>(PdfNames.I)?.Value is true;
+        var isKnockout = group.Get<PdfBoolean>(PdfNames.K)?.Value is true;
+
+        // In an element of a knockout group, the element applies the alpha and the soft mask
+        var alpha = ElementAlpha(_state.FillAlpha);
+        var blend = _state.BlendMode;
+        var softMask = _element is null && _depth < MaxDepth ? _state.SoftMask : null;
+        var ctm = formMatrix * _state.Ctm;
+
+        // The content starts with the graphics state of the Do operator, with the alpha, the blend mode and the soft
+        // mask of a new group (11.6.6): the group applies them
+        var state = _state.Clone();
+        state.Ctm = ctm;
+        state.FillAlpha = 1;
+        state.StrokeAlpha = 1;
+        state.BlendMode = BlendMode.Normal;
+        state.SoftMask = null;
+
+        // A group composites as its content does when nothing composites it as a whole: a non-isolated group, or an
+        // isolated one whose content blends with nothing
+        var isComposited = alpha < 1 || blend != BlendMode.Normal || softMask is not null || _state.Transfer is not null;
+        if (!isKnockout && !isComposited && (!isIsolated || !_cache.UsesBlendModes(resources)))
+        {
+            var direct = CreateChild(state, isKnockout: false, element: null);
+            direct.ClipToRectangle(bbox);
+            direct.Run(canvas, form.GetDecodedData(), resources);
+            return;
+        }
+
+        if (!TryGetDeviceTransform(ctm, out var groupTransform))
+            return;
+
+        // The group covers its bounding box, which clips it
+        var groupBounds = bbox.Right > bbox.Left && bbox.Top > bbox.Bottom
+            ? new VectorPathBuilder().AddRectangle(new RectangleD(bbox.Left, bbox.Bottom, bbox.Right - bbox.Left, bbox.Top - bbox.Bottom)).Build().Transform(groupTransform).Bounds
+            : new RectangleD(0, 0, DeviceSize.Width, DeviceSize.Height);
+        if (ToPixelBounds(groupBounds, margin: 1) is not { } pixelBounds)
+            return;
+
+        // The planes of the group: the frames it is drawn on, and the group alone when it is not isolated
+        _cache.Charge(((long)pixelBounds.Width * pixelBounds.Height * (isIsolated ? 1 : 2) / 1024) + 1);
+        state.Clip = null;
+        state.Transfer = null;
+        var isLuminosity = softMask?.Mask.GetName(PdfNames.S)?.Value != "Alpha";
+        var options = new GroupOptions
+        {
+            Opacity = alpha,
+            BlendMode = blend,
+            IsIsolated = isIsolated,
+            IsKnockout = isKnockout,
+            MaskMode = isLuminosity ? MaskMode.Luminance : MaskMode.Alpha,
+        };
+        void Content(DrawingCanvas target)
+        {
+            var renderer = CreateChild(state, isKnockout, element: null);
+            renderer.ClipToRectangle(bbox);
+            renderer.Run(target, form.GetDecodedData(), resources);
+        }
+
+        void Draw(DrawingCanvas target)
+        {
+            if (softMask is { } mask)
+            {
+                target.Group(options, content => Content(content), maskCanvas => RenderSoftMask(maskCanvas, mask.Mask, mask.Matrix, isLuminosity));
+            }
+            else
+            {
+                target.Group(options, content => Content(content));
+            }
+        }
+
+        // The clip of the graphics state applies to the group as a whole; the transfer function, to its result
+        canvas.Clip(pixelBounds, clipped => ApplyClip(clipped, _state.Clip, target =>
+        {
+            if (_state.Transfer is { } transfer)
+            {
+                var filter = new FilterGraph(transfer);
+                target.Filter(filter, filtered => Draw(filtered));
+            }
+            else
+            {
+                Draw(target);
+            }
+        }));
+    }
+
+    /// <summary>Creates the renderer of the content of a form, a group or a glyph, which paints with this one.</summary>
+    private ContentRenderer CreateChild(RenderGraphicsState state, bool isKnockout, double? element)
+    {
+        var renderer = new ContentRenderer(_cache, _document, state, _depth + 1, _optionalContent)
+        {
+            ForcedColor = ForcedColor,
+            BaseMatrix = state.Ctm,
+            DeviceSize = DeviceSize,
+            IsKnockoutContext = isKnockout,
+            Element = element,
+        };
+        renderer._activeForms.UnionWith(_activeForms);
+        return renderer;
     }
 
     /// <summary>Paints a shading over the clipping region, with the current transformation (8.7.4.2).</summary>
@@ -111,10 +188,14 @@ internal sealed partial class ContentRenderer
 
         using (image)
         {
-            var alpha = _state.FillAlpha;
-            var blend = _state.BlendMode;
             var origin = new PointD(Math.Floor(area.X), Math.Floor(area.Y));
-            PaintWithState(canvas, target => DrawBlended(target, blend, c => c.DrawImage(image.Frames[0], origin, alpha)), ToPixelBounds(area, margin: 1));
+            var bounds = ToPixelBounds(area, margin: 1);
+            PaintElement(canvas, _state.FillAlpha, element =>
+            {
+                var alpha = ElementAlpha(_state.FillAlpha);
+                var blend = _state.BlendMode;
+                PaintWithState(element, target => DrawBlended(target, blend, c => c.DrawImage(image.Frames[0], origin, alpha)), bounds);
+            });
         }
     }
 
@@ -169,7 +250,15 @@ internal sealed partial class ContentRenderer
         if (GetImageBounds(transform, image.Width, image.Height) is not { } bounds)
             return;
 
+        if (IsKnockoutContext && _element is null)
+        {
+            // In a knockout group, the image is an element of the group, of the pixels it covers
+            canvas.Clip(bounds, target => PaintElement(target, _state.FillAlpha, element => DrawDecodedImage(element, image)));
+            return;
+        }
+
         _cache.Charge(((long)image.Width * image.Height / 1024) + 1);
+
         var sampling = image.Interpolate || IsDownscaled(transform) ? ImageSampling.Bilinear : ImageSampling.Nearest;
         if (image.IsStencil)
         {
@@ -192,7 +281,7 @@ internal sealed partial class ContentRenderer
             return;
         }
 
-        var alpha = _state.FillAlpha;
+        var alpha = ElementAlpha(_state.FillAlpha);
         var blend = _state.BlendMode;
         var source = image.Image.Frames[0];
         PaintWithState(canvas, target => DrawBlended(target, blend, c => c.DrawImage(source, transform, sampling, alpha)), bounds);

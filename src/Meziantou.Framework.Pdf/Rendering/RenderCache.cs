@@ -19,6 +19,7 @@ internal sealed class RenderCache(PdfRenderOptions options) : IDisposable
     private readonly Dictionary<PdfObject, RenderFunction> _functions = new(ReferenceEqualityComparer.Instance);
     private readonly Dictionary<PdfObject, object?> _objects = new(ReferenceEqualityComparer.Instance);
     private readonly Dictionary<PdfObject, Rgba32[]> _shadingColors = new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<PdfDictionary, bool> _blendModes = new(ReferenceEqualityComparer.Instance);
     private readonly List<IDisposable> _disposables = [];
     private long _operations;
 
@@ -79,6 +80,61 @@ internal sealed class RenderCache(PdfRenderOptions options) : IDisposable
         }
 
         _objects[key] = result;
+        return result;
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether the graphics states of resources, or of the forms they paint, set a blend mode
+    /// other than Normal: an isolated group without them composites as its content does (11.4.8).
+    /// </summary>
+    public bool UsesBlendModes(PdfDictionary? resources) => UsesBlendModes(resources, depth: 0);
+
+    private bool UsesBlendModes(PdfDictionary? resources, int depth)
+    {
+        if (resources is null)
+            return false;
+
+        if (_blendModes.TryGetValue(resources, out var value))
+            return value;
+
+        // Assumed while the resources are visited, so that a cycle of forms ends
+        _blendModes[resources] = depth > 8;
+        if (depth > 8)
+            return true;
+
+        var result = false;
+        if (resources.Get<PdfDictionary>(PdfNames.ExtGState) is { } states)
+        {
+            foreach (var (_, state) in states)
+            {
+                if (PdfReference.ResolveIfReference(state) is PdfDictionary dictionary && dictionary.GetResolved(PdfName.Create("BM")) switch
+                {
+                    null => false,
+                    PdfName { Value: "Normal" or "Compatible" } => false,
+                    PdfArray { Count: > 0 } modes => modes.GetResolved(0) is not PdfName { Value: "Normal" or "Compatible" },
+                    _ => true,
+                })
+                {
+                    result = true;
+                    break;
+                }
+            }
+        }
+
+        if (!result && resources.Get<PdfDictionary>(PdfNames.XObject) is { } xobjects)
+        {
+            foreach (var (_, xobject) in xobjects)
+            {
+                if (PdfReference.ResolveIfReference(xobject) is PdfStream { } form && form.Dictionary.GetName(PdfNames.Subtype) == PdfNames.Form
+                    && UsesBlendModes(form.Dictionary.Get<PdfDictionary>(PdfNames.Resources), depth + 1))
+                {
+                    result = true;
+                    break;
+                }
+            }
+        }
+
+        _blendModes[resources] = result;
         return result;
     }
 

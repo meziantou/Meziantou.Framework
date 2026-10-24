@@ -185,6 +185,11 @@ internal static class InteropDocuments
         ("meshes", [(20, 20, 255, 0, 0, 12), (150, 50, 0, 255, 0, 12), (50, 150, 0, 0, 255, 12), (150, 150, 255, 255, 0, 12)]),
         ("function-based", [(190, 10, 242, 0, 13, 30), (10, 190, 13, 0, 242, 30)]),
         ("sampled", [(10, 100, 242, 13, 0, 30), (190, 100, 13, 242, 0, 30)]),
+        ("non-isolated-group", [(100, 100, 128, 0, 0, 12)]),
+        ("knockout-group", [(40, 100, 255, 128, 128, 12), (100, 100, 128, 128, 255, 12), (160, 100, 128, 128, 255, 12)]),
+        ("non-isolated-knockout-group", [(40, 100, 255, 128, 0, 12), (100, 100, 128, 128, 128, 12)]),
+        ("knockout-fill-and-stroke", [(45, 100, 128, 64, 191, 12), (100, 100, 255, 128, 128, 12)]),
+        ("soft-mask-multiply", [(50, 100, 0, 255, 0, 12), (150, 100, 255, 255, 0, 12)]),
     ];
 
     private static void CreateAdvancedGraphics(PdfDocument document)
@@ -257,6 +262,48 @@ internal static class InteropDocuments
                         var group = document.CreateForm(new PdfRectangle(0, 0, 200, 200), group: new PdfTransparencyGroup { Isolated = true });
                         group.CreateContentBuilder().SetFillGray(0).Rectangle(40, 40, 80, 120).Fill().Rectangle(80, 40, 80, 120).Fill();
                         builder.SetGraphicsState(new PdfExtGState { FillAlpha = 0.5 }).DrawForm(group);
+                        break;
+                    }
+
+                case "non-isolated-group":
+                    {
+                        // On red, green multiplied by the backdrop in a non-isolated group drawn at 0.5: half black over red
+                        var group = document.CreateForm(new PdfRectangle(0, 0, 200, 200), group: new PdfTransparencyGroup());
+                        group.CreateContentBuilder().SetGraphicsState(new PdfExtGState { BlendMode = PdfBlendMode.Multiply }).SetFillRgb(0, 1, 0).Rectangle(0, 0, 200, 200).Fill();
+                        builder.SetFillRgb(1, 0, 0).Rectangle(0, 0, 200, 200).Fill().SetGraphicsState(new PdfExtGState { FillAlpha = 0.5 }).DrawForm(group);
+                        break;
+                    }
+
+                case "knockout-group" or "non-isolated-knockout-group":
+                    {
+                        // Red then blue at 0.5 in a knockout group: blue replaces red where they overlap
+                        var isolated = name == "knockout-group";
+                        var group = document.CreateForm(new PdfRectangle(0, 0, 200, 200), group: new PdfTransparencyGroup { Isolated = isolated, Knockout = true });
+                        group.CreateContentBuilder().SetGraphicsState(new PdfExtGState { FillAlpha = 0.5 })
+                            .SetFillRgb(1, 0, 0).Rectangle(0, 0, 120, 200).Fill()
+                            .SetFillRgb(0, 0, 1).Rectangle(80, 0, 120, 200).Fill();
+                        builder.SetFillColor(isolated ? PdfColor.White : yellow).Rectangle(0, 0, 200, 200).Fill().DrawForm(group);
+                        break;
+                    }
+
+                case "knockout-fill-and-stroke":
+                    {
+                        // The stroke of a path composites over its fill in a knockout group
+                        var group = document.CreateForm(new PdfRectangle(0, 0, 200, 200), group: new PdfTransparencyGroup { Isolated = true, Knockout = true });
+                        group.CreateContentBuilder().SetGraphicsState(new PdfExtGState { FillAlpha = 0.5, StrokeAlpha = 0.5 })
+                            .SetFillRgb(1, 0, 0).SetStrokeRgb(0, 0, 1).SetLineWidth(20).Rectangle(40, 40, 120, 120).FillAndStroke();
+                        builder.DrawForm(group);
+                        break;
+                    }
+
+                case "soft-mask-multiply":
+                    {
+                        // Cyan multiplied by yellow, through a mask of the left half: the blend mode sees the backdrop
+                        var mask = document.CreateForm(new PdfRectangle(0, 0, 200, 200), group: new PdfTransparencyGroup { ColorSpace = PdfDeviceColorSpace.Gray });
+                        mask.CreateContentBuilder().SetFillGray(1).Rectangle(0, 0, 100, 200).Fill();
+                        builder.SetFillRgb(1, 1, 0).Rectangle(0, 0, 200, 200).Fill()
+                            .SetGraphicsState(new PdfExtGState { BlendMode = PdfBlendMode.Multiply, SoftMask = PdfSoftMask.FromLuminosity(mask) })
+                            .SetFillRgb(0, 1, 1).Rectangle(0, 0, 200, 200).Fill();
                         break;
                     }
 

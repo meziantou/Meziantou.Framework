@@ -36,6 +36,13 @@ internal sealed partial class ContentRenderer
         if (ToPixelBounds(deviceBounds, margin + 1) is not { } bounds)
             return;
 
+        // In a knockout group, the painting is an element of the group, of the pixels it can change
+        if (IsKnockoutContext && _element is null)
+        {
+            canvas.Clip(bounds, target => PaintElement(target, stroke ? _state.StrokeAlpha : _state.FillAlpha, element => Paint(element, stroke, draw, deviceBounds, margin)));
+            return;
+        }
+
         var mark = _brushImages.Count;
         try
         {
@@ -97,11 +104,22 @@ internal sealed partial class ContentRenderer
             masked = target => target.Filter(filter, filtered => draw(filtered));
         }
 
+        // The soft mask of an element of a knockout group is the opacity of the element
         var transferred = masked;
-        if (softMask is { } mask && _depth < MaxDepth)
+        if (softMask is { } mask && _depth < MaxDepth && _element is null)
         {
             var isLuminosity = mask.Mask.GetName(PdfNames.S)?.Value != "Alpha";
-            masked = target => target.Mask(maskCanvas => RenderSoftMask(maskCanvas, mask.Mask, mask.Matrix, isLuminosity), content => transferred(content), isLuminosity ? MaskMode.Luminance : MaskMode.Alpha);
+            var maskMode = isLuminosity ? MaskMode.Luminance : MaskMode.Alpha;
+            if (_state.BlendMode == BlendMode.Normal)
+            {
+                masked = target => target.Mask(maskCanvas => RenderSoftMask(maskCanvas, mask.Mask, mask.Matrix, isLuminosity), content => transferred(content), maskMode);
+            }
+            else
+            {
+                // The drawing blends with what is under it, then the mask is applied: a non-isolated group of the drawing,
+                // whose mask multiplies its alpha (11.6.4.3), mixes with the backdrop where a mask layer would not
+                masked = target => target.Group(new GroupOptions { IsIsolated = false, MaskMode = maskMode }, content => transferred(content), maskCanvas => RenderSoftMask(maskCanvas, mask.Mask, mask.Matrix, isLuminosity));
+            }
         }
 
         ApplyClip(canvas, _state.Clip, masked);
@@ -121,7 +139,7 @@ internal sealed partial class ContentRenderer
     /// <summary>Creates the brush of the fill or stroke color; <see langword="null"/> when nothing is painted.</summary>
     private Brush? CreateBrush(bool stroke, RectangleD? deviceBounds)
     {
-        var alpha = stroke ? _state.StrokeAlpha : _state.FillAlpha;
+        var alpha = ElementAlpha(stroke ? _state.StrokeAlpha : _state.FillAlpha);
         var blend = _state.BlendMode;
         if (ForcedColor is { } forced)
             return new SolidBrush(ToRgba64(forced)) { Opacity = alpha, BlendMode = blend };
@@ -337,6 +355,18 @@ internal sealed partial class ContentRenderer
 
         var formMatrix = ReadMatrix(group.Dictionary.Get<PdfArray>(PdfNames.Matrix));
         PdfRectangle.TryRead(group.Dictionary.Get<PdfArray>(PdfNames.BBox), out var bbox);
+
+        // The group of the mask composites with the backdrop of the mask: an isolated group starts transparent, and a
+        // knockout group knocks out its elements (11.4.8)
+        var attributes = group.Dictionary.Get<PdfDictionary>(PdfNames.Group);
+        var isIsolated = attributes?.Get<PdfBoolean>(PdfNames.I)?.Value is true;
+        var isKnockout = attributes?.Get<PdfBoolean>(PdfNames.K)?.Value is true;
+        if (isKnockout || (isIsolated && _cache.UsesBlendModes(group.Dictionary.Get<PdfDictionary>(PdfNames.Resources))))
+        {
+            canvas.Group(new GroupOptions { IsIsolated = isIsolated, IsKnockout = isKnockout }, content => RenderForm(content, group, matrix, bbox, forcedColor: null, formMatrix * matrix, DeviceSize, applyFormMatrix: true, isKnockout));
+            return;
+        }
+
         RenderForm(canvas, group, matrix, bbox, forcedColor: null, formMatrix * matrix, DeviceSize, applyFormMatrix: true);
     }
 
@@ -344,7 +374,7 @@ internal sealed partial class ContentRenderer
     /// Renders a form or a pattern cell with a new graphics state: the matrix (with the <c>/Matrix</c> of a form, which
     /// is the pattern matrix of a cell), the bounding box as clipping path.
     /// </summary>
-    private void RenderForm(DrawingCanvas canvas, PdfStream form, PdfMatrix matrix, PdfRectangle bbox, RgbColor? forcedColor, PdfMatrix baseMatrix, (int Width, int Height) deviceSize, bool applyFormMatrix)
+    private void RenderForm(DrawingCanvas canvas, PdfStream form, PdfMatrix matrix, PdfRectangle bbox, RgbColor? forcedColor, PdfMatrix baseMatrix, (int Width, int Height) deviceSize, bool applyFormMatrix, bool isKnockout = false)
     {
         var formMatrix = applyFormMatrix ? ReadMatrix(form.Dictionary.Get<PdfArray>(PdfNames.Matrix)) : PdfMatrix.Identity;
         var state = new RenderGraphicsState { Ctm = formMatrix * matrix };
@@ -353,6 +383,7 @@ internal sealed partial class ContentRenderer
             ForcedColor = forcedColor,
             BaseMatrix = baseMatrix,
             DeviceSize = deviceSize,
+            IsKnockoutContext = isKnockout,
         };
         renderer.ClipToRectangle(bbox);
         renderer.Run(canvas, form.GetDecodedData(), form.Dictionary.Get<PdfDictionary>(PdfNames.Resources));

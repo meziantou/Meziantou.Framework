@@ -357,8 +357,12 @@ The image is the crop box of the page, rotated as the page is shown, on a white 
   masks and soft masks, inline images
 - **Shadings and patterns**: functions (sampled, exponential, stitching, PostScript calculator), the seven shading
   types, shading patterns and colored and uncolored tiling patterns
-- **Transparency**: constant alpha, the blend modes, transparency groups (drawn as isolated, non-knockout groups), soft
-  masks (alpha and luminosity, with their backdrop and transfer function), the transfer functions of the graphics state
+- **Transparency**: constant alpha, the blend modes, transparency groups (isolated or not, knockout or not, the soft
+  masks and the page group included), soft masks (alpha and luminosity, with their backdrop and transfer function), the
+  transfer functions of the graphics state. In a knockout group, each painting operator, image, shading, text-showing
+  operator and group is an element; the fill and the stroke of a path are one element, whose stroke composites over its
+  fill, and the alpha of a paint of an element counts as its shape. A transfer function applies to the result of a
+  group
 
 ### Fonts that are not embedded
 

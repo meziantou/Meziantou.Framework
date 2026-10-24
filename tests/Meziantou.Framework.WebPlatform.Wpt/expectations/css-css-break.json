@@ -3363,7 +3363,7 @@
     "reftest": "PASS"
   },
   "css/css-break/transform-009.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/transform-010.html": {
     "total": 1

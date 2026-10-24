@@ -533,9 +533,10 @@ internal sealed class FragmentSlicer
         for (var index = firstIndex; index <= lastIndex; index++)
         {
             // The extent of the fragment in the fragmentainer: a fragment broken at the end of a fragmentainer extends to its end
-            // (the fragments before the start of the box and after its end are empty, at the start of their fragmentainer: as in
-            // Blink, the transform origin of the empty fragment of a box before its start is there)
-            var sliceTop = index == first ? topOffset : index < first ? 0 : openOffsets[index] + (startShifts?[index] ?? 0);
+            // (the fragments before the start of the box and after its end are empty: https://drafts.csswg.org/css-break-3/#transforms,
+            // the origin of an overflow-only fragment is the one of a zero-height box at the start of the overflow; a fragment
+            // after the end of the box is at the start of the fragmentainer)
+            var sliceTop = index == first ? topOffset : index < first ? GetOverflowStart(index) : openOffsets[index] + (startShifts?[index] ?? 0);
             var sliceBottom = index > borderBoxLast || index < first ? sliceTop
                 : index == borderBoxLast ? Math.Max(sliceTop, endIndex == index ? endOffset : map.GetOffsetIn(index, bottom))
                 : Math.Max(sliceTop, closeOffsets?[index] ?? GetBreakEnd(map, index));
@@ -742,6 +743,21 @@ internal sealed class FragmentSlicer
 
         Stitch(box, result, clone);
         return new Slices(firstIndex, result) { BoxEnd = borderBoxLast, InlineShifts = inlineShifts };
+
+        // The block-start edge of the descendants placed in a fragmentainer before the first one of the box (in its empty fragment there)
+        double GetOverflowStart(int index)
+        {
+            var start = _fragmentainers[index].BlockSize;
+            if (childSlices.TryGetValue(index, out var placed))
+            {
+                foreach (var (_, _, childOffset, _) in placed)
+                {
+                    start = Math.Min(start, childOffset);
+                }
+            }
+
+            return start;
+        }
     }
 
     /// <summary>

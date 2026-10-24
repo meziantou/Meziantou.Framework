@@ -50,8 +50,9 @@ the XML documentation and `readme.md` consistent in the same change.
 - Public namespaces: `Meziantou.Framework.Pdf` (document API) and `Meziantou.Framework.Pdf.Objects` (object model).
   Implementation types are `internal`, in sub-namespaces by folder (`Parsing`, `Writing`, `Filters`, `Fonts`, `Text`,
   `Content`, `Metadata`). Every public member is documented (`DisableDocumentationWarnings` is `false`).
-- The vendored data (`Fonts/Afm`, `Fonts/GlyphList`) is embedded as resources and listed in `THIRD-PARTY-NOTICES.md`.
-  Do not modify it.
+- The vendored data (`Fonts/GlyphList`) is embedded as resources and listed in `THIRD-PARTY-NOTICES.md`.
+  Do not modify it. The metrics of the standard 14 fonts come from `AfmFontMetrics.GetStandardFont` of
+  Meziantou.Framework.Fonts, which embeds the Adobe AFM files: do not add another copy.
 
 ## Behavior rules
 

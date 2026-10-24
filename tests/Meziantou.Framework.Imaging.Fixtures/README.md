@@ -33,7 +33,7 @@ tests/Meziantou.Framework.Imaging.Fixtures/
   fonts/<family>/   fonts/vectors/    font files and the values independent font readers give for them (see Fonts)
   fonts/shaping/                      glyphs and positions the reference shaper gives for texts set in the fonts
   font-suites/<suite>/                third-party suites of test fonts and expectations, stored as published
-  LICENSES/                           full texts of the licenses of third-party files (OFL-1.1, Apache-2.0, Unicode-3.0, APAFML)
+  LICENSES/                           full texts of the licenses of third-party files (OFL-1.1, Apache-2.0, Unicode-3.0)
 ```
 
 - Fixture ids are lowercase paths without extension (`png/gray16-low-bit-gradient`); `format` is the container
@@ -339,9 +339,8 @@ path, a line feed, the SHA-256 of its content, a line feed).
 | Suite | License | Content |
 | --- | --- | --- |
 | `font-suites/aots` | Apache-2.0 | The Annotated OpenType Specification tests of Adobe, as the HarfBuzz project distributes them (`test/shape/data/aots` at the commit the manifest records): 205 fonts that each exercise one format of the `cmap`, class definition, coverage, `GSUB` or `GPOS` tables, and 128 files of tests (a font, the options of `hb-shape`, characters, the expected glyphs and positions). `ShapingSuiteTests` runs every test that is not commented out; the commented ones are the cases HarfBuzz itself does not pass |
-| `font-suites/adobe-core14-afm` | APAFML | The Adobe Font Metrics files of the 14 standard fonts of PDF (Courier, Helvetica and Times in four styles, Symbol, ZapfDingbats) as Adobe published them in `Core14_AFMs.zip`, with CRLF line endings, and the `MustRead.html` notice their license requires next to them. `FontTests` reads them with `AfmFontMetrics`, and `FontFuzzTests` mutates them |
 
-The generator copies a suite from a directory of the fonts directory (`aots`, `core14-afm`) and refuses a content whose
+The generator copies a suite from a directory of the fonts directory (`aots`) and refuses a content whose
 hash is not the pinned one. The tools HarfBuzz keeps next to the suite (its test driver and build files) are not copied.
 
 ## Color management
@@ -2629,9 +2628,8 @@ tool version to see what changes; the interop CI job runs it on every build to d
   woff2 tools of the pinned meziantou/prebuilt release) writes the `fonts` section and the `fonts/` directory, and
   keeps the rest of the corpus unchanged. It needs the third-party font files listed in `FontCorpus.cs`, downloaded
   from their pinned sources into one directory given by `--fonts <directory>`; each file is checked against its pinned
-  SHA-256 before it is used. The same directory holds the font suites: `aots` is `test/shape/data/aots` of a checkout of
-  HarfBuzz at the commit pinned in the generator, and `core14-afm` the content of the `Core14_AFMs.zip` archive the
-  generator pins. The generator also records the shaping vectors. The WOFF files are compressed by the zlib of the runtime that runs the generator, which
+  SHA-256 before it is used. The same directory holds the font suite `aots`: `test/shape/data/aots` of a checkout of
+  HarfBuzz at the commit pinned in the generator. The generator also records the shaping vectors. The WOFF files are compressed by the zlib of the runtime that runs the generator, which
   the manifest records: they are reproducible with that runtime.
 
   ```shell
@@ -2694,7 +2692,7 @@ undiscriminating tolerances and error fixtures with expected pixels fail the bui
 
 ### Allowed fixture licenses
 
-`CC0-1.0`, `MIT`, `Unlicense`, `CC-BY-4.0`, `Libpng`, `Zlib`, `Apache-2.0`, `Unicode-3.0`, `APAFML`, and `OFL-1.1` for font
+`CC0-1.0`, `MIT`, `Unlicense`, `CC-BY-4.0`, `Libpng`, `Zlib`, `Apache-2.0`, `Unicode-3.0`, and `OFL-1.1` for font
 files only.
 
 The SIL Open Font License is accepted for the entries of the `fonts` section and for nothing else, because open fonts
@@ -2708,8 +2706,8 @@ it can check:
 - A third-party font always names its source, with the commit or the version it was taken from.
 
 `Apache-2.0` and `Unicode-3.0` are the licenses of the test suites and test fonts published for font implementations;
-their texts are in `LICENSES/`. `APAFML` is the license of the AFM files of the 14 standard fonts of Adobe: they are
-stored unmodified, with the `MustRead.html` file the license requires them to be distributed with.
+their texts are in `LICENSES/`. The AFM files of the 14 standard fonts of Adobe are not fixtures: Meziantou.Framework.Fonts
+embeds them (`src/Meziantou.Framework.Fonts/Afm/StandardFonts`), and the tests read them with `AfmFontMetrics`.
 
 Content created by contributors for this repository (hand-authored patterns, outputs of committed generators, and files
 produced by running third-party tools on such content) is contributed under `CC0-1.0` unless stated otherwise. Tool

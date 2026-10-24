@@ -19,8 +19,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The metrics of the standard 14 fonts (Adobe Core14 AFM files, see Fonts/Afm/MustRead.html) -->
-    <EmbeddedResource Include="Fonts\Afm\*.afm" LogicalName="Meziantou.Framework.Pdf.Afm.%(Filename).afm" />
     <!-- The Adobe Glyph List and the list of ITC Zapf Dingbats (BSD-3-Clause, see Fonts/GlyphList/LICENSE.md) -->
     <EmbeddedResource Include="Fonts\GlyphList\*.txt" LogicalName="Meziantou.Framework.Pdf.GlyphList.%(Filename).txt" />
   </ItemGroup>

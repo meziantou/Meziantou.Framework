@@ -143,8 +143,8 @@ public sealed class FontFuzzTests
     {
         // The AFM files of the 14 standard fonts, mutated byte by byte or line by line (lines removed, repeated, moved,
         // cut, and values replaced by edge cases), so that the mutations reach the sections and the values.
-        var root = FixtureRoot.GetDirectory() / "font-suites" / "adobe-core14-afm";
-        var seeds = Directory.EnumerateFiles(root, "*.afm").Order(StringComparer.Ordinal).Select(file => new FuzzSeed("font-suites/adobe-core14-afm/" + Path.GetFileName(file), File.ReadAllBytes(file))).ToList();
+        // The AFM files of the 14 standard fonts that Meziantou.Framework.Fonts embeds
+        var seeds = AfmFontMetrics.StandardFontNames.Select(name => new FuzzSeed("standard-fonts/" + name + ".afm", ReadStandardFontFile(name + ".afm"))).ToList();
         Assert.HasCount(14, seeds);
         var spliceSources = seeds.Select(seed => seed.Data).ToList();
         var random = new FuzzRandom(FuzzSettings.Seed ^ FuzzSeeds.GetGroupSalt("afm"));
@@ -209,6 +209,14 @@ public sealed class FontFuzzTests
     ];
 
     // Mutates the lines of an AFM file, which the byte mutations rarely keep readable up to the values.
+    private static byte[] ReadStandardFontFile(string fileName)
+    {
+        using var stream = AfmFontMetrics.OpenStandardFontFile(fileName)!;
+        using var memory = new MemoryStream();
+        stream.CopyTo(memory);
+        return memory.ToArray();
+    }
+
     private static byte[] MutateAfmLines(FuzzRandom random, byte[] data)
     {
         var lines = Encoding.Latin1.GetString(data).Split("\r\n").ToList();

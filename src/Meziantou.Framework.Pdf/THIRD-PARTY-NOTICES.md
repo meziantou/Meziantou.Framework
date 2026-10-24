@@ -5,24 +5,6 @@ authors made it available are reproduced below.
 
 ---
 
-## Adobe Core14 AFM files
-
-- Project: the font metrics of the standard 14 fonts, Adobe Systems
-- Source: copied from Apache PDFBox (`pdfbox/src/main/resources/org/apache/pdfbox/resources/afm`, commit
-  99c16b1752d0b24e2c26788ff68686211b0bcef0), which distributes the files of Adobe unchanged
-- Files: `Fonts/Afm/*.afm` and `Fonts/Afm/MustRead.html`, embedded in the assembly
-- Used for: the widths, the kerning and the encodings of the standard 14 fonts
-
-```
-This file and the 14 PostScript(R) AFM files it accompanies may be used, copied, and distributed for any purpose and
-without charge, with or without modification, provided that all copyright notices are retained; that the AFM files
-are not distributed without this file; that all modifications to this file or any of the AFM files are prominently
-noted in the modified file(s); and that this paragraph is not modified. Adobe Systems has no responsibility or
-obligation to support the use of the AFM files.
-```
-
----
-
 ## Adobe Glyph List
 
 - Project: AGL & AGLFN, Adobe Type Tools

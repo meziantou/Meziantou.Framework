@@ -1,3 +1,4 @@
+using Meziantou.Framework.Fonts;
 using Meziantou.Framework.Pdf.Fonts;
 using Meziantou.Framework.Pdf.Objects;
 
@@ -96,9 +97,9 @@ internal sealed class SimpleFontDecoder : PdfFontDecoder
             {
                 width = value.DoubleValue;
             }
-            else if (metrics is not null && _glyphNames[code] is { } glyphName && metrics.Glyphs.TryGetValue(glyphName, out var glyph))
+            else if (metrics is not null && _glyphNames[code] is { } glyphName && StandardFontMetrics.GetWidth(metrics, glyphName) is { } standardWidth)
             {
-                width = glyph.Width;
+                width = standardWidth;
             }
             else
             {

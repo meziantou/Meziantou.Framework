@@ -1,13 +1,27 @@
-using System.Collections.Concurrent;
+using Meziantou.Framework.Fonts;
 
 namespace Meziantou.Framework.Pdf.Fonts;
 
-/// <summary>The metrics of the standard 14 fonts (ISO 32000-2, 9.6.2.2), read once from the vendored Adobe Core14 AFM files.</summary>
+/// <summary>The metrics of the standard 14 fonts (ISO 32000-2, 9.6.2.2): the Adobe Core14 AFM files of Meziantou.Framework.Fonts.</summary>
 internal static class StandardFontMetrics
 {
-    private static readonly ConcurrentDictionary<string, AfmFontMetrics> Cache = new(StringComparer.Ordinal);
+    /// <summary>Gets the metrics of a standard font from its name (a name <see cref="GetStandardName"/> returns).</summary>
+    public static AfmFontMetrics Get(string fontName) => AfmFontMetrics.GetStandardFont(fontName) ?? throw new ArgumentException("'" + fontName + "' is not the name of a standard font", nameof(fontName));
 
-    public static AfmFontMetrics Get(string fontName) => Cache.GetOrAdd(fontName, AfmFontMetrics.Load);
+    /// <summary>Gets the advance width of a glyph of a standard font in 1/1000 em, or <see langword="null"/> when the font has no such glyph.</summary>
+    public static double? GetWidth(AfmFontMetrics metrics, string glyphName) => metrics.GetCharacter(glyphName)?.Width?.X;
+
+    /// <summary>Gets the height of the flat capital letters, in 1/1000 em: the top of the font box when the file does not give it.</summary>
+    public static double GetCapHeight(AfmFontMetrics metrics) => metrics.CapHeight ?? metrics.FontBBox?.Top ?? 0;
+
+    /// <summary>Gets the ascender, in 1/1000 em: the top of the font box when the file does not give it (Symbol, ZapfDingbats).</summary>
+    public static double GetAscender(AfmFontMetrics metrics) => metrics.Ascender ?? metrics.FontBBox?.Top ?? 0;
+
+    /// <summary>Gets the descender, in 1/1000 em: the bottom of the font box when the file does not give it (Symbol, ZapfDingbats).</summary>
+    public static double GetDescender(AfmFontMetrics metrics) => metrics.Descender ?? metrics.FontBBox?.Bottom ?? 0;
+
+    /// <summary>Gets a value indicating whether a font has its own encoding (<c>FontSpecific</c>: Symbol and ZapfDingbats).</summary>
+    public static bool IsFontSpecific(AfmFontMetrics metrics) => string.Equals(metrics.EncodingScheme, "FontSpecific", StringComparison.Ordinal);
 
     /// <summary>Gets the name of the standard font a <c>/BaseFont</c> designates, with the alternative names readers accept (Arial, TimesNewRoman, ...).</summary>
     public static string? GetStandardName(string baseFont)

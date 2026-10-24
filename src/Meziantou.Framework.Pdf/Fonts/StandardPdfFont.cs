@@ -1,4 +1,5 @@
 using System.Globalization;
+using Meziantou.Framework.Fonts;
 using Meziantou.Framework.Pdf.Objects;
 
 namespace Meziantou.Framework.Pdf.Fonts;
@@ -21,14 +22,14 @@ internal sealed class StandardPdfFont : PdfFont
 
     public override string PostScriptName { get; }
 
-    public override double Ascent => _metrics.Value.Ascender;
+    public override double Ascent => StandardFontMetrics.GetAscender(_metrics.Value);
 
-    public override double Descent => _metrics.Value.Descender;
+    public override double Descent => StandardFontMetrics.GetDescender(_metrics.Value);
 
-    public override double CapHeight => _metrics.Value.CapHeight;
+    public override double CapHeight => StandardFontMetrics.GetCapHeight(_metrics.Value);
 
     /// <summary>Gets a value indicating whether the font uses its built-in encoding (Symbol, ZapfDingbats).</summary>
-    public bool IsSymbolic => _metrics.Value.IsFontSpecific;
+    public bool IsSymbolic => StandardFontMetrics.IsFontSpecific(_metrics.Value);
 
     public override bool CanEncode(string text)
     {
@@ -94,17 +95,17 @@ internal sealed class StandardPdfFont : PdfFont
     private (Dictionary<int, byte> Codes, double[] Widths) CreateEncoding()
     {
         var metrics = _metrics.Value;
-        var names = metrics.IsFontSpecific ? (PostScriptName == "Symbol" ? FontEncodings.Symbol : FontEncodings.ZapfDingbats) : FontEncodings.WinAnsi;
+        var names = IsSymbolic ? (PostScriptName == "Symbol" ? FontEncodings.Symbol : FontEncodings.ZapfDingbats) : FontEncodings.WinAnsi;
         var isZapfDingbats = PostScriptName == "ZapfDingbats";
         var codes = new Dictionary<int, byte>();
         var widths = new double[256];
         for (var code = 0; code < 256; code++)
         {
             var name = names[code];
-            if (name is null || !metrics.Glyphs.TryGetValue(name, out var glyph))
+            if (name is null || StandardFontMetrics.GetWidth(metrics, name) is not { } width)
                 continue;
 
-            widths[code] = glyph.Width;
+            widths[code] = width;
             var text = GlyphList.ToUnicode(name, isZapfDingbats);
             if (text is not null && text.EnumerateRunes().Count() == 1)
             {
@@ -112,7 +113,7 @@ internal sealed class StandardPdfFont : PdfFont
             }
         }
 
-        if (!metrics.IsFontSpecific)
+        if (!IsSymbolic)
         {
             // The codes that name the same glyphs as other codes (Annex D): a no-break space and a soft hyphen
             codes.TryAdd(0xA0, 0xA0);

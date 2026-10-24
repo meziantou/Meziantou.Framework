@@ -85,6 +85,7 @@ namespace Meziantou.Framework.Fonts
         public int? MappingScheme { get => throw null; }
         public int MetricsSets { get => throw null; }
         public string? Notice { get => throw null; }
+        public static System.Collections.Generic.IReadOnlyList<string> StandardFontNames { get => throw null; }
         public double? StdHW { get => throw null; }
         public double? StdVW { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Fonts.AfmTrackKerning> TrackKerning { get => throw null; }
@@ -98,6 +99,7 @@ namespace Meziantou.Framework.Fonts
         public Meziantou.Framework.Fonts.AfmCharacterMetrics? GetCharacterByCode(int code) => throw null;
         public Meziantou.Framework.Fonts.AfmVector GetKerning(int firstCode, int secondCode) => throw null;
         public Meziantou.Framework.Fonts.AfmVector GetKerning(string first, string second) => throw null;
+        public static Meziantou.Framework.Fonts.AfmFontMetrics? GetStandardFont(string fontName) => throw null;
         public double GetTrackKerning(int degree, double pointSize) => throw null;
         public Meziantou.Framework.Fonts.AfmVector GetVerticalKerning(int firstCode, int secondCode) => throw null;
         public Meziantou.Framework.Fonts.AfmVector GetVerticalKerning(string first, string second) => throw null;

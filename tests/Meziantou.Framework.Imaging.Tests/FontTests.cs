@@ -2887,23 +2887,29 @@ public sealed class FontTests
     [Fact]
     public void TheAfmFilesOfTheStandardFontsAreRead()
     {
-        var directory = FixtureRoot.GetDirectory() / "font-suites" / "adobe-core14-afm";
-        var files = Directory.EnumerateFiles(directory, "*.afm").Order(StringComparer.Ordinal).ToList();
-        Assert.HasCount(14, files);
+        // The embedded files are the files of Core14_AFMs.zip, unmodified, with the notice their license requires
+        Assert.HasCount(14, AfmFontMetrics.StandardFontNames);
+        using (var notice = AfmFontMetrics.OpenStandardFontFile("MustRead.html"))
+        {
+            Assert.NotNull(notice);
+        }
 
         var fonts = new Dictionary<string, AfmFontMetrics>(StringComparer.Ordinal);
-        foreach (var file in files)
+        foreach (var name in AfmFontMetrics.StandardFontNames)
         {
-            var text = File.ReadAllText(file, Encoding.Latin1);
-            AfmFontMetrics metrics;
-            using (var stream = File.OpenRead(file))
+            string text;
+            using (var stream = AfmFontMetrics.OpenStandardFontFile(name + ".afm")!)
+            using (var reader = new StreamReader(stream, Encoding.Latin1))
             {
-                metrics = AfmFontMetrics.Load(stream);
+                text = reader.ReadToEnd();
             }
 
-            fonts.Add(Path.GetFileNameWithoutExtension(file), metrics);
+            var metrics = AfmFontMetrics.GetStandardFont(name)!;
+            fonts.Add(name, metrics);
+            Assert.Same(metrics, AfmFontMetrics.GetStandardFont(name));
+            Assert.Contains("\r\n", text, StringComparison.Ordinal);
             Assert.Equal("4.1", metrics.FormatVersion);
-            Assert.Equal(Path.GetFileNameWithoutExtension(file), metrics.FontName);
+            Assert.Equal(name, metrics.FontName);
             Assert.NotNull(metrics.FontBBox);
             Assert.NotNull(metrics.Horizontal);
             Assert.Null(metrics.Vertical);
@@ -2956,6 +2962,8 @@ public sealed class FontTests
         Assert.Equal("alpha", fonts["Symbol"].GetCharacterByCode(97)?.Name);
         Assert.Equal(new AfmVector(631, 0), fonts["Symbol"].GetWidth("alpha"));
         Assert.HasCount(202, fonts["ZapfDingbats"].CharacterMetrics);
+        Assert.Null(AfmFontMetrics.GetStandardFont("Arial"));
+        Assert.Null(AfmFontMetrics.GetStandardFont("helvetica"));
 
         static int GetAnnouncedCount(string text, string key)
         {

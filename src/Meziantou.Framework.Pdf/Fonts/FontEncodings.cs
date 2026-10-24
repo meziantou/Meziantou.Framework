@@ -90,11 +90,11 @@ internal static class FontEncodings
     private static string?[] FromAfm(string fontName)
     {
         var names = new string?[256];
-        foreach (var glyph in StandardFontMetrics.Get(fontName).Glyphs.Values)
+        foreach (var character in StandardFontMetrics.Get(fontName).CharacterMetrics)
         {
-            if (glyph.Code is >= 0 and < 256)
+            if (character is { Code: >= 0 and < 256, Name: { } name })
             {
-                names[glyph.Code] = glyph.Name;
+                names[character.Code] = name;
             }
         }
 

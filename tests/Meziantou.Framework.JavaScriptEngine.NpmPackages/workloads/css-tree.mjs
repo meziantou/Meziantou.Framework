@@ -1,5 +1,6 @@
 // CSSTree: parsing to an AST, walking, the lexer (validation of values against the CSS grammar) and generation
-import * as csstree from "css-tree";
+// The ES module build of the package: its lib directory imports source-map-js, a CommonJS module
+import * as csstree from "css-tree/dist/csstree.esm";
 
 const css = `
 @import url("theme.css") screen;

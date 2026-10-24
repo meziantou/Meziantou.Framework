@@ -1,5 +1,5 @@
 // Immutable.js: persistent List, Map, OrderedMap, Set, Record, Seq (lazy), deep operations, equality and hashing
-import Immutable from "immutable";
+import * as Immutable from "immutable";
 
 const { List, Map, OrderedMap, Set, Record, Seq, Range, fromJS, is } = Immutable;
 

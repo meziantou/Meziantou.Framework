@@ -1,5 +1,5 @@
-// Lodash: collections, objects, strings, templates (compiled with Function), memoization, deep operations and chaining
-import _ from "lodash";
+// Lodash (lodash-es: one ES module for each function): collections, objects, strings, templates (compiled with Function), memoization, deep operations and chaining
+import _ from "lodash-es";
 
 const users = [
   { user: "barney", age: 36, active: true, tags: ["a", "b"], address: { city: "Paris" } },

@@ -96,7 +96,7 @@ Undefined variable. at 0:12
 ----
 1px and 1s have incompatible units. at 0:12
 ----
-Can't find stylesheet to import. at 0:0
+Custom importers are required to load stylesheets when compiling in the browser. at 0:0
 ----
 warn: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
 ----

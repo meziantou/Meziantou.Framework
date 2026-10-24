@@ -1,6 +1,6 @@
 // graphql-js: SDL parsing, schema building, validation, execution (fragments, variables, directives, interfaces,
 // unions, lists, errors), introspection and printing
-import graphql from "graphql";
+import * as graphql from "graphql";
 
 const { buildSchema, graphqlSync, parse, print, validate, specifiedRules, getIntrospectionQuery, introspectionFromSchema, printSchema, buildClientSchema, visit, Kind } = graphql;
 

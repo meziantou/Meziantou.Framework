@@ -9,7 +9,7 @@ fr 1: Alice a 1 message (0 %), le 15 janvier 2024. Prix : 1,50 €.
 fr 2: Alice a 2 messages (0 %), le 15 janvier 2024. Prix : 3,00 €.
 fr 5: Alice a 5 messages (1 %), le 15 janvier 2024. Prix : 7,50 €.
 fr 21: Alice a 21 messages (2 %), le 15 janvier 2024. Prix : 31,50 €.
-fr 1000: Alice a 1 000 messages (100 %), le 15 janvier 2024. Prix : 1 500,00 €.
+fr 1000: Alice a 1 000 messages (100 %), le 15 janvier 2024. Prix : 1 500,00 €.
 ar 0: لا رسائل
 ar 1: رسالة واحدة
 ar 2: رسالتان

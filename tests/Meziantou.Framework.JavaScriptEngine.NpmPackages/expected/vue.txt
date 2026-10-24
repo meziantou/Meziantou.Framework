@@ -103,4 +103,8 @@ export function ssrRender(_ctx, _push, _parent, _attrs) {
   _push(`<input${_ssrRenderAttr("value", _ctx.query)}></div>`)
 }
 ----
-<section><p>21 x 2 = 42</p><ul><li>a</li><li>&lt;b&gt;</li><li>c</li></ul><em class="x y" style="color:red;">hi<!--[-->slot &lt;content&gt;<!--]--></em></section>
+<section><p data-count="21">21 x 2 = 42</p><input><ul><li>a</li><li>&lt;b&gt;</li><li>c</li></ul><em class="x y" style="color: red;">hi slot &lt;content&gt;</em><!----></section>
+----
+<section><p data-count="22">22 x 2 = 44</p><input><ul><li>d</li></ul><em class="x y" style="color: red;">hi slot &lt;content&gt;</em><p>big</p></section>
+----
+""

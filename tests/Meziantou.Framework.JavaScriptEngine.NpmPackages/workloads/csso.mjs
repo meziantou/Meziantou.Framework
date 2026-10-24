@@ -1,5 +1,6 @@
 // CSSO: structural minification (merging, restructuring, usage data) and its AST
-import { minify, syntax } from "csso";
+// The ES module build of the package: its lib directory imports source-map-js, a CommonJS module
+import { minify, syntax } from "csso/dist/csso.esm";
 
 const css = `
 .header { color: #ff0000; margin: 10px 10px 10px 10px; }

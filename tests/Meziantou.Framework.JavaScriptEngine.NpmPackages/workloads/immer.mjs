@@ -1,6 +1,7 @@
 // Immer: structural sharing with proxies (produce), patches, inverse patches, Map and Set drafts, frozen results,
 // current and original
-import { produce, produceWithPatches, applyPatches, enablePatches, enableMapSet, current, original, freeze, isDraft } from "immer";
+// The production build: the default ES module of Immer reads process.env.NODE_ENV, which a bundler replaces
+import { produce, produceWithPatches, applyPatches, enablePatches, enableMapSet, current, original, freeze, isDraft } from "/node_modules/immer/dist/immer.production.mjs";
 
 enablePatches();
 enableMapSet();

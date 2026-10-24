@@ -2,8 +2,6 @@
 // importers, source maps, the messages of the logger and the errors
 import * as sass from "sass";
 
-// The messages of Sass contain paths relative to Uri.base: the browser build of Dart computes it from self.location
-globalThis.location = { href: "file:///" };
 
 const modules = {
   "theme": `

@@ -1,6 +1,6 @@
-// MobX: observables (proxies), computed values, reactions, autoruns, actions, transactions, observable collections,
+// MobX (its production build: the default ES module reads process.env.NODE_ENV, which a bundler replaces): observables (proxies), computed values, reactions, autoruns, actions, transactions, observable collections,
 // interception and spying
-import { makeAutoObservable, observable, computed, autorun, reaction, when, runInAction, action, configure, toJS, intercept, observe, spy } from "mobx";
+import { makeAutoObservable, observable, computed, autorun, reaction, when, runInAction, action, configure, toJS, intercept, observe, spy } from "/node_modules/mobx/dist/mobx.esm.production.min.js";
 
 configure({ enforceActions: "never" });
 

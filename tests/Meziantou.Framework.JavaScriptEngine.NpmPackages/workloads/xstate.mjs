@@ -1,5 +1,5 @@
 // XState 5: state machines with nested and parallel states, guards, actions, context assignment, delayed transitions
-// (the harness timers), invoked promises, spawned actors and the snapshot API
+// (the timers of the page), invoked promises, spawned actors and the snapshot API
 import { setup, createActor, assign, fromPromise, sendTo, fromCallback } from "xstate";
 
 const machine = setup({

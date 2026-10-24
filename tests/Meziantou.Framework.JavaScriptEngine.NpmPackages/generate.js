@@ -1,146 +1,91 @@
-// Records the results of the workloads with Node.js in expected/<workload>.txt: see readme.md.
+// Records the results of the workloads in Chromium (Playwright) in expected/<workload>.txt: see readme.md.
 //
 // node generate.js [--check] [workload...]
 //
 // --check compares the results with the files instead of writing them.
 "use strict";
 
-const childProcess = require("child_process");
 const fs = require("fs");
 const path = require("path");
-const vm = require("vm");
-
-// The modules of a vm context need --experimental-vm-modules. The engine runs the workloads in the UTC time zone and with
-// the en-US locale.
-if (process.env.NPM_PACKAGES_GENERATE !== "1") {
-  const result = childProcess.spawnSync(process.execPath, ["--experimental-vm-modules", "--no-warnings", __filename, ...process.argv.slice(2)], {
-    stdio: "inherit",
-    env: { ...process.env, NPM_PACKAGES_GENERATE: "1", TZ: "UTC", LANG: "en_US.UTF-8", LC_ALL: "en_US.UTF-8" },
-  });
-  process.exit(result.status ?? 1);
-}
-
-// The engine does not track the promises that are rejected without a handler: Node.js must not exit for them
-process.on("unhandledRejection", () => { });
 
 const root = path.join(__dirname, "..", "Meziantou.Framework.JavaScriptEngine.External", "npm-packages");
-const harness = fs.readFileSync(path.join(__dirname, "harness.js"), "utf8");
 const expectedDirectory = path.join(__dirname, "expected");
+const origin = "https://npm.test";
+
+let chromium;
+try {
+  ({ chromium } = require("./generator/node_modules/playwright"));
+}
+catch {
+  console.error("Playwright is not installed: run 'npm ci --prefix generator' and 'npx --prefix generator playwright install chromium'");
+  process.exit(1);
+}
+
+if (!fs.existsSync(path.join(root, "importmap.json"))) {
+  console.error(`${root}/importmap.json does not exist: run 'dotnet run eng/javascriptengine/fetch-tests.cs npm-packages'`);
+  process.exit(1);
+}
 
 const args = process.argv.slice(2);
 const check = args[0] === "--check";
 if (check)
   args.shift();
 
-if (!fs.existsSync(path.join(root, "node_modules"))) {
-  console.error(`${root}/node_modules does not exist: run 'dotnet run eng/javascriptengine/fetch-tests.cs'`);
-  process.exit(1);
-}
+const contentTypes = { ".js": "text/javascript", ".mjs": "text/javascript", ".cjs": "text/javascript", ".json": "application/json", ".css": "text/css", ".wasm": "application/wasm", ".html": "text/html" };
+const page = fs.readFileSync(path.join(__dirname, "page.html"), "utf8").replace("{{importmap}}", fs.readFileSync(path.join(root, "importmap.json"), "utf8"));
 
-// '/workloads' is the directory of the workloads, the other paths are in the installed packages
-function readFile(file) {
-  const fullPath = file.startsWith("/workloads/") ? path.join(__dirname, file) : path.join(root, file);
-  if (!fs.statSync(fullPath, { throwIfNoEntry: false })?.isFile())
+// The files of the site: the page, the runner and the workloads of this directory, and the installed packages
+function getFile(pathname) {
+  if (pathname === "/")
+    return { body: page, contentType: "text/html" };
+
+  const fullPath = pathname.startsWith("/node_modules/") ? path.join(root, pathname) : pathname === "/runner.mjs" || pathname.startsWith("/workloads/") ? path.join(__dirname, pathname) : undefined;
+  if (fullPath === undefined || !fs.statSync(fullPath, { throwIfNoEntry: false })?.isFile())
     return undefined;
-  return fs.readFileSync(fullPath, "utf8");
+  return { body: fs.readFileSync(fullPath), contentType: contentTypes[path.extname(fullPath)] ?? "application/octet-stream" };
 }
 
-// Each workload runs in a new context, which only has the built-ins of ECMAScript, as in a realm of the engine
-async function runWorkload(name) {
-  const context = vm.createContext({});
-  const modules = new Map();
-  let api;
+// Returns the result of the workload, and what explains a failure: the missing files and the errors of the page
+async function runWorkload(browser, name) {
+  const context = await browser.newContext({ timezoneId: "UTC", locale: "en-US" });
+  const diagnostics = [];
+  try {
+    await context.route(origin + "/**", route => {
+      const file = getFile(decodeURIComponent(new URL(route.request().url()).pathname));
+      if (file === undefined)
+        diagnostics.push("404 " + route.request().url());
+      return file === undefined ? route.fulfill({ status: 404, body: "" }) : route.fulfill({ status: 200, body: file.body, contentType: file.contentType });
+    });
 
-  function getModule(specifier, referrer) {
-    const { path: modulePath, format } = api.resolve(specifier, referrer);
-    let module = modules.get(modulePath);
-    if (module === undefined) {
-      if (format === "module") {
-        module = new vm.SourceTextModule(readFile(modulePath), {
-          context,
-          identifier: modulePath,
-          initializeImportMeta(meta) {
-            meta.url = "file://" + modulePath;
-          },
-          importModuleDynamically: (specifier, referrer) => importModule(specifier, referrer.identifier),
-        });
-      }
-      else {
-        // A CommonJS module, a JSON file or a Node.js module
-        const exportNames = api.getExportNames(modulePath);
-        module = new vm.SyntheticModule(exportNames, function () {
-          const exports = api.require(modulePath);
-          for (const name of exportNames)
-            this.setExport(name, name === "default" ? exports : exports[name]);
-        }, { context, identifier: modulePath });
-      }
+    const page = await context.newPage();
+    page.on("pageerror", error => diagnostics.push("page error: " + error.message));
+    page.on("console", message => message.type() === "error" && !message.text().startsWith("Failed to load resource") && diagnostics.push("console: " + message.text()));
+    await page.goto(origin + "/?workload=" + encodeURIComponent(name));
 
-      modules.set(modulePath, module);
+    // The page runs in real time (the fake clock of Playwright replaces Date by a function that cannot be subclassed)
+    try {
+      await page.waitForFunction(() => "done" in document.documentElement.dataset, null, { timeout: 120_000, polling: 50 });
+    }
+    catch {
+      return { result: "Error: the workload did not complete", diagnostics };
     }
 
-    return module;
+    return { result: await page.evaluate(() => document.getElementById("result").textContent), diagnostics };
   }
-
-  // Links the module and the modules it imports, synchronously
-  function link(module) {
-    const visited = new Set();
-    const linkRequests = current => {
-      if (visited.has(current) || current.status !== "unlinked")
-        return;
-
-      visited.add(current);
-      const dependencies = current.moduleRequests.map(request => getModule(request.specifier, current.identifier));
-      if (current instanceof vm.SourceTextModule)
-        current.linkRequests(dependencies);
-      for (const dependency of dependencies)
-        linkRequests(dependency);
-    };
-    linkRequests(module);
-    if (module.status === "unlinked")
-      module.instantiate();
-    return module;
-  }
-
-  async function importModule(specifier, referrer) {
-    const module = link(getModule(specifier, referrer));
-    await module.evaluate();
-    return module;
-  }
-
-  // require() of an ES module: the module must be evaluated synchronously (no top-level await)
-  function requireModule(modulePath) {
-    const module = link(getModule(modulePath, undefined));
-    module.evaluate();
-    if (module.status === "errored")
-      throw module.error;
-    if (module.status !== "evaluated")
-      throw new Error("require() of the ES module '" + modulePath + "' that uses top-level await is not supported");
-    return module.namespace;
-  }
-
-  const script = new vm.Script(harness, {
-    filename: "/harness.js",
-    importModuleDynamically: specifier => importModule(specifier, undefined),
-  });
-  api = script.runInContext(context)({ readFile, requireModule });
-  const state = api.run(name);
-  for (; ;) {
-    // Runs the promise jobs
-    await new Promise(resolve => setImmediate(resolve));
-    if (state.done)
-      return state.result;
-    if (!api.runTimer())
-      return "Error: the workload did not complete";
+  finally {
+    await context.close();
   }
 }
 
-const names = args.length > 0 ? args : fs.readdirSync(path.join(__dirname, "workloads")).filter(name => name.endsWith(".mjs")).map(name => name.slice(0, -4)).sort();
-let failed = false;
-fs.mkdirSync(expectedDirectory, { recursive: true });
 (async () => {
+  const names = args.length > 0 ? args : fs.readdirSync(path.join(__dirname, "workloads")).filter(name => name.endsWith(".mjs")).map(name => name.slice(0, -4)).sort();
+  const browser = await chromium.launch();
+  console.log(`Chromium ${browser.version()}`);
+  let failed = false;
+  fs.mkdirSync(expectedDirectory, { recursive: true });
   for (const name of names) {
     const start = process.hrtime.bigint();
-    const result = await runWorkload(name);
+    const { result, diagnostics } = await runWorkload(browser, name);
     const duration = Number((process.hrtime.bigint() - start) / 1000000n);
     const expectedPath = path.join(expectedDirectory, name + ".txt");
     if (check) {
@@ -152,7 +97,11 @@ fs.mkdirSync(expectedDirectory, { recursive: true });
       fs.writeFileSync(expectedPath, result);
       console.log(`${name}: ${result.length} characters (${duration} ms)${result.startsWith("Error: ") ? " " + result.split("\n")[0] : ""}`);
     }
+
+    if (result.startsWith("Error: "))
+      diagnostics.slice(0, 10).forEach(diagnostic => console.log("  " + diagnostic));
   }
 
+  await browser.close();
   process.exit(failed ? 1 : 0);
 })();

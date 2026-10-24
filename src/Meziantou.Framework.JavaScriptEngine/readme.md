@@ -5,8 +5,9 @@ An ECMAScript engine written in .NET: a hand-written parser, a bytecode compiler
 [the test262 results](../../tests/Meziantou.Framework.JavaScriptEngine.Test262/summary.md), and by the
 [Web Tooling Benchmark](../../tests/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark/readme.md) (babel,
 TypeScript, prettier, terser... give the same results as in Node.js) and
-[about 80 npm packages](../../tests/Meziantou.Framework.JavaScriptEngine.NpmPackages/readme.md) (sass, React, Svelte,
-TypeScript 6, ESLint, date-fns, d3... loaded as ES modules and CommonJS modules). It implements ECMAScript
+[about 60 npm packages](../../tests/Meziantou.Framework.JavaScriptEngine.NpmPackages/readme.md) (lightningcss, sass,
+tailwindcss, prettier, Vue, date-fns, d3... loaded as ES modules in a page of Meziantou.Framework.WebPlatform, and
+compared with Chromium). It implements ECMAScript
 2025 (including the proper tail calls of strict code), ECMA-402 (`Intl`) and `Temporal`, the stage 3 proposals
 `import defer`, source phase imports (the module sources are given by the host),
 [immutable `ArrayBuffer`](https://github.com/tc39/proposal-immutable-arraybuffer) (`transferToImmutable`,

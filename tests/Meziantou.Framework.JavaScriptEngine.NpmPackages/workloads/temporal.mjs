@@ -1,6 +1,5 @@
 // temporal-polyfill: an implementation of Temporal in JavaScript (BigInt nanoseconds, Intl.DateTimeFormat for the time
-// zones and the calendars). Its results are compared with the ones of the same code in Node.js, which runs the polyfill
-// too.
+// zones and the calendars). Chromium runs the polyfill too, not its own Temporal: the workload imports it.
 import { Temporal, Intl as TemporalIntl } from "temporal-polyfill/full";
 
 export default () => {

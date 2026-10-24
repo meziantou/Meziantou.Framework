@@ -1,8 +1,8 @@
-// Vue 3: the SFC compiler (template, script setup, scoped styles, server rendering code), and server rendering of
-// components (reactivity, computed values, slots) with vue/server-renderer
+// Vue 3: the SFC compiler (template, script setup, scoped styles, server rendering code), and an application mounted in
+// the document (the browser build of Vue, with the template compiler: the default ES module of the package reads
+// process.env.NODE_ENV, which a bundler replaces)
 import { parse, compileScript, compileTemplate, compileStyle } from "@vue/compiler-sfc";
-import { createSSRApp, ref, computed, h } from "vue";
-import { renderToString } from "vue/server-renderer";
+import { createApp, ref, computed, nextTick } from "/node_modules/vue/dist/vue.esm-browser.prod.js";
 
 const sfc = `<template>
   <div :class="{ active: isActive }" @click="toggle">
@@ -40,18 +40,31 @@ export default async () => {
   results.push(compileStyle({ source: descriptor.styles[0].content, filename: "List.vue", id: "data-v-123", scoped: true }).code);
   results.push(compileTemplate({ source: descriptor.template.content, filename: "List.vue", id: "data-v-123", ssr: true, ssrCssVars: [] }).code);
 
-  const app = createSSRApp({
-    props: ["start"],
-    setup(props) {
-      const count = ref(props.start);
+  // An application mounted in the document: the templates are compiled at run time (new Function), and the updates of
+  // the reactive state patch the DOM
+  const container = document.createElement("div");
+  document.body.append(container);
+  const Child = { props: ["msg"], template: `<em :class="['x', { y: true }]" :style="{ color: 'red' }">{{ msg }} <slot></slot></em>` };
+  const app = createApp({
+    components: { Child },
+    setup() {
+      const count = ref(21);
+      const items = ref(["a", "<b>", "c"]);
       const double = computed(() => count.value * 2);
-      return { count, double, items: ["a", "<b>", "c"] };
+      const filter = ref("");
+      const visible = computed(() => items.value.filter(item => item.includes(filter.value)));
+      return { count, double, items, filter, visible };
     },
-    render() {
-      const child = { props: ["msg"], render() { return h("em", { class: ["x", { y: true }], style: { color: "red" } }, [this.msg, this.$slots.default?.()]); } };
-      return h("section", [h("p", `${this.count} x 2 = ${this.double}`), h("ul", this.items.map(item => h("li", { key: item }, item))), h(child, { msg: "hi" }, { default: () => "slot <content>" })]);
-    },
-  }, { start: 21 });
-  results.push(await renderToString(app));
+    template: `<section><p :data-count="count">{{ count }} x 2 = {{ double }}</p><input v-model="filter"><ul><li v-for="item in visible" :key="item">{{ item }}</li></ul><Child msg="hi">slot &lt;content&gt;</Child><p v-if="count > 21">big</p></section>`,
+  });
+  const instance = app.mount(container);
+  results.push(container.innerHTML);
+  instance.count++;
+  instance.items.push("d");
+  instance.filter = "d";
+  await nextTick();
+  results.push(container.innerHTML);
+  app.unmount();
+  results.push(JSON.stringify(container.innerHTML));
   return results.join("\n----\n");
 };

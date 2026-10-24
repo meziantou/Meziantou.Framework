@@ -6,7 +6,14 @@
     <ServerGarbageCollection>true</ServerGarbageCollection>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.10.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The workloads run in a page of Meziantou.Framework.WebPlatform, with the engine and Wasmtime -->
     <ProjectReference Include="../../src/Meziantou.Framework.JavaScriptEngine/Meziantou.Framework.JavaScriptEngine.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.WebPlatform/Meziantou.Framework.WebPlatform.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.WebPlatform.JavaScript/Meziantou.Framework.WebPlatform.JavaScript.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.WebPlatform.Wasmtime/Meziantou.Framework.WebPlatform.Wasmtime.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
   </ItemGroup>
 </Project>

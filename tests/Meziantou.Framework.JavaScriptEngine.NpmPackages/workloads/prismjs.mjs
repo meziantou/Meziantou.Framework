@@ -1,8 +1,16 @@
-// Prism: the tokenizer and the grammars that the components add to the global Prism object
-import Prism from "prismjs";
-import loadLanguages from "prismjs/components/index.js";
+// Prism: prism.js is a script that defines the global Prism object (with the markup, CSS, C-like and JavaScript
+// grammars), and each component is a script that adds a grammar to it
+import "prismjs";
+import "prismjs/components/prism-typescript.js";
+import "prismjs/components/prism-jsx.js";
+import "prismjs/components/prism-python.js";
+import "prismjs/components/prism-rust.js";
+import "prismjs/components/prism-csharp.js";
+import "prismjs/components/prism-markdown.js";
+import "prismjs/components/prism-json.js";
+import "prismjs/components/prism-diff.js";
 
-loadLanguages(["typescript", "jsx", "python", "rust", "csharp", "markdown", "json", "diff"]);
+const Prism = globalThis.Prism;
 
 const samples = {
   javascript: "const re = /ab+c/gi; let s = `x${1 + 2}`; class A { #x = 1; get y() { return this.#x; } }",

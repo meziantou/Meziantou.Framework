@@ -11,7 +11,8 @@
 // would do for these packages and their dependencies. 'a>b' is the package 'b' as 'a' sees it (a nested dependency).
 //
 // The npm-packages suite is the packages of tests/Meziantou.Framework.JavaScriptEngine.NpmPackages/package-lock.json
-// (lockfileVersion 3), installed in npm-packages/node_modules as 'npm ci --ignore-scripts --omit=optional' would do.
+// (lockfileVersion 3), installed in npm-packages/node_modules as 'npm ci --ignore-scripts --omit=optional' would do, with
+// npm-packages/importmap.json, the import map that loads them in a browser.
 //
 // Without arguments, every suite is fetched except the ones marked "optional" (parse-number-fxx-test-data). The arguments
 // name the suites to fetch, optional or not: dotnet run eng/javascriptengine/fetch-tests.cs parse-number-fxx-test-data
@@ -74,51 +75,318 @@ return 0;
 
 // The packages of a package-lock.json whose lockfileVersion is 3: the keys of "packages" are the paths where npm installs
 // them. The optional packages (the native binaries of the packages that have a JavaScript fallback) are not installed.
+// The import map of the packages is written to <target>/importmap.json, each time (see WriteImportMap).
 static async Task InstallNpmLockFile(string target, string lockFile)
 {
     var nodeModules = Path.Combine(target, "node_modules");
     var stampPath = Path.Combine(nodeModules, ".fetch-tests-stamp");
     var lockContent = File.ReadAllText(lockFile);
     var stamp = Convert.ToHexStringLower(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(lockContent)));
-    if (File.Exists(stampPath) && File.ReadAllText(stampPath) == stamp)
-    {
-        Console.WriteLine($"{Path.GetFileName(target)}/node_modules is up to date");
-        return;
-    }
 
     using var lockDocument = JsonDocument.Parse(lockContent);
     if (lockDocument.RootElement.GetProperty("lockfileVersion").GetInt32() != 3)
         throw new InvalidOperationException($"{lockFile} must have lockfileVersion 3");
 
     var packages = new List<(string Path, string Url, string Integrity)>();
+    var installedPaths = new List<string>();
     foreach (var entry in lockDocument.RootElement.GetProperty("packages").EnumerateObject())
     {
         if (entry.Name.Length == 0 || IsTrue(entry.Value, "optional") || IsTrue(entry.Value, "dev") || IsTrue(entry.Value, "link"))
             continue;
 
-        if (!entry.Name.StartsWith("node_modules/", StringComparison.Ordinal))
+        if (!entry.Name.StartsWith("node_modules/", StringComparison.Ordinal) || entry.Name.Split('/').Contains(".."))
             throw new InvalidOperationException($"Unexpected package path '{entry.Name}' in {lockFile}");
+
+        installedPaths.Add(entry.Name["node_modules/".Length..]);
+
+        // The bundled dependencies are in the tarball of the package that bundles them
+        if (IsTrue(entry.Value, "inBundle"))
+            continue;
 
         packages.Add((entry.Name["node_modules/".Length..], entry.Value.GetProperty("resolved").GetString()!, entry.Value.GetProperty("integrity").GetString()!));
     }
 
-    if (Directory.Exists(nodeModules))
+    if (File.Exists(stampPath) && File.ReadAllText(stampPath) == stamp)
     {
-        Directory.Delete(nodeModules, recursive: true);
+        Console.WriteLine($"{Path.GetFileName(target)}/node_modules is up to date");
+    }
+    else
+    {
+        if (Directory.Exists(nodeModules))
+        {
+            Directory.Delete(nodeModules, recursive: true);
+        }
+
+        Console.WriteLine($"Installing {packages.Count} npm packages in {nodeModules}");
+        using var httpClient = new HttpClient();
+        await Parallel.ForEachAsync(packages, new ParallelOptions { MaxDegreeOfParallelism = 8 }, async (item, cancellationToken) =>
+        {
+            var content = await DownloadWithRetry(httpClient, item.Url, cancellationToken);
+            VerifyIntegrity(item.Url, content, item.Integrity);
+            Extract(content, Path.Combine(nodeModules, item.Path.Replace('/', Path.DirectorySeparatorChar)));
+        });
+
+        File.WriteAllText(stampPath, stamp);
     }
 
-    Console.WriteLine($"Installing {packages.Count} npm packages in {nodeModules}");
-    using var httpClient = new HttpClient();
-    await Parallel.ForEachAsync(packages, new ParallelOptions { MaxDegreeOfParallelism = 8 }, async (item, cancellationToken) =>
-    {
-        var content = await DownloadWithRetry(httpClient, item.Url, cancellationToken);
-        VerifyIntegrity(item.Url, content, item.Integrity);
-        Extract(content, Path.Combine(nodeModules, item.Path.Replace('/', Path.DirectorySeparatorChar)));
-    });
-
-    File.WriteAllText(stampPath, stamp);
+    WriteImportMap(target, installedPaths);
 
     static bool IsTrue(JsonElement element, string name) => element.TryGetProperty(name, out var value) && value.ValueKind is JsonValueKind.True;
+}
+
+// The import map (https://html.spec.whatwg.org/multipage/webappapis.html#import-maps) that lets a browser import the
+// installed packages from /node_modules without a bundler: the "exports" of the package.json files with the "browser",
+// "import", "module", "production" and "default" conditions, else the "module", "browser" or "main" field. A package installed in the node_modules of another package is mapped in
+// the scope of that package, which is what the resolution of Node.js gives (the node_modules of the importing package,
+// then the ones of its parents). An export whose pattern cannot be written as a prefix (e.g. "./*": "./dist/*.js") is
+// written as one entry for each matching file. The "imports" of a package and the object form of its "browser" field
+// are mapped too.
+static void WriteImportMap(string target, IEnumerable<string> packagePaths)
+{
+    // The module of the "false" replacements of the "browser" field
+    const string EmptyModule = "data:text/javascript,export default {};";
+
+    var nodeModules = Path.Combine(target, "node_modules");
+    var imports = new SortedDictionary<string, string>(StringComparer.Ordinal);
+    var scopes = new SortedDictionary<string, SortedDictionary<string, string>>(StringComparer.Ordinal);
+    foreach (var packagePath in packagePaths)
+    {
+        var directory = Path.Combine(nodeModules, packagePath.Replace('/', Path.DirectorySeparatorChar));
+        var packageJsonPath = Path.Combine(directory, "package.json");
+        if (!File.Exists(packageJsonPath))
+            continue;
+
+        using var packageJson = JsonDocument.Parse(File.ReadAllText(packageJsonPath));
+        var separator = packagePath.LastIndexOf("/node_modules/", StringComparison.Ordinal);
+        var name = separator < 0 ? packagePath : packagePath[(separator + "/node_modules/".Length)..];
+        var entries = imports;
+        if (separator >= 0)
+        {
+            var scope = "/node_modules/" + packagePath[..separator] + "/";
+            if (!scopes.TryGetValue(scope, out entries))
+            {
+                entries = new SortedDictionary<string, string>(StringComparer.Ordinal);
+                scopes.Add(scope, entries);
+            }
+        }
+
+        var baseUrl = "/node_modules/" + packagePath + "/";
+        foreach (var (specifier, url) in GetPackageEntries(name, directory, baseUrl, packageJson.RootElement))
+        {
+            entries.TryAdd(specifier, url);
+        }
+
+        // The "imports" of the package ("#name" specifiers), in the scope of the package
+        if (packageJson.RootElement.TryGetProperty("imports", out var packageImports) && packageImports.ValueKind is JsonValueKind.Object)
+        {
+            var packageScope = GetScope(scopes, baseUrl);
+            foreach (var (specifier, url) in GetMapEntries("", directory, baseUrl, packageImports.EnumerateObject().Select(property => (property.Name, property.Value)), imports, scopes, packagePath))
+            {
+                packageScope.TryAdd(specifier, url);
+            }
+        }
+
+        // The object form of the "browser" field (https://github.com/defunctzombie/package-browser-field-spec): the
+        // files of the package replaced by other files, or by an empty module (false), as the bundlers do
+        if (packageJson.RootElement.TryGetProperty("browser", out var browser) && browser.ValueKind is JsonValueKind.Object)
+        {
+            foreach (var property in browser.EnumerateObject())
+            {
+                var replacement = property.Value.ValueKind switch
+                {
+                    JsonValueKind.False => EmptyModule,
+                    JsonValueKind.String when property.Value.GetString()!.StartsWith('.', StringComparison.Ordinal) => baseUrl + NormalizeRelativePath(property.Value.GetString()!),
+                    _ => (string?)null,
+                };
+                if (replacement is null)
+                    continue;
+
+                if (property.Name.StartsWith("./", StringComparison.Ordinal))
+                {
+                    var file = NormalizeRelativePath(property.Name);
+                    foreach (var candidate in new[] { file, file + ".js" }.Where(candidate => File.Exists(Path.Combine(directory, candidate))))
+                    {
+                        imports.TryAdd(baseUrl + candidate, replacement);
+                    }
+                }
+                else
+                {
+                    GetScope(scopes, baseUrl).TryAdd(property.Name, replacement);
+                }
+            }
+        }
+    }
+
+    var options = new JsonWriterOptions { Indented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+    using var stream = File.Create(Path.Combine(target, "importmap.json"));
+    using (var writer = new Utf8JsonWriter(stream, options))
+    {
+        writer.WriteStartObject();
+        writer.WriteStartObject("imports");
+        foreach (var (key, value) in imports)
+        {
+            writer.WriteString(key, value);
+        }
+
+        writer.WriteEndObject();
+        writer.WriteStartObject("scopes");
+        foreach (var (scope, entries) in scopes)
+        {
+            writer.WriteStartObject(scope);
+            foreach (var (key, value) in entries)
+            {
+                writer.WriteString(key, value);
+            }
+
+            writer.WriteEndObject();
+        }
+
+        writer.WriteEndObject();
+        writer.WriteEndObject();
+    }
+
+    Console.WriteLine($"Wrote the import map of the npm packages ({imports.Count} entries, {scopes.Count} scopes)");
+}
+
+static SortedDictionary<string, string> GetScope(SortedDictionary<string, SortedDictionary<string, string>> scopes, string scope)
+{
+    if (!scopes.TryGetValue(scope, out var entries))
+    {
+        entries = new SortedDictionary<string, string>(StringComparer.Ordinal);
+        scopes.Add(scope, entries);
+    }
+
+    return entries;
+}
+
+static IEnumerable<(string Specifier, string Url)> GetPackageEntries(string name, string directory, string baseUrl, JsonElement packageJson)
+{
+    if (!packageJson.TryGetProperty("exports", out var exports) || exports.ValueKind is JsonValueKind.Null)
+    {
+        // No exports: the entry point, and any file of the package
+        var main = new[] { "module", "browser", "main" }
+            .Select(field => packageJson.TryGetProperty(field, out var value) && value.ValueKind is JsonValueKind.String ? value.GetString() : null)
+            .FirstOrDefault(value => value is not null) ?? "index.js";
+        var mainFile = new[] { main, main + ".js", main + "/index.js" }.Select(NormalizeRelativePath).FirstOrDefault(path => File.Exists(Path.Combine(directory, path)));
+        if (mainFile is not null)
+            yield return (name, baseUrl + mainFile);
+
+        yield return (name + "/", baseUrl);
+        yield break;
+    }
+
+    var isConditions = exports.ValueKind is JsonValueKind.Object && !exports.EnumerateObject().Any(property => property.Name.StartsWith('.', StringComparison.Ordinal));
+    var map = exports.ValueKind is JsonValueKind.Object && !isConditions ? exports.EnumerateObject().Select(property => (property.Name, property.Value)).ToList() : [(".", exports)];
+    foreach (var entry in GetMapEntries(name, directory, baseUrl, map, imports: null, scopes: null, packagePath: null))
+        yield return entry;
+}
+
+// The entries of the "exports" (keys "." and "./path", the specifiers are relative to the name of the package) or of the
+// "imports" (keys "#name", the name is empty) of a package. The target of an "imports" entry can be another package: it
+// is resolved with the import map built so far, which has the packages installed before it.
+static IEnumerable<(string Specifier, string Url)> GetMapEntries(string name, string directory, string baseUrl, IEnumerable<(string Key, JsonElement Value)> map, SortedDictionary<string, string>? imports, SortedDictionary<string, SortedDictionary<string, string>>? scopes, string? packagePath)
+{
+    foreach (var (key, value) in map)
+    {
+        var targetPath = ResolveExportTarget(value);
+        if (targetPath is null)
+            continue;
+
+        var specifier = key == "." ? name : key.StartsWith('#', StringComparison.Ordinal) ? key : name + key[1..];
+        if (!targetPath.StartsWith("./", StringComparison.Ordinal))
+        {
+            // A package ("#dep": "other-package"): the entry of the scope of the package, else the top-level one
+            if (key.StartsWith('#', StringComparison.Ordinal) && !key.Contains('*', StringComparison.Ordinal) && imports is not null)
+            {
+                var resolved = scopes!.TryGetValue("/node_modules/" + packagePath + "/", out var scope) && scope.TryGetValue(targetPath, out var scoped) ? scoped : imports.GetValueOrDefault(targetPath);
+                if (resolved is not null)
+                    yield return (specifier, resolved);
+            }
+
+            continue;
+        }
+
+        var star = key.IndexOf('*', StringComparison.Ordinal);
+        var targetStar = targetPath.IndexOf('*', StringComparison.Ordinal);
+        if (star < 0)
+        {
+            yield return (specifier, baseUrl + NormalizeRelativePath(targetPath));
+            continue;
+        }
+
+        if (targetStar < 0)
+            continue;
+
+        var keyPrefix = key[..star];
+        var keySuffix = key[(star + 1)..];
+        var specifierPrefix = keyPrefix.StartsWith('#', StringComparison.Ordinal) ? keyPrefix : name + keyPrefix[1..];
+        var targetPrefix = targetPath[..targetStar];
+        var targetSuffix = targetPath[(targetStar + 1)..];
+        if (keySuffix.Length == 0 && targetSuffix.Length == 0 && keyPrefix.EndsWith('/', StringComparison.Ordinal) && targetPrefix.EndsWith('/', StringComparison.Ordinal))
+        {
+            yield return (specifierPrefix, baseUrl + NormalizeRelativePath(targetPrefix));
+            continue;
+        }
+
+        // The files of the package that match the target pattern
+        var normalizedPrefix = NormalizeRelativePath(targetPrefix);
+        var searchDirectory = Path.Combine(directory, normalizedPrefix[..(normalizedPrefix.LastIndexOf('/', StringComparison.Ordinal) + 1)].Replace('/', Path.DirectorySeparatorChar));
+        if (!Directory.Exists(searchDirectory))
+            continue;
+
+        foreach (var file in Directory.EnumerateFiles(searchDirectory, "*", SearchOption.AllDirectories).Select(file => Path.GetRelativePath(directory, file).Replace(Path.DirectorySeparatorChar, '/')).Order(StringComparer.Ordinal))
+        {
+            if (file.Length >= normalizedPrefix.Length + targetSuffix.Length && file.StartsWith(normalizedPrefix, StringComparison.Ordinal) && file.EndsWith(targetSuffix, StringComparison.Ordinal))
+            {
+                var match = file[normalizedPrefix.Length..(file.Length - targetSuffix.Length)];
+                yield return (specifierPrefix + match + keySuffix, baseUrl + file);
+            }
+        }
+    }
+}
+
+// The target of a conditional export for a browser that loads ES modules
+static string? ResolveExportTarget(JsonElement value)
+{
+    switch (value.ValueKind)
+    {
+        case JsonValueKind.String:
+            return value.GetString();
+        case JsonValueKind.Array:
+            return value.EnumerateArray().Select(ResolveExportTarget).FirstOrDefault(item => item is not null);
+        case JsonValueKind.Object:
+            foreach (var property in value.EnumerateObject())
+            {
+                if (property.Name is "browser" or "import" or "module" or "production" or "default" && ResolveExportTarget(property.Value) is { } result)
+                    return result;
+            }
+
+            return null;
+        default:
+            return null;
+    }
+}
+
+static string NormalizeRelativePath(string path)
+{
+    var parts = new List<string>();
+    foreach (var part in path.Split('/'))
+    {
+        if (part is "" or ".")
+            continue;
+
+        if (part is "..")
+        {
+            if (parts.Count > 0)
+                parts.RemoveAt(parts.Count - 1);
+        }
+        else
+        {
+            parts.Add(part);
+        }
+    }
+
+    return string.Join('/', parts) + (path.EndsWith('/', StringComparison.Ordinal) && parts.Count > 0 ? "/" : "");
 }
 
 static async Task InstallNpmPackages(string target, string lockFile, string[] packages)

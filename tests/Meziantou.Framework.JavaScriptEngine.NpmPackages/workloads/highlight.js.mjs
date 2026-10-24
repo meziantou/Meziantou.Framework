@@ -1,5 +1,6 @@
-// highlight.js: highlighting with the grammars of many languages (large regular expressions) and auto-detection
-import hljs from "highlight.js";
+// highlight.js (the ES module build of @highlightjs/cdn-assets, with the common languages): highlighting with the
+// grammars of many languages (large regular expressions) and auto-detection
+import hljs from "@highlightjs/cdn-assets/es/highlight.js";
 
 const samples = {
   javascript: "async function* gen(a = 1, ...rest) { const { x, y: [z] } = await import('m'); yield `t ${x?.y ?? z}`; } // c\nclass A extends B { #p = 1n; static { } }",

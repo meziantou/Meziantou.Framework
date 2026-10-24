@@ -90,6 +90,9 @@ internal sealed class JsString : JsCell, IEquatable<JsString>
 
     private void Flatten()
     {
+        // A concatenation allocates nothing: the memory limit of the script is checked when the string is built
+        JsEngine.EnsureCurrentCanAllocate((long)Length * sizeof(char));
+
         // Iterative, so that a deep rope does not overflow the stack
         var result = string.Create(Length, this, static (span, root) =>
         {

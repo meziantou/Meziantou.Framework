@@ -46,6 +46,7 @@ internal sealed class JsStringObject : JsObject
         var keys = new List<PropertyKey>();
         for (var i = 0; i < StringData.Length; i++)
         {
+            JsEngine.CountCurrentWork(1);
             keys.Add(new PropertyKey((uint)i));
         }
 

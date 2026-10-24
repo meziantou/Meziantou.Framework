@@ -9,6 +9,36 @@ internal static class StringOperations
     /// <summary>Throws the RangeError of a string longer than <see cref="JsString.MaxLength"/>.</summary>
     public static void ThrowInvalidLength() => ThrowHelper.ThrowRangeError("Invalid string length");
 
+    /// <summary>
+    /// Appends a part of a string built by a built-in function: throws a RangeError when the string becomes too long, and
+    /// counts the work, so that the limits of the running script are checked while it grows (<see cref="JsEngine.CountWork"/>).
+    /// </summary>
+    public static void Append(StringBuilder builder, ReadOnlySpan<char> value)
+    {
+        CheckLength((long)builder.Length + value.Length);
+        builder.Append(value);
+        JsEngine.CountCurrentWork(value.Length + 1);
+    }
+
+    /// <summary>Appends <paramref name="value"/> <paramref name="repeatCount"/> times to a string built by a built-in function (see <see cref="Append(StringBuilder, ReadOnlySpan{char})"/>).</summary>
+    public static void Append(StringBuilder builder, ReadOnlySpan<char> value, long repeatCount)
+    {
+        CheckLength(builder.Length + (repeatCount * value.Length));
+        if (value.Length == 1)
+        {
+            // A single allocation: the string builder can grow to the maximum length of a string
+            JsEngine.EnsureCurrentCanAllocate(repeatCount * sizeof(char));
+            JsEngine.CountCurrentWork(repeatCount);
+            builder.Append(value[0], (int)repeatCount);
+            return;
+        }
+
+        for (long i = 0; i < repeatCount; i++)
+        {
+            Append(builder, value);
+        }
+    }
+
     /// <summary>Throws a RangeError when a string of this length cannot be created.</summary>
     public static void CheckLength(long length)
     {
@@ -133,16 +163,75 @@ internal static class StringOperations
     /// <summary>Normalizes a string (NFC, NFD, NFKC or NFKD) with the normalization of Meziantou.Framework.Unicode.</summary>
     public static string Normalize(string value, NormalizationForm form)
     {
+        // The ASCII characters are in every normalization form
+        var asciiPrefixLength = value.AsSpan().IndexOfAnyExceptInRange((char)0, (char)0x7F);
+        if (asciiPrefixLength < 0)
+            return value;
+
+        // The compatibility decompositions can make the string 18 times longer, and the normalization works on a buffer
+        // of code points (after the ASCII prefix): the memory needed by a long string is checked before it is normalized
+        const int MaxExpansion = 18;
+        long maxLength = value.Length;
+        if ((long)value.Length * MaxExpansion * (sizeof(int) + sizeof(char)) >= JsEngine.LargeAllocationBytes)
+        {
+            maxLength = GetDecomposedLength(value, form);
+            JsEngine.EnsureCurrentCanAllocate((maxLength * sizeof(char)) + ((maxLength - asciiPrefixLength) * sizeof(int)));
+        }
+
         if (UnicodeNormalization.IsNormalized(value, form))
             return value;
 
-        // The compatibility decompositions can make the string much longer
-        if ((long)value.Length * 18 > JsString.MaxLength)
+        if (maxLength > JsString.MaxLength)
         {
             CheckLength(UnicodeNormalization.GetNormalizedLength(value, form));
         }
 
         return UnicodeNormalization.Normalize(value, form);
+    }
+
+    /// <summary>
+    /// The length of the string in the decomposition form of <paramref name="form"/> (NFD or NFKD): the decomposition is
+    /// done code point by code point, and the composition (NFC, NFKC) only makes it shorter, so it bounds the length of
+    /// the normalized string.
+    /// </summary>
+    private static long GetDecomposedLength(string value, NormalizationForm form)
+    {
+        var decomposition = form is NormalizationForm.FormC or NormalizationForm.FormD ? NormalizationForm.FormD : NormalizationForm.FormKD;
+        Dictionary<int, int>? lengths = null;
+        long length = 0;
+        for (var i = 0; i < value.Length; i++)
+        {
+            var c = value[i];
+            if (char.IsAscii(c))
+            {
+                length++;
+                continue;
+            }
+
+            int codePoint = c;
+            if (char.IsHighSurrogate(c) && i + 1 < value.Length && char.IsLowSurrogate(value[i + 1]))
+            {
+                codePoint = char.ConvertToUtf32(c, value[i + 1]);
+                i++;
+            }
+            else if (char.IsSurrogate(c))
+            {
+                // A lone surrogate is not changed
+                length++;
+                continue;
+            }
+
+            lengths ??= [];
+            if (!lengths.TryGetValue(codePoint, out var codePointLength))
+            {
+                codePointLength = UnicodeNormalization.Normalize(char.ConvertFromUtf32(codePoint), decomposition).Length;
+                lengths.Add(codePoint, codePointLength);
+            }
+
+            length += codePointLength;
+        }
+
+        return length;
     }
 
     /// <summary>Converts a string to lower case with the full, locale-insensitive mappings of the Unicode Character Database (including Final_Sigma).</summary>

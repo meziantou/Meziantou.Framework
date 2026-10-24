@@ -688,37 +688,22 @@ internal static class ArrayBuiltins
                     skipped--;
                 }
 
-                StringOperations.CheckLength(result.Length + (skipped * separator.Length));
-                if (separator.Length == 1)
-                {
-                    result.Append(separator[0], (int)skipped);
-                }
-                else if (separator.Length > 1)
-                {
-                    for (long i = 0; i < skipped; i++)
-                    {
-                        result.Append(separator);
-                    }
-                }
-
+                StringOperations.Append(result, separator, skipped);
                 if (next >= length)
                     break;
 
                 k = next;
-                result.Append(separator);
+                StringOperations.Append(result, separator);
             }
             else if (k > 0)
             {
-                StringOperations.CheckLength((long)result.Length + separator.Length);
-                result.Append(separator);
+                StringOperations.Append(result, separator);
             }
 
             var element = ArrayOperations.GetElement(obj, k);
             if (!element.IsNullOrUndefined)
             {
-                var str = JsOperations.ToString(element);
-                StringOperations.CheckLength((long)result.Length + str.Length);
-                result.Append(str);
+                StringOperations.Append(result, JsOperations.ToString(element));
             }
         }
 
@@ -1115,16 +1100,13 @@ internal static class ArrayBuiltins
             if (k > 0)
             {
                 // The implementation-defined list-separator String
-                StringOperations.CheckLength((long)result.Length + 1);
-                result.Append(',');
+                StringOperations.Append(result, ",");
             }
 
             var nextElement = ArrayOperations.GetElement(array, k);
             if (!nextElement.IsNullOrUndefined)
             {
-                var s = JsOperations.ToString(JsOperations.Invoke(nextElement, ToLocaleStringKey, []));
-                StringOperations.CheckLength((long)result.Length + s.Length);
-                result.Append(s);
+                StringOperations.Append(result, JsOperations.ToString(JsOperations.Invoke(nextElement, ToLocaleStringKey, [])));
             }
         }
 

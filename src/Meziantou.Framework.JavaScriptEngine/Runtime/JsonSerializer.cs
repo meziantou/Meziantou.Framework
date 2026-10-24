@@ -21,6 +21,7 @@ internal sealed class JsonSerializer
     private readonly List<PropertyKey>? _propertyList;
     private readonly string _gap;
     private string _indent = "";
+    private int _checkedLength;
 
     public JsonSerializer(JsEngine engine, JsObject? replacerFunction, List<PropertyKey>? propertyList, string gap)
     {
@@ -201,6 +202,8 @@ internal sealed class JsonSerializer
         {
             _builder.Length = mark;
         }
+
+        CheckLength();
     }
 
     /// <summary>SerializeJSONArray(state, value)</summary>
@@ -252,10 +255,15 @@ internal sealed class JsonSerializer
 
     private void CheckLength()
     {
-        if (_builder.Length > JsString.MaxLength)
+        var length = _builder.Length;
+        if (length > JsString.MaxLength)
         {
             ThrowHelper.ThrowRangeError("Invalid string length");
         }
+
+        // The work is the text written since the last check (the text of an undefined property is removed)
+        _engine.CountWork(Math.Max(length - _checkedLength, 0) + 1);
+        _checkedLength = length;
     }
 
     /// <summary>QuoteJSONString(value): the lone surrogates are escaped (well-formed JSON.stringify).</summary>
@@ -275,6 +283,8 @@ internal sealed class JsonSerializer
                 continue;
             }
 
+            // The characters copied, and an escape sequence of up to 6 characters
+            JsEngine.CountCurrentWork(i - start + 6);
             builder.Append(value, start, i - start);
             start = i + 1;
             switch (c)

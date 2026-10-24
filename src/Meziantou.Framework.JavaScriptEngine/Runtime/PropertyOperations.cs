@@ -254,6 +254,7 @@ internal static class PropertyOperations
         var properties = new List<JsValue>(ownKeys.Count);
         foreach (var key in ownKeys)
         {
+            JsEngine.CountCurrentWork(1);
             if (key.IsSymbol)
                 continue;
 

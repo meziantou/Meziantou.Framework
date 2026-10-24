@@ -907,8 +907,8 @@ internal static class RegExpBuiltins
 
             if (position >= nextSourcePosition)
             {
-                StringOperations.CheckLength((long)builder.Length + (position - nextSourcePosition) + replacement.Length);
-                builder.Append(input, nextSourcePosition, position - nextSourcePosition).Append(replacement);
+                StringOperations.Append(builder, input.AsSpan(nextSourcePosition, position - nextSourcePosition));
+                StringOperations.Append(builder, replacement);
                 nextSourcePosition = position + matched.Length;
             }
         }
@@ -916,8 +916,8 @@ internal static class RegExpBuiltins
         if (nextSourcePosition >= length)
             return builder.ToString();
 
-        StringOperations.CheckLength((long)builder.Length + (length - nextSourcePosition));
-        return builder.Append(input, nextSourcePosition, length - nextSourcePosition).ToString();
+        StringOperations.Append(builder, input.AsSpan(nextSourcePosition, length - nextSourcePosition));
+        return builder.ToString();
     }
 
     private static JsObject CreateGroups(RegExpProgram program, string input, int[] captures)
@@ -971,19 +971,19 @@ internal static class RegExpBuiltins
                     break;
 
                 case '`':
-                    AppendChecked(builder, input.AsSpan(0, position));
+                    StringOperations.Append(builder, input.AsSpan(0, position));
                     i += 2;
                     break;
 
                 case '&':
-                    AppendChecked(builder, matched);
+                    StringOperations.Append(builder, matched);
                     i += 2;
                     break;
 
                 case '\'':
                     {
                         var tailPosition = Math.Min(position + matched.Length, input.Length);
-                        AppendChecked(builder, input.AsSpan(tailPosition));
+                        StringOperations.Append(builder, input.AsSpan(tailPosition));
                         i += 2;
                         break;
                     }
@@ -1003,7 +1003,7 @@ internal static class RegExpBuiltins
                             var capture = captures[index - 1];
                             if (!capture.IsUndefined)
                             {
-                                AppendChecked(builder, capture.AsString());
+                                StringOperations.Append(builder, capture.AsString());
                             }
                         }
                         else
@@ -1029,7 +1029,7 @@ internal static class RegExpBuiltins
                         var capture = namedCaptures.Get(groupName);
                         if (!capture.IsUndefined)
                         {
-                            AppendChecked(builder, JsOperations.ToString(capture));
+                            StringOperations.Append(builder, JsOperations.ToString(capture));
                         }
 
                         i = greaterThan + 1;
@@ -1044,13 +1044,6 @@ internal static class RegExpBuiltins
         }
 
         return builder.ToString();
-    }
-
-    /// <summary>Appends a part of a replacement, or throws a RangeError when the string would be too long.</summary>
-    private static void AppendChecked(StringBuilder builder, ReadOnlySpan<char> value)
-    {
-        StringOperations.CheckLength((long)builder.Length + value.Length);
-        builder.Append(value);
     }
 
     /// <summary>RegExp.prototype[%Symbol.search%](string)</summary>

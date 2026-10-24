@@ -177,17 +177,13 @@ internal static class StringBuiltins
         var result = new StringBuilder();
         for (long nextIndex = 0; ; nextIndex++)
         {
-            var nextLiteral = JsOperations.ToString(literals.Get(PropertyKey.FromInteger(nextIndex)));
-            StringOperations.CheckLength((long)result.Length + nextLiteral.Length);
-            result.Append(nextLiteral);
+            StringOperations.Append(result, JsOperations.ToString(literals.Get(PropertyKey.FromInteger(nextIndex))));
             if (nextIndex + 1 == literalCount)
                 return result.ToString();
 
             if (nextIndex < substitutionCount)
             {
-                var nextSubstitution = JsOperations.ToString(arguments[(int)nextIndex + 1]);
-                StringOperations.CheckLength((long)result.Length + nextSubstitution.Length);
-                result.Append(nextSubstitution);
+                StringOperations.Append(result, JsOperations.ToString(arguments[(int)nextIndex + 1]));
             }
         }
     }
@@ -543,6 +539,7 @@ internal static class StringBuiltins
             {
                 if (c == '"')
                 {
+                    JsEngine.CountCurrentWork(6);
                     result.Append("&quot;");
                 }
                 else

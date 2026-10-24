@@ -52,6 +52,7 @@ internal sealed class JsArrayBuffer : JsObject
         if (byteLength > BinaryDataOperations.MaxByteLength || maxByteLength > BinaryDataOperations.MaxByteLength)
             return ThrowHelper.ThrowRangeError<JsArrayBuffer>("Array buffer allocation failed");
 
+        JsEngine.EnsureCurrentCanAllocate((long)byteLength);
         byte[] array;
         try
         {
@@ -215,6 +216,7 @@ internal sealed class JsArrayBuffer : JsObject
         try
         {
             var capacity = (int)Math.Min(Math.Max((long)array.Length * 2, newByteLength), MaxByteLength ?? newByteLength);
+            JsEngine.EnsureCurrentCanAllocate(capacity);
             newArray = new byte[capacity];
         }
         catch (OutOfMemoryException)

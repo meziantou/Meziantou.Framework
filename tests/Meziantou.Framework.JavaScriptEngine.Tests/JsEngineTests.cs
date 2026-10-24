@@ -509,18 +509,6 @@ public sealed class JsEngineTests
             Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
         }
 
-        // A single allocation larger than the limit stops the script before it is made
-        using (var engine = new JsEngine(new JsEngineOptions { MemoryLimit = 1024 * 1024 }))
-        {
-            var realm = engine.CreateRealm();
-            Assert.Equal(1000, realm.Execute("'abc'.padStart(1000).length").AsNumber());
-            foreach (var code in new[] { "'abc'.padStart(933886059)", "'abc'.padEnd(933886059, 'xy')", "'abc'.repeat(300000000)", "try { 'a'.repeat(1e9) } catch { }" })
-            {
-                var exception = Assert.Throws<JsTerminationException>(() => realm.Execute(code));
-                Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
-            }
-        }
-
         using var cancellation = new CancellationTokenSource();
         using (var engine = new JsEngine(new JsEngineOptions { CancellationToken = cancellation.Token }))
         {
@@ -536,6 +524,59 @@ public sealed class JsEngineTests
             var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("check()"));
             Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
         }
+    }
+
+    // A built-in function has no interrupt point: it checks the memory limit before a large allocation, and while its
+    // result grows. Without these checks, each script allocates gigabytes.
+    [Theory]
+    [InlineData("'abc'.padStart(933886059)")]
+    [InlineData("'abc'.padEnd(933886059, 'xy')")]
+    [InlineData("'abc'.repeat(300000000)")]
+    [InlineData("try { 'a'.repeat(1e9) } catch { }")]
+    [InlineData("let s = 'a'; for (let i = 0; i < 29; i++) s += s; s.at(-1)")]
+    [InlineData("'a'.repeat(1 << 16).replaceAll('a', 'b'.repeat(400))")]
+    [InlineData("'a'.repeat(1 << 16).replace(/a/g, '$&'.repeat(200))")]
+    [InlineData("Array(1e7).join('x'.repeat(100))")]
+    [InlineData("Array(1e8).join('x')")]
+    [InlineData("new Uint8Array(1e8).join('x'.repeat(100))")]
+    [InlineData("JSON.stringify(Array(1e8))")]
+    [InlineData("JSON.stringify('\\u0001'.repeat(1 << 22))")]
+    [InlineData("String.raw({ raw: Array(1e7).fill('x'.repeat(100)) })")]
+    [InlineData("escape('\\u0100'.repeat(1 << 22))")]
+    [InlineData("encodeURIComponent('\\u0800'.repeat(1 << 22))")]
+    [InlineData("'x'.link('\"'.repeat(1 << 22))")]
+    [InlineData("'\\uFDFA'.repeat(1 << 20).normalize('NFKD')")]
+    [InlineData("Array.from({ length: 1e8 })")]
+    [InlineData("Array(1e8).fill(0)")]
+    [InlineData("new ArrayBuffer(2e9)")]
+    [InlineData("new Float64Array(2.5e8)")]
+    [InlineData("Object.keys('a'.repeat(1 << 22))")]
+    public void ExecutionLimits_MemoryLimitStopsBuiltins(string code)
+    {
+        using var engine = new JsEngine(new JsEngineOptions { MemoryLimit = 16 * 1024 * 1024 });
+        var exception = Assert.Throws<JsTerminationException>(() => engine.CreateRealm().Execute(code));
+        Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
+    }
+
+    [Fact]
+    public void ExecutionLimits_BuiltinsWithinTheLimits()
+    {
+        using var engine = new JsEngine(new JsEngineOptions { MemoryLimit = 64 * 1024 * 1024 });
+        var realm = engine.CreateRealm();
+        Assert.Equal(1 << 22, realm.Execute("'a'.repeat(1 << 22).normalize('NFKD').length").AsNumber());
+        Assert.Equal((1 << 20) + 2, realm.Execute("('a'.repeat(1 << 20) + '\\u00E9').normalize('NFD').length").AsNumber());
+        Assert.Equal(1 << 22, realm.Execute("'ab'.repeat(1 << 20).padEnd(1 << 22, 'xy').length").AsNumber());
+        Assert.Equal((1 << 20) * 2, realm.Execute("'a'.repeat(1 << 20).replaceAll('a', 'bc').length").AsNumber());
+        Assert.Equal(((1 << 18) * 5) - 2, realm.Execute("Array(1 << 18).fill('abc').join(', ').length").AsNumber());
+        Assert.Equal(1 << 20, realm.Execute("let s = 'a'; for (let i = 0; i < 20; i++) s += s; s.length").AsNumber());
+    }
+
+    [Fact]
+    public void ExecutionLimits_TimeoutStopsBuiltins()
+    {
+        using var engine = new JsEngine(new JsEngineOptions { Timeout = TimeSpan.FromMilliseconds(200) });
+        var exception = Assert.Throws<JsTerminationException>(() => engine.CreateRealm().Execute("Array.prototype.indexOf.call(new Proxy({ length: 1e9 }, {}), 1)"));
+        Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
     }
 
     [Fact]

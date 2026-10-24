@@ -159,7 +159,7 @@ internal static class StringRegExpBuiltins
         var result = new StringBuilder();
         foreach (var matchPosition in positions)
         {
-            result.Append(input, endOfLastMatch, matchPosition - endOfLastMatch);
+            StringOperations.Append(result, input.AsSpan(endOfLastMatch, matchPosition - endOfLastMatch));
             string replacement;
             if (functionalReplace)
             {
@@ -170,15 +170,13 @@ internal static class StringRegExpBuiltins
                 replacement = RegExpBuiltins.GetSubstitution(searchString, input, matchPosition, [], namedCaptures: null, template!);
             }
 
-            StringOperations.CheckLength((long)result.Length + replacement.Length);
-            result.Append(replacement);
+            StringOperations.Append(result, replacement);
             endOfLastMatch = matchPosition + searchLength;
         }
 
         if (endOfLastMatch < input.Length)
         {
-            StringOperations.CheckLength((long)result.Length + (input.Length - endOfLastMatch));
-            result.Append(input, endOfLastMatch, input.Length - endOfLastMatch);
+            StringOperations.Append(result, input.AsSpan(endOfLastMatch));
         }
 
         return result.ToString();

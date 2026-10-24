@@ -368,6 +368,9 @@ public sealed class MediaQueryEvaluatorTests
     [InlineData("(overflow-inline: none)", true)]
     [InlineData("(scan)", false)]
     [InlineData("(scan: progressive)", false)]
+    [InlineData("(resolution: 300dpi)", true)]
+    [InlineData("(min-resolution: 2dppx)", true)]
+    [InlineData("(min-resolution: 301dpi)", false)]
     public void Matches_Print(string query, bool expected)
     {
         var environment = MediaEnvironment.Default with { MediaType = "print" };

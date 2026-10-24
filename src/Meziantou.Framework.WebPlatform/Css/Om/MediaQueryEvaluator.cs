@@ -114,6 +114,9 @@ internal static class MediaQueryEvaluator
     /// <summary>The tolerance used to compare numbers (unit conversions are not exact).</summary>
     private const double Epsilon = 1e-9;
 
+    /// <summary>The resolution of the print media in dppx: 300dpi, as in Chromium.</summary>
+    private const double PrintResolution = 300d / 96;
+
     private static readonly ConcurrentDictionary<string, MediaQuery?[]> Cache = new(StringComparer.Ordinal);
     private static readonly ConditionalWeakTable<List<CssComponentValue>, MediaQuery?[]> ComponentValueCache = new();
 
@@ -674,8 +677,9 @@ internal static class MediaQueryEvaluator
             ["device-height"] = Range(MediaFeatureType.Length, environment => environment.DeviceHeight),
             ["device-aspect-ratio"] = Range(MediaFeatureType.Ratio, environment => environment.DeviceWidth / environment.DeviceHeight),
 
-            // https://drafts.csswg.org/mediaqueries-5/#mf-display-quality
-            ["resolution"] = Range(MediaFeatureType.Resolution, environment => environment.DevicePixelRatio),
+            // https://drafts.csswg.org/mediaqueries-5/#mf-display-quality: the resolution of the output device. As in Chromium, the
+            // resolution of the print media is 300dpi, the minimum of the printers, whatever the screen
+            ["resolution"] = Range(MediaFeatureType.Resolution, environment => environment.MediaType == "print" ? PrintResolution : environment.DevicePixelRatio),
             ["scan"] = new MediaFeature(MediaFeatureType.Discrete)
             {
                 // The scanning process only applies to the "tv" devices (as in the browsers): the screens and the printers match no value

@@ -2803,7 +2803,9 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     add columns to the last row. The block-start margin of a box at its static position in a block container is applied in
     the fragmentainer of the static position (a negative margin does not move the box to the previous one). The static
     position of a box whose containing block is outside of the strip is mapped with
-    the flow that contains it (`OutOfFlowCandidate.StaticPositionContainer`). As in Blink, the boxes are not placed
+    the flow that contains it (`OutOfFlowCandidate.StaticPositionContainer`), as is the static position of a box whose
+    containing block is an inline box of the strip when it is in the contents of an absolutely positioned box that is
+    fragmented apart (`FragmentationFlow.GetStaticPositionCarrier`). As in Blink, the boxes are not placed
     between the edges that the boxes around them repeat (`box-decoration-break: clone`: a box starts at the padding edge
     of its containing block and its fragments start at the start of the next fragmentainers). A box whose containing
     block is a relatively positioned inline box is placed from its position before the relative positioning (the offset

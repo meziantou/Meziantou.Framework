@@ -2511,7 +2511,7 @@
     "reftest": "PASS"
   },
   "css/css-break/out-of-flow-in-multicolumn-085.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/out-of-flow-in-multicolumn-086.html": {
     "reftest": "PASS"

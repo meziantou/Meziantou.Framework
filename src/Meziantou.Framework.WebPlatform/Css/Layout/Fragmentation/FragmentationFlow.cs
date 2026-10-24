@@ -1247,6 +1247,16 @@ internal sealed class FragmentationFlow
                 continue;
             }
 
+            // (also a box of the strip, whose containing block is an inline box of the strip, when its static position is in the
+            // contents of an absolutely positioned box that is fragmented apart: it is placed from that position with their breaks)
+            if (parent is null && _separatesOutOfFlow && child is BoxFragment { Box.IsOutOfFlow: true } carriedBox && PositionedLayout.IsAbsolutelyPositioned(carriedBox.Box)
+                && top < context.ClipEnd && carriedBox.Box.Style.Layout.Insets.Inset is var carriedInsets && carriedInsets.Get(_writingDirection.BlockStart).IsAuto
+                && carriedInsets.Get(_writingDirection.BlockEnd).IsAuto && GetStaticPositionCarrier(carriedBox.Box) is { } carrier)
+            {
+                carrier.Flow.AddOutOfFlow(carriedBox, top, bottom, context, carriedBox, top, _root.Spanners.Count, isStripChild: true);
+                continue;
+            }
+
             // (the absolutely positioned boxes whose containing block is the initial containing block of the pages)
             if (parent is null && PageBreakRules.Current?.InitialContainingBlock is { } initialContainingBlock && child is BoxFragment { Box.IsOutOfFlow: true } pageBox
                 && PositionedLayout.IsAbsolutelyPositioned(pageBox.Box) && top < context.ClipEnd)
@@ -1471,6 +1481,32 @@ internal sealed class FragmentationFlow
             if (!(_root._groupAncestors ??= []).Add(ancestorBox))
                 break;
         }
+    }
+
+    /// <summary>
+    /// Returns the flow of the nearest absolutely positioned ancestor of a box when it is fragmented apart (see
+    /// <see cref="OutOfFlowItems"/>), or null: the static position of the box is in its contents.
+    /// </summary>
+    private ParallelItem? GetStaticPositionCarrier(ContainerBox box)
+    {
+        if (_root._outOfFlowItems is not { } items)
+            return null;
+
+        for (var ancestor = box.Parent; ancestor is not null; ancestor = ancestor.Parent)
+        {
+            if (!ancestor.IsOutOfFlow || !PositionedLayout.IsAbsolutelyPositioned(ancestor))
+                continue;
+
+            foreach (var item in items)
+            {
+                if (ReferenceEquals(item?.Box?.Box, ancestor))
+                    return item;
+            }
+
+            return null;
+        }
+
+        return null;
     }
 
     /// <summary>

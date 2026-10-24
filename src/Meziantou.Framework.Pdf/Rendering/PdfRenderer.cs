@@ -1,5 +1,6 @@
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Imaging.Drawing;
+using Meziantou.Framework.Pdf.Objects;
 using Meziantou.Framework.Pdf.Rendering.Graphics;
 
 namespace Meziantou.Framework.Pdf.Rendering;
@@ -36,12 +37,30 @@ public static class PdfRenderer
             image.Draw(canvas =>
             {
                 var optionalContent = new OptionalContent(page.Document);
-                var renderer = new ContentRenderer(cache, page.Document, new RenderGraphicsState { Ctm = matrix }, depth: 0, optionalContent)
+
+                // A knockout page group (11.4.7): the objects of the page are elements composited with the paper
+                var pageGroup = page.Dictionary.Get<PdfDictionary>(PdfNames.Group);
+                var isKnockout = pageGroup?.GetName(PdfNames.S)?.Value == "Transparency" && pageGroup.Get<PdfBoolean>(PdfNames.K)?.Value is true;
+                void Draw(DrawingCanvas target)
                 {
-                    BaseMatrix = matrix,
-                    DeviceSize = (width, height),
-                };
-                renderer.Run(canvas, GetContent(page), page.Resources);
+                    var renderer = new ContentRenderer(cache, page.Document, new RenderGraphicsState { Ctm = matrix }, depth: 0, optionalContent)
+                    {
+                        BaseMatrix = matrix,
+                        DeviceSize = (width, height),
+                        IsKnockoutContext = isKnockout,
+                    };
+                    renderer.Run(target, GetContent(page), page.Resources);
+                }
+
+                if (isKnockout)
+                {
+                    canvas.Group(new GroupOptions { IsKnockout = true }, content => Draw(content));
+                }
+                else
+                {
+                    Draw(canvas);
+                }
+
                 if (options.RenderAnnotations)
                 {
                     AnnotationRenderer.Render(page, canvas, cache, matrix, (width, height), optionalContent);

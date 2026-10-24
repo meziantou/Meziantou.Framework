@@ -1844,6 +1844,264 @@ public readonly ref struct DrawingCanvas
         }
     }
 
+    /// <summary>Runs a callback whose drawings are made in a group, which is composited as a whole when it ends.</summary>
+    /// <remarks>
+    /// <para>
+    /// A group is a layer of 16-bit samples. An isolated group starts transparent, as a layer. A non-isolated group
+    /// starts with the pixels under it, which its blend modes mix with; when it ends, those pixels are removed from its
+    /// result (ISO 32000-2, 11.4.8), so that the group is composited once. A knockout group composites each element drawn
+    /// with <see cref="KnockoutElement(double, DrawingAction, DrawingAction?, MaskMode)"/> on its canvas with its
+    /// initial backdrop: the element replaces what is under it in proportion to its shape; the other drawings of the
+    /// group are composited as in any group. When the group ends, its alpha is multiplied by its opacity and by the
+    /// values of its mask, then it is drawn on the canvas with its blend mode. A clip that is active when the group starts
+    /// applies to the group as a whole.
+    /// </para>
+    /// <para>
+    /// The group starts with the pixels of what the call is made on: the canvas, or the layer the call is made in.
+    /// Under a projective transformation, the group is drawn as an isolated layer.
+    /// </para>
+    /// </remarks>
+    /// <param name="options">The attributes of the group.</param>
+    /// <param name="content">The callback that draws the content of the group. It must not be asynchronous and must not retain the canvas.</param>
+    /// <param name="mask">The callback that draws the mask of the group, or <see langword="null"/> for none: the alpha, or the luminance (<see cref="GroupOptions.MaskMode"/>), of what it draws multiplies the alpha of the group.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> or <paramref name="content"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate of <see cref="GroupOptions.Bounds"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The opacity is not between 0 and 1, or the blend mode or the mask mode is not defined.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The group or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Group(GroupOptions options, DrawingAction content, DrawingAction? mask = null)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(content);
+        var session = GetSession();
+        var inner = session.IsProjective ? null : session.PushGroup(options.Bounds, options.Opacity, options.BlendMode, options.IsIsolated, options.IsKnockout, options.MaskMode);
+        if (inner is null)
+        {
+            DrawAsLayer(session, options.Opacity, options.BlendMode, options.MaskMode, content, mask);
+            return;
+        }
+
+        var isDrawn = false;
+        try
+        {
+            content(new DrawingCanvas(inner));
+            if (mask is not null)
+            {
+                mask(new DrawingCanvas(session.PushGroupMask()));
+            }
+
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>Runs a callback whose drawings are made in a group, which is composited as a whole when it ends, passing caller state to avoid closure allocations.</summary>
+    /// <remarks>See <see cref="Group(GroupOptions, DrawingAction, DrawingAction?)"/>.</remarks>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="options">The attributes of the group.</param>
+    /// <param name="state">The state passed to <paramref name="content"/> and <paramref name="mask"/>.</param>
+    /// <param name="content">The callback that draws the content of the group. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <param name="mask">The callback that draws the mask of the group, or <see langword="null"/> for none.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> or <paramref name="content"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A coordinate of <see cref="GroupOptions.Bounds"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The opacity is not between 0 and 1, or the blend mode or the mask mode is not defined.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The group or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void Group<TState>(GroupOptions options, TState state, DrawingAction<TState> content, DrawingAction<TState>? mask = null)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(content);
+        var session = GetSession();
+        var inner = session.IsProjective ? null : session.PushGroup(options.Bounds, options.Opacity, options.BlendMode, options.IsIsolated, options.IsKnockout, options.MaskMode);
+        if (inner is null)
+        {
+            DrawAsLayer(session, options.Opacity, options.BlendMode, options.MaskMode, state, content, mask);
+            return;
+        }
+
+        var isDrawn = false;
+        try
+        {
+            content(new DrawingCanvas(inner), state);
+            if (mask is not null)
+            {
+                mask(new DrawingCanvas(session.PushGroupMask()), state);
+            }
+
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>Runs a callback that draws an element of the knockout group whose canvas this is.</summary>
+    /// <remarks>
+    /// <para>
+    /// The callback draws the element with an opacity of 1, with its own blend modes; the element is composited with the
+    /// initial backdrop of the group with <paramref name="opacity"/> and the values of <paramref name="mask"/>, and
+    /// replaces what the group has in proportion to its shape (ISO 32000-2, 11.4.8): the alpha of what the callback
+    /// draws counts as shape, so an element drawn with semi-transparent paints knocks out in proportion to their alpha.
+    /// </para>
+    /// <para>
+    /// On a canvas that is not the canvas of a knockout group (in a layer of the group, for instance), the element is a
+    /// non-isolated group of its own, with that opacity and mask: it is drawn as if the callback drew with them.
+    /// </para>
+    /// </remarks>
+    /// <param name="opacity">The opacity of the element, from 0 to 1.</param>
+    /// <param name="content">The callback that draws the element. It must not be asynchronous and must not retain the canvas.</param>
+    /// <param name="mask">The callback that draws the mask of the element, or <see langword="null"/> for none: its values multiply the opacity of the element.</param>
+    /// <param name="maskMode">How the values of the mask are read.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="content"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="opacity"/> is not between 0 and 1, or <paramref name="maskMode"/> is not a defined <see cref="MaskMode"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The element or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void KnockoutElement(double opacity, DrawingAction content, DrawingAction? mask = null, MaskMode maskMode = MaskMode.Alpha)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+        var session = GetSession();
+        var inner = session.IsProjective ? null : session.PushKnockoutElement(opacity, maskMode);
+        if (inner is null)
+        {
+            DrawAsLayer(session, opacity, BlendMode.Normal, maskMode, content, mask);
+            return;
+        }
+
+        var isDrawn = false;
+        try
+        {
+            content(new DrawingCanvas(inner));
+            if (mask is not null)
+            {
+                mask(new DrawingCanvas(session.PushGroupMask()));
+            }
+
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>Runs a callback that draws an element of the knockout group whose canvas this is, passing caller state to avoid closure allocations.</summary>
+    /// <remarks>See <see cref="KnockoutElement(double, DrawingAction, DrawingAction?, MaskMode)"/>.</remarks>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="opacity">The opacity of the element, from 0 to 1.</param>
+    /// <param name="state">The state passed to <paramref name="content"/> and <paramref name="mask"/>.</param>
+    /// <param name="content">The callback that draws the element. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <param name="mask">The callback that draws the mask of the element, or <see langword="null"/> for none.</param>
+    /// <param name="maskMode">How the values of the mask are read.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="content"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="opacity"/> is not between 0 and 1, or <paramref name="maskMode"/> is not a defined <see cref="MaskMode"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="ImageResourceLimitException">The element or the working storage would exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void KnockoutElement<TState>(double opacity, TState state, DrawingAction<TState> content, DrawingAction<TState>? mask = null, MaskMode maskMode = MaskMode.Alpha)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(content);
+        var session = GetSession();
+        var inner = session.IsProjective ? null : session.PushKnockoutElement(opacity, maskMode);
+        if (inner is null)
+        {
+            DrawAsLayer(session, opacity, BlendMode.Normal, maskMode, state, content, mask);
+            return;
+        }
+
+        var isDrawn = false;
+        try
+        {
+            content(new DrawingCanvas(inner), state);
+            if (mask is not null)
+            {
+                mask(new DrawingCanvas(session.PushGroupMask()), state);
+            }
+
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>Draws a group as an isolated layer, with its mask: what a group is under a projective transformation.</summary>
+    private void DrawAsLayer(DrawingSession session, double opacity, BlendMode blendMode, MaskMode maskMode, DrawingAction content, DrawingAction? mask)
+    {
+        if (mask is null)
+        {
+            Layer(opacity, content, CompositeMode.SourceOver, blendMode);
+            return;
+        }
+
+        DrawingSession.ValidateMaskMode(maskMode, nameof(maskMode));
+        session.PushLayer(opacity, CompositeMode.SourceOver, blendMode);
+        var isDrawn = false;
+        try
+        {
+            content(this);
+            session.PushMask(maskMode);
+            var isMasked = false;
+            try
+            {
+                mask(this);
+                isMasked = true;
+            }
+            finally
+            {
+                session.PopLayer(isMasked);
+            }
+
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
+    /// <summary>Draws a group as an isolated layer, with its mask, passing caller state: what a group is under a projective transformation.</summary>
+    private void DrawAsLayer<TState>(DrawingSession session, double opacity, BlendMode blendMode, MaskMode maskMode, TState state, DrawingAction<TState> content, DrawingAction<TState>? mask)
+        where TState : allows ref struct
+    {
+        DrawingSession.ValidateMaskMode(maskMode, nameof(maskMode));
+        session.PushLayer(opacity, CompositeMode.SourceOver, blendMode);
+        var isDrawn = false;
+        try
+        {
+            content(this, state);
+            if (mask is not null)
+            {
+                session.PushMask(maskMode);
+                var isMasked = false;
+                try
+                {
+                    mask(this, state);
+                    isMasked = true;
+                }
+                finally
+                {
+                    session.PopLayer(isMasked);
+                }
+            }
+
+            isDrawn = true;
+        }
+        finally
+        {
+            session.PopLayer(isDrawn);
+        }
+    }
+
     /// <summary>Runs a callback whose drawings get new colors, as a whole, before they are drawn on the canvas: a photograph in gray levels, an icon in another color, a drawing that is dimmed.</summary>
     /// <remarks>
     /// <para>

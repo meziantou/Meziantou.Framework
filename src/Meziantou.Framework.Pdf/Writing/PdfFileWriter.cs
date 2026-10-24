@@ -102,7 +102,12 @@ internal sealed class PdfFileWriter
         }
 
         var references = new RenumberingReferenceWriter(numbers, objects, writerObjects);
-        var useObjectStreams = _options.UseObjectStreams;
+        // PDF/A-1 is PDF 1.4 (ISO 19005-1, 6.1.4): a cross-reference table, without object streams
+        var isPdfA1 = Conformance.PdfALevel.GetPart(_document.PdfAConformance) == 1;
+        if (isPdfA1 && _options.Version is { } requested && requested != PdfVersion.Pdf14)
+            throw new InvalidOperationException($"PDF/A-1 is PDF 1.4: the requested version is {requested}");
+
+        var useObjectStreams = _options.UseObjectStreams && !isPdfA1;
         var version = GetVersion(useObjectStreams);
         WriteHeader(version);
 
@@ -292,7 +297,7 @@ internal sealed class PdfFileWriter
     /// Gets a value indicating whether the document information dictionary is left out of the trailer: PDF/A-4 only
     /// allows it with page-piece dictionaries (ISO 19005-4, 6.1.3), the XMP metadata has the information.
     /// </summary>
-    private bool OmitsInformation() => _document.PdfAConformance == PdfAConformance.PdfA4 && !_document.Catalog.ContainsKey(PdfName.Create("PieceInfo"));
+    private bool OmitsInformation() => Conformance.PdfALevel.GetPart(_document.PdfAConformance) == 4 && !_document.Catalog.ContainsKey(PdfName.Create("PieceInfo"));
 
     private PdfVersion GetVersion(bool useObjectStreams)
     {

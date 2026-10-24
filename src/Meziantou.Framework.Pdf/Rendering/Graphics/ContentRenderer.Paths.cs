@@ -94,14 +94,28 @@ internal sealed partial class ContentRenderer
 
         if (_optionalContent.IsVisible)
         {
-            if (fill is { } fillRule)
+            if (fill is { } rule && stroke && IsKnockoutContext && _element is null)
             {
-                FillUserPath(canvas, path, fillRule);
+                // In a knockout group, the fill and the stroke of a path are one element: the stroke composites over
+                // the fill instead of knocking it out (11.7.4.4). Their alphas are their own: the element has an
+                // opacity of 1, and the alpha of what it draws is its shape
+                PaintElement(canvas, 1, element =>
+                {
+                    FillUserPath(element, path, rule);
+                    StrokeUserPath(element, path);
+                });
             }
-
-            if (stroke)
+            else
             {
-                StrokeUserPath(canvas, path);
+                if (fill is { } fillRule)
+                {
+                    FillUserPath(canvas, path, fillRule);
+                }
+
+                if (stroke)
+                {
+                    StrokeUserPath(canvas, path);
+                }
             }
         }
 

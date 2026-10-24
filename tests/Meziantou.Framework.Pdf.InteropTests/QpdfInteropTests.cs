@@ -26,6 +26,21 @@ public sealed class QpdfInteropTests
         Assert.Contains("No syntax or stream encoding errors found", result.StandardOutputText, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task EmbeddedFilesAreReadByQpdf(bool objectStreams)
+    {
+        var qpdf = await QpdfTool.LocateAsync(XunitCancellationToken);
+        var path = InteropDocuments.Write("attachments", objectStreams);
+
+        var keys = await qpdf.ListAttachmentsAsync(path, XunitCancellationToken);
+        var data = await qpdf.ShowAttachmentAsync(path, "data.csv", XunitCancellationToken);
+
+        Assert.Equal(["data.csv", "r\u00E9sum\u00E9.txt"], keys);
+        Assert.Equal(InteropDocuments.AttachedCsv, data);
+    }
+
     [Fact]
     public async Task IncrementalUpdatesPassTheCheck()
     {

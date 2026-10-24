@@ -270,20 +270,20 @@ internal sealed partial class ContentRenderer
                 MoveText(0, -_state.Leading);
                 break;
             case "Tj" when operands.Count >= 1 && operands[^1] is PdfString text:
-                ShowText(canvas, text.Span, resources);
+                PaintTextElement(canvas, target => ShowText(target, text.Span, resources));
                 break;
             case "'" when operands.Count >= 1 && operands[^1] is PdfString text:
                 MoveText(0, -_state.Leading);
-                ShowText(canvas, text.Span, resources);
+                PaintTextElement(canvas, target => ShowText(target, text.Span, resources));
                 break;
             case "\"" when operands.Count >= 3 && operands[^1] is PdfString text:
                 _state.WordSpacing = Number(operands, 0);
                 _state.CharacterSpacing = Number(operands, 1);
                 MoveText(0, -_state.Leading);
-                ShowText(canvas, text.Span, resources);
+                PaintTextElement(canvas, target => ShowText(target, text.Span, resources));
                 break;
             case "TJ" when operands.Count >= 1 && operands[^1] is PdfArray array:
-                ShowTextArray(canvas, array, resources);
+                PaintTextElement(canvas, target => ShowTextArray(target, array, resources));
                 break;
             case "d1" when StencilColor is { } stencil:
                 // A Type 3 glyph that is a stencil (9.6.4): its colors are the fill color of the text

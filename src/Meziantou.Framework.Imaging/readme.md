@@ -1343,6 +1343,21 @@ of the layer by the opacity, as the opacity of a brush does, then combines the l
 half its opacity keeps half of what it covers and nothing else. No other layer is made. `Layer(bounds, ...)` and
 `BackdropLayer` take it too; with source-over, both modes draw the same pixels.
 
+**Groups**. `canvas.Group(options, content, mask)` composites its drawings as a whole, as the transparency groups of
+PDF (ISO 32000-2, 11.4) do. An isolated group (`GroupOptions.IsIsolated`, the default) starts transparent, as a layer.
+A non-isolated group starts with the pixels under it, which its blend modes mix with: green multiplied in a group over
+red is black, where an isolated group keeps green; when it ends, the pixels it started with are removed from its result
+(the group alone is tracked on a plane of its own), so that they are not composited twice. In a knockout group
+(`GroupOptions.IsKnockout`), each element drawn with `KnockoutElement(opacity, content, mask)` on the canvas of the group
+is composited with the initial backdrop of the group, and replaces the elements before it in proportion to its shape:
+two overlapping translucent squares show the second one only where they overlap. The callback of an element draws it
+with an opacity of 1, the opacity and the mask of the element are applied when it ends, and the alpha of what it draws
+counts as its shape; outside a knockout group, an element is drawn as if the callback drew with its opacity. The mask
+of a group or of an element multiplies its alpha, by its alpha or its luminance (`GroupOptions.MaskMode`); then the
+group is drawn with its opacity and blend mode. A group is a bounded layer of 16-bit samples, with one more plane when
+it is not isolated, and an element of a knockout group is another; under a projective transformation, a group is drawn
+as an isolated layer.
+
 **Shadows**. `canvas.Shadow(color, offset, blur, callback)` draws what the callback draws with its shadow under it: a
 drop shadow, or a glow when there is no offset. The drawings are made on a layer; the shadow is the alpha of that layer
 (the shape of everything the callback drew, as a whole), blurred by a Gaussian blur of the given standard deviation,

@@ -175,6 +175,10 @@ internal sealed partial class ContentRenderer
             BaseMatrix = BaseMatrix,
             DeviceSize = DeviceSize,
             StencilColor = _state.FillColorSpace is Colors.RenderColorSpace.PatternSpace ? null : fill,
+
+            // A glyph of a text-showing operator of a knockout group is drawn in the element of the operator
+            IsKnockoutContext = IsKnockoutContext,
+            Element = _element,
         };
         renderer._activeForms.UnionWith(_activeForms);
         renderer.Run(canvas, procedure.GetDecodedData(), glyphs.Resources ?? resources);

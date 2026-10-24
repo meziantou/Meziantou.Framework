@@ -2,9 +2,14 @@ using Meziantou.Framework.Pdf.Objects;
 
 namespace Meziantou.Framework.Pdf;
 
-/// <summary>A destination: a page and how it is shown (ISO 32000-2, 12.3.2), the target of an outline item or a link.</summary>
+/// <summary>
+/// A destination: a page and how it is shown (ISO 32000-2, 12.3.2), the target of an outline item or a link. A
+/// destination can also target a structure element (<see cref="WithStructureElement"/>), as PDF/UA-2 requires.
+/// </summary>
 public sealed class PdfDestination
 {
+    private static readonly PdfName SDName = PdfName.Create("SD");
+
     private PdfDestination(PdfPage page, PdfDestinationKind kind, double? left = null, double? top = null, double? right = null, double? bottom = null, double? zoom = null)
     {
         Page = page;
@@ -36,6 +41,13 @@ public sealed class PdfDestination
 
     /// <summary>Gets the zoom factor of a <see cref="PdfDestinationKind.Xyz"/> destination (1 is 100%), or <see langword="null"/> to keep the current one.</summary>
     public double? Zoom { get; }
+
+    /// <summary>
+    /// Gets the structure element the destination targets (a structure destination, 12.3.2.3), or
+    /// <see langword="null"/>. A destination with a structure element is written as a <c>GoTo</c> action whose
+    /// <c>/D</c> is the page and whose <c>/SD</c> is the element (12.6.4.2).
+    /// </summary>
+    public PdfStructureElement? StructureElement { get; private init; }
 
     /// <summary>Creates a destination that shows the whole page.</summary>
     /// <param name="page">The page.</param>
@@ -84,10 +96,54 @@ public sealed class PdfDestination
         };
     }
 
-    /// <summary>Writes the destination as an explicit destination array (12.3.2.2).</summary>
-    internal PdfArray ToArray()
+    /// <summary>Creates a destination that also targets a structure element: the element that holds the content shown at the destination, such as a heading.</summary>
+    /// <param name="element">The structure element, of the document of the page.</param>
+    /// <returns>A destination with the same page and view, and the structure element.</returns>
+    /// <exception cref="ArgumentException">The element is not an element of the document of the page.</exception>
+    public PdfDestination WithStructureElement(PdfStructureElement element)
     {
-        var array = new PdfArray(Page.Reference);
+        ArgumentNullException.ThrowIfNull(element);
+        if (element.Tree.Document != Page.Document)
+            throw new ArgumentException("The structure element is not an element of the document of the page", nameof(element));
+
+        return Copy(element);
+    }
+
+    private PdfDestination Copy(PdfStructureElement element) => new(Page, Kind, Left, Top, Right, Bottom, Zoom) { StructureElement = element };
+
+    /// <summary>
+    /// Writes the destination in a dictionary that has one (an outline item, a link): <c>/Dest</c>, or, with a structure
+    /// element, a <c>GoTo</c> action with the page destination and the structure destination (12.6.4.2, Table 202).
+    /// </summary>
+    internal void WriteTo(PdfDictionary dictionary)
+    {
+        if (StructureElement is not { } element)
+        {
+            dictionary[PdfNames.Dest] = ToArray();
+            if (dictionary.Get<PdfDictionary>(PdfNames.A) is { } existing && existing.GetName(PdfNames.S) == PdfNames.GoTo)
+            {
+                dictionary.Remove(PdfNames.A);
+            }
+
+            return;
+        }
+
+        dictionary.Remove(PdfNames.Dest);
+        dictionary[PdfNames.A] = new PdfDictionary
+        {
+            [PdfNames.S] = PdfNames.GoTo,
+            [PdfNames.D] = ToArray(),
+            [SDName] = ToArray(element.Reference),
+        };
+    }
+
+    /// <summary>Writes the destination as an explicit destination array (12.3.2.2).</summary>
+    internal PdfArray ToArray() => ToArray(Page.Reference);
+
+    /// <summary>Writes the destination as an explicit destination array (12.3.2.2), or a structure destination (12.3.2.3) when the target is a structure element.</summary>
+    private PdfArray ToArray(PdfReference target)
+    {
+        var array = new PdfArray(target);
         switch (Kind)
         {
             case PdfDestinationKind.Xyz:
@@ -145,8 +201,15 @@ public sealed class PdfDestination
             case PdfString text:
                 return Read(document, FindNamedDestination(document, text.ToText(), nameTree: true), depth + 1);
             case PdfDictionary dictionary:
-                // An entry of a /Dests dictionary, or a GoTo action
-                return Read(document, dictionary[PdfNames.D], depth + 1);
+                // An entry of a /Dests dictionary, or a GoTo action, which can have a structure destination (12.6.4.2)
+                var destination = Read(document, dictionary[PdfNames.D], depth + 1);
+                if (destination is not null && dictionary.Get<PdfArray>(SDName) is { Count: > 0 } structure && structure[0] is PdfReference reference
+                    && reference.Resolve() is PdfDictionary element && element.GetName(PdfNames.S) is not null)
+                {
+                    return destination.Copy(new PdfStructureElement(document.StructureTree, element, reference));
+                }
+
+                return destination;
             default:
                 return null;
         }

@@ -33,7 +33,6 @@ rendering/pdfjs/test/pdfs/issue13242.pdf#0: Different
 rendering/pdfjs/test/pdfs/issue13316_reduced.pdf#0: Different
 rendering/pdfjs/test/pdfs/issue13372.pdf#0: Different
 rendering/pdfjs/test/pdfs/issue13447.pdf#0: Different
-rendering/pdfjs/test/pdfs/issue13520.pdf#0: Different
 rendering/pdfjs/test/pdfs/issue13916.pdf#0: Different
 rendering/pdfjs/test/pdfs/issue14200.pdf#0: Different
 rendering/pdfjs/test/pdfs/issue14256.pdf#0: Different
@@ -71,6 +70,11 @@ rendering/pdfjs/test/pdfs/issue9534_reduced.pdf#0: Different
 rendering/pdfjs/test/pdfs/jbig2_file_header.pdf#0: Different
 rendering/pdfjs/test/pdfs/jpx_smaskindata.pdf#0: Different
 rendering/pdfjs/test/pdfs/jpx_subsampling.pdf#0: Different
+rendering/pdfjs/test/pdfs/knockout_groups_test.pdf#0: Different
+rendering/pdfjs/test/pdfs/knockout_inner_backdrop.pdf#0: Different
+rendering/pdfjs/test/pdfs/knockout_isolated_overlap.pdf#0: Different
+rendering/pdfjs/test/pdfs/knockout_nested_group_alpha.pdf#0: Different
+rendering/pdfjs/test/pdfs/knockout_smask.pdf#0: Different
 rendering/pdfjs/test/pdfs/large_jpeg_downscale.pdf#0: Different
 rendering/pdfjs/test/pdfs/pr12564.pdf#0: Different
 rendering/pdfjs/test/pdfs/standard_fonts.pdf#0: Different

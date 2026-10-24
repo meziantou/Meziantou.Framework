@@ -3,7 +3,7 @@ using Meziantou.Framework.Pdf.Objects;
 namespace Meziantou.Framework.Pdf;
 
 /// <summary>An annotation of a page (ISO 32000-2, 12.5): a link, a note, a form field widget, ...</summary>
-/// <remarks>The class cannot be derived outside the library: <see cref="PdfLinkAnnotation"/> represents the links.</remarks>
+/// <remarks>The class cannot be derived outside the library: <see cref="PdfLinkAnnotation"/> represents the links, <see cref="PdfFileAttachmentAnnotation"/> the file attachments.</remarks>
 public class PdfAnnotation
 {
     private protected PdfAnnotation(PdfPage page, PdfDictionary dictionary, PdfReference? reference)
@@ -43,6 +43,9 @@ public class PdfAnnotation
     {
         if (dictionary.GetName(PdfNames.Subtype) == PdfNames.Link)
             return new PdfLinkAnnotation(page, dictionary, reference);
+
+        if (dictionary.GetName(PdfNames.Subtype) == PdfFileAttachmentAnnotation.FileAttachmentName)
+            return new PdfFileAttachmentAnnotation(page, dictionary, reference);
 
         return new PdfAnnotation(page, dictionary, reference);
     }

@@ -29,7 +29,12 @@ the XML documentation and `readme.md` consistent in the same change.
   MuPDF, Poppler and PDFium on the corpora (`expectations/bilevel-images.txt` of the corpus tests records the digests).
 - **Conformance** (`Conformance/`, `Structure/`): the save checks what it can of the PDF/A and PDF/UA levels and writes
   what they need (output intent, XMP identification with the extension schema of PDF/UA for PDF/A-2 and -3, viewer
-  preferences, annotation flags; PDF/A-4 leaves the document information dictionary out of the trailer). The
+  preferences, annotation flags; PDF/A-4 leaves the document information dictionary out of the trailer; PDF/A-1 is
+  written as PDF 1.4 with a cross-reference table, a version 2 sRGB profile (`SrgbV2Profile`) and the `CIDSet` of the
+  font subsets; PDF/UA-2 puts the PDF 2.0 standard types in the PDF 2.0 namespace and needs structure destinations).
+  `PdfAConformance` is a published enum: new levels are appended, never inserted. Embedded files
+  (`Navigation/PdfEmbeddedFile*.cs`) write the name tree as one flat sorted node and associate the document files with
+  the catalog (`/AF`). The
   structure tree keeps its parent tree in objects as the content is tagged (`/StructParents` of the pages,
   `/StructParent` of the annotations) and writes it as one flat number tree. `ConformanceInteropTests` validates the
   documents with the veraPDF of the Meziantou.Prebuilt release: the rules they are known to fail are listed in

@@ -34,7 +34,7 @@ public sealed class PdfLinkAnnotation : PdfAnnotation
                 return destination;
 
             if (Dictionary.Get<PdfDictionary>(PdfNames.A) is { } action && action.GetName(PdfNames.S) == PdfNames.GoTo)
-                return PdfDestination.Read(Page.Document, action[PdfNames.D]);
+                return PdfDestination.Read(Page.Document, action);
 
             return null;
         }

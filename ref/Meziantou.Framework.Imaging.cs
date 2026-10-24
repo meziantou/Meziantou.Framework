@@ -1424,10 +1424,14 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void FilterBackdrop(Meziantou.Framework.Imaging.ColorMatrix matrix) { }
         public void Flattening(double tolerance, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
         public void Flattening<TState>(double tolerance, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
+        public void Group(Meziantou.Framework.Imaging.Drawing.GroupOptions options, Meziantou.Framework.Imaging.Drawing.DrawingAction content, Meziantou.Framework.Imaging.Drawing.DrawingAction? mask = null) { }
+        public void Group<TState>(Meziantou.Framework.Imaging.Drawing.GroupOptions options, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> content, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState>? mask = null) where TState : allows ref struct { }
         public void HighPrecision(Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
         public void HighPrecision<TState>(TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
         public void InnerShadow(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.PointD offset, double blur, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
         public void InnerShadow<TState>(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.PointD offset, double blur, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
+        public void KnockoutElement(double opacity, Meziantou.Framework.Imaging.Drawing.DrawingAction content, Meziantou.Framework.Imaging.Drawing.DrawingAction? mask = null, Meziantou.Framework.Imaging.Drawing.MaskMode maskMode = Meziantou.Framework.Imaging.Drawing.MaskMode.Alpha) { }
+        public void KnockoutElement<TState>(double opacity, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> content, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState>? mask = null, Meziantou.Framework.Imaging.Drawing.MaskMode maskMode = Meziantou.Framework.Imaging.Drawing.MaskMode.Alpha) where TState : allows ref struct { }
         public void Layer(double opacity, Meziantou.Framework.Imaging.Drawing.DrawingAction action, Meziantou.Framework.Imaging.Drawing.CompositeMode compositeMode = Meziantou.Framework.Imaging.Drawing.CompositeMode.SourceOver, Meziantou.Framework.Imaging.Drawing.BlendMode blendMode = Meziantou.Framework.Imaging.Drawing.BlendMode.Normal) { }
         public void Layer(Meziantou.Framework.Imaging.RectangleD bounds, double opacity, Meziantou.Framework.Imaging.Drawing.DrawingAction action, Meziantou.Framework.Imaging.Drawing.CompositeMode compositeMode = Meziantou.Framework.Imaging.Drawing.CompositeMode.SourceOver, Meziantou.Framework.Imaging.Drawing.BlendMode blendMode = Meziantou.Framework.Imaging.Drawing.BlendMode.Normal) { }
         public void Layer(double opacity, Meziantou.Framework.Imaging.Drawing.DrawingAction action, Meziantou.Framework.Imaging.Drawing.CompositeMode compositeMode, Meziantou.Framework.Imaging.Drawing.BlendMode blendMode, Meziantou.Framework.Imaging.Drawing.LayerOpacity opacityMode) { }
@@ -1638,6 +1642,16 @@ namespace Meziantou.Framework.Imaging.Drawing
         public override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.Imaging.Drawing.GradientStop left, Meziantou.Framework.Imaging.Drawing.GradientStop right) => throw null;
         public static bool operator !=(Meziantou.Framework.Imaging.Drawing.GradientStop left, Meziantou.Framework.Imaging.Drawing.GradientStop right) => throw null;
+    }
+
+    public sealed class GroupOptions
+    {
+        public Meziantou.Framework.Imaging.Drawing.BlendMode BlendMode { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.RectangleD? Bounds { get => throw null; init { } }
+        public bool IsIsolated { get => throw null; init { } }
+        public bool IsKnockout { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Drawing.MaskMode MaskMode { get => throw null; init { } }
+        public double Opacity { get => throw null; init { } }
     }
 
     public sealed class ImageBrush : Meziantou.Framework.Imaging.Drawing.Brush

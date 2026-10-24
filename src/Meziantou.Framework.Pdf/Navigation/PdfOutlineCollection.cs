@@ -157,10 +157,17 @@ public sealed class PdfOutlineCollection : IList<PdfOutlineItem>, IReadOnlyList<
 
             if (item.Changes.HasFlag(OutlineItemChanges.Destination))
             {
-                dictionary[PdfNames.Dest] = item.Destination?.ToArray();
-                if (dictionary.Get<PdfDictionary>(PdfNames.A) is { } action && action.GetName(PdfNames.S) == PdfNames.GoTo)
+                if (item.Destination is { } destination)
                 {
-                    dictionary.Remove(PdfNames.A);
+                    destination.WriteTo(dictionary);
+                }
+                else
+                {
+                    dictionary.Remove(PdfNames.Dest);
+                    if (dictionary.Get<PdfDictionary>(PdfNames.A) is { } action && action.GetName(PdfNames.S) == PdfNames.GoTo)
+                    {
+                        dictionary.Remove(PdfNames.A);
+                    }
                 }
             }
 
@@ -229,7 +236,7 @@ public sealed class PdfOutlineCollection : IList<PdfOutlineItem>, IReadOnlyList<
     private static PdfDestination? ReadGoToAction(PdfDocument document, PdfDictionary item)
     {
         if (item.Get<PdfDictionary>(PdfNames.A) is { } action && action.GetName(PdfNames.S) == PdfNames.GoTo)
-            return PdfDestination.Read(document, action[PdfNames.D]);
+            return PdfDestination.Read(document, action);
 
         return null;
     }

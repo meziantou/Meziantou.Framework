@@ -444,6 +444,11 @@ public sealed class PdfDocumentTests
     [InlineData(PdfAConformance.PdfA2A, PdfUAConformance.None, "needs a tagged document")]
     [InlineData(PdfAConformance.None, PdfUAConformance.PdfUA1, "needs the title")]
     [InlineData(PdfAConformance.None, PdfUAConformance.PdfUA1, "needs the language")]
+    [InlineData(PdfAConformance.PdfA1B, PdfUAConformance.None, "is not embedded")]
+    [InlineData(PdfAConformance.PdfA1A, PdfUAConformance.None, "needs a tagged document")]
+    [InlineData(PdfAConformance.PdfA4F, PdfUAConformance.None, "PDF/A-4f needs at least one embedded file")]
+    [InlineData(PdfAConformance.None, PdfUAConformance.PdfUA2, "needs the title")]
+    [InlineData(PdfAConformance.PdfA2B, PdfUAConformance.PdfUA2, "cannot be combined with PDF/A-2")]
     public void TheRequirementsOfTheConformanceLevelsAreChecked(PdfAConformance pdfA, PdfUAConformance pdfUA, string message)
     {
         var document = new PdfDocument { PdfAConformance = pdfA, PdfUAConformance = pdfUA };
@@ -468,6 +473,192 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void PdfA1IsAPdf14FileWithoutTransparency()
+    {
+        var font = PdfFont.Load(TestHarness.RepositoryPaths.Fonts / "noto-sans" / "NotoSans-Regular.subset.ttf");
+        var document = new PdfDocument { PdfAConformance = PdfAConformance.PdfA1B };
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("AVATAR", font, 12, 10, 10);
+
+        var pdf = document.ToByteArray();
+
+        Assert.StartsWith("%PDF-1.4\n", Encoding.Latin1.GetString(pdf), StringComparison.Ordinal);
+        var text = Encoding.Latin1.GetString(pdf);
+        Assert.Contains("\nxref\n", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("/ObjStm", text, StringComparison.Ordinal);
+        var read = PdfDocument.Open(pdf);
+        Assert.Contains("<pdfaid:part>1</pdfaid:part>", Encoding.UTF8.GetString(read.GetXmpMetadata()!), StringComparison.Ordinal);
+
+        // The CIDSet of the subset: the glyph 0 and the four glyphs of "AVATAR" (the high-order bit is the CID 0)
+        var cidFont = read.Pages[0].Resources!.Get<PdfDictionary>(PdfNames.Font)!.Select(entry => (PdfDictionary)PdfReference.ResolveIfReference(entry.Value)).Single().Get<PdfArray>(PdfNames.DescendantFonts)!.GetResolved(0);
+        var cidSet = ((PdfDictionary)cidFont).Get<PdfDictionary>(PdfNames.FontDescriptor)!.Get<PdfStream>(PdfName.Create("CIDSet"))!.GetDecodedData();
+        Assert.Equal(0x80, cidSet[0] & 0x80);
+        var glyphs = Enumerable.Range(0, cidSet.Length * 8).Count(cid => (cidSet[cid / 8] & (0x80 >> (cid % 8))) != 0);
+        Assert.Equal(5, glyphs);
+
+        // The output intent has an ICC profile of version 2, which converts as the sRGB profile of version 4
+        var intent = (PdfDictionary)read.Catalog.Get<PdfArray>(PdfName.Create("OutputIntents"))!.GetResolved(0);
+        var profile = new Imaging.Metadata.IccProfile(new Imaging.Metadata.MetadataBlob(intent.Get<PdfStream>(PdfName.Create("DestOutputProfile"))!.GetDecodedData()));
+        Assert.Equal(2, profile.Version.Major);
+        byte[] colors = [0, 0, 0, 255, 255, 255, 255, 0, 0, 0, 255, 0, 0, 0, 255, 128, 64, 200, 10, 240, 120];
+        var converted = new byte[colors.Length];
+        IccColorTransform.Create(profile, Imaging.Metadata.IccProfile.Srgb).Convert(colors, converted);
+        for (var i = 0; i < colors.Length; i++)
+        {
+            Assert.True(Math.Abs(colors[i] - converted[i]) <= 1, $"Component {i}: {colors[i]} became {converted[i]}");
+        }
+
+        // A save that asks for another version is refused
+        Assert.Throws<InvalidOperationException>(() => document.ToByteArray(new PdfSaveOptions { Version = PdfVersion.Pdf17 }));
+    }
+
+    [Fact]
+    public void PdfA1RefusesTransparencyAndEmbeddedFiles()
+    {
+        var font = PdfFont.Load(TestHarness.RepositoryPaths.Fonts / "noto-sans" / "NotoSans-Regular.subset.ttf");
+        using var image = Image.ImportPixelData<Rgba32>([new Rgba32(255, 0, 0, 128)], 1, 1);
+        var document = new PdfDocument { PdfAConformance = PdfAConformance.PdfA1B };
+        var page = document.Pages.Add(PdfSize.A4);
+        page.CreateContentBuilder()
+            .DrawText("Office", font, 12, 10, 10)
+            .SetGraphicsState(new PdfExtGState { FillAlpha = 0.5, BlendMode = PdfBlendMode.Multiply })
+            .DrawImage(PdfImage.FromImage(image), 0, 0, 10, 10);
+        page.Annotations.AddFileAttachment(PdfRectangle.FromSize(0, 0, 10, 10), "a.txt", "A"u8);
+        document.EmbeddedFiles.Add("b.txt", "B"u8);
+
+        var message = Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message;
+
+        Assert.Contains("a constant alpha other than 1 (ca)", message, StringComparison.Ordinal);
+        Assert.Contains("the blend mode Multiply", message, StringComparison.Ordinal);
+        Assert.Contains("an image has a soft mask", message, StringComparison.Ordinal);
+        Assert.Contains("does not allow embedded files", message, StringComparison.Ordinal);
+        Assert.Contains("does not allow the FileAttachment annotations", message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(PdfAConformance.PdfA4E, "E")]
+    [InlineData(PdfAConformance.PdfA4F, "F")]
+    public void PdfA4EAndPdfA4FAreIdentified(PdfAConformance conformance, string level)
+    {
+        var document = new PdfDocument { PdfAConformance = conformance };
+        document.Pages.Add(PdfSize.A4);
+        if (conformance == PdfAConformance.PdfA4F)
+        {
+            document.EmbeddedFiles.Add("data.csv", "a,b"u8);
+        }
+
+        var read = PdfDocument.Open(document.ToByteArray());
+
+        var xmp = Encoding.UTF8.GetString(read.GetXmpMetadata()!);
+        Assert.Contains("<pdfaid:part>4</pdfaid:part>", xmp, StringComparison.Ordinal);
+        Assert.Contains($"<pdfaid:conformance>{level}</pdfaid:conformance>", xmp, StringComparison.Ordinal);
+        Assert.Equal(PdfVersion.Pdf20, read.Version);
+        Assert.Null(read.Trailer[PdfNames.Info]);
+
+        // PDF/A-4e, as PDF/A-4, embeds PDF/A documents only
+        if (conformance == PdfAConformance.PdfA4E)
+        {
+            document.EmbeddedFiles.Add("data.csv", "a,b"u8);
+            Assert.Contains("'data.csv' is not a PDF/A-1, PDF/A-2, PDF/A-4 document", Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void Example_PdfUA2()
+    {
+        var fontData = File.ReadAllBytes(TestHarness.RepositoryPaths.Fonts / "noto-sans" / "NotoSans-Regular.subset.ttf");
+
+        #region Pdf_PdfUA2
+        var font = PdfFont.Load(fontData);
+        var document = new PdfDocument
+        {
+            PdfAConformance = PdfAConformance.PdfA4,
+            PdfUAConformance = PdfUAConformance.PdfUA2,
+            Language = "en-US",
+        };
+        document.Information.Title = "Annual report";
+
+        // A single Document element, and headings H1 to H6
+        var root = document.StructureTree.AddElement("Document");
+        var heading = root.AddElement("H1");
+        var page = document.Pages.Add(PdfSize.A4);
+        page.CreateContentBuilder().BeginStructureElement(heading).DrawText("Results", font, 24, 60, 760).EndMarkedContent();
+
+        // The destinations in the document go to structure elements
+        document.Outlines.Add("Results", PdfDestination.Fit(page).WithStructureElement(heading));
+
+        var pdf = document.ToByteArray();
+        #endregion
+
+        var read = PdfDocument.Open(pdf);
+        Assert.Equal(PdfVersion.Pdf20, read.Version);
+        var xmp = Encoding.UTF8.GetString(read.GetXmpMetadata()!);
+        Assert.Contains("<pdfuaid:part>2</pdfuaid:part>", xmp, StringComparison.Ordinal);
+        Assert.Contains("<pdfuaid:rev>2024</pdfuaid:rev>", xmp, StringComparison.Ordinal);
+        Assert.DoesNotContain("pdfaExtension", xmp, StringComparison.Ordinal);
+
+        // The Document and H1 elements are in the PDF 2.0 namespace
+        var structureRoot = read.Catalog.Get<PdfDictionary>(PdfName.Create("StructTreeRoot"))!;
+        var ns = Assert.IsType<PdfDictionary>(structureRoot.Get<PdfArray>(PdfName.Create("Namespaces"))!.GetResolved(0));
+        Assert.Equal("http://iso.org/pdf2/ssn", ns.GetText(PdfName.Create("NS")));
+        var document2 = read.StructureTree.Elements[0];
+        Assert.Same(ns, document2.Dictionary.Get<PdfDictionary>(PdfName.Create("NS")));
+        Assert.Same(ns, document2.Children[0].Dictionary.Get<PdfDictionary>(PdfName.Create("NS")));
+
+        // The outline item has a GoTo action with the page and the structure element
+        var item = read.Outlines[0];
+        Assert.Same(read.Pages[0].Dictionary, item.Destination!.Page.Dictionary);
+        Assert.Same(document2.Children[0].Dictionary, item.Destination.StructureElement!.Dictionary);
+    }
+
+    [Fact]
+    public void PdfUA2ChecksTheStructureAndTheDestinations()
+    {
+        var font = PdfFont.Load(TestHarness.RepositoryPaths.Fonts / "noto-sans" / "NotoSans-Regular.subset.ttf");
+        var document = new PdfDocument { PdfUAConformance = PdfUAConformance.PdfUA2, Language = "en" };
+        document.Information.Title = "Title";
+        document.StructureTree.MapRole("Heading", "H");
+        var first = document.StructureTree.AddElement("Document");
+        var heading = first.AddElement("Heading");
+        first.AddElement("Note");
+        document.StructureTree.AddElement("Part");
+        var page = document.Pages.Add(PdfSize.A4);
+        page.CreateContentBuilder().BeginStructureElement(heading).DrawText("Text", font, 12, 10, 10).EndMarkedContent();
+        document.Outlines.Add("Page", PdfDestination.Fit(page));
+        page.Annotations.AddLink(new PdfRectangle(0, 0, 10, 10), PdfDestination.Fit(page));
+        document.EmbeddedFiles.Add("data.csv", "a,b"u8);
+
+        var message = Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message;
+
+        Assert.Contains("needs a single Document element", message, StringComparison.Ordinal);
+        Assert.Contains("does not allow the H structure type", message, StringComparison.Ordinal);
+        Assert.Contains("does not allow the Note structure type", message, StringComparison.Ordinal);
+        Assert.Contains("the outline item 'Page' goes to a page", message, StringComparison.Ordinal);
+        Assert.Contains("a link goes to a page", message, StringComparison.Ordinal);
+        Assert.Contains("the description of the embedded file 'data.csv'", message, StringComparison.Ordinal);
+        Assert.Throws<ArgumentException>(() => PdfDestination.Fit(page).WithStructureElement(new PdfDocument().StructureTree.AddElement("P")));
+    }
+
+    [Fact]
+    public void ALinkToAStructureElementIsAGoToAction()
+    {
+        var document = new PdfDocument();
+        var element = document.StructureTree.AddElement("H1");
+        var page = document.Pages.Add(PdfSize.A4);
+        page.Annotations.AddLink(new PdfRectangle(0, 0, 10, 10), PdfDestination.Xyz(page, 0, 500).WithStructureElement(element));
+
+        var read = PdfDocument.Open(document.ToByteArray());
+
+        var link = Assert.IsType<PdfLinkAnnotation>(read.Pages[0].Annotations[0]);
+        Assert.Null(link.Dictionary[PdfNames.Dest]);
+        var action = link.Dictionary.Get<PdfDictionary>(PdfNames.A)!;
+        Assert.Equal("GoTo", action.GetName(PdfNames.S)!.Value);
+        Assert.Same(read.StructureTree.Elements[0].Dictionary, action.Get<PdfArray>(PdfName.Create("SD"))!.GetResolved(0));
+        Assert.Equal(PdfDestinationKind.Xyz, link.Destination!.Kind);
+        Assert.Equal(500, link.Destination.Top);
+        Assert.Same(read.StructureTree.Elements[0].Dictionary, link.Destination.StructureElement!.Dictionary);
+    }
+
+    [Fact]
     public void PdfA4KeepsTheInformationInTheMetadataOnly()
     {
         var document = new PdfDocument { PdfAConformance = PdfAConformance.PdfA4 };
@@ -480,6 +671,137 @@ public sealed class PdfDocumentTests
         Assert.Null(read.Trailer[PdfNames.Info]);
         Assert.Contains("<pdfaid:rev>2020</pdfaid:rev>", Encoding.UTF8.GetString(read.GetXmpMetadata()!), StringComparison.Ordinal);
         Assert.Equal(4, read.Pages[0].Annotations[0].Dictionary.GetInteger(PdfNames.F));
+    }
+
+    [Fact]
+    public void Example_EmbeddedFiles()
+    {
+        #region Pdf_EmbeddedFiles
+        var document = new PdfDocument();
+        var page = document.Pages.Add(PdfSize.A4);
+
+        // A file of the document: the name tree of the catalog, associated with the document
+        var csv = "Product,Price\nBook,12\n"u8.ToArray();
+        document.EmbeddedFiles.Add("prices.csv", csv, new PdfEmbeddedFileOptions
+        {
+            Description = "The prices of the table",
+            MimeType = "text/csv",
+            Relationship = PdfAssociatedFileRelationship.Data,
+            ModificationDate = new DateTimeOffset(2026, 10, 24, 9, 30, 0, TimeSpan.Zero),
+        });
+
+        // A file of a page: a file attachment annotation, drawn as an icon
+        page.Annotations.AddFileAttachment(PdfRectangle.FromSize(60, 700, 16, 20), "notes.txt", "Notes"u8, icon: PdfFileAttachmentIcon.Paperclip);
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        var prices = read.EmbeddedFiles[0];
+        var notes = ((PdfFileAttachmentAnnotation)read.Pages[0].Annotations[0]).File!;
+        #endregion
+
+        Assert.Equal("prices.csv", prices.FileName);
+        Assert.Equal("The prices of the table", prices.Description);
+        Assert.Equal("text/csv", prices.MimeType);
+        Assert.Equal(PdfAssociatedFileRelationship.Data, prices.Relationship);
+        Assert.Equal(new DateTimeOffset(2026, 10, 24, 9, 30, 0, TimeSpan.Zero), prices.ModificationDate);
+        Assert.Null(prices.CreationDate);
+        Assert.Equal(csv.Length, prices.Size);
+        Assert.Equal(csv, prices.GetData());
+        Assert.Same(prices.Dictionary, read.Catalog.Get<PdfArray>(PdfName.Create("AF"))!.GetResolved(0));
+
+        Assert.Equal("notes.txt", notes.FileName);
+        Assert.Equal("application/octet-stream", notes.MimeType);
+        Assert.Equal(PdfAssociatedFileRelationship.Unspecified, notes.Relationship);
+        Assert.Equal("Notes"u8.ToArray(), notes.GetData());
+        var annotation = Assert.IsType<PdfFileAttachmentAnnotation>(read.Pages[0].Annotations[0]);
+        Assert.Equal(PdfFileAttachmentIcon.Paperclip, annotation.Icon);
+        Assert.Equal("notes.txt", annotation.Contents);
+        Assert.NotNull(annotation.Dictionary.Get<PdfDictionary>(PdfName.Create("AP"))!.Get<PdfStream>(PdfNames.N));
+        Assert.Same(notes.Dictionary, annotation.Dictionary.Get<PdfArray>(PdfName.Create("AF"))!.GetResolved(0));
+        Assert.HasCount(1, read.EmbeddedFiles);
+    }
+
+    [Fact]
+    public void TheNameTreeOfTheEmbeddedFilesIsSortedAndFilesAreRemoved()
+    {
+        var document = new PdfDocument();
+        var b = document.EmbeddedFiles.Add("b.txt", "B"u8);
+        document.EmbeddedFiles.Add("a.txt", "A"u8);
+        document.Pages.Add(PdfSize.A4).Annotations.AddFileAttachment(PdfRectangle.FromSize(0, 0, 10, 10), b);
+
+        Assert.Throws<ArgumentException>(() => document.EmbeddedFiles.Add("a.txt", "Other"u8));
+        Assert.Throws<ArgumentException>(() => document.EmbeddedFiles.Add("", "Empty"u8));
+        Assert.Throws<ArgumentException>(() => document.EmbeddedFiles.Add("c.txt", "C"u8, new PdfEmbeddedFileOptions { MimeType = "text plain" }));
+        Assert.Throws<ArgumentException>(() => new PdfDocument().Pages.Add(PdfSize.A4).Annotations.AddFileAttachment(PdfRectangle.FromSize(0, 0, 10, 10), b));
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        var tree = read.Catalog.Get<PdfDictionary>(PdfNames.Names)!.Get<PdfDictionary>(PdfName.Create("EmbeddedFiles"))!;
+        var names = tree.Get<PdfArray>(PdfNames.Names)!;
+        Assert.Equal(["a.txt", "b.txt"], [((PdfString)names.GetResolved(0)).ToText(), ((PdfString)names.GetResolved(2)).ToText()]);
+        Assert.Equal(["a.txt", "b.txt"], read.EmbeddedFiles.Select(file => file.FileName));
+
+        // The page keeps its file: the file of the name tree is removed from the tree and from the associated files
+        var removed = read.EmbeddedFiles[1];
+        Assert.True(read.EmbeddedFiles.Remove(removed));
+        Assert.False(read.EmbeddedFiles.Remove(removed));
+        Assert.True(read.EmbeddedFiles.Remove(read.EmbeddedFiles[0]));
+        var saved = PdfDocument.Open(read.ToByteArray());
+        Assert.Empty(saved.EmbeddedFiles);
+        Assert.Null(saved.Catalog[PdfNames.Names]);
+        Assert.Null(saved.Catalog[PdfName.Create("AF")]);
+        Assert.Equal("B"u8.ToArray(), ((PdfFileAttachmentAnnotation)saved.Pages[0].Annotations[0]).File!.GetData());
+    }
+
+    [Fact]
+    public void TheEmbeddedFilesOfAFileAreRead()
+    {
+        // A name tree of two levels with limits, a file with /F only and a file without embedded file stream
+        var file = HandWrittenPdf.CreateSimple()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R /Names << /EmbeddedFiles 6 0 R >> >>")
+            .Add(6, "<< /Kids [7 0 R 8 0 R] >>")
+            .Add(7, "<< /Limits [(a.txt) (a.txt)] /Names [(a.txt) 9 0 R] >>")
+            .Add(8, "<< /Limits [(b.txt) (c.txt)] /Names [(b.txt) << /Type /Filespec /F (external.txt) >> (c.txt) 10 0 R] >>")
+            .Add(9, "<< /Type /Filespec /F (a.txt) /Desc (First) /AFRelationship /Source /EF << /F 11 0 R >> >>")
+            .Add(10, "<< /Type /Filespec /UF (\\376\\377\\000\\351\\000.\\000t) /EF << /F 12 0 R >> >>")
+            .Add(11, HandWrittenPdf.Stream("Hello", " /Type /EmbeddedFile /Subtype /text#2Fplain /Params << /Size 5 /CreationDate (D:20260102030405Z) >>"))
+            .Add(12, HandWrittenPdf.Stream("Bonjour"));
+
+        var document = PdfDocument.Open(file.ToArray());
+
+        Assert.Equal(["a.txt", "external.txt", "\u00E9.t"], document.EmbeddedFiles.Select(f => f.FileName));
+        var first = document.EmbeddedFiles[0];
+        Assert.Equal("First", first.Description);
+        Assert.Equal("text/plain", first.MimeType);
+        Assert.Equal(PdfAssociatedFileRelationship.Source, first.Relationship);
+        Assert.Equal(new DateTimeOffset(2026, 1, 2, 3, 4, 5, TimeSpan.Zero), first.CreationDate);
+        Assert.Equal(5, first.Size);
+        Assert.Equal("Hello"u8.ToArray(), first.GetData());
+        Assert.Throws<InvalidPdfContentException>(() => document.EmbeddedFiles[1].GetData());
+        Assert.Null(document.EmbeddedFiles[2].MimeType);
+        Assert.Null(document.EmbeddedFiles[2].Size);
+        Assert.Equal("Bonjour"u8.ToArray(), document.EmbeddedFiles[2].GetData());
+    }
+
+    [Fact]
+    public void PdfA2EmbedsPdfADocumentsOnly()
+    {
+        var font = PdfFont.Load(TestHarness.RepositoryPaths.Fonts / "noto-sans" / "NotoSans-Regular.subset.ttf");
+        var archived = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B };
+        archived.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Archived", font, 12, 10, 10);
+        var document = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B };
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Text", font, 12, 10, 10);
+        document.EmbeddedFiles.Add("archived.pdf", archived.ToByteArray(), new PdfEmbeddedFileOptions { MimeType = "application/pdf" });
+        Assert.NotEmpty(document.ToByteArray());
+
+        document.EmbeddedFiles.Add("plain.pdf", new PdfDocument().ToByteArray());
+        document.EmbeddedFiles.Add("data.csv", "a,b"u8);
+        var message = Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message;
+        Assert.Contains("'plain.pdf' is not a PDF/A-1, PDF/A-2 document", message, StringComparison.Ordinal);
+        Assert.Contains("'data.csv' is not a PDF/A-1, PDF/A-2 document", message, StringComparison.Ordinal);
+        Assert.DoesNotContain("archived.pdf", message, StringComparison.Ordinal);
+
+        // PDF/A-3 embeds any file
+        document.PdfAConformance = PdfAConformance.PdfA3B;
+        Assert.NotEmpty(document.ToByteArray());
     }
 
     [Fact]

@@ -74,6 +74,22 @@ public sealed class PdfArlingtonTests
                 document.Pages.Add(PdfSize.A5).CreateContentBuilder().DrawImage(PdfImage.FromImage(image), 0, 0, 10, 10);
                 return document;
             },
+            ["attachments"] = () =>
+            {
+                var document = new PdfDocument();
+                var page = document.Pages.Add(PdfSize.A5);
+                var file = document.EmbeddedFiles.Add("data.csv", "a,b"u8, new PdfEmbeddedFileOptions
+                {
+                    Description = "Data",
+                    MimeType = "text/csv",
+                    Relationship = PdfAssociatedFileRelationship.Data,
+                    CreationDate = new DateTimeOffset(2024, 5, 6, 7, 8, 9, TimeSpan.Zero),
+                    ModificationDate = new DateTimeOffset(2024, 5, 6, 7, 8, 9, TimeSpan.Zero),
+                });
+                page.Annotations.AddFileAttachment(PdfRectangle.FromSize(10, 10, 16, 20), file);
+                page.Annotations.AddFileAttachment(PdfRectangle.FromSize(40, 10, 16, 20), "page.txt", "Page"u8, icon: PdfFileAttachmentIcon.Graph);
+                return document;
+            },
             ["fonts"] = () =>
             {
                 var document = new PdfDocument();

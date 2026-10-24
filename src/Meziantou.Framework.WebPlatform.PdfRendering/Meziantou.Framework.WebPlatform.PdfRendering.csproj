@@ -11,7 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Meziantou.Framework.Pdf\Meziantou.Framework.Pdf.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
-    <!-- Rasterizes what PDF cannot draw (blurs, filters, some compositing operators, 3D transforms) -->
+    <!-- The backend whose surfaces rasterize what PDF cannot draw when the browsing context has none (public API only) -->
     <ProjectReference Include="..\Meziantou.Framework.WebPlatform.Imaging\Meziantou.Framework.WebPlatform.Imaging.csproj" />
   </ItemGroup>
   <ItemGroup>
@@ -19,12 +19,12 @@
   </ItemGroup>
 
   <!--
-    The package reads the internal display lists and fonts of the core, and rasterizes with the internal rasterizer of
-    Meziantou.Framework.WebPlatform.Imaging: it depends on the exact versions of both
+    The package reads the internal display lists, fonts and rendering surfaces of the core: it depends on the exact version
+    of the core. It uses the public API of Meziantou.Framework.WebPlatform.Imaging only, with a normal dependency.
   -->
   <Target Name="UseExactProjectReferenceVersions" AfterTargets="_GetProjectReferenceVersions">
     <ItemGroup>
-      <_ExactProjectReferencesWithVersions Include="@(_ProjectReferencesWithVersions)" Condition="'%(Filename)' == 'Meziantou.Framework.WebPlatform' or '%(Filename)' == 'Meziantou.Framework.WebPlatform.Imaging'" ProjectVersion="[%(_ProjectReferencesWithVersions.ProjectVersion)]" />
+      <_ExactProjectReferencesWithVersions Include="@(_ProjectReferencesWithVersions)" Condition="'%(Filename)' == 'Meziantou.Framework.WebPlatform'" ProjectVersion="[%(_ProjectReferencesWithVersions.ProjectVersion)]" />
       <_ProjectReferencesWithVersions Remove="@(_ExactProjectReferencesWithVersions)" />
       <_ProjectReferencesWithVersions Include="@(_ExactProjectReferencesWithVersions)" />
     </ItemGroup>

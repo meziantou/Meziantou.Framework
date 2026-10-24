@@ -136,13 +136,13 @@ internal sealed partial class DisplayListRasterizer
                     }
                     else
                     {
-                        ClipPath(canvas, ToPath(PathConversions.GetRoundedRectPath(clip.Rect)), D.FillRule.NonZero, _antiAliasEnabled);
+                        ClipPath(canvas, ToPath(DisplayPath.FromFittedRoundedRect(clip.Rect)), D.FillRule.NonZero, _antiAliasEnabled);
                     }
 
                     return;
 
                 case ClipPathItem clip:
-                    if (PathConversions.TryGetRect(clip.Path, out var clipRect))
+                    if (clip.Path.TryGetRect(out var clipRect))
                     {
                         ClipRect(canvas, clipRect, clip.AntiAlias && _antiAliasEnabled);
                     }
@@ -382,7 +382,7 @@ internal sealed partial class DisplayListRasterizer
                 }
                 else
                 {
-                    DrawPath(canvas, PathConversions.GetRoundedRectPath(draw.Rect), draw.Paint);
+                    DrawPath(canvas, DisplayPath.FromFittedRoundedRect(draw.Rect), draw.Paint);
                 }
 
                 break;
@@ -390,8 +390,8 @@ internal sealed partial class DisplayListRasterizer
             case DrawRingItem draw:
             {
                 // The area between the two contours: the inner contour is a hole of the outer one
-                var outer = PathConversions.GetRoundedRectPath(draw.Outer);
-                var inner = PathConversions.GetRoundedRectPath(draw.Inner);
+                var outer = DisplayPath.FromFittedRoundedRect(draw.Outer);
+                var inner = DisplayPath.FromFittedRoundedRect(draw.Inner);
                 var ring = new DisplayPath();
                 Append(ring, outer);
                 Append(ring, inner);
@@ -473,7 +473,7 @@ internal sealed partial class DisplayListRasterizer
             return;
 
         // A rectangle (e.g. an SVG rect) is filled as one
-        if (PathConversions.TryGetRect(path, out var rect))
+        if (path.TryGetRect(out var rect))
         {
             Paint(canvas, paint, (brush, ToRectangle(rect)), static (c, state) => c.FillRectangle(state.brush, state.Item2));
             return;
@@ -614,7 +614,7 @@ internal sealed partial class DisplayListRasterizer
         var margin = Math.Max(rect.Width, rect.Height) + 1;
         var outside = new DisplayPath();
         outside.AddRect(new PhysicalRect(rect.X - margin, rect.Y - margin, rect.Width + (2 * margin), rect.Height + (2 * margin)));
-        Append(outside, PathConversions.GetRoundedRectPath(box));
+        Append(outside, DisplayPath.FromFittedRoundedRect(box));
         var eraser = new D.SolidBrush(new Meziantou.Framework.Imaging.Rgba64(0, 0, 0, ushort.MaxValue)) { CompositeMode = D.CompositeMode.DestinationOut };
         canvas.Fill(eraser, ToPath(outside), D.FillRule.EvenOdd);
     }

@@ -1,7 +1,6 @@
 using Meziantou.Framework.Pdf;
 using Meziantou.Framework.WebPlatform.Css.Layout;
 using Meziantou.Framework.WebPlatform.Rendering;
-using PathConversions = Meziantou.Framework.WebPlatform.Imaging.PathConversions;
 
 namespace Meziantou.Framework.WebPlatform.PdfRendering;
 
@@ -127,13 +126,13 @@ internal sealed partial class DisplayListPdfWriter
                     }
                     else
                     {
-                        ClipPath(PathConversions.GetRoundedRectPath(clip.Rect), FillRule.NonZero);
+                        ClipPath(DisplayPath.FromFittedRoundedRect(clip.Rect), FillRule.NonZero);
                     }
 
                     break;
 
                 case ClipPathItem clip:
-                    if (PathConversions.TryGetRect(clip.Path, out var clipRect))
+                    if (clip.Path.TryGetRect(out var clipRect))
                     {
                         ClipRect(clipRect);
                     }
@@ -574,7 +573,7 @@ internal sealed partial class DisplayListPdfWriter
                 }
                 else
                 {
-                    DrawPath(PathConversions.GetRoundedRectPath(draw.Rect), draw.Paint, item);
+                    DrawPath(DisplayPath.FromFittedRoundedRect(draw.Rect), draw.Paint, item);
                 }
 
                 break;
@@ -582,8 +581,8 @@ internal sealed partial class DisplayListPdfWriter
             case DrawRingItem draw:
             {
                 // The area between the two contours: the inner contour is a hole of the outer one
-                var outer = PathConversions.GetRoundedRectPath(draw.Outer);
-                var inner = PathConversions.GetRoundedRectPath(draw.Inner);
+                var outer = DisplayPath.FromFittedRoundedRect(draw.Outer);
+                var inner = DisplayPath.FromFittedRoundedRect(draw.Inner);
                 FillShape(draw.Paint, draw.Outer.Rect, _ =>
                 {
                     WritePath(outer);

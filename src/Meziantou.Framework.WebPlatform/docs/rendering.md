@@ -112,9 +112,10 @@ layout and painting features that are not implemented, and the bugs).
 `PdfPrintExtensions.PrintToPdf` (package `Meziantou.Framework.WebPlatform.PdfRendering`) prints a document (a
 `PrintSession`, as `ImagingPrintExtensions`) and writes each printed page into a page of a `Meziantou.Framework.Pdf`
 document. The package is not a `RenderingBackend`: it reads the display lists of the pages, and uses the backend of the
-browsing context for the images (their bytes are only kept when the browsing context has a backend) and the Imaging
-rasterizer for what PDF cannot draw. It uses the internals of the core library and of the Imaging backend, and depends on
-their exact versions.
+browsing context for the images (their bytes are only kept when the browsing context has a backend) and the surfaces of
+that backend (`RenderingBackend.CreateSurface`, an `ImagingRenderingBackend` when the browsing context has none) for what
+PDF cannot draw. It uses the internals of the core library, and depends on its exact version; it uses the public API of
+the Imaging backend only.
 
 - The page size is the size of the printed page (CSS px, 0.75 point each). The first operator of each page maps the CSS px
   of the display list (y down) to the default user space of the page (points, y up), so the items are written with their
@@ -136,9 +137,9 @@ their exact versions.
   their replacement text.
 - An image is embedded once per URL: a JPEG image without EXIF orientation as it is (`DCTDecode`), the other images
   decoded by the backend of the browsing context (their alpha a soft mask).
-- What PDF cannot draw is rasterized by the Imaging backend, at `PdfPrintOptions.RasterizationScale` pixels per CSS px, in
-  the bounds of the items (or of the clip), and drawn as an image at their place: the blurred paints (`BlurSigma`, the
-  shadows), the layers with filters or backdrop filters, composited with a Porter-Duff operator or containing such items
+- What PDF cannot draw is rasterized by a surface of the backend, at `PdfPrintOptions.RasterizationScale` pixels per
+  CSS px, in the bounds of the items (or of the clip), and drawn as an image at their place: the blurred paints
+  (`BlurSigma`, the shadows), the layers with filters or backdrop filters, composited with a Porter-Duff operator or containing such items
   (the masks), the rest of the scope of a 3D transform, the conic gradients, the filtered shaders, the cropped, padded or
   mirrored image patterns, the repeating radial gradients, and the runs of color glyphs. A backdrop filter sees a
   transparent backdrop.

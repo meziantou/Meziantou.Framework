@@ -2,6 +2,7 @@ using Meziantou.Framework.Pdf;
 using Meziantou.Framework.WebPlatform.Css.Fonts;
 using Meziantou.Framework.WebPlatform.Css.Layout;
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.Imaging;
 using Meziantou.Framework.WebPlatform.Rendering;
 using ImagingImage = Meziantou.Framework.Imaging.Image;
 using Rgba32 = Meziantou.Framework.Imaging.Rgba32;
@@ -14,6 +15,7 @@ internal sealed class PdfDocumentWriter
     private readonly Dictionary<(FontFile File, int FaceIndex), PdfFont?> _fonts = [];
     private readonly Dictionary<(string Url, ExifOrientation Orientation, int Frame), PdfImage?> _images = [];
     private readonly Dictionary<(double Alpha, PdfBlendMode BlendMode), PdfExtGState> _graphicsStates = [];
+    private RenderingBackend? _rasterizationBackend;
 
     public PdfDocumentWriter(Document document, PdfPrintOptions options)
     {
@@ -30,6 +32,9 @@ internal sealed class PdfDocumentWriter
     public PdfDocument Pdf { get; } = new();
 
     public PdfDocumentStructure Structure { get; }
+
+    /// <summary>The backend whose surfaces rasterize what PDF cannot draw: the one of the browsing context, else a backend of Meziantou.Framework.WebPlatform.Imaging.</summary>
+    public RenderingBackend RasterizationBackend => Document.BrowsingContext?.Options.RenderingBackend ?? (_rasterizationBackend ??= new ImagingRenderingBackend());
 
     public PdfDocument Write(IReadOnlyList<PrintedPage> pages)
     {

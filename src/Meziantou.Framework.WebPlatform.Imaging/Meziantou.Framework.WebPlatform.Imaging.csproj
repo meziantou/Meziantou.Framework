@@ -16,8 +16,6 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Imaging.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Wpt" />
-    <!-- The PDF backend rasterizes what PDF cannot draw -->
-    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.PdfRendering" />
   </ItemGroup>
 
   <!--

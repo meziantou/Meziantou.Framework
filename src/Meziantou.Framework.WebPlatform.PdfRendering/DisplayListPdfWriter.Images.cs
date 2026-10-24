@@ -1,5 +1,4 @@
 using Meziantou.Framework.WebPlatform.Css.Layout;
-using Meziantou.Framework.WebPlatform.Imaging;
 using Meziantou.Framework.WebPlatform.Rendering;
 using ImagingImage = Meziantou.Framework.Imaging.Image;
 using PdfImage = Meziantou.Framework.Pdf.PdfImage;
@@ -69,29 +68,40 @@ internal sealed partial class DisplayListPdfWriter
         if (area.IsEmpty || PdfGeometry.Invert(_state.ToPage) is not { } toItems)
             return;
 
+        // The pixels cover the area rounded outwards to the pixels of the scale (as the screenshots)
+        const double Epsilon = 1e-6;
         var scale = _owner.Options.RasterizationScale;
+        var left = Math.Floor((area.Left * scale) + Epsilon);
+        var top = Math.Floor((area.Top * scale) + Epsilon);
+        var pixelWidth = (int)Math.Max(1, Math.Ceiling((area.Right * scale) - Epsilon) - left);
+        var pixelHeight = (int)Math.Max(1, Math.Ceiling((area.Bottom * scale) - Epsilon) - top);
+
+        // The items are drawn by a surface of the rendering backend, in its pixels
         var list = new DisplayItem[items.Count + 3];
         list[0] = SaveItem.Instance;
-        list[1] = new TransformItem(_state.ToPage);
+        list[1] = new TransformItem(DisplayMatrix.Translation(-left, -top).PreConcat(DisplayMatrix.Scale(scale, scale)).PreConcat(_state.ToPage));
         for (var i = 0; i < items.Count; i++)
         {
             list[i + 2] = items[i];
         }
 
         list[^1] = RestoreItem.Instance;
-        var (pixels, pixelWidth, pixelHeight) = ImagingScreenshotExtensions.Render(_owner.Document, new DisplayList(list, default), area, new ScreenshotOptions { DevicePixelRatio = scale });
+        using var surface = _owner.RasterizationBackend.CreateSurface(pixelWidth, pixelHeight, RenderingSurfaceOptions.Default);
+        if (surface is null)
+            return;
+
+        surface.Draw(new DisplayList(list, new PhysicalSize(pixelWidth, pixelHeight)));
+        var pixels = new byte[checked(pixelWidth * pixelHeight * 4)];
+        surface.ReadPixels(0, 0, pixelWidth, pixelHeight, pixels);
         if (IsTransparent(pixels))
             return;
 
         using var bitmap = ImagingImage.ImportPixelBytes<Rgba32>(pixels, pixelWidth, pixelHeight, pixelWidth * 4);
         var image = PdfImage.FromImage(bitmap);
-
-        // The pixels cover the area rounded outwards to the pixels of the scale (as the screenshots)
-        const double Epsilon = 1e-6;
-        var left = Math.Floor((area.Left * scale) + Epsilon) / scale;
-        var top = Math.Floor((area.Top * scale) + Epsilon) / scale;
         var width = pixelWidth / scale;
         var height = pixelHeight / scale;
+        left /= scale;
+        top /= scale;
         if (firstItem is not null)
         {
             Mark(firstItem);

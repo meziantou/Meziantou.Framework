@@ -2380,14 +2380,20 @@ internal sealed partial class StyleEngine
             }
         }
 
+        // The primary pointing device: a touch screen (coarse, without hover) or a mouse
+        var pointer = viewport.HasTouch ? "coarse" : "fine";
+        var hover = viewport.HasTouch ? "none" : "hover";
+
         // The environment is computed by each style lookup: the previous one is reused when it is the same
         var pageColorSchemes = document.PageColorSchemes;
         var scriptingEnabled = browsingContext.Options.ScriptingEnabled;
         if (document.LastMediaEnvironment is { } last
             && last.Width == width
             && last.Height == height
-            && last.DeviceWidth == viewport.Width
-            && last.DeviceHeight == viewport.Height
+            && last.DeviceWidth == (viewport.ScreenWidth ?? viewport.Width)
+            && last.DeviceHeight == (viewport.ScreenHeight ?? viewport.Height)
+            && last.Pointer == pointer
+            && last.Hover == hover
             && last.DevicePixelRatio == devicePixelRatio
             && last.MediaType == viewport.MediaType
             && last.PrefersColorScheme == prefersColorScheme
@@ -2406,10 +2412,12 @@ internal sealed partial class StyleEngine
         {
             Width = width,
             Height = height,
-            DeviceWidth = viewport.Width,
-            DeviceHeight = viewport.Height,
+            DeviceWidth = viewport.ScreenWidth ?? viewport.Width,
+            DeviceHeight = viewport.ScreenHeight ?? viewport.Height,
             DevicePixelRatio = devicePixelRatio,
             MediaType = viewport.MediaType,
+            Pointer = pointer,
+            Hover = hover,
             PrefersColorScheme = prefersColorScheme,
             PageColorSchemes = pageColorSchemes,
             PrefersReducedMotion = viewport.PrefersReducedMotion,

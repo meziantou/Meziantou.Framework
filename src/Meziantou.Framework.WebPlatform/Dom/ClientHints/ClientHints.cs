@@ -206,7 +206,7 @@ internal static class ClientHints
         // navigation of a sandboxed iframe would create (only the features whose allowlist is * are delegated to it)
         var origin = container is not null && request.Navigable is { HasSandboxedOriginFlag: true } ? OriginRecord.CreateOpaque() : OriginRecord.FromUrl(url);
         var containerPolicy = container is null ? null : PermissionsPolicyAlgorithms.ProcessPolicyAttributes(container);
-        var values = new ValueProvider(options.ClientHints ?? ClientHintsOptions.Default, valuesDocument, request);
+        var values = new ValueProvider(options.GetClientHints(), valuesDocument, request);
         foreach (var token in ClientHintToken.All)
         {
             if (!hints.Contains(token) || FetchHeaders.Contains(headers, token.HeaderName))

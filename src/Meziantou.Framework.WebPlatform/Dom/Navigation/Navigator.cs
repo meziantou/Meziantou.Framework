@@ -12,7 +12,10 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 [IdlInterface("Navigator", "https://html.spec.whatwg.org/multipage/system-state.html#navigator")]
 public sealed partial class Navigator
 {
-    /// <summary>The user agent string of the library, also sent in the <c>User-Agent</c> header by the hosts that follow it.</summary>
+    /// <summary>
+    /// The user agent string of the library (<c>navigator.userAgent</c> when <see cref="BrowsingContextOptions.UserAgent"/> is
+    /// null), also sent in the <c>User-Agent</c> header by the hosts that follow it.
+    /// </summary>
     [NotInIdl]
     public const string DefaultUserAgent = "Mozilla/5.0 (Meziantou.Framework.WebPlatform)";
 
@@ -33,11 +36,12 @@ public sealed partial class Navigator
 
     /// <summary>
     /// Gets the maximum number of simultaneous touch contacts of the device (https://w3c.github.io/pointerevents/#dom-navigator-maxtouchpoints):
-    /// 0, as there is no touch screen (the touch pointers are injected by the host application, see <see cref="UserInput"/>).
+    /// 1 when the device has a touch screen (<see cref="ViewportOptions.HasTouch"/>, as the touch emulation of Chromium), 0
+    /// otherwise (the touch pointers are injected by the host application, see <see cref="UserInput"/>).
     /// </summary>
     /// <seealso href="https://w3c.github.io/pointerevents/#dom-navigator-maxtouchpoints"/>
     [IdlMember("maxTouchPoints", "https://w3c.github.io/pointerevents/#dom-navigator-maxtouchpoints")]
-    public int MaxTouchPoints => 0;
+    public int MaxTouchPoints => _window.BrowsingContext?.Top.Options.Viewport is { HasTouch: true } ? 1 : 0;
 
     /// <summary>https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-appcodename</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-appcodename"/>
@@ -72,7 +76,7 @@ public sealed partial class Navigator
     /// <summary>https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-useragent</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-useragent"/>
     [IdlMember("userAgent", "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-useragent")]
-    public string UserAgent => DefaultUserAgent;
+    public string UserAgent => _window.Options.EffectiveUserAgent;
 
     /// <summary>https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-vendor</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-vendor"/>

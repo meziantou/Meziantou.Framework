@@ -114,7 +114,7 @@ public sealed class NavigatorUAData
 
     internal NavigatorUAData(GlobalScope global) => _global = global;
 
-    private ClientHintsOptions Values => _global.Options.ClientHints ?? ClientHintsOptions.Default;
+    private ClientHintsOptions Values => _global.Options.GetClientHints();
 
     /// <summary>Gets the brands of the user agent and their significant versions (https://wicg.github.io/ua-client-hints/#dom-navigatoruadata-brands).</summary>
     /// <seealso href="https://wicg.github.io/ua-client-hints/#dom-navigatoruadata-brands"/>

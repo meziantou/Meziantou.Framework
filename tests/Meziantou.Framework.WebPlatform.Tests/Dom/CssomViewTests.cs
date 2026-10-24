@@ -542,6 +542,56 @@ public sealed class CssomViewTests : IDisposable
     }
 
     [Fact]
+    public void Screen_SizeOfTheOptions()
+    {
+        var document = Load("<p>a</p>", new ViewportOptions { Width = 390, Height = 664, ScreenWidth = 390, ScreenHeight = 844 });
+        var window = document.DefaultView!;
+        Assert.Equal((390, 844), (window.Screen.Width, window.Screen.Height));
+        Assert.True(window.MatchMedia("(device-height: 844px) and (height: 664px)").Matches);
+    }
+
+    [Fact]
+    public void HasTouch_CoarsePointerWithoutHover()
+    {
+        var window = Load("<p>a</p>", new ViewportOptions { HasTouch = true }).DefaultView!;
+        Assert.True(window.MatchMedia("(pointer: coarse) and (any-pointer: coarse) and (hover: none) and (any-hover: none)").Matches);
+        Assert.Equal(1, window.Navigator.MaxTouchPoints);
+
+        window = Load("<p>a</p>").DefaultView!;
+        Assert.True(window.MatchMedia("(pointer: fine) and (hover: hover)").Matches);
+        Assert.Equal(0, window.Navigator.MaxTouchPoints);
+    }
+
+    [Fact]
+    public void DeviceDescriptor_Example()
+    {
+        #region DeviceDescriptor_Example
+        // The values of the "iPhone 13" device of Playwright
+        var iPhone13 = new DeviceDescriptor
+        {
+            Width = 390,
+            Height = 664,
+            ScreenWidth = 390,
+            ScreenHeight = 844,
+            DevicePixelRatio = 3,
+            IsMobile = true,
+            HasTouch = true,
+            UserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1",
+        };
+
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            Viewport = iPhone13.CreateViewport(),
+            UserAgent = iPhone13.UserAgent,
+        });
+        var document = context.Navigate("https://example.com/", _ => "<!DOCTYPE html><p>Hello</p>");
+
+        Assert.True(document.DefaultView!.MatchMedia("(pointer: coarse) and (max-device-width: 500px)").Matches);
+        Assert.Equal(iPhone13.UserAgent, document.DefaultView.Navigator.UserAgent);
+        #endregion
+    }
+
+    [Fact]
     public void OffsetParent_IsTheNearestPositionedAncestorOrTheBody()
     {
         var document = Load("<div id=positioned style='position:relative'><table><tr><td id=cell><span id=a></span></td></tr></table></div><div id=b></div><div id=hidden style='display:none'></div>");

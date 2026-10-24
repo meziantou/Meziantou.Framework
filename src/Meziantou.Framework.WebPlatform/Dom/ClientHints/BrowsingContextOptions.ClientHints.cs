@@ -6,7 +6,8 @@ public sealed partial class BrowsingContextOptions
     /// Gets or sets the values of the client hints of the browsing contexts (https://wicg.github.io/client-hints-infrastructure/,
     /// https://wicg.github.io/ua-client-hints/): the identity of the user agent exposed by <c>navigator.userAgentData</c> and
     /// sent in the <c>Sec-CH-UA-*</c> request headers, the memory of the device and the network information. The default is
-    /// null: <see cref="ClientHintsOptions.Default"/>.
+    /// null: <see cref="ClientHintsOptions.Default"/>, with <see cref="ClientHintsOptions.Mobile"/> set when the viewport is the
+    /// one of a mobile device (<see cref="ViewportOptions.IsMobile"/>).
     /// </summary>
     /// <remarks>
     /// The low-entropy hints (<c>Sec-CH-UA</c>, <c>Sec-CH-UA-Mobile</c>, <c>Sec-CH-UA-Platform</c>, and <c>Save-Data</c> when
@@ -15,6 +16,11 @@ public sealed partial class BrowsingContextOptions
     /// the origins they delegate them to. Set <see cref="WebPlatformFeatures.ClientHintsEnabled"/> to false to send no client hint.
     /// </remarks>
     public ClientHintsOptions? ClientHints { get; init; }
+
+    private static readonly ClientHintsOptions MobileClientHints = ClientHintsOptions.Default with { Mobile = true };
+
+    /// <summary>Returns the values of the client hints: <see cref="ClientHints"/>, or the default values of the device of the viewport.</summary>
+    internal ClientHintsOptions GetClientHints() => ClientHints ?? (Viewport is { IsMobile: true } ? MobileClientHints : ClientHintsOptions.Default);
 
     /// <summary>
     /// Gets or sets the Accept-CH cache of the browsing contexts (https://wicg.github.io/client-hints-infrastructure/#accept-ch-cache):

@@ -339,7 +339,7 @@ internal sealed class ContentSecurityPolicyViolation
                 {
                     Body = body,
                     Url = StripUrlForUseInReports(Url),
-                    UserAgent = Navigator.DefaultUserAgent,
+                    UserAgent = Environment.BrowsingContext?.Options.EffectiveUserAgent ?? Navigator.DefaultUserAgent,
                     Destination = group,
                     Type = "csp-violation",
                     Timestamp = eventLoop.TimeProvider.GetUtcNow(),

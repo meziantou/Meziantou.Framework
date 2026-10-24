@@ -1951,6 +1951,18 @@ internal sealed class FragmentationFlow
             lastInFlowEnd = Math.Max(lastInFlowEnd, childBottom);
         }
 
+        // As in Blink, the line of the caret of an editing host without content (see BlockFormattingContext.HasCaretLineIfEmpty)
+        // is monolithic, as a line box, and it is the content of the box: its block-end edges may be pushed to the next
+        // fragmentainer when it overflows
+        var hasCaretLine = false;
+        if (lastInFlowEnd <= contentStart + Epsilon && GetFirstInFlowChild(box) is null && BlockFormattingContext.HasCaretLineIfEmpty(box.Box)
+            && Math.Min(contentStart + box.Box.Style.Layout.UsedLineHeight, contentEnd) is var caretLineEnd && caretLineEnd > contentStart + Epsilon)
+        {
+            AddUnbreakable(contentStart, caretLineEnd);
+            lastInFlowEnd = caretLineEnd;
+            hasCaretLine = true;
+        }
+
         // The last-resort breaks after the block-start border and padding of the box and before its block-end border and padding (as
         // in the browsers: https://drafts.csswg.org/css-break-3/#possible-breaks, class C break points)
         if (GetFirstInFlowChild(box) is { } first)
@@ -1981,7 +1993,7 @@ internal sealed class FragmentationFlow
 
         if (edges.BlockEnd > Epsilon && bottom - edges.BlockEnd > top + edges.BlockStart + Epsilon && bottom - edges.BlockEnd < context.ClipEnd)
         {
-            AddCandidate(new BreakCandidate(bottom - edges.BlockEnd, Math.Max(lastInFlowEnd, contentStart), BreakAppeal.Avoid) { IsBeforeEndEdges = true }, childContext);
+            AddCandidate(new BreakCandidate(bottom - edges.BlockEnd, Math.Max(lastInFlowEnd, contentStart), BreakAppeal.Avoid) { IsBeforeEndEdges = !hasCaretLine }, childContext);
         }
 
         if (contentEnd - lastInFlowEnd > Epsilon && !HasDefiniteBlockSize(box) && GetLastInFlowChild(box) is BoxFragment lastChild

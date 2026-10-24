@@ -1865,8 +1865,11 @@ an atomic inline laid out while its parent collects its items rents another inst
   an [editing host](https://html.spec.whatwg.org/multipage/interaction.html#editing-host) that is a block container always
   has the line of its caret, so that an empty editing host can be seen and pressed: without line box (no content, or only
   collapsed white space), its contents are as tall as a line (`line-height`), which separates its margins; with block-level
-  children, its contents are at least as tall as a line (`BlockFormattingContext.HasCaretLineIfEmpty`). The caret is
-  painted there (see [rendering.md](rendering.md#caret)).
+  children, its contents are at least as tall as a line (`BlockFormattingContext.HasCaretLineIfEmpty`). As in Blink, a flex,
+  grid or grid lanes container that is an editing host has the line too when it has no items (its contents are at least as
+  tall as a line). In a fragmentation context, the line is monolithic, as a line box, and the block-end border and padding
+  of the box may be pushed to the next fragmentainer when it overflows. The caret is painted there (see
+  [rendering.md](rendering.md#caret)).
 - **`::first-line`** ([CSS Pseudo §3.4](https://drafts.csswg.org/css-pseudo-4/#first-line-styling)): on the first line, the
   root inline box has the `::first-line` style of the block container (or of the ancestor whose first formatted line it is,
   through the first in-flow block children; not into the floats, the absolutely positioned boxes and the outside markers),

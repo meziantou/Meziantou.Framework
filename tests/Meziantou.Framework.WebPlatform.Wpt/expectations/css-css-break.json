@@ -504,7 +504,7 @@
     "reftest": "PASS"
   },
   "css/css-break/flexbox/flex-container-fragmentation-007.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/flexbox/flex-container-fragmentation-008.html": {
     "reftest": "PASS"
@@ -1929,7 +1929,7 @@
     "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/grid-lanes-container-fragmentation-007.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/grid-lanes-fragmentation-001.html": {
     "reftest": "FAIL"

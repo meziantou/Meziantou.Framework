@@ -1833,10 +1833,14 @@ internal sealed partial class FlexLayoutAlgorithm
     /// Returns the block size of the contents of the container, its <c>auto</c> block size (which its intrinsic size keywords
     /// resolve to, https://drafts.csswg.org/css-flexbox-1/#intrinsic-cross-sizes, even when its block size is definite): the sum
     /// of the cross sizes of the lines given by their items for a row container, the largest sum of the outer hypothetical main
-    /// sizes of the items of a line for a column container. The min and max block sizes are applied by the caller.
+    /// sizes of the items of a line for a column container. The min and max block sizes are applied by the caller. As in the
+    /// browsers, an editing host without line has the line of its caret (see <see cref="BlockFormattingContext.HasCaretLineIfEmpty"/>).
     /// </summary>
     private double ComputeContentBlockSize()
     {
+        if (_lines.Count == 0 && BlockFormattingContext.HasCaretLineIfEmpty(_box))
+            return _box.Style.Layout.UsedLineHeight;
+
         var size = 0d;
         if (_isRow)
         {

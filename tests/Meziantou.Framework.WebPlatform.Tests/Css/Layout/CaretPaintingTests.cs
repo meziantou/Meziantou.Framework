@@ -202,6 +202,27 @@ public sealed class CaretPaintingTests : IDisposable
     }
 
     [Fact]
+    public void EmptyEditingHost_FlexAndGridContainersHaveTheLineOfTheirCaret()
+    {
+        var document = Parse("""
+            <div id=f contenteditable style='display: flex; line-height: 20px'></div>
+            <div id=g contenteditable style='display: grid; line-height: 20px'></div>
+            <div id=r contenteditable style='display: grid; grid-template-rows: 30px; line-height: 20px'></div>
+            <div id=l contenteditable style='display: grid-lanes; line-height: 20px'></div>
+            <div id=i contenteditable style='display: flex; line-height: 20px'><span style='height: 5px'></span></div>
+            <div id=n style='display: flex; line-height: 20px'></div>
+            """);
+
+        // As in Blink, an editing host without items is at least as tall as a line (the rows of a grid may be taller); not with an item
+        Assert.Equal(20, Get(document, "f").OffsetHeight);
+        Assert.Equal(20, Get(document, "g").OffsetHeight);
+        Assert.Equal(30, Get(document, "r").OffsetHeight);
+        Assert.Equal(20, Get(document, "l").OffsetHeight);
+        Assert.Equal(5, Get(document, "i").OffsetHeight);
+        Assert.Equal(0, Get(document, "n").OffsetHeight);
+    }
+
+    [Fact]
     public void Caret_FollowsTheWritingModeAndTheDirection()
     {
         var document = Parse("""

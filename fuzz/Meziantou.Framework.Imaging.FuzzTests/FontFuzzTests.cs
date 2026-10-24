@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Text;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
@@ -135,6 +136,205 @@ public sealed class FontFuzzTests
         sink.Close();
         Assert.Null(sink.Finish());
         Assert.StartsWith("exception:load:System.InvalidOperationException:", FuzzFailure.FromException("load", new InvalidOperationException()).Signature, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MutatedAfmFilesFailOnlyWithDocumentedErrors()
+    {
+        // The AFM files of the 14 standard fonts, mutated byte by byte or line by line (lines removed, repeated, moved,
+        // cut, and values replaced by edge cases), so that the mutations reach the sections and the values.
+        var root = FixtureRoot.GetDirectory() / "font-suites" / "adobe-core14-afm";
+        var seeds = Directory.EnumerateFiles(root, "*.afm").Order(StringComparer.Ordinal).Select(file => new FuzzSeed("font-suites/adobe-core14-afm/" + Path.GetFileName(file), File.ReadAllBytes(file))).ToList();
+        Assert.HasCount(14, seeds);
+        var spliceSources = seeds.Select(seed => seed.Data).ToList();
+        var random = new FuzzRandom(FuzzSettings.Seed ^ FuzzSeeds.GetGroupSalt("afm"));
+        var failures = new Dictionary<string, string>(StringComparer.Ordinal);
+        var outcomes = new Dictionary<string, int>(StringComparer.Ordinal);
+        var stopwatch = Stopwatch.StartNew();
+        var executed = 0;
+        for (var iteration = -seeds.Count; iteration < FuzzSettings.Iterations; iteration++)
+        {
+            if (FuzzSettings.Duration is { } budget && stopwatch.Elapsed > budget)
+                break;
+
+            var seed = seeds[(iteration + seeds.Count) % seeds.Count];
+            var name = iteration < 0 ? seed.Id : $"{seed.Id} mutation {iteration}";
+            var input = iteration < 0 ? seed.Data : random.Chance(60) ? MutateAfmLines(random, seed.Data) : FuzzMutator.Mutate(random, seed.Data, spliceSources);
+            var failure = CheckAfmWithWatchdog(input, out var outcome);
+            executed++;
+            outcomes[outcome] = outcomes.GetValueOrDefault(outcome) + 1;
+            if (iteration < 0 && (failure is not null || outcome != "loaded"))
+            {
+                Assert.Fail($"The AFM file {seed.Id} is not read without error: {failure?.Message ?? outcome}");
+            }
+
+            if (failure is null || failures.ContainsKey(failure.Signature))
+                continue;
+
+            var minimized = failure.Signature == "property:hang" ? input : FuzzMinimizer.Minimize(input, failure.Signature, candidate => CheckAfmWithWatchdog(candidate, out _));
+            var path = TestArtifacts.GetDirectory("fuzz-afm") / (TestArtifacts.SanitizeFileName(failure.Signature)[..Math.Min(80, TestArtifacts.SanitizeFileName(failure.Signature).Length)] + ".afm");
+            File.WriteAllBytes(path, minimized);
+            failures[failure.Signature] = $"[{failure.Signature}] {name} ({input.Length} bytes, minimized to {minimized.Length} bytes: {path}){Environment.NewLine}{failure.Message}";
+            if (failures.Count >= 4)
+                break;
+        }
+
+        TestContext.Current.TestOutputHelper?.WriteLine(FormattableString.Invariant(
+            $"afm: {executed} files ({seeds.Count} seeds, base seed {FuzzSettings.Seed}) in {stopwatch.Elapsed.TotalSeconds:F1} s; outcomes: {string.Join(", ", outcomes.OrderByDescending(pair => pair.Value).Select(pair => $"{pair.Key}={pair.Value}"))}"));
+
+        if (failures.Count > 0)
+            Assert.Fail($"{failures.Count} distinct fuzz failure(s):{Environment.NewLine}{string.Join(Environment.NewLine + Environment.NewLine, failures.Values)}");
+
+        // The campaign must reach the values, not only the rejection of the first line.
+        if (FuzzSettings.Duration is null && FuzzSettings.Iterations >= FuzzSettings.DefaultIterations)
+        {
+            Assert.True(outcomes.GetValueOrDefault("loaded") > seeds.Count + (executed / 10), "Too few mutated AFM files were loaded.");
+            Assert.True(outcomes.GetValueOrDefault(nameof(InvalidFontException)) > executed / 10, "Too few mutated AFM files were rejected as invalid.");
+        }
+    }
+
+    private static readonly string[] AfmEdgeTokens =
+    [
+        "", "0", "-1", "-0", "1.5", ".5", "-.", "1e30", "1e-30", "16777217", "NaN", "Infinity", "2147483648", "-2147483649",
+        "<>", "<0>", "<FFFFFFFF>", "<7FFFFFFF>", "<zz>", ";", ";;", "true", "false", "C", "N", "L", "StartCharMetrics",
+        "EndCharMetrics", "StartKernData", "EndKernData", "StartKernPairs1", "EndKernPairs", "StartTrackKern", "EndTrackKern",
+        "StartComposites", "EndComposites", "StartDirection", "EndDirection", "EndFontMetrics", "StartMasterFontMetrics",
+    ];
+
+    private static readonly string[] AfmEdgeLines =
+    [
+        "StartDirection 2", "EndDirection", "MetricsSets 2", "StartKernData", "EndKernData", "StartKernPairs1 2", "EndKernPairs",
+        "StartTrackKern 1", "TrackKern -1 72 -1 6 0", "EndTrackKern", "StartComposites 1", "CC Aacute 2 ; PCC A 0 0 ; PCC acute 194 214 ;",
+        "EndComposites", "KPH <41> <56> -70 0", "CH <41> ; W 1 2 ; W1 3 4 ; VV 5 6 ; N A ;", "VVector 500 880", "CharWidth 600 0", "EndFontMetrics",
+    ];
+
+    // Mutates the lines of an AFM file, which the byte mutations rarely keep readable up to the values.
+    private static byte[] MutateAfmLines(FuzzRandom random, byte[] data)
+    {
+        var lines = Encoding.Latin1.GetString(data).Split("\r\n").ToList();
+        var count = random.Next(1, 5);
+        for (var i = 0; i < count && lines.Count > 1; i++)
+        {
+            var index = random.Next(1, lines.Count);
+            switch (random.Next(6))
+            {
+                case 0:
+                    lines.RemoveAt(index);
+                    break;
+
+                case 1:
+                    lines.Insert(index, lines[random.Next(lines.Count)]);
+                    break;
+
+                case 2:
+                    (lines[index], lines[random.Next(1, lines.Count)]) = (lines[random.Next(1, lines.Count)], lines[index]);
+                    break;
+
+                case 3:
+                    lines[index] = lines[index][..random.Next(lines[index].Length + 1)];
+                    break;
+
+                case 4:
+                    lines.Insert(index, random.Pick(AfmEdgeLines));
+                    break;
+
+                default:
+                    var tokens = lines[index].Split(' ');
+                    tokens[random.Next(tokens.Length)] = random.Pick(AfmEdgeTokens);
+                    lines[index] = string.Join(' ', tokens);
+                    break;
+            }
+        }
+
+        return Encoding.Latin1.GetBytes(string.Join(random.Chance(80) ? "\r\n" : random.Pick(["\n", "\r", "\r\n\r\n", "\t\n"]), lines));
+    }
+
+    private static FuzzFailure? CheckAfmWithWatchdog(byte[] input, out string outcome)
+    {
+        var caseOutcome = "?";
+        var task = Task.Run(() =>
+        {
+            var failure = CheckAfm(input, out var checkOutcome);
+            caseOutcome = checkOutcome;
+            return failure;
+        });
+        if (!task.Wait(FuzzSettings.CaseTimeout))
+        {
+            outcome = "hang";
+            return FuzzFailure.Property("hang", $"The AFM file was not read within {FuzzSettings.CaseTimeout.TotalSeconds} s (infinite loop or unbounded work).");
+        }
+
+        outcome = caseOutcome;
+        return task.Result;
+    }
+
+    // Reads an AFM file and every value of it: only the documented exceptions may escape, and every number is in range.
+    private static FuzzFailure? CheckAfm(byte[] input, out string outcome)
+    {
+        AfmFontMetrics metrics;
+        try
+        {
+            metrics = AfmFontMetrics.Load(input, new FontResourceLimits { MaxEncodedBytes = 1024 * 1024 });
+        }
+        catch (Exception exception) when (exception is InvalidFontException or UnsupportedFontFeatureException or FontResourceLimitException)
+        {
+            outcome = exception.GetType().Name;
+            return null;
+        }
+        catch (Exception exception)
+        {
+            outcome = "exception";
+            return FuzzFailure.FromException("load", exception);
+        }
+
+        outcome = "loaded";
+        try
+        {
+            List<double> values = [metrics.CapHeight ?? 0, metrics.XHeight ?? 0, metrics.Ascender ?? 0, metrics.Descender ?? 0, metrics.StdHW ?? 0, metrics.StdVW ?? 0];
+            foreach (var direction in (ReadOnlySpan<AfmWritingDirection?>)[metrics.Horizontal, metrics.Vertical])
+            {
+                values.AddRange([direction?.UnderlinePosition ?? 0, direction?.UnderlineThickness ?? 0, direction?.ItalicAngle ?? 0, direction?.CharWidth?.X ?? 0, direction?.CharWidth?.Y ?? 0]);
+            }
+
+            foreach (var character in metrics.CharacterMetrics)
+            {
+                var width = metrics.GetWidth(character);
+                var verticalWidth = metrics.GetVerticalWidth(character);
+                values.AddRange([width?.X ?? 0, width?.Y ?? 0, verticalWidth?.X ?? 0, verticalWidth?.Y ?? 0, character.VVector?.X ?? 0, character.BoundingBox?.Left ?? 0, character.BoundingBox?.Top ?? 0]);
+                if (character.Name is not null && metrics.GetCharacter(character.Name) is null)
+                    return FuzzFailure.Property("afm-lookup", $"The character '{character.Name}' is not found by its name.");
+
+                if (character.Code >= 0 && metrics.GetCharacterByCode(character.Code) is null)
+                    return FuzzFailure.Property("afm-lookup", $"The character {character.Code} is not found by its code.");
+            }
+
+            foreach (var pair in metrics.KerningPairs.Concat(metrics.VerticalKerningPairs))
+            {
+                values.AddRange([pair.X, pair.Y]);
+                if (pair is { First: not null, Second: not null })
+                    _ = metrics.GetKerning(pair.First, pair.Second);
+            }
+
+            foreach (var track in metrics.TrackKerning)
+            {
+                values.AddRange([metrics.GetTrackKerning(track.Degree, 1), metrics.GetTrackKerning(track.Degree, 12), metrics.GetTrackKerning(track.Degree, 1000), track.GetKerning((track.MinPointSize + track.MaxPointSize) / 2)]);
+            }
+
+            foreach (var composite in metrics.Composites)
+            {
+                values.AddRange(composite.Parts.SelectMany(part => (double[])[part.DeltaX, part.DeltaY]));
+            }
+
+            // The interpolation of a track can round past the largest value by a fraction of a unit; nothing else exceeds it.
+            if (values.Exists(value => !(Math.Abs(value) <= FontErrors.MaxCoordinate + 1)))
+                return FuzzFailure.Property("afm-value", "A metric of the AFM file is not a number in range.");
+        }
+        catch (Exception exception)
+        {
+            return FuzzFailure.FromException("read", exception);
+        }
+
+        return null;
     }
 
     private static List<FuzzSeed> GetSeeds()

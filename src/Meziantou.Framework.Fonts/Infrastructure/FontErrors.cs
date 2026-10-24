@@ -11,6 +11,8 @@ internal static class FontErrors
     internal static InvalidFontException InvalidTable(uint tag, string message, Exception innerException)
         => new($"The font is invalid: the '{FontTags.Format(tag)}' table {message}", innerException);
 
+    internal static InvalidFontException InvalidAfm(int line, string message) => new($"The AFM file is invalid: line {line}: {message}");
+
     internal static InvalidFontException Truncated()
         => new("The font is invalid: a table is truncated or refers to data outside its bounds.");
 

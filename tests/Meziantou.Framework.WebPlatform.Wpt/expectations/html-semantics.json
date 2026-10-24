@@ -5317,13 +5317,13 @@
     "reftest": "PASS"
   },
   "html/semantics/forms/the-select-element/customizable-select/select-picker-pseudo-highlight.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/semantics/forms/the-select-element/customizable-select/select-picker-pseudo-selection.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/semantics/forms/the-select-element/customizable-select/select-picker-pseudo-target-text.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/semantics/forms/the-select-element/customizable-select/select-picker-starting-style.html": {
     "total": 1

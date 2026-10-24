@@ -575,6 +575,25 @@ public sealed class BoxTreeTests : IDisposable
         """);
 
     [Fact]
+    public void Details_WithoutSummary_RendersTheSummaryOfTheUserAgent() => AssertBody("<details>d</details><details open>d</details>", """
+        block <body> block-children
+          block <details> block-children
+            block list-item <summary> inline-children
+              inline <summary>::marker
+                generated-text "\25B8 "
+              text "Details"
+            block <details>::details-content inline-children skips-contents
+              text "d"
+          block <details> block-children
+            block list-item <summary> inline-children
+              inline <summary>::marker
+                generated-text "\25BE "
+              text "Details"
+            block <details>::details-content inline-children
+              text "d"
+        """);
+
+    [Fact]
     public void Details_ContentPseudoElement()
     {
         // The box of ::details-content has the display of the pseudo-element, and its ::before and ::after

@@ -242,9 +242,11 @@ internal static class TextDirectives
             // https://wicg.github.io/scroll-to-text-fragment/#find-a-string-in-range: the nodes in shadow-including tree order
             void Visit(Element element)
             {
-                // https://wicg.github.io/scroll-to-text-fragment/#search-invisible, #non-searchable-subtree
+                // https://wicg.github.io/scroll-to-text-fragment/#search-invisible, #non-searchable-subtree. The contents of a select
+                // element without multiple attribute are in its picker; an open select popover renders them, as a list box
+                // does: they are searched (https://html.spec.whatwg.org/multipage/rendering.html#the-select-element-2)
                 if (element.IsHtmlNamespace && (element.LocalName is "iframe" or "img" or "video" or "audio" or "canvas" or "object" or "embed" or "textarea" or "input" or "script" or "style" or "noscript" or "head" or "title" or "meter" or "progress"
-                    || (element.LocalName == "select" && !element.HasAttributeWithLocalName("multiple"))))
+                    || (element.LocalName == "select" && !element.HasAttributeWithLocalName("multiple") && !IsSelectPopoverShowing(element))))
                     return;
 
                 var style = engine.GetStyle(element);
@@ -276,6 +278,8 @@ internal static class TextDirectives
 
                 result._blockBoundary |= isBlock;
             }
+
+            bool IsSelectPopoverShowing(Element element) => element is HtmlSelectElement { IsPickerOpen: true } select && engine.IsSelectPickerRendered(engine.GetStyle(select));
 
             void VisitChildren(Node parent, bool isVisible, bool slottedOnly)
             {

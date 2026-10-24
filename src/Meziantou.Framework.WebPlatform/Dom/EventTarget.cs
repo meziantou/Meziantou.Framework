@@ -538,7 +538,7 @@ internal static class EventDispatcher
                 touchTargets = RetargetTouchTargets(@event, parent);
 
                 // Without shadow roots in the document, the parents of a node are in its tree
-                if (parent is Node node && target is Node currentTargetNode && (!node.NodeDocument.HasShadowRoots || currentTargetNode.GetRoot().IsShadowIncludingInclusiveAncestorOf(node)))
+                if (parent is Node node && target is Node currentTargetNode && (!HasAnyShadowRoots(node.NodeDocument) || currentTargetNode.GetRoot().IsShadowIncludingInclusiveAncestorOf(node)))
                 {
                     if (isActivationEvent && @event.Bubbles && activationTarget is null && parent.HasActivationBehavior)
                     {
@@ -681,8 +681,10 @@ internal static class EventDispatcher
             ScrollControlActions.Activate(activatedScrollControl, byKeyboard: false);
         }
 
-        // The default actions of the user agent for the trusted events of the user interactions (focus, sequential navigation)
-        if (@event.IsTrusted && @event is MouseEvent or KeyboardEvent && target is Node defaultActionTarget)
+        // The default actions of the user agent for the trusted events of the user interactions (focus, sequential navigation),
+        // for the target of the event in its own tree (not retargeted out of its shadow trees: e.g. a press on a button in a
+        // shadow tree focuses the button)
+        if (@event.IsTrusted && @event is MouseEvent or KeyboardEvent && originalTarget is Node defaultActionTarget)
         {
             UserAgentDefaultActions.Run(@event, defaultActionTarget, @event.CanceledFlag);
         }
@@ -699,7 +701,9 @@ internal static class EventDispatcher
         return !@event.CanceledFlag;
     }
 
-    private static bool IsNodeInShadowTree(EventTarget? target) => target is Node node && node.NodeDocument.HasShadowRoots && node.GetRoot() is ShadowRoot;
+    private static bool IsNodeInShadowTree(EventTarget? target) => target is Node node && HasAnyShadowRoots(node.NodeDocument) && node.GetRoot() is ShadowRoot;
+
+    private static bool HasAnyShadowRoots(Document document) => document.HasShadowRoots || document.HasUserAgentShadowRoots;
 
     /// <summary>The touch target list of the event, each touch target retargeted against the target (empty for most events).</summary>
     private static EventTarget?[] RetargetTouchTargets(Event @event, EventTarget target)

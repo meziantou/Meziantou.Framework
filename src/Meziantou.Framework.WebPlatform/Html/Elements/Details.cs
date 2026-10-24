@@ -8,6 +8,70 @@ public sealed partial class HtmlDetailsElement
     /// <summary>https://html.spec.whatwg.org/multipage/interactive-elements.html#details-toggle-task-tracker</summary>
     private ToggleTaskTracker? _toggleTaskTracker;
 
+    /// <summary>The user agent shadow tree that holds <see cref="ImplicitSummary"/>, created on first use while the element is connected.</summary>
+    private ShadowRoot? _userAgentShadowRoot;
+
+    /// <summary>
+    /// The summary that the user agent provides when the element has no summary child, or null when it has one or is not
+    /// connected (https://html.spec.whatwg.org/multipage/rendering.html#the-details-and-summary-elements: "If the element has no
+    /// child summary element, then the user agent should provide its own legend (e.g. "Details")"). As in the browsers, it is a
+    /// summary element with the text "Details", the child of a closed user agent shadow root whose host is the details element:
+    /// it is rendered before the other children (the <c>:host(details) &gt; summary</c> rules of the user agent give it the style
+    /// of the summary of a details element), it is focusable, and its activation toggles the details element; the events and the
+    /// focus are retargeted to the details element. The children of the details element are not slotted in this shadow tree:
+    /// the box tree builder renders them in the box of the <c>::details-content</c> pseudo-element.
+    /// </summary>
+    internal HtmlElement? ImplicitSummary
+    {
+        get
+        {
+            if (!IsConnected || HasSummaryChild())
+                return null;
+
+            if (_userAgentShadowRoot is null)
+            {
+                var document = NodeDocument;
+                var root = new ShadowRoot(document, this, ShadowRootMode.Closed);
+                var summary = ElementFactory.CreateElement(document, "summary", Namespaces.Html, prefix: null, isValue: null, synchronousCustomElements: false, registry: null);
+                summary.AppendChild(document.CreateTextNode("Details"));
+                root.AppendChild(summary);
+
+                // The events dispatched in the shadow tree are retargeted (see EventDispatcher)
+                document.HasUserAgentShadowRoots = true;
+                root.SetConnected(true);
+                _userAgentShadowRoot = root;
+            }
+
+            return (HtmlElement)_userAgentShadowRoot.FirstChild!;
+        }
+    }
+
+    /// <summary>Whether the element is the summary that the user agent provides for this element (see <see cref="ImplicitSummary"/>), the element having no summary child.</summary>
+    internal bool IsImplicitSummary(Element element) => _userAgentShadowRoot is { } root && ReferenceEquals(root.FirstChild, element) && IsConnected && !HasSummaryChild();
+
+    /// <summary>The summary of the user agent shadow tree when it was created (see <see cref="ImplicitSummary"/>), without creating it: its style is invalidated with the style of the element.</summary>
+    internal Element? CreatedImplicitSummary => _userAgentShadowRoot?.FirstChild as Element;
+
+    private bool HasSummaryChild()
+    {
+        for (var child = FirstElementChild; child is not null; child = child.NextElementSibling)
+        {
+            if (child.IsHtml(TagId.Summary))
+                return true;
+        }
+
+        return false;
+    }
+
+    internal override void RemovingSteps(bool isSubtreeRoot, Node oldAncestor)
+    {
+        base.RemovingSteps(isSubtreeRoot, oldAncestor);
+
+        // A new shadow tree is created when the element is connected again (possibly in another document)
+        _userAgentShadowRoot?.SetConnected(false);
+        _userAgentShadowRoot = null;
+    }
+
     internal override void AttributeChangeSteps(string localName, string? oldValue, string? value, string? @namespace)
     {
         base.AttributeChangeSteps(localName, oldValue, value, @namespace);
@@ -109,7 +173,7 @@ public partial class HtmlElement
                 return;
         }
 
-        var parent = (Element)ParentNode!;
+        var parent = Reflection.GetDetailsOfSummary(this)!;
         if (parent.HasAttributeWithLocalName("open"))
         {
             parent.RemoveAttribute("open");

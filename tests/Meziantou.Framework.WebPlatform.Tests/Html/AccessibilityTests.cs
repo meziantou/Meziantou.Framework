@@ -33,7 +33,37 @@ public sealed class AccessibilityTests : IDisposable
     [InlineData("<input id=target type=search>", "searchbox")]
     [InlineData("<button id=target role=none>x</button>", "button")]
     [InlineData("<img id=target alt='' src='data:,'>", "none")]
+    [InlineData("<div id=target popover style='display:block'>x</div>", "group")]
+    [InlineData("<span id=target popover=manual style='display:block'>x</span>", "group")]
+    [InlineData("<p id=target popover style='display:block'>x</p>", "paragraph")]
+    [InlineData("<div id=target role=generic popover style='display:block'>x</div>", "generic")]
+    [InlineData("<div id=target popover>x</div>", "none")]
+    [InlineData("<button id=target hidden>x</button>", "none")]
+    [InlineData("<div style='display:none'><button id=target>x</button></div>", "none")]
+    [InlineData("<button id=target style='visibility:hidden'>x</button>", "button")]
+    [InlineData("<button id=target aria-hidden=true>x</button>", "button")]
+    [InlineData("<div style='display:contents'><button id=target>x</button></div>", "button")]
     public void ComputedRole(string html, string expected) => Assert.Equal(expected, Get(html).ComputedRole);
+
+    [Fact]
+    public void ComputedRole_ShowingPopoverIsGroup()
+    {
+        var popover = (HtmlElement)Get("<div id=target popover>x</div>");
+        Assert.Equal("none", popover.ComputedRole);
+
+        popover.ShowPopover();
+        Assert.Equal("group", popover.ComputedRole);
+
+        popover.HidePopover();
+        Assert.Equal("none", popover.ComputedRole);
+    }
+
+    [Fact]
+    public void ComputedRole_WithoutBrowsingContextIgnoresTheStyle()
+    {
+        var document = new DomParser().ParseFromString("<div id=target popover style='display:none'>x</div>", DomParserSupportedType.TextHtml);
+        Assert.Equal("group", document.QuerySelector("#target")!.ComputedRole);
+    }
 
     [Theory]
     [InlineData("<button id=target>  Save   changes </button>", "Save changes")]

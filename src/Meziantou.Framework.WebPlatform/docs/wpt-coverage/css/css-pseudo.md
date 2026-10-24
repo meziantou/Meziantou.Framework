@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 42 | 48 | 0 | 88% |
+| [Stable](#stable-tests) | 43 | 48 | 0 | 90% |
 | [Tentative](#tentative-tests) | 9 | 12 | 0 | 75% |
 | [Reftests](#reftests) | 246 | 269 | 0 | 91% |
-| **All** | **297** | **329** | **0** | **90%** |
+| **All** | **298** | **329** | **0** | **91%** |
 
 ## Stable tests
 
@@ -42,8 +42,8 @@
 | [`highlight-cascade/highlight-pseudos-visited-computed-001.html`](https://wpt.fyi/results/css/css-pseudo/highlight-cascade/highlight-pseudos-visited-computed-001.html) | Pass | 12 / 12 |  |  |
 | [`hit-testing-active-pseudo-layout-on-mouseup.html`](https://wpt.fyi/results/css/css-pseudo/hit-testing-active-pseudo-layout-on-mouseup.html) | Pass | 1 / 1 |  |  |
 | [`idlharness.html`](https://wpt.fyi/results/css/css-pseudo/idlharness.html) | Fail | 20 / 29 | TEST BUG | the setup calls `window.getPseudoElements()` and uses `CSSPseudoElementList`, which were removed from CSS Pseudo-Elements 4 (they are not in its IDL): the tests of the `CSSPseudoElement` object fail |
-| [`input-element-pseudo-open-click.optional.html`](https://wpt.fyi/results/css/css-pseudo/input-element-pseudo-open-click.optional.html) | Fail | 0 / 7 | NOT IMPLEMENTED | the pickers of the date/time/color/datalist inputs (clicking does not open a picker, so `:open` never matches) |
-| [`input-element-pseudo-open.optional.html`](https://wpt.fyi/results/css/css-pseudo/input-element-pseudo-open.optional.html) | Fail | 0 / 7 | NOT IMPLEMENTED | `HTMLInputElement.showPicker()` always throws `NotAllowedError` (no picker UI), so `:open` never matches |
+| [`input-element-pseudo-open-click.optional.html`](https://wpt.fyi/results/css/css-pseudo/input-element-pseudo-open-click.optional.html) | Fail | 6 / 7 | NOT IMPLEMENTED | clicking a text input with a `datalist` does not show its suggestions (the HTML Standard gives the Text state no input activation behavior, and Chromium does not match `:open` for it either), so `:open` does not match; `showPicker()` shows them, and the pickers of the date, time and color inputs open when they are clicked |
+| [`input-element-pseudo-open.optional.html`](https://wpt.fyi/results/css/css-pseudo/input-element-pseudo-open.optional.html) | Pass | 7 / 7 |  |  |
 | [`marker-animate.html`](https://wpt.fyi/results/css/css-pseudo/marker-animate.html) | Pass | 3 / 3 |  |  |
 | [`marker-computed-content.html`](https://wpt.fyi/results/css/css-pseudo/marker-computed-content.html) | Pass | 10 / 10 |  |  |
 | [`marker-computed-size.html`](https://wpt.fyi/results/css/css-pseudo/marker-computed-size.html) | Pass | 8 / 8 |  |  |

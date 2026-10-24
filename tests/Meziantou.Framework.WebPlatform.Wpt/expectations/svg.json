@@ -1888,10 +1888,7 @@
     "total": 3
   },
   "svg/linking/scripted/rellist-feature-detection.svg": {
-    "total": 1,
-    "failures": {
-      "Make sure that relList based feature detection is working": "FAIL"
-    }
+    "total": 1
   },
   "svg/linking/scripted/xlink-href-compat.html": {
     "total": 12

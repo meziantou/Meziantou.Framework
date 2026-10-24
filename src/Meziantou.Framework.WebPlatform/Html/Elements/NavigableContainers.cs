@@ -168,6 +168,14 @@ public partial class HtmlIFrameElement
     private void ProcessIframeAttributes(bool initialInsertion)
     {
         LazyLoading.ClearResumptionSteps(this);
+
+        // The content navigable of an iframe inserted in a document loaded again by a traversal restores its session history entry
+        if (initialInsertion && ContentNavigable?.RestoreNestedHistoryEntry() == true)
+        {
+            CurrentNavigationWasLazyLoaded = false;
+            return;
+        }
+
         if (GetAttributeValue("srcdoc") is { } srcdoc)
         {
             CurrentNavigationWasLazyLoaded = false;
@@ -272,6 +280,10 @@ public partial class HtmlFrameElement
     /// <summary>https://html.spec.whatwg.org/multipage/obsolete.html#process-the-frame-attributes</summary>
     private void ProcessFrameAttributes(bool initialInsertion)
     {
+        // The content navigable of a frame inserted in a document loaded again by a traversal restores its session history entry
+        if (initialInsertion && ContentNavigable?.RestoreNestedHistoryEntry() == true)
+            return;
+
         var url = NavigableContainers.SharedAttributeProcessingSteps(this, initialInsertion);
         if (url is null)
             return;

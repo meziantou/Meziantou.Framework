@@ -616,10 +616,18 @@ internal sealed class CascadeRuleCollector
                     }
 
                     // The pseudo-elements of the element-backed ::picker(select) (e.g. "picker::before" with the argument of the
-                    // picker, see StyleEngine.SelectPickerPrefix)
+                    // picker, see StyleEngine.SelectPickerPrefix); the highlight pseudo-elements keep their own argument (e.g.
+                    // "picker::highlight" with the name of the highlight)
                     if (pseudoElement == "picker" && pseudo.Name is "before" or "after" or "backdrop" or "first-line" or "first-letter")
                     {
                         pseudoElement = "picker::" + pseudo.Name;
+                        break;
+                    }
+
+                    if (pseudoElement == "picker" && StyleEngine.IsHighlightPseudoElement(pseudo.Name))
+                    {
+                        pseudoElement = "picker::" + pseudo.Name;
+                        pseudoElementArgument = pseudo.ArgumentText ?? pseudoElementArgument;
                         break;
                     }
 

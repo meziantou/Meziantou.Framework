@@ -101,6 +101,14 @@ public partial class Document : Node
     /// <summary>Whether a shadow root was attached to an element of the document (the style engine then looks for the @property rules of the shadow trees).</summary>
     internal bool HasShadowRoots { get; set; }
 
+    /// <summary>
+    /// Whether an element of the document has a user agent shadow tree (the summary that the user agent provides for a details
+    /// element, see <see cref="HtmlDetailsElement.ImplicitSummary"/>): the events dispatched in it are retargeted. Unlike
+    /// <see cref="HasShadowRoots"/>, it does not make the style engine and the box tree builder take their general paths (the
+    /// user agent shadow trees have no style sheets, and their elements are invalidated with their host).
+    /// </summary>
+    internal bool HasUserAgentShadowRoots { get; set; }
+
     /// <summary>Whether a mutation observer was ever registered on a node of the document (queuing mutation records walks the inclusive ancestors of the target, which is skipped otherwise).</summary>
     internal bool HasMutationObservers { get; set; }
 
@@ -717,6 +725,11 @@ public partial class Document : Node
         if (oldDocument.HasShadowRoots)
         {
             HasShadowRoots = true;
+        }
+
+        if (oldDocument.HasUserAgentShadowRoots)
+        {
+            HasUserAgentShadowRoots = true;
         }
 
         // The adopted nodes keep their registered observers

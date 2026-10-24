@@ -35,6 +35,7 @@ internal static class TdsProjectionTypeFactory
 
     private static ModuleBuilder? s_moduleBuilder;
     private static int s_moduleTypeCount;
+    private static int s_nextAssemblyId;
     private static int s_nextTypeId;
     private static int s_sweepThreshold = MaxRetainedTypes * 2;
 
@@ -153,8 +154,13 @@ internal static class TdsProjectionTypeFactory
     {
         if (s_moduleBuilder is null || s_moduleTypeCount >= TypesPerAssembly)
         {
+            // Each assembly needs its own name: a type that references types from other assemblies records one
+            // assembly reference per name, so all the assemblies sharing a name would resolve to the same one
+            // and loading the type would fail with a TypeLoadException.
+            var assemblyName = "Meziantou.Framework.Tds.QueryEngine.Projections" + s_nextAssemblyId.ToString(CultureInfo.InvariantCulture);
+            s_nextAssemblyId++;
             var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                new AssemblyName("Meziantou.Framework.Tds.QueryEngine.Projections"),
+                new AssemblyName(assemblyName),
                 AssemblyBuilderAccess.RunAndCollect);
             s_moduleBuilder = assemblyBuilder.DefineDynamicModule("Projections");
             s_moduleTypeCount = 0;

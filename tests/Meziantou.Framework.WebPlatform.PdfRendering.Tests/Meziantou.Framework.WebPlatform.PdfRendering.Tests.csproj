@@ -1,0 +1,32 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <!--
+    The tests of the PDF printing: the pages are rendered back by Meziantou.Framework.Pdf.Rendering and compared to the
+    pages rasterized by Meziantou.Framework.WebPlatform.Imaging, and the structure, the text, the links and the outline are
+    read back by Meziantou.Framework.Pdf. The interop tests check the files with qpdf, Poppler and veraPDF (downloaded by
+    the Pdf test harness).
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <!-- The tests use the assertions of xUnit.net, as the tests of the Imaging backend whose helpers they share -->
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+    <!-- Test method names describe behavior with underscores -->
+    <NoWarn>$(NoWarn);CA1707;CA1515;CA2007</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.10.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf.Rendering\Meziantou.Framework.Pdf.Rendering.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.Imaging\Meziantou.Framework.WebPlatform.Imaging.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.PdfRendering\Meziantou.Framework.WebPlatform.PdfRendering.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Pdf.TestHarness\Meziantou.Framework.Pdf.TestHarness.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The browsing contexts of the tests of the Imaging backend -->
+    <Compile Include="..\Meziantou.Framework.WebPlatform.Imaging.Tests\TestPages.cs" Link="TestPages.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+</Project>

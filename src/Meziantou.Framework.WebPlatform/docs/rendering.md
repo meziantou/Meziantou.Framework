@@ -103,7 +103,56 @@ layout and painting features that are not implemented, and the bugs).
   images (also the ones of the page contexts and of the page-margin boxes) and the font faces used only by the print styles
   are fetched by the printing but are not drawn when they were not loaded before the pages are painted
   (print again once they are). The nested documents (`iframe`) are painted as on the screen.
-- There is no PDF output: the pages are images.
+- `ImagingPrintExtensions` renders the pages as images; `PdfPrintExtensions` (`Meziantou.Framework.WebPlatform.PdfRendering`)
+  writes them into a PDF document (see [PDF output](#pdf-output)).
+
+## PDF output
+
+`PdfPrintExtensions.PrintToPdf` (package `Meziantou.Framework.WebPlatform.PdfRendering`) prints a document (a
+`PrintSession`, as `ImagingPrintExtensions`) and writes each printed page into a page of a `Meziantou.Framework.Pdf`
+document. The package is not a `RenderingBackend`: it reads the display lists of the pages, and uses the backend of the
+browsing context for the images (their bytes are only kept when the browsing context has a backend) and the Imaging
+rasterizer for what PDF cannot draw. It uses the internals of the core library and of the Imaging backend, and depends on
+their exact versions.
+
+- The page size is the size of the printed page (CSS px, 0.75 point each). The first operator of each page maps the CSS px
+  of the display list (y down) to the default user space of the page (points, y up), so the items are written with their
+  own coordinates.
+- The state items map to the graphics state: a save is `q`, its restore `Q`, a transform `cm`, a clip a path and `W n`. A
+  layer is a transparency group (an isolated form XObject drawn with the opacity and the blend mode of the layer in its
+  `ExtGState`) when it has an opacity or a blend mode, or when its items blend; it is a `q`/`Q` pair otherwise.
+- The colors are DeviceRGB, their alphas `ca`/`CA`, the blend modes of `mix-blend-mode` the 15 blend modes of PDF. The
+  linear and radial gradients are shading patterns whose function interpolates their stops; the colors of their transparent
+  stops are the colors next to them (PDF interpolates the colors and the alphas separately, CSS premultiplied), the stops of
+  a repeating linear gradient are repeated over the shape, and the alphas of stops that differ are a luminosity soft mask.
+  The image patterns, the background tiles and the SVG patterns and images (`DisplayListShader`) are tiling patterns whose
+  tile is written with the same writer (vector graphics).
+- A glyph run is shown with `PdfContentBuilder.ShowGlyphs`: the glyph ids of the font file of the layout at the positions
+  the layout computed (the text is not shaped again), with the text of the run (its `ToUnicode` CMap entries, or a
+  replacement text for the ligatures and the right-to-left runs). The font is embedded as a subset (`PdfFont.FromFace` of
+  the face of the layout). The synthesized bold is a fill and stroke, the synthesized oblique a shear of the text matrix.
+  The glyphs of the instances of variable fonts and of the fonts PDF cannot embed are filled as paths, with the text as
+  their replacement text.
+- An image is embedded once per URL: a JPEG image without EXIF orientation as it is (`DCTDecode`), the other images
+  decoded by the backend of the browsing context (their alpha a soft mask).
+- What PDF cannot draw is rasterized by the Imaging backend, at `PdfPrintOptions.RasterizationScale` pixels per CSS px, in
+  the bounds of the items (or of the clip), and drawn as an image at their place: the blurred paints (`BlurSigma`, the
+  shadows), the layers with filters or backdrop filters, composited with a Porter-Duff operator or containing such items
+  (the masks), the rest of the scope of a 3D transform, the conic gradients, the filtered shaders, the cropped, padded or
+  mirrored image patterns, the repeating radial gradients, and the runs of color glyphs. A backdrop filter sees a
+  transparent backdrop.
+- The pages are measured before they are written: each item gives the area of its node on its page. The structure tree
+  (when `PdfPrintOptions.Tagged`) is built from the elements in the order of the document: the headings, paragraphs,
+  lists (`LI` with an `LBody`), tables (the scope and the spans of the cells), figures (`img`, `svg`, `canvas`, with their
+  alternate text), `math` (`Formula`), quotations, code, links and sections are structure elements; the other elements
+  belong to their parent. The glyphs and images are the content of the structure element of their node, and every drawing
+  of a figure; the backgrounds, borders and decorations are artifacts, as the drawings without node (the paper, the
+  page-margin boxes), the decorative images (`alt=""`) and the content of `aria-hidden` elements. A transparency group is
+  marked as the structure element of its first text or image.
+- The links are one link annotation per line of each `a` element with an `href` (a URI, or a destination in the PDF
+  document for a fragment of the document), in the `Link` structure element; the headings are the outline, nested by
+  level, whose destinations are where they are first painted.
+- The nested documents (`iframe`) are painted as on the screen, and their content is an artifact.
 
 ## Rendering backends
 

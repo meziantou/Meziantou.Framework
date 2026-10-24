@@ -46,13 +46,11 @@ internal readonly record struct Box(double X, double Y, double Width, double Hei
 /// </summary>
 internal static partial class LayoutComparison
 {
-    private const string FontFamily = "ChromiumDiff Sans";
-
     public static async Task<int> RunAsync(string root, LayoutOptions options)
     {
         var knownDifferencesPath = Path.Combine(root, "tools", "Meziantou.Framework.WebPlatform.ChromiumDiff", "layout-known-differences.json");
         var knownDifferences = JsonSerializer.Deserialize<List<LayoutKnownDifference>>(File.ReadAllText(knownDifferencesPath), new JsonSerializerOptions { PropertyNameCaseInsensitive = true, RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true }) ?? [];
-        var styleSheet = CreateStyleSheet(root);
+        var styleSheet = ComparisonCommon.CreateStyleSheet(root);
 
         // The pages of pages.txt with their recorded subresources, and the files of the --corpus directories without subresources
         var inputs = new List<(string Id, string Url, byte[] Html, Page? Page)>();
@@ -75,13 +73,12 @@ internal static partial class LayoutComparison
         Console.WriteLine($"{inputs.Count} page(s)");
 
         using var playwright = await Playwright.CreateAsync();
-        // Playwright hides the scrollbars of headless Chromium (except the ones styled with ::-webkit-scrollbar): the classic
-        // scrollbars of 15px are the ones of the library
-        await using var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions { Headless = true, IgnoreDefaultArgs = ["--hide-scrollbars"] });
+        // The classic scrollbars of 15px are the ones of the library
+        await using var browser = await ComparisonCommon.LaunchChromiumAsync(playwright, classicScrollbars: true);
         Console.WriteLine($"Chromium {browser.Version}");
-        var measureScript = ReadResource("layout.js");
-        var stylesScript = ReadResource("styles.js");
-        var inspectScript = ReadResource("inspect.js");
+        var measureScript = ComparisonCommon.ReadResource("layout.js");
+        var stylesScript = ComparisonCommon.ReadResource("styles.js");
+        var inspectScript = ComparisonCommon.ReadResource("inspect.js");
 
         // The reports are written as the pages are compared
         using var reportWriter = options.ReportPath is null ? null : new StreamWriter(options.ReportPath) { AutoFlush = true };
@@ -104,7 +101,7 @@ internal static partial class LayoutComparison
             {
                 var directory = Path.Combine(root, "artifacts", "chromium-diff", "resources", page.Name);
                 cache = (options.Record ? null : ResourceCache.Load(directory))
-                    ?? await ResourceCache.RecordAsync(context, url, html, directory, p => PrepareChromiumAsync(p, styleSheet));
+                    ?? await ResourceCache.RecordAsync(context, url, html, directory, p => ComparisonCommon.PrepareChromiumAsync(p, styleSheet));
             }
 
             Dictionary<string, Box> chromium;
@@ -114,7 +111,7 @@ internal static partial class LayoutComparison
                 chromiumPage = await context.NewPageAsync();
                 await cache.RouteAsync(chromiumPage, url, html);
                 await chromiumPage.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.Load, Timeout = 120_000 });
-                await PrepareChromiumAsync(chromiumPage, styleSheet);
+                await ComparisonCommon.PrepareChromiumAsync(chromiumPage, styleSheet);
                 chromium = await MeasureChromiumAsync(chromiumPage, measureScript);
             }
             catch (PlaywrightException ex)
@@ -412,49 +409,6 @@ internal static partial class LayoutComparison
         ServiceWorkers = ServiceWorkerPolicy.Block,
     };
 
-    /// <summary>
-    /// The style sheet injected in both after the load of the page: all the text uses the bundled Arimo of the library (as a
-    /// web font, the same file in both), and the animations and the transitions are disabled.
-    /// </summary>
-    private static string CreateStyleSheet(string root)
-    {
-        var fonts = Path.Combine(root, "src", "Meziantou.Framework.WebPlatform", "Css", "Fonts", "Bundled");
-        var regular = Convert.ToBase64String(File.ReadAllBytes(Path.Combine(fonts, "Arimo-VF.woff2")));
-        var italic = Convert.ToBase64String(File.ReadAllBytes(Path.Combine(fonts, "Arimo-Italic-VF.woff2")));
-        return $$"""
-            @font-face { font-family: "{{FontFamily}}"; src: url(data:font/woff2;base64,{{regular}}) format("woff2"); font-weight: 400 700; font-style: normal; font-display: block }
-            @font-face { font-family: "{{FontFamily}}"; src: url(data:font/woff2;base64,{{italic}}) format("woff2"); font-weight: 400 700; font-style: italic; font-display: block }
-            *, *::before, *::after, *::marker, *::placeholder, *::file-selector-button { font-family: "{{FontFamily}}" !important }
-            *, *::before, *::after { animation: none !important; transition: none !important }
-            """;
-    }
-
-    private const string InjectScript = """
-        async css => {
-          const style = document.createElement('style');
-          style.textContent = css;
-          (document.head || document.documentElement).append(style);
-          document.documentElement.getBoundingClientRect();
-          await document.fonts.ready;
-        }
-        """;
-
-    private static async Task PrepareChromiumAsync(IPage page, string styleSheet)
-    {
-        await page.EvaluateAsync(InjectScript, styleSheet);
-
-        // The resources that the new styles use (e.g. a background image of an element that was not rendered)
-        try
-        {
-            await page.WaitForLoadStateAsync(LoadState.NetworkIdle, new PageWaitForLoadStateOptions { Timeout = 15_000 });
-        }
-        catch (TimeoutException)
-        {
-        }
-
-        await page.EvaluateAsync("async () => { document.documentElement.getBoundingClientRect(); await document.fonts.ready; }");
-    }
-
     private static async Task<Dictionary<string, Box>> MeasureChromiumAsync(IPage page, string script)
     {
         var result = await page.EvaluateAsync<JsonElement>(script);
@@ -485,21 +439,10 @@ internal static partial class LayoutComparison
         {
             var stopwatch = Stopwatch.StartNew();
             context.Navigate(url, _ => new DocumentResource(html) { Headers = [new("Content-Type", "text/html; charset=utf-8")] });
-            await RunUntilIdleAsync(context.EventLoop, stopwatch, options.Timeout);
+            await ComparisonCommon.RunUntilIdleAsync(context.EventLoop, stopwatch, options.Timeout);
+            await ComparisonCommon.PrepareLibraryAsync(context, styleSheet, stopwatch, options.Timeout);
 
             var document = context.Document;
-            var style = document.CreateElement("style");
-            style.TextContent = styleSheet;
-            (document.Head ?? document.DocumentElement)!.AppendChild(style);
-
-            // The fonts and the images that the new styles use are fetched when the document is laid out
-            for (var i = 0; i < 5; i++)
-            {
-                document.DocumentElement?.GetBoundingClientRect();
-                await RunUntilIdleAsync(context.EventLoop, stopwatch, options.Timeout);
-                if (document.Fonts.Status == FontFaceSetLoadStatus.Loaded)
-                    break;
-            }
 
             var boxes = new Dictionary<string, Box>(StringComparer.Ordinal);
             var elements = new Dictionary<string, Element>(StringComparer.Ordinal);
@@ -530,27 +473,6 @@ internal static partial class LayoutComparison
         {
             context.Dispose();
             throw;
-        }
-    }
-
-    /// <summary>Runs the tasks of the event loop until it is idle, or throws a <see cref="TimeoutException"/> after the timeout of the page.</summary>
-    private static async Task RunUntilIdleAsync(DomEventLoop eventLoop, Stopwatch stopwatch, TimeSpan timeout)
-    {
-        while (true)
-        {
-            while (eventLoop.RunTask())
-            {
-                if (stopwatch.Elapsed > timeout)
-                    throw new TimeoutException($"The page is not laid out after {timeout.TotalSeconds} s");
-            }
-
-            if (!eventLoop.HasPendingOperations)
-                return;
-
-            if (stopwatch.Elapsed > timeout)
-                throw new TimeoutException($"The page is not laid out after {timeout.TotalSeconds} s");
-
-            await Task.Delay(10);
         }
     }
 
@@ -757,11 +679,4 @@ internal static partial class LayoutComparison
 
     [GeneratedRegex("^-?[A-Za-z_][A-Za-z0-9_-]*$")]
     private static partial Regex IdentifierRegex();
-
-    private static string ReadResource(string name)
-    {
-        using var stream = typeof(LayoutComparison).Assembly.GetManifestResourceStream(name) ?? throw new InvalidOperationException($"Resource '{name}' not found");
-        using var reader = new StreamReader(stream);
-        return reader.ReadToEnd();
-    }
 }

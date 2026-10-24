@@ -542,6 +542,26 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
     }
 
     [Fact]
+    public void EventHandlers_DoNotBindTheirName()
+    {
+        // The scope of a handler of the window is the global environment: onresize() calls the global function, not the handler
+        // itself; the source text and the name of the function are the ones of the attribute (the title collapses the line breaks)
+        var document = Load("""
+            <body>
+            <div id=d onclick="return 1"></div>
+            <script>
+              function onresize() { document.title += 'global;'; }
+              document.body.setAttribute('onresize', 'onresize(); document.title += typeof event + ";";');
+              window.dispatchEvent(new Event('resize'));
+              var d = document.getElementById('d');
+              document.title += d.onclick.name + ';' + d.onclick.toString();
+            </script>
+            """);
+        Assert.Equal("global;object;onclick;function onclick(event) { return 1 }", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
     public void Errors_AreReported()
     {
         var document = Load("""

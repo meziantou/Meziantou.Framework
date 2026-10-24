@@ -2682,7 +2682,7 @@
     "reftest": "PASS"
   },
   "css/css-break/overflow-clip-010.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/overflow-clip-011.html": {
     "reftest": "PASS"

@@ -247,10 +247,10 @@ internal static partial class ColumnBreaker
                 // The block size that remains in the outer fragmentainer, in the content box of the container and in its row
                 var available = blockSize - offset;
                 var overflows = false;
-                if (_nested.BlockSize is { } containerBlockSize && _nested.RowBlockSize is null)
+                if ((_nested.BlockSize ?? _nested.MaxBlockSize) is { } containerBlockSize && _nested.RowBlockSize is null)
                 {
-                    // The content box of the container ends in the outer fragmentainer: the content that does not fit in the columns
-                    // of its last row overflows in the inline direction
+                    // The content box of the container ends in the outer fragmentainer (or reaches its maximum block size): the content
+                    // that does not fit in the columns of its last row overflows in the inline direction
                     var remaining = containerBlockSize - (_consumed + offset - fragmentStart);
                     if (remaining <= available + Epsilon)
                     {

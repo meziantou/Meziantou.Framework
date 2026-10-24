@@ -442,6 +442,7 @@ internal sealed class MultiColumnFormattingContext : FormattingContext
             Wraps = wraps,
             RowBlockSize = fragmentation.ColumnHeight,
             BlockSize = content.BlockSize ?? content.ContainedBlockSize,
+            MaxBlockSize = content.BlockSize is null && content.ContainedBlockSize is null ? content.MaxBlockSize : null,
             ContentOffset = content.Offset,
             ContentInlineSize = content.InlineSize,
             CreateTrialFlow = () => LayoutStrip(context, box, content, columnWidth, separatesOutOfFlow: true).Flow,

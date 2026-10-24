@@ -2912,7 +2912,8 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     size of the inner container when it is definite): its content is balanced in it when it ends there (or the columns are
     filled, with `column-fill: auto`), else the row has `column-count` columns of that block size and the content continues in
     a row of the next outer fragmentainer. The last row of a container whose definite block size ends in the outer
-    fragmentainer has overflow columns. A row of a fixed block size (`column-height`) is broken by the end of the outer
+    fragmentainer has overflow columns (also the row where the content box of a container whose block size is not definite
+    reaches its `max-height`). A row of a fixed block size (`column-height`) is broken by the end of the outer
     fragmentainer; when it follows other content of the container in the outer fragmentainer, it starts there only if it fits.
     These rows overflow a container with a definite block size (its block-end edge is placed before the end of its content).
   - A column that would break where a rule is violated (`orphans`/`widows`, `avoid`, content that overflows) ends the row
@@ -2951,7 +2952,9 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     and whose static position is in its strip is moved to that static position in the inner columns that the breaker placed
     (`ColumnBreaker.TryGetNestedStaticPosition`, `OutOfFlowPlacement.InlineShift`), also when its containing block is an
     inline box of the outer strip or is outside of the outer container.
-  - The floats, the absolutely positioned boxes and the inline-blocks that are multi-column containers are monolithic.
+  - The floats, the absolutely positioned boxes and the inline-blocks that are multi-column containers are monolithic, as
+    are the containers that extend past the block-end edge of an ancestor that clips its overflow (`overflow: clip`; a container inside such an ancestor
+    is fragmented).
 - **Fragments** (`FragmentSlicer`, [§5](https://drafts.csswg.org/css-break-3/#box-splitting)): a fragment whose subtree is in one column
   (and contains no column spanner, which the multi-column container places itself) is moved to it; a box that spans several columns gets one `BoxFragment` per column (`BoxFragment.CreateSlice`:
   `IsFirstFragment`/`IsLastFragment`, `UnfragmentedFragment` is the fragment before the split), whose children are distributed

@@ -1664,7 +1664,7 @@ internal sealed class FragmentationFlow
     /// <param name="siblingBefore">The in-flow sibling before the container when the flow has a possible break between them, else null.</param>
     private bool TryAddNestedColumns(BoxFragment box, double top, double bottom, VisitContext context, Fragment? siblingBefore)
     {
-        if (TakeNestedColumns(box, context) is not { } nested)
+        if (TakeNestedColumns(box, bottom, context) is not { } nested)
             return false;
 
         // (the breaker places the block-end edge of a container with a definite block size after its content box)
@@ -1750,15 +1750,17 @@ internal sealed class FragmentationFlow
 
     /// <summary>
     /// Returns the content of a multi-column container of the flow that the breaker fragments (see <see cref="NestedColumns"/>), or
-    /// null when the container is monolithic (it was not laid out in a strip, or it is monolithic for another reason).
+    /// null when the container is monolithic (it was not laid out in a strip, it overflows an ancestor that clips it, or it is
+    /// monolithic for another reason).
     /// </summary>
-    private NestedColumns? TakeNestedColumns(BoxFragment box, VisitContext context)
+    /// <param name="bottom">The block-end edge of the border box of the container in the strip.</param>
+    private NestedColumns? TakeNestedColumns(BoxFragment box, double bottom, VisitContext context)
     {
         var container = box.Box;
         var layout = container.Style.Layout;
         if (container.Kind != ContainerBoxKind.Normal || !layout.IsMultiColumnContainer || container.LayoutState is not MultiColumnState state
             || box.IsScrollContainer || container.IsAtomicInline || layout.WritingMode != _writingDirection.WritingMode
-            || !double.IsPositiveInfinity(context.ClipEnd) || (_writingDirection.IsHorizontal ? box.ClipsOverflowY : box.ClipsOverflowX)
+            || bottom > context.ClipEnd + Epsilon || (_writingDirection.IsHorizontal ? box.ClipsOverflowY : box.ClipsOverflowX)
             || (IntrinsicSizing.HasSizeContainment(container, inlineAxis: false) && UsedContainment.CanApplySizeContainment(container)))
         {
             return null;
@@ -2082,7 +2084,7 @@ internal sealed class FragmentationFlow
             }
 
             var (childTop, childBottom, _) = GetBlockRange(child, box.Size, box.WritingDirection, top);
-            var nested = TakeNestedColumns(child, context);
+            var nested = TakeNestedColumns(child, childBottom, context);
             var flow = nested is null ? new FragmentationFlow(_writingDirection, _spannerBoxes, _root) : CreateNestedColumnsFlow(nested, childTop, childBottom);
             var item = new ParallelItem(flow)
             {

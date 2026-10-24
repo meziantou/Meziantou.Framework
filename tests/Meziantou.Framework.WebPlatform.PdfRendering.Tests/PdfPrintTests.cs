@@ -79,6 +79,11 @@ public sealed class PdfPrintTests : IDisposable
         ["3d"] = """
             <div style='position: absolute; left: 50px; top: 30px; width: 100px; height: 80px; background: #3366cc; transform: perspective(200px) rotateY(40deg)'></div>
             """,
+        // The instances of a variable font (the bundled Arimo at a weight other than its default) are drawn as paths
+        ["variable-font"] = """
+            <div style='position: absolute; left: 10px; top: 10px; font: bold 24px/1 sans-serif'>Bold text</div>
+            <div style='position: absolute; left: 10px; top: 50px; font: 600 18px/1 sans-serif; font-style: italic'>Semi bold</div>
+            """,
         ["conic"] = """
             <div style='position: absolute; left: 50px; top: 25px; width: 100px; height: 100px; border-radius: 50%; background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red)'></div>
             """,

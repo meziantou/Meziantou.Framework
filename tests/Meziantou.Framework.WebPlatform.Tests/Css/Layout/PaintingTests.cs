@@ -463,6 +463,32 @@ public sealed class PaintingTests : IDisposable
         Assert.Contains("draw-ring (0, 0, 20x5) - (0, 0, 20x3)", bottom, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("inset rgb(153, 153, 153)", "#454545", "#eeeeee")]
+    [InlineData("outset rgb(153, 153, 153)", "#eeeeee", "#454545")]
+    [InlineData("inset rgb(0, 0, 0)", "#000000", "#545454")]
+    [InlineData("outset rgb(0, 0, 0)", "#545454", "#000000")]
+    [InlineData("inset rgb(255, 255, 255)", "#ababab", "#ffffff")]
+    [InlineData("inset rgb(0, 0, 255)", "#0000ab", "#0000ff")]
+    [InlineData("inset rgb(32, 32, 32)", "#202020", "#747474")]
+    public void Borders_3DStylesShadesAsInChromium(string border, string topColor, string bottomColor)
+    {
+        // The darker side has a color whose largest component is 0.33 lower, the lighter side 0.33 higher, unless the color is
+        // already nearly black or nearly white
+        var dump = Dump(Parse($"<div style='width: 20px; height: 0; border-top: 5px {border}; border-bottom: 5px {border}'></div>"));
+        Assert.Contains("draw-ring (0, 0, 20x10) - (0, 5, 20x0) fill " + topColor, dump, StringComparison.Ordinal);
+        Assert.Contains("fill " + bottomColor, dump, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Borders_GrooveHalvesHaveTheTwoShades()
+    {
+        // The outer half of the top side of a groove is darker, the inner half lighter
+        var dump = Dump(Parse("<div style='width: 20px; height: 0; border-top: 6px groove rgb(153, 153, 153)'></div>"));
+        Assert.Contains("draw-ring (0, 0, 20x6) - (0, 3, 20x3) fill #454545", dump, StringComparison.Ordinal);
+        Assert.Contains("draw-ring (0, 3, 20x3) - (0, 6, 20x0) fill #eeeeee", dump, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Image_ObjectFitAndSampling()
     {

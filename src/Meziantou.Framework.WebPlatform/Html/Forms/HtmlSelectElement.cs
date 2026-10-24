@@ -320,6 +320,62 @@ public partial class HtmlSelectElement
         }
     }
 
+    /// <summary>
+    /// The state of the control that a traversal restores (see <see cref="FormControlState"/>): the indexes and the values of
+    /// the selected options, when the selectedness of an option was changed since the last reset (its dirtiness), or null.
+    /// </summary>
+    internal List<(int Index, string Value)>? SaveFormControlState()
+    {
+        var options = GetListOfOptions();
+        if (!options.Exists(option => option.Dirtiness))
+            return null;
+
+        var state = new List<(int Index, string Value)>();
+        for (var i = 0; i < options.Count; i++)
+        {
+            if (options[i].Selectedness)
+            {
+                state.Add((i, options[i].Value));
+            }
+        }
+
+        return state;
+    }
+
+    /// <summary>
+    /// Restores the state saved by <see cref="SaveFormControlState"/> (no input or change event is fired): an option is found
+    /// by its index and its value, else by its value. As in the browsers, the select keeps its state when none of the saved
+    /// options is found.
+    /// </summary>
+    internal void RestoreFormControlState(List<(int Index, string Value)> state)
+    {
+        var options = GetListOfOptions();
+        var selectedOptions = new List<HtmlOptionElement>();
+        foreach (var (index, value) in state)
+        {
+            var option = index < options.Count && options[index].Value == value ? options[index] : options.Find(option => option.Value == value && !selectedOptions.Contains(option));
+            if (option is not null && !selectedOptions.Contains(option))
+            {
+                selectedOptions.Add(option);
+                if (!IsMultiple)
+                    break;
+            }
+        }
+
+        if (state.Count > 0 && selectedOptions.Count == 0)
+            return;
+
+        foreach (var option in options)
+        {
+            option.Selectedness = selectedOptions.Contains(option);
+            option.Dirtiness = true;
+        }
+
+        RunSelectednessSettingAlgorithm();
+        NodeDocument.InvalidateLayout(rebuildBoxTree: true);
+        UpdateDescendantSelectedContentElements();
+    }
+
     /// <summary>The reset algorithm (https://html.spec.whatwg.org/multipage/form-elements.html#the-select-element:concept-form-reset-control).</summary>
     internal override void ResetFromParser()
     {

@@ -124,6 +124,32 @@ public partial class HtmlInputElement : IEditableTextControl
         }
     }
 
+    /// <summary>
+    /// The state of the control that a traversal restores (see <see cref="FormControlState"/>): the value changed since the
+    /// last reset, or the checkedness of a checkbox or a radio button, or null. As in the browsers, the values of the
+    /// password, file and hidden controls are not saved.
+    /// </summary>
+    internal object? SaveFormControlState() => _type switch
+    {
+        InputType.Password or InputType.File or InputType.Hidden => null,
+        InputType.Checkbox or InputType.Radio => _dirtyCheckedness ? _checkedness : null,
+        _ => ValueMode == InputValueMode.Value && _dirtyValue ? _value : null,
+    };
+
+    /// <summary>Restores the state saved by <see cref="SaveFormControlState"/> (no input or change event is fired).</summary>
+    internal void RestoreFormControlState(object state)
+    {
+        switch (state)
+        {
+            case bool checkedness when _type is InputType.Checkbox or InputType.Radio:
+                Checked = checkedness;
+                break;
+            case string value when ValueMode == InputValueMode.Value:
+                Value = value;
+                break;
+        }
+    }
+
     /// <summary>https://html.spec.whatwg.org/multipage/input.html#the-input-element:concept-form-reset-control</summary>
     internal override void ResetAlgorithm()
     {

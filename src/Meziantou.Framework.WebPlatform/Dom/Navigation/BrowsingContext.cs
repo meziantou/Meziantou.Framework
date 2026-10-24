@@ -1216,8 +1216,9 @@ public sealed partial class BrowsingContext : IDisposable
             return;
 
         // https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate, step 22: a navigation of a child navigable
-        // delays the load event of its parent; a reload or a traversal does not
-        if (Parent is not null && traversalEntry is null)
+        // delays the load event of its parent; a reload or a traversal does not, except the restoration of the entry of a
+        // child navigable inserted in a document loaded again by a traversal
+        if (Parent is not null && (traversalEntry is null || initialInsertion))
         {
             IsDelayingLoadEvents = true;
         }
@@ -1581,8 +1582,9 @@ public sealed partial class BrowsingContext : IDisposable
         }
         else if (srcdoc is not null)
         {
-            // https://html.spec.whatwg.org/multipage/browsing-the-web.html#create-navigation-params-from-a-srcdoc-resource
-            url = AboutSrcdocUrl;
+            // https://html.spec.whatwg.org/multipage/browsing-the-web.html#create-navigation-params-from-a-srcdoc-resource: the
+            // URL is about:srcdoc; a traversal keeps the fragment of the entry (e.g. about:srcdoc#yo)
+            url = traversalEntry is not null && MatchesAboutSrcdoc(url) ? url : AboutSrcdocUrl;
             parameters.PolicyContainer = historyPolicyContainer ?? (Container?.NodeDocument is { } parentDocument ? PolicyContainer.Clone(parentDocument) : PolicyContainer.Empty);
             resource = new DocumentResource(srcdoc);
             parameters.Srcdoc = srcdoc;
@@ -2608,6 +2610,13 @@ public sealed partial class BrowsingContext : IDisposable
             entry.DocumentState.Document = document;
             entry.DocumentState.Origin = document.Origin;
             SetActiveEntry(entry);
+
+            // The child navigables of the new document take over the nested histories of the previous document, and a
+            // traversal restores their entries and the state of the form controls of the document
+            entry.DocumentState.NestedHistoriesToTakeOver = entry.DocumentState.NestedHistories.Count > 0 ? [.. entry.DocumentState.NestedHistories] : null;
+            entry.DocumentState.RestoresNestedHistories = !ReferenceEquals(traversalEntry, previousEntry);
+            document.FormControlStateToRestore = ReferenceEquals(traversalEntry, previousEntry) ? null : entry.PersistedFormControlState;
+            entry.PersistedFormControlState = null;
         }
         else
         {
@@ -2923,11 +2932,13 @@ public sealed partial class BrowsingContext : IDisposable
         // The navigational prefetches and the prerendering navigables of the speculation rules of the document
         Html.NavigationalPrefetch.DiscardAll(document);
 
-        // There is no back/forward cache: a traversal to an entry of the document loads it again
-        if (document.LatestEntry?.DocumentState is { } documentState && ReferenceEquals(documentState.Document, document))
+        // There is no back/forward cache: a traversal to an entry of the document loads it again, and restores the state of
+        // its form controls (https://html.spec.whatwg.org/multipage/browsing-the-web.html#persisted-user-state-restoration)
+        if (document.LatestEntry is { DocumentState: { } documentState } latestEntry && ReferenceEquals(documentState.Document, document))
         {
             documentState.Document = null;
             documentState.DocumentReferrerPolicy = document.ReferrerPolicy;
+            latestEntry.PersistedFormControlState = FormControlState.Save(document);
         }
 
         // https://fetch.spec.whatwg.org/#concept-fetch-group-terminate: the fetches of the document are terminated, and its
@@ -3006,7 +3017,11 @@ public sealed partial class BrowsingContext : IDisposable
         var parentDocument = element.NodeDocument;
         var parent = parentDocument.BrowsingContext!;
         var navigable = new BrowsingContext(parent.Options, parent, element, groupOwner: null, creator: null, name: "");
-        navigable.AddChildNavigableHistory();
+        if (!navigable.TryTakeOverNestedHistory())
+        {
+            navigable.AddChildNavigableHistory();
+        }
+
         NavigableContainers.SetContentNavigable(element, navigable);
         (parentDocument.ChildNavigables ??= []).Add(navigable);
         parent.Options.ScriptEngine?.OnChildNavigablesChanged(parent.Window);

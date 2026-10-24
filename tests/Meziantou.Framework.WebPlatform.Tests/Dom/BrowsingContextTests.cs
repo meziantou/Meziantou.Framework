@@ -755,6 +755,112 @@ public sealed class BrowsingContextTests
     }
 
     [Fact]
+    public void History_Traversal_RestoresFormControlState()
+    {
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            DocumentLoader = new DelegateDocumentLoader((url, _) => ValueTask.FromResult<DocumentResource?>(new DocumentResource(url.EndsWith("page.html", StringComparison.Ordinal)
+                ? "<form><input id=text><input id=off autocomplete=off><input id=password type=password><input id=check type=checkbox><textarea id=area></textarea><select id=select><option>a<option>b</select><select id=multiple multiple><option>x<option>y<option>z</select></form><form autocomplete=off><input id=formoff></form>"
+                : "<title>next</title>"))),
+        });
+
+        context.Navigate("https://example.com/dir/page.html");
+        context.EventLoop.RunUntilIdle();
+        void SetValues()
+        {
+            var document = context.Document;
+            ((HtmlInputElement)document.GetElementById("text")!).Value = "text";
+            ((HtmlInputElement)document.GetElementById("off")!).Value = "off";
+            ((HtmlInputElement)document.GetElementById("password")!).Value = "password";
+            ((HtmlInputElement)document.GetElementById("check")!).Checked = true;
+            ((HtmlTextAreaElement)document.GetElementById("area")!).Value = "area";
+            ((HtmlSelectElement)document.GetElementById("select")!).Value = "b";
+            var multiple = (HtmlSelectElement)document.GetElementById("multiple")!;
+            multiple.Options[1]!.Selected = true;
+            multiple.Options[2]!.Selected = true;
+            ((HtmlInputElement)document.GetElementById("formoff")!).Value = "formoff";
+        }
+
+        SetValues();
+        context.Window.Location.Assign("next.html");
+        context.EventLoop.RunUntilIdle();
+        Assert.Equal("next", context.Document.Title);
+
+        context.Window.History.Back();
+        context.EventLoop.RunUntilIdle();
+        var restored = context.Document;
+        Assert.Equal("text", ((HtmlInputElement)restored.GetElementById("text")!).Value);
+        Assert.Equal("", ((HtmlInputElement)restored.GetElementById("off")!).Value);
+        Assert.Equal("", ((HtmlInputElement)restored.GetElementById("password")!).Value);
+        Assert.True(((HtmlInputElement)restored.GetElementById("check")!).Checked);
+        Assert.Equal("area", ((HtmlTextAreaElement)restored.GetElementById("area")!).Value);
+        Assert.Equal("b", ((HtmlSelectElement)restored.GetElementById("select")!).Value);
+        Assert.Equal(["y", "z"], ((HtmlSelectElement)restored.GetElementById("multiple")!).SelectedOptions.OfType<HtmlOptionElement>().Select(option => option.Value));
+        Assert.Equal("", ((HtmlInputElement)restored.GetElementById("formoff")!).Value);
+
+        // A reload does not restore the state of the form controls
+        SetValues();
+        context.Window.Location.Reload();
+        context.EventLoop.RunUntilIdle();
+        Assert.NotSame(restored, context.Document);
+        Assert.Equal("", ((HtmlInputElement)context.Document.GetElementById("text")!).Value);
+        Assert.Equal("a", ((HtmlSelectElement)context.Document.GetElementById("select")!).Value);
+    }
+
+    [Fact]
+    public void History_Traversal_RestoresTheEntriesOfTheChildNavigables()
+    {
+        var requests = new List<string>();
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            DocumentLoader = new DelegateDocumentLoader((url, _) =>
+            {
+                requests.Add(url);
+                return ValueTask.FromResult<DocumentResource?>(new DocumentResource(url.EndsWith("page.html", StringComparison.Ordinal) ? "<iframe src='child.html'></iframe>" : "<title>" + url + "</title>"));
+            }),
+        });
+
+        context.Navigate("https://example.com/dir/page.html");
+        context.EventLoop.RunUntilIdle();
+        var iframe = (HtmlIFrameElement)context.Document.QuerySelector("iframe")!;
+        iframe.ContentWindow!.Location.Assign("other.html");
+        context.EventLoop.RunUntilIdle();
+        Assert.Equal("https://example.com/dir/other.html", iframe.ContentDocument!.Url);
+        Assert.Equal(2u, context.Window.History.Length);
+
+        context.Window.Location.Assign("next.html");
+        context.EventLoop.RunUntilIdle();
+        Assert.Equal(3u, context.Window.History.Length);
+
+        // The iframe of the document loaded again restores the entry it had navigated to, instead of loading its src
+        requests.Clear();
+        context.Window.History.Back();
+        context.EventLoop.RunUntilIdle();
+        iframe = (HtmlIFrameElement)context.Document.QuerySelector("iframe")!;
+        Assert.Equal("https://example.com/dir/other.html", iframe.ContentDocument!.Url);
+        Assert.Equal(["https://example.com/dir/page.html", "https://example.com/dir/other.html"], requests);
+        Assert.Equal(3u, context.Window.History.Length);
+
+        // The iframe keeps its session history
+        var document = context.Document;
+        context.Window.History.Back();
+        context.EventLoop.RunUntilIdle();
+        Assert.Same(document, context.Document);
+        Assert.Same(iframe, context.Document.QuerySelector("iframe"));
+        Assert.Equal("https://example.com/dir/child.html", iframe.ContentDocument!.Url);
+
+        // A reload loads the src of the iframe
+        context.Window.History.Forward();
+        context.EventLoop.RunUntilIdle();
+        Assert.Equal("https://example.com/dir/other.html", iframe.ContentDocument!.Url);
+        context.Window.Location.Reload();
+        context.EventLoop.RunUntilIdle();
+        iframe = (HtmlIFrameElement)context.Document.QuerySelector("iframe")!;
+        Assert.Equal("https://example.com/dir/child.html", iframe.ContentDocument!.Url);
+        Assert.Equal(3u, context.Window.History.Length);
+    }
+
+    [Fact]
     public void Hyperlink_Click_NavigatesTheTargetNavigable()
     {
         using var context = new BrowsingContext(new BrowsingContextOptions

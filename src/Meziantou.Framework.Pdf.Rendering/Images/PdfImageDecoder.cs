@@ -1,4 +1,5 @@
 using Meziantou.Framework.Imaging;
+using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Pdf.Filters;
 using Meziantou.Framework.Pdf.Objects;
 using Meziantou.Framework.Pdf.Rendering.Colors;
@@ -71,7 +72,13 @@ internal static class PdfImageDecoder
 
     private static DecodedImage? DecodeCompressed(byte[] data, PdfDictionary dictionary, RenderCache cache)
     {
-        using var image = Image.Load<Rgba32>(data, new ImageDecodeOptions { Configuration = cache.Options.Configuration ?? ImageConfiguration.Default });
+        var options = new ImageDecodeOptions
+        {
+            Configuration = cache.Options.Configuration ?? ImageConfiguration.Default,
+            CmykConversion = GetCmykConversion(dictionary),
+        };
+
+        using var image = Image.Load<Rgba32>(data, options);
         var pixels = new Rgba32[image.Width * image.Height];
         image.Frames[0].CopyPixelDataTo(pixels);
         cache.Charge(pixels.Length / 1024);
@@ -186,6 +193,30 @@ internal static class PdfImageDecoder
 
         var colorKey = dictionary.Get<PdfArray>(PdfNames.Mask);
         return Finish(pixels, width, height, dictionary, cache, colorKey, samples);
+    }
+
+    /// <summary>
+    /// The conversion of the inks of a CMYK or YCCK image to sRGB: Imaging loads them only with one. Imaging reads the
+    /// samples as Adobe applications write them (255 is no ink), which is what the inverted decode array of these images
+    /// says (Adobe Technical Note #5116). The profile embedded in the file is used first; the CMYK profile of an ICCBased
+    /// color space of the image (8.6.5.5) is used when the file has none, and the CMYK profile of DeviceCMYK otherwise.
+    /// </summary>
+    private static CmykConversionOptions GetCmykConversion(PdfDictionary dictionary)
+    {
+        if (dictionary.GetResolved(PdfNames.ColorSpace) is PdfArray { Count: > 1 } array && array.GetResolved(0) is PdfName { Value: "ICCBased" } && array.GetResolved(1) is PdfStream stream && stream.Dictionary.GetInteger(PdfNames.N, 0) == 4)
+        {
+            try
+            {
+                var profile = new IccProfile(new MetadataBlob(stream.GetDecodedData()));
+                if (profile.ColorSpace == IccProfileColorSpace.Cmyk)
+                    return new CmykConversionOptions { AssumedSourceProfile = profile };
+            }
+            catch (Exception ex) when (ex is InvalidImageContentException or UnsupportedImageFeatureException or InvalidPdfContentException or ArgumentException)
+            {
+            }
+        }
+
+        return CmykConversionOptions.Default;
     }
 
     /// <summary>Applies the masks of an image (8.9.6): a soft mask, an explicit mask or a color key mask.</summary>

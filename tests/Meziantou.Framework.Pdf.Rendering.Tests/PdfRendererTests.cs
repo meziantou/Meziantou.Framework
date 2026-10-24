@@ -169,6 +169,71 @@ public sealed class PdfRendererTests
         AssertColor(Pixel(image, 25, 25), 0, 0, 255, tolerance: 8);
     }
 
+    [Fact]
+    public void CmykJpegImages()
+    {
+        // A CMYK JPEG file of WPT (html/canvas/element/manual/wide-gamut-canvas/resources) written by an Adobe application
+        // (APP14 segment, inverted inks) with its CMYK profile: 100% cyan
+        var jpeg = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "TestData", "Generic-CMYK-FF000000.jpg"));
+        var document = new PdfDocument();
+        document.Pages.Add(Size).CreateContentBuilder().DrawImage(PdfImage.FromJpeg(jpeg), 0, 0, 100, 100);
+
+        using var image = Render(document);
+
+        // The color Poppler renders
+        AssertColor(Pixel(image, 50, 50), 0, 163, 219, tolerance: 3);
+    }
+
+    [Fact]
+    public void CmykJpegImagesWithoutProfileUseTheProfileOfTheColorSpace()
+    {
+        // The same file without its APP2 segments: the CMYK profile is the one of the ICCBased color space of the image
+        var jpeg = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "TestData", "Generic-CMYK-FF000000.jpg"));
+        using var profile = new MemoryStream();
+        using var withoutProfile = new MemoryStream();
+        withoutProfile.Write(jpeg.AsSpan(0, 2));
+        var position = 2;
+        while (jpeg[position + 1] != 0xDA)
+        {
+            var length = 2 + ((jpeg[position + 2] << 8) | jpeg[position + 3]);
+            var segment = jpeg.AsSpan(position, length);
+            if (segment[1] == 0xE2 && segment[4..].StartsWith("ICC_PROFILE\0"u8))
+            {
+                profile.Write(segment[18..]);
+            }
+            else
+            {
+                withoutProfile.Write(segment);
+            }
+
+            position += length;
+        }
+
+        withoutProfile.Write(jpeg.AsSpan(position));
+        var document = new PdfDocument();
+        var page = document.Pages.Add(Size);
+        page.CreateContentBuilder().AppendRawContent("q 100 0 0 100 0 0 cm /Im0 Do Q"u8);
+        var iccProfile = new PdfStream(new PdfDictionary { [PdfNames.N] = PdfInteger.Get(4) }, profile.ToArray());
+        var image = new PdfStream(new PdfDictionary
+        {
+            [PdfNames.Type] = PdfNames.XObject,
+            [PdfNames.Subtype] = PdfName.Create("Image"),
+            [PdfNames.Width] = PdfInteger.Get(2),
+            [PdfNames.Height] = PdfInteger.Get(2),
+            [PdfNames.BitsPerComponent] = PdfInteger.Get(8),
+            [PdfNames.ColorSpace] = new PdfArray(PdfName.Create("ICCBased"), document.Objects.Add(iccProfile)),
+            [PdfNames.Decode] = PdfArray.FromNumbers(1, 0, 1, 0, 1, 0, 1, 0),
+        });
+        image.SetEncodedData(withoutProfile.ToArray(), PdfNames.DCTDecode);
+        var resources = page.Dictionary.Get<PdfDictionary>(PdfNames.Resources) ?? new PdfDictionary();
+        page.Dictionary[PdfNames.Resources] = resources;
+        resources[PdfNames.XObject] = new PdfDictionary { [PdfName.Create("Im0")] = document.Objects.Add(image) };
+
+        using var rendered = Render(document);
+
+        AssertColor(Pixel(rendered, 50, 50), 0, 163, 219, tolerance: 3);
+    }
+
     [Theory]
     [InlineData("/W 2 /H 1 /BPC 1 /IM true", "@", 0, 255, 0, 255, 255, 255)]
     [InlineData("/W 2 /H 1 /BPC 1 /IM true /D [1 0]", "@", 255, 255, 255, 0, 255, 0)]

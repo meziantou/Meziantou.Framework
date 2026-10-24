@@ -28,7 +28,12 @@ The [computed role](https://w3c.github.io/core-aam/#roleMappingComputedRole) is:
 - otherwise the implicit role of [HTML-AAM](https://w3c.github.io/html-aam/#html-element-role-mappings) (e.g. `heading`,
   `link` for an `a` with `href`, `banner` for a `header` that is not in sectioning content or `main` (`sectionheader` otherwise), `listitem` for an `li` in a
   list, `combobox` or `listbox` for a `select`) and [SVG-AAM](https://w3c.github.io/svg-aam/), `generic` for the elements
-  without specific semantics (`div`, `span`...).
+  without specific semantics (`div`, `span`...); an element with a `popover` attribute whose implicit role is `generic`
+  or that has none maps to `group` ([the minimum role of a popover](https://w3c.github.io/html-aam/#att-popover)).
+
+As in the browsers, an element that is not rendered because of `display: none` (on it or on an ancestor, e.g. a popover
+that is not showing) is not in the accessibility tree: its computed role is `none`. The elements hidden by
+`visibility: hidden` or `aria-hidden="true"` keep their role, and so do all the elements without a browsing context.
 
 The presentational roles (`none`, `presentation`) are ignored on the focusable elements and the elements with global
 ARIA attributes ([conflict resolution](https://w3c.github.io/aria/#conflict_resolution_presentation_none)), and the items of

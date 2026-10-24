@@ -4207,14 +4207,7 @@
     "total": 1
   },
   "html/semantics/forms/the-input-element/click-user-gesture.html": {
-    "total": 14,
-    "failures": {
-      "input[type=date] click() consumes user activation": "FAIL",
-      "input[type=datetime-local] click() consumes user activation": "FAIL",
-      "input[type=month] click() consumes user activation": "FAIL",
-      "input[type=time] click() consumes user activation": "FAIL",
-      "input[type=week] click() consumes user activation": "FAIL"
-    }
+    "total": 14
   },
   "html/semantics/forms/the-input-element/clone.html": {
     "total": 19
@@ -7398,11 +7391,7 @@
     "total": 2
   },
   "html/semantics/popovers/popover-minimum-role.html": {
-    "total": 2,
-    "failures": {
-      "Dynamic changes to popover attribute should change the role.": "FAIL",
-      "The popover attribute, on an element with no implicit role, then the element's role instead maps to group.": "FAIL"
-    }
+    "total": 2
   },
   "html/semantics/popovers/popover-move-documents-during-hide.html": {
     "total": 3
@@ -7510,10 +7499,7 @@
     "total": 40
   },
   "html/semantics/rellist-feature-detection.html": {
-    "total": 4,
-    "failures": {
-      "Make sure that relList based feature detection is working for <link>": "FAIL"
-    }
+    "total": 4
   },
   "html/semantics/scripting-1/the-noscript-element/non-html-noscript.html": {
     "total": 1

@@ -152,6 +152,10 @@ public partial class HtmlInputElement : IEditableTextControl
                 ChangeType(ParseType(value));
                 break;
 
+            case "disabled" or "readonly" or "list" when IsPickerOpen && (!IsMutable || !SupportsPicker):
+                ClosePicker();
+                break;
+
             case "src":
                 OnImageButtonMutation(typeChanged: false);
                 break;
@@ -233,6 +237,7 @@ public partial class HtmlInputElement : IEditableTextControl
         }
 
         var previouslySelectable = SelectionApplies(oldType);
+        ClosePicker();
         _type = newType;
         _userInput = null;
         TextControlEditing.ClearHistory(this);
@@ -276,6 +281,12 @@ public partial class HtmlInputElement : IEditableTextControl
         {
             UncheckOtherRadiosInGroup();
         }
+    }
+
+    internal override void RemovingSteps(bool isSubtreeRoot, Node oldAncestor)
+    {
+        base.RemovingSteps(isSubtreeRoot, oldAncestor);
+        ClosePicker();
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -983,8 +994,10 @@ public partial class HtmlInputElement : IEditableTextControl
     }
 
     /// <summary>
-    /// https://html.spec.whatwg.org/multipage/input.html#show-the-picker,-if-applicable: the user activation is consumed; there
-    /// is no picker user interface (the user does not choose a value).
+    /// https://html.spec.whatwg.org/multipage/input.html#show-the-picker,-if-applicable: the user activation is consumed, then
+    /// the picker of an element that supports one is shown. There is no picker user interface (the user does not choose a
+    /// value): the picker of the File Upload state (the file chooser) closes at once, and the other pickers are open (they
+    /// match <c>:open</c>) until they are closed (see <see cref="IsPickerOpen"/>).
     /// </summary>
     private void ShowPickerIfApplicable()
     {
@@ -992,6 +1005,50 @@ public partial class HtmlInputElement : IEditableTextControl
             return;
 
         window.ConsumeUserActivation();
+        if (!SupportsPicker || _type == InputType.File)
+            return;
+
+        OpenPicker();
+    }
+
+    /// <summary>
+    /// Whether the element supports a picker (https://html.spec.whatwg.org/multipage/input.html#input-support-picker), which is
+    /// implementation-defined except for the File Upload state. As in the browsers, the Color, Date, Month, Week, Time and Local
+    /// Date and Time states support a picker, and so does an element with a suggestions source element (its datalist).
+    /// </summary>
+    private bool SupportsPicker => _type is InputType.File or InputType.Color or InputType.Date or InputType.Month or InputType.Week or InputType.Time or InputType.DateTimeLocal
+        || List is not null;
+
+    /// <summary>
+    /// Whether the picker of the element is open (https://html.spec.whatwg.org/multipage/semantics-other.html#selector-open):
+    /// it is opened by <see cref="ShowPickerIfApplicable"/>, and, as in the browsers, closed when the user presses a pointing
+    /// device outside of the element or presses Escape, and when the element is removed, changes its type or is no longer
+    /// mutable. Only one picker of a document is open at a time.
+    /// </summary>
+    internal bool IsPickerOpen { get; private set; }
+
+    private void OpenPicker()
+    {
+        var document = NodeDocument;
+        if (IsPickerOpen || !IsConnected || !document.IsFullyActive)
+            return;
+
+        document.CloseInputPickers(except: this);
+        IsPickerOpen = true;
+        document.OpenInputPickers.Add(this);
+        document.IncrementElementStateVersion();
+    }
+
+    /// <summary>Closes the picker of the element, if it is open.</summary>
+    internal void ClosePicker()
+    {
+        if (!IsPickerOpen)
+            return;
+
+        var document = NodeDocument;
+        IsPickerOpen = false;
+        document.OpenInputPickers.Remove(this);
+        document.IncrementElementStateVersion();
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -1289,8 +1346,13 @@ public partial class HtmlInputElement : IEditableTextControl
 
                 break;
 
-            // https://html.spec.whatwg.org/multipage/input.html#color-state-(type=color):input-activation-behavior
-            case InputType.Color or InputType.File:
+            // https://html.spec.whatwg.org/multipage/input.html#color-state-(type=color):input-activation-behavior and
+            // https://html.spec.whatwg.org/multipage/input.html#file-upload-state-(type=file):input-activation-behavior. The
+            // HTML Standard gives the date and time states no input activation behavior, but whether they support a picker is
+            // implementation-defined (https://html.spec.whatwg.org/multipage/input.html#input-support-picker), and "a common
+            // choice is to show the picker, if applicable" (https://html.spec.whatwg.org/multipage/input.html#input-activation-behavior):
+            // as in all the browsers, their activation shows their picker, which consumes the user activation.
+            case InputType.Color or InputType.File or InputType.Date or InputType.Month or InputType.Week or InputType.Time or InputType.DateTimeLocal:
                 ShowPickerIfApplicable();
                 break;
         }

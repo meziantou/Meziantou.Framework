@@ -2032,6 +2032,11 @@ internal static class UserAgentDefaultActions
                 {
                     // The arrow keys, PageUp, PageDown, Home and End scrolled
                 }
+                else if (keyboardEvent.Key == "Escape" && target.NodeDocument.CloseInputPickers())
+                {
+                    // The open picker of an input element handles the Escape key, as in the browsers: it closes, and it is
+                    // not a close request of the document
+                }
                 else if (!canceled && keyboardEvent.Key == "Escape")
                 {
                     // A close request (https://html.spec.whatwg.org/multipage/interaction.html#close-requests)

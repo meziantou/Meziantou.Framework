@@ -1,0 +1,45 @@
+<!DOCTYPE html><html><head><title>T</title></head><body><p>One</p><p>Two</p><div>Block</div></body></html>
+  errors: 
+----
+<html><head></head><body>text<table><tbody><tr><td>cell</td></tr><tr><td>2</td></tr></tbody></table></body></html>
+  errors: missing-doctype
+----
+<html><head></head><body><b>bold<i>both</i></b><i>italic</i></body></html>
+  errors: missing-doctype
+----
+<html><head></head><body><p><b><i>a</i></b></p><b><i>b</i></b></body></html>
+  errors: missing-doctype
+----
+<html><head></head><body><svg><foreignObject><p>html in svg</p></foreignObject><circle></circle></svg><math><mi>x</mi></math></body></html>
+  errors: missing-doctype
+----
+<html><head><template><td>in template</td></template></head><body></body></html>
+  errors: missing-doctype
+----
+<html><head></head><body><select><option>a</option><option>b</option><optgroup><option>c</option></optgroup></select></body></html>
+  errors: missing-doctype
+----
+<html><head></head><body><ul><li>1</li><li>2</li></ul><dl><dt>t</dt><dd>d</dd></dl></body></html>
+  errors: missing-doctype
+----
+<html><head></head><body><textarea>&lt;b&gt;not bold&lt;/b&gt;</textarea><pre>
+kept</pre></body></html>
+  errors: missing-doctype
+----
+<html><head></head><body><a href="x">1</a><a href="y">2</a></body></html>
+  errors: missing-doctype
+----
+<html><head></head><body>&amp; © ∉ &amp;unknown; � �</body></html>
+  errors: missing-doctype, missing-semicolon-after-character-reference, unknown-named-character-reference, character-reference-outside-unicode-range, null-character-reference
+----
+<!-- unclosed comment--><html><head></head><body></body></html>
+  errors: eof-in-comment, missing-doctype
+----
+<html><head></head><frameset><frame></frameset></html>
+  errors: missing-doctype
+----
+<td>cell</td><td>row</td>
+----
+<div class="a">
+  <span>x</span>
+</div> {"startLine":1,"startCol":1,"startOffset":0,"endLine":1,"endCol":14,"endOffset":13,"attrs":{"class":{"startLine":1,"startCol":6,"startOffset":5,"endLine":1,"endCol":13,"endOffset":12}}}

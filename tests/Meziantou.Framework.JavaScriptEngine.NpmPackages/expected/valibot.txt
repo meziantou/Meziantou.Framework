@@ -1,0 +1,22 @@
+{
+  "name": "Bob",
+  "email": "bob@example.com",
+  "age": 18,
+  "tags": [
+    "x"
+  ],
+  "role": "user",
+  "id": 3,
+  "price": 12.5,
+  "nested": {
+    "type": "b",
+    "b": 1
+  },
+  "date": "2020-02-29"
+}
+----
+[["name","validation","min_length","Invalid length: Expected >=2 but received 1"],["email","validation","email","Invalid email: Received \"bob\""],["age","validation","integer","Invalid integer: Received -1.5"],["age","validation","min_value","Invalid value: Expected >=0 but received -1.5"],["website","validation","url","Invalid URL: Received \"nope\""],["tags","validation","max_length","Invalid length: Expected <=2 but received 3"],["role","schema","picklist","Invalid type: Expected (\"admin\" | \"user\") but received \"guest\""],["id","validation","uuid","Invalid UUID: Received \"x\""],["price","validation","decimal","Invalid decimal: Received \"1.2.3\""],["nested.type","schema","variant","Invalid type: Expected (\"a\" | \"b\") but received \"c\""]]
+----
+{"nested":{"name":["Invalid length: Expected >=2 but received 1"],"email":["Invalid email: Received \"bob\""],"age":["Invalid integer: Received -1.5","Invalid value: Expected >=0 but received -1.5"],"website":["Invalid URL: Received \"nope\""],"tags":["Invalid length: Expected <=2 but received 3"],"role":["Invalid type: Expected (\"admin\" | \"user\") but received \"guest\""],"id":["Invalid UUID: Received \"x\""],"price":["Invalid decimal: Received \"1.2.3\""],"nested.type":["Invalid type: Expected (\"a\" | \"b\") but received \"c\""]}}
+----
+{"typed":true,"success":true,"output":"ABC"}

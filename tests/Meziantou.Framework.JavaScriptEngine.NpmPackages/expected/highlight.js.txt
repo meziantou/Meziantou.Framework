@@ -1,0 +1,58 @@
+javascript (relevance 14):
+<span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span>* <span class="hljs-title function_">gen</span>(<span class="hljs-params">a = <span class="hljs-number">1</span>, ...rest</span>) { <span class="hljs-keyword">const</span> { x, <span class="hljs-attr">y</span>: [z] } = <span class="hljs-keyword">await</span> <span class="hljs-keyword">import</span>(<span class="hljs-string">&#x27;m&#x27;</span>); <span class="hljs-keyword">yield</span> <span class="hljs-string">`t <span class="hljs-subst">${x?.y ?? z}</span>`</span>; } <span class="hljs-comment">// c</span>
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">A</span> <span class="hljs-keyword">extends</span> <span class="hljs-title class_ inherited__">B</span> { #p = <span class="hljs-number">1n</span>; <span class="hljs-keyword">static</span> { } }
+
+typescript (relevance 10):
+<span class="hljs-keyword">interface</span> A&lt;T <span class="hljs-keyword">extends</span> <span class="hljs-built_in">object</span> = {}&gt; { <span class="hljs-keyword">readonly</span> <span class="hljs-attr">x</span>?: T[]; } <span class="hljs-keyword">type</span> U = keyof A&lt;<span class="hljs-built_in">string</span>&gt; | <span class="hljs-string">`a<span class="hljs-subst">${<span class="hljs-built_in">number</span>}</span>`</span>; <span class="hljs-keyword">enum</span> E { X = <span class="hljs-number">1</span> }
+
+python (relevance 21):
+<span class="hljs-meta">@decorator</span>
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">f</span>(<span class="hljs-params">x: <span class="hljs-built_in">int</span>, *args, **kwargs</span>) -&gt; <span class="hljs-built_in">list</span>[<span class="hljs-built_in">int</span>]:
+    <span class="hljs-string">&quot;&quot;&quot;Doc&quot;&quot;&quot;</span>
+    <span class="hljs-keyword">return</span> [i ** <span class="hljs-number">2</span> <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(x) <span class="hljs-keyword">if</span> i % <span class="hljs-number">2</span> == <span class="hljs-number">0</span>]  <span class="hljs-comment"># comment</span>
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&#x27;<span class="hljs-subst">{f(<span class="hljs-number">3</span>)!r:&gt;<span class="hljs-number">10</span>}</span>&#x27;</span>)
+
+csharp (relevance 13):
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">record</span> <span class="hljs-title">Point</span>(<span class="hljs-params"><span class="hljs-built_in">int</span> X, <span class="hljs-built_in">int</span> Y</span>)</span> { <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> Point <span class="hljs-keyword">operator</span> +(Point a, Point b) =&gt; <span class="hljs-keyword">new</span>(a.X + b.X, a.Y + b.Y); }
+<span class="hljs-keyword">var</span> s = <span class="hljs-string">$&quot;<span class="hljs-subst">{p.X,<span class="hljs-number">5</span>:N2}</span>&quot;</span>; <span class="hljs-comment">// c</span>
+
+rust (relevance 12):
+<span class="hljs-keyword">fn</span> <span class="hljs-title function_">main</span>() <span class="hljs-punctuation">-&gt;</span> <span class="hljs-type">Result</span>&lt;(), <span class="hljs-type">Box</span>&lt;<span class="hljs-keyword">dyn</span> Error&gt;&gt; { <span class="hljs-keyword">let</span> <span class="hljs-variable">v</span>: <span class="hljs-type">Vec</span>&lt;<span class="hljs-type">u8</span>&gt; = <span class="hljs-built_in">vec!</span>[<span class="hljs-number">1</span>, <span class="hljs-number">2</span>]; <span class="hljs-keyword">match</span> v.<span class="hljs-title function_ invoke__">get</span>(<span class="hljs-number">0</span>) { <span class="hljs-title function_ invoke__">Some</span>(&amp;x) <span class="hljs-keyword">if</span> x &gt; <span class="hljs-number">0</span> =&gt; <span class="hljs-built_in">println!</span>(<span class="hljs-string">&quot;{x}&quot;</span>), _ =&gt; {} } <span class="hljs-title function_ invoke__">Ok</span>(()) }
+
+sql (relevance 9):
+<span class="hljs-keyword">SELECT</span> u.id, <span class="hljs-built_in">COUNT</span>(<span class="hljs-operator">*</span>) <span class="hljs-keyword">AS</span> n <span class="hljs-keyword">FROM</span> users u <span class="hljs-keyword">LEFT</span> <span class="hljs-keyword">JOIN</span> orders o <span class="hljs-keyword">ON</span> o.user_id <span class="hljs-operator">=</span> u.id <span class="hljs-keyword">WHERE</span> u.created_at <span class="hljs-operator">&gt;</span> <span class="hljs-string">&#x27;2020-01-01&#x27;</span> <span class="hljs-keyword">GROUP</span> <span class="hljs-keyword">BY</span> u.id <span class="hljs-keyword">HAVING</span> n <span class="hljs-operator">&gt;</span> <span class="hljs-number">1</span>;
+
+css (relevance 11):
+<span class="hljs-keyword">@media</span> (<span class="hljs-attribute">min-width</span>: <span class="hljs-number">640px</span>) { <span class="hljs-selector-class">.a</span> &gt; <span class="hljs-selector-class">.b</span><span class="hljs-selector-pseudo">:hover</span><span class="hljs-selector-pseudo">::after</span> { <span class="hljs-attribute">content</span>: <span class="hljs-string">&#x27;\201C&#x27;</span>; <span class="hljs-attribute">color</span>: <span class="hljs-number">#fff</span> <span class="hljs-meta">!important</span>; } }
+
+xml (relevance 48):
+<span class="hljs-meta">&lt;?xml version=<span class="hljs-string">&quot;1.0&quot;</span>?&gt;</span><span class="hljs-meta">&lt;!DOCTYPE a&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">x</span>=<span class="hljs-string">&quot;1&quot;</span>&gt;</span><span class="hljs-comment">&lt;!-- c --&gt;</span>&lt;![CDATA[ &lt;b&gt; ]]&gt;<span class="hljs-tag">&lt;<span class="hljs-name">b</span>&gt;</span>text <span class="hljs-symbol">&amp;amp;</span> more<span class="hljs-tag">&lt;/<span class="hljs-name">b</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span>
+
+json (relevance 6.029999999999999):
+<span class="hljs-punctuation">{</span><span class="hljs-attr">&quot;a&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-number">1</span><span class="hljs-punctuation">,</span> <span class="hljs-number">2.5e10</span><span class="hljs-punctuation">,</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span> <span class="hljs-literal"><span class="hljs-keyword">null</span></span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;b&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">&quot;c&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;d\n&quot;</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+
+bash (relevance 20):
+<span class="hljs-meta">#!/bin/bash</span>
+<span class="hljs-keyword">for</span> f <span class="hljs-keyword">in</span> *.txt; <span class="hljs-keyword">do</span> <span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;<span class="hljs-variable">${f%.txt}</span>&quot;</span> | sed -e <span class="hljs-string">&#x27;s/a/b/g&#x27;</span> &gt; <span class="hljs-string">&quot;<span class="hljs-variable">$f</span>.out&quot;</span>; <span class="hljs-keyword">done</span>; [[ -z <span class="hljs-variable">$X</span> ]] &amp;&amp; <span class="hljs-built_in">exit</span> 1
+
+yaml (relevance 9):
+<span class="hljs-attr">key:</span> <span class="hljs-string">value</span>
+<span class="hljs-attr">list:</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-string">a</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-attr">b:</span> <span class="hljs-string">c</span>
+<span class="hljs-attr">anchor:</span> <span class="hljs-string">&amp;x</span> { <span class="hljs-attr">y:</span> <span class="hljs-number">1</span> }
+<span class="hljs-attr">ref:</span> <span class="hljs-meta">*x</span>
+<span class="hljs-attr">multi:</span> <span class="hljs-string">|
+  text
+</span>
+
+go (relevance 17):
+<span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(s *Server)</span></span> Handle(ctx context.Context) <span class="hljs-type">error</span> { ch := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-type">int</span>, <span class="hljs-number">3</span>); <span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> { ch &lt;- <span class="hljs-number">1</span> }(); <span class="hljs-keyword">select</span> { <span class="hljs-keyword">case</span> v := &lt;-ch: <span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span> }; <span class="hljs-keyword">return</span> fmt.Errorf(<span class="hljs-string">&quot;%d&quot;</span>, v) }
+
+auto: python 21
+
+auto: rust 12
+
+auto: sql 9
+
+auto: xml 48

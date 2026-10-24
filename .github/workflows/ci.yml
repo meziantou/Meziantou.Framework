@@ -583,6 +583,21 @@ jobs:
         if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark')
         run: dotnet run eng/javascriptengine/fetch-tests.cs -- web-tooling-benchmark
 
+      # The npm package tests read the packages of
+      # tests/Meziantou.Framework.JavaScriptEngine.NpmPackages/package-lock.json and their import map, which the fetch
+      # script writes each time
+      - name: Restore the npm packages of the JavaScript engine tests
+        if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.JavaScriptEngine.NpmPackages')
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: tests/Meziantou.Framework.JavaScriptEngine.External/npm-packages
+          key: javascriptengine-npm-packages-${{ hashFiles('tests/Meziantou.Framework.JavaScriptEngine.NpmPackages/package-lock.json') }}
+          restore-keys: javascriptengine-npm-packages-
+
+      - name: Fetch the npm packages of the JavaScript engine tests
+        if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.JavaScriptEngine.NpmPackages')
+        run: dotnet run eng/javascriptengine/fetch-tests.cs -- npm-packages
+
       - name: Build
         if: steps.build-project.outputs.has-project == 'true'
         run: dotnet build ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} /bl ${{ env.ADDITIONAL_ARGUMENTS }}

@@ -3732,8 +3732,12 @@ that are 0, the default alignment of `position-area`, the center of the default 
   fallback origin (`ComputedStyle.WithPositionOption`: they win over the cascaded values but the important ones, the resolved values
   replace their declaration; the logical properties are mapped first). The box is laid out with that style (`box.Style`, whose
   `PositionBaseStyle` is its computed style, restored before each layout). `getComputedStyle()` and the computed style map read the
-  accepted @position-try properties from it (`ComputedStyle.TryGetAnchorPositionedStyle`): the insets, sizes and margins in px. The
-  children still inherit from the computed style (`inherit` of an anchor function is not resolved). `revert` in a position option
+  accepted @position-try properties from it (`ComputedStyle.TryGetAnchorPositionedStyle`): the insets, sizes and margins in px. A
+  child whose accepted @position-try property is `inherit` (`ComputedStyle.IsExplicitlyInherited`) inherits from that style: the
+  layout replaces the style of its box by a style with the same cascaded values whose parent is that style
+  (`AnchorPositioning.UpdateInheritedStyles`, also for its children that inherit from it explicitly) when the inherited values
+  change, and drops the layout results of the box; `getComputedStyle()` of the child still returns the values inherited from the
+  computed style. `revert` in a position option
   is `unset` (the position fallback origin is not a separate origin of the cascade), `revert-layer` and `revert-rule` are ignored.
 - **Anchor functions** (`AnchorFunctionEvaluator`): `anchor()` gives the inset that aligns the edge of the inset-modified containing
   block with the edge of the anchor box (`inside`/`outside` from the property, `start`/`end` in the writing mode of the containing
@@ -3743,11 +3747,15 @@ that are 0, the default alignment of `position-area`, the center of the default 
 - **position-area**: the area of the position-area grid (the lines of the containing block and of the default anchor box, the outer
   ones extended to the anchor box) replaces the containing block; `auto` insets and margins are 0; `normal` aligns toward the anchor,
   `center` for the center track, `anchor-center` for the three tracks, toward the non-`auto` inset (unsafe) when only one inset is
-  `auto`; the default overflow alignment keeps the box in the original containing block (the overflow limit rect extends to
+  `auto`; the default overflow alignment keeps the box in the original containing block (the padding box of a grid container, not
+  the grid area of the grid-placement properties; the overflow limit rect extends to
   infinity in the reachable scrollable directions of a scroll container, the viewport included for the initial containing block,
   and to the scrolling area of the viewport for a fixed positioned box whose default anchor scrolls with the document). The scrollable containing block (the padding
   box extended to the in-flow contents, without their relative offsets and transforms, csswg-drafts#12552) replaces the local
-  containing block of a scroll container when the box has a default anchor.
+  containing block of a scroll container when the box has a default anchor; the initial containing block of an absolutely
+  positioned box with a default anchor is replaced by the union of the initial containing block and of the margin box of the root
+  element for the position-area grid (https://drafts.csswg.org/css-position-4/#scrollable-containing-block: the scrollable containing
+  block of the document; as in Chrome, the insets of the boxes without `position-area` refer to the initial containing block).
 - **anchor-center**: the margin box is centered on the default anchor box, clamped to the inset-modified containing block (whose
   `auto` insets are 0), and kept in the containing block by the default overflow alignment when it is larger (as in the browsers).
 - **Position options**: the base styles then the entries of `position-try-fallbacks` (a `@position-try` rule with try tactics, or a

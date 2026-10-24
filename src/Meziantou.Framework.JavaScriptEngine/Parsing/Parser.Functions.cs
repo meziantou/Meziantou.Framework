@@ -42,6 +42,11 @@ internal sealed partial class Parser
         Next();
         var isGenerator = Eat(TokenKind.Star);
         var function = ParseFunctionRest(start, id: null, isAsync, isGenerator, isExpression: true);
+        if (start == _source.UnboundNameFunctionStart)
+        {
+            function.Id = null;
+        }
+
         return FinishAt(new FunctionExpression { Function = function }, start, function.End);
     }
 

@@ -261,6 +261,68 @@ internal static class AnchorPositioning
     }
 
     /// <summary>
+    /// Makes the children of an anchor-positioned box inherit the style it is laid out with: "The resulting styles are applied to
+    /// the element via interleaving, so they affect computed values" (https://drafts.csswg.org/css-anchor-position-1/#fallback-apply),
+    /// and the anchor functions resolve to lengths (https://drafts.csswg.org/css-anchor-position-1/#anchor-resolution), so a child
+    /// whose accepted @position-try property is <c>inherit</c> (e.g. <c>height: inherit</c>) inherits the declaration of the position
+    /// option or the length of the anchor function. The other properties of the style of the box are its computed values. The style of
+    /// a child is replaced by a style with the same cascaded values that inherits from the style of the box (and the ones of its
+    /// children that inherit from it explicitly too) when the values it inherits change; it is restored when the box is laid out with
+    /// its computed style.
+    /// </summary>
+    internal static void UpdateInheritedStyles(ContainerBox box)
+    {
+        if (box.Element is { } element)
+        {
+            UpdateInheritedStyles(box, element, box.PseudoElement, previousStyle: null, box.Style);
+        }
+    }
+
+    /// <param name="container">The box whose children are updated (the box, or an anonymous box of its contents).</param>
+    /// <param name="element">The element of the anchor-positioned box.</param>
+    /// <param name="pseudoElement">The pseudo-element of the anchor-positioned box.</param>
+    /// <param name="previousStyle">The style the children inherited from (null for the children of the anchor-positioned box: any style of its element).</param>
+    /// <param name="style">The style the children inherit from.</param>
+    private static void UpdateInheritedStyles(ContainerBox container, Element element, string? pseudoElement, ComputedStyle? previousStyle, ComputedStyle style)
+    {
+        for (var child = container.FirstChild; child is not null; child = child.NextSibling)
+        {
+            if (child is not ContainerBox childBox)
+                continue;
+
+            if (childBox.IsAnonymous)
+            {
+                UpdateInheritedStyles(childBox, element, pseudoElement, previousStyle, style);
+                continue;
+            }
+
+            var childStyle = childBox.Style;
+            if (childStyle.Parent is not { } parent || ReferenceEquals(parent, style))
+                continue;
+
+            var inheritsFromBox = previousStyle is null ? ReferenceEquals(parent.Element, element) && parent.PseudoElement == pseudoElement : ReferenceEquals(parent, previousStyle);
+            if (!inheritsFromBox || !InheritsChangedValue(childStyle, parent, style))
+                continue;
+
+            var inheriting = childStyle.WithParent(style);
+            childBox.Style = inheriting;
+            LayoutResultCache.Invalidate(childBox);
+            UpdateInheritedStyles(childBox, element, pseudoElement, childStyle, inheriting);
+        }
+
+        static bool InheritsChangedValue(ComputedStyle childStyle, ComputedStyle parent, ComputedStyle style)
+        {
+            foreach (var property in AcceptedProperties)
+            {
+                if (childStyle.IsExplicitlyInherited(property) && !string.Equals(parent.GetComputedValue(property), style.GetComputedValue(property), StringComparison.Ordinal))
+                    return true;
+            }
+
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Returns the before-change values of the transitions of an anchor-positioned box: the values resolved by its last layout, or,
     /// when it was not anchor-positioned, the values of its before-change style (it was laid out with them), or null when it was not
     /// laid out.
@@ -572,6 +634,7 @@ internal static class AnchorPositioning
             var resolution = Resolve(option, hypothetical, zeroAutoInsets: false);
             var box = query.Box;
             box.Style = resolution.Style;
+            UpdateInheritedStyles(box);
             var result = PositionedLayout.LayoutInContainingBlock(query.Context, query.Candidate, resolution.ContainingBlockRect, containingBlock, resolution.Parameters);
             var fragment = result.Fragment;
             var marginBox = fragment.MarginBoxRect.Translate(fragment.Offset);
@@ -655,12 +718,30 @@ internal static class AnchorPositioning
                 cbRect = GetScrollableContainingBlock(hostFragment);
                 originalCb = cbRect;
             }
+            else if (defaultAnchor is not null && anchorStyle.PositionArea is not null && containingBlockBox.Kind == ContainerBoxKind.Viewport && ReferenceEquals(hostFragment.Box, containingBlockBox)
+                && query.Candidate.Box.Style.Layout.Position != PositionKind.Fixed)
+            {
+                // https://drafts.csswg.org/css-position-4/#scrollable-containing-block: "For the document, the scrollable containing
+                // block is the union of the initial containing block and the margin box of the root element's generated box" (as in
+                // Chrome, only for the position-area grid: the insets of the other boxes refer to the initial containing block,
+                // css/css-anchor-position/scroll-to-anchored-fixed-000-ref.html)
+                cbRect = GetDocumentScrollableContainingBlock(hostFragment, cbRect);
+                originalCb = cbRect;
+            }
+
+            var limitRect = originalCb;
+            if (ReferenceEquals(hostFragment.Box, containingBlockBox) && !hostFragment.IsScrollContainer && containingBlockBox.Kind != ContainerBoxKind.Viewport && FormattingContext.GetKind(containingBlockBox) == FormattingContextKind.Grid)
+            {
+                // https://drafts.csswg.org/css-position-3/#original-cb: "The element's original containing block is its containing
+                // block before applying any of these effects": the overflow limit rect contains the padding box of the grid
+                // container, not only the grid area of the grid-placement properties (https://drafts.csswg.org/css-grid-2/#abspos-items)
+                limitRect = limitRect.Union(hostFragment.PaddingBoxRect);
+            }
 
             // https://drafts.csswg.org/css-align-3/#auto-safety-position: "for fixed-positioned boxes with default overflow alignment
             // (only) because a fixed-positioned box with a default anchor box that scrolls with the content can be scrolled into view
             // when outside the scrollport, in such cases the overflow limit rect is extended to the scroll container's entire
             // scrollable overflow area" (the scrolling area of the viewport, moved by the scroll offset the anchor is measured with)
-            var limitRect = originalCb;
             if (defaultAnchor is { IncludesViewportScroll: true } && hostFragment.Box.Kind == ContainerBoxKind.Viewport && scrollOffsets.TryGetValue(defaultAnchor.Key, out var usedOffset))
             {
                 var viewportOffset = engine.ViewportScrollState.Offset - (defaultAnchor.GetScrollOffset(engine) - usedOffset);
@@ -764,6 +845,22 @@ internal static class AnchorPositioning
 
             var area = padding.Union(inFlow.Expand(scrollContainer.Padding));
             return ScrollContainers.ClampToScrollOrigin(area, padding, ScrollContainers.GetScrollOrigin(scrollContainer.Box, scrollContainer.WritingDirection));
+        }
+
+        /// <summary>
+        /// Returns the scrollable containing block of the document (https://drafts.csswg.org/css-position-4/#scrollable-containing-block):
+        /// the union of the initial containing block and of the margin box of the box of the root element, in the coordinates of
+        /// the fragment of the viewport.
+        /// </summary>
+        private static PhysicalRect GetDocumentScrollableContainingBlock(BoxFragment viewport, PhysicalRect initialContainingBlock)
+        {
+            foreach (var child in viewport.ChildrenSpan)
+            {
+                if (child is BoxFragment { Box.Element: { ParentNode: Document } } root)
+                    return initialContainingBlock.Union(root.MarginBoxRect.Translate(root.Offset));
+            }
+
+            return initialContainingBlock;
         }
 
         /// <summary>Returns the bounds of the selected tracks of the position-area grid in an axis (https://drafts.csswg.org/css-anchor-position-1/#position-area-grid-resolution).</summary>

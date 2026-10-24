@@ -520,6 +520,20 @@ internal sealed partial class ComputedStyle
         return _cascaded.TryGetValue(property, out value);
     }
 
+    /// <summary>
+    /// Returns whether the cascaded value of a property that is not a logical property is the <c>inherit</c> keyword (or the one of
+    /// <c>all</c> when the property has no declaration): its computed value is the computed value of the property of <see cref="Parent"/>.
+    /// </summary>
+    internal bool IsExplicitlyInherited(string property)
+    {
+        if (!TryGetCascadedValue(property, out var cascaded) && !_cascaded.TryGetValue("all", out cascaded))
+            return false;
+
+        var declared = cascaded.Value;
+        var text = declared.ComputationValue ?? declared.Value;
+        return declared.ShorthandName is null && text is not null && text.AsSpan().Trim().Equals("inherit", StringComparison.OrdinalIgnoreCase);
+    }
+
     // ----------------------------------------------------------------------------------------------------------------
     // Resolved values (https://drafts.csswg.org/cssom/#resolved-values)
     // ----------------------------------------------------------------------------------------------------------------

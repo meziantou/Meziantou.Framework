@@ -27,6 +27,13 @@ internal sealed class SourceText
     /// <summary>Gets the 0-based column of the first character in its document (only the first line is shifted).</summary>
     public int ColumnOffset { get; }
 
+    /// <summary>
+    /// Gets the offset of the named function expression that does not bind its name in its scope, as if it were anonymous
+    /// (-1 when there is none): the function of an event handler content attribute is created by OrdinaryFunctionCreate,
+    /// whose source text has the name of the attribute (https://html.spec.whatwg.org/multipage/webappapis.html#getting-the-current-value-of-the-event-handler).
+    /// </summary>
+    public int UnboundNameFunctionStart { get; init; } = -1;
+
     public int Length => Text.Length;
 
     public char this[int index] => Text[index];

@@ -250,7 +250,7 @@ internal sealed class JavaScriptModuleLoader(JavaScriptScriptEngine owner) : JsM
     /// <summary>Whether a rejection reason is the error of a module that could not be fetched.</summary>
     public bool IsFetchFailure(JsValue reason) => reason.TryGetObject() is { } obj && _fetchFailures is not null && _fetchFailures.TryGetValue(obj, out _);
 
-    protected override void InitializeImportMeta(JsSourceTextModule module, JsObject importMeta) => owner.InitializeImportMeta(module, importMeta);
+    protected internal override void InitializeImportMeta(JsSourceTextModule module, JsObject importMeta) => owner.InitializeImportMeta(module, importMeta);
 
     /// <summary>Parses the root of the graph of an inline module script (it is not added to the module map).</summary>
     public JsModule CreateRootModule(WebIdlRealm<JavaScriptAdapter, object> realm, ModuleScript script)
@@ -269,7 +269,7 @@ internal sealed class JavaScriptModuleLoader(JavaScriptScriptEngine owner) : JsM
     }
 
     /// <summary>HostLoadImportedModule (https://html.spec.whatwg.org/multipage/webappapis.html#hostloadimportedmodule).</summary>
-    protected override void LoadImportedModule(JsModuleLoadRequest request)
+    protected internal override void LoadImportedModule(JsModuleLoadRequest request)
     {
         // The module map is the one of the current realm (the code of another window evaluated by its eval imports the
         // modules of that window), the base URL is the one of the referencing script

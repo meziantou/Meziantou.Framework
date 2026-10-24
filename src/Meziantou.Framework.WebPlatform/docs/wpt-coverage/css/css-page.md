@@ -8,8 +8,8 @@
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 18 | 20 | 0 | 90% |
 | [Tentative](#tentative-tests) | 2 | 3 | 0 | 67% |
-| [Reftests](#reftests) | 198 | 224 | 0 | 88% |
-| **All** | **218** | **247** | **0** | **88%** |
+| [Reftests](#reftests) | 211 | 224 | 0 | 94% |
+| **All** | **231** | **247** | **0** | **94%** |
 
 ## Stable tests
 
@@ -27,7 +27,7 @@
 | [`page-rule-declarations-003.html`](https://wpt.fyi/results/css/css-page/page-rule-declarations-003.html) | Pass | 11 / 11 |  |  |
 | [`page-rule-declarations-004.html`](https://wpt.fyi/results/css/css-page/page-rule-declarations-004.html) | Fail | 6 / 8 | TEST BUG | a dashed ident (`--a`) is accepted as an `@page` selector, as in Chrome, Firefox and Safari: it is an `<ident-token>`, which the grammar of the page selectors (`<page-selector> = [ <ident-token>? <pseudo-page>* ]!`) accepts |
 | [`parsing/margin-rules-001.html`](https://wpt.fyi/results/css/css-page/parsing/margin-rules-001.html) | Pass | 33 / 33 |  |  |
-| [`parsing/margin-rules-002.html`](https://wpt.fyi/results/css/css-page/parsing/margin-rules-002.html) | Fail | 1 / 4 | NOT IMPLEMENTED | non-descriptor properties (e.g. `paddingLeft`) on `CSSPageRule.style`; `CSSPageDescriptors` only has the page descriptor attributes |
+| [`parsing/margin-rules-002.html`](https://wpt.fyi/results/css/css-page/parsing/margin-rules-002.html) | Fail | 1 / 4 | TEST BUG | the last three subtests read `pagerule.style.paddingLeft`: `CSSPageRule.style` is a `CSSPageDescriptors` (https://drafts.csswg.org/cssom/#csspagedescriptors), a `CSSStyleDeclaration` whose only attributes are the page descriptors (`margin*`, `size`, `pageOrientation`, `marks`, `bleed`), so `paddingLeft` is undefined (the declaration is kept: `getPropertyValue("padding-left")` returns `10px`); Blink exposes every property there, Gecko fails these subtests |
 | [`parsing/nested-rules-001.html`](https://wpt.fyi/results/css/css-page/parsing/nested-rules-001.html) | Pass | 1 / 1 |  |  |
 | [`parsing/page-computed.html`](https://wpt.fyi/results/css/css-page/parsing/page-computed.html) | Pass | 6 / 6 |  |  |
 | [`parsing/page-invalid.html`](https://wpt.fyi/results/css/css-page/parsing/page-invalid.html) | Pass | 5 / 5 |  |  |
@@ -41,7 +41,7 @@
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`page-orientation.tentative.html`](https://wpt.fyi/results/css/css-page/page-orientation.tentative.html) | Pass | 11 / 11 |  |  |
-| [`parsing/page-orientation-computed.tentative.html`](https://wpt.fyi/results/css/css-page/parsing/page-orientation-computed.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | a `pageOrientation` attribute on `CSSStyleDeclaration` that returns the empty string (`page-orientation` is only a descriptor; the attribute is undefined) |
+| [`parsing/page-orientation-computed.tentative.html`](https://wpt.fyi/results/css/css-page/parsing/page-orientation-computed.tentative.html) | Fail | 0 / 1 | TEST BUG | the test expects `getComputedStyle(elm).pageOrientation` to be the empty string, but `page-orientation` is only a descriptor of `@page` (https://drafts.csswg.org/css-page-3/#page-orientation-prop), and a `CSSStyleProperties` only has the camel-cased attributes of the supported CSS properties (https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute): the attribute is undefined, as in Gecko (Blink implements the descriptor as an internal property) |
 | [`parsing/page-orientation-invalid.tentative.html`](https://wpt.fyi/results/css/css-page/parsing/page-orientation-invalid.tentative.html) | Pass | 4 / 4 |  |  |
 
 ## Reftests
@@ -56,8 +56,8 @@
 | [`basic-pagination-005-print.html`](https://wpt.fyi/results/css/css-page/basic-pagination-005-print.html) | Pass | 1 / 1 |  |  |
 | [`body-background-slr-print.html`](https://wpt.fyi/results/css/css-page/body-background-slr-print.html) | Pass | 1 / 1 |  |  |
 | [`body-background-srl-print.html`](https://wpt.fyi/results/css/css-page/body-background-srl-print.html) | Fail | 0 / 1 | TEST BUG | the canvas background of a `sideways-rl` root element stitched across two pages: the first page shows the right half of the gradient (lightgray), as the text of the test says, but the reference shows a white first page (Chrome and Firefox fail the test) |
-| [`body-background-vlr-print.html`](https://wpt.fyi/results/css/css-page/body-background-vlr-print.html) | Fail | 0 / 1 | BUG | the absolutely positioned paragraph of the initial containing block of a `vertical-lr` root element is placed at the start of the first page instead of next to the blue box (the gradient of the canvas is the expected one) |
-| [`body-background-vrl-print.html`](https://wpt.fyi/results/css/css-page/body-background-vrl-print.html) | Fail | 0 / 1 | BUG, TEST BUG | the absolutely positioned paragraph of the initial containing block (`left: 20px`) is placed on the page of its block position in the content (the second page, the first one breaks after 600px of the 800px of its page area), where the reference places it in the first page (the initial containing block is the page area of the first page); the canvas background of a vertical root element stitched across two pages: it is positioned in the fragments of the root element stitched in the block direction (`box-decoration-break: slice`: the first page is the block-start side, on the right in `vertical-rl`), so the first page shows the right half of the gradient (white), where the reference expects the left half (lightgray) on the first page; the test of `sideways-rl` expects the opposite (the reference of body-background-srl-print.html contradicts its own text, which the stitching matches), and Chrome and Firefox fail both |
+| [`body-background-vlr-print.html`](https://wpt.fyi/results/css/css-page/body-background-vlr-print.html) | Pass | 1 / 1 |  |  |
+| [`body-background-vrl-print.html`](https://wpt.fyi/results/css/css-page/body-background-vrl-print.html) | Fail | 0 / 1 | BUG | the background of the body stitched across the pages in `vertical-rl`: the fragments of the body are stitched in the block flow direction (the first page is the block-start, right, part of the stitched box), so the first page shows the white half of the gradient (`90deg`: lightgray on the left), where the reference expects the lightgray half on the first page (the absolutely positioned paragraph is placed as expected; no browser passes this test) |
 | [`cssom/dynamic-001-print.html`](https://wpt.fyi/results/css/css-page/cssom/dynamic-001-print.html) | Pass | 1 / 1 |  |  |
 | [`fixedpos-001-print.html`](https://wpt.fyi/results/css/css-page/fixedpos-001-print.html) | Pass | 1 / 1 |  |  |
 | [`fixedpos-002-print.html`](https://wpt.fyi/results/css/css-page/fixedpos-002-print.html) | Pass | 1 / 1 |  |  |
@@ -80,14 +80,14 @@
 | [`margin-boxes/alignment-001-print.html`](https://wpt.fyi/results/css/css-page/margin-boxes/alignment-001-print.html) | Pass | 1 / 1 |  |  |
 | [`margin-boxes/auto-margins-001-print.html`](https://wpt.fyi/results/css/css-page/margin-boxes/auto-margins-001-print.html) | Pass | 1 / 1 |  |  |
 | [`margin-boxes/auto-margins-002-print.html`](https://wpt.fyi/results/css/css-page/margin-boxes/auto-margins-002-print.html) | Pass | 1 / 1 |  |  |
-| [`margin-boxes/auto-margins-003-print.html`](https://wpt.fyi/results/css/css-page/margin-boxes/auto-margins-003-print.html) | Fail | 0 / 1 | BUG | the automatic margins of the margin boxes along their edge (`margin: auto` with a specified width of 25px): the boxes are centered in the outer width that the edge gives them, where the reference expects them flush with the borders of the page area (the automatic margins in the variable dimension are not resolved as in Blink) |
+| [`margin-boxes/auto-margins-003-print.html`](https://wpt.fyi/results/css/css-page/margin-boxes/auto-margins-003-print.html) | Pass | 1 / 1 |  |  |
 | [`margin-boxes/background-001-print.html`](https://wpt.fyi/results/css/css-page/margin-boxes/background-001-print.html) | Pass | 1 / 1 |  |  |
 | [`margin-boxes/content-001-print.html`](https://wpt.fyi/results/css/css-page/margin-boxes/content-001-print.html) | Pass | 1 / 1 |  |  |
 | [`margin-boxes/content-002-print.html`](https://wpt.fyi/results/css/css-page/margin-boxes/content-002-print.html) | Pass | 1 / 1 |  |  |
-| [`margin-boxes/content-003-print.html`](https://wpt.fyi/results/css/css-page/margin-boxes/content-003-print.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the images of the `content` of the margin boxes (`url()`): only the strings, the quotes and the `page` and `pages` counters are generated |
+| [`margin-boxes/content-003-print.html`](https://wpt.fyi/results/css/css-page/margin-boxes/content-003-print.html) | Pass | 1 / 1 |  |  |
 | [`margin-boxes/content-004-print.html`](https://wpt.fyi/results/css/css-page/margin-boxes/content-004-print.html) | Pass | 1 / 1 |  |  |
 | [`margin-boxes/content-005-print.html`](https://wpt.fyi/results/css/css-page/margin-boxes/content-005-print.html) | Pass | 1 / 1 |  |  |
-| [`margin-boxes/content-006-print.html`](https://wpt.fyi/results/css/css-page/margin-boxes/content-006-print.html) | Fail | 0 / 1 | BUG | the absolutely positioned box at its static position that contains forced page breaks fits in the first page, so it is placed there unbroken and its forced breaks are not taken: the document has one page instead of three |
+| [`margin-boxes/content-006-print.html`](https://wpt.fyi/results/css/css-page/margin-boxes/content-006-print.html) | Pass | 1 / 1 |  |  |
 | [`margin-boxes/content-007-print.html`](https://wpt.fyi/results/css/css-page/margin-boxes/content-007-print.html) | Pass | 1 / 1 |  |  |
 | [`margin-boxes/content-008-print.html`](https://wpt.fyi/results/css/css-page/margin-boxes/content-008-print.html) | Pass | 1 / 1 |  |  |
 | [`margin-boxes/content-009-print.html`](https://wpt.fyi/results/css/css-page/margin-boxes/content-009-print.html) | Pass | 1 / 1 |  |  |
@@ -148,13 +148,13 @@
 | [`monolithic-overflow-028-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-028-print.html) | Pass | 1 / 1 |  |  |
 | [`monolithic-overflow-029-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-029-print.html) | Pass | 1 / 1 |  |  |
 | [`monolithic-overflow-030-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-030-print.html) | Pass | 1 / 1 |  |  |
-| [`monolithic-overflow-031-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-031-print.html) | Fail | 0 / 1 | BUG | the monolithic content that does not fit in an empty page is sliced, but a monolithic box in a box with `box-decoration-break: clone` and a specified block size: the repeated block-start edges of the box are not left at the start of the pages where the monolithic content continues (it is placed from the start of the page area) |
-| [`monolithic-overflow-032-print.tentative.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-032-print.tentative.html) | Fail | 0 / 1 | BUG | the monolithic content that does not fit in an empty page is sliced, but a monolithic box in a box with `box-decoration-break: clone` and a specified block size: the repeated block-start edges of the box are not left at the start of the pages where the monolithic content continues (it is placed from the start of the page area) |
+| [`monolithic-overflow-031-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-031-print.html) | Pass | 1 / 1 |  |  |
+| [`monolithic-overflow-032-print.tentative.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-032-print.tentative.html) | Fail | 0 / 1 | BUG | the monolithic content that does not fit in an empty page is sliced, and a box with `box-decoration-break: clone` does not repeat its edges at the slices, but Blink also ends the fragment of the box right after the monolithic content (with its block-end edges) and starts a new fragment of the box after it in the same page (with its block-start edges): the content after the monolithic content is placed after the end of the monolithic content without these edges (the third and next pages differ) |
 | [`page-background-001-print.html`](https://wpt.fyi/results/css/css-page/page-background-001-print.html) | Pass | 1 / 1 |  |  |
 | [`page-background-002-print.html`](https://wpt.fyi/results/css/css-page/page-background-002-print.html) | Pass | 1 / 1 |  |  |
 | [`page-background-003-print.html`](https://wpt.fyi/results/css/css-page/page-background-003-print.html) | Pass | 1 / 1 |  |  |
 | [`page-background-004-print.html`](https://wpt.fyi/results/css/css-page/page-background-004-print.html) | Pass | 1 / 1 |  |  |
-| [`page-background-005-print.html`](https://wpt.fyi/results/css/css-page/page-background-005-print.html) | Fail | 0 / 1 | BUG | the background image of the body stitched across pages with a large left margin of the body: the canvas background is positioned in the root element, but its tiles are not where the reference expects them on the first page |
+| [`page-background-005-print.html`](https://wpt.fyi/results/css/css-page/page-background-005-print.html) | Pass | 1 / 1 |  |  |
 | [`page-background-image-print.html`](https://wpt.fyi/results/css/css-page/page-background-image-print.html) | Pass | 1 / 1 |  |  |
 | [`page-box-000-print.html`](https://wpt.fyi/results/css/css-page/page-box-000-print.html) | Pass | 1 / 1 |  |  |
 | [`page-box-001-print.html`](https://wpt.fyi/results/css/css-page/page-box-001-print.html) | Pass | 1 / 1 |  |  |
@@ -173,7 +173,7 @@
 | [`page-margin-001-print.html`](https://wpt.fyi/results/css/css-page/page-margin-001-print.html) | Pass | 1 / 1 |  |  |
 | [`page-margin-002-print.html`](https://wpt.fyi/results/css/css-page/page-margin-002-print.html) | Pass | 1 / 1 |  |  |
 | [`page-margin-003-print.html`](https://wpt.fyi/results/css/css-page/page-margin-003-print.html) | Pass | 1 / 1 |  |  |
-| [`page-margin-004-print.html`](https://wpt.fyi/results/css/css-page/page-margin-004-print.html) | Fail | 0 / 1 | BUG | an absolutely positioned box of the initial containing block that fits in the first page is placed there unbroken: its forced page break (`break-before: page` of a child) is not taken |
+| [`page-margin-004-print.html`](https://wpt.fyi/results/css/css-page/page-margin-004-print.html) | Pass | 1 / 1 |  |  |
 | [`page-margin-005-print.html`](https://wpt.fyi/results/css/css-page/page-margin-005-print.html) | Pass | 1 / 1 |  |  |
 | [`page-margin-006-print.html`](https://wpt.fyi/results/css/css-page/page-margin-006-print.html) | Pass | 1 / 1 |  |  |
 | [`page-margin-007-print.html`](https://wpt.fyi/results/css/css-page/page-margin-007-print.html) | Pass | 1 / 1 |  |  |
@@ -184,7 +184,7 @@
 | [`page-name-000-print.html`](https://wpt.fyi/results/css/css-page/page-name-000-print.html) | Pass | 1 / 1 |  |  |
 | [`page-name-001-print.html`](https://wpt.fyi/results/css/css-page/page-name-001-print.html) | Pass | 1 / 1 |  |  |
 | [`page-name-002-print.html`](https://wpt.fyi/results/css/css-page/page-name-002-print.html) | Pass | 1 / 1 |  |  |
-| [`page-name-003-print.html`](https://wpt.fyi/results/css/css-page/page-name-003-print.html) | Fail | 0 / 1 | BUG | an absolutely positioned box at its static position whose children have different page names: it fits in the first page, so it is placed there unbroken and the change of page name does not break the pages (Blink breaks inside it, but not inside the box with insets of page-name-abspos-002) |
+| [`page-name-003-print.html`](https://wpt.fyi/results/css/css-page/page-name-003-print.html) | Pass | 1 / 1 |  |  |
 | [`page-name-abspos-001-print.html`](https://wpt.fyi/results/css/css-page/page-name-abspos-001-print.html) | Pass | 1 / 1 |  |  |
 | [`page-name-abspos-002-print.html`](https://wpt.fyi/results/css/css-page/page-name-abspos-002-print.html) | Pass | 1 / 1 |  |  |
 | [`page-name-abspos-003-print.html`](https://wpt.fyi/results/css/css-page/page-name-abspos-003-print.html) | Pass | 1 / 1 |  |  |
@@ -253,7 +253,7 @@
 | [`page-size-009-print.html`](https://wpt.fyi/results/css/css-page/page-size-009-print.html) | Pass | 1 / 1 |  |  |
 | [`page-size-010-print.html`](https://wpt.fyi/results/css/css-page/page-size-010-print.html) | Pass | 1 / 1 |  |  |
 | [`page-size-011-print.html`](https://wpt.fyi/results/css/css-page/page-size-011-print.html) | Pass | 1 / 1 |  |  |
-| [`page-size-012-print.html`](https://wpt.fyi/results/css/css-page/page-size-012-print.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the logical page margins (`margin-inline-start`, `margin-block-start`) of a page whose root element is `vertical-rl`: they are resolved in the writing mode of the page context, but the page area is not placed as in the reference |
+| [`page-size-012-print.html`](https://wpt.fyi/results/css/css-page/page-size-012-print.html) | Pass | 1 / 1 |  |  |
 | [`page-size-013-print.html`](https://wpt.fyi/results/css/css-page/page-size-013-print.html) | Pass | 1 / 1 |  |  |
 | [`page-size-014-print.html`](https://wpt.fyi/results/css/css-page/page-size-014-print.html) | Pass | 1 / 1 |  |  |
 | [`page-size-015-print.tentative.html`](https://wpt.fyi/results/css/css-page/page-size-015-print.tentative.html) | Pass | 1 / 1 |  |  |
@@ -265,10 +265,10 @@
 | [`pseudo-first-margin-003-print.html`](https://wpt.fyi/results/css/css-page/pseudo-first-margin-003-print.html) | Pass | 1 / 1 |  |  |
 | [`pseudo-first-margin-004-print.html`](https://wpt.fyi/results/css/css-page/pseudo-first-margin-004-print.html) | Pass | 1 / 1 |  |  |
 | [`remote-origin-iframe-print.html`](https://wpt.fyi/results/css/css-page/remote-origin-iframe-print.html) | Pass | 1 / 1 |  |  |
-| [`root-element-display-none-print.html`](https://wpt.fyi/results/css/css-page/root-element-display-none-print.html) | Fail | 0 / 1 | BUG | a root element with `display: none`: the page box (its background and its border from `@page`) is painted, where the reference is a blank page (Blink paints no page box when the document has no box) |
+| [`root-element-display-none-print.html`](https://wpt.fyi/results/css/css-page/root-element-display-none-print.html) | Pass | 1 / 1 |  |  |
 | [`subpixel-page-size-001-print.html`](https://wpt.fyi/results/css/css-page/subpixel-page-size-001-print.html) | Pass | 1 / 1 |  |  |
 | [`subpixel-page-size-002-print.html`](https://wpt.fyi/results/css/css-page/subpixel-page-size-002-print.html) | Pass | 1 / 1 |  |  |
-| [`tentative/safe-printable-inset-001-print.html`](https://wpt.fyi/results/css/css-page/tentative/safe-printable-inset-001-print.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `env(safe-printable-inset-*)` and `page-margin-safety` (tentative): the printing has no printable area inset (the variables are not defined) |
-| [`tentative/safe-printable-inset-002-print.html`](https://wpt.fyi/results/css/css-page/tentative/safe-printable-inset-002-print.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `env(safe-printable-inset-*)` and `page-margin-safety` (tentative): the printing has no printable area inset (the variables are not defined) |
-| [`tentative/safe-printable-inset-003-print.html`](https://wpt.fyi/results/css/css-page/tentative/safe-printable-inset-003-print.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `env(safe-printable-inset-*)` and `page-margin-safety` (tentative): the printing has no printable area inset (the variables are not defined) |
+| [`tentative/safe-printable-inset-001-print.html`](https://wpt.fyi/results/css/css-page/tentative/safe-printable-inset-001-print.html) | Pass | 1 / 1 |  |  |
+| [`tentative/safe-printable-inset-002-print.html`](https://wpt.fyi/results/css/css-page/tentative/safe-printable-inset-002-print.html) | Pass | 1 / 1 |  |  |
+| [`tentative/safe-printable-inset-003-print.html`](https://wpt.fyi/results/css/css-page/tentative/safe-printable-inset-003-print.html) | Pass | 1 / 1 |  |  |
 | [`tentative/safe-printable-inset-large-crash-print.html`](https://wpt.fyi/results/css/css-page/tentative/safe-printable-inset-large-crash-print.html) | Pass | 1 / 1 |  |  |

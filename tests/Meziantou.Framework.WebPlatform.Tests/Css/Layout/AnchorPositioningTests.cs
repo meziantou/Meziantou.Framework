@@ -581,4 +581,60 @@ public sealed class AnchorPositioningTests : IDisposable
         Assert.Equal((300, 250, 150), (target.OffsetLeft, target.OffsetTop, target.OffsetWidth));
         Assert.Equal("250px", GetComputedValue(document, "target", "top"));
     }
+
+    [Fact]
+    public void AnchorFunctions_TransitionWhenTheirResultChanges()
+    {
+        var document = Parse("""
+            <style>
+              #anchor { position: absolute; left: 400px; width: 100px; height: 100px; anchor-name: --a; }
+              #target { position: absolute; position-anchor: --a; left: anchor(left); width: anchor-size(width); height: 10px; transition: left 10s -5s linear, width 10s -5s linear; }
+            </style>
+            <div id=anchor></div><div id=target></div>
+            """);
+        var target = Get(document, "target");
+        Assert.Equal((400, 100), (target.OffsetLeft, target.OffsetWidth));
+
+        // The declared values do not change: the resolved values transition (halfway)
+        Get(document, "anchor").Style.SetProperty("left", "200px");
+        Get(document, "anchor").Style.SetProperty("width", "200px");
+        Assert.Equal((300, 150), (target.OffsetLeft, target.OffsetWidth));
+
+        // The anchor moves again: the transition restarts from the current value
+        Get(document, "anchor").Style.SetProperty("left", "0px");
+        Assert.Equal(150, target.OffsetLeft);
+    }
+
+    [Fact]
+    public void PositionOption_TransitionsWhenItIsAppliedAndUnapplied()
+    {
+        var document = Parse("""
+            <style>
+              #cb { position: relative; width: 400px; height: 250px; }
+              #cb.shrink { width: 300px; }
+              #target { position: absolute; left: 300px; width: 50px; height: 50px; }
+              #target.fallback { position-try-fallbacks: --200; }
+              #target.anim { transition: left 1000s steps(2, start); }
+              @position-try --200 { left: 200px; }
+            </style>
+            <div id=cb><div id=target></div></div>
+            """);
+        var cb = Get(document, "cb");
+        var target = Get(document, "target");
+        Assert.Equal(300, target.OffsetLeft);
+        cb.ClassName = "shrink";
+        target.ClassName = "fallback anim";
+        Assert.Equal(250, target.OffsetLeft);
+
+        foreach (var animation in target.GetAnimations())
+        {
+            animation.Cancel();
+        }
+
+        target.ClassName = "fallback";
+        Assert.Equal(200, target.OffsetLeft);
+        cb.ClassName = "";
+        target.ClassName = "anim";
+        Assert.Equal(250, target.OffsetLeft);
+    }
 }

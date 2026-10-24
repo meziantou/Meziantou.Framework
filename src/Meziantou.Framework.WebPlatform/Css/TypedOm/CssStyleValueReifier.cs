@@ -271,6 +271,10 @@ internal static class CssStyleValueReifier
                     if (info.AcceptsCustomIdent)
                         return new CssKeywordValue(ident.Token.Value);
 
+                    // A single <dashed-ident> (e.g. anchor-scope: --a) is reified as an identifier, even as the item of a list
+                    if (info.AcceptsDashedIdent && ident.Token.Value.StartsWith("--", StringComparison.Ordinal))
+                        return new CssKeywordValue(ident.Token.Value);
+
                     break;
                 }
 
@@ -881,6 +885,9 @@ internal static class CssStyleValueReifier
 
         public bool AcceptsColor { get; private set; }
 
+        /// <summary>Whether a &lt;dashed-ident&gt; is accepted, possibly as the item of a list (e.g. anchor-name).</summary>
+        public bool AcceptsDashedIdent { get; private set; }
+
         public bool IsTransformList { get; private init; }
 
         /// <summary>
@@ -987,6 +994,9 @@ internal static class CssStyleValueReifier
                             return;
                         case "color":
                             AcceptsColor = true;
+                            return;
+                        case "dashed-ident":
+                            AcceptsDashedIdent = true;
                             return;
                     }
 

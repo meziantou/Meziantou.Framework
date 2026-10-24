@@ -479,7 +479,7 @@ internal sealed class CustomPropertySyntax
     /// Returns the computed value of a value matching a grammar (e.g. "&lt;length&gt;" for the size features of the container
     /// queries), or null when the value does not match it.
     /// </summary>
-    public static string? ComputeGrammar(ComputedStyle style, string grammarText, string value, string? baseUrl)
+    public static string? ComputeGrammar(ComputedStyle style, string grammarText, string value, string? baseUrl, bool fontSizeContext = false)
     {
         var grammar = Grammars.GetOrAdd(grammarText, static syntax =>
         {
@@ -505,7 +505,7 @@ internal sealed class CustomPropertySyntax
             return null;
 
         var hasColors = CssValueComputer.ContainsType(grammar, "color", new HashSet<string>(StringComparer.Ordinal));
-        return CssValueComputer.ComputeGeneric(style, property: null, value, baseUrl, hasColors);
+        return CssValueComputer.ComputeGeneric(style, property: null, value, baseUrl, hasColors, fontSizeContext);
     }
 }
 

@@ -424,11 +424,16 @@ internal sealed class ExclusionSpace
 
     /// <summary>
     /// Whether the margin box of a float intrudes into the band from <paramref name="blockStart"/> to <paramref name="blockEnd"/>
-    /// (a single position when they are equal). A float without block size does not intrude.
+    /// (a single position when they are equal). A float without block size intrudes only into a band that its position is
+    /// strictly inside of, as in Chrome (WPT css/CSS2/floats/floats-zero-height-wrap-002.xht): a box moved down below it starts
+    /// at its position, next to it.
     /// </summary>
     private static bool Intrudes(LogicalRect rect, double blockStart, double blockEnd)
     {
-        if (rect.BlockEnd <= rect.BlockStart || rect.BlockEnd <= blockStart)
+        if (rect.BlockEnd == rect.BlockStart)
+            return rect.BlockStart > blockStart && rect.BlockStart < blockEnd;
+
+        if (rect.BlockEnd < rect.BlockStart || rect.BlockEnd <= blockStart)
             return false;
 
         return blockEnd > blockStart ? rect.BlockStart < blockEnd : rect.BlockStart <= blockStart;

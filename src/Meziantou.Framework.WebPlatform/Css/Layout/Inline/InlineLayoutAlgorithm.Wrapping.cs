@@ -412,7 +412,7 @@ internal sealed partial class InlineLayoutAlgorithm
             if (count == lines - 1 && ellipsis is not null)
             {
                 _blockEllipsis = ellipsis;
-                lineSize -= ellipsis.InlineSize;
+                lineSize -= GetBlockEllipsisReservedSize(ellipsis);
             }
 
             var end = BreakLine(position, lineSize, isFirstLine, IntrinsicSizeMode.None);

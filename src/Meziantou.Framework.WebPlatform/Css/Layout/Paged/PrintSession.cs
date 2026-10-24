@@ -57,8 +57,8 @@ internal sealed class PrintSession : IDisposable
         // The page area of the first page (an unnamed page, the actual name of the first page is known once the document is laid out)
         var probe = new StyleEngine(_document, _environment) { PrintViewportSize = new PhysicalSize(_environment.Width, _environment.Height), PrintPageSize = PageSize };
         _document.SetEngines(probe, layoutEngine: null);
-        var style = probe.GetPageStyle(new PageSelection("", IsFirst: true, IsLeft: false, IsBlank: false), DefaultMargins, out var size, out var orientation);
-        Install(PageGeometry.Resolve(style, size, orientation, Options, probe).PageArea.Size);
+        var style = probe.GetPageStyle(new PageSelection("", IsFirst: true, IsLeft: false, IsBlank: false), DefaultMargins, out var size, out var orientation, out var marginSafety);
+        Install(PageGeometry.Resolve(style, size, orientation, marginSafety, Options, probe).PageArea.Size);
     }
 
     private void Install(PhysicalSize viewportSize)

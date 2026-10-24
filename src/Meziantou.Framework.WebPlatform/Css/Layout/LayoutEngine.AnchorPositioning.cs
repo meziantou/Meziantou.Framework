@@ -1,3 +1,4 @@
+using Meziantou.Framework.WebPlatform.Css.Values;
 using Meziantou.Framework.WebPlatform.Dom;
 
 namespace Meziantou.Framework.WebPlatform.Css.Layout;
@@ -68,6 +69,18 @@ internal sealed class AnchorPositionState
 
     /// <summary>Moves the inset-modified containing block with the scrolling of the default anchor box (for the overflow checks).</summary>
     public AnchorPositioning.InsetModifiedContainingBlockFollower? Follower;
+
+    /// <summary>
+    /// The values resolved by the last layout of the properties whose results the layout computes (the anchor functions and the
+    /// declarations of the position option): the before-change values of their transitions (see <see cref="Animations.CssTransitionUpdater.UpdateFromLayout"/>).
+    /// </summary>
+    public Dictionary<string, string>? TransitionValues;
+
+    /// <summary>The declarations of the position option applied by the last layout, when the box may have transitions, or null.</summary>
+    public List<CssLonghandValue>? OptionDeclarations;
+
+    /// <summary>The computed value of <c>position-try-fallbacks</c> of the last layout.</summary>
+    public string? OptionFallbacks;
 }
 
 internal sealed partial class LayoutEngine
@@ -88,6 +101,26 @@ internal sealed partial class LayoutEngine
 
         return state;
     }
+
+    /// <summary>
+    /// Returns the declarations of the position option applied by the last layout of an anchor-positioned element that may have
+    /// transitions, or null (see <see cref="Cascade.StyleEngine"/>): the computed values of the element include them
+    /// (https://drafts.csswg.org/css-anchor-position-1/#fallback-apply), so its transitions compare the styles with them.
+    /// </summary>
+    /// <param name="element">The element.</param>
+    /// <param name="pseudoElement">The pseudo-element, or null.</param>
+    /// <param name="fallbacks">The computed value of <c>position-try-fallbacks</c> of the style: the option applies while it is the same, or null to get the option whatever its value.</param>
+    internal List<CssLonghandValue>? GetAppliedPositionOption(Element element, string? pseudoElement, string? fallbacks)
+    {
+        if (TryGetAnchorPositionState(element, pseudoElement) is not { OptionDeclarations: { } declarations } state)
+            return null;
+
+        return fallbacks is null || string.Equals(fallbacks, state.OptionFallbacks, StringComparison.Ordinal) ? declarations : null;
+    }
+
+    /// <summary>Returns the state of an element (or pseudo-element) that was anchor-positioned by the last layout pass, or null.</summary>
+    internal AnchorPositionState? TryGetAnchorPositionState(Element element, string? pseudoElement)
+        => _anchorPositionStates is not null && _anchorPositionStates.TryGetValue((element, pseudoElement), out var state) ? state : null;
 
     /// <summary>
     /// Returns whether an element is relevant to the user because of the anchor positioning (https://drafts.csswg.org/css-anchor-position-1/#anchor-relevance):

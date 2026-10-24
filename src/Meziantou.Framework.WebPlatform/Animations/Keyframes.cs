@@ -92,6 +92,12 @@ internal sealed class ProcessedKeyframe
     /// <summary>Whether the keyframe is an implicit keyframe of a CSS animation, whose values are the underlying values.</summary>
     public bool IsImplicit { get; init; }
 
+    /// <summary>
+    /// Whether the values of the keyframe are attr()-tainted (https://drafts.csswg.org/css-values-5/#attr-security): the values of a
+    /// transition of a custom property whose before-change or after-change value is tainted.
+    /// </summary>
+    public bool IsAttrTainted { get; init; }
+
     private bool? _hasFlowRelativeLonghands;
 
     /// <summary>Whether a longhand of the keyframe is flow-relative (e.g. margin-inline-start), computed once the keyframe is complete.</summary>

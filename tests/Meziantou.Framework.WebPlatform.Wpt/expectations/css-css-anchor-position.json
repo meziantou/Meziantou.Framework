@@ -324,7 +324,7 @@
     "reftest": "PASS"
   },
   "css/css-anchor-position/anchor-position-inline-008.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-anchor-position/anchor-position-multicol-001.html": {
     "total": 4
@@ -709,41 +709,25 @@
     "total": 2
   },
   "css/css-anchor-position/anchor-transition-002.html": {
-    "total": 1,
-    "failures": {
-      "Transition with anchor names defined in different tree scopes": "FAIL"
-    }
+    "total": 1
   },
   "css/css-anchor-position/anchor-transition-003.html": {
-    "total": 1,
-    "failures": {
-      "Transition with anchor names defined in three different tree scopes": "FAIL"
-    }
+    "total": 1
   },
   "css/css-anchor-position/anchor-transition-004.html": {
     "total": 1
   },
   "css/css-anchor-position/anchor-transition-default.html": {
-    "total": 1,
-    "failures": {
-      "Transition when position-anchor changes": "FAIL"
-    }
+    "total": 1
   },
   "css/css-anchor-position/anchor-transition-eval.html": {
-    "total": 2,
-    "failures": {
-      "Transition when the result of anchor() changes": "FAIL",
-      "Transition when the result of anchor-size() changes": "FAIL"
-    }
+    "total": 2
   },
   "css/css-anchor-position/anchor-transition-focus.html": {
     "total": 1
   },
   "css/css-anchor-position/anchor-transition-name.html": {
-    "total": 1,
-    "failures": {
-      "Transition when the dereferenced anchor name changes": "FAIL"
-    }
+    "total": 1
   },
   "css/css-anchor-position/anchor-typed-om.html": {
     "total": 2
@@ -1234,18 +1218,10 @@
     "reftest": "PASS"
   },
   "css/css-anchor-position/position-try-transition-basic.html": {
-    "total": 2,
-    "failures": {
-      "Transition when @position-try is applied": "FAIL",
-      "Transition when @position-try is unapplied": "FAIL"
-    }
+    "total": 2
   },
   "css/css-anchor-position/position-try-transition-flip.html": {
-    "total": 2,
-    "failures": {
-      "Transition to a flipped state": "FAIL",
-      "Transition to an unflipped state": "FAIL"
-    }
+    "total": 2
   },
   "css/css-anchor-position/position-try-tree-scoped-pseudo.html": {
     "reftest": "PASS"
@@ -1437,7 +1413,7 @@
     "reftest": "FAIL"
   },
   "css/css-anchor-position/transform-006.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-anchor-position/transform-007.html": {
     "reftest": "PASS"

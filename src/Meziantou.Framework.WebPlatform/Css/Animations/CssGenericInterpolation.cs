@@ -619,6 +619,14 @@ internal static class CssGenericInterpolation
                 value = dimension.Token.NumericValue;
                 unit = InfraAscii.ToAsciiLowercase(dimension.Token.Value);
                 return true;
+
+            // An infinite value of a keyframe (calc(infinity * 1px)): it is interpolated, then clamped
+            case CssFunction function when InfraAscii.EqualsIgnoreAsciiCase(function.Name, "calc") && function.Value.Exists(v => v is CssPreservedToken { Type: CssTokenType.Ident } ident && (ident.Token.IsIdent("infinity") || ident.Token.IsIdent("-infinity")))
+                && CssCalc.Evaluate(function, CssCalcContext.Default) is { IsNumeric: true, Value: var infinite, Unit: var infiniteUnit } && double.IsInfinity(infinite):
+                value = infinite;
+                unit = infiniteUnit;
+                return true;
+
             default:
                 value = 0;
                 unit = "";

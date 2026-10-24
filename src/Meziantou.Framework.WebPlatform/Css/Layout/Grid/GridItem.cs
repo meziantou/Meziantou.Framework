@@ -139,6 +139,15 @@ internal sealed class GridItem(ContainerBox box, int index, int order)
 
     public double RowShim { get; set; }
 
+    /// <summary>
+    /// How the shim of the item in the columns and in the rows varies with its size, for its contributions of another size than
+    /// the one its baseline was measured with: the baseline of an item whose baseline is synthesized from its border box or measured
+    /// from the other side moves with its size. The shim for an outer size is <c>shim + Factor × (MeasuredSize - size)</c>.
+    /// </summary>
+    public (double Factor, double MeasuredSize) ColumnShimVariation { get; set; }
+
+    public (double Factor, double MeasuredSize) RowShimVariation { get; set; }
+
     /// <summary>The contributions of the item in the columns and in the rows, cached for the size of its area in the other axis.</summary>
     public GridContributions ColumnContributions;
 
@@ -192,6 +201,8 @@ internal sealed class GridItem(ContainerBox box, int index, int order)
     public GridBaselineGroup GetBaselineGroup(GridAxis axis) => axis == GridAxis.Columns ? ColumnBaselineGroup : RowBaselineGroup;
 
     public double GetShim(GridAxis axis) => axis == GridAxis.Columns ? ColumnShim : RowShim;
+
+    public (double Factor, double MeasuredSize) GetShimVariation(GridAxis axis) => axis == GridAxis.Columns ? ColumnShimVariation : RowShimVariation;
 
     /// <summary>Returns whether the axis of the grid is the inline axis of the item.</summary>
     public bool IsInlineAxis(GridAxis axis) => (axis == GridAxis.Columns) != IsOrthogonal;
@@ -272,7 +283,10 @@ internal sealed class GridSizingItem(GridItem item, GridLayoutAlgorithm owner, G
     /// <summary>The baseline shim of the item (https://drafts.csswg.org/css-grid-2/#algo-baseline-shims).</summary>
     public double Shim { get; init; }
 
-    /// <summary>Whether the item is in a subgrid whose lines go in the opposite direction (it does not share baselines with the items of the grid).</summary>
+    /// <summary>How <see cref="Shim"/> varies with the size of the contributions (see <see cref="GridItem.ColumnShimVariation"/>).</summary>
+    public (double Factor, double MeasuredSize) ShimVariation { get; init; }
+
+    /// <summary>Whether the item is in a subgrid whose lines go in the opposite direction (its baselines are measured from the other side).</summary>
     public bool IsReversed { get; init; }
 
     /// <summary>

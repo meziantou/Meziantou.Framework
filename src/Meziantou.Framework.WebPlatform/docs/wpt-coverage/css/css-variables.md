@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 59 | 63 | 0 | 94% |
+| [Stable](#stable-tests) | 60 | 63 | 0 | 95% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 182 | 182 | 0 | 100% |
-| **All** | **241** | **245** | **0** | **98%** |
+| **All** | **242** | **245** | **0** | **99%** |
 
 ## Stable tests
 
@@ -24,7 +24,7 @@
 | [`revert-rule-in-fallback.html`](https://wpt.fyi/results/css/css-variables/revert-rule-in-fallback.html) | Pass | 4 / 4 |  |  |
 | [`revert-rule-to-var.html`](https://wpt.fyi/results/css/css-variables/revert-rule-to-var.html) | Pass | 1 / 1 |  |  |
 | [`test_variable_legal_values.html`](https://wpt.fyi/results/css/css-variables/test_variable_legal_values.html) | Pass | 23 / 23 |  |  |
-| [`transition-with-attribute-taint.html`](https://wpt.fyi/results/css/css-variables/transition-with-attribute-taint.html) | Fail | 0 / 1 | TEST RUNNER | `/web-animations/testcommon.js` is not fetched (`runAndWaitForFrameUpdate` undefined) |
+| [`transition-with-attribute-taint.html`](https://wpt.fyi/results/css/css-variables/transition-with-attribute-taint.html) | Pass | 1 / 1 |  |  |
 | [`url-token-serialization.html`](https://wpt.fyi/results/css/css-variables/url-token-serialization.html) | Pass | 6 / 6 |  |  |
 | [`var-ident-function.html`](https://wpt.fyi/results/css/css-variables/var-ident-function.html) | Pass | 5 / 5 |  |  |
 | [`var-parsing.html`](https://wpt.fyi/results/css/css-variables/var-parsing.html) | Pass | 18 / 18 |  |  |

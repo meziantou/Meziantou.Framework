@@ -31,7 +31,8 @@ internal sealed partial class StyleEngine
         "line-height", "white-space-collapse", "text-wrap-mode", "color", "text-combine-upright", "text-orientation", "unicode-bidi", "direction", "content",
         "hyphens", "hyphenate-character", "hyphenate-limit-chars", "letter-spacing", "line-break", "overflow-wrap", "tab-size", "text-transform",
         "word-break", "word-spacing", "text-autospace", "text-spacing-trim", "text-decoration-skip-ink", "text-emphasis-color",
-        "text-emphasis-position", "text-emphasis-style", "text-shadow", "text-underline-position", "cursor",
+        "text-emphasis-position", "text-emphasis-style", "text-shadow", "text-underline-position", "cursor", "quotes", "counter-increment",
+        "counter-reset", "counter-set",
     }.ToFrozenSet(StringComparer.Ordinal);
 
     private static readonly FrozenSet<string> FirstLineProperties = new[]
@@ -1138,7 +1139,21 @@ internal sealed partial class StyleEngine
             {
                 if (mayHaveTransitions)
                 {
-                    changed = CssTransitionUpdater.Update(style, beforeChange, transitionChanges);
+                    // The computed values of an anchor-positioned element include the declarations of the position option applied by
+                    // its layout (https://drafts.csswg.org/css-anchor-position-1/#fallback-apply): the before-change style was laid out
+                    // with them, and the after-change style keeps them while the position options are the same (the layout resolves
+                    // them again, see CssTransitionUpdater.UpdateFromLayout)
+                    ComputedStyle? afterChange = null;
+                    if (_document.LayoutEngineOrNull?.GetAppliedPositionOption(element, pseudoElement, fallbacks: null) is { } option)
+                    {
+                        beforeChange = beforeChange?.WithPositionOption(option, beforeChange);
+                        if (_document.LayoutEngineOrNull.GetAppliedPositionOption(element, pseudoElement, style.GetComputedValue("position-try-fallbacks")) is not null)
+                        {
+                            afterChange = style.WithPositionOption(option, style).CreateAfterChangeStyle();
+                        }
+                    }
+
+                    changed = CssTransitionUpdater.Update(style, beforeChange, transitionChanges, afterChange);
                 }
 
                 if (mayHaveAnimations)
@@ -1226,6 +1241,10 @@ internal sealed partial class StyleEngine
     /// </summary>
     private ComputedStyle GetPseudoElementParentStyle(Element element, string pseudoElement)
     {
+        // The ::marker of a ::before or ::after pseudo-element inherits from it
+        if (pseudoElement is BeforeMarker or AfterMarker)
+            return GetStyle(element, pseudoElement[..^MarkerSuffix.Length]);
+
         if (Layout.ViewTransitionPseudoTree.IsViewTransitionPseudoElement(pseudoElement) && Layout.ViewTransitionPseudoTree.GetParent(_document.GetViewTransitionPseudoTree(element), pseudoElement) is { } parent)
             return GetStyle(element, parent);
 
@@ -1313,6 +1332,17 @@ internal sealed partial class StyleEngine
     /// (https://drafts.csswg.org/css-scoping/#flat-tree), that is the assigned slot of a slotted element or the shadow host
     /// of the children of a shadow root; the parent element otherwise.
     /// </summary>
+    /// <summary>The names of the <c>::before::marker</c> and <c>::after::marker</c> pseudo-elements (https://drafts.csswg.org/css-pseudo-4/#marker-pseudo).</summary>
+    internal const string BeforeMarker = "before" + MarkerSuffix;
+
+    /// <inheritdoc cref="BeforeMarker"/>
+    internal const string AfterMarker = "after" + MarkerSuffix;
+
+    private const string MarkerSuffix = "::marker";
+
+    /// <summary>Whether a pseudo-element is a <c>::marker</c>: of an element, or of its <c>::before</c> or <c>::after</c> pseudo-element.</summary>
+    internal static bool IsMarker(string? pseudoElement) => pseudoElement is "marker" or BeforeMarker or AfterMarker;
+
     /// <summary>The name of the <c>::details-content</c> pseudo-element (https://drafts.csswg.org/css-pseudo-4/#details-content-pseudo).</summary>
     internal const string DetailsContent = "details-content";
 
@@ -1567,6 +1597,12 @@ internal sealed partial class StyleEngine
 
     /// <summary>The before-change styles used by the styles computed in this generation (see <see cref="InvalidateQueryContainerDescendants"/>).</summary>
     private Dictionary<(Element Element, string? PseudoElement), ComputedStyle>? _usedBeforeChangeStyles;
+
+    /// <summary>
+    /// Returns the before-change style of the transitions of an element whose style changed since the last invalidation of the
+    /// styles (the layout that follows a style change starts the transitions of the values it resolves), or null.
+    /// </summary>
+    internal ComputedStyle? GetBeforeChangeStyle(Element element, string? pseudoElement) => _usedBeforeChangeStyles?.GetValueOrDefault((element, pseudoElement));
 
     /// <summary>
     /// The changes of the transitions by the computations of the styles in a size container in this generation, undone when the
@@ -2644,7 +2680,10 @@ internal sealed partial class StyleEngine
     /// the rules of the author win, as over the declarations of a shadow tree of the user agent), the replaced elements
     /// clip their contents to their content box unless the author sets <c>overflow: visible</c>
     /// (https://drafts.csswg.org/css-overflow-4/#overflow-control: "Host languages should define UA style sheet rules that apply a
-    /// default value of clip to such elements and set their overflow-clip-margin to content-box", the rules of the browsers), the default style
+    /// default value of clip to such elements and set their overflow-clip-margin to content-box", the rules of the browsers; the
+    /// box of overflow-clip-margin "defaults to padding-box on non-replaced elements, or content-box on replaced elements", which
+    /// gives the same clip without applying it to an img element rendered as its alternative text, a non-replaced box; as in the
+    /// browsers, the clip of the iframe, embed and object elements is important), the default style
     /// of the markers (https://drafts.csswg.org/css-lists/#ua-stylesheet), the default style of ::backdrop
     /// (https://drafts.csswg.org/css-position-4/#backdrop), the default styles of the scroll navigation controls
     /// (https://drafts.csswg.org/css-overflow-5/#scroll-navigation: a ::scroll-marker has "a default style like the HTML a
@@ -2678,7 +2717,8 @@ internal sealed partial class StyleEngine
         textarea { display: inline-block; overflow-wrap: break-word; }
         details::details-content { display: block; }
         details:not([open])::details-content { content-visibility: hidden; }
-        img, video, canvas { overflow: clip; overflow-clip-margin: content-box; }
+        img, video, canvas { overflow: clip; }
+        iframe, embed, object { overflow: clip !important; overflow-clip-margin: content-box !important; }
         ::backdrop { position: fixed; inset: 0; }
         dialog:modal { visibility: visible; }
         ::scroll-marker-group { display: block; }
@@ -3317,23 +3357,24 @@ internal sealed partial class StyleEngine
     }
 
     /// <summary>
-    /// Returns whether a property applies to ::marker (https://drafts.csswg.org/css-pseudo-4/#marker-pseudo): the font
-    /// properties (and line-height, a longhand of font), white-space, color, text-combine-upright, unicode-bidi, direction,
-    /// content, the animation and transition properties, and, as in browsers, the inherited text and text decoration
-    /// properties, cursor and the custom properties.
-    /// </summary>
-    /// <summary>
     /// Returns the filter of the properties that apply to a pseudo-element (::marker, ::first-line and ::first-letter), or
     /// null when all the properties apply. The declarations and the animations of the other properties are ignored.
     /// </summary>
     internal static Func<string, bool>? GetPseudoElementPropertyFilter(string? pseudoElement) => pseudoElement switch
     {
-        "marker" => IsMarkerProperty,
+        "marker" or BeforeMarker or AfterMarker => IsMarkerProperty,
         "first-line" or DetailsContentPrefix + "first-line" or SelectPickerPrefix + "first-line" => IsFirstLineProperty,
         "first-letter" or DetailsContentPrefix + "first-letter" or SelectPickerPrefix + "first-letter" => IsFirstLetterProperty,
         _ => null,
     };
 
+    /// <summary>
+    /// Returns whether a property applies to ::marker (https://drafts.csswg.org/css-pseudo-4/#marker-pseudo): the font
+    /// properties (and line-height, a longhand of font), white-space, color, text-combine-upright, unicode-bidi, direction,
+    /// content, the animation and transition properties, and, as in browsers, the inherited text and text decoration
+    /// properties, cursor and the custom properties. As in Firefox, quotes (WPT css/css-pseudo/parsing/marker-supported-properties.html)
+    /// and the counter properties (WPT css/css-lists/marker-counter.html) apply too.
+    /// </summary>
     private static bool IsMarkerProperty(string name) => name.StartsWith("font-", StringComparison.Ordinal)
         || name.StartsWith("animation", StringComparison.Ordinal)
         || name.StartsWith("transition", StringComparison.Ordinal)
@@ -4129,6 +4170,9 @@ internal readonly struct CascadedValue
     /// <summary>The application of the mixin of the declaration, or null: the value is substituted in its frame (see <see cref="CssMixinApplication"/>).</summary>
     public CssMixinApplication? Mixin => Source?.Mixin;
 
+    /// <summary>The namespace prefixes declared by the style sheet of the declaration, or null.</summary>
+    public IReadOnlyDictionary<string, string>? NamespacePrefixes => Source?.NamespacePrefixes;
+
     /// <summary>
     /// The precedence of the declaration of the value: the rank of the winning declaration, or, when it rolls back the cascade
     /// (revert, revert-layer, revert-rule), of the declaration it rolls back to (-1 when there is none).
@@ -4182,12 +4226,15 @@ internal readonly struct CascadedValue
 /// <summary>The rarely used state of a cascaded value: the values that roll back the cascade, and the declarations of the ::part() rules.</summary>
 internal sealed record CascadedValueExtra(long Position, Func<string, CascadedValue>? RollBackSubstitution, Element? OriginatingElement, bool Important = false);
 
-/// <summary>The base URL, the tree scope and the mixin of the declarations of a rule (see <see cref="CascadedValue"/>).</summary>
-internal sealed record CascadedValueSource(string? BaseUrl, Node? TreeScope, CssMixinApplication? Mixin)
+/// <summary>
+/// The base URL, the tree scope and the mixin of the declarations of a rule (see <see cref="CascadedValue"/>), and the namespace
+/// prefixes declared by the @namespace rules of its style sheet (the prefixes of attr(), https://drafts.csswg.org/css-values-5/#attr-notation).
+/// </summary>
+internal sealed record CascadedValueSource(string? BaseUrl, Node? TreeScope, CssMixinApplication? Mixin, IReadOnlyDictionary<string, string>? NamespacePrefixes = null)
 {
-    /// <summary>Returns the source, or null when the base URL, the tree scope and the mixin are null.</summary>
-    public static CascadedValueSource? Create(string? baseUrl, Node? treeScope, CssMixinApplication? mixin)
-        => baseUrl is null && treeScope is null && mixin is null ? null : new(baseUrl, treeScope, mixin);
+    /// <summary>Returns the source, or null when the base URL, the tree scope, the mixin and the namespace prefixes are null.</summary>
+    public static CascadedValueSource? Create(string? baseUrl, Node? treeScope, CssMixinApplication? mixin, IReadOnlyDictionary<string, string>? namespacePrefixes = null)
+        => baseUrl is null && treeScope is null && mixin is null && namespacePrefixes is null ? null : new(baseUrl, treeScope, mixin, namespacePrefixes);
 }
 
 /// <summary>

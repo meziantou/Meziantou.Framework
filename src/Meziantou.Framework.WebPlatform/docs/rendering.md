@@ -90,7 +90,8 @@ layout and painting features that are not implemented, and the bugs).
   quarter turn (counter-clockwise or clockwise) after it is laid out. `ScreenshotOptions.DevicePixelRatio` scales the images (the device pixel ratio of the
   viewport by default).
 - Each page is painted on white paper, as in the browsers: the background of the page box (the `@page` rules) over the
-  whole page (its margins included, whatever `background-clip`), its borders and outline, the page-margin boxes whose
+  whole page (its margins included, whatever `background-clip`; its images are positioned in the page box, by
+  `background-origin`), its borders and outline, the page-margin boxes whose
   `z-index` is negative, then the document in the page area (clipped to the padding box of the page box, its origin snapped
   to the device pixels): its canvas background, positioned in the root element stitched across the pages
   (`box-decoration-break: slice`), covers the padding box of the page box, as in Blink; then the other page-margin boxes.

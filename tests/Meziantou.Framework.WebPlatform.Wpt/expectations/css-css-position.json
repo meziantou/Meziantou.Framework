@@ -168,7 +168,7 @@
     "reftest": "FAIL"
   },
   "css/css-position/overlay/overlay-transition-out-rendering.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-position/overlay/overlay-transition-property.html": {
     "total": 4

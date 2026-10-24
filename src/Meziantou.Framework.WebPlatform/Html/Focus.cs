@@ -1981,16 +1981,6 @@ internal static class UserAgentDefaultActions
                 SelectActions.OnMouseUp(mouseEvent, target, canceled);
                 break;
 
-            case MouseEvent { Type: "click", IsPositionless: false } clickEvent:
-                // https://drafts.csswg.org/css-overflow-5/#scroll-marker-activation: the activation behavior of the scroll
-                // navigation control at the point of the click
-                if (!canceled)
-                {
-                    ScrollControlActions.OnClick(clickEvent, target);
-                }
-
-                break;
-
             // https://fullscreen.spec.whatwg.org/#keyboard-locking: while the keyboard lock of the fullscreen element is active,
             // the Escape key is given to the page (it is not a close request), and holding it exits fullscreen, whether the
             // page cancels the events or not

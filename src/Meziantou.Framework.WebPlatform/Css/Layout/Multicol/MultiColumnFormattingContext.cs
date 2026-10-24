@@ -146,6 +146,32 @@ internal sealed class MultiColumnFlow
             && box.Style.GetComputedValue("column-span") == "all";
 
     /// <summary>
+    /// Returns the multi-column container of a column spanner (https://drafts.csswg.org/css-multicol-1/#column-span: "the nearest
+    /// multicol ancestor in the same block formatting context"), or null when the box is not a spanner: a box with
+    /// <c>column-span: all</c> whose ancestors up to the container participate in its block formatting context (and do not
+    /// establish a containing block for the fixed positioned boxes, see <see cref="IsValidColumnSpanner"/>).
+    /// </summary>
+    public static ContainerBox? GetColumnSpannerContainer(ContainerBox box)
+    {
+        if (!IsColumnSpanner(box))
+            return null;
+
+        for (var ancestor = box.Parent; ancestor is not null; ancestor = ancestor.Parent)
+        {
+            if (ancestor.Style.Layout.IsMultiColumnContainer)
+                return ancestor;
+
+            if (ancestor.Style.Layout.EstablishesFixedPositionContainingBlock || ancestor.Parent is not { } parent
+                || BlockFormattingContext.EstablishesNewFormattingContext(ancestor, WritingDirection.FromStyle(parent.Style.Layout)))
+            {
+                return null;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
     /// Returns whether a box laid out in the block formatting context of the multi-column container is a column spanner of the
     /// container (see <see cref="IsColumnSpanner"/>). As in Blink, a box is not a spanner when one of its ancestors in the
     /// container establishes a containing block for the fixed positioned boxes (a transform, a filter...): the spanner would be

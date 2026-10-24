@@ -326,6 +326,9 @@ internal static partial class CssValueComputer
         if (IsLowercaseIdentifier(value))
             return ComputeGenericProperty(style, property, value, baseUrl);
 
+        if (s_keepsInfiniteCalculations)
+            return ComputeGenericProperty(style, property, value, baseUrl);
+
         var engine = style.Engine;
         if (engine.ContextFreeValues.TryGetValue(property, value, baseUrl, out var memoized))
             return memoized;
@@ -461,8 +464,11 @@ internal static partial class CssValueComputer
     // Generic computation
     // ----------------------------------------------------------------------------------------------------------------
 
-    /// <summary>Computes the lengths, angles, times, colors, URLs and math functions of a value.</summary>
-    public static string ComputeGeneric(ComputedStyle style, CssPropertyDefinition? property, string value, string? baseUrl, bool? hasColors = null)
+    /// <summary>
+    /// Computes the lengths, angles, times, colors, URLs and math functions of a value. The font-relative lengths refer to the font
+    /// of the parent in the font properties, or when <c>fontSizeContext</c> is true.
+    /// </summary>
+    public static string ComputeGeneric(ComputedStyle style, CssPropertyDefinition? property, string value, string? baseUrl, bool? hasColors = null, bool fontSizeContext = false)
     {
         // Most values are a keyword (e.g. block, none, auto): an identifier in lowercase is its own computed value, unless it
         // is a color, or a family name of font-family (serialized as a family name)
@@ -474,7 +480,7 @@ internal static partial class CssValueComputer
         var context = new ComputationContext(style, hasColors ?? (property is not null && HasColorType(property)), baseUrl)
         {
             PercentageUnit = property is null ? null : GetPercentageUnit(property),
-            FontSizeContext = property is not null && property.Name.StartsWith("font-", StringComparison.Ordinal),
+            FontSizeContext = fontSizeContext || (property is not null && property.Name.StartsWith("font-", StringComparison.Ordinal)),
         };
         var transformed = Transform(values, context);
         return ComputeGradients(CssSerializer.SerializeValue(transformed, property));
@@ -605,7 +611,9 @@ internal static partial class CssValueComputer
                 }
                 else if (name is "url" or "src" && ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.String } url])
                 {
-                    return Raw(CssSerializer.SerializeUrl(ResolveUrl(url.Token.Value, context)));
+                    // The computed src() keeps its function around the resolved URL (like a src() whose string is computed from string())
+                    var resolvedUrl = CssSerializer.SerializeUrl(ResolveUrl(url.Token.Value, context));
+                    return Raw(name == "src" ? "src(" + resolvedUrl + ")" : resolvedUrl);
                 }
                 else if (name is "url" or "src" && ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.String } modifiedUrl, .. var urlModifiers] && CssUrlModifiers.Canonicalize(urlModifiers) is { } modifiers)
                 {
@@ -646,12 +654,30 @@ internal static partial class CssValueComputer
         }
     }
 
+    [ThreadStatic]
+    private static bool s_keepsInfiniteCalculations;
+
+    /// <summary>
+    /// Whether the infinite results of the calculations are kept (e.g. calc(infinity * 1px)) instead of being clamped to the largest
+    /// finite values: the values of the keyframes of the animations are interpolated before they are clamped, as in the browsers
+    /// (WPT css/css-values/animations/calc-interpolation.html). The values computed while it is set are not memoized.
+    /// </summary>
+    internal static bool KeepsInfiniteCalculations
+    {
+        get => s_keepsInfiniteCalculations;
+        set => s_keepsInfiniteCalculations = value;
+    }
+
     /// <summary>
     /// Serializes the result of a top-level calculation (https://drafts.csswg.org/css-values-4/#calc-ieee): NaN computes to
     /// zero and the infinite values to the largest finite values (of a single-precision number, as in the browsers).
     /// </summary>
     private static string SerializeComputedCalculation(CssCalcValue result)
     {
+        // The values of the keyframes of an animation are interpolated before they are clamped (calc(infinity * 1px) stays infinite)
+        if (s_keepsInfiniteCalculations && result.IsNumeric && double.IsInfinity(result.Value) && result.Unit.Length > 0)
+            return result.Serialize();
+
         // A zero dimension added to a percentage is not kept in the computed value, as in the browsers (calc(10% + 0px) is 10%: WPT
         // css/css-flexbox/parsing/flex-basis-computed.html)
         if (result.Root is CssCalcSumNode { Children: [CssCalcNumericNode first, CssCalcNumericNode second] }
@@ -1384,7 +1410,7 @@ internal static partial class CssValueComputer
 
         // https://drafts.csswg.org/css-lists-3/#list-style-position-property: an inside marker is an inline box, an outside
         // marker is a block container (display does not apply to ::marker)
-        if (style.PseudoElement == "marker")
+        if (StyleEngine.IsMarker(style.PseudoElement))
             return style.GetComputedValue("list-style-position") == "outside" ? "inline-block" : "inline";
 
         // https://drafts.csswg.org/css-position-4/#top-styling: "If its specified display property is contents, it computes to block"

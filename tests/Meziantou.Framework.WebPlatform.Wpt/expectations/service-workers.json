@@ -572,11 +572,7 @@
     }
   },
   "service-workers/service-worker/fetch-request-css-base-url.https.html": {
-    "total": 4,
-    "failures": {
-      "base URL when service worker does respondWith(fetch(responseUrl)).": "FAIL",
-      "base URL when service worker does respondWith(new Response()).": "FAIL"
-    }
+    "total": 4
   },
   "service-workers/service-worker/fetch-request-css-cross-origin.https.html": {
     "total": 4

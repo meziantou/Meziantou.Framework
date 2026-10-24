@@ -62,7 +62,8 @@ internal sealed partial class InlineLayoutAlgorithm
         ref readonly var item = ref Items[index];
         var text = style.Layout.Text;
         var autospace = text.TextAutospace & (TextAutospace.IdeographAlpha | TextAutospace.IdeographNumeric);
-        if (text.TextSpacingTrim == TextSpacingTrim.SpaceAll && autospace == TextAutospace.None)
+        var movedAutospace = GetAutospaceBeforeItem(index);
+        if (text.TextSpacingTrim == TextSpacingTrim.SpaceAll && autospace == TextAutospace.None && movedAutospace == 0)
             return shaped;
 
         // Most texts have no CJK character: the spacing only applies to the fullwidth punctuation (trimming) and around the
@@ -70,7 +71,11 @@ internal sealed partial class InlineLayoutAlgorithm
         var characters = _text.AsSpan(item.Start, item.End - item.Start);
         bool spacesAll;
         var punctuation = -1;
-        if (characters.IndexOfAnyInRange((char)0x2018, char.MaxValue) < 0 && !characters.Contains((char)0xB7))
+        if (movedAutospace != 0)
+        {
+            spacesAll = true;
+        }
+        else if (characters.IndexOfAnyInRange((char)0x2018, char.MaxValue) < 0 && !characters.Contains((char)0xB7))
         {
             if (autospace == TextAutospace.None || !IsIdeographOrMarkAfter(index))
                 return shaped;
@@ -126,6 +131,11 @@ internal sealed partial class InlineLayoutAlgorithm
         bool SetSpacing(int position)
         {
             var (b, trimAfter, autospaceAfter) = GetItemSpacing(position, index, style, shaped);
+            if (position == itemStart)
+            {
+                b += movedAutospace;
+            }
+
             before[position - itemStart] = b;
             after[position - itemStart] = trimAfter + autospaceAfter;
             return b != 0 || trimAfter != 0 || autospaceAfter != 0;
@@ -202,30 +212,31 @@ internal sealed partial class InlineLayoutAlgorithm
             var punctuation = TextSpacingClasses.GetFullwidthPunctuation(codePoint, GetPunctuationConvention(item, codePoint));
             if (punctuation is FullwidthPunctuation.Opening or FullwidthPunctuation.Closing or FullwidthPunctuation.MiddleDot)
             {
-                var half = GetHalfAdvance(shaped, position - item.Start);
-                if (half > 0)
+                var halfWidth = GetHalfWidthSpacing(shaped, position - item.Start, codePoint, punctuation);
+                if (halfWidth.Before != 0 || halfWidth.After != 0)
                 {
+                    var trimmed = false;
                     switch (punctuation)
                     {
-                        case FullwidthPunctuation.Opening when trim == TextSpacingTrim.TrimAll || IsOpeningTrimmedByPrevious(position, itemIndex, layout.FontSize):
-                            before = -half;
+                        case FullwidthPunctuation.Opening:
+                            trimmed = trim == TextSpacingTrim.TrimAll || IsOpeningTrimmedByPrevious(position, itemIndex, layout.FontSize, shaped);
                             break;
 
                         case FullwidthPunctuation.Closing:
                             next = GetAdjacentCharacter(position, itemIndex, forward: true);
                             nextFetched = true;
-                            if (trim == TextSpacingTrim.TrimAll || IsClosingTrimmedByNext(next.CodePoint, next.Item, layout.FontSize))
-                            {
-                                trimAfter = -half;
-                            }
-
+                            trimmed = trim == TextSpacingTrim.TrimAll || IsClosingTrimmedByNext(position, itemIndex, next.CodePoint, next.Item, layout.FontSize, shaped);
                             break;
 
                         // trim-all: "Set fullwidth opening punctuation, fullwidth closing punctuation, and fullwidth middle dot punctuation with half-width glyphs"
-                        case FullwidthPunctuation.MiddleDot when trim == TextSpacingTrim.TrimAll:
-                            before = -half / 2;
-                            trimAfter = -half / 2;
+                        case FullwidthPunctuation.MiddleDot:
+                            trimmed = trim == TextSpacingTrim.TrimAll;
                             break;
+                    }
+
+                    if (trimmed)
+                    {
+                        (before, trimAfter) = halfWidth;
                     }
                 }
             }
@@ -281,7 +292,9 @@ internal sealed partial class InlineLayoutAlgorithm
                 var nextStyle = Items[next.Item].Style;
                 if (IsAutospaceBoundary(first, style, next.CodePoint, nextStyle, autospace, vertical))
                 {
-                    autospaceAfter = GetIdeographicAdvance(style) / 8;
+                    // (the spacing after the last character of a run before a run of a lower bidi embedding level is before the
+                    // first character of the next run, see GetAutospaceBeforeItem)
+                    autospaceAfter = Items[next.Item].BidiLevel < item.BidiLevel ? 0 : GetIdeographicAdvance(style) / 8;
                 }
                 else if ((autospace & TextAutospace.Replace) != TextAutospace.None && codePoint == ' ' && position > 0)
                 {
@@ -296,6 +309,46 @@ internal sealed partial class InlineLayoutAlgorithm
         }
 
         return (before, trimAfter, autospaceAfter);
+    }
+
+    /// <summary>
+    /// The inter-script spacing of <c>text-autospace</c> before the first character of a text item that follows a run of a higher
+    /// bidi embedding level (e.g. an ideograph after Hebrew letters in a left-to-right paragraph): the spacing after the last
+    /// character of the run, which is on the side of the run that is away from the item (the left of the last letter of a
+    /// right-to-left run), is between the run and the item on the line (https://drafts.csswg.org/css-text-4/#inter-script-spacing:
+    /// "between adjacent characters"), as in Chrome. Returns 0 otherwise.
+    /// </summary>
+    private double GetAutospaceBeforeItem(int itemIndex)
+    {
+        ref readonly var item = ref Items[itemIndex];
+        if (item.Kind != InlineItemKind.Text || item.Start >= item.End)
+            return 0;
+
+        var (previous, previousItem) = GetAdjacentCharacter(item.Start, itemIndex, forward: false);
+        if (previous < 0 || Items[previousItem].BidiLevel <= item.BidiLevel)
+            return 0;
+
+        var previousStyle = Items[previousItem].Style;
+        var autospace = previousStyle.Layout.Text.TextAutospace;
+        var codePoint = GetCodePointAt(_text.AsSpan(0, _length), item.Start);
+        if ((autospace & (TextAutospace.IdeographAlpha | TextAutospace.IdeographNumeric)) == TextAutospace.None || Unicode.CharacterProperties.IsMark(codePoint))
+            return 0;
+
+        // (the spacing is after the base of the marks that end the run)
+        var position = Items[previousItem].End - (previous > char.MaxValue ? 2 : 1);
+        while (Unicode.CharacterProperties.IsMark(previous))
+        {
+            var (before, beforeItem) = GetAdjacentCharacter(position, previousItem, forward: false);
+            if (before < 0)
+                return 0;
+
+            position = (beforeItem == previousItem ? position : Items[beforeItem].End) - (before > char.MaxValue ? 2 : 1);
+            (previous, previousItem) = (before, beforeItem);
+        }
+
+        return IsAutospaceBoundary(previous, Items[previousItem].Style, codePoint, item.Style, autospace, previousStyle.Layout.IsVerticalWritingMode)
+            ? GetIdeographicAdvance(previousStyle) / 8
+            : 0;
     }
 
     /// <summary>
@@ -326,9 +379,10 @@ internal sealed partial class InlineLayoutAlgorithm
     /// <summary>
     /// Whether a fullwidth opening punctuation is set half-width because of the previous character: "a fullwidth opening
     /// punctuation, a fullwidth middle dot punctuation, an ideographic space (U+3000), a fullwidth closing punctuation of an
-    /// equivalent or larger font-size, a character belonging to Unicode general category Ps".
+    /// equivalent or larger font-size, a character belonging to Unicode general category Ps". A closing quotation mark whose
+    /// glyph is not fullwidth (a proportional quote of a Japanese font) is not a fullwidth closing punctuation, as in Chrome.
     /// </summary>
-    private bool IsOpeningTrimmedByPrevious(int position, int itemIndex, double fontSize)
+    private bool IsOpeningTrimmedByPrevious(int position, int itemIndex, double fontSize, ShapedText shaped)
     {
         var (previous, previousItem) = GetAdjacentCharacter(position, itemIndex, forward: false);
         if (previous < 0)
@@ -337,7 +391,8 @@ internal sealed partial class InlineLayoutAlgorithm
         return TextSpacingClasses.GetFullwidthPunctuation(previous, GetPunctuationConvention(Items[previousItem], previous)) switch
         {
             FullwidthPunctuation.Opening or FullwidthPunctuation.MiddleDot or FullwidthPunctuation.IdeographicSpace => true,
-            FullwidthPunctuation.Closing => Items[previousItem].Style.Layout.FontSize >= fontSize,
+            FullwidthPunctuation.Closing => Items[previousItem].Style.Layout.FontSize >= fontSize
+                && !IsProportionalQuote(previous, previousItem == itemIndex ? shaped : Items[previousItem].Shaped, (previousItem == itemIndex ? position : Items[previousItem].End) - 1 - Items[previousItem].Start),
             _ => UnicodeProperties.GetGeneralCategory(previous) == UnicodeCategory.OpenPunctuation,
         };
     }
@@ -345,9 +400,10 @@ internal sealed partial class InlineLayoutAlgorithm
     /// <summary>
     /// Whether a fullwidth closing punctuation is set half-width because of the next character: "a fullwidth closing punctuation,
     /// a fullwidth middle dot punctuation, an ideographic space (U+3000), a fullwidth opening punctuation of a larger font-size,
-    /// a character belonging to Unicode general category Pe".
+    /// a character belonging to Unicode general category Pe". An opening quotation mark whose glyph is not fullwidth is not a
+    /// fullwidth opening punctuation (see <see cref="IsOpeningTrimmedByPrevious"/>).
     /// </summary>
-    private bool IsClosingTrimmedByNext(int next, int nextItem, double fontSize)
+    private bool IsClosingTrimmedByNext(int position, int itemIndex, int next, int nextItem, double fontSize, ShapedText shaped)
     {
         if (next < 0)
             return false;
@@ -355,9 +411,34 @@ internal sealed partial class InlineLayoutAlgorithm
         return TextSpacingClasses.GetFullwidthPunctuation(next, GetPunctuationConvention(Items[nextItem], next)) switch
         {
             FullwidthPunctuation.Closing or FullwidthPunctuation.MiddleDot or FullwidthPunctuation.IdeographicSpace => true,
-            FullwidthPunctuation.Opening => Items[nextItem].Style.Layout.FontSize > fontSize,
+            FullwidthPunctuation.Opening => Items[nextItem].Style.Layout.FontSize > fontSize
+                && !IsProportionalQuote(next, nextItem == itemIndex ? shaped : Items[nextItem].Shaped, nextItem == itemIndex ? position + 1 - Items[itemIndex].Start : 0),
             _ => UnicodeProperties.GetGeneralCategory(next) == UnicodeCategory.ClosePunctuation,
         };
+    }
+
+    /// <summary>
+    /// Whether a quotation mark (U+2018, U+2019, U+201C, U+201D) at an index of its shaped text has a glyph that is not fullwidth
+    /// (its advance in the font is less than about 1em, e.g. the proportional quotes of a Japanese font): "for such proportional
+    /// glyphs [...] the UA must not add or remove space" (https://drafts.csswg.org/css-text-4/#fullwidth-collapsing).
+    /// </summary>
+    private static bool IsProportionalQuote(int codePoint, ShapedText? shaped, int index)
+    {
+        if (codePoint is not (0x2018 or 0x2019 or 0x201C or 0x201D) || shaped is null)
+            return false;
+
+        var glyphs = shaped.Glyphs;
+        var glyphIndex = ShapedText.FindGlyph(glyphs, index);
+        if (glyphIndex >= glyphs.Length || glyphs[glyphIndex].Cluster != index)
+            return false;
+
+        foreach (var run in shaped.Runs)
+        {
+            if (glyphIndex >= run.GlyphStart && glyphIndex < run.GlyphStart + run.GlyphCount)
+                return run.Font.GetAdvance(glyphs[glyphIndex].GlyphId, run.EmSize, run.IsUpright) < run.EmSize * 0.9;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -439,26 +520,28 @@ internal sealed partial class InlineLayoutAlgorithm
     }
 
     /// <summary>
-    /// Returns half the advance of the glyph of the character at an index of a shaped text when it is a fullwidth glyph (its advance
-    /// in the font is at least about 1em), else 0: "for such proportional glyphs, the given advance width is considered
-    /// simultaneously full-width and half-width: the UA must not add or remove space to these glyphs"
-    /// (https://drafts.csswg.org/css-text-4/#fullwidth-collapsing). As Chrome (HanKerning), only the glyphs of a font that has
-    /// the <c>halt</c> feature (<c>vhal</c> for the upright glyphs of vertical text) are trimmed: the UA "may choose not to trim
-    /// when [it] determined the trimming may cause glyph cut-offs, collisions, or excessive kerning through glyph bounding box,
-    /// glyph metrics, or font features", and nothing says where the ink of the punctuation of a font without these features
-    /// is. The trimmed half is half of the advance (the values of the feature are not read). Nothing is trimmed either when
-    /// the text enables a feature that changes the widths of the glyphs
-    /// (<c>halt</c>, <c>vhal</c>, <c>palt</c>, <c>vpal</c>, <c>valt</c>, <c>hwid</c>, <c>pwid</c>, <c>qwid</c>, <c>twid</c>).
+    /// Returns the spacing before and after the glyph of a fullwidth punctuation at an index of a shaped text that is set with a
+    /// half-width glyph, when it is a fullwidth glyph (its advance in the font is at least about 1em), else 0: "for such
+    /// proportional glyphs, the given advance width is considered simultaneously full-width and half-width: the UA must not add
+    /// or remove space to these glyphs" (https://drafts.csswg.org/css-text-4/#fullwidth-collapsing). As Chrome (HanKerning),
+    /// only the glyphs of a font that has the <c>halt</c> feature (<c>vhal</c> for the upright glyphs of vertical text) are
+    /// trimmed: the UA "may choose not to trim when [it] determined the trimming may cause glyph cut-offs, collisions, or
+    /// excessive kerning through glyph bounding box, glyph metrics, or font features", and nothing says where the ink of the
+    /// punctuation of a font without these features is. The glyph is moved and its advance reduced as the feature does (e.g.
+    /// a colon whose ink is centered stays centered in its half-width; a glyph that the feature does not change is not trimmed);
+    /// when the glyph of the character shaped alone is another one, the blank half of the advance on the side of its
+    /// punctuation class is removed. Nothing is trimmed either when the text enables a feature that changes the widths of the
+    /// glyphs (<c>halt</c>, <c>vhal</c>, <c>palt</c>, <c>vpal</c>, <c>valt</c>, <c>hwid</c>, <c>pwid</c>, <c>qwid</c>, <c>twid</c>).
     /// </summary>
-    private static double GetHalfAdvance(ShapedText shaped, int index)
+    private static (double Before, double After) GetHalfWidthSpacing(ShapedText shaped, int index, int codePoint, FullwidthPunctuation punctuation)
     {
         if (shaped.Options.Features is { } features && HasExclusiveWidthFeature(features))
-            return 0;
+            return default;
 
         var glyphs = shaped.Glyphs;
         var glyphIndex = ShapedText.FindGlyph(glyphs, index);
         if (glyphIndex >= glyphs.Length || glyphs[glyphIndex].Cluster != index)
-            return 0;
+            return default;
 
         foreach (var run in shaped.Runs)
         {
@@ -466,17 +549,34 @@ internal sealed partial class InlineLayoutAlgorithm
             {
                 // The font says that its fullwidth punctuation has a blank half with the halt feature (vhal for the upright
                 // glyphs of vertical text)
-                const uint HaltFeature = 0x68616C74;
-                const uint VhalFeature = 0x7668616C;
-                if (!run.Font.Font.HasPositioningFeature(run.IsUpright ? VhalFeature : HaltFeature))
-                    return 0;
+                var font = run.Font.Font;
+                if (!font.HasPositioningFeature(run.IsUpright ? OpenTypeTag.Vhal : OpenTypeTag.Halt))
+                    return default;
 
-                var advance = run.Font.GetAdvance(glyphs[glyphIndex].GlyphId, run.EmSize, run.IsUpright);
-                return advance >= run.EmSize * 0.9 ? advance / 2 : 0;
+                var glyph = glyphs[glyphIndex].GlyphId;
+                var advance = run.Font.GetAdvance(glyph, run.EmSize, run.IsUpright);
+                if (advance < run.EmSize * 0.9)
+                    return default;
+
+                // (a glyph that the feature does not change has no blank half to trim)
+                if (font.GetHalfWidthAdjustment(codePoint, glyph, run.IsUpright, shaped.Options.Language) is var (offset, advanceChange))
+                {
+                    var scale = run.EmSize / font.UnitsPerEm;
+                    return advanceChange < 0 ? (offset * scale, (advanceChange - offset) * scale) : default;
+                }
+
+                var half = advance / 2;
+                return punctuation switch
+                {
+                    FullwidthPunctuation.Opening => (-half, 0),
+                    FullwidthPunctuation.Closing => (0, -half),
+                    FullwidthPunctuation.MiddleDot => (-half / 2, -half / 2),
+                    _ => default,
+                };
             }
         }
 
-        return 0;
+        return default;
     }
 
     private static bool HasExclusiveWidthFeature(FontFeatureList features)
@@ -565,14 +665,15 @@ internal sealed partial class InlineLayoutAlgorithm
         if (item.Kind != InlineItemKind.Text || item.HasFlag(InlineItemFlags.Tab) || position >= item.End)
             return default;
 
+        // The inter-script spacing moved before the first character of the item is "between adjacent characters on the same line"
+        var spacing = position == item.Start ? -GetAutospaceBeforeItem(itemIndex) : 0;
         var codePoint = GetCodePointAt(_text.AsSpan(0, _length), position);
         if (codePoint < 0x22 || (codePoint < 0xB7 && item.Style.Layout.Text.HangingPunctuation == HangingPunctuation.None))
-            return default;
+            return spacing == 0 ? default : new LineEdgeSpacing(position, spacing, 0, 0, 0);
 
         var style = item.Style;
         var text = style.Layout.Text;
         var shaped = item.Shaped!;
-        var spacing = 0d;
         if (TextSpacingClasses.GetFullwidthPunctuation(codePoint, PunctuationConvention.Japanese) == FullwidthPunctuation.Opening)
         {
             var trimmed = text.TextSpacingTrim switch
@@ -587,8 +688,8 @@ internal sealed partial class InlineLayoutAlgorithm
 
             // The spacing applied with the item (the opening punctuation after another punctuation)
             var itemSpacing = GetItemSpacing(position, itemIndex, style, shaped).Before;
-            var desired = trimmed ? -GetHalfAdvance(shaped, position - item.Start) : 0;
-            spacing = desired - itemSpacing;
+            var desired = trimmed ? GetHalfWidthSpacing(shaped, position - item.Start, codePoint, FullwidthPunctuation.Opening).Before : 0;
+            spacing += desired - itemSpacing;
         }
 
         // "An opening bracket, quote, or ideographic space at the start of the first formatted line of an element hangs": not
@@ -666,23 +767,26 @@ internal sealed partial class InlineLayoutAlgorithm
         if (codePoint >= 0xB7 || beforeIdeograph)
         {
             // The inter-script spacing is "between adjacent characters on the same line"
-            var (_, trimAfter, autospaceAfter) = GetItemSpacing(position, itemIndex, style, shaped);
+            var (trimBefore, trimAfter, autospaceAfter) = GetItemSpacing(position, itemIndex, style, shaped);
             spacing -= autospaceAfter;
             if (codePoint >= 0xB7 && TextSpacingClasses.GetFullwidthPunctuation(codePoint, GetPunctuationConvention(item, codePoint)) == FullwidthPunctuation.Closing && !isHyphenated
                 && !IsFollowedOnLine(item.Start + clusterEnd, lineEnd))
             {
-                var half = -GetHalfAdvance(shaped, local);
+                // (the trimming of the item, which depends on the next character, is replaced by the one of the end of the line)
+                var halfWidth = GetHalfWidthSpacing(shaped, local, codePoint, FullwidthPunctuation.Closing);
                 switch (text.TextSpacingTrim)
                 {
                     case TextSpacingTrim.TrimBoth:
-                        spacing += half - trimAfter;
+                        spacing += halfWidth.Before - trimBefore + halfWidth.After - trimAfter;
+                        spacingBefore += halfWidth.Before - trimBefore;
                         break;
 
                     // "set fullwidth closing punctuation with half-width glyphs (flush) at the end of each line if it does not
                     // otherwise fit prior to justification, else set the punctuation with full-width glyphs"
                     case TextSpacingTrim.Normal or TextSpacingTrim.TrimStart or TextSpacingTrim.SpaceFirst or TextSpacingTrim.Auto:
-                        spacing -= trimAfter;
-                        conditional = half;
+                        spacing -= trimBefore + trimAfter;
+                        spacingBefore -= trimBefore;
+                        conditional = halfWidth.Before + halfWidth.After;
                         break;
                 }
             }

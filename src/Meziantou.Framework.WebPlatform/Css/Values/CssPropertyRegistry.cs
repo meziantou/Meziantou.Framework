@@ -63,11 +63,12 @@ internal static partial class CssPropertyRegistry
         // The grammars of the line clamping properties tested by WPT (css/css-overflow/parsing), which follow the resolutions
         // that are not in the css-overflow-4 of webref yet: max-lines is auto (its initial value, none is not valid anymore) or a
         // number of lines with an optional auto (https://drafts.csswg.org/css-overflow-4/#max-lines), block-ellipsis has an
-        // ellipsis keyword instead of auto, and the initial value of continue is normal
+        // ellipsis keyword instead of auto, the initial value of continue is normal, and the auto keyword of line-clamp can be
+        // anywhere (https://github.com/w3c/csswg-drafts/issues/13670)
         ["max-lines"] = "[ <integer [1,\u221E]> || auto ]",
         ["block-ellipsis"] = "no-ellipsis | ellipsis | <string>",
         ["continue"] = "normal | discard | collapse | -webkit-legacy | overflow | paginate | fragments",
-        ["line-clamp"] = "none | [ [ <integer [1,\u221E]> || auto ] || <'block-ellipsis'> ] -webkit-legacy?",
+        ["line-clamp"] = "none | [ <integer [1,\u221E]> || auto || <'block-ellipsis'> ] -webkit-legacy?",
 
         // https://drafts.csswg.org/css-overflow-3/#valdef-overflow-overlay: "User agents must also support the overlay keyword as
         // a legacy value alias of auto" (see CssPropertyRules.CanonicalizeOverflow)
@@ -302,6 +303,12 @@ internal static partial class CssPropertyRegistry
         if (atRule == "@font-face" && name == "font-stretch")
         {
             name = "font-width";
+        }
+
+        // https://drafts.csswg.org/css-page-3/#page-margin-safety: page-margin-safety is also a descriptor of the margin rules
+        if (name == "page-margin-safety" && atRule.Length > 1 && Om.CssRuleParser.IsMarginRuleName(atRule[1..]))
+        {
+            atRule = "@page";
         }
 
         return DescriptorsByName.Value.GetValueOrDefault(atRule + " " + name);

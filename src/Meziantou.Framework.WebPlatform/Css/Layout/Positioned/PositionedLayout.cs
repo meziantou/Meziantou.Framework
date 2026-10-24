@@ -56,7 +56,8 @@ internal static class PositionedLayout
         // is the viewport; otherwise, it's the initial containing block"
         var isFixed = box.Style.Layout.Position == PositionKind.Fixed;
         var last = box;
-        for (var ancestor = GetPositioningParent(box); ancestor is not null; ancestor = GetPositioningParent(ancestor))
+        var ancestor = GetPositioningParent(box);
+        while (ancestor is not null)
         {
             last = ancestor;
             if (ancestor.Kind == ContainerBoxKind.Viewport)
@@ -66,6 +67,10 @@ internal static class PositionedLayout
             // (the contents box of a slider-like control is positioned: it is the containing block of its thumb)
             if ((!ancestor.IsAnonymous || ancestor.IsFieldsetContent || ancestor.IsFormControlContents) && EstablishesContainingBlock(ancestor, isFixed))
                 return ancestor.IsInlineBox ? GetFirstPart(ancestor) : ancestor;
+
+            // https://drafts.csswg.org/css-multicol-1/#column-span: "The containing block of a spanner is the multi-column
+            // container": the containing block chain skips the ancestors between them
+            ancestor = MultiColumnFlow.GetColumnSpannerContainer(ancestor) ?? GetPositioningParent(ancestor);
         }
 
         return last;
@@ -579,6 +584,7 @@ internal static class PositionedLayout
         if (AnchorPositioning.IsAnchorPositioned(candidate.Box))
             return AnchorPositioning.Layout(context, candidate, hostFragment, laidOut, containingBlockRect, containingBlock);
 
+        AnchorPositioning.UpdateTransitionsOfFormerAnchoredBox(context, candidate.Box);
         return LayoutInContainingBlock(context, candidate, containingBlockRect, containingBlock, anchor: null).Fragment;
     }
 

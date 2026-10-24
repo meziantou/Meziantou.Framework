@@ -8,8 +8,8 @@
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 41 | 41 | 0 | 100% |
 | [Tentative](#tentative-tests) | 6 | 6 | 0 | 100% |
-| [Reftests](#reftests) | 1,096 | 1,121 | 0 | 98% |
-| **All** | **1,143** | **1,168** | **0** | **98%** |
+| [Reftests](#reftests) | 1,100 | 1,121 | 0 | 98% |
+| **All** | **1,147** | **1,168** | **0** | **98%** |
 
 ## Stable tests
 
@@ -162,7 +162,7 @@
 | [`box-decoration-break-clone-031.html`](https://wpt.fyi/results/css/css-break/box-decoration-break-clone-031.html) | Pass | 1 / 1 |  |  |
 | [`box-decoration-break-clone-033.html`](https://wpt.fyi/results/css/css-break/box-decoration-break-clone-033.html) | Pass | 1 / 1 |  |  |
 | [`box-decoration-break-clone-034.html`](https://wpt.fyi/results/css/css-break/box-decoration-break-clone-034.html) | Pass | 1 / 1 |  |  |
-| [`box-decoration-break-clone-037.html`](https://wpt.fyi/results/css/css-break/box-decoration-break-clone-037.html) | Fail | 0 / 1 | BUG | `box-decoration-break: clone` on a box with `height: 0` that contains a column spanner: a box that a spanner interrupts is fragmented with the flow of its container (not as a box whose block size does not follow its contents), so its edges are still repeated around the contents that overflow it, before and after the spanner, where Blink ends the box in the first column and repeats no edge after its last fragment |
+| [`box-decoration-break-clone-037.html`](https://wpt.fyi/results/css/css-break/box-decoration-break-clone-037.html) | Pass | 1 / 1 |  |  |
 | [`box-decoration-break-clone-inline-001.html`](https://wpt.fyi/results/css/css-break/box-decoration-break-clone-inline-001.html) | Pass | 1 / 1 |  |  |
 | [`box-decoration-break-clone-split-inline.html`](https://wpt.fyi/results/css/css-break/box-decoration-break-clone-split-inline.html) | Pass | 1 / 1 |  |  |
 | [`box-shadow-001.html`](https://wpt.fyi/results/css/css-break/box-shadow-001.html) | Pass | 1 / 1 |  |  |
@@ -222,7 +222,7 @@
 | [`contain-strict-with-opacity-and-oof.html`](https://wpt.fyi/results/css/css-break/contain-strict-with-opacity-and-oof.html) | Pass | 1 / 1 |  |  |
 | [`fieldset-001.html`](https://wpt.fyi/results/css/css-break/fieldset-001.html) | Pass | 1 / 1 |  |  |
 | [`fieldset-002.html`](https://wpt.fyi/results/css/css-break/fieldset-002.html) | Pass | 1 / 1 |  |  |
-| [`fieldset-003.html`](https://wpt.fyi/results/css/css-break/fieldset-003.html) | Fail | 0 / 1 | BUG | the block-end border of a fieldset that does not fit after its content box in a column: the 60px border is split by the end of the column (30px in the second column, 30px in the third), where Blink ends the fragment after the 10px of the content box and places the whole border in the third column (a break before the block-end border instead of a break in it; only Chrome passes this test) |
+| [`fieldset-003.html`](https://wpt.fyi/results/css/css-break/fieldset-003.html) | Pass | 1 / 1 |  |  |
 | [`fieldset-004.html`](https://wpt.fyi/results/css/css-break/fieldset-004.html) | Pass | 1 / 1 |  |  |
 | [`fieldset-005.html`](https://wpt.fyi/results/css/css-break/fieldset-005.html) | Pass | 1 / 1 |  |  |
 | [`fieldset-006.html`](https://wpt.fyi/results/css/css-break/fieldset-006.html) | Pass | 1 / 1 |  |  |
@@ -759,8 +759,8 @@
 | [`grid/grid-lanes/row-single-lane-fragmentation-006.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-single-lane-fragmentation-006.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/row-single-lane-fragmentation-007.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-single-lane-fragmentation-007.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/row-single-lane-fragmentation-008.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-single-lane-fragmentation-008.html) | Pass | 1 / 1 |  |  |
-| [`grid/grid-lanes/row-single-lane-fragmentation-009.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-single-lane-fragmentation-009.html) | Fail | 0 / 1 | BUG | the fragmentation of a grid lanes item in a fixed row: the item grows beyond its row |
-| [`grid/grid-lanes/row-single-lane-fragmentation-010.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-single-lane-fragmentation-010.html) | Fail | 0 / 1 | BUG | the fragmentation of a grid lanes item in a fixed row: the item grows beyond its row |
+| [`grid/grid-lanes/row-single-lane-fragmentation-009.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-single-lane-fragmentation-009.html) | Pass | 1 / 1 |  |  |
+| [`grid/grid-lanes/row-single-lane-fragmentation-010.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-single-lane-fragmentation-010.html) | Pass | 1 / 1 |  |  |
 | [`grid/monolithic-overflow-001.tentative.html`](https://wpt.fyi/results/css/css-break/grid/monolithic-overflow-001.tentative.html) | Pass | 1 / 1 |  |  |
 | [`grid/monolithic-overflow-002.tentative.html`](https://wpt.fyi/results/css/css-break/grid/monolithic-overflow-002.tentative.html) | Pass | 1 / 1 |  |  |
 | [`grid/monolithic-overflow-003.tentative.html`](https://wpt.fyi/results/css/css-break/grid/monolithic-overflow-003.tentative.html) | Pass | 1 / 1 |  |  |

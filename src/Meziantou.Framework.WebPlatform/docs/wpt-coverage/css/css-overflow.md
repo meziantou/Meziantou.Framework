@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 208 | 214 | 0 | 97% |
+| [Stable](#stable-tests) | 211 | 214 | 0 | 99% |
 | [Tentative](#tentative-tests) | 7 | 10 | 0 | 70% |
-| [Reftests](#reftests) | 652 | 682 | 0 | 96% |
-| **All** | **867** | **906** | **0** | **96%** |
+| [Reftests](#reftests) | 662 | 682 | 0 | 97% |
+| **All** | **880** | **906** | **0** | **97%** |
 
 ## Stable tests
 
@@ -54,7 +54,7 @@
 | [`parsing/continue-valid.html`](https://wpt.fyi/results/css/css-overflow/parsing/continue-valid.html) | Pass | 4 / 4 |  |  |
 | [`parsing/getComputedStyle-scroll-button.html`](https://wpt.fyi/results/css/css-overflow/parsing/getComputedStyle-scroll-button.html) | Pass | 5 / 5 |  |  |
 | [`parsing/line-clamp-invalid.html`](https://wpt.fyi/results/css/css-overflow/parsing/line-clamp-invalid.html) | Pass | 7 / 7 |  |  |
-| [`parsing/line-clamp-valid.html`](https://wpt.fyi/results/css/css-overflow/parsing/line-clamp-valid.html) | Fail | 18 / 20 | BUG | `line-clamp: 3 ellipsis auto` is rejected: the grammar (`[ <integer> \|\| auto ] \|\| <'block-ellipsis'>`) does not accept `auto` after the block ellipsis |
+| [`parsing/line-clamp-valid.html`](https://wpt.fyi/results/css/css-overflow/parsing/line-clamp-valid.html) | Fail | 18 / 20 | TEST BUG | `line-clamp: 3 ellipsis auto` (with or without `-webkit-legacy`) is valid with the grammar of https://github.com/w3c/csswg-drafts/issues/13670 (`[ <integer [1,∞]> \|\| auto \|\| <'block-ellipsis'> ] -webkit-legacy?`), but the test expects it to serialize as specified: the shorthand serializes its longhands in the canonical order of the grammar and omits the default `ellipsis` (https://drafts.csswg.org/cssom/#serialize-a-css-value), as the same test expects for `8 ellipsis` (serialized as `8`) and `auto 11` (serialized as `11 auto`), so the value is `3 auto` |
 | [`parsing/max-lines-invalid.html`](https://wpt.fyi/results/css/css-overflow/parsing/max-lines-invalid.html) | Pass | 8 / 8 |  |  |
 | [`parsing/max-lines-valid.html`](https://wpt.fyi/results/css/css-overflow/parsing/max-lines-valid.html) | Pass | 5 / 5 |  |  |
 | [`parsing/overflow-clip-margin-computed.html`](https://wpt.fyi/results/css/css-overflow/parsing/overflow-clip-margin-computed.html) | Pass | 25 / 25 |  |  |
@@ -94,12 +94,12 @@
 | [`scroll-marker-group-hover-from-marker.html`](https://wpt.fyi/results/css/css-overflow/scroll-marker-group-hover-from-marker.html) | Pass | 1 / 1 |  |  |
 | [`scroll-marker-group-hover.html`](https://wpt.fyi/results/css/css-overflow/scroll-marker-group-hover.html) | Pass | 1 / 1 |  |  |
 | [`scroll-markers/column-scroll-marker-003.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/column-scroll-marker-003.html) | Pass | 8 / 8 |  |  |
-| [`scroll-markers/column-scroll-marker-005.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/column-scroll-marker-005.html) | Fail | 1 / 8 | BUG | the `::column::scroll-marker` pseudo-elements of a multi-column fieldset scroll container, whose columns and scrolling box are the ones of its anonymous fieldset content box: the activation of a marker does not scroll the fieldset to its column (`scrollLeft` stays 0 where 140 and 280 are expected) |
+| [`scroll-markers/column-scroll-marker-005.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/column-scroll-marker-005.html) | Pass | 8 / 8 |  |  |
 | [`scroll-markers/column-scroll-marker-010.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/column-scroll-marker-010.html) | Pass | 9 / 9 |  |  |
 | [`scroll-markers/column-scroll-marker-focus-001.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/column-scroll-marker-focus-001.html) | Pass | 9 / 9 |  |  |
 | [`scroll-markers/column-scroll-marker-focus-002.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/column-scroll-marker-focus-002.html) | Pass | 5 / 5 |  |  |
 | [`scroll-markers/column-scroll-marker-focus-003.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/column-scroll-marker-focus-003.html) | Pass | 5 / 5 |  |  |
-| [`scroll-markers/column-scroll-marker-focus-004.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/column-scroll-marker-focus-004.html) | Fail | 9 / 11 | BUG | after the activation of the `::column::scroll-marker` of a column without element (and no element after it), Tab focuses the first marker of the `scroll-marker-group: after` group instead of the element after the scroll container (2 of 11 subtests: `Focus column #9`, `Focus column #10`) |
+| [`scroll-markers/column-scroll-marker-focus-004.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/column-scroll-marker-focus-004.html) | Pass | 11 / 11 |  |  |
 | [`scroll-markers/html-scroll-marker-target-before-after.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/html-scroll-marker-target-before-after.html) | Pass | 6 / 6 |  |  |
 | [`scroll-markers/root-scroll-button-activation.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/root-scroll-button-activation.html) | Pass | 1 / 1 |  |  |
 | [`scroll-markers/root-scroll-marker-activation-and-scroll-tracking.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/root-scroll-marker-activation-and-scroll-tracking.html) | Pass | 1 / 1 |  |  |
@@ -116,7 +116,7 @@
 | [`scroll-markers/scroll-button-focus-active-element.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-button-focus-active-element.html) | Pass | 1 / 1 |  |  |
 | [`scroll-markers/scroll-button-hover-remove.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-button-hover-remove.html) | Pass | 1 / 1 |  |  |
 | [`scroll-markers/scroll-button-hover.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-button-hover.html) | Pass | 1 / 1 |  |  |
-| [`scroll-markers/scroll-button-link-activation.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-button-link-activation.html) | Fail | 2 / 4 | BUG | activating the `::scroll-button` of a scroll container that is, or is in, an `<a href>` follows the link |
+| [`scroll-markers/scroll-button-link-activation.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-button-link-activation.html) | Pass | 4 / 4 |  |  |
 | [`scroll-markers/scroll-button-universal-before.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-button-universal-before.html) | Pass | 1 / 1 |  |  |
 | [`scroll-markers/scroll-buttons-activation-with-columns.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-buttons-activation-with-columns.html) | Pass | 1 / 1 |  |  |
 | [`scroll-markers/scroll-buttons-activation.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-buttons-activation.html) | Pass | 1 / 1 |  |  |
@@ -251,7 +251,7 @@
 |---|---|--:|---|---|
 | [`abspos-shrink-to-fit-with-scrollable-descendant.html`](https://wpt.fyi/results/css/css-overflow/abspos-shrink-to-fit-with-scrollable-descendant.html) | Pass | 1 / 1 |  |  |
 | [`add-scroller-then-scroll-content-into-view.html`](https://wpt.fyi/results/css/css-overflow/add-scroller-then-scroll-content-into-view.html) | Pass | 1 / 1 |  |  |
-| [`before-after-pseudo-element-scrolling.html`](https://wpt.fyi/results/css/css-overflow/before-after-pseudo-element-scrolling.html) | Fail | 0 / 1 | BUG | the user scrolls the scroll containers of the elements only: the wheel of the test driver is dispatched to `#target`, which is not a scroll container, and the scroll containers generated by its `::before` and `::after` pseudo-elements are not scrolled, so their red images stay visible |
+| [`before-after-pseudo-element-scrolling.html`](https://wpt.fyi/results/css/css-overflow/before-after-pseudo-element-scrolling.html) | Pass | 1 / 1 |  |  |
 | [`button-with-scrollable-descendant.html`](https://wpt.fyi/results/css/css-overflow/button-with-scrollable-descendant.html) | Pass | 1 / 1 |  |  |
 | [`clip-001.html`](https://wpt.fyi/results/css/css-overflow/clip-001.html) | Pass | 1 / 1 |  |  |
 | [`clip-002.html`](https://wpt.fyi/results/css/css-overflow/clip-002.html) | Pass | 1 / 1 |  |  |
@@ -317,7 +317,7 @@
 | [`line-clamp/block-ellipsis-032.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/block-ellipsis-032.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/block-ellipsis-033.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/block-ellipsis-033.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/block-ellipsis-034.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/block-ellipsis-034.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/block-ellipsis-035.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/block-ellipsis-035.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the hanging of the block overflow ellipsis (`hanging-punctuation`): its advance is always reserved at the end of the line |
+| [`line-clamp/block-ellipsis-035.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/block-ellipsis-035.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/block-ellipsis-036.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/block-ellipsis-036.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/block-ellipsis-037.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/block-ellipsis-037.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/block-ellipsis-038.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/block-ellipsis-038.html) | Pass | 1 / 1 |  |  |
@@ -479,7 +479,7 @@
 | [`line-clamp/line-clamp-balance-010.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-balance-010.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-balance-011.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-balance-011.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-balance-012.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-balance-012.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-baseline-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-baseline-001.html) | Fail | 0 / 1 | BUG | the visually suppressed line boxes of a line-clamp container are taken into account for its last baseline set |
+| [`line-clamp/line-clamp-baseline-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-baseline-001.html) | Fail | 0 / 1 | BUG | the baseline of the clamped inline-block is right, but its word `ALIGNED` is about 1px away from the same word in the reference, where it follows a space in the same text run (likely the kerning of the pair space + `A` of the fallback serif font applied across the space, which the browsers do not do: they shape the words separately) |
 | [`line-clamp/line-clamp-bfc.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-bfc.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-content-height-with-dynamic-change.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-content-height-with-dynamic-change.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-dynamic-change-after-clean-content.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-dynamic-change-after-clean-content.html) | Pass | 1 / 1 |  |  |
@@ -492,7 +492,7 @@
 | [`line-clamp/line-clamp-intrinsic-size-004.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-intrinsic-size-004.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-invalidation-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-invalidation-001.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-invalidation-002.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-invalidation-002.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-text-overflow-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-text-overflow-001.html) | Fail | 0 / 1 | BUG | `text-overflow` does not apply to the line that has the block ellipsis after the clamping |
+| [`line-clamp/line-clamp-text-overflow-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-text-overflow-001.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-abspos-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-abspos-001.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-abspos-002.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-abspos-002.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-abspos-003.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-abspos-003.html) | Pass | 1 / 1 |  |  |
@@ -546,7 +546,7 @@
 | [`line-clamp/line-clamp-with-floats-007.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-floats-007.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-floats-008.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-floats-008.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-floats-009.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-floats-009.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-with-floats-010.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-floats-010.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the parts of the floats clipped to the block-end content edge of a line-clamp container still extend the scrollable overflow |
+| [`line-clamp/line-clamp-with-floats-010.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-floats-010.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-floats-011.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-floats-011.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-floats-012.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-floats-012.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-floats-013.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-floats-013.html) | Pass | 1 / 1 |  |  |
@@ -559,7 +559,7 @@
 | [`line-clamp/line-clamp-with-text-overflow-string-005.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-005.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-text-overflow-string-006.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-006.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-text-overflow-string-007.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-007.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-with-text-overflow-string-008.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-008.html) | Fail | 0 / 1 | TEST BUG | the quotation mark before the truncated content keeps its GPOS kerning with the next character of the text (the M+ font kerns `"X`; Chrome keeps it too: the truncated text is a view of the shaping result), the reference has no kerning there: the ellipsis is 0.15px to the left (fails in every browser) |
+| [`line-clamp/line-clamp-with-text-overflow-string-008.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-008.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-text-overflow-string-009.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-009.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/webkit-line-clamp-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/webkit-line-clamp-001.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/webkit-line-clamp-002.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/webkit-line-clamp-002.html) | Pass | 1 / 1 |  |  |
@@ -594,7 +594,7 @@
 | [`line-clamp/webkit-line-clamp-032.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/webkit-line-clamp-032.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/webkit-line-clamp-033.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/webkit-line-clamp-033.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/webkit-line-clamp-034.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/webkit-line-clamp-034.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/webkit-line-clamp-035.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/webkit-line-clamp-035.html) | Fail | 0 / 1 | BUG | `-webkit-line-clamp` with a `visibility: hidden` container and a `visibility: visible` descendant |
+| [`line-clamp/webkit-line-clamp-035.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/webkit-line-clamp-035.html) | Fail | 0 / 1 | BUG | the reference was changed (WPT 2026-10-14, Chromium CL 8574804) to displace the unbreakable word `CCCCCCCCC` of the last line of `-webkit-line-clamp` entirely, as `line-clamp` (https://drafts.csswg.org/css-overflow-4/#block-ellipsis); this engine truncates it as the legacy implementations (see webkit-line-clamp-036.html): displacing it fixes this test, webkit-line-clamp-036 and css/css-text/white-space/text-wrap-balance-line-clamp-003/004, but fails css/css-flexbox/alignment/flex-align-baseline-line-clamp-001/002/003.tentative, which Chrome also passes (their last line, an atomic inline without soft wrap opportunity before it, keeps its content) |
 | [`line-clamp/webkit-line-clamp-036.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/webkit-line-clamp-036.html) | Fail | 0 / 1 | TEST BUG | expects the content of the last line of `-webkit-line-clamp` that does not fit with the block overflow ellipsis to be displaced (as `line-clamp`); the browsers truncate it, as this engine (WPT css/css-overflow/line-clamp/webkit-line-clamp-035.html, the baselines of css/css-flexbox/alignment/flex-align-baseline-line-clamp-*): fails in every browser |
 | [`line-clamp/webkit-line-clamp-037.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/webkit-line-clamp-037.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/webkit-line-clamp-038.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/webkit-line-clamp-038.html) | Pass | 1 / 1 |  |  |
@@ -676,7 +676,7 @@
 | [`overflow-clip-margin-mul-column-border-box.html`](https://wpt.fyi/results/css/css-overflow/overflow-clip-margin-mul-column-border-box.html) | Pass | 1 / 1 |  |  |
 | [`overflow-clip-margin-mul-column-content-box.html`](https://wpt.fyi/results/css/css-overflow/overflow-clip-margin-mul-column-content-box.html) | Pass | 1 / 1 |  |  |
 | [`overflow-clip-margin-mul-column-padding-box.html`](https://wpt.fyi/results/css/css-overflow/overflow-clip-margin-mul-column-padding-box.html) | Pass | 1 / 1 |  |  |
-| [`overflow-clip-margin-svg.html`](https://wpt.fyi/results/css/css-overflow/overflow-clip-margin-svg.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `overflow-clip-margin` on the outermost `svg` element: its contents are always clipped to its content box (100x100 instead of 110x110 with `overflow-clip-margin: 10px`); only Chrome passes |
+| [`overflow-clip-margin-svg.html`](https://wpt.fyi/results/css/css-overflow/overflow-clip-margin-svg.html) | Pass | 1 / 1 |  |  |
 | [`overflow-clip-margin-visual-box-and-value-with-border-radius.html`](https://wpt.fyi/results/css/css-overflow/overflow-clip-margin-visual-box-and-value-with-border-radius.html) | Fail | 0 / 1 | TEST BUG | the reference expects the corners of the overflow clip edge of `overflow-clip-margin: border-box 5px` to be the radii of the padding edge (5px for the 15px top right corner with a 10px border) outset by 15px with the shadow spread formula (15.55px, the shape of Chrome), while css-overflow-4 says "The overflow clip edge is shaped in the corners exactly the same way as an outer box-shadow with a spread radius of the same cumulative offset from the box's border edge" (https://drafts.csswg.org/css-overflow-4/#overflow-clip-margin): the 15px border radius spread by 5px is 20px, which the library renders (only the top right corner of the first box differs; the `padding-box` and `content-box` cases match); only Chrome passes |
 | [`overflow-clip-margin-visual-box-and-value.html`](https://wpt.fyi/results/css/css-overflow/overflow-clip-margin-visual-box-and-value.html) | Pass | 1 / 1 |  |  |
 | [`overflow-clip-margin-visual-box.html`](https://wpt.fyi/results/css/css-overflow/overflow-clip-margin-visual-box.html) | Pass | 1 / 1 |  |  |
@@ -691,7 +691,7 @@
 | [`overflow-img-border-radius.html`](https://wpt.fyi/results/css/css-overflow/overflow-img-border-radius.html) | Pass | 1 / 1 |  |  |
 | [`overflow-img-display-table.html`](https://wpt.fyi/results/css/css-overflow/overflow-img-display-table.html) | Pass | 1 / 1 |  |  |
 | [`overflow-img-object-position.html`](https://wpt.fyi/results/css/css-overflow/overflow-img-object-position.html) | Pass | 1 / 1 |  |  |
-| [`overflow-img-scroll-non-replaced.html`](https://wpt.fyi/results/css/css-overflow/overflow-img-scroll-non-replaced.html) | Fail | 0 / 1 | BUG | an `img` rendered as its alternative text (a block container) with `overflow: scroll` clips its text at its content box: the `overflow-clip-margin: content-box` of the user agent rule of the replaced elements also shrinks the clip of a scroll container (as the specification says of the visual box of `overflow-clip-margin`), where the browsers, which only apply `overflow-clip-margin` to `overflow: clip`, clip at the padding box (12 pixels of the text in the padding) |
+| [`overflow-img-scroll-non-replaced.html`](https://wpt.fyi/results/css/css-overflow/overflow-img-scroll-non-replaced.html) | Pass | 1 / 1 |  |  |
 | [`overflow-img-scroll-replaced.html`](https://wpt.fyi/results/css/css-overflow/overflow-img-scroll-replaced.html) | Pass | 1 / 1 |  |  |
 | [`overflow-img-svg.html`](https://wpt.fyi/results/css/css-overflow/overflow-img-svg.html) | Pass | 1 / 1 |  |  |
 | [`overflow-img.html`](https://wpt.fyi/results/css/css-overflow/overflow-img.html) | Pass | 1 / 1 |  |  |
@@ -701,7 +701,7 @@
 | [`overflow-no-frameset-propagation.html`](https://wpt.fyi/results/css/css-overflow/overflow-no-frameset-propagation.html) | Pass | 1 / 1 |  |  |
 | [`overflow-overlay.html`](https://wpt.fyi/results/css/css-overflow/overflow-overlay.html) | Pass | 1 / 1 |  |  |
 | [`overflow-recalc-001.html`](https://wpt.fyi/results/css/css-overflow/overflow-recalc-001.html) | Pass | 1 / 1 |  |  |
-| [`overflow-replaced-element-002.html`](https://wpt.fyi/results/css/css-overflow/overflow-replaced-element-002.html) | Fail | 0 / 1 | BUG | the four corners of the first replaced element (the `iframe`, whose document has a green background) differ from the reference: the content of the `iframe` is not clipped to its rounded content edge in the same way with the default styles and with `overflow: clip; overflow-clip-margin: content-box` |
+| [`overflow-replaced-element-002.html`](https://wpt.fyi/results/css/css-overflow/overflow-replaced-element-002.html) | Pass | 1 / 1 |  |  |
 | [`overflow-scroll-big-border-small-content.html`](https://wpt.fyi/results/css/css-overflow/overflow-scroll-big-border-small-content.html) | Pass | 1 / 1 |  |  |
 | [`overflow-scroll-intrinsic-001.html`](https://wpt.fyi/results/css/css-overflow/overflow-scroll-intrinsic-001.html) | Pass | 1 / 1 |  |  |
 | [`overflow-scroll-resize-visibility-hidden.html`](https://wpt.fyi/results/css/css-overflow/overflow-scroll-resize-visibility-hidden.html) | Pass | 1 / 1 |  |  |
@@ -780,7 +780,7 @@
 | [`scroll-markers/scroll-marker-group-add-dynamic-002.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-marker-group-add-dynamic-002.html) | Pass | 1 / 1 |  |  |
 | [`scroll-markers/scroll-marker-group-add-dynamic-003.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-marker-group-add-dynamic-003.html) | Pass | 1 / 1 |  |  |
 | [`scroll-markers/scroll-marker-group-add-dynamic-004.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-marker-group-add-dynamic-004.html) | Pass | 1 / 1 |  |  |
-| [`scroll-markers/scroll-marker-group-keeps-active-in-view.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-marker-group-keeps-active-in-view.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the scrolling of a `::scroll-marker-group` that is a scroll container (`overflow-x: scroll`): the pseudo-element boxes have no scrolling box, so the active marker is not scrolled into view (the test waits for the `scrollend` event of that smooth scroll: timeout) |
+| [`scroll-markers/scroll-marker-group-keeps-active-in-view.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-marker-group-keeps-active-in-view.html) | Pass | 1 / 1 |  |  |
 | [`scroll-markers/scroll-marker-group-layout-parent.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-marker-group-layout-parent.html) | Pass | 1 / 1 |  |  |
 | [`scroll-markers/scroll-marker-group-position-change-001.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-marker-group-position-change-001.html) | Pass | 1 / 1 |  |  |
 | [`scroll-markers/scroll-marker-group-position-change-002.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-marker-group-position-change-002.html) | Pass | 1 / 1 |  |  |
@@ -789,7 +789,7 @@
 | [`scroll-markers/scroll-marker-group-scroll-container-change-002.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-marker-group-scroll-container-change-002.html) | Pass | 1 / 1 |  |  |
 | [`scroll-markers/scroll-marker-group-scroll-container-change-003.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-marker-group-scroll-container-change-003.html) | Pass | 1 / 1 |  |  |
 | [`scroll-markers/scroll-marker-group-scroll-container-change-004.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-marker-group-scroll-container-change-004.html) | Pass | 1 / 1 |  |  |
-| [`scroll-markers/scroll-marker-group-snap-aligns-to-active.tentative.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-marker-group-snap-aligns-to-active.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the scrolling of a `::scroll-marker-group` that is a scroll snap container: the pseudo-element boxes have no scrolling box, so the group does not scroll to snap its active marker |
+| [`scroll-markers/scroll-marker-group-snap-aligns-to-active.tentative.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-marker-group-snap-aligns-to-active.tentative.html) | Pass | 1 / 1 |  |  |
 | [`scroll-markers/scroll-marker-group-style-remove.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-marker-group-style-remove.html) | Pass | 1 / 1 |  |  |
 | [`scroll-markers/scroll-marker-selection-in-2d.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-marker-selection-in-2d.html) | Pass | 1 / 1 |  |  |
 | [`scroll-markers/scroll-markers-added-after-content-visibility-auto.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-markers-added-after-content-visibility-auto.html) | Pass | 1 / 1 |  |  |

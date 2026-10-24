@@ -219,4 +219,25 @@ public sealed class UserScrollingTests : IDisposable
         scroller.RemoveAttribute("style");
         Assert.Equal(0, scroller.ScrollTop);
     }
+
+    [Fact]
+    public void Wheel_ScrollsTheScrollContainerOfAPseudoElement_AndKeepsItsPositionAfterALayout()
+    {
+        var document = Load("""
+            <style>#target::before { display: block; content: "a\A b\A c\A d"; white-space: pre; line-height: 100px; height: 50px; width: 100px; overflow: scroll; }</style>
+            <div id=dummy>dummy</div><div id=target></div>
+            """);
+        var target = document.GetElementById("target")!;
+        var engine = document.GetLayoutEngine();
+        var top = target.GetBoundingClientRect().Top;
+        Assert.True(document.BrowsingContext!.Input.Wheel(10, top + 25, 0, 1000));
+        RunFrames(3);
+        var state = engine.TryGetScrollState(target, "before");
+        Assert.NotNull(state);
+        Assert.Equal(state.MaxOffset.Y, state.Offset.Y);
+
+        ((HtmlElement)document.GetElementById("dummy")!).Style.SetProperty("display", "none");
+        RunFrames(3);
+        Assert.Equal(state.MaxOffset.Y, engine.TryGetScrollState(target, "before")!.Offset.Y);
+    }
 }

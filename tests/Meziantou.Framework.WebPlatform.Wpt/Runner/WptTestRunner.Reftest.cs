@@ -145,12 +145,21 @@ internal sealed partial class WptTestRunner
     /// <summary>
     /// Prints the page of a print reftest (as wptrunner prints it to PDF, https://web-platform-tests.org/writing-tests/print-reftests.html):
     /// the pages of 5in x 3in with the default margins of 0.5in. The resources that only the print styles use are fetched, and
-    /// the tasks that are queued run (without advancing the clock) before the pages are rendered.
+    /// the tasks that are queued run (without advancing the clock) before the pages are rendered. The safe printable inset of
+    /// the sheet is the one of <c>&lt;meta name=safe-printable-inset content="(centimeters)"&gt;</c>, as in the test runner of
+    /// Chromium (css/css-page/tentative/safe-printable-inset-*).
     /// </summary>
     private WptResult PrintReftestPages(BrowsingContext browsingContext)
     {
         var document = browsingContext.Document;
-        using var session = document.BeginPrint(PrintReftestOptions);
+        var options = PrintReftestOptions;
+        if (document.QuerySelector("meta[name=safe-printable-inset]")?.GetAttribute("content") is { } inset
+            && double.TryParse(inset, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var centimeters) && centimeters > 0)
+        {
+            options = options with { SafePrintableInset = centimeters * 96 / 2.54 };
+        }
+
+        using var session = document.BeginPrint(options);
         session.FetchResources();
         for (var i = 0; i < 1000 && _eventLoop.RunTask(); i++)
         {

@@ -282,7 +282,7 @@
     "reftest": "PASS"
   },
   "css/css-break/box-decoration-break-clone-037.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/box-decoration-break-clone-inline-001.html": {
     "reftest": "PASS"
@@ -465,7 +465,7 @@
     "reftest": "PASS"
   },
   "css/css-break/fieldset-003.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/fieldset-004.html": {
     "reftest": "PASS"
@@ -2076,10 +2076,10 @@
     "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/row-single-lane-fragmentation-009.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/row-single-lane-fragmentation-010.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/monolithic-overflow-001.tentative.html": {
     "reftest": "PASS"

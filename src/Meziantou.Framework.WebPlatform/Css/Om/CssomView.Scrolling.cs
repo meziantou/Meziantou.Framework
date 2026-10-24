@@ -923,8 +923,11 @@ public partial class HtmlElement
 
     private int GetOffsetPosition(bool horizontal)
     {
-        // "If the element is the body element or does not have any associated box return zero"
-        if (ReferenceEquals(this, CssomViewHelpers.GetTheBodyElement(NodeDocument)) || CssomViewGeometry.GetLayoutEngine(this) is not { } engine)
+        // "If the element is the body element or does not have any associated box return zero". As in the browsers, the style and
+        // the layout are updated first, also for the body element (document.body.offsetTop flushes the style: a style change event
+        // after which the transitions start, https://drafts.csswg.org/css-transitions-1/#style-change-event)
+        var layoutEngine = CssomViewGeometry.GetLayoutEngine(this);
+        if (ReferenceEquals(this, CssomViewHelpers.GetTheBodyElement(NodeDocument)) || layoutEngine is not { } engine)
             return 0;
 
         var fragments = engine.GetFragments(this);

@@ -1201,6 +1201,22 @@ internal sealed partial class InlineLayoutAlgorithm
             _lineBreaker.FindOpportunities(_text.AsSpan(0, _length), CollectionsMarshalAsSpan(_breakRuns), opportunities);
         }
 
+        // The control codes that close an isolate or an embedding (the end of an inline box with unicode-bidi) are combining marks
+        // for the line breaking: a soft wrap opportunity before one (e.g. after the last space of the box) is after it, so that the
+        // end of the box stays on the line
+        for (var i = 0; i < opportunities.Length; i++)
+        {
+            if (_text[i] is (char)0x202C or (char)0x2069 && opportunities[i] is not (LineBreakOpportunity.None or LineBreakOpportunity.Mandatory))
+            {
+                if (i + 1 < opportunities.Length && opportunities[i + 1] == LineBreakOpportunity.None)
+                {
+                    opportunities[i + 1] = opportunities[i];
+                }
+
+                opportunities[i] = LineBreakOpportunity.None;
+            }
+        }
+
         // https://drafts.csswg.org/css-text-4/#line-break-details: "For Web-compatibility there is a soft wrap opportunity before
         // and after each replaced element or other atomic inline, even when adjacent to a character that would normally
         // suppress them, including U+00A0 NO-BREAK SPACE. However, with the exception of U+00A0 NO-BREAK SPACE, there must be
@@ -1529,6 +1545,31 @@ internal sealed partial class InlineLayoutAlgorithm
         }
 
         _bidi.Resolve(text, classes, BidiControls.GetParagraphDirection(unicodeBidi, isRightToLeft));
+
+        // The formatting characters removed by rule X9 at the start of a text have the level of the text after them rather than
+        // the level of the character before them: an inline box that starts with them has no fragment of its own at the level
+        // of the content before it (WPT css/CSS2/bidi-text/bidi-011.xht)
+        foreach (ref readonly var item in Items)
+        {
+            if (item.Kind != InlineItemKind.Text)
+                continue;
+
+            var textStart = item.Start;
+            while (textStart < item.End && _bidi.IsRemovedByRuleX9(textStart))
+            {
+                textStart++;
+            }
+
+            if (textStart > item.Start && textStart < item.End)
+            {
+                var textLevel = _bidi.Levels[textStart];
+                for (var i = item.Start; i < textStart; i++)
+                {
+                    _bidi.SetRemovedLevel(i, textLevel);
+                }
+            }
+        }
+
         var levels = _bidi.Levels;
 
         _splitItems.Clear();
@@ -1819,7 +1860,89 @@ internal sealed partial class InlineLayoutAlgorithm
             after = GetJoiningCharacter(Items[next].Start, 1, Items[next].End);
         }
 
-        return new ShapingContext(before, after);
+        return new ShapingContext(before, after, GetContextScript(first, last));
+    }
+
+    /// <summary>
+    /// The script that the characters of the text items from <paramref name="first"/> to <paramref name="last"/> take when they
+    /// are all of the script Common (e.g. a punctuation in its own element): the script of the closest character of another
+    /// script before them in the inline formatting context, else after them, as when the script runs are computed on the whole
+    /// paragraph (https://www.unicode.org/reports/tr24/#Common, as in Chrome), unless the Script_Extensions of a character
+    /// exclude it. Unknown otherwise (the combining marks of the script Inherited keep the script of their base).
+    /// </summary>
+    private UnicodeScript GetContextScript(int first, int last)
+    {
+        // (the search is limited: the context is only for the characters of the short texts without a script of their own)
+        const int MaxDistance = 256;
+        var text = _text.AsSpan(0, _length);
+        var start = Items[first].Start;
+        var end = Items[last].End;
+        if (end - start > MaxDistance)
+            return UnicodeScript.Unknown;
+
+        for (var i = start; i < end; i++)
+        {
+            var codePoint = GetCodePointAt(text, i);
+            if (codePoint >= 0x80 && UnicodeScripts.GetScript(codePoint) != UnicodeScript.Common)
+                return UnicodeScript.Unknown;
+
+            if (codePoint > char.MaxValue)
+            {
+                i++;
+            }
+        }
+
+        var script = UnicodeScript.Unknown;
+        for (var i = start - 1; i >= 0 && i >= start - MaxDistance && script == UnicodeScript.Unknown; i--)
+        {
+            if (char.IsLowSurrogate(text[i]) && i > 0 && char.IsHighSurrogate(text[i - 1]))
+            {
+                i--;
+            }
+
+            script = GetStrongScript(GetCodePointAt(text, i));
+        }
+
+        for (var i = end; i < _length && i < end + MaxDistance && script == UnicodeScript.Unknown; i++)
+        {
+            var codePoint = GetCodePointAt(text, i);
+            script = GetStrongScript(codePoint);
+            if (codePoint > char.MaxValue)
+            {
+                i++;
+            }
+        }
+
+        if (script == UnicodeScript.Unknown)
+            return script;
+
+        Span<UnicodeScript> extensions = stackalloc UnicodeScript[UnicodeScripts.MaxScriptExtensionCount];
+        for (var i = start; i < end; i++)
+        {
+            var codePoint = GetCodePointAt(text, i);
+            if (codePoint >= 0x80)
+            {
+                var count = UnicodeScripts.GetScriptExtensions(codePoint, extensions);
+                if (!(count == 1 && extensions[0] == UnicodeScript.Common) && !extensions[..count].Contains(script))
+                    return UnicodeScript.Unknown;
+            }
+
+            if (codePoint > char.MaxValue)
+            {
+                i++;
+            }
+        }
+
+        return script;
+
+        static UnicodeScript GetStrongScript(int codePoint)
+        {
+            if (codePoint < 0x41)
+                return UnicodeScript.Unknown;
+
+            var script = UnicodeScripts.GetScript(codePoint);
+            return script is UnicodeScript.Common or UnicodeScript.Inherited ? UnicodeScript.Unknown : script;
+        }
     }
 
     /// <summary>
@@ -2007,7 +2130,8 @@ internal sealed partial class InlineLayoutAlgorithm
         var itemContext = GetShapingContext(index, index);
         var context = new ShapingContext(
             start > 0 ? GetJoiningCharacter(item.Start + start - 1, -1, item.Start) : itemContext.Before,
-            item.Start + end < item.End ? GetJoiningCharacter(item.Start + end, 1, item.End) : itemContext.After);
+            item.Start + end < item.End ? GetJoiningCharacter(item.Start + end, 1, item.End) : itemContext.After,
+            itemContext.Script);
         var part = TextShaper.Shape(text, style.Fonts, GetShapingOptions(style, isRightToLeft) with { Context = context });
         return shaped.Replace(start, end, part);
     }

@@ -8,8 +8,8 @@
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 42 | 48 | 0 | 88% |
 | [Tentative](#tentative-tests) | 9 | 12 | 0 | 75% |
-| [Reftests](#reftests) | 245 | 269 | 0 | 91% |
-| **All** | **296** | **329** | **0** | **90%** |
+| [Reftests](#reftests) | 246 | 269 | 0 | 91% |
+| **All** | **297** | **329** | **0** | **90%** |
 
 ## Stable tests
 
@@ -22,7 +22,7 @@
 | [`backdrop-pseudo-element-click.html`](https://wpt.fyi/results/css/css-pseudo/backdrop-pseudo-element-click.html) | Pass | 1 / 1 |  |  |
 | [`before-in-display-none-thcrash.html`](https://wpt.fyi/results/css/css-pseudo/before-in-display-none-thcrash.html) | Pass | 1 / 1 |  |  |
 | [`chrome-486467574.html`](https://wpt.fyi/results/css/css-pseudo/chrome-486467574.html) | Pass | 1 / 1 |  |  |
-| [`events-on-pseudo-element-shadow-dom.html`](https://wpt.fyi/results/css/css-pseudo/events-on-pseudo-element-shadow-dom.html) | Fail | 2 / 6 | NOT IMPLEMENTED | the sub-pseudo-elements `::before::marker` and `::after::marker`: their rules (`content`, `font-size`) are not applied and their boxes are hit as the `::before`/`::after` (the `pseudoTarget` of `::before` and its retargeting pass) |
+| [`events-on-pseudo-element-shadow-dom.html`](https://wpt.fyi/results/css/css-pseudo/events-on-pseudo-element-shadow-dom.html) | Fail | 2 / 6 | NOT IMPLEMENTED | the sub-pseudo-elements `::before::marker` and `::after::marker`: their boxes are hit as the `::before`/`::after` (the `pseudoTarget` of `::before` and its retargeting pass) |
 | [`file-selector-button-inherit.html`](https://wpt.fyi/results/css/css-pseudo/file-selector-button-inherit.html) | Pass | 1 / 1 |  |  |
 | [`first-letter-allowed-properties.html`](https://wpt.fyi/results/css/css-pseudo/first-letter-allowed-properties.html) | Pass | 36 / 36 |  |  |
 | [`first-letter-punctuation-and-space.html`](https://wpt.fyi/results/css/css-pseudo/first-letter-punctuation-and-space.html) | Pass | 43 / 43 |  |  |
@@ -54,8 +54,8 @@
 | [`marker-reverted-styles.html`](https://wpt.fyi/results/css/css-pseudo/marker-reverted-styles.html) | Pass | 8 / 8 |  |  |
 | [`marker-variable-computed-style.html`](https://wpt.fyi/results/css/css-pseudo/marker-variable-computed-style.html) | Pass | 2 / 2 |  |  |
 | [`parsing/highlight-pseudos.html`](https://wpt.fyi/results/css/css-pseudo/parsing/highlight-pseudos.html) | Pass | 40 / 40 |  |  |
-| [`parsing/marker-supported-properties-in-animation.html`](https://wpt.fyi/results/css/css-pseudo/parsing/marker-supported-properties-in-animation.html) | Fail | 94 / 98 | BUG, TEST BUG | the animations of `quotes` do not apply to `::marker`; expects the computed `list-style` to include `outside` (it contradicts css/css-lists/parsing/list-style-computed.sub.html) |
-| [`parsing/marker-supported-properties.html`](https://wpt.fyi/results/css/css-pseudo/parsing/marker-supported-properties.html) | Fail | 66 / 68 | BUG | the computed `list-style` shorthand of `::marker` is serialized as `outside` instead of `outside none disc` |
+| [`parsing/marker-supported-properties-in-animation.html`](https://wpt.fyi/results/css/css-pseudo/parsing/marker-supported-properties-in-animation.html) | Fail | 96 / 98 | TEST BUG | expects the computed `list-style` to include `outside` (it contradicts css/css-lists/parsing/list-style-computed.sub.html) |
+| [`parsing/marker-supported-properties.html`](https://wpt.fyi/results/css/css-pseudo/parsing/marker-supported-properties.html) | Fail | 67 / 68 | BUG | the computed `list-style` shorthand of `::marker` is serialized as `outside` instead of `outside none disc` |
 | [`parsing/tree-abiding-pseudo-elements.html`](https://wpt.fyi/results/css/css-pseudo/parsing/tree-abiding-pseudo-elements.html) | Pass | 41 / 41 |  |  |
 | [`placeholder-inherit.html`](https://wpt.fyi/results/css/css-pseudo/placeholder-inherit.html) | Pass | 1 / 1 |  |  |
 | [`pseudo-element-removal.html`](https://wpt.fyi/results/css/css-pseudo/pseudo-element-removal.html) | Pass | 1 / 1 |  |  |
@@ -73,7 +73,7 @@
 | [`CSSPseudoElement-getBoxQuads.tentative.html`](https://wpt.fyi/results/css/css-pseudo/CSSPseudoElement-getBoxQuads.tentative.html) | Fail | 7 / 8 | BUG | the margin box of the block-level `::before` includes its used margin-right (the over-constrained margin of CSS 2 §10.3.3, 147px in a 200px container); the test (Blink) expects its computed margin (3px) |
 | [`CSSPseudoElement-view-transitions-scoped.tentative.html`](https://wpt.fyi/results/css/css-pseudo/CSSPseudoElement-view-transitions-scoped.tentative.html) | Pass | 2 / 2 |  |  |
 | [`CSSPseudoElement-view-transitions.tentative.html`](https://wpt.fyi/results/css/css-pseudo/CSSPseudoElement-view-transitions.tentative.html) | Pass | 5 / 5 |  |  |
-| [`events-on-after-before-marker.tentative.html`](https://wpt.fyi/results/css/css-pseudo/events-on-after-before-marker.tentative.html) | Fail | 2 / 4 | NOT IMPLEMENTED | the sub-pseudo-element `::after::marker`: the marker of a `::before`/`::after` list item is an anonymous box of its pseudo-element (it cannot be styled, has no box quads and is hit as the `::after`) |
+| [`events-on-after-before-marker.tentative.html`](https://wpt.fyi/results/css/css-pseudo/events-on-after-before-marker.tentative.html) | Fail | 2 / 4 | NOT IMPLEMENTED | the sub-pseudo-element `::after::marker`: the box of the marker of a `::before`/`::after` list item is a box of its pseudo-element (it has no box quads and is hit as the `::after`) |
 | [`events-on-pseudo-element-mutation.tentative.html`](https://wpt.fyi/results/css/css-pseudo/events-on-pseudo-element-mutation.tentative.html) | Pass | 1 / 1 |  |  |
 | [`events-on-pseudo-element.tentative.html`](https://wpt.fyi/results/css/css-pseudo/events-on-pseudo-element.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the CSS animations and transitions of `::scroll-marker`: the test times out waiting for the `animationstart` event of its animation (the `pseudoTarget` of the animation, transition and focus events is not defined, UI Events only adds it to `UIEvent`) |
 | [`events-on-view-transition-pseudos.tentative.html`](https://wpt.fyi/results/css/css-pseudo/events-on-view-transition-pseudos.tentative.html) | Pass | 2 / 2 |  |  |
@@ -264,7 +264,7 @@
 | [`marker-font-variant-numeric-default-ref.html`](https://wpt.fyi/results/css/css-pseudo/marker-font-variant-numeric-default-ref.html) | Pass | 1 / 1 |  |  |
 | [`marker-font-variant-numeric-default.html`](https://wpt.fyi/results/css/css-pseudo/marker-font-variant-numeric-default.html) | Pass | 1 / 1 |  |  |
 | [`marker-font-variant-numeric-normal-ref.html`](https://wpt.fyi/results/css/css-pseudo/marker-font-variant-numeric-normal-ref.html) | Pass | 1 / 1 |  |  |
-| [`marker-font-variant-numeric-normal.html`](https://wpt.fyi/results/css/css-pseudo/marker-font-variant-numeric-normal.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the styles of the nested pseudo-elements `::before::marker` and `::after::marker`: the marker of a `::before` or `::after` list item is an anonymous box with the declarations of the user agent style sheet (`font-variant-numeric: tabular-nums`), which the `::before::marker { font-variant-numeric: normal }` rule of the test does not override |
+| [`marker-font-variant-numeric-normal.html`](https://wpt.fyi/results/css/css-pseudo/marker-font-variant-numeric-normal.html) | Pass | 1 / 1 |  |  |
 | [`marker-hyphens.html`](https://wpt.fyi/results/css/css-pseudo/marker-hyphens.html) | Pass | 1 / 1 |  |  |
 | [`marker-inherit-line-height.html`](https://wpt.fyi/results/css/css-pseudo/marker-inherit-line-height.html) | Pass | 1 / 1 |  |  |
 | [`marker-inherit-values.html`](https://wpt.fyi/results/css/css-pseudo/marker-inherit-values.html) | Pass | 1 / 1 |  |  |

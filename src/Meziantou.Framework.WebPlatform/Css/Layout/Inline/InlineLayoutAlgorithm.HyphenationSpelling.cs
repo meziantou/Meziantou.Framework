@@ -36,6 +36,9 @@ internal sealed partial class InlineLayoutAlgorithm
     /// <summary>The digraphs of Hungarian whose long form doubles their first letter (e.g. ssz is the long sz), longest first.</summary>
     private static readonly string[] HungarianDigraphs = ["dzs", "cs", "dz", "gy", "ly", "ny", "sz", "ty", "zs"];
 
+    /// <summary>The apostrophes and the hyphens between the syllables of Pinyin (see <see cref="AddPinyinOpportunities"/>).</summary>
+    private static readonly System.Buffers.SearchValues<char> PinyinSeparators = System.Buffers.SearchValues.Create("\u2019'\u2010-");
+
     /// <summary>The hyphenation break at a hyphenation opportunity of the text before <paramref name="position"/>, whose style is <paramref name="style"/>.</summary>
     private HyphenationBreak GetHyphenationBreak(int position, ComputedStyle style)
     {
@@ -136,17 +139,19 @@ internal sealed partial class InlineLayoutAlgorithm
     /// <summary>
     /// Adds the hyphenation opportunities of Pinyin: an apostrophe between two letters separates two syllables, a hyphenation
     /// opportunity of the automatic hyphenation (<c>hyphens: auto</c>), or of a soft hyphen before it (a quotation mark for the
-    /// rules of UAX #14, which forbid the break before it).
+    /// rules of UAX #14, which forbid the break before it). A line broken at a hyphen between two syllables (U+2010 HYPHEN or
+    /// U+002D HYPHEN-MINUS) repeats it at the start of the next line: the opportunity after the hyphen is a hyphenation
+    /// opportunity before it (the hyphenation character ends the line, the hyphen starts the next one).
     /// </summary>
     private void AddPinyinOpportunities(Span<LineBreakOpportunity> opportunities)
     {
         var text = _text.AsSpan(0, _length);
-        if (text.IndexOfAny((char)0x2019, '\'') < 0)
+        if (text.IndexOfAny(PinyinSeparators) < 0)
             return;
 
         foreach (ref readonly var item in Items)
         {
-            if (item.Kind != InlineItemKind.Text || text[item.Start..item.End].IndexOfAny((char)0x2019, '\'') < 0)
+            if (item.Kind != InlineItemKind.Text || text[item.Start..item.End].IndexOfAny(PinyinSeparators) < 0)
                 continue;
 
             var options = GetLineBreakOptions(item.Style);
@@ -155,6 +160,19 @@ internal sealed partial class InlineLayoutAlgorithm
 
             for (var i = Math.Max(item.Start, 1); i < item.End - 1; i++)
             {
+                if (text[i] is (char)0x2010 or '-')
+                {
+                    // (a soft hyphen before the hyphen is already a hyphenation opportunity before it)
+                    var syllableBefore = char.IsLetter(text[i - 1]) || (text[i - 1] == SoftHyphen && i >= 2 && char.IsLetter(text[i - 2]));
+                    if (syllableBefore && char.IsLetter(text[i + 1]) && opportunities[i + 1] == LineBreakOpportunity.Allowed && opportunities[i] is LineBreakOpportunity.None or LineBreakOpportunity.Hyphen)
+                    {
+                        opportunities[i] = LineBreakOpportunity.Hyphen;
+                        opportunities[i + 1] = LineBreakOpportunity.None;
+                    }
+
+                    continue;
+                }
+
                 if (!IsPinyinApostrophe(text[i]) || !char.IsLetter(text[i + 1]) || opportunities[i] is LineBreakOpportunity.Mandatory or LineBreakOpportunity.Allowed)
                     continue;
 

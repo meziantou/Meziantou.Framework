@@ -145,6 +145,7 @@ internal sealed partial class GridLayoutAlgorithm
                 ExtraStart = reversed ? extraEnd : extraStart,
                 ExtraEnd = reversed ? extraStart : extraEnd,
                 Shim = reversed ? 0 : item.GetShim(ownAxis),
+                ShimVariation = reversed ? default : item.GetShimVariation(ownAxis),
                 IsReversed = reversed,
             });
         }

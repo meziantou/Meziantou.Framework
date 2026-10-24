@@ -36,10 +36,7 @@
     "total": 23
   },
   "css/css-variables/transition-with-attribute-taint.html": {
-    "total": 1,
-    "failures": {
-      "Attribute tainted value blocked": "FAIL"
-    }
+    "total": 1
   },
   "css/css-variables/url-token-serialization.html": {
     "total": 6

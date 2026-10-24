@@ -598,6 +598,23 @@ internal sealed partial class GridLayoutAlgorithm
             ComputeTrackPositions(_laneAxis, _laneAxis == GridAxis.Columns ? _inlineSize : _containerBlockSize);
         }
 
+        // The items of the subgrids share the baselines of the tracks of the grid axis: the subgrids, laid out by the placement
+        // before the baselines were known, are laid out again with them (not in a fragmentation context, where the placement laid
+        // out their fragments)
+        if (HasSubgrids() && GetLanesBreaks() is null)
+        {
+            ComputeItemBaselines(final: false);
+            PropagateBaselinesToSubgrids();
+            foreach (var item in _items)
+            {
+                if (item.Subgrid is null)
+                    continue;
+
+                item.Fragment = null;
+                LayoutItem(item, GetAreaSize(item, GridAxis.Columns), GetAreaSize(item, GridAxis.Rows));
+            }
+        }
+
         ComputeLanesAlignmentContainers();
         ComputeItemBaselines(final: true);
         PlaceItems(builder);

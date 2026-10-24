@@ -1096,8 +1096,6 @@
       "Styling SVG from ProcessingInstruction marker-end": "FAIL",
       "Styling SVG from ProcessingInstruction marker-mid": "FAIL",
       "Styling SVG from ProcessingInstruction marker-start": "FAIL",
-      "Styling SVG from ProcessingInstruction mask": "FAIL",
-      "Styling SVG from ProcessingInstruction mask-image": "FAIL",
       "Styling SVG from ProcessingInstruction stroke": "FAIL"
     }
   },

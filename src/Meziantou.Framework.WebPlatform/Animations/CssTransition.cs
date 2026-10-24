@@ -60,6 +60,12 @@ public sealed class CssTransition : Animation
     /// <summary>https://drafts.csswg.org/css-transitions-1/#reversing-shortening-factor</summary>
     internal double ReversingShorteningFactor { get; init; } = 1;
 
+    /// <summary>
+    /// Whether the layout started the transition: its values are the results of anchor functions or the declarations of a position
+    /// option of an anchor-positioned box (see <see cref="Css.Animations.CssTransitionUpdater.UpdateFromLayout"/>).
+    /// </summary>
+    internal bool IsStartedByLayout { get; init; }
+
     internal override void FlushPendingStyle() => OwningElement?.NodeDocument.FlushAnimationStyles();
 
     internal void PlayByStyle() => PlayCore(autoRewind: true);

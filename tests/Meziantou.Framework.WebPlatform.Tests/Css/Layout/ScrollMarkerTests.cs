@@ -272,6 +272,80 @@ public sealed class ScrollMarkerTests : IDisposable
         Assert.Empty(document.GetLayoutEngine().GetFragments(scroller, "column::scroll-marker(4)"));
     }
 
+    [Fact]
+    public void Group_ThatIsAScrollContainer_ScrollsToItsActiveMarker()
+    {
+        var document = Parse(Carousel + "<style>#scroller::scroll-marker-group { display: grid; grid-auto-flow: column; width: 20px; overflow-x: scroll; scrollbar-width: none }</style>");
+        var scroller = Get(document, "scroller");
+        scroller.ScrollTop = 200;
+        RunFrames();
+        Assert.Equal("rgb(0, 128, 0)", GetStyle(document, "c", "::scroll-marker", "background-color"));
+        Assert.Equal(40, document.GetLayoutEngine().TryGetScrollState(scroller, "scroll-marker-group")!.Offset.X);
+    }
+
+    [Fact]
+    public void ColumnMarkers_OfAFieldset_ScrollTheColumnsOfItsContentBox()
+    {
+        var document = Parse("""
+            <style>
+              #scroller { width: 300px; height: 100px; overflow: hidden; columns: 3; column-gap: 0; column-fill: auto; scroll-marker-group: before; margin: 0; border: none; padding: 0; }
+              #scroller::scroll-marker-group { display: flex; height: 20px; width: 300px; }
+              #scroller::column::scroll-marker { content: ""; width: 20px; height: 20px; }
+            </style>
+            <fieldset id=scroller><div style="height: 450px"></div></fieldset>
+            """);
+        var scroller = Get(document, "scroller");
+        Click(document, 30, 10);
+        Assert.Equal(100, scroller.ScrollLeft);
+        Click(document, 70, 10);
+        Assert.Equal(200, scroller.ScrollLeft);
+    }
+
+    [Fact]
+    public void ColumnMarker_OfAColumnWithoutElement_TheNavigationContinuesAfterTheMultiColumnContainer()
+    {
+        var document = Parse("""
+            <style>
+              #scroller { width: 300px; height: 100px; overflow: hidden; scroll-marker-group: after; }
+              #scroller::scroll-marker-group { display: flex; height: 20px; width: 300px; }
+              #multicol { columns: 3; column-gap: 0; column-fill: auto; height: 100%; }
+              #multicol::column::scroll-marker { content: ""; width: 20px; height: 20px; }
+            </style>
+            <div id=scroller><div id=multicol><div id=first tabindex=0 style="height: 50px"></div><div style="height: 200px"></div></div></div>
+            <div id=after tabindex=0></div>
+            """);
+        Click(document, 10, 110);
+        PressKey(document, "Tab");
+        Assert.Same(Get(document, "first"), document.ActiveElement);
+
+        // The third column has no element: the next area is the one after the scroll container, not the markers of its group
+        Click(document, 50, 110);
+        PressKey(document, "Tab");
+        Assert.Same(Get(document, "after"), document.ActiveElement);
+    }
+
+    [Theory]
+    [InlineData("<a href=#nav id=originating class=scroller><span></span></a>", "")]
+    [InlineData("<a href=#nav><div id=originating class=scroller><span></span></div></a>", "")]
+    [InlineData("<a href=#nav id=originating></a>", "#nav")]
+    [InlineData("<a href=#nav><div id=originating></div></a>", "#nav")]
+    public void Click_OnAButtonInALink_FollowsTheLinkOnlyWhenTheButtonCannotScroll(string markup, string expectedHash)
+    {
+        var document = Parse("""
+            <style>
+              body { padding-top: 100px; }
+              a { display: block; }
+              #originating { width: 100px; height: 50px; white-space: nowrap; }
+              .scroller { overflow: auto; }
+              .scroller span { display: inline-block; width: 300px; height: 10px; }
+              #originating::scroll-button(inline-end) { content: ""; position: absolute; top: 0; left: 0; width: 20px; height: 20px; }
+            </style>
+            """ + markup);
+        Click(document, 10, 10);
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal(expectedHash, document.DefaultView!.Location.Hash);
+    }
+
     // A 200x100 scroll container whose contents are 500px wide, with the buttons of the inline axis (20x20, below the scroller)
     private const string Buttons = """
         <style>

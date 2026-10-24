@@ -8851,6 +8851,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public double MarginTop { get => throw null; init { } }
         public double PageHeight { get => throw null; init { } }
         public double PageWidth { get => throw null; init { } }
+        public double SafePrintableInset { get => throw null; init { } }
         public bool Equals(Meziantou.Framework.WebPlatform.Dom.PrintOptions? other) => throw null;
         public override bool Equals(object? obj) => throw null;
         public override int GetHashCode() => throw null;

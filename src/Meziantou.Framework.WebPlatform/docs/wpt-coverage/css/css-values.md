@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 242 | 262 | 0 | 92% |
-| [Tentative](#tentative-tests) | 17 | 22 | 0 | 77% |
-| [Reftests](#reftests) | 203 | 213 | 0 | 95% |
-| **All** | **462** | **497** | **0** | **93%** |
+| [Stable](#stable-tests) | 250 | 262 | 0 | 95% |
+| [Tentative](#tentative-tests) | 19 | 22 | 0 | 86% |
+| [Reftests](#reftests) | 208 | 213 | 0 | 98% |
+| **All** | **477** | **497** | **0** | **96%** |
 
 ## Stable tests
 
@@ -19,7 +19,7 @@
 | [`acos-asin-atan-atan2-computed.html`](https://wpt.fyi/results/css/css-values/acos-asin-atan-atan2-computed.html) | Pass | 52 / 52 |  |  |
 | [`acos-asin-atan-atan2-invalid.html`](https://wpt.fyi/results/css/css-values/acos-asin-atan-atan2-invalid.html) | Pass | 63 / 63 |  |  |
 | [`acos-asin-atan-atan2-serialize.html`](https://wpt.fyi/results/css/css-values/acos-asin-atan-atan2-serialize.html) | Pass | 62 / 62 |  |  |
-| [`animations/calc-interpolation.html`](https://wpt.fyi/results/css/css-values/animations/calc-interpolation.html) | Fail | 130 / 140 | BUG | the values of the keyframes are computed before they are interpolated: `calc(infinity * 1px)` is the largest single-precision number (3.4e38px), interpolated as a finite number (8.51e37px at 0.25, where the CSS Animations and Web Animations subtests expect 3.4e38px); the CSS Transitions subtests, whose values are computed values, expect the finite interpolation |
+| [`animations/calc-interpolation.html`](https://wpt.fyi/results/css/css-values/animations/calc-interpolation.html) | Pass | 140 / 140 |  |  |
 | [`animations/line-height-lh-transition.html`](https://wpt.fyi/results/css/css-values/animations/line-height-lh-transition.html) | Pass | 1 / 1 |  |  |
 | [`attr-IACVT.html`](https://wpt.fyi/results/css/css-values/attr-IACVT.html) | Pass | 1 / 1 |  |  |
 | [`attr-all-types.html`](https://wpt.fyi/results/css/css-values/attr-all-types.html) | Pass | 178 / 178 |  |  |
@@ -39,10 +39,10 @@
 | [`attr-revert-rule.html`](https://wpt.fyi/results/css/css-values/attr-revert-rule.html) | Pass | 1 / 1 |  |  |
 | [`attr-security-animation.html`](https://wpt.fyi/results/css/css-values/attr-security-animation.html) | Pass | 6 / 6 |  |  |
 | [`attr-security-if.html`](https://wpt.fyi/results/css/css-values/attr-security-if.html) | Pass | 14 / 14 |  |  |
-| [`attr-security-transition-2.html`](https://wpt.fyi/results/css/css-values/attr-security-transition-2.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the values tainted by `attr()` are not rejected in `url()` when they come from a transition |
+| [`attr-security-transition-2.html`](https://wpt.fyi/results/css/css-values/attr-security-transition-2.html) | Pass | 1 / 1 |  |  |
 | [`attr-security-transition-interpolated.html`](https://wpt.fyi/results/css/css-values/attr-security-transition-interpolated.html) | Pass | 3 / 3 |  |  |
 | [`attr-security-transition.html`](https://wpt.fyi/results/css/css-values/attr-security-transition.html) | Pass | 1 / 1 |  |  |
-| [`attr-security.html`](https://wpt.fyi/results/css/css-values/attr-security.html) | Fail | 31 / 32 | BUG | the computed `background-image: src("...")` serializes as `url("...")` instead of `src(url("..."))` |
+| [`attr-security.html`](https://wpt.fyi/results/css/css-values/attr-security.html) | Pass | 32 / 32 |  |  |
 | [`attr-serialization.html`](https://wpt.fyi/results/css/css-values/attr-serialization.html) | Pass | 1 / 1 |  |  |
 | [`attr-universal-selector.html`](https://wpt.fyi/results/css/css-values/attr-universal-selector.html) | Pass | 1 / 1 |  |  |
 | [`calc-angle-values.html`](https://wpt.fyi/results/css/css-values/calc-angle-values.html) | Pass | 27 / 27 |  |  |
@@ -131,14 +131,14 @@
 | [`getComputedStyle-border-radius-003.html`](https://wpt.fyi/results/css/css-values/getComputedStyle-border-radius-003.html) | Pass | 1 / 1 |  |  |
 | [`getComputedStyle-calc-mixed-units-001.html`](https://wpt.fyi/results/css/css-values/getComputedStyle-calc-mixed-units-001.html) | Pass | 3 / 3 |  |  |
 | [`getComputedStyle-calc-mixed-units-002.html`](https://wpt.fyi/results/css/css-values/getComputedStyle-calc-mixed-units-002.html) | Fail | 6 / 8 | BUG | `calc(4em + 2.6458333cm)` is `163.99999874px`, serialized with 6 decimals as `163.999999px`: the test expects `164px` (the browsers compute the lengths as single-precision floats or serialize them with 6 significant digits) |
-| [`getComputedStyle-calc-mixed-units-003.html`](https://wpt.fyi/results/css/css-values/getComputedStyle-calc-mixed-units-003.html) | Fail | 6 / 7 | BUG | typed arithmetic dividing by a percentage (`52px * 1px / 10%`) is rejected |
+| [`getComputedStyle-calc-mixed-units-003.html`](https://wpt.fyi/results/css/css-values/getComputedStyle-calc-mixed-units-003.html) | Pass | 7 / 7 |  |  |
 | [`hypot-pow-sqrt-computed.html`](https://wpt.fyi/results/css/css-values/hypot-pow-sqrt-computed.html) | Pass | 123 / 123 |  |  |
 | [`hypot-pow-sqrt-invalid.html`](https://wpt.fyi/results/css/css-values/hypot-pow-sqrt-invalid.html) | Pass | 49 / 49 |  |  |
 | [`hypot-pow-sqrt-serialize.html`](https://wpt.fyi/results/css/css-values/hypot-pow-sqrt-serialize.html) | Pass | 25 / 25 |  |  |
 | [`ident-function-computed.html`](https://wpt.fyi/results/css/css-values/ident-function-computed.html) | Pass | 14 / 14 |  |  |
 | [`ident-function-parsing.html`](https://wpt.fyi/results/css/css-values/ident-function-parsing.html) | Pass | 19 / 19 |  |  |
 | [`ident-function-substitution.html`](https://wpt.fyi/results/css/css-values/ident-function-substitution.html) | Pass | 13 / 13 |  |  |
-| [`if-conditionals.html`](https://wpt.fyi/results/css/css-values/if-conditionals.html) | Fail | 202 / 203 | BUG | the whitespace before `)` in an `if()` branch is dropped (`true_value` instead of `true_value `) |
+| [`if-conditionals.html`](https://wpt.fyi/results/css/css-values/if-conditionals.html) | Pass | 203 / 203 |  |  |
 | [`if-cycle.html`](https://wpt.fyi/results/css/css-values/if-cycle.html) | Pass | 46 / 46 |  |  |
 | [`if-function-revert-rule.html`](https://wpt.fyi/results/css/css-values/if-function-revert-rule.html) | Pass | 2 / 2 |  |  |
 | [`if-initial-unregistered.html`](https://wpt.fyi/results/css/css-values/if-initial-unregistered.html) | Pass | 1 / 1 |  |  |
@@ -232,8 +232,8 @@
 | [`tree-counting/tree-scoped-sibling-function.html`](https://wpt.fyi/results/css/css-values/tree-counting/tree-scoped-sibling-function.html) | Fail | 1 / 2 | BUG | `sibling-index()`/`sibling-count()` in a `::part()` rule of the outer tree use the part element's position instead of evaluating to 1 (tree-scoped) |
 | [`tree-counting/trig-functions-in-gradient-position.html`](https://wpt.fyi/results/css/css-values/tree-counting/trig-functions-in-gradient-position.html) | Pass | 1 / 1 |  |  |
 | [`tree-counting/trig-functions-with-runtime-angle-arguments.html`](https://wpt.fyi/results/css/css-values/tree-counting/trig-functions-with-runtime-angle-arguments.html) | Pass | 4 / 4 |  |  |
-| [`typed-arithmetic-negated-product.html`](https://wpt.fyi/results/css/css-values/typed-arithmetic-negated-product.html) | Fail | 1 / 6 | BUG | typed arithmetic: a `calc()` subtracting products of lengths and divided by a length is not simplified (`calc(((0px * 0px) - (2px * 3px)) / 1px)` instead of `-6px`) |
-| [`typed_arithmetic.html`](https://wpt.fyi/results/css/css-values/typed_arithmetic.html) | Fail | 34 / 41 | BUG, REQUIRES(layout) | typed arithmetic with percentages (`10% / 1px`, `pow(50% / 1px, 1)`, `round(100% / 25px)`) is rejected; `max()` with a percentage resolves to pixels |
+| [`typed-arithmetic-negated-product.html`](https://wpt.fyi/results/css/css-values/typed-arithmetic-negated-product.html) | Pass | 6 / 6 |  |  |
+| [`typed_arithmetic.html`](https://wpt.fyi/results/css/css-values/typed_arithmetic.html) | Pass | 41 / 41 |  |  |
 | [`typed_arithmetic_cycle.html`](https://wpt.fyi/results/css/css-values/typed_arithmetic_cycle.html) | Pass | 1 / 1 |  |  |
 | [`update-subpixel-rem-unit.html`](https://wpt.fyi/results/css/css-values/update-subpixel-rem-unit.html) | Pass | 1 / 1 |  |  |
 | [`urls/cross-origin/url-font-cross-origin-anonymous-negative.sub.html`](https://wpt.fyi/results/css/css-values/urls/cross-origin/url-font-cross-origin-anonymous-negative.sub.html) | Pass | 1 / 1 |  |  |
@@ -253,7 +253,7 @@
 | [`urls/url-request-modifiers-import-parsing.sub.html`](https://wpt.fyi/results/css/css-values/urls/url-request-modifiers-import-parsing.sub.html) | Pass | 10 / 10 |  |  |
 | [`urls/url-request-modifiers-invalid.sub.html`](https://wpt.fyi/results/css/css-values/urls/url-request-modifiers-invalid.sub.html) | Pass | 34 / 34 |  |  |
 | [`urls/url-request-modifiers-serialize.sub.html`](https://wpt.fyi/results/css/css-values/urls/url-request-modifiers-serialize.sub.html) | Pass | 23 / 23 |  |  |
-| [`using-font-relative-units-in-font-properties.html`](https://wpt.fyi/results/css/css-values/using-font-relative-units-in-font-properties.html) | Fail | 7 / 9 | BUG | `em` in `ident()` within `font-palette`/`font-variant-alternates` resolves against the element's own font size instead of the parent's |
+| [`using-font-relative-units-in-font-properties.html`](https://wpt.fyi/results/css/css-values/using-font-relative-units-in-font-properties.html) | Pass | 9 / 9 |  |  |
 | [`various-values-important.html`](https://wpt.fyi/results/css/css-values/various-values-important.html) | Pass | 4 / 4 |  |  |
 | [`viewport-relative-lengths-scaled-viewport.html`](https://wpt.fyi/results/css/css-values/viewport-relative-lengths-scaled-viewport.html) | Pass | 1 / 1 |  |  |
 | [`viewport-units-after-font-load.html`](https://wpt.fyi/results/css/css-values/viewport-units-after-font-load.html) | Pass | 1 / 1 |  |  |
@@ -282,9 +282,9 @@
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`calc-mix-computed.tentative.html`](https://wpt.fyi/results/css/css-values/calc-mix-computed.tentative.html) | Fail | 48 / 53 | BUG | `calc-mix()` (tentative) is not simplified: all-zero weights give `0%` instead of `0px`, it is not flattened into the enclosing `calc()`, and number mixes with `calc()` percentage weights are rejected in `scale` |
+| [`calc-mix-computed.tentative.html`](https://wpt.fyi/results/css/css-values/calc-mix-computed.tentative.html) | Pass | 53 / 53 |  |  |
 | [`calc-mix-invalid.tentative.html`](https://wpt.fyi/results/css/css-values/calc-mix-invalid.tentative.html) | Pass | 18 / 18 |  |  |
-| [`calc-mix-serialize.tentative.html`](https://wpt.fyi/results/css/css-values/calc-mix-serialize.tentative.html) | Fail | 111 / 128 | BUG | `calc-mix()` (tentative) is not simplified: all-zero weights give `0%` instead of `0px`, it is not flattened into the enclosing `calc()`, and number mixes with `calc()` percentage weights are rejected in `scale` |
+| [`calc-mix-serialize.tentative.html`](https://wpt.fyi/results/css/css-values/calc-mix-serialize.tentative.html) | Pass | 128 / 128 |  |  |
 | [`clamp-partial-serialize.tentative.html`](https://wpt.fyi/results/css/css-values/clamp-partial-serialize.tentative.html) | Pass | 16 / 16 |  |  |
 | [`position/position-computed.tentative.html`](https://wpt.fyi/results/css/css-values/position/position-computed.tentative.html) | Pass | 68 / 68 |  |  |
 | [`position/position-invalid.tentative.html`](https://wpt.fyi/results/css/css-values/position/position-invalid.tentative.html) | Pass | 21 / 21 |  |  |
@@ -323,9 +323,9 @@
 | [`attr-length-valid-zero-nofallback.html`](https://wpt.fyi/results/css/css-values/attr-length-valid-zero-nofallback.html) | Pass | 1 / 1 |  |  |
 | [`attr-length-valid-zero.html`](https://wpt.fyi/results/css/css-values/attr-length-valid-zero.html) | Pass | 1 / 1 |  |  |
 | [`attr-length-valid.html`](https://wpt.fyi/results/css/css-values/attr-length-valid.html) | Pass | 1 / 1 |  |  |
-| [`attr-namespace-case-sensitivity.xhtml`](https://wpt.fyi/results/css/css-values/attr-namespace-case-sensitivity.xhtml) | Fail | 0 / 1 | NOT IMPLEMENTED | the namespace prefix of the attribute name of `attr()` (`attr(ns\|name)`) is not resolved against the `@namespace` rules: the attributes in a namespace are not found (the fallback is used); only Firefox passes |
-| [`attr-namespace-non-existing.html`](https://wpt.fyi/results/css/css-values/attr-namespace-non-existing.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the namespace prefix of the attribute name of `attr()` (`attr(ns\|name)`) is not resolved against the `@namespace` rules: the attributes in a namespace are not found (the fallback is used); only Firefox passes |
-| [`attr-namespace-valid.xhtml`](https://wpt.fyi/results/css/css-values/attr-namespace-valid.xhtml) | Fail | 0 / 1 | NOT IMPLEMENTED | the namespace prefix of the attribute name of `attr()` (`attr(ns\|name)`) is not resolved against the `@namespace` rules: the attributes in a namespace are not found (the fallback is used); only Firefox passes |
+| [`attr-namespace-case-sensitivity.xhtml`](https://wpt.fyi/results/css/css-values/attr-namespace-case-sensitivity.xhtml) | Pass | 1 / 1 |  |  |
+| [`attr-namespace-non-existing.html`](https://wpt.fyi/results/css/css-values/attr-namespace-non-existing.html) | Pass | 1 / 1 |  |  |
+| [`attr-namespace-valid.xhtml`](https://wpt.fyi/results/css/css-values/attr-namespace-valid.xhtml) | Pass | 1 / 1 |  |  |
 | [`attr-namespace-wildcard.html`](https://wpt.fyi/results/css/css-values/attr-namespace-wildcard.html) | Pass | 1 / 1 |  |  |
 | [`attr-notype-fallback.html`](https://wpt.fyi/results/css/css-values/attr-notype-fallback.html) | Pass | 1 / 1 |  |  |
 | [`attr-number-invalidation.html`](https://wpt.fyi/results/css/css-values/attr-number-invalidation.html) | Pass | 1 / 1 |  |  |
@@ -375,7 +375,7 @@
 | [`calc-rounding-002.html`](https://wpt.fyi/results/css/css-values/calc-rounding-002.html) | Pass | 1 / 1 |  |  |
 | [`calc-rounding-003.html`](https://wpt.fyi/results/css/css-values/calc-rounding-003.html) | Pass | 1 / 1 |  |  |
 | [`calc-size/calc-size-aspect-ratio-001.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-aspect-ratio-001.html) | Pass | 1 / 1 |  |  |
-| [`calc-size/calc-size-aspect-ratio-002.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-aspect-ratio-002.html) | Fail | 0 / 1 | BUG | `height: calc-size(auto, size + 50px)` on a box with `aspect-ratio: 2/1` and a 100px width: the basis `auto` is the height of the contents (0), not the height transferred through the aspect ratio (50px): the box is 50px tall instead of 100px; only Chrome passes |
+| [`calc-size/calc-size-aspect-ratio-002.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-aspect-ratio-002.html) | Pass | 1 / 1 |  |  |
 | [`calc-size/calc-size-aspect-ratio-003.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-aspect-ratio-003.html) | Pass | 1 / 1 |  |  |
 | [`calc-size/calc-size-aspect-ratio-004.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-aspect-ratio-004.html) | Pass | 1 / 1 |  |  |
 | [`calc-size/calc-size-aspect-ratio-005.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-aspect-ratio-005.html) | Fail | 0 / 1 | BUG | the `min-width: calc-size(auto, size - 50px)` of a box with an `aspect-ratio` is not part of its intrinsic size contribution: its `width: fit-content` parent is 50px wide (the width transferred from the height) instead of 100px; only Chrome passes |
@@ -496,7 +496,7 @@
 | [`urls/referrer-policy/strict-origin/url-image-referrer-policy-cross-origin.html`](https://wpt.fyi/results/css/css-values/urls/referrer-policy/strict-origin/url-image-referrer-policy-cross-origin.html) | Pass | 1 / 1 |  |  |
 | [`urls/referrer-policy/strict-origin/url-image-referrer-policy-same-origin.html`](https://wpt.fyi/results/css/css-values/urls/referrer-policy/strict-origin/url-image-referrer-policy-same-origin.html) | Pass | 1 / 1 |  |  |
 | [`urls/referrer-policy/unsafe-url/url-image-referrer-policy-cross-origin.html`](https://wpt.fyi/results/css/css-values/urls/referrer-policy/unsafe-url/url-image-referrer-policy-cross-origin.html) | Pass | 1 / 1 |  |  |
-| [`urls/referrer-policy/unsafe-url/url-image-referrer-policy-external-stylesheet.html`](https://wpt.fyi/results/css/css-values/urls/referrer-policy/unsafe-url/url-image-referrer-policy-external-stylesheet.html) | Fail | 0 / 1 | BUG | the referrer of the fetch of an image of an external style sheet is the URL of the document, not the URL of the style sheet (https://drafts.csswg.org/css-values-4/#fetch-a-style-resource); only Chrome passes |
+| [`urls/referrer-policy/unsafe-url/url-image-referrer-policy-external-stylesheet.html`](https://wpt.fyi/results/css/css-values/urls/referrer-policy/unsafe-url/url-image-referrer-policy-external-stylesheet.html) | Pass | 1 / 1 |  |  |
 | [`urls/referrer-policy/unsafe-url/url-image-referrer-policy-same-origin.html`](https://wpt.fyi/results/css/css-values/urls/referrer-policy/unsafe-url/url-image-referrer-policy-same-origin.html) | Pass | 1 / 1 |  |  |
 | [`vh-calc-support-pct.html`](https://wpt.fyi/results/css/css-values/vh-calc-support-pct.html) | Pass | 1 / 1 |  |  |
 | [`vh-calc-support.html`](https://wpt.fyi/results/css/css-values/vh-calc-support.html) | Pass | 1 / 1 |  |  |

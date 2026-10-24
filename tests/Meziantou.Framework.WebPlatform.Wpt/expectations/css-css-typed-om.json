@@ -623,10 +623,7 @@
     "total": 31
   },
   "css/css-typed-om/the-stylepropertymap/properties/anchor-scope.html": {
-    "total": 35,
-    "failures": {
-      "Can set 'anchor-scope' to the '--a' keyword: --a": "FAIL"
-    }
+    "total": 35
   },
   "css/css-typed-om/the-stylepropertymap/properties/animation-delay.html": {
     "total": 31

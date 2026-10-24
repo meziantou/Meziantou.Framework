@@ -46,7 +46,39 @@ internal static class LineTruncator
     /// </summary>
     public static LineTruncation? GetTextOverflow(LineBoxFragment line)
     {
-        if (line.Parent is not BoxFragment container || line.Style is null || line.Children.Count == 0)
+        if (line.Children.Count == 0 || GetTextOverflowEdges(line) is not { } edges)
+            return null;
+
+        var (left, right, leftEdge, rightEdge, lineLeftSide) = edges;
+        var units = new List<Unit>();
+        CollectUnits(line, line, PhysicalOffset.Zero, lineLeftSide, units);
+        if (units.Count == 0)
+            return null;
+
+        // The ellipses are shaped only for the edges that the content overflows
+        var minimum = double.PositiveInfinity;
+        var maximum = double.NegativeInfinity;
+        foreach (var unit in units)
+        {
+            minimum = Math.Min(minimum, unit.Left);
+            maximum = Math.Max(maximum, unit.Right);
+        }
+
+        var leftEllipsis = left.Elides && minimum < leftEdge - Epsilon ? LineEllipsis.Create(line, left.Kind == TextOverflowKind.String ? left.String ?? "" : null) : null;
+        var rightEllipsis = right.Elides && maximum > rightEdge + Epsilon ? LineEllipsis.Create(line, right.Kind == TextOverflowKind.String ? right.String ?? "" : null) : null;
+        if (leftEllipsis is null && rightEllipsis is null)
+            return null;
+
+        return Truncate(line, units, leftEdge, rightEdge, leftEllipsis, rightEllipsis, endIsLeft: line.IsRightToLeft);
+    }
+
+    /// <summary>
+    /// Returns the sides of <c>text-overflow</c> that apply to a line (see <see cref="GetTextOverflow"/>) and the line-relative edges of
+    /// its line box in the scrollport, or null when its block container does not elide.
+    /// </summary>
+    private static (TextOverflowSide Left, TextOverflowSide Right, double LeftEdge, double RightEdge, PhysicalSide LineLeftSide)? GetTextOverflowEdges(LineBoxFragment line)
+    {
+        if (line.Parent is not BoxFragment container || line.Style is null)
             return null;
 
         var owner = GetTextOverflowOwner(container);
@@ -79,26 +111,7 @@ internal static class LineTruncator
             _ => (-scroll.Y, lineSize.Height - scroll.Y),
         };
 
-        var units = new List<Unit>();
-        CollectUnits(line, line, PhysicalOffset.Zero, lineLeftSide, units);
-        if (units.Count == 0)
-            return null;
-
-        // The ellipses are shaped only for the edges that the content overflows
-        var minimum = double.PositiveInfinity;
-        var maximum = double.NegativeInfinity;
-        foreach (var unit in units)
-        {
-            minimum = Math.Min(minimum, unit.Left);
-            maximum = Math.Max(maximum, unit.Right);
-        }
-
-        var leftEllipsis = left.Elides && minimum < leftEdge - Epsilon ? LineEllipsis.Create(line, left.Kind == TextOverflowKind.String ? left.String ?? "" : null) : null;
-        var rightEllipsis = right.Elides && maximum > rightEdge + Epsilon ? LineEllipsis.Create(line, right.Kind == TextOverflowKind.String ? right.String ?? "" : null) : null;
-        if (leftEllipsis is null && rightEllipsis is null)
-            return null;
-
-        return Truncate(line, units, leftEdge, rightEdge, leftEllipsis, rightEllipsis, endIsLeft: line.IsRightToLeft);
+        return (left, right, leftEdge, rightEdge, lineLeftSide);
     }
 
     /// <summary>
@@ -108,9 +121,63 @@ internal static class LineTruncator
     /// </summary>
     public static LineTruncation? GetTruncation(LineBoxFragment line)
     {
-        if (GetTextOverflow(line) is { } truncation)
-            return truncation;
+        var blockTruncation = GetBlockEllipsisTruncation(line);
+        if (line.BlockEllipsis is { } blockEllipsis && GetTextOverflowOfBlockEllipsis(line, blockEllipsis, blockTruncation) is { } combined)
+            return combined;
 
+        return GetTextOverflow(line) ?? blockTruncation;
+    }
+
+    /// <summary>
+    /// Returns the truncation of a line by <c>text-overflow</c> when its block overflow ellipsis overflows the edge of the line box
+    /// (https://drafts.csswg.org/css-overflow-4/#line-clamp: the block ellipsis is placed first, then "if the line still overflows,
+    /// text-overflow applies to the line including the block ellipsis"): the characters of the block ellipsis are elided as the
+    /// content of the line, or null.
+    /// </summary>
+    private static LineTruncation? GetTextOverflowOfBlockEllipsis(LineBoxFragment line, LineEllipsis blockEllipsis, LineTruncation? blockTruncation)
+    {
+        if (GetTextOverflowEdges(line) is not { } edges)
+            return null;
+
+        var (left, right, leftEdge, rightEdge, lineLeftSide) = edges;
+        var end = line.IsRightToLeft ? left : right;
+        var overflows = line.IsRightToLeft ? blockEllipsis.LineLeft < leftEdge - Epsilon : blockEllipsis.LineLeft + blockEllipsis.InlineSize > rightEdge + Epsilon;
+        if (!end.Elides || !overflows)
+            return null;
+
+        // The content that remains after the truncation by the block ellipsis, then the characters of the block ellipsis
+        var units = new List<Unit>();
+        var content = new List<Unit>();
+        CollectUnits(line, line, PhysicalOffset.Zero, lineLeftSide, content);
+        foreach (var unit in content)
+        {
+            if (blockTruncation is null || (!blockTruncation.IsHidden(unit.Fragment) && unit.Left >= blockTruncation.ClipLeft - Epsilon && unit.Right <= blockTruncation.ClipRight + Epsilon))
+            {
+                units.Add(unit);
+            }
+        }
+
+        foreach (var fragment in blockEllipsis.Fragments)
+        {
+            if (fragment is { ShapedText: not null, GlyphCount: > 0 })
+            {
+                CollectTextUnits(line, fragment, fragment.Offset, lineLeftSide, units);
+            }
+        }
+
+        var ellipsis = LineEllipsis.Create(line, end.Kind == TextOverflowKind.String ? end.String ?? "" : null);
+        var truncation = line.IsRightToLeft
+            ? Truncate(line, units, leftEdge, rightEdge, ellipsis, rightEllipsis: null, endIsLeft: true)
+            : Truncate(line, units, leftEdge, rightEdge, leftEllipsis: null, ellipsis, endIsLeft: false);
+        if (truncation is null)
+            return null;
+
+        return truncation.WithBlockEllipsis(blockEllipsis, blockTruncation);
+    }
+
+    /// <summary>Returns the truncation of a line by its block overflow ellipsis when its content does not fit with it (see <see cref="GetTruncation"/>), or null.</summary>
+    private static LineTruncation? GetBlockEllipsisTruncation(LineBoxFragment line)
+    {
         if (!line.IsTruncatedByBlockEllipsis || line.BlockEllipsis is not { } ellipsis)
             return null;
 
@@ -479,6 +546,32 @@ internal sealed class LineTruncation
         LeftEllipsis = leftEllipsis;
         RightEllipsis = rightEllipsis;
         _hidden = hidden;
+    }
+
+    /// <summary>
+    /// The block overflow ellipsis of the line when it is truncated by <c>text-overflow</c> as the content of the line, or null: its
+    /// fragments are painted with <see cref="BlockEllipsisTruncation"/>.
+    /// </summary>
+    public LineEllipsis? BlockEllipsis { get; private init; }
+
+    /// <summary>The truncation of the fragments of <see cref="BlockEllipsis"/> (the content before it is also truncated by the block ellipsis).</summary>
+    public LineTruncation? BlockEllipsisTruncation { get; private init; }
+
+    /// <summary>
+    /// Returns the truncation by <c>text-overflow</c> of a line whose block ellipsis is elided as its content: the content is
+    /// truncated by both the block ellipsis (<paramref name="blockTruncation"/>, or null) and this truncation.
+    /// </summary>
+    internal LineTruncation WithBlockEllipsis(LineEllipsis blockEllipsis, LineTruncation? blockTruncation)
+    {
+        var hidden = _hidden;
+        if (blockTruncation?._hidden is { } blockHidden)
+        {
+            hidden = hidden is null ? blockHidden : [.. hidden, .. blockHidden];
+        }
+
+        var clipLeft = Math.Max(ClipLeft, blockTruncation?.ClipLeft ?? double.NegativeInfinity);
+        var clipRight = Math.Min(ClipRight, blockTruncation?.ClipRight ?? double.PositiveInfinity);
+        return new LineTruncation(Line, clipLeft, clipRight, LeftEllipsis, RightEllipsis, hidden) { BlockEllipsis = blockEllipsis, BlockEllipsisTruncation = this };
     }
 
     public LineBoxFragment Line { get; }

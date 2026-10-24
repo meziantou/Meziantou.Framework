@@ -27,4 +27,11 @@ public sealed record PrintOptions
 
     /// <summary>Gets or sets the left margin of the pages when no <c>@page</c> rule sets it, in CSS pixels. The default is 48 (0.5in).</summary>
     public double MarginLeft { get; init; } = 48;
+
+    /// <summary>
+    /// Gets or sets the safe printable inset of the pages, in CSS pixels: the width of the region along each edge of the page
+    /// sheet that the printer cannot print, used by the <c>page-margin-safety</c> descriptor of <c>@page</c> and of the margin
+    /// rules (https://drafts.csswg.org/css-page-3/#page-margin-safety). The default is 0 (the whole sheet is printable).
+    /// </summary>
+    public double SafePrintableInset { get; init; }
 }

@@ -353,7 +353,8 @@ internal sealed partial class Painter
 
         foreach (var cell in model.Cells)
         {
-            if (GetCellFragment(cell.Box) is not { } fragment)
+            // (a cell of collapsed tracks only is not rendered: its box does not end at the grid lines of the visible tracks)
+            if (GetCellFragment(cell.Box) is not { } fragment || IsInCollapsedTracks(cell))
                 continue;
 
             // The border box of a cell ends at the middle of the grid lines (its borders are half of the collapsed borders)
@@ -379,6 +380,26 @@ internal sealed partial class Painter
             {
                 sliceEnds[endRow - 1] ??= GetEdge(rect, writingDirection.BlockEnd);
             }
+        }
+
+        bool IsInCollapsedTracks(TableCell cell)
+        {
+            var allRowsCollapsed = true;
+            for (var row = cell.Row; row < Math.Min(rows, cell.EndRow + 1) && allRowsCollapsed; row++)
+            {
+                allRowsCollapsed = model.Rows[row].IsCollapsed;
+            }
+
+            if (allRowsCollapsed)
+                return true;
+
+            for (var column = cell.Column; column < Math.Min(columns, cell.EndColumn + 1); column++)
+            {
+                if (!model.Columns[column].IsCollapsed)
+                    return false;
+            }
+
+            return true;
         }
 
         // The fragment of a cell that is in this fragment of the table
@@ -422,13 +443,25 @@ internal sealed partial class Painter
             }
         }
 
+        // The lines on both sides of collapsed tracks are one line (see TableCollapsedBorders), painted once; the segments along
+        // the collapsed tracks are not painted
+        for (var line = 0; line <= columns; line++)
+        {
+            columnLines[borders.GetMergedColumnLine(line)] ??= columnLines[line];
+        }
+
+        for (var line = 0; line <= rows; line++)
+        {
+            rowLines[borders.GetMergedRowLine(line)] ??= rowLines[line];
+        }
+
         var segments = new List<(TableCollapsedBorders.Edge Edge, PhysicalRect Rect, bool Vertical, int Position)>();
         for (var row = 0; row < rows; row++)
         {
             for (var line = 0; line <= columns; line++)
             {
                 var edge = borders.GetInlineSegment(row, line);
-                if (!edge.IsVisible || interiorInline[(row * (columns + 1)) + line] || columnLines[line] is not { } position
+                if (!edge.IsVisible || model.Rows[row].IsCollapsed || borders.GetMergedColumnLine(line) != line || interiorInline[(row * (columns + 1)) + line] || columnLines[line] is not { } position
                     || (rowLines[row] ?? sliceStarts?[row]) is not { } start || (rowLines[row + 1] ?? sliceEnds?[row]) is not { } end)
                 {
                     continue;
@@ -449,7 +482,7 @@ internal sealed partial class Painter
             for (var column = 0; column < columns; column++)
             {
                 var edge = borders.GetBlockSegment(line, column);
-                if (!edge.IsVisible || interiorBlock[(line * columns) + column] || rowLines[line] is not { } position || columnLines[column] is not { } start || columnLines[column + 1] is not { } end)
+                if (!edge.IsVisible || model.Columns[column].IsCollapsed || borders.GetMergedRowLine(line) != line || interiorBlock[(line * columns) + column] || rowLines[line] is not { } position || columnLines[column] is not { } start || columnLines[column + 1] is not { } end)
                     continue;
 
                 var (first, last) = start <= end ? (start, end) : (end, start);
@@ -517,15 +550,28 @@ internal sealed partial class Painter
         }
 
         // The widest border of the segments of a row line that meet a column line
+        // (the ones of the visible tracks next to the line: the segments along the collapsed tracks are not painted)
         double MaxBlockWidth(int rowLine, int columnLine)
         {
             var width = 0d;
-            if (columnLine > 0 && borders.GetBlockSegment(rowLine, columnLine - 1) is { IsVisible: true } left)
+            var before = columnLine - 1;
+            while (before >= 0 && model.Columns[before].IsCollapsed)
+            {
+                before--;
+            }
+
+            if (before >= 0 && borders.GetBlockSegment(rowLine, before) is { IsVisible: true } left)
             {
                 width = left.Width;
             }
 
-            if (columnLine < columns && borders.GetBlockSegment(rowLine, columnLine) is { IsVisible: true } right)
+            var after = columnLine;
+            while (after < columns && model.Columns[after].IsCollapsed)
+            {
+                after++;
+            }
+
+            if (after < columns && borders.GetBlockSegment(rowLine, after) is { IsVisible: true } right)
             {
                 width = Math.Max(width, right.Width);
             }
@@ -536,12 +582,24 @@ internal sealed partial class Painter
         double MaxInlineWidth(int rowLine, int columnLine)
         {
             var width = 0d;
-            if (rowLine > 0 && borders.GetInlineSegment(rowLine - 1, columnLine) is { IsVisible: true } above)
+            var before = rowLine - 1;
+            while (before >= 0 && model.Rows[before].IsCollapsed)
+            {
+                before--;
+            }
+
+            if (before >= 0 && borders.GetInlineSegment(before, columnLine) is { IsVisible: true } above)
             {
                 width = above.Width;
             }
 
-            if (rowLine < rows && borders.GetInlineSegment(rowLine, columnLine) is { IsVisible: true } below)
+            var after = rowLine;
+            while (after < rows && model.Rows[after].IsCollapsed)
+            {
+                after++;
+            }
+
+            if (after < rows && borders.GetInlineSegment(after, columnLine) is { IsVisible: true } below)
             {
                 width = Math.Max(width, below.Width);
             }

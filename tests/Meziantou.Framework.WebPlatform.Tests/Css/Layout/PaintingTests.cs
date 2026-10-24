@@ -1416,6 +1416,26 @@ public sealed class PaintingTests : IDisposable
     }
 
     [Fact]
+    public void CollapsedBorders_TheLinesAroundACollapsedTrackAreOneLine()
+    {
+        // The borders on both sides of the collapsed row (column) are one border, and the cells of the collapsed track do not
+        // paint borders: the table is a 20px square
+        var document = Parse("""
+            <table style='border-collapse: collapse'>
+              <col style='border-right: 20px solid rgb(0, 128, 0)'><col style='visibility: collapse'><col style='border-left: 20px solid rgb(0, 128, 0)'>
+              <tr style='border-bottom: 20px solid rgb(0, 128, 0)'><td style='padding: 0'></td><td style='padding: 0'></td><td style='padding: 0'></td></tr>
+              <tr style='visibility: collapse'><td style='padding: 0; border: 30px solid rgb(255, 0, 0)'></td><td style='padding: 0'></td><td style='padding: 0'></td></tr>
+              <tr style='border-top: 20px solid rgb(0, 128, 0)'><td style='padding: 0'></td><td style='padding: 0'></td><td style='padding: 0'></td></tr>
+            </table>
+            """);
+        var dump = Dump(document);
+        Assert.DoesNotContain("#ff0000", dump, StringComparison.Ordinal);
+        Assert.Contains("draw-rect (0, 0, 20x20) fill #008000  [col]", dump, StringComparison.Ordinal);
+        Assert.Contains("draw-rect (0, 0, 20x20) fill #008000  [tr]", dump, StringComparison.Ordinal);
+        Assert.Equal(dump.Split("draw-rect").Length, dump.Split("draw-rect (0, 0, 20x20)").Length);
+    }
+
+    [Fact]
     public void Outline_NegativeOffsetDoesNotShrinkTheOutlineBelowTwiceItsWidth()
     {
         // https://drafts.csswg.org/css-ui-4/#outline-offset: the 2px outline of the 10x10 box is a 4x4 square around its center

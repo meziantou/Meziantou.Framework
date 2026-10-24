@@ -250,8 +250,16 @@ internal sealed partial class Painter
 
         var viewport = fragment.ReplacedContentRect is { } objectRect ? SnapToDevicePixels(objectRect.Translate(offset)) : content;
         _builder.Save();
-        _builder.Add(new ClipRectItem(content));
-        if (BorderRadii.Get(fragment) is not null)
+
+        // The overflow clip of the element (the user agent style sheet clips the iframe, embed and object elements to their
+        // content box) already trims the document: clipping it again would antialias its curved edges twice
+        var clippedByOverflowClip = fragment.ClipsOverflowX && fragment.ClipsOverflowY && fragment.OverflowClipRect == fragment.ContentBoxRect;
+        if (!clippedByOverflowClip)
+        {
+            _builder.Add(new ClipRectItem(content));
+        }
+
+        if (!clippedByOverflowClip && BorderRadii.Get(fragment) is not null)
         {
             // https://drafts.csswg.org/css-backgrounds/#corner-clipping: "the content of replaced elements is always trimmed to
             // the content edge curve"

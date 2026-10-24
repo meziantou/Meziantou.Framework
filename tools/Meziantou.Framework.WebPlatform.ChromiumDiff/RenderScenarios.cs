@@ -111,6 +111,7 @@ internal sealed class LibraryMapping
     public ScreenshotOptions Screenshot { get; init; } = new();
     public PrintOptions Print { get; init; } = PrintOptions.Default;
     public PdfPrintOptions Pdf { get; init; } = PdfPrintOptions.Default;
+    public string? UserAgent { get; init; }
 
     /// <summary>Gets the Playwright options that the library does not support (the scenario renders without them).</summary>
     public List<string> Unsupported { get; } = [];
@@ -185,6 +186,10 @@ internal static class RenderScenarios
             Height = device.Height,
             DevicePixelRatio = device.DeviceScaleFactor,
             MediaType = scenario.PrintMedia ? "print" : "screen",
+            ScreenWidth = device.ScreenWidth,
+            ScreenHeight = device.ScreenHeight,
+            HasTouch = device.HasTouch,
+            IsMobile = device.IsMobile,
 
             // Playwright hides the scrollbars of headless Chromium: they take no space, as the overlay scrollbars
             ScrollbarThickness = 0,
@@ -194,6 +199,7 @@ internal static class RenderScenarios
         var mapping = new LibraryMapping
         {
             Viewport = viewport,
+            UserAgent = device.UserAgent,
             Screenshot = new ScreenshotOptions
             {
                 OmitBackground = scenario.OmitBackground,
@@ -205,18 +211,9 @@ internal static class RenderScenarios
             Pdf = new PdfPrintOptions { Tagged = false },
         };
 
-        // Device emulation
+        // Device emulation: the layout viewport and the scale of the meta viewport of a mobile device are not supported
         if (device.IsMobile)
             mapping.Unsupported.Add("isMobile");
-
-        if (device.HasTouch)
-            mapping.Unsupported.Add("hasTouch");
-
-        if (device.UserAgent is not null)
-            mapping.Unsupported.Add("userAgent");
-
-        if (device.ScreenWidth is not null && (device.ScreenWidth != device.Width || device.ScreenHeight != device.Height))
-            mapping.Unsupported.Add("screen");
 
         // page.pdf()
         if (scenario.Kind is RenderKind.Pdf)

@@ -219,6 +219,7 @@ internal static class RenderComparison
         {
             DocumentLoader = cache.CreateLoader(),
             Viewport = mapping.Viewport,
+            UserAgent = mapping.UserAgent,
             RenderingBackend = new ImagingRenderingBackend(),
             DeclarativeRefreshEnabled = false,
             SpeculativeLoading = new SpeculativeLoadingOptions { PrefetchEnabled = false, PrerenderEnabled = false },

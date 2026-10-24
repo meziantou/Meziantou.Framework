@@ -219,6 +219,28 @@ public sealed class PdfPrintTests : IDisposable
     }
 
     [Fact]
+    public void PrintToPdf_PrintOptionsOfPlaywright()
+    {
+        // Three pages: the second and the third ones are printed, in landscape, scaled; the link to the heading of the third page is
+        // kept, the one to the first page (not printed) is not
+        var context = _pages.Load("""
+            <style>@page { margin: 0 } div { height: 100px; break-after: page }</style>
+            <div><h2 id=first style='margin: 0; font-size: 10px'>First</h2></div>
+            <div><a href='#first'>first</a> <a href='#third'>third</a></div>
+            <div><h2 id=third style='margin: 0; font-size: 10px'>Third</h2></div>
+            """);
+
+        var pdf = Reopen(context.PrintToPdf(new PrintOptions { PageWidth = 200, PageHeight = 300, Landscape = true, Scale = 0.5, PageRanges = "2-3" }));
+
+        Assert.Equal(2, pdf.Pages.Count);
+        var page = pdf.Pages[0];
+        Assert.Equal(300 * 0.75, page.MediaBox.Width, 1);
+        Assert.Equal(200 * 0.75, page.MediaBox.Height, 1);
+        var link = Assert.Single(page.Annotations.OfType<PdfLinkAnnotation>());
+        Assert.Equal("third", link.Contents);
+    }
+
+    [Fact]
     public void PrintToPdf_HeadingsAreTheOutline()
     {
         var context = _pages.Load(PageStyle + "<h1>One</h1><h2>One.A</h2><h2>One.B</h2><h1>Two</h1><h3>Two.A.1</h3>");

@@ -16,10 +16,17 @@ public partial class Document
     /// are: the document is not styled nor laid out again when the printing ends, and no transition starts.
     /// </summary>
     /// <exception cref="InvalidOperationException">The document is already being printed.</exception>
+    /// <exception cref="ArgumentException">The scale or the page ranges of the options are invalid.</exception>
     internal PrintSession BeginPrint(PrintOptions options)
     {
         if (PrintSession is not null)
             throw new InvalidOperationException("The document is already being printed.");
+
+        if (!(options.Scale is >= 0.1 and <= 2))
+            throw new ArgumentException("The scale must be between 0.1 and 2.", nameof(options));
+
+        // (the page ranges are validated before the printing starts)
+        _ = PrintSession.ParsePageRanges(options.PageRanges);
 
         var session = new PrintSession(this, options, _styleEngine, _layoutEngine);
         PrintSession = session;

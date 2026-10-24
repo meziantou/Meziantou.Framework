@@ -551,7 +551,7 @@ internal static class BorderPainter
     /// color is already as light as #EBEBEB (black is lightened to #545454). The components keep their ratios, and are
     /// truncated to 8 bits.
     /// </summary>
-    private static DisplayColor Shade(DisplayColor color, bool darker)
+    internal static DisplayColor Shade(DisplayColor color, bool darker)
     {
         var r = Math.Clamp((double)color.R, 0, 1);
         var g = Math.Clamp((double)color.G, 0, 1);

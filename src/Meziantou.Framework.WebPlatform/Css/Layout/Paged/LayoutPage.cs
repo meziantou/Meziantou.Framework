@@ -80,6 +80,22 @@ internal sealed record PageGeometry(ComputedStyle? Style, PhysicalSize PageSize,
     }
 
     /// <summary>
+    /// The scale of the content of the page (<see cref="PrintOptions.Scale"/>): the content is laid out in the page area divided
+    /// by the scale (<see cref="LayoutAreaSize"/>), and painted scaled in the page area.
+    /// </summary>
+    public double ContentScale { get; init; } = 1;
+
+    /// <summary>The size of the page area in the coordinates of the content: the page area divided by <see cref="ContentScale"/>.</summary>
+    public PhysicalSize LayoutAreaSize
+    {
+        get
+        {
+            var area = PageArea;
+            return new PhysicalSize(area.Width / ContentScale, area.Height / ContentScale);
+        }
+    }
+
+    /// <summary>
     /// Returns the geometry of a page from the style of its page context and its descriptors (see
     /// <see cref="StyleEngine.GetPageStyle"/>): https://drafts.csswg.org/css-page-3/#page-size-prop. The page sheet has the
     /// size of <c>size</c>; the <c>width</c> and <c>height</c> of the page context are the size of the page area, which is
@@ -93,7 +109,7 @@ internal sealed record PageGeometry(ComputedStyle? Style, PhysicalSize PageSize,
     {
         var pageSize = GetPageSize(style, size, options, styleEngine);
         if (style is null)
-            return new PageGeometry(null, pageSize, new Sides<double>(options.MarginTop, options.MarginRight, options.MarginBottom, options.MarginLeft), default, default, "upright");
+            return new PageGeometry(null, pageSize, new Sides<double>(options.MarginTop, options.MarginRight, options.MarginBottom, options.MarginLeft), default, default, "upright") { ContentScale = options.Scale };
 
         var layout = style.Layout;
         var box = layout.Box;
@@ -103,7 +119,7 @@ internal sealed record PageGeometry(ComputedStyle? Style, PhysicalSize PageSize,
         var inset = options.SafePrintableInset;
         var (width, left, right) = ResolveAxis(pageSize.Width, box.Margin.Left, box.Margin.Right, box.Width, box.MinWidth, box.MaxWidth, border.Left + border.Right + padding.Left + padding.Right, borderBox, marginSafety, GetSafePrintableInset(inset, pageSize.Width));
         var (height, top, bottom) = ResolveAxis(pageSize.Height, box.Margin.Top, box.Margin.Bottom, box.Height, box.MinHeight, box.MaxHeight, border.Top + border.Bottom + padding.Top + padding.Bottom, borderBox, marginSafety, GetSafePrintableInset(inset, pageSize.Height));
-        return new PageGeometry(style, new PhysicalSize(width, height), new Sides<double>(top, right, bottom, left), border, padding, orientation is "rotate-left" or "rotate-right" ? orientation : "upright");
+        return new PageGeometry(style, new PhysicalSize(width, height), new Sides<double>(top, right, bottom, left), border, padding, orientation is "rotate-left" or "rotate-right" ? orientation : "upright") { ContentScale = options.Scale };
 
         // The size of the page sheet and the page margins in an axis
         static (double Sheet, double Start, double End) ResolveAxis(double sheet, LengthPercentageAuto marginStart, LengthPercentageAuto marginEnd, Size size, Size minSize, Size maxSize, double edges, bool borderBox, string marginSafety, double inset)
@@ -169,8 +185,8 @@ internal sealed record PageGeometry(ComputedStyle? Style, PhysicalSize PageSize,
     /// </summary>
     private static PhysicalSize GetPageSize(ComputedStyle? style, string size, PrintOptions options, StyleEngine? styleEngine)
     {
-        var width = options.PageWidth;
-        var height = options.PageHeight;
+        var width = options.EffectivePageWidth;
+        var height = options.EffectivePageHeight;
         string? pageOrientation = null;
         foreach (var keyword in size.Split(' ', StringSplitOptions.RemoveEmptyEntries))
         {

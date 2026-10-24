@@ -214,21 +214,6 @@ internal static class RenderScenarios
         // page.pdf()
         if (scenario.Kind is RenderKind.Pdf)
         {
-            if (scenario.Landscape)
-                mapping.Unsupported.Add("landscape");
-
-            if (scenario.Scale != 1)
-                mapping.Unsupported.Add("scale");
-
-            if (!scenario.PrintBackground)
-                mapping.Unsupported.Add("printBackground: false");
-
-            if (!scenario.PreferCssPageSize)
-                mapping.Unsupported.Add("preferCSSPageSize: false");
-
-            if (scenario.PageRanges is not null)
-                mapping.Unsupported.Add("pageRanges");
-
             if (scenario.DisplayHeaderFooter)
                 mapping.Unsupported.Add("displayHeaderFooter");
         }
@@ -238,12 +223,15 @@ internal static class RenderScenarios
 
     private static PrintOptions MapPrint(RenderScenario scenario)
     {
-        // The landscape orientation swaps the paper size (approximated while the library has no option for it)
-        var (width, height) = scenario.Landscape ? (scenario.PaperHeight, scenario.PaperWidth) : (scenario.PaperWidth, scenario.PaperHeight);
         return new PrintOptions
         {
-            PageWidth = width,
-            PageHeight = height,
+            PageWidth = scenario.PaperWidth,
+            PageHeight = scenario.PaperHeight,
+            Landscape = scenario.Landscape,
+            Scale = scenario.Scale,
+            PrintBackground = scenario.PrintBackground,
+            PreferCssPageSize = scenario.PreferCssPageSize,
+            PageRanges = scenario.PageRanges,
             MarginTop = scenario.Margins.Top,
             MarginRight = scenario.Margins.Right,
             MarginBottom = scenario.Margins.Bottom,

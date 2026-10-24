@@ -8865,13 +8865,21 @@ namespace Meziantou.Framework.WebPlatform.Dom
     public sealed class PrintOptions : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.PrintOptions>
     {
         public static Meziantou.Framework.WebPlatform.Dom.PrintOptions Default { get => throw null; }
+        public bool DisplayHeaderFooter { get => throw null; init { } }
+        public string? FooterTemplate { get => throw null; init { } }
+        public string? HeaderTemplate { get => throw null; init { } }
+        public bool Landscape { get => throw null; init { } }
         public double MarginBottom { get => throw null; init { } }
         public double MarginLeft { get => throw null; init { } }
         public double MarginRight { get => throw null; init { } }
         public double MarginTop { get => throw null; init { } }
         public double PageHeight { get => throw null; init { } }
+        public string? PageRanges { get => throw null; init { } }
         public double PageWidth { get => throw null; init { } }
+        public bool PreferCssPageSize { get => throw null; init { } }
+        public bool PrintBackground { get => throw null; init { } }
         public double SafePrintableInset { get => throw null; init { } }
+        public double Scale { get => throw null; init { } }
         public bool Equals(Meziantou.Framework.WebPlatform.Dom.PrintOptions? other) => throw null;
         public override bool Equals(object? obj) => throw null;
         public override int GetHashCode() => throw null;

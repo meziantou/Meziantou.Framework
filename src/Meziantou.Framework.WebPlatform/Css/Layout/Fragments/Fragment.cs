@@ -304,6 +304,10 @@ internal sealed class BoxFragment : Fragment
         ScrollContainer = 4,
         OverflowComputed = 8,
         Transformed = 16,
+
+        // The axes where the fragment clips the scrollable overflow of its descendants only (see DisableOverflowClip)
+        ClipsScrollableX = 32,
+        ClipsScrollableY = 64,
     }
 
     /// <summary>The data of the scroll containers (and of the viewport), allocated only for them to keep the fragments small.</summary>
@@ -746,9 +750,22 @@ internal sealed class BoxFragment : Fragment
 
     /// <summary>
     /// Makes the fragment not clip its contents: a fragment of a box in a fragmentainer before the first one of the box, which
-    /// only holds an absolutely positioned descendant placed before the box (see <see cref="FragmentSlicer"/>).
+    /// only holds an absolutely positioned descendant placed before the box (see <see cref="FragmentSlicer"/>). As in Blink,
+    /// the scrollable overflow of the descendant is still clipped in the axes where the box clips its overflow (nothing is
+    /// painted outside of the box elsewhere).
     /// </summary>
-    internal void DisableOverflowClip() => _flags &= ~(OverflowFlags.ClipsX | OverflowFlags.ClipsY);
+    internal void DisableOverflowClip()
+    {
+        if (ClipsOverflowX)
+        {
+            _flags = (_flags & ~OverflowFlags.ClipsX) | OverflowFlags.ClipsScrollableX;
+        }
+
+        if (ClipsOverflowY)
+        {
+            _flags = (_flags & ~OverflowFlags.ClipsY) | OverflowFlags.ClipsScrollableY;
+        }
+    }
 
     /// <summary>
     /// Whether the box is a scroll container (https://drafts.csswg.org/css-overflow-3/#scroll-container): its used <c>overflow</c>
@@ -1176,6 +1193,11 @@ internal sealed class BoxFragment : Fragment
                         var clipY = (flags & OverflowFlags.ClipsY) != OverflowFlags.None;
                         boxScrollable = Unite(box.BorderBoxRect, Clip(boxScrollable, clip, clipX, clipY));
                         boxInk = Clip(boxInk, clip, clipX, clipY).Union(box.BorderBoxRect);
+                    }
+                    else if ((flags & (OverflowFlags.ClipsScrollableX | OverflowFlags.ClipsScrollableY)) != OverflowFlags.None)
+                    {
+                        // (the empty fragment of a box that clips its overflow, before the start of the box, see DisableOverflowClip)
+                        boxScrollable = Unite(box.BorderBoxRect, Clip(boxScrollable, box.OverflowClipRect, (flags & OverflowFlags.ClipsScrollableX) != OverflowFlags.None, (flags & OverflowFlags.ClipsScrollableY) != OverflowFlags.None));
                     }
 
                     // https://drafts.csswg.org/css-contain-2/#containment-layout: "If the computed value of the overflow property is

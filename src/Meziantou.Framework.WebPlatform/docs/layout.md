@@ -2779,8 +2779,8 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     spanner has all its columns for them): from the offset of the box from the block-start edge of its containing block in
     that sequence (the fragmentainer where the containing block starts, a next one when the offset is larger than what
     remains of it, a previous one when it is negative: the box is then a child of an empty fragment of its containing block,
-    which does not clip and is at the start of the overflow in that fragmentainer, the origin of its transform,
-    [§5.5](https://drafts.csswg.org/css-break-3/#transforms)), or from the block-end edge of the fragments of the containing block stitched together (`bottom`
+    which does not clip, except the scrollable overflow as in Blink, and is at the start of the overflow in that
+    fragmentainer, the origin of its transform, [§5.5](https://drafts.csswg.org/css-break-3/#transforms)), or from the block-end edge of the fragments of the containing block stitched together (`bottom`
     without `top`, an aligned static position in a flex or grid container: `OutOfFlowPlacement.EndRatio`), or from a
     position of the content (the static position, a grid area: it follows the breaks of the content). The breaks are the
     ones of the flow that contains the contents of the containing block (`OutOfFlowPlacement.OwnerFlow`: the strip, or the

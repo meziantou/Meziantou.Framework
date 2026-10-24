@@ -28,13 +28,40 @@ namespace Meziantou.Framework.WebPlatform.Imaging
         public static Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> TakeScreenshot(this Meziantou.Framework.WebPlatform.Dom.BrowsingContext browsingContext, Meziantou.Framework.WebPlatform.Imaging.ScreenshotOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> TakeScreenshot(this Meziantou.Framework.WebPlatform.Dom.Document document, Meziantou.Framework.WebPlatform.Imaging.ScreenshotOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> TakeScreenshot(this Meziantou.Framework.WebPlatform.Dom.Element element, Meziantou.Framework.WebPlatform.Imaging.ScreenshotOptions? options = null) => throw null;
+        public static byte[] TakeScreenshotAsJpeg(this Meziantou.Framework.WebPlatform.Dom.BrowsingContext browsingContext, Meziantou.Framework.WebPlatform.Imaging.ScreenshotOptions? options = null) => throw null;
+        public static byte[] TakeScreenshotAsJpeg(this Meziantou.Framework.WebPlatform.Dom.Document document, Meziantou.Framework.WebPlatform.Imaging.ScreenshotOptions? options = null) => throw null;
+        public static byte[] TakeScreenshotAsJpeg(this Meziantou.Framework.WebPlatform.Dom.Element element, Meziantou.Framework.WebPlatform.Imaging.ScreenshotOptions? options = null) => throw null;
         public static byte[] TakeScreenshotAsPng(this Meziantou.Framework.WebPlatform.Dom.BrowsingContext browsingContext, Meziantou.Framework.WebPlatform.Imaging.ScreenshotOptions? options = null) => throw null;
         public static byte[] TakeScreenshotAsPng(this Meziantou.Framework.WebPlatform.Dom.Document document, Meziantou.Framework.WebPlatform.Imaging.ScreenshotOptions? options = null) => throw null;
         public static byte[] TakeScreenshotAsPng(this Meziantou.Framework.WebPlatform.Dom.Element element, Meziantou.Framework.WebPlatform.Imaging.ScreenshotOptions? options = null) => throw null;
     }
 
+    public readonly struct ScreenshotClip : System.IEquatable<Meziantou.Framework.WebPlatform.Imaging.ScreenshotClip>
+    {
+        public double Height { get => throw null; init { } }
+        public double Width { get => throw null; init { } }
+        public double X { get => throw null; init { } }
+        public double Y { get => throw null; init { } }
+        public ScreenshotClip(double X, double Y, double Width, double Height) { }
+        public void Deconstruct(out double X, out double Y, out double Width, out double Height) => throw null;
+        public bool Equals(Meziantou.Framework.WebPlatform.Imaging.ScreenshotClip other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Imaging.ScreenshotClip left, Meziantou.Framework.WebPlatform.Imaging.ScreenshotClip right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Imaging.ScreenshotClip left, Meziantou.Framework.WebPlatform.Imaging.ScreenshotClip right) => throw null;
+    }
+
     public sealed class ScreenshotOptions
     {
+        public Meziantou.Framework.WebPlatform.Imaging.ScreenshotClip? Clip { get => throw null; init { } }
         public double? DevicePixelRatio { get => throw null; init { } }
+        public bool FullPage { get => throw null; init { } }
+        public bool OmitBackground { get => throw null; init { } }
+        public int? Quality { get => throw null; init { } }
     }
 }

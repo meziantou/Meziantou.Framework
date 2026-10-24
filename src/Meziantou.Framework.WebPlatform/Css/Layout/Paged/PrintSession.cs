@@ -94,8 +94,9 @@ internal sealed class PrintSession : IDisposable
     /// Paints the pages of the document (see <see cref="GetPages"/>). A page whose <c>page-orientation</c> is
     /// <c>rotate-left</c> or <c>rotate-right</c> is rotated a quarter turn counter-clockwise or clockwise for its presentation
     /// (https://drafts.csswg.org/css-page-3/#page-orientation-prop): its printed size is the size of its page box transposed.
+    /// Without <paramref name="paper"/>, the pages are painted over a transparent sheet instead of white paper.
     /// </summary>
-    public IReadOnlyList<PrintedPage> Paint()
+    public IReadOnlyList<PrintedPage> Paint(bool paper = true)
     {
         var pages = GetPages();
         var result = new PrintedPage[pages.Count];
@@ -103,7 +104,7 @@ internal sealed class PrintSession : IDisposable
         {
             var geometry = pages[i].Geometry;
             var size = geometry.PageSize;
-            var displayList = _layoutEngine!.PaintPage(pages[i]);
+            var displayList = _layoutEngine!.PaintPage(pages[i], paper);
             if (geometry.Orientation is "rotate-left" or "rotate-right")
             {
                 var builder = new DisplayListBuilder();

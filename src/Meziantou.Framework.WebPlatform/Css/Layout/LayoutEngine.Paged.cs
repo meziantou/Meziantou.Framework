@@ -766,16 +766,20 @@ internal sealed partial class LayoutEngine
     /// padding box of the page box), then the other page-margin boxes. As in Blink, each page-margin box is painted atomically, as a stacking
     /// context, in the order of its <c>z-index</c> (<c>auto</c> is 0), then in the order of the boxes (from the top-left
     /// corner, clockwise). The display list is in the coordinates of the page box. A document whose root element generates no
-    /// box has blank pages.
+    /// box has blank pages. Without <paramref name="paper"/>, the page is painted over a transparent sheet.
     /// </summary>
-    internal DisplayList PaintPage(LayoutPage page)
+    internal DisplayList PaintPage(LayoutPage page, bool paper = true)
     {
         using var suspension = _document.GetStyleEngine().SuspendUpdates();
         var geometry = page.Geometry;
         var builder = new DisplayListBuilder();
 
         // The page sheet is white paper
-        builder.Add(new DrawPaintItem(new DisplayPaint(DisplayColor.White)));
+        if (paper)
+        {
+            builder.Add(new DrawPaintItem(new DisplayPaint(DisplayColor.White)));
+        }
+
         List<(BoxFragment Fragment, int ZIndex)>? marginBoxes = null;
         var viewport = _boxTree?.Viewport;
         // (as in Gecko, a document whose root element generates no box prints blank pages, without page boxes)

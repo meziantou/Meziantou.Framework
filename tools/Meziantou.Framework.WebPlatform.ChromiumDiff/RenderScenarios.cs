@@ -114,9 +114,6 @@ internal sealed class LibraryMapping
 
     /// <summary>Gets the Playwright options that the library does not support (the scenario renders without them).</summary>
     public List<string> Unsupported { get; } = [];
-
-    /// <summary>Gets the clip that the harness applies to the screenshot of the viewport, while the library has no clip option.</summary>
-    public (double X, double Y, double Width, double Height)? HarnessClip { get; set; }
 }
 
 internal static class RenderScenarios
@@ -197,6 +194,13 @@ internal static class RenderScenarios
         var mapping = new LibraryMapping
         {
             Viewport = viewport,
+            Screenshot = new ScreenshotOptions
+            {
+                OmitBackground = scenario.OmitBackground,
+                FullPage = scenario.FullPage,
+                Clip = scenario.Clip is { } clip ? new ScreenshotClip(clip.X, clip.Y, clip.Width, clip.Height) : null,
+                Quality = scenario.Quality,
+            },
             Print = scenario.Kind is RenderKind.Pdf ? MapPrint(scenario) : PrintOptions.Default,
             Pdf = new PdfPrintOptions { Tagged = false },
         };
@@ -213,23 +217,6 @@ internal static class RenderScenarios
 
         if (device.ScreenWidth is not null && (device.ScreenWidth != device.Width || device.ScreenHeight != device.Height))
             mapping.Unsupported.Add("screen");
-
-        // page.screenshot()
-        if (scenario.OmitBackground)
-            mapping.Unsupported.Add("omitBackground");
-
-        if (scenario.FullPage)
-            mapping.Unsupported.Add("fullPage");
-
-        if (scenario.Clip is { } clip)
-        {
-            mapping.Unsupported.Add("clip");
-            if (!scenario.FullPage)
-                mapping.HarnessClip = clip;
-        }
-
-        if (scenario.Jpeg)
-            mapping.Unsupported.Add("type: jpeg");
 
         // page.pdf()
         if (scenario.Kind is RenderKind.Pdf)

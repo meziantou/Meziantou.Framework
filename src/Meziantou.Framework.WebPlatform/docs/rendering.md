@@ -50,12 +50,27 @@ The `Meziantou.Framework.WebPlatform.Imaging` package adds extension methods (`I
 | `Document.TakeScreenshot(options)` | The viewport of a document (the area of its `iframe` for a nested document: transparent where the document paints nothing) |
 | `Element.TakeScreenshot(options)` | The border box of an element in its viewport (`getBoundingClientRect()`, transforms included), rounded outwards to device pixels, with what is painted over it; the parts outside of the viewport are painted too |
 | `TakeScreenshotAsPng(options)` | The same screenshots, encoded as PNG |
+| `TakeScreenshotAsJpeg(options)` | The same screenshots, encoded as JPEG (composited over white, quality `ScreenshotOptions.Quality`, 80 by default as in Chromium, chroma subsampled 4:2:0) |
+
+The `ScreenshotOptions` are the ones of the screenshots of Playwright:
+
+| Option | Playwright | Effect |
+| --- | --- | --- |
+| `DevicePixelRatio` | `scale: 'css'` (1) | The number of pixels per CSS px (see below) |
+| `OmitBackground` | `omitBackground` | The canvas of a top-level document is transparent instead of its canvas color (white, or the dark color of a dark color scheme): the backgrounds of the document (the root element, the body propagated to the canvas) are still painted, the rest is transparent (e.g. a transparent SVG document). The printed pages have no white paper. Ignored by the JPEG screenshots |
+| `FullPage` | `fullPage` | The whole scrolling area of the viewport from the origin of the document (`scrollWidth` x `scrollHeight`, at least the viewport), without the scrollbars of the viewport. The layout does not change (`vh` and the media queries still see the viewport); a fixed element is painted once, where it is at the current scroll position |
+| `Clip` | `clip` | An area in CSS px, relative to the viewport (to the document with `FullPage`), clipped to it; an area empty once clipped throws an `ArgumentException` |
+| `Quality` | `quality` | The quality of the JPEG screenshots (0 to 100) |
+
+The screenshots are compared with the ones of Playwright by `ChromiumDiff --render` (see
+[fuzzing.md](fuzzing.md#comparing-the-exports-with-playwright)).
 
 - The size of a screenshot is the size of the area in CSS px multiplied by the device pixel ratio:
   `ViewportOptions.DevicePixelRatio` by default, or `ScreenshotOptions.DevicePixelRatio` (which scales the painting
   without changing the layout: the media queries still see the ratio of the viewport). The screenshot of a viewport
   includes its [scrollbars](#scrollbars) (or their empty gutters). The pixels are sRGB, 8 bits per component, not
-  premultiplied (`Rgba32`); the canvas of a top-level document is drawn over white.
+  premultiplied (`Rgba32`); the canvas of a top-level document is drawn over its canvas color (white, unless
+  `OmitBackground`).
 - A screenshot paints the current state of the document: the layout is computed when it is out of date, as by the geometry
   APIs (call it from the thread of the event loop, after the resources are loaded, e.g. after `RunUntilIdleAsync()`). The
   display list is cached by the document: two screenshots without change in between paint it once.

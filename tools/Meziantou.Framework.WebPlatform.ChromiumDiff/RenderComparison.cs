@@ -279,35 +279,10 @@ internal static class RenderComparison
         if (scenario.Kind is RenderKind.ElementScreenshot)
         {
             var element = context.Document.QuerySelector(scenario.ElementSelector) ?? throw new InvalidOperationException($"No element matches '{scenario.ElementSelector}'");
-            return element.TakeScreenshot(mapping.Screenshot);
+            return scenario.Jpeg ? Image.Load<Rgba32>(element.TakeScreenshotAsJpeg(mapping.Screenshot)) : element.TakeScreenshot(mapping.Screenshot);
         }
 
-        var image = context.TakeScreenshot(mapping.Screenshot);
-        if (mapping.HarnessClip is not { } clip)
-            return image;
-
-        using (image)
-        {
-            var ratio = mapping.Screenshot.DevicePixelRatio ?? mapping.Viewport.DevicePixelRatio;
-            return Crop(image, (int)Math.Round(clip.X * ratio, MidpointRounding.AwayFromZero), (int)Math.Round(clip.Y * ratio, MidpointRounding.AwayFromZero), (int)Math.Round(clip.Width * ratio, MidpointRounding.AwayFromZero), (int)Math.Round(clip.Height * ratio, MidpointRounding.AwayFromZero));
-        }
-    }
-
-    private static Image<Rgba32> Crop(Image<Rgba32> image, int x, int y, int width, int height)
-    {
-        x = Math.Clamp(x, 0, image.Width);
-        y = Math.Clamp(y, 0, image.Height);
-        width = Math.Max(1, Math.Min(width, image.Width - x));
-        height = Math.Max(1, Math.Min(height, image.Height - y));
-        var pixels = new Rgba32[image.Width * image.Height];
-        image.Frames[0].CopyPixelDataTo(pixels);
-        var result = new Rgba32[width * height];
-        for (var row = 0; row < height; row++)
-        {
-            pixels.AsSpan(((y + row) * image.Width) + x, width).CopyTo(result.AsSpan(row * width, width));
-        }
-
-        return ImageComparison.ToImage(result, width, height);
+        return scenario.Jpeg ? Image.Load<Rgba32>(context.TakeScreenshotAsJpeg(mapping.Screenshot)) : context.TakeScreenshot(mapping.Screenshot);
     }
 
     private static async Task<List<RenderResult>> ComparePdfAsync(IBrowser browser, RenderScenario scenario, ResolvedDevice device, LibraryMapping mapping, RenderInput input, ResourceCache cache, string styleSheet, PdfRasterizer rasterizer, string directory, RenderOptions options)

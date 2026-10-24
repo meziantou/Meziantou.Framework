@@ -6,10 +6,10 @@ The fixtures of `render-corpus` exported by Playwright (Chromium 153.0.8010.12) 
 
 | Status | Count |
 |---|---|
-| Pass | 21 |
+| Pass | 34 |
 | Known | 0 |
-| Unsupported | 90 |
-| Unexpected | 25 |
+| Unsupported | 71 |
+| Unexpected | 31 |
 | Error | 0 |
 
 ## Scenarios
@@ -18,11 +18,11 @@ The fixtures of `render-corpus` exported by Playwright (Chromium 153.0.8010.12) 
 |---|---|---|---|---|---|---|---|
 | desktop | viewport 1280x720 |  | 11 | 0 | 0 | 4 | 0 |
 | desktop-dpr2 | Desktop Chrome HiDPI (deviceScaleFactor 2) | userAgent, screen | 0 | 0 | 9 | 0 | 0 |
-| omit-background | omitBackground: true | omitBackground | 0 | 0 | 10 | 0 | 0 |
-| full-page | fullPage: true | fullPage | 0 | 0 | 2 | 0 | 0 |
-| clip | clip: 10,20 300x200 | clip | 0 | 0 | 3 | 0 | 0 |
-| clip-full-page | fullPage: true, clip: 0,600 400x400 (beyond the viewport) | fullPage, clip | 0 | 0 | 1 | 0 | 0 |
-| jpeg-q80 | type: jpeg, quality: 80 | type: jpeg | 0 | 0 | 3 | 0 | 0 |
+| omit-background | omitBackground: true |  | 7 | 0 | 0 | 3 | 0 |
+| full-page | fullPage: true |  | 1 | 0 | 0 | 1 | 0 |
+| clip | clip: 10,20 300x200 |  | 1 | 0 | 0 | 2 | 0 |
+| clip-full-page | fullPage: true, clip: 0,600 400x400 (beyond the viewport) |  | 1 | 0 | 0 | 0 | 0 |
+| jpeg-q80 | type: jpeg, quality: 80 |  | 3 | 0 | 0 | 0 | 0 |
 | print-media | emulateMedia({ media: 'print' }) |  | 0 | 0 | 0 | 2 | 0 |
 | element | locator('#target').screenshot() |  | 0 | 0 | 0 | 1 | 0 |
 | iphone-13 | iPhone 13 (390x664, deviceScaleFactor 3, isMobile, hasTouch) | isMobile, hasTouch, userAgent, screen | 0 | 0 | 7 | 0 | 0 |
@@ -68,25 +68,25 @@ The fixtures of `render-corpus` exported by Playwright (Chromium 153.0.8010.12) 
 | desktop-dpr2 | svg-transparent.svg | screenshot | Unsupported | 2560x1440, SSIM 0.9983, 0.10% different, 0.00% alpha different, max 204 | unsupported: userAgent, screen |
 | desktop-dpr2 | text.html | screenshot | Unsupported | 2560x1440, SSIM 0.9882, 1.34% different, 0.00% alpha different, max 245 | unsupported: userAgent, screen |
 | desktop-dpr2 | transparent-body.html | screenshot | Unsupported | 2560x1440, SSIM 0.9997, 0.07% different, 0.00% alpha different, max 57 | unsupported: userAgent, screen |
-| omit-background | boxes.html | screenshot | Unsupported | 1280x720, SSIM 0.1728, 81.38% different, 79.43% alpha different, max 255 | unsupported: omitBackground |
-| omit-background | dark-scheme.html | screenshot | Unsupported | 1280x720, SSIM 0.0323, 99.67% different, 99.34% alpha different, max 237 | unsupported: omitBackground |
-| omit-background | gradients.html | screenshot | Unsupported | 1280x720, SSIM 0.2213, 76.37% different, 75.97% alpha different, max 255 | unsupported: omitBackground |
-| omit-background | images.html | screenshot | Unsupported | 1280x720, SSIM 0.9999, 0.00% different, 0.00% alpha different, max 13 | unsupported: omitBackground |
-| omit-background | long-page.html | screenshot | Unsupported | 1280x720, SSIM 0.9970, 0.11% different, 0.00% alpha different, max 57 | unsupported: omitBackground |
-| omit-background | media-features.html | screenshot | Unsupported | 1280x720, SSIM 0.0789, 89.88% different, 89.30% alpha different, max 255 | unsupported: omitBackground |
-| omit-background | svg-sized.svg | screenshot | Unsupported | 1280x720, SSIM 0.0255, 98.72% different, 98.69% alpha different, max 255 | unsupported: omitBackground |
-| omit-background | svg-transparent.svg | screenshot | Unsupported | 1280x720, SSIM 0.0167, 98.87% different, 98.92% alpha different, max 255 | unsupported: omitBackground |
-| omit-background | text.html | screenshot | Unsupported | 1280x720, SSIM 0.0007, 98.96% different, 97.59% alpha different, max 255 | unsupported: omitBackground |
-| omit-background | transparent-body.html | screenshot | Unsupported | 1280x720, SSIM 0.2691, 99.48% different, 99.28% alpha different, max 191 | unsupported: omitBackground |
-| full-page | long-page.html | screenshot | Unsupported | size 1616x3298 vs 1280x720, SSIM 0.9970, 0.11% different, 0.00% alpha different, max 57 | unsupported: fullPage |
-| full-page | text.html | screenshot | Unsupported | size 1280x764 vs 1280x720, SSIM 0.9911, 0.94% different, 0.00% alpha different, max 221 | unsupported: fullPage |
-| clip | boxes.html | screenshot | Unsupported | 300x200, SSIM 0.9338, 7.76% different, 0.00% alpha different, max 85 | unsupported: clip |
-| clip | gradients.html | screenshot | Unsupported | 300x200, SSIM 0.9986, 0.00% different, 0.00% alpha different, max 1 | unsupported: clip |
-| clip | svg-transparent.svg | screenshot | Unsupported | 300x200, SSIM 0.9728, 1.60% different, 0.00% alpha different, max 196 | unsupported: clip |
-| clip-full-page | long-page.html | screenshot | Unsupported | size 400x400 vs 1280x720, SSIM 0.7708, 100.00% different, 0.00% alpha different, max 255 | unsupported: fullPage, clip |
-| jpeg-q80 | boxes.html | screenshot | Unsupported | 1280x720, SSIM 0.9744, 1.24% different, 0.00% alpha different, max 98 | unsupported: type: jpeg |
-| jpeg-q80 | gradients.html | screenshot | Unsupported | 1280x720, SSIM 0.9810, 0.04% different, 0.00% alpha different, max 68 | unsupported: type: jpeg |
-| jpeg-q80 | svg-transparent.svg | screenshot | Unsupported | 1280x720, SSIM 0.9938, 0.11% different, 0.00% alpha different, max 194 | unsupported: type: jpeg |
+| omit-background | boxes.html | screenshot | Unexpected | 1280x720, SSIM 0.9887, 1.40% different, 0.06% alpha different, max 85 |  |
+| omit-background | dark-scheme.html | screenshot | Unexpected | 1280x720, SSIM 0.9932, 0.64% different, 0.45% alpha different, max 196 |  |
+| omit-background | gradients.html | screenshot | Pass | 1280x720, SSIM 0.9990, 0.06% different, 0.10% alpha different, max 66 |  |
+| omit-background | images.html | screenshot | Pass | 1280x720, SSIM 0.9999, 0.00% different, 0.00% alpha different, max 13 |  |
+| omit-background | long-page.html | screenshot | Pass | 1280x720, SSIM 0.9970, 0.11% different, 0.00% alpha different, max 57 |  |
+| omit-background | media-features.html | screenshot | Pass | 1280x720, SSIM 0.9997, 0.00% different, 0.00% alpha different, max 32 |  |
+| omit-background | svg-sized.svg | screenshot | Pass | 1280x720, SSIM 1.0000, 0.00% different, 0.00% alpha different, max 5 |  |
+| omit-background | svg-transparent.svg | screenshot | Pass | 1280x720, SSIM 0.9980, 0.11% different, 0.14% alpha different, max 196 |  |
+| omit-background | text.html | screenshot | Unexpected | 1280x720, SSIM 0.9911, 0.98% different, 2.59% alpha different, max 221 |  |
+| omit-background | transparent-body.html | screenshot | Pass | 1280x720, SSIM 0.9999, 0.01% different, 0.07% alpha different, max 33 |  |
+| full-page | long-page.html | screenshot | Pass | 1616x3298, SSIM 0.9995, 0.02% different, 0.00% alpha different, max 57 |  |
+| full-page | text.html | screenshot | Unexpected | 1280x764, SSIM 0.9914, 0.97% different, 0.00% alpha different, max 221 |  |
+| clip | boxes.html | screenshot | Unexpected | 300x200, SSIM 0.9338, 7.76% different, 0.00% alpha different, max 85 |  |
+| clip | gradients.html | screenshot | Pass | 300x200, SSIM 0.9986, 0.00% different, 0.00% alpha different, max 1 |  |
+| clip | svg-transparent.svg | screenshot | Unexpected | 300x200, SSIM 0.9728, 1.60% different, 0.00% alpha different, max 196 |  |
+| clip-full-page | long-page.html | screenshot | Pass | 400x400, SSIM 0.9989, 0.03% different, 0.00% alpha different, max 34 |  |
+| jpeg-q80 | boxes.html | screenshot | Pass | 1280x720, SSIM 0.9876, 1.15% different, 0.00% alpha different, max 89 |  |
+| jpeg-q80 | gradients.html | screenshot | Pass | 1280x720, SSIM 0.9965, 0.03% different, 0.00% alpha different, max 60 |  |
+| jpeg-q80 | svg-transparent.svg | screenshot | Pass | 1280x720, SSIM 0.9973, 0.10% different, 0.00% alpha different, max 193 |  |
 | print-media | media-features.html | screenshot | Unexpected | 1280x720, SSIM 0.9978, 0.87% different, 0.00% alpha different, max 105 |  |
 | print-media | print-basic.html | screenshot | Unexpected | 1280x720, SSIM 0.9983, 0.39% different, 0.00% alpha different, max 65 |  |
 | element | element-clip.html | screenshot | Unexpected | 306x132, SSIM 0.9954, 0.44% different, 0.00% alpha different, max 35 |  |

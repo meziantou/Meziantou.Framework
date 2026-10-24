@@ -51,4 +51,26 @@ public sealed class PrintTests : IDisposable
         using var screenshot = context.TakeScreenshot();
         Assert.Equal(Colors.Red, screenshot.GetPixel(5, 5));
     }
+
+    [Fact]
+    public void RenderPages_OmitBackground_TheSheetIsTransparent()
+    {
+        var context = _pages.Load("<style>@page { size: 100px 80px; margin: 10px }</style><div style='height: 20px; background: blue'></div>");
+
+        var pages = context.RenderPages(options: new ScreenshotOptions { OmitBackground = true });
+        try
+        {
+            Assert.Single(pages);
+            Assert.Equal(new Rgba32(0, 0, 0, 0), pages[0].GetPixel(5, 5));
+            Assert.Equal(new Rgba32(0, 0, 0, 0), pages[0].GetPixel(50, 50));
+            Assert.Equal(Colors.Blue, pages[0].GetPixel(50, 20));
+        }
+        finally
+        {
+            foreach (var page in pages)
+            {
+                page.Dispose();
+            }
+        }
+    }
 }

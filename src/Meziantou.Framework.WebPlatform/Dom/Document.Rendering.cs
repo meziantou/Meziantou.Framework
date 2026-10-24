@@ -36,6 +36,19 @@ public partial class Document
     internal DisplayList? GetDisplayList() => GetLayoutEngine().GetDisplayList();
 
     /// <summary>
+    /// Paints the document for a screenshot (see <see cref="Css.Layout.LayoutEngine.PaintScreenshot"/>): over a transparent
+    /// canvas, and the whole document instead of its viewport. Returns null when the document is not rendered.
+    /// </summary>
+    internal DisplayList? PaintScreenshot(bool transparentCanvas, bool fullPage) => GetLayoutEngine().PaintScreenshot(transparentCanvas, fullPage);
+
+    /// <summary>Returns the size of the document painted by a full page screenshot, in CSS pixels (see <see cref="Css.Layout.LayoutEngine.GetFullPageSize"/>).</summary>
+    internal Css.Layout.PhysicalSize GetFullPageSize()
+    {
+        GetLayoutEngine().EnsureLayout();
+        return GetLayoutEngine().GetFullPageSize();
+    }
+
+    /// <summary>
     /// Creates the image the painting draws for an image resource: the encoded bytes of a raster image are kept only when the
     /// document has a rendering backend, which decodes them when the image is first drawn (without a backend, the display list
     /// draws an image without pixels, which the paint timing observes); the ones of an SVG image are always kept, as its document

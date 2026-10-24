@@ -298,6 +298,14 @@ internal sealed partial class Painter
         => Paint(engine, document, root, viewportScrollOffset, baseColor, capture: false, hidesAnimatedCaret, out nextFrameDelay, out hasAnimatedCaret);
 
     /// <summary>
+    /// Paints the whole document (a full page screenshot): the fragment tree of the document from its origin (the fixed
+    /// positioned elements are where the layout of the current scroll position put them), in a viewport of
+    /// <paramref name="size"/> (the scrolling area of the viewport), without the scrollbars of the viewport.
+    /// </summary>
+    internal static DisplayList PaintFullPage(LayoutEngine engine, Document document, BoxFragment root, PhysicalSize size, DisplayColor baseColor, bool hidesAnimatedCaret)
+        => Paint(engine, document, root, PhysicalOffset.Zero, baseColor, capture: false, hidesAnimatedCaret, out _, out _, fullPageSize: size);
+
+    /// <summary>
     /// Paints the fragment tree of a printed page (the content of its page area, see <see cref="LayoutPage"/>) in the coordinates of
     /// the page box: the painting is snapped to the device pixels of the page, as the document would be painted at the
     /// position of the page area in the page (the page area may be at a fractional position: a margin of <c>2cm</c>).
@@ -375,15 +383,16 @@ internal sealed partial class Painter
         return builder.ToDisplayList(fragment.Size);
     }
 
-    private static DisplayList Paint(LayoutEngine engine, Document document, BoxFragment root, PhysicalOffset viewportScrollOffset, DisplayColor baseColor, bool capture, bool hidesAnimatedCaret, out double? nextFrameDelay, out bool hasAnimatedCaret, PhysicalOffset rootOrigin = default)
+    private static DisplayList Paint(LayoutEngine engine, Document document, BoxFragment root, PhysicalOffset viewportScrollOffset, DisplayColor baseColor, bool capture, bool hidesAnimatedCaret, out double? nextFrameDelay, out bool hasAnimatedCaret, PhysicalOffset rootOrigin = default, PhysicalSize? fullPageSize = null)
     {
         // The display list of a document is the one of its viewport, with the gutters of its classic scrollbars: the scrollport
         // (the root fragment) is at its place in the viewport, the canvas extends under the gutters, and the scrollbars are
-        // painted over the document. The image of the document captured by a view transition is the scrollport alone.
+        // painted over the document. The image of the document captured by a view transition is the scrollport alone. A full
+        // page is the whole scrolling area, without the gutters and the scrollbars.
         var environment = document.GetStyleEngine().Environment;
-        var viewportSize = capture ? root.Size : new PhysicalSize(Math.Max(root.Size.Width, environment.Width), Math.Max(root.Size.Height, environment.Height));
+        var viewportSize = fullPageSize ?? (capture ? root.Size : new PhysicalSize(Math.Max(root.Size.Width, environment.Width), Math.Max(root.Size.Height, environment.Height)));
         var origin = capture ? root.GetOffsetInRoot() : rootOrigin;
-        var hasGutters = !capture && (root.Offset != PhysicalOffset.Zero || root.Size != viewportSize);
+        var hasGutters = !capture && fullPageSize is null && (root.Offset != PhysicalOffset.Zero || root.Size != viewportSize);
         var painter = new Painter(engine, document, origin) { _rootFragment = root };
         var builder = painter._builder;
 
@@ -450,7 +459,7 @@ internal sealed partial class Painter
 
         painter.PaintItems(items);
         painter.PaintOutlines(painter._group);
-        if (!capture && painter._paintsScrollbars)
+        if (!capture && fullPageSize is null && painter._paintsScrollbars)
         {
             // The scrollbars of the viewport, in the coordinates of the viewport
             builder.RestoreTo(documentSaveCount);

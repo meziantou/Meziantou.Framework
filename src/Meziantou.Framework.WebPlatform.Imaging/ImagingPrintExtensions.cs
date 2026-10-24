@@ -24,7 +24,7 @@ public static class ImagingPrintExtensions
     /// <summary>Prints the active document of a browsing context and renders each page.</summary>
     /// <param name="browsingContext">The browsing context.</param>
     /// <param name="printOptions">The page size and the default margins, or null for <see cref="PrintOptions.Default"/>.</param>
-    /// <param name="options">The options of the images (the device pixel ratio), or null for the default options.</param>
+    /// <param name="options">The options of the images (the device pixel ratio, the omission of the white paper), or null for the default options.</param>
     /// <returns>One image per page, of the size of its page box in device pixels. The caller owns them.</returns>
     /// <exception cref="InvalidOperationException">The document is not rendered.</exception>
     public static IReadOnlyList<Image<Rgba32>> RenderPages(this BrowsingContext browsingContext, PrintOptions? printOptions = null, ScreenshotOptions? options = null)
@@ -36,7 +36,7 @@ public static class ImagingPrintExtensions
     /// <summary>Prints a document and renders each page.</summary>
     /// <param name="document">The document, which must be the active document of a browsing context.</param>
     /// <param name="printOptions">The page size and the default margins, or null for <see cref="PrintOptions.Default"/>.</param>
-    /// <param name="options">The options of the images (the device pixel ratio), or null for the default options.</param>
+    /// <param name="options">The options of the images (the device pixel ratio, the omission of the white paper), or null for the default options.</param>
     /// <returns>One image per page, of the size of its page box in device pixels. The caller owns them.</returns>
     /// <exception cref="InvalidOperationException">The document is not rendered (it has no browsing context), or it is already being printed.</exception>
     public static IReadOnlyList<Image<Rgba32>> RenderPages(this Document document, PrintOptions? printOptions = null, ScreenshotOptions? options = null)
@@ -94,7 +94,7 @@ public static class ImagingPrintExtensions
     /// <remarks>With a <paramref name="pool"/>, the arrays are rented from it (they can be longer than the pixels): the caller returns them.</remarks>
     internal static List<(byte[] Pixels, int Width, int Height)> RenderPages(Document document, PrintSession session, ScreenshotOptions? options, System.Buffers.ArrayPool<byte>? pool = null)
     {
-        var pages = session.Paint();
+        var pages = session.Paint(paper: options?.OmitBackground != true);
         var result = new List<(byte[] Pixels, int Width, int Height)>(pages.Count);
         foreach (var page in pages)
         {

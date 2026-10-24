@@ -37,7 +37,13 @@ public sealed class JsPreparedScript
     /// does not bind its name in its scope, as if it were anonymous: its name is the name given by its context (e.g. the
     /// key of a property definition) and its source text keeps the name (the function of an event handler content attribute).
     /// </summary>
-    internal static JsPreparedScript Parse(string code, string? url, int lineOffset, int columnOffset, int unboundNameFunctionStart)
+    /// <param name="code">The source text.</param>
+    /// <param name="url">The URL (or the file name) of the script, used in the stack traces and the error locations.</param>
+    /// <param name="lineOffset">The number of lines before the code in its document (e.g. an inline script of an HTML document).</param>
+    /// <param name="columnOffset">The column of the code in the first line of its document (0-based).</param>
+    /// <param name="unboundNameFunctionStart">The index in <paramref name="code"/> of the <c>function</c> keyword of the function expression whose name is not bound, or -1 for none.</param>
+    /// <exception cref="JsSyntaxErrorException">The script is not valid.</exception>
+    public static JsPreparedScript Parse(string code, string? url, int lineOffset, int columnOffset, int unboundNameFunctionStart)
     {
         ArgumentNullException.ThrowIfNull(code);
         var source = new SourceText(code, url, lineOffset, columnOffset) { UnboundNameFunctionStart = unboundNameFunctionStart };
@@ -49,7 +55,14 @@ public sealed class JsPreparedScript
     public static bool TryParse(string code, string? url, int lineOffset, int columnOffset, [NotNullWhen(true)] out JsPreparedScript? script, [NotNullWhen(false)] out JsSyntaxErrorException? error) => TryParse(code, url, lineOffset, columnOffset, unboundNameFunctionStart: -1, out script, out error);
 
     /// <summary>Parses and compiles a script (see <see cref="Parse(string, string?, int, int, int)"/>); returns false and the syntax error when the script is not valid.</summary>
-    internal static bool TryParse(string code, string? url, int lineOffset, int columnOffset, int unboundNameFunctionStart, [NotNullWhen(true)] out JsPreparedScript? script, [NotNullWhen(false)] out JsSyntaxErrorException? error)
+    /// <param name="code">The source text.</param>
+    /// <param name="url">The URL (or the file name) of the script, used in the stack traces and the error locations.</param>
+    /// <param name="lineOffset">The number of lines before the code in its document (e.g. an inline script of an HTML document).</param>
+    /// <param name="columnOffset">The column of the code in the first line of its document (0-based).</param>
+    /// <param name="unboundNameFunctionStart">The index in <paramref name="code"/> of the <c>function</c> keyword of the function expression whose name is not bound, or -1 for none.</param>
+    /// <param name="script">The compiled script, when the script is valid.</param>
+    /// <param name="error">The syntax error, when the script is not valid.</param>
+    public static bool TryParse(string code, string? url, int lineOffset, int columnOffset, int unboundNameFunctionStart, [NotNullWhen(true)] out JsPreparedScript? script, [NotNullWhen(false)] out JsSyntaxErrorException? error)
     {
         try
         {

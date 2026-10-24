@@ -268,6 +268,29 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void PreparedScriptWithUnboundFunctionName()
+    {
+        const string Prefix = "var onload = 'global'; ({ onload: ";
+        const string Code = Prefix + "function onload() { return typeof onload; } }).onload";
+        var script = JsPreparedScript.Parse(Code, "handler.js", 0, 0, unboundNameFunctionStart: Prefix.Length);
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        realm.GlobalObject.SetProperty("f", realm.Execute(script));
+        Assert.Equal("string", realm.Execute("f()").AsString());
+        Assert.Equal("onload", realm.Execute("f.name").AsString());
+        Assert.Equal("function onload() { return typeof onload; }", realm.Execute("f.toString()").AsString());
+
+        var bound = JsPreparedScript.Parse(Code, "handler.js", 0, 0, unboundNameFunctionStart: -1);
+        realm.GlobalObject.SetProperty("g", realm.Execute(bound));
+        Assert.Equal("function", realm.Execute("g()").AsString());
+
+        Assert.True(JsPreparedScript.TryParse(Code, "handler.js", 0, 0, Prefix.Length, out var parsed, out _));
+        Assert.Equal("handler.js", parsed.Url);
+        Assert.False(JsPreparedScript.TryParse("var = 1", "invalid.js", 0, 0, Prefix.Length, out _, out var error));
+        Assert.Equal("invalid.js", error.Url);
+    }
+
+    [Fact]
     public void Jobs()
     {
         using var engine = new JsEngine();

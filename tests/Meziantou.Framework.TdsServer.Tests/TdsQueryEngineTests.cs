@@ -4054,6 +4054,47 @@ public sealed class TdsQueryEngineTests
         Assert.Equal(Enumerable.Range(0, 24).Select(index => $"Alias{index % 8}"), results);
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The SQL query is generated within the test and not user-controlled.")]
+    public async Task SqlClient_QueryEngine_ProjectionShapesSpanningSeveralDynamicAssemblies_CanReferenceEachOther()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            TdsQueryEngine.CreateQueryHandler(queryEngineOptions));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        // The emitted types are packed in several dynamic assemblies, and each query emits a new carrier type
+        // because the CROSS APPLY alias changes. The column alias first reuses one projection type, then
+        // alternates with a second projection type emitted more than one assembly later, so the next
+        // carriers reference projection types from two different assemblies.
+        for (var index = 0; index < 250; index++)
+        {
+            await using var command = connection.CreateCommand();
+            var columnAlias = index < 80 ? "Item0" : $"Item{index % 2}";
+            command.CommandText = $"""
+                SELECT n{index}.{columnAlias}.value('(@id)[1]', 'int') AS ItemId
+                FROM xml_docs
+                CROSS APPLY Payload.nodes('/root/item') AS n{index}({columnAlias})
+                WHERE Id = 1
+                ORDER BY n{index}.{columnAlias}.value('(@id)[1]', 'int')
+                """;
+
+            await using var reader = await command.ExecuteReaderAsync();
+            Assert.Equal("ItemId\n1\n2", await ReadResultAsync(reader));
+        }
+    }
+
     private static TdsQueryEngineOptions CreateQueryEngineOptions()
     {
         var options = new TdsQueryEngineOptions();

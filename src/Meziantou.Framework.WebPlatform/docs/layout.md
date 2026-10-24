@@ -2852,7 +2852,10 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
   boxes (they are painted and hit tested; `getClientRects()` returns the rectangles of the original ones).
 - **Collapsed borders of a fragmented table**: each fragment of the table grid box paints the collapsed borders of the
   fragments of its cells; the borders along a cell that is broken run to the edge of its fragment, no border is painted
-  across a broken cell, and a border on a grid line that is at a break is half in each fragment.
+  across a broken cell, and a border on a grid line that is at a break is half in each fragment. As in Blink, the joints
+  of a row line at a break are the ones of the column lines of the fragment's rows only (the segments are extended by
+  half of their borders, not of the ones of the other fragment), and at the block-start edge of a fragment the border of
+  the column line at the inline-end joint of a segment covers the joint.
 - **Balancing** (`ColumnBreaker.Balance`, [column-fill](https://drafts.csswg.org/css-multicol-1/#cf)), as in Blink: the initial column
   height distributes the content runs between the forced breaks into the columns (at least the tallest unbreakable interval),
   then the columns are stretched by the minimal space shortage until the content fits in the column count without violating a

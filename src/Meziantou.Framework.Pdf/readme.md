@@ -23,7 +23,8 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   (`PdfPage.CreateContentBuilder`), shadings and functions (`PdfShading`, `PdfFunction`), patterns, form XObjects,
   transparency (`PdfExtGState`: alpha, blend modes, soft masks; transparency groups), the standard 14 fonts and embedded TrueType and OpenType fonts, images (`PdfImage`: JPEG files as they are, other images
   of `Meziantou.Framework.Imaging` with their alpha channel and ICC profile), the document information and the XMP
-  metadata, the outline (bookmarks), links and annotations, text extraction (`PdfPage.ExtractText`)
+  metadata, the outline (bookmarks), links and annotations, embedded files (`PdfDocument.EmbeddedFiles`, file
+  attachment annotations), text extraction (`PdfPage.ExtractText`)
 - **Rendering** (`Meziantou.Framework.Pdf.Rendering`): the pages drawn to images on the canvas of
   `Meziantou.Framework.Imaging`: paths, clipping, optional content and annotation appearances; embedded TrueType, CFF,
   Type 1 and Type 3 fonts and substituted fonts; every color space and image filter; functions, the seven shading types
@@ -239,6 +240,36 @@ cover.Annotations.AddLink(new PdfRectangle(50, 100, 250, 130), new Uri("https://
 ```
 <!-- endref -->
 
+## Embedded files
+
+`PdfDocument.EmbeddedFiles` holds the files of the document (the `/EmbeddedFiles` name tree), which the save also
+associates with the document (`/AF`), as PDF/A-3 and PDF/A-4f require. A file attachment annotation holds a file of a
+page and shows it as an icon. The dates of a file are written only when they are given.
+
+<!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_EmbeddedFiles;format=md-fenced-code-block;dedent=true -->
+```csharp
+var document = new PdfDocument();
+var page = document.Pages.Add(PdfSize.A4);
+
+// A file of the document: the name tree of the catalog, associated with the document
+var csv = "Product,Price\nBook,12\n"u8.ToArray();
+document.EmbeddedFiles.Add("prices.csv", csv, new PdfEmbeddedFileOptions
+{
+    Description = "The prices of the table",
+    MimeType = "text/csv",
+    Relationship = PdfAssociatedFileRelationship.Data,
+    ModificationDate = new DateTimeOffset(2026, 10, 24, 9, 30, 0, TimeSpan.Zero),
+});
+
+// A file of a page: a file attachment annotation, drawn as an icon
+page.Annotations.AddFileAttachment(PdfRectangle.FromSize(60, 700, 16, 20), "notes.txt", "Notes"u8, icon: PdfFileAttachmentIcon.Paperclip);
+
+var read = PdfDocument.Open(document.ToByteArray());
+var prices = read.EmbeddedFiles[0];
+var notes = ((PdfFileAttachmentAnnotation)read.Pages[0].Annotations[0]).File!;
+```
+<!-- endref -->
+
 ## Object model
 
 The high-level types read and write the objects of the document: anything the API does not cover can be done with
@@ -379,7 +410,6 @@ specification says; a content stream that cannot be decoded throws when its data
   method of the other streams.
 - The standard 14 fonts show the text of `WinAnsiEncoding` (or the encodings of Symbol and ZapfDingbats); an embedded
   font shows any text it has the glyphs of. The fonts with CFF2 outlines, and the instances of variable fonts, are not
-  embedded. PDF/A-1, PDF/A-4e and PDF/A-4f, and PDF/UA-2 are not supported; the embedded files of PDF/A-3 cannot be
-  added with the document API.
+  embedded. PDF/A-1, PDF/A-4e and PDF/A-4f, and PDF/UA-2 are not supported.
 - The text extraction follows the order of the content and joins the glyphs into lines by their positions; it does
   not detect columns.

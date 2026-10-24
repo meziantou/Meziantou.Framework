@@ -53,6 +53,55 @@ public sealed class PdfAnnotationCollection : IReadOnlyList<PdfAnnotation>
         return AddLink(rectangle, PdfNames.Dest, destination.ToArray());
     }
 
+    /// <summary>Adds a file attachment annotation (12.5.6.15) that embeds a new file.</summary>
+    /// <param name="rectangle">The region of the icon, in default user space.</param>
+    /// <param name="fileName">The name of the file.</param>
+    /// <param name="data">The content of the file.</param>
+    /// <param name="options">The attributes of the file, or <see langword="null"/> for the defaults.</param>
+    /// <param name="icon">The icon of the annotation.</param>
+    /// <returns>The annotation. Its <see cref="PdfAnnotation.Contents"/>, the text that describes it, is the description of the file or its name.</returns>
+    /// <exception cref="ArgumentException"><paramref name="fileName"/> is empty, or the MIME type is not valid.</exception>
+    public PdfFileAttachmentAnnotation AddFileAttachment(PdfRectangle rectangle, string fileName, ReadOnlySpan<byte> data, PdfEmbeddedFileOptions? options = null, PdfFileAttachmentIcon icon = PdfFileAttachmentIcon.PushPin)
+    {
+        var (dictionary, reference) = PdfEmbeddedFile.Create(_page.Document, fileName, data, options);
+        return AddFileAttachment(rectangle, new PdfEmbeddedFile(_page.Document, dictionary, reference, key: null), icon);
+    }
+
+    /// <summary>Adds a file attachment annotation (12.5.6.15) that holds a file of the document, such as a file of <see cref="PdfDocument.EmbeddedFiles"/>.</summary>
+    /// <param name="rectangle">The region of the icon, in default user space.</param>
+    /// <param name="file">The file.</param>
+    /// <param name="icon">The icon of the annotation.</param>
+    /// <returns>The annotation. Its <see cref="PdfAnnotation.Contents"/>, the text that describes it, is the description of the file or its name.</returns>
+    /// <exception cref="ArgumentException">The file is not an indirect object of the document.</exception>
+    public PdfFileAttachmentAnnotation AddFileAttachment(PdfRectangle rectangle, PdfEmbeddedFile file, PdfFileAttachmentIcon icon = PdfFileAttachmentIcon.PushPin)
+    {
+        ArgumentNullException.ThrowIfNull(file);
+        if (file.Document != _page.Document || file.Reference is not { } fileReference)
+            throw new ArgumentException("The file is not an indirect object of the document of the page", nameof(file));
+
+        var iconName = PdfFileAttachmentAnnotation.GetIconName(icon);
+        var dictionary = new PdfDictionary
+        {
+            [PdfNames.Type] = PdfNames.Annot,
+            [PdfNames.Subtype] = PdfFileAttachmentAnnotation.FileAttachmentName,
+            [PdfNames.Rect] = rectangle.ToArray(),
+            [PdfNames.Contents] = PdfString.FromText(file.Description ?? file.FileName),
+            [PdfNames.P] = _page.Reference,
+
+            // Print, NoZoom and NoRotate (12.5.3): the icon keeps its size and orientation
+            [PdfNames.F] = PdfInteger.Get(4 | 8 | 16),
+            [PdfFileAttachmentAnnotation.FSName] = fileReference,
+            [PdfNames.Name] = iconName,
+
+            // The file is associated with the annotation (14.13.2), which PDF/A-3 requires of every embedded file
+            [PdfEmbeddedFile.AFName] = new PdfArray(fileReference),
+            [PdfName.Create("AP")] = new PdfDictionary { [PdfNames.N] = CreateIcon(rectangle) },
+        };
+        var reference = _page.Document.Objects.Add(dictionary);
+        GetOrCreateArray().Add(reference);
+        return new PdfFileAttachmentAnnotation(_page, dictionary, reference);
+    }
+
     /// <summary>Removes an annotation from the page.</summary>
     /// <param name="annotation">The annotation.</param>
     /// <returns><see langword="true"/> when the annotation was on the page.</returns>
@@ -95,6 +144,35 @@ public sealed class PdfAnnotationCollection : IReadOnlyList<PdfAnnotation>
         var reference = _page.Document.Objects.Add(dictionary);
         GetOrCreateArray().Add(reference);
         return new PdfLinkAnnotation(_page, dictionary, reference);
+    }
+
+    /// <summary>
+    /// Creates the appearance of a file attachment (12.5.5): a sheet with a folded corner, drawn in the rectangle, which
+    /// PDF/A requires (ISO 19005-2, 6.3.3) and viewers show instead of their own icon.
+    /// </summary>
+    private PdfReference CreateIcon(PdfRectangle rectangle)
+    {
+        var (width, height) = (Math.Max(rectangle.Width, 1), Math.Max(rectangle.Height, 1));
+        var form = _page.Document.CreateForm(PdfRectangle.FromSize(0, 0, width, height));
+        var fold = Math.Min(width, height) * 0.3;
+        var line = Math.Max(Math.Min(width, height) * 0.06, 0.5);
+        form.CreateContentBuilder()
+            .SetFillGray(1)
+            .SetStrokeGray(0.25)
+            .SetLineWidth(line)
+            .SetLineJoin(PdfLineJoin.Round)
+            .MoveTo(line, line)
+            .LineTo(width - line, line)
+            .LineTo(width - line, height - fold)
+            .LineTo(width - fold, height - line)
+            .LineTo(line, height - line)
+            .ClosePath()
+            .FillAndStroke()
+            .MoveTo(width - fold, height - line)
+            .LineTo(width - fold, height - fold)
+            .LineTo(width - line, height - fold)
+            .Stroke();
+        return form.Reference;
     }
 
     private PdfArray GetOrCreateArray()

@@ -22,6 +22,7 @@ public sealed partial class PdfDocument
     private PdfDocumentInformation? _information;
     private PdfOutlineCollection? _outlines;
     private PdfStructureTree? _structureTree;
+    private PdfEmbeddedFileCollection? _embeddedFiles;
 
     /// <summary>Initializes a new instance of the <see cref="PdfDocument"/> class: an empty PDF 1.7 document without pages.</summary>
     public PdfDocument()
@@ -118,6 +119,9 @@ public sealed partial class PdfDocument
 
     /// <summary>Gets the pages of the document.</summary>
     public PdfPageCollection Pages => _pages ??= new PdfPageCollection(this);
+
+    /// <summary>Gets the files embedded in the document (ISO 32000-2, 7.11.4): the <c>/EmbeddedFiles</c> name tree of the catalog.</summary>
+    public PdfEmbeddedFileCollection EmbeddedFiles => _embeddedFiles ??= new PdfEmbeddedFileCollection(this);
 
     /// <summary>Gets the document information dictionary (ISO 32000-2, 14.3.3): title, author, dates.</summary>
     public PdfDocumentInformation Information => _information ??= new PdfDocumentInformation(this);

@@ -483,6 +483,137 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void Example_EmbeddedFiles()
+    {
+        #region Pdf_EmbeddedFiles
+        var document = new PdfDocument();
+        var page = document.Pages.Add(PdfSize.A4);
+
+        // A file of the document: the name tree of the catalog, associated with the document
+        var csv = "Product,Price\nBook,12\n"u8.ToArray();
+        document.EmbeddedFiles.Add("prices.csv", csv, new PdfEmbeddedFileOptions
+        {
+            Description = "The prices of the table",
+            MimeType = "text/csv",
+            Relationship = PdfAssociatedFileRelationship.Data,
+            ModificationDate = new DateTimeOffset(2026, 10, 24, 9, 30, 0, TimeSpan.Zero),
+        });
+
+        // A file of a page: a file attachment annotation, drawn as an icon
+        page.Annotations.AddFileAttachment(PdfRectangle.FromSize(60, 700, 16, 20), "notes.txt", "Notes"u8, icon: PdfFileAttachmentIcon.Paperclip);
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        var prices = read.EmbeddedFiles[0];
+        var notes = ((PdfFileAttachmentAnnotation)read.Pages[0].Annotations[0]).File!;
+        #endregion
+
+        Assert.Equal("prices.csv", prices.FileName);
+        Assert.Equal("The prices of the table", prices.Description);
+        Assert.Equal("text/csv", prices.MimeType);
+        Assert.Equal(PdfAssociatedFileRelationship.Data, prices.Relationship);
+        Assert.Equal(new DateTimeOffset(2026, 10, 24, 9, 30, 0, TimeSpan.Zero), prices.ModificationDate);
+        Assert.Null(prices.CreationDate);
+        Assert.Equal(csv.Length, prices.Size);
+        Assert.Equal(csv, prices.GetData());
+        Assert.Same(prices.Dictionary, read.Catalog.Get<PdfArray>(PdfName.Create("AF"))!.GetResolved(0));
+
+        Assert.Equal("notes.txt", notes.FileName);
+        Assert.Equal("application/octet-stream", notes.MimeType);
+        Assert.Equal(PdfAssociatedFileRelationship.Unspecified, notes.Relationship);
+        Assert.Equal("Notes"u8.ToArray(), notes.GetData());
+        var annotation = Assert.IsType<PdfFileAttachmentAnnotation>(read.Pages[0].Annotations[0]);
+        Assert.Equal(PdfFileAttachmentIcon.Paperclip, annotation.Icon);
+        Assert.Equal("notes.txt", annotation.Contents);
+        Assert.NotNull(annotation.Dictionary.Get<PdfDictionary>(PdfName.Create("AP"))!.Get<PdfStream>(PdfNames.N));
+        Assert.Same(notes.Dictionary, annotation.Dictionary.Get<PdfArray>(PdfName.Create("AF"))!.GetResolved(0));
+        Assert.HasCount(1, read.EmbeddedFiles);
+    }
+
+    [Fact]
+    public void TheNameTreeOfTheEmbeddedFilesIsSortedAndFilesAreRemoved()
+    {
+        var document = new PdfDocument();
+        var b = document.EmbeddedFiles.Add("b.txt", "B"u8);
+        document.EmbeddedFiles.Add("a.txt", "A"u8);
+        document.Pages.Add(PdfSize.A4).Annotations.AddFileAttachment(PdfRectangle.FromSize(0, 0, 10, 10), b);
+
+        Assert.Throws<ArgumentException>(() => document.EmbeddedFiles.Add("a.txt", "Other"u8));
+        Assert.Throws<ArgumentException>(() => document.EmbeddedFiles.Add("", "Empty"u8));
+        Assert.Throws<ArgumentException>(() => document.EmbeddedFiles.Add("c.txt", "C"u8, new PdfEmbeddedFileOptions { MimeType = "text plain" }));
+        Assert.Throws<ArgumentException>(() => new PdfDocument().Pages.Add(PdfSize.A4).Annotations.AddFileAttachment(PdfRectangle.FromSize(0, 0, 10, 10), b));
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        var tree = read.Catalog.Get<PdfDictionary>(PdfNames.Names)!.Get<PdfDictionary>(PdfName.Create("EmbeddedFiles"))!;
+        var names = tree.Get<PdfArray>(PdfNames.Names)!;
+        Assert.Equal(["a.txt", "b.txt"], [((PdfString)names.GetResolved(0)).ToText(), ((PdfString)names.GetResolved(2)).ToText()]);
+        Assert.Equal(["a.txt", "b.txt"], read.EmbeddedFiles.Select(file => file.FileName));
+
+        // The page keeps its file: the file of the name tree is removed from the tree and from the associated files
+        var removed = read.EmbeddedFiles[1];
+        Assert.True(read.EmbeddedFiles.Remove(removed));
+        Assert.False(read.EmbeddedFiles.Remove(removed));
+        Assert.True(read.EmbeddedFiles.Remove(read.EmbeddedFiles[0]));
+        var saved = PdfDocument.Open(read.ToByteArray());
+        Assert.Empty(saved.EmbeddedFiles);
+        Assert.Null(saved.Catalog[PdfNames.Names]);
+        Assert.Null(saved.Catalog[PdfName.Create("AF")]);
+        Assert.Equal("B"u8.ToArray(), ((PdfFileAttachmentAnnotation)saved.Pages[0].Annotations[0]).File!.GetData());
+    }
+
+    [Fact]
+    public void TheEmbeddedFilesOfAFileAreRead()
+    {
+        // A name tree of two levels with limits, a file with /F only and a file without embedded file stream
+        var file = HandWrittenPdf.CreateSimple()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R /Names << /EmbeddedFiles 6 0 R >> >>")
+            .Add(6, "<< /Kids [7 0 R 8 0 R] >>")
+            .Add(7, "<< /Limits [(a.txt) (a.txt)] /Names [(a.txt) 9 0 R] >>")
+            .Add(8, "<< /Limits [(b.txt) (c.txt)] /Names [(b.txt) << /Type /Filespec /F (external.txt) >> (c.txt) 10 0 R] >>")
+            .Add(9, "<< /Type /Filespec /F (a.txt) /Desc (First) /AFRelationship /Source /EF << /F 11 0 R >> >>")
+            .Add(10, "<< /Type /Filespec /UF (\\376\\377\\000\\351\\000.\\000t) /EF << /F 12 0 R >> >>")
+            .Add(11, HandWrittenPdf.Stream("Hello", " /Type /EmbeddedFile /Subtype /text#2Fplain /Params << /Size 5 /CreationDate (D:20260102030405Z) >>"))
+            .Add(12, HandWrittenPdf.Stream("Bonjour"));
+
+        var document = PdfDocument.Open(file.ToArray());
+
+        Assert.Equal(["a.txt", "external.txt", "\u00E9.t"], document.EmbeddedFiles.Select(f => f.FileName));
+        var first = document.EmbeddedFiles[0];
+        Assert.Equal("First", first.Description);
+        Assert.Equal("text/plain", first.MimeType);
+        Assert.Equal(PdfAssociatedFileRelationship.Source, first.Relationship);
+        Assert.Equal(new DateTimeOffset(2026, 1, 2, 3, 4, 5, TimeSpan.Zero), first.CreationDate);
+        Assert.Equal(5, first.Size);
+        Assert.Equal("Hello"u8.ToArray(), first.GetData());
+        Assert.Throws<InvalidPdfContentException>(() => document.EmbeddedFiles[1].GetData());
+        Assert.Null(document.EmbeddedFiles[2].MimeType);
+        Assert.Null(document.EmbeddedFiles[2].Size);
+        Assert.Equal("Bonjour"u8.ToArray(), document.EmbeddedFiles[2].GetData());
+    }
+
+    [Fact]
+    public void PdfA2EmbedsPdfADocumentsOnly()
+    {
+        var font = PdfFont.Load(TestHarness.RepositoryPaths.Fonts / "noto-sans" / "NotoSans-Regular.subset.ttf");
+        var archived = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B };
+        archived.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Archived", font, 12, 10, 10);
+        var document = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B };
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Text", font, 12, 10, 10);
+        document.EmbeddedFiles.Add("archived.pdf", archived.ToByteArray(), new PdfEmbeddedFileOptions { MimeType = "application/pdf" });
+        Assert.NotEmpty(document.ToByteArray());
+
+        document.EmbeddedFiles.Add("plain.pdf", new PdfDocument().ToByteArray());
+        document.EmbeddedFiles.Add("data.csv", "a,b"u8);
+        var message = Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message;
+        Assert.Contains("'plain.pdf' is not a PDF/A-1, PDF/A-2 document", message, StringComparison.Ordinal);
+        Assert.Contains("'data.csv' is not a PDF/A-1, PDF/A-2 document", message, StringComparison.Ordinal);
+        Assert.DoesNotContain("archived.pdf", message, StringComparison.Ordinal);
+
+        // PDF/A-3 embeds any file
+        document.PdfAConformance = PdfAConformance.PdfA3B;
+        Assert.NotEmpty(document.ToByteArray());
+    }
+
+    [Fact]
     public void Example_OutlineAndLinks()
     {
         #region Pdf_OutlineAndLinks

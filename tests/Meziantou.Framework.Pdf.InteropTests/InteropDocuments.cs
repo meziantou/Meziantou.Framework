@@ -7,7 +7,10 @@ namespace Meziantou.Framework.Pdf.InteropTests;
 /// <summary>The documents the interop tests give to the external tools: documents the library writes, and the fixtures.</summary>
 internal static class InteropDocuments
 {
-    public static readonly string[] WrittenNames = ["text", "graphics", "images", "navigation", "metadata", "fonts", "advanced-graphics"];
+    public static readonly string[] WrittenNames = ["text", "graphics", "images", "navigation", "metadata", "fonts", "advanced-graphics", "attachments"];
+
+    /// <summary>The content of the <c>data.csv</c> file of the "attachments" document.</summary>
+    public static readonly byte[] AttachedCsv = "a,b\n1,2\n"u8.ToArray();
 
     /// <summary>The embedded fonts of the "fonts" document, and the text of its page for each one.</summary>
     public static readonly (string Font, string Text)[] EmbeddedFonts =
@@ -135,6 +138,23 @@ internal static class InteropDocuments
             case "advanced-graphics":
                 CreateAdvancedGraphics(document);
                 break;
+            case "attachments":
+                {
+                    var page = document.Pages.Add(PdfSize.A4);
+                    var data = document.EmbeddedFiles.Add("data.csv", AttachedCsv, new PdfEmbeddedFileOptions
+                    {
+                        Description = "The data",
+                        MimeType = "text/csv",
+                        Relationship = PdfAssociatedFileRelationship.Data,
+                        CreationDate = new DateTimeOffset(2024, 5, 6, 7, 8, 9, TimeSpan.FromHours(2)),
+                        ModificationDate = new DateTimeOffset(2024, 5, 6, 7, 8, 9, TimeSpan.Zero),
+                    });
+                    document.EmbeddedFiles.Add("r\u00E9sum\u00E9.txt", "R\u00E9sum\u00E9"u8);
+                    page.Annotations.AddFileAttachment(PdfRectangle.FromSize(60, 700, 16, 20), data);
+                    page.Annotations.AddFileAttachment(PdfRectangle.FromSize(100, 700, 16, 20), "page.txt", "Page"u8, icon: PdfFileAttachmentIcon.Tag);
+                    break;
+                }
+
             case "fonts":
                 foreach (var (font, text) in EmbeddedFonts)
                 {

@@ -63,6 +63,38 @@ public sealed class QpdfTool
         return new QpdfObjects(objects, result.ExitCode == 3);
     }
 
+    /// <summary>Gets the content of an embedded file of the document, as qpdf reads it (<c>--show-attachment</c>).</summary>
+    /// <param name="path">The file.</param>
+    /// <param name="key">The key of the file in the <c>/EmbeddedFiles</c> name tree.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>The bytes of the embedded file.</returns>
+    /// <exception cref="InvalidOperationException">qpdf failed.</exception>
+    public async Task<byte[]> ShowAttachmentAsync(string path, string key, CancellationToken cancellationToken)
+    {
+        var result = await ProcessRunner.RunAsync(Path, ["--show-attachment=" + key, path], cancellationToken).ConfigureAwait(false);
+        if (result.ExitCode != 0)
+            throw new InvalidOperationException(string.Create(CultureInfo.InvariantCulture, $"qpdf --show-attachment failed on '{path}' (exit code {result.ExitCode}): {result.StandardError}"));
+
+        return result.StandardOutput.ToArray();
+    }
+
+    /// <summary>Gets the keys of the embedded files of the document (<c>--list-attachments</c>).</summary>
+    /// <param name="path">The file.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>The keys of the <c>/EmbeddedFiles</c> name tree, in the order qpdf lists them.</returns>
+    /// <exception cref="InvalidOperationException">qpdf failed.</exception>
+    public async Task<IReadOnlyList<string>> ListAttachmentsAsync(string path, CancellationToken cancellationToken)
+    {
+        var result = await ProcessRunner.RunAsync(Path, ["--list-attachments", path], cancellationToken).ConfigureAwait(false);
+        if (result.ExitCode != 0)
+            throw new InvalidOperationException(string.Create(CultureInfo.InvariantCulture, $"qpdf --list-attachments failed on '{path}' (exit code {result.ExitCode}): {result.StandardError}"));
+
+        // Each line is "key -> number,generation"
+        return [.. result.StandardOutputText.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(line => line.Contains(" -> ", StringComparison.Ordinal))
+            .Select(line => line[..line.LastIndexOf(" -> ", StringComparison.Ordinal)])];
+    }
+
     /// <summary>Rewrites a file with options, such as <c>--object-streams=generate</c> or <c>--linearize</c>.</summary>
     /// <param name="inputPath">The file to read.</param>
     /// <param name="outputPath">The file to write.</param>

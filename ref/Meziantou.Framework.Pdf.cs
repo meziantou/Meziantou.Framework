@@ -36,6 +36,8 @@ namespace Meziantou.Framework.Pdf
     {
         public int Count { get => throw null; }
         public Meziantou.Framework.Pdf.PdfAnnotation this[int index] { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfFileAttachmentAnnotation AddFileAttachment(Meziantou.Framework.Pdf.PdfRectangle rectangle, Meziantou.Framework.Pdf.PdfEmbeddedFile file, Meziantou.Framework.Pdf.PdfFileAttachmentIcon icon = Meziantou.Framework.Pdf.PdfFileAttachmentIcon.PushPin) => throw null;
+        public Meziantou.Framework.Pdf.PdfFileAttachmentAnnotation AddFileAttachment(Meziantou.Framework.Pdf.PdfRectangle rectangle, string fileName, System.ReadOnlySpan<byte> data, Meziantou.Framework.Pdf.PdfEmbeddedFileOptions? options = null, Meziantou.Framework.Pdf.PdfFileAttachmentIcon icon = Meziantou.Framework.Pdf.PdfFileAttachmentIcon.PushPin) => throw null;
         public Meziantou.Framework.Pdf.PdfLinkAnnotation AddLink(Meziantou.Framework.Pdf.PdfRectangle rectangle, Meziantou.Framework.Pdf.PdfDestination destination) => throw null;
         public Meziantou.Framework.Pdf.PdfLinkAnnotation AddLink(Meziantou.Framework.Pdf.PdfRectangle rectangle, System.Uri uri) => throw null;
         public System.Collections.Generic.IEnumerator<Meziantou.Framework.Pdf.PdfAnnotation> GetEnumerator() => throw null;
@@ -50,6 +52,18 @@ namespace Meziantou.Framework.Pdf
         Layout = 2,
         Page = 3,
         Background = 4,
+    }
+
+    public enum PdfAssociatedFileRelationship
+    {
+        Unspecified = 0,
+        Source = 1,
+        Data = 2,
+        Alternative = 3,
+        Supplement = 4,
+        EncryptedPayload = 5,
+        FormData = 6,
+        Schema = 7,
     }
 
     public enum PdfBlendMode
@@ -211,6 +225,7 @@ namespace Meziantou.Framework.Pdf
     public sealed class PdfDocument
     {
         public Meziantou.Framework.Pdf.Objects.PdfDictionary Catalog { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfEmbeddedFileCollection EmbeddedFiles { get => throw null; }
         public Meziantou.Framework.Pdf.PdfEncryption? Encryption { get => throw null; set { } }
         public Meziantou.Framework.Pdf.PdfDocumentInformation Information { get => throw null; }
         public bool IsEncrypted { get => throw null; }
@@ -260,6 +275,39 @@ namespace Meziantou.Framework.Pdf
         public void SetText(string key, string? value) { }
     }
 
+    public sealed class PdfEmbeddedFile
+    {
+        public System.DateTimeOffset? CreationDate { get => throw null; }
+        public string? Description { get => throw null; }
+        public Meziantou.Framework.Pdf.Objects.PdfDictionary Dictionary { get => throw null; }
+        public string FileName { get => throw null; }
+        public string? MimeType { get => throw null; }
+        public System.DateTimeOffset? ModificationDate { get => throw null; }
+        public Meziantou.Framework.Pdf.Objects.PdfReference? Reference { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfAssociatedFileRelationship Relationship { get => throw null; }
+        public long? Size { get => throw null; }
+        public byte[] GetData() => throw null;
+    }
+
+    public sealed class PdfEmbeddedFileCollection : System.Collections.Generic.IEnumerable<Meziantou.Framework.Pdf.PdfEmbeddedFile>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Pdf.PdfEmbeddedFile>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfEmbeddedFile>, System.Collections.IEnumerable
+    {
+        public int Count { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfEmbeddedFile this[int index] { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfEmbeddedFile Add(string fileName, System.ReadOnlySpan<byte> data, Meziantou.Framework.Pdf.PdfEmbeddedFileOptions? options = null) => throw null;
+        public System.Collections.Generic.IEnumerator<Meziantou.Framework.Pdf.PdfEmbeddedFile> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public bool Remove(Meziantou.Framework.Pdf.PdfEmbeddedFile file) => throw null;
+    }
+
+    public sealed class PdfEmbeddedFileOptions
+    {
+        public System.DateTimeOffset? CreationDate { get => throw null; init { } }
+        public string? Description { get => throw null; init { } }
+        public string? MimeType { get => throw null; init { } }
+        public System.DateTimeOffset? ModificationDate { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfAssociatedFileRelationship Relationship { get => throw null; init { } }
+    }
+
     public sealed class PdfEncryption
     {
         public Meziantou.Framework.Pdf.PdfEncryptionAlgorithm Algorithm { get => throw null; init { } }
@@ -302,6 +350,20 @@ namespace Meziantou.Framework.Pdf
         public double? StrokeAlpha { get => throw null; init { } }
         public bool? StrokeOverprint { get => throw null; init { } }
         public bool? TextKnockout { get => throw null; init { } }
+    }
+
+    public sealed class PdfFileAttachmentAnnotation : Meziantou.Framework.Pdf.PdfAnnotation
+    {
+        public Meziantou.Framework.Pdf.PdfEmbeddedFile? File { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfFileAttachmentIcon Icon { get => throw null; }
+    }
+
+    public enum PdfFileAttachmentIcon
+    {
+        PushPin = 0,
+        Paperclip = 1,
+        Graph = 2,
+        Tag = 3,
     }
 
     public enum PdfFillRule

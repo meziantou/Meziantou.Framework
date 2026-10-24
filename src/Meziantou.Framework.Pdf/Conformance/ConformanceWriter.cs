@@ -56,6 +56,8 @@ internal static class ConformanceWriter
             }
         }
 
+        CheckEmbeddedFiles(document, errors);
+
         var isPdfA4 = pdfA == PdfAConformance.PdfA4;
         if (pdfA != PdfAConformance.None && !isPdfA4 && document.Version > PdfVersion.Pdf17)
         {
@@ -121,6 +123,83 @@ internal static class ConformanceWriter
         // PDF/A-2 and PDF/A-3 only know the schemas of XMP 2005: the PDF/UA identification is described by an extension schema
         var describePdfUA = pdfUA != PdfUAConformance.None && pdfA != PdfAConformance.None && !isPdfA4;
         document.SetXmpMetadata(XmpPacketWriter.Write(document.Information, properties, describePdfUA));
+    }
+
+    /// <summary>
+    /// Checks the embedded files (ISO 19005-2, 6.8; ISO 19005-3, 6.8; ISO 19005-4, 6.9): PDF/A-2 and PDF/A-4 embed PDF/A
+    /// documents only, PDF/A-3 any file whose file specification has a name, a MIME type and a relationship.
+    /// </summary>
+    private static void CheckEmbeddedFiles(PdfDocument document, List<string> errors)
+    {
+        var pdfA = document.PdfAConformance;
+        if (pdfA == PdfAConformance.None)
+            return;
+
+        foreach (var file in GetEmbeddedFiles(document))
+        {
+            var name = file.FileName;
+            if (file.Dictionary.GetText(PdfNames.F) is null || file.Dictionary.GetText(PdfEmbeddedFile.UFName) is null)
+            {
+                errors.Add($"The file specification of the embedded file '{name}' needs the F and UF entries");
+            }
+
+            if (pdfA is PdfAConformance.PdfA2B or PdfAConformance.PdfA2U or PdfAConformance.PdfA2A or PdfAConformance.PdfA4)
+            {
+                // ISO 19005-2, 6.8 and ISO 19005-4, 6.9: the embedded files are PDF/A documents
+                int[] parts = pdfA == PdfAConformance.PdfA4 ? [1, 2, 4] : [1, 2];
+                var part = GetPdfAPart(file);
+                if (part is null || !parts.Contains(part.Value))
+                {
+                    errors.Add($"The embedded file '{name}' is not a PDF/A-{string.Join(", PDF/A-", parts)} document: {pdfA} embeds PDF/A documents only");
+                }
+            }
+
+            if (pdfA is PdfAConformance.PdfA3B or PdfAConformance.PdfA3U or PdfAConformance.PdfA3A or PdfAConformance.PdfA4)
+            {
+                if (file.MimeType is null)
+                {
+                    errors.Add($"The embedded file '{name}' needs a MIME type (the Subtype of its stream)");
+                }
+
+                if (file.Dictionary.GetName(PdfEmbeddedFile.AFRelationshipName) is null)
+                {
+                    errors.Add($"The file specification of the embedded file '{name}' needs the AFRelationship entry");
+                }
+            }
+        }
+    }
+
+    /// <summary>Gets the files of the name tree of the document and of the file attachment annotations of its pages.</summary>
+    private static List<PdfEmbeddedFile> GetEmbeddedFiles(PdfDocument document)
+    {
+        var result = document.EmbeddedFiles.Where(file => file.Stream is not null).ToList();
+        var visited = new HashSet<PdfDictionary>(result.Select(file => file.Dictionary), ReferenceEqualityComparer.Instance);
+        foreach (var page in document.Pages)
+        {
+            foreach (var annotation in page.Annotations)
+            {
+                if (annotation is PdfFileAttachmentAnnotation { File: { } file } && file.Stream is not null && visited.Add(file.Dictionary))
+                {
+                    result.Add(file);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>Gets the part of ISO 19005 an embedded file claims, or <see langword="null"/> when it is not a PDF/A document.</summary>
+    private static int? GetPdfAPart(PdfEmbeddedFile file)
+    {
+        try
+        {
+            var embedded = PdfDocument.Open(file.GetData());
+            return embedded.GetXmpMetadata() is { } metadata ? XmpIdentification.ReadPdfAPart(metadata) : null;
+        }
+        catch (PdfException)
+        {
+            return null;
+        }
     }
 
     /// <summary>The output intent of PDF/A (ISO 19005-2, 6.2.3): the sRGB profile, which gives the meaning of the device color spaces.</summary>

@@ -849,7 +849,7 @@ the fragment. The contents of the box (the `foreignObject` boxes of an `svg`) ar
   `textarea` are the ones laid out in its inline size, where they wrap: `ReplacedFormattingContext.GetAutomaticBlockSize`;
   a list box has as many rows as displayed options, none when it has none). A drop-down box with size containment is
   sized as an empty drop-down box (its arrow and one line) in the axes where `contain-intrinsic-size` is `none`, as in the
-  browsers (it is a widget, not a replaced element). The labels are measured after `text-transform`. As in the browsers, a drop-down `select` with
+  browsers (it is a widget, not a replaced element), and a list box as an empty list box (its rows and its scrollbar). The labels are measured after `text-transform`. As in the browsers, a drop-down `select` with
   its native appearance ignores `line-height` (it is laid out with `normal`; the computed value is not changed), and `size=0` is a drop-down box whose first option
   is selected (the specification only says so for a display size of 1). The sizes are logical (swapped in vertical writing modes); the buttons have the paddings and
   borders of Chrome in the UA style sheet (`padding-block: 1px`, `padding-inline: 6px`, `2px outset`), a drop-down `select`
@@ -1876,7 +1876,11 @@ an atomic inline laid out while its parent collects its items rents another inst
   the block container of the line, not from its originating element, and the styles of several ancestors are nested, the
   outermost first (`GetRootFirstLineStyle`). The background of `::first-line` (its color and its images) is painted behind
   the content of the line (`Painter.PaintFirstLineBackground`: the content area of the root inline box along the in-flow
-  content of a horizontal line, which is also the positioning area of the images). The backgrounds, the shadows and the
+  content of a horizontal line, which is also the positioning area of the images). The `vertical-align` of `::first-line`
+  ("any inline layout properties that apply to inline elements") aligns its fictional inline box, which wraps the content of
+  the line, relative to the root inline box (`AlignVertically`): the root inline box then has the strut of the block
+  container, the fictional box has the layout bounds of the `::first-line` style, and the background is painted on its content
+  area (`LineBoxFragment.FirstLineBoxBaseline`), as in Gecko (Blink and WebKit ignore it). The backgrounds, the shadows and the
   colors of the borders and of the outline of the inline boxes of the first line are painted with their style inheriting
   from `::first-line` (`Painter.GetDecorationStyle`: e.g. a `currentcolor` background or border; the widths and the styles
   of the borders are the ones of the box, and a `filter` applies to the box as a whole with the colors of its style). Only the
@@ -1939,12 +1943,16 @@ an atomic inline laid out while its parent collects its items rents another inst
   inline box. An outside marker (`PendingOutsideMarker`) is placed next to the first line box of its list item that is not
   empty, also in a descendant block container (the list item passes it to its first in-flow block container child in
   `ConstraintSpace.OutsideMarker`): the inline-end edge of its margin box is at the inline-start edge of the content box, its
-  baseline on the baseline of the line. A line box shortened by a float on its start side moves the marker beside the float
+  baseline on the baseline of the line. A line of an anonymous block box of the list item (e.g. the one of a block-in-inline
+  split) places it as a line of the list item: outside of the border box of the list item, as in Blink and Gecko
+  (`PendingOutsideMarker.ListItemContentInlineOffset`). A line box shortened by a float on its start side moves the marker beside the float
   (also the marker of a list item without content, which is where its line box would be). As in the browsers, the marker of a list item with inline content is part of its
   first line: its margin box makes the line taller (a marker image, a marker with a larger font; `AlignVertically`), also
   the line of a list item without content (`PlaceWithoutLine`); the marker placed next to a line of a descendant block
   container does not change this line. The outside marker is painted before the content of its list item (it precedes it
-  in the tree), which may overlap it. The bullets of the predefined counter styles (`disc`, `circle`, `square`, the
+  in the tree), which may overlap it. A marker placed next to a line of a positioned descendant block that does not
+  establish a stacking context belongs to the inline content of the list item: it is painted under the positioned block
+  (`PaintOrder.GetListItemPaintingMarker`), as in Blink and Gecko. The bullets of the predefined counter styles (`disc`, `circle`, `square`, the
   disclosure triangles) are symbols: `letter-spacing` and `word-spacing` do not space them. The marker is not passed to a child that clips
   its overflow, which would clip it. When no line box placed the marker, it is aligned with the first baseline of the
   in-flow children of the list item, if any (the baseline of a flex or grid container, of a table, of a block that

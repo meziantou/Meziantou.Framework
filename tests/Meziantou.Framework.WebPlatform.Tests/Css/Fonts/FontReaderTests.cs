@@ -123,7 +123,7 @@ public sealed class FontReaderTests
 
         var extended = new byte[((data.Length + 3) & ~3) + 4];
         data.CopyTo(extended, 0);
-        System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(extended.AsSpan(8), (uint)extended.Length);
+        BinaryPrimitives.WriteUInt32BigEndian(extended.AsSpan(8), (uint)extended.Length);
         Assert.Null(FontFile.Load(extended));
 
         // The reserved field of the header is ignored
@@ -187,6 +187,33 @@ public sealed class FontReaderTests
         Assert.Equal(-143, font.GetKerning(font.GetGlyphId('T'), font.GetGlyphId('o')));
         Assert.Equal(0, font.GetKerning(v, v));
         Assert.True(font.GetPairAdjustment(a, v, Tag("liga")).IsEmpty);
+    }
+
+    [Fact]
+    public void Metrics_DescentAboveTheBaselineIsInverted()
+    {
+        // A positive descender (above the baseline) is a sign error of the font, inverted as in Gecko: the Revalia font of WPT
+        // css/CSS2/visudet/line-height-204.html has a descender of +382 units in its hhea and OS/2 tables
+        var data = File.ReadAllBytes(Bundled("Ahem.ttf"));
+        var tableCount = BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(4));
+        for (var i = 0; i < tableCount; i++)
+        {
+            var record = data.AsSpan(12 + (i * 16));
+            var tag = BinaryPrimitives.ReadUInt32BigEndian(record);
+            var offset = (int)BinaryPrimitives.ReadUInt32BigEndian(record[8..]);
+            if (tag == Tag("hhea"))
+            {
+                BinaryPrimitives.WriteInt16BigEndian(data.AsSpan(offset + 6), 150);
+            }
+            else if (tag == Tag("OS/2"))
+            {
+                BinaryPrimitives.WriteInt16BigEndian(data.AsSpan(offset + 70), 150);
+            }
+        }
+
+        var font = (FontFile.Load(data) ?? throw new InvalidOperationException("The font is invalid")).Faces[0];
+        Assert.Equal(800, font.Metrics.Ascent);
+        Assert.Equal(150, font.Metrics.Descent);
     }
 
     [Fact]

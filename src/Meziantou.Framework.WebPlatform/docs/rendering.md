@@ -195,9 +195,11 @@ sample is published with Native AOT on CI), and the same document gives the same
   with (the two libraries share the font reader of Meziantou.Framework.Fonts, so a font file is read once), per face and
   instance of the variation axes (`FontCache`), and the coverages of the glyphs are cached per backend (`GlyphCache`). On
   the pixel grid, the origin of a glyph is rounded to a quarter of a device pixel along the line and to a whole pixel across
-  it, as the glyph caches of the browsers do. The synthetic bold thickens the outline (1/24 of the font size up to 9px, 1/32
-  from 36px), the synthetic oblique is a shear of the glyphs (the painting draws the upright glyphs of vertical text with a
-  vertical skew transform around the center of their column instead, `DisplayFont.SyntheticObliqueAngle` 0), and a
+  it, as the glyph caches of the browsers do; the positions of the glyphs of the CSS text are first rounded to 1/4096 px
+  (`Painter.QuantizeGlyphOrigin`), so that the same position computed through a computed value (whose lengths have 6
+  decimals, e.g. a relative offset set by a script) is rounded to the same quarter. The synthetic bold thickens the
+  outline (1/24 of the font size up to 9px, 1/32 from 36px), the synthetic oblique is a shear of the glyphs (the painting
+  draws the upright glyphs of vertical text with a vertical skew transform around the center of their column instead, `DisplayFont.SyntheticObliqueAngle` 0), and a
   combined upright text is compressed with the horizontal scale of the run. The glyphs of `COLR` version 0 reach the backend
   as the glyph runs of their layers (see [Color glyphs](#color-glyphs)); the other color glyphs (`COLR` version 1, `sbix`,
   `CBDT`) are drawn by Meziantou.Framework.Imaging with their colors (the first palette of the font), faded by the alpha of

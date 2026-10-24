@@ -551,7 +551,7 @@ internal sealed partial class Painter
 
             var x = forward ? pens[i] : inlineSize - pens[i] - glyph.Advance;
             ids.Add(glyph.GlyphId);
-            positions.Add(new PhysicalOffset(origin.X + x + glyph.OffsetX, origin.Y + glyph.OffsetY));
+            positions.Add(new PhysicalOffset(QuantizeGlyphOrigin(origin.X + x + glyph.OffsetX), origin.Y + glyph.OffsetY));
         }
 
         if (!forward)
@@ -560,6 +560,18 @@ internal sealed partial class Painter
         }
 
         return ids.Count == 0 ? null : new GlyphRun(font, [.. ids], [.. positions], text);
+    }
+
+    /// <summary>
+    /// Rounds the position of a glyph along the line to 1/4096 px: the backends move the origin of a glyph to the nearest quarter
+    /// of a pixel, and a position computed through a computed value (whose lengths are serialized with 6 decimals, e.g. a relative
+    /// offset set by a script) differs from the same position computed by the layout by a few millionths of a pixel, which moves
+    /// the glyph to the other quarter when it is halfway between two (WPT css/css-grid/grid-lanes/grid-placement/row-explicit-placement-005.html).
+    /// </summary>
+    private static double QuantizeGlyphOrigin(double value)
+    {
+        const double Steps = 4096;
+        return Math.Round(value * Steps, MidpointRounding.AwayFromZero) / Steps;
     }
 
     /// <summary>

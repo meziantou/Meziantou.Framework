@@ -948,7 +948,7 @@ internal sealed partial class Painter
         var metrics = style.Fonts.PrimaryFont.GetMetrics(style.Layout.FontSize);
         var offset = line.GetOffsetInRoot() - _group.Origin;
         SyncClips(GetClipChain(line, includeSelf: false));
-        var rect = SnapToDevicePixels(new PhysicalRect(offset.X + left, offset.Y + line.Baseline - metrics.Ascent, right - left, metrics.Ascent + metrics.Descent));
+        var rect = SnapToDevicePixels(new PhysicalRect(offset.X + left, offset.Y + (line.FirstLineBoxBaseline ?? line.Baseline) - metrics.Ascent, right - left, metrics.Ascent + metrics.Descent));
         if (!color.IsTransparent)
         {
             _builder.Add(new DrawRectItem(rect, new DisplayPaint(color)) { Source = style.Element });

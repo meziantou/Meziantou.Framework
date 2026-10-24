@@ -1310,6 +1310,12 @@ internal sealed class LineBoxFragment : Fragment
     public double Baseline { get; }
 
     /// <summary>
+    /// The position of the baseline of the fictional inline box of <c>::first-line</c> (from the block-start edge of the line box)
+    /// when its <c>vertical-align</c> moves it away from <see cref="Baseline"/>, or null: its background is painted there.
+    /// </summary>
+    public double? FirstLineBoxBaseline { get; internal set; }
+
+    /// <summary>
     /// How much the ruby annotations of the line overflow the block-end side of the line box (https://drafts.csswg.org/css-ruby-1/#line-height):
     /// the next line is placed after them, and the fragmentation does not break before their end.
     /// </summary>

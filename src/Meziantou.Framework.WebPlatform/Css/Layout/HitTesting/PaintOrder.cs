@@ -997,14 +997,30 @@ internal static class PaintOrder
         }
 
         // The outside marker of a list item precedes its content in the tree (the layout adds its fragment after the line box it
-        // is placed next to): it is painted first, under the content that overlaps it
+        // is placed next to): it is painted first, under the content that overlaps it. A marker placed next to a line of a
+        // positioned descendant block belongs to the inline content of the list item: it is painted under the positioned block
+        // (as in Blink and Gecko, WPT css/css-lists/outside-marker-covered-by-relpos-block-link.html)
         var hasOutsideMarker = false;
+        if (fragment is BoxFragment { Box: var listItem } && GetOutsideMarkerBox(listItem) is { } markerBox)
+        {
+            for (var markerFragment = markerBox.FirstFragment; markerFragment is not null; markerFragment = markerFragment.NextFragmentOfBox)
+            {
+                if (markerFragment is BoxFragment marker && ReferenceEquals(GetListItemPaintingMarker(marker), fragment))
+                {
+                    PaintChild(marker);
+                }
+            }
+        }
+
         foreach (var child in fragment.ChildrenSpan)
         {
-            if (child is BoxFragment { Box.IsOutsideMarker: true })
+            if (child is BoxFragment { Box.IsOutsideMarker: true } marker)
             {
                 hasOutsideMarker = true;
-                PaintChild(child);
+                if (GetListItemPaintingMarker(marker) is null)
+                {
+                    PaintChild(child);
+                }
             }
         }
 
@@ -1041,6 +1057,43 @@ internal static class PaintOrder
                     break;
             }
         }
+    }
+
+    private static ContainerBox? GetOutsideMarkerBox(ContainerBox box)
+    {
+        foreach (var child in box.Children)
+        {
+            if (child is ContainerBox { IsOutsideMarker: true } marker)
+                return marker;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Returns the fragment of the list item that paints an outside marker placed next to a line of a positioned descendant block
+    /// that does not establish a stacking context (the marker belongs to the inline content of the list item, under the
+    /// positioned block), or null when the marker is painted with the block container of the line.
+    /// </summary>
+    private static BoxFragment? GetListItemPaintingMarker(BoxFragment marker)
+    {
+        var listItem = marker.Box.Parent;
+        var inLayer = false;
+        for (var ancestor = marker.Parent; ancestor is not null; ancestor = ancestor.Parent)
+        {
+            if (ancestor is not BoxFragment box)
+                continue;
+
+            if (ReferenceEquals(box.Box, listItem))
+                return inLayer ? box : null;
+
+            if (box.EstablishesStackingContext)
+                return null;
+
+            inLayer |= IsPositioned(box);
+        }
+
+        return null;
     }
 
     /// <summary>

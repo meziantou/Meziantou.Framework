@@ -14934,10 +14934,10 @@
     "reftest": "PASS"
   },
   "css/CSS2/selectors/first-line-pseudo-012.xht": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/selectors/first-line-pseudo-013.xht": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/selectors/first-line-pseudo-014.xht": {
     "reftest": "PASS"
@@ -14946,7 +14946,7 @@
     "reftest": "PASS"
   },
   "css/CSS2/selectors/first-line-pseudo-016.xht": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/selectors/first-line-pseudo-018.xht": {
     "reftest": "PASS"

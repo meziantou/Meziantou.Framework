@@ -12,6 +12,12 @@ internal sealed partial class InlineLayoutAlgorithm
     private bool _rootHasText;
 
     /// <summary>
+    /// The position of the baseline of the fictional inline box of <c>::first-line</c> from the line-over edge of the line box,
+    /// when its <c>vertical-align</c> moves it away from the baseline of the root inline box (see <see cref="AlignVertically"/>), or null.
+    /// </summary>
+    private double? _firstLineBoxBaseline;
+
+    /// <summary>
     /// Places the leaves in visual order (rule L2 of UAX #9) from the line-left edge of the line box, in the fragments of their
     /// inline boxes. An inline box whose content is not contiguous after the reordering has several fragments on the line:
     /// its inline-start edges are on the fragment of its start in its direction, the inline-end ones on the fragment of its
@@ -361,13 +367,32 @@ internal sealed partial class InlineLayoutAlgorithm
     /// </summary>
     private (double BlockSize, double Baseline) AlignVertically(bool isFirstLine, bool isEmpty)
     {
-        var nodes = CollectionsMarshal.AsSpan(_nodes);
-
         // (as in the browsers, the line height quirks do not apply to the lines of a list item: https://github.com/whatwg/quirks/issues/38)
         var quirks = _context.UsesLineHeightQuirks && !_block.Display.IsListItem;
 
         // https://drafts.csswg.org/css-inline-3/#strut: the root inline box has the font and the line height of the block container
-        var rootMetrics = GetMetrics(GetLineStyle(_block, isFirstLine));
+        // (its ::first-line style on the first line, as in the browsers)
+        var rootStyle = GetLineStyle(_block, isFirstLine);
+        var rootMetrics = GetMetrics(rootStyle);
+        var strutStyle = rootStyle;
+        var strutMetrics = rootMetrics;
+
+        // https://drafts.csswg.org/css-pseudo-4/#first-line-styling: the vertical-align of ::first-line ("any inline layout properties
+        // that apply to inline elements") aligns its fictional inline box, which wraps the content of the line, relative to the root
+        // inline box: the root inline box then has the strut of the block container, and the fictional box (an extra node, removed
+        // before the fragments are created) has the layout bounds of the ::first-line style, as in Gecko (Blink and WebKit ignore it)
+        _firstLineBoxBaseline = null;
+        var wrapperIndex = -1;
+        if (isFirstLine && !isEmpty && !HasRuby && _firstLineRoot is not null && rootStyle.Layout.VerticalAlign is var firstLineAlign
+            && (firstLineAlign.AlignmentBaseline != AlignmentBaseline.Baseline || firstLineAlign.BaselineShift.Kind != BaselineShiftKind.Length || !firstLineAlign.BaselineShift.Length.IsZero))
+        {
+            strutStyle = GetLineStyle(_block, isFirstLine: false);
+            strutMetrics = GetMetrics(strutStyle);
+            wrapperIndex = _nodes.Count;
+            _nodes.Add(new LineNode { Leaf = -1, Parent = -1, FirstChild = -1, LastChild = -1, NextSibling = -1, HasDirectText = _rootHasText });
+        }
+
+        var nodes = CollectionsMarshal.AsSpan(_nodes);
         var lineTop = double.PositiveInfinity;
         var lineBottom = double.NegativeInfinity;
 
@@ -377,14 +402,32 @@ internal sealed partial class InlineLayoutAlgorithm
         // it does not contribute to the height of a line without text directly in it
         if (!quirks || _rootHasText)
         {
-            var (rootAscentLeading, rootDescentLeading) = GetHalfLeadings(rootMetrics);
-            var (rootAscent, rootDescent) = (rootMetrics.Ascent + rootAscentLeading, rootMetrics.Descent + rootDescentLeading);
+            var (rootAscentLeading, rootDescentLeading) = GetHalfLeadings(strutMetrics);
+            var (rootAscent, rootDescent) = (strutMetrics.Ascent + rootAscentLeading, strutMetrics.Descent + rootDescentLeading);
             if (_rootHasText)
             {
-                (rootAscent, rootDescent) = AddEmphasisMarks(GetLineStyle(_block, isFirstLine), rootMetrics, rootAscent, rootDescent);
+                (rootAscent, rootDescent) = AddEmphasisMarks(strutStyle, strutMetrics, rootAscent, rootDescent);
             }
 
             Extend(-rootAscent, rootDescent);
+        }
+
+        if (wrapperIndex >= 0)
+        {
+            ref var wrapper = ref nodes[wrapperIndex];
+            AlignInlineBox(ref wrapper, rootStyle, strutMetrics, quirks);
+            wrapper.AlignRoot = -1;
+            if (wrapper.LineRelative != BaselineShiftKind.Length)
+            {
+                wrapper.AlignRoot = wrapperIndex;
+                wrapper.GroupTop = wrapper.Contributes ? -wrapper.Ascent : 0;
+                wrapper.GroupBottom = wrapper.Contributes ? wrapper.Descent : 0;
+                wrapper.Baseline = 0;
+            }
+            else if (wrapper.Contributes)
+            {
+                Extend(wrapper.Baseline - wrapper.Ascent, wrapper.Baseline + wrapper.Descent);
+            }
         }
 
         // https://drafts.csswg.org/css-lists-3/#list-style-position-outside: the outside marker that the line places is aligned
@@ -404,12 +447,18 @@ internal sealed partial class InlineLayoutAlgorithm
 
         for (var i = 0; i < nodes.Length; i++)
         {
+            if (i == wrapperIndex)
+                continue;
+
             ref var node = ref nodes[i];
-            var parentMetrics = node.Parent < 0 ? rootMetrics : nodes[node.Parent].Metrics;
+
+            // (the children of the root inline box are in the fictional inline box of ::first-line, when it has one)
+            var parent = node.Parent < 0 ? wrapperIndex : node.Parent;
+            var parentMetrics = parent < 0 ? rootMetrics : nodes[parent].Metrics;
 
             // The position of the baseline of the parent relative to the baseline of its aligned subtree (0 for its root)
-            var parentBaseline = node.Parent < 0 ? 0 : nodes[node.Parent].Baseline;
-            node.AlignRoot = node.Parent < 0 ? -1 : nodes[node.Parent].AlignRoot;
+            var parentBaseline = parent < 0 ? 0 : nodes[parent].Baseline;
+            node.AlignRoot = parent < 0 ? -1 : nodes[parent].AlignRoot;
             if (node.Leaf >= 0)
             {
                 var leaf = _leaves[node.Leaf];
@@ -449,7 +498,7 @@ internal sealed partial class InlineLayoutAlgorithm
                     // https://drafts.csswg.org/css-inline-3/#valdef-line-height-normal: with line-height: normal, the layout bounds of
                     // the box of the text include the ones of the fallback fonts of its glyphs (their ascent, descent and line gap),
                     // as in the browsers (Blink's InlineBoxState::AccumulateUsedFonts), also the hyphen of a hyphenated line
-                    if (leaf.Kind is LineLeafKind.Text or LineLeafKind.Hyphen && leaf.Shaped is not null && (node.Parent < 0 ? !quirks || _rootHasText : nodes[node.Parent].Contributes)
+                    if (leaf.Kind is LineLeafKind.Text or LineLeafKind.Hyphen && leaf.Shaped is not null && (parent < 0 ? !quirks || _rootHasText : nodes[parent].Contributes)
                         && GetFallbackFontBounds(leaf, GetLineStyle(Items[leaf.Item], isFirstLine)) is { } fallback)
                     {
                         var (fallbackTop, fallbackBottom) = (node.Baseline - fallback.Ascent, node.Baseline + fallback.Descent);
@@ -576,30 +625,26 @@ internal sealed partial class InlineLayoutAlgorithm
             lineBottom = 0;
         }
 
-        // The positions of the baselines from the top of the line box (the ruby annotations are placed after the other nodes)
+        // The positions of the baselines from the top of the line box (the ruby annotations are placed after the other nodes; the
+        // fictional inline box of ::first-line, after the nodes it contains, is placed first)
+        if (wrapperIndex >= 0)
+        {
+            PlaceBaseline(nodes, wrapperIndex, lineTop, lineBottom);
+            _firstLineBoxBaseline = nodes[wrapperIndex].Baseline;
+        }
+
         for (var i = 0; i < nodes.Length; i++)
         {
-            ref var node = ref nodes[i];
-            if (node.AlignRoot >= 0 && nodes[node.AlignRoot].IsRubyAnnotation)
-                continue;
+            if (i != wrapperIndex && !(nodes[i].AlignRoot >= 0 && nodes[nodes[i].AlignRoot].IsRubyAnnotation))
+            {
+                PlaceBaseline(nodes, i, lineTop, lineBottom);
+            }
+        }
 
-            if (node.AlignRoot == i)
-            {
-                node.Baseline = node.LineRelative switch
-                {
-                    BaselineShiftKind.Bottom => lineBottom - node.GroupBottom,
-                    BaselineShiftKind.Center => ((lineTop + lineBottom) / 2) - ((node.GroupTop + node.GroupBottom) / 2),
-                    _ => lineTop - node.GroupTop,
-                } - lineTop;
-            }
-            else if (node.AlignRoot >= 0)
-            {
-                node.Baseline += nodes[node.AlignRoot].Baseline;
-            }
-            else
-            {
-                node.Baseline -= lineTop;
-            }
+        if (wrapperIndex >= 0)
+        {
+            _nodes.RemoveAt(wrapperIndex);
+            nodes = CollectionsMarshal.AsSpan(_nodes);
         }
 
         if (HasRuby)
@@ -621,6 +666,28 @@ internal sealed partial class InlineLayoutAlgorithm
         {
             lineTop = Math.Min(lineTop, top);
             lineBottom = Math.Max(lineBottom, bottom);
+        }
+
+        static void PlaceBaseline(Span<LineNode> nodes, int i, double lineTop, double lineBottom)
+        {
+            ref var node = ref nodes[i];
+            if (node.AlignRoot == i)
+            {
+                node.Baseline = node.LineRelative switch
+                {
+                    BaselineShiftKind.Bottom => lineBottom - node.GroupBottom,
+                    BaselineShiftKind.Center => ((lineTop + lineBottom) / 2) - ((node.GroupTop + node.GroupBottom) / 2),
+                    _ => lineTop - node.GroupTop,
+                } - lineTop;
+            }
+            else if (node.AlignRoot >= 0)
+            {
+                node.Baseline += nodes[node.AlignRoot].Baseline;
+            }
+            else
+            {
+                node.Baseline -= lineTop;
+            }
         }
     }
 

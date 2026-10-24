@@ -1163,8 +1163,13 @@ internal sealed partial class InlineLayoutAlgorithm
         var baseline = fragment.FirstBaseline
             ?? (_block.Style.Layout.HasCentralDominantBaseline ? size.Block / 2 : _writingDirection.LineUnder == _writingDirection.BlockStart ? 0 : size.Block);
         // As in the browsers (Blink, WebKit), the marker is outside of the border box of its list item: its paddings and borders
-        // do not move it (when the line is in a descendant block container, it is outside of the content box of that block)
-        var start = ReferenceEquals(marker.ListItem, _block) ? 0 : content.Offset.Inline;
+        // do not move it (when the line is in a descendant block container, it is outside of the content box of that block). The
+        // anonymous block boxes of the list item are not descendant block containers: the lines are the ones of the list item (as
+        // in Blink, whose block-in-inline boxes stay in the inline formatting context of the list item, and in Gecko, WPT
+        // css/css-lists/inline-block-list.html)
+        var start = ReferenceEquals(marker.ListItem, _block) ? 0
+            : _block.Kind == ContainerBoxKind.Anonymous && ReferenceEquals(_block.Parent, marker.ListItem) ? -marker.ListItemContentInlineOffset
+            : content.Offset.Inline;
 
         // The marker is next to the line box: a line box shortened by a float on its start side moves it beside the float (as in
         // the browsers, WPT css/CSS2/lists/list-style-applies-to-017.html for a list item without content)

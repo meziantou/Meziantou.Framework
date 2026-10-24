@@ -37,7 +37,7 @@ public sealed partial class HtmlDetailsElement
                 root.AppendChild(summary);
 
                 // The events dispatched in the shadow tree are retargeted (see EventDispatcher)
-                document.HasShadowRoots = true;
+                document.HasUserAgentShadowRoots = true;
                 root.SetConnected(true);
                 _userAgentShadowRoot = root;
             }
@@ -48,6 +48,9 @@ public sealed partial class HtmlDetailsElement
 
     /// <summary>Whether the element is the summary that the user agent provides for this element (see <see cref="ImplicitSummary"/>), the element having no summary child.</summary>
     internal bool IsImplicitSummary(Element element) => _userAgentShadowRoot is { } root && ReferenceEquals(root.FirstChild, element) && IsConnected && !HasSummaryChild();
+
+    /// <summary>The summary of the user agent shadow tree when it was created (see <see cref="ImplicitSummary"/>), without creating it: its style is invalidated with the style of the element.</summary>
+    internal Element? CreatedImplicitSummary => _userAgentShadowRoot?.FirstChild as Element;
 
     private bool HasSummaryChild()
     {

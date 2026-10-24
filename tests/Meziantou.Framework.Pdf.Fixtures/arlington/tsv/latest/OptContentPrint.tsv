@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Subtype	name	1.5		FALSE	FALSE	FALSE					Table 100, Print cell
+PrintState	name	1.5		FALSE	FALSE	FALSE		[ON,OFF]			

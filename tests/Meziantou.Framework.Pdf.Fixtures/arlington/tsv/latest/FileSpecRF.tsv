@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+F	array	1.3		FALSE	TRUE	FALSE			[fn:Eval((fn:ArrayLength(F) mod 2)==0)]	[RelatedFilesArray]	Table 43, RF cell
+UF	array	1.7		FALSE	TRUE	FALSE			[fn:Eval((fn:ArrayLength(UF) mod 2)==0)]	[RelatedFilesArray]	

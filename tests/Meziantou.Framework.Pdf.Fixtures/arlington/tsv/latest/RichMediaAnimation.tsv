@@ -1,0 +1,6 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE		[RichMediaAnimation]			Table 337
+Subtype	name	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE	None	[None,Linear,Oscillating]			Table 313
+PlayCount	integer	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE	-1		[fn:Ignore(@Subtype==None)]		
+Speed	number	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE	1	[fn:Eval(@Speed>0)]	[fn:Ignore(@Subtype==None)]		
+AO	integer	fn:Extension(ISO_TS_32007,2.0)		FALSE	FALSE	FALSE	0		[fn:Eval(@AO>=0)]		ISO/TS 32007

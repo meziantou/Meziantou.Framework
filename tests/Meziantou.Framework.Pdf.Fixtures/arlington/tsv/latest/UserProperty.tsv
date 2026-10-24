@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+N	string-text	1.6		TRUE	FALSE	FALSE			[fn:Eval(trailer::Catalog::MarkInfo::@UserProperties==true)]		Table 362
+V	array;boolean;dictionary;name;null;number;stream;string	1.6		TRUE	[FALSE];[FALSE];[FALSE];[FALSE];[FALSE];[FALSE];[TRUE];[FALSE]	FALSE				[_UniversalArray];[];[_UniversalDictionary];[];[];[];[Stream];[]	any PDF object
+F	string-text	1.6		FALSE	FALSE	FALSE					
+H	boolean	1.6		FALSE	FALSE	FALSE	false				

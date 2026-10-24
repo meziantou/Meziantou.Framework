@@ -1,0 +1,17 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+FT	name	1.3		TRUE	FALSE	TRUE		[Sig]			Table 226, Table 228 and Table 235
+Parent	dictionary	1.3		FALSE	FALSE	FALSE				[FieldTx,FieldBtnPush,FieldBtnCheckbox,FieldBtnRadio,FieldChoice,FieldSig,Field]	
+Kids	array	1.3		FALSE	FALSE	FALSE				[ArrayOfFields]	
+T	string-text	1.3		FALSE	FALSE	FALSE					
+TU	string-text	1.3		FALSE	FALSE	FALSE					
+TM	string-text	1.3		FALSE	FALSE	FALSE					
+Ff	bitmask	1.3		FALSE	FALSE	TRUE			[fn:Eval(fn:BitsClear(4,32))]		
+V	dictionary	1.3		FALSE	FALSE	TRUE				[Signature,fn:SinceVersion(1.7,DocTimeStamp)]	
+DV	dictionary	1.3		FALSE	FALSE	TRUE				[Signature,fn:SinceVersion(1.7,DocTimeStamp)]	
+AA	dictionary	1.3		FALSE	FALSE	FALSE				[AddActionFormField]	
+DA	string-byte	1.3		FALSE	FALSE	TRUE					required if field contains variable text. https://github.com/pdf-association/pdf-issues/issues/318
+Q	integer	1.3		FALSE	FALSE	FALSE	0	[0,1,2]			
+DS	string-text	1.5		FALSE	FALSE	FALSE					
+RV	stream;string-text	1.5		FALSE	[TRUE];[FALSE]	FALSE				[Stream];[]	
+Lock	dictionary	1.5		FALSE	TRUE	FALSE				[SigFieldLock]	
+SV	dictionary	1.5		FALSE	TRUE	FALSE				[SigFieldSeedValue]	

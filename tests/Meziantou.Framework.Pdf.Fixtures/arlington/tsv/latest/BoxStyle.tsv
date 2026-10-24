@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+C	array	1.4		FALSE	FALSE	FALSE	[0.0 0.0 0.0]			[ArrayOf_3RGBNumbers]	Table 397
+W	number	1.4		FALSE	FALSE	FALSE	1				line width
+S	name	1.4		FALSE	FALSE	FALSE	S	[S,D]			style (solid or dashed)
+D	array	1.4		FALSE	FALSE	FALSE	[3]			[ArrayOfDashPatterns]	dash pattern

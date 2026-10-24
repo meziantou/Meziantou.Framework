@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Instance	dictionary	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		TRUE	FALSE	FALSE				[RichMediaInstance]	Table 345
+Data	stream;string-text	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		TRUE	[TRUE];[FALSE]	FALSE				[Stream];[]	

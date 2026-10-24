@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	number	fn:Extension(ISO_21812,1.7)		TRUE	FALSE	FALSE		[fn:Eval(@0>0)]			ISO 21812-1:2019, Table 20. width (X) in points
+1	number	fn:Extension(ISO_21812,1.7)		TRUE	FALSE	FALSE		[fn:Eval(@1>0)]			height (Y) in points
+2	number	fn:Extension(ISO_21812,1.7)		TRUE	FALSE	FALSE		[fn:Eval(@2>0)]			depth (Z) in points

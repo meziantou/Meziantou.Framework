@@ -12,7 +12,7 @@ What it covers:
 - Horizontal and vertical metrics, `BASE` baselines
 - Text shaping with `GSUB` and `GPOS`, and the shaping models of complex scripts (Arabic, Hebrew, Indic, Khmer, Myanmar, Thai and Lao, Hangul, and the universal shaping engine)
 - The fonts installed on Windows, macOS and Linux (`SystemFontCollection`): an index of their faces by family and by name, read without loading the fonts, and the font matching of CSS to choose a face of a family
-- AFM files (Adobe Font Metrics, `AfmFontMetrics`): the metrics of a PostScript font without its glyphs, such as the 14 standard fonts of PDF: global metrics, widths, bounding boxes and ligatures of the characters, kerning pairs and tracks, composite characters
+- AFM files (Adobe Font Metrics, `AfmFontMetrics`): the metrics of a PostScript font without its glyphs, such as the 14 standard fonts of PDF: global metrics, widths, bounding boxes and ligatures of the characters, kerning pairs and tracks, composite characters; the metrics of the 14 standard fonts of PDF are embedded (`AfmFontMetrics.GetStandardFont`)
 
 The types are in the `Meziantou.Framework.Fonts` namespace:
 

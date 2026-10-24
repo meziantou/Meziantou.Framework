@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	null;number	1.5		TRUE	FALSE	FALSE		[];[fn:Eval(@0>=0)]			Table 378 - before
+1	null;number	1.5		TRUE	FALSE	FALSE		[];[fn:Eval(@1>=0)]			after
+2	null;number	1.5		TRUE	FALSE	FALSE		[];[fn:Eval(@2>=0)]			start
+3	null;number	1.5		TRUE	FALSE	FALSE		[];[fn:Eval(@3>=0)]			end

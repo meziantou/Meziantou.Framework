@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+ColorTransform	integer	1.0		FALSE	FALSE	FALSE		[0,1]			Table 13

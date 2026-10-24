@@ -1,0 +1,6 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.7		TRUE	FALSE	FALSE		[ExData]			Table 324
+Subtype	name	1.7		TRUE	FALSE	FALSE		[Markup3D]			
+3DA	dictionary;string-text	1.7		TRUE	FALSE	FALSE				[Annot3D];[]	
+3DV	dictionary	1.7		TRUE	FALSE	FALSE				[3DView]	
+MD5	string-byte	1.7		FALSE	FALSE	FALSE					

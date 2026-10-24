@@ -1,0 +1,102 @@
+%PDF-1.7
+% ò¤ô
+% A page tree of two levels: the media box, the resources and the rotation are inherited. The content of the
+% second page is split between two streams, between the operands of an operator and the operator
+1 0 obj <<
+  /Type /Catalog
+  /Pages 2 0 R
+>>
+endobj
+2 0 obj <<
+  /Type /Pages
+  /Kids [3 0 R 4 0 R]
+  /Count 3
+  /MediaBox [0 0 595 842]
+  /Resources << /Font << /F1 8 0 R >> >>
+>>
+endobj
+3 0 obj <<
+  /Type /Pages
+  /Parent 2 0 R
+  /Kids [5 0 R 6 0 R]
+  /Count 2
+  /Rotate 90
+>>
+endobj
+4 0 obj <<
+  /Type /Page
+  /Parent 2 0 R
+  /MediaBox [0 0 300 300]
+  /Contents 11 0 R
+>>
+endobj
+5 0 obj <<
+  /Type /Page
+  /Parent 3 0 R
+  /Contents 9 0 R
+>>
+endobj
+6 0 obj <<
+  /Type /Page
+  /Parent 3 0 R
+  /Rotate 0
+  /Contents [10 0 R 12 0 R]
+>>
+endobj
+8 0 obj <<
+  /Type /Font
+  /Subtype /Type1
+  /BaseFont /Times-Roman
+>>
+endobj
+9 0 obj <<
+  /Length 37
+>>
+stream
+BT /F1 12 Tf 72 720 Td (Page 1) Tj ET
+endstream
+endobj
+10 0 obj <<
+  /Length 31
+>>
+stream
+BT /F1 12 Tf 72 720 Td (Page 2)
+endstream
+endobj
+11 0 obj <<
+  /Length 36
+>>
+stream
+BT /F1 12 Tf 10 10 Td (Page 3) Tj ET
+endstream
+endobj
+12 0 obj <<
+  /Length 5
+>>
+stream
+Tj ET
+endstream
+endobj
+xref
+0 13
+0000000000 65535 f 
+0000000221 00000 n 
+0000000274 00000 n 
+0000000410 00000 n 
+0000000508 00000 n 
+0000000604 00000 n 
+0000000673 00000 n 
+0000000000 65535 f 
+0000000764 00000 n 
+0000000842 00000 n 
+0000000931 00000 n 
+0000001015 00000 n 
+0000001104 00000 n 
+
+trailer <<
+  /Root 1 0 R
+  /Size 13
+>>
+startxref
+1161
+%%EOF

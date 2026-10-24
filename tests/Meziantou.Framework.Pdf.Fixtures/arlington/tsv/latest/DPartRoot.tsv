@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Eval(fn:Extension(PDF_VT2,1.6) || 2.0)		FALSE	FALSE	FALSE		[DPartRoot]			Table 408
+DPartRootNode	dictionary	fn:Eval(fn:Extension(PDF_VT2,1.6) || 2.0)		TRUE	TRUE	FALSE				[DPart]	
+RecordLevel	integer	fn:Eval(fn:Extension(PDF_VT2,1.6) || 2.0)		FALSE	FALSE	FALSE			[fn:Eval(@RecordLevel>=0)]		
+NodeNameList	array	fn:Eval(fn:Extension(PDF_VT2,1.6) || 2.0)		fn:IsRequired(fn:Extension(PDF_VT2))	FALSE	FALSE				[ArrayOfNamesGeneral]	since PDF/X-4 with PDF 1.6

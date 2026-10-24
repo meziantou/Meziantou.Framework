@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Extension(ISO_21812,1.7)		TRUE	FALSE	FALSE		[CIP4_LayoutIntent]			ISO 21812-1:2019 Table 20
+CIP4_Sides	name	fn:Extension(ISO_21812,1.7)		TRUE	FALSE	FALSE		[OneSided,OneSidedBack,TwoSidedHeadToHead,TwoSidedHeadToFoot]			
+CIP4_FinishedDimensions	array	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[ArrayOfCIP4_FinishedDimensions]	
+CIP4_SpreadType	name	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE	SinglePage	[SinglePage,Spread]			

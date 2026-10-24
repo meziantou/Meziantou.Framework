@@ -1,0 +1,6 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Extension(ISO_TS_24064,2.0)		FALSE	FALSE	FALSE		[Requirement]			Table 273 and ISO/TS 24064
+S	name	fn:Extension(ISO_TS_24064,2.0)		TRUE	FALSE	FALSE		[STEP]			
+V	dictionary;name	fn:Extension(ISO_TS_24064,2.0)		FALSE	FALSE	FALSE				[Extensions];[]	
+RH	array;dictionary	fn:Extension(ISO_TS_24064,2.0)		FALSE	FALSE	FALSE	[[]];[]			[ArrayOfRequirementsHandlers];[RequirementsHandler]	
+Penalty	integer	fn:Extension(ISO_TS_24064,2.0)		FALSE	FALSE	FALSE	100	[fn:Eval((@Penalty>=0) && (@Penalty<=100))]			

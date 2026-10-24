@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+ExportState	name	1.5		TRUE	FALSE	FALSE		[ON,OFF]			Table 100, Export cell

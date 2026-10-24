@@ -63,6 +63,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.NodeJs\Meziantou.Framework.NodeJs.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.NtpClient\Meziantou.Framework.NtpClient.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.NtpServer\Meziantou.Framework.NtpServer.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf\Meziantou.Framework.Pdf.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.PooledMemoryStream\Meziantou.Framework.PooledMemoryStream.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ProcessWrapper\Meziantou.Framework.ProcessWrapper.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.QRCode\Meziantou.Framework.QRCode.csproj" />
@@ -87,6 +88,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Versioning\Meziantou.Framework.Versioning.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.Imaging\Meziantou.Framework.WebPlatform.Imaging.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.PdfRendering\Meziantou.Framework.WebPlatform.PdfRendering.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Win32.CredentialManager\Meziantou.Framework.Win32.CredentialManager.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Yaml\Meziantou.Framework.Yaml.csproj" />
   </ItemGroup>
@@ -143,6 +145,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.NodeJs" />
     <TrimmerRootAssembly Include="Meziantou.Framework.NtpClient" />
     <TrimmerRootAssembly Include="Meziantou.Framework.NtpServer" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Pdf" />
     <TrimmerRootAssembly Include="Meziantou.Framework.PooledMemoryStream" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ProcessWrapper" />
     <TrimmerRootAssembly Include="Meziantou.Framework.QRCode" />
@@ -167,6 +170,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Versioning" />
     <TrimmerRootAssembly Include="Meziantou.Framework.WebPlatform" />
     <TrimmerRootAssembly Include="Meziantou.Framework.WebPlatform.Imaging" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.WebPlatform.PdfRendering" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Win32.CredentialManager" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Yaml" />
   </ItemGroup>

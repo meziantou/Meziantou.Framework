@@ -1,0 +1,22 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <!--
+    Deterministic mutation fuzz tests of Meziantou.Framework.Pdf over the fixtures (tests/Meziantou.Framework.Pdf.Fixtures)
+    and the replay of the committed fuzz regressions (FuzzRegressions). The default budget is small and runs in CI;
+    longer campaigns are opt-in through the MEZIANTOU_FRAMEWORK_PDF_FUZZ_* environment variables (PdfFuzzSettings).
+    Tool-free and network-free.
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Pdf.FuzzTests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf\Meziantou.Framework.Pdf.csproj" />
+    <ProjectReference Include="..\..\tests\Meziantou.Framework.Pdf.TestHarness\Meziantou.Framework.Pdf.TestHarness.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Minimized fuzz regressions (PdfFuzzRegressionTests) -->
+    <None Update="FuzzRegressions\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

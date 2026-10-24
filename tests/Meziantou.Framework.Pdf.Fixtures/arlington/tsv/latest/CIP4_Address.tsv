@@ -1,0 +1,13 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Extension(ISO_21812,1.7)		TRUE	FALSE	FALSE		[CIP4_Address]			ISO 21812-1:2019 Table 28
+CIP4_AddressUsage	name	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE		[Business,Residence,*]			extendible
+CIP4_AddressLines	array	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[ArrayOfStringsText]	
+CIP4_City	string	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					
+CIP4_CivicNumber	string	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					
+CIP4_Country	string	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					
+CIP4_CountryCode	name	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					ISO 3166-1 alpha-2 code of the country
+CIP4_PostalCode	string	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					
+CIP4_PostBox	string	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					
+CIP4_Region	string	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					
+CIP4_Street	string	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					
+CIP4_StreetName	string	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					

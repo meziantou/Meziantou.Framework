@@ -85,6 +85,7 @@ namespace Meziantou.Framework.Fonts
         public int? MappingScheme { get => throw null; }
         public int MetricsSets { get => throw null; }
         public string? Notice { get => throw null; }
+        public static System.Collections.Generic.IReadOnlyList<string> StandardFontNames { get => throw null; }
         public double? StdHW { get => throw null; }
         public double? StdVW { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Fonts.AfmTrackKerning> TrackKerning { get => throw null; }
@@ -98,6 +99,7 @@ namespace Meziantou.Framework.Fonts
         public Meziantou.Framework.Fonts.AfmCharacterMetrics? GetCharacterByCode(int code) => throw null;
         public Meziantou.Framework.Fonts.AfmVector GetKerning(int firstCode, int secondCode) => throw null;
         public Meziantou.Framework.Fonts.AfmVector GetKerning(string first, string second) => throw null;
+        public static Meziantou.Framework.Fonts.AfmFontMetrics? GetStandardFont(string fontName) => throw null;
         public double GetTrackKerning(int degree, double pointSize) => throw null;
         public Meziantou.Framework.Fonts.AfmVector GetVerticalKerning(int firstCode, int secondCode) => throw null;
         public Meziantou.Framework.Fonts.AfmVector GetVerticalKerning(string first, string second) => throw null;
@@ -229,6 +231,19 @@ namespace Meziantou.Framework.Fonts
         Png = 0,
         Jpeg = 1,
         Tiff = 2,
+    }
+
+    public sealed class CffFont
+    {
+        public System.Collections.Generic.IReadOnlyList<double> FontMatrix { get => throw null; }
+        public int GlyphCount { get => throw null; }
+        public bool IsCidKeyed { get => throw null; }
+        public void DecodeOutline(int glyphId, Meziantou.Framework.Fonts.OutlineSink sink, ref Meziantou.Framework.Fonts.GlyphBudget budget) { }
+        public int GetGlyphByCid(int cid) => throw null;
+        public int GetGlyphByCode(int code) => throw null;
+        public int GetGlyphByName(string name) => throw null;
+        public string? GetGlyphName(int glyphId) => throw null;
+        public static Meziantou.Framework.Fonts.CffFont Load(System.ReadOnlySpan<byte> data) => throw null;
     }
 
     public enum CmapVariation
@@ -597,6 +612,13 @@ namespace Meziantou.Framework.Fonts
         public long MaxTextGlyphs { get => throw null; init { } }
     }
 
+    public static class FontSubsetter
+    {
+        public static System.Collections.Generic.SortedSet<int> GetClosure(Meziantou.Framework.Fonts.FontFace face, System.Collections.Generic.IEnumerable<int> glyphs) => throw null;
+        public static byte[] SubsetCff(Meziantou.Framework.Fonts.FontFace face, System.Collections.Generic.IEnumerable<int> glyphs, string fontName) => throw null;
+        public static byte[] SubsetTrueType(Meziantou.Framework.Fonts.FontFace face, System.Collections.Generic.IEnumerable<int> glyphs, bool keepHinting = true) => throw null;
+    }
+
     public sealed class GlyphBoundsSink : Meziantou.Framework.Fonts.OutlineSink
     {
         public bool IsEmpty { get => throw null; }
@@ -961,6 +983,13 @@ namespace Meziantou.Framework.Fonts
         public static void AddText(Meziantou.Framework.Fonts.GlyphBuffer buffer, System.ReadOnlySpan<char> text, int clusterOffset = 0) { }
         public static bool IsSynthesizedSpace(int codePoint) => throw null;
         public static void Shape(Meziantou.Framework.Fonts.GlyphBuffer buffer, Meziantou.Framework.Fonts.FontFace face, Meziantou.Framework.UnicodeScript script, System.ReadOnlySpan<uint> languages, bool isRightToLeft, System.ReadOnlySpan<Meziantou.Framework.Fonts.ShapingFeature> features, bool isVertical = false, Meziantou.Framework.Fonts.GlyphScratch? scratch = null, Meziantou.Framework.Fonts.ShapingCache? cache = null, bool areCharactersMirrored = false) { }
+    }
+
+    public sealed class TrueTypeGlyphOutlines
+    {
+        public int GlyphCount { get => throw null; }
+        public TrueTypeGlyphOutlines(System.ReadOnlyMemory<byte> glyf, System.ReadOnlyMemory<byte> loca, bool hasLongLocations, int glyphCount, System.ReadOnlyMemory<byte> horizontalMetrics = default, int horizontalMetricCount = 0) { }
+        public void DecodeOutline(int glyphId, Meziantou.Framework.Fonts.OutlineSink sink, Meziantou.Framework.Fonts.GlyphScratch scratch, ref Meziantou.Framework.Fonts.GlyphBudget budget) { }
     }
 
     public sealed class UnknownFontFormatException : Meziantou.Framework.Fonts.FontException

@@ -40,7 +40,7 @@ namespace Meziantou.Framework.Fonts;
 /// Assert.Equal(15.168, width);
 /// </code>
 /// </example>
-public sealed class AfmFontMetrics
+public sealed partial class AfmFontMetrics
 {
     private readonly Dictionary<string, AfmCharacterMetrics> _charactersByName = new(StringComparer.Ordinal);
     private readonly Dictionary<int, AfmCharacterMetrics> _charactersByCode = [];

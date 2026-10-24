@@ -1,0 +1,38 @@
+{
+  "pdfjs": {
+    "repository": "mozilla/pdf.js",
+    "commit": "cfab9b7c8bf494f3b92ff822094b839f0ee530f2",
+    "license": "Apache-2.0",
+    "paths": ["LICENSE", "test/pdfs", "test/test_manifest.json"]
+  },
+  "pdfium": {
+    "repository": "chromium/pdfium",
+    "commit": "a84323421e94f484faca52dd9d027934eba42ab8",
+    "license": "BSD-3-Clause",
+    "paths": ["LICENSE", "testing/resources"]
+  },
+  "qpdf": {
+    "repository": "qpdf/qpdf",
+    "commit": "4eba95899886e851cc41d76886483b347612f2a8",
+    "license": "Apache-2.0",
+    "paths": ["LICENSE.txt", "qpdf/qtest/qpdf"]
+  },
+  "pdf20examples": {
+    "repository": "pdf-association/pdf20examples",
+    "commit": "c20f2c17bfcc4baab7cfe62e70fae64caf14d5fa",
+    "license": "CC-BY-SA-4.0",
+    "paths": ["LICENSE.md", "*.pdf"]
+  },
+  "pdfbox": {
+    "repository": "apache/pdfbox",
+    "commit": "99c16b1752d0b24e2c26788ff68686211b0bcef0",
+    "license": "Apache-2.0",
+    "paths": ["LICENSE.txt", "NOTICE.txt", "pdfbox/src/test/resources", "examples/src/test/resources/org/apache/pdfbox/examples/signature"]
+  },
+  "verapdf": {
+    "repository": "veraPDF/veraPDF-corpus",
+    "commit": "bb75f4f0073d9350dfd058c0162a367e6fadf25e",
+    "license": "CC-BY-4.0",
+    "paths": ["README.md", "ISO 32000-1", "ISO 32000-2", "Isartor test files", "PDF_A-1a", "PDF_A-1b", "PDF_A-2a", "PDF_A-2b", "PDF_A-2u", "PDF_A-3b", "PDF_A-4", "PDF_A-4e", "PDF_A-4f", "PDF_UA-1", "PDF_UA-2", "TWG test files"]
+  }
+}

@@ -1,0 +1,7 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.1		FALSE	FALSE	FALSE		[Bead]			Table 163
+T	dictionary	1.1		TRUE	TRUE	FALSE				[Thread]	
+N	dictionary	1.1		TRUE	TRUE	FALSE				[BeadFirst,Bead]	
+V	dictionary	1.1		TRUE	TRUE	FALSE				[BeadFirst,Bead]	
+P	dictionary	1.1		TRUE	TRUE	FALSE				[PageObject]	
+R	rectangle	1.1		TRUE	FALSE	FALSE					

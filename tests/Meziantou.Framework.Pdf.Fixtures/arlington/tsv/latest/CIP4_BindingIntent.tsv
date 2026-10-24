@@ -1,0 +1,6 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Extension(ISO_21812,1.7)		TRUE	FALSE	FALSE		[CIP4_BindingIntent]			ISO 21812-1:2019 Table 12
+CIP4_BindingSide	name	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE		[Left,Right,Top,Bottom]			
+CIP4_BindingType	name	fn:Extension(ISO_21812,1.7)		TRUE	FALSE	FALSE		[AdhesiveNote,ChannelBinding,CoilBinding,CornerStitch,EdgeGluing,HardCover,LooseBinding,None,PlasticComb,RingBinding,SaddleStitch,SideStitch,SoftCover,StripBind,Tape,WireComb]			
+CIP4_SaddleStitching	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[CIP4_SaddleStitching]	
+CIP4_SideStitching	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[CIP4_SideStitching]	

@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	number	1.2		FALSE	FALSE	FALSE					Table 55

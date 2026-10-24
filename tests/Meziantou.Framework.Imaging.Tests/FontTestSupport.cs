@@ -148,7 +148,7 @@ internal static class FontTestSupport
         return sink.ToString();
     }
 
-    private sealed class SvgPathSink : OutlineSink
+    internal sealed class SvgPathSink : OutlineSink
     {
         private readonly StringBuilder _path = new();
 

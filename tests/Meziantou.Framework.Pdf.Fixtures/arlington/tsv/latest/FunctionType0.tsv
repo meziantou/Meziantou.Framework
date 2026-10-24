@@ -1,0 +1,16 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+FunctionType	integer	1.2		TRUE	FALSE	FALSE		[0]			Table 5, Table 38 and Table 39
+Domain	array	1.2		TRUE	FALSE	FALSE			[fn:Eval((fn:ArrayLength(Domain) mod 2)==0)]	[ArrayOfNumbersGeneral]	
+Range	array	1.2		TRUE	FALSE	FALSE			[fn:Eval((fn:ArrayLength(Range) mod 2)==0)]	[ArrayOfNumbersGeneral]	
+Size	array	1.2		TRUE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(Domain)==(2 * fn:ArrayLength(Size)))]	[ArrayOfIntegersGeneral]	array of m positive integers
+BitsPerSample	integer	1.2		TRUE	FALSE	FALSE		[1,2,4,8,12,16,24,32]			
+Order	integer	1.2		FALSE	FALSE	FALSE	1	[1,3]			
+Encode	array	1.2		FALSE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(Encode)==(2 * fn:ArrayLength(Size)))]	[ArrayOfNumbersGeneral]	
+Decode	array	1.2		FALSE	FALSE	FALSE	@Range		[fn:Eval(fn:ArrayLength(Decode)==fn:ArrayLength(Range))]	[ArrayOfNumbersGeneral]	
+Length	integer	1.3		TRUE	FALSE	FALSE					
+Filter	array;name	1.3		FALSE	FALSE	FALSE		[];[ASCIIHexDecode,ASCII85Decode,LZWDecode,FlateDecode,RunLengthDecode,fn:SinceVersion(1.5,Crypt)]	[fn:Eval(fn:ArrayLength(DecodeParms)==fn:ArrayLength(Filter))];[]	[ArrayOfCompressionFilterNames];[]	
+DecodeParms	array;dictionary	1.3		FALSE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(DecodeParms)==fn:ArrayLength(Filter))];[]	[ArrayOfDecodeParams];[FilterLZWDecode,FilterFlateDecode,fn:SinceVersion(1.5,FilterCrypt)]	
+F	dictionary;string	1.3		FALSE	FALSE	FALSE				[FileSpecification];[]	
+FFilter	array;name	1.3		FALSE	FALSE	FALSE		[];[ASCIIHexDecode,ASCII85Decode,LZWDecode,FlateDecode,RunLengthDecode,fn:SinceVersion(1.5,Crypt)]	[fn:Eval(fn:ArrayLength(FDecodeParms)==fn:ArrayLength(FFilter))];[]	[ArrayOfCompressionFilterNames];[]	
+FDecodeParms	array;dictionary	1.3		FALSE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(FDecodeParms)==fn:ArrayLength(FFilter))];[]	[ArrayOfDecodeParams];[FilterLZWDecode,FilterFlateDecode,fn:SinceVersion(1.5,FilterCrypt)]	
+DL	integer	1.5		FALSE	FALSE	FALSE			[fn:Eval(@DL>=0)]		

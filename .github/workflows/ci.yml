@@ -598,6 +598,20 @@ jobs:
         if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.JavaScriptEngine.NpmPackages')
         run: dotnet run eng/javascriptengine/fetch-tests.cs -- npm-packages
 
+      # The PDF corpus tests read the test files of pdf.js, PDFium, qpdf, the PDF Association and Apache PDFBox at the
+      # commits pinned in tests/Meziantou.Framework.Pdf.Corpus/corpus.json: they are fetched, not committed
+      - name: Restore the PDF corpora
+        if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.Pdf.Corpus')
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: tests/Meziantou.Framework.Pdf.External
+          key: pdf-external-tests-${{ hashFiles('tests/Meziantou.Framework.Pdf.Corpus/corpus.json') }}
+          restore-keys: pdf-external-tests-
+
+      - name: Fetch the PDF corpora
+        if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.Pdf.Corpus')
+        run: dotnet run eng/pdf/fetch-tests.cs
+
       - name: Build
         if: steps.build-project.outputs.has-project == 'true'
         run: dotnet build ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} /bl ${{ env.ADDITIONAL_ARGUMENTS }}

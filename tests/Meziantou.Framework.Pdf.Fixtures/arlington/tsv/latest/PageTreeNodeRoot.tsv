@@ -1,0 +1,8 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.0		TRUE	FALSE	FALSE		[Pages]			Table 30 and Table 31 for inheritable keys
+Kids	array	1.0		TRUE	FALSE	FALSE				[ArrayOfPageTreeNodeKids]	
+Count	integer	1.0		TRUE	FALSE	FALSE		[fn:Eval(@Count>=0)]			
+Resources	dictionary	1.0		FALSE	FALSE	FALSE				[Resource]	Inheritable
+MediaBox	rectangle	1.0		FALSE	FALSE	FALSE					Inheritable
+CropBox	rectangle	1.0		FALSE	FALSE	FALSE	@MediaBox				Inheritable
+Rotate	integer	1.0		FALSE	FALSE	FALSE	0	[fn:Eval((@Rotate mod 90)==0)]			Inheritable

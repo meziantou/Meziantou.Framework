@@ -3,8 +3,8 @@
 Opens an issue for each target of a fuzz project that failed in its weekly fuzzing campaign (.github/workflows/fuzz-*.yml).
 
 .DESCRIPTION
-Reads the result.json and failure.md files that eng/run-fuzz.ps1 (SharpFuzz projects) and eng/run-imaging-fuzz.ps1
-(Imaging fuzz tests) write for each target of a fuzz project, on each architecture. Each failed target gets an issue
+Reads the result.json and failure.md files that eng/run-fuzz.ps1 (SharpFuzz projects) and eng/run-fuzz-tests.ps1
+(fuzz test projects) write for each target of a fuzz project, on each architecture. Each failed target gets an issue
 titled "Fuzzing: <target> failed", with the failure report, the failing input and the commands that reproduce it (one
 section per architecture when it failed on several). When an open issue with the same title and all the labels exists,
 the details are added to it as a comment instead. A failed campaign without any result for the project (a build error, a

@@ -1,0 +1,11 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.4		FALSE	FALSE	FALSE		[OutputIntent]			Table 401
+S	name	1.4		TRUE	FALSE	FALSE		[GTS_PDFX,GTS_PDFA1,ISO_PDFE1]			
+OutputCondition	string-text	1.4		FALSE	FALSE	FALSE					
+OutputConditionIdentifier	string-text	1.4		TRUE	FALSE	FALSE					
+RegistryName	string-text	1.4		FALSE	FALSE	FALSE					
+Info	string-text	1.4		FALSE	FALSE	FALSE					
+DestOutputProfile	stream	1.4		FALSE	TRUE	FALSE				[ICCProfileStream]	
+DestOutputProfileRef	dictionary	2.0		FALSE	FALSE	FALSE				[DestOutputProfileRef]	
+MixingHints	dictionary	2.0		FALSE	FALSE	FALSE				[DeviceNMixingHints]	
+SpectralData	dictionary	2.0		FALSE	FALSE	FALSE				[SpectralData]	

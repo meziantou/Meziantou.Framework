@@ -1,0 +1,6 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	2.0		FALSE	FALSE	FALSE		[Requirement]			Table 273 and ISO/TS 32007
+S	name	2.0		TRUE	FALSE	FALSE		[glTF]			
+V	name	2.0		TRUE	FALSE	FALSE		[2.0]			version of ISO/IEC 12113 according to ISO/TS 32007
+RH	array;dictionary	2.0		FALSE	FALSE	FALSE	[[]];[]			[ArrayOfRequirementsHandlers];[RequirementsHandler]	
+Penalty	integer	2.0		FALSE	FALSE	FALSE	100	[fn:Eval((@Penalty>=0) && (@Penalty<=100))]			

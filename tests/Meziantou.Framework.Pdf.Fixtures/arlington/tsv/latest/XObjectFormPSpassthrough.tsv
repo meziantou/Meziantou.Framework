@@ -1,0 +1,15 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.1	1.3	FALSE	FALSE	FALSE		[XObject]			Table 5 and 
+Subtype	name	1.1	1.3	TRUE	FALSE	FALSE		[PS]			
+Subtype2	name	1.1	1.3	TRUE	FALSE	FALSE		[PS]			
+Level1	stream	1.1	1.3	FALSE	TRUE	FALSE				[Stream]	
+PS	stream	1.1	1.3	TRUE	TRUE	FALSE				[Stream]	
+FormType	integer	1.1	1.3	fn:IsRequired(fn:BeforeVersion(1.3))	FALSE	FALSE		[1]			
+BBox	rectangle	1.1	1.3	TRUE	FALSE	FALSE	[0 0 0 0]				
+Matrix	matrix	1.1	1.3	fn:IsRequired(fn:BeforeVersion(1.3))	FALSE	FALSE	[1 0 0 1 0 0]				
+Length	integer	1.1	1.3	TRUE	FALSE	FALSE					
+Filter	array;name	1.1	1.3	FALSE	FALSE	FALSE		[];[ASCIIHexDecode,ASCII85Decode,LZWDecode,fn:SinceVersion(1.2,FlateDecode),RunLengthDecode,fn:SinceVersion(1.5,Crypt)]	[fn:Eval(fn:ArrayLength(DecodeParms)==fn:ArrayLength(Filter))];[]	[ArrayOfCompressionFilterNames];[]	
+DecodeParms	array;dictionary	1.1	1.3	FALSE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(DecodeParms)==fn:ArrayLength(Filter))];[]	[ArrayOfDecodeParams];[FilterLZWDecode,fn:SinceVersion(1.2,FilterFlateDecode),fn:SinceVersion(1.5,FilterCrypt)]	
+F	dictionary;string	1.1	1.3	FALSE	FALSE	FALSE				[FileSpecification];[]	
+FFilter	array;name	1.2	1.3	FALSE	FALSE	FALSE		[];[ASCIIHexDecode,ASCII85Decode,LZWDecode,FlateDecode,RunLengthDecode,fn:SinceVersion(1.5,Crypt)]	[fn:Eval(fn:ArrayLength(FDecodeParms)==fn:ArrayLength(FFilter))];[]	[ArrayOfCompressionFilterNames];[]	
+FDecodeParms	array;dictionary	1.2	1.3	FALSE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(FDecodeParms)==fn:ArrayLength(FFilter))];[]	[ArrayOfDecodeParams];[FilterLZWDecode,FilterFlateDecode]	

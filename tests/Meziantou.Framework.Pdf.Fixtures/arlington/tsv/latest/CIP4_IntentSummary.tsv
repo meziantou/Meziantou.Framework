@@ -1,0 +1,10 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Extension(ISO_21812,1.7)		TRUE	FALSE	FALSE		[CIP4_Intent]			ISO 21812-1:2019 Table 23
+CIP4_AssemblingIntent	array	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[ArrayOfCIP4_AssemblingIntent]	
+CIP4_BindingIntent	array	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[ArrayOfCIP4_BindingIntent]	
+CIP4_ColorIntent	array	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[ArrayOfCIP4_ColorIntent]	
+CIP4_FoldingIntent	array	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[ArrayOfCIP4_FoldingIntent]	
+CIP4_HoleMakingIntent	array	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[ArrayOfCIP4_HoleMakingIntent]	
+CIP4_LayoutIntent	array	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[ArrayOfCIP4_LayoutIntent]	
+CIP4_MediaIntent	array	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[ArrayOfCIP4_MediaIntent]	
+CIP4_ProductionIntent	array	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[ArrayOfCIP4_ProductionIntent]	https://github.com/pdf-association/pdf-issues/issues/459

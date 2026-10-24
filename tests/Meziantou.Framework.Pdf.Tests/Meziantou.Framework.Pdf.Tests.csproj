@@ -1,0 +1,25 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <!-- The snapshots of the writer goldens find their files through the source paths mapped by the deterministic builds of CI -->
+  <Import Project="../../src/Meziantou.Framework.SnapshotTesting/build/Meziantou.Framework.SnapshotTesting.targets" />
+
+  <!--
+    Unit tests of Meziantou.Framework.Pdf: the lexer, the parser, the filters, the writer (exact bytes, round trips),
+    the recovery of broken files, the document API, the text extraction, the renderer (the pixels of small documents)
+    and the signatures (certificates and a time stamp authority created by the tests). No external tool and no network.
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Pdf.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf\Meziantou.Framework.Pdf.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.SnapshotTesting\Meziantou.Framework.SnapshotTesting.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Pdf.TestHarness\Meziantou.Framework.Pdf.TestHarness.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="TestData/**/*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

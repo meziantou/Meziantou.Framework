@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Panose	string-byte	1.2		FALSE	FALSE	FALSE			[fn:Eval(fn:StringLength(Panose)==12)]		Clause 9.8.3.2

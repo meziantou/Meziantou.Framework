@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+ViewState	name	1.5		FALSE	FALSE	FALSE		[ON,OFF]			Table 100, View cell

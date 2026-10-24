@@ -1,21 +1,26 @@
 # Meziantou.Framework.Fonts
 
-The OpenType font reader and the text shaper shared by `Meziantou.Framework.Imaging` (which draws text) and
-`Meziantou.Framework.WebPlatform` (which lays out HTML, SVG and MathML text): TrueType, CFF and CFF2 outlines, WOFF
-and WOFF2, variable fonts, color fonts (COLR, CPAL, sbix, CBDT), BASE baselines, and the shaping of complex scripts.
+The OpenType font reader and the text shaper shared by `Meziantou.Framework.Imaging` (which draws text),
+`Meziantou.Framework.WebPlatform` (which lays out HTML, SVG and MathML text) and `Meziantou.Framework.Pdf` (which
+embeds fonts): TrueType, CFF and CFF2 outlines, WOFF and WOFF2, variable fonts, color fonts (COLR, CPAL, sbix, CBDT),
+BASE baselines, the shaping of complex scripts, and the subsetting of TrueType and CFF outlines (`FontSubsetter`).
 
 These instructions complete the repository-level `AGENTS.md`.
 
 ## Hard constraints
 
 - **The public API is what the packages that use the code need.** A type is `public` when `Meziantou.Framework.Imaging`,
-  `Meziantou.Framework.WebPlatform` or `Meziantou.Framework.WebPlatform.Imaging` uses it, and everything else stays
-  `internal` (the tests, the fuzzing and the benchmarks see it through `InternalsVisibleTo`; the libraries do not).
-  These packages still depend on the exact version of this package (`UseExactProjectReferenceVersions` in their project
-  file) and are released together with it. Every public member is documented (`DisableDocumentationWarnings` is
+  `Meziantou.Framework.WebPlatform`, `Meziantou.Framework.WebPlatform.Imaging` or `Meziantou.Framework.Pdf` uses it
+  (`FontSubsetter` for the font subsets of PDF, `CffFont` and `TrueTypeGlyphOutlines` for the font programs its renderer
+  draws), and everything else stays `internal` (the tests, the fuzzing and the benchmarks see it through
+  `InternalsVisibleTo`). The packages that use internal types depend on the exact version of this package
+  (`UseExactProjectReferenceVersions` in their project file) and are released together with it;
+  `Meziantou.Framework.Pdf` uses the public API only and has a normal dependency, so do not give it access to the
+  internals again. Every public member is documented (`DisableDocumentationWarnings` is
   `false`), and the public API is recorded in `ref/` by the build. The one exception is the AFM reader
-  (`AfmFontMetrics` and the `Afm*` types it returns): it is a standalone reader of font metrics that no package of
-  the repository uses, public so that applications (PDF writers, text measurement) can read AFM files.
+  (`AfmFontMetrics` and the `Afm*` types it returns): it is a standalone reader of font metrics, public so that
+  applications (PDF writers, text measurement) can read AFM files; `Meziantou.Framework.Pdf` reads the metrics of the
+  standard fonts with `AfmFontMetrics.GetStandardFont`.
 - `Adler32`, `DeterministicAngle` (`Infrastructure/`) and `FontTags` are compiled into `Meziantou.Framework.Imaging`
   too, in its namespace (`MEZIANTOU_FRAMEWORK_IMAGING`): they are helpers, not font API, and stay internal to both
   assemblies. WebPlatform has its own tag constants (`OpenTypeTag`).
@@ -132,8 +137,13 @@ reads the text, `AfmFontMetrics` indexes the characters and the kerning pairs.
   other pairs.
 - AMFM (`StartMasterFontMetrics`) and ACFM (`StartCompFontMetrics`) files are `UnsupportedFontFeatureException`.
   `FontLoader` recognizes the three signatures and says to use `AfmFontMetrics`.
-- Tests: `FontTests` (literals of the specification, and the Core 14 files of `font-suites/adobe-core14-afm`), and
-  `FontFuzzTests.MutatedAfmFilesFailOnlyWithDocumentedErrors` (mutations of bytes and of lines).
+- **Standard fonts.** `Afm/StandardFonts` holds the 14 AFM files of `Core14_AFMs.zip` as Adobe published them (CRLF line
+  endings, see `THIRD-PARTY-NOTICES.md`) and `MustRead.html`, which their license requires next to them: both are
+  embedded resources (`Meziantou.Framework.Fonts.Afm.<file>`). It is the only copy of these files in the repository;
+  never modify them. `GetStandardFont` reads a file once and shares the metrics; the tests read the raw files with the
+  internal `OpenStandardFontFile`.
+- Tests: `FontTests` (literals of the specification, and the embedded standard fonts), and
+  `FontFuzzTests.MutatedAfmFilesFailOnlyWithDocumentedErrors` (mutations of bytes and of lines of the standard fonts).
 
 ## System fonts
 

@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	name	2.0		TRUE	FALSE	FALSE					Table 356
+1	dictionary	2.0		TRUE	TRUE	FALSE				[Namespace]	

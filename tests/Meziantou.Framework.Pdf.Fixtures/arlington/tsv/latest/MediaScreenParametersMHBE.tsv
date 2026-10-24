@@ -1,0 +1,6 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+W	integer	1.5		FALSE	FALSE	FALSE	3	[0,1,2,3]			Table 294
+B	array	1.5		FALSE	FALSE	FALSE				[ArrayOf_3RGBNumbers]	
+O	number	1.5		FALSE	FALSE	FALSE	1.0	[fn:Eval((@O>=0.0) && (@O<=1.0))]			
+M	integer	1.5		FALSE	FALSE	FALSE	0	[0,1,2,3,4,5,6]			
+F	dictionary	1.5		FALSE	FALSE	FALSE				[FloatingWindowParameters]	

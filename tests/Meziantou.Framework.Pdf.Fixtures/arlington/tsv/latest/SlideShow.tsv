@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.4	2.0	TRUE	FALSE	FALSE		[SlideShow]			Table 308
+Subtype	name	1.4	2.0	TRUE	FALSE	FALSE		[Embedded]			
+Resources	name-tree	1.4	2.0	TRUE	FALSE	FALSE				[XObjectImage,FileSpecification]	https://github.com/pdf-association/pdf-issues/issues/481
+StartResource	string-byte	1.4	2.0	TRUE	FALSE	FALSE			[fn:InNameTree(Resources)]		

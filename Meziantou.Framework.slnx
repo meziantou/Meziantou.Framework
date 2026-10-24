@@ -153,6 +153,7 @@
     <Project Path="src/Meziantou.Framework.ObjectMethodExecutor/Meziantou.Framework.ObjectMethodExecutor.csproj" />
     <Project Path="src/Meziantou.Framework.OpenTelemetryCollector.InMemory/Meziantou.Framework.OpenTelemetryCollector.InMemory.csproj" />
     <Project Path="src/Meziantou.Framework.OpenTelemetryCollector/Meziantou.Framework.OpenTelemetryCollector.csproj" />
+    <Project Path="src/Meziantou.Framework.Pdf/Meziantou.Framework.Pdf.csproj" />
     <Project Path="src/Meziantou.Framework.PooledMemoryStream/Meziantou.Framework.PooledMemoryStream.csproj" />
     <Project Path="src/Meziantou.Framework.PostgreSqlServer/Meziantou.Framework.PostgreSqlServer.csproj" />
     <Project Path="src/Meziantou.Framework.ProcessWrapper/Meziantou.Framework.ProcessWrapper.csproj" />
@@ -202,6 +203,7 @@
     <Project Path="src/Meziantou.Framework.Versioning/Meziantou.Framework.Versioning.csproj" />
     <Project Path="src/Meziantou.Framework.WebPlatform.Imaging/Meziantou.Framework.WebPlatform.Imaging.csproj" />
     <Project Path="src/Meziantou.Framework.WebPlatform.JavaScript/Meziantou.Framework.WebPlatform.JavaScript.csproj" />
+    <Project Path="src/Meziantou.Framework.WebPlatform.PdfRendering/Meziantou.Framework.WebPlatform.PdfRendering.csproj" />
     <Project Path="src/Meziantou.Framework.WebPlatform.Wasmtime/Meziantou.Framework.WebPlatform.Wasmtime.csproj" />
     <Project Path="src/Meziantou.Framework.WebPlatform/Meziantou.Framework.WebPlatform.csproj" />
     <Project Path="src/Meziantou.Framework.Win32.AccessToken/Meziantou.Framework.Win32.AccessToken.csproj" />
@@ -333,6 +335,10 @@
     <Project Path="tests/Meziantou.Framework.ObjectMethodExecutor.FSharpTests/Meziantou.Framework.ObjectMethodExecutor.FSharpTests.fsproj" />
     <Project Path="tests/Meziantou.Framework.ObjectMethodExecutor.Tests/Meziantou.Framework.ObjectMethodExecutor.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.OpenTelemetry.Tests/Meziantou.Framework.OpenTelemetry.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Pdf.Corpus/Meziantou.Framework.Pdf.Corpus.csproj" />
+    <Project Path="tests/Meziantou.Framework.Pdf.InteropTests/Meziantou.Framework.Pdf.InteropTests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Pdf.TestHarness/Meziantou.Framework.Pdf.TestHarness.csproj" />
+    <Project Path="tests/Meziantou.Framework.Pdf.Tests/Meziantou.Framework.Pdf.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.PooledMemoryStream.Tests/Meziantou.Framework.PooledMemoryStream.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.PostgreSqlServer.Tests/Meziantou.Framework.PostgreSqlServer.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.ProcessWrapper.Tests/Meziantou.Framework.ProcessWrapper.Tests.csproj" />
@@ -384,6 +390,7 @@
     <Project Path="tests/Meziantou.Framework.Versioning.Tests/Meziantou.Framework.Versioning.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.WebPlatform.AotTests/Meziantou.Framework.WebPlatform.AotTests.csproj" />
     <Project Path="tests/Meziantou.Framework.WebPlatform.Imaging.Tests/Meziantou.Framework.WebPlatform.Imaging.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.WebPlatform.PdfRendering.Tests/Meziantou.Framework.WebPlatform.PdfRendering.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.WebPlatform.Tests/Meziantou.Framework.WebPlatform.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.WebPlatform.Wpt/Meziantou.Framework.WebPlatform.Wpt.csproj" />
     <Project Path="tests/Meziantou.Framework.Win32.AccessToken.Tests/Meziantou.Framework.Win32.AccessToken.Tests.csproj" />
@@ -444,6 +451,7 @@
     <Project Path="fuzz/Meziantou.Framework.Language.Fuzz/Meziantou.Framework.Language.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Markdown.Fuzz/Meziantou.Framework.Markdown.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.MediaTags.Fuzz/Meziantou.Framework.MediaTags.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Pdf.FuzzTests/Meziantou.Framework.Pdf.FuzzTests.csproj" />
     <Project Path="fuzz/Meziantou.Framework.PostgreSqlServer.Fuzz/Meziantou.Framework.PostgreSqlServer.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.RobotsTxt.Fuzz/Meziantou.Framework.RobotsTxt.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Scheduling.Fuzz/Meziantou.Framework.Scheduling.Fuzz.csproj" />

@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	stream	1.0		FALSE	TRUE	FALSE				[XObjectFormType1,XObjectImage,fn:SinceVersion(1.1,XObjectFormPS),fn:SinceVersion(1.1,XObjectFormPSpassthrough)]	Table 34

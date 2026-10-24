@@ -1,0 +1,8 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Extension(ISO_21812,1.7)		TRUE	FALSE	FALSE		[CIP4_Contact]			ISO 21812-1:2019 Table 25
+CIP4_Address	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[CIP4_Address]	
+CIP4_ComChannel	array	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[ArrayOfCIP4_ComChannel]	
+CIP4_Company	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[CIP4_Company]	
+CIP4_ContactTypes	array	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[ArrayOfCIP4_ContactTypes]	
+CIP4_DescriptiveName	string	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					
+CIP4_Person	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[CIP4_Person]	

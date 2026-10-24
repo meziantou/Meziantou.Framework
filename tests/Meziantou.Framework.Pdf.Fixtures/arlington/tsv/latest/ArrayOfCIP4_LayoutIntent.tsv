@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	TRUE	FALSE				[CIP4_LayoutIntent]	ISO 21812-1:2019, Table 23

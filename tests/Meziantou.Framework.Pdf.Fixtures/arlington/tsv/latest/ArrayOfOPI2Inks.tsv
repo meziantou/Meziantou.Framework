@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	name	1.2	2.0	TRUE	FALSE	FALSE		[monochrome]			Table 407, Inks cell
+1*	string	1.2	2.0	TRUE	FALSE	FALSE					
+2*	number	1.2	2.0	TRUE	FALSE	FALSE		[fn:Eval((@2*>=0) && (@2*<=1))]			

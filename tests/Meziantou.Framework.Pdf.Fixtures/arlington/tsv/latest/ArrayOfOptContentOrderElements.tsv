@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	array;dictionary	1.5		FALSE	FALSE	FALSE				[ArrayOfOptContentOrders];[OptContentGroup]	Table 99

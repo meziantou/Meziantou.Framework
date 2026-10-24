@@ -1,0 +1,2 @@
+# The rules of veraPDF that the documents of ConformanceInteropTests are known to fail: <document> <flavour> <clause-test>.
+# The test fails when a rule fails that is not listed, or when a listed rule passes: update this file with the change.

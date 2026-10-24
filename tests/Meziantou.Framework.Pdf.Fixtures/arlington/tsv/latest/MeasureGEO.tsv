@@ -1,0 +1,10 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	2.0		FALSE	FALSE	FALSE		[Measure]			Table 266 and Table 269
+Subtype	name	2.0		FALSE	FALSE	FALSE		[GEO]			
+Bounds	array	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE				[ArrayOfNumbersGeneral]	
+GCS	dictionary	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		TRUE	FALSE	FALSE				[GeographicCoordinateSystem,ProjectedCoordinateSystem]	
+DCS	dictionary	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE				[GeographicCoordinateSystem,ProjectedCoordinateSystem]	
+PDU	array	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE				[ArrayOf3PDUNames]	Preferred Display Units
+GPTS	array	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		TRUE	FALSE	FALSE				[ArrayOfNumbersGeneral]	
+LPTS	array	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE				[ArrayOfNumbersGeneral]	
+PCSM	array	2.0		FALSE	FALSE	FALSE				[ArrayOf3DTransMatrix]	Projected Coordinate System Matrix

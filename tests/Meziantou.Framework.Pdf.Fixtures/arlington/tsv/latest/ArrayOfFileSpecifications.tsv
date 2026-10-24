@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	dictionary	2.0		TRUE	FALSE	FALSE				[FileSpecification]	
+*	dictionary	2.0		FALSE	FALSE	FALSE				[FileSpecification]	

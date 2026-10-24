@@ -1,4 +1,10 @@
+// Compiled into Meziantou.Framework.Imaging and Meziantou.Framework.Pdf (CCITTFaxDecode, JBIG2), internal to each. The copy
+// of Pdf is in its namespace, so that Pdf does not depend on the internals of Imaging.
+#if MEZIANTOU_FRAMEWORK_PDF
+namespace Meziantou.Framework.Pdf.Filters;
+#else
 namespace Meziantou.Framework.Imaging.Internals;
+#endif
 
 /// <summary>
 /// The decoder of the CCITT facsimile compressions of TIFF, written from ITU-T Recommendations T.4 and T.6 and from
@@ -38,6 +44,8 @@ internal static class TiffCcittDecoder
     /// <returns>The number of entries.</returns>
     public static long GetChangeListLength(int width) => (long)width + 8;
 
+#if !MEZIANTOU_FRAMEWORK_PDF
+    // The rows of a TIFF block: Meziantou.Framework.Pdf decodes the rows itself (CCITTFaxDecode, JBIG2)
     /// <summary>Decodes the rows of one block.</summary>
     /// <param name="data">The compressed block.</param>
     /// <param name="destination">Exactly <paramref name="rowCount"/> rows of <c>(width + 7) / 8</c> bytes.</param>
@@ -99,12 +107,13 @@ internal static class TiffCcittDecoder
 
         return null;
     }
+#endif
 
     /// <summary>Ends a change list with the entries that stand for "no further change": the end of the row.</summary>
-    private static void Terminate(Span<int> changes, int count, int width) => changes.Slice(count, 4).Fill(width);
+    internal static void Terminate(Span<int> changes, int count, int width) => changes.Slice(count, 4).Fill(width);
 
     /// <summary>Sets the pixels of the black runs: the runs that start at the changes of even index.</summary>
-    private static void Paint(ReadOnlySpan<int> changes, int count, Span<byte> row, int width)
+    internal static void Paint(ReadOnlySpan<int> changes, int count, Span<byte> row, int width)
     {
         for (var i = 0; i < count; i += 2)
         {
@@ -139,7 +148,7 @@ internal static class TiffCcittDecoder
     /// Consumes an end-of-line code and the fill bits before it: at least eleven zeros and a one. The position is not
     /// changed when the next bits are something else.
     /// </summary>
-    private static bool TrySkipEndOfLine(ref TiffBitReader reader)
+    internal static bool TrySkipEndOfLine(ref TiffBitReader reader)
     {
         var start = reader.Position;
         var zeros = 0;
@@ -182,7 +191,7 @@ internal static class TiffCcittDecoder
     }
 
     /// <summary>Decodes a row coded in one dimension: alternating white and black runs, the first one white (T.4, 4.1).</summary>
-    private static string? DecodeOneDimensionalRow(ref TiffBitReader reader, Span<int> changes, int width, out int count)
+    internal static string? DecodeOneDimensionalRow(ref TiffBitReader reader, Span<int> changes, int width, out int count)
     {
         count = 0;
         var position = 0;
@@ -211,7 +220,7 @@ internal static class TiffCcittDecoder
     /// relative to <c>a0</c>, the last position coded, and to <c>b1</c> and <c>b2</c>, the first changes of the reference
     /// row to the right of <c>a0</c> (<c>b1</c> being a change to the color opposite to the one at <c>a0</c>).
     /// </summary>
-    private static string? DecodeTwoDimensionalRow(ref TiffBitReader reader, ReadOnlySpan<int> reference, Span<int> changes, int width, out int count)
+    internal static string? DecodeTwoDimensionalRow(ref TiffBitReader reader, ReadOnlySpan<int> reference, Span<int> changes, int width, out int count)
     {
         count = 0;
 

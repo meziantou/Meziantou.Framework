@@ -1,0 +1,11 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.0		TRUE	FALSE	FALSE		[Font]			Table 109 and Clause 9.6.2.3
+Subtype	name	1.0		TRUE	FALSE	FALSE		[MMType1]			
+Name	name	1.0	2.0	fn:IsRequired(fn:IsPDFVersion(1.0))	FALSE	FALSE					
+BaseFont	name	1.0		TRUE	FALSE	FALSE					
+FirstChar	integer	1.0		fn:IsRequired(fn:SinceVersion(2.0) || fn:NotStandard14Font())	FALSE	FALSE					
+LastChar	integer	1.0		fn:IsRequired(fn:SinceVersion(2.0) || fn:NotStandard14Font())	FALSE	FALSE					
+Widths	array	1.0		fn:IsRequired(fn:SinceVersion(2.0) || fn:NotStandard14Font())	FALSE	FALSE				[ArrayOfNumbersGeneral]	
+FontDescriptor	dictionary	1.0		fn:IsRequired(fn:SinceVersion(2.0) || fn:NotStandard14Font())	TRUE	FALSE				[FontDescriptorType1]	
+Encoding	dictionary;name	1.0		FALSE	FALSE	FALSE		[];[MacRomanEncoding,MacExpertEncoding,WinAnsiEncoding]		[Encoding];[]	
+ToUnicode	stream	1.2		FALSE	TRUE	FALSE				[ToUnicodeCMapStream]	

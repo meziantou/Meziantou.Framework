@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.7		FALSE	fn:MustBeDirect()	FALSE		[Extensions]			Table 48
+ISO_	fn:SinceVersion(2.0,array);dictionary	1.7		FALSE	fn:MustBeDirect()	FALSE				[fn:SinceVersion(2.0,ArrayOfDevExtensions)];[ISO_DevExtensions]	
+GTSm	fn:SinceVersion(2.0,array);dictionary	fn:Extension(ISO_21812,1.7)		FALSE	fn:MustBeDirect()	FALSE				[fn:SinceVersion(2.0,ArrayOfDevExtensions)];[GTSm_DevExtensions]	see ISO 21812-1:2019
+*	fn:SinceVersion(2.0,array);dictionary	1.7		FALSE	fn:MustBeDirect()	FALSE				[fn:SinceVersion(2.0,ArrayOfDevExtensions)];[DevExtensions]	

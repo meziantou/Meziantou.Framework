@@ -1,0 +1,6 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		TRUE	FALSE	FALSE		[OCG]			Table 96
+Name	string-text	1.5		TRUE	FALSE	FALSE					
+Intent	array;name	1.5		FALSE	FALSE	FALSE				[ArrayOfNamesGeneral];[]	
+Usage	dictionary	1.5		FALSE	FALSE	FALSE				[OptContentUsage]	
+GTS_Metadata	dictionary	fn:Extension(ISO_19593,1.7)		FALSE	FALSE	FALSE				[GTS_ProcStepsGroup]	ISO 19593-1

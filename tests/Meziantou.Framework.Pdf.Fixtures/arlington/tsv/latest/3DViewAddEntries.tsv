@@ -1,0 +1,19 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	2.0		FALSE	FALSE	FALSE		[3DView]			Table 315 and Table 344 - for rich media only
+XN	string	2.0		TRUE	FALSE	FALSE					
+IN	string	2.0		FALSE	FALSE	FALSE	@XN				
+MS	name	2.0		FALSE	FALSE	FALSE					
+MA	array	2.0		FALSE	FALSE	FALSE				[ArrayOf3DMeasure]	
+C2W	array	2.0		fn:IsRequired(@MS==M)	FALSE	FALSE				[ArrayOf3DTransMatrix]	
+U3DPath	array;string	2.0		fn:IsRequired(@MS==U3D)	FALSE	FALSE				[ArrayOfStringsText];[]	
+CO	number	2.0		FALSE	FALSE	FALSE					
+P	dictionary	2.0		FALSE	FALSE	FALSE				[Projection]	
+O	stream	2.0		FALSE	TRUE	FALSE				[XObjectFormType1]	
+BG	dictionary	2.0		FALSE	FALSE	FALSE				[3DBackground]	
+RM	dictionary	2.0		FALSE	FALSE	FALSE				[3DRenderMode]	
+LS	dictionary	2.0		FALSE	FALSE	FALSE				[3DLightingScheme]	
+SA	array	2.0		FALSE	FALSE	FALSE				[ArrayOf3DCrossSection]	
+NA	array	2.0		FALSE	FALSE	FALSE				[ArrayOf3DNode]	
+NR	boolean	2.0		FALSE	FALSE	FALSE	false				
+Snapshot	stream	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	TRUE	FALSE				[XObjectImage]	
+Params	array	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE				[ArrayOfViewParams]	

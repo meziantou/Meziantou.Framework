@@ -1,0 +1,7 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+FunctionType	integer	1.3		TRUE	FALSE	FALSE		[3]			Table 38 and Table 41
+Domain	array	1.3		TRUE	FALSE	FALSE			[fn:Eval((fn:ArrayLength(Domain) mod 2)==0)]	[ArrayOfNumbersGeneral]	
+Range	array	1.3		FALSE	FALSE	FALSE			[fn:Eval((fn:ArrayLength(Range) mod 2)==0)]	[ArrayOfNumbersGeneral]	
+Functions	array	1.3		TRUE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(Functions)==(fn:ArrayLength(Bounds)+1))]	[ArrayOfFunctions]	
+Bounds	array	1.3		TRUE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(Bounds)==(fn:ArrayLength(Functions) - 1))]	[ArrayOfNumbersGeneral]	
+Encode	array	1.3		TRUE	FALSE	FALSE			[fn:Eval((fn:ArrayLength(Encode) mod 2)==0)]	[ArrayOfNumbersGeneral]	

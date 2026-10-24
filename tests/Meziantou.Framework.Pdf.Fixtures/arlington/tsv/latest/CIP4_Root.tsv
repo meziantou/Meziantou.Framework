@@ -1,0 +1,9 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Extension(ISO_21812,1.7)		TRUE	FALSE	FALSE		[CIP4_Root]			ISO 21812-1:2019 Table 3
+CIP4_DescriptiveName	string	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					
+CIP4_ExternalID	name	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE					
+CIP4_Intent	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[CIP4_Intent]	
+CIP4_IntentSummary	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[CIP4_IntentSummary]	
+CIP4_Metadata	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[CIP4_Metadata]	
+CIP4_Production	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[CIP4_Production]	
+CIP4_Recipient	dictionary	fn:Extension(ISO_21812,1.7)		FALSE	FALSE	FALSE				[CIP4_Recipient]	

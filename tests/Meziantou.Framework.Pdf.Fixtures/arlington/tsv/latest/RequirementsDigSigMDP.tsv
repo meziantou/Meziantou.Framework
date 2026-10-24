@@ -1,0 +1,7 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	2.0		FALSE	FALSE	FALSE		[Requirement]			Table 273 and Table 274 and Table 275
+S	name	2.0		TRUE	FALSE	FALSE		[DigSigMDP]			
+V	dictionary;name	2.0		FALSE	FALSE	FALSE				[Extensions];[]	
+RH	array;dictionary	2.0		FALSE	FALSE	FALSE	[[]];[]			[ArrayOfRequirementsHandlers];[RequirementsHandler]	
+Penalty	integer	2.0		FALSE	FALSE	FALSE	100	[fn:Eval((@Penalty>=0) && (@Penalty<=100))]			
+DigSig	dictionary	2.0		FALSE	FALSE	FALSE				[Signature,DocTimeStamp]	

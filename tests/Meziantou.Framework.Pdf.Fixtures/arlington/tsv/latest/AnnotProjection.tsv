@@ -1,0 +1,29 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE		[Annot]			Table 166 and Table 172 and Clause 12.5.6.24 (markup annot)
+Subtype	name	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		TRUE	FALSE	FALSE		[Projection]			
+Rect	rectangle	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		TRUE	FALSE	FALSE					
+Contents	string-text	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE					
+P	dictionary	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	TRUE	FALSE				[PageObject]	
+NM	string-text	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE					
+M	date;string-text	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE					
+F	bitmask	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE	0		[fn:Eval(fn:BitsClear(11,32))]		Table 167
+AP	dictionary	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE				[Appearance]	
+AS	name	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		fn:IsRequired(fn:IsPresent(AP::N::*) || fn:IsPresent(AP::R::*) || fn:IsPresent(AP::D::*))	FALSE	FALSE					
+Border	array	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE	[0 0 1]			[ArrayOf_4AnnotBorderCharacteristics]	
+C	array	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE				[ArrayOf_4NumbersColorAnnotation]	
+StructParent	integer	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE					Table 359
+OC	dictionary	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE				[OptContentGroup,OptContentMembership]	
+AF	array	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		FALSE	FALSE	FALSE				[ArrayOfAFFileSpecifications]	
+ca	number	2.0		FALSE	FALSE	FALSE	@CA	[fn:Eval((@ca>=0.0) && (@ca<=1.0))]			https://github.com/pdf-association/pdf-issues/issues/577
+CA	number	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE	1.0	[fn:Eval((@CA>=0.0) && (@CA<=1.0))]			
+BM	name	2.0		FALSE	FALSE	FALSE	Normal	[fn:Deprecated(1.4,Compatible),Normal,Multiply,Screen,Difference,Darken,Lighten,ColorDodge,ColorBurn,Exclusion,HardLight,Overlay,SoftLight,Luminosity,Hue,Saturation,Color]			Table 134 and Table 135
+Lang	string-text	2.0		FALSE	FALSE	FALSE					
+T	string-text	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE					
+Popup	dictionary	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	TRUE	FALSE				[AnnotPopup]	
+RC	stream;string-text	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	[TRUE];[FALSE]	FALSE				[Stream];[]	
+CreationDate	date	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE					
+IRT	dictionary	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		fn:IsRequired(fn:IsPresent(RT))	FALSE	FALSE				[AnnotText,AnnotLink,AnnotFreeText,AnnotLine,AnnotSquare,AnnotCircle,AnnotPolygon,AnnotHighlight,AnnotUnderline,AnnotSquiggly,AnnotStrikeOut,AnnotCaret,AnnotStamp,AnnotInk,AnnotPopup,AnnotFileAttachment,AnnotSound,AnnotMovie,AnnotScreen,AnnotWidget,AnnotPrinterMark,fn:SinceVersion(1.6,AnnotWatermark),Annot3D,AnnotRedact,AnnotProjection,AnnotRichMedia]	https://github.com/pdf-association/pdf-issues/issues/297
+Subj	string-text	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE					
+RT	name	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE	R	[R,Group]	[fn:IsMeaningful(fn:IsPresent(IRT))]		
+IT	name	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE					
+ExData	dictionary	fn:Eval(fn:Extension(ADBE_Extn3,1.7) || 2.0)		FALSE	FALSE	FALSE				[ExData3DMarkup,ExDataMarkupGeo,ExDataProjection]	2D markup annots only

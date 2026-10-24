@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		FALSE	FALSE	FALSE		[MediaScreenParams]			Table 293
+MH	dictionary	1.5		FALSE	FALSE	FALSE				[MediaScreenParametersMHBE]	
+BE	dictionary	1.5		FALSE	FALSE	FALSE				[MediaScreenParametersMHBE]	

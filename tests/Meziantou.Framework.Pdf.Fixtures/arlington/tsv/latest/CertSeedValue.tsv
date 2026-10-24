@@ -1,0 +1,14 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		FALSE	FALSE	FALSE		[SVCert]			Table 238
+Ff	bitmask	1.5		FALSE	FALSE	FALSE	0		[fn:Eval(fn:BitsClear(8,32))]		
+Subject	array	1.5		FALSE	FALSE	FALSE				[ArrayOfStringsByte]	
+SignaturePolicyOID	string-ascii	2.0		FALSE	FALSE	FALSE					
+SignaturePolicyHashValue	string	2.0		FALSE	FALSE	FALSE					
+SignaturePolicyHashAlgorithm	name	2.0		FALSE	FALSE	FALSE		[adbe.pkcs7.detached,fn:Deprecated(2.0,adbe.pkcs7.sha1),adbe.x509.rsa_sha1,ETSI.CAdES.detached,ETSI.RFC3161]			Table 260
+SignaturePolicyCommitmentType	array	2.0		FALSE	FALSE	FALSE				[ArrayOfStringsASCII]	
+SubjectDN	array	1.7		FALSE	FALSE	FALSE				[ArrayOfSubjectDN]	
+KeyUsage	array	1.7		FALSE	FALSE	FALSE				[ArrayOfStringsASCII]	RFC 5280
+Issuer	array	1.5		FALSE	FALSE	FALSE				[ArrayOfStringsByte]	
+OID	array	1.5		FALSE	FALSE	FALSE				[ArrayOfStringsByte]	
+URL	string-ascii	1.5		FALSE	FALSE	FALSE					
+URLType	name	1.7		FALSE	FALSE	FALSE	Browser	[Browser,*]			

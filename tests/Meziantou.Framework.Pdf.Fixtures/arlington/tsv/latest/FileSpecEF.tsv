@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+F	stream	1.3		FALSE	TRUE	FALSE				[EmbeddedFileStream]	Table 43, EF cell
+UF	stream	1.7		FALSE	TRUE	FALSE				[EmbeddedFileStream]	

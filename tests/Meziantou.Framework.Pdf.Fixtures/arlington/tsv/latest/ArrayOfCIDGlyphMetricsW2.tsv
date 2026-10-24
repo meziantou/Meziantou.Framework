@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	array;integer;number	1.2		FALSE	FALSE	FALSE			[fn:Eval((fn:ArrayLength(*) mod 3)==0)];[];[]	[ArrayOfNumbersGeneral];[];[]	Clause 9.7.4.3 - C-last

@@ -1,0 +1,11 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.7		FALSE	FALSE	FALSE		[3DCrossSection]			Table 322
+C	array	1.7		FALSE	FALSE	FALSE	[0 0 0]			[ArrayOf_3CenterOfRotationNumbers]	
+O	array	1.7		TRUE	FALSE	FALSE	[null 0 0]			[ArrayOf_3OrientationNumbers]	
+PO	number	1.7		FALSE	FALSE	FALSE	0.5	[fn:Eval((@PO>=0) && (@PO<=1))]			
+PC	array	1.7		FALSE	FALSE	FALSE	[DeviceRGB 1 1 1]			[ArrayOf_4ColourSpaceEntries]	
+IV	boolean	1.7		FALSE	FALSE	FALSE	true				
+PV	boolean	1.7		FALSE	FALSE	FALSE	true				See https://github.com/pdf-association/pdf-issues/issues/49
+IC	array	1.7		FALSE	FALSE	FALSE	[DeviceRGB 0 1 0]		[fn:IsMeaningful(@IV==true)]	[ArrayOf_4ColourSpaceEntries]	
+ST	boolean	2.0		FALSE	FALSE	FALSE	false				
+SC	boolean	2.0		FALSE	FALSE	FALSE	false				

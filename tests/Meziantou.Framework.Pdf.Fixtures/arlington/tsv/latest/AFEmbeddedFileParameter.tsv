@@ -1,0 +1,6 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Size	integer	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		FALSE	FALSE	FALSE		[fn:Eval(@Size>=0)]			Table 45
+CreationDate	date	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		FALSE	FALSE	FALSE					
+ModDate	date	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		TRUE	FALSE	FALSE					
+Mac	dictionary	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)	2.0	FALSE	FALSE	FALSE				[Mac]	
+CheckSum	string-byte	fn:Eval(fn:Extension(ISO_19005_3,1.7) || 2.0)		FALSE	FALSE	FALSE			[fn:Eval(fn:StringLength(CheckSum)==16)]		MD5 checksum - https://github.com/pdf-association/pdf-issues/issues/382

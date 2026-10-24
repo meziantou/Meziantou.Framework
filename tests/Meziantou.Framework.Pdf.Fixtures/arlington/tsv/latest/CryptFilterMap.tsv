@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Identity	dictionary	1.5		FALSE	FALSE	FALSE				[CryptFilter]	Table 26 explicitly defines Identity
+StdCF	dictionary	1.5		FALSE	FALSE	FALSE			[fn:Eval(StdCF::@AuthEvent==DocOpen)]	[CryptFilter]	Clause 7.6.4
+*	dictionary	1.5		FALSE	FALSE	FALSE				[CryptFilter]	

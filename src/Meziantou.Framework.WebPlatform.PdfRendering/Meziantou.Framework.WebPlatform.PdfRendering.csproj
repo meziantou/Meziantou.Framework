@@ -1,0 +1,32 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.WebPlatform.PdfRendering</RootNamespace>
+    <Version>1.0.0</Version>
+    <IsTrimmable>true</IsTrimmable>
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+    <Description>Prints the documents of Meziantou.Framework.WebPlatform to PDF with Meziantou.Framework.Pdf: vector pages, embedded font subsets with extractable text, images, links, bookmarks and tagged PDF (PDF/UA, PDF/A).</Description>
+    <PackageTags>html;dom;css;rendering;print;pdf;pdf-ua;pdf-a</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Pdf\Meziantou.Framework.Pdf.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
+    <!-- The backend whose surfaces rasterize what PDF cannot draw when the browsing context has none (public API only) -->
+    <ProjectReference Include="..\Meziantou.Framework.WebPlatform.Imaging\Meziantou.Framework.WebPlatform.Imaging.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.PdfRendering.Tests" />
+  </ItemGroup>
+
+  <!--
+    The package reads the internal display lists, fonts and rendering surfaces of the core: it depends on the exact version
+    of the core. It uses the public API of Meziantou.Framework.WebPlatform.Imaging only, with a normal dependency.
+  -->
+  <Target Name="UseExactProjectReferenceVersions" AfterTargets="_GetProjectReferenceVersions">
+    <ItemGroup>
+      <_ExactProjectReferencesWithVersions Include="@(_ProjectReferencesWithVersions)" Condition="'%(Filename)' == 'Meziantou.Framework.WebPlatform'" ProjectVersion="[%(_ProjectReferencesWithVersions.ProjectVersion)]" />
+      <_ProjectReferencesWithVersions Remove="@(_ExactProjectReferencesWithVersions)" />
+      <_ProjectReferencesWithVersions Include="@(_ExactProjectReferencesWithVersions)" />
+    </ItemGroup>
+  </Target>
+</Project>

@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	2.0		FALSE	FALSE	FALSE		[EncryptedPayload]			Table 28
+Subtype	name	2.0		TRUE	FALSE	FALSE					
+Version	name	2.0		FALSE	FALSE	FALSE					

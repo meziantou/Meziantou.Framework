@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.7		FALSE	FALSE	FALSE		[CollectionItem]			Table 46
+*	date;dictionary;number;string-text	1.7		FALSE	FALSE	FALSE				[];[CollectionSubitem];[];[]	

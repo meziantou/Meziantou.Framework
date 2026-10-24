@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Filter	dictionary	1.5		FALSE	fn:MustBeDirect()	FALSE				[SignatureBuildDataDict]	Adobe _Digital Signature Build Dictionary Specification_ Table 1
+PubSec	dictionary	1.5		FALSE	fn:MustBeDirect()	FALSE				[SignatureBuildDataDict]	
+App	dictionary	1.5		FALSE	fn:MustBeDirect()	FALSE				[SignatureBuildDataAppDict]	
+SigQ	dictionary	1.5		FALSE	fn:MustBeDirect()	FALSE				[SignatureBuildDataSigQDict]	

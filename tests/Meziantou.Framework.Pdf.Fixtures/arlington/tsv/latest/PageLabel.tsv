@@ -1,0 +1,5 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.3		FALSE	FALSE	FALSE		[PageLabel]			Table 161
+S	name	1.3		FALSE	FALSE	FALSE		[D,R,r,A,a]			
+P	string-text	1.3		FALSE	FALSE	FALSE					
+St	integer	1.3		FALSE	FALSE	FALSE	1	[fn:Eval(@St>=1)]			

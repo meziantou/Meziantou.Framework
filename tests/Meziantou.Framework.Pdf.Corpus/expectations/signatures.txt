@@ -1,0 +1,16 @@
+signatures/pdfium/testing/resources/signature_no_sub_filter.in#0: Error
+signatures/pdfium/testing/resources/signature_no_sub_filter.pdf#0: Error
+signatures/pdfium/testing/resources/signature_reason.in#0: Error
+signatures/pdfium/testing/resources/signature_reason.pdf#0: Error
+signatures/pdfium/testing/resources/two_signatures.in#0: Error
+signatures/pdfium/testing/resources/two_signatures.in#1: Error
+signatures/pdfium/testing/resources/two_signatures.pdf#0: Error
+signatures/pdfium/testing/resources/two_signatures.pdf#1: Error
+signatures/pdfjs/test/pdfs/bug854315.pdf#0: Invalid(intact=False,signature=True,timestamp=True)
+signatures/pdfjs/test/pdfs/poppler-395-0-fuzzed.pdf#0: Error
+signatures/pdfjs/test/pdfs/xfa_filled_imm1344e.pdf#0: Error
+signatures/verapdf/PDF_A-2b/6.1 File structure/6.1.12 Permissions/veraPDF test suite 6-1-12-t02-fail-a.pdf#0: Invalid(intact=False,signature=False,timestamp=none)
+signatures/verapdf/PDF_A-2b/6.1 File structure/6.1.12 Permissions/veraPDF test suite 6-1-12-t02-fail-b.pdf#0: Invalid(intact=False,signature=False,timestamp=none)
+signatures/verapdf/PDF_A-2b/6.1 File structure/6.1.12 Permissions/veraPDF test suite 6-1-12-t02-fail-c.pdf#0: Invalid(intact=False,signature=False,timestamp=none)
+signatures/verapdf/PDF_A-2b/6.1 File structure/6.1.12 Permissions/veraPDF test suite 6-1-12-t02-pass-a.pdf#0: Invalid(intact=False,signature=False,timestamp=none)
+signatures/verapdf/PDF_A-4/6.1 File structure/6.1.11 Permissions/veraPDF test suite 6-1-11-t01-pass-a.pdf#0: Error

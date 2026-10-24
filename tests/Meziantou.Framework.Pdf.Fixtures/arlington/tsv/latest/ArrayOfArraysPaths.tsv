@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	array	2.0		TRUE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(0)==2)]	[ArrayOfPaths]	Table 181 or Table 185 - must be moveto
+*	array	2.0		FALSE	FALSE	FALSE			[fn:Eval((fn:ArrayLength(*)==2) || (fn:ArrayLength(*)==6))]	[ArrayOfPaths]	must be lineto or curveto

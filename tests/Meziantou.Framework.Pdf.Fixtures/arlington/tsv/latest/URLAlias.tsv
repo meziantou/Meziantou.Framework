@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+U	string-ascii	1.3		TRUE	FALSE	FALSE					Table 392
+C	array	1.3		FALSE	FALSE	FALSE			[fn:Eval(fn:ArrayLength(C)>=1)]	[ArrayOfArraysURLStrings]	

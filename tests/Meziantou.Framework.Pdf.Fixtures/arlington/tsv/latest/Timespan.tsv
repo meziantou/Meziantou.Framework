@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		FALSE	FALSE	FALSE		[Timespan]			Table 300
+S	name	1.5		TRUE	FALSE	FALSE		[S]			
+V	number	1.5		TRUE	FALSE	FALSE					

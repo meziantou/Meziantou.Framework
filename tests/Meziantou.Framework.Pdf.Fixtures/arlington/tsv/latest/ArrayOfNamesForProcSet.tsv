@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	name	1.0	2.0	FALSE	FALSE	FALSE		[PDF,Text,ImageB,ImageC,ImageI]			Table 34 and Table 346. https://github.com/pdf-association/pdf-issues/issues/367

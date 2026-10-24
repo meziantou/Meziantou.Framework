@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+0	dictionary;number	1.0		TRUE	FALSE	FALSE		[];[fn:Eval(@0>=0)]		[PageObject];[]	Table 149 - page
+1	name	1.0		TRUE	FALSE	FALSE		[FitH,FitV,fn:SinceVersion(1.1,FitBH),fn:SinceVersion(1.1,FitBV)]			
+2	null;number	1.0		TRUE	FALSE	FALSE				[];[]	top or left

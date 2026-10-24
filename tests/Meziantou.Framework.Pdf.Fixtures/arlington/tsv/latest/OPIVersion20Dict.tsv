@@ -1,0 +1,12 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.2	2.0	FALSE	FALSE	FALSE		[OPI]			Table 407
+Version	number	1.2	2.0	TRUE	FALSE	FALSE		[2.0]			
+F	dictionary;string	1.2	2.0	TRUE	FALSE	FALSE				[FileSpecification];[]	
+MainImage	string-byte	1.2	2.0	FALSE	FALSE	FALSE					
+Tags	array	1.2	2.0	FALSE	FALSE	FALSE				[ArrayOfTags]	
+Size	array	1.2	2.0	fn:IsRequired(fn:IsPresent(CropRect))	FALSE	FALSE			[fn:Eval((Size::@0>0) && (Size::@1>0))]	[ArrayOf_2Numbers]	
+CropRect	rectangle	1.2	2.0	fn:IsRequired(fn:IsPresent(Size))	FALSE	FALSE					
+Overprint	boolean	1.2	2.0	FALSE	FALSE	FALSE					
+Inks	array;name	1.2	2.0	FALSE	FALSE	FALSE		[];[full_color,registration]		[ArrayOfOPI2Inks];[]	
+IncludedImageDimensions	array	1.2	2.0	FALSE	FALSE	FALSE			[fn:Eval((IncludedImageDimensions::@0>0) && (IncludedImageDimensions::@1>0))]	[ArrayOf_2Integers]	
+IncludedImageQuality	number	1.2	2.0	FALSE	FALSE	FALSE		[1,2,3]			

@@ -274,7 +274,7 @@
       "required": ["origin", "license"],
       "properties": {
         "origin": { "enum": ["hand-authored", "generated", "external"] },
-        "license": { "enum": ["CC0-1.0", "MIT", "Unlicense", "CC-BY-4.0", "Libpng", "Zlib", "Apache-2.0", "Unicode-3.0", "APAFML", "OFL-1.1"], "description": "OFL-1.1 is only accepted for the entries of fonts." },
+        "license": { "enum": ["CC0-1.0", "MIT", "Unlicense", "CC-BY-4.0", "Libpng", "Zlib", "Apache-2.0", "Unicode-3.0", "OFL-1.1"], "description": "OFL-1.1 is only accepted for the entries of fonts." },
         "author": { "type": "string" },
         "source": { "type": "string", "description": "Required for external fixtures: URL or citation of the original." },
         "generator": { "type": "string", "description": "Required for generated fixtures: committed script path and function." },

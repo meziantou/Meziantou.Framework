@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+D	array	1.1		TRUE	FALSE	FALSE				[DestXYZArray,Dest0Array,Dest1Array,Dest4Array]	Clause 12.3.2.4
+SD	array	2.0		FALSE	FALSE	FALSE				[DestXYZStructArray,Dest0StructArray,Dest1StructArray,Dest4StructArray]	

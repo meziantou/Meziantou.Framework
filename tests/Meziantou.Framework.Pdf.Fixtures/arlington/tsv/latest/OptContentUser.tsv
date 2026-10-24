@@ -1,0 +1,3 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.5		TRUE	FALSE	FALSE		[Ind,Ttl,Org]			Table 100, User cell
+Name	array;string-text	1.5		FALSE	FALSE	FALSE				[ArrayOfStringsText];[]	

@@ -1,0 +1,4 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+Type	name	1.2	1.2	FALSE	FALSE	FALSE		[Action]			Table 196 and Adobe PDF 1.2
+S	name	1.2	1.2	TRUE	FALSE	FALSE		[NOP]			only documented in Adobe PDF 1.2
+Next	array;dictionary	1.2	1.2	FALSE	FALSE	FALSE				[ArrayOfActions];[ActionGoTo,ActionGoToR,ActionLaunch,ActionNOP,ActionSetState,ActionThread,ActionURI,ActionSound,ActionMovie,ActionHide,ActionNamed,ActionSubmitForm,ActionResetForm,ActionImportData]	only documented in Adobe PDF 1.2 so only limited Actions

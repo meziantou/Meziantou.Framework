@@ -1,0 +1,2 @@
+Key	Type	SinceVersion	DeprecatedIn	Required	IndirectReference	Inheritable	DefaultValue	PossibleValues	SpecialCase	Link	Note
+*	stream	1.4		FALSE	TRUE	FALSE				[XObjectFormPrinterMark]	Table 170 and Clause 12.5.5

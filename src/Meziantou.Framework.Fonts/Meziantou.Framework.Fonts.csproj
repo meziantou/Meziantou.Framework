@@ -16,6 +16,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!--
+      The metrics of the 14 standard fonts of PDF, as Adobe published them in Core14_AFMs.zip (see THIRD-PARTY-NOTICES.md):
+      their license forbids distributing the AFM files without MustRead.html
+    -->
+    <EmbeddedResource Include="Afm\StandardFonts\*.afm;Afm\StandardFonts\MustRead.html" LogicalName="Meziantou.Framework.Fonts.Afm.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- The tests, the fuzzing and the benchmarks also use the internal types -->
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.FuzzTests" />
@@ -24,5 +32,6 @@
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Fuzz" />
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Benchmarks" />
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Imaging.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Pdf.Tests" />
   </ItemGroup>
 </Project>

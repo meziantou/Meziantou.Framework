@@ -175,6 +175,12 @@ internal static partial class ColumnBreaker
         /// <summary>The offset in the current fragmentainer where the parallel flows that overflow it end.</summary>
         private double _overflowEndOffset;
 
+        /// <summary>
+        /// Whether an item of a track that started is after the end of the current fragmentainer (an item offset in its track by
+        /// a margin or its alignment): it is placed in a next one, so the flow continues.
+        /// </summary>
+        private bool _hasDeferredItems;
+
         /// <summary>The parallel flows that were placed in the current fragmentainer.</summary>
         private readonly List<ParallelItem> _advanced = [];
         private double _position;
@@ -310,6 +316,7 @@ internal static partial class ColumnBreaker
             _overflowEnd = double.NegativeInfinity;
             _overflowOffset = 0;
             _overflowEndOffset = 0;
+            _hasDeferredItems = false;
             _advanced.Clear();
             var shortage = double.PositiveInfinity;
 
@@ -370,7 +377,7 @@ internal static partial class ColumnBreaker
                 }
             }
 
-            var isUnfinished = false;
+            var isUnfinished = _hasDeferredItems;
             var worstAppeal = BreakAppeal.Perfect;
             foreach (var penalty in _penalties)
             {
@@ -1065,15 +1072,19 @@ internal static partial class ColumnBreaker
                 }
 
                 var isAfterFragmentainer = false;
+                var isTrackStarted = false;
                 var spillover = GetSpannedGapSpillover(group, track, _position);
                 foreach (var item in group.StartingItems[track])
                 {
                     if (item.Generation == _generation)
+                    {
+                        isTrackStarted = true;
                         continue;
+                    }
 
                     // An item at the start of the fragmentainer is placed in it even when it does not fit
                     // (an item that starts before its track, with a negative margin, starts with the track)
-                    var offset = GetOffset(item.Start) - spillover;
+                    var origin = GetOrigin(item.Start) + spillover;
                     var flowStart = Math.Max(item.Start, group.TrackStarts[track]);
                     if (GetOffset(flowStart) - spillover >= blockSize - Epsilon && flowStart > _position + Epsilon)
                     {
@@ -1081,13 +1092,22 @@ internal static partial class ColumnBreaker
                         continue;
                     }
 
+                    // As in Blink, an item that was after the end of a previous fragmentainer and starts before the start of this one
+                    // (its track grew with monolithic content that overflowed that fragmentainer) starts it: its offset is truncated
+                    if (item.Start < _position - Epsilon && item.Start > group.TrackStarts[track] + Epsilon)
+                    {
+                        origin = item.Start;
+                    }
+
+                    var offset = item.Start - origin;
+                    isTrackStarted = true;
                     item.Generation = _generation;
                     item.IsBoxDone = false;
                     item.Group!.HasEnded = false;
                     item.IsFlowDone = false;
                     item.IsContentPlaced = false;
                     item.Map = new FlowMap();
-                    item.Map.Add(double.NegativeInfinity, _index, GetOrigin(item.Start) + spillover, isBreak: false);
+                    item.Map.Add(double.NegativeInfinity, _index, origin, isBreak: false);
                     if (item.Nested is { } nested)
                     {
                         item.Cursor = new NestedColumnsCursor(item, nested, offset);
@@ -1096,7 +1116,7 @@ internal static partial class ColumnBreaker
                     {
                         // (a new generation: the parallel flows of the item start again when the item does, after a break before it)
                         var cursor = new FlowCursor(item.Flow, item.Map, item.Start, item.Flow.ContentEnd, _index, item.Flow.NextGeneration(), item.CanBreakBefore && offset > Epsilon, includesStart: true) { BreaksBeforeAsLastResort = item.BreaksBeforeAsLastResort };
-                        cursor.SetOrigin(GetOrigin(item.Start) + spillover);
+                        cursor.SetOrigin(origin);
                         // (the pages slice the monolithic content that does not fit in the page instead: SlicesMonolithicContent)
                         if (!item.CanGrow && !double.IsNaN(item.LeadingMonolithicEnd) && GetOffset(item.End) <= blockSize + Epsilon
                             && !(_flow.SlicesMonolithicContent && GetOffset(item.LeadingMonolithicEnd) > blockSize + Epsilon))
@@ -1112,7 +1132,11 @@ internal static partial class ColumnBreaker
                 }
 
                 if (isAfterFragmentainer)
+                {
+                    // (the items of the track that are after the end of the fragmentainer are placed in a next one)
+                    _hasDeferredItems |= isTrackStarted;
                     return false;
+                }
 
                 // The track ends when its items end
                 var isNestedTrack = group.Items is [{ Nested: not null }] && ReferenceEquals(group.Container, group.Items[0].Box);

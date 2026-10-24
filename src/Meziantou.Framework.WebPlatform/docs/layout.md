@@ -2728,7 +2728,9 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     in its track (`align-self: end`, a margin) and does not fit is pushed alone; in a grid, only when it has no possible
     break (as in Blink, a break before the first content of a row is not a possible break: the item is rather broken
     between line boxes that violate `orphans` and `widows`, `ParallelItem.BreaksBeforeAsLastResort`). An item that starts
-    before its track (a negative margin) starts with the track, at a negative offset when the track starts a fragmentainer.
+    after the end of the fragmentainer where its track started is placed in a next one (the flow continues for it); as in
+    Blink, it starts that fragmentainer when its position is before its start (the track grew with monolithic content that
+    overflowed the previous one: its offset is truncated). An item that starts before its track (a negative margin) starts with the track, at a negative offset when the track starts a fragmentainer.
     A monolithic item that overflows the fragmentainer ends its track after it (the flow does not break beside it; the items
     whose block size follows the track end with it), unless another item of the track continues in the next fragmentainer
     (its contents, or its definite block size, which is broken at the end of the fragmentainer): the track is then broken
@@ -3018,9 +3020,8 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
   without the boxes), the repeated edges of a box with `box-decoration-break: clone` and a specified block size that a
   column spanner interrupts, the block size of a table row when the monolithic contents of a cell overflow a
   fragmentainer (the row is as tall as in the strip, where the overflow counts: the percentages of the other cells resolve
-  against it), the gap of a row flex container after a forced break (it disappears, where Blink keeps a part of it), an
-  item that is offset in its line and starts after the end of a fragmentainer without block size (it is
-  placed when the flow reaches its offset, column after column), the margin of a table caption that follows a caption
+  against it), the gap of a row flex container after a forced break (it disappears, where Blink keeps a part of it), the
+  margin of a table caption that follows a caption
   without block size after a break (it is not truncated), the items that follow, before the position of the break, an
   item placed after a forced break although it overlaps the previous one, a column flex item that is as tall as its
   contents once fragmented in a multi-line container, the stitched scrollable

@@ -1419,7 +1419,7 @@
     "reftest": "PASS"
   },
   "css/css-break/flexbox/single-line-row-flex-fragmentation-044.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/flexbox/single-line-row-flex-fragmentation-045-print.html": {
     "reftest": "PASS"

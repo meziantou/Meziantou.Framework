@@ -5529,7 +5529,11 @@ folder for their sources and licenses), loaded on first use and shared by all th
 
 `BundledFonts.GetGenericFamily` maps the generic families to the bundled families (`ui-serif`, `system-ui`,
 `ui-sans-serif`, `ui-rounded` and `ui-monospace` included) and `math` to STIX Two Math; `cursive`, `fantasy`, `emoji` and
-`fangsong` have no bundled font. `eng/webplatform/update-fonts.sh` downloads the fonts from their pinned commits and produces the subsets with
+`fangsong` have no bundled font. As the metric aliases of fontconfig (which the browsers use on Linux), a family that is
+neither bundled nor installed by the host and that a bundled family is metric-compatible with uses it
+(`BundledFonts.GetMetricCompatibleFamily`): Arimo for `Arial` and `Helvetica`, Tinos for `Times New Roman` and `Times`,
+Cousine for `Courier New` and `Courier`, so that a page that names these fonts is laid out with their metrics (an
+installed font of the same name wins). `eng/webplatform/update-fonts.sh` downloads the fonts from their pinned commits and produces the subsets with
 fontTools.
 
 A host can install more fonts for the documents of a browsing context (`InstalledFontCollection`,

@@ -1533,7 +1533,8 @@ an atomic inline laid out while its parent collects its items rents another inst
   are rounded: six inline-blocks of 16.66666667% fit in their container); the flex items are collected into flex lines
   with the same tolerance. When nothing fits, the line breaks at the first opportunity (the content overflows), or at
   the last emergency opportunity that fits with `overflow-wrap: anywhere | break-word`. The starts of the inline boxes at a
-  break go to the next line (with the out-of-flow boxes after them), the other out-of-flow boxes at a break and the ends of
+  break go to the next line (with the out-of-flow boxes after them), and so do the out-of-flow boxes after collapsible spaces
+  (the opportunity is after the spaces), unless a collapsed space follows them; the other out-of-flow boxes at a break and the ends of
   the inline boxes (also after a forced break) stay on the line, as in the browsers; an empty inline box (its content collapsed
   away, no inline margin, border nor padding) after collapsible spaces stays on the line with them. At the boundary of two
   inline boxes, the `overflow-wrap` of either character allows an emergency opportunity (which properties control the
@@ -1848,7 +1849,8 @@ an atomic inline laid out while its parent collects its items rents another inst
   The factor of a line (`MeasureLineFit`) makes its scalable parts fill the line box: the content of the line is measured
   with two font sizes (`CollectLineContent`, with the spacing at the edges of the line and without the white space at its
   end), which separates the parts that follow the font size from the other ones (the atomic inlines, the edges of the
-  inline boxes, the spacing that is a length, `text-indent`); a line without scalable part is not scaled. `grow` does not
+  inline boxes, the spacing that is a length, `text-indent`); a line without scalable part is not scaled. The content is
+  then measured with the factor, which is reduced when the scaled advances exceed the line box by a floating-point excess. `grow` does not
   scale down and `shrink` does not scale up; the percentage limits the factor (a maximum of 100% or more for `grow`, a
   minimum from 0% to 100% for `shrink`). `per-line` and `per-line-all` scale each line by its factor (`per-line`: not the
   last line nor the lines that end with a forced break); `consistent` scales all the lines by the smallest factor of the
@@ -5803,9 +5805,16 @@ gives the untailored algorithm, which passes `LineBreakTest.txt`. The CSS tailor
   the iteration marks are ID, breaks before U+2010/U+2013 after an ID; in Chinese or Japanese, the centered punctuation marks
   and the PO/PR characters whose East_Asian_Width is A, F or W are ID. With `normal` or `loose` in Chinese or Japanese, U+301C
   and U+30A0 are ID. `anywhere`: an opportunity at every grapheme cluster boundary, except before a forced break.
+- The [deviations from UAX #14](https://drafts.csswg.org/css-text-3/#line-break-details) "for maximum interoperability with
+  existing implementations": no opportunity between `!` or `/` and an alphabetic letter (AL, HL), as in Blink and WebKit
+  (`!important`, `23/Jan`). The one of `|` is not applied: WPT `css3-text-line-break-baspglwj-026` expects the
+  opportunity of UAX #14 after it.
 - `word-break: break-all`: the letters and numbers, and the AL, HL, NU and SA characters are ID (except the Hangul jamo and the
   Brahmic aksaras, which keep their syllables); `keep-all`: no opportunity between two letters/numbers or NU, AL, AI, ID
-  characters, except the explicit ones (U+200B) and the word boundaries of the lexical word breaking; `manual`: SA is AL;
+  characters, except the explicit ones (U+200B) and the word boundaries of the lexical word breaking; with
+  `overflow-wrap: normal`, the opportunities that `keep-all` removes are emergency opportunities, used when no other one fits
+  ("the restrictions introduced by word-break: keep-all may be relaxed to match word-break: normal if there are no
+  otherwise-acceptable break points in the line"; no browser does it); `manual`: SA is AL;
   `auto-phrase`: see below.
 - The [lexical word breaking](https://drafts.csswg.org/css-text-4/#lexical-breaking) of the Southeast Asian scripts (SA,
   `LineBreaker.GetWordBreakEngine`): the runs of the SA characters of Thai, Lao, Myanmar and Khmer are segmented into words with the
@@ -5931,7 +5940,7 @@ also used by the HTML directionality (`dir=auto`). `BidiTest.txt` and `BidiChara
   (Bidi_Class B: U+2029, LF, CR, U+001C-U+001E, U+0085; P1); `Paragraphs` gives their ranges and levels.
 - `BidiParagraphDirection`: `LeftToRight`/`RightToLeft` set the paragraph level (clause HL1, the CSS `direction` of the block
   container); `AutoLeftToRight`/`AutoRightToLeft` apply rules P2 and P3 to each paragraph, with the level used when it has no
-  strong character (`unicode-bidi: plaintext`).
+  strong character (`unicode-bidi: plaintext`; `BidiParagraph.IsDefaultLevel`).
 - The explicit levels (X1 to X8) use the directional status stack (max_depth 125); the characters removed by X9 (embedding and
   override initiators, PDF, BN) are kept as described in UAX #9 §5.2: they are skipped by the isolating run sequences and get the
   level of the preceding character. The isolating run sequences (BD13) are resolved with W1 to W7, N0 (bracket pairs, BD16 with
@@ -5957,7 +5966,11 @@ boundary or a forced paragraph break. `BidiControls` gives the control codes tha
 `GetInlineStart(unicodeBidi, isRtl)` before the content of an inline box and `GetInlineEnd(unicodeBidi)` after it
 (`embed`: LRE/RLE…PDF, `isolate`: LRI/RLI…PDI, `bidi-override`: LRO/RLO…PDF, `isolate-override`: FSI LRO/RLO…PDF PDI, `plaintext`:
 FSI…PDI), and `GetBlockContainerStart`/`GetBlockContainerEnd` around the content of a block container with `bidi-override` or
-`isolate-override`. The paragraph level is `GetParagraphDirection(unicodeBidi, isRtl)` of the block container. When an inline
+`isolate-override`. The paragraph level is `GetParagraphDirection(unicodeBidi, isRtl)` of the block container. With `plaintext`, the
+[inline base direction of a line box](https://drafts.csswg.org/css-text-3/#bidi-linebox) (its alignment) is the direction
+of its paragraph, or for a paragraph without strong character, the direction of the line box before it (of the last
+paragraph before it that has one), or of the block container for the first line box; its content keeps the level of rule P3
+(`InlineLayoutAlgorithm.IsLineRightToLeft`). When an inline
 box is split by a forced paragraph break, its end codes are inserted before the break and its start codes after it
 ([§2.4.4](https://drafts.csswg.org/css-writing-modes-4/#bidi-paragraph-breaks)). An atomic inline (U+FFFC) is neutral, except
 a replaced element with `unicode-bidi: embed | bidi-override` (`GetAtomicInlineClass`, passed to `Resolve` with the classes).

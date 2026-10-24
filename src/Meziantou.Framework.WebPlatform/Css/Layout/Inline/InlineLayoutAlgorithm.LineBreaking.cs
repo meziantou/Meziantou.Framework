@@ -218,10 +218,22 @@ internal sealed partial class InlineLayoutAlgorithm
                     // An out-of-flow box at a break stays on the line (its static position is at the end of the line, as in the
                     // browsers), with the starts of the inline boxes before it when they have no inline size (the line can break
                     // after the box, as in Blink: the inline boxes then start on the line, which matters for the containing
-                    // block that they form), else it goes to the next line with them
+                    // block that they form), else it goes to the next line with them. An out-of-flow box between collapsible
+                    // spaces and the content after them is after the soft wrap opportunity that follows the spaces: it goes to
+                    // the next line with that content ("Out-of-flow boxes ... do not introduce a forced line break or soft wrap
+                    // opportunity", https://drafts.csswg.org/css-text-4/#line-break-details; WPT
+                    // css/css-text/line-breaking/line-breaking-019.html); one followed by a collapsed space is inside the
+                    // spaces, before their opportunity, and stays on the line (WPT css/CSS2/positioning/inline-static-position-001.html)
                     if (!item.IsFloat && pendingItem >= 0 && width == pendingWidth)
                     {
                         pendingItem = -1;
+                    }
+                    else if (!item.IsFloat && pendingItem < 0 && trailing > trailingPreserved && hasContent && _wrappingCollapsedSpaces.BinarySearch(item.Start) < 0)
+                    {
+                        pendingItem = index;
+                        pendingWidth = width;
+                        pendingTrailing = trailing;
+                        pendingClonedEnd = clonedEnd;
                     }
 
                     if (item.IsFloat)

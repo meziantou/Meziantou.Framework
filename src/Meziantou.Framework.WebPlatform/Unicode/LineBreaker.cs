@@ -544,13 +544,26 @@ internal sealed class LineBreaker
         if (result == LineBreakOpportunity.Mandatory)
             return result;
 
+        // https://drafts.csswg.org/css-text-3/#line-break-details: "the following deviations could be desirable for maximum
+        // interoperability with existing implementations": no soft wrap opportunity between U+0021 (!) or U+002F (/) and a
+        // letter, e.g. in "!important" or "23/Jan", as in Blink and WebKit (only before the alphabetic letters: the letters
+        // of word-break: break-all are ideographic, and so are the CJK ideographs). The deviation of U+007C (|) is not applied:
+        // WPT css/css-text/i18n/css3-text-line-break-baspglwj-026.html expects the opportunity of UAX #14 after it, as Firefox
+        if (result == LineBreakOpportunity.Allowed && before.BaseCodePoint is '!' or '/' && before.LastClass is EX or SY && after.Class is AL or HL)
+        {
+            result = LineBreakOpportunity.None;
+        }
+
         // https://drafts.csswg.org/css-text-4/#valdef-word-break-keep-all: no implicit soft wrap opportunity between letters,
-        // "except where opportunities exist due to dictionary-based breaking"
+        // "except where opportunities exist due to dictionary-based breaking". With overflow-wrap: normal, "the restrictions
+        // introduced by word-break: keep-all may be relaxed to match word-break: normal if there are no otherwise-acceptable break
+        // points in the line" (https://drafts.csswg.org/css-text-4/#valdef-overflow-wrap-normal): the opportunity is an emergency
+        // one (with the other values of overflow-wrap, the emergency opportunities are at every grapheme cluster boundary)
         var bothFlags = before.Flags & after.Flags;
         if (result == LineBreakOpportunity.Allowed && options.WordBreak == WordBreakMode.KeepAll && ((bothFlags & UnitFlags.Letter) != UnitFlags.None)
             && (bothFlags & UnitFlags.DictionaryLetter) == UnitFlags.None)
         {
-            result = LineBreakOpportunity.None;
+            result = options.OverflowWrap == OverflowWrapMode.Normal ? LineBreakOpportunity.Emergency : LineBreakOpportunity.None;
         }
 
         // https://drafts.csswg.org/css-text-4/#hyphens-property: the soft hyphens are hyphenation opportunities, except with

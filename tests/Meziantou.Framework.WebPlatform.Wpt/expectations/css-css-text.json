@@ -50,7 +50,7 @@
     "reftest": "PASS"
   },
   "css/css-text/bidi/bidi-lines-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/bidi/bidi-tab-001.html": {
     "reftest": "PASS"
@@ -1857,7 +1857,7 @@
     "reftest": "PASS"
   },
   "css/css-text/line-breaking/line-breaking-019.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/line-breaking/line-breaking-020.html": {
     "total": 1
@@ -2343,7 +2343,7 @@
     "reftest": "PASS"
   },
   "css/css-text/overflow-wrap/overflow-wrap-normal-keep-all-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/overflow-wrap/overflow-wrap-shaping-001.html": {
     "reftest": "PASS"
@@ -3286,11 +3286,7 @@
     "reftest": "PASS"
   },
   "css/css-text/text-fit/text-autospace.html": {
-    "total": 2,
-    "failures": {
-      "\"text-autospace\" and \"consistent\" work fine": "FAIL",
-      "\"text-autospace\" and \"per-line-all\" work fine": "FAIL"
-    }
+    "total": 2
   },
   "css/css-text/text-fit/text-box.html": {
     "reftest": "PASS"
@@ -5336,7 +5332,7 @@
     "reftest": "PASS"
   },
   "css/css-text/white-space/white-space-pre-wrap-justify-004.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/white-space/white-space-pre-wrap-justify-005.html": {
     "reftest": "PASS"

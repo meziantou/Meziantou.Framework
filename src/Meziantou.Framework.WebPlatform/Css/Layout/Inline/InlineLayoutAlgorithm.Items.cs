@@ -1653,6 +1653,28 @@ internal sealed partial class InlineLayoutAlgorithm
     }
 
     /// <summary>
+    /// Whether the inline base direction of the line box that starts at a character is right-to-left
+    /// (https://drafts.csswg.org/css-text-3/#bidi-linebox): the direction of its bidi paragraph, except with
+    /// <c>unicode-bidi: plaintext</c> for a paragraph without strong character, whose line boxes take their direction "from the
+    /// preceding line box (if any), or, if this is the first line box in the containing block, from the direction property of
+    /// the containing block" (the paragraph keeps the level of rule P3 for the bidi reordering of its content).
+    /// </summary>
+    private bool IsLineRightToLeft(int index)
+    {
+        if (!_needsBidi || _length == 0)
+            return _block.Style.Layout.Direction == Direction.Rtl;
+
+        var paragraphs = _bidi.Paragraphs;
+        for (var i = _bidi.GetParagraphIndex(Math.Max(0, index)); i >= 0; i--)
+        {
+            if (!paragraphs[i].IsDefaultLevel)
+                return paragraphs[i].IsRightToLeft;
+        }
+
+        return _block.Style.Layout.Direction == Direction.Rtl;
+    }
+
+    /// <summary>
     /// Shapes the text items. The text of sibling inline boxes is shaped together when nothing breaks the shaping at their
     /// boundaries (https://drafts.csswg.org/css-text-3/#boundary-shaping): the items of a group have the same fonts and shaping
     /// options, the same bidi level, and no margin, border, padding, non-baseline vertical alignment or bidi isolation between

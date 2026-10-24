@@ -368,7 +368,7 @@ internal sealed partial class InlineLayoutAlgorithm
         {
             var lineStart = start.Position;
             var lineEnd = Math.Max(lineStart, Math.Min(end.Position, _length));
-            isRightToLeft = (GetParagraphLevel(Math.Min(lineStart, _length - 1)) & 1) != 0;
+            isRightToLeft = IsLineRightToLeft(Math.Min(lineStart, _length - 1));
             reordered = ResolveLineLevels(lineStart, lineEnd);
         }
 

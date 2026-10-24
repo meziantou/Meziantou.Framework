@@ -73,10 +73,12 @@ internal sealed class LineClamp
     public TextOverflowSide Ellipsis { get; }
 
     /// <summary>
-    /// Whether the container is clamped by <c>-webkit-line-clamp</c> (<see cref="ContinueKind.WebkitLegacy"/>): as in the browsers
-    /// (WPT css/css-overflow/line-clamp/webkit-line-clamp-035.html, the baselines of css/css-flexbox/alignment/flex-align-baseline-line-clamp-*),
-    /// when no content of the last line fits with the block overflow ellipsis, the line keeps its content, which is truncated by the
-    /// ellipsis when it is painted (<see cref="LineBoxFragment.IsTruncatedByBlockEllipsis"/>) instead of being displaced.
+    /// Whether the container is clamped by <c>-webkit-line-clamp</c> (<see cref="ContinueKind.WebkitLegacy"/>): as in Blink (the
+    /// baselines of WPT css/css-flexbox/alignment/flex-align-baseline-line-clamp-*), when no content of the last line fits with
+    /// the block overflow ellipsis but its first content fits without it, the line keeps its content, which is truncated by the
+    /// ellipsis when it is painted (<see cref="LineBoxFragment.IsTruncatedByBlockEllipsis"/>) instead of being displaced. The
+    /// content that does not fit without the ellipsis either (e.g. an unbreakable word wider than the line) is displaced, as
+    /// with <c>line-clamp</c> (WPT css/css-overflow/line-clamp/webkit-line-clamp-035.html, webkit-line-clamp-036.html).
     /// </summary>
     public bool IsLegacy { get; }
 

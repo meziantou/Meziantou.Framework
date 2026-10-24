@@ -115,6 +115,54 @@ public sealed class PagedMediaTests : IDisposable
     }
 
     [Fact]
+    public void Pages_ForcedBreaksAtTheStartOfAPageAreIgnored()
+    {
+        // As in Gecko, the forced breaks after boxes without block size at the start of a page do not start another page (the
+        // page would only contain these boxes)
+        var document = Parse("""
+            <div style='height: 10px'></div>
+            <div style='page: b; height: 0'></div>
+            <div style='page: c; height: 0; break-after: page'></div>
+            <div id=a style='page: d; height: 10px'></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        Assert.Equal([(1, new PhysicalRect(0, 0, 300, 10))], GetPageRects(pages, document.GetElementById("a")!));
+    }
+
+    [Fact]
+    public void Pages_FloatBeforeForcedBreakStaysInItsPage()
+    {
+        // As in Blink, a float whose margin box crosses a forced break stays in the page of its position in the content, and the
+        // content after the break is not laid out beside it
+        var document = Parse("""
+            <div id=a style='float: right; width: 10px; height: 10px; margin-top: 100px'></div>
+            <div style='height: 10px'></div>
+            <div style='break-before: page'><div id=b style='float: right; width: 10px; height: 10px'></div></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal([(0, new PhysicalRect(290, 100, 10, 10))], GetPageRects(pages, document.GetElementById("a")!));
+        Assert.Equal([(1, new PhysicalRect(290, 0, 10, 10))], GetPageRects(pages, document.GetElementById("b")!));
+    }
+
+    [Fact]
+    public void Pages_StaticPositionBeforeForcedBreak()
+    {
+        // As in Blink, an absolutely positioned box whose static position is in the block-start margin preserved after a forced
+        // break, before the box after the break in the content, is in the page before the break
+        var document = Parse("""
+            <div style='height: 10px; margin-bottom: 20px'></div>
+            <div id=a style='position: absolute; width: 10px; height: 10px'></div>
+            <div style='break-before: page; margin-top: 20px; height: 10px'></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal([(0, new PhysicalRect(0, 30, 10, 10))], GetPageRects(pages, document.GetElementById("a")!));
+    }
+
+    [Fact]
     public void Pages_PageMarginSafety()
     {
         // https://drafts.csswg.org/css-page-3/#page-margin-safety: clamp keeps the margins at least the safe printable inset,
@@ -166,6 +214,17 @@ public sealed class PagedMediaTests : IDisposable
         var pages = session.GetPages();
         Assert.Equal([(0, new PhysicalRect(0, 0, 300, 300)), (1, new PhysicalRect(0, -200, 300, 300))], GetPageRects(pages, document.GetElementById("a")!));
         Assert.Equal([(1, new PhysicalRect(0, 100, 300, 10))], GetPageRects(pages, document.GetElementById("b")!));
+    }
+
+    [Fact]
+    public void Pages_MonolithicContentAfterBordersIsSliced()
+    {
+        // As in Blink, the break after the block-start border of a box that starts the page is not a possible break: the
+        // monolithic content that does not fit stays in the page and is sliced
+        var document = Parse("<div style='border-top: 5px solid'><div id=a style='contain: size; height: 300px'></div></div>");
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal([(0, new PhysicalRect(0, 5, 300, 300)), (1, new PhysicalRect(0, -195, 300, 300))], GetPageRects(pages, document.GetElementById("a")!));
     }
 
     [Fact]

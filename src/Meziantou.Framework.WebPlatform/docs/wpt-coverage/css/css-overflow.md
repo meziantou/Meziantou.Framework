@@ -7,9 +7,9 @@
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 211 | 214 | 0 | 99% |
-| [Tentative](#tentative-tests) | 7 | 10 | 0 | 70% |
-| [Reftests](#reftests) | 662 | 682 | 0 | 97% |
-| **All** | **880** | **906** | **0** | **97%** |
+| [Tentative](#tentative-tests) | 8 | 10 | 0 | 80% |
+| [Reftests](#reftests) | 666 | 682 | 0 | 98% |
+| **All** | **885** | **906** | **0** | **98%** |
 
 ## Stable tests
 
@@ -237,13 +237,13 @@
 | [`parsing/scroll-markers-computed.tentative.html`](https://wpt.fyi/results/css/css-overflow/parsing/scroll-markers-computed.tentative.html) | Pass | 4 / 4 |  |  |
 | [`parsing/scroll-markers-invalid.tentative.html`](https://wpt.fyi/results/css/css-overflow/parsing/scroll-markers-invalid.tentative.html) | Pass | 8 / 8 |  |  |
 | [`resizer-no-size-change.tentative.html`](https://wpt.fyi/results/css/css-overflow/resizer-no-size-change.tentative.html) | Pass | 1 / 1 |  |  |
-| [`resizer-transform.tentative.html`](https://wpt.fyi/results/css/css-overflow/resizer-transform.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `resize` property (resizing the box by dragging its resizer) |
+| [`resizer-transform.tentative.html`](https://wpt.fyi/results/css/css-overflow/resizer-transform.tentative.html) | Pass | 1 / 1 |  |  |
 | [`scroll-markers/scroll-marker-activation-focus-behaviour-links-mode.tentative.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-marker-activation-focus-behaviour-links-mode.tentative.html) | Pass | 1 / 1 |  |  |
 | [`scroll-markers/scroll-marker-activation-focus-behaviour-tabs-mode.tentative.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/scroll-marker-activation-focus-behaviour-tabs-mode.tentative.html) | Pass | 1 / 1 |  |  |
 | [`scroll-markers/targeted-scroll-marker-selection-with-transition.tentative.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/targeted-scroll-marker-selection-with-transition.tentative.html) | Pass | 2 / 2 |  |  |
 | [`scroll-markers/targeted-scroll-marker-selection.tentative.html`](https://wpt.fyi/results/css/css-overflow/scroll-markers/targeted-scroll-marker-selection.tentative.html) | Pass | 4 / 4 |  |  |
-| [`scrollable-overflow-transform-005.tentative.html`](https://wpt.fyi/results/css/css-overflow/scrollable-overflow-transform-005.tentative.html) | Fail | 4 / 6 | NOT IMPLEMENTED | tentative test of the open issue https://github.com/w3c/csswg-drafts/issues/12113: the untransformed border box of an in-flow child extends the in-flow content of its scroll container (and so its scrolling area, with the paddings), as in Chrome and Firefox, which fail the same 2 subtests with the same values; the test expects it to be excluded |
-| [`scrollable-overflow-transform-010.tentative.html`](https://wpt.fyi/results/css/css-overflow/scrollable-overflow-transform-010.tentative.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the tentative unreachable region of the transformed boxes (their transformed bounds are clipped at the scroll origin) |
+| [`scrollable-overflow-transform-005.tentative.html`](https://wpt.fyi/results/css/css-overflow/scrollable-overflow-transform-005.tentative.html) | Fail | 4 / 6 | TEST BUG | tentative test of the open issue https://github.com/w3c/csswg-drafts/issues/12113 (no resolution): it expects the untransformed border box of an in-flow child not to extend the scrollable overflow of its scroll container; https://drafts.csswg.org/css-overflow-3/#scrollable includes the in-flow content (with the paddings), as Chrome, Edge and Firefox, which fail the same 2 subtests with the same values (wpt.fyi) |
+| [`scrollable-overflow-transform-010.tentative.html`](https://wpt.fyi/results/css/css-overflow/scrollable-overflow-transform-010.tentative.html) | Fail | 0 / 2 | TEST BUG | tentative test of the open issue https://github.com/w3c/csswg-drafts/issues/12112 (no resolution): it expects the exact union of the nested rotated boxes (241px); as Chrome, Edge and Firefox, which fail both subtests (wpt.fyi), the scrollable overflow of each box is the bounding rectangle of its descendants, whose transformed bounding rectangle is the contribution of the box (300px) |
 
 ## Reftests
 
@@ -461,7 +461,7 @@
 | [`line-clamp/line-clamp-auto-060.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-060.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-061.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-061.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-062.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-062.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-auto-063.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-063.html) | Fail | 0 / 1 | BUG | the block-end margin of a box whose block size is reduced by `max-height` collapses with the margin of its last child (the browsers do not collapse them): the clamp point by the block size is earlier |
+| [`line-clamp/line-clamp-auto-063.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-063.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-with-ruby-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-with-ruby-001.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-with-ruby-002.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-with-ruby-002.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-with-ruby-003.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-with-ruby-003.html) | Pass | 1 / 1 |  |  |
@@ -479,7 +479,7 @@
 | [`line-clamp/line-clamp-balance-010.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-balance-010.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-balance-011.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-balance-011.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-balance-012.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-balance-012.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-baseline-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-baseline-001.html) | Fail | 0 / 1 | BUG | the baseline of the clamped inline-block is right, but its word `ALIGNED` is about 1px away from the same word in the reference, where it follows a space in the same text run (likely the kerning of the pair space + `A` of the fallback serif font applied across the space, which the browsers do not do: they shape the words separately) |
+| [`line-clamp/line-clamp-baseline-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-baseline-001.html) | Fail | 0 / 1 | TEST BUG | its style sheet sets `font-family: monospaced` (a typo for `monospace`): the default serif font is used, whose kerning pair space + `A` (-113/2048em in Tinos, as in Times New Roman) moves the third `ALIGNED` of the reference, which follows a space in the same text run, about 1px to the left, while the clamped one starts an inline-block (an inline formatting context of its own: no kerning with the space before it). With `monospace` (Cousine has no such pair) the test passes. Fails in Chrome, Edge and Firefox (wpt.fyi) |
 | [`line-clamp/line-clamp-bfc.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-bfc.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-content-height-with-dynamic-change.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-content-height-with-dynamic-change.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-dynamic-change-after-clean-content.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-dynamic-change-after-clean-content.html) | Pass | 1 / 1 |  |  |
@@ -516,7 +516,7 @@
 | [`line-clamp/line-clamp-with-abspos-021.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-abspos-021.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-abspos-022.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-abspos-022.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-abspos-023.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-abspos-023.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-with-abspos-024.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-abspos-024.html) | Fail | 0 / 1 | BUG | the `opacity` of the clamped inline ancestor of an absolutely positioned box after the clamp point is not applied to the box |
+| [`line-clamp/line-clamp-with-abspos-024.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-abspos-024.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-abspos-025.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-abspos-025.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-abspos-026.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-abspos-026.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-block-in-inline-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-block-in-inline-001.html) | Pass | 1 / 1 |  |  |
@@ -594,8 +594,8 @@
 | [`line-clamp/webkit-line-clamp-032.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/webkit-line-clamp-032.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/webkit-line-clamp-033.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/webkit-line-clamp-033.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/webkit-line-clamp-034.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/webkit-line-clamp-034.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/webkit-line-clamp-035.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/webkit-line-clamp-035.html) | Fail | 0 / 1 | BUG | the reference was changed (WPT 2026-10-14, Chromium CL 8574804) to displace the unbreakable word `CCCCCCCCC` of the last line of `-webkit-line-clamp` entirely, as `line-clamp` (https://drafts.csswg.org/css-overflow-4/#block-ellipsis); this engine truncates it as the legacy implementations (see webkit-line-clamp-036.html): displacing it fixes this test, webkit-line-clamp-036 and css/css-text/white-space/text-wrap-balance-line-clamp-003/004, but fails css/css-flexbox/alignment/flex-align-baseline-line-clamp-001/002/003.tentative, which Chrome also passes (their last line, an atomic inline without soft wrap opportunity before it, keeps its content) |
-| [`line-clamp/webkit-line-clamp-036.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/webkit-line-clamp-036.html) | Fail | 0 / 1 | TEST BUG | expects the content of the last line of `-webkit-line-clamp` that does not fit with the block overflow ellipsis to be displaced (as `line-clamp`); the browsers truncate it, as this engine (WPT css/css-overflow/line-clamp/webkit-line-clamp-035.html, the baselines of css/css-flexbox/alignment/flex-align-baseline-line-clamp-*): fails in every browser |
+| [`line-clamp/webkit-line-clamp-035.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/webkit-line-clamp-035.html) | Pass | 1 / 1 |  |  |
+| [`line-clamp/webkit-line-clamp-036.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/webkit-line-clamp-036.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/webkit-line-clamp-037.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/webkit-line-clamp-037.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/webkit-line-clamp-038.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/webkit-line-clamp-038.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/webkit-line-clamp-039.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/webkit-line-clamp-039.html) | Pass | 1 / 1 |  |  |
@@ -656,7 +656,7 @@
 | [`overflow-clip-margin-007.html`](https://wpt.fyi/results/css/css-overflow/overflow-clip-margin-007.html) | Pass | 1 / 1 |  |  |
 | [`overflow-clip-margin-008.html`](https://wpt.fyi/results/css/css-overflow/overflow-clip-margin-008.html) | Pass | 1 / 1 |  |  |
 | [`overflow-clip-margin-009.html`](https://wpt.fyi/results/css/css-overflow/overflow-clip-margin-009.html) | Pass | 1 / 1 |  |  |
-| [`overflow-clip-margin-010.html`](https://wpt.fyi/results/css/css-overflow/overflow-clip-margin-010.html) | Fail | 0 / 1 | BUG | only the antialiased edges of what is painted differ, or a box is painted 1px away (not analyzed individually; the causes fixed with #461 are not involved: the Ahem glyphs are not antialiased, the joins of the sides of the borders, the glyphs of the highlights painted once, the slices of the border images, the transformed rectangles that are almost on the pixels) |
+| [`overflow-clip-margin-010.html`](https://wpt.fyi/results/css/css-overflow/overflow-clip-margin-010.html) | Fail | 0 / 1 | TEST BUG | the reference rounds the top-right corner of the overflow clip edge with a 27.52px radius, the shape of a spread of 20px from the padding edge (radius 10px, ratio 0.5: 10 + 20 * (1 - 0.5^3) = 27.5, as Chrome); https://drafts.csswg.org/css-overflow-4/#overflow-clip-margin shapes it "exactly the same way as an outer box-shadow with a spread radius of the same cumulative offset from the box's border edge": 15px from the border radius of 15px (ratio 1), a 30px radius, which the test paints (only the pixels of that corner differ; the other corners agree). Fails in Firefox (wpt.fyi) |
 | [`overflow-clip-margin-011.html`](https://wpt.fyi/results/css/css-overflow/overflow-clip-margin-011.html) | Pass | 1 / 1 |  |  |
 | [`overflow-clip-margin-012.html`](https://wpt.fyi/results/css/css-overflow/overflow-clip-margin-012.html) | Pass | 1 / 1 |  |  |
 | [`overflow-clip-margin-013.html`](https://wpt.fyi/results/css/css-overflow/overflow-clip-margin-013.html) | Pass | 1 / 1 |  |  |
@@ -865,7 +865,7 @@
 | [`text-overflow-025.html`](https://wpt.fyi/results/css/css-overflow/text-overflow-025.html) | Pass | 1 / 1 |  |  |
 | [`text-overflow-026.html`](https://wpt.fyi/results/css/css-overflow/text-overflow-026.html) | Pass | 1 / 1 |  |  |
 | [`text-overflow-027.html`](https://wpt.fyi/results/css/css-overflow/text-overflow-027.html) | Pass | 1 / 1 |  |  |
-| [`text-overflow-028.html`](https://wpt.fyi/results/css/css-overflow/text-overflow-028.html) | Fail | 0 / 1 | BUG | 1 antialiased pixel of a glyph differs by 1 from the reference (the cause is not identified) |
+| [`text-overflow-028.html`](https://wpt.fyi/results/css/css-overflow/text-overflow-028.html) | Fail | 0 / 1 | BUG | 1 antialiased pixel differs by 1 from the reference: the width of the div is 10ch of Cousine 13px (78.0078125px), its overflow clip is snapped to the pixel (86px), and the ink of the glyph `A` at the end of the line ends at 86.0078px: the antialiasing of that 0.0078px sliver (1/255) is painted in the reference but clipped in the test. The browsers position the glyphs on whole pixels (or their layout unit, 1/64px, truncates the width to 78px) |
 | [`text-overflow-029.html`](https://wpt.fyi/results/css/css-overflow/text-overflow-029.html) | Pass | 1 / 1 |  |  |
 | [`text-overflow-030.html`](https://wpt.fyi/results/css/css-overflow/text-overflow-030.html) | Pass | 1 / 1 |  |  |
 | [`text-overflow-change-color.html`](https://wpt.fyi/results/css/css-overflow/text-overflow-change-color.html) | Pass | 1 / 1 |  |  |

@@ -73,6 +73,43 @@ public sealed class ViewportTests : IDisposable
         Assert.Equal("78.5px", document.DefaultView!.GetComputedStyle(document.DocumentElement!).GetPropertyValue("padding-left"));
     }
 
+    [Theory]
+    [InlineData("overflow")]
+    [InlineData("overflow-y")]
+    [InlineData("--tracker")]
+    public void ViewportUnits_CycleThroughTheGuttersInvalidatesIf(string firstProperty)
+    {
+        // https://github.com/w3c/csswg-drafts/issues/13189: the overflow of the root element depends on the viewport units through
+        // a style query, and the viewport units depend on the overflow (a cycle): the if() is invalid at computed-value time
+        var document = Parse("""
+            <style>
+            @property --tracker { syntax: '<length>'; initial-value: 0px; inherits: false; }
+            :root { --tracker: 100vw; overflow: if(style(--tracker = 800px): scroll; else: hidden); }
+            </style>
+            <div id=target style='width: 100vw'></div>
+            """);
+        var style = document.DefaultView!.GetComputedStyle(document.DocumentElement!);
+        _ = style.GetPropertyValue(firstProperty);
+        Assert.Equal("visible", style.GetPropertyValue("overflow"));
+
+        // (the custom property is in the cycle too)
+        Assert.Equal("0px", style.GetPropertyValue("--tracker"));
+        Assert.Equal("800px", GetComputedValue(document, "target", "width"));
+    }
+
+    [Fact]
+    public void ViewportUnits_IfWithoutCycle()
+    {
+        // The viewport units used by a style query of another property than the ones the gutters depend on subtract the gutters
+        var document = Parse("""
+            <style>
+            @property --tracker { syntax: '<length>'; initial-value: 0px; inherits: false; }
+            :root { --tracker: 100vw; overflow-y: scroll; padding-left: if(style(--tracker = 785px): 10px; else: 20px); }
+            </style>
+            """);
+        Assert.Equal("10px", document.DefaultView!.GetComputedStyle(document.DocumentElement!).GetPropertyValue("padding-left"));
+    }
+
     [Fact]
     public void ViewportUnits_AutoScrollbarsAreIgnored()
     {
@@ -148,6 +185,30 @@ public sealed class ViewportTests : IDisposable
         Assert.Equal(["window", "visualViewport"], events);
         Assert.Equal(370, frameWindow.InnerWidth);
         Assert.Equal("370px", GetComputedValue(frame.ContentDocument!, "target", "width"));
+    }
+
+    [Fact]
+    public void NestedViewport_ContainerNoLongerHidden()
+    {
+        // The iframe of a display: none subtree has an empty viewport: showing it resizes the viewport, and the next rendering
+        // update fires the resize event; a change of the parent document by the event handler, during the rendering update, is
+        // followed by another rendering update (WPT css/css-values/dynamic-viewport-units-rule-cache.html)
+        var document = Parse("<div id=parent style='display: none'><iframe style='width: 100px; height: 100px; border: 0' srcdoc='<div id=target style=\"width: 100vw\"></div>'></iframe></div>");
+        _contexts.EventLoop.RunUntilIdle();
+        var frame = (HtmlIFrameElement)document.QuerySelector("iframe")!;
+        var frameWindow = frame.ContentWindow!;
+        var events = new List<double>();
+        frameWindow.AddEventListener("resize", _ =>
+        {
+            events.Add(frameWindow.InnerWidth);
+            frame.Style.SetProperty("width", "200px");
+        });
+        Assert.Equal(0, frameWindow.InnerWidth);
+
+        ((HtmlElement)document.GetElementById("parent")!).Style.SetProperty("display", "block");
+        RunFrames(2);
+        Assert.Equal([100d, 200d], events);
+        Assert.Equal("200px", GetComputedValue(frame.ContentDocument!, "target", "width"));
     }
 
     [Fact]

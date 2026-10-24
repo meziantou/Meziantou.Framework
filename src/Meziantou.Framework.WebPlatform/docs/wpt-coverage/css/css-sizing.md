@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 182 | 192 | 0 | 95% |
+| [Stable](#stable-tests) | 183 | 192 | 0 | 95% |
 | [Tentative](#tentative-tests) | 7 | 7 | 0 | 100% |
 | [Reftests](#reftests) | 548 | 565 | 0 | 97% |
-| **All** | **737** | **764** | **0** | **96%** |
+| **All** | **738** | **764** | **0** | **97%** |
 
 ## Stable tests
 
@@ -83,7 +83,7 @@
 | [`contain-intrinsic-size/auto-016.html`](https://wpt.fyi/results/css/css-sizing/contain-intrinsic-size/auto-016.html) | Pass | 1 / 1 |  |  |
 | [`contain-intrinsic-size/auto-017.html`](https://wpt.fyi/results/css/css-sizing/contain-intrinsic-size/auto-017.html) | Pass | 1 / 1 |  |  |
 | [`contain-intrinsic-size/auto-018.html`](https://wpt.fyi/results/css/css-sizing/contain-intrinsic-size/auto-018.html) | Pass | 1 / 1 |  |  |
-| [`contain-intrinsic-size/contain-intrinsic-size-009.html`](https://wpt.fyi/results/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-009.html) | Fail | 1 / 7 | NOT IMPLEMENTED | the size containment of a `select` list box keeps the space of its scrollbar, as in the browsers (its contents are replaced by `contain-intrinsic-size`) |
+| [`contain-intrinsic-size/contain-intrinsic-size-009.html`](https://wpt.fyi/results/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-009.html) | Pass | 7 / 7 |  |  |
 | [`contain-intrinsic-size/contain-intrinsic-size-028.html`](https://wpt.fyi/results/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html) | Pass | 48 / 48 |  |  |
 | [`contain-intrinsic-size/contain-intrinsic-size-029.html`](https://wpt.fyi/results/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-029.html) | Pass | 8 / 8 |  |  |
 | [`contain-intrinsic-size/contain-intrinsic-size-030.html`](https://wpt.fyi/results/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html) | Pass | 24 / 24 |  |  |

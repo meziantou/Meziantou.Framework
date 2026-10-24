@@ -298,6 +298,18 @@ internal sealed partial class Painter
         => Paint(engine, document, root, viewportScrollOffset, baseColor, capture: false, hidesAnimatedCaret, out nextFrameDelay, out hasAnimatedCaret);
 
     /// <summary>
+    /// Paints the fragment tree of a printed page (the content of its page area, see <see cref="LayoutPage"/>) in the coordinates of
+    /// the page box: the painting is snapped to the device pixels of the page, as the document would be painted at the
+    /// position of the page area in the page (the page area may be at a fractional position: a margin of <c>2cm</c>).
+    /// </summary>
+    /// <param name="engine">The layout of the document.</param>
+    /// <param name="document">The document.</param>
+    /// <param name="root">The fragment of the page area.</param>
+    /// <param name="pageAreaOrigin">The position of the page area in the page box.</param>
+    internal static DisplayList PaintPageContent(LayoutEngine engine, Document document, BoxFragment root, PhysicalOffset pageAreaOrigin)
+        => Paint(engine, document, root, PhysicalOffset.Zero, DisplayColor.Transparent, capture: false, hidesAnimatedCaret: false, out _, out _, -pageAreaOrigin);
+
+    /// <summary>
     /// Paints the image of the document element captured by a view transition (https://drafts.csswg.org/css-view-transitions-1/#capture-the-image):
     /// the document "including its canvas background and any top layer content", on a canvas the size of the snapshot
     /// containing block, without the view transition layer nor the other captured elements. As in the browsers, the canvas has
@@ -363,14 +375,14 @@ internal sealed partial class Painter
         return builder.ToDisplayList(fragment.Size);
     }
 
-    private static DisplayList Paint(LayoutEngine engine, Document document, BoxFragment root, PhysicalOffset viewportScrollOffset, DisplayColor baseColor, bool capture, bool hidesAnimatedCaret, out double? nextFrameDelay, out bool hasAnimatedCaret)
+    private static DisplayList Paint(LayoutEngine engine, Document document, BoxFragment root, PhysicalOffset viewportScrollOffset, DisplayColor baseColor, bool capture, bool hidesAnimatedCaret, out double? nextFrameDelay, out bool hasAnimatedCaret, PhysicalOffset rootOrigin = default)
     {
         // The display list of a document is the one of its viewport, with the gutters of its classic scrollbars: the scrollport
         // (the root fragment) is at its place in the viewport, the canvas extends under the gutters, and the scrollbars are
         // painted over the document. The image of the document captured by a view transition is the scrollport alone.
         var environment = document.GetStyleEngine().Environment;
         var viewportSize = capture ? root.Size : new PhysicalSize(Math.Max(root.Size.Width, environment.Width), Math.Max(root.Size.Height, environment.Height));
-        var origin = capture ? root.GetOffsetInRoot() : PhysicalOffset.Zero;
+        var origin = capture ? root.GetOffsetInRoot() : rootOrigin;
         var hasGutters = !capture && (root.Offset != PhysicalOffset.Zero || root.Size != viewportSize);
         var painter = new Painter(engine, document, origin) { _rootFragment = root };
         var builder = painter._builder;
@@ -948,7 +960,7 @@ internal sealed partial class Painter
         var metrics = style.Fonts.PrimaryFont.GetMetrics(style.Layout.FontSize);
         var offset = line.GetOffsetInRoot() - _group.Origin;
         SyncClips(GetClipChain(line, includeSelf: false));
-        var rect = SnapToDevicePixels(new PhysicalRect(offset.X + left, offset.Y + line.Baseline - metrics.Ascent, right - left, metrics.Ascent + metrics.Descent));
+        var rect = SnapToDevicePixels(new PhysicalRect(offset.X + left, offset.Y + (line.FirstLineBoxBaseline ?? line.Baseline) - metrics.Ascent, right - left, metrics.Ascent + metrics.Descent));
         if (!color.IsTransparent)
         {
             _builder.Add(new DrawRectItem(rect, new DisplayPaint(color)) { Source = style.Element });

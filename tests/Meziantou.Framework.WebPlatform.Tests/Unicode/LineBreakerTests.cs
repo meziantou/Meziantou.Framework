@@ -60,7 +60,7 @@ public sealed class LineBreakerTests
     [Fact]
     public void Spaces_AreOpportunitiesWhateverFollowsThem()
     {
-        Assert.Equal("a |.b |,c |)d |]e |!|f |/|g |( |" + (char)0x00AB + " |" + (char)0x2060 + "h", Format("a .b ,c )d ]e !f /g ( " + (char)0x00AB + " " + (char)0x2060 + "h"));
+        Assert.Equal("a |.b |,c |)d |]e |!f |/g |( |" + (char)0x00AB + " |" + (char)0x2060 + "h", Format("a .b ,c )d ]e !f /g ( " + (char)0x00AB + " " + (char)0x2060 + "h"));
         Assert.Equal("a .b ,c )d ]e !|f /|g |( h", Format("a .b ,c )d ]e !f /g ( h", LineBreakOptions.UnicodeDefault));
     }
 
@@ -68,6 +68,21 @@ public sealed class LineBreakerTests
     public void Punctuation()
     {
         Assert.Equal("(a) |[b] |c-|d |$12.50 |-1/12", Format("(a) [b] c-d $12.50 -1/12"));
+    }
+
+    // https://drafts.csswg.org/css-text-3/#line-break-details: the deviations from UAX #14 "for maximum interoperability with existing
+    // implementations": no opportunity between "!" or "/" and a letter
+    [Fact]
+    public void Punctuation_DeviationsFromUnicode()
+    {
+        Assert.Equal("color: |red |!important", Format("color: red !important"));
+        Assert.Equal("23/Jan/|2024", Format("23/Jan/2024"));
+        Assert.Equal("!|important", Format("!important", LineBreakOptions.UnicodeDefault));
+        Assert.Equal("23/|Jan", Format("23/Jan", LineBreakOptions.UnicodeDefault));
+
+        // The letters of word-break: break-all are ideographic: the opportunities of UAX #14 after the punctuation remain
+        Assert.Equal("!|a|b", Format("!ab", new LineBreakOptions { WordBreak = WordBreakMode.BreakAll }));
+        Assert.Equal("2|3/|J|a|n", Format("23/Jan", new LineBreakOptions { WordBreak = WordBreakMode.BreakAll }));
     }
 
     [Fact]
@@ -98,17 +113,19 @@ public sealed class LineBreakerTests
     [Fact]
     public void WordBreak_KeepAll()
     {
+        // With overflow-wrap: normal, "the restrictions introduced by word-break: keep-all may be relaxed to match word-break: normal
+        // if there are no otherwise-acceptable break points in the line": the opportunities that keep-all removes are emergency ones
         var options = new LineBreakOptions { WordBreak = WordBreakMode.KeepAll };
         Assert.Equal("한|국|어 |텍|스|트", Format("한국어 텍스트"));
-        Assert.Equal("한국어 |텍스트", Format("한국어 텍스트", options));
+        Assert.Equal("한~국~어 |텍~스~트", Format("한국어 텍스트", options));
         Assert.Equal("日|本|語", Format("日本語"));
-        Assert.Equal("日本語", Format("日本語", options));
+        Assert.Equal("日~本~語", Format("日本語", options));
 
         // The punctuation still allows breaks
-        Assert.Equal("日本。|語", Format("日本。語", options));
+        Assert.Equal("日~本。|語", Format("日本。語", options));
 
         // U+200B is never suppressed
-        Assert.Equal("日本" + (char)0x200B + "|語", Format("日本" + (char)0x200B + "語", options));
+        Assert.Equal("日~本" + (char)0x200B + "|語", Format("日本" + (char)0x200B + "語", options));
     }
 
     [Fact]

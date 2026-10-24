@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 288 | 319 | 0 | 90% |
+| [Stable](#stable-tests) | 290 | 319 | 0 | 91% |
 | [Tentative](#tentative-tests) | 39 | 42 | 0 | 93% |
 | [Reftests](#reftests) | 5 | 5 | 0 | 100% |
-| **All** | **332** | **366** | **0** | **91%** |
+| **All** | **334** | **366** | **0** | **91%** |
 
 ## Stable tests
 
@@ -243,13 +243,13 @@
 | [`the-stylepropertymap/properties/outline-style.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/outline-style.html) | Pass | 41 / 41 |  |  |
 | [`the-stylepropertymap/properties/outline-width.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/outline-width.html) | Pass | 34 / 34 |  |  |
 | [`the-stylepropertymap/properties/overflow-anchor.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/overflow-anchor.html) | Pass | 33 / 33 |  |  |
-| [`the-stylepropertymap/properties/overflow-clip-margin.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/overflow-clip-margin.html) | Fail | 29 / 36 | BUG | `overflow-clip-margin` is a shorthand of the `overflow-clip-margin-*` longhands (CSS Overflow 4), reified as `CSSStyleValue`: the test expects a `<visual-box>` keyword to be a `CSSKeywordValue` and a length a `CSSUnitValue`; fails in Chrome and Safari too |
+| [`the-stylepropertymap/properties/overflow-clip-margin.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/overflow-clip-margin.html) | Fail | 29 / 36 | TEST BUG | the test was written when `overflow-clip-margin` was a longhand: CSS Overflow 4 makes it a shorthand of the `overflow-clip-margin-*` longhands ("The shorthand/longhand relationships are as for margin", https://drafts.csswg.org/css-overflow-4/#overflow-clip-margin), and the Typed OM reifies the shorthands as `CSSStyleValue` (`margin`, `padding`: "reify as a CSSStyleValue", https://drafts.css-houdini.org/css-typed-om-1/#reify-stylevalue), but the test expects a `<visual-box>` keyword to be a `CSSKeywordValue` and a length a `CSSUnitValue`; these subtests fail in every browser (Firefox gets a `CSSStyleValue` too, Chrome and Safari reject the values) |
 | [`the-stylepropertymap/properties/overflow-wrap.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/overflow-wrap.html) | Fail | 33 / 35 | TEST BUG | `break-spaces` is not a value of `overflow-wrap` (`normal \| break-word \| anywhere`, https://drafts.csswg.org/css-text-4/#propdef-overflow-wrap): it is a value of `white-space-collapse` |
 | [`the-stylepropertymap/properties/overflow.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/overflow.html) | Pass | 72 / 72 |  |  |
 | [`the-stylepropertymap/properties/overscroll-behavior.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/overscroll-behavior.html) | Pass | 68 / 68 |  |  |
 | [`the-stylepropertymap/properties/padding.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/padding.html) | Pass | 124 / 124 |  |  |
 | [`the-stylepropertymap/properties/page.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/page.html) | Pass | 35 / 35 |  |  |
-| [`the-stylepropertymap/properties/paint-order.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/paint-order.html) | Fail | 35 / 37 | BUG | `paint-order: fill stroke` is serialized in its shortest form (`fill`), whose single keyword is reified as `CSSKeywordValue`: the test expects a `CSSStyleValue` for a list of keywords (the value as specified is only used to reify the keywords and the numeric values); fails in Safari too |
+| [`the-stylepropertymap/properties/paint-order.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/paint-order.html) | Pass | 37 / 37 |  |  |
 | [`the-stylepropertymap/properties/perspective-origin.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/perspective-origin.html) | Error | 5 / 6 | TEST BUG | the shared `resources/testsuite.js` has no example for the `<position>` syntax and throws; it also expects a `none` keyword that `perspective-origin` does not have |
 | [`the-stylepropertymap/properties/perspective.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/perspective.html) | Pass | 32 / 32 |  |  |
 | [`the-stylepropertymap/properties/pointer-events.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/pointer-events.html) | Pass | 41 / 41 |  |  |
@@ -264,7 +264,7 @@
 | [`the-stylepropertymap/properties/scroll-padding.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/scroll-padding.html) | Pass | 252 / 252 |  |  |
 | [`the-stylepropertymap/properties/scroll-snap-align.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/scroll-snap-align.html) | Fail | 33 / 37 | TEST BUG | the test calls `assert_is_unsupported(input, result)` as the `computed` callback, which checks the class of its first argument: the `CSSKeywordValue` that was set, not the computed value; fails in Chrome and Safari too |
 | [`the-stylepropertymap/properties/scroll-snap-stop.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/scroll-snap-stop.html) | Pass | 33 / 33 |  |  |
-| [`the-stylepropertymap/properties/scroll-snap-type.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/scroll-snap-type.html) | Fail | 38 / 39 | BUG | `scroll-snap-type: inline proximity` is serialized in its shortest form (`inline`), whose single keyword is reified as `CSSKeywordValue`: the test expects a `CSSStyleValue`; fails in Chrome and Safari too |
+| [`the-stylepropertymap/properties/scroll-snap-type.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/scroll-snap-type.html) | Pass | 39 / 39 |  |  |
 | [`the-stylepropertymap/properties/scrollbar-gutter.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/scrollbar-gutter.html) | Pass | 34 / 34 |  |  |
 | [`the-stylepropertymap/properties/scrollbar-width.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/scrollbar-width.html) | Pass | 34 / 34 |  |  |
 | [`the-stylepropertymap/properties/shape-image-threshold.html`](https://wpt.fyi/results/css/css-typed-om/the-stylepropertymap/properties/shape-image-threshold.html) | Fail | 27 / 31 | TEST BUG | the test expects `attributeStyleMap.set()` to throw a TypeError for a percentage on `shape-image-threshold`, whose grammar is `<opacity-value>` (https://drafts.csswg.org/css-shapes-1/#shape-image-threshold-property; `css/css-shapes/parsing/shape-image-threshold-valid.html` expects the percentages to be valid); the browsers pass because their Typed OM only accepts numbers for this property |

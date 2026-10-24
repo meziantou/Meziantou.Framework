@@ -1188,7 +1188,7 @@
     "reftest": "PASS"
   },
   "css/css-flexbox/flex-container-line-if-empty-vertical-writing-mode.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-flexbox/flex-container-margin.html": {
     "reftest": "PASS"

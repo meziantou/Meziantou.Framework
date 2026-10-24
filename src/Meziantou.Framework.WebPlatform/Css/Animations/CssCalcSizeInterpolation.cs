@@ -38,11 +38,12 @@ internal static class CssCalcSizeInterpolation
     public static Func<double, string?>? Prepare(CssInterpolationContext context, string from, string to, out bool handled)
     {
         handled = false;
-        if (!TryPrepare(context, from, to, out var a, out var b))
+        if (TryPrepare(context, from, to, out var a, out var b) is not { } prepared)
             return null;
 
+        // A value that fails to be prepared (its expansion is too large) cannot be interpolated
         handled = true;
-        if (GetCombinedBasis(a, b) is not { } basis)
+        if (!prepared || GetCombinedBasis(a, b) is not { } basis)
             return null;
 
         // "the result's calc-size calculation is the interpolation of the two input calc-size calculations" (also at the ends of
@@ -57,30 +58,35 @@ internal static class CssCalcSizeInterpolation
     /// </summary>
     public static string? Combine(CssInterpolationContext context, string underlying, string value)
     {
-        if (!TryPrepare(context, underlying, value, out var a, out var b))
+        if (TryPrepare(context, underlying, value, out var a, out var b) is not { } prepared)
             return null;
 
-        if (GetCombinedBasis(a, b) is not { } basis)
+        if (!prepared || GetCombinedBasis(a, b) is not { } basis)
             return value;
 
         return "calc-size(" + basis + ", (" + a.Calculation + ") + (" + b.Calculation + "))";
     }
 
-    private static bool TryPrepare(CssInterpolationContext context, string from, string to, out PreparedValue a, out PreparedValue b)
+    /// <summary>
+    /// Prepares two values for interpolation: null when they are not handled here (the generic interpolation applies), false
+    /// when one of them fails to be prepared (https://drafts.csswg.org/css-values-5/#calc-size-prepare-for-interpolation: they
+    /// cannot be interpolated), true otherwise.
+    /// </summary>
+    private static bool? TryPrepare(CssInterpolationContext context, string from, string to, out PreparedValue a, out PreparedValue b)
     {
         a = default;
         b = default;
         var fromKind = Classify(from);
         var toKind = Classify(to);
         if (fromKind == ValueKind.Other || toKind == ValueKind.Other)
-            return false;
+            return null;
 
         if (fromKind != ValueKind.CalcSize && toKind != ValueKind.CalcSize)
         {
             // https://drafts.csswg.org/css-values-5/#valdef-interpolate-size-allow-keywords: "Sizing values can also be combined if
             // one of them is an <size-keyword> and the other is a <length-percentage>"
             if (fromKind == toKind || !AllowsKeywords(context))
-                return false;
+                return null;
         }
 
         if (Prepare(from, fromKind) is not { } preparedFrom || Prepare(to, toKind) is not { } preparedTo)

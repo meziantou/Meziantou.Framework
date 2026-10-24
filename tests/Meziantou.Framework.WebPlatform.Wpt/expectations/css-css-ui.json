@@ -3191,19 +3191,7 @@
     }
   },
   "css/css-ui/resize-interactive.html": {
-    "total": 10,
-    "failures": {
-      "test resize-block wm-horizontal": "FAIL",
-      "test resize-block wm-vertical": "FAIL",
-      "test resize-both wm-horizontal": "FAIL",
-      "test resize-both wm-vertical": "FAIL",
-      "test resize-horizontal wm-horizontal": "FAIL",
-      "test resize-horizontal wm-vertical": "FAIL",
-      "test resize-inline wm-horizontal": "FAIL",
-      "test resize-inline wm-vertical": "FAIL",
-      "test resize-vertical wm-horizontal": "FAIL",
-      "test resize-vertical wm-vertical": "FAIL"
-    }
+    "total": 10
   },
   "css/css-ui/resize-textarea-relative-to-right-001.tentative.html": {
     "total": 1,

@@ -153,10 +153,7 @@
     "total": 4
   },
   "css/css-anchor-position/anchor-inherited.html": {
-    "total": 1,
-    "failures": {
-      ".child 1": "FAIL"
-    }
+    "total": 1
   },
   "css/css-anchor-position/anchor-inside-outside.html": {
     "total": 16
@@ -300,16 +297,13 @@
     "reftest": "PASS"
   },
   "css/css-anchor-position/anchor-position-inline-001.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 4
   },
   "css/css-anchor-position/anchor-position-inline-002.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 4
   },
   "css/css-anchor-position/anchor-position-inline-003.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 4
   },
   "css/css-anchor-position/anchor-position-inline-004.html": {
     "reftest": "PASS"
@@ -829,16 +823,16 @@
     "total": 5
   },
   "css/css-anchor-position/grid-lanes-position-area-basic.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-anchor-position/grid-position-area-basic.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-anchor-position/idlharness.html": {
     "total": 86
   },
   "css/css-anchor-position/inherit-height-from-fallback.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-anchor-position/last-successful-animation.html": {
     "total": 3
@@ -1087,12 +1081,7 @@
     }
   },
   "css/css-anchor-position/position-area-scrolling-003.tentative.html": {
-    "total": 3,
-    "failures": {
-      "Initial scroll position": "FAIL",
-      "Redisplay at 40,60": "FAIL",
-      "Scroll to 40,60": "FAIL"
-    }
+    "total": 3
   },
   "css/css-anchor-position/position-area-scrolling-004.tentative.html": {
     "reftest": "PASS"

@@ -162,10 +162,14 @@ internal sealed class ReplacedContent
 
             // A drop-down box is a widget, not a replaced element: as in the browsers (WPT css/css-contain/contain-size-select-*,
             // css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-032.html), its contents are its label, so with size
-            // containment and contain-intrinsic-size: none, it is sized as an empty drop-down box (its arrow and one line)
-            if (kind == ReplacedContentKind.FormControl && box.Element is HtmlSelectElement select && StyleEngine.IsDropDownBox(select))
+            // containment and contain-intrinsic-size: none, it is sized as an empty drop-down box (its arrow and one line). The
+            // contents of a list box are its options: it is sized as an empty list box (its rows and its scrollbar, WPT
+            // css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-009.html)
+            if (kind == ReplacedContentKind.FormControl && box.Element is HtmlSelectElement select)
             {
-                var (emptyInline, emptyBlock) = FormControlSizing.GetEmptyDropDownBoxSize(box.Style);
+                var (emptyInline, emptyBlock) = StyleEngine.IsDropDownBox(select)
+                    ? FormControlSizing.GetEmptyDropDownBoxSize(box.Style)
+                    : FormControlSizing.GetEmptyListBoxSize(select, box.Style, ScrollContainers.GetScrollbarThickness(context, layout) / zoom);
                 var (emptyWidth, emptyHeight) = horizontal ? (emptyInline * zoom, emptyBlock * zoom) : (emptyBlock * zoom, emptyInline * zoom);
                 natural = new ImageNaturalSize(
                     containWidth && !LastRememberedSizes.HasExplicitContainIntrinsicSize(box, horizontal: true) ? emptyWidth : natural.Width,

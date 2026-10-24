@@ -1,4 +1,5 @@
 using Meziantou.Framework.WebPlatform.Css.Cascade;
+using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Rendering;
 
 namespace Meziantou.Framework.WebPlatform.Css.Layout;
@@ -272,7 +273,21 @@ internal sealed partial class LayoutEngine
                 var anchor = box.Box.Style.Layout.Anchor;
                 if (segment is not null || PageBreakRules.IsAtStaticBlockPosition(box) || box.Box.Style.PositionBaseStyle is not null || anchor.UsesAnchorFunctions
                     || anchor.PositionArea is not null || anchor.PositionAnchor is PositionAnchorKind.Auto or PositionAnchorKind.Name or PositionAnchorKind.MatchParent)
-                    return map.Map(position);
+                {
+                    var placement = map.Map(position);
+                    var breakIndex = placement.Index - baseIndex - 1;
+                    if (PageBreakRules.IsAtStaticBlockPosition(box) && breakIndex >= 0 && breakIndex < breaks.Count && position >= breaks[breakIndex].Position - 0.01
+                        && FindBreakAnchor(children, stripSize, writingDirection, breaks[breakIndex].Position, parentTop: 0) is var (breakAnchor, _)
+                        && IsBeforeInTreeOrder(box.Box, breakAnchor) && map.GetOffsetIn(placement.Index - 1, position) is var previousOffset
+                        && previousOffset <= sizes[Math.Clamp(breakIndex, 0, sizes.Count - 1)] + 0.01)
+                    {
+                        // (a box whose static position is before the box after a break, in its block-start margin preserved after a
+                        // forced break: as in Blink, it is in the page before the break)
+                        return (placement.Index - 1, previousOffset);
+                    }
+
+                    return placement;
+                }
 
                 var pageIndex = 0;
                 while (pageIndex < sizes.Count - 1 && position >= sizes[pageIndex] - 0.01)
@@ -371,7 +386,7 @@ internal sealed partial class LayoutEngine
             {
                 var pushesFloats = FloatPusher.Update(context, flow, map, blockSizes, fragmentainers, ref floatPushes);
                 if (GridLanesFragmentation.Update(flow, children, stripSize, writingDirection, map, blockSizes, ref lanesBreaks) || pushesFloats
-                    || stripRelayout.UpdateFloatAvoiders(flow, map, children, stripSize, writingDirection))
+                    || stripRelayout.UpdateFloatAvoiders(flow, map, children, stripSize, writingDirection) || stripRelayout.UpdateFloatExclusionEnds(context, flow))
                 {
                     ClearNestedColumnStates(context);
                     continue;
@@ -415,6 +430,19 @@ internal sealed partial class LayoutEngine
                 contentIndex++;
             }
 
+            // The pages of the absolutely positioned boxes placed at their position (before the slicer places the fragments of the
+            // strip in the pages)
+            List<(BoxFragment Box, int Index, double Offset)>? placedBoxPages = null;
+            if (placedBoxes is not null)
+            {
+                placedBoxPages = new(placedBoxes.Count);
+                foreach (var box in placedBoxes)
+                {
+                    var (boxIndex, boxOffset) = MapPlacedBox(box, writingDirection.ToLogical(box.Offset - box.RelativeOffset, icbSize, box.Size).Block);
+                    placedBoxPages.Add((box, boxIndex, boxOffset));
+                }
+            }
+
             // The fragments of the strip in the page areas
             var slicer = new FragmentSlicer(flow, map, fragmentainers, writingDirection);
             var placedFragments = slicer.Slice(children, stripSize, spannerBoxes: null);
@@ -437,12 +465,11 @@ internal sealed partial class LayoutEngine
 
                     // The absolutely positioned boxes of the initial containing block at their static position or anchored are on
                     // the page where the content at their position is, unbroken
-                    if (placedBoxes is not null)
+                    if (placedBoxPages is not null)
                     {
-                        foreach (var box in placedBoxes)
+                        foreach (var (box, boxIndex, offset) in placedBoxPages)
                         {
                             var logical = writingDirection.ToLogical(box.Offset - box.RelativeOffset, icbSize, box.Size);
-                            var (boxIndex, offset) = MapPlacedBox(box, logical.Block);
                             if (Math.Clamp(boxIndex, 0, fragmentainers.Count - 1) == index)
                             {
                                 builder.AddChild(box, new LogicalOffset(logical.Inline, boxIndex == index ? offset : logical.Block - fragmentainers[index].Start + fragmentainers[index].DisplayOffset));
@@ -504,6 +531,24 @@ internal sealed partial class LayoutEngine
         }
 
         return null;
+    }
+
+    /// <summary>Returns whether a box precedes another box in the tree order of their elements.</summary>
+    private static bool IsBeforeInTreeOrder(ContainerBox box, ContainerBox other)
+    {
+        return GetNode(box) is { } node && GetNode(other) is { } otherNode && !ReferenceEquals(node, otherNode)
+            && (node.CompareDocumentPosition(otherNode) & Node.DocumentPositionFollowing) != 0;
+
+        static Node? GetNode(ContainerBox box)
+        {
+            for (ContainerBox? current = box; current is not null; current = current.FirstChild as ContainerBox)
+            {
+                if (current.Element is { } element)
+                    return element;
+            }
+
+            return null;
+        }
     }
 
     /// <summary>
@@ -765,14 +810,13 @@ internal sealed partial class LayoutEngine
 
         // The document is painted in the page area; as in Blink, its canvas background covers the padding box of the page box,
         // and the content that overflows it is clipped
-        // (the origin of the page area is snapped to the device pixels: the document snaps its painting to them)
+        // (the document is painted at the position of the page area, which may be fractional: its painting is snapped to the
+        // device pixels of the page)
         var area = geometry.PageArea;
         var paddingBox = geometry.PaddingBox;
-        var devicePixelRatio = _document.GetStyleEngine().Environment.DevicePixelRatio;
         builder.Save();
         builder.Add(new ClipRectItem(paddingBox));
-        builder.Transform(DisplayMatrix.Translation(Math.Round(area.X * devicePixelRatio, MidpointRounding.AwayFromZero) / devicePixelRatio, Math.Round(area.Y * devicePixelRatio, MidpointRounding.AwayFromZero) / devicePixelRatio));
-        builder.AddList(Painter.Paint(this, _document, page.Content, PhysicalOffset.Zero, DisplayColor.Transparent));
+        builder.AddList(Painter.PaintPageContent(this, _document, page.Content, new PhysicalOffset(area.X, area.Y)));
         builder.Restore();
         PaintMarginBoxes(negative: false);
         return builder.ToDisplayList(geometry.PageSize);

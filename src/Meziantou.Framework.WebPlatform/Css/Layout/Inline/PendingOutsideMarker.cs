@@ -14,6 +14,13 @@ internal sealed class PendingOutsideMarker(ContainerBox marker, ContainerBox lis
     /// <summary>The block container of the list item, which places the marker at its block-start edge when no line box placed it.</summary>
     public ContainerBox ListItem { get; } = listItem;
 
+    /// <summary>
+    /// The inline-start border and padding of the list item (the offset of its content box from its border box), when its content
+    /// is block-level: an anonymous block box of the list item (e.g. the one of a block-in-inline split) places the marker outside
+    /// of the border box of the list item, as the list item would.
+    /// </summary>
+    public double ListItemContentInlineOffset { get; init; }
+
     /// <summary>Whether a line box placed the marker.</summary>
     public bool IsPlaced { get; set; }
 

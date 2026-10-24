@@ -1307,11 +1307,7 @@
     "total": 35
   },
   "css/css-typed-om/the-stylepropertymap/properties/paint-order.html": {
-    "total": 37,
-    "failures": {
-      "'paint-order' does not support 'fill stroke'": "FAIL",
-      "'paint-order' does not support 'markers fill stroke'": "FAIL"
-    }
+    "total": 37
   },
   "css/css-typed-om/the-stylepropertymap/properties/perspective-origin.html": {
     "harness": "ERROR",
@@ -1366,10 +1362,7 @@
     "total": 33
   },
   "css/css-typed-om/the-stylepropertymap/properties/scroll-snap-type.html": {
-    "total": 39,
-    "failures": {
-      "'scroll-snap-type' does not support 'inline proximity'": "FAIL"
-    }
+    "total": 39
   },
   "css/css-typed-om/the-stylepropertymap/properties/scrollbar-gutter.html": {
     "total": 34

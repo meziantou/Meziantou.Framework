@@ -313,7 +313,7 @@ internal sealed partial class OpenTypeFont
     /// The metrics of an instance of the font (the default instance when it is null), with the deltas of the MVAR table.
     /// The ascent, descent and line gap are the typographic metrics of the OS/2 table when <c>USE_TYPO_METRICS</c> is set,
     /// else the metrics of the hhea table (the typographic metrics, then the Windows metrics, when they are 0), like the
-    /// browsers (https://drafts.csswg.org/css-inline-3/#ascent-descent).
+    /// browsers (https://drafts.csswg.org/css-inline-3/#ascent-descent). A negative descent is inverted.
     /// </summary>
     public FontMetrics GetMetrics(FontVariationInstance? instance)
     {
@@ -336,6 +336,14 @@ internal sealed partial class OpenTypeFont
             ascent = face.WinAscent;
             descent = face.WinDescent;
             lineGap = 0;
+        }
+
+        // A descent above the baseline is a sign error of the font (e.g. a positive hhea.descender): it is inverted, as in Gecko
+        // (gfxFT2FontBase::InitMetricsFromPlatform) and WebKit (WPT css/CSS2/visudet/line-height-204.html, whose font has a
+        // descender of +382 units)
+        if (descent < 0)
+        {
+            descent = -descent;
         }
 
         // The x-height and the cap height of the OS/2 table, else the top of the outline of x and H

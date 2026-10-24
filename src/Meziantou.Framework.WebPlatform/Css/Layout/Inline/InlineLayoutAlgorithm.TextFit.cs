@@ -144,7 +144,8 @@ internal sealed partial class InlineLayoutAlgorithm
     /// part: "(A + B) / A, where A is the total inline size of the scalable parts and B is the remaining space" (without the
     /// white space at the end of the line). The scalable parts are the ones whose size follows the used font size (the text and
     /// the spacing that is a percentage; not the atomic inlines, the edges of the inline boxes, the spacing that is a length):
-    /// the content of the line is measured with two font sizes.
+    /// the content of the line is measured with two font sizes, then with the factor, which is reduced when the content then
+    /// exceeds the line box by a floating-point excess.
     /// </summary>
     private double? MeasureLineFit(LinePosition start, in LineEnd end, double availableSize, bool isFirstLine)
     {
@@ -157,6 +158,18 @@ internal sealed partial class InlineLayoutAlgorithm
         if (scalable <= LayoutEpsilon)
             return null;
 
-        return Math.Max(MinimumFontScale, (availableSize - (size - scalable)) / scalable);
+        var factor = Math.Max(MinimumFontScale, (availableSize - (size - scalable)) / scalable);
+
+        // The content is shaped again at the used font sizes: the sum of the scaled advances can exceed the line box by a
+        // floating-point excess (e.g. 400.00000000000006px in a line box of 400px), which the factor must not let overflow
+        var fittedSize = CollectLineContent(start, end, availableSize, isFirstLine, factor).Width;
+        _fontScale = 1;
+        ClearLineSpacing();
+        if (fittedSize > availableSize && fittedSize - availableSize < LayoutEpsilon)
+        {
+            factor = Math.Max(MinimumFontScale, factor - (fittedSize - availableSize + LayoutEpsilon) / scalable);
+        }
+
+        return factor;
     }
 }

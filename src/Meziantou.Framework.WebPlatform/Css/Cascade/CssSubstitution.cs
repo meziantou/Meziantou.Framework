@@ -490,9 +490,17 @@ internal static class CssSubstitution
             parsed.Add((branch[..colon], branch[(colon + 1)..]));
         }
 
+        // A condition whose style query depends on the scrollbar gutters that the viewport units subtract while they are being
+        // determined is a cycle: the if() is invalid at computed-value time (https://github.com/w3c/csswg-drafts/issues/13189)
+        var engine = context.Style.Engine;
+        var cycles = engine.ViewportUnitCycleCount;
         foreach (var (condition, value) in parsed)
         {
-            if (EvaluateIfCondition(condition, source, context, ref tainted) != true)
+            var matches = EvaluateIfCondition(condition, source, context, ref tainted);
+            if (engine.ViewportUnitCycleCount != cycles)
+                return null;
+
+            if (matches != true)
                 continue;
 
             var builder = new SubstitutionBuilder();
@@ -674,7 +682,7 @@ internal static class CssSubstitution
             if (double.IsNaN(number))
                 return null;
 
-            baseValue = Math.Clamp(number, 0, Math.BitDecrement(1d));
+            baseValue = Math.Clamp(number, 0, CssRandom.MaxBaseValue);
         }
         else if (CssRandom.ParseSharing(significantKey) is { } sharing)
         {

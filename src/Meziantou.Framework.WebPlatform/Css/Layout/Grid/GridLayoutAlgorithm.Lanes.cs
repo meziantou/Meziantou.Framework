@@ -581,7 +581,7 @@ internal sealed partial class GridLayoutAlgorithm
         PlaceLanesItems(GridSizingMode.Layout);
 
         // The block size of the contents: the size of the rows, or the stacking range (https://drafts.csswg.org/css-grid-3/#grid-lanes-intrinsic-sizes)
-        var contentBlockSize = _laneAxis == GridAxis.Rows ? _contentBlockSize : _stackingRange;
+        var contentBlockSize = GetContentBlockSizeWithCaretLine(_laneAxis == GridAxis.Rows ? _contentBlockSize : _stackingRange);
         if (_content.MeasuresIntrinsicBlockSize)
             return new ContentLayoutResult(contentBlockSize);
 

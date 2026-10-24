@@ -2964,6 +2964,13 @@ input.Wheel(120, 80, deltaX: 0, deltaY: 100);
   the release (the scrollbar captures the pointer); the press focuses as a press on the scroll container does, except on
   a scrollbar of the viewport, which keeps the focus where it is. The scrollbars of an inert element do not react. A touch
   that starts on a scrollbar neither pans nor scrolls.
+- **Resizer.** The press of the primary button of the mouse or of a pen on the resizer of a scroll container whose `resize`
+  is not `none` (`UserInput.Resizer.cs`: a square as large as its classic scrollbars, 15px without them, at its bottom
+  corner on the side of its vertical scrollbar, inside its borders) is handled as a press on a scrollbar (no selection, no
+  drag-and-drop, no `click`, no move event until the release): a move of the pointer, mapped to the coordinates of the box
+  (its transforms included), changes its size by as much ([css-ui-4](https://drafts.csswg.org/css-ui-4/#resize)): the
+  `width` and/or `height` (the axes of `resize`) that change are set in px in its `style` attribute, rounded to 1/64px, and
+  never smaller than the resizer. The resizer is not painted.
 - **Default actions.** The trusted events run the default actions of [Focus](#focus) and of the light dismiss; a move of
   the mouse with the primary button pressed starts a [drag-and-drop operation](#drag-and-drop) (the pointer events are
   then suppressed until the drop); a press of the primary button on an `<input type=range>` and the moves that follow set

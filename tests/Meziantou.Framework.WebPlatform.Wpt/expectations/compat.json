@@ -110,10 +110,10 @@
     "reftest": "PASS"
   },
   "compat/webkit-text-fill-color-property-002.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "PASS"
   },
   "compat/webkit-text-fill-color-property-003.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "PASS"
   },
   "compat/webkit-text-fill-color-property-004.html": {
     "reftest": "PASS"

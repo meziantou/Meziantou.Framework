@@ -92,8 +92,9 @@ layout and painting features that are not implemented, and the bugs).
 - Each page is painted on white paper, as in the browsers: the background of the page box (the `@page` rules) over the
   whole page (its margins included, whatever `background-clip`; its images are positioned in the page box, by
   `background-origin`), its borders and outline, the page-margin boxes whose
-  `z-index` is negative, then the document in the page area (clipped to the padding box of the page box, its origin snapped
-  to the device pixels): its canvas background, positioned in the root element stitched across the pages
+  `z-index` is negative, then the document in the page area (clipped to the padding box of the page box; it is painted at
+  the position of the page area, which may be fractional, and snapped to the device pixels of the page, so a box at the
+  same position in the page covers the same pixels whatever the page margins): its canvas background, positioned in the root element stitched across the pages
   (`box-decoration-break: slice`), covers the padding box of the page box, as in Blink; then the other page-margin boxes.
   Each page-margin box is painted atomically (as a stacking context), in the order of its `z-index`, then from the top-left
   corner clockwise.
@@ -195,9 +196,11 @@ sample is published with Native AOT on CI), and the same document gives the same
   with (the two libraries share the font reader of Meziantou.Framework.Fonts, so a font file is read once), per face and
   instance of the variation axes (`FontCache`), and the coverages of the glyphs are cached per backend (`GlyphCache`). On
   the pixel grid, the origin of a glyph is rounded to a quarter of a device pixel along the line and to a whole pixel across
-  it, as the glyph caches of the browsers do. The synthetic bold thickens the outline (1/24 of the font size up to 9px, 1/32
-  from 36px), the synthetic oblique is a shear of the glyphs (the painting draws the upright glyphs of vertical text with a
-  vertical skew transform around the center of their column instead, `DisplayFont.SyntheticObliqueAngle` 0), and a
+  it, as the glyph caches of the browsers do; the positions of the glyphs of the CSS text are first rounded to 1/4096 px
+  (`Painter.QuantizeGlyphOrigin`), so that the same position computed through a computed value (whose lengths have 6
+  decimals, e.g. a relative offset set by a script) is rounded to the same quarter. The synthetic bold thickens the
+  outline (1/24 of the font size up to 9px, 1/32 from 36px), the synthetic oblique is a shear of the glyphs (the painting
+  draws the upright glyphs of vertical text with a vertical skew transform around the center of their column instead, `DisplayFont.SyntheticObliqueAngle` 0), and a
   combined upright text is compressed with the horizontal scale of the run. The glyphs of `COLR` version 0 reach the backend
   as the glyph runs of their layers (see [Color glyphs](#color-glyphs)); the other color glyphs (`COLR` version 1, `sbix`,
   `CBDT`) are drawn by Meziantou.Framework.Imaging with their colors (the first palette of the font), faded by the alpha of
@@ -610,8 +613,9 @@ in the gutters that the layout reserves for them (see [layout.md](layout.md)), a
   neither painted nor interactive (their gutters show the background of the box, or the canvas). With a
   `ScrollbarThickness` of 0 (overlay scrollbars) there is no gutter and nothing is painted.
 
-Not done: the buttons, the hover and pressed states, the overlay scrollbars that appear while scrolling, the resizer of
-`resize`; the scrollbars of a nested document are scaled by the zoom of its container (the browsers keep their thickness).
+Not done: the buttons, the hover and pressed states, the overlay scrollbars that appear while scrolling, the painting of the
+resizer of `resize` (it is interactive, see [the user input](browsing-context.md#user-input)); the scrollbars of a nested
+document are scaled by the zoom of its container (the browsers keep their thickness).
 
 ### Forced colors mode
 

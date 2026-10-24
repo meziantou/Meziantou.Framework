@@ -453,7 +453,8 @@ internal sealed class FragmentSlicer
                 // The root of a parallel flow: its block-end edge is placed by the flow of its container, or follows its contents
                 if (item.Box is not null && !item.IsMonolithic)
                 {
-                    var containerEnd = map.MapEnd(childBottom, childTop, growsWithTrack: item.Stretches);
+                    // (a box displaced from the flow of its container ends where the breaker placed its block-end edge)
+                    (int Index, double Offset) containerEnd = item.PushShift > 0 && item.IsBoxDone ? (item.EndIndex, item.EndOffset) : map.MapEnd(childBottom, childTop, growsWithTrack: item.Stretches);
                     childEnd = containerEnd;
                     if (item.CanGrow)
                     {
@@ -533,8 +534,10 @@ internal sealed class FragmentSlicer
         for (var index = firstIndex; index <= lastIndex; index++)
         {
             // The extent of the fragment in the fragmentainer: a fragment broken at the end of a fragmentainer extends to its end
-            // (the fragments before the start of the box and after its end are empty)
-            var sliceTop = index == first ? topOffset : index < first ? _fragmentainers[index].BlockSize : openOffsets[index] + (startShifts?[index] ?? 0);
+            // (the fragments before the start of the box and after its end are empty: https://drafts.csswg.org/css-break-3/#transforms,
+            // the origin of an overflow-only fragment is the one of a zero-height box at the start of the overflow; a fragment
+            // after the end of the box is at the start of the fragmentainer)
+            var sliceTop = index == first ? topOffset : index < first ? GetOverflowStart(index) : openOffsets[index] + (startShifts?[index] ?? 0);
             var sliceBottom = index > borderBoxLast || index < first ? sliceTop
                 : index == borderBoxLast ? Math.Max(sliceTop, endIndex == index ? endOffset : map.GetOffsetIn(index, bottom))
                 : Math.Max(sliceTop, closeOffsets?[index] ?? GetBreakEnd(map, index));
@@ -609,9 +612,12 @@ internal sealed class FragmentSlicer
                     // fragmentainer (less the footer), a break between two rows leaves the footer after the row before it
                     var inline = FragmentationFlow.GetBlockRange(footer, box.Size, writingDirection, 0).Inline;
                     var footerOffset = Math.Max(sliceBottom, _fragmentainers[index].BlockSize) - _writingDirection.ToLogical(border.Add(padding)).BlockEnd - repeated.FooterBlockSize;
-                    if (map.GetRange(index + 1) is var (breakPosition, _) && GetRowEndBefore(box, unclampedTop, breakPosition) is { } rowEnd)
+                    // (not after a row that ends in a later fragmentainer: a row broken by the breaks of its contents, whose parallel
+                    // flows are broken while the position of the flow of the table does not progress)
+                    if (map.GetRange(index + 1) is var (breakPosition, _) && GetRowEndBefore(box, unclampedTop, breakPosition) is { } rowEnd
+                        && map.MapEnd(rowEnd, top) is var rowEndPlacement && rowEndPlacement.Index == index)
                     {
-                        footerOffset = Math.Min(footerOffset, map.MapEnd(rowEnd, top).Offset + repeated.FooterSize - repeated.FooterBlockSize);
+                        footerOffset = Math.Min(footerOffset, rowEndPlacement.Offset + repeated.FooterSize - repeated.FooterBlockSize);
                     }
 
                     sections.Add((footer.CloneSubtree(), inline, footerOffset, true));
@@ -738,6 +744,21 @@ internal sealed class FragmentSlicer
 
         Stitch(box, result, clone);
         return new Slices(firstIndex, result) { BoxEnd = borderBoxLast, InlineShifts = inlineShifts };
+
+        // The block-start edge of the descendants placed in a fragmentainer before the first one of the box (in its empty fragment there)
+        double GetOverflowStart(int index)
+        {
+            var start = _fragmentainers[index].BlockSize;
+            if (childSlices.TryGetValue(index, out var placed))
+            {
+                foreach (var (_, _, childOffset, _) in placed)
+                {
+                    start = Math.Min(start, childOffset);
+                }
+            }
+
+            return start;
+        }
     }
 
     /// <summary>
@@ -746,7 +767,7 @@ internal sealed class FragmentSlicer
     /// that flow is broken (it is not broken where the content of another flow that overflows the fragmentainer ends).
     /// </summary>
     private double GetBreakEnd(FlowMap map, int index)
-        => ReferenceEquals(map, _map) ? _fragmentainers[index].BlockSize : Math.Min(_fragmentainers[index].BlockSize, map.GetBreakEnd(index) ?? _fragmentainers[index].BlockSize);
+        => Math.Min(_fragmentainers[index].BlockSize, map.GetBreakEnd(index) ?? _fragmentainers[index].BlockSize);
 
     /// <summary>
     /// Returns the block-end edge in the strip of the last row of a table grid box before a break when the break is between two

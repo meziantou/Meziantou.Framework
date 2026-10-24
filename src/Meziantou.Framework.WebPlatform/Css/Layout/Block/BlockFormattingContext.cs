@@ -408,7 +408,7 @@ internal sealed class BlockFormattingContext : FormattingContext
         {
             if (child is ContainerBox { IsOutsideMarker: true } markerBox)
             {
-                ownMarker = new PendingOutsideMarker(markerBox, box);
+                ownMarker = new PendingOutsideMarker(markerBox, box) { ListItemContentInlineOffset = content.Offset.Inline };
                 marker = ownMarker;
                 break;
             }
@@ -770,7 +770,14 @@ internal sealed class BlockFormattingContext : FormattingContext
         var marginBoxSize = new LogicalSize(size.Inline + lineLeftMargin + lineRightMargin, size.Block + blockStartMargin + blockEndMargin);
         var position = exclusions.PlaceFloat(side, marginBoxSize, ceiling, content.BlockFormattingContextOffset.Inline, content.InlineSize);
         var marginBox = new LogicalRect(position, marginBoxSize);
-        exclusions.Add(side, marginBox, FloatShapes.Create(box, fragment, writingDirection, marginBox, content.InlineSize), visibleFrom, isDeferred);
+        var exclusionBox = marginBox;
+        if (context.StripRelayout is { } stripRelayout && stripRelayout.GetFloatExclusionEnd(box) is var exclusionEnd && exclusionEnd < marginBox.BlockEnd)
+        {
+            // (a float kept in the page before a forced page break: the content after the break, in the next pages, is not beside it)
+            exclusionBox = marginBox with { Size = new LogicalSize(marginBoxSize.Inline, Math.Max(0, exclusionEnd - position.Block)) };
+        }
+
+        exclusions.Add(side, exclusionBox, FloatShapes.Create(box, fragment, writingDirection, marginBox, content.InlineSize), visibleFrom, isDeferred);
         if (context.MultiColumnDepth > 0)
         {
             context.FloatPlacements[box] = position.Block;

@@ -311,7 +311,7 @@ internal static class FormControlSizing
         {
             // "If the 'field-sizing' property on the element has a computed value of 'content', return the height necessary to
             // contain all rows for items" (none without item)
-            var rows = fieldSizingContent ? displayedOptions : select.DisplaySize > 0 ? select.DisplaySize : 4;
+            var rows = fieldSizingContent ? displayedOptions : GetListBoxRows(select);
             return new FormControlSize(labelsWidth + scrollbarThickness, rows * lineHeight, FormControlBaseline.FirstLine);
         }
 
@@ -328,6 +328,16 @@ internal static class FormControlSizing
 
     /// <summary>The natural size of a drop-down box without label (see <see cref="GetSelectSize"/>): its arrow button and one line, in the coordinates of the element.</summary>
     internal static (double InlineSize, double BlockSize) GetEmptyDropDownBoxSize(ComputedStyle style) => (style.FontSize, GetLineHeight(style));
+
+    /// <summary>
+    /// The natural size of a list box without option (see <see cref="GetSelectSize"/>): its scrollbar and its rows (none with
+    /// <c>field-sizing: content</c>), in the coordinates of the element.
+    /// </summary>
+    internal static (double InlineSize, double BlockSize) GetEmptyListBoxSize(HtmlSelectElement select, ComputedStyle style, double scrollbarThickness)
+        => (scrollbarThickness, IsFieldSizingContent(style) ? 0 : GetListBoxRows(select) * GetLineHeight(style));
+
+    /// <summary>The number of rows of a list box: its display size, 4 by default (https://html.spec.whatwg.org/multipage/rendering.html#the-select-element-2).</summary>
+    private static long GetListBoxRows(HtmlSelectElement select) => select.DisplaySize > 0 ? select.DisplaySize : 4;
 
     /// <summary>
     /// Whether an option of a list box is rendered: as in the browsers, where the options of a list box are boxes,

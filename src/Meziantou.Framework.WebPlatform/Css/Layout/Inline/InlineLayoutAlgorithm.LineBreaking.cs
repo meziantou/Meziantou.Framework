@@ -133,8 +133,10 @@ internal sealed partial class InlineLayoutAlgorithm
         // displacing content from the end of the line as if wrapping, until the last soft wrap opportunity" that fits
         var displaces = _blockEllipsis is not null && mode == IntrinsicSizeMode.None;
 
-        // The content that does not fit with the ellipsis is displaced entirely, but with -webkit-line-clamp (it is truncated)
+        // The content that does not fit with the ellipsis is displaced entirely; with -webkit-line-clamp, only when it does not fit
+        // without the ellipsis either: the content that fits without it is kept and truncated by the ellipsis (see LineClamp.IsLegacy)
         var displacesAll = displaces && !_blockEllipsisIsLegacy;
+        var legacyLimit = displaces && _blockEllipsisIsLegacy ? availableSize + GetBlockEllipsisReservedSize(_blockEllipsis) : double.PositiveInfinity;
 
         // Most lines of the documents are short: the break opportunities are computed only when the rest of the content (up to
         // the next forced line break) does not fit
@@ -247,7 +249,7 @@ internal sealed partial class InlineLayoutAlgorithm
                         {
                             // https://drafts.csswg.org/css2/#float-position: the float is placed on the current line when it fits next to
                             // the content before it (which must fit on the line), else below the line
-                            if (width - trailing + clonedEnd > availableSize && hasContent && (best.Exists || phrase.Exists || emergency.Exists || displacesAll))
+                            if (width - trailing + clonedEnd > availableSize && hasContent && (best.Exists || phrase.Exists || emergency.Exists || DisplacesAll(width - trailing + clonedEnd)))
                                 return ToFallbackEnd();
 
                             return new LineEnd { Item = index, Position = item.Start, StopsAtFloat = true, ContentStart = contentStart, Width = width - trailing + (hasCharacters ? clonedEnd : 0) };
@@ -259,10 +261,11 @@ internal sealed partial class InlineLayoutAlgorithm
                 case InlineItemKind.CloseTag:
                     // The content of an inline box must fit before its negative inline-end margin is applied: as in the browsers,
                     // the margin does not bring back on the line the content that overflows it (WPT css/css-grid/firefox-bug-1881495.html)
-                    if (item.InlineSize < 0 && hasContent && (best.Exists || phrase.Exists || emergency.Exists || displacesAll))
+                    if (item.InlineSize < 0 && hasContent)
                     {
                         var closeEdge = GetLineEndSpacing(lastContent, lastContentItem, item.Start, isHyphenated: false, isLastLine: false);
-                        if (width - trailing + closeEdge.Unconditional + closeEdge.Conditional > availableSize)
+                        var closeWidth = width - trailing + closeEdge.Unconditional + closeEdge.Conditional;
+                        if (closeWidth > availableSize && (best.Exists || phrase.Exists || emergency.Exists || DisplacesAll(closeWidth)))
                             return ToFallbackEnd();
                     }
 
@@ -278,7 +281,8 @@ internal sealed partial class InlineLayoutAlgorithm
                 case InlineItemKind.ForcedBreak:
                     // The content before the forced break must fit: else the line breaks at the last opportunity that fits
                     var forcedEdge = GetLineEndSpacing(lastContent, lastContentItem, item.Start, isHyphenated: false, isLastLine: false);
-                    if (width - trailing + clonedEnd + forcedEdge.Unconditional + forcedEdge.Conditional > availableSize && hasContent && (best.Exists || phrase.Exists || emergency.Exists || displacesAll))
+                    var forcedWidth = width - trailing + clonedEnd + forcedEdge.Unconditional + forcedEdge.Conditional;
+                    if (forcedWidth > availableSize && hasContent && (best.Exists || phrase.Exists || emergency.Exists || DisplacesAll(forcedWidth)))
                         return ToFallbackEnd();
 
                     var forcedConditional = mode == IntrinsicSizeMode.MaxContent ? trailingPreserved : 0;
@@ -487,7 +491,7 @@ internal sealed partial class InlineLayoutAlgorithm
         // The end of the content: the last line, unless it does not fit
         var edge = GetLineEndSpacing(lastContent, lastContentItem, _length, isHyphenated: false, isLastLine: true);
         var contentWidth = width - trailing + edge.Unconditional + GetRemovedSpaceShapingCorrection(lastContent, lastContentItem, isFirstLine);
-        if (contentWidth + edge.Conditional > availableSize && hasContent && (best.Exists || phrase.Exists || emergency.Exists || displacesAll))
+        if (contentWidth + edge.Conditional > availableSize && hasContent && (best.Exists || phrase.Exists || emergency.Exists || DisplacesAll(contentWidth + edge.Conditional)))
             return ToFallbackEnd();
 
         return new LineEnd { Item = items.Length, Position = _length, ContentStart = contentStart, Width = contentWidth + (mode == IntrinsicSizeMode.MaxContent ? trailingPreserved : 0) };
@@ -573,9 +577,12 @@ internal sealed partial class InlineLayoutAlgorithm
             }
 
             // The content does not fit: break at the last opportunity that fits, or here
-            end = best.Exists || phrase.Exists || emergency.Exists || displacesAll ? ToFallbackEnd() : ToLineEnd(candidate);
+            end = best.Exists || phrase.Exists || emergency.Exists || DisplacesAll(fitWidth) ? ToFallbackEnd() : ToLineEnd(candidate);
             return true;
         }
+
+        // Whether the content of the line that does not fit (of the width) is displaced entirely by the block overflow ellipsis
+        bool DisplacesAll(double contentWidth) => displacesAll || contentWidth > legacyLimit;
 
         LineEnd ToLineEnd(BreakCandidate candidate) => new() { Item = candidate.Item, Position = candidate.Position, IsHyphenated = candidate.IsHyphen, ContentStart = contentStart, Width = candidate.Width };
 

@@ -914,6 +914,7 @@ internal sealed partial class ComputedStyle
         if (!computing.Add(this, property))
         {
             // A cyclic dependency between properties (e.g. font-size: 1lh): the initial value is used
+            Engine.OnPropertyCycle();
             return CssValueComputer.Compute(this, definition, CssValueComputer.GetInitialValue(definition), baseUrl: null);
         }
 
@@ -1405,6 +1406,7 @@ internal sealed partial class ComputedStyle
                 customPropertyCycles.Add(customPropertyStack[i]);
             }
 
+            Engine.OnPropertyCycle();
             return null;
         }
 

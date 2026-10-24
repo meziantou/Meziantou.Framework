@@ -1130,8 +1130,9 @@ not implemented yet (the grid lanes): their children are stacked without collaps
   (`ContentArea.StartMarginCollapsesWithChildren`), the block-end margin with the ones of the last children when the box
   has no block-end border or padding and an `auto` block size. As in the browsers, when the minimum block size makes the box
   taller than its contents, the margins of the last children neither collapse with its margin nor make it taller: they are
-  discarded (`BlockFormattingContextState.DiscardMargins`); a maximum block size does not change the collapsing (Blink and
-  Gecko discard the margins then too, WebKit does not, CSS 2 does not either). The result is in
+  discarded (`BlockFormattingContextState.DiscardMargins`), and so are they when the maximum block size makes the box shorter
+  than its contents (as Blink, Gecko and Servo; WebKit collapses them, as CSS 2 that only checks `height`:
+  https://github.com/w3c/csswg-drafts/issues/12218). The result is in
   `BoxFragment.CollapsedMargins` (`CollapsedBlockMargins`: the `Start` and `End` sets of adjoining margins
   (`MarginStrut`: the largest positive and the most negative margins), `CollapsedThrough`, `Clearance`); the other boxes
   have `CollapsedBlockMargins.None` (their parent uses their `Margin`). The content layouts return the margins of their
@@ -4096,9 +4097,10 @@ laid out but hidden (`continue: collapse`, as Blink), and the container is sized
   are removed. The ellipsis is shaped in the style of the block container (not its `::first-line` style), isolated in the direction
   of the bidi paragraph of the line, placed after the content in that direction (on the line-left side of a right-to-left line) and
   aligned with it (`text-align`, after the justification); as the anonymous inline of `line-height: 0`, its fonts do not extend
-  the line. With `-webkit-line-clamp`, as in the browsers (WPT `webkit-line-clamp-035`, the `*-align-baseline-line-clamp-*`
-  tests), a line whose content does not fit with the ellipsis keeps its content, which is truncated by the ellipsis when it is
-  painted (`LineBoxFragment.IsTruncatedByBlockEllipsis`, `LineTruncator.GetTruncation`, as `text-overflow`). `text-overflow` still
+  the line. With `-webkit-line-clamp`, as in Blink (the `*-align-baseline-line-clamp-*` tests), a line whose content does not fit
+  with the ellipsis but fits without it keeps its content, which is truncated by the ellipsis when it is painted
+  (`LineBoxFragment.IsTruncatedByBlockEllipsis`, `LineTruncator.GetTruncation`, as `text-overflow`); the content that does not
+  fit without the ellipsis either is displaced (WPT `webkit-line-clamp-035`, `webkit-line-clamp-036`). `text-overflow` still
   truncates the lines of a clamped container.
 - **`text-wrap-style: balance`**: "the clamping effect is applied first, then the remaining lines are balanced": the layouts that
   look for the clamp point do not balance (`LineClamp.Balances`); the lines before the clamp point are balanced in the clamped
@@ -4120,8 +4122,7 @@ laid out but hidden (`continue: collapse`, as Blink), and the container is sized
   break (`CreateEllipsisClamp`), and fragmented again. Not done: a container nested in another fragmentation context (its
   columns are fragmented by the outer one) and the rows of `column-wrap: wrap` (not region breaks).
 - Not done: the hanging of the block overflow ellipsis (`hanging-punctuation`), the clipped parts of the floats in the scrollable
-  overflow, the intrinsic sizes of a clamped container (all its content counts), and a box whose block size is clamped by
-  `max-height` still collapses its block-end margin with its last children (WPT `line-clamp-auto-063`).
+  overflow, and the intrinsic sizes of a clamped container (all its content counts).
 
 ### Viewports (`LayoutEngine.Viewport.cs`)
 
@@ -4137,7 +4138,10 @@ The [viewports](https://drafts.csswg.org/cssom-view/#viewport) of a document fro
   the size of its last layout is used; without box (e.g. in skipped contents), the computed `width`/`height` (or the
   attributes, 300x150 by default). The environment of the nested document is pulled at each style update of the nested
   document: a change of the layout of the parent document restyles and relayouts the nested one, and its resize steps fire
-  the `resize` events.
+  the `resize` events. Once the window of a nested document has a `resize` listener
+  (`DomEventLoop.HasNestedWindowsWithResizeListeners`), each change of a document that contains nested browsing contexts
+  schedules a rendering update (`Document.RequestCssResourcesUpdate`), whose resize steps fire the events (the rendering is
+  otherwise updated only when something requests it).
 - **Viewport-percentage lengths** ([css-values-4](https://drafts.csswg.org/css-values-4/#viewport-relative-lengths)): they are
   computed values (`CssValueComputer`), relative to `StyleEngine.GetViewportUnitSize(environment)`: the viewport minus the
   scrollbar gutters that do not depend on the contents (`ScrollContainers.GetViewportUnitGutters`: the forced scrollbars of
@@ -4145,7 +4149,9 @@ The [viewports](https://drafts.csswg.org/cssom-view/#viewport) of a document fro
   the root or the body element and the `scrollbar-gutter`, `scrollbar-width` and `writing-mode` of the root element, read one
   property at a time so that the other properties of the root element can use the units). The gutters are computed once per
   generation of styles; a viewport unit used while they are computed (a cycle through `if()`, csswg-drafts#13189) uses the
-  whole viewport. The small, large and dynamic viewports are the same (no dynamic browser interface). The container query
+  whole viewport, and the `if()` whose style query meets the cycle (a viewport unit, or a property being computed, used while
+  the gutters are computed: `StyleEngine.ViewportUnitCycleCount`) is invalid at computed-value time, as the custom properties
+  of the cycle. The small, large and dynamic viewports are the same (no dynamic browser interface). The container query
   units fall back to the same size, and the SVG lengths use it. The media queries use the whole viewport.
 - **Visual viewport** (`VisualViewport`, [CSSOM View](https://drafts.csswg.org/cssom-view/#the-visualviewport-interface)):
   there is no pinch zoom (the `scale` is 1 and the offsets from the layout viewport are 0): its size is the initial

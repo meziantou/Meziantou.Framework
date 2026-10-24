@@ -4927,10 +4927,10 @@
     "reftest": "PASS"
   },
   "css/css-text/white-space/text-wrap-balance-line-clamp-003.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/white-space/text-wrap-balance-line-clamp-004.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/white-space/text-wrap-balance-line-clamp-005.html": {
     "reftest": "FAIL"

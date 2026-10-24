@@ -612,8 +612,9 @@ in the gutters that the layout reserves for them (see [layout.md](layout.md)), a
   neither painted nor interactive (their gutters show the background of the box, or the canvas). With a
   `ScrollbarThickness` of 0 (overlay scrollbars) there is no gutter and nothing is painted.
 
-Not done: the buttons, the hover and pressed states, the overlay scrollbars that appear while scrolling, the resizer of
-`resize`; the scrollbars of a nested document are scaled by the zoom of its container (the browsers keep their thickness).
+Not done: the buttons, the hover and pressed states, the overlay scrollbars that appear while scrolling, the painting of the
+resizer of `resize` (it is interactive, see [the user input](browsing-context.md#user-input)); the scrollbars of a nested
+document are scaled by the zoom of its container (the browsers keep their thickness).
 
 ### Forced colors mode
 

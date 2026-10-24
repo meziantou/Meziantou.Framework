@@ -1541,6 +1541,23 @@ internal sealed partial class StyleEngine
     private bool _resolvingViewportUnitGutters;
 
     /// <summary>
+    /// The number of cycles through the scrollbar gutters subtracted by the viewport units detected so far: a viewport unit, or a
+    /// property being computed, used while the gutters are determined (see <see cref="GetViewportUnitSize"/>). The <c>if()</c>
+    /// whose style queries meet such a cycle is invalid at computed-value time (https://github.com/w3c/csswg-drafts/issues/13189:
+    /// "the use of property-dependent units should, implicitly, guard the dependent property").
+    /// </summary>
+    internal int ViewportUnitCycleCount { get; private set; }
+
+    /// <summary>Records a cycle when a property that is being computed is used while the gutters of the viewport units are determined (see <see cref="ViewportUnitCycleCount"/>).</summary>
+    internal void OnPropertyCycle()
+    {
+        if (_resolvingViewportUnitGutters)
+        {
+            ViewportUnitCycleCount++;
+        }
+    }
+
+    /// <summary>
     /// Returns the size the viewport-percentage lengths are relative to (https://drafts.csswg.org/css-values-4/#viewport-relative-lengths):
     /// the size of the viewport of the environment, reduced by the scrollbar gutters that do not depend on the contents
     /// (<c>overflow: scroll</c> or <c>scrollbar-gutter: stable</c> applied to the viewport, see
@@ -1550,7 +1567,8 @@ internal sealed partial class StyleEngine
     /// </summary>
     /// <remarks>
     /// The gutters depend on computed values of the root and body elements: a viewport unit used by one of these properties
-    /// (e.g. through <c>if()</c>, a cycle) uses the size of the viewport without gutters.
+    /// (e.g. through <c>if()</c>, a cycle) uses the size of the viewport without gutters, and the <c>if()</c> whose style query
+    /// uses it is invalid at computed-value time (see <see cref="ViewportUnitCycleCount"/>).
     /// </remarks>
     internal (double Width, double Height) GetViewportUnitSize(MediaEnvironment environment, string? pseudoElement = null)
     {
@@ -1564,7 +1582,12 @@ internal sealed partial class StyleEngine
             return (printViewport.Width, printViewport.Height);
 
         var gutters = _viewportUnitGutters;
-        if (gutters is null && _environmentOverride is null && !_resolvingViewportUnitGutters)
+        if (gutters is null && _resolvingViewportUnitGutters)
+        {
+            // A viewport unit used by a property that the gutters depend on (a cycle, see ViewportUnitCycleCount)
+            ViewportUnitCycleCount++;
+        }
+        else if (gutters is null && _environmentOverride is null)
         {
             _resolvingViewportUnitGutters = true;
             try

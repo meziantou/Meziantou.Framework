@@ -20,6 +20,15 @@ public partial class Document
     internal void RequestCssResourcesUpdate()
     {
         RequestAnimationStylesUpdate();
+
+        // The rendering is updated when something requests it, not at each frame: a change of a document that contains nested
+        // browsing contexts may resize their viewports, whose resize events are fired by the next rendering update
+        // (WPT css/css-values/dynamic-viewport-units-rule-cache.html)
+        if (ChildNavigables is { Count: > 0 } && EventLoop is { HasNestedWindowsWithResizeListeners: true } resizeEventLoop)
+        {
+            resizeEventLoop.RequestRenderingUpdate();
+        }
+
         if (_cssResourcesUpdateRequested || BrowsingContext is not { Options.DocumentLoader: not null } || EventLoop is not { } eventLoop)
             return;
 

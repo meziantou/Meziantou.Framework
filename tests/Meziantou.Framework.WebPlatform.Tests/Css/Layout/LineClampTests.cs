@@ -140,10 +140,22 @@ public sealed class LineClampTests : IDisposable
     [Fact]
     public void WebkitLineClamp_TruncatesTheLastLine()
     {
-        // As in the browsers, the content of the last line that does not fit with the ellipsis is truncated (not displaced)
-        var document = Parse("<div id=c style='display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; width: 50px; overflow: hidden'>aaaaaaaa<br>bb</div>");
+        // As in Blink, the content of the last line that fits without the ellipsis but not with it is truncated (not displaced)
+        var document = Parse("<div id=c style='display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; width: 50px; overflow: hidden'>aaaaa<br>bb</div>");
         var line = GetLines(GetFragment(document, "c"))[0];
         Assert.True(line.IsTruncatedByBlockEllipsis);
+        Assert.Contains(Ellipsis, GetDrawnTexts(document));
+    }
+
+    [Fact]
+    public void WebkitLineClamp_DisplacesTheContentWiderThanTheLine()
+    {
+        // The content that does not fit without the ellipsis either is displaced, as with line-clamp (WPT
+        // css/css-overflow/line-clamp/webkit-line-clamp-035.html)
+        var document = Parse("<div id=c style='display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; width: 50px; overflow: hidden'>aa<br>aaaaaaaa<br>bb</div>");
+        var line = GetLines(GetFragment(document, "c"))[1];
+        Assert.False(line.IsTruncatedByBlockEllipsis);
+        Assert.DoesNotContain("aaaaaaaa", GetDrawnTexts(document));
         Assert.Contains(Ellipsis, GetDrawnTexts(document));
     }
 

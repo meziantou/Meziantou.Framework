@@ -670,11 +670,7 @@
     "total": 16
   },
   "css/css-values/dynamic-viewport-units-rule-cache.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "dynamic-viewport-units-rule-cache": "TIMEOUT"
-    }
+    "total": 1
   },
   "css/css-values/ex-calc-expression-001.html": {
     "reftest": "PASS"
@@ -1491,10 +1487,7 @@
     "total": 24
   },
   "css/css-values/viewport-units-scroll-no-cycles-001.tentative.html": {
-    "total": 1,
-    "failures": {
-      "CSS Values and Units Test: Viewport units and scrollbars": "FAIL"
-    }
+    "total": 1
   },
   "css/css-values/viewport-units-scrollbars-auto-vhw-001.html": {
     "reftest": "FAIL"

@@ -219,6 +219,57 @@ public sealed class ScrollbarTests : IDisposable
     }
 
     [Fact]
+    public void DragOfTheResizer_SetsTheChangedSizes()
+    {
+        var document = Parse("<div style='height: 600px'><div id=r style='width: 100px; height: 50%; padding: 5px; border: 2px solid; overflow: hidden; resize: both'></div></div>");
+        var box = Get(document, "r");
+        var events = new List<string>();
+        document.AddEventListener("click", e => events.Add(e.Type));
+
+        // The resizer is the 15x15px square at the bottom-right corner, inside the borders: a press elsewhere does not resize
+        var mouse = document.BrowsingContext!.Input.Mouse;
+        mouse.Move(80, 300);
+        mouse.Down();
+        mouse.Move(200, 300);
+        mouse.Up();
+        Assert.Equal("width: 100px; height: 50%; padding: 5px; border: 2px solid; overflow: hidden; resize: both", box.GetAttributeValue("style"));
+
+        // The move along the x axis sets the width (in px, the used value of the property), not the height; the press is not a click
+        events.Clear();
+        mouse.Move(110, 305);
+        mouse.Down();
+        mouse.Move(150.5, 305);
+        mouse.Up();
+        Assert.Equal("140.5px", box.Style.GetPropertyValue("width"));
+        Assert.Equal("50%", box.Style.GetPropertyValue("height"));
+        Assert.Empty(events);
+
+        // The box is not made smaller than the resizer
+        mouse.Move(150, 305);
+        mouse.Down();
+        mouse.Move(0, 320);
+        mouse.Up();
+        Assert.Equal("15px", box.Style.GetPropertyValue("width"));
+        Assert.Equal("315px", box.Style.GetPropertyValue("height"));
+    }
+
+    [Fact]
+    public void DragOfTheResizer_FollowsTheTransforms()
+    {
+        // Rotated by 90deg around its top-left corner, the resizer is at the bottom-left corner of the bounding box: a move down
+        // makes the box wider (WPT css/css-overflow/resizer-transform.tentative.html)
+        var document = Parse("<div id=r style='position: absolute; top: 200px; left: 200px; width: 100px; height: 100px; overflow: hidden; resize: horizontal; transform-origin: 0 0; transform: rotate(90deg)'></div>");
+        var box = Get(document, "r");
+        var mouse = document.BrowsingContext!.Input.Mouse;
+        mouse.Move(101, 299);
+        mouse.Down();
+        mouse.Move(101, 350);
+        mouse.Up();
+        Assert.Equal("151px", box.Style.GetPropertyValue("width"));
+        Assert.Equal("100px", box.Style.GetPropertyValue("height"));
+    }
+
+    [Fact]
     public void PressOnAScrollbar_FocusesAsThePressOnItsBox()
     {
         var document = Parse("<input id=i>" + Scroller.Replace("id=s", "id=s tabindex=0", StringComparison.Ordinal) + "<div style='height: 1200px'></div>");

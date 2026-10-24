@@ -73,6 +73,15 @@ public sealed partial class UserInput
             return;
         }
 
+        if (pointer.ResizerPress is { } resizerPress)
+        {
+            // The resizer that is pressed captures the pointer, as a scrollbar
+            MoveResizerPress(pointer, resizerPress);
+            pointer.MovementX = 0;
+            pointer.MovementY = 0;
+            return;
+        }
+
         FireHoverableEvent(pointer, "pointermove", "mousemove", button: -1, detail: 0, out _);
         pointer.MovementX = 0;
         pointer.MovementY = 0;
@@ -114,6 +123,10 @@ public sealed partial class UserInput
         // The press of the primary button on a scrollbar is handled by the scrollbar (see UserInput.Scrollbars.cs)
         var scrollbarPress = button == 0 && !chorded && pointer.CaptureTarget is null && pointer.PendingCaptureTarget is null && GetPointerLockTarget(pointer) is null ? CreateScrollbarPress(pointer) : null;
         pointer.ScrollbarPress = scrollbarPress;
+
+        // The press of the primary button on a resizer is handled by the resizer (see UserInput.Resizer.cs)
+        var resizerPress = scrollbarPress is null && button == 0 && !chorded && pointer.CaptureTarget is null && pointer.PendingCaptureTarget is null && GetPointerLockTarget(pointer) is null ? CreateResizerPress(pointer) : null;
+        pointer.ResizerPress = resizerPress;
         var target = FirePointerEvent(pointer, chorded ? "pointermove" : "pointerdown", button, updateMouseOver: true, out var canceled);
         if (!chorded && canceled)
         {
@@ -125,6 +138,10 @@ public sealed partial class UserInput
             if (scrollbarPress is not null)
             {
                 BeginScrollbarPress(pointer, scrollbarPress);
+            }
+            else if (resizerPress is not null)
+            {
+                BeginResizerPress(pointer);
             }
 
             return;
@@ -170,6 +187,12 @@ public sealed partial class UserInput
         if (scrollbarPress is not null)
         {
             BeginScrollbarPress(pointer, scrollbarPress);
+            return;
+        }
+
+        if (resizerPress is not null)
+        {
+            BeginResizerPress(pointer);
             return;
         }
 
@@ -243,6 +266,12 @@ public sealed partial class UserInput
             EndScrollbarPress(scrollbarPress);
             pointer.DownTargets?.Remove(button);
         }
+        else if (button == 0 && pointer.ResizerPress is not null)
+        {
+            // The release of a press on a resizer is not a click
+            pointer.ResizerPress = null;
+            pointer.DownTargets?.Remove(button);
+        }
         else
         {
             FireClick(pointer, button, target, capturedTarget, clickCount);
@@ -278,6 +307,7 @@ public sealed partial class UserInput
             EndScrollbarPress(scrollbarPress);
         }
 
+        pointer.ResizerPress = null;
         FirePointerEvent(pointer, "pointercancel", button: 0, updateMouseOver: false, out _);
         pointer.PressedDocument = null;
         pointer.PreventMouseEvent = false;

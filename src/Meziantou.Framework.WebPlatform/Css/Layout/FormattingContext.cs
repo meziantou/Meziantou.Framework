@@ -1016,8 +1016,10 @@ internal abstract class FormattingContext
         // bottom border"; otherwise the margins of the last children are inside the box. As in the browsers, when the minimum
         // size makes the box taller than its contents, the margins of the last children neither collapse with the margin of
         // the box nor make it taller: they are discarded (WPT css/CSS2/normal-flow/margin-collapse-min-height-001.html,
-        // min-height-separates-margin.html). A maximum size does not change the collapsing (Blink and Gecko discard the
-        // margins then too, WebKit does not: WPT css/CSS2/margin-padding-clear/margin-collapse-038.xht)
+        // min-height-separates-margin.html). As in Blink, Gecko and Servo, they are discarded too when the maximum size makes
+        // the box shorter than its contents (WPT css/CSS2/normal-flow/max-height-separates-margin.html,
+        // css/css-overflow/line-clamp/line-clamp-auto-063.html; WebKit collapses them, as CSS 2 that only checks 'height':
+        // https://github.com/w3c/csswg-drafts/issues/12218, css/CSS2/margin-padding-clear/margin-collapse-038.xht)
         var endMarginCollapsesWithChildren = blockFormattingContext is not null && paddingAndBorder.BlockEnd == 0 && specifiedBlockSize is null && quirksFillBlockSize is null;
 
         // (as in Blink, the margins of the last children that overflow a box whose block size is limited into a later
@@ -1043,7 +1045,7 @@ internal abstract class FormattingContext
         if (endMarginCollapsesWithChildren && containedBlockSize is null && !IsZeroMinimumSize(layout, blockIsHorizontal, blockBasis))
         {
             finalBlockSize = ComputeBlockSize(contentsBlockSize);
-            if (finalBlockSize - Math.Max(GetAutomaticBlockSize(context, box, contentsBlockSize, contentInlineSize) + edges.BlockSum(), paddingAndBorder.BlockSum()) > 0.01)
+            if (Math.Abs(finalBlockSize - Math.Max(GetAutomaticBlockSize(context, box, contentsBlockSize, contentInlineSize) + edges.BlockSum(), paddingAndBorder.BlockSum())) > 0.01)
             {
                 endMarginCollapsesWithChildren = false;
                 discardsEndMargin = true;
@@ -1058,6 +1060,14 @@ internal abstract class FormattingContext
             }
 
             finalBlockSize = containedBlockSize ?? ComputeBlockSize(contentsBlockSize);
+
+            // (a maximum size that makes the box shorter than its contents discards the margins of its last children too)
+            if (endMarginCollapsesWithChildren && containedBlockSize is null
+                && Math.Max(GetAutomaticBlockSize(context, box, contentsBlockSize, contentInlineSize) + edges.BlockSum(), paddingAndBorder.BlockSum()) - finalBlockSize > 0.01)
+            {
+                endMarginCollapsesWithChildren = false;
+                discardsEndMargin = true;
+            }
         }
 
         if (endMarginCollapsesWithChildren && result.EndMargin.Sum != 0 && context.StripRelayout is { } stripRelayout && contentsBlockSize > finalBlockSize - edges.BlockSum() + 0.01)

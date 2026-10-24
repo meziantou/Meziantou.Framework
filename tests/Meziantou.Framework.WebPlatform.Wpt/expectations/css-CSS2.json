@@ -7659,7 +7659,7 @@
     "reftest": "PASS"
   },
   "css/CSS2/margin-padding-clear/margin-collapse-038.xht": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "css/CSS2/margin-padding-clear/margin-collapse-039.xht": {
     "reftest": "PASS"
@@ -10776,7 +10776,7 @@
     "reftest": "PASS"
   },
   "css/CSS2/normal-flow/max-height-separates-margin.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/normal-flow/max-width-001.xht": {
     "reftest": "PASS"

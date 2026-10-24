@@ -203,6 +203,7 @@ internal static class PaintOrder
 
                         list.Add(box);
                         childContext = owner;
+                        MarkHiddenContexts(owner, context);
                     }
 
                     if (box.EstablishesStackingContext)
@@ -216,6 +217,62 @@ internal static class PaintOrder
 
                 stack.Push((child, childContext));
             }
+        }
+    }
+
+    /// <summary>
+    /// Records the stacking context that adopts a layer when it is hidden after the clamp point of a line-clamp container
+    /// (<see cref="Fragment.IsHiddenForPaint"/>), with its ancestor stacking contexts in the hidden content
+    /// (<see cref="TreeOrder.HiddenContexts"/>): https://drafts.csswg.org/css-overflow-4/#line-clamp, an absolutely positioned box
+    /// whose containing block is not hidden is visible, and the effects of its hidden ancestors (e.g. the opacity of an inline box)
+    /// still apply to it (WPT css/css-overflow/line-clamp/line-clamp-with-abspos-024.html).
+    /// </summary>
+    private static void MarkHiddenContexts(BoxFragment owner, TreeOrder context)
+    {
+        var isHidden = false;
+        for (Fragment? current = owner; current is not null; current = current.Parent)
+        {
+            if (current.IsHiddenForPaint)
+            {
+                isHidden = true;
+                break;
+            }
+        }
+
+        if (!isHidden)
+            return;
+
+        context.HiddenContexts ??= new(ReferenceEqualityComparer.Instance);
+        for (Fragment? current = owner; current is not null; current = current.Parent)
+        {
+            if (current is BoxFragment { EstablishesStackingContext: true } box)
+            {
+                context.HiddenContexts.Add(box);
+            }
+
+            if (current.IsHiddenForPaint)
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Collects the outermost stacking contexts of the content of a fragment hidden after the clamp point of a line-clamp container
+    /// that adopt a visible layer (<see cref="TreeOrder.HiddenContexts"/>): only their adopted layers are painted.
+    /// </summary>
+    private static void CollectHiddenLayers(Fragment fragment, List<(BoxFragment Fragment, int ZIndex)> layers, TreeOrder treeOrder)
+    {
+        if (treeOrder.HiddenContexts is not { } hiddenContexts)
+            return;
+
+        foreach (var child in fragment.ChildrenSpan)
+        {
+            if (child is BoxFragment box && hiddenContexts.Contains(box))
+            {
+                layers.Add((box, box.ZIndex ?? 0));
+                continue;
+            }
+
+            CollectHiddenLayers(child, layers, treeOrder);
         }
     }
 
@@ -383,6 +440,18 @@ internal static class PaintOrder
         if (markers)
         {
             output.Add(new PaintItem(context) { Marker = PaintItemMarker.BeginStackingContext });
+        }
+
+        // A stacking context hidden after the clamp point of a line-clamp container only paints the visible layers it adopts
+        if (treeOrder.HiddenContexts?.Contains(context) == true)
+        {
+            PaintHiddenStackingContextContents(context, output, markers, treeOrder, adopted);
+            if (markers)
+            {
+                output.Add(new PaintItem(context) { Marker = PaintItemMarker.EndStackingContext });
+            }
+
+            return;
         }
 
         output.Add(new PaintItem(context));
@@ -593,6 +662,42 @@ internal static class PaintOrder
         }
     }
 
+    /// <summary>Paints the visible layers adopted by a stacking context hidden after the clamp point of a line-clamp container (see <see cref="MarkHiddenContexts"/>).</summary>
+    private static void PaintHiddenStackingContextContents(BoxFragment context, List<PaintItem> output, bool markers, TreeOrder treeOrder, List<BoxFragment>? adopted)
+    {
+        var layers = new List<(BoxFragment Fragment, int ZIndex)>();
+        CollectHiddenLayers(context, layers, treeOrder);
+        if (adopted is not null)
+        {
+            foreach (var fragment in adopted)
+            {
+                if (fragment.IsForceHidden || fragment.IsHiddenForPaint)
+                    continue;
+
+                layers.Add((fragment, fragment.EstablishesStackingContext ? fragment.ZIndex ?? 0 : 0));
+                if (!fragment.EstablishesStackingContext)
+                {
+                    CollectLayers(fragment, layers, excluded: null, treeOrder);
+                }
+            }
+        }
+
+        var sorted = layers.Count > 1 ? SortByZIndex(layers, treeOrder) : layers;
+        for (var index = 0; index < sorted.Count; index++)
+        {
+            var layer = sorted[index].Fragment;
+            if (layer.EstablishesStackingContext)
+            {
+                index = PaintLayerStackingContext(sorted, index, output, markers, treeOrder);
+            }
+            else
+            {
+                PaintPseudoStackingContext(layer, output, markers);
+                AddOutlinesMarker(layer, output, markers);
+            }
+        }
+    }
+
     private static void AddOutlinesMarker(BoxFragment layer, List<PaintItem> output, bool markers)
     {
         if (markers)
@@ -715,6 +820,9 @@ internal static class PaintOrder
         /// <summary>The layers that are not painted in the stacking context of their containing block chain.</summary>
         public HashSet<BoxFragment> Moved { get; } = new(ReferenceEqualityComparer.Instance);
 
+        /// <summary>The stacking contexts hidden after the clamp point of a line-clamp container that contain an adopted visible layer (see <see cref="MarkHiddenContexts"/>).</summary>
+        public HashSet<BoxFragment>? HiddenContexts { get; set; }
+
         public int Get(ContainerBox box)
         {
             if (_indexes is null)
@@ -767,7 +875,18 @@ internal static class PaintOrder
         foreach (var child in fragment.ChildrenSpan)
         {
             if (child.IsHiddenForPaint)
+            {
+                if (child is BoxFragment hiddenBox && treeOrder.HiddenContexts?.Contains(hiddenBox) == true)
+                {
+                    layers.Add((hiddenBox, hiddenBox.ZIndex ?? 0));
+                }
+                else
+                {
+                    CollectHiddenLayers(child, layers, treeOrder);
+                }
+
                 continue;
+            }
 
             if (child is BoxFragment box)
             {

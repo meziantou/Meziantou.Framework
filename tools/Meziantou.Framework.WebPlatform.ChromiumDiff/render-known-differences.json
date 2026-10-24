@@ -1,1 +1,49 @@
-[]
+[
+  {
+    "fixture": "*",
+    "scenario": "pdf-*",
+    "output": "pdf",
+    "reason": "PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale"
+  },
+  {
+    "fixture": "*",
+    "scenario": "pdf-*",
+    "output": "pages",
+    "reason": "the pages rendered by the library compared with the PDF of Chromium rasterized by Poppler: the two rasterizers anti-alias and position the glyphs of the dense text differently"
+  },
+  {
+    "fixture": "*",
+    "scenario": "iphone-13*",
+    "reason": "fractional page scale and text: Chromium snaps the geometry to the device pixels at the page scale (some edges are one device pixel apart) and renders heavier glyphs; the text autosizing of the mobile emulation of Chromium is not implemented"
+  },
+  {
+    "fixture": "*",
+    "scenario": "pixel-7",
+    "reason": "fractional page scale and device pixel ratio (2.625) and text: Chromium snaps the geometry to the device pixels at the page scale (some edges are one device pixel apart) and renders heavier glyphs"
+  },
+  {
+    "fixture": "dark-scheme.html",
+    "scenario": "*",
+    "reason": "form controls: Chromium gives them a font of 13.333px (font: -webkit-small-control), the library inherits the font of their parent (the user agent style sheet of the HTML Standard)"
+  },
+  {
+    "fixture": "images.html",
+    "scenario": "desktop-dpr2",
+    "reason": "image resampling: Skia scales the images up with another filter than the library at a device pixel ratio of 2"
+  },
+  {
+    "fixture": "text.html",
+    "scenario": "*",
+    "reason": "text: Skia renders heavier glyphs (the gamma and the contrast of its glyph masks) at other subpixel positions, Chromium paints the disc markers of the lists as shapes (Blink's symbol markers) where the library paints the text of the marker, and Blink rounds the font metrics of the line with superscripts and subscripts to whole pixels"
+  },
+  {
+    "fixture": "print-basic.html",
+    "scenario": "*",
+    "reason": "text: Skia renders heavier glyphs (the gamma and the contrast of its glyph masks) at other subpixel positions"
+  },
+  {
+    "fixture": "element-clip.html",
+    "scenario": "element",
+    "reason": "text of the element screenshot: Skia renders heavier glyphs (the gamma and the contrast of its glyph masks) at other subpixel positions"
+  }
+]

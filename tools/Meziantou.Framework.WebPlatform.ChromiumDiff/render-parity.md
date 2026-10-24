@@ -6,46 +6,46 @@ The fixtures of `render-corpus` exported by Playwright (Chromium 153.0.8010.12) 
 
 | Status | Count |
 |---|---|
-| Pass | 34 |
-| Known | 0 |
-| Unsupported | 71 |
-| Unexpected | 31 |
+| Pass | 71 |
+| Known | 65 |
+| Unsupported | 0 |
+| Unexpected | 0 |
 | Error | 0 |
 
 ## Scenarios
 
 | Scenario | Playwright options | Unsupported options | Pass | Known | Unsupported | Unexpected | Error |
 |---|---|---|---|---|---|---|---|
-| desktop | viewport 1280x720 |  | 11 | 0 | 0 | 4 | 0 |
-| desktop-dpr2 | Desktop Chrome HiDPI (deviceScaleFactor 2) | userAgent, screen | 0 | 0 | 9 | 0 | 0 |
-| omit-background | omitBackground: true |  | 7 | 0 | 0 | 3 | 0 |
-| full-page | fullPage: true |  | 1 | 0 | 0 | 1 | 0 |
-| clip | clip: 10,20 300x200 |  | 1 | 0 | 0 | 2 | 0 |
+| desktop | viewport 1280x720 |  | 12 | 3 | 0 | 0 | 0 |
+| desktop-dpr2 | Desktop Chrome HiDPI (deviceScaleFactor 2) |  | 6 | 3 | 0 | 0 | 0 |
+| omit-background | omitBackground: true |  | 8 | 2 | 0 | 0 | 0 |
+| full-page | fullPage: true |  | 1 | 1 | 0 | 0 | 0 |
+| clip | clip: 10,20 300x200 |  | 3 | 0 | 0 | 0 | 0 |
 | clip-full-page | fullPage: true, clip: 0,600 400x400 (beyond the viewport) |  | 1 | 0 | 0 | 0 | 0 |
 | jpeg-q80 | type: jpeg, quality: 80 |  | 3 | 0 | 0 | 0 | 0 |
-| print-media | emulateMedia({ media: 'print' }) |  | 0 | 0 | 0 | 2 | 0 |
-| element | locator('#target').screenshot() |  | 0 | 0 | 0 | 1 | 0 |
-| iphone-13 | iPhone 13 (390x664, deviceScaleFactor 3, isMobile, hasTouch) | isMobile, hasTouch, userAgent, screen | 0 | 0 | 7 | 0 | 0 |
-| iphone-13-landscape | iPhone 13 landscape | isMobile, hasTouch, userAgent, screen | 0 | 0 | 2 | 0 | 0 |
-| pixel-7 | Pixel 7 (412x839, deviceScaleFactor 2.625, isMobile, hasTouch) | isMobile, hasTouch, userAgent, screen | 0 | 0 | 6 | 0 | 0 |
-| ipad-gen-7 | iPad (gen 7) (810x1080, deviceScaleFactor 2, isMobile, hasTouch) | isMobile, hasTouch, userAgent | 0 | 0 | 3 | 0 | 0 |
-| pdf-default | page.pdf() (Letter, no margins, no backgrounds, CSS page size ignored) | printBackground: false, preferCSSPageSize: false | 0 | 0 | 18 | 0 | 0 |
-| pdf-background | printBackground: true, preferCSSPageSize: true |  | 7 | 0 | 0 | 11 | 0 |
-| pdf-margins | margin: 1in |  | 2 | 0 | 0 | 4 | 0 |
-| pdf-legal | format: Legal, margin: 0.5in |  | 1 | 0 | 0 | 3 | 0 |
-| pdf-landscape | landscape: true, margin: 0.5in | landscape | 0 | 0 | 6 | 0 | 0 |
-| pdf-scale-0.5 | scale: 0.5, margin: 0.5in | scale | 0 | 0 | 6 | 0 | 0 |
-| pdf-scale-1.5 | scale: 1.5, margin: 0.5in | scale | 0 | 0 | 4 | 0 | 0 |
-| pdf-ignore-css-size | printBackground: true, preferCSSPageSize: false | preferCSSPageSize: false | 0 | 0 | 4 | 0 | 0 |
-| pdf-ranges | pageRanges: '2-3, 5' | pageRanges | 0 | 0 | 2 | 0 | 0 |
-| pdf-header-footer | displayHeaderFooter: true, header (title, url), footer (pageNumber / totalPages), margin: 0.75in | displayHeaderFooter | 0 | 0 | 4 | 0 | 0 |
+| print-media | emulateMedia({ media: 'print' }) |  | 1 | 1 | 0 | 0 | 0 |
+| element | locator('#target').screenshot() |  | 0 | 1 | 0 | 0 | 0 |
+| iphone-13 | iPhone 13 (390x664, deviceScaleFactor 3, isMobile, hasTouch) |  | 3 | 4 | 0 | 0 | 0 |
+| iphone-13-landscape | iPhone 13 landscape |  | 0 | 2 | 0 | 0 | 0 |
+| pixel-7 | Pixel 7 (412x839, deviceScaleFactor 2.625, isMobile, hasTouch) |  | 2 | 4 | 0 | 0 | 0 |
+| ipad-gen-7 | iPad (gen 7) (810x1080, deviceScaleFactor 2, isMobile, hasTouch) |  | 3 | 0 | 0 | 0 | 0 |
+| pdf-default | page.pdf() (Letter, no margins, no backgrounds, CSS page size ignored) |  | 9 | 9 | 0 | 0 | 0 |
+| pdf-background | printBackground: true, preferCSSPageSize: true |  | 8 | 10 | 0 | 0 | 0 |
+| pdf-margins | margin: 1in |  | 3 | 3 | 0 | 0 | 0 |
+| pdf-legal | format: Legal, margin: 0.5in |  | 1 | 3 | 0 | 0 | 0 |
+| pdf-landscape | landscape: true, margin: 0.5in |  | 2 | 4 | 0 | 0 | 0 |
+| pdf-scale-0.5 | scale: 0.5, margin: 0.5in |  | 2 | 4 | 0 | 0 | 0 |
+| pdf-scale-1.5 | scale: 1.5, margin: 0.5in |  | 0 | 4 | 0 | 0 | 0 |
+| pdf-ignore-css-size | printBackground: true, preferCSSPageSize: false |  | 2 | 2 | 0 | 0 | 0 |
+| pdf-ranges | pageRanges: '2-3, 5' |  | 0 | 2 | 0 | 0 | 0 |
+| pdf-header-footer | displayHeaderFooter: true, header (title, url), footer (pageNumber / totalPages), margin: 0.75in |  | 1 | 3 | 0 | 0 | 0 |
 
 ## Results
 
 | Scenario | Fixture | Output | Status | Metrics | Notes |
 |---|---|---|---|---|---|
-| desktop | boxes.html | screenshot | Unexpected | 1280x720, SSIM 0.9887, 1.40% different, 0.00% alpha different, max 85 |  |
-| desktop | dark-scheme.html | screenshot | Unexpected | 1280x720, SSIM 0.9940, 0.57% different, 0.00% alpha different, max 146 |  |
+| desktop | boxes.html | screenshot | Pass | 1280x720, SSIM 0.9998, 0.00% different, 0.00% alpha different, max 39 |  |
+| desktop | dark-scheme.html | screenshot | Known | 1280x720, SSIM 0.9940, 0.59% different, 0.00% alpha different, max 146 | form controls: Chromium gives them a font of 13.333px (font: -webkit-small-control), the library inherits the font of their parent (the user agent style sheet of the HTML Standard) |
 | desktop | gradients.html | screenshot | Pass | 1280x720, SSIM 0.9992, 0.05% different, 0.00% alpha different, max 66 |  |
 | desktop | images.html | screenshot | Pass | 1280x720, SSIM 0.9999, 0.00% different, 0.00% alpha different, max 13 |  |
 | desktop | long-page.html | screenshot | Pass | 1280x720, SSIM 0.9970, 0.11% different, 0.00% alpha different, max 57 |  |
@@ -54,129 +54,129 @@ The fixtures of `render-corpus` exported by Playwright (Chromium 153.0.8010.12) 
 | desktop | meta-viewport-initial-scale-2.html | screenshot | Pass | 1280x720, SSIM 0.9995, 0.05% different, 0.00% alpha different, max 38 |  |
 | desktop | meta-viewport-none.html | screenshot | Pass | 1280x720, SSIM 0.9995, 0.05% different, 0.00% alpha different, max 38 |  |
 | desktop | meta-viewport-width-600.html | screenshot | Pass | 1280x720, SSIM 0.9995, 0.05% different, 0.00% alpha different, max 38 |  |
-| desktop | print-basic.html | screenshot | Unexpected | 1280x720, SSIM 0.9982, 0.45% different, 0.00% alpha different, max 65 |  |
+| desktop | print-basic.html | screenshot | Known | 1280x720, SSIM 0.9982, 0.45% different, 0.00% alpha different, max 65 | text: Skia renders heavier glyphs (the gamma and the contrast of its glyph masks) at other subpixel positions |
 | desktop | svg-sized.svg | screenshot | Pass | 1280x720, SSIM 1.0000, 0.00% different, 0.00% alpha different, max 5 |  |
-| desktop | svg-transparent.svg | screenshot | Pass | 1280x720, SSIM 0.9980, 0.11% different, 0.00% alpha different, max 196 |  |
-| desktop | text.html | screenshot | Unexpected | 1280x720, SSIM 0.9911, 0.94% different, 0.00% alpha different, max 221 |  |
+| desktop | svg-transparent.svg | screenshot | Pass | 1280x720, SSIM 0.9999, 0.01% different, 0.00% alpha different, max 31 |  |
+| desktop | text.html | screenshot | Known | 1280x720, SSIM 0.9911, 0.94% different, 0.00% alpha different, max 221 | text: Skia renders heavier glyphs (the gamma and the contrast of its glyph masks) at other subpixel positions, Chromium paints the disc markers of the lists as shapes (Blink's symbol markers) where the library paints the text of the marker, and Blink rounds the font metrics of the line with superscripts and subscripts to whole pixels |
 | desktop | transparent-body.html | screenshot | Pass | 1280x720, SSIM 0.9999, 0.01% different, 0.00% alpha different, max 33 |  |
-| desktop-dpr2 | boxes.html | screenshot | Unsupported | 2560x1440, SSIM 0.9927, 1.45% different, 0.00% alpha different, max 88 | unsupported: userAgent, screen |
-| desktop-dpr2 | dark-scheme.html | screenshot | Unsupported | 2560x1440, SSIM 0.9952, 0.52% different, 0.00% alpha different, max 229 | unsupported: userAgent, screen |
-| desktop-dpr2 | gradients.html | screenshot | Unsupported | 2560x1440, SSIM 0.9993, 0.03% different, 0.00% alpha different, max 67 | unsupported: userAgent, screen |
-| desktop-dpr2 | images.html | screenshot | Unsupported | 2560x1440, SSIM 0.9975, 0.28% different, 0.00% alpha different, max 66 | unsupported: userAgent, screen |
-| desktop-dpr2 | media-features.html | screenshot | Unsupported | 2560x1440, SSIM 0.9983, 0.10% different, 0.00% alpha different, max 51 | unsupported: userAgent, screen |
-| desktop-dpr2 | svg-sized.svg | screenshot | Unsupported | 2560x1440, SSIM 1.0000, 0.00% different, 0.00% alpha different, max 7 | unsupported: userAgent, screen |
-| desktop-dpr2 | svg-transparent.svg | screenshot | Unsupported | 2560x1440, SSIM 0.9983, 0.10% different, 0.00% alpha different, max 204 | unsupported: userAgent, screen |
-| desktop-dpr2 | text.html | screenshot | Unsupported | 2560x1440, SSIM 0.9882, 1.34% different, 0.00% alpha different, max 245 | unsupported: userAgent, screen |
-| desktop-dpr2 | transparent-body.html | screenshot | Unsupported | 2560x1440, SSIM 0.9997, 0.07% different, 0.00% alpha different, max 57 | unsupported: userAgent, screen |
-| omit-background | boxes.html | screenshot | Unexpected | 1280x720, SSIM 0.9887, 1.40% different, 0.06% alpha different, max 85 |  |
-| omit-background | dark-scheme.html | screenshot | Unexpected | 1280x720, SSIM 0.9932, 0.64% different, 0.45% alpha different, max 196 |  |
+| desktop-dpr2 | boxes.html | screenshot | Pass | 2560x1440, SSIM 0.9999, 0.00% different, 0.00% alpha different, max 29 |  |
+| desktop-dpr2 | dark-scheme.html | screenshot | Known | 2560x1440, SSIM 0.9951, 0.53% different, 0.00% alpha different, max 229 | form controls: Chromium gives them a font of 13.333px (font: -webkit-small-control), the library inherits the font of their parent (the user agent style sheet of the HTML Standard) |
+| desktop-dpr2 | gradients.html | screenshot | Pass | 2560x1440, SSIM 0.9993, 0.03% different, 0.00% alpha different, max 67 |  |
+| desktop-dpr2 | images.html | screenshot | Known | 2560x1440, SSIM 0.9975, 0.28% different, 0.00% alpha different, max 66 | image resampling: Skia scales the images up with another filter than the library at a device pixel ratio of 2 |
+| desktop-dpr2 | media-features.html | screenshot | Pass | 2560x1440, SSIM 0.9983, 0.10% different, 0.00% alpha different, max 51 |  |
+| desktop-dpr2 | svg-sized.svg | screenshot | Pass | 2560x1440, SSIM 1.0000, 0.00% different, 0.00% alpha different, max 7 |  |
+| desktop-dpr2 | svg-transparent.svg | screenshot | Pass | 2560x1440, SSIM 0.9998, 0.03% different, 0.00% alpha different, max 62 |  |
+| desktop-dpr2 | text.html | screenshot | Known | 2560x1440, SSIM 0.9882, 1.34% different, 0.00% alpha different, max 245 | text: Skia renders heavier glyphs (the gamma and the contrast of its glyph masks) at other subpixel positions, Chromium paints the disc markers of the lists as shapes (Blink's symbol markers) where the library paints the text of the marker, and Blink rounds the font metrics of the line with superscripts and subscripts to whole pixels |
+| desktop-dpr2 | transparent-body.html | screenshot | Pass | 2560x1440, SSIM 0.9997, 0.07% different, 0.00% alpha different, max 57 |  |
+| omit-background | boxes.html | screenshot | Pass | 1280x720, SSIM 0.9998, 0.00% different, 0.06% alpha different, max 39 |  |
+| omit-background | dark-scheme.html | screenshot | Known | 1280x720, SSIM 0.9931, 0.67% different, 0.45% alpha different, max 224 | form controls: Chromium gives them a font of 13.333px (font: -webkit-small-control), the library inherits the font of their parent (the user agent style sheet of the HTML Standard) |
 | omit-background | gradients.html | screenshot | Pass | 1280x720, SSIM 0.9990, 0.06% different, 0.10% alpha different, max 66 |  |
 | omit-background | images.html | screenshot | Pass | 1280x720, SSIM 0.9999, 0.00% different, 0.00% alpha different, max 13 |  |
 | omit-background | long-page.html | screenshot | Pass | 1280x720, SSIM 0.9970, 0.11% different, 0.00% alpha different, max 57 |  |
 | omit-background | media-features.html | screenshot | Pass | 1280x720, SSIM 0.9997, 0.00% different, 0.00% alpha different, max 32 |  |
 | omit-background | svg-sized.svg | screenshot | Pass | 1280x720, SSIM 1.0000, 0.00% different, 0.00% alpha different, max 5 |  |
-| omit-background | svg-transparent.svg | screenshot | Pass | 1280x720, SSIM 0.9980, 0.11% different, 0.14% alpha different, max 196 |  |
-| omit-background | text.html | screenshot | Unexpected | 1280x720, SSIM 0.9911, 0.98% different, 2.59% alpha different, max 221 |  |
+| omit-background | svg-transparent.svg | screenshot | Pass | 1280x720, SSIM 0.9999, 0.01% different, 0.09% alpha different, max 31 |  |
+| omit-background | text.html | screenshot | Known | 1280x720, SSIM 0.9911, 0.98% different, 2.59% alpha different, max 221 | text: Skia renders heavier glyphs (the gamma and the contrast of its glyph masks) at other subpixel positions, Chromium paints the disc markers of the lists as shapes (Blink's symbol markers) where the library paints the text of the marker, and Blink rounds the font metrics of the line with superscripts and subscripts to whole pixels |
 | omit-background | transparent-body.html | screenshot | Pass | 1280x720, SSIM 0.9999, 0.01% different, 0.07% alpha different, max 33 |  |
 | full-page | long-page.html | screenshot | Pass | 1616x3298, SSIM 0.9995, 0.02% different, 0.00% alpha different, max 57 |  |
-| full-page | text.html | screenshot | Unexpected | 1280x764, SSIM 0.9914, 0.97% different, 0.00% alpha different, max 221 |  |
-| clip | boxes.html | screenshot | Unexpected | 300x200, SSIM 0.9338, 7.76% different, 0.00% alpha different, max 85 |  |
+| full-page | text.html | screenshot | Known | 1280x764, SSIM 0.9914, 0.97% different, 0.00% alpha different, max 221 | text: Skia renders heavier glyphs (the gamma and the contrast of its glyph masks) at other subpixel positions, Chromium paints the disc markers of the lists as shapes (Blink's symbol markers) where the library paints the text of the marker, and Blink rounds the font metrics of the line with superscripts and subscripts to whole pixels |
+| clip | boxes.html | screenshot | Pass | 300x200, SSIM 1.0000, 0.00% different, 0.00% alpha different, max 1 |  |
 | clip | gradients.html | screenshot | Pass | 300x200, SSIM 0.9986, 0.00% different, 0.00% alpha different, max 1 |  |
-| clip | svg-transparent.svg | screenshot | Unexpected | 300x200, SSIM 0.9728, 1.60% different, 0.00% alpha different, max 196 |  |
+| clip | svg-transparent.svg | screenshot | Pass | 300x200, SSIM 0.9985, 0.09% different, 0.00% alpha different, max 31 |  |
 | clip-full-page | long-page.html | screenshot | Pass | 400x400, SSIM 0.9989, 0.03% different, 0.00% alpha different, max 34 |  |
-| jpeg-q80 | boxes.html | screenshot | Pass | 1280x720, SSIM 0.9876, 1.15% different, 0.00% alpha different, max 89 |  |
+| jpeg-q80 | boxes.html | screenshot | Pass | 1280x720, SSIM 0.9988, 0.00% different, 0.00% alpha different, max 37 |  |
 | jpeg-q80 | gradients.html | screenshot | Pass | 1280x720, SSIM 0.9965, 0.03% different, 0.00% alpha different, max 60 |  |
-| jpeg-q80 | svg-transparent.svg | screenshot | Pass | 1280x720, SSIM 0.9973, 0.10% different, 0.00% alpha different, max 193 |  |
-| print-media | media-features.html | screenshot | Unexpected | 1280x720, SSIM 0.9978, 0.87% different, 0.00% alpha different, max 105 |  |
-| print-media | print-basic.html | screenshot | Unexpected | 1280x720, SSIM 0.9983, 0.39% different, 0.00% alpha different, max 65 |  |
-| element | element-clip.html | screenshot | Unexpected | 306x132, SSIM 0.9954, 0.44% different, 0.00% alpha different, max 35 |  |
-| iphone-13 | media-features.html | screenshot | Unsupported | size 1170x1991 vs 1170x1992, SSIM 0.8681, 38.58% different, 0.00% alpha different, max 255 | unsupported: isMobile, hasTouch, userAgent, screen |
-| iphone-13 | meta-viewport-device-width.html | screenshot | Unsupported | 1170x1992, SSIM 0.9962, 0.77% different, 0.00% alpha different, max 82 | unsupported: isMobile, hasTouch, userAgent, screen |
-| iphone-13 | meta-viewport-initial-scale-2.html | screenshot | Unsupported | 1170x1992, SSIM 0.7502, 43.42% different, 0.00% alpha different, max 255 | unsupported: isMobile, hasTouch, userAgent, screen |
-| iphone-13 | meta-viewport-none.html | screenshot | Unsupported | size 1170x1991 vs 1170x1992, SSIM 0.8853, 17.06% different, 0.00% alpha different, max 255 | unsupported: isMobile, hasTouch, userAgent, screen |
-| iphone-13 | meta-viewport-width-600.html | screenshot | Unsupported | size 1170x1991 vs 1170x1992, SSIM 0.8876, 14.18% different, 0.00% alpha different, max 255 | unsupported: isMobile, hasTouch, userAgent, screen |
-| iphone-13 | svg-transparent.svg | screenshot | Unsupported | size 1170x1991 vs 1170x1992, SSIM 0.9330, 19.41% different, 0.00% alpha different, max 255 | unsupported: isMobile, hasTouch, userAgent, screen |
-| iphone-13 | text.html | screenshot | Unsupported | size 1170x1991 vs 1170x1992, SSIM 0.8060, 12.63% different, 0.00% alpha different, max 255 | unsupported: isMobile, hasTouch, userAgent, screen |
-| iphone-13-landscape | media-features.html | screenshot | Unsupported | size 2250x1024 vs 2250x1026, SSIM 0.8497, 33.45% different, 0.00% alpha different, max 255 | unsupported: isMobile, hasTouch, userAgent, screen |
-| iphone-13-landscape | meta-viewport-device-width.html | screenshot | Unsupported | 2250x1026, SSIM 0.9961, 0.78% different, 0.00% alpha different, max 82 | unsupported: isMobile, hasTouch, userAgent, screen |
-| pixel-7 | boxes.html | screenshot | Unsupported | size 1082x2202 vs 1082x2203, SSIM 0.8349, 35.70% different, 0.00% alpha different, max 255 | unsupported: isMobile, hasTouch, userAgent, screen |
-| pixel-7 | media-features.html | screenshot | Unsupported | size 1082x2202 vs 1082x2203, SSIM 0.8928, 29.35% different, 0.00% alpha different, max 255 | unsupported: isMobile, hasTouch, userAgent, screen |
-| pixel-7 | meta-viewport-device-width.html | screenshot | Unsupported | size 1082x2202 vs 1082x2203, SSIM 0.9967, 0.73% different, 0.00% alpha different, max 77 | unsupported: isMobile, hasTouch, userAgent, screen |
-| pixel-7 | meta-viewport-initial-scale-2.html | screenshot | Unsupported | size 1082x2200 vs 1082x2203, SSIM 0.8002, 34.33% different, 0.00% alpha different, max 255 | unsupported: isMobile, hasTouch, userAgent, screen |
-| pixel-7 | meta-viewport-none.html | screenshot | Unsupported | size 1082x2202 vs 1082x2203, SSIM 0.9081, 12.93% different, 0.00% alpha different, max 255 | unsupported: isMobile, hasTouch, userAgent, screen |
-| pixel-7 | meta-viewport-width-600.html | screenshot | Unsupported | size 1082x2201 vs 1082x2203, SSIM 0.9101, 10.56% different, 0.00% alpha different, max 255 | unsupported: isMobile, hasTouch, userAgent, screen |
-| ipad-gen-7 | media-features.html | screenshot | Unsupported | size 1620x2159 vs 1620x2160, SSIM 0.9440, 10.00% different, 0.00% alpha different, max 248 | unsupported: isMobile, hasTouch, userAgent |
-| ipad-gen-7 | meta-viewport-device-width.html | screenshot | Unsupported | 1620x2160, SSIM 0.9992, 0.18% different, 0.00% alpha different, max 58 | unsupported: isMobile, hasTouch, userAgent |
-| ipad-gen-7 | meta-viewport-none.html | screenshot | Unsupported | size 1620x2159 vs 1620x2160, SSIM 0.9509, 5.10% different, 0.00% alpha different, max 255 | unsupported: isMobile, hasTouch, userAgent |
-| pdf-default | boxes.html | pdf | Unsupported | 816x1056, SSIM 0.9239, 21.44% different, 0.00% alpha different, max 185 | unsupported: printBackground: false, preferCSSPageSize: false; page(s) 1 differ |
-| pdf-default | boxes.html | pages | Unsupported | 816x1056, SSIM 0.9251, 21.18% different, 0.00% alpha different, max 182 | unsupported: printBackground: false, preferCSSPageSize: false; page(s) 1 differ |
-| pdf-default | images.html | pdf | Unsupported | 816x1056, SSIM 0.9812, 1.90% different, 0.00% alpha different, max 215 | unsupported: printBackground: false, preferCSSPageSize: false; page(s) 1 differ |
-| pdf-default | images.html | pages | Unsupported | 816x1056, SSIM 0.9806, 1.84% different, 0.00% alpha different, max 215 | unsupported: printBackground: false, preferCSSPageSize: false |
-| pdf-default | print-basic.html | pdf | Unsupported | 816x1056, SSIM 0.6888, 39.08% different, 0.00% alpha different, max 255 | unsupported: printBackground: false, preferCSSPageSize: false; page(s) 1, 2 differ |
-| pdf-default | print-basic.html | pages | Unsupported | 816x1056, SSIM 0.8809, 15.59% different, 0.00% alpha different, max 255 | unsupported: printBackground: false, preferCSSPageSize: false; page(s) 1 differ |
-| pdf-default | print-css-size.html | pdf | Unsupported | size 816x1056 vs 384x576, SSIM 0.4535, 49.78% different, 0.00% alpha different, max 255 | unsupported: printBackground: false, preferCSSPageSize: false; page 1 is 612x792pt vs 288x432pt; page(s) 1 differ |
-| pdf-default | print-css-size.html | pages | Unsupported | size 816x1056 vs 384x576, SSIM 0.7786, 11.86% different, 0.00% alpha different, max 255 | unsupported: printBackground: false, preferCSSPageSize: false; page 1 is 612x792pt vs 288x432pt; page(s) 1 differ |
-| pdf-default | print-long.html | pdf | Unsupported | 816x1056, SSIM 0.0524, 91.79% different, 0.00% alpha different, max 255 | unsupported: printBackground: false, preferCSSPageSize: false; page(s) 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 differ |
-| pdf-default | print-long.html | pages | Unsupported | 816x1056, SSIM 0.6727, 11.97% different, 0.00% alpha different, max 131 | unsupported: printBackground: false, preferCSSPageSize: false; page(s) 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 differ |
-| pdf-default | print-page-rules.html | pdf | Unsupported | size 1056x816 vs 794x560, SSIM 0.7185, 31.52% different, 0.00% alpha different, max 255 | unsupported: printBackground: false, preferCSSPageSize: false; page 1 is 792x612pt vs 595.3x419.5pt; page(s) 1, 2 differ |
-| pdf-default | print-page-rules.html | pages | Unsupported | size 1056x816 vs 794x560, SSIM 0.9102, 4.60% different, 0.00% alpha different, max 203 | unsupported: printBackground: false, preferCSSPageSize: false; page 1 is 792x612pt vs 595.3x419.5pt; page(s) 1, 2 differ |
-| pdf-default | svg-transparent.svg | pdf | Unsupported | 816x1056, SSIM 0.9954, 0.31% different, 0.00% alpha different, max 189 | unsupported: printBackground: false, preferCSSPageSize: false; page(s) 1 differ |
-| pdf-default | svg-transparent.svg | pages | Unsupported | 816x1056, SSIM 0.9960, 0.22% different, 0.00% alpha different, max 189 | unsupported: printBackground: false, preferCSSPageSize: false |
-| pdf-default | text.html | pdf | Unsupported | 816x1056, SSIM 0.7729, 19.87% different, 0.00% alpha different, max 244 | unsupported: printBackground: false, preferCSSPageSize: false; page(s) 1 differ |
-| pdf-default | text.html | pages | Unsupported | 816x1056, SSIM 0.9230, 4.80% different, 0.00% alpha different, max 238 | unsupported: printBackground: false, preferCSSPageSize: false; page(s) 1 differ |
-| pdf-default | transparent-body.html | pdf | Unsupported | 816x1056, SSIM 0.7115, 99.43% different, 0.00% alpha different, max 255 | unsupported: printBackground: false, preferCSSPageSize: false; page(s) 1 differ |
-| pdf-default | transparent-body.html | pages | Unsupported | 816x1056, SSIM 0.9735, 96.81% different, 0.00% alpha different, max 143 | unsupported: printBackground: false, preferCSSPageSize: false; page(s) 1 differ |
-| pdf-background | boxes.html | pdf | Unexpected | 816x1056, SSIM 0.9854, 1.62% different, 0.00% alpha different, max 89 | page(s) 1 differ |
-| pdf-background | boxes.html | pages | Pass | 816x1056, SSIM 0.9867, 1.34% different, 0.00% alpha different, max 85 |  |
-| pdf-background | images.html | pdf | Unexpected | 816x1056, SSIM 0.9910, 0.81% different, 0.00% alpha different, max 119 | page(s) 1 differ |
+| jpeg-q80 | svg-transparent.svg | screenshot | Pass | 1280x720, SSIM 0.9992, 0.00% different, 0.00% alpha different, max 32 |  |
+| print-media | media-features.html | screenshot | Pass | 1280x720, SSIM 0.9997, 0.00% different, 0.00% alpha different, max 32 |  |
+| print-media | print-basic.html | screenshot | Known | 1280x720, SSIM 0.9983, 0.39% different, 0.00% alpha different, max 65 | text: Skia renders heavier glyphs (the gamma and the contrast of its glyph masks) at other subpixel positions |
+| element | element-clip.html | screenshot | Known | 306x132, SSIM 0.9954, 0.44% different, 0.00% alpha different, max 35 | text of the element screenshot: Skia renders heavier glyphs (the gamma and the contrast of its glyph masks) at other subpixel positions |
+| iphone-13 | media-features.html | screenshot | Pass | 1170x1991, SSIM 0.9996, 0.00% different, 0.00% alpha different, max 37 |  |
+| iphone-13 | meta-viewport-device-width.html | screenshot | Known | 1170x1992, SSIM 0.9962, 0.77% different, 0.00% alpha different, max 82 | fractional page scale and text: Chromium snaps the geometry to the device pixels at the page scale (some edges are one device pixel apart) and renders heavier glyphs; the text autosizing of the mobile emulation of Chromium is not implemented |
+| iphone-13 | meta-viewport-initial-scale-2.html | screenshot | Known | 1170x1992, SSIM 0.9906, 1.11% different, 0.00% alpha different, max 86 | fractional page scale and text: Chromium snaps the geometry to the device pixels at the page scale (some edges are one device pixel apart) and renders heavier glyphs; the text autosizing of the mobile emulation of Chromium is not implemented |
+| iphone-13 | meta-viewport-none.html | screenshot | Pass | 1170x1991, SSIM 0.9984, 0.19% different, 0.00% alpha different, max 46 |  |
+| iphone-13 | meta-viewport-width-600.html | screenshot | Known | 1170x1991, SSIM 0.9984, 0.43% different, 0.00% alpha different, max 54 | fractional page scale and text: Chromium snaps the geometry to the device pixels at the page scale (some edges are one device pixel apart) and renders heavier glyphs; the text autosizing of the mobile emulation of Chromium is not implemented |
+| iphone-13 | svg-transparent.svg | screenshot | Pass | 1170x1991, SSIM 0.9999, 0.01% different, 0.00% alpha different, max 38 |  |
+| iphone-13 | text.html | screenshot | Known | 1170x1991, SSIM 0.9842, 1.27% different, 0.00% alpha different, max 221 | fractional page scale and text: Chromium snaps the geometry to the device pixels at the page scale (some edges are one device pixel apart) and renders heavier glyphs; the text autosizing of the mobile emulation of Chromium is not implemented |
+| iphone-13-landscape | media-features.html | screenshot | Known | 2250x1024, SSIM 0.9976, 0.25% different, 0.00% alpha different, max 50 | fractional page scale and text: Chromium snaps the geometry to the device pixels at the page scale (some edges are one device pixel apart) and renders heavier glyphs; the text autosizing of the mobile emulation of Chromium is not implemented |
+| iphone-13-landscape | meta-viewport-device-width.html | screenshot | Known | 2250x1026, SSIM 0.9961, 0.78% different, 0.00% alpha different, max 82 | fractional page scale and text: Chromium snaps the geometry to the device pixels at the page scale (some edges are one device pixel apart) and renders heavier glyphs; the text autosizing of the mobile emulation of Chromium is not implemented |
+| pixel-7 | boxes.html | screenshot | Known | 1082x2202, SSIM 0.9904, 1.14% different, 0.00% alpha different, max 255 | fractional page scale and device pixel ratio (2.625) and text: Chromium snaps the geometry to the device pixels at the page scale (some edges are one device pixel apart) and renders heavier glyphs |
+| pixel-7 | media-features.html | screenshot | Pass | 1082x2202, SSIM 0.9981, 0.08% different, 0.00% alpha different, max 85 |  |
+| pixel-7 | meta-viewport-device-width.html | screenshot | Known | 1082x2202, SSIM 0.9967, 0.73% different, 0.00% alpha different, max 77 | fractional page scale and device pixel ratio (2.625) and text: Chromium snaps the geometry to the device pixels at the page scale (some edges are one device pixel apart) and renders heavier glyphs |
+| pixel-7 | meta-viewport-initial-scale-2.html | screenshot | Known | 1082x2200, SSIM 0.9863, 1.53% different, 0.00% alpha different, max 160 | fractional page scale and device pixel ratio (2.625) and text: Chromium snaps the geometry to the device pixels at the page scale (some edges are one device pixel apart) and renders heavier glyphs |
+| pixel-7 | meta-viewport-none.html | screenshot | Pass | 1082x2202, SSIM 0.9992, 0.02% different, 0.00% alpha different, max 36 |  |
+| pixel-7 | meta-viewport-width-600.html | screenshot | Known | 1082x2201, SSIM 0.9988, 0.27% different, 0.00% alpha different, max 53 | fractional page scale and device pixel ratio (2.625) and text: Chromium snaps the geometry to the device pixels at the page scale (some edges are one device pixel apart) and renders heavier glyphs |
+| ipad-gen-7 | media-features.html | screenshot | Pass | 1620x2159, SSIM 0.9991, 0.06% different, 0.00% alpha different, max 43 |  |
+| ipad-gen-7 | meta-viewport-device-width.html | screenshot | Pass | 1620x2160, SSIM 0.9992, 0.18% different, 0.00% alpha different, max 58 |  |
+| ipad-gen-7 | meta-viewport-none.html | screenshot | Pass | 1620x2159, SSIM 0.9990, 0.09% different, 0.00% alpha different, max 44 |  |
+| pdf-default | boxes.html | pdf | Pass | 816x1056, SSIM 0.9964, 0.18% different, 0.00% alpha different, max 72 |  |
+| pdf-default | boxes.html | pages | Pass | 816x1056, SSIM 0.9980, 0.09% different, 0.00% alpha different, max 69 |  |
+| pdf-default | images.html | pdf | Known | 816x1056, SSIM 0.9950, 0.39% different, 0.00% alpha different, max 92 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-default | images.html | pages | Pass | 816x1056, SSIM 0.9947, 0.26% different, 0.00% alpha different, max 116 |  |
+| pdf-default | print-basic.html | pdf | Known | 816x1056, SSIM 0.9831, 0.92% different, 0.00% alpha different, max 123 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-default | print-basic.html | pages | Pass | 816x1056, SSIM 0.9834, 0.66% different, 0.00% alpha different, max 125 |  |
+| pdf-default | print-css-size.html | pdf | Known | 816x1056, SSIM 0.9862, 1.00% different, 0.00% alpha different, max 137 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-default | print-css-size.html | pages | Pass | 816x1056, SSIM 0.9876, 0.80% different, 0.00% alpha different, max 147 |  |
+| pdf-default | print-long.html | pdf | Known | 816x1056, SSIM 0.6637, 17.49% different, 0.00% alpha different, max 130 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-default | print-long.html | pages | Known | 816x1056, SSIM 0.6727, 11.97% different, 0.00% alpha different, max 131 | the pages rendered by the library compared with the PDF of Chromium rasterized by Poppler: the two rasterizers anti-alias and position the glyphs of the dense text differently |
+| pdf-default | print-page-rules.html | pdf | Known | 1056x816, SSIM 0.9881, 1.31% different, 0.00% alpha different, max 100 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-default | print-page-rules.html | pages | Pass | 1056x816, SSIM 0.9868, 1.16% different, 0.00% alpha different, max 92 |  |
+| pdf-default | svg-transparent.svg | pdf | Known | 816x1056, SSIM 0.9968, 0.27% different, 0.00% alpha different, max 168 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-default | svg-transparent.svg | pages | Pass | 816x1056, SSIM 0.9974, 0.17% different, 0.00% alpha different, max 118 |  |
+| pdf-default | text.html | pdf | Known | 816x1056, SSIM 0.9401, 3.80% different, 0.00% alpha different, max 221 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-default | text.html | pages | Pass | 816x1056, SSIM 0.9416, 2.78% different, 0.00% alpha different, max 221 |  |
+| pdf-default | transparent-body.html | pdf | Known | 816x1056, SSIM 0.9946, 0.28% different, 0.00% alpha different, max 130 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-default | transparent-body.html | pages | Pass | 816x1056, SSIM 0.9954, 0.21% different, 0.00% alpha different, max 137 |  |
+| pdf-background | boxes.html | pdf | Pass | 816x1056, SSIM 0.9972, 0.11% different, 0.00% alpha different, max 49 |  |
+| pdf-background | boxes.html | pages | Pass | 816x1056, SSIM 0.9986, 0.05% different, 0.00% alpha different, max 49 |  |
+| pdf-background | images.html | pdf | Known | 816x1056, SSIM 0.9910, 0.81% different, 0.00% alpha different, max 119 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
 | pdf-background | images.html | pages | Pass | 816x1056, SSIM 0.9907, 0.61% different, 0.00% alpha different, max 119 |  |
-| pdf-background | print-basic.html | pdf | Unexpected | 816x1056, SSIM 0.7087, 34.21% different, 0.00% alpha different, max 233 | page(s) 1, 2 differ |
+| pdf-background | print-basic.html | pdf | Known | 816x1056, SSIM 0.9802, 1.18% different, 0.00% alpha different, max 123 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
 | pdf-background | print-basic.html | pages | Pass | 816x1056, SSIM 0.9778, 0.89% different, 0.00% alpha different, max 124 |  |
-| pdf-background | print-css-size.html | pdf | Unexpected | 384x576, SSIM 0.4758, 48.81% different, 0.00% alpha different, max 255 | page(s) 1 differ |
-| pdf-background | print-css-size.html | pages | Unexpected | 384x576, SSIM 0.9509, 3.11% different, 0.00% alpha different, max 147 | page(s) 1 differ |
-| pdf-background | print-long.html | pdf | Unexpected | 816x1056, SSIM 0.0524, 91.79% different, 0.00% alpha different, max 255 | page(s) 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 differ |
-| pdf-background | print-long.html | pages | Unexpected | 816x1056, SSIM 0.6727, 11.97% different, 0.00% alpha different, max 131 | page(s) 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 differ |
-| pdf-background | print-page-rules.html | pdf | Unexpected | 794x560, SSIM 0.5176, 46.24% different, 0.00% alpha different, max 255 | page(s) 1, 2 differ |
+| pdf-background | print-css-size.html | pdf | Known | 384x576, SSIM 0.9453, 3.91% different, 0.00% alpha different, max 137 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-background | print-css-size.html | pages | Known | 384x576, SSIM 0.9509, 3.11% different, 0.00% alpha different, max 147 | the pages rendered by the library compared with the PDF of Chromium rasterized by Poppler: the two rasterizers anti-alias and position the glyphs of the dense text differently |
+| pdf-background | print-long.html | pdf | Known | 816x1056, SSIM 0.6637, 17.49% different, 0.00% alpha different, max 130 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-background | print-long.html | pages | Known | 816x1056, SSIM 0.6727, 11.97% different, 0.00% alpha different, max 131 | the pages rendered by the library compared with the PDF of Chromium rasterized by Poppler: the two rasterizers anti-alias and position the glyphs of the dense text differently |
+| pdf-background | print-page-rules.html | pdf | Known | 794x560, SSIM 0.9831, 1.25% different, 0.00% alpha different, max 123 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
 | pdf-background | print-page-rules.html | pages | Pass | 794x560, SSIM 0.9848, 0.97% different, 0.00% alpha different, max 130 |  |
-| pdf-background | svg-transparent.svg | pdf | Unexpected | 816x1056, SSIM 0.9954, 0.31% different, 0.00% alpha different, max 189 | page(s) 1 differ |
-| pdf-background | svg-transparent.svg | pages | Pass | 816x1056, SSIM 0.9960, 0.22% different, 0.00% alpha different, max 189 |  |
-| pdf-background | text.html | pdf | Unexpected | 816x1056, SSIM 0.7705, 20.13% different, 0.00% alpha different, max 244 | page(s) 1 differ |
+| pdf-background | svg-transparent.svg | pdf | Known | 816x1056, SSIM 0.9968, 0.27% different, 0.00% alpha different, max 168 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-background | svg-transparent.svg | pages | Pass | 816x1056, SSIM 0.9974, 0.17% different, 0.00% alpha different, max 118 |  |
+| pdf-background | text.html | pdf | Known | 816x1056, SSIM 0.9388, 3.89% different, 0.00% alpha different, max 221 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
 | pdf-background | text.html | pages | Pass | 816x1056, SSIM 0.9403, 2.84% different, 0.00% alpha different, max 221 |  |
-| pdf-background | transparent-body.html | pdf | Unexpected | 816x1056, SSIM 0.7283, 26.44% different, 0.00% alpha different, max 255 | page(s) 1 differ |
+| pdf-background | transparent-body.html | pdf | Known | 816x1056, SSIM 0.9947, 0.28% different, 0.00% alpha different, max 130 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
 | pdf-background | transparent-body.html | pages | Pass | 816x1056, SSIM 0.9954, 0.21% different, 0.00% alpha different, max 137 |  |
-| pdf-margins | boxes.html | pdf | Unexpected | 816x1056, SSIM 0.9853, 1.64% different, 0.00% alpha different, max 89 | page(s) 1 differ |
-| pdf-margins | boxes.html | pages | Pass | 816x1056, SSIM 0.9866, 1.34% different, 0.00% alpha different, max 85 |  |
-| pdf-margins | print-basic.html | pdf | Unexpected | 816x1056, SSIM 0.7751, 25.38% different, 0.00% alpha different, max 233 | page(s) 1, 2 differ |
+| pdf-margins | boxes.html | pdf | Pass | 816x1056, SSIM 0.9971, 0.12% different, 0.00% alpha different, max 50 |  |
+| pdf-margins | boxes.html | pages | Pass | 816x1056, SSIM 0.9984, 0.04% different, 0.00% alpha different, max 50 |  |
+| pdf-margins | print-basic.html | pdf | Known | 816x1056, SSIM 0.9765, 1.65% different, 0.00% alpha different, max 123 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
 | pdf-margins | print-basic.html | pages | Pass | 816x1056, SSIM 0.9766, 1.10% different, 0.00% alpha different, max 133 |  |
-| pdf-margins | print-long.html | pdf | Unexpected | 816x1056, SSIM 0.3983, 56.09% different, 0.00% alpha different, max 255 | page(s) 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 differ |
-| pdf-margins | print-long.html | pages | Unexpected | 816x1056, SSIM 0.7822, 7.97% different, 0.00% alpha different, max 133 | page(s) 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 differ |
-| pdf-legal | print-basic.html | pdf | Unexpected | 816x1344, SSIM 0.7947, 23.47% different, 0.00% alpha different, max 233 | page(s) 1, 2 differ |
+| pdf-margins | print-long.html | pdf | Known | 816x1056, SSIM 0.7750, 11.65% different, 0.00% alpha different, max 130 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-margins | print-long.html | pages | Known | 816x1056, SSIM 0.7822, 7.97% different, 0.00% alpha different, max 133 | the pages rendered by the library compared with the PDF of Chromium rasterized by Poppler: the two rasterizers anti-alias and position the glyphs of the dense text differently |
+| pdf-legal | print-basic.html | pdf | Known | 816x1344, SSIM 0.9844, 0.93% different, 0.00% alpha different, max 123 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
 | pdf-legal | print-basic.html | pages | Pass | 816x1344, SSIM 0.9828, 0.70% different, 0.00% alpha different, max 133 |  |
-| pdf-legal | text.html | pdf | Unexpected | 816x1344, SSIM 0.8164, 15.07% different, 0.00% alpha different, max 244 | page(s) 1 differ |
-| pdf-legal | text.html | pages | Unexpected | 816x1344, SSIM 0.8932, 4.85% different, 0.00% alpha different, max 238 | page(s) 1 differ |
-| pdf-landscape | print-basic.html | pdf | Unsupported | 1056x816, SSIM 0.6458, 40.97% different, 0.00% alpha different, max 233 | unsupported: landscape; page(s) 1, 2 differ |
-| pdf-landscape | print-basic.html | pages | Unsupported | 1056x816, SSIM 0.9763, 0.93% different, 0.00% alpha different, max 133 | unsupported: landscape |
-| pdf-landscape | print-long.html | pdf | Unsupported | 1056x816, SSIM 0.2164, 74.47% different, 0.00% alpha different, max 255 | unsupported: landscape; page(s) 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 differ |
-| pdf-landscape | print-long.html | pages | Unsupported | 1056x816, SSIM 0.7386, 9.65% different, 0.00% alpha different, max 131 | unsupported: landscape; page(s) 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 differ |
-| pdf-landscape | print-page-rules.html | pdf | Unsupported | 794x560, SSIM 0.5176, 46.24% different, 0.00% alpha different, max 255 | unsupported: landscape; page(s) 1, 2 differ |
-| pdf-landscape | print-page-rules.html | pages | Unsupported | 794x560, SSIM 0.9848, 0.97% different, 0.00% alpha different, max 130 | unsupported: landscape |
-| pdf-scale-0.5 | print-basic.html | pdf | Unsupported | 816x1056, SSIM 0.7082, 33.62% different, 0.00% alpha different, max 255 | unsupported: scale; page(s) 1, 2 differ |
-| pdf-scale-0.5 | print-basic.html | pages | Unsupported | 816x1056, SSIM 0.7588, 24.56% different, 0.00% alpha different, max 255 | unsupported: scale; page(s) 1 differ |
-| pdf-scale-0.5 | print-long.html | pdf | Unsupported | 816x1056, SSIM 0.2456, 72.44% different, 0.00% alpha different, max 255 | unsupported: scale; 6 page(s) vs 11; page(s) 1, 2, 3, 4, 5, 6 differ |
-| pdf-scale-0.5 | print-long.html | pages | Unsupported | 816x1056, SSIM 0.4313, 30.21% different, 0.00% alpha different, max 202 | unsupported: scale; 6 page(s) vs 11; page(s) 2, 3, 4, 5, 6 differ |
-| pdf-scale-0.5 | print-page-rules.html | pdf | Unsupported | 794x560, SSIM 0.5013, 47.14% different, 0.00% alpha different, max 255 | unsupported: scale; 1 page(s) vs 2; page(s) 1 differ |
-| pdf-scale-0.5 | print-page-rules.html | pages | Unsupported | 794x560, SSIM 0.8727, 6.65% different, 0.00% alpha different, max 255 | unsupported: scale; 1 page(s) vs 2; page(s) 1 differ |
-| pdf-scale-1.5 | print-basic.html | pdf | Unsupported | 816x1056, SSIM 0.6556, 41.15% different, 0.00% alpha different, max 255 | unsupported: scale; page(s) 1, 2 differ |
-| pdf-scale-1.5 | print-basic.html | pages | Unsupported | 816x1056, SSIM 0.6801, 35.25% different, 0.00% alpha different, max 255 | unsupported: scale; page(s) 1 differ |
-| pdf-scale-1.5 | print-long.html | pdf | Unsupported | 816x1056, SSIM 0.2223, 73.80% different, 0.00% alpha different, max 255 | unsupported: scale; 21 page(s) vs 11; page(s) 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 differ |
-| pdf-scale-1.5 | print-long.html | pages | Unsupported | 816x1056, SSIM 0.3871, 35.27% different, 0.00% alpha different, max 224 | unsupported: scale; 21 page(s) vs 11; page(s) 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 differ |
-| pdf-ignore-css-size | print-css-size.html | pdf | Unsupported | size 816x1056 vs 384x576, SSIM 0.4535, 49.78% different, 0.00% alpha different, max 255 | unsupported: preferCSSPageSize: false; page 1 is 612x792pt vs 288x432pt; page(s) 1 differ |
-| pdf-ignore-css-size | print-css-size.html | pages | Unsupported | size 816x1056 vs 384x576, SSIM 0.7786, 11.86% different, 0.00% alpha different, max 255 | unsupported: preferCSSPageSize: false; page 1 is 612x792pt vs 288x432pt; page(s) 1 differ |
-| pdf-ignore-css-size | print-page-rules.html | pdf | Unsupported | size 1056x816 vs 794x560, SSIM 0.7185, 31.52% different, 0.00% alpha different, max 255 | unsupported: preferCSSPageSize: false; page 1 is 792x612pt vs 595.3x419.5pt; page(s) 1, 2 differ |
-| pdf-ignore-css-size | print-page-rules.html | pages | Unsupported | size 1056x816 vs 794x560, SSIM 0.9102, 4.60% different, 0.00% alpha different, max 203 | unsupported: preferCSSPageSize: false; page 1 is 792x612pt vs 595.3x419.5pt; page(s) 1, 2 differ |
-| pdf-ranges | print-long.html | pdf | Unsupported | 816x1056, SSIM 0.0953, 89.20% different, 0.00% alpha different, max 255 | unsupported: pageRanges; 3 page(s) vs 11; page(s) 1, 2, 3 differ |
-| pdf-ranges | print-long.html | pages | Unsupported | 816x1056, SSIM 0.4928, 26.52% different, 0.00% alpha different, max 204 | unsupported: pageRanges; 3 page(s) vs 11; page(s) 1, 2, 3 differ |
-| pdf-header-footer | print-basic.html | pdf | Unsupported | 816x1056, SSIM 0.7527, 27.86% different, 0.00% alpha different, max 233 | unsupported: displayHeaderFooter; page(s) 1, 2 differ |
-| pdf-header-footer | print-basic.html | pages | Unsupported | 816x1056, SSIM 0.9721, 1.31% different, 0.00% alpha different, max 168 | unsupported: displayHeaderFooter |
-| pdf-header-footer | print-long.html | pdf | Unsupported | 816x1056, SSIM 0.3032, 65.50% different, 0.00% alpha different, max 255 | unsupported: displayHeaderFooter; page(s) 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 differ |
-| pdf-header-footer | print-long.html | pages | Unsupported | 816x1056, SSIM 0.7374, 9.68% different, 0.00% alpha different, max 168 | unsupported: displayHeaderFooter; page(s) 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 differ |
+| pdf-legal | text.html | pdf | Known | 816x1344, SSIM 0.8926, 5.40% different, 0.00% alpha different, max 238 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-legal | text.html | pages | Known | 816x1344, SSIM 0.8932, 4.85% different, 0.00% alpha different, max 238 | the pages rendered by the library compared with the PDF of Chromium rasterized by Poppler: the two rasterizers anti-alias and position the glyphs of the dense text differently |
+| pdf-landscape | print-basic.html | pdf | Known | 1056x816, SSIM 0.9791, 1.22% different, 0.00% alpha different, max 123 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-landscape | print-basic.html | pages | Pass | 1056x816, SSIM 0.9763, 0.93% different, 0.00% alpha different, max 133 |  |
+| pdf-landscape | print-long.html | pdf | Known | 1056x816, SSIM 0.7301, 14.08% different, 0.00% alpha different, max 130 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-landscape | print-long.html | pages | Known | 1056x816, SSIM 0.7386, 9.65% different, 0.00% alpha different, max 131 | the pages rendered by the library compared with the PDF of Chromium rasterized by Poppler: the two rasterizers anti-alias and position the glyphs of the dense text differently |
+| pdf-landscape | print-page-rules.html | pdf | Known | 794x560, SSIM 0.9831, 1.25% different, 0.00% alpha different, max 123 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-landscape | print-page-rules.html | pages | Pass | 794x560, SSIM 0.9848, 0.97% different, 0.00% alpha different, max 130 |  |
+| pdf-scale-0.5 | print-basic.html | pdf | Known | 816x1056, SSIM 0.9671, 1.42% different, 0.00% alpha different, max 110 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-scale-0.5 | print-basic.html | pages | Pass | 816x1056, SSIM 0.9767, 1.51% different, 0.00% alpha different, max 117 |  |
+| pdf-scale-0.5 | print-long.html | pdf | Known | 816x1056, SSIM 0.8411, 7.55% different, 0.00% alpha different, max 115 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-scale-0.5 | print-long.html | pages | Known | 816x1056, SSIM 0.8269, 6.41% different, 0.00% alpha different, max 116 | the pages rendered by the library compared with the PDF of Chromium rasterized by Poppler: the two rasterizers anti-alias and position the glyphs of the dense text differently |
+| pdf-scale-0.5 | print-page-rules.html | pdf | Known | 794x560, SSIM 0.9895, 0.38% different, 0.00% alpha different, max 118 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-scale-0.5 | print-page-rules.html | pages | Pass | 794x560, SSIM 0.9870, 0.24% different, 0.00% alpha different, max 109 |  |
+| pdf-scale-1.5 | print-basic.html | pdf | Known | 816x1056, SSIM 0.9236, 6.75% different, 0.00% alpha different, max 215 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-scale-1.5 | print-basic.html | pages | Known | 816x1056, SSIM 0.9300, 5.28% different, 0.00% alpha different, max 215 | the pages rendered by the library compared with the PDF of Chromium rasterized by Poppler: the two rasterizers anti-alias and position the glyphs of the dense text differently |
+| pdf-scale-1.5 | print-long.html | pdf | Known | 816x1056, SSIM 0.8292, 16.35% different, 0.00% alpha different, max 141 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-scale-1.5 | print-long.html | pages | Known | 816x1056, SSIM 0.7859, 14.90% different, 0.00% alpha different, max 145 | the pages rendered by the library compared with the PDF of Chromium rasterized by Poppler: the two rasterizers anti-alias and position the glyphs of the dense text differently |
+| pdf-ignore-css-size | print-css-size.html | pdf | Known | 816x1056, SSIM 0.9862, 1.00% different, 0.00% alpha different, max 137 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-ignore-css-size | print-css-size.html | pages | Pass | 816x1056, SSIM 0.9876, 0.80% different, 0.00% alpha different, max 147 |  |
+| pdf-ignore-css-size | print-page-rules.html | pdf | Known | 1056x816, SSIM 0.9881, 1.31% different, 0.00% alpha different, max 100 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-ignore-css-size | print-page-rules.html | pages | Pass | 1056x816, SSIM 0.9868, 1.16% different, 0.00% alpha different, max 92 |  |
+| pdf-ranges | print-long.html | pdf | Known | 816x1056, SSIM 0.6641, 17.45% different, 0.00% alpha different, max 130 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-ranges | print-long.html | pages | Known | 816x1056, SSIM 0.6731, 11.95% different, 0.00% alpha different, max 131 | the pages rendered by the library compared with the PDF of Chromium rasterized by Poppler: the two rasterizers anti-alias and position the glyphs of the dense text differently |
+| pdf-header-footer | print-basic.html | pdf | Known | 816x1056, SSIM 0.9722, 1.86% different, 0.00% alpha different, max 134 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-header-footer | print-basic.html | pages | Pass | 816x1056, SSIM 0.9722, 1.25% different, 0.00% alpha different, max 134 |  |
+| pdf-header-footer | print-long.html | pdf | Known | 816x1056, SSIM 0.7296, 13.99% different, 0.00% alpha different, max 132 | PDF rasterization: Chromium embeds the fonts as Type 3 fonts and the library as TrueType fonts, which Poppler anti-aliases and positions differently (the dense text of the long documents differs on most of its pixels); the library rasterizes the SVG masks and filters, and the background tiles drift at a fractional print scale |
+| pdf-header-footer | print-long.html | pages | Known | 816x1056, SSIM 0.7376, 9.63% different, 0.00% alpha different, max 133 | the pages rendered by the library compared with the PDF of Chromium rasterized by Poppler: the two rasterizers anti-alias and position the glyphs of the dense text differently |

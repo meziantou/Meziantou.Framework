@@ -51,7 +51,11 @@ internal enum RenderStatus
 /// <c>screenshot</c>; <c>pdf</c> (the PDF of the library rasterized as the PDF of Chromium); <c>pages</c> (the pages rendered
 /// by <c>RenderPages</c> compared with the PDF of Chromium rasterized).
 /// </param>
-internal sealed record RenderResult(string Scenario, string Fixture, string Output, RenderStatus Status, ImageMetrics? Metrics, IReadOnlyList<string> Unsupported, string? Message, IReadOnlyList<string> Images);
+internal sealed record RenderResult(string Scenario, string Fixture, string Output, RenderStatus Status, ImageMetrics? Metrics, IReadOnlyList<string> Unsupported, string? Message, IReadOnlyList<string> Images)
+{
+    /// <summary>Gets the accepted difference that explains the result, when its status is <see cref="RenderStatus.Known"/>.</summary>
+    public RenderKnownDifference? KnownDifference { get; init; }
+}
 
 /// <summary>
 /// Compares the exports of pages by Playwright (Chromium) and by the library: the screenshots (<c>page.screenshot()</c> vs
@@ -142,7 +146,7 @@ internal static class RenderComparison
 
         // A known difference that matches no result must be removed from the list (only when everything is compared)
         var stale = options.Filter is null && options.Scenarios is null
-            ? knownDifferences.Where(k => !results.Any(r => r.Status is RenderStatus.Known && r.Message == k.Reason)).ToList()
+            ? knownDifferences.Where(k => !results.Any(r => r.Status is RenderStatus.Known && ReferenceEquals(r.KnownDifference, k))).ToList()
             : [];
 
         RenderReport.Write(options.OutputDirectory, browser.Version, rasterizer.Name, scenarios, results, stale);
@@ -176,7 +180,7 @@ internal static class RenderComparison
                 return result with { Status = RenderStatus.Pass };
 
             var known = knownDifferences.FirstOrDefault(k => k.Matches(result.Fixture, result.Scenario, result.Output));
-            return known is null ? result with { Status = RenderStatus.Unexpected } : result with { Status = RenderStatus.Known, Message = known.Reason };
+            return known is null ? result with { Status = RenderStatus.Unexpected } : result with { Status = RenderStatus.Known, Message = known.Reason, KnownDifference = known };
         }
     }
 

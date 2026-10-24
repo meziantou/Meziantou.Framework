@@ -7,6 +7,28 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// </summary>
 /// <example>
 /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/CssomViewTests.cs" ref:region="DeviceDescriptor_Example" ref:dedent="true">
+/// // The values of the "iPhone 13" device of Playwright
+/// var iPhone13 = new DeviceDescriptor
+/// {
+///     Width = 390,
+///     Height = 664,
+///     ScreenWidth = 390,
+///     ScreenHeight = 844,
+///     DevicePixelRatio = 3,
+///     IsMobile = true,
+///     HasTouch = true,
+///     UserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1",
+/// };
+///
+/// using var context = new BrowsingContext(new BrowsingContextOptions
+/// {
+///     Viewport = iPhone13.CreateViewport(),
+///     UserAgent = iPhone13.UserAgent,
+/// });
+/// var document = context.Navigate("https://example.com/", _ =&gt; "&lt;!DOCTYPE html&gt;&lt;p&gt;Hello&lt;/p&gt;");
+///
+/// Assert.True(document.DefaultView!.MatchMedia("(pointer: coarse) and (max-device-width: 500px)").Matches);
+/// Assert.Equal(iPhone13.UserAgent, document.DefaultView.Navigator.UserAgent);
 /// </code>
 /// </example>
 public sealed record DeviceDescriptor

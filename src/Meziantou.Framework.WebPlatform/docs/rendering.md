@@ -121,6 +121,54 @@ layout and painting features that are not implemented, and the bugs).
   (print again once they are). The nested documents (`iframe`) are painted as on the screen.
 - `ImagingPrintExtensions` renders the pages as images; `PdfPrintExtensions` (`Meziantou.Framework.WebPlatform.PdfRendering`)
   writes them into a PDF document (see [PDF output](#pdf-output)).
+- `ScreenshotOptions.OmitBackground` paints the pages over a transparent sheet instead of white paper.
+
+The other `PrintOptions` are the ones of the PDF of Playwright (`page.pdf()`):
+
+| Option | Playwright | Effect |
+| --- | --- | --- |
+| `PageWidth`, `PageHeight` | `format`, `width`, `height` | The size of the pages of `size: auto` (US Letter by default, as in Playwright) |
+| `MarginTop`... | `margin` | The margins of the pages when no `@page` rule sets them (0.5in by default; **0 by default in Playwright**) |
+| `Landscape` | `landscape` | The width and the height of the pages of `size: auto` are swapped |
+| `Scale` | `scale` | From 0.1 to 2: the content is laid out in the page area divided by the scale and painted scaled; the page margins and the page-margin boxes are not scaled (as in Chromium) |
+| `PrintBackground` | `printBackground` | **True by default (false in Playwright).** When false, as in the browsers, the backgrounds of the boxes whose `print-color-adjust` is `economy` (the initial value) are painted white, without their images, and their nearly white text is darkened; `print-color-adjust: exact` keeps the backgrounds |
+| `PreferCssPageSize` | `preferCSSPageSize` | **True by default (false in Playwright).** When false, the pages are printed on the paper of `PageWidth` x `PageHeight` (in the orientation of the page box): a page box of another size (the `size` of `@page`) is centered on it, scaled down when it does not fit, as in Chromium |
+| `PageRanges` | `pageRanges` | The pages to print (`1-5, 8, -3, 11-`): once each, in order, with their numbers; the numbers beyond the last page are ignored, an invalid syntax throws an `ArgumentException` and ranges that select no page an `InvalidOperationException`. The links of a PDF to the pages that are not printed are removed |
+| `DisplayHeaderFooter`, `HeaderTemplate`, `FooterTemplate` | `displayHeaderFooter`, `headerTemplate`, `footerTemplate` | The HTML templates printed in the top and bottom margins of each page, as in Chromium: each template is a document of its own (no script; only its `data:` resources), as wide as the page, 20px from its edge, whose root font size is 0 (set the size of the text), whose backgrounds are not printed (unless `print-color-adjust: exact`); the content of the elements of class `date`, `title`, `url`, `pageNumber` and `totalPages` is the date (`M/d/yyyy`), the title and the URL of the document, the number of the page and the number of pages |
+
+The defaults that differ keep the previous behavior of the library; set `MarginTop`, `MarginRight`, `MarginBottom` and
+`MarginLeft` to 0, `PrintBackground` and `PreferCssPageSize` to false to print as the defaults of `page.pdf()`. The PDF are
+compared with the ones of Playwright by `ChromiumDiff --render` (see [fuzzing.md](fuzzing.md#comparing-the-exports-with-playwright)).
+
+## Device emulation
+
+The options of the devices of Playwright (`playwright.devices`, the options of `browser.newContext()`) are the ones of the
+viewport and of the browsing context:
+
+| Option | Playwright | Effect |
+| --- | --- | --- |
+| `ViewportOptions.Width`, `Height` | `viewport` | The size of the viewport in CSS px |
+| `ViewportOptions.DevicePixelRatio` | `deviceScaleFactor` | The device pixel ratio (the `resolution` media feature; the size of the screenshots) |
+| `ViewportOptions.ScreenWidth`, `ScreenHeight` | `screen` | The size of the screen (`device-width`, `device-height`, `screen.width`); the viewport by default |
+| `ViewportOptions.HasTouch` | `hasTouch` | `pointer`/`any-pointer: coarse`, `hover`/`any-hover: none`, `navigator.maxTouchPoints` 1 |
+| `ViewportOptions.IsMobile` | `isMobile` | The `viewport` meta element sets the layout viewport and the scale of the top-level document (see below), overlay scrollbars, mobile client hints |
+| `BrowsingContextOptions.UserAgent` | `userAgent` | `navigator.userAgent`, the user agent of the reports, the `User-Agent` header of the requests |
+| `ViewportOptions.PreferredColorScheme` | `colorScheme` | `prefers-color-scheme` |
+| `ViewportOptions.MediaType` | `page.emulateMedia({ media })` | `screen` or `print` (the `resolution` of the print media is 300dpi, as in Chromium) |
+
+`DeviceDescriptor` describes a device with the names of Playwright and creates its `ViewportOptions` (`CreateViewport`); the
+library has no list of devices: copy the values of a descriptor of Playwright.
+
+On a mobile device (`IsMobile`), as in the mobile emulation of Chromium, the last `<meta name="viewport">` element of the
+top-level document ([CSS Viewport](https://drafts.csswg.org/css-viewport/)) sets its layout viewport: the initial containing
+block, the viewport units, the width media queries and `innerWidth` follow it, while the screen (`device-width`) stays the
+viewport of the options. Its width is the `width` of the meta element (`device-width` or a length; at least the width of
+the device divided by `initial-scale`), the width of the device divided by `initial-scale`, or 980px without both; its height
+keeps the aspect ratio of the device unless `height` is set. The page is scaled by `initial-scale`, or to fit the width of its
+contents in the width of the device, within `minimum-scale` and `maximum-scale` (5 by default): `visualViewport.scale` is
+the scale and the screenshots show the visual viewport (the viewport of the device) at the device pixel ratio multiplied by
+the scale. The text autosizing of Chromium (which enlarges the text of the pages that are scaled down) is not implemented,
+and there is no pinch zoom: the visual viewport is at the origin of the layout viewport.
 
 ## PDF output
 

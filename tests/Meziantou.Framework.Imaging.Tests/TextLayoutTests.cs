@@ -421,6 +421,80 @@ public sealed class TextLayoutTests
     }
 
     [Fact]
+    public void GetOriginPutsAPointOfTheTextAtAnAnchor()
+    {
+        // "A" is 16 pixels wide and tall, its baseline is at 13, and its ink goes from (2, 1) to (14, 13)
+        var layout = TextLayout.Create("A", Boxes, 16);
+        var anchor = new PointD(100, 50);
+        Assert.Equal(new PointD(100, 50), layout.GetOrigin(anchor, TextHorizontalAnchor.Left, TextVerticalAnchor.Top));
+        Assert.Equal(new PointD(92, 42), layout.GetOrigin(anchor, TextHorizontalAnchor.Center, TextVerticalAnchor.Center));
+        Assert.Equal(new PointD(84, 34), layout.GetOrigin(anchor, TextHorizontalAnchor.Right, TextVerticalAnchor.Bottom));
+        Assert.Equal(new PointD(84, 37), layout.GetOrigin(anchor, TextHorizontalAnchor.Right, TextVerticalAnchor.Baseline));
+
+        // The ink box puts the visible edges at the anchor; the baseline is the same
+        Assert.Equal(new PointD(98, 49), layout.GetOrigin(anchor, TextHorizontalAnchor.Left, TextVerticalAnchor.Top, TextBounds.Ink));
+        Assert.Equal(new PointD(92, 43), layout.GetOrigin(anchor, TextHorizontalAnchor.Center, TextVerticalAnchor.Center, TextBounds.Ink));
+        Assert.Equal(new PointD(86, 37), layout.GetOrigin(anchor, TextHorizontalAnchor.Right, TextVerticalAnchor.Bottom, TextBounds.Ink));
+        Assert.Equal(new PointD(86, 37), layout.GetOrigin(anchor, TextHorizontalAnchor.Right, TextVerticalAnchor.Baseline, TextBounds.Ink));
+
+        // In a rectangle, the point of the text goes on the same point of the rectangle; a larger text overflows it
+        var box = new RectangleD(10, 20, 100, 40);
+        Assert.Equal(new PointD(52, 32), layout.GetOrigin(box, TextHorizontalAnchor.Center, TextVerticalAnchor.Center));
+        Assert.Equal(new PointD(10, 44), layout.GetOrigin(box, TextHorizontalAnchor.Left, TextVerticalAnchor.Bottom));
+        Assert.Equal(new PointD(94, 20), layout.GetOrigin(box, TextHorizontalAnchor.Right, TextVerticalAnchor.Top));
+        Assert.Equal(new PointD(96, 19), layout.GetOrigin(box, TextHorizontalAnchor.Right, TextVerticalAnchor.Top, TextBounds.Ink));
+        Assert.Equal(new PointD(10, 32), TextLayout.Create("AAAAAAAAAAAAAAAAAAAA", Boxes, 16).GetOrigin(new RectangleD(20, 20, 300, 40), TextHorizontalAnchor.Center, TextVerticalAnchor.Center));
+
+        // The ink of "A" drawn in the middle of a rectangle is in its middle
+        Assert.Equal(
+            Render(120, 80, canvas => canvas.FillRectangle(White, new RectangleD(54, 34, 12, 12))),
+            Render(120, 80, canvas => canvas.FillText(White, layout, layout.GetOrigin(box, TextHorizontalAnchor.Center, TextVerticalAnchor.Center, TextBounds.Ink))));
+
+        // A layout that draws nothing is placed by its layout box
+        var space = TextLayout.Create(" ", Boxes, 16);
+        Assert.Equal(space.GetOrigin(anchor, TextHorizontalAnchor.Center, TextVerticalAnchor.Center), space.GetOrigin(anchor, TextHorizontalAnchor.Center, TextVerticalAnchor.Center, TextBounds.Ink));
+
+        // A rectangle has no baseline, and neither has a vertical layout along y
+        Assert.Throws<ArgumentException>("vertical", () => layout.GetOrigin(box, TextHorizontalAnchor.Left, TextVerticalAnchor.Baseline));
+        var vertical = TextLayout.Create("\u4E00\u4E8C", new TextStyle(Ideographs, 16), Vertical());
+        Assert.Throws<ArgumentException>("vertical", () => vertical.GetOrigin(anchor, TextHorizontalAnchor.Left, TextVerticalAnchor.Baseline));
+        Assert.Equal(new PointD(92, 34), vertical.GetOrigin(anchor, TextHorizontalAnchor.Center, TextVerticalAnchor.Center));
+
+        Assert.Throws<ArgumentOutOfRangeException>("horizontal", () => layout.GetOrigin(anchor, (TextHorizontalAnchor)3, TextVerticalAnchor.Top));
+        Assert.Throws<ArgumentOutOfRangeException>("vertical", () => layout.GetOrigin(anchor, TextHorizontalAnchor.Left, (TextVerticalAnchor)4));
+        Assert.Throws<ArgumentOutOfRangeException>("bounds", () => layout.GetOrigin(box, TextHorizontalAnchor.Left, TextVerticalAnchor.Top, (TextBounds)2));
+        Assert.Throws<ArgumentException>("anchor", () => layout.GetOrigin(new PointD(double.NaN, 0), TextHorizontalAnchor.Left, TextVerticalAnchor.Top));
+        Assert.Throws<ArgumentException>("box", () => layout.GetOrigin(new RectangleD(double.PositiveInfinity, 0, 1, 1), TextHorizontalAnchor.Left, TextVerticalAnchor.Top));
+    }
+
+    [Fact]
+    public void GetInkBoundsContainsTheStrokeOfThePen()
+    {
+        // The ink of "A" goes from (2, 1) to (14, 13): a stroke reaches half its width further with round joins, and
+        // as far as the limit of its miters (4 by default) with miters
+        var layout = TextLayout.Create("A", Boxes, 16);
+        Assert.Equal(RectangleD.FromLTRB(1, 0, 15, 14), layout.GetInkBounds(new Pen(White, 2) { LineJoin = LineJoin.Round }));
+        Assert.Equal(RectangleD.FromLTRB(-2, -3, 18, 17), layout.GetInkBounds(new Pen(White, 2)));
+        Assert.Equal(layout.InkBounds, layout.GetInkBounds(new Pen(White, 2) { Alignment = PenAlignment.Inside }));
+        Assert.Equal(RectangleD.FromLTRB(0, -1, 16, 15), layout.GetInkBounds(new Pen(White, 2) { Alignment = PenAlignment.Outside, LineJoin = LineJoin.Round }));
+
+        // Markers are drawn at the ends of open contours, which glyphs do not have: the path is stroked to know it
+        var arrow = new Pen(White, 2) { LineJoin = LineJoin.Round, EndMarker = LineMarker.Arrow };
+        Assert.Equal(RectangleD.FromLTRB(1, 0, 15, 14), layout.GetInkBounds(arrow));
+
+        Assert.Equal(RectangleD.Empty, TextLayout.Create(" ", Boxes, 16).GetInkBounds(new Pen(White, 2)));
+        Assert.Throws<ArgumentNullException>("pen", () => layout.GetInkBounds(null!));
+
+        // What the pen paints is inside: nothing is painted around the bounds
+        var pen = new Pen(White, 3);
+        var origin = new PointD(10, 10);
+        var bounds = layout.GetInkBounds(pen).Offset(origin.X, origin.Y);
+        Assert.Equal(
+            Render(40, 40, canvas => canvas.Clip(bounds, clipped => clipped.StrokeText(pen, layout, origin))),
+            Render(40, 40, canvas => canvas.StrokeText(pen, layout, origin)));
+    }
+
+    [Fact]
     public void SpacingIsAddedToLettersAndWords()
     {
         // 4 pixels after each letter: the second A is 20 pixels after the first, and the text is 40 pixels wide.

@@ -45,4 +45,12 @@ public sealed class DropShadowFilter : Filter
 
     // The shadow is blurred with transparent edges; its offset is interpolated between two pixels: one step
     internal override int GetLocalSteps(bool isAfterReach) => 1;
+
+    internal override bool TryGetBoundsCore(RectangleD bounds, out RectangleD result)
+    {
+        var radius = GaussianKernel.GetRadius(Sigma);
+        var shadow = bounds.Offset(Offset.X, Offset.Y).Inflate(radius);
+        result = ShadowOnly ? shadow : RectangleD.Union(bounds, shadow);
+        return true;
+    }
 }

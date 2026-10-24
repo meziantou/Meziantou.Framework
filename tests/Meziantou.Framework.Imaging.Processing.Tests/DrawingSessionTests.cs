@@ -3667,6 +3667,82 @@ public sealed class DrawingSessionTests
     }
 
     [Fact]
+    public void TryGetBoundsGivesWhereAFilterPaints()
+    {
+        var bounds = new RectangleD(10, 10, 4, 4);
+
+        // A blur spreads by three deviations along each axis, rounded up
+        Assert.True(new BlurFilter(1).TryGetBounds(bounds, out var blurred));
+        Assert.Equal(RectangleD.FromLTRB(7, 7, 17, 17), blurred);
+        Assert.True(new BlurFilter(0.5, 0).TryGetBounds(bounds, out blurred));
+        Assert.Equal(RectangleD.FromLTRB(8, 10, 16, 14), blurred);
+        Assert.False(new BlurFilter(1) { EdgeMode = FilterEdgeMode.Duplicate }.TryGetBounds(bounds, out blurred));
+        Assert.Equal(RectangleD.Empty, blurred);
+
+        // A shadow covers what casts it and its own rectangle, moved and blurred; a shadow alone, only its own
+        var black = new Rgba64(0, 0, 0);
+        var shadow = new DropShadowFilter(black, new PointD(5, 3), 1);
+        Assert.True(shadow.TryGetBounds(bounds, out var shadowed));
+        Assert.Equal(RectangleD.FromLTRB(10, 10, 22, 20), shadowed);
+        Assert.True(new DropShadowFilter(black, new PointD(5, 3), 1) { ShadowOnly = true }.TryGetBounds(bounds, out shadowed));
+        Assert.Equal(RectangleD.FromLTRB(12, 10, 22, 20), shadowed);
+
+        // A color matrix keeps transparent pixels transparent, unless it adds to the alpha
+        var addsAlpha = new ColorMatrixFilter(new ColorMatrix([1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0.5]));
+        Assert.True(new ColorMatrixFilter(ColorMatrix.CreateInvert()).TryGetBounds(bounds, out var colored));
+        Assert.Equal(bounds, colored);
+        Assert.False(addsAlpha.TryGetBounds(bounds, out _));
+
+        // A chain spreads each filter from the rectangle of the one before it
+        Assert.True(new FilterChain(new BlurFilter(1), shadow).TryGetBounds(bounds, out var chained));
+        Assert.Equal(RectangleD.FromLTRB(7, 7, 25, 23), chained);
+        Assert.False(new FilterChain(new BlurFilter(1), addsAlpha).TryGetBounds(bounds, out _));
+
+        // A graph stays in its region; without one, a flood fills the canvas
+        var flood = new FloodPrimitive(new Rgba64(65535, 0, 0));
+        Assert.False(new FilterGraph(flood).TryGetBounds(bounds, out _));
+        Assert.True(new FilterGraph(flood) { Region = new RectangleD(0, 0, 50, 40) }.TryGetBounds(bounds, out var region));
+        Assert.Equal(new RectangleD(0, 0, 50, 40), region);
+
+        Assert.Throws<ArgumentException>("bounds", () => new BlurFilter(1).TryGetBounds(new RectangleD(double.NaN, 0, 1, 1), out _));
+
+        // The pixels a filter paints are inside its bounds rounded out to whole pixels, and beyond what is drawn
+        var drawn = new RectangleD(24.5, 22.25, 7, 5);
+        Filter[] filters =
+        [
+            new BlurFilter(1.3),
+            new BlurFilter(0.6, 2),
+            new DropShadowFilter(new Rgba64(0, 0, 0, 40000), new PointD(-2.5, 4.25), 0.7),
+            new DropShadowFilter(black, new PointD(6, -3), 1.5) { ShadowOnly = true },
+            new FilterChain(new BlurFilter(0.8), new DropShadowFilter(black, new PointD(3.5, 3.5), 1)),
+        ];
+        foreach (var filter in filters)
+        {
+            Assert.True(filter.TryGetBounds(drawn, out var painted));
+            var left = (int)Math.Floor(painted.Left);
+            var top = (int)Math.Floor(painted.Top);
+            var right = (int)Math.Ceiling(painted.Right);
+            var bottom = (int)Math.Ceiling(painted.Bottom);
+            using var image = new Image<Rgba32>(64, 64);
+            image.Draw(canvas => canvas.Filter(filter, layer => layer.FillRectangle(White, drawn)), Ct);
+            var outside = 0;
+            for (var y = 0; y < 64; y++)
+            {
+                for (var x = 0; x < 64; x++)
+                {
+                    if (image.Frames[0][x, y].A == 0)
+                        continue;
+
+                    Assert.True(x >= left && x < right && y >= top && y < bottom, $"The pixel ({x}, {y}) is outside {painted}");
+                    outside += x < 24 || x >= 32 || y < 22 || y >= 28 ? 1 : 0;
+                }
+            }
+
+            Assert.True(outside > 0, "The filter paints nothing beyond what is drawn");
+        }
+    }
+
+    [Fact]
     public void AFilterCanChangeColorsCastAShadowAndBeChained()
     {
         // A color matrix on the straight colors: the gray of the matrix of the canvas, up to the rounding of the

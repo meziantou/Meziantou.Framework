@@ -64,4 +64,16 @@ public sealed class BlurFilter : Filter
 
     // The other edge modes read the pixels of the edges of the canvas, which may be far from what is drawn
     internal override int GetLocalSteps(bool isAfterReach) => EdgeMode == FilterEdgeMode.Transparent ? 1 : -1;
+
+    internal override bool TryGetBoundsCore(RectangleD bounds, out RectangleD result)
+    {
+        if (EdgeMode != FilterEdgeMode.Transparent)
+        {
+            result = default;
+            return false;
+        }
+
+        result = bounds.Inflate(GaussianKernel.GetRadius(SigmaX), GaussianKernel.GetRadius(SigmaY));
+        return true;
+    }
 }

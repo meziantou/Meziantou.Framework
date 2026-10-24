@@ -1293,6 +1293,34 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>Text: place texts by a point of their box, centered in a button and on a common baseline.</summary>
+    #region Imaging_PlaceText
+    public static void DrawPayButton(string fontPath, string outputPath)
+    {
+        var font = Font.Load(fontPath);
+        var label = TextLayout.Create("Pay now", font, size: 20);
+        var caption = TextLayout.Create("Total", font, size: 16);
+        var amount = TextLayout.Create("42.00", font, size: 24);
+
+        using var image = new Image<Rgba32>(240, 120, new Rgba32(255, 255, 255));
+        image.Draw(canvas =>
+        {
+            // GetOrigin gives the top-left corner to draw a layout at so that a point of its box lands on an anchor.
+            // The ink box centers what is drawn, the tail of the y included; the layout box would center the line
+            var button = new RectangleD(20, 64, 200, 40);
+            canvas.FillRoundedRectangle(new Rgba32(30, 60, 160), button, radius: 8);
+            canvas.FillText(new Rgba32(255, 255, 255), label, label.GetOrigin(button, TextHorizontalAnchor.Center, TextVerticalAnchor.Center, TextBounds.Ink));
+
+            // Two sizes on one baseline: the caption from the left, the amount aligned to the right
+            var baseline = 44;
+            canvas.FillText(new Rgba32(90, 90, 90), caption, caption.GetOrigin(new PointD(20, baseline), TextHorizontalAnchor.Left, TextVerticalAnchor.Baseline));
+            canvas.FillText(new Rgba32(0, 0, 0), amount, amount.GetOrigin(new PointD(220, baseline), TextHorizontalAnchor.Right, TextVerticalAnchor.Baseline));
+        });
+
+        image.Save(outputPath);
+    }
+    #endregion
+
     /// <summary>Text: a wrapped and justified paragraph whose parts have their own style.</summary>
     #region Imaging_DrawParagraph
     public static void DrawParagraph(string fontPath, string outputPath)
@@ -1333,8 +1361,8 @@ internal static class Examples
             {
                 for (var row = -1; row <= 1; row++)
                 {
-                    var origin = new PointD(center.X - (layout.Width / 2), center.Y - (layout.Height / 2) + (row * layout.Height * 1.5));
-                    turned.FillText(ink, layout, origin);
+                    var middle = new PointD(center.X, center.Y + (row * layout.Height * 1.5));
+                    turned.FillText(ink, layout, layout.GetOrigin(middle, TextHorizontalAnchor.Center, TextVerticalAnchor.Center));
                 }
             });
         });

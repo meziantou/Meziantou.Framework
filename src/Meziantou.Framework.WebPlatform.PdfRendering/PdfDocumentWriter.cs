@@ -21,7 +21,7 @@ internal sealed class PdfDocumentWriter
     {
         Document = document;
         Options = options;
-        var tagged = options.Tagged || options.PdfUAConformance != PdfUAConformance.None || options.PdfAConformance is PdfAConformance.PdfA2A or PdfAConformance.PdfA3A;
+        var tagged = options.Tagged || options.PdfUAConformance != PdfUAConformance.None || options.PdfAConformance is PdfAConformance.PdfA1A or PdfAConformance.PdfA2A or PdfAConformance.PdfA3A;
         Structure = new PdfDocumentStructure(document, tagged);
     }
 

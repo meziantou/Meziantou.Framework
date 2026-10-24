@@ -13,8 +13,8 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
 - **Writer**: full saves (the objects reachable from the catalog, renumbered, with object streams and a
   cross-reference stream, or a cross-reference table) and incremental updates that keep the bytes of the original file;
   the output depends only on the document and the options, except the random keys and vectors of the encryption
-- **Conformance**: PDF/A-2 (b, u, a), PDF/A-3 (b, u, a) and PDF/A-4 output (`PdfDocument.PdfAConformance`), PDF/UA-1
-  (`PdfDocument.PdfUAConformance`), and Tagged PDF: a structure tree with a role map, alternate descriptions,
+- **Conformance**: PDF/A-1 (b, a), PDF/A-2 (b, u, a), PDF/A-3 (b, u, a) and PDF/A-4 (4, 4e, 4f) output
+  (`PdfDocument.PdfAConformance`), PDF/UA-1 and PDF/UA-2 (`PdfDocument.PdfUAConformance`), and Tagged PDF: a structure tree with a role map, alternate descriptions,
   languages and artifacts (`PdfDocument.StructureTree`, `PdfContentBuilder.BeginStructureElement`); the documents are
   validated by veraPDF in the tests
 - **Encryption**: the standard security handler, revisions 2 to 6 (RC4 with 40-bit and 128-bit keys, AES-128,
@@ -163,12 +163,52 @@ var pdf = document.ToByteArray();
 ```
 <!-- endref -->
 
+### PDF/UA-2
+
+PDF/UA-2 (ISO 14289-2) is based on PDF 2.0, so it is combined with PDF/A-4 only. The save checks that the structure
+tree has a single `Document` element and no `H` or `Note` element, puts the standard types of PDF 2.0 in the PDF 2.0
+namespace, and refuses the destinations of the document that go to a page only: give them the structure element they
+show (`PdfDestination.WithStructureElement`), which is written as a `GoTo` action with a structure destination. The
+embedded files need a description.
+
+<!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_PdfUA2;format=md-fenced-code-block;dedent=true -->
+```csharp
+var font = PdfFont.Load(fontData);
+var document = new PdfDocument
+{
+    PdfAConformance = PdfAConformance.PdfA4,
+    PdfUAConformance = PdfUAConformance.PdfUA2,
+    Language = "en-US",
+};
+document.Information.Title = "Annual report";
+
+// A single Document element, and headings H1 to H6
+var root = document.StructureTree.AddElement("Document");
+var heading = root.AddElement("H1");
+var page = document.Pages.Add(PdfSize.A4);
+page.CreateContentBuilder().BeginStructureElement(heading).DrawText("Results", font, 24, 60, 760).EndMarkedContent();
+
+// The destinations in the document go to structure elements
+document.Outlines.Add("Results", PdfDestination.Fit(page).WithStructureElement(heading));
+
+var pdf = document.ToByteArray();
+```
+<!-- endref -->
+
 ## PDF/A
 
 PDF/A is the PDF of long-term archiving. The save checks what the library can check (no encryption, embedded fonts,
 a structure tree for the level A, the version), adds the sRGB output intent, and writes the XMP metadata from the
 document information with the identification of the level. The content must follow the other rules of the level:
 the conformance tests validate the documents the library writes with veraPDF.
+
+| Level | Based on | Specific rules the save checks or writes |
+| --- | --- | --- |
+| PDF/A-1b, PDF/A-1a | PDF 1.4 | A 1.4 header and a cross-reference table, without object streams; an sRGB output intent of version 2; the `CIDSet` of the font subsets. No transparency (alpha, blend modes, soft masks, images with an alpha channel, transparency groups), no LZW or JPEG 2000 filter, no layers, no embedded files, no ICC profile of version 4 |
+| PDF/A-2b, -2u, -2a | PDF 1.7 | The embedded files are PDF/A-1 or PDF/A-2 documents |
+| PDF/A-3b, -3u, -3a | PDF 1.7 | The embedded files, of any format, have a MIME type and a relationship |
+| PDF/A-4, PDF/A-4e | PDF 2.0 | No document information dictionary; the embedded files are PDF/A-1, -2 or -4 documents |
+| PDF/A-4f | PDF 2.0 | PDF/A-4 with at least one embedded file, of any format |
 
 <!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_PdfA;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -410,6 +450,8 @@ specification says; a content stream that cannot be decoded throws when its data
   method of the other streams.
 - The standard 14 fonts show the text of `WinAnsiEncoding` (or the encodings of Symbol and ZapfDingbats); an embedded
   font shows any text it has the glyphs of. The fonts with CFF2 outlines, and the instances of variable fonts, are not
-  embedded. PDF/A-1, PDF/A-4e and PDF/A-4f, and PDF/UA-2 are not supported.
+  embedded. The save checks what the conformance levels require of the document as a whole; the
+  content (the order of the structure, the colors of the annotations of PDF/A-1, the values of the numbers) follows
+  the other rules of the level.
 - The text extraction follows the order of the content and joins the glyphs into lines by their positions; it does
   not detect columns.

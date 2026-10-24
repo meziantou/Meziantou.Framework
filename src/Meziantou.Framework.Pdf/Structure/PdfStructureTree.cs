@@ -26,6 +26,22 @@ public sealed class PdfStructureTree
     private static readonly PdfName PgName = PdfName.Create("Pg");
     private static readonly PdfName McidName = PdfName.Create("MCID");
     private static readonly PdfName NumsName = PdfName.Create("Nums");
+    private static readonly PdfName NamespacesName = PdfName.Create("Namespaces");
+    private static readonly PdfName NamespaceName = PdfName.Create("Namespace");
+    private static readonly PdfName NSName = PdfName.Create("NS");
+
+    private const string Pdf2Namespace = "http://iso.org/pdf2/ssn";
+
+    // The standard structure types of the PDF 2.0 namespace (ISO 32000-2, 14.8.4); the types of PDF 1.7 that PDF 2.0
+    // does not have (Art, BlockQuote, Note, Code, Quote...) stay in the default namespace
+    private static readonly HashSet<string> Pdf2Types = new(StringComparer.Ordinal)
+    {
+        "Document", "DocumentFragment", "Part", "Sect", "Div", "Aside", "NonStruct",
+        "P", "H", "Title", "FENote", "Sub", "Lbl", "Span", "Em", "Strong", "Link", "Annot", "Form",
+        "Ruby", "RB", "RT", "RP", "Warichu", "WT", "WP",
+        "L", "LI", "LBody", "TOC", "TOCI",
+        "Table", "TR", "TH", "TD", "THead", "TBody", "TFoot", "Caption", "Figure", "Formula", "Artifact",
+    };
 
     private readonly PdfDocument _document;
     private readonly Dictionary<int, PdfObject> _parentTree = [];
@@ -41,6 +57,8 @@ public sealed class PdfStructureTree
             ReadParentTree(root);
         }
     }
+
+    internal PdfDocument Document => _document;
 
     /// <summary>Gets a value indicating whether the document has a structure tree.</summary>
     public bool Exists => _root is not null;
@@ -227,6 +245,59 @@ public sealed class PdfStructureTree
             }
         }
     }
+
+    /// <summary>
+    /// Puts the elements whose type is a standard type of PDF 2.0 in the PDF 2.0 namespace (14.7.4.2, 14.8.6), as
+    /// PDF/UA-2 requires of the <c>Document</c> element at the top of the tree (ISO 14289-2, 8.2.5.2). The other types
+    /// stay in the default namespace, the namespace of PDF 1.7, with the role map.
+    /// </summary>
+    internal void UsePdf2Namespace()
+    {
+        if (_root is null)
+            return;
+
+        if (_root.Get<PdfArray>(NamespacesName) is not { } namespaces)
+        {
+            namespaces = [];
+            _root[NamespacesName] = namespaces;
+        }
+
+        var reference = namespaces.OfType<PdfReference>().FirstOrDefault(item => item.Resolve() is PdfDictionary dictionary && dictionary.GetText(NSName) == Pdf2Namespace);
+        if (reference is null)
+        {
+            reference = _document.Objects.Add(new PdfDictionary
+            {
+                [PdfNames.Type] = NamespaceName,
+                [NSName] = PdfString.FromText(Pdf2Namespace),
+            });
+            namespaces.Add(reference);
+        }
+
+        var visited = new HashSet<PdfDictionary>(ReferenceEqualityComparer.Instance);
+        void Visit(PdfDictionary parent, int depth)
+        {
+            if (depth > 64)
+                return;
+
+            foreach (var element in GetChildren(parent))
+            {
+                if (!visited.Add(element.Dictionary))
+                    continue;
+
+                if (!element.Dictionary.ContainsKey(NSName) && IsPdf2Type(element.Type))
+                {
+                    element.Dictionary[NSName] = reference;
+                }
+
+                Visit(element.Dictionary, depth + 1);
+            }
+        }
+
+        Visit(_root, depth: 0);
+    }
+
+    /// <summary>Gets a value indicating whether a type is a standard type of PDF 2.0: the types of the table, and the headings <c>H1</c>, <c>H2</c>... (14.8.4.3.2).</summary>
+    private static bool IsPdf2Type(string type) => Pdf2Types.Contains(type) || (type.Length > 1 && type[0] == 'H' && type.AsSpan(1).IndexOfAnyExceptInRange('0', '9') < 0 && type[1] != '0');
 
     private PdfArray GetPageContents(PdfPage page)
     {

@@ -50,7 +50,9 @@ public sealed class PdfAnnotationCollection : IReadOnlyList<PdfAnnotation>
         if (destination.Page.Document != _page.Document)
             throw new ArgumentException("The destination is a page of another document", nameof(destination));
 
-        return AddLink(rectangle, PdfNames.Dest, destination.ToArray());
+        var link = AddLink(rectangle, key: null, target: null);
+        destination.WriteTo(link.Dictionary);
+        return link;
     }
 
     /// <summary>Adds a file attachment annotation (12.5.6.15) that embeds a new file.</summary>
@@ -129,7 +131,7 @@ public sealed class PdfAnnotationCollection : IReadOnlyList<PdfAnnotation>
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-    private PdfLinkAnnotation AddLink(PdfRectangle rectangle, PdfName key, PdfObject target)
+    private PdfLinkAnnotation AddLink(PdfRectangle rectangle, PdfName? key, PdfObject? target)
     {
         var dictionary = new PdfDictionary
         {
@@ -139,8 +141,12 @@ public sealed class PdfAnnotationCollection : IReadOnlyList<PdfAnnotation>
             [PdfNames.Border] = PdfArray.FromNumbers(0, 0, 0),
             [PdfNames.P] = _page.Reference,
             [PdfNames.F] = PdfInteger.Get(4), // Print (12.5.3)
-            [key] = target,
         };
+        if (key is not null)
+        {
+            dictionary[key] = target;
+        }
+
         var reference = _page.Document.Objects.Add(dictionary);
         GetOrCreateArray().Add(reference);
         return new PdfLinkAnnotation(_page, dictionary, reference);

@@ -23,6 +23,8 @@ internal sealed class EmbeddedFontUsage
     private PdfReference? _descriptor;
     private PdfReference? _fontFile;
     private PdfReference? _toUnicode;
+    private PdfReference? _cidSet;
+    private bool _writtenCidSet;
     private int _writtenVersion = -1;
     private int _version;
 
@@ -67,10 +69,13 @@ internal sealed class EmbeddedFontUsage
     /// <summary>Writes the font objects, when glyphs were added since they were written.</summary>
     public void Write(PdfDocument document)
     {
-        if (_writtenVersion == _version)
+        // PDF/A-1 needs the CIDSet of the subsets (ISO 19005-1, 6.3.5); the other documents leave it out
+        var writeCidSet = Conformance.PdfALevel.GetPart(document.PdfAConformance) == 1;
+        if (_writtenVersion == _version && _writtenCidSet == writeCidSet)
             return;
 
         _writtenVersion = _version;
+        _writtenCidSet = writeCidSet;
         var face = _font.Face;
         var isCff = face.Outlines == FontOutlineKind.Cff;
         var baseFont = CreateSubsetTag() + "+" + _font.PostScriptName;
@@ -116,6 +121,23 @@ internal sealed class EmbeddedFontUsage
             [PdfNames.StemV] = PdfInteger.Get(50 + (int)Math.Round(Math.Pow(Math.Clamp(face.Weight, 1, 1000) / 65d, 2), MidpointRounding.AwayFromZero)),
             [isCff ? PdfNames.FontFile3 : PdfNames.FontFile2] = _fontFile,
         };
+        if (writeCidSet)
+        {
+            // One bit for each CID, the high-order bit of the first byte for the CID 0 (9.8.3.3, Table 125): the CIDs
+            // are the glyphs of the subset, the glyphs shown with the glyph 0 and the components of the composite glyphs
+            var present = FontSubsetter.GetClosure(face, _glyphs);
+            var bits = new byte[(present.Max / 8) + 1];
+            foreach (var cid in present)
+            {
+                bits[cid / 8] |= (byte)(0x80 >> (cid % 8));
+            }
+
+            var cidSet = new PdfStream();
+            cidSet.SetData(bits);
+            _cidSet = Set(document, _cidSet, cidSet);
+            descriptor[PdfName.Create("CIDSet")] = _cidSet;
+        }
+
         _descriptor = Set(document, _descriptor, descriptor);
 
         var cidFont = new PdfDictionary

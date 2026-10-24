@@ -20,6 +20,10 @@ namespace Meziantou.Framework.Pdf
         PdfA3U = 5,
         PdfA3A = 6,
         PdfA4 = 7,
+        PdfA1B = 8,
+        PdfA1A = 9,
+        PdfA4E = 10,
+        PdfA4F = 11,
     }
 
     public class PdfAnnotation
@@ -193,6 +197,7 @@ namespace Meziantou.Framework.Pdf
         public double? Left { get => throw null; }
         public Meziantou.Framework.Pdf.PdfPage Page { get => throw null; }
         public double? Right { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfStructureElement? StructureElement { get => throw null; }
         public double? Top { get => throw null; }
         public double? Zoom { get => throw null; }
         public static Meziantou.Framework.Pdf.PdfDestination Fit(Meziantou.Framework.Pdf.PdfPage page) => throw null;
@@ -200,6 +205,7 @@ namespace Meziantou.Framework.Pdf
         public static Meziantou.Framework.Pdf.PdfDestination FitHorizontally(Meziantou.Framework.Pdf.PdfPage page, double? top) => throw null;
         public static Meziantou.Framework.Pdf.PdfDestination FitRectangle(Meziantou.Framework.Pdf.PdfPage page, Meziantou.Framework.Pdf.PdfRectangle rectangle) => throw null;
         public static Meziantou.Framework.Pdf.PdfDestination FitVertically(Meziantou.Framework.Pdf.PdfPage page, double? left) => throw null;
+        public Meziantou.Framework.Pdf.PdfDestination WithStructureElement(Meziantou.Framework.Pdf.PdfStructureElement element) => throw null;
         public static Meziantou.Framework.Pdf.PdfDestination Xyz(Meziantou.Framework.Pdf.PdfPage page, double? left, double? top, double? zoom = null) => throw null;
     }
 
@@ -790,6 +796,7 @@ namespace Meziantou.Framework.Pdf
     {
         None = 0,
         PdfUA1 = 1,
+        PdfUA2 = 2,
     }
 
     public readonly struct PdfVersion : System.IComparable<Meziantou.Framework.Pdf.PdfVersion>, System.IEquatable<Meziantou.Framework.Pdf.PdfVersion>

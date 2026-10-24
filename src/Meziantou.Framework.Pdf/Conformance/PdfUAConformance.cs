@@ -8,4 +8,11 @@ public enum PdfUAConformance
 
     /// <summary>PDF/UA-1 (ISO 14289-1): the document is tagged, has a title and a language, and its content is either in the structure tree or an artifact.</summary>
     PdfUA1,
+
+    /// <summary>
+    /// PDF/UA-2 (ISO 14289-2, PDF 2.0): PDF/UA-1 with the structure of PDF 2.0 (a single <c>Document</c> element of
+    /// the PDF 2.0 namespace, no <c>H</c> element) and structure destinations
+    /// (<see cref="PdfDestination.WithStructureElement"/>). It can be combined with PDF/A-4 only.
+    /// </summary>
+    PdfUA2,
 }

@@ -10,6 +10,9 @@
 // and with the integrity hashes of the package-lock.json of the suite (lockfileVersion 1), like 'npm ci --ignore-scripts'
 // would do for these packages and their dependencies. 'a>b' is the package 'b' as 'a' sees it (a nested dependency).
 //
+// The npm-packages suite is the packages of tests/Meziantou.Framework.JavaScriptEngine.NpmPackages/package-lock.json
+// (lockfileVersion 3), installed in npm-packages/node_modules as 'npm ci --ignore-scripts --omit=optional' would do.
+//
 // Without arguments, every suite is fetched except the ones marked "optional" (parse-number-fxx-test-data). The arguments
 // name the suites to fetch, optional or not: dotnet run eng/javascriptengine/fetch-tests.cs parse-number-fxx-test-data
 using System.Diagnostics;
@@ -23,13 +26,17 @@ string[] pinsPaths =
     Path.Combine(root, "tests", "Meziantou.Framework.JavaScriptEngine.Test262", "test262.json"),
     Path.Combine(root, "tests", "Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark", "web-tooling-benchmark.json"),
 ];
+var npmLockFiles = new Dictionary<string, string>(StringComparer.Ordinal)
+{
+    ["npm-packages"] = Path.Combine(root, "tests", "Meziantou.Framework.JavaScriptEngine.NpmPackages", "package-lock.json"),
+};
 var externalPath = Path.Combine(root, "tests", "Meziantou.Framework.JavaScriptEngine.External");
 var pinsDocuments = pinsPaths.Select(path => JsonDocument.Parse(File.ReadAllText(path))).ToArray();
 var requestedSuites = args.ToHashSet(StringComparer.Ordinal);
 foreach (var name in requestedSuites)
 {
-    if (!pinsDocuments.Any(pins => pins.RootElement.TryGetProperty(name, out _)))
-        throw new InvalidOperationException($"'{name}' is not a suite of {string.Join(" or ", pinsPaths)}");
+    if (!npmLockFiles.ContainsKey(name) && !pinsDocuments.Any(pins => pins.RootElement.TryGetProperty(name, out _)))
+        throw new InvalidOperationException($"'{name}' is not a suite of {string.Join(" or ", [.. pinsPaths, .. npmLockFiles.Values])}");
 }
 
 foreach (var pins in pinsDocuments)
@@ -55,7 +62,64 @@ foreach (var pins in pinsDocuments)
     }
 }
 
+foreach (var (name, lockFile) in npmLockFiles)
+{
+    if (requestedSuites.Count == 0 || requestedSuites.Contains(name))
+    {
+        await InstallNpmLockFile(Path.Combine(externalPath, name), lockFile);
+    }
+}
+
 return 0;
+
+// The packages of a package-lock.json whose lockfileVersion is 3: the keys of "packages" are the paths where npm installs
+// them. The optional packages (the native binaries of the packages that have a JavaScript fallback) are not installed.
+static async Task InstallNpmLockFile(string target, string lockFile)
+{
+    var nodeModules = Path.Combine(target, "node_modules");
+    var stampPath = Path.Combine(nodeModules, ".fetch-tests-stamp");
+    var lockContent = File.ReadAllText(lockFile);
+    var stamp = Convert.ToHexStringLower(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(lockContent)));
+    if (File.Exists(stampPath) && File.ReadAllText(stampPath) == stamp)
+    {
+        Console.WriteLine($"{Path.GetFileName(target)}/node_modules is up to date");
+        return;
+    }
+
+    using var lockDocument = JsonDocument.Parse(lockContent);
+    if (lockDocument.RootElement.GetProperty("lockfileVersion").GetInt32() != 3)
+        throw new InvalidOperationException($"{lockFile} must have lockfileVersion 3");
+
+    var packages = new List<(string Path, string Url, string Integrity)>();
+    foreach (var entry in lockDocument.RootElement.GetProperty("packages").EnumerateObject())
+    {
+        if (entry.Name.Length == 0 || IsTrue(entry.Value, "optional") || IsTrue(entry.Value, "dev") || IsTrue(entry.Value, "link"))
+            continue;
+
+        if (!entry.Name.StartsWith("node_modules/", StringComparison.Ordinal))
+            throw new InvalidOperationException($"Unexpected package path '{entry.Name}' in {lockFile}");
+
+        packages.Add((entry.Name["node_modules/".Length..], entry.Value.GetProperty("resolved").GetString()!, entry.Value.GetProperty("integrity").GetString()!));
+    }
+
+    if (Directory.Exists(nodeModules))
+    {
+        Directory.Delete(nodeModules, recursive: true);
+    }
+
+    Console.WriteLine($"Installing {packages.Count} npm packages in {nodeModules}");
+    using var httpClient = new HttpClient();
+    await Parallel.ForEachAsync(packages, new ParallelOptions { MaxDegreeOfParallelism = 8 }, async (item, cancellationToken) =>
+    {
+        var content = await DownloadWithRetry(httpClient, item.Url, cancellationToken);
+        VerifyIntegrity(item.Url, content, item.Integrity);
+        Extract(content, Path.Combine(nodeModules, item.Path.Replace('/', Path.DirectorySeparatorChar)));
+    });
+
+    File.WriteAllText(stampPath, stamp);
+
+    static bool IsTrue(JsonElement element, string name) => element.TryGetProperty(name, out var value) && value.ValueKind is JsonValueKind.True;
+}
 
 static async Task InstallNpmPackages(string target, string lockFile, string[] packages)
 {

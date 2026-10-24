@@ -1,0 +1,36 @@
+"use strict";Object.defineProperty(exports, "__esModule", {value: true}); function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+var _react = require('react'); var _react2 = _interopRequireDefault(_react);
+var Color; (function (Color) { const Red = "r"; Color["Red"] = Red; const Green = "g"; Color["Green"] = Green; })(Color || (exports.Color = Color = {}));
+
+ class Base {    __init() {this.x = 1} constructor( name) {;this.name = name;Base.prototype.__init.call(this); } } exports.Base = Base;
+ const App = ({ title, count = 0 }) => {
+    const [state, setState] = _react.useState(count);
+    return _react2.default.createElement('div', { className: "app", onClick: () => setState(state + 1),}, title , ": " , state, _react2.default.createElement(_react2.default.Fragment, null, "fragment"));
+}; exports.App = App;
+ function f( a) { } exports.default = f;
+let value = ("x" ) ;
+
+----
+const _jsxFileName = "App.tsx";import {jsxDEV as _jsxDEV, Fragment as _Fragment} from "react/jsx-dev-runtime";
+import React, { useState } from "react";
+export var Color; (function (Color) { const Red = "r"; Color["Red"] = Red; const Green = "g"; Color["Green"] = Green; })(Color || (Color = {}));
+
+export  class Base { ;   x = 1; constructor( name) {;this.name = name; } }
+export const App = ({ title, count = 0 }) => {
+    const [state, setState] = useState(count);
+    return _jsxDEV('div', { className: "app", onClick: () => setState(state + 1), children: [title , ": " , state, _jsxDEV(_Fragment, { children: "fragment"}, void 0, false, {fileName: _jsxFileName, lineNumber: 8}, this)]}, void 0, true, {fileName: _jsxFileName, lineNumber: 8}, this);
+};
+export default function f( a) { }
+let value = ("x" ) ;
+
+----
+"use strict";// 
+
+function f(a, b) { return [a]; }
+
+
+----
+ function _nullishCoalesce(lhs, rhsFn) { if (lhs != null) { return lhs; } else { return rhsFn(); } } function _optionalChain(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }class A {constructor() { A.prototype.__init.call(this); } __init() {this.x = 1} static __initStatic() {this.y = 2} #z = 3; } A.__initStatic();
+const a = _nullishCoalesce(_optionalChain([b, 'optionalAccess', _ => _.c]), () => ( d));
+----
+3.35.1

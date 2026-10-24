@@ -1,0 +1,78 @@
+scan: 10
+scan: 40
+scan: 90
+scan complete
+pairwise: [[1,2],[2,3],[3,1]]
+pairwise complete
+groupBy: [1,["a","c"]]
+groupBy: [2,["bb","dd"]]
+groupBy complete
+zip: [1,"a"]
+zip: [2,"b"]
+zip complete
+concat: [1,2,3]
+concat complete
+retry: "ok after 3"
+retry complete
+catchError: "caught boom"
+catchError complete
+combineLatest: [1,"initial"]
+combineLatest: [1,"second"]
+combineLatest: [2,"second"]
+replay: 2
+replay: 3
+merge: "start"
+first 9
+throttle: 0
+concatMap: 0
+takeUntil: 0
+tap 0
+shared A: 0
+shared B: 0
+buffer: [0,1]
+bufferTime: [0,1]
+takeUntil: 1
+merge: "x0"
+concatMap: 1
+tap 1
+shared A: 1
+shared B: 1
+merge: "y0"
+takeUntil: 2
+bufferTime: [2,3]
+concatMap: 2
+takeUntil: 3
+tap 2
+shared A: 2
+shared B: 2
+shared A complete
+shared B complete
+takeUntil complete
+finalized
+merge: "x1"
+bufferTime: [4,5,6]
+bufferTime complete
+merge: "y1"
+merge complete
+exhaustMap: "exhausted 0"
+switchMap: "switched 2"
+withLatestFrom: [3,0]
+timeout: "TimeoutError"
+timeout complete
+withLatestFrom: [4,1]
+withLatestFrom complete
+throttle: 3
+buffer: [2,3]
+concatMap: 3
+concatMap: 4
+switchMap: "switched 4"
+exhaustMap: "exhausted 3"
+debounce: 4
+debounce complete
+throttle complete
+buffer: [4]
+buffer complete
+switchMap complete
+exhaustMap complete
+concatMap complete
+last late

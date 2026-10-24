@@ -1,0 +1,147 @@
+var a = function(b, c) {
+    if (b) {
+        return c ? {
+            x: 1,
+            y: [1, 2, 3]
+        } : null
+    } else {
+        for (var i = 0; i < 10; i++) {
+            c += i
+        }
+    }
+    return `t${b}`
+};
+const f = async (x) => {
+    await x;
+    label: while (true) {
+        break label
+    }
+};
+class A extends B {
+    static #p = 1;
+    get x() {
+        return this.#p
+    }
+}
+----
+var a = function( b, c )
+{
+  if ( b )
+  {
+    return c ?
+    {
+      x: 1,
+      y: [ 1, 2, 3 ]
+    } : null
+  }
+  else
+  {
+    for ( var i = 0; i < 10; i++ )
+    {
+      c += i
+    }
+  }
+  return `t${b}`
+};
+const f = async ( x ) =>
+{
+  await x;
+  label: while ( true )
+  {
+    break label
+  }
+};
+class A extends B
+{
+  static #p = 1;
+  get x()
+  {
+    return this.#p
+  }
+}
+
+----
+.a {
+    color: red;
+    background: url(x.png)
+}
+
+@media (max-width:100px) {
+    .b>.c {
+        margin: 0 auto
+    }
+}
+
+.d:hover::after {
+    content: 'x'
+}
+----
+.a {
+	color: red;
+	background: url(x.png)
+}
+@media (max-width:100px) {
+	.b>.c {
+		margin: 0 auto
+	}
+}
+.d:hover::after {
+	content: 'x'
+}
+----
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>T</title>
+    <style>
+        a {
+            color: red
+        }
+    </style>
+</head>
+
+<body>
+    <div class=a>
+        <p>Text <b>bold</b></p>
+        <ul>
+            <li>1
+            <li>2
+        </ul>
+        <script>
+            if (a) {
+                b()
+            }
+        </script>
+        <pre>  keep   this </pre>
+    </div>
+</body>
+
+</html>
+----
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>T</title>
+        <style>
+            a {
+                color: red
+            }
+        </style>
+    </head>
+    <body>
+        <div class=a>
+            <p>Text <b>bold</b></p>
+            <ul>
+                <li>1
+                <li>2
+            </ul>
+            <script>
+                if (a) {
+                    b()
+                }
+            </script>
+            <pre>  keep   this </pre>
+        </div>
+    </body>
+</html>

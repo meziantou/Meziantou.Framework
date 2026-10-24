@@ -1,0 +1,49 @@
+2:1 2 no-var Unexpected var, use let or const instead. [fix]
+2:5 2 local/no-foo Do not use 'unused'. [fix]
+2:5 2 no-unused-vars 'unused' is assigned a value but never used. [1 suggestions]
+3:5 2 no-unused-vars 'reassigned' is assigned a value but never used. [1 suggestions]
+3:5 2 prefer-const 'reassigned' is never reassigned. Use 'const' instead. [fix]
+4:14 2 no-const-assign 'a' is constant.
+4:14 2 no-unused-vars 'a' is assigned a value but never used.
+5:10 2 no-unused-vars 'f' is defined but never used. [1 suggestions]
+5:27 2 eqeqeq Expected '===' and instead saw '=='. [1 suggestions]
+5:38 2 no-useless-return Unnecessary return statement. [fix]
+5:44 2 semi Missing semicolon. [fix]
+5:52 2 no-else-return Unnecessary 'else' after 'return'. [fix]
+5:63 2 semi Missing semicolon. [fix]
+6:1 1 no-console Unexpected console statement. [1 suggestions]
+6:23 2 quotes Strings must use doublequote. [fix]
+7:6 2 no-var Unexpected var, use let or const instead.
+7:43 2 no-loop-func Function declared in a loop contains unsafe references to variable(s) 'i'.
+7:57 1 no-console Unexpected console statement. [1 suggestions]
+8:7 2 no-unused-vars 'obj' is assigned a value but never used. [1 suggestions]
+8:21 2 no-dupe-keys Duplicate key 'a'.
+9:18 2 valid-typeof Invalid typeof comparison value.
+10:16 2 no-unused-vars 'g' is defined but never used. [1 suggestions]
+10:59 2 no-return-await Redundant use of `await` on a return value. [1 suggestions]
+12:7 2 no-unused-vars 're' is assigned a value but never used. [1 suggestions]
+12:12 2 no-regex-spaces Spaces are hard to count. Use {2}. [fix]
+13:1 2 no-labels Unexpected labeled statement.
+13:19 2 no-labels Unexpected label in continue statement.
+14:1 2 no-debugger Unexpected 'debugger' statement.
+----
+/* eslint no-console: "warn" */
+const used = 1;
+const reassigned = 2;
+const a = 1; a = 2;
+function f(x, x2) { if (x == null) {  } else { return x2; } }
+console.log("hello" + "world");
+for (var i = 0; i < 10; i++) { setTimeout(function () { console.log(i); }); }
+const obj = { a: 1, a: 2 };
+if (typeof x === "strnig") {}
+async function g() { await Promise.all([1].map(async v => await v)); }
+while (true) { break; }
+const re = /a {2}b/;
+label: for (;;) { continue label; }
+debugger;
+export default class { constructor() { super.x; } }
+
+----
+true 19
+----
+[{"ruleId":null,"fatal":true,"severity":2,"message":"Parsing error: The keyword 'let' is reserved","line":1,"column":1}]

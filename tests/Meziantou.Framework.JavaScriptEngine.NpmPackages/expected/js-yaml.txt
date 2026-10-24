@@ -1,0 +1,122 @@
+{
+  "string": "hello",
+  "quoted": "line\nbreak é",
+  "single": "it's",
+  "int": 42,
+  "octal": "0o17",
+  "hex": 31,
+  "float": 6.02e+23,
+  "infinity": null,
+  "nan": null,
+  "bool": [
+    true,
+    false,
+    true,
+    false
+  ],
+  "null_values": [
+    null,
+    null,
+    ""
+  ],
+  "date": "2001-12-15T02:59:43.100Z",
+  "literal": "line 1\n  line 2\n",
+  "folded": "folded text\n",
+  "base": {
+    "a": 1,
+    "b": 2
+  },
+  "merged": {
+    "a": 1,
+    "b": 3
+  },
+  "list": [
+    {
+      "name": "x",
+      "values": [
+        1,
+        2
+      ]
+    },
+    {
+      "name": true,
+      "values": []
+    }
+  ]
+}
+----
+{"a":15,"b":"yes","c":"1_000","d":31}
+----
+{"a":1,"b":true,"c":null}
+----
+{"a":"1","b":["x"]}
+----
+[1,[2],{"a":3}]
+----
+{"p":{"x":1,"y":2}}
+----
+[[["complex","key"],"value"],["plain",1]]
+----
+base:
+  a: 1
+  b: 2
+bool:
+  - true
+  - false
+  - true
+  - false
+date: 2001-12-15T02:59:43.100Z
+float: 6.02e+23
+folded: |
+  folded text
+hex: 31
+infinity: .inf
+int: 42
+list:
+  - name: x
+    values:
+      - 1
+      - 2
+  - name: true
+    values: []
+literal: |
+  line 1
+    line 2
+merged:
+  a: 1
+  b: 3
+nan: .nan
+null_values:
+  - null
+  - null
+  - ''
+octal: '0o17'
+quoted: |-
+  line
+  break é
+single: it's
+string: hello
+
+----
+[{"type":1,"explicitStart":false,"explicitEnd":false,"directives":[]},{"type":3,"start":0,"anchorStart":-1,"anchorEnd":-1,"tagStart":-1,"tagEnd":-1,"style":1},{"type":4,"valueStart":0,"valueEnd":1,"anchorStart":-1,"anchorEnd":-1,"tagStart":-1,"tagEnd":-1,"style":1,"chomping":1,"indent":-1,"fast":true},{"type":2,"start":3,"anchorStart":-1,"anchorEnd":-1,"tagStart":-1,"tagEnd":-1,"style":2},{"type":4,"valueStart":4,"valueEnd":5,"anchorStart":-1,"anchorEnd":-1,"tagStart":-1,"tagEnd":-1,"style":1,"chomping":1,"indent":-1,"fast":true},{"type":4,"valueStart":10,"valueEnd":11,"anchorStart":8,"anchorEnd":9,"tagStart":-1,"tagEnd":-1,"style":1,"chomping":1,"indent":-1,"fast":true},{"type":6},{"type":4,"valueStart":13,"valueEnd":14,"anchorStart":-1,"anchorEnd":-1,"tagStart":-1,"tagEnd":-1,"style":1,"chomping":1,"indent":-1,"fast":true},{"type":5,"anchorStart":17,"anchorEnd":18},{"type":6},{"type":6}]
+----
+p: !point
+  - 1
+  - 2
+s: |-
+  multi
+  line
+k: 'yes'
+'n': null
+arr:
+  - [1, 2]
+  - {a: []}
+
+----
+YAMLException: unexpected end of the stream within a flow collection at 0:8
+----
+YAMLException: bad indentation of a mapping entry at 0:4
+----
+YAMLException: end of the stream or a document separator is expected at 1:0
+----
+YAMLException: duplicated mapping key at 0:7

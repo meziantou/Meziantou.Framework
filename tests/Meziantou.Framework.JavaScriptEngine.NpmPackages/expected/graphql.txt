@@ -1,0 +1,107 @@
+{"errors":[{"message":"Resolver failed","locations":[{"line":6,"column":5}],"path":["failing"]}],"data":{"hero":{"id":"1","name":"Luke","friends":[{"name":"Leia","friends":[{"name":"Luke"}]},{"name":"Han","friends":[{"name":"Luke"},{"name":"Leia"}]}]},"search":[{"__typename":"Character","name":"Leia","appearsIn":["NEWHOPE"]},{"__typename":"Character","name":"Han","appearsIn":["EMPIRE"]},{"__typename":"Starship","name":"Falcon","feet":112.76247079999999}],"node":{"id":"10","length":34.37},"failing":null}}
+----
+{"data":{"createReview":{"episode":"JEDI","stars":5,"commentary":"Great"}}}
+----
+{"errors":[{"message":"Cannot query field \"unknownField\" on type \"Character\".","locations":[{"line":1,"column":10}]},{"message":"Field \"search\" of type \"[SearchResult!]!\" must have a selection of subfields. Did you mean \"search { ... }\"?","locations":[{"line":1,"column":25}]},{"message":"Field \"search\" argument \"text\" of type \"String!\" is required, but it was not provided.","locations":[{"line":1,"column":25}]}]}
+----
+{"errors":[{"message":"Variable \"$e\" got invalid value \"INVALID\"; Value \"INVALID\" does not exist in \"Episode\" enum.","locations":[{"line":1,"column":8}]}]}
+----
+query Hero($episode: Episode = EMPIRE, $withFriends: Boolean!) {
+  hero(episode: $episode) {
+    ...Fields
+    friends @include(if: $withFriends) {
+      fullName: name
+      friends {
+        fullName: name
+      }
+    }
+  }
+  search(text: "a") {
+    __typename
+    ... on Character {
+      fullName: name
+      appearsIn
+    }
+    ... on Starship {
+      fullName: name
+      feet: length(unit: FOOT)
+    }
+  }
+  node(id: "10") {
+    id
+    ... on Starship {
+      length
+    }
+  }
+  failing
+}
+
+fragment Fields on Character {
+  id
+  fullName: name
+}
+
+mutation Review {
+  createReview(episode: JEDI, review: {stars: 5, commentary: "Great"}) {
+    episode
+    stars
+    commentary
+  }
+}
+----
+["Fields \"hero\" conflict because they have differing arguments. Use different aliases on the fields to fetch both if this was intentional.","Enum \"Episode\" cannot represent non-enum value: 1."]
+----
+false
+----
+"""A thing with an id"""
+interface Node {
+  id: ID!
+}
+
+enum Episode {
+  NEWHOPE
+  EMPIRE
+  JEDI
+}
+
+type Character implements Node {
+  id: ID!
+  name: String!
+  friends: [Character!]!
+  appearsIn: [Episode!]!
+}
+
+type Starship implements Node {
+  id: ID!
+  name: String!
+  length(unit: Unit = METER): Float
+}
+
+enum Unit {
+  METER
+  FOOT
+}
+
+union SearchResult = Character | Starship
+
+input ReviewInput {
+  stars: Int!
+  commentary: String
+}
+
+type Review {
+  episode: Episode
+  stars: Int!
+  commentary: String
+}
+
+type Query {
+  hero(episode: Episode): Character
+  search(text: String!): [SearchResult!]!
+  node(id: ID!): Node
+  failing: String
+}
+
+type Mutation {
+  createReview(episode: Episode, review: ReviewInput!): Review
+}

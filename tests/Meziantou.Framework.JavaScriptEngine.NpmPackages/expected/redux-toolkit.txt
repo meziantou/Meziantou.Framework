@@ -1,0 +1,66 @@
+{
+ "log": [
+  "state [\"write\"]",
+  "state [\"read\",\"write\"]",
+  "state [\"read\",\"write\"]",
+  "toggled read -> true",
+  "state [\"read\",\"write\"]",
+  "state [\"read\",\"write\"]",
+  "state [\"t2\",\"t1\",\"t0\",\"read\",\"write\"]",
+  "state [\"t2\",\"t1\",\"t0\",\"read\",\"write\"]",
+  "state [\"t2\",\"t1\",\"t0\",\"read\",\"write\"]",
+  "state [\"t2\",\"t1\",\"t0\",\"read\"]"
+ ],
+ "state": {
+  "todos": {
+   "ids": [
+    "t2",
+    "t1",
+    "t0",
+    "read"
+   ],
+   "entities": {
+    "read": {
+     "id": "read",
+     "title": "Read",
+     "done": true
+    },
+    "t0": {
+     "id": "t0",
+     "title": "Fetched 3",
+     "done": true
+    },
+    "t1": {
+     "id": "t1",
+     "title": "Fetched 2",
+     "done": false
+    },
+    "t2": {
+     "id": "t2",
+     "title": "Fetched 1",
+     "done": true
+    }
+   },
+   "status": "failed",
+   "error": "negative count"
+  },
+  "counter": {
+   "value": 5
+  }
+ },
+ "done": [
+  "Fetched 1",
+  "Fetched 3",
+  "Read"
+ ],
+ "memoized": true,
+ "total": 4,
+ "status": "failed",
+ "thunks": [
+  "todos/fetch/fulfilled",
+  "fulfilled",
+  "todos/fetch/rejected",
+  "negative count"
+ ],
+ "nanoid": 21
+}

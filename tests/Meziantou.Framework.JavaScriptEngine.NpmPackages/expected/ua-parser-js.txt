@@ -1,0 +1,184 @@
+[
+ {
+  "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.2210.91",
+  "browser": {
+   "name": "Edge",
+   "version": "120.0.2210.91",
+   "major": "120"
+  },
+  "engine": {
+   "name": "Blink",
+   "version": "120.0.0.0"
+  },
+  "os": {
+   "name": "Windows",
+   "version": "10"
+  },
+  "device": {},
+  "cpu": {
+   "architecture": "amd64"
+  }
+ },
+ {
+  "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
+  "browser": {
+   "name": "Safari",
+   "version": "17.2",
+   "major": "17"
+  },
+  "engine": {
+   "name": "WebKit",
+   "version": "605.1.15"
+  },
+  "os": {
+   "name": "Mac OS",
+   "version": "10.15.7"
+  },
+  "device": {
+   "vendor": "Apple",
+   "model": "Macintosh"
+  },
+  "cpu": {}
+ },
+ {
+  "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1",
+  "browser": {
+   "name": "Mobile Safari",
+   "version": "17.2",
+   "major": "17"
+  },
+  "engine": {
+   "name": "WebKit",
+   "version": "605.1.15"
+  },
+  "os": {
+   "name": "iOS",
+   "version": "17.2"
+  },
+  "device": {
+   "vendor": "Apple",
+   "model": "iPhone",
+   "type": "mobile"
+  },
+  "cpu": {}
+ },
+ {
+  "ua": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.144 Mobile Safari/537.36",
+  "browser": {
+   "name": "Chrome",
+   "version": "120.0.6099.144",
+   "major": "120"
+  },
+  "engine": {
+   "name": "Blink",
+   "version": "120.0.6099.144"
+  },
+  "os": {
+   "name": "Android",
+   "version": "14"
+  },
+  "device": {
+   "vendor": "Samsung",
+   "model": "SM-S918B",
+   "type": "mobile"
+  },
+  "cpu": {}
+ },
+ {
+  "ua": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:121.0) Gecko/20100101 Firefox/121.0",
+  "browser": {
+   "name": "Firefox",
+   "version": "121.0",
+   "major": "121"
+  },
+  "engine": {
+   "name": "Gecko",
+   "version": "121.0"
+  },
+  "os": {
+   "name": "Ubuntu"
+  },
+  "device": {},
+  "cpu": {
+   "architecture": "amd64"
+  }
+ },
+ {
+  "ua": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+  "browser": {},
+  "engine": {},
+  "os": {},
+  "device": {},
+  "cpu": {}
+ },
+ {
+  "ua": "Mozilla/5.0 (PlayStation; PlayStation 5/2.26) AppleWebKit/605.1.15 (KHTML, like Gecko)",
+  "browser": {
+   "name": "WebKit",
+   "version": "605.1.15",
+   "major": "605"
+  },
+  "engine": {
+   "name": "WebKit",
+   "version": "605.1.15"
+  },
+  "os": {
+   "name": "PlayStation",
+   "version": "5"
+  },
+  "device": {
+   "vendor": "Sony",
+   "model": "PlayStation 5",
+   "type": "console"
+  },
+  "cpu": {}
+ },
+ {
+  "ua": "Mozilla/5.0 (Linux; Android 10; SMART TV Build/QP1A) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0 Safari/537.36",
+  "browser": {
+   "name": "Chrome",
+   "version": "89.0",
+   "major": "89"
+  },
+  "engine": {
+   "name": "Blink",
+   "version": "89.0"
+  },
+  "os": {
+   "name": "Android",
+   "version": "10"
+  },
+  "device": {
+   "type": "smarttv"
+  },
+  "cpu": {}
+ },
+ {
+  "ua": "curl/8.4.0",
+  "browser": {},
+  "engine": {},
+  "os": {},
+  "device": {},
+  "cpu": {}
+ },
+ {
+  "ua": "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
+  "browser": {
+   "name": "IE",
+   "version": "11.0",
+   "major": "11"
+  },
+  "engine": {
+   "name": "Trident",
+   "version": "7.0"
+  },
+  "os": {
+   "name": "Windows",
+   "version": "7"
+  },
+  "device": {},
+  "cpu": {
+   "architecture": "amd64"
+  }
+ }
+]

@@ -1,0 +1,61 @@
+.box {
+  border: 2px dashed #2952a3;
+  background-color: black;
+  padding: 8px 16px;
+  margin: -8px;
+  color: rgba(51, 102, 204, 0.5);
+  width: calc(100% - 8px);
+  background: red;
+}
+.box-title {
+  font-size: 50%;
+}
+.inner .box {
+  color: #4c33cc;
+}
+@media (min-width: 768px) {
+  .box {
+    padding: 24px;
+  }
+}
+.base,
+.box {
+  display: block;
+}
+.w-3 {
+  width: 30%;
+}
+.w-2 {
+  width: 20%;
+}
+.w-1 {
+  width: 10%;
+}
+.text-small 10px {
+  font-size: 10px;
+}
+.text-medium 16px {
+  font-size: 16px;
+}
+.text-large 24px {
+  font-size: 24px;
+}
+.functions {
+  a: 3.14;
+  b: 2;
+  c: 5px;
+  d: #0a141e;
+  e: #800080;
+  f: "Hallo";
+  g: 3;
+  h: yes;
+}
+
+----
+.box{border:2px dashed #2952a3;background-color:black;padding:8px 16px;margin:-8px;color:rgba(51,102,204,0.5);width:calc(100% - 8px);background:red}.box-title{font-size:50%}.inner .box{color:#4c33cc}@media (min-width:768px){.box{padding:24px}}.base,.box{display:block}.w-3{width:30%}.w-2{width:20%}.w-1{width:10%}.text-small 10px{font-size:10px}.text-medium 16px{font-size:16px}.text-large 24px{font-size:24px}.functions{a:3.14;b:2;c:5px;d:#0a141e;e:#800080;f:"Hallo";g:3;h:yes}
+----
+Name: variable @missing is undefined (line 1)
+----
+Name: .undefined-mixin is undefined (line 1)
+----
+Parse: Unrecognised input. Possibly missing something (line 1)

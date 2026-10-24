@@ -1,0 +1,170 @@
+import * as $ from 'svelte/internal/server';
+
+export default function List($$renderer, $$props) {
+	$$renderer.component(($$renderer) => {
+		let { items = [], title = "List" } = $$props;
+		let filter = "";
+		let visible = $.derived(() => items.filter((item) => item.name.includes(filter)));
+
+		function remove(item) {
+			items = items.filter((other) => other !== item);
+		}
+
+		function row($$renderer, item, index) {
+			$$renderer.push(`<li${$.attr('data-index', index)}${$.attr_class('svelte-70o1bw', void 0, { 'done': item.done })}>${$.escape(index + 1)}. ${$.escape(item.name)} <button>x</button></li>`);
+		}
+
+		$$renderer.push(`<h1 class="svelte-70o1bw">${$.escape(title)} (${$.escape(visible().length)})</h1> <input${$.attr('value', filter)} placeholder="Filter"/> `);
+
+		if (visible().length === 0) {
+			$$renderer.push(`<!--[0--><p>Nothing</p>`);
+		} else {
+			$$renderer.push(`<!--[-1--><ul><!--[-->`);
+
+			const each_array = $.ensure_array_like(visible());
+
+			for (let index = 0, $$length = each_array.length; index < $$length; index++) {
+				let item = each_array[index];
+
+				row($$renderer, item, index);
+			}
+
+			$$renderer.push(`<!--]--></ul>`);
+		}
+
+		$$renderer.push(`<!--]--> `);
+
+		$.await(
+			$$renderer,
+			Promise.resolve(42),
+			() => {
+				$$renderer.push(`<p>waiting</p>`);
+			},
+			(value) => {
+				$$renderer.push(`<p>${$.escape(value)}</p>`);
+			}
+		);
+
+		$$renderer.push(`<!--]--> <img src="a.png"/>`);
+	});
+}
+----
+
+    h1.svelte-70o1bw { color: purple; }
+    li.done.svelte-70o1bw { text-decoration: line-through; }
+    /* (unused) .unused { color: red; }*/
+
+----
+a11y_missing_attribute: `<img>` element should have an alt attribute
+https://svelte.dev/e/a11y_missing_attribute
+css_unused_selector: Unused CSS selector ".unused"
+https://svelte.dev/e/css_unused_selector
+----
+import 'svelte/internal/disclose-version';
+import * as $ from 'svelte/internal/client';
+
+var root = $.from_html(`<li> <button>x</button></li>`);
+var root_1 = $.from_html(`<p>Nothing</p>`);
+var root_2 = $.from_html(`<ul></ul>`);
+var root_3 = $.from_html(`<p> </p>`);
+var root_4 = $.from_html(`<p>waiting</p>`);
+var root_5 = $.from_html(`<h1 class="svelte-70o1bw"> </h1> <input placeholder="Filter"/> <!> <!> <img src="a.png"/>`, 1);
+
+export default function List($$anchor, $$props) {
+	$.push($$props, true);
+
+	const row = ($$anchor, item = $.noop, index = $.noop) => {
+		var li = root();
+		let classes;
+		var text = $.child(li);
+		var button = $.sibling(text);
+
+		$.reset(li);
+
+		$.template_effect(() => {
+			$.set_attribute(li, 'data-index', index());
+			classes = $.set_class(li, 1, 'svelte-70o1bw', null, classes, { done: item().done });
+			$.set_text(text, `${index() + 1}. ${item().name ?? ''} `);
+		});
+
+		$.delegated('click', button, () => remove(item()));
+		$.append($$anchor, li);
+	};
+
+	let items = $.prop($$props, 'items', 23, () => []),
+		title = $.prop($$props, 'title', 3, "List");
+
+	let filter = $.state("");
+	let visible = $.derived(() => items().filter((item) => item.name.includes($.get(filter))));
+
+	$.user_effect(() => {
+		console.log($.get(visible).length);
+	});
+
+	function remove(item) {
+		items(items().filter((other) => other !== item));
+	}
+
+	var fragment = root_5();
+	var h1 = $.first_child(fragment);
+	var text_1 = $.only_child(h1);
+	var input = $.sibling(h1, 2);
+
+	$.remove_input_defaults(input);
+
+	var node = $.sibling(input, 2);
+
+	{
+		var consequent = ($$anchor) => {
+			var p = root_1();
+
+			$.append($$anchor, p);
+		};
+
+		var alternate = ($$anchor) => {
+			var ul = root_2();
+
+			$.each(ul, 23, () => $.get(visible), (item) => item.name, ($$anchor, item, index) => {
+				row($$anchor, () => $.get(item), () => $.get(index));
+			});
+
+			$.reset(ul);
+			$.append($$anchor, ul);
+		};
+
+		$.if(node, ($$render) => {
+			if ($.get(visible).length === 0) $$render(consequent); else $$render(alternate, -1);
+		});
+	}
+
+	var node_1 = $.sibling(node, 2);
+
+	$.await(
+		node_1,
+		() => Promise.resolve(42),
+		($$anchor) => {
+			var p_2 = root_4();
+
+			$.append($$anchor, p_2);
+		},
+		($$anchor, value) => {
+			var p_1 = root_3();
+			var text_2 = $.only_child(p_1, true);
+
+			$.template_effect(() => $.set_text(text_2, $.get(value)));
+			$.append($$anchor, p_1);
+		}
+	);
+
+	$.next(2);
+	$.template_effect(() => $.set_text(text_1, `${title() ?? ''} (${$.get(visible).length ?? ''})`));
+	$.bind_value(input, () => $.get(filter), ($$value) => $.set(filter, $$value));
+	$.append($$anchor, fragment);
+	$.pop();
+}
+
+$.delegate(['click']);
+----
+["Text","SnippetBlock","Text","RegularElement","Text","RegularElement","Text","IfBlock","Text","AwaitBlock","Text","RegularElement","Text"]
+----
+expected_whitespace: Expected whitespace

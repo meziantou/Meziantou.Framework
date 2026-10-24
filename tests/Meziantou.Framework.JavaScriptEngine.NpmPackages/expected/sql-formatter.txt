@@ -1,0 +1,140 @@
+select
+  a,
+  b as c,
+  count(*)
+from
+  t1
+  inner join t2 on t1.id = t2.id
+where
+  x = 1
+  and (
+    y in (
+      select
+        z
+      from
+        u
+      where
+        w > 2
+    )
+    or v is null
+  )
+group by
+  a,
+  b
+having
+  count(*) > 1
+order by
+  a desc
+limit
+  10
+----
+with recursive
+  cte (n) as (
+    select
+      1
+    union all
+    select
+      n + 1
+    from
+      cte
+    where
+      n < 5
+  )
+select
+  n,
+  row_number() over (
+    partition by
+      n % 2
+    order by
+      n
+  )
+from
+  cte
+where
+  data ->> 'key' = $1::text
+----
+insert into
+  `users` (`name`, `email`)
+values
+  ('a', 'b'),
+  ('c', 'd')
+on duplicate key update
+  `email` = values(`email`)
+----
+select
+  top 10 [Id],
+  [Name]
+from
+  [dbo].[Users]
+with
+  (nolock)
+where
+  [Created] > @date;
+
+update t
+set
+  x = 1 output inserted.x
+where
+  id = 2
+----
+create table if not exists t (
+  id integer primary key autoincrement,
+  name text not null default 'x',
+  unique (name)
+);
+
+create index i on t (name)
+----
+select
+  struct(1 as a, 'b' as b) as s,
+  ARRAY<INT64>[1, 2]
+from
+  `project.dataset.table`
+where
+  _partitiontime > timestamp('2020-01-01')
+----
+SELECT
+    a,
+    b AS c,
+    count(*)
+FROM
+    t1
+    INNER JOIN t2 ON t1.id = t2.id
+WHERE
+    x = 1 AND
+    (
+        y IN (
+            SELECT
+                z
+            FROM
+                u
+            WHERE
+                w > 2
+        ) OR
+        v IS NULL
+    )
+GROUP BY
+    a,
+    b
+HAVING
+    count(*) > 1
+ORDER BY
+    a DESC
+LIMIT
+    10
+----
+select
+  *
+from
+  t
+where
+  a = 1
+  and b = 'x'
+----
+select
+  *
+from
+  t
+where
+  a = 1
+  and b = 'x'

@@ -1,0 +1,27 @@
+item | list two <&> 3 | custom {"x":1}
+----
+<my-greeting name="Ada"><span>Hi Ada</span></my-greeting>
+----
+attr name null -> Ada
+----
+2
+----
+2
+----
+app
+----
+item even|item odd|item even
+----
+Hello |world|one <&>|two <&>|three <&>|Hi Ada
+----
+<p title="a &quot;title&quot;">Bye <b>world</b><i>!</i></p>
+----
+T
+----
+en
+----
+true
+----
+2 <?xml version="1.0" encoding="utf-8"?><root><item id="1">a</item><item>b</item></root>
+----
+<!DOCTYPE html><html lang="en"><head><title>T</title></head><body><main id="app"><p title="a &quot;title&quot;">Bye <b>world</b><i>!</i></p><ul><li class="item even" data-index="0">one &lt;&amp;&gt;</li><li class="item odd" data-index="1">two &lt;&amp;&gt;</li><li class="item even" data-index="2">three &lt;&amp;&gt;</li></ul><my-greeting name="Ada"><span>Hi Ada</span></my-greeting></main></body></html>

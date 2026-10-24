@@ -1,0 +1,9 @@
+[{"type":"let","name":"x","value":{"op":"+","left":1,"right":{"op":"*","left":2,"right":3}}},{"type":"let","name":"y","value":{"op":"%","left":{"op":"/","left":{"op":"-","left":{"name":"x"},"right":1},"right":2},"right":4}},{"type":"let","name":"s","value":{"callee":"concat","args":["a","b\\\"c",{"callee":"max","args":[{"name":"x"},{"name":"y"},10]}]}},{"type":"expr","expression":{"op":"+","left":{"op":"*","left":{"name":"x"},"right":{"name":"y"}},"right":{"name":"s"}}}]
+----
+[7,3,"ab\\\"c10","21ab\\\"c10"]
+----
+Expected ";", [ \t\n\r], [%*/], [+\-], or identifier but "=" found. at 1:5
+Expected "(", identifier, number, or string but ";" found. at 1:5
+Expected "(", identifier, number, or string but "\"" found. at 1:9
+----
+true

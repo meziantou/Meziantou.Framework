@@ -1,0 +1,61 @@
+export class Queue{#t=[];static#e=0;constructor(t="queue"){this.name=t,Queue.#e++}push(...t){return this.#t.push(...t),this}get size(){return this.#t.length}*[Symbol.iterator](){yield*this.#t}async*drain(t){for(;this.#t.length;)await t(),yield this.#t.shift()}static get count(){return Queue.#e}}export function process(t){const{a:e=1,b:{c:s}={},...n}=t??{},i=[e,s??"none",Object.keys(n).length].map(t=>"number"==typeof t?2*t:t);for(let t=0;t<3;t++)1!==t&&i.push(t**2);return i.length>3?i:[...i,`count: ${i.length}`]}export const config={longPropertyName:1,_privateProperty:2,"quoted-key":3};
+//# sourceMappingURL=out.js.map
+----
+{"version":3,"file":"out.js","names":["Queue","items","static","constructor","name","this","instances","push","values","size","length","Symbol","iterator","drain","delay","shift","count","process","input","a","b","c","rest","result","Object","keys","map","x","i","config","longPropertyName","_privateProperty"],"sources":["0"],"mappings":"OACO,MAAMA,MACTC,GAAS,GACTC,SAAoB,EACpB,WAAAC,CAAYC,EAAO,SAAWC,KAAKD,KAAOA,EAAMJ,OAAMM,GAAc,CACpE,IAAAC,IAAQC,GAAuC,OAA7BH,MAAKJ,EAAOM,QAAQC,GAAgBH,IAAM,CAC5D,QAAII,GAAS,OAAOJ,MAAKJ,EAAOS,MAAQ,CACxC,EAAEC,OAAOC,kBAAqBP,MAAKJ,CAAQ,CAC3C,WAAOY,CAAMC,GAAS,KAAOT,MAAKJ,EAAOS,cAAgBI,UAAeT,MAAKJ,EAAOc,OAAW,CAC/F,gBAAWC,GAAU,OAAOhB,OAAMM,CAAY,SAK3C,SAASW,QAAQC,GAEpB,MAAMC,EAAEA,EAAI,EAAGC,GAAGC,EAAEA,GAAM,CAAC,KAAMC,GAASJ,GAAS,CAAC,EAC9CK,EAAS,CAACJ,EAAGE,GAAK,OAAQG,OAAOC,KAAKH,GAAMZ,QAAQgB,IAAIC,GAAkB,iBAANA,EAAqB,EAAJA,EAAQA,GAC5F,IAAK,IAAIC,EAAI,EAAGA,EAAI,EAAGA,IAAiB,IAANA,GAAyBL,EAAOhB,KAAKqB,GAAK,GACnF,OAAOL,EAAOb,OAAS,EAAIa,EAAS,IAAIA,EAAQ,UAAUA,EAAOb,SACrE,QACO,MAAMmB,OAAS,CAAEC,iBAAkB,EAAGC,iBAAkB,EAAG,aAAc","ignoreList":[]}
+----
+export class Queue{#t=[];static#e=0;constructor(t="queue"){this.name=t,Queue.#e++}push(...t){return this.#t.push(...t),this}get size(){return this.#t.length}*[Symbol.iterator](){yield*this.#t}async*drain(t){for(;this.#t.length;)await t(),yield this.#t.shift()}static get count(){return Queue.#e}}export function process(t){const{a:e=1,b:{c:r}={},...s}=t??{},o=[e,r??"none",Object.keys(s).length].map(t=>"number"==typeof t?2*t:t);for(let t=0;t<3;t++)1!==t&&o.push(t**2);return o.length>3?o:[...o,"count: "+o.length]}export const config={longPropertyName:1,t:2,"quoted-key":3};
+----
+export class Queue {
+  #items=[];
+  static #instances=0;
+  constructor(name = "queue") {
+    this.name = name;
+    Queue.#instances++;
+  }
+  push(...values) {
+    this.#items.push(...values);
+    return this;
+  }
+  get size() {
+    return this.#items.length;
+  }
+  * [Symbol.iterator]() {
+    yield* this.#items;
+  }
+  async* drain(delay) {
+    while (this.#items.length) {
+      await delay();
+      yield this.#items.shift();
+    }
+  }
+  static get count() {
+    return Queue.#instances;
+  }
+}
+
+function unusedHelper() {
+  return "never called";
+}
+
+const DEBUG = false;
+
+export function process(input) {
+  if (DEBUG) console.log("debug", input);
+  const {a: a = 1, b: {c: c} = {}, ...rest} = input ?? {};
+  const result = [ a, c ?? "none", Object.keys(rest).length ].map(x => typeof x === "number" ? x * 2 : x);
+  label: for (let i = 0; i < 3; i++) {
+    if (i === 1) continue label;
+    result.push(i ** 2);
+  }
+  return result.length > 3 ? result : [ ...result, `count: ${result.length}` ];
+}
+
+export const config = {
+  longPropertyName: 1,
+  _privateProperty: 2,
+  "quoted-key": 3
+};
+----
+console.log(7,!0);
+----
+SyntaxError: Unexpected token: punc (() 1:9

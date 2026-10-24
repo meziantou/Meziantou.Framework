@@ -1,0 +1,7 @@
+<main><h1 title="Todo &lt;list&gt; &amp; &quot;quotes&quot;">Todos (<!-- -->3<!-- -->)</h1><input aria-label="Search" readOnly="" value="search &lt;x&gt;"/><ul><li id="_R_b_" class="dark" data-done="true" style="text-decoration:line-through;font-size:14px">Write &lt;tests&gt;<span> ✓</span></li><li id="_R_j_" class="dark" data-done="false" style="font-size:14px">Run them</li><li id="_R_r_" class="dark" data-done="false" style="font-size:14px">Ship &amp; celebrate</li></ul><p><em>raw</em></p><svg viewBox="0 0 10 10" xmlns:xlink="http://www.w3.org/1999/xlink"><circle cx="5" cy="5" r="4" stroke-width="2"></circle></svg><select><option value="a">A</option><option value="b" selected="">B</option></select><textarea readOnly="">text</textarea></main>
+----
+<main><h1 title="Todo &lt;list&gt; &amp; &quot;quotes&quot;">Todos (1)</h1><input aria-label="Search" readOnly="" value="search &lt;x&gt;"/><ul><li id="_R_b_" class="dark" data-done="true" style="text-decoration:line-through;font-size:14px">Write &lt;tests&gt;<span> ✓</span></li></ul><p><em>raw</em></p><svg viewBox="0 0 10 10" xmlns:xlink="http://www.w3.org/1999/xlink"><circle cx="5" cy="5" r="4" stroke-width="2"></circle></svg><select><option value="a">A</option><option value="b" selected="">B</option></select><textarea readOnly="">text</textarea></main>
+----
+<!--$--><div>ready</div><!--/$-->
+----
+<div hidden="" tabindex="-1" draggable="false" contentEditable="true">0123</div>

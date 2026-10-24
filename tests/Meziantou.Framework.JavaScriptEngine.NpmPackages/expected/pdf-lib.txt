@@ -1,0 +1,31 @@
+{
+ "sizes": [
+  5240,
+  3853,
+  778
+ ],
+ "hashes": [
+  "da4b524e",
+  "4b333ba5",
+  "ea23bef5"
+ ],
+ "header": "%PDF-1.7",
+ "pages": [
+  {
+   "width": 595.28,
+   "height": 841.89
+  },
+  {
+   "width": 300,
+   "height": 300
+  }
+ ],
+ "title": "Test document ✓",
+ "author": "Engine",
+ "fields": [
+  "name:PDFTextField",
+  "agree:PDFCheckBox"
+ ],
+ "name": "Ada",
+ "objects": 23
+}

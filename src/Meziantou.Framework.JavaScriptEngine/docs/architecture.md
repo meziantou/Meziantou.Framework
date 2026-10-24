@@ -335,6 +335,11 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
 - `tests/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark`: real-world programs (V8's Web Tooling Benchmark:
   babel, typescript, prettier, terser...) whose results are compared with the results of Node.js. The same fetch script
   downloads the benchmark and its npm packages; see the readme of the project.
+- `tests/Meziantou.Framework.JavaScriptEngine.NpmPackages`: about 80 current npm packages (sass, React, Svelte, ESLint,
+  date-fns, d3...) used by small workloads, loaded by a harness that resolves the ES modules and the CommonJS modules as
+  Node.js does; the results are compared with the results of Node.js. `fetch-tests.cs npm-packages` installs the
+  packages of its `package-lock.json`; see the readme of the project for the differences with Node.js that the workloads
+  avoid.
 
 ## Conventions and pitfalls
 

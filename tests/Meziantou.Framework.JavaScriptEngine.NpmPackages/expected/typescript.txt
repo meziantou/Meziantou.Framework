@@ -1,0 +1,109 @@
+"use strict";
+var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (receiver, state, kind, f) {
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+};
+var _Registry_items;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Direction = exports.total = exports.Registry = void 0;
+const shapes_1 = require("./shapes");
+class Registry {
+    constructor() {
+        _Registry_items.set(this, new Map());
+    }
+    add(name, item) { __classPrivateFieldGet(this, _Registry_items, "f").set(name, item); return this; }
+    get total() { return [...__classPrivateFieldGet(this, _Registry_items, "f").values()].reduce((sum, item) => sum + (0, shapes_1.area)(item), 0); }
+}
+exports.Registry = Registry;
+_Registry_items = new WeakMap();
+const registry = new Registry().add("c", { kind: "circle", radius: 1 }).add("s", { kind: "square", size: 2 });
+exports.total = registry.total;
+const wrong = 42;
+var Direction;
+(function (Direction) {
+    Direction[Direction["Up"] = 1] = "Up";
+    Direction[Direction["Down"] = 2] = "Down";
+    Direction["Left"] = "L";
+})(Direction || (exports.Direction = Direction = {}));
+//# sourceMappingURL=main.js.map
+----
+{"version":3,"file":"main.js","sourceRoot":"","sources":["main.ts"],"names":[],"mappings":";;;;;;;;;AAAA,qCAAuC;AACvC,MAAa,QAAQ;IAArB;QACI,0BAAS,IAAI,GAAG,EAAa,EAAC;IAGlC,CAAC;IAFG,GAAG,CAAC,IAAY,EAAE,IAAO,IAAU,uBAAA,IAAI,uBAAO,CAAC,GAAG,CAAC,IAAI,EAAE,IAAI,CAAC,CAAC,CAAC,OAAO,IAAI,CAAC,CAAC,CAAC;IAC9E,IAAI,KAAK,KAAa,OAAO,CAAC,GAAG,uBAAA,IAAI,uBAAO,CAAC,MAAM,EAAE,CAAC,CAAC,MAAM,CAAC,CAAC,GAAG,EAAE,IAAI,EAAE,EAAE,CAAC,GAAG,GAAG,IAAA,aAAI,EAAC,IAAI,CAAC,EAAE,CAAC,CAAC,CAAC,CAAC,CAAC;CACvG;AAJD,4BAIC;;AACD,MAAM,QAAQ,GAAG,IAAI,QAAQ,EAAE,CAAC,GAAG,CAAC,GAAG,EAAE,EAAE,IAAI,EAAE,QAAQ,EAAE,MAAM,EAAE,CAAC,EAAE,CAAC,CAAC,GAAG,CAAC,GAAG,EAAE,EAAE,IAAI,EAAE,QAAQ,EAAE,IAAI,EAAE,CAAC,EAAE,CAAC,CAAC;AACjG,QAAA,KAAK,GAAW,QAAQ,CAAC,KAAK,CAAC;AAC5C,MAAM,KAAK,GAAW,EAAE,CAAC;AACzB,IAAY,SAAsC;AAAlD,WAAY,SAAS;IAAG,qCAAM,CAAA;IAAE,yCAAI,CAAA;IAAE,uBAAU,CAAA;AAAC,CAAC,EAAtC,SAAS,yBAAT,SAAS,QAA6B"}
+----
+/lib.d.ts:6 TS2317 Global type 'Iterator' must have 3 type parameter(s).
+/lib.d.ts:6 TS2317 Global type 'IterableIterator' must have 3 type parameter(s).
+/main.ts:5 TS2802 Type 'IterableIterator<T>' can only be iterated through when using the '--downlevelIteration' flag or with a '--target' of 'es2015' or higher.
+/main.ts:9 TS2322 Type 'number' is not assignable to type 'string'.
+----
+/main.d.ts
+import { Shape } from "./shapes";
+export declare class Registry<T extends Shape> {
+    #private;
+    add(name: string, item: T): this;
+    get total(): number;
+}
+export declare const total: number;
+export declare enum Direction {
+    Up = 1,
+    Down = 2,
+    Left = "L"
+}
+export type Readonly2<T> = {
+    readonly [K in keyof T]: T[K];
+};
+declare module "./shapes" {
+    interface Circle {
+        color?: string;
+    }
+}
+
+----
+/main.js
+import { area } from "./shapes";
+export class Registry {
+    #items = new Map();
+    add(name, item) { this.#items.set(name, item); return this; }
+    get total() { return [...this.#items.values()].reduce((sum, item) => sum + area(item), 0); }
+}
+const registry = new Registry().add("c", { kind: "circle", radius: 1 }).add("s", { kind: "square", size: 2 });
+export const total = registry.total;
+const wrong = 42;
+export var Direction;
+(function (Direction) {
+    Direction[Direction["Up"] = 1] = "Up";
+    Direction[Direction["Down"] = 2] = "Down";
+    Direction["Left"] = "L";
+})(Direction || (Direction = {}));
+
+----
+/shapes.d.ts
+export interface Circle {
+    kind: "circle";
+    radius: number;
+}
+export interface Square {
+    kind: "square";
+    size: number;
+}
+export type Shape = Circle | Square;
+export declare function area(shape: Shape): number;
+export declare const unused: (value?: string) => string;
+
+----
+/shapes.js
+export function area(shape) {
+    switch (shape.kind) {
+        case "circle": return Math.PI * shape.radius ** 2;
+        case "square": return shape.size ** 2;
+    }
+}
+export const unused = (value) => value?.trim() ?? "";
+
+----
+area: (shape: Shape) => number
+Circle: any
+Square: any
+Shape: any
+unused: (value?: string | undefined) => string
+----
+export const answer: number = 42;

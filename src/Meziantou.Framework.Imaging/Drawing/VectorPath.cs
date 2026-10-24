@@ -221,6 +221,38 @@ public sealed class VectorPath
     /// <returns>The rectangle.</returns>
     public RectangleD GetTightBounds() => PathBounds.ComputeTight(_commands, _points);
 
+    /// <summary>Gets a rectangle that contains everything a pen paints when it strokes the path.</summary>
+    /// <remarks>
+    /// <para>
+    /// The rectangle is <see cref="GetTightBounds"/> spread by how far the stroke can reach from the path: half the width
+    /// of the pen, its miters up to <see cref="Pen.MiterLimit"/> (with <see cref="LineJoin.Miter"/>), and the corners of
+    /// square caps. It contains the stroke without computing it, and is larger than the stroke where the path has no
+    /// sharp corner at its extremes; <see cref="Widen"/> then <see cref="GetTightBounds"/> gives the exact one. A pen with
+    /// markers is widened: the result is then exact, and computing it allocates.
+    /// </para>
+    /// <para>
+    /// The stroke of <see cref="PenAlignment.Inside"/> stays within what the path fills; the one of
+    /// <see cref="PenAlignment.Outside"/> reaches a whole width beyond the path. The units are those of the path: a pen
+    /// that does not scale with the transformation of the canvas (<see cref="Pen.ScalesWithTransform"/>), and a hairline
+    /// (a width of 0, one pixel of the canvas), reach that far only when the canvas is not scaled.
+    /// </para>
+    /// </remarks>
+    /// <param name="pen">The stroke. Its brush is not used.</param>
+    /// <returns>The rectangle; an empty rectangle when the path is empty.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="pen"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The stroke goes beyond the largest coordinate (16777216).</exception>
+    public RectangleD GetBounds(Pen pen)
+    {
+        ArgumentNullException.ThrowIfNull(pen);
+        if (IsEmpty)
+            return RectangleD.Empty;
+
+        if (pen.HasMarkers)
+            return Widen(pen).GetTightBounds();
+
+        return pen.GetStrokeBounds(GetTightBounds());
+    }
+
     /// <summary>Creates the path a pen draws when it strokes this path: filling the result paints what the stroke paints.</summary>
     /// <remarks>
     /// <para>

@@ -149,7 +149,7 @@ public sealed class TextLayout
     /// </summary>
     /// <remarks>
     /// The rectangle contains the control points of the outlines, the decorations and the backgrounds of the styles
-    /// (not the strokes of their outlines, which reach half the width of a pen further). It is the exact bounding box of
+    /// (not the strokes of their outlines, which reach half the width of a pen further: see <see cref="GetInkBounds(Pen)"/>). It is the exact bounding box of
     /// the glyphs of a font that has a point at each extremum of its curves, as fonts do. It can extend beyond the box
     /// of the layout: glyphs overhang their advance, and marks rise above the ascent.
     /// </remarks>
@@ -458,6 +458,155 @@ public sealed class TextLayout
         }
 
         return builder.Build();
+    }
+
+    /// <summary>Gets a rectangle that contains everything a pen paints when it strokes the layout, relative to its top-left corner.</summary>
+    /// <remarks>
+    /// The rectangle is <see cref="InkBounds"/> spread by how far the stroke can reach from the outlines, as
+    /// <see cref="VectorPath.GetBounds(Pen)"/> spreads the bounds of a path: what
+    /// <see cref="DrawingCanvas.StrokeText(Pen, TextLayout, PointD)"/> paints, or a filled layout outlined with that pen.
+    /// A pen with markers strokes <see cref="ToPath(PointD)"/>, which allocates, and gives its exact bounds. Empty when
+    /// the layout draws nothing.
+    /// </remarks>
+    /// <param name="pen">The stroke. Its brush is not used.</param>
+    /// <returns>The rectangle.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="pen"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The stroke goes beyond the largest coordinate (16777216).</exception>
+    public RectangleD GetInkBounds(Pen pen)
+    {
+        ArgumentNullException.ThrowIfNull(pen);
+        if (InkBounds.IsEmpty)
+            return InkBounds;
+
+        if (pen.HasMarkers)
+            return RectangleD.Union(InkBounds, ToPath(default).GetBounds(pen));
+
+        return pen.GetStrokeBounds(InkBounds);
+    }
+
+    /// <summary>
+    /// Gets the origin to draw the layout at so that a point of its box lands on an anchor: its center, a corner, the
+    /// middle of a side, or a point of its first baseline.
+    /// </summary>
+    /// <remarks>
+    /// The origin is the top-left corner of the layout, which <see cref="DrawingCanvas.FillText(Brush, TextLayout, PointD)"/>
+    /// and <see cref="DrawingCanvas.StrokeText(Pen, TextLayout, PointD)"/> take. It is not rounded: glyphs are placed at
+    /// fractions of a pixel, and rounding it is the choice of the caller.
+    /// </remarks>
+    /// <param name="anchor">Where the point of the box goes, on the canvas.</param>
+    /// <param name="horizontal">The point of the box along x.</param>
+    /// <param name="vertical">The point of the box along y.</param>
+    /// <param name="bounds">The box: the box of the layout, or what is drawn.</param>
+    /// <returns>The position of the top-left corner of the layout.</returns>
+    /// <exception cref="ArgumentException">
+    /// A coordinate of <paramref name="anchor"/> is not a finite number, or <paramref name="vertical"/> is
+    /// <see cref="TextVerticalAnchor.Baseline"/> and the layout is vertical.
+    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// The magnitude of a coordinate of <paramref name="anchor"/> exceeds 16777216, or <paramref name="horizontal"/>,
+    /// <paramref name="vertical"/> or <paramref name="bounds"/> is not a defined value.
+    /// </exception>
+    /// <example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs" ref:region="Imaging_PlaceText" ref:dedent="true">
+    /// public static void DrawPayButton(string fontPath, string outputPath)
+    /// {
+    ///     var font = Font.Load(fontPath);
+    ///     var label = TextLayout.Create("Pay now", font, size: 20);
+    ///     var caption = TextLayout.Create("Total", font, size: 16);
+    ///     var amount = TextLayout.Create("42.00", font, size: 24);
+    ///
+    ///     using var image = new Image&lt;Rgba32&gt;(240, 120, new Rgba32(255, 255, 255));
+    ///     image.Draw(canvas =&gt;
+    ///     {
+    ///         // GetOrigin gives the top-left corner to draw a layout at so that a point of its box lands on an anchor.
+    ///         // The ink box centers what is drawn, the tail of the y included; the layout box would center the line
+    ///         var button = new RectangleD(20, 64, 200, 40);
+    ///         canvas.FillRoundedRectangle(new Rgba32(30, 60, 160), button, radius: 8);
+    ///         canvas.FillText(new Rgba32(255, 255, 255), label, label.GetOrigin(button, TextHorizontalAnchor.Center, TextVerticalAnchor.Center, TextBounds.Ink));
+    ///
+    ///         // Two sizes on one baseline: the caption from the left, the amount aligned to the right
+    ///         var baseline = 44;
+    ///         canvas.FillText(new Rgba32(90, 90, 90), caption, caption.GetOrigin(new PointD(20, baseline), TextHorizontalAnchor.Left, TextVerticalAnchor.Baseline));
+    ///         canvas.FillText(new Rgba32(0, 0, 0), amount, amount.GetOrigin(new PointD(220, baseline), TextHorizontalAnchor.Right, TextVerticalAnchor.Baseline));
+    ///     });
+    ///
+    ///     image.Save(outputPath);
+    /// }
+    /// </code>
+    /// </example>
+    public PointD GetOrigin(PointD anchor, TextHorizontalAnchor horizontal, TextVerticalAnchor vertical, TextBounds bounds = TextBounds.Layout)
+    {
+        DrawingGuard.Point(anchor, nameof(anchor));
+        ValidateAnchors(horizontal, vertical, bounds);
+        if (vertical == TextVerticalAnchor.Baseline && _vertical is not null)
+            throw new ArgumentException("A vertical layout has no horizontal baseline.", nameof(vertical));
+
+        var box = bounds == TextBounds.Ink && !InkBounds.IsEmpty ? InkBounds : new RectangleD(0, 0, Width, Height);
+        var x = horizontal switch
+        {
+            TextHorizontalAnchor.Left => box.Left,
+            TextHorizontalAnchor.Center => box.X + (box.Width / 2),
+            _ => box.Right,
+        };
+        var y = vertical switch
+        {
+            TextVerticalAnchor.Top => box.Top,
+            TextVerticalAnchor.Center => box.Y + (box.Height / 2),
+            TextVerticalAnchor.Baseline => Baseline,
+            _ => box.Bottom,
+        };
+
+        return new PointD(anchor.X - x, anchor.Y - y);
+    }
+
+    /// <summary>Gets the origin to draw the layout at so that its box is aligned in a rectangle: centered, or against a side or a corner.</summary>
+    /// <remarks>
+    /// The point of the box goes on the same point of the rectangle: its center on the center, its right side on the
+    /// right side. A text larger than the rectangle overflows it, on both sides when it is centered. The origin is not rounded.
+    /// </remarks>
+    /// <param name="box">The rectangle, on the canvas.</param>
+    /// <param name="horizontal">Where the text goes along x.</param>
+    /// <param name="vertical">Where the text goes along y: not <see cref="TextVerticalAnchor.Baseline"/>, which a rectangle does not have.</param>
+    /// <param name="bounds">The box of the text: the box of the layout, or what is drawn.</param>
+    /// <returns>The position of the top-left corner of the layout.</returns>
+    /// <exception cref="ArgumentException">An edge of <paramref name="box"/> is not a finite number, or <paramref name="vertical"/> is <see cref="TextVerticalAnchor.Baseline"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// The magnitude of an edge of <paramref name="box"/> exceeds 16777216, or <paramref name="horizontal"/>,
+    /// <paramref name="vertical"/> or <paramref name="bounds"/> is not a defined value.
+    /// </exception>
+    public PointD GetOrigin(RectangleD box, TextHorizontalAnchor horizontal, TextVerticalAnchor vertical, TextBounds bounds = TextBounds.Layout)
+    {
+        DrawingGuard.Rectangle(box, nameof(box));
+        ValidateAnchors(horizontal, vertical, bounds);
+        if (vertical == TextVerticalAnchor.Baseline)
+            throw new ArgumentException("A rectangle has no baseline: place the text at a point of the baseline instead.", nameof(vertical));
+
+        var x = horizontal switch
+        {
+            TextHorizontalAnchor.Left => box.Left,
+            TextHorizontalAnchor.Center => box.X + (box.Width / 2),
+            _ => box.Right,
+        };
+        var y = vertical switch
+        {
+            TextVerticalAnchor.Top => box.Top,
+            TextVerticalAnchor.Center => box.Y + (box.Height / 2),
+            _ => box.Bottom,
+        };
+
+        return GetOrigin(new PointD(x, y), horizontal, vertical, bounds);
+    }
+
+    private static void ValidateAnchors(TextHorizontalAnchor horizontal, TextVerticalAnchor vertical, TextBounds bounds)
+    {
+        if (!Enum.IsDefined(horizontal))
+            throw new ArgumentOutOfRangeException(nameof(horizontal), horizontal, "The horizontal anchor is not valid.");
+
+        if (!Enum.IsDefined(vertical))
+            throw new ArgumentOutOfRangeException(nameof(vertical), vertical, "The vertical anchor is not valid.");
+
+        if (!Enum.IsDefined(bounds))
+            throw new ArgumentOutOfRangeException(nameof(bounds), bounds, "The bounds are not valid.");
     }
 
     /// <summary>Finds the character at a point of the layout, or the nearest one: what a click selects.</summary>

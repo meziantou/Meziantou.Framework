@@ -864,7 +864,7 @@
     "reftest": "PASS"
   },
   "css/css-break/flexbox/multi-line-row-flex-fragmentation-045.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/flexbox/multi-line-row-flex-fragmentation-046.html": {
     "reftest": "PASS"

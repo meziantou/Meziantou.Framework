@@ -2318,7 +2318,14 @@ internal sealed class FragmentationFlow
             var appeal = IsForcedBreak(after) || IsForcedBreak(before) ? BreakAppeal.Forced
                 : context.Avoid || IsAvoidBreak(after) || IsAvoidBreak(before) ? BreakAppeal.Avoid
                 : BreakAppeal.Perfect;
-            AddCandidate(new BreakCandidate(position, previousEnd, appeal), context);
+            var sequence = 0;
+            if (appeal == BreakAppeal.Forced)
+            {
+                sequence = ++_root._sequence;
+                (group.ForcedBreakSequences ??= new int[tracks.Length])[track] = sequence;
+            }
+
+            AddCandidate(new BreakCandidate(position, previousEnd, appeal) { Sequence = sequence }, context);
         }
 
         (Groups ??= []).Add(group);
@@ -3085,6 +3092,13 @@ internal sealed class ParallelGroup(BoxFragment container, double[] trackStarts,
     public double[] TrackEnds { get; } = trackEnds;
 
     public double Start => TrackStarts[0];
+
+    /// <summary>
+    /// The sequence (<see cref="BreakCandidate.Sequence"/>) of the forced break before each track (0 when there is none), or
+    /// null: the breaker does not place a track after a forced break that it has not taken (the tracks without block size at
+    /// the same position are separated by their forced breaks).
+    /// </summary>
+    public int[]? ForcedBreakSequences { get; set; }
 
     public List<ParallelItem> Items { get; } = [];
 

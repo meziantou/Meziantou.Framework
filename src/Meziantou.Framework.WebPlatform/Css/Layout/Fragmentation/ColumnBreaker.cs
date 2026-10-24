@@ -403,7 +403,8 @@ internal static partial class ColumnBreaker
             for (var i = _candidateIndex; i < candidates.Count; i++)
             {
                 var candidate = candidates[i].ResolveRepeated();
-                if (candidate.Position >= _end - Epsilon)
+                // (the forced breaks between the tracks without block size at the end of the flow, at the start of the fragmentainer, are taken)
+                if (candidate.Position >= _end - Epsilon && !(candidate.Appeal == BreakAppeal.Forced && candidate.Position <= _position + Epsilon && IsTrackForcedBreak(candidate.Sequence)))
                     break;
 
                 if (candidate.IsBeforeFloat && !_flow.BreaksBeforeFloats)
@@ -1019,10 +1020,14 @@ internal static partial class ColumnBreaker
         private bool HasForcedBreak()
         {
             var candidates = _flow.Candidates;
-            for (var i = _candidateIndex; i < candidates.Count && candidates[i].Position < _end - Epsilon; i++)
+            for (var i = _candidateIndex; i < candidates.Count && candidates[i].Position <= _end + Epsilon; i++)
             {
-                if (candidates[i].Appeal == BreakAppeal.Forced && candidates[i].Position >= _position - Epsilon)
+                // (also a forced break between tracks without block size at the end of the flow, at the start of the fragmentainer)
+                if (candidates[i].Appeal == BreakAppeal.Forced && candidates[i].Position >= _position - Epsilon
+                    && (candidates[i].Position < _end - Epsilon || (candidates[i].Position <= _position + Epsilon && IsTrackForcedBreak(candidates[i].Sequence))))
+                {
                     return true;
+                }
             }
 
             return false;
@@ -1051,6 +1056,14 @@ internal static partial class ColumnBreaker
         {
             for (var track = group.ClosedTracks; track < group.TrackStarts.Length; track++)
             {
+                // A track after a forced break at the start of the fragmentainer that the flow has not taken yet (several tracks
+                // without block size at the same position, e.g. the lines of items with negative margins) starts a next one
+                if (group.ForcedBreakSequences is { } forcedSequences && forcedSequences[track] != 0 && group.TrackStarts[track] <= _position + Epsilon
+                    && IsCandidateLeft(group.TrackStarts[track], forcedSequences[track]))
+                {
+                    return false;
+                }
+
                 var isAfterFragmentainer = false;
                 var spillover = GetSpannedGapSpillover(group, track, _position);
                 foreach (var item in group.StartingItems[track])
@@ -1146,6 +1159,34 @@ internal static partial class ColumnBreaker
             }
 
             return true;
+        }
+
+        /// <summary>Returns whether a forced break is between two tracks of a group of the flow (see <see cref="ParallelGroup.ForcedBreakSequences"/>).</summary>
+        private bool IsTrackForcedBreak(int sequence)
+        {
+            if (_flow.Groups is { } groups)
+            {
+                foreach (var group in groups)
+                {
+                    if (group.ForcedBreakSequences is { } sequences && Array.IndexOf(sequences, sequence) > 0)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>Returns whether the possible break of a sequence at a position is after the start of the fragmentainer (it was not taken yet).</summary>
+        private bool IsCandidateLeft(double position, int sequence)
+        {
+            var candidates = _flow.Candidates;
+            for (var i = _candidateIndex; i < candidates.Count && candidates[i].Position <= position + Epsilon; i++)
+            {
+                if (candidates[i].Sequence == sequence)
+                    return true;
+            }
+
+            return false;
         }
 
         /// <summary>Places a parallel flow in the current fragmentainer.</summary>

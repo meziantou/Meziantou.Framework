@@ -9,8 +9,8 @@ by `Meziantou.Framework.Pdf` and drawn on the canvas of `Meziantou.Framework.Ima
   are not embedded replaced by a font of the system or of the application, the text rendering modes
 - **Colors**: the device color spaces, `ICCBased` (through the ICC profiles of Imaging), `CalRGB`, `CalGray`, `Lab`,
   `Indexed`, `Separation` and `DeviceN`; `DeviceCMYK` is converted with a CMYK profile
-- **Images**: every filter (`DCTDecode` and `JPXDecode` through the codecs of Imaging, `CCITTFaxDecode`, `JBIG2Decode`),
-  1 to 16 bits per component, `/Decode`, stencil masks, explicit masks, color key masks and soft masks, inline images
+- **Images**: every filter (`DCTDecode` and `JPXDecode` through the codecs of Imaging, CMYK JPEG images included,
+  `CCITTFaxDecode`, `JBIG2Decode`), 1 to 16 bits per component, `/Decode`, stencil masks, explicit masks, color key masks and soft masks, inline images
 - **Shadings and patterns**: functions (sampled, exponential, stitching, PostScript calculator), the seven shading
   types, shading patterns and colored and uncolored tiling patterns
 - **Transparency**: constant alpha, the blend modes, transparency groups (drawn as isolated, non-knockout groups), soft

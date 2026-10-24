@@ -16,6 +16,7 @@
     <Project Path="../src/Meziantou.Framework.Yaml/Meziantou.Framework.Yaml.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.JavaScriptEngine.AotTests/Meziantou.Framework.JavaScriptEngine.AotTests.csproj" />
     <Project Path="../tests/Meziantou.Framework.JavaScriptEngine.Test262/Meziantou.Framework.JavaScriptEngine.Test262.csproj" />
     <Project Path="../tests/Meziantou.Framework.JavaScriptEngine.Tests/Meziantou.Framework.JavaScriptEngine.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark.csproj" />

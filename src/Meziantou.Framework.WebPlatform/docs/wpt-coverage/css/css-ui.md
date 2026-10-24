@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 83 | 101 | 0 | 82% |
+| [Stable](#stable-tests) | 84 | 101 | 0 | 83% |
 | [Tentative](#tentative-tests) | 11 | 16 | 0 | 69% |
 | [Reftests](#reftests) | 956 | 960 | 0 | 99.5% |
-| **All** | **1,050** | **1,077** | **0** | **97%** |
+| **All** | **1,051** | **1,077** | **0** | **98%** |
 
 ## Stable tests
 
@@ -106,7 +106,7 @@
 | [`resize-016.html`](https://wpt.fyi/results/css/css-ui/resize-016.html) | Timeout | 0 / 0 | REQUIRES(layout), TEST RUNNER | resizing; manual test (a person must resize the box and press the button), it times out |
 | [`resize-017.html`](https://wpt.fyi/results/css/css-ui/resize-017.html) | Timeout | 0 / 0 | REQUIRES(layout), TEST RUNNER | resizing; manual test (a person must resize the box and press the button), it times out |
 | [`resize-018.html`](https://wpt.fyi/results/css/css-ui/resize-018.html) | Timeout | 0 / 0 | REQUIRES(layout), TEST RUNNER | resizing; manual test (a person must resize the box and press the button), it times out |
-| [`resize-interactive.html`](https://wpt.fyi/results/css/css-ui/resize-interactive.html) | Fail | 0 / 10 | NOT IMPLEMENTED | the resize handle of `resize` is not interactive: dragging it with the pointer does not resize the element |
+| [`resize-interactive.html`](https://wpt.fyi/results/css/css-ui/resize-interactive.html) | Pass | 10 / 10 |  |  |
 | [`select-author-level-padding-applies.html`](https://wpt.fyi/results/css/css-ui/select-author-level-padding-applies.html) | Pass | 1 / 1 |  |  |
 | [`user-select-001.html`](https://wpt.fyi/results/css/css-ui/user-select-001.html) | Pass | 1 / 1 |  |  |
 | [`user-select-button.html`](https://wpt.fyi/results/css/css-ui/user-select-button.html) | Pass | 6 / 6 |  |  |
@@ -123,7 +123,7 @@
 |---|---|--:|---|---|
 | [`animation/outline-offset-interpolation-rounding.tentative.html`](https://wpt.fyi/results/css/css-ui/animation/outline-offset-interpolation-rounding.tentative.html) | Fail | 2 / 7 | NOT IMPLEMENTED | the interpolated `outline-offset` is not snapped as a line width |
 | [`outline-width-rounding.tentative.html`](https://wpt.fyi/results/css/css-ui/outline-width-rounding.tentative.html) | Pass | 12 / 12 |  |  |
-| [`resize-iframe-3d-transform.tentative.html`](https://wpt.fyi/results/css/css-ui/resize-iframe-3d-transform.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the resize handle of `resize` is not interactive: dragging it does not resize the element (the width is also measured 152.00000000000003 instead of 152 through the 3D transform) |
+| [`resize-iframe-3d-transform.tentative.html`](https://wpt.fyi/results/css/css-ui/resize-iframe-3d-transform.tentative.html) | Fail | 0 / 1 | BUG | the iframe is resized by dragging its resizer, but its width is measured 152.00000000000003 instead of 152 through the 3D transform (the floating-point error of the inverse of the transform) |
 | [`resize-textarea-relative-to-right-001.tentative.html`](https://wpt.fyi/results/css/css-ui/resize-textarea-relative-to-right-001.tentative.html) | Fail | 0 / 1 | REQUIRES(layout) | the textarea is resized by dragging its resize handle and its width is measured |
 | [`resize-textarea-rtl-001.tentative.html`](https://wpt.fyi/results/css/css-ui/resize-textarea-rtl-001.tentative.html) | Fail | 0 / 1 | REQUIRES(layout) | the textarea is resized by dragging its resize handle and its width is measured |
 | [`resize-textarea-rtl-002.tentative.html`](https://wpt.fyi/results/css/css-ui/resize-textarea-rtl-002.tentative.html) | Fail | 0 / 1 | REQUIRES(layout) | the textarea is resized by dragging its resize handle and its width is measured |

@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 250 | 262 | 0 | 95% |
-| [Tentative](#tentative-tests) | 19 | 22 | 0 | 86% |
-| [Reftests](#reftests) | 208 | 213 | 0 | 98% |
-| **All** | **477** | **497** | **0** | **96%** |
+| [Stable](#stable-tests) | 253 | 262 | 0 | 97% |
+| [Tentative](#tentative-tests) | 20 | 22 | 0 | 91% |
+| [Reftests](#reftests) | 210 | 213 | 0 | 99% |
+| **All** | **483** | **497** | **0** | **97%** |
 
 ## Stable tests
 
@@ -74,8 +74,8 @@
 | [`calc-serialization-002.html`](https://wpt.fyi/results/css/css-values/calc-serialization-002.html) | Pass | 24 / 24 |  |  |
 | [`calc-serialization.html`](https://wpt.fyi/results/css/css-values/calc-serialization.html) | Pass | 1 / 1 |  |  |
 | [`calc-serialize.html`](https://wpt.fyi/results/css/css-values/calc-serialize.html) | Pass | 4 / 4 |  |  |
-| [`calc-size/animation/calc-size-height-interpolation.html`](https://wpt.fyi/results/css/css-values/calc-size/animation/calc-size-height-interpolation.html) | Fail | 1,126 / 1,156 | BUG | the interpolation of a deeply nested `calc-size()` is not refused when its expansion is too large (https://github.com/w3c/csswg-drafts/issues/10369): the computed value simplifies the nested calculations |
-| [`calc-size/animation/calc-size-interpolation-expansion.html`](https://wpt.fyi/results/css/css-values/calc-size/animation/calc-size-interpolation-expansion.html) | Fail | 9 / 11 | BUG | the interpolated value of a `calc-size()` whose basis is a nested `calc-size()` substitutes the inner calculation instead of keeping the nested basis, and `1 * size` is not simplified |
+| [`calc-size/animation/calc-size-height-interpolation.html`](https://wpt.fyi/results/css/css-values/calc-size/animation/calc-size-height-interpolation.html) | Pass | 1,156 / 1,156 |  |  |
+| [`calc-size/animation/calc-size-interpolation-expansion.html`](https://wpt.fyi/results/css/css-values/calc-size/animation/calc-size-interpolation-expansion.html) | Fail | 9 / 11 | TEST BUG | two subtests expect the expansions of Chrome, which the test itself says are "not fully specified": `0px` to `calc-size(calc-size(min-content, size + 20px), 2 * size)` keeps the nested basis, but preparing a `calc-size()` for interpolation always replaces a `calc-size()` basis with its own basis and substitutes its calculation (https://drafts.csswg.org/css-values-5/#calc-size-prepare-for-interpolation: `calc-size(min-content, 0px + (1.5 * (20px + size)))`); and `calc-size(min-content, size * 4)` to the same value expects `size` for the product `1 * size`, which the simplification of a product keeps (https://drafts.csswg.org/css-values-4/#calc-simplification: only the numbers are multiplied together); Safari fails both subtests too (with the same `(1 * size)` for the second) |
 | [`calc-size/animation/calc-size-width-interpolation.html`](https://wpt.fyi/results/css/css-values/calc-size/animation/calc-size-width-interpolation.html) | Pass | 732 / 732 |  |  |
 | [`calc-size/animation/interpolate-size-height-composition.html`](https://wpt.fyi/results/css/css-values/calc-size/animation/interpolate-size-height-composition.html) | Pass | 20 / 20 |  |  |
 | [`calc-size/animation/interpolate-size-height-interpolation.html`](https://wpt.fyi/results/css/css-values/calc-size/animation/interpolate-size-height-interpolation.html) | Pass | 318 / 318 |  |  |
@@ -101,7 +101,7 @@
 | [`calc-size/calc-size-parsing.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-parsing.html) | Pass | 94 / 94 |  |  |
 | [`calc-size/calc-size-replaced-element.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-replaced-element.html) | Pass | 33 / 33 |  |  |
 | [`calc-size/calc-size-table.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-table.html) | Pass | 6 / 6 |  |  |
-| [`calc-size/calc-size-typed-om.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-typed-om.html) | Fail | 18 / 19 | BUG | `computedStyleMap()` serializes a `calc-size()` calculation without the parentheses of a nested product (`0.5 * size` instead of `(0.5 * size)`) |
+| [`calc-size/calc-size-typed-om.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-typed-om.html) | Fail | 18 / 19 | TEST BUG | the test expects the root product of the calculation of `calc-size(max-content, size / 2)` in parentheses (`(0.5 * size)`), but not the root products of `calc-size(min-content, size * 2)` (`2 * size`) and `calc-size(10px, sign(size) * size)`: the calculation of `calc-size()` is serialized like the one of `calc()`, whose outer parentheses are removed (https://drafts.csswg.org/css-values-4/#serialize-a-calculation-tree), and the products nested in a sum keep theirs (`30px + (0.5 * size)`, as expected by the test); Chrome and Safari fail this subtest the same way (`0.5 * size`) |
 | [`calc-size/calc-size-width-box-sizing.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-width-box-sizing.html) | Pass | 15 / 15 |  |  |
 | [`calc-size/calc-size-width.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-width.html) | Pass | 20 / 20 |  |  |
 | [`calc-size/interpolate-size-computed.html`](https://wpt.fyi/results/css/css-values/calc-size/interpolate-size-computed.html) | Pass | 2 / 2 |  |  |
@@ -121,7 +121,7 @@
 | [`clamp-length-invalid.html`](https://wpt.fyi/results/css/css-values/clamp-length-invalid.html) | Pass | 23 / 23 |  |  |
 | [`clamp-length-serialize.html`](https://wpt.fyi/results/css/css-values/clamp-length-serialize.html) | Pass | 50 / 50 |  |  |
 | [`clamp-none-whitespace.html`](https://wpt.fyi/results/css/css-values/clamp-none-whitespace.html) | Pass | 3 / 3 |  |  |
-| [`dynamic-viewport-units-rule-cache.html`](https://wpt.fyi/results/css/css-values/dynamic-viewport-units-rule-cache.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the rendering is updated only when something requests it (an animation frame callback, an observer, a scroll...): showing the hidden parent of an iframe does not schedule the resize steps, so the `resize` event of the iframe awaited by the test is never fired |
+| [`dynamic-viewport-units-rule-cache.html`](https://wpt.fyi/results/css/css-values/dynamic-viewport-units-rule-cache.html) | Pass | 1 / 1 |  |  |
 | [`exp-log-compute.html`](https://wpt.fyi/results/css/css-values/exp-log-compute.html) | Pass | 59 / 59 |  |  |
 | [`exp-log-invalid.html`](https://wpt.fyi/results/css/css-values/exp-log-invalid.html) | Pass | 48 / 48 |  |  |
 | [`exp-log-serialize.html`](https://wpt.fyi/results/css/css-values/exp-log-serialize.html) | Pass | 19 / 19 |  |  |
@@ -130,7 +130,7 @@
 | [`getComputedStyle-border-radius-002.html`](https://wpt.fyi/results/css/css-values/getComputedStyle-border-radius-002.html) | Pass | 8 / 8 |  |  |
 | [`getComputedStyle-border-radius-003.html`](https://wpt.fyi/results/css/css-values/getComputedStyle-border-radius-003.html) | Pass | 1 / 1 |  |  |
 | [`getComputedStyle-calc-mixed-units-001.html`](https://wpt.fyi/results/css/css-values/getComputedStyle-calc-mixed-units-001.html) | Pass | 3 / 3 |  |  |
-| [`getComputedStyle-calc-mixed-units-002.html`](https://wpt.fyi/results/css/css-values/getComputedStyle-calc-mixed-units-002.html) | Fail | 6 / 8 | BUG | `calc(4em + 2.6458333cm)` is `163.99999874px`, serialized with 6 decimals as `163.999999px`: the test expects `164px` (the browsers compute the lengths as single-precision floats or serialize them with 6 significant digits) |
+| [`getComputedStyle-calc-mixed-units-002.html`](https://wpt.fyi/results/css/css-values/getComputedStyle-calc-mixed-units-002.html) | Pass | 8 / 8 |  |  |
 | [`getComputedStyle-calc-mixed-units-003.html`](https://wpt.fyi/results/css/css-values/getComputedStyle-calc-mixed-units-003.html) | Pass | 7 / 7 |  |  |
 | [`hypot-pow-sqrt-computed.html`](https://wpt.fyi/results/css/css-values/hypot-pow-sqrt-computed.html) | Pass | 123 / 123 |  |  |
 | [`hypot-pow-sqrt-invalid.html`](https://wpt.fyi/results/css/css-values/hypot-pow-sqrt-invalid.html) | Pass | 49 / 49 |  |  |
@@ -202,7 +202,7 @@
 | [`round-mod-rem-computed.html`](https://wpt.fyi/results/css/css-values/round-mod-rem-computed.html) | Pass | 243 / 243 |  |  |
 | [`round-mod-rem-invalid.html`](https://wpt.fyi/results/css/css-values/round-mod-rem-invalid.html) | Pass | 108 / 108 |  |  |
 | [`round-mod-rem-serialize.html`](https://wpt.fyi/results/css/css-values/round-mod-rem-serialize.html) | Pass | 24 / 24 |  |  |
-| [`sign-in-keyframes-with-relative-units.html`](https://wpt.fyi/results/css/css-values/sign-in-keyframes-with-relative-units.html) | Fail | 0 / 2 | BUG, TEST BUG | the keyframe values with `sign()` of relative units are not computed with the font size of the element; the test expects the interpolated `font-palette` as `palette-mix(in oklab, palette-mix(in lch, ...), palette-mix(in lch, ...))`, with the default color space: the computed value omits it (`palette-mix(palette-mix(in lch, ...), palette-mix(in lch, ...))`), as `css/css-fonts/parsing/palette-mix-computed.html` requires; the second subtest only fails for this |
+| [`sign-in-keyframes-with-relative-units.html`](https://wpt.fyi/results/css/css-values/sign-in-keyframes-with-relative-units.html) | Fail | 0 / 2 | TEST BUG | the first subtest expects the `1em` of the `font-style`, `font-weight`, `font-palette` and `font-variation-settings` keyframes to be the font size of the element (8px, so `sign(1em - 10px)` is -1): in the font-affecting properties, the font-relative lengths resolve against the metrics of the parent (16px, so the sign is 1 and `font-style` is `oblique 1.75deg`; https://drafts.csswg.org/css-values-4/#font-relative-lengths), as `css/css-values/using-font-relative-units-in-font-properties.html` expects (Chrome and Safari pass it for `font-style`, `font-weight` and `font-variation-settings`); the non-font properties of the keyframes (`scale`, `rotate`, `text-size-adjust`) use the font size of the element, as expected; the test expects the interpolated `font-palette` as `palette-mix(in oklab, palette-mix(in lch, ...), palette-mix(in lch, ...))`, with the default color space: the computed value omits it (`palette-mix(palette-mix(in lch, ...), palette-mix(in lch, ...))`), as `css/css-fonts/parsing/palette-mix-computed.html` requires; the second subtest only fails for this |
 | [`signed-zero.html`](https://wpt.fyi/results/css/css-values/signed-zero.html) | Pass | 162 / 162 |  |  |
 | [`signs-abs-computed.html`](https://wpt.fyi/results/css/css-values/signs-abs-computed.html) | Pass | 233 / 233 |  |  |
 | [`signs-abs-invalid.html`](https://wpt.fyi/results/css/css-values/signs-abs-invalid.html) | Pass | 53 / 53 |  |  |
@@ -212,7 +212,7 @@
 | [`sin-cos-tan-serialize.html`](https://wpt.fyi/results/css/css-values/sin-cos-tan-serialize.html) | Pass | 270 / 270 |  |  |
 | [`tree-counting/calc-sibling-function-in-shadow-dom.html`](https://wpt.fyi/results/css/css-values/tree-counting/calc-sibling-function-in-shadow-dom.html) | Pass | 3 / 3 |  |  |
 | [`tree-counting/calc-sibling-function-parsing.html`](https://wpt.fyi/results/css/css-values/tree-counting/calc-sibling-function-parsing.html) | Pass | 47 / 47 |  |  |
-| [`tree-counting/calc-sibling-function.html`](https://wpt.fyi/results/css/css-values/tree-counting/calc-sibling-function.html) | Fail | 6 / 7 | NOT IMPLEMENTED | nested pseudo-elements in `getComputedStyle()` (`::before::marker`) |
+| [`tree-counting/calc-sibling-function.html`](https://wpt.fyi/results/css/css-values/tree-counting/calc-sibling-function.html) | Fail | 6 / 7 | TEST BUG | the nested pseudo-element subtest calls `getComputedStyle(element, '::before::marker')`: `getComputedStyle()` parses its argument as a single `<pseudo-element-selector>` and returns an empty declaration block when it fails to parse (https://drafts.csswg.org/cssom/#dom-window-getcomputedstyle), and `::before::marker` is two pseudo-elements; the test acknowledges that it requires the unresolved https://github.com/w3c/csswg-drafts/issues/4456, and fails in every browser the same way (`""`) |
 | [`tree-counting/sibling-function-container-query-invalidation.html`](https://wpt.fyi/results/css/css-values/tree-counting/sibling-function-container-query-invalidation.html) | Pass | 8 / 8 |  |  |
 | [`tree-counting/sibling-function-container-query.html`](https://wpt.fyi/results/css/css-values/tree-counting/sibling-function-container-query.html) | Pass | 6 / 6 |  |  |
 | [`tree-counting/sibling-function-if-style-query.html`](https://wpt.fyi/results/css/css-values/tree-counting/sibling-function-if-style-query.html) | Pass | 4 / 4 |  |  |
@@ -223,13 +223,13 @@
 | [`tree-counting/sibling-index-keyframe-length-value-dynamic.html`](https://wpt.fyi/results/css/css-values/tree-counting/sibling-index-keyframe-length-value-dynamic.html) | Pass | 2 / 2 |  |  |
 | [`tree-counting/sibling-index-keyframe-palette-mix-dynamic.html`](https://wpt.fyi/results/css/css-values/tree-counting/sibling-index-keyframe-palette-mix-dynamic.html) | Pass | 2 / 2 |  |  |
 | [`tree-counting/sibling-index-keyframe-percent-dynamic.html`](https://wpt.fyi/results/css/css-values/tree-counting/sibling-index-keyframe-percent-dynamic.html) | Pass | 2 / 2 |  |  |
-| [`tree-counting/sibling-index-keyframe-registered-properties-dynamic.html`](https://wpt.fyi/results/css/css-values/tree-counting/sibling-index-keyframe-registered-properties-dynamic.html) | Fail | 18 / 20 | BUG | the registered `<color>` keyframes with `sibling-index()` are interpolated in Oklab where the test expects the keyframe value |
+| [`tree-counting/sibling-index-keyframe-registered-properties-dynamic.html`](https://wpt.fyi/results/css/css-values/tree-counting/sibling-index-keyframe-registered-properties-dynamic.html) | Fail | 18 / 20 | TEST BUG | the `--color` subtests expect the `from` keyframe value (`color(srgb 0 0.6 0)`) of a `step-end` animation to `red`: the step easing gives a transformed distance of 0, and the value is the interpolation at p = 0 (https://drafts.csswg.org/web-animations-1/#the-effect-value-of-a-keyframe-animation-effect), which is in the Oklab interpolation space when a color is not a legacy color (https://drafts.csswg.org/css-color-4/#interpolation-space), as `css/css-color/animation/color-interpolation.html` expects with the same `steps(1, end)` easing (`color(srgb 0 0 0)` to `color(srgb 1 1 1)` at 0 is `oklab(0 0 0)` in every browser); Safari fails these subtests the same way (Chrome and Firefox do not interpolate a color with a tree-counting function and keep the keyframe value) |
 | [`tree-counting/sibling-index-keyframe-rotate-dynamic.html`](https://wpt.fyi/results/css/css-values/tree-counting/sibling-index-keyframe-rotate-dynamic.html) | Pass | 2 / 2 |  |  |
 | [`tree-counting/sibling-index-keyframe-scale-dynamic.html`](https://wpt.fyi/results/css/css-values/tree-counting/sibling-index-keyframe-scale-dynamic.html) | Pass | 2 / 2 |  |  |
 | [`tree-counting/sibling-index-keyframe-transform-dynamic.html`](https://wpt.fyi/results/css/css-values/tree-counting/sibling-index-keyframe-transform-dynamic.html) | Pass | 2 / 2 |  |  |
 | [`tree-counting/sibling-index-keyframe-value-dynamic.html`](https://wpt.fyi/results/css/css-values/tree-counting/sibling-index-keyframe-value-dynamic.html) | Pass | 2 / 2 |  |  |
 | [`tree-counting/sibling-index-linear-gradient-gcs.html`](https://wpt.fyi/results/css/css-values/tree-counting/sibling-index-linear-gradient-gcs.html) | Pass | 3 / 3 |  |  |
-| [`tree-counting/tree-scoped-sibling-function.html`](https://wpt.fyi/results/css/css-values/tree-counting/tree-scoped-sibling-function.html) | Fail | 1 / 2 | BUG | `sibling-index()`/`sibling-count()` in a `::part()` rule of the outer tree use the part element's position instead of evaluating to 1 (tree-scoped) |
+| [`tree-counting/tree-scoped-sibling-function.html`](https://wpt.fyi/results/css/css-values/tree-counting/tree-scoped-sibling-function.html) | Fail | 1 / 2 | TEST BUG | the test expects `sibling-index()` and `sibling-count()` in a `::part()` rule of the outer tree to be 1: they are tree-scoped references that fail to match an element of a descendant shadow tree, so they return 0 ("If the reference fails to match (because the element is, for example, in a descendent shadow tree from the stylesheet), the function returns 0", and the `::part(my-part)` example "Returns 0px", https://drafts.csswg.org/css-values-5/#tree-counting); Safari returns 0 too (Chrome and Firefox return 1, an earlier resolution) |
 | [`tree-counting/trig-functions-in-gradient-position.html`](https://wpt.fyi/results/css/css-values/tree-counting/trig-functions-in-gradient-position.html) | Pass | 1 / 1 |  |  |
 | [`tree-counting/trig-functions-with-runtime-angle-arguments.html`](https://wpt.fyi/results/css/css-values/tree-counting/trig-functions-with-runtime-angle-arguments.html) | Pass | 4 / 4 |  |  |
 | [`typed-arithmetic-negated-product.html`](https://wpt.fyi/results/css/css-values/typed-arithmetic-negated-product.html) | Pass | 6 / 6 |  |  |
@@ -290,7 +290,7 @@
 | [`position/position-invalid.tentative.html`](https://wpt.fyi/results/css/css-values/position/position-invalid.tentative.html) | Pass | 21 / 21 |  |  |
 | [`position/position-valid.tentative.html`](https://wpt.fyi/results/css/css-values/position/position-valid.tentative.html) | Pass | 34 / 34 |  |  |
 | [`random-alias-property.tentative.html`](https://wpt.fyi/results/css/css-values/random-alias-property.tentative.html) | Pass | 1 / 1 |  |  |
-| [`random-computed.tentative.html`](https://wpt.fyi/results/css/css-values/random-computed.tentative.html) | Fail | 164 / 172 | BUG | `random()` (tentative): computed values with percentages omit `fixed`, a nested `random(fixed random(...))` base is clamped, `random()` in relative color channels is rejected, and values are shared across elements |
+| [`random-computed.tentative.html`](https://wpt.fyi/results/css/css-values/random-computed.tentative.html) | Fail | 170 / 172 | BUG | `random()` (tentative) with percentages is simplified at computed-value time when all its arguments are percentages, unless the property accepts `<length-percentage>` outside of functions (`CssValueComputer.GetPercentageUnit`): `border-image-slice: random(10%, 30%)` and the position of a gradient (`radial-gradient(at 30% random(33%, 1%), ...)`) compute to a percentage, where the test expects `random(fixed <base>, ...)`, as for the other percentages resolved at used-value time (https://drafts.csswg.org/css-values-5/#random-evaluation; the test also expects the random color stops of the same gradient to be simplified); only Chrome passes, Firefox and Safari fail the same way |
 | [`random-in-animations.tentative.html`](https://wpt.fyi/results/css/css-values/random-in-animations.tentative.html) | Pass | 37 / 37 |  |  |
 | [`random-in-container-query.tentative.html`](https://wpt.fyi/results/css/css-values/random-in-container-query.tentative.html) | Pass | 9 / 9 |  |  |
 | [`random-in-custom-function.tentative.html`](https://wpt.fyi/results/css/css-values/random-in-custom-function.tentative.html) | Pass | 63 / 63 |  |  |
@@ -303,7 +303,7 @@
 | [`random-unresolvable-argument.tentative.html`](https://wpt.fyi/results/css/css-values/random-unresolvable-argument.tentative.html) | Pass | 3 / 3 |  |  |
 | [`tree-counting/sibling-function-descriptors.tentative.html`](https://wpt.fyi/results/css/css-values/tree-counting/sibling-function-descriptors.tentative.html) | Fail | 9 / 10 | TEST BUG | the `sibling-count()` rule of the test has a `negative: linear-gradient(green, green)` descriptor that the test expects to be dropped, but an `<image>` is a valid `<symbol>` (https://drafts.csswg.org/css-counter-styles-3/#typedef-symbol), as `css/css-counter-styles/counter-style-at-rule/prefix-suffix-syntax.html` expects; the descriptors with `sibling-index()` and `sibling-count()` are dropped; the browsers pass because they do not support the image symbols |
 | [`tree-counting/sibling-function-media-query.tentative.html`](https://wpt.fyi/results/css/css-values/tree-counting/sibling-function-media-query.tentative.html) | Pass | 4 / 4 |  |  |
-| [`viewport-units-scroll-no-cycles-001.tentative.html`](https://wpt.fyi/results/css/css-values/viewport-units-scroll-no-cycles-001.tentative.html) | Fail | 0 / 1 | BUG | an `if()` in the `overflow` of the root element whose condition depends on the viewport units (a cycle through the scrollbar gutters, csswg-drafts#13189) is not invalid at computed-value time: the viewport units used while the gutters are determined ignore them |
+| [`viewport-units-scroll-no-cycles-001.tentative.html`](https://wpt.fyi/results/css/css-values/viewport-units-scroll-no-cycles-001.tentative.html) | Pass | 1 / 1 |  |  |
 
 ## Reftests
 
@@ -378,7 +378,7 @@
 | [`calc-size/calc-size-aspect-ratio-002.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-aspect-ratio-002.html) | Pass | 1 / 1 |  |  |
 | [`calc-size/calc-size-aspect-ratio-003.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-aspect-ratio-003.html) | Pass | 1 / 1 |  |  |
 | [`calc-size/calc-size-aspect-ratio-004.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-aspect-ratio-004.html) | Pass | 1 / 1 |  |  |
-| [`calc-size/calc-size-aspect-ratio-005.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-aspect-ratio-005.html) | Fail | 0 / 1 | BUG | the `min-width: calc-size(auto, size - 50px)` of a box with an `aspect-ratio` is not part of its intrinsic size contribution: its `width: fit-content` parent is 50px wide (the width transferred from the height) instead of 100px; only Chrome passes |
+| [`calc-size/calc-size-aspect-ratio-005.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-aspect-ratio-005.html) | Pass | 1 / 1 |  |  |
 | [`calc-size/calc-size-flex-001.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-flex-001.html) | Pass | 1 / 1 |  |  |
 | [`calc-size/calc-size-flex-002.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-flex-002.html) | Pass | 1 / 1 |  |  |
 | [`calc-size/calc-size-flex-003.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-flex-003.html) | Pass | 1 / 1 |  |  |
@@ -386,7 +386,7 @@
 | [`calc-size/calc-size-flex-005.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-flex-005.html) | Pass | 1 / 1 |  |  |
 | [`calc-size/calc-size-flex-006.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-flex-006.html) | Pass | 1 / 1 |  |  |
 | [`calc-size/calc-size-flex-007.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-flex-007.html) | Pass | 1 / 1 |  |  |
-| [`calc-size/calc-size-flex-008.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-flex-008.html) | Fail | 0 / 1 | BUG | the `height: calc-size(auto, min(size, 100px))` of a column flex container is resolved (100px) after its items were laid out in an indefinite main size, and the items are not flexed again in the definite size: they keep their 60px height and overflow instead of shrinking to 50px; only Chrome passes |
+| [`calc-size/calc-size-flex-008.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-flex-008.html) | Pass | 1 / 1 |  |  |
 | [`calc-size/calc-size-flex-009.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-flex-009.html) | Pass | 1 / 1 |  |  |
 | [`calc-size/calc-size-grid-repeat.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-grid-repeat.html) | Pass | 1 / 1 |  |  |
 | [`calc-size/calc-size-min-max-sizes-001.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-min-max-sizes-001.html) | Pass | 1 / 1 |  |  |
@@ -418,7 +418,7 @@
 | [`ch-unit-016.html`](https://wpt.fyi/results/css/css-values/ch-unit-016.html) | Pass | 1 / 1 |  |  |
 | [`ch-unit-017.html`](https://wpt.fyi/results/css/css-values/ch-unit-017.html) | Pass | 1 / 1 |  |  |
 | [`ch-unit-018.html`](https://wpt.fyi/results/css/css-values/ch-unit-018.html) | Pass | 1 / 1 |  |  |
-| [`ch-unit-019.html`](https://wpt.fyi/results/css/css-values/ch-unit-019.html) | Fail | 0 / 1 | BUG | the icon font of the test has no glyph for `0`: `ch` is the advance of `0` in the font used to render it (https://drafts.csswg.org/css-values-4/#ch), here the fallback font: 0.5em in horizontal text as expected, but its vertical advance (1.1em) in upright vertical text, where the test expects the 1em of a font without `0` (as Chrome, which does not look for `0` in the fallback fonts; Firefox and Safari fail the test) |
+| [`ch-unit-019.html`](https://wpt.fyi/results/css/css-values/ch-unit-019.html) | Fail | 0 / 1 | TEST BUG | the icon font of the test has no glyph for `0`, and the test expects `ch` to fall back to 0.5em (1em in upright vertical text), as for a measure that is "impossible or impractical to determine": `ch` is the advance measure of the `0` glyph "in the font used to render it" (https://drafts.csswg.org/css-values-4/#ch), the fallback font that renders the `0` here, whose advance is measurable (0.5em in horizontal text, but 1.1em in upright vertical text, so the second rectangle is 105px wide); only Chrome passes, as it only looks for `0` in the first available font (Firefox and Safari fail) |
 | [`ex-calc-expression-001.html`](https://wpt.fyi/results/css/css-values/ex-calc-expression-001.html) | Pass | 1 / 1 |  |  |
 | [`ex-unit-001.html`](https://wpt.fyi/results/css/css-values/ex-unit-001.html) | Pass | 1 / 1 |  |  |
 | [`ex-unit-002.html`](https://wpt.fyi/results/css/css-values/ex-unit-002.html) | Pass | 1 / 1 |  |  |

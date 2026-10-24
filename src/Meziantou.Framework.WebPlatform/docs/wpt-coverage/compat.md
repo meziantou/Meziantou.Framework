@@ -8,8 +8,8 @@
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 13 | 14 | 0 | 93% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 21 | 25 | 0 | 84% |
-| **All** | **34** | **39** | **0** | **87%** |
+| [Reftests](#reftests) | 23 | 25 | 0 | 92% |
+| **All** | **36** | **39** | **0** | **92%** |
 
 ## Stable tests
 
@@ -54,8 +54,8 @@
 | [`webkit-text-fill-color-property-001b.html`](https://wpt.fyi/results/compat/webkit-text-fill-color-property-001b.html) | Pass | 1 / 1 |  |  |
 | [`webkit-text-fill-color-property-001c.html`](https://wpt.fyi/results/compat/webkit-text-fill-color-property-001c.html) | Pass | 1 / 1 |  |  |
 | [`webkit-text-fill-color-property-001d.html`](https://wpt.fyi/results/compat/webkit-text-fill-color-property-001d.html) | Pass | 1 / 1 |  |  |
-| [`webkit-text-fill-color-property-002.html`](https://wpt.fyi/results/compat/webkit-text-fill-color-property-002.html) | Timeout | 0 / 1 | BUG | the page never removes the `reftest-wait` class of its root element (an error of its scripts, or an event that is not fired) |
-| [`webkit-text-fill-color-property-003.html`](https://wpt.fyi/results/compat/webkit-text-fill-color-property-003.html) | Timeout | 0 / 1 | BUG | the page never removes the `reftest-wait` class of its root element (an error of its scripts, or an event that is not fired) |
+| [`webkit-text-fill-color-property-002.html`](https://wpt.fyi/results/compat/webkit-text-fill-color-property-002.html) | Pass | 1 / 1 |  |  |
+| [`webkit-text-fill-color-property-003.html`](https://wpt.fyi/results/compat/webkit-text-fill-color-property-003.html) | Pass | 1 / 1 |  |  |
 | [`webkit-text-fill-color-property-004.html`](https://wpt.fyi/results/compat/webkit-text-fill-color-property-004.html) | Pass | 1 / 1 |  |  |
 | [`webkit-text-fill-color-property-005.html`](https://wpt.fyi/results/compat/webkit-text-fill-color-property-005.html) | Pass | 1 / 1 |  |  |
 | [`webkit-text-fill-color-property-006.html`](https://wpt.fyi/results/compat/webkit-text-fill-color-property-006.html) | Pass | 1 / 1 |  |  |

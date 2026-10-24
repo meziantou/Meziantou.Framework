@@ -179,351 +179,73 @@
     "total": 1
   },
   "content-security-policy/embedded-enforcement/allow_csp_from-header.html": {
-    "harness": "TIMEOUT",
-    "total": 12,
-    "failures": {
-      "'self' in blanket enforced EmbeddingCSP matches the target response origin.": "TIMEOUT",
-      "Allow-CSP-From header enforces EmbeddingCSP.": "TIMEOUT",
-      "Allow-CSP-From header with a star value allows cross origin frame.": "TIMEOUT",
-      "Cross origin iframe with correct Allow-CSP-From header is allowed.": "TIMEOUT",
-      "Same origin iframes with correct Allow-CSP-From header are allowed.": "TIMEOUT",
-      "Star Allow-CSP-From header enforces EmbeddingCSP.": "TIMEOUT"
-    }
+    "total": 12
   },
   "content-security-policy/embedded-enforcement/blocked-iframe-are-cross-origin.html": {
-    "total": 2,
-    "failures": {
-      "Two same-origin iframes must appear as cross-origin when one is blocked": "FAIL"
-    }
+    "total": 2
   },
   "content-security-policy/embedded-enforcement/change-csp-attribute-and-history-navigation.html": {
-    "total": 2,
-    "failures": {
-      "Iframe csp attribute changed before history navigation of local scheme.": "FAIL",
-      "Iframe csp attribute changed before history navigation of network scheme.": "FAIL"
-    }
+    "total": 2
   },
   "content-security-policy/embedded-enforcement/idlharness.window.js": {
-    "total": 15,
-    "failures": {
-      "HTMLIFrameElement interface: attribute csp": "FAIL",
-      "HTMLIFrameElement interface: document.createElement(\"iframe\") must inherit property \"csp\" with the proper type": "FAIL"
-    }
+    "total": 15
   },
   "content-security-policy/embedded-enforcement/iframe-csp-attribute.html": {
-    "total": 4,
-    "failures": {
-      "<iframe> has a 'csp' attibute which is an empty string if undefined.": "FAIL",
-      "<iframe>'s 'csp content attribute reflects the IDL attribute.": "FAIL",
-      "<iframe>'s IDL attribute reflects the DOM attribute.": "FAIL",
-      "<iframe>'s csp attribute is always a string.": "FAIL"
-    }
+    "total": 4
   },
   "content-security-policy/embedded-enforcement/required-csp-header-cascade.html": {
-    "harness": "TIMEOUT",
-    "total": 9,
-    "failures": {
-      "Test same origin: Test invalid policy on first iframe (bad directive name)": "TIMEOUT",
-      "Test same origin: Test invalid policy on first iframe (report directive)": "TIMEOUT",
-      "Test same origin: Test invalid policy on second iframe (bad directive name)": "TIMEOUT",
-      "Test same origin: Test invalid policy on second iframe (report directive)": "TIMEOUT",
-      "Test same origin: Test less restrictive policy on second iframe": "TIMEOUT",
-      "Test same origin: Test more restrictive policy on second iframe": "TIMEOUT",
-      "Test same origin: Test no policy on first iframe": "TIMEOUT",
-      "Test same origin: Test no policy on second iframe": "TIMEOUT",
-      "Test same origin: Test same policy for both iframes": "TIMEOUT"
-    }
+    "total": 9
   },
   "content-security-policy/embedded-enforcement/required_csp-header-crlf.html": {
-    "harness": "TIMEOUT",
-    "total": 18,
-    "failures": {
-      "Test CRLF: Attempt injecting after directive name using \\n": "TIMEOUT",
-      "Test CRLF: Attempt injecting after directive name using \\r": "TIMEOUT",
-      "Test CRLF: Attempt injecting after directive name using \\r\\n": "TIMEOUT",
-      "Test CRLF: Attempt injecting after directive value using \\n": "TIMEOUT",
-      "Test CRLF: Attempt injecting after directive value using \\r": "TIMEOUT",
-      "Test CRLF: Attempt injecting after directive value using \\r\\n": "TIMEOUT",
-      "Test CRLF: Attempt injecting after semicolon using \\n": "TIMEOUT",
-      "Test CRLF: Attempt injecting after semicolon using \\r": "TIMEOUT",
-      "Test CRLF: Attempt injecting after semicolon using \\r\\n": "TIMEOUT",
-      "Test CRLF: Attempt injecting after space between name and value using \\n": "TIMEOUT",
-      "Test CRLF: Attempt injecting after space between name and value using \\r": "TIMEOUT",
-      "Test CRLF: Attempt injecting after space between name and value using \\r\\n": "TIMEOUT",
-      "Test CRLF: \\n character after directive name": "TIMEOUT",
-      "Test CRLF: \\n character in directive value": "TIMEOUT",
-      "Test CRLF: \\r character after directive name": "TIMEOUT",
-      "Test CRLF: \\r character in directive value": "TIMEOUT",
-      "Test CRLF: \\r\\n character after directive name": "TIMEOUT",
-      "Test CRLF: \\r\\n character in directive value": "TIMEOUT"
-    }
+    "total": 18
   },
   "content-security-policy/embedded-enforcement/required_csp-header.html": {
-    "harness": "TIMEOUT",
-    "total": 75,
-    "failures": {
-      "Test Required-CSP value on `csp` change: Sec-Required-CSP is not sent if `csp` attribute is longer than 4096 bytes": "TIMEOUT",
-      "Test Required-CSP value on `csp` change: Sec-Required-CSP is not sent if `csp` attribute is not set on <iframe>.": "TIMEOUT",
-      "Test Required-CSP value on `csp` change: Send Sec-Required-CSP Header on change of `src` attribute on iframe.": "TIMEOUT",
-      "Test Required-CSP value on `csp` change: Send Sec-Required-CSP when `csp` attribute of <iframe> is not empty.": "TIMEOUT",
-      "Test Required-CSP value on `csp` change: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - comma separated": "TIMEOUT",
-      "Test Required-CSP value on `csp` change: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - invalid character in directive name": "TIMEOUT",
-      "Test Required-CSP value on `csp` change: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - invalid characters in directive names": "TIMEOUT",
-      "Test Required-CSP value on `csp` change: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - report-to present": "TIMEOUT",
-      "Test Required-CSP value on `csp` change: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - report-uri present": "TIMEOUT",
-      "Test Required-CSP value on `csp` change: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - gibberish csp": "TIMEOUT",
-      "Test Required-CSP value on `csp` change: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - missing semicolon": "TIMEOUT",
-      "Test Required-CSP value on `csp` change: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - misspeled 'none'": "TIMEOUT",
-      "Test Required-CSP value on `csp` change: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - query values in path": "TIMEOUT",
-      "Test Required-CSP value on `csp` change: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - unknown policy name": "TIMEOUT",
-      "Test Required-CSP value on `csp` change: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - unknown policy name in multiple directives": "TIMEOUT",
-      "Test cross origin redirect of cross origin iframe: Sec-Required-CSP is not sent if `csp` attribute is longer than 4096 bytes": "TIMEOUT",
-      "Test cross origin redirect of cross origin iframe: Sec-Required-CSP is not sent if `csp` attribute is not set on <iframe>.": "TIMEOUT",
-      "Test cross origin redirect of cross origin iframe: Send Sec-Required-CSP Header on change of `src` attribute on iframe.": "TIMEOUT",
-      "Test cross origin redirect of cross origin iframe: Send Sec-Required-CSP when `csp` attribute of <iframe> is not empty.": "TIMEOUT",
-      "Test cross origin redirect of cross origin iframe: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - comma separated": "TIMEOUT",
-      "Test cross origin redirect of cross origin iframe: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - invalid character in directive name": "TIMEOUT",
-      "Test cross origin redirect of cross origin iframe: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - invalid characters in directive names": "TIMEOUT",
-      "Test cross origin redirect of cross origin iframe: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - report-to present": "TIMEOUT",
-      "Test cross origin redirect of cross origin iframe: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - report-uri present": "TIMEOUT",
-      "Test cross origin redirect of cross origin iframe: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - gibberish csp": "TIMEOUT",
-      "Test cross origin redirect of cross origin iframe: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - missing semicolon": "TIMEOUT",
-      "Test cross origin redirect of cross origin iframe: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - misspeled 'none'": "TIMEOUT",
-      "Test cross origin redirect of cross origin iframe: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - query values in path": "TIMEOUT",
-      "Test cross origin redirect of cross origin iframe: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - unknown policy name": "TIMEOUT",
-      "Test cross origin redirect of cross origin iframe: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - unknown policy name in multiple directives": "TIMEOUT",
-      "Test cross origin redirect: Sec-Required-CSP is not sent if `csp` attribute is longer than 4096 bytes": "TIMEOUT",
-      "Test cross origin redirect: Sec-Required-CSP is not sent if `csp` attribute is not set on <iframe>.": "TIMEOUT",
-      "Test cross origin redirect: Send Sec-Required-CSP Header on change of `src` attribute on iframe.": "TIMEOUT",
-      "Test cross origin redirect: Send Sec-Required-CSP when `csp` attribute of <iframe> is not empty.": "TIMEOUT",
-      "Test cross origin redirect: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - comma separated": "TIMEOUT",
-      "Test cross origin redirect: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - invalid character in directive name": "TIMEOUT",
-      "Test cross origin redirect: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - invalid characters in directive names": "TIMEOUT",
-      "Test cross origin redirect: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - report-to present": "TIMEOUT",
-      "Test cross origin redirect: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - report-uri present": "TIMEOUT",
-      "Test cross origin redirect: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - gibberish csp": "TIMEOUT",
-      "Test cross origin redirect: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - missing semicolon": "TIMEOUT",
-      "Test cross origin redirect: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - misspeled 'none'": "TIMEOUT",
-      "Test cross origin redirect: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - query values in path": "TIMEOUT",
-      "Test cross origin redirect: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - unknown policy name": "TIMEOUT",
-      "Test cross origin redirect: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - unknown policy name in multiple directives": "TIMEOUT",
-      "Test same origin redirect: Sec-Required-CSP is not sent if `csp` attribute is longer than 4096 bytes": "TIMEOUT",
-      "Test same origin redirect: Sec-Required-CSP is not sent if `csp` attribute is not set on <iframe>.": "TIMEOUT",
-      "Test same origin redirect: Send Sec-Required-CSP Header on change of `src` attribute on iframe.": "TIMEOUT",
-      "Test same origin redirect: Send Sec-Required-CSP when `csp` attribute of <iframe> is not empty.": "TIMEOUT",
-      "Test same origin redirect: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - comma separated": "TIMEOUT",
-      "Test same origin redirect: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - invalid character in directive name": "TIMEOUT",
-      "Test same origin redirect: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - invalid characters in directive names": "TIMEOUT",
-      "Test same origin redirect: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - report-to present": "TIMEOUT",
-      "Test same origin redirect: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - report-uri present": "TIMEOUT",
-      "Test same origin redirect: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - gibberish csp": "TIMEOUT",
-      "Test same origin redirect: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - missing semicolon": "TIMEOUT",
-      "Test same origin redirect: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - misspeled 'none'": "TIMEOUT",
-      "Test same origin redirect: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - query values in path": "TIMEOUT",
-      "Test same origin redirect: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - unknown policy name": "TIMEOUT",
-      "Test same origin redirect: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - unknown policy name in multiple directives": "TIMEOUT",
-      "Test same origin: Sec-Required-CSP is not sent if `csp` attribute is longer than 4096 bytes": "TIMEOUT",
-      "Test same origin: Sec-Required-CSP is not sent if `csp` attribute is not set on <iframe>.": "TIMEOUT",
-      "Test same origin: Send Sec-Required-CSP Header on change of `src` attribute on iframe.": "TIMEOUT",
-      "Test same origin: Send Sec-Required-CSP when `csp` attribute of <iframe> is not empty.": "TIMEOUT",
-      "Test same origin: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - comma separated": "TIMEOUT",
-      "Test same origin: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - invalid character in directive name": "TIMEOUT",
-      "Test same origin: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - invalid characters in directive names": "TIMEOUT",
-      "Test same origin: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - report-to present": "TIMEOUT",
-      "Test same origin: Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - report-uri present": "TIMEOUT",
-      "Test same origin: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - gibberish csp": "TIMEOUT",
-      "Test same origin: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - missing semicolon": "TIMEOUT",
-      "Test same origin: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - misspeled 'none'": "TIMEOUT",
-      "Test same origin: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - query values in path": "TIMEOUT",
-      "Test same origin: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - unknown policy name": "TIMEOUT",
-      "Test same origin: Wrong but allowed value of `csp` should still trigger sending Sec-Required-CSP Header - unknown policy name in multiple directives": "TIMEOUT"
-    }
+    "total": 75
   },
   "content-security-policy/embedded-enforcement/subsumption_algorithm-general.html": {
-    "harness": "TIMEOUT",
-    "total": 16,
-    "failures": {
-      "Host intersection with wildcards is computed correctly.": "TIMEOUT",
-      "If there is no required csp, iframe should load.": "TIMEOUT",
-      "Iframe should load even if the ports are different but are default for the protocols.": "TIMEOUT",
-      "Iframe should load if intersection allows only sources which are in required_csp.": "TIMEOUT",
-      "Iframe with a matching and more restrictive ports should load.": "TIMEOUT",
-      "Iframe with matching CSP should load.": "TIMEOUT",
-      "Iframe with more restricting CSP should load.": "TIMEOUT",
-      "Removed plugin-types directive should be ignored 2.": "TIMEOUT",
-      "Removed plugin-types directive should be ignored.": "TIMEOUT"
-    }
+    "total": 16
   },
   "content-security-policy/embedded-enforcement/subsumption_algorithm-hashes.html": {
-    "harness": "TIMEOUT",
-    "total": 13,
-    "failures": {
-      "'sha256-abc123' is properly subsumed with other sources.": "TIMEOUT",
-      "'sha256-abc123' is properly subsumed.": "TIMEOUT",
-      "Effective policy is properly found where 'sha256-abc123' is not part of it.": "TIMEOUT",
-      "Effective policy is properly found.": "TIMEOUT",
-      "Effective policy now does not allow 'sha256-abc123'.": "TIMEOUT",
-      "Hashes do not have to be present in returned csp.": "TIMEOUT",
-      "Other expressions have to be subsumed but 'unsafe-inline' gets ignored.": "TIMEOUT"
-    }
+    "total": 13
   },
   "content-security-policy/embedded-enforcement/subsumption_algorithm-host_sources-hosts.html": {
-    "harness": "TIMEOUT",
-    "total": 5,
-    "failures": {
-      "A wildcard host should match a more specific host.": "TIMEOUT"
-    }
+    "total": 5
   },
   "content-security-policy/embedded-enforcement/subsumption_algorithm-host_sources-paths.html": {
-    "harness": "TIMEOUT",
-    "total": 9,
-    "failures": {
-      "All specific paths match except the order.": "TIMEOUT",
-      "Matching paths.": "TIMEOUT",
-      "Returned CSP allows only one path.": "TIMEOUT",
-      "Returned CSP has a more specific path.": "TIMEOUT",
-      "Unspecified path should be subsumed by `/`.": "TIMEOUT",
-      "`/` path should be subsumed by an empty path.": "TIMEOUT"
-    }
+    "total": 9
   },
   "content-security-policy/embedded-enforcement/subsumption_algorithm-host_sources-ports.html": {
-    "harness": "TIMEOUT",
-    "total": 15,
-    "failures": {
-      "Returned CSP should be subsumed even if the port is not specified but is a default port for a more secure scheme.": "TIMEOUT",
-      "Returned CSP should be subsumed even if the port is not specified but is a default port for a scheme.": "TIMEOUT",
-      "Returned CSP should be subsumed if the port is specified but the scheme is more secure.": "TIMEOUT",
-      "Returned CSP should be subsumed if the port is specified.": "TIMEOUT",
-      "Returned CSP should be subsumed if the ports match but schemes are not identical for `ws`.": "TIMEOUT",
-      "Returned CSP should be subsumed if the ports match but schemes are not identical.": "TIMEOUT",
-      "The same should hold for `ws` case.": "TIMEOUT",
-      "Unspecified ports must match if schemes match.": "TIMEOUT",
-      "Wildcard port should match a wildcard.": "TIMEOUT",
-      "Wildcard port should match any specific port.": "TIMEOUT",
-      "Wildcard port should match unspecified port.": "TIMEOUT"
-    }
+    "total": 15
   },
   "content-security-policy/embedded-enforcement/subsumption_algorithm-host_sources-protocols.html": {
-    "harness": "TIMEOUT",
-    "total": 11,
-    "failures": {
-      "All scheme sources are subsumed by their stronger variants.": "TIMEOUT",
-      "Matching `https` protocols.": "TIMEOUT",
-      "The reverse allows iframe be to be loaded.": "TIMEOUT",
-      "`http:` should subsume all host source expressions with `https:`.": "TIMEOUT",
-      "`http:` should subsume all host source expressions with this protocol.": "TIMEOUT",
-      "`http:` subsumes other `http:` source expression.": "TIMEOUT",
-      "`http:` subsumes other `https:` source expression and expressions with `http:`.": "TIMEOUT"
-    }
+    "total": 11
   },
   "content-security-policy/embedded-enforcement/subsumption_algorithm-nonces.html": {
-    "harness": "TIMEOUT",
-    "total": 8,
-    "failures": {
-      "Any nonce subsumes.": "TIMEOUT",
-      "Exact nonce subsumes.": "TIMEOUT",
-      "Multiples nonces returned subsume.": "TIMEOUT",
-      "Nonce intersection is still done on exact match - non-matching nonces.": "TIMEOUT",
-      "Other expressions still have to be subsumed - positive test.": "TIMEOUT"
-    }
+    "total": 8
   },
   "content-security-policy/embedded-enforcement/subsumption_algorithm-none.html": {
-    "harness": "TIMEOUT",
-    "total": 18,
-    "failures": {
-      "Both required and returned csp are `none`.": "TIMEOUT",
-      "Both required and returned csp are effectively 'none'.": "TIMEOUT",
-      "Both required and returned csp are empty.": "TIMEOUT",
-      "Empty required csp subsumes a policy with `none`.": "TIMEOUT",
-      "Empty required csp subsumes any list of policies.": "TIMEOUT",
-      "Empty required csp subsumes empty list of returned policies.": "TIMEOUT",
-      "Required csp with `none` subsumes effective list of `none` despite other keywords.": "TIMEOUT",
-      "Required csp with `none` subsumes effective list of `none`.": "TIMEOUT",
-      "Returned csp with `none` is subsumed by any required csp.": "TIMEOUT",
-      "Returned csp with effective `none` is subsumed by any required csp.": "TIMEOUT",
-      "Source list with exprssions other than `none` make `none` ineffective.": "TIMEOUT"
-    }
+    "total": 18
   },
   "content-security-policy/embedded-enforcement/subsumption_algorithm-self.html": {
-    "harness": "TIMEOUT",
-    "total": 7,
-    "failures": {
-      "'self' keywords should match.": "TIMEOUT",
-      "Required 'self' should match to a origin's url.": "TIMEOUT",
-      "Required 'self' should subsume a more secure version of origin's url.": "TIMEOUT",
-      "Returned 'self' should match to an origin's url.": "TIMEOUT",
-      "Returned CSP does not have to specify 'self'.": "TIMEOUT"
-    }
+    "total": 7
   },
   "content-security-policy/embedded-enforcement/subsumption_algorithm-source_list-wildcards.html": {
-    "harness": "TIMEOUT",
-    "total": 24,
-    "failures": {
-      "Effective wildcard list should be properly found.": "TIMEOUT",
-      "Wildcard list is equivalent to a specific list of scheme expressions and their secure variants.": "TIMEOUT",
-      "Wildcard list is equivalent to a specific list of scheme expressions.": "TIMEOUT",
-      "Wildcard list might include other scheme source expressions.": "TIMEOUT",
-      "Wildcard list subsumes a list of policies with wildcards in source lists.": "TIMEOUT",
-      "Wildcard list subsumes a source list with `none`.": "TIMEOUT",
-      "Wildcard list subsumes an empty source list.": "TIMEOUT",
-      "Wildcard list subsumes another wildcard list.": "TIMEOUT",
-      "Wildcard list subsumption logic should not affect other keyword expressions.": "TIMEOUT"
-    }
+    "total": 24
   },
   "content-security-policy/embedded-enforcement/subsumption_algorithm-strict_dynamic.html": {
-    "harness": "TIMEOUT",
-    "total": 11,
-    "failures": {
-      "'strict-dynamic' is ineffective for `child-src`.": "TIMEOUT",
-      "'strict-dynamic' is ineffective for `frame-src`.": "TIMEOUT",
-      "'strict-dynamic' is ineffective for `img-src`.": "TIMEOUT",
-      "'strict-dynamic' is ineffective for `style-src`.": "TIMEOUT",
-      "'strict-dynamic' makes 'self' ineffective.": "TIMEOUT",
-      "'strict-dynamic' makes 'unsafe-inline' ineffective.": "TIMEOUT",
-      "'strict-dynamic' makes host source expressions ineffective.": "TIMEOUT",
-      "'strict-dynamic' makes scheme source expressions ineffective.": "TIMEOUT"
-    }
+    "total": 11
   },
   "content-security-policy/embedded-enforcement/subsumption_algorithm-unsafe_eval.html": {
-    "harness": "TIMEOUT",
-    "total": 7,
-    "failures": {
-      "'unsafe-eval' is properly subsumed.": "TIMEOUT",
-      "Effective policy is properly found where 'unsafe-eval' is not part of it.": "TIMEOUT",
-      "Effective policy is properly found.": "TIMEOUT"
-    }
+    "total": 7
   },
   "content-security-policy/embedded-enforcement/subsumption_algorithm-unsafe_hashes.html": {
-    "harness": "TIMEOUT",
-    "total": 7,
-    "failures": {
-      "'unsafe-hashes' is properly subsumed.": "TIMEOUT",
-      "Effective policy is properly found where 'unsafe-hashes' is not part of it.": "TIMEOUT",
-      "Effective policy is properly found.": "TIMEOUT"
-    }
+    "total": 7
   },
   "content-security-policy/embedded-enforcement/subsumption_algorithm-unsafe_inline.html?1-8": {
-    "harness": "TIMEOUT",
-    "total": 8,
-    "failures": {
-      "'strict-dynamic' is ineffective for `style-src`.": "TIMEOUT",
-      "'unsafe-inline' does not matter if returned csp is effectively `none`.": "TIMEOUT",
-      "'unsafe-inline' is only ineffective if the effective returned csp has hashes in `style-src`.": "TIMEOUT",
-      "'unsafe-inline' is only ineffective if the effective returned csp has nonces in `style-src`.": "TIMEOUT",
-      "'unsafe-inline' is properly subsumed in `script-src`.": "TIMEOUT",
-      "'unsafe-inline' is properly subsumed in `style-src`.": "TIMEOUT",
-      "Returned csp does not have to allow 'unsafe-inline' in `style-src` to be subsumed.": "TIMEOUT",
-      "Returned csp only loads 'unsafe-inline' scripts with 'nonce-abc'.": "TIMEOUT"
-    }
+    "total": 8
   },
   "content-security-policy/embedded-enforcement/subsumption_algorithm-unsafe_inline.html?9-last": {
-    "harness": "TIMEOUT",
-    "total": 8,
-    "failures": {
-      "'unsafe-inline' is ineffective when nonces are present.": "TIMEOUT",
-      "'unsafe-inline' is only ineffective if the effective returned csp has hashes in `script-src`.": "TIMEOUT",
-      "Effective returned csp does not allow 'sha512-321cba' hash.": "TIMEOUT"
-    }
+    "total": 8
   },
   "content-security-policy/font-src/font-match-allowed.sub.html": {
     "total": 1
@@ -538,11 +260,7 @@
     "total": 1
   },
   "content-security-policy/font-src/font-stylesheet-font-blocked.sub.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Test font does not load if it does not match font-src.": "TIMEOUT"
-    }
+    "total": 1
   },
   "content-security-policy/form-action/form-action-self-allowed-target-blank.html": {
     "total": 1
@@ -1744,11 +1462,7 @@
     "total": 2
   },
   "content-security-policy/generic/only-valid-whitespaces-are-allowed.html": {
-    "total": 28,
-    "failures": {
-      "U+000B VT    should not be parsed inside directive value - HTTP header": "FAIL",
-      "U+000B VT    should not be parsed inside directive value - meta tag": "FAIL"
-    }
+    "total": 28
   },
   "content-security-policy/generic/policy-does-not-affect-child.sub.html": {
     "total": 1
@@ -1790,11 +1504,7 @@
     "total": 1
   },
   "content-security-policy/img-src/icon-blocked.sub.html": {
-    "harness": "TIMEOUT",
-    "total": 2,
-    "failures": {
-      "Test that spv event is fired": "NOTRUN"
-    }
+    "total": 2
   },
   "content-security-policy/img-src/img-src-4_1.sub.html": {
     "total": 3
@@ -1854,16 +1564,10 @@
     "total": 1
   },
   "content-security-policy/inheritance/history-iframe.sub.html": {
-    "total": 8,
-    "failures": {
-      "History navigation in iframe: \"about:blank\" document is navigated back from history cross-origin.": "FAIL"
-    }
+    "total": 8
   },
   "content-security-policy/inheritance/history.sub.html": {
-    "total": 6,
-    "failures": {
-      "History navigation: \"about:blank\" document is navigated back from history cross-origin.": "FAIL"
-    }
+    "total": 6
   },
   "content-security-policy/inheritance/iframe-all-local-schemes-inherit-self.sub.html": {
     "total": 6
@@ -2110,17 +1814,7 @@
     "total": 1
   },
   "content-security-policy/parsing/invalid-bytes.html": {
-    "total": 18,
-    "failures": {
-      "CSP: \"img-src 'none' http:\\x01\" should allow rendering (Invalid directive ignored).": "FAIL",
-      "CSP: \"img-src 'none' http:\\x7f\" should allow rendering (Invalid directive ignored).": "FAIL",
-      "CSP: \"img-src 'none'\\x01\" should allow rendering (Invalid directive ignored).": "FAIL",
-      "CSP: \"img-src 'none'\\x7f\" should allow rendering (Invalid directive ignored).": "FAIL",
-      "CSP: \"img-src 'self', img-src 'self'\\x01\" should allow rendering.": "FAIL",
-      "CSP: \"img-src 'self', img-src 'self'\\x7f\" should allow rendering.": "FAIL",
-      "CSP: \"img-src 'self'\\x01\" should allow rendering (Invalid directive ignored).": "FAIL",
-      "CSP: \"img-src 'self'\\x7f\" should allow rendering (Invalid directive ignored).": "FAIL"
-    }
+    "total": 18
   },
   "content-security-policy/parsing/invalid-directive.html": {
     "total": 1
@@ -2135,71 +1829,31 @@
     "total": 1
   },
   "content-security-policy/report-hash/default-src.https.window.js": {
-    "total": 8,
-    "failures": {
-      "Reporting endpoints received no report for failed integrity check with sha256.": "FAIL",
-      "Reporting endpoints received no report for failed integrity check with sha512.": "FAIL"
-    }
+    "total": 8
   },
   "content-security-policy/report-hash/multiple-policies.https.sub.html": {
-    "total": 8,
-    "failures": {
-      "Reporting endpoints received no report for failed integrity check with sha256.": "FAIL",
-      "Reporting endpoints received no report for failed integrity check with sha512.": "FAIL"
-    }
+    "total": 8
   },
   "content-security-policy/report-hash/reportonly-default-src.https.window.js": {
-    "total": 8,
-    "failures": {
-      "Reporting endpoints received no report for failed integrity check with sha256.": "FAIL",
-      "Reporting endpoints received no report for failed integrity check with sha512.": "FAIL"
-    }
+    "total": 8
   },
   "content-security-policy/report-hash/reportonly-script-src-elem.https.window.js": {
-    "total": 8,
-    "failures": {
-      "Reporting endpoints received no report for failed integrity check with sha256.": "FAIL",
-      "Reporting endpoints received no report for failed integrity check with sha512.": "FAIL"
-    }
+    "total": 8
   },
   "content-security-policy/report-hash/reportonly-script-src-none.https.window.js": {
-    "total": 8,
-    "failures": {
-      "Reporting endpoints received no report for failed integrity check with sha256.": "FAIL",
-      "Reporting endpoints received no report for failed integrity check with sha512.": "FAIL"
-    }
+    "total": 8
   },
   "content-security-policy/report-hash/reportonly-script-src.https.window.js": {
-    "total": 8,
-    "failures": {
-      "Reporting endpoints received no report for failed integrity check with sha256.": "FAIL",
-      "Reporting endpoints received no report for failed integrity check with sha512.": "FAIL"
-    }
+    "total": 8
   },
   "content-security-policy/report-hash/script-src-elem.https.window.js": {
-    "total": 8,
-    "failures": {
-      "Reporting endpoints received no report for failed integrity check with sha256.": "FAIL",
-      "Reporting endpoints received no report for failed integrity check with sha512.": "FAIL"
-    }
+    "total": 8
   },
   "content-security-policy/report-hash/script-src-sha512.https.window.js": {
-    "total": 8,
-    "failures": {
-      "Reporting endpoints received hash for cross-origin CORS script.": "FAIL",
-      "Reporting endpoints received hash for same-origin CORS script.": "FAIL",
-      "Reporting endpoints received hash for same-origin no-CORS script.": "FAIL",
-      "Reporting endpoints received no report for failed integrity check with sha256.": "FAIL",
-      "Reporting endpoints received no report for failed integrity check with sha512.": "FAIL",
-      "Reporting endpoints received the right hash for same-origin CORS script with integrity.": "FAIL"
-    }
+    "total": 8
   },
   "content-security-policy/report-hash/script-src.https.window.js": {
-    "total": 8,
-    "failures": {
-      "Reporting endpoints received no report for failed integrity check with sha256.": "FAIL",
-      "Reporting endpoints received no report for failed integrity check with sha512.": "FAIL"
-    }
+    "total": 8
   },
   "content-security-policy/reporting-api/dedicated-worker-correct-url-in-report.html": {
     "total": 4
@@ -2245,10 +1899,7 @@
     "total": 4
   },
   "content-security-policy/reporting-api/reporting-api-works-on-frame-ancestors.https.sub.html": {
-    "total": 2,
-    "failures": {
-      "Violation report status OK.": "FAIL"
-    }
+    "total": 2
   },
   "content-security-policy/reporting-api/reporting-api-works-on-frame-src.https.sub.html": {
     "total": 2
@@ -3157,32 +2808,16 @@
     "total": 1
   },
   "content-security-policy/unsafe-eval/tentative/eval-allowed-by-hash-long-script.sub.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "Expecting alerts: [\"PASS, long text that exceeds the 40 character limit used for report snippets\"]": "FAIL"
-    }
+    "total": 1
   },
   "content-security-policy/unsafe-eval/tentative/eval-allowed-by-hash.sub.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "Expecting alerts: [\"PASS (1 of 2)\",\"PASS (2 of 2)\"]": "FAIL"
-    }
+    "total": 1
   },
   "content-security-policy/unsafe-eval/tentative/eval-blocked-report-contains-hash.html": {
-    "total": 2,
-    "failures": {
-      "Violation report status OK.": "FAIL"
-    }
+    "total": 2
   },
   "content-security-policy/unsafe-eval/tentative/eval-hashes-override-unsafe-eval.sub.html": {
-    "total": 3,
-    "failures": {
-      "Expecting logs: [\"PASS EvalError\",\"PASS EvalError\", \"violated-directive=script-src\"]": "FAIL",
-      "eval-blocked": "FAIL",
-      "eval-blocked 1": "FAIL"
-    }
+    "total": 1
   },
   "content-security-policy/unsafe-hashes/javascript_src_allowed-href.html": {
     "total": 1

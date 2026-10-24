@@ -6,16 +6,16 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 91 | 107 | 0 | 85% |
+| [Stable](#stable-tests) | 93 | 107 | 0 | 87% |
 | [Tentative](#tentative-tests) | 13 | 18 | 0 | 72% |
-| [Reftests](#reftests) | 4 | 6 | 0 | 67% |
-| **All** | **108** | **131** | **0** | **82%** |
+| [Reftests](#reftests) | 5 | 6 | 0 | 83% |
+| **All** | **111** | **131** | **0** | **85%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`after-change-style-inherited-try-fallback.html`](https://wpt.fyi/results/css/css-transitions/after-change-style-inherited-try-fallback.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the transitions of the properties set by a position option: the declarations of the chosen `@position-try` rule (and the try tactics) are applied at layout time, the after-change style of the transitions does not include them |
+| [`after-change-style-inherited-try-fallback.html`](https://wpt.fyi/results/css/css-transitions/after-change-style-inherited-try-fallback.html) | Pass | 1 / 1 |  |  |
 | [`after-change-style-inherited.html`](https://wpt.fyi/results/css/css-transitions/after-change-style-inherited.html) | Pass | 6 / 6 |  |  |
 | [`all-interpolates-same-as-explicit-property.html`](https://wpt.fyi/results/css/css-transitions/all-interpolates-same-as-explicit-property.html) | Pass | 32 / 32 |  |  |
 | [`animations/animate-with-color-mix.html`](https://wpt.fyi/results/css/css-transitions/animations/animate-with-color-mix.html) | Pass | 6 / 6 |  |  |
@@ -100,7 +100,7 @@
 | [`transition-base-response-001.html`](https://wpt.fyi/results/css/css-transitions/transition-base-response-001.html) | Pass | 3 / 3 |  |  |
 | [`transition-base-response-002.html`](https://wpt.fyi/results/css/css-transitions/transition-base-response-002.html) | Pass | 1 / 1 |  |  |
 | [`transition-base-response-003.html`](https://wpt.fyi/results/css/css-transitions/transition-base-response-003.html) | Pass | 1 / 1 |  |  |
-| [`transition-behavior-events.html`](https://wpt.fyi/results/css/css-transitions/transition-behavior-events.html) | Fail | 0 / 2 | BUG | no `transitionrun` and `transitionstart` events for a discrete transition with `transition-behavior: allow-discrete` |
+| [`transition-behavior-events.html`](https://wpt.fyi/results/css/css-transitions/transition-behavior-events.html) | Pass | 2 / 2 |  |  |
 | [`transition-behavior.html`](https://wpt.fyi/results/css/css-transitions/transition-behavior.html) | Pass | 6 / 6 |  |  |
 | [`transition-cancel-elapsed-time-on-removal.html`](https://wpt.fyi/results/css/css-transitions/transition-cancel-elapsed-time-on-removal.html) | Pass | 1 / 1 |  |  |
 | [`transition-delay-001.html`](https://wpt.fyi/results/css/css-transitions/transition-delay-001.html) | Pass | 21 / 21 |  |  |
@@ -151,7 +151,7 @@
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
 | [`allow-discrete-auto-inset.html`](https://wpt.fyi/results/css/css-transitions/allow-discrete-auto-inset.html) | Pass | 1 / 1 |  |  |
-| [`inherit-background-color-transition.html`](https://wpt.fyi/results/css/css-transitions/inherit-background-color-transition.html) | Timeout | 0 / 1 | BUG | the page never removes the `reftest-wait` class of its root element (an error of its scripts, or an event that is not fired) |
+| [`inherit-background-color-transition.html`](https://wpt.fyi/results/css/css-transitions/inherit-background-color-transition.html) | Pass | 1 / 1 |  |  |
 | [`pseudo-element-transform.html`](https://wpt.fyi/results/css/css-transitions/pseudo-element-transform.html) | Timeout | 0 / 1 | BUG | the page never removes the `reftest-wait` class of its root element (an error of its scripts, or an event that is not fired) |
 | [`render-blocking/no-transition-from-ua-to-blocking-stylesheet.html`](https://wpt.fyi/results/css/css-transitions/render-blocking/no-transition-from-ua-to-blocking-stylesheet.html) | Pass | 1 / 1 |  |  |
 | [`root-color-transition.html`](https://wpt.fyi/results/css/css-transitions/root-color-transition.html) | Pass | 1 / 1 |  |  |

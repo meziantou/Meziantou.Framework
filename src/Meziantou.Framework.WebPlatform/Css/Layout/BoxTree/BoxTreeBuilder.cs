@@ -1388,8 +1388,8 @@ internal sealed partial class BoxTreeBuilder
         if (display.IsListItem)
         {
             // A ::before or ::after pseudo-element that is a list item has a marker (https://drafts.csswg.org/css-pseudo-4/#marker-pseudo:
-            // "::before::marker"), which cannot be styled: it inherits from the pseudo-element
-            BuildMarker(element, contents, pseudoElement, style);
+            // "::before::marker"), which inherits from the pseudo-element
+            BuildMarker(element, contents, pseudoElement);
         }
 
         AppendContent(contents, style, element, pseudoElement, content);
@@ -1409,17 +1409,19 @@ internal sealed partial class BoxTreeBuilder
     /// <param name="element">The list item, or the originating element of the pseudo-element that is a list item.</param>
     /// <param name="parent">The box of the contents of the list item.</param>
     /// <param name="originatingPseudoElement">The ::before or ::after pseudo-element that is the list item, or null for the element.</param>
-    /// <param name="originatingStyle">The style of the pseudo-element that is the list item, or null for the element.</param>
-    private void BuildMarker(Element element, ContainerBox parent, string? originatingPseudoElement = null, ComputedStyle? originatingStyle = null)
+    private void BuildMarker(Element element, ContainerBox parent, string? originatingPseudoElement = null)
     {
-        // The marker of a pseudo-element is an anonymous box of the pseudo-element (its texts are generated content of it)
+        // The marker of a pseudo-element (::before::marker, which inherits from it) is a box of the pseudo-element (its texts
+        // are generated content of it)
         var name = originatingPseudoElement ?? "marker";
-        var style = originatingStyle is null ? _engine.GetStyle(element, name) : GetAnonymousStyle(originatingStyle).GetDerivedStyle(PseudoElementMarkerStyle, 0, static (style, _) => style.WithOverrides(PseudoElementMarkerStyle));
-        var content = originatingStyle is null ? style.GetComputedValue("content") : "normal";
+        var style = _engine.GetStyle(element, originatingPseudoElement is null ? name : originatingPseudoElement + "::marker");
+        var content = style.GetComputedValue("content");
         if (content is "none")
             return;
 
-        var outside = style.Layout.Text.ListStylePosition == ListStylePosition.Outside;
+        // https://drafts.csswg.org/css-lists-3/#list-style-position-property: "If the list item is an inline box, this value is
+        // equivalent to inside"
+        var outside = style.Layout.Text.ListStylePosition == ListStylePosition.Outside && parent.Display is not { Outside: DisplayOutside.Inline, Inside: DisplayInside.Flow };
         var display = outside ? new Display(DisplayBox.Normal, DisplayOutside.Inline, DisplayInside.FlowRoot) : Display.Inline;
         ContainerBox box;
         if (content is not ("normal" or ""))
@@ -1461,16 +1463,6 @@ internal sealed partial class BoxTreeBuilder
 
         FixupContainer(box);
     }
-
-    /// <summary>The declarations of the user agent style sheet for the markers (https://drafts.csswg.org/css-lists-3/#ua-stylesheet), for the marker of a pseudo-element.</summary>
-    private static readonly CssLonghandValue[] PseudoElementMarkerStyle =
-    [
-        new("unicode-bidi", "isolate"),
-        new("font-variant-numeric", "tabular-nums"),
-        new("white-space-collapse", "preserve"),
-        new("text-wrap-mode", "nowrap"),
-        new("text-transform", "none"),
-    ];
 
     /// <summary>The marker string of a list item (https://drafts.csswg.org/css-lists-3/#marker-string), or null when list-style-type is none.</summary>
     private string? GetMarkerString(Element element, ComputedStyle style, string? originatingPseudoElement = null)
@@ -1541,7 +1533,7 @@ internal sealed partial class BoxTreeBuilder
     }
 
     /// <summary>Whether a function is an &lt;image&gt; (https://drafts.csswg.org/css-images-4/#image-values, https://drafts.fxtf.org/filter-effects/#FilterCSSImageValue).</summary>
-    private static bool IsImageFunction(string name)
+    internal static bool IsImageFunction(string name)
     {
         name = InfraAscii.ToAsciiLowercase(name);
         return name.EndsWith("gradient", StringComparison.Ordinal) || name is "url" or "src" or "image" or "image-set" or "-webkit-image-set" or "cross-fade" or "-webkit-cross-fade" or "element" or "paint" or "filter";

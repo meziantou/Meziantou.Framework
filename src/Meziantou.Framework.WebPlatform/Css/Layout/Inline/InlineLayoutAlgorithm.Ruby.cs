@@ -1641,7 +1641,7 @@ internal sealed partial class InlineLayoutAlgorithm
                 }
 
                 // The punctuation of a text that enables a feature that changes the widths of the glyphs (e.g. halt) has no blank
-                // part (see GetHalfAdvance)
+                // part (see GetHalfWidthSpacing)
                 var punctuation = shaped.Options.Features is { } features && HasExclusiveWidthFeature(features)
                     ? FullwidthPunctuation.None
                     : TextSpacingClasses.GetFullwidthPunctuation(c, GetPunctuationConvention(item, c));

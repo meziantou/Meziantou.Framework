@@ -115,6 +115,28 @@ public sealed class PagedMediaTests : IDisposable
     }
 
     [Fact]
+    public void Pages_PageMarginSafety()
+    {
+        // https://drafts.csswg.org/css-page-3/#page-margin-safety: clamp keeps the margins at least the safe printable inset,
+        // add adds the inset to them; without the descriptor, the inset does not change the margins
+        var document = Parse("""
+            <style>
+              @page { margin: 10px 30px 0 0 }
+              @page :first { page-margin-safety: clamp }
+              @page wide { page-margin-safety: add }
+            </style>
+            <div style='height: 10px'></div>
+            <div style='page: wide; height: 10px'></div>
+            <div style='page: plain; height: 10px'></div>
+            """);
+        using var session = document.BeginPrint(Options with { SafePrintableInset = 20 });
+        var pages = session.GetPages();
+        Assert.Equal(new PhysicalRect(20, 20, 350, 260), pages[0].Geometry.PageArea);
+        Assert.Equal(new PhysicalRect(20, 30, 330, 250), pages[1].Geometry.PageArea);
+        Assert.Equal(new PhysicalRect(0, 10, 370, 290), pages[2].Geometry.PageArea);
+    }
+
+    [Fact]
     public void Pages_BreakToRightPageInsertsBlankPage()
     {
         // The first page is a right page: a break to a right page after it inserts a blank left page

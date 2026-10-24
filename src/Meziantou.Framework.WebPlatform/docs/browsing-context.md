@@ -1444,10 +1444,18 @@ block anything. A request is blocked when an enforced policy does not allow it:
   check).
 - The violations are also reported for a request that is blocked as mixed content (e.g. a `ws:` WebSocket of an
   `https:` document whose policy has `connect-src 'none'`), as in the browsers.
+- As in the browsers, a directive that contains a character that the grammar does not allow (a control character such as
+  U+0001, U+000B VT or U+007F, which is not ASCII whitespace) is ignored, rather than parsed as a source list that
+  matches nothing.
 
-CSP Embedded Enforcement (the `csp` attribute of the `iframe` element, the `Sec-Required-CSP` and `Allow-CSP-From`
-headers, https://w3c.github.io/webappsec-cspee/) is not implemented. The Trusted Types directives are described in
-[trusted-types.md](trusted-types.md).
+The host is notified of each violation, whatever the disposition of the policy, by `BrowsingContextOptions.ContentSecurityPolicyViolation`
+(a `ContentSecurityPolicyViolationReport`: the stripped document and blocked URLs, the effective directive, the policy,
+its disposition, the source location and the sample). It is invoked in the task that fires the `securitypolicyviolation`
+event, on the thread of the event loop of the global object, and plays the role of the developer console of a browser.
+The violations of a navigation response check (`frame-ancestors`, `sandbox`) are given too, with the global scope of the
+document that reports them.
+
+The Trusted Types directives are described in [trusted-types.md](trusted-types.md).
 
 ### Navigations and document directives
 
@@ -1472,8 +1480,10 @@ https://w3c.github.io/webappsec-csp/#should-block-navigation-request), and with 
   whose URL is not local: the origin of the container document of each ancestor must match its source list (`'self'`
   matches the origin of the response). A blocked response is replaced by an error document. The violation has no global
   object: no event is fired, the `report-uri` reports are sent from the origin of the response, to the endpoints
-  resolved against its URL, and no `report-to` report is queued (the specification generates it with the settings
-  object of the global object of the violation; the browsers send it to the endpoints of the response).
+  resolved against its URL, and the `report-to` report is sent to the endpoint of the response (its
+  `Reporting-Endpoints` or `Report-To` header), as in Chromium. The specification generates this report with the
+  settings object of the global object of the violation, which does not exist, so it is not visible to the
+  `ReportingObserver`s.
 - `X-Frame-Options` (https://html.spec.whatwg.org/multipage/document-lifecycle.html#the-x-frame-options-header): `DENY`
   blocks the response of a child navigable, and `SAMEORIGIN` blocks it unless every ancestor is same origin with it;
   several different values that include a valid one block it, and invalid values are ignored. An enforced
@@ -1492,6 +1502,44 @@ https://w3c.github.io/webappsec-csp/#should-block-navigation-request), and with 
 - `<meta http-equiv="Content-Security-Policy">` only applies when the element is inserted in the `head` of a document
   that has a browsing context; `report-uri`, `frame-ancestors` and `sandbox` are ignored in it, and there is no
   report-only `meta` element.
+
+### CSP Embedded Enforcement
+
+An `iframe` element can require the documents loaded into it to enforce a policy, with its `csp` attribute
+([CSP Embedded Enforcement](https://w3c.github.io/webappsec-cspee/), an editors' draft that only Chromium implements):
+
+- The required CSP of a navigation of a child navigable is snapshotted when the navigation starts: the value of the `csp`
+  attribute of its `iframe` container when it is valid, else the required CSP of the policy container of the container
+  document (so a nested frame without `csp` attribute gets the requirement of its ancestor). A valid value is not empty,
+  has at most 4096 characters, matches the serialized-policy grammar, has no `report-uri` nor `report-to` directive, and
+  is subsumed by the required CSP of the container document. As in Chromium, a value that contains a line break is
+  invalid (it would inject a header).
+- The request of the navigation (and of its redirects) has the `Sec-Required-CSP` header, whose value is the required
+  CSP.
+- The response is blocked (an error document, whose origin is opaque, after the `frame-ancestors`, embedder policy and
+  `X-Frame-Options` checks) unless it accepts the required policy: its URL has a local scheme, or it has an
+  `Allow-CSP-From` header whose value is `*` or the serialized origin of the request (the origin of the initiator of the
+  navigation), or its enforced `Content-Security-Policy` policies subsume the required policy.
+- The document enforces the required policy (it is added to its CSP list, so `'self'` is the origin of the response),
+  unless the policies of its response subsume it, and the required policy becomes the required CSP of its policy
+  container. A document of a local scheme (`about:blank`, `about:srcdoc`, `data:`, `blob:`) has no such policy: it
+  enforces the required policy in addition to the policies it inherits. A document of a local scheme loaded again from
+  the session history keeps the required policy it enforced, as in Chromium (the one of its history policy container, or
+  of the document state of a `blob:` document); a document that is fetched again gets the current one.
+- The subsumption follows Chromium, as the web-platform-tests do: the source lists are compared for each fetch directive
+  (and `base-uri`, `form-action` and `frame-ancestors`), with their fallback lists (a required `default-src` directive
+  constrains every directive of the response), against the intersection of the enforced policies of the response. The
+  effective source lists expand `'self'` (the origin of the response) and `*`, ignore `'none'` among other expressions,
+  the nonces, the hashes and the keywords outside the script and style directives, `'unsafe-inline'` with a nonce or a
+  hash, and the URL expressions of a script directive with `'strict-dynamic'`. A nonce is subsumed by any nonce (the
+  value is not compared, so that an embedder cannot guess it), a hash by the same hash, a URL expression by an expression
+  whose scheme, host, port and path allow it (with the secure upgrades of the scheme and of the default port: `http://a`
+  allows `https://a`). The `sandbox` flags and `upgrade-insecure-requests` of the required policy must be in the policies
+  of the response.
+- The `object` and `embed` elements have no `csp` attribute, and their requests have no `Sec-Required-CSP` header (their
+  resource is fetched by the element).
+- The initial `about:blank` document of an `iframe` is not created by a navigation: it does not enforce the required
+  policy of the `csp` attribute (Chromium applies its `sandbox` directive to it).
 
 ### Policy inheritance
 
@@ -1598,8 +1646,9 @@ when several policies are violated, each one reports its violation (in the order
 - A script whose policy has a `'report-sha256'`, `'report-sha384'` or `'report-sha512'` source expression in the
   directive that applies to it (`script-src-elem`, `script-src`, `default-src`, or `worker-src` for a worker) queues a
   `csp-hash` report with the hash of its body (the empty string for a response that is not CORS-same-origin) when its
-  policy has a `report-to` directive (https://w3c.github.io/webappsec-csp/#potentially-report-hash). These reports are
-  not visible to the observers.
+  policy has a `report-to` directive (https://w3c.github.io/webappsec-csp/#potentially-report-hash). The strongest
+  algorithm of the keywords is used, and nothing is reported for a script that fails its integrity metadata (as in the
+  browsers). These reports are not visible to the observers.
 - Nothing is reported for a document that has no browsing context (no event loop).
 
 ### Compilation of strings and of WebAssembly
@@ -1613,6 +1662,10 @@ allows `'unsafe-eval'`, or `'trusted-types-eval'` when Trusted Types are enforce
   sample (with `'report-sample'`) is the first 40 characters of the code (the source text of the function, e.g.
   `function anonymous(a\n) {\nreturn a\n}`, for the constructors). The Trusted Types checks of the code run first (see
   [trusted-types.md](trusted-types.md)).
+- The tentative `'eval-sha256-…'`, `'eval-sha384-…'` and `'eval-sha512-…'` source expressions (not in CSP3) allow the
+  code whose UTF-8 hash matches; a source list that has some ignores `'unsafe-eval'`. The deprecated `report-uri` report
+  of a blocked compilation has an `eval-hash` field (the SHA-256 hash of the code). The `evalHash` and `urlHash`
+  attributes of the violation events and the `'url-sha256-…'` sources of `script-src` are not implemented.
 - The string handlers of `setTimeout()` and `setInterval()` are checked when the timer is created, as in the browsers: a
   blocked string creates no timer (the method returns `0`), the violation is reported and no exception is thrown nor
   reported. The HTML Standard checks the string when the timer runs (on each run of an interval) and reports the

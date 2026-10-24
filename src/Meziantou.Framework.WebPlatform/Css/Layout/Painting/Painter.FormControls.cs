@@ -81,9 +81,12 @@ internal sealed partial class Painter
         var content = SnapToDevicePixels(fragment.ContentBoxRect.Translate(offset));
         var writingDirection = fragment.WritingDirection;
         var padding = fragment.Padding;
+
+        // The label of a button is decorated as the text of its box would be (https://drafts.csswg.org/css-text-decor-3/#line-decoration)
+        var decorations = element is HtmlInputElement { InputType: InputType.Submit or InputType.Reset or InputType.Button } ? CollectAppliedDecorations(fragment.Box) : null;
         if (writingDirection.IsHorizontal || (element is HtmlInputElement { InputType: InputType.Checkbox or InputType.Radio or InputType.Color or InputType.Hidden } && !FormControlContents.IsSwitch(element)))
         {
-            PaintFormControlContents(element, style, content, padding, native);
+            PaintFormControlContents(element, style, content, padding, native, decorations);
             return;
         }
 
@@ -102,7 +105,7 @@ internal sealed partial class Painter
             : new Sides<double>(padding.Left, padding.Top, padding.Right, padding.Bottom);
         _builder.Save();
         _builder.Add(new TransformItem(matrix));
-        PaintFormControlContents(element, style, new PhysicalRect(0, 0, content.Height, content.Width), rotatedPadding, native);
+        PaintFormControlContents(element, style, new PhysicalRect(0, 0, content.Height, content.Width), rotatedPadding, native, decorations);
         _builder.Restore();
     }
 
@@ -126,9 +129,9 @@ internal sealed partial class Painter
 
     /// <summary>
     /// Paints the contents of a form control in its content box, with horizontal lines (see <see cref="PaintFormControl"/>).
-    /// <paramref name="padding"/> is the padding around the content box.
+    /// <paramref name="padding"/> is the padding around the content box, <paramref name="decorations"/> the decorations of the label of a button.
     /// </summary>
-    private void PaintFormControlContents(Element? element, ComputedStyle style, PhysicalRect content, Sides<double> padding, bool native)
+    private void PaintFormControlContents(Element? element, ComputedStyle style, PhysicalRect content, Sides<double> padding, bool native, List<AppliedDecoration>? decorations)
     {
         var linePadding = (Over: padding.Top, Under: padding.Bottom);
         var zoom = style.Layout.EffectiveZoom;
@@ -171,7 +174,7 @@ internal sealed partial class Painter
                         return;
 
                     case InputType.Submit or InputType.Reset or InputType.Button:
-                        PaintButtonLabel(input, style, content, FormControlSizing.GetButtonLabelLines(input, style), GetColor(style, "color"));
+                        PaintButtonLabel(input, style, content, FormControlSizing.GetButtonLabelLines(input, style), GetColor(style, "color"), decorations);
                         return;
 
                     case InputType.Image:
@@ -425,7 +428,7 @@ internal sealed partial class Painter
     /// Paints the lines of the label of a button (<see cref="FormControlSizing.GetButtonLabelLines"/>: the line feeds of the
     /// value break the lines, which do not wrap), vertically centered as a group in its content box, clipped to it.
     /// </summary>
-    private void PaintButtonLabel(Element element, ComputedStyle style, PhysicalRect content, string[] lines, DisplayColor color)
+    private void PaintButtonLabel(Element element, ComputedStyle style, PhysicalRect content, string[] lines, DisplayColor color, List<AppliedDecoration>? decorations)
     {
         if (color.IsTransparent || content.IsEmpty)
             return;
@@ -436,7 +439,7 @@ internal sealed partial class Painter
             {
                 _builder.Save();
                 _builder.Add(new ClipRectItem(content));
-                PaintControlText(element, style, content, lines[0], color, centered: true);
+                PaintControlText(element, style, content, lines[0], color, centered: true, decorations: decorations);
                 _builder.Restore();
             }
 
@@ -449,7 +452,7 @@ internal sealed partial class Painter
         _builder.Add(new ClipRectItem(content));
         for (var i = 0; i < lines.Length; i++)
         {
-            PaintControlText(element, style, new PhysicalRect(content.X, y + (i * lineHeight), content.Width, lineHeight), lines[i], color, centered: false, firstLine: i == 0);
+            PaintControlText(element, style, new PhysicalRect(content.X, y + (i * lineHeight), content.Width, lineHeight), lines[i], color, centered: false, firstLine: i == 0, decorations: decorations);
         }
 
         _builder.Restore();
@@ -459,9 +462,9 @@ internal sealed partial class Painter
 
     /// <summary>
     /// Paints a line of text of a control in a rectangle: aligned with <c>text-align</c> (start, center, end), vertically centered
-    /// (<paramref name="centered"/>) or on the baseline of a line box at the top of the rectangle.
+    /// (<paramref name="centered"/>) or on the baseline of a line box at the top of the rectangle, with <paramref name="decorations"/>.
     /// </summary>
-    private void PaintControlText(Element element, ComputedStyle style, PhysicalRect area, string text, DisplayColor color, bool centered, bool firstLine = true)
+    private void PaintControlText(Element element, ComputedStyle style, PhysicalRect area, string text, DisplayColor color, bool centered, bool firstLine = true, List<AppliedDecoration>? decorations = null)
     {
         if (text.Length == 0)
             return;
@@ -543,6 +546,10 @@ internal sealed partial class Painter
             _ => rtl ? area.Right - width : area.X,
         };
 
+        // "the underline, overline, and line-through decorations [...] are drawn in the following order: underline, overline,
+        // text, line-through" (https://drafts.csswg.org/css-text-decor-3/#painting-order)
+        var textLine = new TextLine(Horizontal: true, baseline, x, x + width, UnderSign: 1, metrics, layout.FontSize);
+        PaintControlDecorations(element, style, textLine, decorations, TextDecorationLines.Underline | TextDecorationLines.Overline);
         if (shapedRuns is not null)
         {
             // (text-overflow does not elide the lines reordered by the bidi algorithm: they are clipped)
@@ -551,12 +558,14 @@ internal sealed partial class Painter
                 DrawControlGlyphs(element, shapedRuns[i], text, x, baseline, color, 0, shapedRuns[i].Glyphs.Length, bidiRuns![i].IsRightToLeft);
                 x += shapedRuns[i].Width;
             }
-
-            return;
+        }
+        else
+        {
+            var (visibleStart, visibleEnd) = TruncateControlText(element, style, area, shaped, x, baseline, color, options);
+            DrawControlGlyphs(element, shaped, text, x, baseline, color, visibleStart, visibleEnd);
         }
 
-        var (visibleStart, visibleEnd) = TruncateControlText(element, style, area, shaped, x, baseline, color, options);
-        DrawControlGlyphs(element, shaped, text, x, baseline, color, visibleStart, visibleEnd);
+        PaintControlDecorations(element, style, textLine, decorations, TextDecorationLines.LineThrough);
     }
 
     /// <summary>

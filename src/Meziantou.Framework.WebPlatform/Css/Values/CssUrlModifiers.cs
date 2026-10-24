@@ -101,6 +101,12 @@ internal static class CssUrlModifiers
                 modifiers = parsed;
                 return true;
 
+            // A computed src(), whose string is resolved to a url()
+            case CssFunction function when InfraAscii.EqualsIgnoreAsciiCase(function.Name, "src")
+                && ValueMatcher.RemoveWhitespace(function.Value) is [var inner]
+                && (inner is CssPreservedToken { Type: CssTokenType.Url } || (inner is CssFunction innerFunction && InfraAscii.EqualsIgnoreAsciiCase(innerFunction.Name, "url"))):
+                return TryGetUrl(inner, out url, out modifiers);
+
             default:
                 url = "";
                 modifiers = CssRequestModifiers.None;

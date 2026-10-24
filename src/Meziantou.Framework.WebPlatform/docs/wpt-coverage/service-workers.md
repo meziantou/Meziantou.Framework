@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 225 | 283 | 4 | 81% |
+| [Stable](#stable-tests) | 226 | 283 | 4 | 81% |
 | [Tentative](#tentative-tests) | 0 | 11 | 0 | 0% |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
-| **All** | **226** | **295** | **4** | **78%** |
+| **All** | **227** | **295** | **4** | **78%** |
 
 ## Stable tests
 
@@ -124,7 +124,7 @@
 | [`service-worker/fetch-mixed-content-to-inscope.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-mixed-content-to-inscope.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/fetch-mixed-content-to-outscope.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-mixed-content-to-outscope.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/fetch-request-body-cancel.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-request-body-cancel.https.html) | Error | 1 / 2 | NOT IMPLEMENTED | the bodies are not streamed: cancelling `event.request.body` does not cancel the body of the request |
-| [`service-worker/fetch-request-css-base-url.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-request-css-base-url.https.html) | Fail | 2 / 4 | BUG | the referrer of the requests of a style sheet given by the service worker is the URL of the style sheet requested, not the URL of its response |
+| [`service-worker/fetch-request-css-base-url.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-request-css-base-url.https.html) | Pass | 4 / 4 |  |  |
 | [`service-worker/fetch-request-css-cross-origin.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-request-css-cross-origin.https.html) | Pass | 4 / 4 |  |  |
 | [`service-worker/fetch-request-css-images.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-request-css-images.https.html) | Pass | 4 / 4 |  |  |
 | [`service-worker/fetch-request-fallback.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-request-fallback.https.html) | Pass | 17 / 17 |  |  |

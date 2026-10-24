@@ -45,16 +45,27 @@ internal sealed class PageBreakRules
     public bool IsNameBreak(Fragment previous, Fragment next)
         => previous is BoxFragment previousBox && next is BoxFragment nextBox && !IsInOutOfFlowBox(previousBox) && !string.Equals(GetEndPageValue(previousBox), GetStartPageValue(nextBox), StringComparison.Ordinal);
 
-    /// <summary>Returns whether a box is in an absolutely positioned box: as in the browsers, the page names of its contents do not break the pages.</summary>
+    /// <summary>
+    /// Returns whether a box is in an absolutely positioned box placed by its insets in the block axis: as in Blink, the page
+    /// names of its contents do not break the pages (they do in a box at its static position).
+    /// </summary>
     private static bool IsInOutOfFlowBox(BoxFragment box)
     {
         for (var ancestor = box.Parent; ancestor is not null; ancestor = ancestor.Parent)
         {
-            if (ancestor is BoxFragment { Box.IsOutOfFlow: true } outOfFlow && PositionedLayout.IsAbsolutelyPositioned(outOfFlow.Box))
+            if (ancestor is BoxFragment { Box.IsOutOfFlow: true } outOfFlow && PositionedLayout.IsAbsolutelyPositioned(outOfFlow.Box) && !IsAtStaticBlockPosition(outOfFlow))
                 return true;
         }
 
         return false;
+    }
+
+    /// <summary>Returns whether an absolutely positioned box is at its static position in the block axis (its block-start and block-end insets are <c>auto</c>).</summary>
+    internal static bool IsAtStaticBlockPosition(BoxFragment box)
+    {
+        var inset = box.Box.Style.Layout.Insets.Inset;
+        var writingDirection = box.Parent is BoxFragment parent ? parent.WritingDirection : box.WritingDirection;
+        return inset.Get(writingDirection.BlockStart).IsAuto && inset.Get(writingDirection.BlockEnd).IsAuto;
     }
 
     /// <summary>

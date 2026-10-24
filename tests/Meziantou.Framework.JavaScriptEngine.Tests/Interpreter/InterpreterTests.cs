@@ -186,6 +186,75 @@ public sealed class InterpreterTests
         Assert.Equal(expected, Run(code));
     }
 
+    // The calls in tail position of strict code reuse the frame of the caller: 10,000 calls run with a recursion limit of 1,000
+    [Theory]
+    [InlineData("'use strict'; function f(n) { if (n === 0) return 'done'; return f(n - 1); } f(10000)", "done")]
+    [InlineData("'use strict'; var f = n => n === 0 ? 'done' : f(n - 1); f(10000)", "done")]
+    [InlineData("'use strict'; function f(n) { return n === 0 || f(n - 1); } f(10000)", "true")]
+    [InlineData("'use strict'; function f(n) { return n !== 0 && f(n - 1); } f(10000)", "false")]
+    [InlineData("'use strict'; function f(n) { return n === 0 ? 'done' : (n--, (f(n))); } f(10000)", "done")]
+    [InlineData("'use strict'; function f(n) { return n === 0 ? 'done' : undefined ?? f(n - 1); } f(10000)", "done")]
+    [InlineData("'use strict'; function f(...a) { return a[0] === 0 ? 'done' : f(...[a[0] - 1]); } f(10000)", "done")]
+    [InlineData("'use strict'; function f(s, n) { return n === 0 ? 'done' : f`${n - 1}`; } f(null, 10000)", "done")]
+    [InlineData("'use strict'; var o = { f(n) { return n === 0 ? 'done' : this.f(n - 1); } }; o.f(10000)", "done")]
+    [InlineData("'use strict'; class C { f(n) { return n === 0 ? 'done' : this.f(n - 1); } } new C().f(10000)", "done")]
+    [InlineData("'use strict'; function even(n) { return n === 0 ? true : odd(n - 1); } function odd(n) { return n === 0 ? false : even(n - 1); } even(10001)", "false")]
+    [InlineData("'use strict'; function f(n) { if (n === 0) return 'done'; try { } finally { return f(n - 1); } } f(10000)", "done")]
+    [InlineData("'use strict'; function f(n) { if (n === 0) return 'done'; try { throw null; } catch { return f(n - 1); } } f(10000)", "done")]
+    [InlineData("'use strict'; function f(n) { if (n === 0) return 'done'; for (var k in { a: 1 }) return f(n - 1); } f(10000)", "done")]
+    [InlineData("'use strict'; function f(n) { return n === 0 ? 'done' : f(n - 1); } [10000].map(f)[0]", "done")]
+    [InlineData("var eval = function (n) { 'use strict'; return n === 0 ? 'done' : eval(n - 1); }; eval(10000)", "done")]
+    [InlineData("'use strict'; function f(n) { return n === 0 ? 'done' : eval(n - 1); } globalThis.eval = f; f(10000)", "done")]
+    public void Evaluate_TailCalls(string code, string expected)
+    {
+        Assert.Equal(expected, RunWithRecursionLimit(code));
+    }
+
+    // The calls that are not in tail position keep the frame of the caller
+    [Theory]
+    [InlineData("function f(n) { if (n === 0) return 'done'; return f(n - 1); } f(10000)")]
+    [InlineData("'use strict'; function f(n) { if (n === 0) return 'done'; try { return f(n - 1); } catch (e) { throw e; } } f(10000)")]
+    [InlineData("'use strict'; function f(n) { if (n === 0) return 'done'; try { return f(n - 1); } finally { } } f(10000)")]
+    [InlineData("'use strict'; function f(n) { if (n === 0) return 'done'; try { throw null; } catch { return f(n - 1); } finally { } } f(10000)")]
+    [InlineData("'use strict'; function f(n) { if (n === 0) return 'done'; for (var x of [1]) return f(n - 1); } f(10000)")]
+    [InlineData("'use strict'; function f(n) { if (n === 0) return 'done'; { using r = null; return f(n - 1); } } f(10000)")]
+    [InlineData("'use strict'; function f(n) { return n === 0 ? 'done' : f?.(n - 1); } f(10000)")]
+    [InlineData("'use strict'; function f(n) { var r = n === 0 ? 'done' : f(n - 1); return r; } f(10000)")]
+    [InlineData("'use strict'; function F(n) { if (n === 0) return {}; return new F(n - 1); } new F(10000)")]
+    public void Evaluate_CallsThatAreNotTailCalls(string code)
+    {
+        var exception = Assert.Throws<JsException>(() => RunWithRecursionLimit(code));
+        Assert.StartsWith("RangeError", exception.Message, StringComparison.Ordinal);
+    }
+
+    // A tail call has the semantics of a call followed by a return
+    [Theory]
+    [InlineData("'use strict'; function g() { throw new Error('g'); } function f() { try { return g(); } catch (e) { return 'caught ' + e.message; } } f()", "caught g")]
+    [InlineData("'use strict'; var log = []; function g() { log.push('g'); } function f() { try { return g(); } finally { log.push('finally'); } } f(); log.join()", "g,finally")]
+    [InlineData("'use strict'; var log = []; var it = { [Symbol.iterator]() { return this; }, next() { return { done: false }; }, return() { log.push('return'); return {}; } }; function g() { log.push('g'); } function f() { for (var x of it) return g(); } f(); log.join()", "g,return")]
+    [InlineData("'use strict'; function make() { return { a: 1 }; } function C() { return make(); } new C().a", "1")]
+    [InlineData("'use strict'; function id(v) { return v; } function C() { this.a = 2; return id(5); } new C().a", "2")]
+    [InlineData("'use strict'; class B { constructor() { this.b = 3; } } function id(v) { return v; } class C extends B { constructor() { super(); return id(undefined); } } new C().b", "3")]
+    [InlineData("'use strict'; function f() { return Math.max(1, 2); } f()", "2")]
+    [InlineData("'use strict'; function f() { return eval('1 + 1'); } f()", "2")]
+    [InlineData("'use strict'; function* g() { yield 1; } function f() { return g(); } f().next().value", "1")]
+    [InlineData("'use strict'; function g() { return this; } var o = { g }; function f() { return o.g(); } f() === o", "true")]
+    [InlineData("'use strict'; function g() { return typeof this; } function f() { return g(); } f()", "undefined")]
+    [InlineData("'use strict'; function f(n) { return n === 0 ? new Error('x').stack.split('\\n').length : f(n - 1); } f(10) < 5", "true")]
+    public void Evaluate_TailCallSemantics(string code, string expected)
+    {
+        Assert.Equal(expected, RunWithRecursionLimit(code));
+    }
+
+    private static string RunWithRecursionLimit(string code)
+    {
+        using var engine = new JsEngine(new JsEngineOptions { RecursionLimit = 1_000 });
+        var realm = engine.CreateRealm();
+        var result = realm.Execute(code);
+        using var scope = engine.Enter();
+        return result.IsString ? result.AsString() : result.ToString();
+    }
+
     // An assignment to an undeclared identifier in strict code: the reference is resolved before the value is evaluated
     [Theory]
     [InlineData("'use strict'; var r; try { undeclared = (this.undeclared = 5); } catch (e) { r = e.constructor.name; } [r, undeclared].join()", "ReferenceError,5")]
@@ -320,6 +389,95 @@ public sealed class InterpreterTests
     public void Evaluate_LazyCompilation(string code, string expected)
     {
         Assert.Equal(expected, Run(code));
+    }
+
+    // Decorators (https://github.com/tc39/proposal-decorators) and decorator metadata
+    [Theory]
+    [InlineData("var log = []; function d(n) { log.push('eval ' + n); return (v, c) => { log.push(c.kind + ' ' + n); }; } function k(n) { log.push('key ' + n); return n; } @d('c') class C { @d('m') [k('m')]() {} @d('f') [k('f')] = 1; @d('sf') static [k('sf')] = 2; @d('sm') static [k('sm')]() {} @d('a') accessor [k('a')] = 3; } log.join()", "eval c,eval m,key m,eval f,key f,eval sf,key sf,eval sm,key sm,eval a,key a,method sm,method m,accessor a,field sf,field f,class c")]
+    [InlineData("var r = []; function d(v, c) { r.push([c.kind, String(c.name), c.static, c.private, Object.keys(c).join(' '), Object.keys(c.access || {}).join(' ')].join(':')); } @d class C { @d m() {} @d static #p() {} @d get g() { return 1; } @d set s(v) {} @d f; @d accessor a; } r.join('|')", "method:#p:true:true:kind access static private name addInitializer metadata:get has|method:m:false:false:kind access static private name addInitializer metadata:get has|getter:g:false:false:kind access static private name addInitializer metadata:get has|setter:s:false:false:kind access static private name addInitializer metadata:set has|accessor:a:false:false:kind access static private name addInitializer metadata:get set has|field:f:false:false:kind access static private name addInitializer metadata:get set has|class:C:::kind name addInitializer metadata:")]
+    [InlineData("function twice(v, c) { return function () { return v.call(this) * 2; }; } function plus(v, c) { return function () { return v.call(this) + 1; }; } class C { @twice @plus m() { return 1; } @twice static s() { return 5; } } [new C().m(), C.s(), C.prototype.m.name].join()", "4,10,")]
+    [InlineData("var log = []; function f(t) { return () => function (x) { log.push(t + ' got ' + x); return x + t; }; } class C { @f('A') @f('B') x = 'x'; @f('S') static s = 's'; } [new C().x, C.s, log.join()].join('|')", "xAB|sS|S got s,A got x,B got xA")]
+    [InlineData("var log = []; function t(v, c) { return { get() { log.push('get'); return v.get.call(this); }, set(x) { log.push('set ' + x); v.set.call(this, x); }, init(x) { log.push('init ' + x); return x + 1; } }; } class C { @t accessor a = 1; } var c = new C(); var r = c.a; c.a = 5; [r, c.a, log.join()].join('|')", "2|5|init 1,get,set 5,get")]
+    [InlineData("var log = []; function d(n) { return (v, c) => { c.addInitializer(function () { log.push(n + ' ' + typeof this); }); }; } @d('class') class C { static { log.push('block'); } @d('sf') static sf = (log.push('sf value'), 1); @d('sm') static sm() {} @d('m') m() {} @d('f') f = (log.push('f value'), 2); constructor() { log.push('ctor'); } } log.push('new'); new C(); log.join()", "sm function,block,sf value,sf function,class function,new,m object,f value,f object,ctor")]
+    [InlineData("var Original; function replace(v, c) { Original = v; return class extends v { static tag = 'replaced'; }; } @replace class C { static self = this; static fn() { return C; } } [C.tag, C === Original, C.self === C, C.fn() === C, Object.hasOwn(C, 'self'), Object.getPrototypeOf(C) === Original].join()", "replaced,false,true,true,true,true")]
+    [InlineData("function meta(k, v) { return (_, c) => { c.metadata[k] = v; }; } @meta('a', 'x') class C { @meta('b', 'y') m() {} } class D extends C { @meta('b', 'z') m() {} } var d = Object.getOwnPropertyDescriptor(C, Symbol.metadata); [C[Symbol.metadata].a, C[Symbol.metadata].b, D[Symbol.metadata].a, D[Symbol.metadata].b, Object.getPrototypeOf(C[Symbol.metadata]), d.writable, d.enumerable, d.configurable, (class { })[Symbol.metadata]].join()", "x,y,x,z,,true,false,true,")]
+    [InlineData("var log = []; var o = { dec(v, c) { log.push(this === o); }, make() { return function (v, c) { 'use strict'; log.push(this === undefined); }; } }; @o.dec @(o.dec) @o.make() @((0, o.dec)) class C {} log.join()", "false,true,true,true")]
+    [InlineData("var r = []; function t(f) { try { f(); r.push('ok'); } catch (e) { r.push(e.constructor.name); } } t(() => { class C { @(() => 1) m() {} } }); t(() => { class C { @(() => ({})) f; } }); t(() => { class C { @(() => 1) accessor a; } }); t(() => { class C { @(() => ({ get: 1 })) accessor a; } }); t(() => { @(() => null) class C {} }); t(() => { class C { @(1) m() {} } }); t(() => { var add; class C { @((v, c) => { add = c.addInitializer; }) m() {} } add(() => {}); }); t(() => { class C { @((v, c) => { c.addInitializer(1); }) m() {} } }); t(() => { class C { @(() => () => {}) accessor a; } }); r.join()", "TypeError,TypeError,TypeError,TypeError,TypeError,TypeError,TypeError,TypeError,ok")]
+    [InlineData("var a = {}; function d(v, c) { a[c.name] = c.access; } class C { @d #m() { return 1; } @d #f = 2; @d accessor #x = 3; @d g = 4; } var c = new C(); a['#f'].set(c, 5); a['#x'].set(c, 6); a.g.set(c, 7); [typeof a['#m'].get(c), a['#f'].get(c), a['#x'].get(c), a.g.get(c), a['#m'].has(c), a['#m'].has({}), a.g.has({ g: 1 })].join()", "function,5,6,7,true,false,true")]
+    [InlineData("var a; function d(v, c) { a = c.access; } class C { @d m() {} } var r = []; for (var f of [() => a.get(1), () => a.has(null), () => a.get({})]) { try { r.push(String(f())); } catch (e) { r.push(e.constructor.name); } } r.join()", "TypeError,TypeError,undefined")]
+    [InlineData("function wrap(v, c) { return function (...args) { return 'w(' + v.apply(this, args) + ')'; }; } class C { #v = 1; @wrap #m() { return 'm'; } @wrap get #x() { return this.#v; } set #x(v) { this.#v = v; } @wrap static #s() { return 's'; } @wrap static get #t() { return 't'; } run() { this.#x = 2; return [this.#m(), this.#x, C.#s(), C.#t].join(); } } new C().run()", "w(m),w(2),w(s),w(t)")]
+    [InlineData("function wrap(v, c) { return function (...args) { return v.apply(this, args); }; } class C { #v = 1; @wrap get x() { return this.#v; } set x(v) { this.#v = v; } } var c = new C(); c.x = 3; var d = Object.getOwnPropertyDescriptor(C.prototype, 'x'); [c.x, typeof d.get, typeof d.set, d.enumerable].join()", "3,function,function,false")]
+    [InlineData("function d() {} class C { a() {} @d b() {} accessor c; @d static e() {} static g() {} @d h() {} } Object.getOwnPropertyNames(C.prototype).join() + '|' + Object.getOwnPropertyNames(C).join()", "constructor,a,b,c,h|length,name,prototype,e,g")]
+    [InlineData("var names = []; function d(v, c) { names.push(c.name); } var X = @d class {}; var o = { Y: @d class {} }; (@d class {}); @d class Z {} names.join()", "X,Y,,Z")]
+    [InlineData("function d() {} var C = @d class X { @d m() {} }; C.toString()", "@d class X { @d m() {} }")]
+    [InlineData("var log = []; function d(t) { return (v, c) => { c.addInitializer(function () { log.push(t + ' ' + Object.hasOwn(this, 'f') + ' ' + this.check()); }); }; } class B { constructor() { log.push('base'); } } class C extends B { f = 1; #p() {} check() { return #p in this; } @d('m') m() {} } new C(); log.join()", "base,m false true")]
+    [InlineData("var proto; @((v, c) => { proto = Object.getPrototypeOf(c.metadata); }) class C extends null {} String(proto)", "null")]
+    [InlineData("var g; function* gen() { function d(v, c) { g = c.name; } class C { @d [yield 1]() {} } return C; } var it = gen(); it.next(); var C = it.next('k').value; [g, typeof C.prototype.k].join()", "k,function")]
+    [InlineData("var w = { dec(v, c) { this.seen = true; } }; with (w) { (@dec class {}); } w.seen", "true")]
+    [InlineData("var inner; try { @((v) => { inner = v; }) class T { static m() { return T; } } } catch (e) { } typeof inner.m()", "function")]
+    [InlineData("var r = []; class C { @((v, c) => { try { C; } catch (e) { r.push(e.constructor.name); } c.addInitializer(function () { r.push(C === this); }); }) static m() {} } r.join()", "ReferenceError,true")]
+    [InlineData("var d = Object.getOwnPropertyDescriptor(Symbol, 'metadata'); [typeof Symbol.metadata, Symbol.metadata.description, d.writable, d.configurable].join()", "symbol,Symbol.metadata,false,false")]
+    public void Evaluate_Decorators(string code, string expected)
+    {
+        Assert.Equal(expected, Run(code));
+    }
+
+    // Auto-accessors: a getter and a setter on the prototype (or the class) for a private storage
+    [Theory]
+    [InlineData("class C { accessor x = 1; static accessor s = 2; accessor #p = 3; get p() { return this.#p; } set p(v) { this.#p = v; } } var c = new C(); c.x = 5; c.p = 6; [c.x, C.s, c.p, Object.hasOwn(c, 'x'), Object.keys(c).length].join()", "5,2,6,false,0")]
+    [InlineData("class C { accessor x; } var d = Object.getOwnPropertyDescriptor(C.prototype, 'x'); [d.get.name, d.set.name, d.get.length, d.set.length, d.enumerable, d.configurable].join()", "get x,set x,0,1,false,true")]
+    [InlineData("var k = 'dyn'; var s = Symbol('sym'); class C { accessor [k] = () => 1; accessor [s]; accessor #h = function () {}; h() { return this.#h.name; } } var c = new C(); [c.dyn.name, Object.getOwnPropertyDescriptor(C.prototype, s).get.name, c.h()].join()", "dyn,get [sym],#h")]
+    [InlineData("class C { static accessor x = 1; } class D extends C { } var r; try { D.x; } catch (e) { r = e.constructor.name; } [C.x, r].join()", "1,TypeError")]
+    [InlineData("class C { accessor\n x = 1; accessor = 2; } var c = new C(); [c.x, c.accessor].join()", "1,2")]
+    public void Evaluate_AutoAccessors(string code, string expected)
+    {
+        Assert.Equal(expected, Run(code));
+    }
+
+    [Theory]
+    [InlineData("class C { @d constructor() {} }")]
+    [InlineData("class C { @d static {} }")]
+    [InlineData("@d var x;")]
+    [InlineData("@d function f() {}")]
+    [InlineData("@d class {}")]
+    [InlineData("if (1) @d class C {}")]
+    [InlineData("class C { @d; }")]
+    [InlineData("class C { @d[0] m() {} }")]
+    [InlineData("class C { @this.x m() {} }")]
+    [InlineData("class C { @x.#y m() {} }")]
+    [InlineData("class C { @yield m() {} }")]
+    [InlineData("async function f() { @await class C {} }")]
+    [InlineData("class C { accessor m() {} }")]
+    [InlineData("class C { accessor static x; }")]
+    [InlineData("class C { accessor #x; accessor #x; }")]
+    [InlineData("class C { accessor #x; get #x() {} }")]
+    [InlineData("class C { static accessor prototype; }")]
+    [InlineData("class C { accessor constructor; }")]
+    public void Decorators_SyntaxErrors(string code)
+    {
+        var exception = Assert.Throws<JsException>(() => Run(code));
+        Assert.StartsWith("SyntaxError:", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Module_DecoratedClassExports()
+    {
+        var result = RunModule(new()
+        {
+            ["main"] = "import { A, B } from 'a'; import D from 'b'; import E from 'c'; globalThis.result = [A.n, B.n, D.n, E.n].join();",
+            ["a"] = "function d(v, c) { v.n = c.name; } @d export class A {} export @d class B {}",
+            ["b"] = "function d(v, c) { v.n = c.name; } export default @d class {}",
+            ["c"] = "function d(v, c) { v.n = c.name; } @d export default class E {}",
+        });
+
+        Assert.Equal("A,B,default,E", result);
+    }
+
+    [Fact]
+    public void Module_DecoratorsBeforeAndAfterExportAreASyntaxError()
+    {
+        var exception = Assert.Throws<JsException>(() => RunModule(new() { ["main"] = "function d() {} @d export @d class C {}" }));
+        Assert.StartsWith("SyntaxError:", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -477,7 +635,8 @@ public sealed class InterpreterTests
 
         protected internal override void LoadImportedModule(JsModuleLoadRequest request)
         {
-            if (!_modules.TryGetValue(request.Specifier, out var module))
+            var key = request.Type is null ? request.Specifier : request.Specifier + "|" + request.Type;
+            if (!_modules.TryGetValue(key, out var module))
             {
                 if (request.Specifier == "module-source")
                 {
@@ -496,8 +655,14 @@ public sealed class InterpreterTests
                     return;
                 }
 
-                module = request.Type == "json" ? request.Realm.CreateJsonModule(code, request.Specifier) : request.Realm.ParseModule(code, request.Specifier);
-                _modules[request.Specifier] = module;
+                module = request.Type switch
+                {
+                    "json" => request.Realm.CreateJsonModule(code, request.Specifier),
+                    "text" => request.Realm.CreateTextModule(code, request.Specifier),
+                    "bytes" => request.Realm.CreateBytesModule(Encoding.UTF8.GetBytes(code), request.Specifier),
+                    _ => request.Realm.ParseModule(code, request.Specifier),
+                };
+                _modules[key] = module;
             }
 
             request.Complete(module);
@@ -618,6 +783,24 @@ public sealed class InterpreterTests
     }
 
     [Fact]
+    public void Module_TextAndBytes()
+    {
+        var result = RunModule(new()
+        {
+            ["main"] = """
+                import text from 'data' with { type: 'text' };
+                import bytes from 'data' with { type: 'bytes' };
+                import * as namespace from 'data' with { type: 'text' };
+                const dynamic = await import('data', { with: { type: 'bytes' } });
+                globalThis.result = [text, typeof bytes, bytes.constructor.name, bytes.join(' '), bytes.buffer.immutable, Object.keys(namespace).join(), dynamic.default === bytes].join();
+                """,
+            ["data"] = "é!",
+        });
+
+        Assert.Equal("é!,object,Uint8Array,195 169 33,true,default,true", result);
+    }
+
+    [Fact]
     public void Module_CycleCanCallHoistedFunctions()
     {
         var result = RunModule(new()
@@ -702,5 +885,39 @@ public sealed class InterpreterTests
         thread.Start();
         thread.Join();
         Assert.True(error is null or JsException);
+    }
+
+    [Theory]
+    [InlineData("o", ".f()", "[object Object]")]
+    [InlineData("o", ".o", "[object Object]")]
+    [InlineData("o", "['o']", "[object Object]")]
+    [InlineData("o.g", "()", "function g() { return g; }")]
+    [InlineData("o", "?.f()", "[object Object]")]
+    [InlineData("0", " + 1", "5000")]
+    [InlineData("0", " || 0", "0")]
+    public void LongChain_RunsOnASmallStack(string start, string link, string expected)
+    {
+        // A chain nests on its left operand, as deep as it is long (a line of @babel/standalone chains 650 calls): the
+        // compiler handles the chains in a loop, on the stack of a secondary thread (1 MB on Windows)
+        const int Length = 5_000;
+        string? result = null;
+        Exception? error = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                using var engine = new JsEngine();
+                var code = "var o = { f() { return this; }, g: function g() { return g; } }; o.o = o; String(" + start + string.Concat(Enumerable.Repeat(link, Length)) + ")";
+                result = engine.CreateRealm().Execute(code).AsString();
+            }
+            catch (JsException ex)
+            {
+                error = ex;
+            }
+        }, maxStackSize: 1024 * 1024);
+        thread.Start();
+        thread.Join();
+        Assert.Null(error);
+        Assert.Equal(expected, result);
     }
 }

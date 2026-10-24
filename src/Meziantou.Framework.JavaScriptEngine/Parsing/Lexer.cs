@@ -193,6 +193,8 @@ internal sealed class Lexer
                 return Punctuator(ref token, TokenKind.Colon, 1);
             case '~':
                 return Punctuator(ref token, TokenKind.Tilde, 1);
+            case '@':
+                return Punctuator(ref token, TokenKind.At, 1);
             case '.':
                 if (IsDecimalDigit(CharAt(_pos + 1)))
                     return ScanNumber(ref token);

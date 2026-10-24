@@ -370,6 +370,7 @@ internal sealed partial class InlineLayoutAlgorithm
         _blockSpaceAdvance = null;
         _blockEllipsis = null;
         _blockEllipsisText = null;
+        _blockEllipsisHang = 0;
         _blockEllipsisIsLegacy = false;
         _hidesLines = false;
         _lineWidthLimits.Clear();
@@ -416,8 +417,34 @@ internal sealed partial class InlineLayoutAlgorithm
     private LineEllipsis CreateBlockEllipsis(TextOverflowSide ellipsis)
     {
         _blockEllipsisText = ellipsis.Kind == TextOverflowKind.String ? ellipsis.String : null;
-        return LineEllipsis.Create(_block, _block.Style, _blockEllipsisText, _block.Style.Layout.Direction == Direction.Rtl);
+        var isRightToLeft = _block.Style.Layout.Direction == Direction.Rtl;
+        var result = LineEllipsis.Create(_block, _block.Style, _blockEllipsisText, isRightToLeft);
+
+        // https://drafts.csswg.org/css-text-4/#hanging-punctuation-property: the last character of the ellipsis is at the end of the
+        // last line of the block container: a closing bracket or quote hangs with hanging-punctuation: last, a stop or a comma with
+        // force-end; its advance is not reserved at the end of the line
+        _blockEllipsisHang = 0;
+        var hanging = _block.Style.Layout.Text.HangingPunctuation;
+        var text = LineEllipsis.GetText(_block.Style, _blockEllipsisText);
+        if (hanging != HangingPunctuation.None && text.Length > 0)
+        {
+            var last = char.IsLowSurrogate(text[^1]) && text.Length > 1 ? text[^2..] : text[^1..];
+            var codePoint = char.ConvertToUtf32(last, 0);
+            if (((hanging & HangingPunctuation.Last) != HangingPunctuation.None && TextSpacingClasses.IsClosingBracketOrQuote(codePoint))
+                || ((hanging & HangingPunctuation.ForceEnd) != HangingPunctuation.None && TextSpacingClasses.IsStopOrComma(codePoint)))
+            {
+                _blockEllipsisHang = Math.Min(result.InlineSize, LineEllipsis.Create(_block, _block.Style, last, isRightToLeft).InlineSize);
+            }
+        }
+
+        return result;
     }
+
+    /// <summary>The advance of the end of the block overflow ellipsis that hangs (see <see cref="CreateBlockEllipsis"/>).</summary>
+    private double _blockEllipsisHang;
+
+    /// <summary>The space that the block overflow ellipsis takes at the end of its line: its advance, but its part that hangs.</summary>
+    private double GetBlockEllipsisReservedSize(LineEllipsis? ellipsis) => ellipsis is null ? 0 : Math.Max(0, ellipsis.InlineSize - _blockEllipsisHang);
 
     /// <summary>The state of the lines of a formatting context.</summary>
     [StructLayout(LayoutKind.Auto)]
@@ -550,8 +577,8 @@ internal sealed partial class InlineLayoutAlgorithm
         while (true)
         {
             var opportunity = GetLineOpportunity(blockOffset, bandSize);
-            var space = opportunity.Size - indent - (_blockEllipsis?.InlineSize ?? 0);
-            var available = Math.Min(opportunity.Size, limit) - indent - (_blockEllipsis?.InlineSize ?? 0);
+            var space = opportunity.Size - indent - GetBlockEllipsisReservedSize(_blockEllipsis);
+            var available = Math.Min(opportunity.Size, limit) - indent - GetBlockEllipsisReservedSize(_blockEllipsis);
             if (reduction > 0)
             {
                 available = Math.Max(available - reduction, Math.Min(keptWidth, space));
@@ -579,7 +606,8 @@ internal sealed partial class InlineLayoutAlgorithm
                 }
 
                 // (the float fits in the space of the line, whatever the space the line breaking uses to balance the lines)
-                if (_deferredFloats.Count > 0 || (end.Width > 0 && end.Width + item.InlineSize > (reduction > 0 ? space : available)))
+                var floatSpace = reduction > 0 ? space : available;
+                if (_deferredFloats.Count > 0 || (end.Width > 0 && (end.Width + item.InlineSize > floatSpace || !ContentAfterFloatFits(position, floatSpace - item.InlineSize, isFirstLine))))
                 {
                     _deferredFloats.Add(end.Item);
                 }
@@ -668,6 +696,18 @@ internal sealed partial class InlineLayoutAlgorithm
             _lineFits = end.Width <= available + FitTolerance;
             return (end, line, opportunity, blockOffset);
         }
+    }
+
+    /// <summary>
+    /// Whether the line that starts at <paramref name="position"/>, whose float met by the line breaking is flagged as placed,
+    /// fits in <paramref name="availableSize"/> (the space next to the float): the content after the float up to the next
+    /// soft wrap opportunity must fit next to it, else the float is placed below the line, as in Firefox (WPT
+    /// css/CSS2/floats/float-nowrap-7.html: a float inside unbreakable text that overflows the line is not placed beside it).
+    /// </summary>
+    private bool ContentAfterFloatFits(LinePosition position, double availableSize, bool isFirstLine)
+    {
+        var end = BreakLine(position, availableSize, isFirstLine, IntrinsicSizeMode.None);
+        return end.Width <= availableSize + FitTolerance;
     }
 
     /// <summary>

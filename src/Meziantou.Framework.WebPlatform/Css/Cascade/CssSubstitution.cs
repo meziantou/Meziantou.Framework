@@ -15,7 +15,7 @@ namespace Meziantou.Framework.WebPlatform.Css.Cascade;
 /// <param name="TreeScope">The root of the tree of the style sheet of the value, or null for the document.</param>
 /// <param name="Frame">The custom function being evaluated, or null for a value of the element.</param>
 /// <param name="AttrElement">The element whose attributes attr() reads when it is not the element (the originating element of a ::part() rule), or null.</param>
-internal readonly record struct SubstitutionContext(ComputedStyle Style, Node? TreeScope, CssFunctionFrame? Frame = null, Element? AttrElement = null);
+internal readonly record struct SubstitutionContext(ComputedStyle Style, Node? TreeScope, CssFunctionFrame? Frame = null, Element? AttrElement = null, IReadOnlyDictionary<string, string>? NamespacePrefixes = null);
 
 /// <summary>
 /// Replaces the arbitrary substitution functions of a value (https://drafts.csswg.org/css-values-5/#arbitrary-substitution):
@@ -66,9 +66,10 @@ internal static class CssSubstitution
             return null;
 
         // A value that only contains whitespace after substitution (e.g. the value of an empty custom property, which is a
-        // space) is serialized as a space, like an empty value; an empty if() branch is empty
+        // space) is serialized as a space, like an empty value; an empty if() branch is empty. The trailing whitespace of a
+        // substituted value is kept (if(style(--x): a ) is "a ")
         var result = builder.ToString();
-        var trimmed = result.Trim();
+        var trimmed = result.TrimStart();
         if (trimmed.Length == 0 && result.Length > 0)
             return " ";
 
@@ -431,7 +432,8 @@ internal static class CssSubstitution
             {
                 value.Append(token.Token.Value);
             }
-            else if (CustomPropertySyntax.ComputeGrammar(context.Style, "<integer>", CssSerializer.SerializeValue([argument], property: null), baseUrl: null) is { } integer)
+            // The font-relative lengths of a font property refer to the font of the parent (https://drafts.csswg.org/css-values-4/#font-relative-lengths)
+            else if (CustomPropertySyntax.ComputeGrammar(context.Style, "<integer>", CssSerializer.SerializeValue([argument], property: null), baseUrl: null, fontSizeContext: s_computedProperty.Property?.StartsWith("font-", StringComparison.Ordinal) == true) is { } integer)
             {
                 value.Append(integer);
             }
@@ -498,7 +500,9 @@ internal static class CssSubstitution
                 return null;
 
             tainted |= builder.Tainted;
-            return builder.ToString().Trim();
+
+            // The whitespace after the colon is not part of the value, unlike the whitespace before the closing parenthesis
+            return builder.ToString().TrimStart();
         }
 
         return null;
@@ -873,10 +877,11 @@ internal static class CssSubstitution
     }
 
     /// <summary>The first argument of an attr() function, parsed as &lt;attr-name&gt; &lt;attr-type&gt;?.</summary>
-    /// <param name="Name">The local name of the attribute (in the null namespace).</param>
+    /// <param name="Name">The local name of the attribute.</param>
     /// <param name="Unit">The unit of an &lt;attr-unit&gt; (lowercase, or % for a percentage), or null when it is not a known unit.</param>
     /// <param name="Syntax">The syntax of type().</param>
-    internal readonly record struct AttrArguments(string Name, AttrTypeKind Kind, string? Unit, CustomPropertySyntax? Syntax);
+    /// <param name="Prefix">The namespace prefix of the name (ns|name), or null when the attribute is in the null namespace (name or |name).</param>
+    internal readonly record struct AttrArguments(string Name, AttrTypeKind Kind, string? Unit, CustomPropertySyntax? Syntax, string? Prefix = null);
 
     /// <summary>
     /// The attributes whose value is being substituted by attr() (https://drafts.csswg.org/css-values-5/#substitute-arbitrary-substitution-function):
@@ -967,7 +972,7 @@ internal static class CssSubstitution
 
     /// <summary>
     /// Parses the first argument of an attr() function (after substitution): &lt;attr-name&gt; &lt;attr-type&gt;?, where
-    /// &lt;attr-name&gt; = [ &lt;ident-token&gt;? '|' ]? &lt;ident-token&gt; (only the null namespace is supported) and
+    /// &lt;attr-name&gt; = [ &lt;ident-token&gt;? '|' ]? &lt;ident-token&gt; (the prefix is resolved by the @namespace rules of the style sheet) and
     /// &lt;attr-type&gt; = type( &lt;syntax&gt; ) | raw-string | number | &lt;attr-unit&gt;. Returns null on failure.
     /// </summary>
     internal static AttrArguments? ParseAttrArguments(List<CssComponentValue> values)
@@ -976,16 +981,22 @@ internal static class CssSubstitution
         var index = 0;
 
         // The components of the name are not separated by whitespace
+        string? prefix = null;
         if (tokens is [CssPreservedToken bar, ..] && bar.Token.IsDelim('|'))
         {
             index++;
+        }
+        else if (tokens is [CssPreservedToken { Type: CssTokenType.Ident } prefixToken, CssPreservedToken prefixBar, CssPreservedToken { Type: CssTokenType.Ident }, ..] && prefixBar.Token.IsDelim('|'))
+        {
+            prefix = prefixToken.Token.Value;
+            index += 2;
         }
 
         if (index >= tokens.Count || tokens[index] is not CssPreservedToken { Type: CssTokenType.Ident } nameToken)
             return null;
 
         index++;
-        if (index == 1 && index < tokens.Count && tokens[index] is CssPreservedToken namespaceBar && namespaceBar.Token.IsDelim('|'))
+        if (index < tokens.Count && tokens[index] is CssPreservedToken namespaceBar && namespaceBar.Token.IsDelim('|'))
             return null;
 
         while (index < tokens.Count && tokens[index] is CssPreservedToken { Type: CssTokenType.Whitespace })
@@ -994,7 +1005,7 @@ internal static class CssSubstitution
         }
 
         if (index == tokens.Count)
-            return new AttrArguments(nameToken.Token.Value, AttrTypeKind.None, Unit: null, Syntax: null);
+            return new AttrArguments(nameToken.Token.Value, AttrTypeKind.None, Unit: null, Syntax: null, prefix);
 
         if (index != tokens.Count - 1)
             return null;
@@ -1002,20 +1013,20 @@ internal static class CssSubstitution
         switch (tokens[index])
         {
             case CssPreservedToken { Type: CssTokenType.Ident } keyword when keyword.Token.IsIdent("raw-string"):
-                return new AttrArguments(nameToken.Token.Value, AttrTypeKind.RawString, Unit: null, Syntax: null);
+                return new AttrArguments(nameToken.Token.Value, AttrTypeKind.RawString, Unit: null, Syntax: null, prefix);
 
             case CssPreservedToken { Type: CssTokenType.Ident } keyword when keyword.Token.IsIdent("number"):
-                return new AttrArguments(nameToken.Token.Value, AttrTypeKind.Number, Unit: null, Syntax: null);
+                return new AttrArguments(nameToken.Token.Value, AttrTypeKind.Number, Unit: null, Syntax: null, prefix);
 
             case CssPreservedToken { Type: CssTokenType.Ident } unit:
             {
                 // An unknown unit is valid: it triggers the fallback
                 var lower = InfraAscii.ToAsciiLowercase(unit.Token.Value);
-                return new AttrArguments(nameToken.Token.Value, AttrTypeKind.Unit, ValueMatcher.IsKnownUnit(lower) ? lower : null, Syntax: null);
+                return new AttrArguments(nameToken.Token.Value, AttrTypeKind.Unit, ValueMatcher.IsKnownUnit(lower) ? lower : null, Syntax: null, prefix);
             }
 
             case CssPreservedToken percent when percent.Token.IsDelim('%'):
-                return new AttrArguments(nameToken.Token.Value, AttrTypeKind.Unit, "%", Syntax: null);
+                return new AttrArguments(nameToken.Token.Value, AttrTypeKind.Unit, "%", Syntax: null, prefix);
 
             case CssFunction { Name: var functionName } typeFunction when InfraAscii.EqualsIgnoreAsciiCase(functionName, "type"):
             {
@@ -1029,7 +1040,7 @@ internal static class CssSubstitution
                         return null;
                 }
 
-                return new AttrArguments(nameToken.Token.Value, AttrTypeKind.Type, Unit: null, syntax);
+                return new AttrArguments(nameToken.Token.Value, AttrTypeKind.Type, Unit: null, syntax, prefix);
             }
 
             default:
@@ -1090,7 +1101,21 @@ internal static class CssSubstitution
     {
         var element = context.AttrElement ?? context.Style.Element;
         var name = GetAttrName(element, arguments);
-        var attributeValue = element.GetAttributeValue(name);
+        string? attributeValue;
+        if (arguments.Prefix is { } prefix)
+        {
+            // An undeclared prefix matches no attribute
+            if (context.NamespacePrefixes?.GetValueOrDefault(prefix) is not { } namespaceUri)
+                return null;
+
+            attributeValue = element.GetAttributeValue(namespaceUri, arguments.Name);
+            name = "{" + namespaceUri + "}" + arguments.Name;
+        }
+        else
+        {
+            attributeValue = element.GetAttributeValue(name);
+        }
+
         if (attributeValue is null)
             return null;
 

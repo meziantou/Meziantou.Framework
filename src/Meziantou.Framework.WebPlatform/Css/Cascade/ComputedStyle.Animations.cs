@@ -97,6 +97,11 @@ internal sealed partial class ComputedStyle
             if (IsRevertKeyword(declared.Value))
                 return underlying;
 
+            if (keyframe.IsAttrTainted)
+            {
+                Rare.CustomPropertyTainted = true;
+            }
+
             return ComputeCustomProperty(name, new CascadedValue(declared, 0, keyframe.Source), registration, rollbacks: 0);
         });
 
@@ -121,9 +126,10 @@ internal sealed partial class ComputedStyle
     /// to the current time" (https://drafts.csswg.org/css-transitions-1/#before-change-style). The animated values of the style
     /// were computed when it was (e.g. by the last rendering update, before a transition ended).
     /// </summary>
-    internal ComputedStyle WithCurrentAnimations()
+    /// <param name="includeNewAnimations">Whether the style is created even when the element had no animations when it was computed (the layout started some).</param>
+    internal ComputedStyle WithCurrentAnimations(bool includeNewAnimations = false)
     {
-        if (_effects is null)
+        if (_effects is null && !includeNewAnimations)
             return this;
 
         _cascadedShared = true;
@@ -445,9 +451,19 @@ internal sealed partial class ComputedStyle
         if (IsRevertKeyword(value.Value))
             return underlying;
 
-        // A longhand of a pending-substitution shorthand keeps its name (it is looked up in the substituted shorthand)
+        // A longhand of a pending-substitution shorthand keeps its name (it is looked up in the substituted shorthand). The
+        // infinite calculations are clamped after the interpolation (see IsInfinite).
         var declared = value.ShorthandName is null ? value with { Name = property.Name } : value;
-        return ComputeCascadedValue(property, new CascadedValue(declared, 0, keyframe.Source), property.Inherited, rollbacks: 0);
+        var keepsInfiniteCalculations = CssValueComputer.KeepsInfiniteCalculations;
+        CssValueComputer.KeepsInfiniteCalculations = true;
+        try
+        {
+            return ComputeCascadedValue(property, new CascadedValue(declared, 0, keyframe.Source), property.Inherited, rollbacks: 0);
+        }
+        finally
+        {
+            CssValueComputer.KeepsInfiniteCalculations = keepsInfiniteCalculations;
+        }
     }
 
     private static bool IsRevertKeyword(string value) => InfraAscii.ToAsciiLowercase(value.Trim()) is "revert" or "revert-layer";
@@ -528,7 +544,7 @@ internal sealed partial class ComputedStyle
         var composited = false;
         var startValue = ApplyComposite(effect, property, keyframes[startIndex], underlying, finalValue, currentIteration, context, ref composited);
         if (endIndex is not { } end)
-            return composited && startValue is not null ? Canonicalize(property, startValue) : startValue;
+            return (composited || IsInfinite(startValue)) && startValue is not null ? Canonicalize(property, startValue) : startValue;
 
         var endValue = ApplyComposite(effect, property, keyframes[end], underlying, finalValue, currentIteration, context, ref composited);
         var startOffset = keyframes[startIndex].Offset;
@@ -582,8 +598,11 @@ internal sealed partial class ComputedStyle
         }
 
         var result = CssInterpolation.Prepare(context, property, from, to).Interpolate(progress);
-        return !composited && (ReferenceEquals(result, from) || ReferenceEquals(result, to)) ? result : Canonicalize(property, result);
+        return !composited && !IsInfinite(result) && (ReferenceEquals(result, from) || ReferenceEquals(result, to)) ? result : Canonicalize(property, result);
     }
+
+    /// <summary>Whether a keyframe value contains an infinite calculation (see <see cref="CssValueComputer.KeepsInfiniteCalculations"/>): it is clamped when it is the animated value.</summary>
+    private static bool IsInfinite(string? value) => value is not null && value.Contains("infinity", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Computes a combined value again: e.g. a calc() is simplified (the values are already computed, so this is idempotent).</summary>
     private string Canonicalize(string property, string value)

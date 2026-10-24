@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 36 | 37 | 0 | 97% |
+| [Stable](#stable-tests) | 37 | 37 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 140 | 171 | 0 | 82% |
-| **All** | **176** | **208** | **0** | **85%** |
+| [Reftests](#reftests) | 149 | 171 | 0 | 87% |
+| **All** | **186** | **208** | **0** | **89%** |
 
 ## Stable tests
 
@@ -26,7 +26,7 @@
 | [`list-and-margin-collapse-002.html`](https://wpt.fyi/results/css/css-lists/list-and-margin-collapse-002.html) | Pass | 1 / 1 |  |  |
 | [`list-and-writing-mode-001.html`](https://wpt.fyi/results/css/css-lists/list-and-writing-mode-001.html) | Pass | 1 / 1 |  |  |
 | [`list-inside-contain.html`](https://wpt.fyi/results/css/css-lists/list-inside-contain.html) | Pass | 1 / 1 |  |  |
-| [`list-style-type-transition-tree-scope-custom-ident.html`](https://wpt.fyi/results/css/css-lists/list-style-type-transition-tree-scope-custom-ident.html) | Fail | 0 / 1 | BUG | a `list-style-type` counter style name that moves to another tree scope does not start a transition (the tree scope is not part of the computed value) |
+| [`list-style-type-transition-tree-scope-custom-ident.html`](https://wpt.fyi/results/css/css-lists/list-style-type-transition-tree-scope-custom-ident.html) | Pass | 1 / 1 |  |  |
 | [`list-style-type-transition-tree-scope-keyword.html`](https://wpt.fyi/results/css/css-lists/list-style-type-transition-tree-scope-keyword.html) | Pass | 1 / 1 |  |  |
 | [`nested-list-with-list-style-type-none.html`](https://wpt.fyi/results/css/css-lists/nested-list-with-list-style-type-none.html) | Pass | 1 / 1 |  |  |
 | [`parsing/content-invalid.html`](https://wpt.fyi/results/css/css-lists/parsing/content-invalid.html) | Pass | 24 / 24 |  |  |
@@ -96,12 +96,12 @@
 | [`counter-reset-reversed-list-item-start.html`](https://wpt.fyi/results/css/css-lists/counter-reset-reversed-list-item-start.html) | Pass | 1 / 1 |  |  |
 | [`counter-reset-reversed-list-item.html`](https://wpt.fyi/results/css/css-lists/counter-reset-reversed-list-item.html) | Pass | 1 / 1 |  |  |
 | [`counter-reset-reversed-multiple.html`](https://wpt.fyi/results/css/css-lists/counter-reset-reversed-multiple.html) | Pass | 1 / 1 |  |  |
-| [`counter-reset-reversed-nested.html`](https://wpt.fyi/results/css/css-lists/counter-reset-reversed-nested.html) | Fail | 0 / 1 | BUG | the initial value of a `reversed()` counter that has no start value is computed from the increments of the elements only: the `counter-increment` of the `::before` pseudo-elements of the list items is not counted, so the counter starts at 0 and goes negative (only Firefox passes) |
+| [`counter-reset-reversed-nested.html`](https://wpt.fyi/results/css/css-lists/counter-reset-reversed-nested.html) | Pass | 1 / 1 |  |  |
 | [`counter-reset-reversed-not-list-item-start.html`](https://wpt.fyi/results/css/css-lists/counter-reset-reversed-not-list-item-start.html) | Pass | 1 / 1 |  |  |
 | [`counter-reset-reversed-not-list-item.html`](https://wpt.fyi/results/css/css-lists/counter-reset-reversed-not-list-item.html) | Pass | 1 / 1 |  |  |
-| [`counter-reset-reversed-pseudo-001.html`](https://wpt.fyi/results/css/css-lists/counter-reset-reversed-pseudo-001.html) | Fail | 0 / 1 | BUG | the initial value of a `reversed()` counter that has no start value is computed from the increments of the elements only: the `counter-increment` of the `::before` and `::after` pseudo-elements in its scope (and the scope of a counter created on a pseudo-element) is not counted, so the counter starts at 0 and goes negative (only Firefox passes) |
-| [`counter-reset-reversed-pseudo-002.html`](https://wpt.fyi/results/css/css-lists/counter-reset-reversed-pseudo-002.html) | Fail | 0 / 1 | BUG | the initial value of a `reversed()` counter that has no start value is computed from the increments of the elements only: the `counter-increment` of the `::before` and `::after` pseudo-elements in its scope (and the scope of a counter created on a pseudo-element) is not counted, so the counter starts at 0 and goes negative (only Firefox passes) |
-| [`counter-reset-reversed-pseudo-003.html`](https://wpt.fyi/results/css/css-lists/counter-reset-reversed-pseudo-003.html) | Fail | 0 / 1 | BUG | the initial value of a `reversed()` counter that has no start value is computed from the increments of the elements only: the `counter-increment` of the `::before` and `::after` pseudo-elements in its scope (and the scope of a counter created on a pseudo-element) is not counted, so the counter starts at 0 and goes negative (only Firefox passes) |
+| [`counter-reset-reversed-pseudo-001.html`](https://wpt.fyi/results/css/css-lists/counter-reset-reversed-pseudo-001.html) | Pass | 1 / 1 |  |  |
+| [`counter-reset-reversed-pseudo-002.html`](https://wpt.fyi/results/css/css-lists/counter-reset-reversed-pseudo-002.html) | Pass | 1 / 1 |  |  |
+| [`counter-reset-reversed-pseudo-003.html`](https://wpt.fyi/results/css/css-lists/counter-reset-reversed-pseudo-003.html) | Pass | 1 / 1 |  |  |
 | [`counter-reset-reversed-siblings-001a.html`](https://wpt.fyi/results/css/css-lists/counter-reset-reversed-siblings-001a.html) | Pass | 1 / 1 |  |  |
 | [`counter-reset-reversed-siblings-001b.html`](https://wpt.fyi/results/css/css-lists/counter-reset-reversed-siblings-001b.html) | Pass | 1 / 1 |  |  |
 | [`counter-reset-reversed-siblings-002.html`](https://wpt.fyi/results/css/css-lists/counter-reset-reversed-siblings-002.html) | Pass | 1 / 1 |  |  |
@@ -137,9 +137,9 @@
 | [`implicit-and-explicit-list-item-counters.html`](https://wpt.fyi/results/css/css-lists/implicit-and-explicit-list-item-counters.html) | Pass | 1 / 1 |  |  |
 | [`inline-block-list-marker.html`](https://wpt.fyi/results/css/css-lists/inline-block-list-marker.html) | Fail | 0 / 1 | BUG | only the antialiased edges of the glyphs of the markers of the `inline-block` list items differ (23 and 51 pixels; the positions of the boxes are the same, the cause of the subpixel difference is not identified); fails in Safari |
 | [`inline-block-list.html`](https://wpt.fyi/results/css/css-lists/inline-block-list.html) | Fail | 0 / 1 | BUG | only the antialiased edges of the glyphs of the markers of the `inline-block` list items differ (23 and 51 pixels; the positions of the boxes are the same, the cause of the subpixel difference is not identified); fails in Safari |
-| [`inline-list-marker.html`](https://wpt.fyi/results/css/css-lists/inline-list-marker.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `display: inline list-item`: an inline-level list item generates no `::marker` box (the markers are only generated for the block-level list items) |
+| [`inline-list-marker.html`](https://wpt.fyi/results/css/css-lists/inline-list-marker.html) | Pass | 1 / 1 |  |  |
 | [`inline-list-with-table-child.html`](https://wpt.fyi/results/css/css-lists/inline-list-with-table-child.html) | Pass | 1 / 1 |  |  |
-| [`inline-list.html`](https://wpt.fyi/results/css/css-lists/inline-list.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `display: inline list-item`: an inline-level list item generates no `::marker` box (the markers are only generated for the block-level list items) |
+| [`inline-list.html`](https://wpt.fyi/results/css/css-lists/inline-list.html) | Pass | 1 / 1 |  |  |
 | [`li-insert-child.html`](https://wpt.fyi/results/css/css-lists/li-insert-child.html) | Pass | 1 / 1 |  |  |
 | [`li-list-item-counter-001.html`](https://wpt.fyi/results/css/css-lists/li-list-item-counter-001.html) | Pass | 1 / 1 |  |  |
 | [`li-list-item-counter-002.html`](https://wpt.fyi/results/css/css-lists/li-list-item-counter-002.html) | Pass | 1 / 1 |  |  |
@@ -216,12 +216,12 @@
 | [`list-style-type-string-007.html`](https://wpt.fyi/results/css/css-lists/list-style-type-string-007.html) | Pass | 1 / 1 |  |  |
 | [`list-type-none-style-image.html`](https://wpt.fyi/results/css/css-lists/list-type-none-style-image.html) | Pass | 1 / 1 |  |  |
 | [`list-with-image-display-changed-001.html`](https://wpt.fyi/results/css/css-lists/list-with-image-display-changed-001.html) | Pass | 1 / 1 |  |  |
-| [`marker-counter.html`](https://wpt.fyi/results/css/css-lists/marker-counter.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the counter properties on `::marker`: `counter-increment`, `counter-set` and `counter-reset` do not apply to the `::marker` pseudo-element (they are not in the list of the properties that apply to it in css-lists-3 and css-pseudo-4; only Firefox applies them) |
+| [`marker-counter.html`](https://wpt.fyi/results/css/css-lists/marker-counter.html) | Pass | 1 / 1 |  |  |
 | [`marker-dynamic-content-change.html`](https://wpt.fyi/results/css/css-lists/marker-dynamic-content-change.html) | Pass | 1 / 1 |  |  |
-| [`marker-quotes.html`](https://wpt.fyi/results/css/css-lists/marker-quotes.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `quotes` on `::marker`: the property does not apply to the `::marker` pseudo-element, whose `open-quote` and `close-quote` use the quotes inherited from the list item (fails in Chrome) |
+| [`marker-quotes.html`](https://wpt.fyi/results/css/css-lists/marker-quotes.html) | Pass | 1 / 1 |  |  |
 | [`marker-webkit-text-fill-color.html`](https://wpt.fyi/results/css/css-lists/marker-webkit-text-fill-color.html) | Pass | 1 / 1 |  |  |
 | [`nested-marker-dynamic.html`](https://wpt.fyi/results/css/css-lists/nested-marker-dynamic.html) | Pass | 1 / 1 |  |  |
-| [`nested-marker-styling.html`](https://wpt.fyi/results/css/css-lists/nested-marker-styling.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the styles of the nested pseudo-elements `::before::marker` and `::after::marker`: the marker of a `::before` or `::after` list item is an anonymous box that inherits from the pseudo-element (the `content` of the `div::before::marker` rule is not applied) |
+| [`nested-marker-styling.html`](https://wpt.fyi/results/css/css-lists/nested-marker-styling.html) | Pass | 1 / 1 |  |  |
 | [`nested-marker.html`](https://wpt.fyi/results/css/css-lists/nested-marker.html) | Pass | 1 / 1 |  |  |
 | [`ol-change-display-type.html`](https://wpt.fyi/results/css/css-lists/ol-change-display-type.html) | Pass | 1 / 1 |  |  |
 | [`outside-marker-covered-by-relpos-block-link.html`](https://wpt.fyi/results/css/css-lists/outside-marker-covered-by-relpos-block-link.html) | Fail | 0 / 1 | BUG | the outside marker of a list item is painted over the background of a relatively positioned block of the list item that covers it: the marker, which the line box of the positioned block places, is a child fragment of that block and is painted with its content instead of with the content of the list item, under the positioned block (fails in Safari) |

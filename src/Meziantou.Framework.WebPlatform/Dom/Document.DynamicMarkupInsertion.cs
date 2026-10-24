@@ -128,8 +128,9 @@ public partial class Document
     {
         ThrowIfDynamicMarkupInsertionIsNotAllowed();
 
-        // Without a running script (a call from .NET), the document is its own entry document
-        var entryDocument = EntryGlobalDocument ?? this;
+        // The entry document is not tracked in the promise jobs (e.g. after an await): the document of the incumbent realm
+        // is used. Without a running script (a call from .NET), the document is its own entry document.
+        var entryDocument = EntryGlobalDocument ?? (BrowsingContext?.Options.ScriptEngine?.GetCurrentGlobal() as Window)?.Document ?? this;
         if (!IsSameOrigin(this, entryDocument))
             throw new DomException("The document is not same origin with the entry document", "SecurityError");
 

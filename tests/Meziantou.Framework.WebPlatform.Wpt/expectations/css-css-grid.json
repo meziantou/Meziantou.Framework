@@ -1827,30 +1827,10 @@
     "total": 12
   },
   "css/css-grid/alignment/grid-self-baseline-not-applied-if-sizing-cyclic-dependency-002.html": {
-    "total": 24,
-    "failures": {
-      ".inline-grid 1": "FAIL",
-      ".inline-grid 19": "FAIL",
-      ".inline-grid 2": "FAIL",
-      ".inline-grid 20": "FAIL",
-      ".inline-grid 21": "FAIL",
-      ".inline-grid 22": "FAIL",
-      ".inline-grid 23": "FAIL",
-      ".inline-grid 24": "FAIL",
-      ".inline-grid 3": "FAIL",
-      ".inline-grid 4": "FAIL",
-      ".inline-grid 5": "FAIL",
-      ".inline-grid 6": "FAIL"
-    }
+    "total": 24
   },
   "css/css-grid/alignment/grid-self-baseline-not-applied-if-sizing-cyclic-dependency-003.html": {
-    "total": 6,
-    "failures": {
-      ".grid 2": "FAIL",
-      ".grid 3": "FAIL",
-      ".grid 5": "FAIL",
-      ".grid 6": "FAIL"
-    }
+    "total": 6
   },
   "css/css-grid/alignment/replaced-alignment-with-aspect-ratio-001.html": {
     "reftest": "PASS"
@@ -4733,13 +4713,13 @@
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/baseline/column-grid-lanes-item-baseline-subgrid-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/baseline/column-grid-lanes-item-baseline-subgrid-002.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/baseline/column-grid-lanes-item-baseline-subgrid-003.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/baseline/column-grid-lanes-item-baseline-subgrid-004.html": {
     "reftest": "PASS"
@@ -6686,10 +6666,7 @@
     "total": 4
   },
   "css/css-grid/layout-algorithm/grid-intrinsic-width-minmax-tracks-001.html": {
-    "total": 35,
-    "failures": {
-      ".grid 23": "FAIL"
-    }
+    "total": 35
   },
   "css/css-grid/layout-algorithm/grid-item-margin-auto-columns-rows-001.html": {
     "total": 4
@@ -7466,13 +7443,7 @@
     "total": 12
   },
   "css/css-grid/subgrid/subgrid-baseline-009.html": {
-    "total": 12,
-    "failures": {
-      ".item 10": "FAIL",
-      ".item 7": "FAIL",
-      ".item 8": "FAIL",
-      ".item 9": "FAIL"
-    }
+    "total": 12
   },
   "css/css-grid/subgrid/subgrid-baseline-010.html": {
     "total": 2

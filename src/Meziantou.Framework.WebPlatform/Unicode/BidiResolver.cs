@@ -99,6 +99,23 @@ internal sealed class BidiResolver
     /// <summary>The paragraphs of the text (rule P1).</summary>
     public IReadOnlyList<BidiParagraph> Paragraphs => _paragraphs;
 
+    /// <summary>
+    /// Whether the code unit at <paramref name="index"/> is removed by rule X9 (an embedding or override initiator, a PDF, or a
+    /// boundary neutral): its level is a convention (see <see cref="SetRemovedLevel"/>).
+    /// </summary>
+    public bool IsRemovedByRuleX9(int index) => IsRemovedByX9(_initialTypes[index]);
+
+    /// <summary>
+    /// Changes the level of a code unit removed by rule X9: these characters are not displayed, their retained level (the one of
+    /// the preceding character, https://www.unicode.org/reports/tr9/#Retaining_Explicit_Formatting_Characters) only decides
+    /// where they are in the visual order.
+    /// </summary>
+    public void SetRemovedLevel(int index, byte level)
+    {
+        Debug.Assert(IsRemovedByRuleX9(index));
+        _levels[index] = level;
+    }
+
     /// <summary>Returns the embedding levels of the code units of a single-line text (rules P1 to L1).</summary>
     public static byte[] GetLevels(ReadOnlySpan<char> text, BidiParagraphDirection direction)
     {

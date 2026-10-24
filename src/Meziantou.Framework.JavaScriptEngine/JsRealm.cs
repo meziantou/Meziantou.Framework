@@ -167,6 +167,39 @@ public sealed partial class JsRealm
         }
     }
 
+    /// <summary>
+    /// Creates a text module (CreateTextModule, the import text proposal): a module whose default export is the text,
+    /// imported with <c>with { type: "text" }</c>.
+    /// </summary>
+    public JsSyntheticModule CreateTextModule(string text, string? url = null, object? hostDefined = null)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var value = JsValue.FromString(text);
+        return new JsSyntheticModule(this, url, hostDefined, ["default"], module => module.SetExport("default", value));
+    }
+
+    /// <summary>
+    /// Creates a bytes module (CreateBytesModule, the import bytes proposal): a module whose default export is a
+    /// Uint8Array over an immutable ArrayBuffer that contains a copy of the bytes, imported with <c>with { type: "bytes" }</c>.
+    /// </summary>
+    /// <exception cref="JsException">The ArrayBuffer cannot be allocated (a RangeError).</exception>
+    public JsSyntheticModule CreateBytesModule(ReadOnlySpan<byte> bytes, string? url = null, object? hostDefined = null)
+    {
+        using var scope = Engine.Enter();
+        var previousRealm = Engine.CurrentRealm;
+        Engine.CurrentRealm = this;
+        try
+        {
+            var buffer = JsArrayBuffer.CreateImmutable(this, bytes.Length, bytes);
+            var value = new JsValue(JsTypedArray.Create(this, TypedArrayElementType.Uint8, buffer, byteOffset: 0, bytes.Length));
+            return new JsSyntheticModule(this, url, hostDefined, ["default"], module => module.SetExport("default", value));
+        }
+        finally
+        {
+            Engine.CurrentRealm = previousRealm;
+        }
+    }
+
     /// <summary>Creates a synthetic module whose exports are set by <paramref name="evaluate"/> with <see cref="JsSyntheticModule.SetExport"/> when the module is evaluated.</summary>
     public JsSyntheticModule CreateSyntheticModule(IEnumerable<string> exportNames, Action<JsSyntheticModule> evaluate, string? url = null, object? hostDefined = null)
     {

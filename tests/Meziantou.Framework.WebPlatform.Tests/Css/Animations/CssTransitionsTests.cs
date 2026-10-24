@@ -138,6 +138,26 @@ public sealed class CssTransitionsTests : IDisposable
         Assert.Single(target.GetAnimations());
     }
 
+    [Theory]
+    [InlineData("custom", 1)]
+    [InlineData("circle", 0)]
+    public void ListStyleTypeDeclaredInAnotherTree(string counterStyle, int transitions)
+    {
+        // The name of an author-defined counter style is a tree-scoped reference: the same name in another tree is another value
+        var document = Load($$"""
+            <style>@counter-style custom { system: cyclic; symbols: "*"; } #host.document::part(item) { list-style-type: {{counterStyle}}; }</style>
+            <div id=host class=shadow><template shadowrootmode=open>
+            <style>@counter-style custom { system: cyclic; symbols: "*"; } #item { display: list-item; transition: list-style-type 100s allow-discrete; } :host(.shadow) #item { list-style-type: {{counterStyle}}; }</style>
+            <div id=item part=item>x</div></template></div>
+            """);
+        var host = (HtmlElement)document.GetElementById("host")!;
+        var item = host.ShadowRoot!.GetElementById("item")!;
+        Assert.Equal(counterStyle, GetComputed(item, "list-style-type"));
+        host.ClassName = "document";
+        Assert.Equal(counterStyle, GetComputed(item, "list-style-type"));
+        Assert.Equal(transitions, item.GetAnimations().Count);
+    }
+
     [Fact]
     public void NoTransitionWithoutBeforeChangeStyle()
     {

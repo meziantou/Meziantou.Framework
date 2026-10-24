@@ -194,7 +194,8 @@ internal sealed class ComputedStyleDeclarations
     /// <summary>
     /// Returns whether the element is in the flat tree (https://drafts.csswg.org/css-scoping/#flat-tree): the children of a
     /// shadow host are in the flat tree only when they are assigned to a slot (which must be in the flat tree), and the
-    /// children of a slot (its fallback content) only when no node is assigned to the slot.
+    /// children of a slot (its fallback content) only when no node is assigned to the slot. As in Gecko, the media elements have
+    /// a user agent shadow tree without slot (https://github.com/whatwg/html/issues/3748): their children are not in the flat tree.
     /// </summary>
     private static bool IsInFlatTree(Element element)
     {
@@ -213,6 +214,7 @@ internal sealed class ComputedStyleDeclarations
                     return true;
                 case Element { AttachedShadowRoot: not null }:
                 case HtmlSlotElement { AssignedNodesList.Count: > 0 }:
+                case HtmlMediaElement:
                     return false;
                 case ShadowRoot shadowRoot:
                     node = shadowRoot.Host;

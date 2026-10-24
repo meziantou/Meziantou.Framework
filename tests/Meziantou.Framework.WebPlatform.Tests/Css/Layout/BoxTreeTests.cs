@@ -259,12 +259,36 @@ public sealed class BoxTreeTests : IDisposable
         """);
 
     [Fact]
+    public void ListItems_MarkerOfAPseudoElementIsStyled() => AssertBody("<style>div::before { content: 'a'; display: list-item; list-style-position: inside } div::before::marker { content: 'm' }</style><div id=d>b</div>", """
+        block <body> block-children
+          block <div#d> block-children
+            block list-item <div#d>::before inline-children
+              inline <div#d>::before
+                generated-text "m"
+              generated-text "a"
+            block anonymous inline-children
+              text "b"
+        """);
+
+    [Fact]
     public void Counters_PseudoElementWithoutBoxDoesNotChangeTheCounters() => AssertBody("<style>#d::before { content: 'x'; display: none; counter-increment: c 10 } p::before { content: counter(c) }</style><div id=d><p></p></div>", """
         block <body> block-children
           block <div#d> block-children
             block <p> inline-children
               inline <p>::before
                 generated-text "0"
+        """);
+
+    [Fact]
+    public void Counters_ReversedInitialValueCountsPseudoElements() => AssertBody("<style>#d { counter-reset: reversed(c); counter-increment: c -1 } #d::before { content: counter(c); counter-increment: c -2 } p::after { content: counter(c); counter-increment: c -3 }</style><div id=d><p></p></div>", """
+        block <body> block-children
+          block <div#d> block-children
+            block anonymous inline-children
+              inline <div#d>::before
+                generated-text "6"
+            block <p> inline-children
+              inline <p>::after
+                generated-text "3"
         """);
 
     [Fact]
@@ -816,7 +840,7 @@ public sealed class BoxTreeTests : IDisposable
     [InlineData("<div id=t>a</div>", "Box", false)]
     [InlineData("<div style='display: none'><p id=t>a</p></div>", "DisplayNone", false)]
     [InlineData("<div id=t style='display: contents'>a</div>", "Contents", false)]
-    [InlineData("<video><p id=t>a</p></video>", "ReplacedContents", false)]
+    [InlineData("<video><p id=t>a</p></video>", "NoStyle", false)]
     [InlineData("<select><option id=t>a</option></select>", "ReplacedContents", false)]
     [InlineData("<select style='appearance: base-select'><option id=t>a</option></select>", "DisplayNone", false)]
     [InlineData("<select multiple style='appearance: base-select'><option id=t>a</option></select>", "Box", false)]

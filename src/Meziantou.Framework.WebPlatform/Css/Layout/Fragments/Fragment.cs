@@ -926,8 +926,9 @@ internal sealed class BoxFragment : Fragment
     /// <summary>
     /// The overflow clip edge (https://drafts.csswg.org/css-overflow-3/#overflow-clip-edge), in the coordinates of the fragment:
     /// for a scroll container, its padding box (clamped by <c>overflow-clip-margin</c>, which can only shrink it); for
-    /// <c>overflow: clip</c> and paint containment, the box of <c>overflow-clip-margin</c> (the padding box by default) extended
-    /// by its length (https://drafts.csswg.org/css-overflow-4/#overflow-clip-margin). Only the axes that clip are clipped.
+    /// <c>overflow: clip</c> and paint containment, the box of <c>overflow-clip-margin</c> extended by its length
+    /// (https://drafts.csswg.org/css-overflow-4/#overflow-clip-margin: the box "defaults to padding-box on non-replaced elements,
+    /// or content-box on replaced elements"). Only the axes that clip are clipped.
     /// </summary>
     public PhysicalRect OverflowClipRect
     {
@@ -952,7 +953,7 @@ internal sealed class BoxFragment : Fragment
             double GetEdge(OverflowClipMargin margin, PhysicalSide side)
             {
                 // "the border-box value ignores any specified offset" for a scroll container
-                var box = margin.Box ?? VisualBox.PaddingBox;
+                var box = margin.Box ?? (IsReplacedElement() ? VisualBox.ContentBox : VisualBox.PaddingBox);
                 var rect = box switch
                 {
                     VisualBox.ContentBox => ContentBoxRect,
@@ -969,6 +970,26 @@ internal sealed class BoxFragment : Fragment
                 };
             }
         }
+    }
+
+    /// <summary>
+    /// Whether the box is a replaced element (https://drafts.csswg.org/css-display-3/#replaced-element): an atomic box of an
+    /// embedded content element or a generated image, but not a form control (its parts are not a replaced content).
+    /// </summary>
+    private bool IsReplacedElement()
+    {
+        if (Box.Kind != ContainerBoxKind.Replaced)
+            return false;
+
+        if (Box.PseudoElement is not null)
+            return true;
+
+        return Box.Element switch
+        {
+            Dom.HtmlInputElement input => input.InputType == Dom.InputType.Image,
+            Dom.HtmlTextAreaElement or Dom.HtmlSelectElement or Dom.HtmlMeterElement or Dom.HtmlProgressElement => false,
+            _ => true,
+        };
     }
 
     /// <summary>
@@ -1033,6 +1054,23 @@ internal sealed class BoxFragment : Fragment
         _flags &= ~OverflowFlags.OverflowComputed;
     }
 
+    /// <summary>
+    /// The area of a line-clamp container that its floats are not clipped from (https://drafts.csswg.org/css-overflow-4/#line-clamp:
+    /// they are clipped to its block-end content edge, see <see cref="IsLineClampContainer"/>): "pieces of floats that get clipped
+    /// away" are not scrollable overflow.
+    /// </summary>
+    private PhysicalRect GetLineClampFloatClip()
+    {
+        const double Extent = 1e7;
+        var content = ContentBoxRect;
+        return WritingDirection.BlockEnd switch
+        {
+            PhysicalSide.Bottom => new PhysicalRect(-Extent, -Extent, 2 * Extent, content.Bottom + Extent),
+            PhysicalSide.Left => new PhysicalRect(content.Left, -Extent, Extent, 2 * Extent),
+            _ => new PhysicalRect(-Extent, -Extent, content.Right + Extent, 2 * Extent),
+        };
+    }
+
     private void EnsureOverflow()
     {
         if ((_flags & OverflowFlags.OverflowComputed) != OverflowFlags.None)
@@ -1064,6 +1102,7 @@ internal sealed class BoxFragment : Fragment
         var excludesUnreachable = IsScrollContainer || isViewport;
         var padding = excludesUnreachable ? PaddingBoxRect : default;
         var scrollOrigin = excludesUnreachable ? ScrollContainers.GetScrollOrigin(Box, WritingDirection) : default;
+        PhysicalRect? floatClip = IsLineClampContainer ? GetLineClampFloatClip() : null;
         foreach (var child in ChildrenSpan)
         {
             // The fixed positioned boxes do not scroll with the viewport (https://drafts.csswg.org/css-overflow-3/#scrollable):
@@ -1087,7 +1126,7 @@ internal sealed class BoxFragment : Fragment
                 // "The border boxes of all boxes for which it is the containing block and whose border boxes are positioned not
                 // wholly within its unreachable scrollable overflow region": the region before the scroll origin
                 var childContents = PhysicalRect.Empty;
-                AddOverflow(child, child.Offset, ref childContents, ref ink);
+                AddOverflow(child, child.Offset, ref childContents, ref ink, floatClip);
                 if (!IsWhollyUnreachable(childContents, padding, scrollOrigin))
                 {
                     contents = Unite(contents, childContents);
@@ -1096,7 +1135,7 @@ internal sealed class BoxFragment : Fragment
                 continue;
             }
 
-            AddOverflow(child, child.Offset, ref contents, ref ink);
+            AddOverflow(child, child.Offset, ref contents, ref ink, floatClip);
         }
 
         // The column boxes of a multi-column container contribute their border boxes, as the boxes it is the containing block of
@@ -1115,7 +1154,7 @@ internal sealed class BoxFragment : Fragment
         inkOverflow = ink;
         return contents;
 
-        static void AddOverflow(Fragment fragment, PhysicalOffset offset, ref PhysicalRect scrollable, ref PhysicalRect ink)
+        static void AddOverflow(Fragment fragment, PhysicalOffset offset, ref PhysicalRect scrollable, ref PhysicalRect ink, PhysicalRect? floatClip)
         {
             // https://drafts.csswg.org/css-overflow-4/#line-clamp: the content hidden after the clamp point is not painted, and it is
             // not scrollable overflow (WPT css/css-overflow/line-clamp/line-clamp-021.html)
@@ -1155,7 +1194,21 @@ internal sealed class BoxFragment : Fragment
                         boxInk = LayoutTransforms.TransformRect(boxInk, matrix);
                     }
 
-                    scrollable = Unite(scrollable, boxScrollable.Translate(offset));
+                    // "Border boxes with zero area do not affect the scrollable overflow area": as in the browsers, this applies to
+                    // the positioned boxes, without contents that overflow them (the position of the other boxes contributes,
+                    // see Unite)
+                    if (boxScrollable != box.BorderBoxRect || (box.Size.Width > 0 && box.Size.Height > 0) || !box.Box.Style.Layout.IsPositioned)
+                    {
+                        // (the floats of a line-clamp container are clipped to its block-end content edge, see IsLineClampContainer)
+                        var translated = boxScrollable.Translate(offset);
+                        if (floatClip is { } clampClip && box.Box.IsOutOfFlow && !PositionedLayout.IsAbsolutelyPositioned(box.Box))
+                        {
+                            translated = Clip(translated, clampClip, clipX: true, clipY: true);
+                        }
+
+                        scrollable = Unite(scrollable, translated);
+                    }
+
                     ink = ink.Union(boxInk.Translate(offset));
                     break;
 
@@ -1167,7 +1220,7 @@ internal sealed class BoxFragment : Fragment
                         var lineScrollable = PhysicalRect.Empty;
                         foreach (var child in line.ChildrenSpan)
                         {
-                            AddOverflow(child, offset + child.Offset, ref lineScrollable, ref ink);
+                            AddOverflow(child, offset + child.Offset, ref lineScrollable, ref ink, floatClip);
                         }
 
                         scrollable = Unite(scrollable, Clip(lineScrollable, nonHanging.Translate(offset), clipX: true, clipY: true));
@@ -1176,7 +1229,7 @@ internal sealed class BoxFragment : Fragment
 
                     foreach (var child in line.ChildrenSpan)
                     {
-                        AddOverflow(child, offset + child.Offset, ref scrollable, ref ink);
+                        AddOverflow(child, offset + child.Offset, ref scrollable, ref ink, floatClip);
                     }
 
                     break;

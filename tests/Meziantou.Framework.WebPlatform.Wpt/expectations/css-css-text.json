@@ -305,7 +305,7 @@
     "reftest": "PASS"
   },
   "css/css-text/hyphens/i18n/hyphens-i18n-auto-004.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/hyphens/i18n/hyphens-i18n-auto-005.html": {
     "reftest": "FAIL"
@@ -323,7 +323,7 @@
     "reftest": "PASS"
   },
   "css/css-text/hyphens/i18n/hyphens-i18n-manual-004.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/hyphens/i18n/hyphens-i18n-manual-005.html": {
     "reftest": "FAIL"
@@ -3187,7 +3187,7 @@
     "reftest": "PASS"
   },
   "css/css-text/text-autospace/text-autospace-mixed-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/text-autospace/text-autospace-no-001.html": {
     "reftest": "PASS"
@@ -3491,13 +3491,13 @@
     "reftest": "PASS"
   },
   "css/css-text/text-spacing-trim/text-spacing-trim-colon-001.html?class=chws,htb": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/text-spacing-trim/text-spacing-trim-colon-001.html?class=chws,vrl": {
     "reftest": "FAIL"
   },
   "css/css-text/text-spacing-trim/text-spacing-trim-colon-001.html?class=halt,htb": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/text-spacing-trim/text-spacing-trim-colon-001.html?class=halt,vrl": {
     "reftest": "FAIL"
@@ -3614,31 +3614,31 @@
     "reftest": "PASS"
   },
   "css/css-text/text-spacing-trim/text-spacing-trim-quote-001.html?class=chws,htb&lang=zh-hans": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/text-spacing-trim/text-spacing-trim-quote-001.html?class=chws,htb&lang=zh-hant": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/text-spacing-trim/text-spacing-trim-quote-001.html?class=chws,vrl&lang=zh-hans": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/text-spacing-trim/text-spacing-trim-quote-001.html?class=chws,vrl&lang=zh-hant": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/text-spacing-trim/text-spacing-trim-quote-001.html?class=halt,htb&lang=ja": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/text-spacing-trim/text-spacing-trim-quote-001.html?class=halt,htb&lang=zh-hans": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/text-spacing-trim/text-spacing-trim-quote-001.html?class=halt,htb&lang=zh-hant": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/text-spacing-trim/text-spacing-trim-quote-001.html?class=halt,vrl&lang=zh-hans": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/text-spacing-trim/text-spacing-trim-quote-001.html?class=halt,vrl&lang=zh-hant": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/text-spacing-trim/text-spacing-trim-space-all-001.html?class=chws": {
     "reftest": "PASS"

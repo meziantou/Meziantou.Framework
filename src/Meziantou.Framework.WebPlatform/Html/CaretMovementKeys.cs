@@ -54,7 +54,7 @@ internal static class CaretMovementKeys
         return true;
     }
 
-    /// <summary>Moves the selection of the value of a text control (an input whose selection applies, or a textarea).</summary>
+    /// <summary>Moves the selection of the value of a text control (an input whose type allows the entry of text, or a textarea).</summary>
     private static bool MoveInTextControl(HtmlElement element, string key, bool extend, bool control)
     {
         string value;
@@ -75,6 +75,14 @@ internal static class CaretMovementKeys
                 start = (int)inputStart;
                 end = (int)inputEnd;
                 direction = input.SelectionDirection;
+                break;
+
+            case IEditableTextControl { IsTextEditor: true } editable:
+                // The caret of the inputs whose selection is not exposed (number and email) moves in the text they show
+                value = editable.EditValue;
+                start = editable.EditSelectionStart;
+                end = editable.EditSelectionEnd;
+                direction = editable.EditSelectionDirection;
                 break;
 
             default:
@@ -159,9 +167,13 @@ internal static class CaretMovementKeys
         {
             area.SetSelectionRange((uint)newStart, (uint)newEnd, newDirection);
         }
+        else if (element is HtmlInputElement { SelectionStart: not null } input)
+        {
+            input.SetSelectionRange((uint)newStart, (uint)newEnd, newDirection);
+        }
         else
         {
-            ((HtmlInputElement)element).SetSelectionRange((uint)newStart, (uint)newEnd, newDirection);
+            ((IEditableTextControl)element).SetUserSelection(newStart, newEnd, newDirection);
         }
 
         // As in the browsers, the value is scrolled to reveal the caret

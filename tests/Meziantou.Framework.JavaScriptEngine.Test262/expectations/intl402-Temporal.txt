@@ -1,2 +1,0 @@
-intl402/Temporal/ZonedDateTime/links.js:sloppy
-intl402/Temporal/ZonedDateTime/links.js:strict

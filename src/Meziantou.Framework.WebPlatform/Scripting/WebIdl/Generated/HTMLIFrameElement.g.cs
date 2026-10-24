@@ -42,6 +42,8 @@ internal static class Binding_HTMLIFrameElement<TAdapter, TValue> where TAdapter
     private static TValue Get_contentWindow(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlIFrameElement>(t, Binding); return r.Wrap(o.ContentWindow); }
     private static TValue Get_credentialless(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlIFrameElement>(t, Binding); return r.FromBoolean(o.Credentialless); }
     private static void Set_credentialless(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlIFrameElement>(t, Binding); var x = r.ToBoolean(v); o.Credentialless = x; }
+    private static TValue Get_csp(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlIFrameElement>(t, Binding); return r.FromString(o.Csp); }
+    private static void Set_csp(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlIFrameElement>(t, Binding); var x = r.ToDomString(v); o.Csp = x; }
     private static TValue Get_align(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlIFrameElement>(t, Binding); return r.FromString(o.Align); }
     private static void Set_align(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlIFrameElement>(t, Binding); var x = r.ToDomString(v); o.Align = x; }
     private static TValue Get_scrolling(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlIFrameElement>(t, Binding); return r.FromString(o.Scrolling); }
@@ -75,6 +77,7 @@ internal static class Binding_HTMLIFrameElement<TAdapter, TValue> where TAdapter
         r.DefineAttribute(instanceTarget, "contentDocument", Get_contentDocument, null);
         r.DefineAttribute(instanceTarget, "contentWindow", Get_contentWindow, null);
         r.DefineAttribute(instanceTarget, "credentialless", Get_credentialless, Set_credentialless);
+        r.DefineAttribute(instanceTarget, "csp", Get_csp, Set_csp);
         r.DefineAttribute(instanceTarget, "align", Get_align, Set_align);
         r.DefineAttribute(instanceTarget, "scrolling", Get_scrolling, Set_scrolling);
         r.DefineAttribute(instanceTarget, "frameBorder", Get_frameBorder, Set_frameBorder);

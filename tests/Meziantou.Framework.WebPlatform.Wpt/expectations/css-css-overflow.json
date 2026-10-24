@@ -15,7 +15,7 @@
     "total": 1
   },
   "css/css-overflow/before-after-pseudo-element-scrolling.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/button-with-scrollable-descendant.html": {
     "reftest": "PASS"
@@ -234,7 +234,7 @@
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/block-ellipsis-035.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/block-ellipsis-036.html": {
     "reftest": "PASS"
@@ -765,7 +765,7 @@
     "total": 1
   },
   "css/css-overflow/line-clamp/line-clamp-text-overflow-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-with-abspos-001.html": {
     "reftest": "PASS"
@@ -927,7 +927,7 @@
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-with-floats-010.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-with-floats-011.html": {
     "reftest": "PASS"
@@ -966,7 +966,7 @@
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-008.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-009.html": {
     "reftest": "PASS"
@@ -1341,7 +1341,7 @@
     "reftest": "PASS"
   },
   "css/css-overflow/overflow-clip-margin-svg.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/overflow-clip-margin-visual-box-and-value-with-border-radius.html": {
     "reftest": "FAIL"
@@ -1401,7 +1401,7 @@
     "reftest": "PASS"
   },
   "css/css-overflow/overflow-img-scroll-non-replaced.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/overflow-img-scroll-replaced.html": {
     "reftest": "PASS"
@@ -1446,7 +1446,7 @@
     "total": 1
   },
   "css/css-overflow/overflow-replaced-element-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/overflow-rtl-scroll-left.html": {
     "total": 1
@@ -1648,16 +1648,7 @@
     "reftest": "PASS"
   },
   "css/css-overflow/scroll-markers/column-scroll-marker-005.html": {
-    "total": 8,
-    "failures": {
-      "Scroll fifth column into view": "FAIL",
-      "Scroll fourth column into view": "FAIL",
-      "Scroll fourth column into view again": "FAIL",
-      "Scroll second column into view": "FAIL",
-      "Scroll second column into view again": "FAIL",
-      "Scroll third column into view": "FAIL",
-      "Scroll third column into view again": "FAIL"
-    }
+    "total": 8
   },
   "css/css-overflow/scroll-markers/column-scroll-marker-006.html": {
     "reftest": "PASS"
@@ -1702,11 +1693,7 @@
     "total": 5
   },
   "css/css-overflow/scroll-markers/column-scroll-marker-focus-004.html": {
-    "total": 11,
-    "failures": {
-      "Focus column #10": "FAIL",
-      "Focus column #9": "FAIL"
-    }
+    "total": 11
   },
   "css/css-overflow/scroll-markers/column-scroll-marker-group-style-remove.html": {
     "reftest": "PASS"
@@ -1772,11 +1759,7 @@
     "total": 1
   },
   "css/css-overflow/scroll-markers/scroll-button-link-activation.html": {
-    "total": 4,
-    "failures": {
-      "::scroll-button of a scroll container inside an <a href> does not follow the link": "FAIL",
-      "::scroll-button of an <a href> scroll container does not follow the link": "FAIL"
-    }
+    "total": 4
   },
   "css/css-overflow/scroll-markers/scroll-button-on-object.html": {
     "reftest": "PASS"
@@ -2013,7 +1996,7 @@
     "reftest": "PASS"
   },
   "css/css-overflow/scroll-markers/scroll-marker-group-keeps-active-in-view.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "PASS"
   },
   "css/css-overflow/scroll-markers/scroll-marker-group-layout-parent.html": {
     "reftest": "PASS"
@@ -2046,7 +2029,7 @@
     "total": 1
   },
   "css/css-overflow/scroll-markers/scroll-marker-group-snap-aligns-to-active.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/scroll-markers/scroll-marker-group-style-and-scroll-container-query.html": {
     "total": 2
@@ -2234,8 +2217,6 @@
   "css/css-overflow/scrollable-overflow-padding.html": {
     "total": 30,
     "failures": {
-      "scrollable-container 26": "FAIL",
-      "scrollable-container 28": "FAIL",
       "scrollable-container 30": "FAIL"
     }
   },

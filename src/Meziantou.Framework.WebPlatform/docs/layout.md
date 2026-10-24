@@ -2638,7 +2638,7 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
   and there is no break between the block-start edge of the fieldset and it. A
   break is forced by `break-before`/`break-after: column | always | all` (propagated from the first/last in-flow children through
   the block containers without borders and paddings, and, as in Blink, from the items of the first/last line or track of a
-  flex or grid container whatever its borders and paddings; not out of a box with layout containment), violates the rules (`BreakAppeal.Avoid`)
+  flex or grid container and from the first/last row of a table whatever its borders and paddings; not out of a box with layout containment), violates the rules (`BreakAppeal.Avoid`)
   with `avoid`/`avoid-column`, `break-inside: avoid` on an ancestor, `orphans` and `widows` (`LineBreakInfo`: as in Blink, the
   line boxes before a break are counted in the fragmentainer, the fragment of the block container; when no break has
   `orphans` line boxes before it and `widows` after it, the first break with enough line boxes before it is taken); the
@@ -2727,7 +2727,8 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     container; a forced break before an item that overlaps the previous one (a negative margin) is taken after the
     previous item, and the item starts the next fragmentainer at the offset its margin gives it, before the start of the
     fragmentainer (`FragmentationFlow.GetForcedStart`: its position in the strip is before the break).
-  - **Boxes whose block size does not follow their contents** (a specified block size, a box as tall as its `max-height`;
+  - **Boxes whose block size does not follow their contents** (a specified block size, a box as tall as its `max-height`,
+    an item of a grid lanes container whose lanes are rows that is shorter than its contents, as a grid item in a fixed row;
     also the flex and grid containers, and the anonymous content box of a fieldset that is one; not the ones that contain a
     column spanner): "content overflowing the content edge of a fixed-size box is considered parallel to the content after the
     fixed-size box". The box is a track of one item in the flow of its container (`FragmentationFlow.TryAddDefiniteBox`,
@@ -2735,7 +2736,9 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     fragmentainers, whatever the breaks of its contents: the block size it has left is what its fragments did not consume),
     and its contents have their own flow, which is broken at the end of each fragmentainer and continues after the end of the
     box; the flow of the container breaks beside the contents that overflow the box. The box extends over monolithic contents
-    that overflow the fragmentainer, up to its block size. When the box fits in the fragmentainer, its first content is placed
+    that overflow the fragmentainer, up to its block size. As in Blink, its block-end border and padding (when it does not
+    repeat them) are not broken: the box breaks before them (its fragment ends there) when its content progresses, and its
+    first fragment contains its block-start border and padding. When the box fits in the fragmentainer, its first content is placed
     with it even when it is monolithic and overflows the fragmentainer
     ([csswg-drafts#6056](https://github.com/w3c/csswg-drafts/issues/6056), `ParallelItem.LeadingMonolithicEnd`: the box is not
     pushed because of its first line or monolithic child; also for the items with a definite block size). A box with
@@ -2789,7 +2792,10 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
   - A float is pushed when it is not at the start of the fragmentainer (the block-start edges repeated by
     `box-decoration-break: clone` do not count) and it is monolithic or has `break-inside: avoid`, or its first content (a
     line box, a monolithic box) does not fit, or its border box fits but not its block-end margin (the margin of a float is
-    not truncated, [csswg-drafts#9191](https://github.com/w3c/csswg-drafts/issues/9191)).
+    not truncated, [csswg-drafts#9191](https://github.com/w3c/csswg-drafts/issues/9191)). As in Gecko, a float with a forced
+    break before it (`break-before`, [CSS 2 §13.3.1](https://drafts.csswg.org/css2/#page-break-props)) is also pushed when it
+    is not at the start of the fragmentainer. The floats inside a float that is pushed are not pushed in the same pass (they
+    move with it).
   - The strip is then laid out again with the float placed at or below the position of the strip where the next
     fragmentainer starts (`LayoutContext.FloatPushes`; the positions of the strip are converted to the block formatting
     context of the float with `LayoutContext.FloatPlacements`): the line boxes and the boxes after the float that are still
@@ -2811,6 +2817,9 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     floats that do not fit in the balanced columns are then pushed.
   - A break in the empty block size of a float at a position where the in-flow content has a possible break is that break
     (between two line boxes: with their `orphans` and `widows`).
+  - As in Blink, a float that continues in a fragmentainer after a break is placed again at its start: its fragment there is
+    moved toward its side, beside the floats of the same side that also continue there before it (the floats that ended no
+    longer push it; the content beside it is not laid out again).
 - **Repeated table headers and footers** ([CSS Tables 3](https://drafts.csswg.org/css-tables-3/#repeated-headers), as in
   Blink in the columns, the only browser that implements them there; `RepeatedSections`): the `table-header-group` and the
   `table-footer-group` of a table that have `break-inside: avoid` and are not taller than a quarter of the fragmentainer
@@ -2929,7 +2938,8 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
   columns. `box-decoration-break: slice` keeps the block-start border and padding on the first fragment and the block-end ones on
   the fragment where the border box ends ("the box is rendered as if it were not fragmented, and then sliced by the breaks":
   the fragments know the box they make when stitched together, `BoxFragment.StitchedBox`/`StitchedOffset`, which positions
-  their background images and slices their shadows; the corners at the breaks are square); `clone` repeats them on every fragment (the breaker reserves the block-end edges before a
+  their background images and slices their shadows; the corners at the breaks are square); `clone` repeats them on every fragment of its border box (not at the breaks after its end, in the contents
+  that overflow it, as in Blink: `VisitContext.CloneBoxes`; the breaker reserves the block-end edges before a
   break and displays the content after the repeated block-start edges, `FragmentainerBreak.DisplayOffset`; the fragments of
   the contents that are broken end before the repeated block-end edges; as in Blink, a break after the repeated
   block-start edges of a box that starts its fragmentainer is not possible, `BreakCandidate.OnlyEdgesFrom`: the first
@@ -3025,7 +3035,15 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   `min-*` and `max-*`) when they are not `auto`: the automatic margins share what remains (they may be negative,
   [csswg-drafts#8508](https://github.com/w3c/csswg-drafts/issues/8508)), and when no margin is automatic the page sheet is
   resized to the margin box of the page box ("the containing block is resized to coincide with the margin edges of the page
-  box"). `page-orientation` rotates the printed page (see [Printing](rendering.md#printing)), not its layout.
+  box"). A document whose root element generates no box prints blank pages (no page box is painted, as in Gecko).
+  `page-orientation` rotates the printed page (see [Printing](rendering.md#printing)), not its layout.
+- **Printable area** ([`page-margin-safety`](https://drafts.csswg.org/css-page-3/#page-margin-safety)): `PrintOptions.SafePrintableInset`
+  is the unprintable region along the edges of the sheet (0 by default; the WPT runner reads it from
+  `<meta name=safe-printable-inset>`, in centimeters, as the runner of Chromium). With `clamp`, the page margins that are not
+  automatic are at least the inset; with `add`, the inset is added to them. In the margin rules (where the descriptor is
+  also accepted), only the margins of a page-margin box that face an edge of the sheet are adjusted: an automatic margin
+  is the inset when the size of the box is automatic, and a centered box moves away from the edge until its margin
+  reaches the inset (as far as the opposite margin allows). An inset whose two edges cover the sheet is ignored.
 - **Pagination** (the fragmentation of the multi-column containers, see above, with the page areas as fragmentainers): the
   root element is laid out in the initial containing block (the page area of the first page) as a strip, which is as tall
   as the margin box of the root element. Its possible breaks are collected with the rules of the pages (`PageBreakRules`,
@@ -3057,7 +3075,9 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   printed). The monolithic content (a replaced element, a box with size containment, a line box) that does not fit in an
   empty page is sliced: the next page starts at the end of the page
   (`FragmentationFlow.SlicesMonolithicContent`) and shows the rest of it (`FragmentSlicer` places a copy of its fragment in
-  each next page, at a negative offset; the page area clips it), and the content after it follows it. The content that
+  each next page, at a negative offset; the page area clips it), and the content after it follows it. As in Blink, whose
+  page grows over the monolithic content, the boxes with `box-decoration-break: clone` do not repeat their edges at these
+  slices (`FragmentationFlow.StartsInMonolithicSlice`; a box with a definite block size consumes the whole page). The content that
   overflows a monolithic box (that does not clip it) adds pages, as in the browsers: the flow continues until its end
   (`FragmentationFlow.GetOverflowEnd`, also for an absolutely positioned monolithic box), and the copies of the box are
   placed in these pages.
@@ -3071,16 +3091,18 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   ([CSS Position 3](https://drafts.csswg.org/css-position-3/#fixed-pos): positioned in the page area of each page, as in the
   first one; the pages added by the absolutely positioned boxes alternate between left and right pages, with the block
   sizes of their page areas); the absolutely positioned boxes whose containing block is the initial containing block are on the page of
-  their position in the content, unbroken, when they fit in the rest of it with their descendants, else they are
-  fragmented apart from their position in the initial containing block (`PageBreakRules.InitialContainingBlock`; the pages
-  they reach are added, and the page names of their contents do not break the pages); the absolutely positioned boxes
+  their position (in the content for a box at its static position in the block axis or anchored, else in the initial
+  containing block, whose pages follow each other by the block sizes of their page areas), unbroken, when they fit in the rest of it with their descendants and their contents
+  have no forced page break, else they are fragmented apart from their position in the initial containing block
+  (`PageBreakRules.InitialContainingBlock`; the pages they reach are added; as in Blink, the page names of their contents
+  break the pages only when the box is at its static position in the block axis); the absolutely positioned boxes
   whose containing block is in the strip are fragmented as in the columns. The layers adopted by a stacking context split by the pages are painted with its fragment of the same page
   (`PaintOrder`).
 - **Page-margin boxes** (`PageMarginBoxes`, [§4](https://drafts.csswg.org/css-page-3/#margin-boxes)): the sixteen boxes of
   the margin rules (`@top-left-corner`... `@left-top`) whose `content` is not `none` nor `normal`, styled by the margin rules
   of the matching `@page` rules (`StyleEngine.GetPageMarginStyle`: they inherit from the page context, with the default
-  `text-align` and `vertical-align` of each box). Their content is the strings, the quotes and the counters (`counter()`,
-  `counters()`, with a counter style) of `content`. The corner boxes fill the corners of the page margins; the three boxes
+  `text-align` and `vertical-align` of each box). Their content is the strings, the quotes, the counters (`counter()`,
+  `counters()`, with a counter style) and the images (replaced boxes, as in `::before`) of `content`. The corner boxes fill the corners of the page margins; the three boxes
   of an edge share its length ([§4.2.2](https://drafts.csswg.org/css-page-3/#variable-auto-sizing)), as in Blink: when the
   middle box B is generated, it is centered and the boxes at the ends A and C have the same size: an imaginary box twice as
   large as A, then as C, shares the edge with B, and the larger of the two keeps B centered (a specified size is a
@@ -3090,7 +3112,8 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   are the intrinsic inline sizes of a box whose inline axis is along it, else its size laid out in the depth of the margin;
   the percentages of a box refer to the width of its edge or corner horizontally and to its height vertically. In the depth
   of the margin, a box fills the page margin (or has its specified or intrinsic size: `max-content`, `fit-content`...); the
-  automatic margins center a box with a specified size, and an over-constrained box is placed next to the page area. The
+  automatic margins center a box with a specified size (they are zero when the box does not fit with them), and an
+  over-constrained box is placed next to the page area. The
   contents are aligned by `vertical-align` (`top`, `middle`, `center`, `bottom`, line-relative in a vertical writing mode).
   Each box is painted atomically, in the order of its `z-index` (the negative ones before the document), then from the
   top-left corner, clockwise (see [Printing](rendering.md#printing)).
@@ -3102,8 +3125,7 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   nested (`counters()` shows one value).
 - Not done: the layout of the content of a page whose page area has another inline size than the strip when the page does
   not start before a block box of the block flow of the root element (it is laid out in the inline size of the strip), the
-  images of the `content` of the page-margin boxes
-  (`content: url()`), the nested documents of the `iframe` elements (they are painted as on the screen), `window.print()`,
+  nested documents of the `iframe` elements (they are painted as on the screen), `window.print()`,
   `beforeprint` and `afterprint`.
 
 ### Gap decorations (`Css/Layout/Gaps/`)
@@ -3761,6 +3783,17 @@ that are 0, the default alignment of `position-area`, the center of the default 
   style whose anchor functions are resolved replace its animation and transition values, `ComputedStyle.ResolvedAnchorProperties`).
   The functions of both values are resolved against the current layout (the specification resolves each value when it is
   computed): the result is the same while the anchors do not move.
+- **Transitions of the resolved values** (https://github.com/w3c/csswg-drafts/issues/9598: the anchor functions and the declarations
+  of the position option are resolved at computed-value time): `AnchorPositioning.Layout` keeps the values of the after-change style
+  resolved by the last layout (`AnchorPositionState.TransitionValues`: the properties that accept the anchor functions and the
+  declarations of the option), and `CssTransitionUpdater.UpdateFromLayout` starts the transitions of the values that changed while
+  the declared values did not (the anchor moved, `position-anchor`, `anchor-name` or the tree scope of a name changed, another
+  position option applies); the box is then laid out again with the new transitions (`ComputedStyle.WithCurrentAnimations`). A box
+  that becomes anchor-positioned transitions from its before-change style (`StyleEngine.GetBeforeChangeStyle`), one that stops
+  being anchor-positioned from its last resolved values. These transitions are `CssTransition.IsStartedByLayout`: the style changes
+  do not replace them (the layout does, when the resolved after-change value changes). The style engine includes the declarations
+  of the option applied by the last layout in the before-change and after-change styles of the transitions
+  (`LayoutEngine.GetAppliedPositionOption`), while `position-try-fallbacks` is the same.
 - **Anchored container queries** ([CSS Anchor Positioning 2](https://drafts.csswg.org/css-anchor-position-2/#anchored-container-queries),
   `LayoutEngine.AnchoredQueries.cs`): `container-type: anchored` (which applies style containment) makes an anchor-positioned box a
   query container of `@container anchored(fallback: ...)` (`ContainerQueryParser.ParseAnchoredQuery`: the boolean syntax, the
@@ -3775,12 +3808,10 @@ that are 0, the default alignment of `position-area`, the center of the default 
   before-change styles: the transitions compare with the styles before the change), its contents are built again
   (`BoxTree.RebuildContents`) and it is laid out again with the same option (no loop: the option is not chosen again).
   `getComputedStyle()` lays out the document when an ancestor is an anchored container.
-- Not done: the transitions when the resolved value of an anchor function changes while the computed value does not (e.g. the anchor
-  moved, `position-anchor` or `anchor-name` changed) and the transitions of the properties set by a position option (the anchor
-  functions and the position options are applied at layout time, not at computed-value time with the style and layout
-  interleaving), the tree scopes of the anchor names of an interpolated value (the names resolve in the tree of the declaration of
-  the after-change value), `inherit` of an anchor function (the children inherit the unresolved function), the containing block
-  chain of the column spanners (it should skip to the multi-column container).
+- Not done: the anchor functions and the position options are applied at layout time, not at computed-value time with the style
+  and layout interleaving: the tree scopes of the anchor names of an interpolated value (the names resolve in the tree of the
+  declaration of the after-change value), `inherit` of an anchor function or of a declaration of a position option (the children
+  inherit the unresolved function, or the value without the option).
 
 ### Overflow and scrolling (`Css/Layout/Scrolling/`)
 
@@ -3896,6 +3927,10 @@ that are 0, the default alignment of `position-area`, the center of the default 
   (`SessionHistoryEntry.ScrollPositionData`) and restored by the traversals when `history.scrollRestoration` is `auto`, and by
   the navigation API (`NavigateEvent.scroll()`, `scroll: "after-transition"`); the `top` fragment scrolls to the beginning of
   the document.
+- The boxes of the pseudo-elements that are scroll containers (e.g. a `::before` with `overflow: scroll`, a
+  `::scroll-marker-group`) have their own scrolling box (`ScrollState.PseudoElement`, kept by element and pseudo-element): its
+  scroll events target the originating element, its `scroll-behavior` and `scroll-padding` are the ones of the box. The wheel
+  scrolls the ones at its position first (the target of the event is their originating element).
 - The scrolls of the user (the wheel, a panning touch, the keys, the scrollbars; see [User input](browsing-context.md#user-input))
   scroll the nearest scrolling box that can scroll in their direction (`LayoutEngine.ScrollByUser`, `LayoutEngine.UserScrolling.cs`,
   by kind of `UserScrollKind`): the keys and the presses on the track of a scrollbar are relative scrolls from the destination
@@ -4242,7 +4277,8 @@ only implementation) where the specification is silent or differs. The selectors
     of a smooth scroll in progress), or the nearest one after it when it is closer and less than half a scrollport away;
     the positions that the scroll range cannot reach are distributed over min(1/8 of the scrollport, half the range) at each
     end of the range. The last target wins a tie. When the focused marker stops being active, the focus moves to the new
-    active marker.
+    active marker. A group that is a scroll container scrolls to its new active marker (as Chrome: at the nearest edge, or
+    aligned with its `scroll-snap-align` when the group is a scroll snap container, with the `scroll-behavior` of the group).
   - **Buttons**: a button is enabled when a scroll by one page in its direction (87.5% of the scrollport, or the scrollport
     less 40px when that is larger, snapped as a relative scroll) changes the position rounded to the pixel; the buttons of
     an element that is not a scroll container are disabled.
@@ -4250,8 +4286,7 @@ only implementation) where the specification is silent or differs. The selectors
   are the originating element). Their inertness is the one of their scroll container, or `interactivity: inert` on the
   group (its markers are then inert whatever the inertness of their originating element) or on the pseudo-element itself;
   `interactivity` has no other effect yet.
-- Not done: the scrolling of a `::scroll-marker-group` that is a scroll container (the pseudo-element boxes have no scrolling
-  box: the active marker is not scrolled into view); `::scroll-button(prev | next)`; the accessibility roles of the modes
+- Not done: `::scroll-button(prev | next)`; the accessibility roles of the modes
   (the `tabs` mode does not hide the inactive panels); the `::column` pseudo-element only gives the `scroll-snap-align` of
   the scroll targets of the column markers and of the column snap areas (no box, no `getComputedStyle(element, "::column")` of a column,
   no `::column::scroll-marker` in `getComputedStyle()`), and the columns of a multi-column container that is fragmented by
@@ -4385,7 +4420,8 @@ positions are negative in `vertical-rl` and `direction: rtl`).
   perpendicular to the one of its containing block establishes an independent formatting context; its available inline space is
   the block size of the containing block, or the fallback of [§7.3](https://drafts.csswg.org/css-writing-modes-4/#orthogonal-auto)
   (see [Formatting contexts](#formatting-contexts)); its `auto` inline size is its fit-content size and its block size is the
-  size of its contents; its contributions to the intrinsic sizes of its parent are measured by laying it out
+  size of its contents (the `auto` margins of a block-level box in normal flow, in the inline axis of its containing block,
+  are resolved with that block size); its contributions to the intrinsic sizes of its parent are measured by laying it out
   (`IntrinsicSizing.GetContribution`). An `inline` box whose writing mode differs from its parent's computes to `inline-block`
   (the cascade).
 - **Text**: the shaping orientation comes from `writing-mode` and `text-orientation` (`mixed`, `upright`, `sideways`; the
@@ -4814,11 +4850,13 @@ something asks for the display list (`LayoutEngine.PaintCount` for the tests).
   expanded beyond the border edge by `overflow-clip-margin` are shaped as the spread of a box shadow, from the border edge:
   the outset-adjusted radii; the contour of the box when its corners are shaped by `corner-shape`); the nested documents
   (`iframe`...) are clipped to the content edge curve too. The contents of a replaced
-  box are clipped by its own clip (`includeSelf`): the user agent style sheet has `img, video, canvas { overflow: clip;
-  overflow-clip-margin: content-box }` ([CSS Overflow 4](https://drafts.csswg.org/css-overflow-4/#overflow-control), the
-  rule of the browsers), so an image overflowing its content box (`object-fit: cover`) is clipped to it unless the author
-  sets `overflow: visible`; the contents of the other replaced boxes (`embed`, `object`, the generated images) are always
-  clipped to the content box.
+  box are clipped by its own clip (`includeSelf`): the user agent style sheet has `img, video, canvas { overflow: clip }` and
+  `iframe, embed, object { overflow: clip !important; overflow-clip-margin: content-box !important }`
+  ([CSS Overflow 4](https://drafts.csswg.org/css-overflow-4/#overflow-control), the rules of the browsers), and the box of
+  `overflow-clip-margin` defaults to the content box of the replaced elements (not of an `img` rendered as its alternative text,
+  nor of the form controls), so an image overflowing its content box (`object-fit: cover`) is clipped to it unless the author
+  sets `overflow: visible`; the contents of the other replaced boxes (the generated images) are always clipped to the content
+  box, and an outermost `svg` element to its overflow clip edge.
 - **Pixel snapping.** The geometry of the layout (and of the CSSOM View) keeps its fractional positions; the painter snaps
   what it paints to the device pixels of the viewport (`ViewportOptions.DevicePixelRatio`), as Blink does: the border boxes
   of the backgrounds, the borders, the outlines and the shadows, the overflow clips, the replaced content rectangles, the

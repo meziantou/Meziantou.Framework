@@ -46,7 +46,7 @@ internal static class ValueMatcher
     /// <param name="type">The type whose grammar is matched (e.g. grid-line), which may exclude keywords from &lt;custom-ident&gt;.</param>
     public static bool MatchAll(GrammarNode grammar, List<CssComponentValue> values, List<GrammarCapture>? captures, string? type = null)
     {
-        var context = new MatchContext(values, captures is not null, type is null ? null : CustomIdentExclusions.GetValueOrDefault(type), AcceptsPercentages(grammar), GetKeywords(grammar), GetAnchorFunctions(grammar), IsFlexBasisGrammar(grammar));
+        var context = new MatchContext(values, captures is not null, type is null ? null : CustomIdentExclusions.GetValueOrDefault(type), AcceptsPercentages(grammar), GetKeywords(grammar), GetAnchorFunctions(grammar), IsFlexBasisGrammar(grammar), AcceptsLengthPercentages(grammar));
         foreach (var (end, path) in MatchNode(grammar, context, 0, 0, root: true))
         {
             if (end == values.Count)
@@ -86,8 +86,14 @@ internal static class ValueMatcher
 
     private sealed record CapturePath(GrammarCapture Capture, CapturePath? Previous);
 
-    private sealed class MatchContext(List<CssComponentValue> values, bool capture, FrozenSet<string>? excludedIdents = null, bool percentagesAllowed = true, HashSet<string>? keywords = null, CssAnchorFunctions anchorFunctions = CssAnchorFunctions.None, bool excludesReferencedAnchorFunctions = false)
+    private sealed class MatchContext(List<CssComponentValue> values, bool capture, FrozenSet<string>? excludedIdents = null, bool percentagesAllowed = true, HashSet<string>? keywords = null, CssAnchorFunctions anchorFunctions = CssAnchorFunctions.None, bool excludesReferencedAnchorFunctions = false, bool percentagesAreLengths = false)
     {
+        /// <summary>
+        /// Whether the percentages of the grammar resolve against lengths (it accepts a &lt;length-percentage&gt;): calc(10% / 1px) is
+        /// then a &lt;number&gt; (https://drafts.csswg.org/css-values-4/#calc-type-checking), e.g. in line-height.
+        /// </summary>
+        public bool PercentagesAreLengths { get; } = percentagesAreLengths;
+
         /// <summary>
         /// Whether the properties referenced by the grammar do not accept their anchor functions: <c>flex-basis</c> references
         /// <c>&lt;'width'&gt;</c>, but <c>anchor-size()</c> is only allowed in the sizing, inset and margin properties
@@ -226,7 +232,7 @@ internal static class ValueMatcher
 
             case TypeNode type:
                 // The built-in types (e.g. <length>, <ident>) match a single component value
-                if (!type.IsProperty && type.Name != "calc-size()" && position < context.Values.Count && MatchBuiltInType(type, context.Values[position], context.ExcludedIdents, context.PercentagesAllowed) is { } builtIn)
+                if (!type.IsProperty && type.Name != "calc-size()" && position < context.Values.Count && MatchBuiltInType(type, context.Values[position], context.ExcludedIdents, context.PercentagesAllowed, percentagesAreLengths: context.PercentagesAreLengths) is { } builtIn)
                     return builtIn ? [(position + 1, CaptureType(type, context, position, position + 1, path))] : [];
 
                 return MatchTypeNode(type, context, position, depth, path);
@@ -400,7 +406,7 @@ internal static class ValueMatcher
         {
             if (CssPropertyRegistry.Get(type.Name) is { } property && CssPropertyRegistry.GetGrammar(property) is { } propertyGrammar)
             {
-                foreach (var (end, _) in MatchNode(propertyGrammar, new MatchContext(values, capture: false, percentagesAllowed: AcceptsPercentages(propertyGrammar), keywords: context.Keywords, anchorFunctions: context.ExcludesReferencedAnchorFunctions || IsFlexBasisGrammar(propertyGrammar) ? CssAnchorFunctions.None : GetAnchorFunctions(propertyGrammar), excludesReferencedAnchorFunctions: context.ExcludesReferencedAnchorFunctions || IsFlexBasisGrammar(propertyGrammar)), position, depth + 1))
+                foreach (var (end, _) in MatchNode(propertyGrammar, new MatchContext(values, capture: false, percentagesAllowed: AcceptsPercentages(propertyGrammar), keywords: context.Keywords, anchorFunctions: context.ExcludesReferencedAnchorFunctions || IsFlexBasisGrammar(propertyGrammar) ? CssAnchorFunctions.None : GetAnchorFunctions(propertyGrammar), excludesReferencedAnchorFunctions: context.ExcludesReferencedAnchorFunctions || IsFlexBasisGrammar(propertyGrammar), percentagesAreLengths: AcceptsLengthPercentages(propertyGrammar)), position, depth + 1))
                 {
                     yield return end;
                 }
@@ -434,7 +440,7 @@ internal static class ValueMatcher
         }
 
         // Built-in types
-        if (position < values.Count && MatchBuiltInType(type, values[position], context.ExcludedIdents, context.PercentagesAllowed, context.AnchorFunctions) is { } builtIn)
+        if (position < values.Count && MatchBuiltInType(type, values[position], context.ExcludedIdents, context.PercentagesAllowed, context.AnchorFunctions, context.PercentagesAreLengths) is { } builtIn)
         {
             if (builtIn)
                 yield return position + 1;
@@ -481,7 +487,7 @@ internal static class ValueMatcher
         // Types defined by the specifications
         if (CssPropertyRegistry.GetTypeGrammar(type.GrammarName) is { } grammar)
         {
-            foreach (var (end, _) in MatchNode(grammar, new MatchContext(values, capture: false, CustomIdentExclusions.GetValueOrDefault(type.Name) ?? context.ExcludedIdents, context.PercentagesAllowed, context.Keywords, context.AnchorFunctions, context.ExcludesReferencedAnchorFunctions), position, depth + 1))
+            foreach (var (end, _) in MatchNode(grammar, new MatchContext(values, capture: false, CustomIdentExclusions.GetValueOrDefault(type.Name) ?? context.ExcludedIdents, context.PercentagesAllowed, context.Keywords, context.AnchorFunctions, context.ExcludesReferencedAnchorFunctions, context.PercentagesAreLengths), position, depth + 1))
             {
                 // The range of the type applies to the numeric values (e.g. <length-percentage [0,∞]>)
                 if (end == position + 1 && (type.RangeMin is not null || type.RangeMax is not null) && values[position] is CssPreservedToken { Token: { Type: CssTokenType.Number or CssTokenType.Percentage or CssTokenType.Dimension } numericToken }
@@ -517,7 +523,7 @@ internal static class ValueMatcher
         or "dimension" or "string" or "url" or "ident" or "custom-ident" or "dashed-ident" or "hex-color" or "named-color" or "system-color" or "zero" or "opentype-tag";
 
     /// <summary>Matches a built-in type against a single component value; returns null when the type is not built in.</summary>
-    private static bool? MatchBuiltInType(TypeNode type, CssComponentValue value, FrozenSet<string>? excludedIdents, bool percentagesAllowed = true, CssAnchorFunctions anchorFunctions = CssAnchorFunctions.None)
+    private static bool? MatchBuiltInType(TypeNode type, CssComponentValue value, FrozenSet<string>? excludedIdents, bool percentagesAllowed = true, CssAnchorFunctions anchorFunctions = CssAnchorFunctions.None, bool percentagesAreLengths = false)
     {
         var name = type.Name;
         switch (name)
@@ -538,7 +544,7 @@ internal static class ValueMatcher
                     return name switch
                     {
                         "zero" => false,
-                        "number" or "integer" => IsMathFunctionOfType(function, "", percentageUnit: null),
+                        "number" or "integer" => IsMathFunctionOfType(function, "", percentageUnit: null) || (percentagesAreLengths && IsMathFunctionOfType(function, "", percentageUnit: "px")),
                         "percentage" => IsMathFunctionOfType(function, "%", percentageUnit: null),
                         "length" => IsMathFunctionOfType(function, "px", percentageUnit: null, anchorFunctions),
                         "angle" => IsMathFunctionOfType(function, "deg", percentageUnit: null),
@@ -764,16 +770,21 @@ internal static class ValueMatcher
     private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<GrammarNode, System.Runtime.CompilerServices.StrongBox<bool>> PercentageGrammars = [];
 
     /// <summary>Returns whether a grammar accepts a percentage type (outside of its functions).</summary>
-    private static bool AcceptsPercentages(GrammarNode grammar) => PercentageGrammars.GetValue(grammar, static grammar => new System.Runtime.CompilerServices.StrongBox<bool>(ContainsPercentageType(grammar, new HashSet<string>(StringComparer.Ordinal)))).Value;
+    private static bool AcceptsPercentages(GrammarNode grammar) => PercentageGrammars.GetValue(grammar, static grammar => new System.Runtime.CompilerServices.StrongBox<bool>(ContainsPercentageType(grammar, new HashSet<string>(StringComparer.Ordinal), lengthOnly: false))).Value;
 
-    private static bool ContainsPercentageType(GrammarNode node, HashSet<string> visited)
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<GrammarNode, System.Runtime.CompilerServices.StrongBox<bool>> LengthPercentageGrammars = [];
+
+    /// <summary>Whether the grammar accepts a &lt;length-percentage&gt;: its percentages resolve against lengths, also in the math functions of its other numeric types.</summary>
+    private static bool AcceptsLengthPercentages(GrammarNode grammar) => LengthPercentageGrammars.GetValue(grammar, static grammar => new System.Runtime.CompilerServices.StrongBox<bool>(ContainsPercentageType(grammar, new HashSet<string>(StringComparer.Ordinal), lengthOnly: true))).Value;
+
+    private static bool ContainsPercentageType(GrammarNode node, HashSet<string> visited, bool lengthOnly)
     {
         switch (node)
         {
             case GroupNode group:
                 foreach (var child in group.Children)
                 {
-                    if (ContainsPercentageType(child, visited))
+                    if (ContainsPercentageType(child, visited, lengthOnly))
                         return true;
                 }
 
@@ -781,7 +792,7 @@ internal static class ValueMatcher
 
             case TypeNode type when !type.Name.EndsWith("()", StringComparison.Ordinal):
             {
-                if (!type.IsProperty && (type.Name == "percentage" || type.Name.EndsWith("-percentage", StringComparison.Ordinal)))
+                if (!type.IsProperty && (lengthOnly ? type.Name == "length-percentage" : type.Name == "percentage" || type.Name.EndsWith("-percentage", StringComparison.Ordinal)))
                     return true;
 
                 if (!visited.Add(type.IsProperty ? "'" + type.Name : type.Name))
@@ -790,7 +801,7 @@ internal static class ValueMatcher
                 var grammar = type.IsProperty
                     ? CssPropertyRegistry.Get(type.Name) is { } property ? CssPropertyRegistry.GetGrammar(property) : null
                     : CssPropertyRegistry.GetTypeGrammar("<" + type.Name + ">");
-                return grammar is not null && ContainsPercentageType(grammar, visited);
+                return grammar is not null && ContainsPercentageType(grammar, visited, lengthOnly);
             }
 
             default:

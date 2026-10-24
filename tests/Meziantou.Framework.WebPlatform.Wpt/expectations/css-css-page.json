@@ -24,7 +24,7 @@
     "reftest": "FAIL"
   },
   "css/css-page/body-background-vlr-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/body-background-vrl-print.html": {
     "reftest": "FAIL"
@@ -114,7 +114,7 @@
     "reftest": "PASS"
   },
   "css/css-page/margin-boxes/auto-margins-003-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/margin-boxes/background-001-print.html": {
     "reftest": "PASS"
@@ -126,7 +126,7 @@
     "reftest": "PASS"
   },
   "css/css-page/margin-boxes/content-003-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/margin-boxes/content-004-print.html": {
     "reftest": "PASS"
@@ -135,7 +135,7 @@
     "reftest": "PASS"
   },
   "css/css-page/margin-boxes/content-006-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/margin-boxes/content-007-print.html": {
     "reftest": "PASS"
@@ -318,7 +318,7 @@
     "reftest": "PASS"
   },
   "css/css-page/monolithic-overflow-031-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/monolithic-overflow-032-print.tentative.html": {
     "reftest": "FAIL"
@@ -336,7 +336,7 @@
     "reftest": "PASS"
   },
   "css/css-page/page-background-005-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/page-background-image-print.html": {
     "reftest": "PASS"
@@ -393,7 +393,7 @@
     "reftest": "PASS"
   },
   "css/css-page/page-margin-004-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/page-margin-005-print.html": {
     "reftest": "PASS"
@@ -426,7 +426,7 @@
     "reftest": "PASS"
   },
   "css/css-page/page-name-003-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/page-name-abspos-001-print.html": {
     "reftest": "PASS"
@@ -655,7 +655,7 @@
     "reftest": "PASS"
   },
   "css/css-page/page-size-012-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/page-size-013-print.html": {
     "reftest": "PASS"
@@ -732,7 +732,7 @@
     "reftest": "PASS"
   },
   "css/css-page/root-element-display-none-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/subpixel-page-size-001-print.html": {
     "reftest": "PASS"
@@ -741,13 +741,13 @@
     "reftest": "PASS"
   },
   "css/css-page/tentative/safe-printable-inset-001-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/tentative/safe-printable-inset-002-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/tentative/safe-printable-inset-003-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/tentative/safe-printable-inset-large-crash-print.html": {
     "reftest": "PASS"

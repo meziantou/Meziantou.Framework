@@ -207,7 +207,7 @@ internal sealed partial class LayoutEngine
             }
 
             var sameTargets = previousX == result.TargetX && previousY == result.TargetY;
-            _ = PerformScrollCore(state, position, sameTargets ? ScrollBehavior.Instant : ScrollBehavior.Auto, state.Element ?? _document.DocumentElement);
+            _ = PerformScrollCore(state, position, sameTargets ? ScrollBehavior.Instant : ScrollBehavior.Auto, state.GetAssociatedElement(_document));
         }
     }
 
@@ -220,6 +220,15 @@ internal sealed partial class LayoutEngine
         if (_scrollStates is not null)
         {
             foreach (var state in _scrollStates.Values)
+            {
+                if (HasSnapType(state))
+                    return true;
+            }
+        }
+
+        if (_pseudoElementScrollStates is not null)
+        {
+            foreach (var state in _pseudoElementScrollStates.Values)
             {
                 if (HasSnapType(state))
                     return true;

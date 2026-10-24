@@ -1177,8 +1177,9 @@ public sealed class ComputedStyleTests : IDisposable
     [InlineData("<div id=target style='color: green; outline: 2px solid'></div>", "outline-color", "rgb(0, 128, 0)")]
     [InlineData("<div id=target style='color: green; outline: auto'></div>", "outline-color", "auto")]
     [InlineData("<div id=target style='color: green; outline: auto red'></div>", "outline-color", "rgb(255, 0, 0)")]
-    // A drop-down box ignores line-height in its layout only
-    [InlineData("<select id=target style='line-height: 30px'></select>", "line-height", "30px")]
+    // A drop-down box ignores line-height in its layout (its resolved value is normal, as in the browsers), not in the lh unit
+    [InlineData("<select id=target style='line-height: 30px'></select>", "line-height", "normal")]
+    [InlineData("<select id=target style='line-height: 30px; appearance: none'></select>", "line-height", "30px")]
     [InlineData("<select id=target style='line-height: 30px; width: 2lh'></select>", "width", "60px")]
     public void ComputedValues_OutlineColorAndSelectLineHeight(string html, string property, string expected) => Assert.Equal(expected, Get("<!DOCTYPE html>" + html, property));
 

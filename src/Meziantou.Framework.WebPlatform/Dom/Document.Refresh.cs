@@ -17,12 +17,12 @@ public partial class Document
     /// the browsing context navigates to the URL (when <see cref="BrowsingContextOptions.DeclarativeRefreshEnabled"/>).
     /// </summary>
     /// <param name="input">The value of the <c>Refresh</c> header or of the <c>content</c> attribute, e.g. <c>5; url=next.html</c>.</param>
+    /// <param name="isMeta">Whether the refresh comes from a <c>meta</c> element: the sandboxed automatic features browsing context flag blocks it.</param>
     /// <remarks>
     /// The refresh of a meta element comes due after the later of the completely loaded time of the document and the
-    /// insertion of the element: as the element is inserted now, it is the same as for the <c>Refresh</c> header. The
-    /// iframe sandboxing flags are not implemented.
+    /// insertion of the element: as the element is inserted now, it is the same as for the <c>Refresh</c> header.
     /// </remarks>
-    internal void RunSharedDeclarativeRefreshSteps(string input)
+    internal void RunSharedDeclarativeRefreshSteps(string input, bool isMeta = false)
     {
         if (WillDeclarativelyRefresh)
             return;
@@ -96,7 +96,7 @@ public partial class Document
         var eventLoop = browsingContext.EventLoop;
         void StartTimer() => eventLoop.QueueTimer(delay, () =>
         {
-            if (BrowsingContext is { } navigable && ReferenceEquals(navigable.Document, this))
+            if (BrowsingContext is { } navigable && ReferenceEquals(navigable.Document, this) && (!isMeta || (ActiveSandboxingFlags & SandboxingFlags.AutomaticFeatures) == SandboxingFlags.None))
             {
                 // All the browsers reload the document when the URL of the refresh is the URL of the document (the navigation
                 // type of its navigate event is "reload"); the specification navigates with "replace"

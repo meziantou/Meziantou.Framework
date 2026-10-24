@@ -90,6 +90,22 @@ internal sealed class DocumentState(Document? document)
     /// </summary>
     public PolicyContainer? HistoryPolicyContainer { get; set; }
 
+    /// <summary>
+    /// Whether <see cref="InitiatorOriginDocument"/> is set: the initiator origin of the document state of an about: document
+    /// (https://html.spec.whatwg.org/multipage/browsing-the-web.html#document-state-initiator-origin), which a traversal gives
+    /// to the document again, whatever the active document is.
+    /// </summary>
+    public bool HasInitiatorOrigin { get; set; }
+
+    /// <summary>The document that holds the initiator origin, or null for an opaque origin.</summary>
+    public Document? InitiatorOriginDocument { get; set; }
+
+    /// <summary>
+    /// The required CSP (https://w3c.github.io/webappsec-cspee/#navigation-params-required-csp) enforced by a <c>blob:</c>
+    /// document, whose policy container is not stored in the session history: a traversal enforces it again.
+    /// </summary>
+    public string? HistoryRequiredContentSecurityPolicy { get; set; }
+
     /// <summary>The srcdoc resource of the document state, used to load an iframe srcdoc document again.</summary>
     public string? SrcdocResource { get; init; }
 

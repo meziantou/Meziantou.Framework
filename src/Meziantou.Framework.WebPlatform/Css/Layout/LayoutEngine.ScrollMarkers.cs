@@ -213,13 +213,14 @@ internal sealed partial class LayoutEngine
     /// <summary>
     /// Returns the first element, in tree order, of the contents of a multi-column container that starts in a column or in one of
     /// the columns after it: where the sequential focus navigation continues after the activation of the scroll marker of the
-    /// column (as in Chrome: the first focusable area of the column is the next one).
+    /// column (as in Chrome: the first focusable area of the column is the next one). As in Chrome, a line break is text, not an
+    /// element of the column.
     /// </summary>
     internal Element? GetFirstElementOfColumn(Element container, int index)
     {
         for (var node = container.FirstChild; node is not null; node = node.GetNextInTreeOrder(container))
         {
-            if (node is Element element && GetColumnOf(container, element) is { } column && column >= index)
+            if (node is Element element and not HtmlBRElement && GetColumnOf(container, element) is { } column && column >= index)
                 return element;
         }
 
@@ -328,6 +329,7 @@ internal sealed partial class LayoutEngine
         }
 
         changed |= UpdateScrollButtonStates(controls, onlyNew);
+        ScrollMarkerGroupsToActiveMarkers();
         if (!changed || !_scrollMarkerStateQueried)
             return false;
 
@@ -378,7 +380,55 @@ internal sealed partial class LayoutEngine
         }
 
         group.Active = active;
+        if (isPseudoElement && active is { } newActive)
+        {
+            (_scrollMarkerGroupScrolls ??= []).Add((container, newActive));
+        }
+
         return true;
+    }
+
+    /// <summary>The scroll marker groups whose active marker changed: their <c>::scroll-marker-group</c> is scrolled to it (see <see cref="ScrollMarkerGroupsToActiveMarkers"/>).</summary>
+    private List<(Element Scroller, ScrollMarkerReference Marker)>? _scrollMarkerGroupScrolls;
+
+    /// <summary>
+    /// Scrolls the <c>::scroll-marker-group</c> pseudo-elements that are scroll containers to their new active marker, as in Chrome
+    /// (the marker is brought into view at the nearest edge, or aligned with its <c>scroll-snap-align</c> when the group is a scroll
+    /// snap container), with the <c>scroll-behavior</c> of the group: the active marker stays visible.
+    /// </summary>
+    private void ScrollMarkerGroupsToActiveMarkers()
+    {
+        if (_scrollMarkerGroupScrolls is not { Count: > 0 } scrolls)
+            return;
+
+        var pending = scrolls.ToArray();
+        scrolls.Clear();
+        foreach (var (scroller, marker) in pending)
+        {
+            if (TryGetScrollState(scroller, ScrollControls.MarkerGroup) is not { Fragment: { } groupFragment } state || marker.PseudoElement is not { } pseudoElement
+                || GetFragments(marker.Element, pseudoElement) is not [var markerFragment, ..])
+            {
+                continue;
+            }
+
+            var block = ScrollLogicalPosition.Nearest;
+            var inline = ScrollLogicalPosition.Nearest;
+            if (state.ContainerStyle is { Overflow.ScrollSnapType.IsNone: false })
+            {
+                var align = markerFragment.Box.Style.Layout.Overflow.ScrollSnapAlign;
+                block = align.Block == SnapAlignment.None ? block : ToScrollPosition(align.Block);
+                inline = align.Inline == SnapAlignment.None ? inline : ToScrollPosition(align.Inline);
+            }
+
+            var scrollport = ScrollIntoView.GetScrollport(_document, groupFragment, state);
+            var delta = ScrollIntoView.GetScrollDelta(markerFragment.GetRectInRoot(), scrollport, state.WritingDirection, block, inline);
+            // (a scroll snap container snaps to the marker: it is its new snap target)
+            var position = GetSnapPosition(state, SnapSelectionStrategy.ForEndPosition(state.Clamp(state.Offset + delta), scrolledX: true, scrolledY: true));
+            if (position != state.Offset)
+            {
+                _ = PerformScroll(state, position, ScrollBehavior.Auto, associatedElement: null);
+            }
+        }
     }
 
     /// <summary>Whether an element is a scroll marker group container (https://drafts.csswg.org/css-overflow-5/#scroll-target-group): <c>scroll-target-group: auto</c>.</summary>

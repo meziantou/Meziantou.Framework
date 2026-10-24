@@ -360,7 +360,12 @@ internal static class Fetching
         if (!response.IsNetworkError && !request.IsSpeculative)
         {
             // The post-request check of the script directives reports the hash of the scripts (https://w3c.github.io/webappsec-csp/#script-post-request)
-            ContentSecurityPolicyReportHash.PotentiallyReportHash(request, response);
+            // (not for a response that fails its integrity metadata: browsers do not report it)
+            if (request.Integrity.Length == 0 || SubresourceIntegrity.Matches(response.Body ?? [], response.Type is FetchResponseType.Opaque or FetchResponseType.OpaqueRedirect, request.Integrity))
+            {
+                ContentSecurityPolicyReportHash.PotentiallyReportHash(request, response);
+            }
+
             if (ContentSecurityPolicy.ShouldBlockResponse(request, response))
                 return FetchResponse.NetworkError();
         }

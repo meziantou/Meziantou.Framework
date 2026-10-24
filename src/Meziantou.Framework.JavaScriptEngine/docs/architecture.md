@@ -15,7 +15,7 @@ source text ──Parsing/JsParser──▶ Ast (Program, nodes) ──Compiler�
 | `Ast/` | The syntax tree: one sealed class per node (`Node.Start`/`End` are UTF-16 offsets), with the `NodeType` enum for fast dispatch. ESTree-like shapes. |
 | `Parsing/` | `JsParser` (hand-written recursive descent, all early errors), `ParserOptions` (goal and eval context). Syntax errors throw `JsSyntaxErrorException`. |
 | `Compiler/` | Scope analysis and the bytecode generator (the nested functions are compiled on their first call: see "Lazy compilation"). |
-| `Interpreter/` | The bytecode interpreter: frames on the heap, no .NET recursion for JavaScript-to-JavaScript calls. |
+| `Interpreter/` | The bytecode interpreter: frames on the heap, no .NET recursion for JavaScript-to-JavaScript calls. A call in tail position of strict code (`OpCode.TailCall`) replaces the frame of its caller (proper tail calls), unless the caller is the entry frame of the run, a [[Construct]], or a handler covers the call. |
 | `Runtime/` | The object model and the abstract operations shared by everything. |
 | `Builtins/` | The built-in objects of the realm: one static class per built-in (e.g. `ArrayBuiltins`). |
 | `Temporal/` | The Temporal objects (`JsPlainDate`, `JsZonedDateTime`... with their internal slots), the abstract operations (`TemporalOperations`: exact `Int128` epoch nanoseconds and time durations, the rounding family), the RFC 9557 / ISO 8601 parser (`TemporalParser`) and the calendars (`ITemporalCalendar`, `TemporalCalendars`: ISO 8601, and in `Temporal/Calendars/` the calendars of ECMA-402 ported from ICU4X: `NonIsoTemporalCalendar` implements the NonISO* operations of the Intl era and monthCode proposal from the primitives of each calendar, `TemporalCalendarData` holds the year data of the Chinese, Korean and Umm al-Qura calendars). |
@@ -328,6 +328,13 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
   `TEST262_UPDATE_EXPECTATIONS=1 dotnet test -f net10.0` (one target framework: the processes of the target frameworks
   run concurrently). Filter with `TEST262_FILTER=a|b` (substrings of the test ids). The update also regenerates
   `summary.md`.
+- The number conversions (StringToNumber, parseFloat, the numeric literals, JSON.parse, Number::toString) are checked
+  against a sample of parse-number-fxx-test-data (`Tests/Corpus/ParseNumberFxx.md`). The whole corpus (5.3 million
+  lines) is an optional suite: `dotnet run eng/javascriptengine/fetch-tests.cs parse-number-fxx-test-data`, then
+  `NumberBuiltinsTests.ParseNumberFxx_FullCorpus` checks it.
+- `tests/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark`: real-world programs (V8's Web Tooling Benchmark:
+  babel, typescript, prettier, terser...) whose results are compared with the results of Node.js. The same fetch script
+  downloads the benchmark and its npm packages; see the readme of the project.
 
 ## Conventions and pitfalls
 

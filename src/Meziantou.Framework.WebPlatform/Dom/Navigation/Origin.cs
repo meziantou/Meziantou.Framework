@@ -30,7 +30,7 @@ public sealed class Origin
     /// <summary>
     /// Returns the origin of a value (https://html.spec.whatwg.org/multipage/browsers.html#dom-origin-from): the origin of a
     /// platform object that has one (<see cref="Origin"/>, a same origin-domain <see cref="Window"/>, a <see cref="WorkerGlobalScope"/>, a <see cref="MessageEvent"/>
-    /// fired by the user agent, <see cref="Url"/>, the <c>a</c> and <c>area</c> elements with a URL), or the origin of a
+    /// fired by the user agent, <see cref="Url"/>, the HTML, SVG and MathML <c>a</c> elements and the <c>area</c> element with a URL), or the origin of a
     /// URL string.
     /// </summary>
     /// <param name="value">The value.</param>
@@ -78,8 +78,10 @@ public sealed class Origin
             case Url url:
                 return OriginRecord.FromUrl(url.Record);
 
-            // https://html.spec.whatwg.org/multipage/links.html#hyperlink-element: the origin of the url, if any
-            case HtmlAnchorElement or HtmlAreaElement:
+            // https://html.spec.whatwg.org/multipage/links.html#hyperlink-element: the origin of the url, if any. The SVG and
+            // MathML a elements implement HyperlinkElementUtils too (https://w3c.github.io/mathml-core/#dom-mathmlanchorelement,
+            // https://github.com/w3c/svgwg/pull/1052)
+            case HtmlAnchorElement or HtmlAreaElement or SvgAElement or MathMLAnchorElement:
                 return HyperlinkElementUtils.GetUrl((Element)value) is { } hyperlinkUrl ? OriginRecord.FromUrl(hyperlinkUrl) : null;
 
             default:

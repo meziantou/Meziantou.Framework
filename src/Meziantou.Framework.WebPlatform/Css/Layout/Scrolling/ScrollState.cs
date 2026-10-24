@@ -22,8 +22,17 @@ internal sealed class ScrollState
         Element = element;
     }
 
-    /// <summary>The element whose principal box is the scroll container, or null for the viewport.</summary>
+    /// <summary>The element whose principal box is the scroll container (the originating element of a pseudo-element), or null for the viewport.</summary>
     public Element? Element { get; }
+
+    /// <summary>The pseudo-element whose box is the scroll container (e.g. <c>::before</c>, <c>::scroll-marker-group</c>), or null.</summary>
+    public string? PseudoElement { get; init; }
+
+    /// <summary>
+    /// The element whose style applies to the scrolling box (<c>scroll-behavior</c>, <c>scroll-padding</c>): its element, the root
+    /// element for the viewport, null for a pseudo-element (see <see cref="ContainerStyle"/>).
+    /// </summary>
+    internal Element? GetAssociatedElement(Document document) => PseudoElement is not null ? null : Element ?? document.DocumentElement;
 
     /// <summary>Whether the scrolling box is the one of the viewport.</summary>
     public bool IsViewport => Element is null;

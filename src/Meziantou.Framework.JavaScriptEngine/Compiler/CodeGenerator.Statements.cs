@@ -160,6 +160,87 @@ internal sealed partial class CodeGenerator
     }
 
     /// <summary>
+    /// Whether the calls in tail position of a returned expression can be tail calls (IsInTailPosition): the code is strict,
+    /// the function is not a generator, an async function nor a class constructor, and nothing runs between the call and
+    /// the return (no finally block, no resource to dispose, no iterator to close). The interpreter checks the rest (e.g.
+    /// a try block, whose handler must catch the exceptions of the callee).
+    /// </summary>
+    private bool CanEmitTailCalls()
+    {
+        if (!_function.IsStrict || _function.Kind == FunctionInfoKind.ClassConstructor || _function.FunctionNode is not { IsAsync: false, IsGenerator: false })
+            return false;
+
+        for (var control = _control; control is not null; control = control.Parent)
+        {
+            if (control.Kind is ControlKind.Finally or ControlKind.ForOf)
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Emits an expression whose value is returned, then the return: the calls in tail position (HasCallInTailPosition)
+    /// are tail calls. <see cref="CanEmitTailCalls"/> must be true.
+    /// </summary>
+    private void EmitTailExpressionAndReturn(Node expression, int position)
+    {
+        CompilerStack.EnsureSufficientStack();
+        switch (expression)
+        {
+            case ConditionalExpression conditional:
+                {
+                    EmitExpression(conditional.Test);
+                    var elseLabel = _builder.DefineLabel();
+                    _builder.EmitJump(OpCode.JumpIfFalse, elseLabel);
+                    EmitTailExpressionAndReturn(conditional.Consequent, position);
+                    _builder.MarkLabel(elseLabel);
+                    EmitTailExpressionAndReturn(conditional.Alternate, position);
+                    return;
+                }
+
+            case LogicalExpression logical:
+                {
+                    EmitExpression(logical.Left);
+                    var endLabel = _builder.DefineLabel();
+                    _builder.EmitJump(logical.Operator switch
+                    {
+                        LogicalOperator.And => OpCode.JumpIfFalseKeep,
+                        LogicalOperator.Or => OpCode.JumpIfTrueKeep,
+                        _ => OpCode.JumpIfNotNullishKeep,
+                    }, endLabel);
+                    _builder.Emit(OpCode.Pop);
+                    EmitTailExpressionAndReturn(logical.Right, position);
+                    _builder.MarkLabel(endLabel);
+                    break;
+                }
+
+            case SequenceExpression sequence:
+                for (var i = 0; i < sequence.Expressions.Count - 1; i++)
+                {
+                    EmitExpression(sequence.Expressions[i]);
+                    _builder.Emit(OpCode.Pop);
+                }
+
+                EmitTailExpressionAndReturn(sequence.Expressions[^1], position);
+                return;
+
+            // An optional call (a?.b(), f?.()), super(...) and import(...) are not in tail position
+            case CallExpression { Callee: not Super, Optional: false } or TaggedTemplateExpression:
+                EmitExpression(expression);
+                _builder.MakeLastCallTailCall();
+                break;
+
+            default:
+                EmitExpression(expression);
+                break;
+        }
+
+        _builder.SetPosition(position);
+        _builder.Emit(OpCode.Return);
+    }
+
+    /// <summary>
     /// value -> value or this: a derived constructor that returns undefined returns its this binding when the binding is in
     /// the environment (an arrow function or eval can call super()). The binding is not checked here: the checks of the
     /// result are done by the Return instruction, once the function body has been left (no handler of the function can
@@ -824,6 +905,11 @@ internal sealed partial class CodeGenerator
         if (returnStatement.Argument is null)
         {
             _builder.Emit(OpCode.PushUndefined);
+        }
+        else if (CanEmitTailCalls())
+        {
+            EmitTailExpressionAndReturn(returnStatement.Argument, returnStatement.Start);
+            return;
         }
         else
         {

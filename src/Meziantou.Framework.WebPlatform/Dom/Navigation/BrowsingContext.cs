@@ -1100,12 +1100,48 @@ public sealed partial class BrowsingContext : IDisposable
                 // The location of the script that started the navigation, for the violations of the content security policies
                 // (the navigation runs in a task)
                 var scriptLocation = sourceDocument is { ContentSecurityPoliciesOrNull: not null, RelevantWindow.ScriptEngine: { } sourceEngine } ? sourceEngine.GetCurrentScriptLocation() : null;
+
+                // https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate, steps 18 and 19: the navigation is the
+                // ongoing navigation of the navigable, which a later navigation cancels, and a navigation of a child navigable
+                // delays the load event of its parent. As in the browsers, a javascript: URL of a cross origin-domain document,
+                // which does nothing, does not abort the ongoing navigation.
+                var javaScriptNavigationId = 0;
+                if (sourceDocument is null || Document.IsSameOriginDomain(sourceDocument, activeDocument))
+                {
+                    CancelOngoingNavigation();
+                    javaScriptNavigationId = Interlocked.Increment(ref s_nextNavigationId);
+                    _ongoingNavigation = javaScriptNavigationId;
+                    _javaScriptUrlNavigationId = javaScriptNavigationId;
+                    if (Parent is not null)
+                    {
+                        IsDelayingLoadEvents = true;
+                    }
+                }
+
                 activeDocument.QueueGlobalTask(() =>
                 {
-                    if (generation == _javaScriptUrlNavigationGeneration)
+                    // As in the browsers, a later javascript: URL navigation does not cancel this one: both scripts run (WPT
+                    // url/javascript-urls.window.js); another navigation cancels it (WPT navigating-across-documents/007.html)
+                    var supersededByJavaScriptUrl = false;
+                    if (javaScriptNavigationId != 0 && _ongoingNavigation != javaScriptNavigationId)
                     {
-                        NavigateToJavaScriptUrl(engine, url, sourceDocument, initiatorOrigin, initialInsertion, sourceElement, scriptLocation, isFormSubmission);
+                        if (!IsJavaScriptUrlNavigationOngoing || javaScriptNavigationId > _javaScriptUrlNavigationId)
+                            return;
+
+                        supersededByJavaScriptUrl = true;
                     }
+
+                    if (generation != _javaScriptUrlNavigationGeneration)
+                    {
+                        if (javaScriptNavigationId != 0)
+                        {
+                            EndNavigationWithoutDocument();
+                        }
+
+                        return;
+                    }
+
+                    NavigateToJavaScriptUrl(engine, url, sourceDocument, initiatorOrigin, initialInsertion, sourceElement, scriptLocation, isFormSubmission, isOngoingNavigation: javaScriptNavigationId != 0 && !supersededByJavaScriptUrl, supersededByJavaScriptUrl);
                 });
             }
 
@@ -1149,6 +1185,7 @@ public sealed partial class BrowsingContext : IDisposable
         _isTraversalOngoing = traversalEntry is not null;
         var navigationId = Interlocked.Increment(ref s_nextNavigationId);
         _ongoingNavigation = navigationId;
+        _ongoingNavigationSourceDocument = traversalEntry is null ? sourceDocument : null;
         if (_containerResourceTiming is { NavigationId: 0 } containerResourceTiming)
         {
             containerResourceTiming.NavigationId = navigationId;
@@ -1208,12 +1245,16 @@ public sealed partial class BrowsingContext : IDisposable
         // The sandboxing flags of the new document are the ones of the container when the navigation starts: a later
         // change of the sandbox attribute applies to the next navigation
         var targetSandboxingFlags = GetIframeSandboxingFlags();
+
+        // https://w3c.github.io/webappsec-cspee/#html-integration: the required CSP of the target snapshot params (the csp
+        // attribute of the iframe when the navigation starts)
+        var requiredPolicy = GetRequiredContentSecurityPolicy();
         QueueTask(() =>
         {
             if (_ongoingNavigation != navigationId || IsDestroyed)
                 return;
 
-            StartLoadingDocument(navigationId, url, sourceDocument, sourceHasTransientActivation, historyHandling, srcdoc, referrerPolicy, iframeElementReferrerPolicy, targetSandboxingFlags, blobUrlEntry, postResource, traversalEntry, response, isFormSubmission: formData is not null, fragmentDirective, userInvolvement);
+            StartLoadingDocument(navigationId, url, sourceDocument, sourceHasTransientActivation, historyHandling, srcdoc, referrerPolicy, iframeElementReferrerPolicy, targetSandboxingFlags, requiredPolicy, blobUrlEntry, postResource, traversalEntry, response, isFormSubmission: formData is not null, fragmentDirective, userInvolvement);
         });
     }
 
@@ -1257,6 +1298,35 @@ public sealed partial class BrowsingContext : IDisposable
     // Incremented to cancel the pending javascript: URL navigations
     private int _javaScriptUrlNavigationGeneration;
 
+    // The identifier of the last javascript: URL navigation (see IsJavaScriptUrlNavigationOngoing)
+    private int _javaScriptUrlNavigationId;
+
+    /// <summary>
+    /// Whether the ongoing navigation is a javascript: URL navigation, whose script has not run yet: as in the browsers, a
+    /// form submission planned before it still navigates the navigable (the script may not create a document).
+    /// </summary>
+    internal bool IsJavaScriptUrlNavigationOngoing => _ongoingNavigation != 0 && _ongoingNavigation == _javaScriptUrlNavigationId;
+
+    // The source document of the ongoing navigation (null for a traversal or a reload): the client of its request
+    private Document? _ongoingNavigationSourceDocument;
+
+    /// <summary>
+    /// Cancels the ongoing navigation when its request was made by a document whose fetches are canceled
+    /// (https://html.spec.whatwg.org/multipage/document-lifecycle.html#abort-a-document: the fetches in the context of the
+    /// document, e.g. the navigation of an iframe by its parent document stopped by <c>window.stop()</c>), as in Chrome.
+    /// </summary>
+    internal void CancelNavigationFetchedBy(Document document)
+    {
+        if (!IsCrossDocumentNavigationOngoing || !ReferenceEquals(_ongoingNavigationSourceDocument, document) || _isTraversalOngoing)
+            return;
+
+        CancelOngoingNavigation();
+        EndNavigationWithoutDocument();
+    }
+
+    /// <summary>Whether the navigable is navigating to another document (the ongoing navigation is not a javascript: URL navigation).</summary>
+    internal bool IsCrossDocumentNavigationOngoing => _ongoingNavigation != 0 && _ongoingNavigation != _javaScriptUrlNavigationId;
+
     /// <summary>
     /// Whether the text directives are enabled (<see cref="WebPlatformFeatures.TextDirectivesEnabled"/>): the fragment
     /// directive is then removed from the URLs the navigable is navigated to.
@@ -1289,13 +1359,22 @@ public sealed partial class BrowsingContext : IDisposable
     internal void CancelPendingJavaScriptUrlNavigations() => _javaScriptUrlNavigationGeneration++;
 
     /// <summary>https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate-to-a-javascript:-url</summary>
-    private void NavigateToJavaScriptUrl(Scripting.ScriptEngine engine, UrlRecord url, Document? sourceDocument, Document? initiatorOrigin, bool initialInsertion, Element? sourceElement, Scripting.ScriptLocation? scriptLocation, bool isFormSubmission)
+    private void NavigateToJavaScriptUrl(Scripting.ScriptEngine engine, UrlRecord url, Document? sourceDocument, Document? initiatorOrigin, bool initialInsertion, Element? sourceElement, Scripting.ScriptLocation? scriptLocation, bool isFormSubmission, bool isOngoingNavigation, bool supersededByJavaScriptUrl = false)
     {
         if (IsDestroyed)
             return;
 
-        // The ongoing navigation is canceled after the origin check (the specification cancels it first, but the browsers
-        // do not abort a navigation of a document because a cross-origin document tried to run a javascript: URL in it)
+        // The ongoing navigation is set to null. The canceled navigation no longer delays the load event of the parent document
+        // (e.g. when the javascript: URL is blocked, or evaluates to a value that is not a string).
+        if (isOngoingNavigation)
+        {
+            CancelOngoingNavigation();
+            EndNavigationWithoutDocument();
+        }
+
+        // The navigation of a cross origin-domain document is not the ongoing navigation: it is canceled after the origin
+        // check (the browsers do not abort a navigation of a document because a cross-origin document tried to run a
+        // javascript: URL in it)
         var document = Document;
         if (sourceDocument is not null && !Document.IsSameOriginDomain(sourceDocument, document))
             return;
@@ -1305,10 +1384,12 @@ public sealed partial class BrowsingContext : IDisposable
         if (sourceDocument is not null && (sourceDocument.ActiveSandboxingFlags & SandboxingFlags.Scripts) != SandboxingFlags.None)
             return;
 
-        // The canceled navigation no longer delays the load event of the parent document (e.g. when the javascript: URL is
-        // blocked, or evaluates to a value that is not a string)
-        CancelOngoingNavigation();
-        EndNavigationWithoutDocument();
+        // A navigation superseded by a later javascript: URL navigation leaves the ongoing navigation to it
+        if (!isOngoingNavigation && !supersededByJavaScriptUrl)
+        {
+            CancelOngoingNavigation();
+            EndNavigationWithoutDocument();
+        }
 
         // https://w3c.github.io/webappsec-csp/#should-block-navigation-request: the pre-navigation checks (the Trusted Types
         // default policy may convert the script, and the form-action directive of a form submission), then the inline checks of
@@ -1362,7 +1443,10 @@ public sealed partial class BrowsingContext : IDisposable
         var parameters = new DocumentParameters
         {
             HistoryHandling = NavigationHistoryBehavior.Replace,
-            Referrer = sourceDocument?.Url ?? "",
+
+            // The navigation params have no request (https://html.spec.whatwg.org/multipage/browsing-the-web.html#evaluate-a-javascript:-url
+            // questions the resulting null referrer): as in Chrome and Safari, the document keeps the referrer of the previous document
+            Referrer = document.Referrer,
             ReferrerPolicy = document.ReferrerPolicy,
             OriginDocument = initiatorOrigin ?? Document.GetOriginDocument(document),
             AboutBaseUrl = document.AboutBaseUrl,
@@ -1375,7 +1459,8 @@ public sealed partial class BrowsingContext : IDisposable
             PolicyContainer = PolicyContainer.Clone(document),
         };
 
-        LoadDocument(document.UrlRecord, parameters, DocumentResource.Create(result, "text/html;charset=utf-8"));
+        // The body of the response is the UTF-8 encoding of the result: its lone surrogates become U+FFFD
+        LoadDocument(document.UrlRecord, parameters, DocumentResource.Create(Infra.InfraString.ToScalarValueString(result), "text/html;charset=utf-8"));
     }
 
     /// <summary>
@@ -1404,6 +1489,7 @@ public sealed partial class BrowsingContext : IDisposable
         }
 
         _ongoingNavigation = 0;
+        _ongoingNavigationSourceDocument = null;
         _isTraversalOngoing = false;
         if (_loaderCancellation is { } cancellation)
         {
@@ -1417,9 +1503,15 @@ public sealed partial class BrowsingContext : IDisposable
     /// the srcdoc and about:blank documents are created immediately, the other documents are provided by
     /// <see cref="BrowsingContextOptions.DocumentLoader"/>, possibly asynchronously.
     /// </summary>
-    private void StartLoadingDocument(int navigationId, UrlRecord url, Document? sourceDocument, bool sourceHasTransientActivation, NavigationHistoryBehavior historyHandling, string? srcdoc, string referrerPolicy, string iframeElementReferrerPolicy, SandboxingFlags targetSandboxingFlags, FileApi.BlobUrlEntry? blobUrlEntry, PostResource? postResource, SessionHistoryEntry? traversalEntry, DocumentResource? fetchedResponse, bool isFormSubmission, string? fragmentDirective = null, UserNavigationInvolvement userInvolvement = UserNavigationInvolvement.None)
+    private void StartLoadingDocument(int navigationId, UrlRecord url, Document? sourceDocument, bool sourceHasTransientActivation, NavigationHistoryBehavior historyHandling, string? srcdoc, string referrerPolicy, string iframeElementReferrerPolicy, SandboxingFlags targetSandboxingFlags, string? requiredPolicy, FileApi.BlobUrlEntry? blobUrlEntry, PostResource? postResource, SessionHistoryEntry? traversalEntry, DocumentResource? fetchedResponse, bool isFormSubmission, string? fragmentDirective = null, UserNavigationInvolvement userInvolvement = UserNavigationInvolvement.None)
     {
         var initiatorOrigin = sourceDocument is null ? null : Document.GetOriginDocument(sourceDocument);
+
+        // A traversal to an about: document gives it the initiator origin of its document state, not the origin of the active document
+        if (traversalEntry?.DocumentState is { HasInitiatorOrigin: true } storedState && url.Scheme == "about")
+        {
+            initiatorOrigin = storedState.InitiatorOriginDocument;
+        }
 
         // https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate: "If sourceDocument is navigable's container
         // document, then reserve deferred fetch quota for navigable's container given url's origin"
@@ -1468,6 +1560,16 @@ public sealed partial class BrowsingContext : IDisposable
         // documents of the local schemes get a clone of the policy container stored in the session history entry, else of
         // the one of their initiator (the parent for a srcdoc document)
         var historyPolicyContainer = traversalEntry?.DocumentState.HistoryPolicyContainer;
+
+        // A document of a local scheme loaded again from the session history keeps the required CSP it enforced (as in
+        // Chromium): it is in its history policy container, or in the document state of a blob: document. A later change
+        // of the csp attribute applies to the documents that are fetched again.
+        if (traversalEntry is not null && url.Scheme is "about" or "blob" or "data")
+        {
+            requiredPolicy = historyPolicyContainer is null ? traversalEntry.DocumentState.HistoryRequiredContentSecurityPolicy : null;
+        }
+
+        parameters.RequiredContentSecurityPolicy = requiredPolicy;
 
         DocumentResource resource;
         if (srcdoc is null && IsNavigationRequestBlockedByContentSecurityPolicy(url, sourceDocument, isFormSubmission))
@@ -1614,6 +1716,12 @@ public sealed partial class BrowsingContext : IDisposable
             if (postResource is not null)
             {
                 request.HeaderList.Add(new("Content-Type", postResource.ContentType));
+            }
+
+            // https://w3c.github.io/webappsec-cspee/#abstract-opdef-set-the-sec-required-csp-header
+            if (requiredPolicy is not null)
+            {
+                request.HeaderList.Add(new("Sec-Required-CSP", requiredPolicy));
             }
 
             // https://wicg.github.io/nav-speculation/prefetch.html#wait-for-a-matching-prefetch-record: the navigation uses the
@@ -1882,7 +1990,7 @@ public sealed partial class BrowsingContext : IDisposable
         // The opener policy and the cross-origin resource policy of the responses of the fetch of a navigation are checked by
         // ProcessNavigationResponse. The response of a child navigable is checked by the frame-ancestors directives of its
         // policies, by the embedder policy of its container document and by its X-Frame-Options header.
-        if (!parameters.OpaqueOrigin && (IsNavigationResponseBlocked(url, resource.Headers, resource.StatusCode, checkResourcePolicy: !checkedByNavigationFetch) || (!checkedByNavigationFetch && !ApplyOpenerPolicy(url, parameters, resource.Headers))))
+        if (!parameters.OpaqueOrigin && (IsNavigationResponseBlocked(url, resource.Headers, resource.StatusCode, checkResourcePolicy: !checkedByNavigationFetch, parameters) || (!checkedByNavigationFetch && !ApplyOpenerPolicy(url, parameters, resource.Headers))))
         {
             // A network error: an error document, whose origin is opaque
             resource = new DocumentResource("");
@@ -1960,6 +2068,7 @@ public sealed partial class BrowsingContext : IDisposable
     private void EndNavigationWithoutDocument()
     {
         _ongoingNavigation = 0;
+        Document.FireSuppressedContainerLoadEvent();
         if (IsDelayingLoadEvents)
         {
             IsDelayingLoadEvents = false;
@@ -2001,8 +2110,16 @@ public sealed partial class BrowsingContext : IDisposable
             _ = TextDirectives.RemoveFragmentDirective(url);
         }
 
-        // There is no MIME type sniffing: a response without a valid Content-Type is an HTML document
+        // https://mimesniff.spec.whatwg.org/#mime-type-sniffing-algorithm: a Content-Type that gives no MIME type (e.g. */*) is
+        // sniffed from the bytes of the resource (an HTML document, else a text or binary resource). A response without
+        // Content-Type is an HTML document (the handlers of the tests often omit it).
         var mimeType = resource.MimeType;
+        if (mimeType is null && HeaderList.Get(resource.Headers, "Content-Type") is not null)
+        {
+            var sniffedType = EmbeddedResources.SniffType(resource.ContentBytes is { } contentBytes ? contentBytes.Span : System.Text.Encoding.UTF8.GetBytes(resource.Content ?? ""));
+            mimeType = Infra.MimeType.Parse(sniffedType == "image/*" ? "application/octet-stream" : sniffedType);
+        }
+
         var contentType = mimeType?.Essence ?? "text/html";
         var charset = mimeType?.GetParameter("charset");
         if (HeaderList.Get(resource.Headers, "Last-Modified") is { } lastModified)
@@ -2076,6 +2193,7 @@ public sealed partial class BrowsingContext : IDisposable
                 var encoding = WebEncodingId.Utf8;
                 var text = resource.Content ?? Decode(resource.ContentBytes!.Value.Span, charset, out encoding);
                 parameters.ContentType = contentType;
+                parameters.IsTextDocument = true;
                 var textDocument = parser.Parse("<pre style=\"word-wrap: break-word; white-space: pre-wrap;\">\n" + WebUtility.HtmlEncode(text));
                 textDocument.Encoding = encoding;
             }
@@ -2234,6 +2352,14 @@ public sealed partial class BrowsingContext : IDisposable
             sandboxingFlags |= GetContentSecurityPolicySandboxingFlags(inheritedPolicyContainer);
         }
 
+        // https://w3c.github.io/webappsec-cspee/#html-integration: the required CSP is enforced by the document, unless the
+        // policies of its response subsume it (its sandbox directive applies to the document)
+        var enforcedRequiredPolicy = GetEnforcedRequiredContentSecurityPolicy(document, parameters);
+        if (enforcedRequiredPolicy?.GetDirectiveValue("sandbox") is { } requiredSandbox)
+        {
+            sandboxingFlags |= Sandboxing.ParseSandboxingDirective(string.Join(' ', requiredSandbox));
+        }
+
         document.ActiveSandboxingFlags = sandboxingFlags;
 
         // https://html.spec.whatwg.org/multipage/webappapis.html#concept-environment-script: scripting is disabled when the
@@ -2253,6 +2379,9 @@ public sealed partial class BrowsingContext : IDisposable
         document.ReferrerPolicy = parameters.ReferrerPolicy;
         document.ResponseStatus = parameters.Status;
         document.MediaDocumentResource = parameters.MediaDocumentResource;
+
+        // The text documents have no doctype but are in no-quirks mode, as in the browsers
+        document.ParserCannotChangeTheMode |= parameters.IsTextDocument;
 
         // https://w3c.github.io/webappsec-csp/#parse-response-csp: the self-origin of the CSP list is the origin of the URL of
         // the response, also when the document is sandboxed (the documents of the local schemes keep their origin)
@@ -2292,6 +2421,16 @@ public sealed partial class BrowsingContext : IDisposable
         else
         {
             document.AddContentSecurityPolicies(parameters.Headers);
+        }
+
+        if (enforcedRequiredPolicy is not null)
+        {
+            document.AddContentSecurityPolicy(enforcedRequiredPolicy.Serialized, reportOnly: false);
+        }
+
+        if (parameters.RequiredContentSecurityPolicy is { } requiredPolicy && !parameters.IsNetworkError)
+        {
+            document.RequiredContentSecurityPolicy = requiredPolicy;
         }
 
         foreach (var (name, value) in parameters.Headers)
@@ -2431,11 +2570,12 @@ public sealed partial class BrowsingContext : IDisposable
         if (oldDocument is not null)
         {
             FirePageSwap(oldDocument, document, historyHandling, traversalEntry);
-            UnloadDocumentAndDescendants(oldDocument);
+            UnloadDocumentAndDescendants(oldDocument, includeInitialAboutBlank: true);
 
             // https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigation-params-unload-timing: the times of the unload
-            // event of the previous document are exposed to a document of the same origin, when no redirect is cross-origin
-            if (document.LoadTimingInfo is { HasCrossOriginRedirects: false } loadTiming && oldDocument.UnloadEventTimes is { Start: not 0 } unloadTimes
+            // event of the previous document are exposed to a document of the same origin, when no redirect is cross-origin. As in
+            // the browsers, the initial about:blank document is not a previous document (its unload event times are 0).
+            if (!oldDocument.IsInitialAboutBlank && document.LoadTimingInfo is { HasCrossOriginRedirects: false } loadTiming && oldDocument.UnloadEventTimes is { Start: not 0 } unloadTimes
                 && OriginRecord.IsSameOrigin(oldDocument.Origin, document.Origin))
             {
                 loadTiming.UnloadEventStart = unloadTimes.Start;
@@ -2505,6 +2645,15 @@ public sealed partial class BrowsingContext : IDisposable
         if (document.UrlRecord.Scheme is "about" or "data")
         {
             entry.DocumentState.HistoryPolicyContainer = PolicyContainer.Clone(document);
+            if (document.UrlRecord.Scheme == "about" && parameters is not null)
+            {
+                entry.DocumentState.HasInitiatorOrigin = true;
+                entry.DocumentState.InitiatorOriginDocument = parameters.OpaqueOrigin ? null : parameters.OriginDocument;
+            }
+        }
+        else if (document.UrlRecord.Scheme == "blob")
+        {
+            entry.DocumentState.HistoryRequiredContentSecurityPolicy = parameters?.RequiredContentSecurityPolicy;
         }
 
         document.LatestEntry = entry;
@@ -2601,7 +2750,7 @@ public sealed partial class BrowsingContext : IDisposable
     /// </summary>
     private void FirePageSwap(Document oldDocument, Document newDocument, NavigationHistoryBehavior historyHandling, SessionHistoryEntry? traversalEntry)
     {
-        if (oldDocument.IsInitialAboutBlank || oldDocument.IsUnloaded || oldDocument.RelevantWindow is not { } oldWindow || !ReferenceEquals(oldWindow.Document, oldDocument))
+        if (oldDocument.IsUnloaded || oldDocument.RelevantWindow is not { } oldWindow || !ReferenceEquals(oldWindow.Document, oldDocument))
             return;
 
         var navigationType = traversalEntry is null
@@ -2672,11 +2821,12 @@ public sealed partial class BrowsingContext : IDisposable
     /// </summary>
     /// <param name="document">The document to unload.</param>
     /// <param name="includeInitialAboutBlank">
-    /// Whether <paramref name="document"/> is unloaded when it is an initial about:blank document. A navigation does not
-    /// unload it: its window may be reused by the new document, and it was never shown. When its top-level traversable is
-    /// closed, the browsers fire the pagehide and unload events at it (its page showing flag is not set, so the specification
-    /// fires no pagehide). The initial about:blank documents of the descendant navigables are always unloaded, as in the
-    /// browsers (e.g. <c>visibilitychange</c> is fired at the empty frames of a removed frame).
+    /// Whether <paramref name="document"/> is unloaded when it is an initial about:blank document. As in the browsers, a
+    /// navigation unloads it (before the new document reuses its window, if it does), and so does the closing of its
+    /// top-level traversable: the pagehide and unload events are fired at it (its page showing flag is not set, so the
+    /// specification fires no pagehide). The initial about:blank documents of the descendant navigables are always unloaded,
+    /// as in the browsers (e.g. <c>visibilitychange</c> is fired at the empty frames of a removed frame). The removal of a
+    /// container does not unload it (see <see cref="UnloadRemovedChildNavigables"/>).
     /// </param>
     private static void UnloadDocumentAndDescendants(Document document, bool includeInitialAboutBlank = false)
     {
@@ -3229,6 +3379,9 @@ public sealed partial class BrowsingContext : IDisposable
         /// <summary>The response of the navigation, for a media document (see <see cref="Document.MediaDocumentResource"/>).</summary>
         public DocumentResource? MediaDocumentResource { get; set; }
 
+        /// <summary>Whether the document shows a text resource (https://html.spec.whatwg.org/multipage/document-lifecycle.html#read-text).</summary>
+        public bool IsTextDocument { get; set; }
+
         /// <summary>
         /// The URL of the document when it is not the URL of the response: the URL of a navigation that uses the response of a
         /// navigational prefetch that was not redirected, or the current URL of the request when a service worker responded
@@ -3324,5 +3477,11 @@ public sealed partial class BrowsingContext : IDisposable
         /// of the document replaced by the result of a <c>javascript:</c> URL. Null for the policies of the response headers.
         /// </summary>
         public PolicyContainer? PolicyContainer { get; set; }
+
+        /// <summary>
+        /// The required CSP of the navigation params (https://w3c.github.io/webappsec-cspee/#navigation-params-required-csp):
+        /// the serialized policy that the document must enforce, or null.
+        /// </summary>
+        public string? RequiredContentSecurityPolicy { get; set; }
     }
 }

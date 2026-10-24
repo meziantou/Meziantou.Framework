@@ -8,8 +8,8 @@
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 110 | 114 | 0 | 96% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 242 | 251 | 0 | 96% |
-| **All** | **352** | **365** | **0** | **96%** |
+| [Reftests](#reftests) | 243 | 251 | 0 | 97% |
+| **All** | **353** | **365** | **0** | **97%** |
 
 ## Stable tests
 
@@ -172,7 +172,7 @@
 | [`overlay/overlay-transition-dialog.html`](https://wpt.fyi/results/css/css-position/overlay/overlay-transition-dialog.html) | Fail | 0 / 1 | BUG | the dialog closed while its `overlay` and `display` transition stays rendered in the top layer with its `::backdrop`, but it is no longer `:modal` (https://html.spec.whatwg.org/multipage/interactive-elements.html#close-the-dialog sets is modal to false): it loses the `position: fixed; inset-block: 0` of `dialog:modal` and is painted at the top of the viewport instead of centered, and it keeps the focus (focus ring) where the reference blurs it; Blink centers it (fails in Firefox and Safari) |
 | [`overlay/overlay-transition-finished.html`](https://wpt.fyi/results/css/css-position/overlay/overlay-transition-finished.html) | Pass | 1 / 1 |  |  |
 | [`overlay/overlay-transition-in-rendering.html`](https://wpt.fyi/results/css/css-position/overlay/overlay-transition-in-rendering.html) | Fail | 0 / 1 | TEST RUNNER | the runner runs the event loop until it is idle before the screenshot, advancing its virtual clock to the next timer: the 60s `overlay` transition of the popover shown second ends (it is then rendered in the top layer, red over the green popover), where the browsers take the screenshot after the load, while the transition delays the rendering in the top layer |
-| [`overlay/overlay-transition-out-rendering.html`](https://wpt.fyi/results/css/css-position/overlay/overlay-transition-out-rendering.html) | Fail | 0 / 1 | TEST RUNNER | the runner runs the event loop until it is idle before the screenshot, advancing its virtual clock to the next timer: the 60s `overlay` transition of the hidden green popover ends and it is removed from the top layer (the red popover is then on top), where the browsers take the screenshot after the load, while the transition keeps it rendered in the top layer |
+| [`overlay/overlay-transition-out-rendering.html`](https://wpt.fyi/results/css/css-position/overlay/overlay-transition-out-rendering.html) | Pass | 1 / 1 |  |  |
 | [`position-absolute-center-001.html`](https://wpt.fyi/results/css/css-position/position-absolute-center-001.html) | Pass | 1 / 1 |  |  |
 | [`position-absolute-center-002.html`](https://wpt.fyi/results/css/css-position/position-absolute-center-002.html) | Pass | 1 / 1 |  |  |
 | [`position-absolute-center-003.html`](https://wpt.fyi/results/css/css-position/position-absolute-center-003.html) | Pass | 1 / 1 |  |  |

@@ -101,8 +101,9 @@ internal sealed partial class Painter
         }
         else if (ClipsSvgViewport(style))
         {
+            // The overflow clip edge of the replaced box (its content box extended by overflow-clip-margin)
             _builder.Save();
-            _builder.Add(new ClipRectItem(GetSvgViewportClip(style, snappedContent)));
+            _builder.Add(new ClipRectItem(GetSvgViewportClip(style, SnapToDevicePixels(fragment.OverflowClipRect.Translate(offset)))));
         }
         else if (svg.ParentNode is Document)
         {

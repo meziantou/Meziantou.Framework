@@ -588,6 +588,16 @@ public sealed class FontFaceSet : EventTarget, IReadOnlyCollection<FontFace>
         LoadUsedFontFaces();
     }
 
+    /// <summary>Reports the violations of the content security policies by the sources of the font faces of the style sheets (see <see cref="FontFace.CheckContentSecurityPolicy"/>).</summary>
+    internal void CheckContentSecurityPolicy()
+    {
+        UpdateCssConnectedFaces();
+        foreach (var face in _cssConnectedFaces.ToArray())
+        {
+            face.CheckContentSecurityPolicy();
+        }
+    }
+
     /// <summary>https://drafts.csswg.org/css-font-loading/#fontfaceset-pending-on-the-environment: the document is loading or has pending style sheets.</summary>
     private bool IsPendingOnTheEnvironment() => _worker is null && (_document.ReadyState != DocumentReadyState.Complete || _document.StyleSheetImportsDelayingTheLoadEvent > 0);
 

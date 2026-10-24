@@ -35,6 +35,9 @@ public partial class HtmlMediaElement
     private Node? _pointerBefore;
     private Node? _pointerAfter;
 
+    /// <summary>The candidate of the children mode; null once it was removed or moved out of the media element.</summary>
+    private HtmlSourceElement? _candidate;
+
     /// <summary>Whether the resource selection algorithm waits for a node after the pointer (a new <c>source</c> element).</summary>
     private bool _waitingForSource;
 
@@ -169,6 +172,7 @@ public partial class HtmlMediaElement
         _hasSourcePointer = false;
         _pointerBefore = null;
         _pointerAfter = null;
+        _candidate = null;
         _waitingForSource = false;
         _deferredFetch = null;
         _stallGeneration++;
@@ -380,6 +384,7 @@ public partial class HtmlMediaElement
     /// <summary>The "process candidate" steps of the children mode.</summary>
     private void ProcessCandidate(int generation, HtmlSourceElement candidate)
     {
+        _candidate = candidate;
         var src = candidate.GetAttributeValue("src");
         if (string.IsNullOrEmpty(src)
             || (candidate.GetAttributeValue("media") is { } media && !MediaQueryEvaluator.Matches(media, StyleEngine.CreateEnvironment(NodeDocument)))
@@ -394,11 +399,18 @@ public partial class HtmlMediaElement
         FetchResource(generation, url, provider: ResolveMediaSourceUrl(url), () => FailWithElements(generation, candidate));
     }
 
-    /// <summary>The "failed with elements" steps: an <c>error</c> event is fired at the candidate, and the next candidate is searched at the next stable state.</summary>
+    /// <summary>
+    /// The "failed with elements" steps: an <c>error</c> event is fired at the candidate, unless it was removed or moved out
+    /// of the media element, and the next candidate is searched at the next stable state.
+    /// </summary>
     private void FailWithElements(int generation, HtmlSourceElement candidate)
     {
         DetachMediaSource();
-        QueueMediaElementTask(() => candidate.FireEvent(new Event("error")));
+        if (ReferenceEquals(_candidate, candidate))
+        {
+            QueueMediaElementTask(() => candidate.FireEvent(new Event("error")));
+        }
+
         AwaitStableState(() =>
         {
             if (generation != _selectionGeneration)
@@ -443,6 +455,11 @@ public partial class HtmlMediaElement
     {
         if (!_hasSourcePointer)
             return;
+
+        if (_candidate is { } candidate && !ReferenceEquals(candidate.ParentNode, this))
+        {
+            _candidate = null;
+        }
 
         if (_pointerBefore is { } before && !ReferenceEquals(before.ParentNode, this))
         {

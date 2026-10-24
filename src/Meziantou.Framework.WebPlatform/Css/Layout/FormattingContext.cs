@@ -128,6 +128,12 @@ internal readonly record struct ContentArea(WritingDirection WritingDirection, L
     public bool IsBlockSizeIndefinite { get; init; }
 
     /// <summary>
+    /// Whether <see cref="InlineSize"/> is given by the contents of the box (its fit-content size, or an intrinsic size keyword): it is
+    /// not a definite size (https://drafts.csswg.org/css-sizing-3/#definite: "a size that can be determined without performing layout").
+    /// </summary>
+    public bool InlineSizeDependsOnContents { get; init; }
+
+    /// <summary>
     /// Whether <see cref="BlockSize"/> comes from the inline size through the preferred aspect ratio and the box grows to contain
     /// its contents (https://drafts.csswg.org/css-sizing-4/#aspect-ratio-minimum: its automatic minimum size): the contents are
     /// aligned in the larger of the two sizes.
@@ -693,6 +699,7 @@ internal abstract class FormattingContext
 
         var inlineIsRatioDependent = false;
         var inlineIsAutomatic = false;
+        var inlineDependsOnContents = false;
         double inlineSize;
         var isAutoInlineSize = false;
         if (fixedInlineSize is { } fixedInline)
@@ -711,6 +718,7 @@ internal abstract class FormattingContext
             if (!preferredIsTransferred && inlineSizing.Resolve(preferredInlineSize, SizingProperty.Preferred) is { } specified)
             {
                 inlineSize = specified;
+                inlineDependsOnContents = preferredInlineSize.IsIntrinsic;
 
                 // https://drafts.csswg.org/css-sizing-4/#aspect-ratio-size-transfers: the sizing constraints of the block axis are
                 // "applied to any indefinite preferred size in the other axis": an intrinsic size keyword is one
@@ -737,6 +745,7 @@ internal abstract class FormattingContext
                     // a shrink-to-fit box (a button) is given by its contents, its auto margins take the remaining space
                     var isFitContent = isOrthogonal || space.AutoInlineSizeIsFitContent || justification is { IsFitContent: true };
                     isAutoInlineSize = box.Kind != ContainerBoxKind.Replaced && !isFitContent && !BlockFormattingContext.UsesShrinkToFit(box);
+                    inlineDependsOnContents = box.Kind != ContainerBoxKind.Replaced && !isAutoInlineSize;
                     inlineIsAutomatic = true;
                     inlineSize = GetAutomaticInlineSize(context, box, availableInlineSize - logicalMargin.InlineSum(), edges.InlineSum(), inlineSizing.GetIntrinsicSizingInput(), isFitContent);
                 }
@@ -821,7 +830,11 @@ internal abstract class FormattingContext
             ratioBlockSize = (inlineIsAutomatic ? GetNaturalBlockSize(box, contentInlineSize) : null) is { } naturalBlockSize
                 ? naturalBlockSize + paddingAndBorder.BlockSum()
                 : blockRatio.ToBlock(inlineSize);
-            specifiedBlockSize = blockSizing.Clamp(ratioBlockSize.Value, transferredMin, transferredMax);
+
+            // The basis auto of calc-size() is the automatic size: the block size transferred through the aspect ratio
+            // (https://drafts.csswg.org/css-values-5/#calc-size)
+            var ratioPreferredBlockSize = preferredBlockSize.Kind == SizeKind.CalcSize && (blockSizing with { ContentSize = ratioBlockSize.Value }).Resolve(preferredBlockSize, SizingProperty.Preferred) is { } calcSize ? calcSize : ratioBlockSize.Value;
+            specifiedBlockSize = blockSizing.Clamp(ratioPreferredBlockSize, transferredMin, transferredMax);
         }
 
         // https://quirks.spec.whatwg.org/#the-html-element-fills-the-viewport-quirk and
@@ -839,6 +852,7 @@ internal abstract class FormattingContext
         var content = new ContentArea(writingDirection, new LogicalOffset(edges.InlineStart, edges.BlockStart), contentInlineSize, contentBlockSize)
         {
             IsBlockSizeIndefinite = space.IsFixedBlockSizeIndefinite && !isOrthogonal && fixedBlockSize is not null,
+            InlineSizeDependsOnContents = inlineDependsOnContents,
             BlockSizeGrowsToContents = blockIsRatioDependent && UsesAspectRatioAutomaticMinimum(box, layout, blockIsHorizontal),
             AnonymousPercentageBlockSize = contentBlockSize is null && !isOrthogonal && box is { Kind: ContainerBoxKind.Anonymous, IsInlineBox: false, Display.Internal: DisplayInternal.None } ? space.PercentageBlockSize : null,
             // The baseline of an inline-block whose baseline-source is auto: its last baseline, computed as CSS 2 defines it
@@ -1173,6 +1187,14 @@ internal abstract class FormattingContext
         }
 
         var size = writingDirection.ToPhysical(new LogicalSize(inlineSize, finalBlockSize));
+
+        // The auto margins of an orthogonal block-level box in normal flow, in the inline axis of its containing block (its block
+        // axis), are resolved with its block size (https://drafts.csswg.org/css2/#blockwidth)
+        if (isOrthogonal && space.FixedInlineSize is null && box.IsBlockLevel && box.IsInFlow && !space.IsInlineSizeIndefinite && !space.AutoInlineSizeIsFitContent && double.IsFinite(space.AvailableInlineSize))
+        {
+            margin = ResolveAutoInlineMargins(boxModel, containingBlock, margin, space.AvailableInlineSize, containingBlock.ToLogical(size).Inline, isAutoInlineSize: false, justification);
+        }
+
         var fragment = new BoxFragment(box, size, border, padding, margin, builder.Build(size))
         {
             FirstBaseline = result.FirstBaseline + edges.BlockStart + contentAlignmentOffset,

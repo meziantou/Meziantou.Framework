@@ -440,8 +440,9 @@ internal sealed partial class InlineLayoutAlgorithm
         }
 
         var ellipsisWidth = ellipsis?.InlineSize ?? 0;
+        var ellipsisHang = ellipsisWidth - GetBlockEllipsisReservedSize(ellipsis);
         _justifiedSpace = 0;
-        var shift = AlignLine(end, opportunity.Size, indent, contentWidth + ellipsisWidth, hangWidth + endHang, startHang, isRightToLeft);
+        var shift = AlignLine(end, opportunity.Size, indent, contentWidth + ellipsisWidth - ellipsisHang, hangWidth + endHang + ellipsisHang, startHang, isRightToLeft);
         ApplyLineSpacing();
         PlaceLeaves(reordered);
         var contentShift = ellipsis is not null && isRightToLeft ? shift + ellipsisWidth : shift;

@@ -54,10 +54,7 @@
     "total": 3
   },
   "css/css-transitions/after-change-style-inherited-try-fallback.html": {
-    "total": 1,
-    "failures": {
-      "Position fallback correctly applied to after-change style": "FAIL"
-    }
+    "total": 1
   },
   "css/css-transitions/after-change-style-inherited.html": {
     "total": 6
@@ -191,7 +188,7 @@
     "total": 1
   },
   "css/css-transitions/inherit-background-color-transition.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "PASS"
   },
   "css/css-transitions/inherit-height-transition.html": {
     "total": 1
@@ -458,11 +455,7 @@
     "total": 1
   },
   "css/css-transitions/transition-behavior-events.html": {
-    "total": 2,
-    "failures": {
-      "transitionrun events": "FAIL",
-      "transitionstart events": "FAIL"
-    }
+    "total": 2
   },
   "css/css-transitions/transition-behavior.html": {
     "total": 6

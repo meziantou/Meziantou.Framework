@@ -352,6 +352,21 @@ internal sealed class FragmentationFlow
 
     private bool _slicesMonolithicContent;
 
+    private HashSet<int>? _monolithicSlices;
+
+    /// <summary>
+    /// Records that the fragmentainer of an index starts in monolithic content sliced by the pages: as in Blink (whose page
+    /// grows over the monolithic content that does not fit), the boxes with <c>box-decoration-break: clone</c> do not repeat
+    /// their edges there.
+    /// </summary>
+    public void AddMonolithicSlice(int index) => (_root._monolithicSlices ??= []).Add(index);
+
+    /// <summary>Returns whether the fragmentainer of an index starts in monolithic content sliced by the pages (see <see cref="AddMonolithicSlice"/>).</summary>
+    public bool StartsInMonolithicSlice(int index) => _root._monolithicSlices?.Contains(index) == true;
+
+    /// <summary>Forgets the slices of the monolithic content (the breaks are found again).</summary>
+    public void ClearMonolithicSlices() => _root._monolithicSlices?.Clear();
+
     /// <summary>Whether the flow is collected with the rules of the pages (see <see cref="PageBreakRules"/>).</summary>
     private bool _isPaged;
 
@@ -583,6 +598,14 @@ internal sealed class FragmentationFlow
             // A percentage that is not resolved behaves as auto (the box is as tall as its contents)
             return !(size.IsLengthPercentage && size.Value.HasPercentage && !double.IsNaN(box.IntrinsicBlockSize)
                 && Math.Abs(box.IntrinsicBlockSize - _writingDirection.ToLogical(box.Size).Block) < Epsilon);
+        }
+
+        // An item of a grid lanes container whose lanes are rows, shorter than its contents (stretched in a row that does not
+        // follow them): as an item of a grid in a fixed row, it does not grow when its contents are pushed by the breaks
+        if (box.Parent is BoxFragment { Box.Display.Inside: DisplayInside.GridLanes } lanes && GridLayoutAlgorithm.GetLaneAxis(lanes.Box.Style.Layout) == GridAxis.Rows
+            && box.IntrinsicBlockSize > _writingDirection.ToLogical(box.Size).Block + Epsilon)
+        {
+            return true;
         }
 
         var maxSize = style.GetMaxSize(horizontal: !_writingDirection.IsHorizontal);
@@ -1090,7 +1113,13 @@ internal sealed class FragmentationFlow
 
         /// <summary>The number of boxes with <c>break-inside: avoid</c> around the contents that are visited (see <see cref="BreakCandidate.AvoidDepth"/>).</summary>
         public int AvoidDepth { get; init; }
+
+        /// <summary>The boxes around the contents that repeat their edges (in <see cref="CloneStart"/> and <see cref="CloneEnd"/>), from the nearest one.</summary>
+        public CloneBox? CloneBoxes { get; init; }
     }
+
+    /// <summary>A box that repeats its edges at the breaks inside its border box (<c>box-decoration-break: clone</c>): the block-end edge of its border box and its edges.</summary>
+    private sealed record CloneBox(double End, double StartEdges, double EndEdges, CloneBox? Next);
 
     /// <summary>Returns the logical block range of a child fragment in the strip (without its relative offset).</summary>
     internal static (double Top, double Bottom, double Inline) GetBlockRange(Fragment child, PhysicalSize parentSize, WritingDirection parentWritingDirection, double parentTop)
@@ -1378,6 +1407,7 @@ internal sealed class FragmentationFlow
             OwnCloneStart = clones ? edges.BlockStart : 0,
             OwnCloneEnd = clones ? edges.BlockEnd : 0,
             ShrinksAtBreaks = clones && layout.BoxSizing == BoxSizing.BorderBox,
+            BlockEndEdges = clones ? 0 : edges.BlockEnd,
         };
 
         var item = CreateContentItem(box, top, bottom, clones ? context with { CloneOwner = group } : context);
@@ -1757,7 +1787,12 @@ internal sealed class FragmentationFlow
 
         if (fragmentation.BoxDecorationBreak == BoxDecorationBreak.Clone)
         {
-            childContext = childContext with { CloneStart = childContext.CloneStart + edges.BlockStart, CloneEnd = childContext.CloneEnd + edges.BlockEnd };
+            childContext = childContext with
+            {
+                CloneStart = childContext.CloneStart + edges.BlockStart,
+                CloneEnd = childContext.CloneEnd + edges.BlockEnd,
+                CloneBoxes = new CloneBox(bottom, edges.BlockStart, edges.BlockEnd, childContext.CloneBoxes),
+            };
         }
 
         if (box.Box.IsOutOfFlow || (_root._pushedFloats is not null && BlockFormattingContext.EstablishesNewFormattingContext(box.Box, box.Box.Parent is { } parentBox ? WritingDirection.FromStyle(parentBox.Style.Layout) : _writingDirection)))
@@ -2248,7 +2283,7 @@ internal sealed class FragmentationFlow
         {
             // https://drafts.csswg.org/css-break-3/#break-margins: "When a forced break occurs there, adjoining margins before the break
             // are truncated, but margins after the break are preserved"
-            var marginStart = next is BoxFragment nextBox ? Math.Max(0, nextBox.Margin.Get(_writingDirection.BlockStart)) : 0;
+            var marginStart = next is BoxFragment nextBox ? GetCollapsedBlockStartMargin(nextBox) : 0;
             AddCandidate(new BreakCandidate(Math.Max(previousBottom, nextTop - marginStart), previousBottom, BreakAppeal.Forced), context);
             return;
         }
@@ -2258,6 +2293,45 @@ internal sealed class FragmentationFlow
             + (next is BoxFragment followingBox ? Math.Max(0, followingBox.Margin.Get(_writingDirection.BlockStart)) : 0);
         var avoid = context.Avoid || IsAvoidBreak(after) || IsAvoidBreak(before);
         AddCandidate(new BreakCandidate(nextTop, previousBottom, avoid ? BreakAppeal.Avoid : BreakAppeal.Perfect) { IsBetweenMargins = nextTop - previousBottom <= margins + Epsilon }, context);
+    }
+
+    /// <summary>
+    /// Returns the positive block-start margin of a box after a forced break, collapsed with the block-start margins of its first
+    /// in-flow descendants that collapse through its block-start edge (https://drafts.csswg.org/css2/#collapsing-margins): the
+    /// margin of a first child that is at the block-start edge of its parent (without border nor padding) collapsed with it.
+    /// </summary>
+    private double GetCollapsedBlockStartMargin(BoxFragment box)
+    {
+        var side = _writingDirection.BlockStart;
+        var margin = Math.Max(0, box.Margin.Get(side));
+        while (box.Border.Get(side) + box.Padding.Get(side) <= Epsilon && GetFirstInFlowChild(box) is BoxFragment child
+            && GetBlockStartOffset(box, child) <= Epsilon)
+        {
+            margin = Math.Max(margin, child.Margin.Get(side));
+            box = child;
+        }
+
+        return margin;
+
+        static Fragment? GetFirstInFlowChild(BoxFragment box)
+        {
+            var children = box.ChildrenSpan;
+            for (var i = 0; i < box.InFlowChildCount && i < children.Length; i++)
+            {
+                if (children[i] is not BoxFragment { Box.Style.Layout.IsOutOfFlow: true })
+                    return children[i];
+            }
+
+            return null;
+        }
+
+        double GetBlockStartOffset(BoxFragment parent, Fragment child) => side switch
+        {
+            PhysicalSide.Top => child.Offset.Y,
+            PhysicalSide.Left => child.Offset.X,
+            PhysicalSide.Right => parent.Size.Width - child.Offset.X - child.Size.Width,
+            _ => parent.Size.Height - child.Offset.Y - child.Size.Height,
+        };
     }
 
     /// <summary>
@@ -2315,7 +2389,32 @@ internal sealed class FragmentationFlow
     {
         if (context.CloneStart != 0 || context.CloneEnd != 0)
         {
-            candidate = candidate with { CloneStartEdges = context.CloneStart, CloneEndEdges = context.CloneEnd, Repeated = context.Repeated, CloneOwner = context.CloneOwner };
+            // (as in Blink, a box does not repeat its edges at a break after the end of its border box, in the contents that overflow it:
+            // a range of breaks across the end of the box is split there)
+            if (candidate.IsRange)
+            {
+                for (var cloneBox = context.CloneBoxes; cloneBox is not null; cloneBox = cloneBox.Next)
+                {
+                    if (cloneBox.End > candidate.Position + Epsilon && cloneBox.End < candidate.RangeEnd - Epsilon)
+                    {
+                        AddCandidate(candidate with { RangeEnd = cloneBox.End, ExcludesRangeEnd = false }, context);
+                        AddCandidate(candidate with { Position = cloneBox.End, ContentEnd = cloneBox.End, IncludesRangeStart = true }, context);
+                        return;
+                    }
+                }
+            }
+
+            var (cloneStart, cloneEnd) = (context.CloneStart, context.CloneEnd);
+            for (var cloneBox = context.CloneBoxes; cloneBox is not null; cloneBox = cloneBox.Next)
+            {
+                if (cloneBox.End <= candidate.Position + Epsilon)
+                {
+                    cloneStart -= cloneBox.StartEdges;
+                    cloneEnd -= cloneBox.EndEdges;
+                }
+            }
+
+            candidate = candidate with { CloneStartEdges = Math.Max(0, cloneStart), CloneEndEdges = Math.Max(0, cloneEnd), Repeated = context.Repeated, CloneOwner = context.CloneOwner };
         }
 
         if (context.AvoidDepth != 0)
@@ -2361,6 +2460,7 @@ internal sealed class FragmentationFlow
             Context = context.FormattingContext,
             BorderBoxEnd = bottom,
             IsUnbreakable = isMonolithic || avoid,
+            HasForcedBreakBefore = IsForcedBreak(GetBreakBefore(box)),
             LeadingEnd = isMonolithic ? bottom : GetLeadingMonolithicEnd(box, top),
             LeadingStart = hasContentBefore ? marginTop : context.LeadingStart,
             LeadingEdges = hasContentBefore ? 0 : context.LeadingEdges,
@@ -2481,9 +2581,9 @@ internal sealed class FragmentationFlow
                 break;
             }
 
-            // (as in Blink, the values of the items of a flex or grid container propagate through its borders and paddings, not
-            // the ones of the children of a block container)
-            if (_writingDirection.ToLogical(box.Border.Add(box.Padding)).BlockStart != 0 || GetFirstInFlowChild(box) is not { } first)
+            // (as in Blink, the values of the items of a flex or grid container and of the first row of a table propagate through
+            // its borders and paddings, not the ones of the children of a block container)
+            if ((box.Box.Kind != ContainerBoxKind.TableGrid && _writingDirection.ToLogical(box.Border.Add(box.Padding)).BlockStart != 0) || GetFirstInFlowChild(box) is not { } first)
                 break;
 
             fragment = first;
@@ -2530,7 +2630,7 @@ internal sealed class FragmentationFlow
                 break;
             }
 
-            if (_writingDirection.ToLogical(box.Border.Add(box.Padding)).BlockEnd != 0 || GetLastInFlowChild(box) is not { } last)
+            if ((box.Box.Kind != ContainerBoxKind.TableGrid && _writingDirection.ToLogical(box.Border.Add(box.Padding)).BlockEnd != 0) || GetLastInFlowChild(box) is not { } last)
                 break;
 
             fragment = last;
@@ -2602,6 +2702,9 @@ internal readonly record struct FloatExtent(BoxFragment Fragment, double Start, 
 
     /// <summary>Whether the float is monolithic: it is in one fragmentainer.</summary>
     public bool IsMonolithic { get; init; }
+
+    /// <summary>Whether the float has a forced break before it (<c>break-before</c> of the float or of its first content).</summary>
+    public bool HasForcedBreakBefore { get; init; }
 
     /// <summary>Whether the float was pushed to the start of a fragmentainer (see <see cref="FloatPush"/>).</summary>
     public bool IsPushed { get; init; }
@@ -2965,6 +3068,12 @@ internal sealed class ParallelGroup(BoxFragment container, double[] trackStarts,
     /// <summary>Whether the edges that the box repeats are taken from its block size (<c>box-sizing: border-box</c>), else they are added to it.</summary>
     public bool ShrinksAtBreaks { get; init; }
 
+    /// <summary>
+    /// The block-end border and padding of the box of the group when it does not repeat them: as in Blink, there is no break
+    /// inside them (the box breaks before them when they do not fit).
+    /// </summary>
+    public double BlockEndEdges { get; init; }
+
     /// <summary>The nearest box around the group that repeats its edges until it ends (see <see cref="OwnCloneStart"/>; its edges are in <see cref="CloneStart"/> and <see cref="CloneEnd"/>), or null.</summary>
     public ParallelGroup? CloneOwner { get; init; }
 
@@ -3119,6 +3228,9 @@ internal sealed class ParallelItem(FragmentationFlow flow)
 
     /// <summary>The last fragmentainer the flow was advanced in.</summary>
     public int AdvancedIndex { get; set; }
+
+    /// <summary>Whether the flow of the item was broken in the current fragmentainer by a slice of its monolithic content (the state of the breaker).</summary>
+    public bool IsMonolithicSlice { get; set; }
 
     /// <summary>The offset in the current fragmentainer of the end of the monolithic contents of a box that overflow it (see <see cref="IsDefiniteBox"/>), or of the end of an item that overflows it (the item ends there; the other items of its track do not), else 0.</summary>
     public double OverflowExtent { get; set; }

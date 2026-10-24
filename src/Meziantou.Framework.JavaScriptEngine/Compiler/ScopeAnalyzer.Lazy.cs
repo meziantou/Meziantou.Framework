@@ -262,6 +262,7 @@ internal sealed partial class ScopeAnalyzer
     {
         // The names declared by the scopes of the function that enclose the current node (innermost last), reused
         private readonly List<HashSet<string>> _scopes = [];
+        private readonly List<Node> _leftNestedExpressions = [];
         private int _scopeCount;
         private int _specials;
 
@@ -389,6 +390,9 @@ internal sealed partial class ScopeAnalyzer
 
         private void ScanClass(ClassNode node, bool inThisScope)
         {
+            // The decorators of the class are evaluated outside of its scope
+            ScanDecorators(node.Decorators, inThisScope);
+
             // The inner binding of the name and the private names are in the scope of the class
             var scope = PushScope();
             if (node.Id is not null)
@@ -417,10 +421,12 @@ internal sealed partial class ScopeAnalyzer
                 switch (element)
                 {
                     case MethodDefinition method:
+                        ScanDecorators(method.Decorators, inThisScope);
                         ScanKey(method.Key, method.Computed, inThisScope);
                         ScanFunction(method.Value, inThisScope: false, ownName: null);
                         break;
                     case PropertyDefinition property:
+                        ScanDecorators(property.Decorators, inThisScope);
                         ScanKey(property.Key, property.Computed, inThisScope);
                         Scan(property.Value, inThisScope: false);
                         break;
@@ -436,6 +442,14 @@ internal sealed partial class ScopeAnalyzer
             }
 
             PopScope();
+        }
+
+        private void ScanDecorators(List<Node>? decorators, bool inThisScope)
+        {
+            if (decorators is not null)
+            {
+                ScanList(decorators, inThisScope);
+            }
         }
 
         private void ScanKey(Node key, bool computed, bool inThisScope)
@@ -582,6 +596,92 @@ internal sealed partial class ScopeAnalyzer
                 case RestElement rest:
                     DeclareBoundNames(rest.Argument, scope);
                     break;
+            }
+        }
+
+        // Long chains (a.b().c()..., a + b + c...) nest on their left operand: see ScopeAnalyzer.VisitLeftNestedExpression
+        private void ScanLeftNestedExpression(Node node, bool inThisScope)
+        {
+            var start = _leftNestedExpressions.Count;
+            for (Node? current = node; current is not null; current = GetLeftNestedOperand(current))
+            {
+                _leftNestedExpressions.Add(current);
+            }
+
+            switch (_leftNestedExpressions[^1])
+            {
+                case BinaryExpression binary:
+                    Scan(binary.Left, inThisScope);
+                    break;
+                case LogicalExpression logical:
+                    Scan(logical.Left, inThisScope);
+                    break;
+                case CallExpression call:
+                    if (call.Callee is Identifier { Name: "eval" } && !call.Optional)
+                    {
+                        HasDirectEval = true;
+                    }
+
+                    if (call.Callee is Super)
+                    {
+                        // super(): the this binding, new.target and the active function of the derived constructor
+                        UseSpecial(VariableKind.ActiveFunction, inThisScope);
+                        UseSpecial(VariableKind.This, inThisScope);
+                        UseSpecial(VariableKind.NewTarget, inThisScope);
+                    }
+                    else
+                    {
+                        Scan(call.Callee, inThisScope);
+                    }
+
+                    break;
+                case MemberExpression member:
+                    if (member.Object is Super)
+                    {
+                        UseSpecial(VariableKind.HomeObject, inThisScope);
+                        UseSpecial(VariableKind.This, inThisScope);
+                    }
+                    else
+                    {
+                        Scan(member.Object, inThisScope);
+                    }
+
+                    break;
+            }
+
+            for (var i = _leftNestedExpressions.Count - 1; i >= start; i--)
+            {
+                switch (_leftNestedExpressions[i])
+                {
+                    case BinaryExpression binary:
+                        Scan(binary.Right, inThisScope);
+                        break;
+                    case LogicalExpression logical:
+                        Scan(logical.Right, inThisScope);
+                        break;
+                    case CallExpression call:
+                        ScanList(call.Arguments, inThisScope);
+                        break;
+                    case MemberExpression member:
+                        ScanKey(member.Property, member.Computed, inThisScope);
+                        break;
+                }
+            }
+
+            _leftNestedExpressions.RemoveRange(start, _leftNestedExpressions.Count - start);
+
+            static Node? GetLeftNestedOperand(Node node)
+            {
+                var left = node switch
+                {
+                    BinaryExpression binary => binary.Left,
+                    LogicalExpression logical => logical.Left,
+                    CallExpression call => call.Callee,
+                    MemberExpression member => member.Object,
+                    _ => null,
+                };
+
+                return left is BinaryExpression or LogicalExpression or CallExpression or MemberExpression ? left : null;
             }
         }
 
@@ -781,13 +881,8 @@ internal sealed partial class ScopeAnalyzer
                 case UpdateExpression update:
                     Scan(update.Argument, inThisScope);
                     return;
-                case BinaryExpression binary:
-                    Scan(binary.Left, inThisScope);
-                    Scan(binary.Right, inThisScope);
-                    return;
-                case LogicalExpression logical:
-                    Scan(logical.Left, inThisScope);
-                    Scan(logical.Right, inThisScope);
+                case BinaryExpression or LogicalExpression or CallExpression or MemberExpression:
+                    ScanLeftNestedExpression(node, inThisScope);
                     return;
                 case AssignmentExpression assignment:
                     Scan(assignment.Left, inThisScope);
@@ -798,42 +893,9 @@ internal sealed partial class ScopeAnalyzer
                     Scan(conditional.Consequent, inThisScope);
                     Scan(conditional.Alternate, inThisScope);
                     return;
-                case CallExpression call:
-                    if (call.Callee is Identifier { Name: "eval" } && !call.Optional)
-                    {
-                        HasDirectEval = true;
-                    }
-
-                    if (call.Callee is Super)
-                    {
-                        // super(): the this binding, new.target and the active function of the derived constructor
-                        UseSpecial(VariableKind.ActiveFunction, inThisScope);
-                        UseSpecial(VariableKind.This, inThisScope);
-                        UseSpecial(VariableKind.NewTarget, inThisScope);
-                    }
-                    else
-                    {
-                        Scan(call.Callee, inThisScope);
-                    }
-
-                    ScanList(call.Arguments, inThisScope);
-                    return;
                 case NewExpression newExpression:
                     Scan(newExpression.Callee, inThisScope);
                     ScanList(newExpression.Arguments, inThisScope);
-                    return;
-                case MemberExpression member:
-                    if (member.Object is Super)
-                    {
-                        UseSpecial(VariableKind.HomeObject, inThisScope);
-                        UseSpecial(VariableKind.This, inThisScope);
-                    }
-                    else
-                    {
-                        Scan(member.Object, inThisScope);
-                    }
-
-                    ScanKey(member.Property, member.Computed, inThisScope);
                     return;
                 case ChainExpression chain:
                     Scan(chain.Expression, inThisScope);

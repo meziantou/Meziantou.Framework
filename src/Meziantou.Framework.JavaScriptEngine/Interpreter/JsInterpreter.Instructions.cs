@@ -982,7 +982,8 @@ internal static partial class JsInterpreter
         var function = (JsClosure)values[--sp].Cell!;
         var home = (JsObject)values[--sp].Cell!;
         var constructor = (JsClosure)values[--sp].Cell!;
-        DefinePrivateMethod(constructor, home, function, privateName, kind, isStatic);
+        function.HomeObject = home;
+        DefinePrivateMethod(constructor, function, privateName, kind, isStatic);
         frame.Pc = pc;
         return sp;
     }

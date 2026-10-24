@@ -24,6 +24,48 @@ internal static partial class JsInterpreter
         return callee;
     }
 
+    /// <summary>
+    /// Enters the frame of a call that runs in the current run: on top of the caller, or, for a tail call
+    /// (PrepareForTailCall), in place of the caller when it can be replaced (<see cref="CanReplaceFrame"/>).
+    /// </summary>
+    private static Frame EnterInlineFrame(Frame caller, Frame callee, Frame entry, JsEngine engine, bool isTailCall)
+    {
+        if (!isTailCall || !CanReplaceFrame(caller, entry))
+            return PushInlineFrame(caller, callee, engine);
+
+        // An endless recursion of tail calls is a loop: it checks the limits of the script as a backward jump does
+        engine.CountInterruptPoint();
+
+        // The arguments are copied in the frame of the callee: the frame of the caller can go back to the pool
+        callee.Parent = caller.Parent;
+        engine.PopFrame();
+        caller.State = FrameState.Completed;
+        engine.FramePool.Return(caller);
+        engine.PushFrame(callee);
+        engine.CurrentRealm = callee.Realm;
+        return callee;
+    }
+
+    /// <summary>
+    /// Whether the frame of a tail call can replace the frame of its caller (positioned after the call): not the entry
+    /// frame of the run (its result is returned to .NET), not a [[Construct]] (its result is checked once it returns),
+    /// and no handler of the caller covers the call (a call in a try block: the handler catches the exceptions of the callee).
+    /// </summary>
+    private static bool CanReplaceFrame(Frame caller, Frame entry)
+    {
+        if (ReferenceEquals(caller, entry) || caller.IsConstruct)
+            return false;
+
+        var pc = caller.Pc - 1;
+        foreach (var handler in caller.Code.Handlers)
+        {
+            if (pc >= handler.Start && pc < handler.End)
+                return false;
+        }
+
+        return true;
+    }
+
     /// <summary>PrepareForOrdinaryCall and OrdinaryCallBindThis: the frame of a call of a closure (from the pool of the engine, except the frames that outlive the call: generators, async functions).</summary>
     private static Frame CreateCallFrame(JsClosure closure, JsValue thisArgument, ReadOnlySpan<JsValue> arguments, JsObject? newTarget, bool pooled = true)
     {
@@ -501,9 +543,9 @@ internal static partial class JsInterpreter
         return (constructor, prototype);
     }
 
-    private static void DefinePrivateMethod(JsClosure constructor, JsObject home, JsClosure function, PrivateName name, int kind, bool isStatic)
+    /// <summary>Adds a private method (kind 0), getter (1) or setter (2) to the class: to the class itself when static, else to [[PrivateMethods]].</summary>
+    private static void DefinePrivateMethod(JsClosure constructor, JsValue function, PrivateName name, int kind, bool isStatic)
     {
-        function.HomeObject = home;
         var target = isStatic ? null : constructor.PrivateMethods ??= [];
         var record = kind switch
         {
@@ -542,7 +584,7 @@ internal static partial class JsInterpreter
         target.Add(record);
     }
 
-    /// <summary>InitializeInstanceElements(O, constructor): the private methods, then the fields.</summary>
+    /// <summary>InitializeInstanceElements(O, constructor): the private methods, the initializers added by the decorators of the methods, then the fields.</summary>
     public static void InitializeInstanceElements(JsObject obj, JsClosure constructor)
     {
         if (constructor.PrivateMethods is { Count: > 0 } methods)
@@ -556,6 +598,14 @@ internal static partial class JsInterpreter
             foreach (var method in methods)
             {
                 PrivateMethodOrAccessorAdd(obj, method);
+            }
+        }
+
+        if (constructor.Initializers is { } initializers)
+        {
+            foreach (var initializer in initializers)
+            {
+                initializer.AsObject().Call(obj, []);
             }
         }
 

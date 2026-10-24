@@ -336,7 +336,7 @@ internal static class IntersectionGeometry
         List<(BoxFragment Container, PhysicalOffset ContentOffset, LayoutEngine ParentEngine)>? frames = null;
         while (true)
         {
-            intersects &= ClipByAncestors(engine, start, rootElement, effectiveScrollMargin, ref rect, out var reachedRoot);
+            intersects &= ClipByAncestors(engine, start, rootElement, effectiveScrollMargin, ref rect, out var reachedRoot, startIsFrameContainer: frames is not null);
             if (rootElement is not null)
             {
                 if (!reachedRoot)
@@ -405,9 +405,11 @@ internal static class IntersectionGeometry
     /// Clips a rectangle (in the coordinates of the viewport) by the overflow clip edges (in the axes they clip) and the clip paths
     /// of a fragment and of its ancestors, up to the fragment of <paramref name="rootElement"/> (excluded) or the root of the
     /// fragment tree (the viewport, excluded); the scroll margin expands the clips of the scroll containers. Returns whether the rectangle intersects all
-    /// of them (edge-inclusive); <paramref name="reachedRoot"/> tells whether the fragment of the root element was reached.
+    /// of them (edge-inclusive); <paramref name="reachedRoot"/> tells whether the fragment of the root element was reached. The
+    /// overflow clip of the container of a nested browsing context (<paramref name="startIsFrameContainer"/>) is its content box,
+    /// the viewport of its document, which already clipped the rectangle with the scroll margin.
     /// </summary>
-    private static bool ClipByAncestors(LayoutEngine engine, Fragment? start, Element? rootElement, IntersectionMargin scrollMargin, ref PhysicalRect rect, out bool reachedRoot)
+    private static bool ClipByAncestors(LayoutEngine engine, Fragment? start, Element? rootElement, IntersectionMargin scrollMargin, ref PhysicalRect rect, out bool reachedRoot, bool startIsFrameContainer = false)
     {
         reachedRoot = false;
         var intersects = true;
@@ -436,7 +438,7 @@ internal static class IntersectionGeometry
                 intersects &= TryIntersect(rect, clipPathRect, out rect);
             }
 
-            if (!box.ClipsOverflow)
+            if (!box.ClipsOverflow || (startIsFrameContainer && ReferenceEquals(box, start)))
                 continue;
 
             var clip = box.IsScrollContainer ? scrollMargin.Apply(box.OverflowClipRect) : box.OverflowClipRect;

@@ -72,6 +72,7 @@ public partial class HtmlInputElement
 
         _value = value;
         _dirtyValue = true;
+        _userInput = null;
         SanitizeValue();
         document.IncrementElementStateVersion();
         FireEvent(new InputEvent("input", new InputEventInit { Bubbles = true, Composed = true, Data = value, InputType = "insertReplacementText", View = view }));

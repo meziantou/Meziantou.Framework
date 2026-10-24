@@ -1173,7 +1173,7 @@
     "reftest": "PASS"
   },
   "css/CSS2/bidi-text/bidi-011.xht": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/bidi-text/bidi-box-model-001.xht": {
     "reftest": "PASS"
@@ -1317,7 +1317,7 @@
     "reftest": "PASS"
   },
   "css/CSS2/bidi-text/bidi-breaking-003.xht": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/bidi-text/bidi-glyph-mirroring-001.xht": {
     "reftest": "PASS"
@@ -4761,13 +4761,13 @@
     "reftest": "PASS"
   },
   "css/CSS2/floats/float-nowrap-7.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/floats/float-nowrap-8.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/floats/float-nowrap-9.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/floats/float-nowrap-hyphen-rewind-1.html": {
     "reftest": "PASS"
@@ -4986,7 +4986,7 @@
     "reftest": "PASS"
   },
   "css/CSS2/floats/floats-zero-height-wrap-002.xht": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/floats/hit-test-floats-001.html": {
     "total": 1
@@ -11904,7 +11904,7 @@
     "reftest": "PASS"
   },
   "css/CSS2/pagination/float-page-break-inside-avoid-2-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/pagination/float-page-break-inside-avoid-3-print.html": {
     "reftest": "PASS"
@@ -11913,13 +11913,13 @@
     "reftest": "PASS"
   },
   "css/CSS2/pagination/float-page-break-inside-avoid-5-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/pagination/float-page-break-inside-avoid-6-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/pagination/float-page-break-inside-avoid-7-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/pagination/float-page-break-inside-avoid-8-print.html": {
     "reftest": "FAIL"
@@ -11973,7 +11973,7 @@
     "reftest": "PASS"
   },
   "css/CSS2/pagination/table-page-break-inside-avoid-5-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/pagination/table-page-break-inside-avoid-6-print.html": {
     "reftest": "PASS"
@@ -16011,7 +16011,7 @@
     "reftest": "PASS"
   },
   "css/CSS2/tables/border-collapse-visibility-collapse-002.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/tables/border-conflict-element-001a.xht": {
     "reftest": "PASS"

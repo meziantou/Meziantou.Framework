@@ -1,4 +1,5 @@
 using Meziantou.Framework.WebPlatform.Css.Cascade;
+using Meziantou.Framework.WebPlatform.Css.Values;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Html;
 
@@ -329,8 +330,9 @@ internal sealed class AnchorQuery
         var current = anchor;
         while (true)
         {
+            // (a column spanner is laid out by its multi-column container, https://drafts.csswg.org/css-multicol-1/#column-span)
             ContainerBox next;
-            for (var box = current; ; box = PositionedLayout.GetPositioningParent(box))
+            for (var box = current; ; box = MultiColumnFlow.GetColumnSpannerContainer(box) ?? PositionedLayout.GetPositioningParent(box))
             {
                 if (box is null || ReferenceEquals(box, positioned))
                     return false;
@@ -448,11 +450,20 @@ internal sealed class AnchorQuery
         PhysicalRect? rect = null;
         List<ContainerBox>? scrollContainers = null;
 
-        // The fragments of an inline box are in the fragment of its block container
+        // The fragments of an inline box are in the fragment of its block container (the parent of the anonymous block boxes of
+        // its parts when it is split around block-level boxes)
         var laidOutBox = anchor;
-        while (laidOutBox.IsInlineBox && laidOutBox.Parent is { } parent)
+        var isSplitInline = anchor is { IsInlineBox: true, Continuation: not null };
+        if (isSplitInline)
         {
-            laidOutBox = parent;
+            laidOutBox = PositionedLayout.GetHost(anchor);
+        }
+        else
+        {
+            while (laidOutBox.IsInlineBox && laidOutBox.Parent is { } parent)
+            {
+                laidOutBox = parent;
+            }
         }
 
         var scrolled = PhysicalOffset.Zero;
@@ -467,7 +478,7 @@ internal sealed class AnchorQuery
                 measuredFragment = fragment;
                 rectInFragment = fragment.LocalRect;
             }
-            else if (FindFragments(fragment, anchor) is { } inlineRect)
+            else if ((isSplitInline ? FindSplitInlineFragments(fragment, anchor) : FindFragments(fragment, anchor)) is { } inlineRect)
             {
                 // The rectangle of the fragments of the inline box in the coordinates of the block container (a scroll container
                 // scrolls them)
@@ -492,7 +503,9 @@ internal sealed class AnchorQuery
             scrollContainers = null;
             scrolled = PhysicalOffset.Zero;
             measuredFragment = null;
-            rect = FindFragments(_hostFragment, anchor, includeSelf: false, offset: PhysicalOffset.Zero, ref scrollContainers);
+            rect = isSplitInline && ReferenceEquals(_hostFragment.Box, laidOutBox)
+                ? FindSplitInlineFragments(_hostFragment, anchor)
+                : FindFragments(_hostFragment, anchor, includeSelf: false, offset: PhysicalOffset.Zero, ref scrollContainers);
             if (_laidOut is not null)
             {
                 foreach (var laidOut in _laidOut)
@@ -541,11 +554,24 @@ internal sealed class AnchorQuery
             scrolled += offset;
         }
 
+        // The transforms of the boxes of a 3D rendering context are accumulated (https://drafts.csswg.org/css-transforms-2/#accumulated-3d-transformation-matrix-computation),
+        // the rectangle is flattened when it leaves the context
+        double[]? accumulated = null;
         while (!ReferenceEquals(current, _hostFragment))
         {
-            if (current is BoxFragment boxFragment && boxFragment.Box.Style.Layout.HasTransform && LayoutTransforms.GetMatrix(boxFragment) is { } matrix)
+            if (current is BoxFragment boxFragment && (accumulated is not null || boxFragment.Box.Style.Layout.HasTransform) && LayoutTransforms.GetMatrix(boxFragment) is var matrix && (matrix is not null || accumulated is not null))
             {
-                rect = LayoutTransforms.TransformRect(rect, matrix);
+                if (LayoutTransforms.ParticipatesIn3DRenderingContext(boxFragment) && current.Parent is { } contextParent && !ReferenceEquals(contextParent, _hostFragment))
+                {
+                    // (the offset is part of the accumulated matrix)
+                    var local = matrix is null ? accumulated : accumulated is null ? matrix : CssTransforms.Multiply(matrix, accumulated);
+                    accumulated = CssTransforms.Multiply([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, current.Offset.X, current.Offset.Y, 0, 1], local);
+                    current = current.Parent;
+                    continue;
+                }
+
+                rect = LayoutTransforms.TransformRect(rect, matrix is null ? accumulated : accumulated is null ? matrix : CssTransforms.Multiply(matrix, accumulated));
+                accumulated = null;
             }
 
             rect = rect.Translate(current.Offset);
@@ -592,6 +618,75 @@ internal sealed class AnchorQuery
     private PhysicalOffset GetScrollOffset(ContainerBox scrollContainer)
         => scrollContainer.Element is { } element && _context.Engine.TryGetScrollState(element) is { } state ? state.Offset : PhysicalOffset.Zero;
 
+    /// <summary>
+    /// Returns the bounding rectangle of an inline box split around block-level boxes (https://drafts.csswg.org/css2/#anonymous-block-level)
+    /// in the descendants of the fragment of its block container, in its coordinates: its parts, and the block-level boxes split out of
+    /// it, each one in the anonymous block box that holds it in the inline box, as wide as the content box of the block container (as in
+    /// the browsers, the inline box spans these lines).
+    /// </summary>
+    private static PhysicalRect? FindSplitInlineFragments(BoxFragment container, ContainerBox inline)
+    {
+        var parts = new HashSet<ContainerBox>(ReferenceEqualityComparer.Instance);
+        for (var part = inline; part is not null; part = part.Continuation)
+        {
+            parts.Add(part);
+        }
+
+        var content = container.ContentBoxRect;
+        var isHorizontal = container.WritingDirection.IsHorizontal;
+        PhysicalRect? result = null;
+        Collect(container, PhysicalOffset.Zero);
+        return result;
+
+        void Collect(Fragment fragment, PhysicalOffset offset)
+        {
+            foreach (var child in fragment.ChildrenSpan)
+            {
+                var childOffset = offset + child.Offset;
+                if (child is BoxFragment childBox)
+                {
+                    if (parts.Contains(childBox.Box))
+                    {
+                        Add(new PhysicalRect(childOffset, child.Size));
+                        continue;
+                    }
+
+                    if (IsSplitOutOf(childBox.Box))
+                    {
+                        var margin = childBox.MarginBoxRect.Translate(childOffset);
+                        Add(isHorizontal ? new PhysicalRect(content.X, margin.Y, content.Width, margin.Height) : new PhysicalRect(margin.X, content.Y, margin.Width, content.Height));
+                        continue;
+                    }
+
+                    if (childBox.IsScrollContainer || childBox.Box.IsOutOfFlow)
+                        continue;
+                }
+
+                if (child.ChildrenSpan.Length > 0)
+                {
+                    Collect(child, childOffset);
+                }
+            }
+        }
+
+        void Add(PhysicalRect rect) => result = result is { } existing ? existing.Union(rect) : rect;
+
+        // An in-flow block-level box split out of the inline box
+        bool IsSplitOutOf(ContainerBox box)
+        {
+            if (!box.IsBlockLevel || box.IsOutOfFlow)
+                return false;
+
+            for (var parent = box.SplitInlineParent; parent is not null; parent = parent.Parent is { IsInlineBox: true } inlineParent ? inlineParent : null)
+            {
+                if (parts.Contains(parent))
+                    return true;
+            }
+
+            return false;
+        }
+    }
+
     /// <summary>Returns the bounding rectangle of the fragments of a box (and of its continuations) in the descendants of a fragment, in its coordinates.</summary>
     private static PhysicalRect? FindFragments(Fragment root, ContainerBox box)
     {
@@ -603,14 +698,15 @@ internal sealed class AnchorQuery
     {
         PhysicalRect? result = null;
         if (includeSelf && fragment is BoxFragment self && IsFragmentOf(self, box))
-            return new PhysicalRect(offset, fragment.Size);
+            return GetTransformedRect(self).Translate(offset);
 
         foreach (var child in fragment.ChildrenSpan)
         {
             var childOffset = offset + child.Offset;
             if (child is BoxFragment childBox && IsFragmentOf(childBox, box))
             {
-                var childRect = new PhysicalRect(childOffset, child.Size);
+                // (each fragment of a box fragmented by a multi-column container is transformed with its own reference box)
+                var childRect = GetTransformedRect(childBox).Translate(childOffset);
                 result = result is { } existing ? existing.Union(childRect) : childRect;
                 continue;
             }
@@ -637,5 +733,8 @@ internal sealed class AnchorQuery
 
             return false;
         }
+
+        static PhysicalRect GetTransformedRect(BoxFragment fragment)
+            => fragment.Box.Style.Layout.HasTransform && LayoutTransforms.GetMatrix(fragment) is { } matrix ? LayoutTransforms.TransformRect(fragment.LocalRect, matrix) : fragment.LocalRect;
     }
 }

@@ -11,6 +11,9 @@ internal sealed partial class ScopeAnalyzer
 {
     private readonly List<PendingReference> _pending = [];
     private readonly List<Scope> _allScopes = [];
+
+    // The expressions of the left-nested chains being visited (VisitLeftNestedExpression)
+    private readonly List<Node> _leftNestedExpressions = [];
     private readonly ProgramKind _programKind;
 
     private ScopeAnalyzer(ProgramKind programKind)
@@ -454,6 +457,8 @@ internal sealed partial class ScopeAnalyzer
 
     private void VisitClass(ClassNode node, Scope parentScope)
     {
+        // The decorators of the class are evaluated before the class scope is created
+        VisitDecorators(node.Decorators, parentScope);
         var classScope = CreateScope(ScopeKind.Class, parentScope, parentScope.Function, node);
         if (node.Id is not null)
         {
@@ -486,8 +491,39 @@ internal sealed partial class ScopeAnalyzer
         FunctionInfo? instanceInitializer = null;
         FunctionInfo? staticInitializer = null;
         var computedKeyIndex = 0;
+        var hiddenIndex = 0;
+        var hasDecorators = node.HasDecorators();
         foreach (var element in node.Body)
         {
+            // The decorators of an element are evaluated with its key, in the class scope. The state of the decoration
+            // (the decorators, then the initializers they add) is in a hidden binding read by the field initializers. In
+            // a decorated class, the elements that are not fields are defined after the evaluation of all the elements:
+            // they have a decoration state too.
+            var decorators = element switch
+            {
+                MethodDefinition method => method.Decorators,
+                PropertyDefinition property => property.Decorators,
+                _ => null,
+            };
+
+            if (decorators is not null || (hasDecorators && element is MethodDefinition { Kind: not MethodKind.Constructor } or PropertyDefinition { IsAccessor: true }))
+            {
+                VisitDecorators(decorators, classScope);
+                var decoration = classScope.Declare("%decoration" + hiddenIndex.ToString(System.Globalization.CultureInfo.InvariantCulture), VariableKind.Hidden);
+                decoration.IsCaptured = true;
+                _elementDecorations[element] = decoration;
+                hiddenIndex++;
+            }
+
+            // The private name of the backing storage of an auto-accessor (a new one for each evaluation of the class)
+            if (element is PropertyDefinition { IsAccessor: true } accessor)
+            {
+                var storage = classScope.Declare("%storage" + hiddenIndex.ToString(System.Globalization.CultureInfo.InvariantCulture), VariableKind.Hidden);
+                storage.IsCaptured = true;
+                _accessorStorages[accessor] = storage;
+                hiddenIndex++;
+            }
+
             switch (element)
             {
                 case MethodDefinition method:
@@ -538,6 +574,26 @@ internal sealed partial class ScopeAnalyzer
             _classInitializers[(node, true)] = staticInitializer;
         }
     }
+
+    private void VisitDecorators(List<Node>? decorators, Scope scope)
+    {
+        if (decorators is null)
+            return;
+
+        foreach (var decorator in decorators)
+        {
+            VisitExpression(decorator, scope);
+        }
+    }
+
+    private readonly Dictionary<Node, Variable> _elementDecorations = [];
+    private readonly Dictionary<PropertyDefinition, Variable> _accessorStorages = [];
+
+    /// <summary>Gets the hidden binding that holds the decoration state of a decorated class element.</summary>
+    public Variable GetElementDecoration(Node element) => _elementDecorations[element];
+
+    /// <summary>Gets the hidden binding that holds the private name of the backing storage of an auto-accessor.</summary>
+    public Variable GetAccessorStorage(PropertyDefinition accessor) => _accessorStorages[accessor];
 
     private readonly Dictionary<PropertyDefinition, Variable> _computedFieldKeys = [];
     private readonly Dictionary<(ClassNode Class, bool Static), FunctionInfo> _classInitializers = [];
@@ -1082,21 +1138,8 @@ internal sealed partial class ScopeAnalyzer
             case UpdateExpression update:
                 VisitAssignmentTarget(update.Argument, scope, isReadWrite: true);
                 return;
-            case BinaryExpression binary:
-                if (binary.Left is PrivateIdentifier privateIdentifier)
-                {
-                    RecordReference(privateIdentifier, "#" + privateIdentifier.Name, scope, ReferenceKind.Read);
-                }
-                else
-                {
-                    VisitExpression(binary.Left, scope);
-                }
-
-                VisitExpression(binary.Right, scope);
-                return;
-            case LogicalExpression logical:
-                VisitExpression(logical.Left, scope);
-                VisitExpression(logical.Right, scope);
+            case BinaryExpression or LogicalExpression or CallExpression or MemberExpression:
+                VisitLeftNestedExpression(node, scope);
                 return;
             case AssignmentExpression assignment:
                 if (assignment.Operator == AssignmentOperator.Assign && assignment.Left is ObjectPattern or ArrayPattern)
@@ -1115,56 +1158,11 @@ internal sealed partial class ScopeAnalyzer
                 VisitExpression(conditional.Consequent, scope);
                 VisitExpression(conditional.Alternate, scope);
                 return;
-            case CallExpression call:
-                if (call.Callee is Identifier { Name: "eval" } && !call.Optional)
-                {
-                    MarkDirectEval(scope);
-                }
-
-                if (call.Callee is Super)
-                {
-                    // super(): the this binding, new.target and the active function of the derived constructor
-                    RecordSpecialReference(call, scope, VariableKind.ActiveFunction);
-                    RecordSpecialReference(call, scope, VariableKind.This);
-                    RecordSpecialReference(call, scope, VariableKind.NewTarget);
-                }
-                else
-                {
-                    VisitExpression(call.Callee, scope);
-                }
-
-                foreach (var argument in call.Arguments)
-                {
-                    VisitExpression(argument, scope);
-                }
-
-                return;
             case NewExpression newExpression:
                 VisitExpression(newExpression.Callee, scope);
                 foreach (var argument in newExpression.Arguments)
                 {
                     VisitExpression(argument, scope);
-                }
-
-                return;
-            case MemberExpression member:
-                if (member.Object is Super)
-                {
-                    RecordSpecialReference(member.Object, scope, VariableKind.HomeObject);
-                    RecordSpecialReference(member, scope, VariableKind.This);
-                }
-                else
-                {
-                    VisitExpression(member.Object, scope);
-                }
-
-                if (member.Computed)
-                {
-                    VisitExpression(member.Property, scope);
-                }
-                else if (member.Property is PrivateIdentifier privateName)
-                {
-                    RecordReference(privateName, "#" + privateName.Name, scope, ReferenceKind.Read);
                 }
 
                 return;
@@ -1196,6 +1194,120 @@ internal sealed partial class ScopeAnalyzer
         }
     }
 
+
+    /// <summary>
+    /// Visits a binary or logical expression, a call or a member expression. Long chains (<c>a.b().c()...</c>,
+    /// <c>a + b + c...</c>) nest on their left operand, as deep as they are long: the left operands are visited in a loop,
+    /// from the innermost expression, and only the other operands are visited recursively.
+    /// </summary>
+    private void VisitLeftNestedExpression(Node node, Scope scope)
+    {
+        var start = _leftNestedExpressions.Count;
+        for (Node? current = node; current is not null; current = GetLeftNestedOperand(current))
+        {
+            _leftNestedExpressions.Add(current);
+        }
+
+        VisitLeftOperand(_leftNestedExpressions[^1], scope);
+        for (var i = _leftNestedExpressions.Count - 1; i >= start; i--)
+        {
+            VisitOtherOperands(_leftNestedExpressions[i], scope);
+        }
+
+        _leftNestedExpressions.RemoveRange(start, _leftNestedExpressions.Count - start);
+
+        static Node? GetLeftNestedOperand(Node node)
+        {
+            var left = node switch
+            {
+                BinaryExpression binary => binary.Left,
+                LogicalExpression logical => logical.Left,
+                CallExpression call => call.Callee,
+                MemberExpression member => member.Object,
+                _ => null,
+            };
+
+            return left is BinaryExpression or LogicalExpression or CallExpression or MemberExpression ? left : null;
+        }
+    }
+
+    private void VisitLeftOperand(Node node, Scope scope)
+    {
+        switch (node)
+        {
+            case BinaryExpression { Left: PrivateIdentifier privateIdentifier }:
+                RecordReference(privateIdentifier, "#" + privateIdentifier.Name, scope, ReferenceKind.Read);
+                break;
+            case BinaryExpression binary:
+                VisitExpression(binary.Left, scope);
+                break;
+            case LogicalExpression logical:
+                VisitExpression(logical.Left, scope);
+                break;
+            case CallExpression call:
+                if (call.Callee is Identifier { Name: "eval" } && !call.Optional)
+                {
+                    MarkDirectEval(scope);
+                }
+
+                if (call.Callee is Super)
+                {
+                    // super(): the this binding, new.target and the active function of the derived constructor
+                    RecordSpecialReference(call, scope, VariableKind.ActiveFunction);
+                    RecordSpecialReference(call, scope, VariableKind.This);
+                    RecordSpecialReference(call, scope, VariableKind.NewTarget);
+                }
+                else
+                {
+                    VisitExpression(call.Callee, scope);
+                }
+
+                break;
+            case MemberExpression member:
+                if (member.Object is Super)
+                {
+                    RecordSpecialReference(member.Object, scope, VariableKind.HomeObject);
+                    RecordSpecialReference(member, scope, VariableKind.This);
+                }
+                else
+                {
+                    VisitExpression(member.Object, scope);
+                }
+
+                break;
+        }
+    }
+
+    private void VisitOtherOperands(Node node, Scope scope)
+    {
+        switch (node)
+        {
+            case BinaryExpression binary:
+                VisitExpression(binary.Right, scope);
+                break;
+            case LogicalExpression logical:
+                VisitExpression(logical.Right, scope);
+                break;
+            case CallExpression call:
+                foreach (var argument in call.Arguments)
+                {
+                    VisitExpression(argument, scope);
+                }
+
+                break;
+            case MemberExpression member:
+                if (member.Computed)
+                {
+                    VisitExpression(member.Property, scope);
+                }
+                else if (member.Property is PrivateIdentifier privateName)
+                {
+                    RecordReference(privateName, "#" + privateName.Name, scope, ReferenceKind.Read);
+                }
+
+                break;
+        }
+    }
 
     private void VisitAssignmentTarget(Node target, Scope scope, bool isReadWrite)
     {

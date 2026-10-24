@@ -49,7 +49,11 @@ internal static class CssTransitionUpdater
     /// may compute the style again (<paramref name="changes"/> is not null), the canceled transitions are only pending
     /// cancellation, and the changes are recorded so that they can be undone (see <see cref="TransitionChanges"/>).
     /// </summary>
-    public static bool Update(ComputedStyle style, ComputedStyle? before, TransitionChanges? changes)
+    /// <param name="style">The new style of the element.</param>
+    /// <param name="before">The before-change style, or null.</param>
+    /// <param name="changes">The changes recorded for the layout, or null.</param>
+    /// <param name="afterChange">The after-change style, or null for the after-change style of <paramref name="style"/>.</param>
+    public static bool Update(ComputedStyle style, ComputedStyle? before, TransitionChanges? changes, ComputedStyle? afterChange = null)
     {
         var element = style.Element;
         var pseudoElement = style.PseudoElement;
@@ -75,7 +79,7 @@ internal static class CssTransitionUpdater
         if (matching.Count == 0 && transitions is null)
             return false;
 
-        var after = style.CreateAfterChangeStyle();
+        var after = afterChange ?? style.CreateAfterChangeStyle();
         var context = new CssInterpolationContext(after);
         var candidates = new SortedSet<string>(matching.Keys, StringComparer.Ordinal);
         if (transitions is not null)
@@ -108,12 +112,12 @@ internal static class CssTransitionUpdater
             if (running is null && before is not null && parameters is { CombinedDuration: > 0 } && !style.IsAnimatedByAnimations(property) && !IsInheritedFromTransition(style, before, property))
             {
                 var beforeValue = GetValue(before, property);
-                if (!string.Equals(beforeValue, afterValue, StringComparison.Ordinal) && (completed is null || !string.Equals(completed, afterValue, StringComparison.Ordinal))
+                if ((!string.Equals(beforeValue, afterValue, StringComparison.Ordinal) || HasTreeScopedNameChanged(before, after, property, afterValue)) && (completed is null || !string.Equals(completed, afterValue, StringComparison.Ordinal))
                     && IsTransitionable(context, property, beforeValue, afterValue, parameters.AllowDiscrete))
                 {
                     transitions ??= document.Animations.GetOrCreateTransitions(element, pseudoElement);
                     RemoveCompleted(transitions, property, changes);
-                    transitions.Running[property] = StartTransition(style, property, beforeValue, afterValue, parameters, beforeValue, reversingShorteningFactor: 1);
+                    transitions.Running[property] = StartTransition(style, property, beforeValue, afterValue, parameters, beforeValue, reversingShorteningFactor: 1, IsTainted(before, property), IsTainted(after, property));
                     changed = true;
                     continue;
                 }
@@ -142,32 +146,12 @@ internal static class CssTransitionUpdater
                 continue;
             }
 
-            // Step 4: a running transition whose end value changed is canceled, reversed or replaced
-            if (running is not null && !string.Equals(running.EndValue, afterValue, StringComparison.Ordinal))
+            // Step 4: a running transition whose end value changed is canceled, reversed or replaced (the end value of a
+            // transition started by the layout is a value that the layout resolved: the layout compares it, see UpdateFromLayout)
+            if (running is not null && !running.IsStartedByLayout && !string.Equals(running.EndValue, afterValue, StringComparison.Ordinal))
             {
-                var currentValue = GetValue(style, property);
-                var output = GetTimingFunctionOutput(running);
-                Cancel(transitions!, running, changes);
+                ReplaceRunningTransition(style, context, transitions!, running, afterValue, parameters, changes, IsTainted(after, property), startedByLayout: false);
                 changed = true;
-                if (string.Equals(currentValue, afterValue, StringComparison.Ordinal) || parameters.CombinedDuration <= 0 || !IsTransitionable(context, property, currentValue, afterValue, parameters.AllowDiscrete))
-                    continue;
-
-                if (string.Equals(running.ReversingAdjustedStartValue, afterValue, StringComparison.Ordinal))
-                {
-                    // https://drafts.csswg.org/css-transitions-1/#reversing: the duration of the reversed transition is shortened
-                    var factor = Math.Clamp(Math.Abs((output * running.ReversingShorteningFactor) + 1 - running.ReversingShorteningFactor), 0, 1);
-                    var shortened = parameters with
-                    {
-                        Duration = parameters.Duration * factor,
-                        Delay = parameters.Delay < 0 ? parameters.Delay * factor : parameters.Delay,
-                    };
-
-                    transitions!.Running[property] = StartTransition(style, property, currentValue, afterValue, shortened, running.EndValue, factor);
-                }
-                else
-                {
-                    transitions!.Running[property] = StartTransition(style, property, currentValue, afterValue, parameters, currentValue, reversingShorteningFactor: 1);
-                }
             }
         }
 
@@ -177,6 +161,104 @@ internal static class CssTransitionUpdater
         }
 
         return changed;
+    }
+
+    /// <summary>
+    /// Updates the transitions of an anchor-positioned box after its layout (https://github.com/w3c/csswg-drafts/issues/9598): the
+    /// anchor functions and the declarations of the chosen position option are resolved at computed-value time, with the style
+    /// and layout interleaving, so the transitions start when their results change, even when the declared values do not (the
+    /// anchor box moved, the anchor name designates another element, another position option applies...). The layout resolves
+    /// them: <paramref name="before"/> are the values resolved by the previous layout, <paramref name="after"/> the values of the
+    /// after-change style resolved by this layout. A running transition started by a style change is kept (its end value is the
+    /// declared value). Returns whether the transitions changed.
+    /// </summary>
+    public static bool UpdateFromLayout(ComputedStyle style, IReadOnlyDictionary<string, string> before, IReadOnlyDictionary<string, string> after)
+    {
+        if (style.IsDisplayNoneForAnimations())
+            return false;
+
+        var matching = GetMatchingTransitions(style);
+        if (matching.Count == 0)
+            return false;
+
+        var element = style.Element;
+        var pseudoElement = style.PseudoElement;
+        var document = element.NodeDocument;
+        var transitions = document.AnimationsOrNull?.GetTransitions(element, pseudoElement);
+        var context = new CssInterpolationContext(style.CreateAfterChangeStyle());
+        ComputedStyle? currentStyle = null;
+        var changed = false;
+        foreach (var (property, afterValue) in after)
+        {
+            if (!before.TryGetValue(property, out var beforeValue) || !matching.TryGetValue(property, out var parameters) || parameters.CombinedDuration <= 0 || style.IsAnimatedByAnimations(property))
+                continue;
+
+            if (transitions is not null && transitions.Running.TryGetValue(property, out var running))
+            {
+                if (running.PlayStateValue == AnimationPlayState.Finished)
+                {
+                    transitions.Running.Remove(property);
+                    transitions.Completed[property] = running.EndValue;
+                }
+                else
+                {
+                    if (running.IsStartedByLayout && !string.Equals(running.EndValue, afterValue, StringComparison.Ordinal))
+                    {
+                        ReplaceRunningTransition(currentStyle ??= style.WithCurrentAnimations(includeNewAnimations: true), context, transitions, running, afterValue, parameters, changes: null, endTainted: false, startedByLayout: true);
+                        changed = true;
+                    }
+
+                    continue;
+                }
+            }
+
+            if (string.Equals(beforeValue, afterValue, StringComparison.Ordinal) || IsInheritedFromTransition(style, style, property)
+                || (transitions?.Completed.GetValueOrDefault(property) is { } completed && string.Equals(completed, afterValue, StringComparison.Ordinal))
+                || !IsTransitionable(context, property, beforeValue, afterValue, parameters.AllowDiscrete))
+            {
+                continue;
+            }
+
+            transitions ??= document.Animations.GetOrCreateTransitions(element, pseudoElement);
+            RemoveCompleted(transitions, property, changes: null);
+            transitions.Running[property] = StartTransition(style, property, beforeValue, afterValue, parameters, beforeValue, reversingShorteningFactor: 1, startedByLayout: true);
+            changed = true;
+        }
+
+        if (transitions is not null)
+        {
+            document.Animations.RemoveTransitionsIfEmpty(element, pseudoElement);
+        }
+
+        return changed;
+    }
+
+    /// <summary>Cancels a running transition whose end value changed, and starts a transition from its current value to the new end value (reversed when it goes back to its start value).</summary>
+    private static void ReplaceRunningTransition(ComputedStyle style, CssInterpolationContext context, ElementTransitions transitions, CssTransition running, string afterValue, TransitionParameters parameters, TransitionChanges? changes, bool endTainted, bool startedByLayout)
+    {
+        var property = running.TransitionProperty;
+        var currentValue = GetValue(style, property);
+        var output = GetTimingFunctionOutput(running);
+        Cancel(transitions, running, changes);
+        if (string.Equals(currentValue, afterValue, StringComparison.Ordinal) || parameters.CombinedDuration <= 0 || !IsTransitionable(context, property, currentValue, afterValue, parameters.AllowDiscrete))
+            return;
+
+        if (string.Equals(running.ReversingAdjustedStartValue, afterValue, StringComparison.Ordinal))
+        {
+            // https://drafts.csswg.org/css-transitions-1/#reversing: the duration of the reversed transition is shortened
+            var factor = Math.Clamp(Math.Abs((output * running.ReversingShorteningFactor) + 1 - running.ReversingShorteningFactor), 0, 1);
+            var shortened = parameters with
+            {
+                Duration = parameters.Duration * factor,
+                Delay = parameters.Delay < 0 ? parameters.Delay * factor : parameters.Delay,
+            };
+
+            transitions.Running[property] = StartTransition(style, property, currentValue, afterValue, shortened, running.EndValue, factor, IsTainted(style, property), endTainted, startedByLayout);
+        }
+        else
+        {
+            transitions.Running[property] = StartTransition(style, property, currentValue, afterValue, parameters, currentValue, reversingShorteningFactor: 1, IsTainted(style, property), endTainted, startedByLayout);
+        }
     }
 
     /// <summary>Cancels a running transition, or makes its cancellation pending when the changes are recorded.</summary>
@@ -274,7 +356,7 @@ internal static class CssTransitionUpdater
         return result;
     }
 
-    private static CssTransition StartTransition(ComputedStyle style, string property, string startValue, string endValue, TransitionParameters parameters, string reversingAdjustedStartValue, double reversingShorteningFactor)
+    private static CssTransition StartTransition(ComputedStyle style, string property, string startValue, string endValue, TransitionParameters parameters, string reversingAdjustedStartValue, double reversingShorteningFactor, bool startTainted = false, bool endTainted = false, bool startedByLayout = false)
     {
         var element = style.Element;
         var document = element.NodeDocument;
@@ -294,6 +376,7 @@ internal static class CssTransitionUpdater
             {
                 Offset = 0,
                 ComputedOffset = 0,
+                IsAttrTainted = startTainted,
                 Properties = { new(property, startValue) },
                 Longhands = { [property] = new CssLonghandValue(property, startValue) },
             },
@@ -301,6 +384,7 @@ internal static class CssTransitionUpdater
             {
                 Offset = 1,
                 ComputedOffset = 1,
+                IsAttrTainted = endTainted,
                 Properties = { new(property, endValue) },
                 Longhands = { [property] = new CssLonghandValue(property, endValue) },
             },
@@ -312,6 +396,7 @@ internal static class CssTransitionUpdater
             EndValue = endValue,
             ReversingAdjustedStartValue = reversingAdjustedStartValue,
             ReversingShorteningFactor = reversingShorteningFactor,
+            IsStartedByLayout = startedByLayout,
         };
 
         transition.PlayByStyle();
@@ -362,6 +447,34 @@ internal static class CssTransitionUpdater
             return false;
 
         return allowDiscrete || !CssInterpolation.Prepare(context, property, from, to).IsDiscrete;
+    }
+
+    /// <summary>Whether the value of a custom property is attr()-tainted (https://drafts.csswg.org/css-values-5/#attr-security): so are the values of its transition.</summary>
+    private static bool IsTainted(ComputedStyle style, string property) => CssPropertyRegistry.IsCustomProperty(property) && style.IsCustomPropertyTainted(property);
+
+    /// <summary>
+    /// Whether the counter style name of <c>list-style-type</c> is declared in another tree: the computed value of an
+    /// author-defined name is a tree-scoped reference (https://drafts.csswg.org/css-scoping/#shadow-names), the same name in
+    /// another tree is another value. The names of the predefined counter styles are keywords.
+    /// </summary>
+    private static bool HasTreeScopedNameChanged(ComputedStyle before, ComputedStyle after, string property, string value)
+    {
+        if (property != "list-style-type" || value is "none" or "" || value[0] is '"' or '\'' || CounterStyle.Predefined.ContainsKey(CounterStyle.NormalizeName(value)))
+            return false;
+
+        return !ReferenceEquals(GetTreeScope(before, property), GetTreeScope(after, property));
+
+        // (an inherited value keeps the tree of its declaration)
+        static Dom.Node? GetTreeScope(ComputedStyle style, string property)
+        {
+            for (var current = style; current is not null; current = current.Parent)
+            {
+                if (current.TryGetCascadedValue(property, out var cascaded) && cascaded.Value.Value.Trim() is not ("inherit" or "unset"))
+                    return cascaded.TreeScope;
+            }
+
+            return null;
+        }
     }
 
     private static string GetValue(ComputedStyle style, string property) => CssPropertyRegistry.IsCustomProperty(property) ? style.GetCustomPropertyValue(property) ?? "" : style.GetComputedValue(property);

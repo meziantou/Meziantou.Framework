@@ -1,0 +1,45 @@
+{
+  "web-tooling-benchmark": {
+    "repository": "v8/web-tooling-benchmark",
+    "commit": "4a12828c6a1eed02a70c011bd080445dd319a05f",
+    "paths": ["LICENSE", "package.json", "package-lock.json", "src", "third_party"],
+    "npm": {
+      "lockfile": "package-lock.json",
+      "packages": [
+        "@babel/standalone",
+        "acorn",
+        "autoprefixer",
+        "babel-minify",
+        "babylon",
+        "buble",
+        "chai",
+        "coffeescript",
+        "espree",
+        "esprima",
+        "jshint",
+        "lebab",
+        "postcss",
+        "postcss-nested",
+        "prepack",
+        "prettier",
+        "source-map",
+        "terser",
+        "typescript",
+        "uglify-js",
+        "node-libs-browser>assert",
+        "node-libs-browser>buffer",
+        "node-libs-browser>events",
+        "node-libs-browser>os-browserify",
+        "node-libs-browser>path-browserify",
+        "node-libs-browser>process",
+        "node-libs-browser>punycode",
+        "node-libs-browser>stream-browserify",
+        "node-libs-browser>string_decoder",
+        "node-libs-browser>tty-browserify",
+        "node-libs-browser>url",
+        "node-libs-browser>util",
+        "node-libs-browser>vm-browserify"
+      ]
+    }
+  }
+}

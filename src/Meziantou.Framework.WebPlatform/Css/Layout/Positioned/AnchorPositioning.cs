@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Text;
+using Meziantou.Framework.WebPlatform.Css.Animations;
 using Meziantou.Framework.WebPlatform.Css.Cascade;
 using Meziantou.Framework.WebPlatform.Css.Om;
 using Meziantou.Framework.WebPlatform.Css.Syntax;
@@ -65,7 +66,8 @@ internal static class AnchorPositioning
     /// Returns whether an absolutely positioned box uses the anchor positioning: an anchor function, <c>position-area</c>, a default
     /// anchor (<c>position-anchor</c>), position options, <c>anchor-center</c> or <c>position-visibility: no-overflow</c> (which
     /// applies to the absolutely positioned boxes without anchor too). Restores the computed style of the box when it was replaced by
-    /// the style of a position option by the previous pass.
+    /// the style of a position option by the previous pass. A transition of the result of an anchor function replaces the function
+    /// (see <see cref="CssTransitionUpdater.UpdateFromLayout"/>): the after-change style uses it.
     /// </summary>
     public static bool IsAnchorPositioned(ContainerBox box)
     {
@@ -74,9 +76,11 @@ internal static class AnchorPositioning
             box.Style = baseStyle;
         }
 
-        var layout = box.Style.Layout;
+        var style = box.Style;
+        var layout = style.Layout;
         var anchor = layout.Anchor;
         return anchor.UsesAnchorFunctions || anchor.PositionArea is not null || anchor.TryFallbacks is not null
+            || (CssTransitionUpdater.MayHaveTransitions(style) && style.CreateAfterChangeStyle().Layout.Anchor.UsesAnchorFunctions)
             || anchor.PositionAnchor is PositionAnchorKind.Auto or PositionAnchorKind.Name or PositionAnchorKind.MatchParent
             || (anchor.Visibility & PositionVisibility.NoOverflow) != PositionVisibility.Always
             || layout.Alignment.JustifySelf.Keyword == AlignmentKeyword.AnchorCenter || layout.Alignment.AlignSelf.Keyword == AlignmentKeyword.AnchorCenter;
@@ -111,7 +115,10 @@ internal static class AnchorPositioning
 
         var query = new AnchorQuery(context, candidate, hostFragment, laidOut);
         var options = GetPositionOptions(context, box, baseStyle, state);
-        var layout = new AnchorLayout(query, baseStyle, containingBlockRect, containingBlock, state, hostFragment);
+        var layout = new AnchorLayout(query, baseStyle, containingBlockRect, containingBlock, state, hostFragment)
+        {
+            ComputesTransitionValues = box.Element is not null && CssTransitionUpdater.MayHaveTransitions(baseStyle),
+        };
 
         AnchorAttempt? chosen = null;
         if (options.Count == 1)
@@ -210,6 +217,21 @@ internal static class AnchorPositioning
             }
         }
 
+        // https://github.com/w3c/csswg-drafts/issues/9598: the anchor functions and the declarations of the position option are
+        // resolved at computed-value time, so their transitions start when their results change: the box is laid out again with
+        // the values of the transitions started by the change
+        var transitionValues = chosen.TransitionValues ?? GetTransitionValues(chosen.Style, chosen.Option, state);
+        if (layout.ComputesTransitionValues && GetPreviousTransitionValues(context, box, state, recalculate) is { } previousValues
+            && CssTransitionUpdater.UpdateFromLayout(baseStyle, previousValues, transitionValues))
+        {
+            baseStyle = baseStyle.WithCurrentAnimations(includeNewAnimations: true);
+            layout.ReplaceBaseStyle(baseStyle);
+            chosen = layout.Try(chosen.Option, hypothetical: false);
+        }
+
+        state.TransitionValues = transitionValues;
+        state.OptionDeclarations = layout.ComputesTransitionValues ? layout.GetDeclarations(chosen.Option) : null;
+        state.OptionFallbacks = baseStyle.GetComputedValue("position-try-fallbacks");
         box.Style = chosen.Style;
         state.UsedOption = chosen.Option.Text;
         // The anchors of the options tried by the previous passes still influence the position of a box with position options
@@ -236,6 +258,83 @@ internal static class AnchorPositioning
         chosen.Result.Fragment.AnchorScrollShift = PhysicalOffset.Zero;
         engine.RegisterAnchorPositionedFragment(state);
         return chosen.Result.Fragment;
+    }
+
+    /// <summary>
+    /// Returns the before-change values of the transitions of an anchor-positioned box: the values resolved by its last layout, or,
+    /// when it was not anchor-positioned, the values of its before-change style (it was laid out with them), or null when it was not
+    /// laid out.
+    /// </summary>
+    private static Dictionary<string, string>? GetPreviousTransitionValues(LayoutContext context, ContainerBox box, AnchorPositionState state, bool recalculate)
+    {
+        if (!recalculate)
+            return state.TransitionValues;
+
+        if (box.Element is not { } element)
+            return null;
+
+        var beforeChange = context.Document.GetStyleEngine().GetBeforeChangeStyle(element, box.PseudoElement);
+        if (beforeChange is null || beforeChange.IsDisplayNoneForAnimations())
+            return null;
+
+        return GetTransitionValues(beforeChange, option: null, state: null);
+    }
+
+    /// <summary>
+    /// Updates the transitions of an absolutely positioned box that is not anchor-positioned anymore: the values resolved by its last
+    /// layout as an anchor-positioned box (e.g. the declarations of a position option) transition to its computed values. Returns
+    /// whether the transitions changed: the box is laid out with its new style.
+    /// </summary>
+    public static bool UpdateTransitionsOfFormerAnchoredBox(LayoutContext context, ContainerBox box)
+    {
+        if (box.Element is not { } element || context.Engine.TryGetAnchorPositionState(element, box.PseudoElement) is not { TransitionValues: { } previousValues } state)
+            return false;
+
+        // (the state is discarded after the pass)
+        state.TransitionValues = null;
+        var style = box.Style;
+        if (!CssTransitionUpdater.MayHaveTransitions(style) || !CssTransitionUpdater.UpdateFromLayout(style, previousValues, GetTransitionValues(style.CreateAfterChangeStyle(), option: null, state: null)))
+            return false;
+
+        box.Style = style.WithCurrentAnimations(includeNewAnimations: true);
+        return true;
+    }
+
+    /// <summary>
+    /// Returns the values of the properties whose results the layout of an anchor-positioned box computes: the properties that accept
+    /// the anchor functions, the declarations of its position option, and the properties of the previous layout.
+    /// </summary>
+    private static Dictionary<string, string> GetTransitionValues(ComputedStyle style, PositionOption? option, AnchorPositionState? state)
+    {
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var property in AnchorPositioningStyle.AnchorFunctionProperties)
+        {
+            result[property] = style.GetUnanimatedComputedValue(property);
+        }
+
+        if (option?.Rule is { } rule)
+        {
+            foreach (var declaration in rule.Style.Declarations)
+            {
+                var property = LogicalProperties.GetPhysicalProperty(declaration.Value.Name, style) ?? declaration.Value.Name;
+                result.TryAdd(property, style.GetUnanimatedComputedValue(property));
+            }
+        }
+
+        if (option?.PositionArea is not null)
+        {
+            result.TryAdd("position-area", style.GetUnanimatedComputedValue("position-area"));
+        }
+
+        if (state?.TransitionValues is { } previous)
+        {
+            foreach (var property in previous.Keys)
+            {
+                result.TryAdd(property, style.GetUnanimatedComputedValue(property));
+            }
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -425,12 +524,23 @@ internal static class AnchorPositioning
         public bool ReferencesDefaultAnchor { get; init; }
 
         public required InsetModifiedContainingBlockFollower Follower { get; init; }
+
+        /// <summary>The values of the after-change style used by the transitions (see <see cref="GetTransitionValues"/>), or null when the box has no transitions.</summary>
+        public Dictionary<string, string>? TransitionValues { get; init; }
     }
 
     /// <summary>Lays out an anchor-positioned box with its position options.</summary>
     private sealed class AnchorLayout(AnchorQuery query, ComputedStyle baseStyle, PhysicalRect containingBlockRect, WritingDirection containingBlock, AnchorPositionState state, BoxFragment hostFragment)
     {
-        public ComputedStyle BaseStyle => baseStyle;
+        private ComputedStyle _baseStyle = baseStyle;
+
+        public ComputedStyle BaseStyle => _baseStyle;
+
+        /// <summary>Whether the attempts compute the values of the after-change style used by the transitions (the box may have transitions).</summary>
+        public bool ComputesTransitionValues { get; init; }
+
+        /// <summary>Replaces the computed style of the box (with the transitions started by the layout).</summary>
+        public void ReplaceBaseStyle(ComputedStyle style) => _baseStyle = style;
 
         public WritingDirection ContainingBlock => containingBlock;
 
@@ -491,6 +601,7 @@ internal static class AnchorPositioning
                 CompensatesHorizontally = resolution.CompensatesHorizontally,
                 CompensatesVertically = resolution.CompensatesVertically,
                 ReferencesDefaultAnchor = resolution.ReferencesDefaultAnchor,
+                TransitionValues = resolution.TransitionValues,
             };
 
             LastAttempt = attempt;
@@ -597,7 +708,7 @@ internal static class AnchorPositioning
             if (anchorStyle.UsesAnchorFunctions)
             {
                 var evaluator = new AnchorFunctionEvaluator(query, optionStyle, cbRect, containingBlock, defaultAnchorBox, GetRect);
-                style = evaluator.Resolve(baseStyle);
+                style = evaluator.Resolve(_baseStyle);
                 referencesDefault |= evaluator.ReferencesDefaultAnchor;
                 if (defaultAnchor is not null)
                 {
@@ -624,7 +735,20 @@ internal static class AnchorPositioning
                 FollowingSides = defaultAnchor is not null && anchorStyle.UsesAnchorFunctions ? evaluatorSides : default,
             };
 
-            return new OptionResolution(style, cbRect, parameters, scrollOffsets, defaultAnchor, compensatesHorizontally, compensatesVertically, referencesDefault) { Follower = follower, DefaultAnchorRect = defaultRect ?? default };
+            // The values of the after-change style (without the transitions), whose anchor functions are resolved
+            Dictionary<string, string>? transitionValues = null;
+            if (ComputesTransitionValues)
+            {
+                var afterChange = new AnchorFunctionEvaluator(query, optionStyle.CreateAfterChangeStyle(), cbRect, containingBlock, defaultAnchorBox, GetRect).Resolve(_baseStyle);
+                transitionValues = GetTransitionValues(afterChange, option, state);
+            }
+
+            return new OptionResolution(style, cbRect, parameters, scrollOffsets, defaultAnchor, compensatesHorizontally, compensatesVertically, referencesDefault)
+            {
+                Follower = follower,
+                DefaultAnchorRect = defaultRect ?? default,
+                TransitionValues = transitionValues,
+            };
         }
 
         /// <summary>
@@ -661,31 +785,36 @@ internal static class AnchorPositioning
 
         /// <summary>Returns the style of the box with the declarations of a position option (https://drafts.csswg.org/css-anchor-position-1/#apply-a-position-option).</summary>
         private ComputedStyle ApplyOption(PositionOption option)
+            => GetDeclarations(option) is { } declarations ? _baseStyle.WithPositionOption(declarations, _baseStyle) : _baseStyle;
+
+        /// <summary>Returns the declarations of a position option in the position fallback origin, or null for the base styles.</summary>
+        public List<CssLonghandValue>? GetDeclarations(PositionOption option)
         {
             if (option.IsBase)
-                return baseStyle;
+                return null;
 
             if (option.PositionArea is { } positionArea)
-                return baseStyle.WithPositionOption([new CssLonghandValue("position-area", positionArea)], baseStyle);
+                return [new CssLonghandValue("position-area", positionArea)];
 
-            var style = baseStyle;
+            List<CssLonghandValue>? declarations = null;
+            var style = _baseStyle;
             if (option.Rule is { } rule)
             {
-                var declarations = new List<CssLonghandValue>(rule.Style.Declarations.Count);
+                declarations = new List<CssLonghandValue>(rule.Style.Declarations.Count);
                 foreach (var declaration in rule.Style.Declarations)
                 {
                     declarations.Add(declaration.Value);
                 }
 
-                style = baseStyle.WithPositionOption(declarations, baseStyle);
+                style = _baseStyle.WithPositionOption(declarations, _baseStyle);
             }
 
             if (option.Tactics.Count > 0)
             {
-                style = baseStyle.WithPositionOption(TryTactics.Apply(style, option.Tactics, containingBlock), baseStyle);
+                declarations = TryTactics.Apply(style, option.Tactics, containingBlock);
             }
 
-            return style;
+            return declarations;
         }
     }
 
@@ -696,6 +825,8 @@ internal static class AnchorPositioning
         public InsetModifiedContainingBlockFollower Follower { get; init; } = new();
 
         public PhysicalRect DefaultAnchorRect { get; init; }
+
+        public Dictionary<string, string>? TransitionValues { get; init; }
     }
 
     /// <summary>

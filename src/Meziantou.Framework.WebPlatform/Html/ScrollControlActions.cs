@@ -194,13 +194,18 @@ internal static class ScrollControlActions
         return true;
     }
 
-    /// <summary>The default action of a click on a scroll navigation control: its activation behavior.</summary>
-    public static void OnClick(MouseEvent @event, Node target)
+    /// <summary>
+    /// Returns the scroll navigation control at the point of a trusted click when it has an activation behavior (a scroll marker,
+    /// or a scroll button that can scroll its originating element), or null. The pseudo-element is the innermost box hit by the
+    /// click: its activation behavior replaces the one of its originating element and of its ancestors (a link containing the
+    /// scroll container is not followed, https://github.com/whatwg/html/issues/10032).
+    /// </summary>
+    public static ScrollControlReference? GetActivationTarget(MouseEvent @event, Node target)
     {
-        if (GetControlAt(target.NodeDocument, @event) is { } control)
-        {
-            Activate(control, byKeyboard: false);
-        }
+        if (!@event.IsTrusted || @event.IsPositionless || GetBoxes(target.NodeDocument) is null)
+            return null;
+
+        return GetControlAt(target.NodeDocument, @event) is { } control && IsFocusable(control) ? control : null;
     }
 
     /// <summary>
@@ -362,10 +367,23 @@ internal static class ScrollControlActions
         if (!isTabs && target.IsConnected)
         {
             // The navigation continues at the originating element: it is the next area when it is focusable (at the first
-            // element of the column, for the scroll marker of a column)
-            var start = column is { } startColumn ? engine.GetFirstElementOfColumn(target, startColumn) : target;
+            // element of the column, for the scroll marker of a column; as in Chrome, at the element after the multi-column
+            // container when no element starts in the column or after it)
+            var start = column is { } startColumn ? engine.GetFirstElementOfColumn(target, startColumn) ?? GetNextElementSkippingChildren(target) : target;
             document.SequentialFocusNavigationStartingPoint = start is not null ? new(start, FocusNavigationStartingPointKind.BeforeNode) : new(target, FocusNavigationStartingPointKind.AfterNode);
         }
+    }
+
+    private static Element? GetNextElementSkippingChildren(Element element)
+    {
+        var root = element.NodeDocument;
+        for (var node = element.GetNextInTreeOrderSkippingChildren(root); node is not null; node = node.GetNextInTreeOrder(root))
+        {
+            if (node is Element next)
+                return next;
+        }
+
+        return null;
     }
 
     /// <summary>A stop of the sequential focus navigation among the scroll navigation controls of a scroll container.</summary>

@@ -10,6 +10,7 @@ internal static class WellKnownSymbols
     public static readonly JsSymbol IsConcatSpreadable = new("Symbol.isConcatSpreadable");
     public static readonly JsSymbol Iterator = new("Symbol.iterator");
     public static readonly JsSymbol Match = new("Symbol.match");
+    public static readonly JsSymbol Metadata = new("Symbol.metadata");
     public static readonly JsSymbol MatchAll = new("Symbol.matchAll");
     public static readonly JsSymbol Replace = new("Symbol.replace");
     public static readonly JsSymbol Search = new("Symbol.search");

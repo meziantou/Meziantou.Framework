@@ -8,8 +8,8 @@
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 9 | 9 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 60 | 65 | 0 | 92% |
-| **All** | **69** | **74** | **0** | **93%** |
+| [Reftests](#reftests) | 61 | 65 | 0 | 94% |
+| **All** | **70** | **74** | **0** | **95%** |
 
 ## Stable tests
 
@@ -33,7 +33,7 @@
 | [`attr-case-sensitivity-002.html`](https://wpt.fyi/results/css/css-content/attr-case-sensitivity-002.html) | Pass | 1 / 1 |  |  |
 | [`attr-case-sensitivity-003.html`](https://wpt.fyi/results/css/css-content/attr-case-sensitivity-003.html) | Pass | 1 / 1 |  |  |
 | [`attr-case-sensitivity-004.html`](https://wpt.fyi/results/css/css-content/attr-case-sensitivity-004.html) | Pass | 1 / 1 |  |  |
-| [`attr-chained-pseudo-001.html`](https://wpt.fyi/results/css/css-content/attr-chained-pseudo-001.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the nested pseudo-elements (`::after::marker`): a `::before` or `::after` pseudo-element whose `display` is `list-item` generates no marker box, so the content of `div::after::marker` is not rendered |
+| [`attr-chained-pseudo-001.html`](https://wpt.fyi/results/css/css-content/attr-chained-pseudo-001.html) | Pass | 1 / 1 |  |  |
 | [`content-none-select-1.html`](https://wpt.fyi/results/css/css-content/content-none-select-1.html) | Pass | 1 / 1 |  |  |
 | [`element-replacement-alt.html`](https://wpt.fyi/results/css/css-content/element-replacement-alt.html) | Pass | 1 / 1 |  |  |
 | [`element-replacement-display-contents.html`](https://wpt.fyi/results/css/css-content/element-replacement-display-contents.html) | Pass | 1 / 1 |  |  |

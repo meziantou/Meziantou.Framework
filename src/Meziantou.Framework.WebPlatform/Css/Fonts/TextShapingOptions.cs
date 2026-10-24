@@ -68,11 +68,15 @@ internal enum FontEmojiVariant : byte
 /// </summary>
 /// <param name="Before">The character before the text, or 0.</param>
 /// <param name="After">The character after the text, or 0.</param>
+/// <param name="Script">
+/// The script of the text around a text that has only characters of the scripts Common and Inherited (e.g. a punctuation in its
+/// own element), which they take, as when the script runs are computed on the whole paragraph; Unknown for none.
+/// </param>
 [StructLayout(LayoutKind.Auto)]
-internal readonly record struct ShapingContext(int Before, int After)
+internal readonly record struct ShapingContext(int Before, int After, UnicodeScript Script = UnicodeScript.Unknown)
 {
     /// <summary>Whether there is no context.</summary>
-    public bool IsEmpty => Before == 0 && After == 0;
+    public bool IsEmpty => Before == 0 && After == 0 && Script == UnicodeScript.Unknown;
 }
 
 /// <summary>

@@ -1,5 +1,6 @@
 using System.Globalization;
 using Meziantou.Framework.WebPlatform.Css.Cascade;
+using Meziantou.Framework.WebPlatform.Html;
 
 namespace Meziantou.Framework.WebPlatform.Css.Layout;
 
@@ -122,14 +123,19 @@ internal sealed class LayoutStyle
         }
     }
 
-    /// <summary>https://drafts.csswg.org/css2/#float-position (none for an absolutely positioned box: its computed value is none).</summary>
+    /// <summary>
+    /// https://drafts.csswg.org/css2/#float-position (none for an absolutely positioned box: its computed value is none). As in
+    /// the browsers, a br or wbr element is not floated: it is a line break (opportunity) of its line (see <see cref="BoxTreeBuilder"/>).
+    /// </summary>
     public FloatKind Float
     {
         get
         {
             if (!IsResolved(ResolvedFields.Float))
             {
-                _float = LayoutKeywords.ParseFloat(_style.GetComputedValue("float"));
+                _float = _style is { PseudoElement: null, Element: var element } && (element.IsHtml(TagId.Br) || element.IsHtml(TagId.Wbr))
+                    ? FloatKind.None
+                    : LayoutKeywords.ParseFloat(_style.GetComputedValue("float"));
                 _resolved |= ResolvedFields.Float;
             }
 
@@ -867,8 +873,8 @@ internal sealed class LayoutStyle
     /// <summary>
     /// The line-height (https://drafts.csswg.org/css-inline-3/#line-height-property): its computed value, except for a
     /// drop-down box with its native appearance, which ignores <c>line-height</c> as in the browsers (it is laid out with
-    /// <c>normal</c>; the computed value and the <c>lh</c> unit are not changed: WPT css/css-values/lh-unit-004.html,
-    /// html/rendering/replaced-elements/the-select-element/select-1-line-height.html).
+    /// <c>normal</c>, which is its resolved value; the computed value and the <c>lh</c> unit are not changed: WPT
+    /// css/css-values/lh-unit-004.html, html/rendering/replaced-elements/the-select-element/select-1-line-height.html).
     /// </summary>
     public LineHeight LineHeight
     {
@@ -876,14 +882,17 @@ internal sealed class LayoutStyle
         {
             if (!IsResolved(ResolvedFields.LineHeight))
             {
-                var ignoresLineHeight = _style.PseudoElement is null && _style.Element is Dom.HtmlSelectElement { IsMultiple: false, DisplaySize: <= 1 } && _style.GetComputedValue("appearance") is "auto" or "menulist";
-                _lineHeight = ignoresLineHeight ? LineHeight.Parse("normal", EffectiveZoom) : LineHeight.Parse(_style.GetComputedValue("line-height"), EffectiveZoom);
+                _lineHeight = IgnoresLineHeight(_style) ? LineHeight.Parse("normal", EffectiveZoom) : LineHeight.Parse(_style.GetComputedValue("line-height"), EffectiveZoom);
                 _resolved |= ResolvedFields.LineHeight;
             }
 
             return _lineHeight;
         }
     }
+
+    /// <summary>Returns whether the box of a style is laid out with <c>line-height: normal</c> whatever its line-height (see <see cref="LineHeight"/>).</summary>
+    internal static bool IgnoresLineHeight(ComputedStyle style)
+        => style.PseudoElement is null && style.Element is Dom.HtmlSelectElement { IsMultiple: false, DisplaySize: <= 1 } && style.GetComputedValue("appearance") is "auto" or "menulist";
 
     /// <summary>
     /// The used line height in px: normal is the sum of the ascent, the descent and the line gap of the first available font

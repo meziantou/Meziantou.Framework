@@ -89,7 +89,7 @@ internal sealed partial class LayoutEngine
         var counters = new PageCounters(_document.DocumentElement is { } root ? styleEngine.GetStyle(root) : null);
         for (var i = 0; i < pages.Count; i++)
         {
-            pages[i].MarginBoxes = PageMarginBoxes.Layout(context, pages[i], selections[i], pages.Count, counters.Next(pages[i].Geometry.Style));
+            pages[i].MarginBoxes = PageMarginBoxes.Layout(context, pages[i], selections[i], pages.Count, counters.Next(pages[i].Geometry.Style), _printSession!.Options.SafePrintableInset);
         }
 
         _pages = pages;
@@ -104,8 +104,8 @@ internal sealed partial class LayoutEngine
         {
             var session = _printSession!;
             var styleEngine = _document.GetStyleEngine();
-            var style = styleEngine.GetPageStyle(selection, session.DefaultMargins, out var size, out var orientation);
-            geometry = PageGeometry.Resolve(style, size, orientation, session.Options, styleEngine);
+            var style = styleEngine.GetPageStyle(selection, session.DefaultMargins, out var size, out var orientation, out var marginSafety);
+            geometry = PageGeometry.Resolve(style, size, orientation, marginSafety, session.Options, styleEngine);
             geometries[selection] = geometry;
         }
 
@@ -263,6 +263,27 @@ internal sealed partial class LayoutEngine
                 sizes = computed;
             }
 
+            // The page and the offset of an absolutely positioned box of the initial containing block: a box placed by its insets
+            // in the block axis is in the initial containing block, the page area of the first page (the pages follow it by
+            // their block sizes, whatever the breaks of the content), a box at its static position or anchored follows the
+            // content at its position
+            (int Index, double Offset) MapPlacedBox(BoxFragment box, double position)
+            {
+                var anchor = box.Box.Style.Layout.Anchor;
+                if (segment is not null || PageBreakRules.IsAtStaticBlockPosition(box) || box.Box.Style.PositionBaseStyle is not null || anchor.UsesAnchorFunctions
+                    || anchor.PositionArea is not null || anchor.PositionAnchor is PositionAnchorKind.Auto or PositionAnchorKind.Name or PositionAnchorKind.MatchParent)
+                    return map.Map(position);
+
+                var pageIndex = 0;
+                while (pageIndex < sizes.Count - 1 && position >= sizes[pageIndex] - 0.01)
+                {
+                    position -= sizes[pageIndex];
+                    pageIndex++;
+                }
+
+                return (pageIndex, position);
+            }
+
             // (a box placed on its page that does not fit in the rest of the page is fragmented apart by a new layout)
             var hasNewFragmentedBox = false;
             if (placedBoxes is not null && pass < FloatPusher.MaxPasses)
@@ -270,12 +291,13 @@ internal sealed partial class LayoutEngine
                 foreach (var box in placedBoxes)
                 {
                     var (top, bottom, _) = FragmentationFlow.GetBlockRange(box, icbSize, writingDirection, parentTop: 0);
-                    var (index, offset) = map.Map(top);
+                    var (index, offset) = MapPlacedBox(box, top);
                     if (index < baseIndex)
                         continue;
 
+                    // (also a box whose content has a forced page break: it is broken there)
                     var extent = GetSubtreeBlockEnd(box, writingDirection, top, bottom) - top;
-                    if ((offset + extent > sizes[Math.Clamp(index - baseIndex, 0, sizes.Count - 1)] + 0.01 || (index - baseIndex >= breaks.Count && top > flow.ContentEnd + 0.01 && offset > sizes[^1] - 0.01))
+                    if ((offset + extent > sizes[Math.Clamp(index - baseIndex, 0, sizes.Count - 1)] + 0.01 || (index - baseIndex >= breaks.Count && top > flow.ContentEnd + 0.01 && offset > sizes[^1] - 0.01) || ContainsForcedPageBreak(rules, box, PageBreakRules.IsAtStaticBlockPosition(box)))
                         && (fragmentedBoxes ??= []).Add(box.Box))
                     {
                         hasNewFragmentedBox = true;
@@ -420,7 +442,7 @@ internal sealed partial class LayoutEngine
                         foreach (var box in placedBoxes)
                         {
                             var logical = writingDirection.ToLogical(box.Offset - box.RelativeOffset, icbSize, box.Size);
-                            var (boxIndex, offset) = map.Map(logical.Block);
+                            var (boxIndex, offset) = MapPlacedBox(box, logical.Block);
                             if (Math.Clamp(boxIndex, 0, fragmentainers.Count - 1) == index)
                             {
                                 builder.AddChild(box, new LogicalOffset(logical.Inline, boxIndex == index ? offset : logical.Block - fragmentainers[index].Start + fragmentainers[index].DisplayOffset));
@@ -524,6 +546,35 @@ internal sealed partial class LayoutEngine
             => box.Box.Kind is ContainerBoxKind.Normal && !box.Box.ChildrenAreInline && box.Box.Display.Inside is DisplayInside.Flow or DisplayInside.FlowRoot
                 && !box.Box.Style.Layout.IsMultiColumnContainer && box.WritingDirection.BlockStart == writingDirection.BlockStart
                 && !FragmentationFlow.IsMonolithic(box, writingDirection, scrollContainersAreMonolithic: false);
+    }
+
+    /// <summary>
+    /// Returns whether the in-flow content of a box has a forced page break between two siblings (or a change of the page name,
+    /// when <paramref name="namesBreak"/>).
+    /// </summary>
+    private static bool ContainsForcedPageBreak(PageBreakRules rules, BoxFragment box, bool namesBreak)
+    {
+        if (box.Box.EstablishesIndependentChildrenLayout || UsedContainment.HasLayoutContainment(box.Box))
+            return false;
+
+        var children = box.ChildrenSpan;
+        BoxFragment? previous = null;
+        for (var i = 0; i < box.InFlowChildCount && i < children.Length; i++)
+        {
+            if (children[i] is not BoxFragment child || child.Box.IsOutOfFlow)
+                continue;
+
+            if (previous is not null && (PageBreakRules.IsForced(previous.Box.Style.Layout.Fragmentation.BreakAfter) || PageBreakRules.IsForced(child.Box.Style.Layout.Fragmentation.BreakBefore)
+                || (namesBreak && !string.Equals(rules.GetEndPageValue(previous), rules.GetStartPageValue(child), StringComparison.Ordinal))))
+                return true;
+
+            if (ContainsForcedPageBreak(rules, child, namesBreak))
+                return true;
+
+            previous = child;
+        }
+
+        return false;
     }
 
     /// <summary>Returns the block-end edge of a fragment and of its descendants (in the block axis of the strip).</summary>
@@ -669,7 +720,8 @@ internal sealed partial class LayoutEngine
     /// page-margin boxes whose <c>z-index</c> is negative, then the document in the page area (its canvas background covers the
     /// padding box of the page box), then the other page-margin boxes. As in Blink, each page-margin box is painted atomically, as a stacking
     /// context, in the order of its <c>z-index</c> (<c>auto</c> is 0), then in the order of the boxes (from the top-left
-    /// corner, clockwise). The display list is in the coordinates of the page box.
+    /// corner, clockwise). The display list is in the coordinates of the page box. A document whose root element generates no
+    /// box has blank pages.
     /// </summary>
     internal DisplayList PaintPage(LayoutPage page)
     {
@@ -681,15 +733,18 @@ internal sealed partial class LayoutEngine
         builder.Add(new DrawPaintItem(new DisplayPaint(DisplayColor.White)));
         List<(BoxFragment Fragment, int ZIndex)>? marginBoxes = null;
         var viewport = _boxTree?.Viewport;
-        if (geometry.Style is { } style && viewport is not null)
+        // (as in Gecko, a document whose root element generates no box prints blank pages, without page boxes)
+        if (geometry.Style is { } style && viewport is { IsEmpty: false })
         {
             // As in the browsers, the background of the page box covers the whole page, its margins included (whatever its
-            // background-clip); its borders are in the page margins
-            var background = new ContainerBox(ContainerBoxKind.Normal, style, Display.Block, style.Element, StyleEngine.PageContextPseudoElement);
-            var backgroundFragment = new BoxFragment(background, geometry.PageSize, default, default, default, children: null);
+            // background-clip), and its images are positioned in the page box (see Painter.PaintBackground); its borders are in
+            // the page margins
+            var borderBox = geometry.BorderBox;
+            var backgroundStyle = style.CreateOverriddenStyle([("border-top-style", "none"), ("border-right-style", "none"), ("border-bottom-style", "none"), ("border-left-style", "none")]);
+            var background = new ContainerBox(ContainerBoxKind.Normal, backgroundStyle, Display.Block, style.Element, StyleEngine.PageContextPseudoElement);
+            var backgroundFragment = new BoxFragment(background, borderBox.Size, geometry.Border, geometry.Padding, geometry.Margin, children: null) { Offset = borderBox.Offset };
             var borderStyle = style.CreateOverriddenStyle([("background-color", "transparent"), ("background-image", "none")]);
             var pageBox = new ContainerBox(ContainerBoxKind.Normal, borderStyle, Display.Block, style.Element, StyleEngine.PageContextPseudoElement);
-            var borderBox = geometry.BorderBox;
             var pageBoxFragment = new BoxFragment(pageBox, borderBox.Size, geometry.Border, geometry.Padding, geometry.Margin, children: null) { Offset = borderBox.Offset };
             var sheet = new BoxFragment(viewport, geometry.PageSize, default, default, default, [backgroundFragment, pageBoxFragment]);
             builder.AddList(Painter.Paint(this, _document, sheet, PhysicalOffset.Zero, DisplayColor.Transparent));

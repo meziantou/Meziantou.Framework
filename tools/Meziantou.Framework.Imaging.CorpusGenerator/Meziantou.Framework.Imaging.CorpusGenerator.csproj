@@ -27,7 +27,7 @@
 
   <ItemGroup>
     <!-- `verify` re-decodes the corpus with the tools of the interop tests: keep the same version as the TestHarness project -->
-    <PackageReference Include="Meziantou.Prebuilt" Version="3.7.0" />
+    <PackageReference Include="Meziantou.Prebuilt" Version="3.11.0" />
   </ItemGroup>
 
   <ItemGroup>

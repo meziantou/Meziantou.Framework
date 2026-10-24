@@ -441,13 +441,7 @@
     "total": 7
   },
   "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/bailout-exception-vs-return-origin.sub.window.js": {
-    "total": 6,
-    "failures": {
-      "document.open should throw a SecurityError with cross-origin document even when the ignore-opens-during-unload counter is greater than 0 (during beforeunload event)": "FAIL",
-      "document.open should throw a SecurityError with cross-origin document even when the ignore-opens-during-unload counter is greater than 0 (during pagehide event)": "FAIL",
-      "document.open should throw a SecurityError with cross-origin document even when the ignore-opens-during-unload counter is greater than 0 (during unload event)": "FAIL",
-      "document.open should throw a SecurityError with cross-origin document even when there is an active parser executing script": "FAIL"
-    }
+    "total": 6
   },
   "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/bailout-exception-vs-return-xml.window.js": {
     "total": 4
@@ -474,10 +468,7 @@
     "total": 2
   },
   "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/document-open-cancels-javascript-url-navigation.html": {
-    "total": 1,
-    "failures": {
-      "document-open-cancels-javascript-url-navigation": "FAIL"
-    }
+    "total": 1
   },
   "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/document.open-01.xhtml": {
     "total": 1

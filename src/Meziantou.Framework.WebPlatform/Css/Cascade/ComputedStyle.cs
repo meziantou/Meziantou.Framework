@@ -557,6 +557,10 @@ internal sealed partial class ComputedStyle
 
         if (physical == "line-height" && value != "normal")
         {
+            // https://drafts.csswg.org/cssom/#resolved-values: "the used value" (a drop-down box ignores line-height)
+            if (LayoutStyle.IgnoresLineHeight(this))
+                return "normal";
+
             // https://html.spec.whatwg.org/multipage/rendering.html#the-input-element-as-a-text-entry-widget: "the used value of
             // the 'line-height' property must be a length value that is no smaller than what the used value would be for
             // 'line-height: normal'"
@@ -1061,7 +1065,7 @@ internal sealed partial class ComputedStyle
             // https://drafts.csswg.org/css-lists-3/#marker-properties: the marker is not indented nor aligned by the properties of
             // its list item (as the important declarations of the user agent style sheet of the browsers:
             // text-indent: 0 !important; text-align: start !important; text-align-last: start !important)
-            if (PseudoElement == "marker" && name is "text-indent" or "text-align-all" or "text-align-last")
+            if (StyleEngine.IsMarker(PseudoElement) && name is "text-indent" or "text-align-all" or "text-align-last")
                 return Default(property, inherit: false);
 
             return Default(property, inherit: inherited);
@@ -1124,7 +1128,7 @@ internal sealed partial class ComputedStyle
     /// Returns the context of the substitution of a cascaded value: the element, or the frame of the application of the mixin
     /// of the declaration, whose variables are its parameters and its local variables.
     /// </summary>
-    private SubstitutionContext GetSubstitutionContext(CascadedValue cascaded) => cascaded.Mixin is { } mixin ? GetMixinFrame(mixin).Context : new SubstitutionContext(this, cascaded.TreeScope, AttrElement: cascaded.OriginatingElement);
+    private SubstitutionContext GetSubstitutionContext(CascadedValue cascaded) => cascaded.Mixin is { } mixin ? GetMixinFrame(mixin).Context : new SubstitutionContext(this, cascaded.TreeScope, AttrElement: cascaded.OriginatingElement, NamespacePrefixes: cascaded.NamespacePrefixes);
 
     /// <summary>Returns the frame of the application of a mixin for the element (created on first use).</summary>
     private CssFunctionFrame GetMixinFrame(CssMixinApplication mixin)

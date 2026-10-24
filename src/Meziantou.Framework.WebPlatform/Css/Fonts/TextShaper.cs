@@ -218,6 +218,11 @@ internal static partial class TextShaper
         var orientation = options.Orientation;
         MatchedFont? previousFont = null;
         var scripts = new ScriptItemizer(stackalloc int[ScriptItemizer.MaxBrackets], stackalloc UnicodeScript[ScriptItemizer.MaxBrackets]);
+        if (options.Context.Script != UnicodeScript.Unknown)
+        {
+            scripts.Start(options.Context.Script);
+        }
+
         var index = 0;
         while (index < text.Length)
         {
@@ -239,7 +244,7 @@ internal static partial class TextShaper
 
             MatchedFont font;
             var shapedCodePoint = codePoint is '\t' or '\r' ? ' ' : codePoint;
-            if (codePoint == '\n' || UnicodeProperties.IsDefaultIgnorable(codePoint))
+            if (IsLineSeparator(codePoint) || UnicodeProperties.IsDefaultIgnorable(codePoint))
             {
                 // The segment breaks and the default ignorable characters are invisible (in the font of the previous character)
                 font = previousFont ?? fonts.PrimaryFont;
@@ -341,6 +346,9 @@ internal static partial class TextShaper
         private readonly Span<UnicodeScript> _bracketScripts = bracketScripts;
         private UnicodeScript _current = UnicodeScript.Common;
         private int _bracketCount;
+
+        /// <summary>Sets the script of the text before the characters: the Common and Inherited characters at the start take it.</summary>
+        public void Start(UnicodeScript script) => _current = script is UnicodeScript.Hiragana or UnicodeScript.Katakana ? UnicodeScript.KatakanaOrHiragana : script;
 
         /// <summary>The script of the next base character.</summary>
         public UnicodeScript Next(int codePoint)
@@ -781,7 +789,14 @@ internal static partial class TextShaper
     /// The character the shaper is given for a character of the text: a segment break is not rendered, as a default ignorable
     /// character (a zero width space, which does not join either).
     /// </summary>
-    private static int GetShapedCharacter(int codePoint) => codePoint == '\n' ? 0x200B : codePoint;
+    private static int GetShapedCharacter(int codePoint) => IsLineSeparator(codePoint) ? 0x200B : codePoint;
+
+    /// <summary>
+    /// Whether a character ends its line and is not rendered: a segment break, or a line or paragraph separator (U+2028, U+2029),
+    /// forced line breaks of UAX #14 (https://drafts.csswg.org/css-text-4/#line-breaking) that are not control characters (the
+    /// control characters are rendered visibly, https://drafts.csswg.org/css-text-4/#white-space-processing).
+    /// </summary>
+    internal static bool IsLineSeparator(int codePoint) => codePoint is '\n' or 0x2028 or 0x2029;
 
     /// <summary>Adds the features of a list to the features of a run, in their order.</summary>
     private static void AddFeatures(List<ShapingFeature> features, FontFeatureList? list)
@@ -931,7 +946,7 @@ internal static partial class TextShaper
 
                 // The invisible characters have no letter spacing, nor the letters of the cursive scripts, whose connections would
                 // break (https://drafts.csswg.org/css-text-4/#cursive-tracking: as Chrome and Firefox, for the joining scripts)
-                if (options.LetterSpacing != 0 && codePoints[i].Cluster == codePoints[i].Index && codePoint != '\n' && !UnicodeProperties.IsDefaultIgnorable(codePoint)
+                if (options.LetterSpacing != 0 && codePoints[i].Cluster == codePoints[i].Index && !IsLineSeparator(codePoint) && !UnicodeProperties.IsDefaultIgnorable(codePoint)
                     && !CharacterProperties.IsJoiningScript(UnicodeScripts.GetScript(codePoint)))
                 {
                     units++;

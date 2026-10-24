@@ -489,6 +489,10 @@ public sealed class JsEngineTests
             exception = Assert.Throws<JsTerminationException>(() => realm.Execute("function f(n) { return n < 2 ? n : f(n - 1) + f(n - 2); } f(30)"));
             Assert.Equal(JsTerminationReason.StatementLimit, exception.Reason);
             Assert.Equal(3, realm.Execute("1 + 2").AsNumber());
+
+            // An endless recursion of tail calls never exceeds the recursion limit: it is a loop
+            exception = Assert.Throws<JsTerminationException>(() => realm.Execute("'use strict'; function g() { return g(); } g()"));
+            Assert.Equal(JsTerminationReason.StatementLimit, exception.Reason);
         }
 
         using (var engine = new JsEngine(new JsEngineOptions { RegExpTimeout = TimeSpan.FromMilliseconds(50) }))

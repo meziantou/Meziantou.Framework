@@ -1067,8 +1067,15 @@ response blocked by a check included; a `404` response is not a network error, a
   the `Accept` header of a navigation. There is no HTTP cache, so the response is not used by the next request of the
   URL. A content security policy that has a `default-src` directive blocks the prefetch unless one of its fetch
   directives allows the URL (https://w3c.github.io/webappsec-csp/#does-resource-hint-violate-policy).
-- `preconnect` and `dns-prefetch` are ignored: the loader has no connection to open in advance
-  (`relList.supports()` is false for them).
+- **`<link rel=prerender>`** (removed from the HTML Standard) is processed as a prefetch, as in the browsers (Chromium's
+  NoState Prefetch).
+- **`<link rel=preconnect>`** and **`<link rel=dns-prefetch>`** fetch nothing and fire no event: the loader has
+  neither a connection pool nor a DNS cache to fill in advance, so the hints are satisfied by doing nothing (the
+  specification makes them recommendations). `<link rel=next>` is processed as a preconnect (the specification lets
+  the user agent choose between a DNS prefetch, a preconnect and a prefetch). The `preconnect` links of the `Link`
+  headers are ignored for the same reason.
+- `apple-touch-icon` and `apple-touch-icon-precomposed` are icons, and `canonical` has no processing model:
+  `relList.supports()` is true for them, as in the browsers.
 - As in the browsers, the request of a preload whose element was created by the parser is "parser-inserted" for the
   content security policies: a script preload without nonce is blocked by `'strict-dynamic'`.
 

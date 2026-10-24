@@ -58,6 +58,7 @@ internal static class ElementInterfacesGenerator
         ["HTMLAnchorElement.relList"] = "SupportedTokens.HyperlinkRel",
         ["HTMLAreaElement.relList"] = "SupportedTokens.HyperlinkRel",
         ["HTMLFormElement.relList"] = "SupportedTokens.HyperlinkRel",
+        ["SVGAElement.relList"] = "SupportedTokens.HyperlinkRel",
         ["HTMLIFrameElement.sandbox"] = "SupportedTokens.Sandbox",
         ["HTMLLinkElement.blocking"] = "SupportedTokens.Blocking",
         ["HTMLScriptElement.blocking"] = "SupportedTokens.Blocking",

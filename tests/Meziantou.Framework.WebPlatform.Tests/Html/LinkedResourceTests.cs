@@ -191,11 +191,16 @@ public sealed class LinkedResourceTests : IDisposable
         Assert.False(link.RelList.Supports("noopener"));
         Assert.True(link.RelList.Supports("modulepreload"));
         Assert.True(link.RelList.Supports("prefetch"));
-        Assert.False(link.RelList.Supports("preconnect"));
+        Assert.True(link.RelList.Supports("preconnect"));
+        Assert.False(link.RelList.Supports("prev"));
+        Assert.False(link.RelList.Supports("author"));
         Assert.True(((HtmlAnchorElement)document.QuerySelector("a")!).RelList.Supports("noopener"));
         Assert.True(((HtmlAreaElement)document.QuerySelector("area")!).RelList.Supports("noreferrer"));
         Assert.True(((HtmlFormElement)document.QuerySelector("form")!).RelList.Supports("opener"));
         Assert.False(((HtmlFormElement)document.QuerySelector("form")!).RelList.Supports("stylesheet"));
+        var svgAnchor = (SvgAElement)document.CreateElementNS("http://www.w3.org/2000/svg", "a");
+        Assert.True(svgAnchor.RelList.Supports("noopener"));
+        Assert.False(svgAnchor.RelList.Supports("prefetch"));
     }
 
     [Theory]

@@ -28,8 +28,8 @@ internal static class StringBuiltins
         new("lastIndexOf", 1, LastIndexOf),
         new("localeCompare", 1, LocaleCompare),
         new("normalize", 0, Normalize),
-        new("padEnd", 1, (f, t, a, _) => Pad(t, a, atStart: false, "padEnd")),
-        new("padStart", 1, (f, t, a, _) => Pad(t, a, atStart: true, "padStart")),
+        new("padEnd", 1, (f, t, a, _) => Pad(f, t, a, atStart: false, "padEnd")),
+        new("padStart", 1, (f, t, a, _) => Pad(f, t, a, atStart: true, "padStart")),
         new("repeat", 1, Repeat),
         new("slice", 2, Slice),
         new("startsWith", 1, StartsWith),
@@ -177,17 +177,13 @@ internal static class StringBuiltins
         var result = new StringBuilder();
         for (long nextIndex = 0; ; nextIndex++)
         {
-            var nextLiteral = JsOperations.ToString(literals.Get(PropertyKey.FromInteger(nextIndex)));
-            StringOperations.CheckLength((long)result.Length + nextLiteral.Length);
-            result.Append(nextLiteral);
+            StringOperations.Append(result, JsOperations.ToString(literals.Get(PropertyKey.FromInteger(nextIndex))));
             if (nextIndex + 1 == literalCount)
                 return result.ToString();
 
             if (nextIndex < substitutionCount)
             {
-                var nextSubstitution = JsOperations.ToString(arguments[(int)nextIndex + 1]);
-                StringOperations.CheckLength((long)result.Length + nextSubstitution.Length);
-                result.Append(nextSubstitution);
+                StringOperations.Append(result, JsOperations.ToString(arguments[(int)nextIndex + 1]));
             }
         }
     }
@@ -376,7 +372,7 @@ internal static class StringBuiltins
     }
 
     /// <summary>StringPaddingBuiltinsImpl(O, maxLength, fillString, placement)</summary>
-    private static JsValue Pad(JsValue thisValue, ReadOnlySpan<JsValue> arguments, bool atStart, string methodName)
+    private static JsValue Pad(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, bool atStart, string methodName)
     {
         var s = ThisToString(thisValue, methodName);
         var maxLength = JsOperations.ToLength(Arg(arguments, 0));
@@ -390,26 +386,18 @@ internal static class StringBuiltins
             return s;
 
         StringOperations.CheckLength((long)maxLength);
-        var fillLength = (int)maxLength - stringLength;
-        var result = new StringBuilder((int)maxLength);
-        if (!atStart)
+        function.Realm.Engine.EnsureCanAllocate((long)maxLength * sizeof(char));
+        // A single allocation: the string can be close to the maximum length
+        return string.Create((int)maxLength, (Value: s, Filler: filler, AtStart: atStart), (span, state) =>
         {
-            result.Append(s);
-        }
-
-        while (fillLength > 0)
-        {
-            var count = Math.Min(fillLength, filler.Length);
-            result.Append(filler, 0, count);
-            fillLength -= count;
-        }
-
-        if (atStart)
-        {
-            result.Append(s);
-        }
-
-        return result.ToString();
+            var fill = state.AtStart ? span[..^state.Value.Length] : span[state.Value.Length..];
+            state.Value.CopyTo(state.AtStart ? span[fill.Length..] : span);
+            for (var i = 0; i < fill.Length; i += state.Filler.Length)
+            {
+                var count = Math.Min(fill.Length - i, state.Filler.Length);
+                state.Filler.AsSpan(0, count).CopyTo(fill[i..]);
+            }
+        });
     }
 
     /// <summary>String.prototype.repeat(count)</summary>
@@ -431,6 +419,7 @@ internal static class StringBuiltins
         }
 
         var count = (int)n;
+        function.Realm.Engine.EnsureCanAllocate((long)count * s.Length * sizeof(char));
         if (s.Length == 1)
             return new string(s[0], count);
 
@@ -550,6 +539,7 @@ internal static class StringBuiltins
             {
                 if (c == '"')
                 {
+                    JsEngine.CountCurrentWork(6);
                     result.Append("&quot;");
                 }
                 else

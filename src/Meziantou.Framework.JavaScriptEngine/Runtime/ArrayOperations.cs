@@ -79,6 +79,7 @@ internal static class ArrayOperations
     /// <summary>HasProperty(O, index), then Get(O, index) when the property exists.</summary>
     public static bool TryGetElement(JsObject obj, long index, out JsValue value)
     {
+        JsEngine.CountCurrentWork(1);
         if (TryGetDenseElement(obj, index, out value))
             return true;
 
@@ -93,6 +94,7 @@ internal static class ArrayOperations
     /// <summary>Get(O, index)</summary>
     public static JsValue GetElement(JsObject obj, long index)
     {
+        JsEngine.CountCurrentWork(1);
         if (TryGetDenseElement(obj, index, out var value))
             return value;
 
@@ -102,6 +104,7 @@ internal static class ArrayOperations
     /// <summary>HasProperty(O, index)</summary>
     public static bool HasElement(JsObject obj, long index)
     {
+        JsEngine.CountCurrentWork(1);
         if (TryGetDenseElement(obj, index, out _))
             return true;
 
@@ -109,14 +112,23 @@ internal static class ArrayOperations
     }
 
     /// <summary>Set(O, index, value, true)</summary>
-    public static void SetElement(JsObject obj, long index, JsValue value) => obj.Set(Key(index), value, throwOnFailure: true);
+    public static void SetElement(JsObject obj, long index, JsValue value)
+    {
+        JsEngine.CountCurrentWork(1);
+        obj.Set(Key(index), value, throwOnFailure: true);
+    }
 
     /// <summary>DeletePropertyOrThrow(O, index)</summary>
-    public static void DeleteElement(JsObject obj, long index) => obj.DeletePropertyOrThrow(Key(index));
+    public static void DeleteElement(JsObject obj, long index)
+    {
+        JsEngine.CountCurrentWork(1);
+        obj.DeletePropertyOrThrow(Key(index));
+    }
 
     /// <summary>CreateDataPropertyOrThrow(O, index, value)</summary>
     public static void CreateElement(JsObject obj, long index, JsValue value)
     {
+        JsEngine.CountCurrentWork(1);
         // An extensible array whose indices are all in the dense elements: the element is an ordinary data property
         if (obj is JsArray array && array.TryCreateDenseElement(index, value))
             return;

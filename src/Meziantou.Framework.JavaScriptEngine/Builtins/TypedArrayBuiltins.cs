@@ -815,17 +815,14 @@ internal static class TypedArrayBuiltins
         {
             if (k > 0)
             {
-                builder.Append(separator);
+                StringOperations.Append(builder, separator);
             }
 
             var element = GetElement(typedArray, k);
             if (!element.IsUndefined)
             {
-                builder.Append(JsOperations.ToString(element));
+                StringOperations.Append(builder, JsOperations.ToString(element));
             }
-
-            if (builder.Length > JsString.MaxLength)
-                return ThrowHelper.ThrowRangeError<JsValue>("Invalid string length");
         }
 
         return builder.ToString();
@@ -1321,17 +1318,14 @@ internal static class TypedArrayBuiltins
         {
             if (k > 0)
             {
-                builder.Append(',');
+                StringOperations.Append(builder, ",");
             }
 
             var element = GetElement(typedArray, k);
             if (!element.IsNullOrUndefined)
             {
-                builder.Append(JsOperations.ToString(JsOperations.Invoke(element, ToLocaleStringKey, [locales, options])));
+                StringOperations.Append(builder, JsOperations.ToString(JsOperations.Invoke(element, ToLocaleStringKey, [locales, options])));
             }
-
-            if (builder.Length > JsString.MaxLength)
-                return ThrowHelper.ThrowRangeError<JsValue>("Invalid string length");
         }
 
         return builder.ToString();

@@ -46,6 +46,9 @@ public sealed class JsSharedDataBlock
             return null;
 
         var capacity = (nuint)Math.Max(maxByteLength ?? byteLength, 1);
+
+        // The native memory is not counted by the memory limit of the script, but a block larger than the limit is not created
+        JsEngine.EnsureCurrentCanAllocate((long)capacity);
         nint pointer;
         try
         {

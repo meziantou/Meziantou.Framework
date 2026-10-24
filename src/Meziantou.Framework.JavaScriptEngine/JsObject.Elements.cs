@@ -177,6 +177,8 @@ public partial class JsObject
 
     private static T[] AllocateStorage<T>(int length, int elementSize)
     {
+        JsEngine.EnsureCurrentCanAllocate((long)length * elementSize);
+
         // A rented array is not cleared: the caller writes every element
         return IsPooledStorageLength(length, elementSize) ? ArrayPool<T>.Shared.Rent(length) : new T[length];
     }

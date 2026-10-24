@@ -10,6 +10,12 @@ public sealed partial class JsEngine
     // The limits are checked every InterruptCheckInterval interrupt points (the backward jumps and the calls)
     private const long InterruptCheckInterval = 1024;
 
+    // The limits are checked every WorkCheckInterval units of work of the built-in functions (CountWork)
+    private const long WorkCheckInterval = 1 << 16;
+
+    // The allocations checked before they are made (EnsureCurrentCanAllocate): the size of the large object heap
+    internal const long LargeAllocationBytes = 85_000;
+
     private readonly List<Frame> _frames = [];
 
     // The script execution contexts pushed by the host (EnterActiveScriptOrModule), with the number of frames when they were pushed
@@ -19,6 +25,8 @@ public sealed partial class JsEngine
     private long _executionStart;
     private long _executionStartCounter;
     private long _executionStartAllocatedBytes;
+    private long _workCounter;
+    private long _nextWorkCheck = WorkCheckInterval;
 
     /// <summary>Gets whether a script is running (the execution context stack is not empty).</summary>
     public bool IsScriptRunning => _frames.Count > 0;
@@ -152,6 +160,56 @@ public sealed partial class JsEngine
 
         if (options.MaxStatements is { } maxStatements && _interruptCounter - _executionStartCounter > maxStatements)
             throw new JsTerminationException(JsTerminationReason.StatementLimit, "The script exceeded its statement limit");
+    }
+
+    /// <summary>
+    /// Throws a <see cref="JsTerminationException"/> when allocating <paramref name="byteCount"/> more bytes would exceed
+    /// <see cref="JsEngineOptions.MemoryLimit"/>. The limit is otherwise checked after the allocations, so a single large
+    /// allocation (a string whose length the script chooses) must be checked before it is made.
+    /// </summary>
+    internal void EnsureCanAllocate(long byteCount)
+    {
+        if (Options.MemoryLimit is { } memoryLimit && IsScriptRunning && GC.GetAllocatedBytesForCurrentThread() - _executionStartAllocatedBytes + byteCount > memoryLimit)
+            throw new JsTerminationException(JsTerminationReason.MemoryLimit, "The script exceeded its memory limit");
+    }
+
+    /// <summary>
+    /// <see cref="EnsureCanAllocate"/> for the engine of the current thread, when the allocation is large (smaller ones are
+    /// covered by the periodic checks).
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void EnsureCurrentCanAllocate(long byteCount)
+    {
+        if (byteCount >= LargeAllocationBytes)
+        {
+            s_current?.EnsureCanAllocate(byteCount);
+        }
+    }
+
+    /// <summary>
+    /// Counts the work of a built-in function (an element visited, a character written) and checks the limits
+    /// periodically. A built-in function has no interrupt point: without it, one call could build a result of
+    /// gigabytes, or run for minutes.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal void CountWork(long units)
+    {
+        _workCounter += units;
+        if (_workCounter >= _nextWorkCheck)
+        {
+            CheckWorkLimits();
+        }
+    }
+
+    /// <summary><see cref="CountWork"/> for the engine of the current thread.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void CountCurrentWork(long units) => s_current?.CountWork(units);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void CheckWorkLimits()
+    {
+        _nextWorkCheck = _workCounter + WorkCheckInterval;
+        CheckLimits();
     }
 
     internal string? HostGetCodeForEval(JsValue argument) => HostHooks.GetCodeForEval(this, argument);

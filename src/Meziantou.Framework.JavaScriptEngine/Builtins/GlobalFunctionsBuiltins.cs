@@ -292,6 +292,8 @@ internal static class GlobalFunctionsBuiltins
                 codePoint = c;
             }
 
+            // An escaped code point is up to 12 characters long
+            JsEngine.CountCurrentWork(12);
             var length = new Rune(codePoint).EncodeToUtf8(octets);
             for (var i = 0; i < length; i++)
             {
@@ -470,10 +472,12 @@ internal static class GlobalFunctionsBuiltins
             }
             else if (c < 256)
             {
+                JsEngine.CountCurrentWork(3);
                 builder.Append('%').Append(HexUpper(c >> 4)).Append(HexUpper(c & 0xF));
             }
             else
             {
+                JsEngine.CountCurrentWork(6);
                 builder.Append("%u").Append(HexUpper(c >> 12)).Append(HexUpper((c >> 8) & 0xF)).Append(HexUpper((c >> 4) & 0xF)).Append(HexUpper(c & 0xF));
             }
         }

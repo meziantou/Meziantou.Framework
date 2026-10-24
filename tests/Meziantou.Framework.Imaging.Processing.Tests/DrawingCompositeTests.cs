@@ -768,6 +768,156 @@ public sealed class DrawingCompositeTests
         }
     }
 
+    [Fact]
+    public void ANonIsolatedGroupMixesWithItsBackdropAndIsCompositedOnce()
+    {
+        // On red, green multiplied by red is black: a non-isolated group at an opacity of 0.5 is half black over red,
+        // (128, 0, 0); an isolated group multiplies green by its transparent backdrop, which keeps green: (128, 128, 0)
+        var green = new SolidBrush(new Rgba32(0, 255, 0)) { BlendMode = BlendMode.Multiply };
+        using var image = new Image<Rgba32>(2, 1, new Rgba32(255, 0, 0));
+        image.Draw(canvas => canvas.Group(new GroupOptions { Opacity = 0.5, IsIsolated = false }, layer => layer.FillRectangle(green, new RectangleD(0, 0, 1, 1))), Ct);
+        image.Draw(canvas => canvas.Group(new GroupOptions { Opacity = 0.5 }, layer => layer.FillRectangle(green, new RectangleD(1, 0, 1, 1))), Ct);
+        AssertNear(image.Frames[0][0, 0], 128, 0, 0, 255);
+        AssertNear(image.Frames[0][1, 0], 128, 128, 0, 255);
+
+        // The backdrop is removed before the group is composited (ISO 32000-2, 11.4.8): a non-isolated group of a drawing
+        // of the normal blend mode is that drawing, on a half-transparent backdrop too
+        var blue = new SolidBrush(new Rgba32(0, 0, 255)) { Opacity = 0.5 };
+        using var grouped = new Image<Rgba32>(1, 1, new Rgba32(255, 0, 0, 128));
+        using var direct = new Image<Rgba32>(1, 1, new Rgba32(255, 0, 0, 128));
+        grouped.Draw(canvas => canvas.Group(new GroupOptions { IsIsolated = false }, layer => layer.Fill(blue)), Ct);
+        direct.Draw(canvas => canvas.Fill(blue), Ct);
+        var expected = direct.Frames[0][0, 0];
+        AssertNear(grouped.Frames[0][0, 0], expected.R, expected.G, expected.B, expected.A);
+    }
+
+    [Fact]
+    public void TheElementsOfAKnockoutGroupKnockOutOneAnother()
+    {
+        // Red then blue, each at an opacity of 0.5, on white. In an isolated knockout group, blue replaces red where it
+        // covers it: (128, 128, 255), where a group that is not knockout gives blue over red over white, (128, 64, 191)
+        static void Draw(DrawingCanvas group)
+        {
+            group.KnockoutElement(0.5, static element => element.FillRectangle(new Rgba32(255, 0, 0), new RectangleD(0, 0, 2, 1)));
+            group.KnockoutElement(0.5, static element => element.FillRectangle(new Rgba32(0, 0, 255), new RectangleD(1, 0, 2, 1)));
+        }
+
+        using var knockout = new Image<Rgba32>(3, 1, new Rgba32(255, 255, 255));
+        knockout.Draw(canvas => canvas.Group(new GroupOptions { IsKnockout = true }, Draw), Ct);
+        AssertNear(knockout.Frames[0][0, 0], 255, 128, 128, 255);
+        AssertNear(knockout.Frames[0][1, 0], 128, 128, 255, 255);
+        AssertNear(knockout.Frames[0][2, 0], 128, 128, 255, 255);
+
+        using var normal = new Image<Rgba32>(3, 1, new Rgba32(255, 255, 255));
+        normal.Draw(canvas => canvas.Group(new GroupOptions(), Draw), Ct);
+        AssertNear(normal.Frames[0][1, 0], 128, 64, 191, 255);
+
+        // In a non-isolated knockout group on yellow, each element is composited with yellow: blue over yellow,
+        // (128, 128, 128), where it covers red over yellow, (255, 128, 0)
+        using var yellow = new Image<Rgba32>(3, 1, new Rgba32(255, 255, 0));
+        yellow.Draw(canvas => canvas.Group(new GroupOptions { IsIsolated = false, IsKnockout = true }, Draw), Ct);
+        AssertNear(yellow.Frames[0][0, 0], 255, 128, 0, 255);
+        AssertNear(yellow.Frames[0][1, 0], 128, 128, 128, 255);
+
+        // With the group at an opacity of 0.5, the result of the group is half over yellow: (191, 191, 64)
+        yellow.Draw(canvas => canvas.Clear(new Rgba32(255, 255, 0)), Ct);
+        yellow.Draw(canvas => canvas.Group(new GroupOptions { IsIsolated = false, IsKnockout = true, Opacity = 0.5 }, Draw), Ct);
+        AssertNear(yellow.Frames[0][1, 0], 191, 191, 64, 255);
+    }
+
+    [Fact]
+    public void AnElementOutsideAKnockoutGroupIsDrawnWithItsOpacity()
+    {
+        // Red multiplied with green at an opacity of 0.5: the element is the drawing of the brush of that opacity
+        using var element = new Image<Rgba32>(1, 1, new Rgba32(0, 255, 0));
+        using var direct = new Image<Rgba32>(1, 1, new Rgba32(0, 255, 0));
+        element.Draw(canvas => canvas.KnockoutElement(0.5, static layer => layer.Fill(new SolidBrush(new Rgba32(255, 0, 0)) { BlendMode = BlendMode.Multiply })), Ct);
+        direct.Draw(canvas => canvas.Fill(new SolidBrush(new Rgba32(255, 0, 0)) { BlendMode = BlendMode.Multiply, Opacity = 0.5 }), Ct);
+        var expected = direct.Frames[0][0, 0];
+        AssertNear(element.Frames[0][0, 0], expected.R, expected.G, expected.B, expected.A);
+        AssertNear(element.Frames[0][0, 0], 0, 128, 0, 255);
+    }
+
+    [Fact]
+    public void TheMaskOfAGroupMultipliesItsAlpha()
+    {
+        // A luminance mask, white on the left pixel and gray (128) on the right one: red is drawn fully on the left,
+        // at about half on the right, over white: (255, 127, 127)
+        using var image = new Image<Rgba32>(2, 1, new Rgba32(255, 255, 255));
+        image.Draw(
+            canvas => canvas.Group(
+                new GroupOptions { IsIsolated = false, MaskMode = MaskMode.Luminance },
+                static content => content.Fill(new Rgba32(255, 0, 0)),
+                static mask =>
+                {
+                    mask.FillRectangle(new Rgba32(255, 255, 255), new RectangleD(0, 0, 1, 1));
+                    mask.FillRectangle(new Rgba32(128, 128, 128), new RectangleD(1, 0, 1, 1));
+                }),
+            Ct);
+        AssertNear(image.Frames[0][0, 0], 255, 0, 0, 255);
+        AssertNear(image.Frames[0][1, 0], 255, 127, 127, 255);
+
+        // The state overloads draw the same
+        image.Draw(canvas => canvas.Clear(new Rgba32(255, 255, 255)), Ct);
+        image.Draw(
+            canvas => canvas.Group(
+                new GroupOptions { MaskMode = MaskMode.Alpha, Bounds = new RectangleD(0, 0, 1, 1) },
+                new Rgba32(0, 0, 255),
+                static (content, color) => content.Fill(color),
+                static (mask, _) => mask.Fill(new Rgba32(0, 0, 0))),
+            Ct);
+        AssertNear(image.Frames[0][0, 0], 0, 0, 255, 255);
+        AssertNear(image.Frames[0][1, 0], 255, 255, 255, 255);
+    }
+
+    [Fact]
+    public void TheOptionsOfAGroupAreValidated()
+    {
+        GroupOptions[] invalid =
+        [
+            new GroupOptions { Opacity = 2 },
+            new GroupOptions { BlendMode = (BlendMode)16 },
+            new GroupOptions { MaskMode = (MaskMode)2 },
+            new GroupOptions { Bounds = new RectangleD(double.NaN, 0, 1, 1) },
+        ];
+        using var image = new Image<Rgba32>(1, 1);
+        foreach (var options in invalid)
+        {
+            image.Draw(
+                canvas =>
+                {
+                    try
+                    {
+                        canvas.Group(options, static _ => Assert.Fail("The callback ran."));
+                        Assert.Fail("The options were accepted.");
+                    }
+                    catch (ArgumentException)
+                    {
+                    }
+                },
+                Ct);
+        }
+
+        image.Draw(
+            canvas =>
+            {
+                try
+                {
+                    canvas.KnockoutElement(-1, static _ => Assert.Fail("The callback ran."));
+                    Assert.Fail("The opacity was accepted.");
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                }
+            },
+            Ct);
+    }
+
+    private static void AssertNear(Rgba32 actual, int r, int g, int b, int a)
+    {
+        Assert.True(Math.Abs(actual.R - r) <= 1 && Math.Abs(actual.G - g) <= 1 && Math.Abs(actual.B - b) <= 1 && Math.Abs(actual.A - a) <= 1, $"Expected ({r}, {g}, {b}, {a}), got ({actual.R}, {actual.G}, {actual.B}, {actual.A})");
+    }
+
     private static TPixel Blend<TPixel>(TPixel pixel, Rgba64 color, BlendMode blend)
         where TPixel : unmanaged
         => Paint(pixel, color, WholePixel, blend: blend);

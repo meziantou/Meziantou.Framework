@@ -478,6 +478,16 @@ internal sealed partial class DrawingSession
     public void PopLayer(bool draw)
     {
         var level = _layers[--_layerDepth];
+        if (level.Group is { } group)
+        {
+            // A group, or an element of a knockout group: its planes are computed, then drawn
+            var groupLayer = level.Bounded!;
+            level.Group = null;
+            level.Bounded = null;
+            PopGroup(level, groupLayer, group, draw);
+            return;
+        }
+
         if (level.Bounded is { } bounded)
         {
             // A layer of its own image: its session ends, then the image is drawn at its place
@@ -846,6 +856,9 @@ internal sealed partial class DrawingSession
         /// <summary>Gets or sets the session on an image of the rectangle the layer holds, and where that image is on the canvas; only the opacity, the operator and the blend mode are then used.</summary>
         public BoundedLayer? Bounded { get; set; }
 
+        /// <summary>Gets or sets the state of the group, or of the element of a knockout group, whose planes are the image of <see cref="Bounded"/>.</summary>
+        public GroupState? Group { get; set; }
+
         public CompositeMode Mode { get; set; }
 
         public BlendMode Blend { get; set; }
@@ -1016,6 +1029,20 @@ internal sealed partial class DrawingSession
         public void Dispose()
         {
             End();
+            if (Group is { } group)
+            {
+                group.Mask?.Session.Dispose();
+                group.Mask?.Image.Dispose();
+                group.Mask = null;
+                if (!group.IsElement)
+                {
+                    group.Backdrop?.Dispose();
+                    group.Backdrop = null;
+                }
+
+                Group = null;
+            }
+
             if (Bounded is { } bounded)
             {
                 bounded.Session.Dispose();

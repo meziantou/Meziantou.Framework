@@ -9,6 +9,9 @@
 
     <!-- Every public member must be documented -->
     <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+
+    <!-- The decoders compiled from the sources of Meziantou.Framework.Imaging are in the namespace of this library -->
+    <DefineConstants>$(DefineConstants);MEZIANTOU_FRAMEWORK_PDF</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,6 +19,20 @@
     <ProjectReference Include="..\Meziantou.Framework.Imaging\Meziantou.Framework.Imaging.csproj" />
     <!-- The embedded fonts: their tables, the shaping of the text and the subsetter (internal) -->
     <ProjectReference Include="..\Meziantou.Framework.Fonts\Meziantou.Framework.Fonts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The CCITT decoder of TIFF (CCITTFaxDecode, the MMR regions of JBIG2) and the MQ decoder of JPEG 2000 (the arithmetic
+      decoding of JBIG2), compiled in the namespace of this library: it uses the public API of Meziantou.Framework.Imaging
+      and Meziantou.Framework.Fonts only, so it does not depend on their exact versions
+    -->
+    <Compile Include="..\Meziantou.Framework.Imaging\Internals\Codecs\Tiff\TiffBitReader.cs" Link="Filters\Shared\TiffBitReader.cs" />
+    <Compile Include="..\Meziantou.Framework.Imaging\Internals\Codecs\Tiff\TiffCcittCode.cs" Link="Filters\Shared\TiffCcittCode.cs" />
+    <Compile Include="..\Meziantou.Framework.Imaging\Internals\Codecs\Tiff\TiffCcittCodes.cs" Link="Filters\Shared\TiffCcittCodes.cs" />
+    <Compile Include="..\Meziantou.Framework.Imaging\Internals\Codecs\Tiff\TiffCcittDecoder.cs" Link="Filters\Shared\TiffCcittDecoder.cs" />
+    <Compile Include="..\Meziantou.Framework.Imaging\Internals\Codecs\Jpeg2000\Jpeg2000MqDecoder.cs" Link="Filters\Shared\Jpeg2000MqDecoder.cs" />
+    <Compile Include="..\Meziantou.Framework.Imaging\Internals\Codecs\Jpeg2000\Jpeg2000MqTables.cs" Link="Filters\Shared\Jpeg2000MqTables.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -33,12 +50,4 @@
     <InternalsVisibleTo Include="Meziantou.Framework.Pdf.Signing.Tests" />
   </ItemGroup>
 
-  <!-- The library is released together with Meziantou.Framework.Imaging and Meziantou.Framework.Fonts, whose internal types it uses: it depends on the exact versions of those packages -->
-  <Target Name="UseExactProjectReferenceVersions" AfterTargets="_GetProjectReferenceVersions">
-    <ItemGroup>
-      <_ExactProjectReferencesWithVersions Include="@(_ProjectReferencesWithVersions)" Condition="'%(Filename)' == 'Meziantou.Framework.Imaging' OR '%(Filename)' == 'Meziantou.Framework.Fonts'" ProjectVersion="[%(_ProjectReferencesWithVersions.ProjectVersion)]" />
-      <_ProjectReferencesWithVersions Remove="@(_ExactProjectReferencesWithVersions)" />
-      <_ProjectReferencesWithVersions Include="@(_ExactProjectReferencesWithVersions)" />
-    </ItemGroup>
-  </Target>
 </Project>

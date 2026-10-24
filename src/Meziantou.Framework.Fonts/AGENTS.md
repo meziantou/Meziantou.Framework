@@ -10,11 +10,13 @@ These instructions complete the repository-level `AGENTS.md`.
 ## Hard constraints
 
 - **The public API is what the packages that use the code need.** A type is `public` when `Meziantou.Framework.Imaging`,
-  `Meziantou.Framework.WebPlatform` or `Meziantou.Framework.WebPlatform.Imaging` uses it, and everything else stays
-  `internal` (the tests, the fuzzing and the benchmarks see it through `InternalsVisibleTo`; the libraries do not,
-  except `Meziantou.Framework.Pdf`, which uses the internal subsetter, `FontSubsetter`, and `FontTags`).
-  These packages still depend on the exact version of this package (`UseExactProjectReferenceVersions` in their project
-  file) and are released together with it. Every public member is documented (`DisableDocumentationWarnings` is
+  `Meziantou.Framework.WebPlatform`, `Meziantou.Framework.WebPlatform.Imaging` or `Meziantou.Framework.Pdf` uses it
+  (`FontSubsetter` is public for the font subsets of PDF), and everything else stays `internal` (the tests, the fuzzing
+  and the benchmarks see it through `InternalsVisibleTo`; the libraries do not, except `Meziantou.Framework.Pdf.Rendering`,
+  which reads the CFF and `glyf` outlines of the embedded fonts with internal types). The packages that use internal
+  types depend on the exact version of this package (`UseExactProjectReferenceVersions` in their project file) and are
+  released together with it; `Meziantou.Framework.Pdf` uses the public API only and has a normal dependency, so do not
+  give it access to the internals again. Every public member is documented (`DisableDocumentationWarnings` is
   `false`), and the public API is recorded in `ref/` by the build. The one exception is the AFM reader
   (`AfmFontMetrics` and the `Afm*` types it returns): it is a standalone reader of font metrics, public so that
   applications (PDF writers, text measurement) can read AFM files; `Meziantou.Framework.Pdf` reads the metrics of the

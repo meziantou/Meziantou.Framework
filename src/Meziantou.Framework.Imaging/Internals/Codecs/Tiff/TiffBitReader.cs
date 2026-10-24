@@ -1,4 +1,10 @@
+// Compiled into Meziantou.Framework.Imaging and Meziantou.Framework.Pdf (CCITTFaxDecode, JBIG2), internal to each. The copy
+// of Pdf is in its namespace, so that Pdf does not depend on the internals of Imaging.
+#if MEZIANTOU_FRAMEWORK_PDF
+namespace Meziantou.Framework.Pdf.Filters;
+#else
 namespace Meziantou.Framework.Imaging.Internals;
+#endif
 
 /// <summary>
 /// Reads the bits of a TIFF strip or tile most significant bit first, the order of LZW codes and of CCITT code words.

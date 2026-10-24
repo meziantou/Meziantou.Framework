@@ -21,6 +21,9 @@ internal sealed class EmbeddedPdfFont : PdfFont
     // The longest text a glyph maps to in the ToUnicode CMap: a longer one is a replacement text
     private const int MaxMappedTextLength = 32;
 
+    // The tag of the OS/2 table (OpenType specification, "OS/2")
+    private const uint Os2Tag = ((uint)'O' << 24) | ((uint)'S' << 16) | ((uint)'/' << 8) | '2';
+
     private readonly double _scale;
 
     public EmbeddedPdfFont(FontFace face)
@@ -28,7 +31,7 @@ internal sealed class EmbeddedPdfFont : PdfFont
         if (face.Outlines is not (FontOutlineKind.TrueType or FontOutlineKind.Cff))
             throw new UnsupportedPdfFeatureException($"The outlines of the font '{face.FamilyName}' cannot be embedded: only TrueType and CFF outlines can");
 
-        if (face.TryGetTable(FontTags.Os2, out var os2) && os2.Length >= 10)
+        if (face.TryGetTable(Os2Tag, out var os2) && os2.Length >= 10)
         {
             // The embedding permissions (OpenType specification, "OS/2", fsType): restricted license, or bitmaps only
             var type = (os2.Span[8] << 8) | os2.Span[9];

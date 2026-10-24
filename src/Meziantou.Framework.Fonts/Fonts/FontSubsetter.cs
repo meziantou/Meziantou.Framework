@@ -21,8 +21,7 @@ namespace Meziantou.Framework.Fonts;
 /// </description></item>
 /// </list>
 /// </remarks>
-[SuppressMessage("Design", "MA0182:Unused internal type", Justification = "Consumed by Meziantou.Framework.Pdf, which embeds the subsets of the fonts, and covered by its tests.")]
-internal static class FontSubsetter
+public static class FontSubsetter
 {
     private const uint Cvt = ((uint)'c' << 24) | ((uint)'v' << 16) | ((uint)'t' << 8) | ' ';
     private const uint Fpgm = ((uint)'f' << 24) | ((uint)'p' << 16) | ((uint)'g' << 8) | 'm';

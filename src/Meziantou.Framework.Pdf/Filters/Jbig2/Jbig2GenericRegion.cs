@@ -1,5 +1,3 @@
-using Meziantou.Framework.Imaging.Internals;
-
 namespace Meziantou.Framework.Pdf.Filters.Jbig2;
 
 /// <summary>The generic region decoding procedure (T.88, 6.2): a bitmap coded with the MQ coder and a template of neighbor pixels, or with MMR.</summary>

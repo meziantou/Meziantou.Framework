@@ -59,8 +59,7 @@
     <!-- The rendering backend of Meziantou.Framework.WebPlatform draws with the faces the layout measured the text with -->
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Imaging" />
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Imaging.Tests" />
-    <!-- Meziantou.Framework.Pdf decodes the CCITTFaxDecode filter with the rows of the CCITT decoder of TIFF -->
-    <InternalsVisibleTo Include="Meziantou.Framework.Pdf" />
+    <!-- The tests of Meziantou.Framework.Pdf encode their CCITT and JBIG2 data with the encoders of TIFF and JPEG 2000 -->
     <InternalsVisibleTo Include="Meziantou.Framework.Pdf.Tests" />
   </ItemGroup>
 

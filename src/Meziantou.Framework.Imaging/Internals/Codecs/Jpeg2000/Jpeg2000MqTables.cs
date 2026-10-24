@@ -1,4 +1,10 @@
+// Compiled into Meziantou.Framework.Imaging and Meziantou.Framework.Pdf (CCITTFaxDecode, JBIG2), internal to each. The copy
+// of Pdf is in its namespace, so that Pdf does not depend on the internals of Imaging.
+#if MEZIANTOU_FRAMEWORK_PDF
+namespace Meziantou.Framework.Pdf.Filters;
+#else
 namespace Meziantou.Framework.Imaging.Internals;
+#endif
 
 /// <summary>The probability estimation of the MQ coder (T.800, Table C.2): for each of the 47 states, the probability of the less probable symbol and the transitions.</summary>
 internal static class Jpeg2000MqTables

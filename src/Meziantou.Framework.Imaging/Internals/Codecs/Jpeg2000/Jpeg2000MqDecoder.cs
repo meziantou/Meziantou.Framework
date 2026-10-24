@@ -2,7 +2,13 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+// Compiled into Meziantou.Framework.Imaging and Meziantou.Framework.Pdf (CCITTFaxDecode, JBIG2), internal to each. The copy
+// of Pdf is in its namespace, so that Pdf does not depend on the internals of Imaging.
+#if MEZIANTOU_FRAMEWORK_PDF
+namespace Meziantou.Framework.Pdf.Filters;
+#else
 namespace Meziantou.Framework.Imaging.Internals;
+#endif
 
 /// <summary>
 /// The arithmetic decoder of T.800, Annex C (the MQ decoder), written from the flow charts of C.3: INITDEC (Figure C.20),

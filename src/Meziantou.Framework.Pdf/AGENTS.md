@@ -15,11 +15,14 @@ the XML documentation and `readme.md` consistent in the same change.
   and test oracles only. Cite the clause in the comments of the code that implements it.
 - Fully managed, trimmable and NativeAOT-compatible (`IsTrimmable`): no reflection. The dependencies of the
   repository are `Meziantou.Framework.Imaging` (the image codecs and the ICC profiles) and `Meziantou.Framework.Fonts`
-  (the fonts to embed: the reader, the shaper and the internal subsetter, through `InternalsVisibleTo`), with exact
-  versions (`UseExactProjectReferenceVersions` in the project file, as Imaging does with Fonts).
+  (the fonts to embed: the reader, the shaper and the subsetter `FontSubsetter`, the AFM metrics of the standard fonts).
+  The library uses their public API only, so it depends on them with normal (minimum) versions: never give it access to
+  their internals again (`InternalsVisibleTo`, `UseExactProjectReferenceVersions`); make a type public in Fonts or
+  Imaging, or compile its source into this library, instead.
 - **Bilevel filters** (`Filters/CcittFaxFilter.cs`, `Filters/Jbig2/`): `CCITTFaxDecode` reads the rows with the CCITT
-  decoder of the TIFF codec of Imaging, and JBIG2 decodes with the MQ decoder of its JPEG 2000 codec (both internal,
-  through `InternalsVisibleTo`). JBIG2 follows T.88 with the context bit order of its figures: the typical prediction
+  decoder of the TIFF codec of Imaging, and JBIG2 decodes with the MQ decoder of its JPEG 2000 codec. Their sources
+  (`TiffBitReader`, `TiffCcittCode(s)`, `TiffCcittDecoder`, `Jpeg2000MqDecoder`, `Jpeg2000MqTables`) are compiled into
+  this library in its namespace (`MEZIANTOU_FRAMEWORK_PDF`, see the project file): a change to them changes both. JBIG2 follows T.88 with the context bit order of its figures: the typical prediction
   contexts alias the contexts of particular templates, so the order matters. Both were checked pixel by pixel against
   MuPDF, Poppler and PDFium on the corpora (`expectations/bilevel-images.txt` of the corpus tests records the digests).
 - **Conformance** (`Conformance/`, `Structure/`): the save checks what it can of the PDF/A and PDF/UA levels and writes

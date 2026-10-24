@@ -1,5 +1,3 @@
-using Meziantou.Framework.Imaging.Internals;
-
 namespace Meziantou.Framework.Pdf.Filters.Jbig2;
 
 /// <summary>

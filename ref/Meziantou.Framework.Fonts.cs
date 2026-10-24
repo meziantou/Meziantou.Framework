@@ -599,6 +599,13 @@ namespace Meziantou.Framework.Fonts
         public long MaxTextGlyphs { get => throw null; init { } }
     }
 
+    public static class FontSubsetter
+    {
+        public static System.Collections.Generic.SortedSet<int> GetClosure(Meziantou.Framework.Fonts.FontFace face, System.Collections.Generic.IEnumerable<int> glyphs) => throw null;
+        public static byte[] SubsetCff(Meziantou.Framework.Fonts.FontFace face, System.Collections.Generic.IEnumerable<int> glyphs, string fontName) => throw null;
+        public static byte[] SubsetTrueType(Meziantou.Framework.Fonts.FontFace face, System.Collections.Generic.IEnumerable<int> glyphs, bool keepHinting = true) => throw null;
+    }
+
     public sealed class GlyphBoundsSink : Meziantou.Framework.Fonts.OutlineSink
     {
         public bool IsEmpty { get => throw null; }

@@ -1,4 +1,3 @@
-using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Pdf.Objects;
 
 namespace Meziantou.Framework.Pdf.Filters;

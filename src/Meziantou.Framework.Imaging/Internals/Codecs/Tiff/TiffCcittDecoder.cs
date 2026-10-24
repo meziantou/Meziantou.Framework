@@ -1,4 +1,10 @@
+// Compiled into Meziantou.Framework.Imaging and Meziantou.Framework.Pdf (CCITTFaxDecode, JBIG2), internal to each. The copy
+// of Pdf is in its namespace, so that Pdf does not depend on the internals of Imaging.
+#if MEZIANTOU_FRAMEWORK_PDF
+namespace Meziantou.Framework.Pdf.Filters;
+#else
 namespace Meziantou.Framework.Imaging.Internals;
+#endif
 
 /// <summary>
 /// The decoder of the CCITT facsimile compressions of TIFF, written from ITU-T Recommendations T.4 and T.6 and from
@@ -38,6 +44,8 @@ internal static class TiffCcittDecoder
     /// <returns>The number of entries.</returns>
     public static long GetChangeListLength(int width) => (long)width + 8;
 
+#if !MEZIANTOU_FRAMEWORK_PDF
+    // The rows of a TIFF block: Meziantou.Framework.Pdf decodes the rows itself (CCITTFaxDecode, JBIG2)
     /// <summary>Decodes the rows of one block.</summary>
     /// <param name="data">The compressed block.</param>
     /// <param name="destination">Exactly <paramref name="rowCount"/> rows of <c>(width + 7) / 8</c> bytes.</param>
@@ -99,6 +107,7 @@ internal static class TiffCcittDecoder
 
         return null;
     }
+#endif
 
     /// <summary>Ends a change list with the entries that stand for "no further change": the end of the row.</summary>
     internal static void Terminate(Span<int> changes, int count, int width) => changes.Slice(count, 4).Fill(width);

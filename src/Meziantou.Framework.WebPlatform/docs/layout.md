@@ -2953,8 +2953,8 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     (`ColumnBreaker.TryGetNestedStaticPosition`, `OutOfFlowPlacement.InlineShift`), also when its containing block is an
     inline box of the outer strip or is outside of the outer container.
   - The floats, the absolutely positioned boxes and the inline-blocks that are multi-column containers are monolithic, as
-    are the containers that extend past the block-end edge of an ancestor that clips its overflow (`overflow: clip`; a container inside such an ancestor
-    is fragmented).
+    are the containers that extend past the block-end edge of an ancestor that clips its overflow (`overflow: clip`; a
+    container inside such an ancestor is fragmented).
 - **Fragments** (`FragmentSlicer`, [§5](https://drafts.csswg.org/css-break-3/#box-splitting)): a fragment whose subtree is in one column
   (and contains no column spanner, which the multi-column container places itself) is moved to it; a box that spans several columns gets one `BoxFragment` per column (`BoxFragment.CreateSlice`:
   `IsFirstFragment`/`IsLastFragment`, `UnfragmentedFragment` is the fragment before the split), whose children are distributed

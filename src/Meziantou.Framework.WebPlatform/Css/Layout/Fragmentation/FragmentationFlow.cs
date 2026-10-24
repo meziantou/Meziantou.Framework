@@ -1344,7 +1344,7 @@ internal sealed class FragmentationFlow
                     }
                     else
                     {
-                        AddBreakBetween(previous, child, top, previousBottom, breakContext);
+                        AddBreakBetween(previous, child, top, previousBottom, breakContext, endsWithContent: parent?.Box.Kind == ContainerBoxKind.TableWrapper);
                     }
                 }
 
@@ -2340,7 +2340,8 @@ internal sealed class FragmentationFlow
     }
 
     /// <summary>Adds the class A break opportunity between two in-flow sibling boxes (https://drafts.csswg.org/css-break-3/#possible-breaks).</summary>
-    private void AddBreakBetween(Fragment previous, Fragment next, double nextTop, double previousBottom, VisitContext context)
+    /// <param name="endsWithContent">Whether the boxes broken there end with the content before the break (see <see cref="BreakCandidate.EndsWithContent"/>).</param>
+    private void AddBreakBetween(Fragment previous, Fragment next, double nextTop, double previousBottom, VisitContext context, bool endsWithContent = false)
     {
         var after = GetBreakAfter(previous);
         var before = GetBreakBefore(next);
@@ -2349,7 +2350,7 @@ internal sealed class FragmentationFlow
             // https://drafts.csswg.org/css-break-3/#break-margins: "When a forced break occurs there, adjoining margins before the break
             // are truncated, but margins after the break are preserved"
             var marginStart = next is BoxFragment nextBox ? GetCollapsedBlockStartMargin(nextBox) : 0;
-            AddCandidate(new BreakCandidate(Math.Max(previousBottom, nextTop - marginStart), previousBottom, BreakAppeal.Forced), context);
+            AddCandidate(new BreakCandidate(Math.Max(previousBottom, nextTop - marginStart), previousBottom, BreakAppeal.Forced) { EndsWithContent = endsWithContent }, context);
             return;
         }
 
@@ -2357,7 +2358,7 @@ internal sealed class FragmentationFlow
         var margins = (previous is BoxFragment previousBox ? Math.Max(0, previousBox.Margin.Get(_writingDirection.BlockEnd)) : 0)
             + (next is BoxFragment followingBox ? Math.Max(0, followingBox.Margin.Get(_writingDirection.BlockStart)) : 0);
         var avoid = context.Avoid || IsAvoidBreak(after) || IsAvoidBreak(before);
-        AddCandidate(new BreakCandidate(nextTop, previousBottom, avoid ? BreakAppeal.Avoid : BreakAppeal.Perfect) { IsBetweenMargins = nextTop - previousBottom <= margins + Epsilon }, context);
+        AddCandidate(new BreakCandidate(nextTop, previousBottom, avoid ? BreakAppeal.Avoid : BreakAppeal.Perfect) { IsBetweenMargins = nextTop - previousBottom <= margins + Epsilon, EndsWithContent = endsWithContent }, context);
     }
 
     /// <summary>

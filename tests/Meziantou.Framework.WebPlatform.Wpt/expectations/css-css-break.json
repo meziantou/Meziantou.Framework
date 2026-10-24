@@ -2913,7 +2913,7 @@
     "reftest": "PASS"
   },
   "css/css-break/table/caption-margin-005.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/table/dynamic-caption-child-change-001.html": {
     "reftest": "PASS"

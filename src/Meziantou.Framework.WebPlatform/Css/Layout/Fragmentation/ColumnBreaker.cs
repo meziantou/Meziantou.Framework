@@ -716,7 +716,12 @@ internal static partial class ColumnBreaker
 
             // (the breaks at the same position that follow the break in the content are not taken yet)
             var sequence = Math.Abs(position - next.Position) <= Epsilon ? next.Sequence : 0;
-            if (_flow.OwnerItem is not null)
+            if (next.EndsWithContent && Math.Abs(position - next.Position) <= Epsilon)
+            {
+                // (the boxes broken at the break end with the content before it, see BreakCandidate.EndsWithContent)
+                _map.SetBreakEnd(_index, Math.Min(blockSize, GetPlacedOffset(endBeforeBreak)));
+            }
+            else if (_flow.OwnerItem is not null)
             {
                 _map.SetBreakEnd(_index, Math.Max(blockSize, GetPlacedOffset(endBeforeBreak)));
             }

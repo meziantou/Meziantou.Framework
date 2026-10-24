@@ -766,7 +766,7 @@ internal sealed class FragmentSlicer
     /// that flow is broken (it is not broken where the content of another flow that overflows the fragmentainer ends).
     /// </summary>
     private double GetBreakEnd(FlowMap map, int index)
-        => ReferenceEquals(map, _map) ? _fragmentainers[index].BlockSize : Math.Min(_fragmentainers[index].BlockSize, map.GetBreakEnd(index) ?? _fragmentainers[index].BlockSize);
+        => Math.Min(_fragmentainers[index].BlockSize, map.GetBreakEnd(index) ?? _fragmentainers[index].BlockSize);
 
     /// <summary>
     /// Returns the block-end edge in the strip of the last row of a table grid box before a break when the break is between two

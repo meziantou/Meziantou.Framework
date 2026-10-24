@@ -179,6 +179,12 @@ internal readonly record struct BreakCandidate(double Position, double ContentEn
     public bool IsBeforeEndEdges { get; init; }
 
     /// <summary>
+    /// Whether the boxes broken at the break end with the content before it, not at the end of the fragmentainer: as in Blink,
+    /// a break between two children of a table wrapper box (the captions and the table grid box) does not stretch the table.
+    /// </summary>
+    public bool EndsWithContent { get; init; }
+
+    /// <summary>
     /// The block size of the flow that is skipped after the break: the edges that a box with <c>box-decoration-break: clone</c>
     /// and a block size of its border box repeats at the break are taken from its block size.
     /// </summary>

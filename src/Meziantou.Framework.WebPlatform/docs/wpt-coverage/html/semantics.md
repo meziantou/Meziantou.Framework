@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 2,074 | 2,174 | 31 | 97% |
+| [Stable](#stable-tests) | 2,081 | 2,174 | 31 | 97% |
 | [Tentative](#tentative-tests) | 57 | 197 | 31 | 34% |
-| [Reftests](#reftests) | 315 | 418 | 61 | 88% |
-| **All** | **2,446** | **2,789** | **123** | **92%** |
+| [Reftests](#reftests) | 318 | 418 | 61 | 89% |
+| **All** | **2,456** | **2,789** | **123** | **92%** |
 
 ## Stable tests
 
@@ -1012,7 +1012,7 @@
 | [`forms/the-input-element/checkbox-click-events.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/checkbox-click-events.html) | Pass | 4 / 4 |  |  |
 | [`forms/the-input-element/checkbox.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/checkbox.html) | Pass | 6 / 6 |  |  |
 | [`forms/the-input-element/checked.xhtml`](https://wpt.fyi/results/html/semantics/forms/the-input-element/checked.xhtml) | Pass | 1 / 1 |  |  |
-| [`forms/the-input-element/click-user-gesture.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/click-user-gesture.html) | Fail | 9 / 14 | TEST BUG | the test expects `click()` to consume the transient user activation of the date, time, month, week and datetime-local inputs; their activation behavior shows no picker: the input activation behavior only shows the picker of the File Upload and Color states (https://html.spec.whatwg.org/multipage/input.html#input-activation-behavior) |
+| [`forms/the-input-element/click-user-gesture.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/click-user-gesture.html) | Pass | 14 / 14 |  |  |
 | [`forms/the-input-element/clone.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/clone.html) | Pass | 19 / 19 |  |  |
 | [`forms/the-input-element/cloning-steps.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/cloning-steps.html) | Pass | 68 / 68 |  |  |
 | [`forms/the-input-element/color-attributes.window.js`](https://wpt.fyi/results/html/semantics/forms/the-input-element/color-attributes.window.js) | Pass | 2 / 2 |  |  |
@@ -1102,7 +1102,7 @@
 | [`forms/the-input-element/radio-multiple-selected.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/radio-multiple-selected.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-input-element/radio.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/radio.html) | Pass | 12 / 12 |  |  |
 | [`forms/the-input-element/range-2.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/range-2.html) | Pass | 5 / 5 |  |  |
-| [`forms/the-input-element/range-restore-oninput-onchange-event.https.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/range-restore-oninput-onchange-event.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the restoration of the form control state on history traversal (the values are not restored after navigating back) |
+| [`forms/the-input-element/range-restore-oninput-onchange-event.https.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/range-restore-oninput-onchange-event.https.html) | Pass | 2 / 2 |  |  |
 | [`forms/the-input-element/range.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/range.html) | Pass | 25 / 25 |  |  |
 | [`forms/the-input-element/required_attribute.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/required_attribute.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-input-element/reset.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/reset.html) | Pass | 6 / 6 |  |  |
@@ -1173,7 +1173,7 @@
 | [`forms/the-select-element/customizable-select-listbox/select-listbox-home-end-pagedown-pageup.optional.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select-listbox/select-listbox-home-end-pagedown-pageup.optional.html) | Fail | 0 / 2 | TEST BUG | End is expected to leave the last option 2px lower: the rules of the base appearance of the HTML Standard give a list box `box-sizing: border-box` and `block-size: calc(max(24px, 1lh) * size)`, so its rows overflow its content box by its 2px of borders (Chrome passes: its list box is not `border-box`; Firefox and Safari fail) |
 | [`forms/the-select-element/customizable-select-listbox/select-listbox-typeahead.optional.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select-listbox/select-listbox-typeahead.optional.html) | Pass | 2 / 2 |  |  |
 | [`forms/the-select-element/customizable-select-listbox/selectedcontent-listbox.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select-listbox/selectedcontent-listbox.html) | Pass | 1 / 1 |  |  |
-| [`forms/the-select-element/customizable-select-multiple-popup/selectedcontent-multiple-restore.optional.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select-multiple-popup/selectedcontent-multiple-restore.optional.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `<selectedcontent>` of a `<select multiple>` (the update of the descendant `selectedcontent` elements returns early for multiple selects); the restoration of the form control state on history traversal (the values are not restored after navigating back) |
+| [`forms/the-select-element/customizable-select-multiple-popup/selectedcontent-multiple-restore.optional.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select-multiple-popup/selectedcontent-multiple-restore.optional.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `<selectedcontent>` of a `<select multiple>` (the update of the descendant `selectedcontent` elements returns early for multiple selects) |
 | [`forms/the-select-element/customizable-select/base-appearance-inheritance.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/base-appearance-inheritance.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-select-element/customizable-select/button-in-popover.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/button-in-popover.html) | Pass | 2 / 2 |  |  |
 | [`forms/the-select-element/customizable-select/checkmark-animation.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/checkmark-animation.html) | Pass | 1 / 1 |  |  |
@@ -1245,7 +1245,7 @@
 | [`forms/the-select-element/customizable-select/selectedcontent-nested.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-nested.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-option-insertion.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-option-insertion.html) | Pass | 8 / 8 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-queued-update.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-queued-update.html) | Pass | 8 / 8 |  |  |
-| [`forms/the-select-element/customizable-select/selectedcontent-restore.optional.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.optional.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the restoration of the form control state on history traversal (the values are not restored after navigating back) |
+| [`forms/the-select-element/customizable-select/selectedcontent-restore.optional.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.optional.html) | Pass | 2 / 2 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-subtree-mutations.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-subtree-mutations.html) | Pass | 3 / 3 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent.html) | Pass | 11 / 11 |  |  |
 | [`forms/the-select-element/customizable-select/switch-picker-appearance.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/switch-picker-appearance.html) | Pass | 9 / 9 |  |  |
@@ -1318,7 +1318,7 @@
 | [`interactive-elements/the-details-element/auto-expand-details-element-fragment.html`](https://wpt.fyi/results/html/semantics/interactive-elements/the-details-element/auto-expand-details-element-fragment.html) | Pass | 1 / 1 |  |  |
 | [`interactive-elements/the-details-element/details-keyboard-activation.html`](https://wpt.fyi/results/html/semantics/interactive-elements/the-details-element/details-keyboard-activation.html) | Pass | 1 / 1 |  |  |
 | [`interactive-elements/the-details-element/details-name-exclusivity-fragment-insertion.html`](https://wpt.fyi/results/html/semantics/interactive-elements/the-details-element/details-name-exclusivity-fragment-insertion.html) | Pass | 1 / 1 |  |  |
-| [`interactive-elements/the-details-element/details-toggle-source.html`](https://wpt.fyi/results/html/semantics/interactive-elements/the-details-element/details-toggle-source.html) | Fail | 2 / 3 | NOT IMPLEMENTED, REQUIRES(layout) | the implicit UA `<summary>` (shadow tree) of a `<details>` without summary; the test clicks the top half of the details to hit it |
+| [`interactive-elements/the-details-element/details-toggle-source.html`](https://wpt.fyi/results/html/semantics/interactive-elements/the-details-element/details-toggle-source.html) | Pass | 3 / 3 |  |  |
 | [`interactive-elements/the-details-element/details.html`](https://wpt.fyi/results/html/semantics/interactive-elements/the-details-element/details.html) | Pass | 5 / 5 |  |  |
 | [`interactive-elements/the-details-element/name-attribute.html`](https://wpt.fyi/results/html/semantics/interactive-elements/the-details-element/name-attribute.html) | Pass | 18 / 18 |  |  |
 | [`interactive-elements/the-details-element/toggleEvent.html`](https://wpt.fyi/results/html/semantics/interactive-elements/the-details-element/toggleEvent.html) | Pass | 11 / 11 |  |  |
@@ -1495,7 +1495,7 @@
 | [`popovers/popover-focus-2.html`](https://wpt.fyi/results/html/semantics/popovers/popover-focus-2.html) | Pass | 3 / 3 |  |  |
 | [`popovers/popover-focus-3.html`](https://wpt.fyi/results/html/semantics/popovers/popover-focus-3.html) | Pass | 9 / 9 |  |  |
 | [`popovers/popover-focus-4.html`](https://wpt.fyi/results/html/semantics/popovers/popover-focus-4.html) | Pass | 3 / 3 |  |  |
-| [`popovers/popover-focus-5.html`](https://wpt.fyi/results/html/semantics/popovers/popover-focus-5.html) | Fail | 20 / 24 | NOT IMPLEMENTED | the implicit UA `<summary>` (shadow tree) of a `<details>` without summary, which is focusable in browsers |
+| [`popovers/popover-focus-5.html`](https://wpt.fyi/results/html/semantics/popovers/popover-focus-5.html) | Pass | 24 / 24 |  |  |
 | [`popovers/popover-focus-across-slot.html`](https://wpt.fyi/results/html/semantics/popovers/popover-focus-across-slot.html) | Pass | 1 / 1 |  |  |
 | [`popovers/popover-focus-form-control.html`](https://wpt.fyi/results/html/semantics/popovers/popover-focus-form-control.html) | Pass | 1 / 1 |  |  |
 | [`popovers/popover-focus-harness.html`](https://wpt.fyi/results/html/semantics/popovers/popover-focus-harness.html) | Pass | 1 / 1 |  |  |
@@ -1529,7 +1529,7 @@
 | [`popovers/popover-light-dismiss-touch-scroll.html`](https://wpt.fyi/results/html/semantics/popovers/popover-light-dismiss-touch-scroll.html) | Pass | 1 / 1 |  |  |
 | [`popovers/popover-light-dismiss.html`](https://wpt.fyi/results/html/semantics/popovers/popover-light-dismiss.html) | Pass | 33 / 33 |  |  |
 | [`popovers/popover-manual-hide-does-not-close-auto.html`](https://wpt.fyi/results/html/semantics/popovers/popover-manual-hide-does-not-close-auto.html) | Pass | 2 / 2 |  |  |
-| [`popovers/popover-minimum-role.html`](https://wpt.fyi/results/html/semantics/popovers/popover-minimum-role.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the popover minimum role `group` (HTML-AAM) and the role `none` of hidden elements in `ComputedRole` |
+| [`popovers/popover-minimum-role.html`](https://wpt.fyi/results/html/semantics/popovers/popover-minimum-role.html) | Pass | 2 / 2 |  |  |
 | [`popovers/popover-move-documents-during-hide.html`](https://wpt.fyi/results/html/semantics/popovers/popover-move-documents-during-hide.html) | Pass | 3 / 3 |  |  |
 | [`popovers/popover-move-documents.html`](https://wpt.fyi/results/html/semantics/popovers/popover-move-documents.html) | Pass | 3 / 3 |  |  |
 | [`popovers/popover-nested-in-button.html`](https://wpt.fyi/results/html/semantics/popovers/popover-nested-in-button.html) | Pass | 4 / 4 |  |  |
@@ -1559,7 +1559,7 @@
 | [`popovers/popovertarget-reflection.html`](https://wpt.fyi/results/html/semantics/popovers/popovertarget-reflection.html) | Pass | 1 / 1 |  |  |
 | [`popovers/togglePopover.html`](https://wpt.fyi/results/html/semantics/popovers/togglePopover.html) | Pass | 3 / 3 |  |  |
 | [`popovers/toggleevent-interface.html`](https://wpt.fyi/results/html/semantics/popovers/toggleevent-interface.html) | Pass | 40 / 40 |  |  |
-| [`rellist-feature-detection.html`](https://wpt.fyi/results/html/semantics/rellist-feature-detection.html) | Fail | 3 / 4 | NOT IMPLEMENTED | the link types that the library does not process: `preconnect` and `dns-prefetch` (the loader has no connection to open in advance), `prerender`, `next`, `canonical`, `apple-touch-icon` and `apple-touch-icon-precomposed` (the HTML Standard does not require the user agents to support the last two), so `link.relList.supports()` returns false for them |
+| [`rellist-feature-detection.html`](https://wpt.fyi/results/html/semantics/rellist-feature-detection.html) | Pass | 4 / 4 |  |  |
 | [`scripting-1/the-noscript-element/non-html-noscript.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-noscript-element/non-html-noscript.html) | Pass | 1 / 1 |  |  |
 | [`scripting-1/the-script-element/async_001.htm`](https://wpt.fyi/results/html/semantics/scripting-1/the-script-element/async_001.htm) | Pass | 1 / 1 |  |  |
 | [`scripting-1/the-script-element/async_002.htm`](https://wpt.fyi/results/html/semantics/scripting-1/the-script-element/async_002.htm) | Pass | 2 / 2 |  |  |
@@ -2570,9 +2570,9 @@
 | [`forms/the-select-element/customizable-select/select-picker-pseudo-backdrop.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-picker-pseudo-backdrop.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-select-element/customizable-select/select-picker-pseudo-before-after.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-picker-pseudo-before-after.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-select-element/customizable-select/select-picker-pseudo-first-letter-first-line.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-picker-pseudo-first-letter-first-line.html) | Pass | 1 / 1 |  |  |
-| [`forms/the-select-element/customizable-select/select-picker-pseudo-highlight.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-picker-pseudo-highlight.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the highlight pseudo-elements of the select popover (`::picker(select)::highlight()`, `::selection`, `::target-text`): only `::before`, `::after`, `::backdrop`, `::first-line` and `::first-letter` can follow `::picker(select)` |
-| [`forms/the-select-element/customizable-select/select-picker-pseudo-selection.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-picker-pseudo-selection.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the highlight pseudo-elements of the select popover (`::picker(select)::highlight()`, `::selection`, `::target-text`): only `::before`, `::after`, `::backdrop`, `::first-line` and `::first-letter` can follow `::picker(select)` |
-| [`forms/the-select-element/customizable-select/select-picker-pseudo-target-text.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-picker-pseudo-target-text.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the highlight pseudo-elements of the select popover (`::picker(select)::highlight()`, `::selection`, `::target-text`): only `::before`, `::after`, `::backdrop`, `::first-line` and `::first-letter` can follow `::picker(select)` |
+| [`forms/the-select-element/customizable-select/select-picker-pseudo-highlight.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-picker-pseudo-highlight.html) | Pass | 1 / 1 |  |  |
+| [`forms/the-select-element/customizable-select/select-picker-pseudo-selection.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-picker-pseudo-selection.html) | Pass | 1 / 1 |  |  |
+| [`forms/the-select-element/customizable-select/select-picker-pseudo-target-text.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-picker-pseudo-target-text.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-select-element/customizable-select/select-popover-exit-animation.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-popover-exit-animation.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-select-element/customizable-select/select-pseudo-ordering.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-pseudo-ordering.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-select-element/customizable-select/select-second-child-button.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-second-child-button.html) | Pass | 1 / 1 |  |  |

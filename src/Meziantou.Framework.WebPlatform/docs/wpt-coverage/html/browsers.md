@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 661 | 740 | 0 | 89% |
-| [Tentative](#tentative-tests) | 8 | 12 | 0 | 67% |
+| [Stable](#stable-tests) | 663 | 740 | 0 | 90% |
+| [Tentative](#tentative-tests) | 9 | 12 | 0 | 75% |
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
-| **All** | **673** | **756** | **0** | **89%** |
+| **All** | **676** | **756** | **0** | **89%** |
 
 ## Stable tests
 
@@ -88,8 +88,8 @@
 | [`browsing-the-web/history-traversal/popstate_event.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/history-traversal/popstate_event.html) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/history-traversal/same-url.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/history-traversal/same-url.html) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/history-traversal/scroll-restoration-order.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/history-traversal/scroll-restoration-order.html) | Pass | 1 / 1 |  |  |
-| [`browsing-the-web/history-traversal/srcdoc/consecutive-srcdoc.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/history-traversal/srcdoc/consecutive-srcdoc.html) | Fail | 1 / 2 | BUG | traversing back to the `about:srcdoc#yo` entry, whose document was replaced, reloads the srcdoc document at `about:srcdoc` (the fragment of the entry URL is lost) |
-| [`browsing-the-web/history-traversal/srcdoc/srcdoc-history-entries.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/history-traversal/srcdoc/srcdoc-history-entries.html) | Fail | 1 / 2 | NOT IMPLEMENTED | when a traversal reloads the container document, the iframe loads its `src` instead of restoring its `about:srcdoc` session history entry |
+| [`browsing-the-web/history-traversal/srcdoc/consecutive-srcdoc.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/history-traversal/srcdoc/consecutive-srcdoc.html) | Pass | 2 / 2 |  |  |
+| [`browsing-the-web/history-traversal/srcdoc/srcdoc-history-entries.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/history-traversal/srcdoc/srcdoc-history-entries.html) | Pass | 2 / 2 |  |  |
 | [`browsing-the-web/history-traversal/unset_context_name.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/history-traversal/unset_context_name.html) | Timeout | 0 / 1 | TEST RUNNER | the ported `unset_context_name_stash.py` never stores the value (as in wptserve, it compares the byte-string method with "POST"), so the polling never ends |
 | [`browsing-the-web/history-traversal/window-name-after-cross-origin-aux-frame-navigation.sub.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/history-traversal/window-name-after-cross-origin-aux-frame-navigation.sub.html) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/history-traversal/window-name-after-cross-origin-main-frame-navigation.sub.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/history-traversal/window-name-after-cross-origin-main-frame-navigation.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | clearing `window.name` (the target name) when a top-level navigable navigates to a cross-origin document |
@@ -763,7 +763,7 @@
 | [`browsing-the-web/back-forward-cache/broadcastchannel/dedicatedworker.tentative.window.js`](https://wpt.fyi/results/html/browsers/browsing-the-web/back-forward-cache/broadcastchannel/dedicatedworker.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | back/forward cache |
 | [`browsing-the-web/back-forward-cache/broadcastchannel/evict-on-message.tentative.window.js`](https://wpt.fyi/results/html/browsers/browsing-the-web/back-forward-cache/broadcastchannel/evict-on-message.tentative.window.js) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/history-traversal/iframe-history-restore-about-blank.tentative.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/history-traversal/iframe-history-restore-about-blank.tentative.html) | Pass | 3 / 3 |  |  |
-| [`browsing-the-web/history-traversal/iframe-history-restore-on-container-traversal.tentative.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/history-traversal/iframe-history-restore-on-container-traversal.tentative.html) | Fail | 1 / 2 | NOT IMPLEMENTED | when a traversal reloads the container document, its iframes load their `src` instead of restoring the session history entry of the child navigable |
+| [`browsing-the-web/history-traversal/iframe-history-restore-on-container-traversal.tentative.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/history-traversal/iframe-history-restore-on-container-traversal.tentative.html) | Pass | 2 / 2 |  |  |
 | [`browsing-the-web/navigating-across-documents/javascript-url-abort/javascript-url-abort-return-value-string.tentative.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/javascript-url-abort/javascript-url-abort-return-value-string.tentative.html) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/navigating-across-documents/javascript-url-abort/javascript-url-abort-return-value-undefined.tentative.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/javascript-url-abort/javascript-url-abort-return-value-undefined.tentative.html) | Pass | 1 / 1 |  |  |
 | [`origin/api/file-scheme-origin.tentative.any.js`](https://wpt.fyi/results/html/browsers/origin/api/file-scheme-origin.tentative.any.js) | Pass | 2 / 2 |  |  |

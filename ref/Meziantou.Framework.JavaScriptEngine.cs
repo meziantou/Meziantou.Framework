@@ -302,7 +302,9 @@ namespace Meziantou.Framework.JavaScriptEngine
     {
         public string? Url { get => throw null; }
         public static Meziantou.Framework.JavaScriptEngine.JsPreparedScript Parse(string code, string? url = null, int lineOffset = 0, int columnOffset = 0) => throw null;
+        public static Meziantou.Framework.JavaScriptEngine.JsPreparedScript Parse(string code, string? url, int lineOffset, int columnOffset, int unboundNameFunctionStart) => throw null;
         public static bool TryParse(string code, string? url, int lineOffset, int columnOffset, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.JavaScriptEngine.JsPreparedScript? script, [System.Diagnostics.CodeAnalysis.NotNullWhen(false)] out Meziantou.Framework.JavaScriptEngine.JsSyntaxErrorException? error) => throw null;
+        public static bool TryParse(string code, string? url, int lineOffset, int columnOffset, int unboundNameFunctionStart, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.JavaScriptEngine.JsPreparedScript? script, [System.Diagnostics.CodeAnalysis.NotNullWhen(false)] out Meziantou.Framework.JavaScriptEngine.JsSyntaxErrorException? error) => throw null;
     }
 
     public enum JsPromiseRejectionOperation

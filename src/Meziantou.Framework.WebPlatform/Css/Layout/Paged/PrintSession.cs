@@ -25,6 +25,7 @@ internal sealed class PrintSession : IDisposable
     private MediaEnvironment? _environment;
     private LayoutEngine? _layoutEngine;
     private PhysicalSize _viewportSize;
+    private PrintHeaderFooter? _headerFooter;
     private bool _disposed;
 
     internal PrintSession(Document document, PrintOptions options, StyleEngine? screenStyleEngine, LayoutEngine? screenLayoutEngine)
@@ -106,6 +107,13 @@ internal sealed class PrintSession : IDisposable
             var geometry = pages[i].Geometry;
             var size = geometry.PageSize;
             var displayList = _layoutEngine!.PaintPage(pages[i], paper);
+
+            // The header and the footer in the page margins (PrintOptions.DisplayHeaderFooter)
+            if (Options.DisplayHeaderFooter && (Options.HeaderTemplate is { Length: > 0 } || Options.FooterTemplate is { Length: > 0 }))
+            {
+                _headerFooter ??= new PrintHeaderFooter(_document);
+                displayList = _headerFooter.Paint(displayList, size, geometry.Margin, i + 1, pages.Count, Options);
+            }
             if (geometry.Orientation is "rotate-left" or "rotate-right")
             {
                 var builder = new DisplayListBuilder();
@@ -244,6 +252,7 @@ internal sealed class PrintSession : IDisposable
             return;
 
         _disposed = true;
+        _headerFooter?.Dispose();
         _document.EndPrint(this, _screenStyleEngine, _screenLayoutEngine);
     }
 }

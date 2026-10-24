@@ -211,13 +211,6 @@ internal static class RenderScenarios
             Pdf = new PdfPrintOptions { Tagged = false },
         };
 
-        // page.pdf()
-        if (scenario.Kind is RenderKind.Pdf)
-        {
-            if (scenario.DisplayHeaderFooter)
-                mapping.Unsupported.Add("displayHeaderFooter");
-        }
-
         return mapping;
     }
 
@@ -232,6 +225,9 @@ internal static class RenderScenarios
             PrintBackground = scenario.PrintBackground,
             PreferCssPageSize = scenario.PreferCssPageSize,
             PageRanges = scenario.PageRanges,
+            DisplayHeaderFooter = scenario.DisplayHeaderFooter,
+            HeaderTemplate = scenario.HeaderTemplate,
+            FooterTemplate = scenario.FooterTemplate,
             MarginTop = scenario.Margins.Top,
             MarginRight = scenario.Margins.Right,
             MarginBottom = scenario.Margins.Bottom,

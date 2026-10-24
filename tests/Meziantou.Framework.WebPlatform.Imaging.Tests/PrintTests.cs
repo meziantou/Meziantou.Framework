@@ -215,6 +215,50 @@ public sealed class PrintTests : IDisposable
         }
     }
 
+    [Fact]
+    public void RenderPages_HeaderAndFooter()
+    {
+        // Pages of 200x100 with margins of 40px: the header is 20px below the top edge, the footer 20px above the bottom edge; the
+        // page number and the number of pages are the content of the elements of class pageNumber and totalPages (10px Ahem glyphs)
+        var context = _pages.Load("""
+            <title>T</title>
+            <div style='height: 20px; break-after: page'></div><div style='height: 20px'></div>
+            """);
+        var options = new PrintOptions
+        {
+            PageWidth = 200,
+            PageHeight = 100,
+            MarginTop = 40,
+            MarginBottom = 40,
+            MarginLeft = 0,
+            MarginRight = 0,
+            DisplayHeaderFooter = true,
+            HeaderTemplate = "<div style='font: 10px/1 Ahem; color: blue'><span class=title></span><span class=pageNumber></span></div>",
+            FooterTemplate = "<div style='font: 10px/1 Ahem; color: red; background: lime'><span class=pageNumber></span>/<span class=totalPages></span></div>",
+        };
+
+        var pages = context.RenderPages(options);
+        try
+        {
+            Assert.Equal(2, pages.Count);
+
+            // "T1": two glyphs at y 20 to 30
+            Assert.Equal(Colors.White, pages[0].GetPixel(5, 18));
+            Assert.Equal(Colors.Blue, pages[0].GetPixel(5, 25));
+            Assert.Equal(Colors.Blue, pages[0].GetPixel(15, 25));
+            Assert.Equal(Colors.White, pages[0].GetPixel(25, 25));
+
+            // "2/2": three glyphs at y 70 to 80, on a white background (the backgrounds of the templates are not printed)
+            Assert.Equal(Colors.Red, pages[1].GetPixel(25, 75));
+            Assert.Equal(Colors.White, pages[1].GetPixel(35, 75));
+            Assert.Equal(Colors.White, pages[1].GetPixel(5, 82));
+        }
+        finally
+        {
+            DisposeAll(pages);
+        }
+    }
+
     private static void DisposeAll(IReadOnlyList<Image<Rgba32>> pages)
     {
         foreach (var page in pages)

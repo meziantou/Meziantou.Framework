@@ -11922,7 +11922,7 @@
     "reftest": "PASS"
   },
   "css/CSS2/pagination/float-page-break-inside-avoid-8-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/pagination/float-page-break-inside-avoid-9-print.html": {
     "reftest": "PASS"

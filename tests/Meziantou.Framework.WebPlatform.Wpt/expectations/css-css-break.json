@@ -2988,7 +2988,7 @@
     "reftest": "PASS"
   },
   "css/css-break/table/repeated-section/fixedpos-in-footer-forced-break-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/table/repeated-section/footer.tentative.html": {
     "reftest": "PASS"
@@ -3408,7 +3408,7 @@
     "reftest": "PASS"
   },
   "css/css-break/transform-024-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/transform-025.html": {
     "reftest": "PASS"

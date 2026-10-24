@@ -533,8 +533,9 @@ internal sealed class FragmentSlicer
         for (var index = firstIndex; index <= lastIndex; index++)
         {
             // The extent of the fragment in the fragmentainer: a fragment broken at the end of a fragmentainer extends to its end
-            // (the fragments before the start of the box and after its end are empty)
-            var sliceTop = index == first ? topOffset : index < first ? _fragmentainers[index].BlockSize : openOffsets[index] + (startShifts?[index] ?? 0);
+            // (the fragments before the start of the box and after its end are empty, at the start of their fragmentainer: as in
+            // Blink, the transform origin of the empty fragment of a box before its start is there)
+            var sliceTop = index == first ? topOffset : index < first ? 0 : openOffsets[index] + (startShifts?[index] ?? 0);
             var sliceBottom = index > borderBoxLast || index < first ? sliceTop
                 : index == borderBoxLast ? Math.Max(sliceTop, endIndex == index ? endOffset : map.GetOffsetIn(index, bottom))
                 : Math.Max(sliceTop, closeOffsets?[index] ?? GetBreakEnd(map, index));
@@ -609,9 +610,12 @@ internal sealed class FragmentSlicer
                     // fragmentainer (less the footer), a break between two rows leaves the footer after the row before it
                     var inline = FragmentationFlow.GetBlockRange(footer, box.Size, writingDirection, 0).Inline;
                     var footerOffset = Math.Max(sliceBottom, _fragmentainers[index].BlockSize) - _writingDirection.ToLogical(border.Add(padding)).BlockEnd - repeated.FooterBlockSize;
-                    if (map.GetRange(index + 1) is var (breakPosition, _) && GetRowEndBefore(box, unclampedTop, breakPosition) is { } rowEnd)
+                    // (not after a row that ends in a later fragmentainer: a row broken by the breaks of its contents, whose parallel
+                    // flows are broken while the position of the flow of the table does not progress)
+                    if (map.GetRange(index + 1) is var (breakPosition, _) && GetRowEndBefore(box, unclampedTop, breakPosition) is { } rowEnd
+                        && map.MapEnd(rowEnd, top) is var rowEndPlacement && rowEndPlacement.Index == index)
                     {
-                        footerOffset = Math.Min(footerOffset, map.MapEnd(rowEnd, top).Offset + repeated.FooterSize - repeated.FooterBlockSize);
+                        footerOffset = Math.Min(footerOffset, rowEndPlacement.Offset + repeated.FooterSize - repeated.FooterBlockSize);
                     }
 
                     sections.Add((footer.CloneSubtree(), inline, footerOffset, true));

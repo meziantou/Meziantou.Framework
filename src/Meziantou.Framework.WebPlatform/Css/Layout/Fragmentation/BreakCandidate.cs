@@ -167,6 +167,14 @@ internal readonly record struct BreakCandidate(double Position, double ContentEn
     /// </summary>
     public double OnlyEdgesFrom { get; init; } = double.NaN;
 
+    /// <summary>
+    /// The position from which only the block-start edges of boxes precede the break (the break is after these edges, before the
+    /// first content of the boxes), else NaN: in the pages, as in Blink ("requires content before breaking"), it is not a
+    /// possible break in a page that starts at that position or after it, where the content after it stays (the monolithic
+    /// content that does not fit is sliced, see <see cref="FragmentationFlow.SlicesMonolithicContent"/>).
+    /// </summary>
+    public double EdgesOnlyFrom { get; init; } = double.NaN;
+
     /// <summary>Whether the break is between the last content of a box and its block-end border and padding (a last-resort break).</summary>
     public bool IsBeforeEndEdges { get; init; }
 

@@ -2677,7 +2677,9 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     the content of a flow whose parallel flows continue is after the boxes without block size at its position: the contents
     that overflow them (a box with `height: 0`) start in that fragmentainer and are broken there.
   - A forced break at the start of a fragmentainer is taken when it is at a class A break point (after a box without block
-    size), not before the first content of a box.
+    size), not before the first content of a box. In the pages, as in Gecko, it is not taken: the forced breaks (of
+    `break-before`, `break-after` and of the page names) after boxes without block size at the start of a page do not start
+    another page.
   - The block-end margin of the last child of a box (in a block formatting context root, before a block-end padding) is
     truncated when a break is in it or after it ([§5.2](https://drafts.csswg.org/css-break-3/#break-margins)): the box ends at
     the end of the fragmentainer (`FlowMap.AddTruncation`) and the content after it starts the next one.
@@ -2846,7 +2848,7 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
   balanced with them. There is no break between the header and the section after it. The slicer adds a copy of the
   fragments of the header (`Fragment.CloneSubtree`) at the start of the fragments after the first one that have other
   sections, and a copy of the footer in the fragments before the one of the footer: at the end of the fragmentainer when
-  a row is broken there, after the last row when the break is between two rows. The copies are fragments of the same
+  a row is broken there (also by a forced break in its cells), after the last row when the break is between two rows. The copies are fragments of the same
   boxes (they are painted and hit tested; `getClientRects()` returns the rectangles of the original ones).
 - **Collapsed borders of a fragmented table**: each fragment of the table grid box paints the collapsed borders of the
   fragments of its cells; the borders along a cell that is broken run to the edge of its fragment, no border is painted
@@ -3067,7 +3069,11 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   block-level children; `auto` is the used value of the parent). `orphans`, `widows`, `break-inside: avoid`,
   `box-decoration-break`, the floats, the parallel flows (flex, grid, tables), the repeated table headers and the nested
   multi-column containers (laid out as nested containers: the pages fragment their columns) are fragmented as in the
-  columns. `ColumnBreaker.FindBreaks` fills the pages: the block size of a page depends on its page style, which depends on
+  columns. A float that starts before a forced break and whose margin box ends after it stays in the page of its position
+  in the content when it fits in the rest of the page (`FragmentationFlow.KeepFloat`), and its exclusion ends at the break
+  (`StripRelayout.UpdateFloatExclusionEnds`, the strip is laid out again): as in Blink, the content after the break is not
+  laid out beside it. A break beside a float with `break-inside: avoid` that does not start the page does not violate
+  that rule: as in Gecko, the float is pushed to the next page. `ColumnBreaker.FindBreaks` fills the pages: the block size of a page depends on its page style, which depends on
   the breaks (the page name of the content that starts the page, its side), so the breaks are found again with the block
   sizes of the pages until they are stable (5 times at most). The floats that do not fit are pushed to the next page by new
   layouts of the strip, as in the columns, and the items of the grid lanes containers fragmented in their stacking axis are
@@ -3086,11 +3092,15 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   pages have the inline size of the first one.
 - **Monolithic content**: as in the browsers, the scroll containers are not monolithic in the pages (their contents are
   printed). The monolithic content (a replaced element, a box with size containment, a line box) that does not fit in an
-  empty page is sliced: the next page starts at the end of the page
+  empty page is sliced (also when only the block-start borders and paddings of its ancestors precede it in the page: as
+  in Blink, the break after these edges is not a possible break there, `BreakCandidate.EdgesOnlyFrom`, and the first
+  monolithic content of a box with a definite block size does not make the page taller): the next page starts at the end of the page
   (`FragmentationFlow.SlicesMonolithicContent`) and shows the rest of it (`FragmentSlicer` places a copy of its fragment in
   each next page, at a negative offset; the page area clips it), and the content after it follows it. As in Blink, whose
   page grows over the monolithic content, the boxes with `box-decoration-break: clone` do not repeat their edges at these
-  slices (`FragmentationFlow.StartsInMonolithicSlice`; a box with a definite block size consumes the whole page). The content that
+  slices (`FragmentationFlow.StartsInMonolithicSlice`; a box with a definite block size consumes the whole page), and the
+  repeated table headers are placed over the rest of the monolithic content of a row (the rows after it follow the header
+  or the end of the monolithic content, and the row ends with the content of its cells, which follows the slices). The content that
   overflows a monolithic box (that does not clip it) adds pages, as in the browsers: the flow continues until its end
   (`FragmentationFlow.GetOverflowEnd`, also for an absolutely positioned monolithic box), and the copies of the box are
   placed in these pages.
@@ -3105,7 +3115,9 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   first one; the pages added by the absolutely positioned boxes alternate between left and right pages, with the block
   sizes of their page areas); the absolutely positioned boxes whose containing block is the initial containing block are on the page of
   their position (in the content for a box at its static position in the block axis or anchored, else in the initial
-  containing block, whose pages follow each other by the block sizes of their page areas), unbroken, when they fit in the rest of it with their descendants and their contents
+  containing block, whose pages follow each other by the block sizes of their page areas; a box whose static position is
+  before the box after a break, in its block-start margin preserved after a forced break, is in the page before the break,
+  as in Blink), unbroken, when they fit in the rest of it with their descendants and their contents
   have no forced page break, else they are fragmented apart from their position in the initial containing block
   (`PageBreakRules.InitialContainingBlock`; the pages they reach are added; as in Blink, the page names of their contents
   break the pages only when the box is at its static position in the block axis); the absolutely positioned boxes

@@ -80,6 +80,9 @@ internal enum TokenKind : byte
     BarBarEqual,
     QuestionQuestionEqual,
 
+    /// <summary><c>@</c>: the start of a decorator.</summary>
+    At,
+
     // Reserved words
     Break,
     Case,

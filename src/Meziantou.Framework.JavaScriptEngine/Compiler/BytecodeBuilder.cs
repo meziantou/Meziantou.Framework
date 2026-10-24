@@ -497,6 +497,7 @@ internal sealed class BytecodeBuilder
                 or OpCode.Call or OpCode.TailCall or OpCode.New or OpCode.SuperCall
                 or OpCode.CreateClosure or OpCode.CreateClass or OpCode.CreatePrivateName
                 or OpCode.DefineClassField or OpCode.SetFunctionNameComputed
+                or OpCode.DefineAutoAccessor or OpCode.SetDecoratedMethod or OpCode.ApplyClassDecorators or OpCode.RunClassDecorationInitializers
                 or OpCode.GetTemplateObject
                 or OpCode.IteratorNext or OpCode.ForInNext or OpCode.IteratorDelegateStep or OpCode.CreateIterResultDone or OpCode.IteratorStepFinish
                 or OpCode.GlobalDeclarationInstantiation or OpCode.EvalDeclarationInstantiation
@@ -515,7 +516,7 @@ internal sealed class BytecodeBuilder
                 or OpCode.DefineMethod
                 or OpCode.GetPrivate or OpCode.SetPrivate or OpCode.PrivateIn
                 or OpCode.CallEval or OpCode.TailCallEval
-                or OpCode.DefinePrivateMethod
+                or OpCode.DefinePrivateMethod or OpCode.CreateElementDecoration
                 or OpCode.ThrowError
                 or OpCode.CreateRegExp
                 or OpCode.StoreResolved
@@ -600,6 +601,17 @@ internal sealed class BytecodeBuilder
             OpCode.DefinePrivateMethod => -4,
             OpCode.CallClassStaticInitializer => -2,
             OpCode.SetHomeObject => -1,
+            OpCode.DefineAutoAccessor => -2,
+            OpCode.CreateClassDecoration => 1,
+            OpCode.AddDecorator => -2,
+            OpCode.CreateElementDecoration => 0,
+            OpCode.SetDecoratedMethod => -3,
+            OpCode.SetDecoratedKey => -2,
+            OpCode.SetDecoratedAccessor => -1,
+            OpCode.BeginClassDecoration or OpCode.ApplyElementDecorators => -2,
+            OpCode.ApplyClassDecorators => 0,
+            OpCode.RunClassDecorationInitializers => -1,
+            OpCode.RunFieldInitializers or OpCode.RunExtraInitializers => -2,
             OpCode.IteratorCallReturn or OpCode.ThrowIfNotObject => 0,
             OpCode.JumpIfUndefinedPop => 0,
             OpCode.AddDisposableResource => -2,

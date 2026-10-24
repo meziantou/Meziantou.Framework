@@ -32,6 +32,14 @@ internal static class AstPrinter
         builder.Append(']');
     }
 
+    private static void AppendDecorators(StringBuilder builder, List<Node>? decorators)
+    {
+        if (decorators is not null)
+        {
+            AppendList(builder, "Decorators", decorators);
+        }
+    }
+
     private static void AppendString(StringBuilder builder, string name, string? value)
     {
         builder.Append(' ').Append(name).Append('=');
@@ -503,6 +511,7 @@ internal static class AstPrinter
                 Print(builder, n.Id);
                 builder.Append(" SuperClass=");
                 Print(builder, n.SuperClass);
+                AppendDecorators(builder, n.Decorators);
                 AppendList(builder, "Body", n.Body);
                 break;
             case MethodDefinition n:
@@ -514,6 +523,7 @@ internal static class AstPrinter
                 builder.Append(" Kind=").Append(n.Kind.ToString());
                 builder.Append(" Static=").Append(n.Static ? "true" : "false");
                 builder.Append(" Computed=").Append(n.Computed ? "true" : "false");
+                AppendDecorators(builder, n.Decorators);
                 break;
             case PropertyDefinition n:
                 builder.Append("(PropertyDefinition");
@@ -523,6 +533,8 @@ internal static class AstPrinter
                 Print(builder, n.Value);
                 builder.Append(" Static=").Append(n.Static ? "true" : "false");
                 builder.Append(" Computed=").Append(n.Computed ? "true" : "false");
+                builder.Append(" IsAccessor=").Append(n.IsAccessor ? "true" : "false");
+                AppendDecorators(builder, n.Decorators);
                 break;
             case StaticBlock n:
                 builder.Append("(StaticBlock");

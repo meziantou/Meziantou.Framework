@@ -57,6 +57,26 @@ internal sealed partial class Parser
                     Unexpected();
 
                 return ParseClassDeclaration(start, allowAnonymous: false);
+            case TokenKind.At:
+            {
+                // A decorated class declaration, or decorators before 'export'
+                if (!isDeclarationContext)
+                    Unexpected();
+
+                var decorators = ParseDecorators();
+                if (_token.Kind == TokenKind.Export)
+                {
+                    if (!_isModule)
+                        Raise(_token.Start, "Unexpected token 'export'");
+
+                    if (!topLevel)
+                        Raise(_token.Start, "An export declaration can only be used at the top level of a module");
+
+                    return ParseExportDeclaration(start, decorators);
+                }
+
+                return ParseClassDeclaration(start, allowAnonymous: false, decorators);
+            }
             case TokenKind.If:
                 return ParseIf(start);
             case TokenKind.Return:

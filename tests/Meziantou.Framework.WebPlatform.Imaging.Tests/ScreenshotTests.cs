@@ -719,6 +719,26 @@ public sealed class ScreenshotTests : IDisposable
         Assert.Throws<ArgumentException>("options", () => context.TakeScreenshotAsJpeg(new ScreenshotOptions { Quality = 101 }));
     }
 
+    [Fact]
+    public void IsMobile_TheScreenshotIsTheVisualViewport()
+    {
+        // A 100x50 mobile viewport at a device pixel ratio of 2: the page without viewport meta element is laid out in a layout
+        // viewport of 980px and scaled down to fit the device; the screenshot is the viewport of the device
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            Viewport = new ViewportOptions { Width = 100, Height = 50, DevicePixelRatio = 2, IsMobile = true },
+            RenderingBackend = new ImagingRenderingBackend(),
+        });
+        context.Navigate("https://example.com/", _ => "<!DOCTYPE html><style>body { margin: 0 }</style><div style='width: 490px; height: 245px; background: blue'></div>");
+        context.EventLoop.RunUntilIdle();
+
+        using var screenshot = context.TakeScreenshot();
+        Assert.Equal((200, 100), (screenshot.Width, screenshot.Height));
+        Assert.Equal(Colors.Blue, screenshot.GetPixel(10, 10));
+        Assert.Equal(Colors.Blue, screenshot.GetPixel(98, 23));
+        Assert.Equal(Colors.White, screenshot.GetPixel(102, 27));
+    }
+
     private static Func<Rgba32, Rgba32, bool> ColorComparer(int tolerance) => (a, b) => Math.Abs(a.R - b.R) <= tolerance && Math.Abs(a.G - b.G) <= tolerance && Math.Abs(a.B - b.B) <= tolerance && Math.Abs(a.A - b.A) <= tolerance;
 
     /// <summary>Returns the sum of the darkness of the pixels of an area.</summary>

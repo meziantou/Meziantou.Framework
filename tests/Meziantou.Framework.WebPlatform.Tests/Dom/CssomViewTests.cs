@@ -562,6 +562,43 @@ public sealed class CssomViewTests : IDisposable
         Assert.Equal(0, window.Navigator.MaxTouchPoints);
     }
 
+    [Theory]
+    [InlineData("", 980, 1668.5128205128206, 0.3979591836734694)]
+    [InlineData("<meta name=viewport content='width=device-width, initial-scale=1'>", 390, 664, 1)]
+    [InlineData("<meta name=viewport content='width=600'>", 600, 1021.5384615384615, 0.65)]
+    [InlineData("<meta name=viewport content='width=device-width, initial-scale=2'>", 390, 664, 2)]
+    [InlineData("<meta name=viewport content='initial-scale=0.5'>", 780, 1328, 0.5)]
+    [InlineData("<meta name=viewport content='width = 500 ; maximum-scale = 0.5, unknown=1'>", 500, 851.2820512820513, 0.78)]
+    [InlineData("<meta name=viewport content='width=device-width, initial-scale=3, user-scalable=no'>", 390, 664, 3)]
+    [InlineData("<meta name=viewport content='width=device-width'><meta name=viewport content='width=800'>", 800, 1362.051282051282, 0.4875)]
+    public void IsMobile_TheViewportMetaSetsTheLayoutViewport(string meta, double width, double height, double scale)
+    {
+        // A 390x664 mobile viewport: the layout viewport and the scale of the page are set by the last viewport meta element (980px wide
+        // without one), the height keeps the aspect ratio of the device
+        var window = Load("<!DOCTYPE html>" + meta + "<p>a</p>", new ViewportOptions { Width = 390, Height = 664, IsMobile = true }).DefaultView!;
+        Assert.Equal(width, window.InnerWidth);
+        Assert.True(window.MatchMedia(FormattableString.Invariant($"(min-width: {width - 0.01}px) and (max-width: {width + 0.01}px) and (min-height: {height - 0.01}px) and (max-height: {height + 0.01}px) and (device-width: 390px)")).Matches);
+        Assert.Equal(scale, window.VisualViewport!.Scale, 1e-9);
+        Assert.Equal(390 / scale, window.VisualViewport.Width, 1e-9);
+    }
+
+    [Fact]
+    public void IsMobile_TheScaleFitsTheContents()
+    {
+        // A page wider than its layout viewport is scaled down to fit its contents
+        var window = Load("<!DOCTYPE html><meta name=viewport content='width=device-width'><style>body { margin: 0 }</style><div style='width: 780px; height: 10px'></div>", new ViewportOptions { Width = 390, Height = 664, IsMobile = true }).DefaultView!;
+        Assert.Equal(390, window.InnerWidth);
+        Assert.Equal(0.5, window.VisualViewport!.Scale, 1e-9);
+    }
+
+    [Fact]
+    public void IsMobile_IgnoredWithoutTheOption()
+    {
+        var window = Load("<!DOCTYPE html><meta name=viewport content='width=600'><p>a</p>", new ViewportOptions { Width = 390, Height = 664 }).DefaultView!;
+        Assert.Equal(390, window.InnerWidth);
+        Assert.Equal(1, window.VisualViewport!.Scale);
+    }
+
     [Fact]
     public void DeviceDescriptor_Example()
     {

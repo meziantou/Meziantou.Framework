@@ -211,10 +211,6 @@ internal static class RenderScenarios
             Pdf = new PdfPrintOptions { Tagged = false },
         };
 
-        // Device emulation: the layout viewport and the scale of the meta viewport of a mobile device are not supported
-        if (device.IsMobile)
-            mapping.Unsupported.Add("isMobile");
-
         // page.pdf()
         if (scenario.Kind is RenderKind.Pdf)
         {

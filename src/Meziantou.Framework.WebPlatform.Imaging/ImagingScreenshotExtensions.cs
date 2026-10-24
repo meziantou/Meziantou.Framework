@@ -160,6 +160,20 @@ public static class ImagingScreenshotExtensions
         ArgumentNullException.ThrowIfNull(document);
         var displayList = GetDisplayList(document, options?.OmitBackground ?? false, options?.FullPage ?? false);
         var area = new PhysicalRect(0, 0, displayList.Size.Width, displayList.Size.Height);
+
+        // On a mobile device, the viewport of a top-level document is its visual viewport: the viewport of the device scaled by
+        // the page scale (the layout viewport is wider when the page is scaled down), whole CSS pixels as in Chromium
+        var pageScale = document.GetPageScale();
+        if (pageScale != 1 && options?.FullPage != true && document.BrowsingContext?.Top.Options.Viewport is { IsMobile: true } viewport)
+        {
+            const double Epsilon = 1e-6;
+            area = new PhysicalRect(0, 0, Math.Min(area.Width, Math.Floor((viewport.Width / pageScale) + Epsilon)), Math.Min(area.Height, Math.Floor((viewport.Height / pageScale) + Epsilon)));
+        }
+
+        // The size of the screenshot of a viewport is rounded to device pixels (e.g. a viewport of 839px at a device pixel ratio
+        // of 2.625 is 2202 pixels high), as in Chromium; a clip is rounded outwards
+        var roundSize = options?.Clip is null;
+
         if (options?.Clip is { } clip)
         {
             if (!double.IsFinite(clip.X) || !double.IsFinite(clip.Y) || !double.IsFinite(clip.Width) || !double.IsFinite(clip.Height) || clip.Width <= 0 || clip.Height <= 0)
@@ -176,7 +190,7 @@ public static class ImagingScreenshotExtensions
             area = new PhysicalRect(left, top, right - left, bottom - top);
         }
 
-        return Render(document, displayList, area, options, pool);
+        return Render(document, displayList, area, options, pool, pageScale, roundSize);
     }
 
     private static (byte[] Pixels, int Width, int Height) RenderElement(Element element, ScreenshotOptions? options)
@@ -189,7 +203,7 @@ public static class ImagingScreenshotExtensions
         if (area.IsEmpty)
             throw new InvalidOperationException("The element is not rendered or its border box is empty.");
 
-        return Render(document, displayList, area, options);
+        return Render(document, displayList, area, options, pageScale: document.GetPageScale());
     }
 
     private static DisplayList GetDisplayList(Document document, bool transparentCanvas, bool fullPage)
@@ -200,10 +214,13 @@ public static class ImagingScreenshotExtensions
         return document.PaintScreenshot(transparentCanvas, fullPage) ?? throw new InvalidOperationException("The document is not rendered.");
     }
 
-    /// <summary>Rasterizes an area of the viewport (in CSS px), rounded outwards to device pixels.</summary>
-    internal static (byte[] Pixels, int Width, int Height) Render(Document document, DisplayList displayList, PhysicalRect area, ScreenshotOptions? options, System.Buffers.ArrayPool<byte>? pool = null)
+    /// <summary>
+    /// Rasterizes an area of the viewport (in CSS px), rounded outwards to device pixels (or with a size rounded to device pixels
+    /// with <paramref name="roundSize"/>): the device pixel ratio is multiplied by the page scale of a mobile device.
+    /// </summary>
+    internal static (byte[] Pixels, int Width, int Height) Render(Document document, DisplayList displayList, PhysicalRect area, ScreenshotOptions? options, System.Buffers.ArrayPool<byte>? pool = null, double pageScale = 1, bool roundSize = false)
     {
-        var devicePixelRatio = options?.DevicePixelRatio ?? StyleEngine.CreateEnvironment(document).DevicePixelRatio;
+        var devicePixelRatio = (options?.DevicePixelRatio ?? StyleEngine.CreateEnvironment(document).DevicePixelRatio) * pageScale;
         if (!double.IsFinite(devicePixelRatio) || devicePixelRatio <= 0)
             throw new ArgumentException("The device pixel ratio must be a positive number.", nameof(options));
 
@@ -211,8 +228,8 @@ public static class ImagingScreenshotExtensions
         const double Epsilon = 1e-6;
         var left = Math.Floor((area.Left * devicePixelRatio) + Epsilon);
         var top = Math.Floor((area.Top * devicePixelRatio) + Epsilon);
-        var width = (int)Math.Max(1, Math.Ceiling((area.Right * devicePixelRatio) - Epsilon) - left);
-        var height = (int)Math.Max(1, Math.Ceiling((area.Bottom * devicePixelRatio) - Epsilon) - top);
+        var width = (int)Math.Max(1, roundSize ? Math.Round(area.Width * devicePixelRatio, MidpointRounding.AwayFromZero) : Math.Ceiling((area.Right * devicePixelRatio) - Epsilon) - left);
+        var height = (int)Math.Max(1, roundSize ? Math.Round(area.Height * devicePixelRatio, MidpointRounding.AwayFromZero) : Math.Ceiling((area.Bottom * devicePixelRatio) - Epsilon) - top);
 
         var backend = document.BrowsingContext?.Options.RenderingBackend as ImagingRenderingBackend ?? new ImagingRenderingBackend();
         var transform = DisplayMatrix.Translation(-left, -top).PreConcat(DisplayMatrix.Scale(devicePixelRatio, devicePixelRatio));

@@ -2338,6 +2338,14 @@ internal sealed partial class StyleEngine
         // While the documents are displayed fullscreen, the viewport is the one the host answered (the screen), if any
         var width = top.FullscreenViewportSize?.Width ?? top.ClientWindowViewportWidth ?? viewport.Width;
         var height = top.FullscreenViewportSize?.Height ?? top.ClientWindowViewportHeight ?? viewport.Height;
+
+        // On a mobile device, the viewport of a top-level document is its layout viewport, set by its viewport meta element
+        // (https://drafts.csswg.org/css-viewport/#viewport-meta, see MobileViewport): the screen is the viewport of the options
+        if (viewport.IsMobile && browsingContext.Container is null && top.FullscreenViewportSize is null && top.ClientWindowViewportWidth is null)
+        {
+            (width, height) = Layout.MobileViewport.GetLayoutViewportSize(document.ViewportMeta, viewport.Width, viewport.Height);
+        }
+
         var devicePixelRatio = viewport.DevicePixelRatio;
         // https://drafts.csswg.org/css-color-adjust-1/#forced: the palette of the forced colors mode sets the preferred color
         // scheme when its canvas is clearly light or dark, and the preferred contrast

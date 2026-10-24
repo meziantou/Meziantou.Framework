@@ -1275,21 +1275,38 @@ public sealed class VisualViewport : EventTarget, IRealmBoundPlatformObject
     /// <summary>
     /// Gets the width of the visual viewport (https://drafts.csswg.org/cssom-view/#dom-visualviewport-width): the width of the
     /// viewport without the rendered vertical classic scrollbar, divided by <see cref="Scale"/> (the layout is computed when it
-    /// is out of date), or 0 when the document is not fully active.
+    /// is out of date), or 0 when the document is not fully active. On a mobile device (<see cref="ViewportOptions.IsMobile"/>),
+    /// the visual viewport of a top-level document is the viewport of the device scaled by the page scale.
     /// </summary>
     /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-visualviewport-width"/>
     [IdlMember("width", "https://drafts.csswg.org/cssom-view/#dom-visualviewport-width")]
-    public double Width => _document.IsFullyActive ? GetSize().Width / Scale : 0;
+    public double Width => _document.IsFullyActive ? GetVisualSize().Width : 0;
 
     /// <summary>Gets the height of the visual viewport (https://drafts.csswg.org/cssom-view/#dom-visualviewport-height): see <see cref="Width"/>.</summary>
     /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-visualviewport-height"/>
     [IdlMember("height", "https://drafts.csswg.org/cssom-view/#dom-visualviewport-height")]
-    public double Height => _document.IsFullyActive ? GetSize().Height / Scale : 0;
+    public double Height => _document.IsFullyActive ? GetVisualSize().Height : 0;
 
-    /// <summary>Gets the pinch-zoom scale of the visual viewport: 1 (there is no pinch zoom), or 0 when the document is not fully active.</summary>
+    /// <summary>
+    /// Gets the scale of the visual viewport: the page scale of a top-level document on a mobile device (set by its viewport
+    /// meta element, see <see cref="ViewportOptions.IsMobile"/>), else 1 (there is no pinch zoom), or 0 when the document is not
+    /// fully active.
+    /// </summary>
     /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-visualviewport-scale"/>
     [IdlMember("scale", "https://drafts.csswg.org/cssom-view/#dom-visualviewport-scale")]
-    public double Scale => _document.IsFullyActive ? 1 : 0;
+    public double Scale => _document.IsFullyActive ? _document.GetPageScale() : 0;
+
+    /// <summary>The size of the visual viewport in CSS pixels: the viewport of a mobile device divided by the page scale, else the layout viewport without its scrollbars.</summary>
+    private PhysicalSize GetVisualSize()
+    {
+        if (_document.BrowsingContext is { Container: null } browsingContext && browsingContext.Top.Options.Viewport is { IsMobile: true } viewport)
+        {
+            var scale = _document.GetPageScale();
+            return new PhysicalSize(viewport.Width / scale, viewport.Height / scale);
+        }
+
+        return GetSize();
+    }
 
     /// <summary>The size of the layout viewport without its scrollbars, from the layout (computed when it is out of date), or the size of the viewport when the document is not rendered.</summary>
     private PhysicalSize GetSize()

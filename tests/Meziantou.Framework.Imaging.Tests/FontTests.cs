@@ -2401,6 +2401,571 @@ public sealed class FontTests
         }
     }
 
+    [Fact]
+    public void AnAfmFileGivesTheGlobalMetricsOfTheFont()
+    {
+        // Every global key of section 7.1, comments, keys the reader does not know, tabs, and the three line endings.
+        var text = string.Join("\n",
+            "StartFontMetrics 4.1",
+            "Comment A comment\tkeeps its tabs",
+            "FontName\tSample-Bold",
+            "FullName Sample Bold  Condensed ",
+            "FamilyName Sample",
+            "Weight Bold",
+            "Version 001.002",
+            "Notice Copyright (c) Sample",
+            "EncodingScheme AdobeStandardEncoding",
+            "CharacterSet ExtendedRoman",
+            "MappingScheme 3",
+            "EscChar 255",
+            "Characters 2",
+            "IsBaseFont false",
+            "IsCIDFont true",
+            "FontBBox -166 -225.5 1000 931",
+            "CapHeight 718",
+            "XHeight 523.25",
+            "Ascender 718",
+            "Descender -207",
+            "StdHW 76",
+            "StdVW 88",
+            "ItalicAngle -12.5",
+            "IsFixedPitch false",
+            "UnderlinePosition -100",
+            "UnderlineThickness 50",
+            "userKey 1 2 3",
+            "FutureKey with values",
+            "",
+            "   \t ",
+            "EndFontMetrics").Replace("Characters 2\n", "Characters 2\r\n", StringComparison.Ordinal).Replace("XHeight 523.25\n", "XHeight 523.25\r", StringComparison.Ordinal);
+
+        var metrics = AfmFontMetrics.Parse(text);
+
+        Assert.Equal("4.1", metrics.FormatVersion);
+        Assert.Equal("Sample-Bold", metrics.FontName);
+        Assert.Equal("Sample Bold  Condensed", metrics.FullName);
+        Assert.Equal("Sample", metrics.FamilyName);
+        Assert.Equal("Bold", metrics.Weight);
+        Assert.Equal("001.002", metrics.Version);
+        Assert.Equal("Copyright (c) Sample", metrics.Notice);
+        Assert.Equal("AdobeStandardEncoding", metrics.EncodingScheme);
+        Assert.Equal("ExtendedRoman", metrics.CharacterSet);
+        Assert.Equal(["A comment\tkeeps its tabs"], metrics.Comments);
+        Assert.Equal(3, metrics.MappingScheme);
+        Assert.Equal(255, metrics.EscChar);
+        Assert.Equal(2, metrics.CharacterCount);
+        Assert.False(metrics.IsBaseFont);
+        Assert.True(metrics.IsCIDFont);
+        Assert.Equal(new AfmBox(-166, -225.5, 1000, 931), metrics.FontBBox);
+        Assert.Equal(718, metrics.CapHeight);
+        Assert.Equal(523.25, metrics.XHeight);
+        Assert.Equal(718, metrics.Ascender);
+        Assert.Equal(-207, metrics.Descender);
+        Assert.Equal(76, metrics.StdHW);
+        Assert.Equal(88, metrics.StdVW);
+        Assert.Null(metrics.VVector);
+        Assert.False(metrics.IsFixedV);
+
+        // Outside StartDirection, the metrics are those of direction 0 (MetricsSets 0 is implied).
+        Assert.Equal(0, metrics.MetricsSets);
+        Assert.NotNull(metrics.Horizontal);
+        Assert.Equal(-12.5, metrics.Horizontal.ItalicAngle);
+        Assert.Equal(-100, metrics.Horizontal.UnderlinePosition);
+        Assert.Equal(50, metrics.Horizontal.UnderlineThickness);
+        Assert.Null(metrics.Horizontal.CharWidth);
+        Assert.False(metrics.Horizontal.IsFixedPitch);
+        Assert.Null(metrics.Vertical);
+        Assert.Empty(metrics.CharacterMetrics);
+        Assert.Empty(metrics.KerningPairs);
+        Assert.Empty(metrics.TrackKerning);
+        Assert.Empty(metrics.Composites);
+
+        // A file without the optional keys.
+        var minimal = AfmFontMetrics.Parse("StartFontMetrics 2.0\nEndFontMetrics");
+        Assert.Equal("2.0", minimal.FormatVersion);
+        Assert.Null(minimal.FontName);
+        Assert.Null(minimal.FontBBox);
+        Assert.True(minimal.IsBaseFont);
+        Assert.Empty(minimal.Comments);
+        Assert.NotNull(minimal.Horizontal);
+        Assert.Null(minimal.Horizontal.ItalicAngle);
+    }
+
+    [Fact]
+    public void AnAfmFileIsReadFromItsBytes()
+    {
+        // The notices of some files have characters of ISO-8859-1; a byte order mark is skipped, and what follows
+        // EndFontMetrics is ignored (some files end with an end-of-file character).
+        byte[] data = [0xEF, 0xBB, 0xBF, .. "StartFontMetrics 4.1\r\nNotice Caf"u8, 0xE9, .. "\r\nEndFontMetrics\r\n\u001A"u8];
+
+        var metrics = AfmFontMetrics.Load(data);
+
+        Assert.Equal("Café", metrics.Notice);
+    }
+
+    [Fact]
+    public async Task AnAfmFileIsBoundedByTheLimits()
+    {
+        var data = "StartFontMetrics 4.1\nFontName Sample\nEndFontMetrics\n"u8.ToArray();
+        var exact = new FontResourceLimits { MaxEncodedBytes = data.Length };
+        var smaller = new FontResourceLimits { MaxEncodedBytes = data.Length - 1 };
+
+        Assert.Equal("Sample", AfmFontMetrics.Load(data, exact).FontName);
+        var exception = Assert.Throws<FontResourceLimitException>(() => AfmFontMetrics.Load(data, smaller));
+        Assert.Equal(FontResourceLimitKind.EncodedBytes, exception.Kind);
+        Assert.Equal(data.Length - 1, exception.Limit);
+        Assert.Equal(data.Length, exception.Requested);
+
+        using (var stream = new MemoryStream(data))
+        {
+            Assert.Equal("Sample", AfmFontMetrics.Load(stream, exact).FontName);
+        }
+
+        using (var stream = new MemoryStream(data))
+        {
+            Assert.Equal(FontResourceLimitKind.EncodedBytes, Assert.Throws<FontResourceLimitException>(() => AfmFontMetrics.Load(stream, smaller)).Kind);
+        }
+
+        using (var stream = new NonSeekableStream(data))
+        {
+            Assert.Equal("Sample", AfmFontMetrics.Load(stream, exact).FontName);
+        }
+
+        using (var stream = new NonSeekableStream(data))
+        {
+            Assert.Equal(FontResourceLimitKind.EncodedBytes, Assert.Throws<FontResourceLimitException>(() => AfmFontMetrics.Load(stream, smaller)).Kind);
+        }
+
+        using (var stream = new NonSeekableStream(data))
+        {
+            Assert.Equal("Sample", (await AfmFontMetrics.LoadAsync(stream, exact, TestContext.Current.CancellationToken)).FontName);
+        }
+
+        using (var stream = new NonSeekableStream(data))
+        {
+            Assert.Equal(FontResourceLimitKind.EncodedBytes, (await Assert.Throws<FontResourceLimitException>(async () => { await AfmFontMetrics.LoadAsync(stream, smaller, TestContext.Current.CancellationToken); })).Kind);
+        }
+    }
+
+    [Fact]
+    public void AnAfmFileGivesTheMetricsOfItsCharacters()
+    {
+        var metrics = AfmFontMetrics.Parse("""
+            StartFontMetrics 4.1
+            StartDirection 0
+            CharWidth 600 0
+            EndDirection
+            StartCharMetrics 7
+            C 102 ; WX 333 ; N f ; B 20 0 383 682 ; L i fi ; L l fl ;
+            C 32;WX 250;N space;B 0 0 0 0;
+            N fi ; C -1 ; W0X 556 ; B 31 0 521 683.5 ;
+            CH <84AF> ; W 1000 -20 ; W1 0 -1000 ; VV 500 880 ; N kanji ;
+            C 65 ; WY 10 ; W1X 5 ; W1Y -900 ; N A ;
+            C 66 ; N f ; userKey value ;
+            C 67 ; N fixed ;
+            userLine without code
+            EndCharMetrics
+            EndFontMetrics
+            """);
+
+        Assert.HasCount(7, metrics.CharacterMetrics);
+        var f = metrics.CharacterMetrics[0];
+        Assert.Equal(102, f.Code);
+        Assert.Equal("f", f.Name);
+        Assert.Equal(new AfmVector(333, 0), f.Width);
+        Assert.Null(f.VerticalWidth);
+        Assert.Null(f.VVector);
+        Assert.Equal(new AfmBox(20, 0, 383, 682), f.BoundingBox);
+        Assert.Equal([new AfmLigature("i", "fi"), new AfmLigature("l", "fl")], f.Ligatures);
+
+        var space = metrics.GetCharacter("space");
+        Assert.NotNull(space);
+        Assert.Equal(32, space.Code);
+        Assert.Equal(new AfmVector(250, 0), space.Width);
+        Assert.Equal(new AfmBox(0, 0, 0, 0), space.BoundingBox);
+        Assert.Empty(space.Ligatures);
+
+        // An unencoded character has the code -1, and is found by its name only.
+        var ligature = metrics.GetCharacter("fi");
+        Assert.NotNull(ligature);
+        Assert.Equal(-1, ligature.Code);
+        Assert.Equal(new AfmVector(556, 0), ligature.Width);
+        Assert.Equal(new AfmBox(31, 0, 521, 683.5), ligature.BoundingBox);
+        Assert.Null(metrics.GetCharacterByCode(-1));
+
+        var kanji = metrics.GetCharacterByCode(0x84AF);
+        Assert.NotNull(kanji);
+        Assert.Equal("kanji", kanji.Name);
+        Assert.Equal(new AfmVector(1000, -20), kanji.Width);
+        Assert.Equal(new AfmVector(0, -1000), kanji.VerticalWidth);
+        Assert.Equal(new AfmVector(500, 880), kanji.VVector);
+
+        var a = metrics.GetCharacterByCode(65);
+        Assert.NotNull(a);
+        Assert.Equal(new AfmVector(0, 10), a.Width);
+        Assert.Equal(new AfmVector(5, -900), a.VerticalWidth);
+        Assert.Null(a.BoundingBox);
+
+        // A name that two characters have is the one of the first character; both are in the list.
+        Assert.Same(f, metrics.GetCharacter("f"));
+        Assert.Equal(66, metrics.CharacterMetrics[5].Code);
+        Assert.Same(metrics.CharacterMetrics[5], metrics.GetCharacterByCode(66));
+        Assert.Null(metrics.GetCharacter("missing"));
+        Assert.Null(metrics.GetCharacterByCode(1));
+
+        // A character without width has the width of its direction.
+        Assert.Null(metrics.CharacterMetrics[6].Width);
+        Assert.Equal(new AfmVector(600, 0), metrics.GetWidth("fixed"));
+        Assert.Equal(new AfmVector(333, 0), metrics.GetWidth(f));
+        Assert.Null(metrics.GetWidth("missing"));
+        Assert.Null(metrics.GetVerticalWidth("fixed"));
+        Assert.Equal(new AfmVector(0, -1000), metrics.GetVerticalWidth(kanji));
+        Assert.True(metrics.Horizontal?.IsFixedPitch);
+    }
+
+    [Fact]
+    public void AnAfmFileDescribesItsWritingDirections()
+    {
+        var both = AfmFontMetrics.Parse("""
+            StartFontMetrics 4.1
+            MetricsSets 2
+            VVector 500 880
+            StartDirection 0
+            ItalicAngle -12
+            UnderlinePosition -100
+            EndDirection
+            StartDirection 1
+            CharWidth 0 -1000
+            IsFixedPitch false
+            UnderlinePosition 400
+            EndDirection
+            EndFontMetrics
+            """);
+
+        Assert.Equal(2, both.MetricsSets);
+        Assert.Equal(new AfmVector(500, 880), both.VVector);
+        Assert.True(both.IsFixedV);
+        Assert.NotNull(both.Horizontal);
+        Assert.NotNull(both.Vertical);
+        Assert.Equal(-12, both.Horizontal.ItalicAngle);
+        Assert.Equal(-100, both.Horizontal.UnderlinePosition);
+        Assert.False(both.Horizontal.IsFixedPitch);
+        Assert.Null(both.Vertical.ItalicAngle);
+        Assert.Equal(400, both.Vertical.UnderlinePosition);
+        Assert.Equal(new AfmVector(0, -1000), both.Vertical.CharWidth);
+        Assert.False(both.Vertical.IsFixedPitch);
+
+        // StartDirection 2: both directions have the same metrics. IsFixedV can say that the vectors differ.
+        var same = AfmFontMetrics.Parse("""
+            StartFontMetrics 4.1
+            MetricsSets 2
+            VVector 500 880
+            IsFixedV false
+            StartDirection 2
+            CharWidth 1000 0
+            EndDirection
+            EndFontMetrics
+            """);
+        Assert.False(same.IsFixedV);
+        Assert.Equal(new AfmVector(1000, 0), same.Horizontal?.CharWidth);
+        Assert.Equal(new AfmVector(1000, 0), same.Vertical?.CharWidth);
+        Assert.True(same.Horizontal?.IsFixedPitch);
+        Assert.True(same.Vertical?.IsFixedPitch);
+
+        // The vertical font of section 11.3: direction 1 only.
+        var vertical = AfmFontMetrics.Parse("""
+            StartFontMetrics 3.0
+            MetricsSets 1
+            FontName Ryumin-Light-V
+            StartDirection 1
+            ItalicAngle 0
+            CharWidth 0 -1000
+            EndDirection
+            StartCharMetrics 2
+            CH <2121> ; B 0 0 0 0 ;
+            CH <2122> ; B 211 -337 435 -81 ;
+            EndCharMetrics
+            EndFontMetrics
+            """);
+        Assert.Equal(1, vertical.MetricsSets);
+        Assert.Null(vertical.Horizontal);
+        Assert.Equal(new AfmVector(0, -1000), vertical.Vertical?.CharWidth);
+        Assert.Equal(new AfmVector(0, -1000), vertical.GetVerticalWidth(vertical.GetCharacterByCode(0x2122)!));
+        Assert.Null(vertical.GetWidth(vertical.GetCharacterByCode(0x2121)!));
+    }
+
+    [Fact]
+    public void AnAfmFileGivesItsKerningAndItsCompositeCharacters()
+    {
+        var metrics = AfmFontMetrics.Parse("""
+            StartFontMetrics 4.1
+            StartCharMetrics 4
+            C 65 ; WX 722 ; N A ;
+            C 86 ; WX 722 ; N V ;
+            C 121 ; WX 500 ; N y ;
+            C 196 ; WX 333 ; N acute ;
+            EndCharMetrics
+            StartKernData
+            StartTrackKern 3
+            Comment Light kerning
+            TrackKern -1 14 0 72 -1.89
+            TrackKern -3 6 -.1 72 -3.78
+            TrackKern -1 1 1 2 2
+            EndTrackKern
+            StartKernPairs 6
+            KPX A V -129
+            KPY A y 12
+            KP V A -100 5
+            KPH <41> <79> -92 0
+            KPX A V -1
+            KPX A missing -40
+            EndKernPairs
+            StartKernPairs1 1
+            KPY A V -50
+            EndKernPairs
+            EndKernData
+            StartComposites 2
+            CC Aacute 2; PCC A 0 0; PCC acute 194 214;
+            CC Vacute 2 ; PCC V 0 0 ; PCC acute 194.5 -3 ;
+            EndComposites
+            EndFontMetrics
+            """);
+
+        // A pair given by names gets the codes of its characters, a pair given by codes (KPH) gets their names.
+        Assert.Equal(
+            [
+                new AfmKerningPair("A", "V", 65, 86, -129, 0),
+                new AfmKerningPair("A", "y", 65, 121, 0, 12),
+                new AfmKerningPair("V", "A", 86, 65, -100, 5),
+                new AfmKerningPair("A", "y", 65, 121, -92, 0),
+                new AfmKerningPair("A", "V", 65, 86, -1, 0),
+                new AfmKerningPair("A", "missing", 65, null, -40, 0),
+            ],
+            metrics.KerningPairs);
+
+        // When the file has a pair twice, the first one applies.
+        Assert.Equal(new AfmVector(-129, 0), metrics.GetKerning("A", "V"));
+        Assert.Equal(new AfmVector(-129, 0), metrics.GetKerning(65, 86));
+        Assert.Equal(new AfmVector(0, 12), metrics.GetKerning("A", "y"));
+        Assert.Equal(new AfmVector(-100, 5), metrics.GetKerning(86, 65));
+        Assert.Equal(new AfmVector(-40, 0), metrics.GetKerning("A", "missing"));
+        Assert.Equal(default, metrics.GetKerning("V", "y"));
+        Assert.Equal(default, metrics.GetKerning(1, 2));
+
+        Assert.Equal([new AfmKerningPair("A", "V", 65, 86, 0, -50)], metrics.VerticalKerningPairs);
+        Assert.Equal(new AfmVector(0, -50), metrics.GetVerticalKerning("A", "V"));
+        Assert.Equal(new AfmVector(0, -50), metrics.GetVerticalKerning(65, 86));
+        Assert.Equal(default, metrics.GetVerticalKerning("V", "A"));
+
+        // Section 9.1: constant below the minimum and above the maximum point size, linear in between.
+        Assert.Equal([new AfmTrackKerning(-1, 14, 0, 72, -1.89), new AfmTrackKerning(-3, 6, -0.1, 72, -3.78), new AfmTrackKerning(-1, 1, 1, 2, 2)], metrics.TrackKerning);
+        Assert.Equal(["Light kerning"], metrics.Comments);
+        Assert.Equal(0, metrics.GetTrackKerning(-1, 6));
+        Assert.Equal(0, metrics.GetTrackKerning(-1, 14));
+        Assert.Equal(-0.945, metrics.GetTrackKerning(-1, 43), 1e-12);
+        Assert.Equal(-1.89, metrics.GetTrackKerning(-1, 72));
+        Assert.Equal(-1.89, metrics.GetTrackKerning(-1, 100));
+        Assert.Equal(-0.1, metrics.GetTrackKerning(-3, 6));
+        Assert.Equal(-1.94, metrics.GetTrackKerning(-3, 39), 1e-12);
+        Assert.Equal(0, metrics.GetTrackKerning(-2, 12));
+        Assert.Equal(1, new AfmTrackKerning(0, 10, 1, 10, 2).GetKerning(10));
+        Assert.Equal(2, new AfmTrackKerning(0, 10, 1, 10, 2).GetKerning(11));
+
+        // Point sizes so close that the slope of the line is not a number.
+        Assert.Equal(0, new AfmTrackKerning(0, 0, -5, 1e-320, 5).GetKerning(5e-321), 1e-9);
+
+        Assert.HasCount(2, metrics.Composites);
+        Assert.Equal("Aacute", metrics.Composites[0].Name);
+        Assert.Equal([new AfmCompositePart("A", 0, 0), new AfmCompositePart("acute", 194, 214)], metrics.Composites[0].Parts);
+        Assert.Equal("Vacute", metrics.Composites[1].Name);
+        Assert.Equal([new AfmCompositePart("V", 0, 0), new AfmCompositePart("acute", 194.5, -3)], metrics.Composites[1].Parts);
+    }
+
+    [Fact]
+    public void KerningPairsOutsideKernDataAreRead()
+    {
+        // Section 9 puts the pairs and the tracks in StartKernData; some files have them directly in the file.
+        var metrics = AfmFontMetrics.Parse("""
+            StartFontMetrics 4.1
+            StartKernPairs 1
+            KPX A V -70
+            EndKernPairs
+            StartTrackKern 1
+            TrackKern 0 6 0 72 -1
+            EndTrackKern
+            EndFontMetrics
+            """);
+
+        Assert.Equal([new AfmKerningPair("A", "V", null, null, -70, 0)], metrics.KerningPairs);
+        Assert.Equal(new AfmVector(-70, 0), metrics.GetKerning("A", "V"));
+        Assert.Equal(-1, metrics.GetTrackKerning(0, 72));
+    }
+
+    [Theory]
+    [InlineData("", 1, "the file is empty.")]
+    [InlineData("FontName Sample\nEndFontMetrics", 1, "the file does not start with StartFontMetrics.")]
+    [InlineData("\nStartFontMetrics 4.1\nEndFontMetrics", 1, "the file does not start with StartFontMetrics.")]
+    [InlineData("StartFontMetrics\nEndFontMetrics", 1, "StartFontMetrics has no version.")]
+    [InlineData("StartFontMetrics 4.1\nFontName Sample", 2, "EndFontMetrics is missing.")]
+    [InlineData("StartFontMetrics 4.1\nStartCharMetrics 1\nC 32 ; WX 250 ;\nEndFontMetrics", 4, "EndFontMetrics is not expected in the StartCharMetrics section.")]
+    [InlineData("StartFontMetrics 4.1\nStartCharMetrics 1\nC 32 ; WX 250 ;", 3, "the StartCharMetrics section is not closed.")]
+    [InlineData("StartFontMetrics 4.1\nEndCharMetrics\nEndFontMetrics", 2, "EndCharMetrics is not expected in the StartFontMetrics section.")]
+    [InlineData("StartFontMetrics 4.1\nEndKernPairs\nEndFontMetrics", 2, "EndKernPairs is not expected in the StartFontMetrics section.")]
+    [InlineData("StartFontMetrics 4.1\nStartKernData\nStartCharMetrics 1\nEndCharMetrics\nEndKernData\nEndFontMetrics", 3, "StartCharMetrics is not expected in the StartKernData section.")]
+    [InlineData("StartFontMetrics 4.1\nStartDirection 0\nStartDirection 1\nEndDirection\nEndFontMetrics", 3, "StartDirection is not expected in the StartDirection section.")]
+    [InlineData("StartFontMetrics 4.1\nCapHeight abc\nEndFontMetrics", 2, "the value 'abc' of CapHeight is not a number in range.")]
+    [InlineData("StartFontMetrics 4.1\nCapHeight NaN\nEndFontMetrics", 2, "the value 'NaN' of CapHeight is not a number in range.")]
+    [InlineData("StartFontMetrics 4.1\nCapHeight Infinity\nEndFontMetrics", 2, "the value 'Infinity' of CapHeight is not a number in range.")]
+    [InlineData("StartFontMetrics 4.1\nCapHeight 1e30\nEndFontMetrics", 2, "the value '1e30' of CapHeight is not a number in range.")]
+    [InlineData("StartFontMetrics 4.1\nCapHeight 0x10\nEndFontMetrics", 2, "the value '0x10' of CapHeight is not a number in range.")]
+    [InlineData("StartFontMetrics 4.1\nFontBBox 1 2 3\nEndFontMetrics", 2, "FontBBox has fewer values than it needs.")]
+    [InlineData("StartFontMetrics 4.1\nCharacters 1.5\nEndFontMetrics", 2, "the value '1.5' of Characters is not an integer.")]
+    [InlineData("StartFontMetrics 4.1\nIsFixedPitch yes\nEndFontMetrics", 2, "the value 'yes' of IsFixedPitch is not true or false.")]
+    [InlineData("StartFontMetrics 4.1\nMetricsSets 3\nEndFontMetrics", 2, "MetricsSets is 3, which is not 0, 1 or 2.")]
+    [InlineData("StartFontMetrics 4.1\nStartDirection 3\nEndDirection\nEndFontMetrics", 2, "StartDirection has the direction 3, which is not 0, 1 or 2.")]
+    [InlineData("StartFontMetrics 4.1\nStartCharMetrics 1\nWX 250 ; N space ;\nEndCharMetrics\nEndFontMetrics", 3, "the metrics of a character have no code (C or CH).")]
+    [InlineData("StartFontMetrics 4.1\nStartCharMetrics 1\nCH 41 ;\nEndCharMetrics\nEndFontMetrics", 3, "the value '41' of CH is not a hexadecimal code between angle brackets.")]
+    [InlineData("StartFontMetrics 4.1\nStartCharMetrics 1\nCH <FFFFFFFF> ;\nEndCharMetrics\nEndFontMetrics", 3, "the value '<FFFFFFFF>' of CH is not a hexadecimal code between angle brackets.")]
+    [InlineData("StartFontMetrics 4.1\nStartCharMetrics 1\nCH <> ;\nEndCharMetrics\nEndFontMetrics", 3, "the value '<>' of CH is not a hexadecimal code between angle brackets.")]
+    [InlineData("StartFontMetrics 4.1\nStartCharMetrics 1\nC 65 ; L fi ;\nEndCharMetrics\nEndFontMetrics", 3, "L has fewer values than it needs.")]
+    [InlineData("StartFontMetrics 4.1\nStartKernPairs 1\nKPX A V\nEndKernPairs\nEndFontMetrics", 3, "KPX has fewer values than it needs.")]
+    [InlineData("StartFontMetrics 4.1\nStartTrackKern 1\nTrackKern -1 14 0 72\nEndTrackKern\nEndFontMetrics", 3, "TrackKern has fewer values than it needs.")]
+    [InlineData("StartFontMetrics 4.1\nStartComposites 1\nPCC A 0 0 ; CC Aacute 1 ;\nEndComposites\nEndFontMetrics", 3, "PCC comes before the CC key of its composite character.")]
+    [InlineData("StartFontMetrics 4.1\nStartCharMetrics 1\nC 65 ; N 01234567890123456789012345678901234567890123456789 ; WX wide0123456789012345678901234567890123456789 ;\nEndCharMetrics\nEndFontMetrics", 3, "the value 'wide0123456789012345678901234567...' of WX is not a number in range.")]
+    public void InvalidAfmFilesAreRejectedWithTheLineOfTheError(string text, int line, string message)
+    {
+        var exception = Assert.Throws<InvalidFontException>(() => AfmFontMetrics.Parse(text));
+
+        Assert.Equal($"The AFM file is invalid: line {line}: {message}", exception.Message);
+    }
+
+    [Theory]
+    [InlineData("StartMasterFontMetrics 4.0\nFontName MyriadMM\nEndMasterFontMetrics", "AMFM")]
+    [InlineData("StartCompFontMetrics 3.0\nFontName Ryumin-Light-V\nEndCompFontMetrics", "ACFM")]
+    public void MultipleMasterAndCompositeMetricsFilesAreNotSupported(string text, string feature)
+    {
+        var exception = Assert.Throws<UnsupportedFontFeatureException>(() => AfmFontMetrics.Parse(text));
+
+        Assert.Equal(feature, exception.Feature);
+    }
+
+    [Fact]
+    public void TheFontLoaderSaysThatAnAfmFileHasNoGlyphs()
+    {
+        var environment = new PooledFontEnvironment(FontResourceLimits.Default, 1024 * 1024);
+
+        var exception = Assert.Throws<UnknownFontFormatException>(() => FontLoader.Load("StartFontMetrics 4.1\nEndFontMetrics\n"u8, environment));
+
+        Assert.Equal("The data is not a font: it is an AFM file (Adobe Font Metrics), which has metrics but no glyphs. Read it with AfmFontMetrics.", exception.Message);
+        Assert.Contains("AfmFontMetrics", Assert.Throws<UnknownFontFormatException>(() => FontLoader.Load("StartMasterFontMetrics 4.0\n"u8, environment)).Message);
+    }
+
+    [Fact]
+    public void TheAfmFilesOfTheStandardFontsAreRead()
+    {
+        var directory = FixtureRoot.GetDirectory() / "font-suites" / "adobe-core14-afm";
+        var files = Directory.EnumerateFiles(directory, "*.afm").Order(StringComparer.Ordinal).ToList();
+        Assert.HasCount(14, files);
+
+        var fonts = new Dictionary<string, AfmFontMetrics>(StringComparer.Ordinal);
+        foreach (var file in files)
+        {
+            var text = File.ReadAllText(file, Encoding.Latin1);
+            AfmFontMetrics metrics;
+            using (var stream = File.OpenRead(file))
+            {
+                metrics = AfmFontMetrics.Load(stream);
+            }
+
+            fonts.Add(Path.GetFileNameWithoutExtension(file), metrics);
+            Assert.Equal("4.1", metrics.FormatVersion);
+            Assert.Equal(Path.GetFileNameWithoutExtension(file), metrics.FontName);
+            Assert.NotNull(metrics.FontBBox);
+            Assert.NotNull(metrics.Horizontal);
+            Assert.Null(metrics.Vertical);
+
+            // The counts the file announces are the entries it has.
+            Assert.HasCount(GetAnnouncedCount(text, "StartCharMetrics"), metrics.CharacterMetrics);
+            Assert.HasCount(GetAnnouncedCount(text, "StartKernPairs"), metrics.KerningPairs);
+            Assert.All(metrics.CharacterMetrics, character =>
+            {
+                Assert.NotNull(character.Name);
+                Assert.NotNull(character.Width);
+                Assert.NotNull(character.BoundingBox);
+                Assert.Same(character, metrics.GetCharacter(character.Name));
+            });
+            Assert.All(metrics.KerningPairs, pair => Assert.True(pair.First is not null && pair.Second is not null && metrics.GetCharacter(pair.First) is not null && metrics.GetCharacter(pair.Second) is not null));
+        }
+
+        var helvetica = fonts["Helvetica"];
+        Assert.Equal("Helvetica", helvetica.FamilyName);
+        Assert.Equal("Medium", helvetica.Weight);
+        Assert.Equal("002.000", helvetica.Version);
+        Assert.Equal("AdobeStandardEncoding", helvetica.EncodingScheme);
+        Assert.Equal("ExtendedRoman", helvetica.CharacterSet);
+        Assert.Equal(new AfmBox(-166, -225, 1000, 931), helvetica.FontBBox);
+        Assert.Equal(718, helvetica.CapHeight);
+        Assert.Equal(523, helvetica.XHeight);
+        Assert.Equal(-207, helvetica.Descender);
+        Assert.Equal(88, helvetica.StdVW);
+        Assert.Equal(-100, helvetica.Horizontal?.UnderlinePosition);
+        Assert.Equal(50, helvetica.Horizontal?.UnderlineThickness);
+        Assert.Equal(0, helvetica.Horizontal?.ItalicAngle);
+        Assert.False(helvetica.Horizontal?.IsFixedPitch);
+        Assert.Contains("Helvetica is a trademark of Linotype-Hell AG", helvetica.Notice);
+        Assert.Equal(new AfmVector(667, 0), helvetica.GetWidth("A"));
+        Assert.Equal(new AfmVector(278, 0), helvetica.GetCharacterByCode(32)?.Width);
+        Assert.Equal([new AfmLigature("i", "fi"), new AfmLigature("l", "fl")], helvetica.GetCharacter("f")?.Ligatures);
+        Assert.Equal(new AfmBox(13, 0, 266, 901), helvetica.GetCharacter("Idieresis")?.BoundingBox);
+        Assert.Equal(-1, helvetica.GetCharacter("Idieresis")?.Code);
+        Assert.Equal(new AfmVector(-70, 0), helvetica.GetKerning("A", "V"));
+        Assert.Equal(new AfmVector(-120, 0), helvetica.GetKerning("T", "o"));
+        Assert.Equal(new AfmVector(-70, 0), helvetica.GetKerning(65, 86));
+
+        Assert.True(fonts["Courier"].Horizontal?.IsFixedPitch);
+        Assert.Equal(new AfmBox(-23, -250, 715, 805), fonts["Courier"].FontBBox);
+        Assert.All(fonts["Courier"].CharacterMetrics, character => Assert.Equal(new AfmVector(600, 0), character.Width));
+        Assert.Equal(new AfmBox(-168, -218, 1000, 898), fonts["Times-Roman"].FontBBox);
+        Assert.Equal(450, fonts["Times-Roman"].XHeight);
+        Assert.Equal("FontSpecific", fonts["Symbol"].EncodingScheme);
+        Assert.Equal("Special", fonts["Symbol"].CharacterSet);
+        Assert.Equal("alpha", fonts["Symbol"].GetCharacterByCode(97)?.Name);
+        Assert.Equal(new AfmVector(631, 0), fonts["Symbol"].GetWidth("alpha"));
+        Assert.HasCount(202, fonts["ZapfDingbats"].CharacterMetrics);
+
+        static int GetAnnouncedCount(string text, string key)
+        {
+            var line = text.Split("\r\n").SingleOrDefault(line => line.StartsWith(key + " ", StringComparison.Ordinal));
+            return line is null ? 0 : int.Parse(line.AsSpan(key.Length + 1), CultureInfo.InvariantCulture);
+        }
+    }
+
+    [Fact]
+    public void AfmFontMetricsMeasureText()
+    {
+        #region AfmFontMetrics_Load
+        // An AFM file gives the metrics of a PostScript font without its glyphs, here two characters of Helvetica.
+        var metrics = AfmFontMetrics.Parse("""
+            StartFontMetrics 4.1
+            FontName Helvetica
+            StartCharMetrics 2
+            C 65 ; WX 667 ; N A ; B 14 0 654 718 ;
+            C 86 ; WX 667 ; N V ; B 20 0 647 718 ;
+            EndCharMetrics
+            StartKernData
+            StartKernPairs 1
+            KPX A V -70
+            EndKernPairs
+            EndKernData
+            EndFontMetrics
+            """);
+
+        // The metrics are in 1/1000 of the point size: the width of "AV" at 12 points, with its kerning.
+        var units = metrics.GetWidth("A")!.Value.X + metrics.GetKerning("A", "V").X + metrics.GetWidth("V")!.Value.X;
+        var width = units * 12 / 1000;
+        Assert.Equal(15.168, width);
+        #endregion
+    }
+
     private static byte[] WriteNameTable(params (int Platform, int Encoding, int Language, int Id, string Value)[] records)
     {
         var header = new List<byte>();

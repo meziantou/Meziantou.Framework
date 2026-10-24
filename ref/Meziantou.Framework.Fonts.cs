@@ -4,6 +4,202 @@
 
 namespace Meziantou.Framework.Fonts
 {
+    public readonly struct AfmBox : System.IEquatable<Meziantou.Framework.Fonts.AfmBox>
+    {
+        public double Bottom { get => throw null; init { } }
+        public double Left { get => throw null; init { } }
+        public double Right { get => throw null; init { } }
+        public double Top { get => throw null; init { } }
+        public AfmBox(double Left, double Bottom, double Right, double Top) { }
+        public void Deconstruct(out double Left, out double Bottom, out double Right, out double Top) => throw null;
+        public bool Equals(Meziantou.Framework.Fonts.AfmBox other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.Fonts.AfmBox left, Meziantou.Framework.Fonts.AfmBox right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Fonts.AfmBox left, Meziantou.Framework.Fonts.AfmBox right) => throw null;
+    }
+
+    public sealed class AfmCharacterMetrics
+    {
+        public Meziantou.Framework.Fonts.AfmBox? BoundingBox { get => throw null; }
+        public int Code { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Fonts.AfmLigature> Ligatures { get => throw null; }
+        public string? Name { get => throw null; }
+        public Meziantou.Framework.Fonts.AfmVector? VVector { get => throw null; }
+        public Meziantou.Framework.Fonts.AfmVector? VerticalWidth { get => throw null; }
+        public Meziantou.Framework.Fonts.AfmVector? Width { get => throw null; }
+    }
+
+    public sealed class AfmCompositeCharacter
+    {
+        public string Name { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Fonts.AfmCompositePart> Parts { get => throw null; }
+    }
+
+    public readonly struct AfmCompositePart : System.IEquatable<Meziantou.Framework.Fonts.AfmCompositePart>
+    {
+        public double DeltaX { get => throw null; init { } }
+        public double DeltaY { get => throw null; init { } }
+        public string Name { get => throw null; init { } }
+        public AfmCompositePart(string Name, double DeltaX, double DeltaY) { }
+        public void Deconstruct(out string Name, out double DeltaX, out double DeltaY) => throw null;
+        public bool Equals(Meziantou.Framework.Fonts.AfmCompositePart other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.Fonts.AfmCompositePart left, Meziantou.Framework.Fonts.AfmCompositePart right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Fonts.AfmCompositePart left, Meziantou.Framework.Fonts.AfmCompositePart right) => throw null;
+    }
+
+    public sealed class AfmFontMetrics
+    {
+        public double? Ascender { get => throw null; }
+        public double? CapHeight { get => throw null; }
+        public int? CharacterCount { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Fonts.AfmCharacterMetrics> CharacterMetrics { get => throw null; }
+        public string? CharacterSet { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> Comments { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Fonts.AfmCompositeCharacter> Composites { get => throw null; }
+        public double? Descender { get => throw null; }
+        public string? EncodingScheme { get => throw null; }
+        public int? EscChar { get => throw null; }
+        public string? FamilyName { get => throw null; }
+        public Meziantou.Framework.Fonts.AfmBox? FontBBox { get => throw null; }
+        public string? FontName { get => throw null; }
+        public string FormatVersion { get => throw null; }
+        public string? FullName { get => throw null; }
+        public Meziantou.Framework.Fonts.AfmWritingDirection? Horizontal { get => throw null; }
+        public bool IsBaseFont { get => throw null; }
+        public bool IsCIDFont { get => throw null; }
+        public bool IsFixedV { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Fonts.AfmKerningPair> KerningPairs { get => throw null; }
+        public int? MappingScheme { get => throw null; }
+        public int MetricsSets { get => throw null; }
+        public string? Notice { get => throw null; }
+        public double? StdHW { get => throw null; }
+        public double? StdVW { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Fonts.AfmTrackKerning> TrackKerning { get => throw null; }
+        public Meziantou.Framework.Fonts.AfmVector? VVector { get => throw null; }
+        public string? Version { get => throw null; }
+        public Meziantou.Framework.Fonts.AfmWritingDirection? Vertical { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Fonts.AfmKerningPair> VerticalKerningPairs { get => throw null; }
+        public string? Weight { get => throw null; }
+        public double? XHeight { get => throw null; }
+        public Meziantou.Framework.Fonts.AfmCharacterMetrics? GetCharacter(string name) => throw null;
+        public Meziantou.Framework.Fonts.AfmCharacterMetrics? GetCharacterByCode(int code) => throw null;
+        public Meziantou.Framework.Fonts.AfmVector GetKerning(int firstCode, int secondCode) => throw null;
+        public Meziantou.Framework.Fonts.AfmVector GetKerning(string first, string second) => throw null;
+        public double GetTrackKerning(int degree, double pointSize) => throw null;
+        public Meziantou.Framework.Fonts.AfmVector GetVerticalKerning(int firstCode, int secondCode) => throw null;
+        public Meziantou.Framework.Fonts.AfmVector GetVerticalKerning(string first, string second) => throw null;
+        public Meziantou.Framework.Fonts.AfmVector? GetVerticalWidth(Meziantou.Framework.Fonts.AfmCharacterMetrics character) => throw null;
+        public Meziantou.Framework.Fonts.AfmVector? GetVerticalWidth(string name) => throw null;
+        public Meziantou.Framework.Fonts.AfmVector? GetWidth(Meziantou.Framework.Fonts.AfmCharacterMetrics character) => throw null;
+        public Meziantou.Framework.Fonts.AfmVector? GetWidth(string name) => throw null;
+        public static Meziantou.Framework.Fonts.AfmFontMetrics Load(System.IO.Stream stream, Meziantou.Framework.Fonts.FontResourceLimits? limits = null) => throw null;
+        public static Meziantou.Framework.Fonts.AfmFontMetrics Load(System.ReadOnlySpan<byte> data, Meziantou.Framework.Fonts.FontResourceLimits? limits = null) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Fonts.AfmFontMetrics> LoadAsync(System.IO.Stream stream, Meziantou.Framework.Fonts.FontResourceLimits? limits = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static Meziantou.Framework.Fonts.AfmFontMetrics Parse(System.ReadOnlySpan<char> text) => throw null;
+    }
+
+    public readonly struct AfmKerningPair : System.IEquatable<Meziantou.Framework.Fonts.AfmKerningPair>
+    {
+        public string? First { get => throw null; init { } }
+        public int? FirstCode { get => throw null; init { } }
+        public string? Second { get => throw null; init { } }
+        public int? SecondCode { get => throw null; init { } }
+        public double X { get => throw null; init { } }
+        public double Y { get => throw null; init { } }
+        public AfmKerningPair(string? First, string? Second, int? FirstCode, int? SecondCode, double X, double Y) { }
+        public void Deconstruct(out string? First, out string? Second, out int? FirstCode, out int? SecondCode, out double X, out double Y) => throw null;
+        public bool Equals(Meziantou.Framework.Fonts.AfmKerningPair other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.Fonts.AfmKerningPair left, Meziantou.Framework.Fonts.AfmKerningPair right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Fonts.AfmKerningPair left, Meziantou.Framework.Fonts.AfmKerningPair right) => throw null;
+    }
+
+    public readonly struct AfmLigature : System.IEquatable<Meziantou.Framework.Fonts.AfmLigature>
+    {
+        public string Ligature { get => throw null; init { } }
+        public string Successor { get => throw null; init { } }
+        public AfmLigature(string Successor, string Ligature) { }
+        public void Deconstruct(out string Successor, out string Ligature) => throw null;
+        public bool Equals(Meziantou.Framework.Fonts.AfmLigature other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.Fonts.AfmLigature left, Meziantou.Framework.Fonts.AfmLigature right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Fonts.AfmLigature left, Meziantou.Framework.Fonts.AfmLigature right) => throw null;
+    }
+
+    public readonly struct AfmTrackKerning : System.IEquatable<Meziantou.Framework.Fonts.AfmTrackKerning>
+    {
+        public int Degree { get => throw null; init { } }
+        public double MaxKern { get => throw null; init { } }
+        public double MaxPointSize { get => throw null; init { } }
+        public double MinKern { get => throw null; init { } }
+        public double MinPointSize { get => throw null; init { } }
+        public AfmTrackKerning(int Degree, double MinPointSize, double MinKern, double MaxPointSize, double MaxKern) { }
+        public void Deconstruct(out int Degree, out double MinPointSize, out double MinKern, out double MaxPointSize, out double MaxKern) => throw null;
+        public bool Equals(Meziantou.Framework.Fonts.AfmTrackKerning other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        public double GetKerning(double pointSize) => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.Fonts.AfmTrackKerning left, Meziantou.Framework.Fonts.AfmTrackKerning right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Fonts.AfmTrackKerning left, Meziantou.Framework.Fonts.AfmTrackKerning right) => throw null;
+    }
+
+    public readonly struct AfmVector : System.IEquatable<Meziantou.Framework.Fonts.AfmVector>
+    {
+        public double X { get => throw null; init { } }
+        public double Y { get => throw null; init { } }
+        public AfmVector(double X, double Y) { }
+        public void Deconstruct(out double X, out double Y) => throw null;
+        public bool Equals(Meziantou.Framework.Fonts.AfmVector other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.Fonts.AfmVector left, Meziantou.Framework.Fonts.AfmVector right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Fonts.AfmVector left, Meziantou.Framework.Fonts.AfmVector right) => throw null;
+    }
+
+    public sealed class AfmWritingDirection
+    {
+        public Meziantou.Framework.Fonts.AfmVector? CharWidth { get => throw null; }
+        public bool IsFixedPitch { get => throw null; }
+        public double? ItalicAngle { get => throw null; }
+        public double? UnderlinePosition { get => throw null; }
+        public double? UnderlineThickness { get => throw null; }
+    }
+
     public readonly struct BitmapGlyph : System.IEquatable<Meziantou.Framework.Fonts.BitmapGlyph>
     {
         public int? Bottom { get => throw null; init { } }

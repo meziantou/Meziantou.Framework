@@ -2756,12 +2756,16 @@ internal sealed partial class StyleEngine
     /// specificity of the rule of the hidden attribute, "[hidden]:not([hidden=until-found i]):not(embed) { display: none }",
     /// which otherwise wins against the rules of the specification that are meant to override it. The boxes of the parts of
     /// the form controls (see <see cref="Layout.FormControlContents"/>) are blocks, and the button of a file upload control an
-    /// inline-block that does not wrap.
+    /// inline-block that does not wrap. The summary that the user agent provides for a details element without summary child,
+    /// in its user agent shadow tree (see <see cref="HtmlDetailsElement.ImplicitSummary"/>), has the style of the summary of a
+    /// details element ("details &gt; summary:first-of-type").
     /// </summary>
     private const string SupplementalStyleSheet = """
         textarea { display: inline-block; overflow-wrap: break-word; }
         details::details-content { display: block; }
         details:not([open])::details-content { content-visibility: hidden; }
+        :host(details) > summary { display: list-item; counter-increment: list-item 0; list-style: disclosure-closed inside; }
+        :host(details[open]) > summary { list-style-type: disclosure-open; }
         img, video, canvas { overflow: clip; }
         iframe, embed, object { overflow: clip !important; overflow-clip-margin: content-box !important; }
         ::backdrop { position: fixed; inset: 0; }

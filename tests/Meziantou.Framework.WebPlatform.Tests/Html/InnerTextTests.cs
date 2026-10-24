@@ -30,6 +30,7 @@ public sealed class InnerTextTests : IDisposable
     [InlineData("<table id=target><tr><td>a<td>b<tr><td>c<td>d</table>", "a\tb\nc\td")]
     [InlineData("<div id=target><select><option>a<option>b</select></div>", "a\nb")]
     [InlineData("<div id=target><details><summary>a</summary>b</details></div>", "a")]
+    [InlineData("<div id=target><details open>b</details></div>", "b")]
     public void InnerText_RenderedText(string html, string expected) => Assert.Equal(expected, GetInnerText(html));
 
     [Fact]

@@ -681,8 +681,10 @@ internal static class EventDispatcher
             ScrollControlActions.Activate(activatedScrollControl, byKeyboard: false);
         }
 
-        // The default actions of the user agent for the trusted events of the user interactions (focus, sequential navigation)
-        if (@event.IsTrusted && @event is MouseEvent or KeyboardEvent && target is Node defaultActionTarget)
+        // The default actions of the user agent for the trusted events of the user interactions (focus, sequential navigation),
+        // for the target of the event in its own tree (not retargeted out of its shadow trees: e.g. a press on a button in a
+        // shadow tree focuses the button)
+        if (@event.IsTrusted && @event is MouseEvent or KeyboardEvent && originalTarget is Node defaultActionTarget)
         {
             UserAgentDefaultActions.Run(@event, defaultActionTarget, @event.CanceledFlag);
         }

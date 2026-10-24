@@ -207,6 +207,32 @@ public sealed class UserInputTests : IDisposable
     }
 
     [Fact]
+    public void Mouse_ClickOnTheSummaryOfTheUserAgentTogglesTheDetails()
+    {
+        var document = Load("<details id=d>content</details>");
+        var details = (HtmlDetailsElement)document.GetElementById("d")!;
+        var events = Log(document, "pointerdown", "mousedown", "focusin", "click");
+        Assert.Same(details, document.ElementFromPoint(5, 5));
+        var mouse = document.BrowsingContext!.Input.Mouse;
+        mouse.Move(5, 5);
+        mouse.Down();
+        mouse.Up();
+
+        // The press focuses the summary, and the click toggles the details element (the events are retargeted to it)
+        Assert.Equal(["pointerdown@d", "mousedown@d", "focusin@d", "click@d"], events);
+        Assert.True(details.Open);
+        Assert.Same(details, document.ActiveElement);
+
+        // A press on the contents of the details element does not toggle it
+        _contexts.EventLoop.RunUntilIdle();
+        mouse.Move(5, details.GetBoundingClientRect().Bottom - 5);
+        mouse.Down();
+        mouse.Up();
+        Assert.True(details.Open);
+        Assert.Same(document.Body, document.ActiveElement);
+    }
+
+    [Fact]
     public void Slider_DragSetsTheValue()
     {
         var document = Load("<input id=range type=range min=0 max=10 value=5 style='width: 116px; margin: 0; padding: 0; border: 0'>");

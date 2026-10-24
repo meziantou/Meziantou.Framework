@@ -124,6 +124,9 @@ public sealed class StringBuiltinsTests
         Assert.Equal("1abcab", context.CallPrototype("String", "padEnd", "1", 6, "abc").AsString());
         Assert.Equal("    1", context.CallPrototype("String", "padStart", "1", 5).AsString());
         Assert.Equal("1", context.CallPrototype("String", "padStart", "1", 5, "").AsString());
+        Assert.Equal("abcabc", context.CallPrototype("String", "padStart", "", 6, "abc").AsString());
+        Assert.Equal("xyzab", context.CallPrototype("String", "padEnd", "xyz", 5, "abc").AsString());
+        Assert.Equal("xyz", context.CallPrototype("String", "padEnd", "xyz", 2, "abc").AsString());
         context.AssertThrows("RangeError", () => context.CallPrototype("String", "padStart", "1", double.PositiveInfinity, "a"));
 
         Assert.Equal("ababab", context.CallPrototype("String", "repeat", "ab", 3).AsString());

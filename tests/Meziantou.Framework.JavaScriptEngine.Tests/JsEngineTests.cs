@@ -509,6 +509,18 @@ public sealed class JsEngineTests
             Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
         }
 
+        // A single allocation larger than the limit stops the script before it is made
+        using (var engine = new JsEngine(new JsEngineOptions { MemoryLimit = 1024 * 1024 }))
+        {
+            var realm = engine.CreateRealm();
+            Assert.Equal(1000, realm.Execute("'abc'.padStart(1000).length").AsNumber());
+            foreach (var code in new[] { "'abc'.padStart(933886059)", "'abc'.padEnd(933886059, 'xy')", "'abc'.repeat(300000000)", "try { 'a'.repeat(1e9) } catch { }" })
+            {
+                var exception = Assert.Throws<JsTerminationException>(() => realm.Execute(code));
+                Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
+            }
+        }
+
         using var cancellation = new CancellationTokenSource();
         using (var engine = new JsEngine(new JsEngineOptions { CancellationToken = cancellation.Token }))
         {

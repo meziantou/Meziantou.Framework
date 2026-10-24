@@ -154,6 +154,17 @@ public sealed partial class JsEngine
             throw new JsTerminationException(JsTerminationReason.StatementLimit, "The script exceeded its statement limit");
     }
 
+    /// <summary>
+    /// Throws a <see cref="JsTerminationException"/> when allocating <paramref name="byteCount"/> more bytes would exceed
+    /// <see cref="JsEngineOptions.MemoryLimit"/>. The limit is otherwise checked after the allocations, so a single large
+    /// allocation (a string whose length the script chooses) must be checked before it is made.
+    /// </summary>
+    internal void EnsureCanAllocate(long byteCount)
+    {
+        if (Options.MemoryLimit is { } memoryLimit && IsScriptRunning && GC.GetAllocatedBytesForCurrentThread() - _executionStartAllocatedBytes + byteCount > memoryLimit)
+            throw new JsTerminationException(JsTerminationReason.MemoryLimit, "The script exceeded its memory limit");
+    }
+
     internal string? HostGetCodeForEval(JsValue argument) => HostHooks.GetCodeForEval(this, argument);
 
     internal void HostEnsureCanCompileStrings(JsRealm realm, IReadOnlyList<string> parameterStrings, string bodyString, string codeString, JsCompilationType compilationType, IReadOnlyList<JsValue> parameterArgs, JsValue bodyArg)

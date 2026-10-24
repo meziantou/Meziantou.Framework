@@ -2671,7 +2671,9 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
   content before them fits). A break at the end of the empty block size of an in-flow box is
   the break after the box: it is not possible when the flow has a class A or C break there (which has its own rules, e.g.
   `break-before: avoid` on the next sibling); a break that violates no rule but is beside a box with `break-inside: avoid`
-  (overflowing content, a float) violates that rule. As in Blink:
+  (overflowing content, a float) violates that rule. A break between two children of a table wrapper box (the captions
+  and the table grid box) does not stretch the boxes broken there: as in Blink, they end with the content before the
+  break (`BreakCandidate.EndsWithContent`). As in Blink:
   - When only breaks that violate a rule fit, the ones inside fewer boxes with `break-inside: avoid` are preferred
     (`BreakCandidate.AvoidDepth`; as in the browsers, a break outside of the innermost avoided box).
   - Several breaks may be at the same position (before and after a box without block size): the candidates and such boxes are
@@ -3021,8 +3023,7 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
   column spanner interrupts, the block size of a table row when the monolithic contents of a cell overflow a
   fragmentainer (the row is as tall as in the strip, where the overflow counts: the percentages of the other cells resolve
   against it), the gap of a row flex container after a forced break (it disappears, where Blink keeps a part of it), the
-  margin of a table caption that follows a caption
-  without block size after a break (it is not truncated), the items that follow, before the position of the break, an
+  items that follow, before the position of the break, an
   item placed after a forced break although it overlaps the previous one, a column flex item that is as tall as its
   contents once fragmented in a multi-line container, the stitched scrollable
   overflow of a fragmented box (`scrollWidth`/`scrollHeight` use its first fragment), `column-span: <integer>`.

@@ -6,7 +6,9 @@ An ECMAScript engine written in .NET: a hand-written parser, a bytecode compiler
 [Web Tooling Benchmark](../../tests/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark/readme.md) (babel,
 TypeScript, prettier, terser... give the same results as in Node.js). It implements ECMAScript
 2025 (including the proper tail calls of strict code), ECMA-402 (`Intl`) and `Temporal`, the stage 3 proposals
-`import defer`, source phase imports (the module sources are given by the host),
+[decorators](https://github.com/tc39/proposal-decorators) (with the `accessor` fields and the
+[metadata](https://github.com/tc39/proposal-decorator-metadata) of `Symbol.metadata`), `import defer`, source phase
+imports (the module sources are given by the host),
 [immutable `ArrayBuffer`](https://github.com/tc39/proposal-immutable-arraybuffer) (`transferToImmutable`,
 `sliceToImmutable`), Await Dictionary (`Promise.allKeyed` and `Promise.allSettledKeyed`) and Non-extensible Applies to
 Private (a private field or method cannot be added to a non-extensible object), and the `ShadowRealm`,

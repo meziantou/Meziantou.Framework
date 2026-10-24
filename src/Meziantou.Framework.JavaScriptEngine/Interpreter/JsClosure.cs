@@ -64,6 +64,13 @@ internal sealed class JsClosure : JsFunction
         set => (_classData ??= new()).PrivateMethods = value;
     }
 
+    /// <summary>Gets or sets the [[Initializers]] of a class constructor: the functions added by the decorators of the instance methods with addInitializer.</summary>
+    public List<JsValue>? Initializers
+    {
+        get => _classData?.Initializers;
+        set => (_classData ??= new()).Initializers = value;
+    }
+
     /// <summary>Gets whether the function is the constructor of a class with an extends clause ([[ConstructorKind]] derived).</summary>
     public bool IsDerivedConstructor => ClassDefinition is not null ? ClassDefinition.HasHeritage : Template.IsDerivedConstructor;
 
@@ -103,4 +110,6 @@ internal sealed class ClassConstructorData
     public JsClosure? FieldInitializer { get; set; }
 
     public List<PrivateMethodRecord>? PrivateMethods { get; set; }
+
+    public List<JsValue>? Initializers { get; set; }
 }

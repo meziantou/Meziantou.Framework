@@ -9,21 +9,33 @@ internal sealed partial class CodeGenerator
     {
         _builder.SetPosition(node.Start);
 
+        // The decorators of the class are evaluated first, in the enclosing scope (and in the strictness of the enclosing code)
+        var classDecoration = -1;
+        if (node.HasDecorators())
+        {
+            classDecoration = _function.AllocateRegister();
+            _builder.Emit(OpCode.CreateClassDecoration);
+            EmitDecorators(node.Decorators);
+            _builder.Emit(OpCode.StoreLocal, classDecoration);
+        }
+
         // All parts of a class are strict: the heritage and the computed keys run as strict code in sloppy code too
         if (!_function.IsStrict && _classStrictDepth++ == 0)
         {
             _builder.Emit(OpCode.EnterStrictCode);
         }
 
-        EmitClassDefinition(node, name);
+        EmitClassDefinition(node, name, classDecoration);
         if (!_function.IsStrict && --_classStrictDepth == 0)
         {
             _builder.Emit(OpCode.ExitStrictCode);
         }
     }
 
-    private void EmitClassDefinition(ClassNode node, string name)
+    /// <summary>The class definition; <paramref name="classDecoration"/> is the register of the decoration state of a decorated class, else -1.</summary>
+    private void EmitClassDefinition(ClassNode node, string name, int classDecoration)
     {
+        var isDecorated = classDecoration >= 0;
         var outerScope = _scope;
         var classScope = _analysis.Scopes[node];
         EnterScope(classScope);
@@ -74,8 +86,20 @@ internal sealed partial class CodeGenerator
             {
                 case MethodDefinition { Kind: MethodKind.Constructor }:
                     break;
+                case MethodDefinition method when isDecorated:
+                    EmitDecoratedClassMethod(method, method.Static ? constructor : prototype);
+                    break;
                 case MethodDefinition method:
                     EmitClassMethod(method, method.Static ? constructor : prototype, constructor);
+                    break;
+                case PropertyDefinition { IsAccessor: true } accessor:
+                    EmitAutoAccessorDefinition(accessor, accessor.Static ? constructor : prototype, constructor, isDecorated);
+                    break;
+                case PropertyDefinition field when field.Decorators is not null:
+                    EmitCreateElementDecoration(field, DecoratedElementKind.Field, field.Static ? constructor : prototype);
+                    EmitLoadVariable(_analysis.GetElementDecoration(field), checkTdz: false);
+                    EmitClassElementKey(field.Key, field.Computed, field.Computed ? _analysis.GetComputedFieldKey(field) : null);
+                    _builder.Emit(OpCode.SetDecoratedKey);
                     break;
                 case PropertyDefinition { Computed: true } field:
                     // The computed keys of the fields are evaluated now, in order
@@ -86,6 +110,16 @@ internal sealed partial class CodeGenerator
             }
         }
 
+        var instanceInitializer = _analysis.GetClassInitializer(node, isStatic: false);
+        var staticInitializer = _analysis.GetClassInitializer(node, isStatic: true);
+        if (isDecorated)
+        {
+            EmitDecoratedClassEnd(node, name, classDecoration, constructor, classScope, instanceInitializer, staticInitializer);
+            ExitScope(classScope);
+            _scope = outerScope;
+            return;
+        }
+
         // The inner binding of the class name is initialized before the static elements run
         if (node.Id is not null && classScope.Find(node.Id.Name) is { } nameVariable)
         {
@@ -94,7 +128,7 @@ internal sealed partial class CodeGenerator
         }
 
         // The instance fields: an initializer function called by InitializeInstanceElements
-        if (_analysis.GetClassInitializer(node, isStatic: false) is { } instanceInitializer)
+        if (instanceInitializer is not null)
         {
             _builder.Emit(OpCode.LoadLocal, constructor);
             _builder.Emit(OpCode.CreateClosure, _builder.AddObject(CompileClassInitializer(node, instanceInitializer, isStatic: false)));
@@ -102,7 +136,7 @@ internal sealed partial class CodeGenerator
         }
 
         // The static fields and blocks, in order, with the class as this
-        if (_analysis.GetClassInitializer(node, isStatic: true) is { } staticInitializer)
+        if (staticInitializer is not null)
         {
             _builder.Emit(OpCode.LoadLocal, constructor);
             _builder.Emit(OpCode.CreateClosure, _builder.AddObject(CompileClassInitializer(node, staticInitializer, isStatic: true)));
@@ -112,6 +146,190 @@ internal sealed partial class CodeGenerator
         _builder.Emit(OpCode.LoadLocal, constructor);
         ExitScope(classScope);
         _scope = outerScope;
+    }
+
+    /// <summary>
+    /// The end of the definition of a decorated class: the decorators of the elements are applied (the elements that are
+    /// not fields are defined then), then the decorators of the class; the static elements run with the decorated class as
+    /// this. The decorated class is on the stack.
+    /// </summary>
+    private void EmitDecoratedClassEnd(ClassNode node, string name, int classDecoration, int constructor, Scope classScope, FunctionInfo? instanceInitializer, FunctionInfo? staticInitializer)
+    {
+        _builder.SetPosition(node.Start);
+        _builder.Emit(OpCode.LoadLocal, classDecoration);
+        _builder.Emit(OpCode.LoadLocal, constructor);
+        _builder.Emit(OpCode.BeginClassDecoration);
+
+        // The static elements that are not fields, the instance ones, then the static fields and the instance fields
+        EmitApplyElementDecorators(node, classDecoration, isStatic: true, fields: false);
+        EmitApplyElementDecorators(node, classDecoration, isStatic: false, fields: false);
+        EmitApplyElementDecorators(node, classDecoration, isStatic: true, fields: true);
+        EmitApplyElementDecorators(node, classDecoration, isStatic: false, fields: true);
+
+        // The instance elements are set before the class decorators run: they can create instances
+        if (instanceInitializer is not null)
+        {
+            _builder.Emit(OpCode.LoadLocal, constructor);
+            _builder.Emit(OpCode.CreateClosure, _builder.AddObject(CompileClassInitializer(node, instanceInitializer, isStatic: false)));
+            _builder.Emit(OpCode.SetFieldInitializer);
+        }
+
+        _builder.SetPosition(node.Start);
+        _builder.Emit(OpCode.LoadLocal, classDecoration);
+        _builder.Emit(OpCode.ApplyClassDecorators, _builder.AddConstant(name));
+        var result = _function.AllocateRegister();
+        _builder.Emit(OpCode.StoreLocal, result);
+
+        // The inner binding of the class name is the decorated class
+        if (node.Id is not null && classScope.Find(node.Id.Name) is { } nameVariable)
+        {
+            _builder.Emit(OpCode.LoadLocal, result);
+            EmitInitializeVariable(nameVariable);
+        }
+
+        _builder.Emit(OpCode.LoadLocal, classDecoration);
+        _builder.Emit(OpCode.RunClassDecorationInitializers, 0);
+
+        // The static fields and blocks, in order, with the decorated class as this (their home object is the class)
+        if (staticInitializer is not null)
+        {
+            _builder.Emit(OpCode.CreateClosure, _builder.AddObject(CompileClassInitializer(node, staticInitializer, isStatic: true)));
+            _builder.Emit(OpCode.LoadLocal, constructor);
+            _builder.Emit(OpCode.SetHomeObject);
+            _builder.Emit(OpCode.LoadLocal, result);
+            _builder.Emit(OpCode.Call, 0);
+            _builder.Emit(OpCode.Pop);
+        }
+
+        _builder.Emit(OpCode.LoadLocal, classDecoration);
+        _builder.Emit(OpCode.RunClassDecorationInitializers, 1);
+        _builder.Emit(OpCode.LoadLocal, result);
+    }
+
+    private void EmitApplyElementDecorators(ClassNode node, int classDecoration, bool isStatic, bool fields)
+    {
+        foreach (var element in node.Body)
+        {
+            var applies = element switch
+            {
+                MethodDefinition { Kind: not MethodKind.Constructor } method => !fields && method.Static == isStatic,
+                PropertyDefinition { IsAccessor: true } accessor => !fields && accessor.Static == isStatic,
+                PropertyDefinition { Decorators: not null } field => fields && field.Static == isStatic,
+                _ => false,
+            };
+
+            if (applies)
+            {
+                _builder.SetPosition(element.Start);
+                _builder.Emit(OpCode.LoadLocal, classDecoration);
+                EmitLoadVariable(_analysis.GetElementDecoration(element), checkTdz: false);
+                _builder.Emit(OpCode.ApplyElementDecorators);
+            }
+        }
+    }
+
+    /// <summary>Evaluates decorators (DecoratorListEvaluation): each one adds its value and its receiver to the decoration state on the stack.</summary>
+    private void EmitDecorators(List<Node>? decorators)
+    {
+        if (decorators is null)
+            return;
+
+        foreach (var decorator in decorators)
+        {
+            _builder.SetPosition(decorator.Start);
+            EmitCallee(decorator);
+            _builder.Emit(OpCode.AddDecorator);
+        }
+    }
+
+    /// <summary>Creates the decoration state of an element of a decorated class, with its decorators, in its hidden binding.</summary>
+    private void EmitCreateElementDecoration(Node element, DecoratedElementKind kind, int home)
+    {
+        var (decorators, isStatic) = element switch
+        {
+            MethodDefinition method => (method.Decorators, method.Static),
+            PropertyDefinition property => (property.Decorators, property.Static),
+            _ => throw new InvalidOperationException("Unexpected class element: " + element.Type),
+        };
+
+        _builder.SetPosition(element.Start);
+        _builder.Emit(OpCode.LoadLocal, home);
+        _builder.Emit(OpCode.CreateElementDecoration, (int)kind, isStatic ? 1 : 0);
+        EmitDecorators(decorators);
+        EmitInitializeVariable(_analysis.GetElementDecoration(element));
+    }
+
+    /// <summary>Pushes the key of a class element: its private name, its computed key (also stored in <paramref name="keyVariable"/>) or its constant key.</summary>
+    private void EmitClassElementKey(Node key, bool computed, Variable? keyVariable)
+    {
+        if (key is PrivateIdentifier privateName)
+        {
+            EmitLoadVariable(FindVariable("#" + privateName.Name), checkTdz: false);
+        }
+        else if (computed)
+        {
+            EmitExpression(key);
+            _builder.Emit(OpCode.ToPropertyKey);
+            if (keyVariable is not null)
+            {
+                _builder.Emit(OpCode.Dup);
+                EmitInitializeVariable(keyVariable);
+            }
+        }
+        else
+        {
+            EmitPushKey(GetPropertyKey(key));
+        }
+    }
+
+    /// <summary>A method, a getter or a setter of a decorated class: it is defined when the decorators are applied.</summary>
+    private void EmitDecoratedClassMethod(MethodDefinition method, int home)
+    {
+        var (kind, prefix) = method.Kind switch
+        {
+            MethodKind.Get => (DecoratedElementKind.Getter, "get "),
+            MethodKind.Set => (DecoratedElementKind.Setter, "set "),
+            _ => (DecoratedElementKind.Method, ""),
+        };
+
+        EmitCreateElementDecoration(method, kind, home);
+        EmitLoadVariable(_analysis.GetElementDecoration(method), checkTdz: false);
+        EmitClassElementKey(method.Key, method.Computed, keyVariable: null);
+        var name = method.Key switch
+        {
+            PrivateIdentifier privateName => prefix + "#" + privateName.Name,
+            _ when method.Computed => "",
+            _ => prefix + GetFunctionNameForKey(GetPropertyKey(method.Key)),
+        };
+
+        _builder.Emit(OpCode.CreateClosure, CompileNestedFunction(method.Value, name));
+        _builder.Emit(OpCode.SetDecoratedMethod, method.Computed ? 1 : 0);
+    }
+
+    /// <summary>
+    /// An auto-accessor (<c>accessor key = value;</c>): a getter and a setter of a private storage, defined now (or when
+    /// the decorators are applied in a decorated class). The private name of the storage is in a hidden binding.
+    /// </summary>
+    private void EmitAutoAccessorDefinition(PropertyDefinition accessor, int home, int constructor, bool isDecorated)
+    {
+        var keyVariable = accessor.Computed ? _analysis.GetComputedFieldKey(accessor) : null;
+        if (isDecorated)
+        {
+            EmitCreateElementDecoration(accessor, DecoratedElementKind.Accessor, home);
+            EmitLoadVariable(_analysis.GetElementDecoration(accessor), checkTdz: false);
+            EmitClassElementKey(accessor.Key, accessor.Computed, keyVariable);
+            _builder.Emit(OpCode.SetDecoratedAccessor);
+        }
+        else
+        {
+            _builder.SetPosition(accessor.Start);
+            _builder.Emit(OpCode.LoadLocal, constructor);
+            _builder.Emit(OpCode.LoadLocal, home);
+            EmitClassElementKey(accessor.Key, accessor.Computed, keyVariable);
+            _builder.Emit(OpCode.DefineAutoAccessor, accessor.Static ? 1 : 0);
+        }
+
+        EmitInitializeVariable(_analysis.GetAccessorStorage(accessor));
     }
 
     /// <summary>
@@ -289,16 +507,54 @@ internal sealed partial class CodeGenerator
         return Build(string.Empty, length: 0, flags, block.Start, block.End, nameScope: null);
     }
 
-    /// <summary>DefineField: this key value (the anonymous functions are named after the key).</summary>
+    /// <summary>
+    /// InitializeFieldOrAccessor: DefineField this key value (the anonymous functions are named after the key), after the
+    /// initializers added by the decorators; then the extra initializers of the decorators. An auto-accessor defines the
+    /// private field of its storage.
+    /// </summary>
     private void EmitFieldDefinition(PropertyDefinition field)
     {
         _builder.SetPosition(field.Start);
         _builder.Emit(OpCode.LoadThis);
+        if (field.IsAccessor)
+        {
+            EmitLoadVariable(_analysis.GetAccessorStorage(field), checkTdz: false);
+            if (field.Key is PrivateIdentifier privateKey)
+            {
+                EmitFieldValue(field, "#" + privateKey.Name);
+            }
+            else if (field.Computed)
+            {
+                if (field.Value is not null && IsAnonymousFunctionDefinition(field.Value))
+                {
+                    EmitLoadVariable(_analysis.GetComputedFieldKey(field), checkTdz: false);
+                    EmitNamedEvaluationWithKeyOnStack(field.Value, prefix: 0);
+                    _builder.Emit(OpCode.Swap);
+                    _builder.Emit(OpCode.Pop);
+                }
+                else
+                {
+                    EmitFieldValue(field, name: null);
+                }
+            }
+            else
+            {
+                EmitFieldValue(field, GetFunctionNameForKey(GetPropertyKey(field.Key)));
+            }
+
+            EmitFieldDecoratorInitializers(field);
+            _builder.Emit(OpCode.DefinePrivateField);
+            EmitFieldExtraInitializers(field);
+            return;
+        }
+
         if (field.Key is PrivateIdentifier privateName)
         {
             EmitLoadVariable(FindVariable("#" + privateName.Name), checkTdz: false);
             EmitFieldValue(field, "#" + privateName.Name);
+            EmitFieldDecoratorInitializers(field);
             _builder.Emit(OpCode.DefinePrivateField);
+            EmitFieldExtraInitializers(field);
             return;
         }
 
@@ -314,13 +570,39 @@ internal sealed partial class CodeGenerator
                 EmitFieldValue(field, name: null);
             }
 
+            EmitFieldDecoratorInitializers(field);
             _builder.Emit(OpCode.DefineClassFieldComputed);
+            EmitFieldExtraInitializers(field);
             return;
         }
 
         var key = GetPropertyKey(field.Key);
         EmitFieldValue(field, GetFunctionNameForKey(key));
+        EmitFieldDecoratorInitializers(field);
         _builder.Emit(OpCode.DefineClassField, _builder.AddKey(key));
+        EmitFieldExtraInitializers(field);
+    }
+
+    /// <summary>value -> value: the initializers that the decorators of the field added.</summary>
+    private void EmitFieldDecoratorInitializers(PropertyDefinition field)
+    {
+        if (field.Decorators is null)
+            return;
+
+        _builder.Emit(OpCode.LoadThis);
+        EmitLoadVariable(_analysis.GetElementDecoration(field), checkTdz: false);
+        _builder.Emit(OpCode.RunFieldInitializers);
+    }
+
+    /// <summary>The initializers that the decorators of the field added with addInitializer, once the field is defined.</summary>
+    private void EmitFieldExtraInitializers(PropertyDefinition field)
+    {
+        if (field.Decorators is null)
+            return;
+
+        _builder.Emit(OpCode.LoadThis);
+        EmitLoadVariable(_analysis.GetElementDecoration(field), checkTdz: false);
+        _builder.Emit(OpCode.RunExtraInitializers);
     }
 
     private void EmitFieldValue(PropertyDefinition field, string? name)

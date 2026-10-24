@@ -543,9 +543,9 @@ internal static partial class JsInterpreter
         return (constructor, prototype);
     }
 
-    private static void DefinePrivateMethod(JsClosure constructor, JsObject home, JsClosure function, PrivateName name, int kind, bool isStatic)
+    /// <summary>Adds a private method (kind 0), getter (1) or setter (2) to the class: to the class itself when static, else to [[PrivateMethods]].</summary>
+    private static void DefinePrivateMethod(JsClosure constructor, JsValue function, PrivateName name, int kind, bool isStatic)
     {
-        function.HomeObject = home;
         var target = isStatic ? null : constructor.PrivateMethods ??= [];
         var record = kind switch
         {
@@ -584,7 +584,7 @@ internal static partial class JsInterpreter
         target.Add(record);
     }
 
-    /// <summary>InitializeInstanceElements(O, constructor): the private methods, then the fields.</summary>
+    /// <summary>InitializeInstanceElements(O, constructor): the private methods, the initializers added by the decorators of the methods, then the fields.</summary>
     public static void InitializeInstanceElements(JsObject obj, JsClosure constructor)
     {
         if (constructor.PrivateMethods is { Count: > 0 } methods)
@@ -598,6 +598,14 @@ internal static partial class JsInterpreter
             foreach (var method in methods)
             {
                 PrivateMethodOrAccessorAdd(obj, method);
+            }
+        }
+
+        if (constructor.Initializers is { } initializers)
+        {
+            foreach (var initializer in initializers)
+            {
+                initializer.AsObject().Call(obj, []);
             }
         }
 

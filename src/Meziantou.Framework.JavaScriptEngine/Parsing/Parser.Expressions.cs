@@ -800,6 +800,8 @@ internal sealed partial class Parser
                 return ParseFunctionExpression(start, isAsync: false);
             case TokenKind.Class:
                 return ParseClassExpression(start);
+            case TokenKind.At:
+                return ParseClassExpression(start, ParseDecorators());
             case TokenKind.New:
                 return ParseNew();
             case TokenKind.Template:

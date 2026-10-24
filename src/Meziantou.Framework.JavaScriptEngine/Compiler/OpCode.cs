@@ -550,6 +550,47 @@ internal enum OpCode
     /// <summary>function homeObject -> function: sets the [[HomeObject]] of a function</summary>
     SetHomeObject,
 
+    /// <summary>(static) constructor homeObject key -> storage: defines the getter and the setter of an auto-accessor (key: a property key or a private name)</summary>
+    DefineAutoAccessor,
+
+    // ---- Decorators --------------------------------------------------------------------------------------------------
+
+    /// <summary>-> classDecoration: the decoration state of a class that has decorators</summary>
+    CreateClassDecoration,
+
+    /// <summary>decoration function thisValue -> decoration: adds a decorator (and its receiver) to a class or a class element</summary>
+    AddDecorator,
+
+    /// <summary>(kind, static) homeObject -> decoration: the decoration state of a class element (kind: DecoratedElementKind)</summary>
+    CreateElementDecoration,
+
+    /// <summary>(nameFromKey) decoration key function ->: the method, getter or setter of an element of a decorated class</summary>
+    SetDecoratedMethod,
+
+    /// <summary>decoration key ->: the key of a decorated field</summary>
+    SetDecoratedKey,
+
+    /// <summary>decoration key -> storage: the getter and the setter of an auto-accessor of a decorated class</summary>
+    SetDecoratedAccessor,
+
+    /// <summary>classDecoration constructor ->: creates the metadata object, once the elements are evaluated</summary>
+    BeginClassDecoration,
+
+    /// <summary>classDecoration decoration ->: applies the decorators of an element, and defines it when it is not a field</summary>
+    ApplyElementDecorators,
+
+    /// <summary>(name) classDecoration -> class: applies the decorators of the class and defines its metadata</summary>
+    ApplyClassDecorators,
+
+    /// <summary>(class) classDecoration ->: calls the initializers of the static methods (0) or of the class (1), with the class as this</summary>
+    RunClassDecorationInitializers,
+
+    /// <summary>value receiver decoration -> value: the initializers added by the decorators of a field or an auto-accessor</summary>
+    RunFieldInitializers,
+
+    /// <summary>receiver decoration ->: the extra initializers (addInitializer) of a field or an auto-accessor</summary>
+    RunExtraInitializers,
+
     /// <summary>(template) -> template object (tagged templates, cached per site and realm)</summary>
     GetTemplateObject,
 

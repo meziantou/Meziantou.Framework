@@ -453,7 +453,8 @@ internal sealed class FragmentSlicer
                 // The root of a parallel flow: its block-end edge is placed by the flow of its container, or follows its contents
                 if (item.Box is not null && !item.IsMonolithic)
                 {
-                    var containerEnd = map.MapEnd(childBottom, childTop, growsWithTrack: item.Stretches);
+                    // (a box displaced from the flow of its container ends where the breaker placed its block-end edge)
+                    (int Index, double Offset) containerEnd = item.PushShift > 0 && item.IsBoxDone ? (item.EndIndex, item.EndOffset) : map.MapEnd(childBottom, childTop, growsWithTrack: item.Stretches);
                     childEnd = containerEnd;
                     if (item.CanGrow)
                     {

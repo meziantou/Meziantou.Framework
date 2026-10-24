@@ -226,6 +226,14 @@ internal static partial class ColumnBreaker
         /// </summary>
         public bool BreaksBeforeAsLastResort { get; init; }
 
+        /// <summary>
+        /// The appeal of a break before the first content of a box that resumes at the start of the next fragmentainer, or null
+        /// when it is not a possible break: as in Blink (<c>MinBreakAppeal</c>), in a column of a nested multi-column container
+        /// after the first one of its row, the worst appeal of the breaks of the previous columns of the row (the content may be
+        /// pushed to the next row, in the next outer fragmentainer, where it may have more space).
+        /// </summary>
+        public BreakAppeal? StartBreakAppeal { get; set; }
+
         /// <param name="includesStart">Whether the flow starts with its content: a forced break at its start, after a box without block size, is taken.</param>
         public FlowCursor(FragmentationFlow flow, FlowMap map, double start, double end, int index, int generation, bool canBreakBefore, bool includesStart = false)
         {
@@ -250,6 +258,7 @@ internal static partial class ColumnBreaker
 
         /// <summary>The position of the flow where the content of the next fragmentainer starts.</summary>
         public double Position => _position;
+
 
         /// <summary>The space at the start of the next fragmentainer before the content (see <see cref="FragmentainerBreak.DisplayOffset"/>).</summary>
         public double DisplayOffset => _displayOffset;
@@ -1099,12 +1108,32 @@ internal static partial class ColumnBreaker
 
                     // As in Blink, an item that was after the end of a previous fragmentainer and starts before the start of this one
                     // (its track grew with monolithic content that overflowed that fragmentainer) starts it: its offset is truncated
-                    if (item.Start < _position - Epsilon && item.Start > group.TrackStarts[track] + Epsilon)
+                    // (also an item that was pushed alone from the start of a previous one, see StartBreakAppeal)
+                    var wasPushed = item.PushedGeneration == _generation && item.PushedIndex < _index;
+                    item.PushShift = 0;
+                    if (item.Start < _position - Epsilon && (item.Start > group.TrackStarts[track] + Epsilon || wasPushed))
                     {
+                        // (the box of the item is displaced from the flow of its container: its block-end edge follows)
+                        item.PushShift = origin - item.Start;
                         origin = item.Start;
                     }
 
+                    // As in Blink, an item at the start of a track that starts the fragmentainer, in a container that started in a
+                    // previous one, may be pushed alone when the break before it is a possible break (see StartBreakAppeal)
                     var offset = item.Start - origin;
+                    var isResumedStart = StartBreakAppeal == BreakAppeal.Perfect && !item.BreaksBeforeAsLastResort && Math.Abs(offset) <= Epsilon
+                        && group.TrackStarts[track] <= _position + Epsilon && group.Start < _position - Epsilon;
+
+                    // An item with break-inside: avoid that can be pushed alone and does not fit is pushed (also when it has no
+                    // content to push: its box would be broken)
+                    if (((item.CanBreakBefore && offset > Epsilon) || isResumedStart) && item.Avoid && item.Nested is null && GetItemEndOffset(item) > blockSize + Epsilon)
+                    {
+                        item.PushedGeneration = _generation;
+                        item.PushedIndex = _index;
+                        _hasDeferredItems = true;
+                        continue;
+                    }
+
                     isTrackStarted = true;
                     item.Generation = _generation;
                     item.IsBoxDone = false;
@@ -1120,10 +1149,11 @@ internal static partial class ColumnBreaker
                     else
                     {
                         // (a new generation: the parallel flows of the item start again when the item does, after a break before it)
-                        var cursor = new FlowCursor(item.Flow, item.Map, item.Start, item.Flow.ContentEnd, _index, item.Flow.NextGeneration(), item.CanBreakBefore && offset > Epsilon, includesStart: true) { BreaksBeforeAsLastResort = item.BreaksBeforeAsLastResort };
+                        var canBreakBefore = (item.CanBreakBefore && offset > Epsilon) || isResumedStart;
+                        var cursor = new FlowCursor(item.Flow, item.Map, item.Start, item.Flow.ContentEnd, _index, item.Flow.NextGeneration(), canBreakBefore, includesStart: true) { BreaksBeforeAsLastResort = item.BreaksBeforeAsLastResort };
                         cursor.SetOrigin(origin);
                         // (the pages slice the monolithic content that does not fit in the page instead: SlicesMonolithicContent)
-                        if (!item.CanGrow && !double.IsNaN(item.LeadingMonolithicEnd) && GetOffset(item.End) <= blockSize + Epsilon
+                        if (!item.CanGrow && !double.IsNaN(item.LeadingMonolithicEnd) && GetItemEndOffset(item) <= blockSize + Epsilon
                             && !(_flow.SlicesMonolithicContent && GetOffset(item.LeadingMonolithicEnd) > blockSize + Epsilon))
                         {
                             cursor.SetLeadingEnd(item.LeadingMonolithicEnd);
@@ -1190,6 +1220,9 @@ internal static partial class ColumnBreaker
             return true;
         }
 
+        /// <summary>Returns the offset of the block-end edge of the box of a parallel flow in the current fragmentainer (the box may be displaced, see <see cref="ParallelItem.PushShift"/>).</summary>
+        private double GetItemEndOffset(ParallelItem item) => GetOffset(item.End + item.PushShift);
+
         /// <summary>Returns whether a forced break is between two tracks of a group of the flow (see <see cref="ParallelGroup.ForcedBreakSequences"/>).</summary>
         private bool IsTrackForcedBreak(int sequence)
         {
@@ -1228,10 +1261,11 @@ internal static partial class ColumnBreaker
                 return;
 
             var cursor = (IItemCursor)item.Cursor!;
+
             if (item.Group is { OwnCloneStart: > 0 } or { OwnCloneEnd: > 0 })
             {
                 // The edges that the box of the flow repeats are not repeated once the box has ended
-                item.Group.HasEnded = item.IsBoxDone || GetOffset(item.End) <= blockSize - item.Group.CloneEndEdges + Epsilon;
+                item.Group.HasEnded = item.IsBoxDone || GetItemEndOffset(item) <= blockSize - item.Group.CloneEndEdges + Epsilon;
             }
 
             var result = cursor.Advance(blockSize, _index);
@@ -1251,7 +1285,7 @@ internal static partial class ColumnBreaker
                 // The box extends over its monolithic contents that overflow the fragmentainer, up to its block size (as in
                 // Blink); the flow of the container breaks beside the contents that overflow the box
                 item.OverflowExtent = cursor.GetPlacedOffset(result.IsFinished ? item.Flow.ContentEnd : item.Flow.GetGapStart(result.Position));
-                _overflowOffset = Math.Max(_overflowOffset, Math.Min(item.OverflowExtent, GetOffset(item.End)));
+                _overflowOffset = Math.Max(_overflowOffset, Math.Min(item.OverflowExtent, GetItemEndOffset(item)));
                 return;
             }
 
@@ -1287,7 +1321,7 @@ internal static partial class ColumnBreaker
             // the fragmentainer; an item with a definite block size is broken at the end of the fragmentainer beside it)
             var available = Math.Max(Math.Max(blockSize - item.Group!.CloneEndEdges, item.CanGrow ? _overflowEndOffset : 0), item.OverflowExtent);
             var placed = item.IsFlowDone || item.IsContentPlaced;
-            var end = GetOffset(item.End);
+            var end = GetItemEndOffset(item);
             if (placed && item.CanGrow && item.AdvancedIndex == _index && _flow.StartsInMonolithicSlice(_index))
             {
                 // (the pages slice the monolithic content of the item: the box ends with its flow, which follows the slices,

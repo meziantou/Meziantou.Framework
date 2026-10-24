@@ -294,11 +294,15 @@ internal static partial class ColumnBreaker
 
                 var isFinished = false;
                 var columns = 0;
+                var rowAppeal = BreakAppeal.Perfect;
                 while (columns < maxColumns)
                 {
                     var lastStart = _columns.Position;
                     var lastDisplayOffset = _columns.DisplayOffset;
+                    _columns.StartBreakAppeal = columns == 0 ? null : rowAppeal;
                     var result = _columns.Advance(columnBlockSize);
+                    _columns.StartBreakAppeal = null;
+                    rowAppeal = Worst(rowAppeal, result.Appeal == BreakAppeal.Forced ? BreakAppeal.Perfect : result.Appeal);
                     var column = new NestedColumn
                     {
                         OuterIndex = index,
@@ -478,6 +482,7 @@ internal static partial class ColumnBreaker
             var cursor = new FlowCursor(flow, map, start, end, 0, flow.NextGeneration(), canBreakBefore: false);
             for (var count = 0; count < max; count++)
             {
+                cursor.StartBreakAppeal = count == 0 ? null : accepted;
                 var result = cursor.Advance(blockSize);
                 var appeal = result.Appeal == BreakAppeal.Forced ? BreakAppeal.Perfect : result.Appeal;
                 if (appeal > accepted)

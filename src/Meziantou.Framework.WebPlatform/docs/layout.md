@@ -2928,7 +2928,10 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     before it and is placed in the next outer fragmentainer, unless a break that is as bad was already taken in the columns
     of the row before it; the first column of the first row is compared with the break before the container (an `avoid`
     there accepts the violations of `orphans`/`widows` and `avoid`). When no content fits after the start of the container,
-    the outer flow breaks before the container if it can.
+    the outer flow breaks before the container if it can. As in Blink (`MinBreakAppeal`), in a column after the first one of
+    a row whose breaks violate no rule, a break before the first content of a box that resumes there is a possible break
+    (`FlowCursor.StartBreakAppeal`): an item at the start of a track that starts the column is pushed alone to the next
+    column when it has `break-inside: avoid` and does not fit (an item offset in its track is pushed the same way).
   - The spanners of the inner container are fragmented by the outer fragmentainers (each one has its own
     `FragmentationFlow`, `FragmentationFlow.CollectBox`): a spanner whose content does not fit starts in the next outer
     fragmentainer, its forced breaks (`break-before`, `break-after`) break the outer columns (they are propagated to the

@@ -3327,6 +3327,19 @@ internal sealed class ParallelItem(FragmentationFlow flow)
     /// <summary>Whether the contents of the box, up to its automatic block size, are placed.</summary>
     public bool IsContentPlaced { get; set; }
 
+    /// <summary>The generation of the breaker and the fragmentainer where the item was pushed alone to the next fragmentainer (see <c>FlowCursor.StartBreakAppeal</c>).</summary>
+    public int PushedGeneration { get; set; }
+
+    /// <inheritdoc cref="PushedGeneration"/>
+    public int PushedIndex { get; set; }
+
+    /// <summary>
+    /// The distance between the position of the flow of the container where the box of the item starts and its position in the
+    /// strip, when the item starts a fragmentainer after its position (it was pushed alone, or its offset was truncated): its
+    /// block-end edge follows it. 0 otherwise.
+    /// </summary>
+    public double PushShift { get; set; }
+
     /// <summary>The appeal of the break of the flow in the current fragmentainer.</summary>
     public BreakAppeal Appeal { get; set; }
 

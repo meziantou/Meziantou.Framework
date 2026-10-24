@@ -214,3 +214,42 @@ The limits of the comparison: the pages are the version downloaded once (another
 boxes are compared, not the painting (colors, backgrounds, text positions inside a box); the transforms change the
 rectangles of both; the elements inside a scroll container are compared at its initial scroll position; and an
 accepted difference may hide another difference in the same element.
+
+### Comparing the exports with Playwright
+
+`--render` compares the exports of pages by Playwright (Chromium) and by the library: the screenshots (`page.screenshot()`
+and `locator.screenshot()` against `TakeScreenshot`) and the PDF (`page.pdf()` against `PrintToPdf` and `RenderPages`).
+The pages are the fixtures of `tools/Meziantou.Framework.WebPlatform.ChromiumDiff/render-corpus` (the files of its
+`resources` directory are their subresources), the files of the `--corpus` directories, and, with `--pages`, the pages of
+`pages.txt` (with their recorded resources, in the `desktop` and `omit-background` scenarios only). They are loaded as for
+`--layout` (the same resources, no scripts, the injected font, no animations), except the scrollbars: the ones of headless
+Chromium are hidden, so the library uses overlay scrollbars (`ScrollbarThickness = 0`).
+
+Each fixture is exported in the scenarios of `RenderScenarios.cs` that apply to it: a viewport, a device of
+`playwright.Devices` (iPhone 13, Pixel 7, iPad...), the options of `page.screenshot()` (`omitBackground`, `fullPage`,
+`clip`, JPEG), the print media emulation, and the options of `page.pdf()` (the defaults of Playwright, margins, paper
+size, `landscape`, `scale`, `printBackground`, `preferCSSPageSize`, `pageRanges`, header and footer templates).
+`RenderScenarios.Map` converts the options of Playwright to the options of the library; an option that the library does
+not support is listed in the result, which is *unsupported* (the library renders without it).
+
+The images are compared by `ImageComparison`: the sizes must be equal, then both images are composited over white and over
+black (so a difference of transparency is a difference of color), blurred by a 3x3 box filter (the text and the edges are
+anti-aliased differently), and compared: the SSIM and the fraction of the pixels with a channel that differs by more than
+24. The PDF are compared by their number of pages and the size of each page, then the PDF of both are rasterized at 96 dpi
+by the same rasterizer (`pdftoppm` of Poppler when it is on the `PATH`, else `Meziantou.Framework.Pdf`, see
+`--rasterizer`) and compared page by page (`pdf`); the pages rendered by `RenderPages` are also compared with the PDF of
+Chromium rasterized (`pages`), with looser thresholds (the rasterizer does not position the glyphs and does not smooth the
+images as the library).
+
+The images (`chromium.png`, `library.png` and `diff.png`, the different pixels in red), the PDF, `report.html`,
+`report.md` and `report.json` are written in `artifacts/chromium-diff/render` (`--out`). `--summary` writes the summary in
+Markdown, without timings, so that it changes only with the results: `render-parity.md` is the committed summary, to
+update with the changes that change the results. A difference fails the comparison, except the accepted ones of
+`render-known-differences.json` (a fixture, a scenario or a prefix followed by `*`, an optional output and the reason; a
+rule that matches no result when everything is compared fails), and the unsupported results (`--no-fail` never fails):
+
+```bash
+dotnet run --project tools/Meziantou.Framework.WebPlatform.ChromiumDiff -c Release -- --render --summary tools/Meziantou.Framework.WebPlatform.ChromiumDiff/render-parity.md
+dotnet run --project tools/Meziantou.Framework.WebPlatform.ChromiumDiff -c Release -- --render --scenario iphone-13 --filter meta-viewport
+dotnet run --project tools/Meziantou.Framework.WebPlatform.ChromiumDiff -c Release -- --render --scenario pdf-background --rasterizer meziantou
+```

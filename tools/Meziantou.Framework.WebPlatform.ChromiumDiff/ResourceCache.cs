@@ -55,6 +55,39 @@ internal sealed class ResourceCache
     /// <summary>An empty cache: the page is laid out without subresources (the files of <c>--corpus</c>).</summary>
     public static ResourceCache Empty { get; } = new ResourceCache("", []);
 
+    /// <summary>
+    /// The files of a directory as resources: the URL of each file is <paramref name="baseUrl"/> followed by its path relative
+    /// to the directory, and its content type is the one of its extension.
+    /// </summary>
+    public static ResourceCache FromDirectory(string directory, string baseUrl)
+    {
+        var responses = new Dictionary<string, CachedResponse>(StringComparer.Ordinal);
+        foreach (var file in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories))
+        {
+            var relative = Path.GetRelativePath(directory, file).Replace('\\', '/');
+            responses[baseUrl + relative] = new CachedResponse(200, [new("content-type", GetContentType(file))], relative);
+        }
+
+        return new ResourceCache(directory, responses);
+    }
+
+    /// <summary>Returns the content type of a file from its extension.</summary>
+    public static string GetContentType(string path) => Path.GetExtension(path).ToUpperInvariant() switch
+    {
+        ".HTML" or ".HTM" => "text/html; charset=utf-8",
+        ".SVG" => "image/svg+xml",
+        ".XHTML" => "application/xhtml+xml",
+        ".CSS" => "text/css; charset=utf-8",
+        ".PNG" => "image/png",
+        ".JPG" or ".JPEG" => "image/jpeg",
+        ".GIF" => "image/gif",
+        ".WEBP" => "image/webp",
+        ".WOFF2" => "font/woff2",
+        ".WOFF" => "font/woff",
+        ".TTF" => "font/ttf",
+        _ => "application/octet-stream",
+    };
+
     public bool TryGet(string url, out CachedResponse response, out byte[] body)
     {
         if (_responses.TryGetValue(url, out response!))
@@ -144,14 +177,14 @@ internal sealed class ResourceCache
     }
 
     /// <summary>Replays the recorded responses in Chromium; the other requests (and the navigations of the iframes) fail.</summary>
-    public async Task RouteAsync(IPage page, string url, byte[] html)
+    public async Task RouteAsync(IPage page, string url, byte[] html, string contentType = "text/html; charset=utf-8")
     {
         await page.RouteAsync("**/*", async route =>
         {
             var request = route.Request;
             if (request.IsNavigationRequest && request.Frame == page.MainFrame && request.Url == url)
             {
-                await route.FulfillAsync(new RouteFulfillOptions { Status = 200, ContentType = "text/html; charset=utf-8", BodyBytes = html });
+                await route.FulfillAsync(new RouteFulfillOptions { Status = 200, ContentType = contentType, BodyBytes = html });
             }
             else if (!request.IsNavigationRequest && request.Method == "GET" && TryGet(request.Url, out var response, out var body))
             {

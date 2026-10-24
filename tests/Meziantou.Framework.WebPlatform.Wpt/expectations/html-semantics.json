@@ -7398,11 +7398,7 @@
     "total": 2
   },
   "html/semantics/popovers/popover-minimum-role.html": {
-    "total": 2,
-    "failures": {
-      "Dynamic changes to popover attribute should change the role.": "FAIL",
-      "The popover attribute, on an element with no implicit role, then the element's role instead maps to group.": "FAIL"
-    }
+    "total": 2
   },
   "html/semantics/popovers/popover-move-documents-during-hide.html": {
     "total": 3

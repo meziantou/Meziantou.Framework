@@ -2844,6 +2844,20 @@ choose them ("the user agent should allow the user to..."): they are the ones of
 - Not done: the selection of
   a range of options (Shift, a drag); the multi-select drop-down box; the restoration of the state on history traversal.
 
+## Input pickers
+
+Whether an `input` element supports a picker is implementation-defined, except for the File Upload state
+(https://html.spec.whatwg.org/multipage/input.html#input-support-picker). As in the browsers, the Color, Date, Month,
+Week, Time and Local Date and Time states support one, and so does an input with a suggestions source (a `datalist`).
+`showPicker()` and the activation of the color, file, date and time inputs (a click) *show the picker, if applicable*:
+it consumes the transient activation of the window, then opens the picker of a mutable element (the HTML Standard gives
+the date and time states no activation behavior, but all the browsers show their picker when they are clicked). There is
+no picker user interface: the user does not choose a value, and the file chooser closes at once. The other pickers are
+open until a press of a pointing device outside of the element, `Escape` (it is not a close request then), or until the
+element is removed, changes its type or is no longer mutable; opening a picker closes the other ones of the document.
+The element matches `:open` while its picker is open (https://html.spec.whatwg.org/multipage/semantics-other.html#selector-open).
+`showPicker()` does not focus the element, and clicking a text input does not show the suggestions of its `datalist`.
+
 ## User input
 
 `BrowsingContext.Input` (`UserInput`) is the entry point of a host application that injects the input of the user: the

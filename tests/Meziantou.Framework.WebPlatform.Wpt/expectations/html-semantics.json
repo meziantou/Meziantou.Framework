@@ -4207,14 +4207,7 @@
     "total": 1
   },
   "html/semantics/forms/the-input-element/click-user-gesture.html": {
-    "total": 14,
-    "failures": {
-      "input[type=date] click() consumes user activation": "FAIL",
-      "input[type=datetime-local] click() consumes user activation": "FAIL",
-      "input[type=month] click() consumes user activation": "FAIL",
-      "input[type=time] click() consumes user activation": "FAIL",
-      "input[type=week] click() consumes user activation": "FAIL"
-    }
+    "total": 14
   },
   "html/semantics/forms/the-input-element/clone.html": {
     "total": 19

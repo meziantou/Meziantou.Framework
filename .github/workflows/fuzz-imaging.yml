@@ -1,6 +1,6 @@
 # Weekly campaign of the Imaging fuzz tests (fuzz/Meziantou.Framework.Imaging.FuzzTests, see fuzz/README.md), split
 # across jobs, on x64 and on arm64 so that the hardware intrinsics paths of both (SSE/AVX and AdvSimd) are fuzzed. Pull
-# requests run them with a small fixed budget; eng/run-imaging-fuzz.ps1 runs them with a new base seed every week and a
+# requests run them with a small fixed budget; eng/run-fuzz-tests.ps1 runs them with a new base seed every week and a
 # time budget per campaign. It writes a result.json and a failure.md file per failed test, so the report job opens an
 # issue for every failing test (or comments on the open one with the same title) with the minimized input and the
 # commands that reproduce it. Two fuzz campaigns run each night at 3:00 (see FUZZ_PROJECTS in fuzz-sharpfuzz.yml).
@@ -67,7 +67,7 @@ jobs:
       - name: Setup .NET
         uses: $/.github/actions/setup-dotnet
       - name: Fuzz
-        run: ./eng/run-imaging-fuzz.ps1 -Shard ${{ matrix.shard.id }} -Filter '${{ matrix.shard.filter }}'
+        run: ./eng/run-fuzz-tests.ps1 -Shard ${{ matrix.shard.id }} -Filter '${{ matrix.shard.filter }}'
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:

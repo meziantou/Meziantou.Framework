@@ -4,15 +4,17 @@ The fuzz projects live apart from `tests/` because their campaigns run at a diff
 
 - `Meziantou.Framework.Imaging.FuzzTests`: deterministic mutation fuzz tests over the Imaging golden corpus, with their own
   harness.
+- `Meziantou.Framework.Pdf.FuzzTests`: deterministic mutation fuzz tests over the Pdf fixtures, and the replay of their
+  regressions.
 - `Meziantou.Framework.*.Fuzz`: coverage-guided fuzzing with [SharpFuzz](https://github.com/Metalnem/sharpfuzz) and
   [libFuzzer](https://llvm.org/docs/LibFuzzer.html) (through [libfuzzer-dotnet](https://github.com/Metalnem/libfuzzer-dotnet)).
 
-Both run weekly, on x64 and on arm64. `.github/workflows/fuzz-sharpfuzz.yml` fuzzes the SharpFuzz projects: its
+They run weekly, on x64 and on arm64. `.github/workflows/fuzz-sharpfuzz.yml` fuzzes the SharpFuzz projects: its
 `FUZZ_PROJECTS` table gives the component label of each project and the night of its campaign, and a manual run fuzzes
-one component or all of them. `.github/workflows/fuzz-imaging.yml` runs the Imaging fuzz tests. Two campaigns run each
-night at 3:00 (Toronto time): a new project gets a row on a night with the fewest, and an option of the `component`
-input (`Meziantou.Framework.Fuzzing.Tests` checks both). `eng/run-fuzz.ps1` (SharpFuzz) and `eng/run-imaging-fuzz.ps1`
-(Imaging) write a `result.json` and a `failure.md` file for each target under `artifacts/fuzz/results`, and
+one component or all of them. `.github/workflows/fuzz-imaging.yml` and `.github/workflows/fuzz-pdf.yml` run the Imaging
+and the Pdf fuzz tests. Several campaigns run each night at 3:00 (Toronto time): a new project gets a row on a night
+with the fewest, and an option of the `component` input (`Meziantou.Framework.Fuzzing.Tests` checks both). `eng/run-fuzz.ps1` (SharpFuzz) and `eng/run-fuzz-tests.ps1`
+(fuzz test projects) write a `result.json` and a `failure.md` file for each target under `artifacts/fuzz/results`, and
 `eng/report-fuzz-failures.ps1` opens an issue for each failed target, labeled with the component of the project.
 
 ## SharpFuzz projects
@@ -113,15 +115,29 @@ Once a failure is fixed, commit its input under `fuzz/<Library>.Fuzz/Regressions
 ## Imaging fuzz tests
 
 `Meziantou.Framework.Imaging.FuzzTests` is a test project: every CI build runs it with a small, deterministic budget, and
-the `MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_*` environment variables (`FuzzSettings`) set a longer campaign. `eng/run-imaging-fuzz.ps1`
+the `MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_*` environment variables (`FuzzSettings`) set a longer campaign. `eng/run-fuzz-tests.ps1`
 builds and runs it, then writes a result for each failed test and one for the campaign (any OS):
 
 ```bash
 export MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_SEED=1234
 export MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_ITERATIONS=2000000000
 export MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_DURATION_SECONDS=60
-pwsh eng/run-imaging-fuzz.ps1 -Filter '--filter-class Meziantou.Framework.Imaging.FuzzTests.MutationFuzzTests'
+pwsh eng/run-fuzz-tests.ps1 -Filter '--filter-class Meziantou.Framework.Imaging.FuzzTests.MutationFuzzTests'
 ```
 
 The minimized failing inputs are written to `artifacts/fuzz/inputs`. Once a failure is fixed, commit the minimized input
 under `fuzz/Meziantou.Framework.Imaging.FuzzTests/FuzzRegressions` (see `regressions.json`).
+
+## Pdf fuzz tests
+
+`Meziantou.Framework.Pdf.FuzzTests` is a test project too: every CI build runs it with a small, deterministic budget, and
+the `MEZIANTOU_FRAMEWORK_PDF_FUZZ_*` environment variables (`PdfFuzzSettings`: seed, mutated inputs per seed, timeout of a
+case) set a longer campaign. `.github/workflows/fuzz-pdf.yml` runs it weekly with `eng/run-fuzz-tests.ps1`:
+
+```bash
+export MEZIANTOU_FRAMEWORK_PDF_FUZZ_SEED=1234
+export MEZIANTOU_FRAMEWORK_PDF_FUZZ_ITERATIONS=50000
+pwsh eng/run-fuzz-tests.ps1 -Project fuzz/Meziantou.Framework.Pdf.FuzzTests -SettingsPrefix MEZIANTOU_FRAMEWORK_PDF_FUZZ -ArtifactsVariable ''
+```
+
+Once a failure is fixed, commit its input under `fuzz/Meziantou.Framework.Pdf.FuzzTests/FuzzRegressions`.

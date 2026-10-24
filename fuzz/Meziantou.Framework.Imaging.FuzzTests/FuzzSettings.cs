@@ -3,7 +3,7 @@ namespace Meziantou.Framework.Imaging.FuzzTests;
 /// <summary>
 /// Budget of the mutation fuzz tests. The default budget is small and deterministic, so the fuzz
 /// tests run in every CI job; a longer campaign is opt-in through environment variables (the weekly campaign of
-/// <c>.github/workflows/fuzz-imaging.yml</c> sets them, runs the tests with <c>eng/run-imaging-fuzz.ps1</c> and opens an issue for every failure):
+/// <c>.github/workflows/fuzz-imaging.yml</c> sets them, runs the tests with <c>eng/run-fuzz-tests.ps1</c> and opens an issue for every failure):
 /// <list type="bullet">
 /// <item><description><c>MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_ITERATIONS</c>: mutated inputs per seed group (default 1500);</description></item>
 /// <item><description><c>MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_SEED</c>: base seed (default fixed; any 64-bit integer gives another reproducible campaign);</description></item>

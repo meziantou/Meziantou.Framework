@@ -1,18 +1,18 @@
 <#
 .SYNOPSIS
-Runs a campaign of the Imaging fuzz tests (fuzz/Meziantou.Framework.Imaging.FuzzTests) and writes its results like
-eng/run-fuzz.ps1 does.
+Runs a campaign of the tests of a fuzz test project (fuzz/Meziantou.Framework.Imaging.FuzzTests,
+fuzz/Meziantou.Framework.Pdf.FuzzTests) and writes its results like eng/run-fuzz.ps1 does.
 
 .DESCRIPTION
-Builds the project and runs its tests with the budget the MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_* environment variables set
-(FuzzSettings), then reads the .trx reports. Each failed test gets a directory under OutputDirectory/results: result.json
+Builds the project and runs its tests with the budget the <SettingsPrefix>_* environment variables set (the
+FuzzSettings of the Imaging tests, the PdfFuzzSettings of the Pdf tests), then reads the .trx reports. Each failed test gets a directory under OutputDirectory/results: result.json
 and failure.md, the body of the issue that eng/report-fuzz-failures.ps1 opens, with the failure messages (signature,
 case, minimized input in base64) and the commands that reproduce it. The campaign gets a result too, named after the
 shard: it fails when the tests could not be built or run, or when dotnet test failed without a failed test in its
 reports (a test host killed by the hang dump, a crash).
 
-The minimized inputs are written to MEZIANTOU_FRAMEWORK_IMAGING_TEST_ARTIFACTS (OutputDirectory/inputs by default).
-Reads MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_SEED and MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_DURATION_SECONDS from the environment.
+The minimized inputs are written to the directory of the ArtifactsVariable environment variable (OutputDirectory/inputs
+by default). Reads <SettingsPrefix>_SEED and <SettingsPrefix>_DURATION_SECONDS from the environment.
 
 Exits with code 1 when the campaign fails.
 #>
@@ -26,7 +26,13 @@ param(
     # '--filter-class Meziantou.Framework.Imaging.FuzzTests.MutationFuzzTests'
     [string]$Filter,
 
-    [string]$OutputDirectory = 'artifacts/fuzz'
+    [string]$OutputDirectory = 'artifacts/fuzz',
+
+    # The prefix of the environment variables of the budget of the project (seed, duration, iterations, groups)
+    [string]$SettingsPrefix = 'MEZIANTOU_FRAMEWORK_IMAGING_FUZZ',
+
+    # The environment variable of the directory the tests write the minimized inputs to, or empty when they write none
+    [string]$ArtifactsVariable = 'MEZIANTOU_FRAMEWORK_IMAGING_TEST_ARTIFACTS'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -39,12 +45,12 @@ $resultsDirectory = Join-Path $OutputDirectory 'results'
 # An absolute path: dotnet test resolves a relative project path twice
 $projectPath = (Resolve-Path $Project).Path
 $testResultsDirectory = [System.IO.Path]::GetFullPath((Join-Path $OutputDirectory "test-results/$Shard"))
-if (-not $env:MEZIANTOU_FRAMEWORK_IMAGING_TEST_ARTIFACTS) {
-    $env:MEZIANTOU_FRAMEWORK_IMAGING_TEST_ARTIFACTS = [System.IO.Path]::GetFullPath((Join-Path $OutputDirectory 'inputs'))
+if ($ArtifactsVariable -and -not [Environment]::GetEnvironmentVariable($ArtifactsVariable)) {
+    [Environment]::SetEnvironmentVariable($ArtifactsVariable, [System.IO.Path]::GetFullPath((Join-Path $OutputDirectory 'inputs')))
 }
 
-$Seed = $env:MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_SEED
-$Duration = $env:MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_DURATION_SECONDS
+$Seed = [Environment]::GetEnvironmentVariable("${SettingsPrefix}_SEED")
+$Duration = [Environment]::GetEnvironmentVariable("${SettingsPrefix}_DURATION_SECONDS")
 $Namespace = @{ t = 'http://microsoft.com/schemas/VisualStudio/TeamTest/2010' }
 
 function Get-Fence([string]$Text) {
@@ -104,7 +110,7 @@ if (Test-Path $testResultsDirectory) {
 }
 
 if ($Seed) {
-    # FuzzSettings silently falls back to the default seed for a value it cannot parse
+    # The settings of the tests silently fall back to the default seed for a value they cannot parse
     $parsed = [ulong]0
     if (-not [ulong]::TryParse($Seed, [ref]$parsed)) {
         throw "The seed '$Seed' is not a 64-bit unsigned integer"
@@ -129,7 +135,7 @@ try {
 catch {
     $elapsed = [int]((Get-Date) - $started).TotalSeconds
     Write-Host "::error::$($_.Exception.Message)"
-    Write-Result -Target $campaignTarget -Failed $true -Seconds $elapsed -Failure "The Imaging fuzz tests could not run: $($_.Exception.Message). See the build log of the run."
+    Write-Result -Target $campaignTarget -Failed $true -Seconds $elapsed -Failure "The tests of $projectName could not run: $($_.Exception.Message). See the build log of the run."
     exit 1
 }
 
@@ -208,20 +214,20 @@ foreach ($testName in $failures.Keys) {
     [void]$body.AppendLine('```bash')
     [void]$body.AppendLine("git checkout $env:GITHUB_SHA")
     if ($Seed) {
-        [void]$body.AppendLine("export MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_SEED=$Seed")
+        [void]$body.AppendLine("export ${SettingsPrefix}_SEED=$Seed")
     }
 
     if ($group) {
-        [void]$body.AppendLine("export MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_GROUPS=$group")
+        [void]$body.AppendLine("export ${SettingsPrefix}_GROUPS=$group")
     }
 
     if ($iterations) {
-        [void]$body.AppendLine("export MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_ITERATIONS=$iterations")
+        [void]$body.AppendLine("export ${SettingsPrefix}_ITERATIONS=$iterations")
     }
     elseif ($Duration) {
         # Without a case number, the campaign has to run as long as on CI to reach the case
-        [void]$body.AppendLine("export MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_ITERATIONS=2000000000")
-        [void]$body.AppendLine("export MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_DURATION_SECONDS=$Duration")
+        [void]$body.AppendLine("export ${SettingsPrefix}_ITERATIONS=2000000000")
+        [void]$body.AppendLine("export ${SettingsPrefix}_DURATION_SECONDS=$Duration")
     }
 
     [void]$body.AppendLine("dotnet test --project `"`$PWD/$Project`" --configuration Release$framework$testFilter")

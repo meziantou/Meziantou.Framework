@@ -1,4 +1,8 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <!-- The snapshots of the writer goldens find their files through the source paths mapped by the deterministic builds of CI -->
+  <Import Project="../../src/Meziantou.Framework.SnapshotTesting/build/Meziantou.Framework.SnapshotTesting.targets" />
+
   <!--
     Unit tests of Meziantou.Framework.Pdf: the lexer, the parser, the filters, the writer (exact bytes, round trips),
     the recovery of broken files, the document API, the text extraction, the renderer (the pixels of small documents)

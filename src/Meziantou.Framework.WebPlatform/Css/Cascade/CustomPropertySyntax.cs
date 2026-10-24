@@ -293,6 +293,11 @@ internal sealed class CustomPropertySyntax
                     if (InfraAscii.ToAsciiLowercase(function.Name) is "var" or "attr" || !IsComputationallyIndependent(function.Value, checkUnits))
                         return false;
 
+                    // The random base value of a random function depends on the element and the property, unless it is fixed
+                    // (https://drafts.csswg.org/css-values-5/#random-caching)
+                    if (InfraAscii.ToAsciiLowercase(function.Name) is "random" or "random-item" && !IsFixedRandomFunction(function))
+                        return false;
+
                     break;
                 case CssSimpleBlock block when !IsComputationallyIndependent(block.Value, checkUnits):
                     return false;
@@ -300,6 +305,8 @@ internal sealed class CustomPropertySyntax
         }
 
         return true;
+
+        static bool IsFixedRandomFunction(CssFunction function) => ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken first, ..] && first.Token.IsIdent("fixed");
     }
 
     /// <summary>Returns the computed value of a value of a registered custom property, or null when the value does not match the syntax.</summary>

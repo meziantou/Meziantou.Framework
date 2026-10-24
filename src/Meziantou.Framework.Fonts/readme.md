@@ -12,6 +12,7 @@ What it covers:
 - Horizontal and vertical metrics, `BASE` baselines
 - Text shaping with `GSUB` and `GPOS`, and the shaping models of complex scripts (Arabic, Hebrew, Indic, Khmer, Myanmar, Thai and Lao, Hangul, and the universal shaping engine)
 - The fonts installed on Windows, macOS and Linux (`SystemFontCollection`): an index of their faces by family and by name, read without loading the fonts, and the font matching of CSS to choose a face of a family
+- AFM files (Adobe Font Metrics, `AfmFontMetrics`): the metrics of a PostScript font without its glyphs, such as the 14 standard fonts of PDF: global metrics, widths, bounding boxes and ligatures of the characters, kerning pairs and tracks, composite characters
 
 The types are in the `Meziantou.Framework.Fonts` namespace:
 
@@ -27,6 +28,35 @@ if (fonts.Match("Arial", weight: 700, isItalic: false) is { } face)
 }
 ```
 <!-- endref -->
+
+An AFM file gives the metrics of text without loading a font:
+
+<!-- ref:../../tests/Meziantou.Framework.Imaging.Tests/FontTests.cs;region=AfmFontMetrics_Load;format=md-fenced-code-block;dedent=true -->
+```csharp
+// An AFM file gives the metrics of a PostScript font without its glyphs, here two characters of Helvetica.
+var metrics = AfmFontMetrics.Parse("""
+    StartFontMetrics 4.1
+    FontName Helvetica
+    StartCharMetrics 2
+    C 65 ; WX 667 ; N A ; B 14 0 654 718 ;
+    C 86 ; WX 667 ; N V ; B 20 0 647 718 ;
+    EndCharMetrics
+    StartKernData
+    StartKernPairs 1
+    KPX A V -70
+    EndKernPairs
+    EndKernData
+    EndFontMetrics
+    """);
+
+// The metrics are in 1/1000 of the point size: the width of "AV" at 12 points, with its kerning.
+var units = metrics.GetWidth("A")!.Value.X + metrics.GetKerning("A", "V").X + metrics.GetWidth("V")!.Value.X;
+var width = units * 12 / 1000;
+Assert.Equal(15.168, width);
+```
+<!-- endref -->
+
+The multiple master (AMFM) and composite (ACFM) metrics files are not supported.
 
 The installed fonts are found in the fonts directory of Windows, in the fonts installed for the user and in the files the registry lists; in the `Library/Fonts` directories of macOS and in the fonts it downloads on demand; and on Linux in the directories of the configuration of fontconfig (`fonts.conf` and the files it includes) and in the XDG font directories. `SystemFontCollection.Create` indexes chosen directories instead.
 

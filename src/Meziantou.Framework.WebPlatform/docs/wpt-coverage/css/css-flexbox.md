@@ -8,8 +8,8 @@
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 361 | 370 | 0 | 98% |
 | [Tentative](#tentative-tests) | 6 | 6 | 0 | 100% |
-| [Reftests](#reftests) | 1,008 | 1,017 | 0 | 99% |
-| **All** | **1,375** | **1,393** | **0** | **99%** |
+| [Reftests](#reftests) | 1,009 | 1,017 | 0 | 99% |
+| **All** | **1,376** | **1,393** | **0** | **99%** |
 
 ## Stable tests
 
@@ -656,7 +656,7 @@
 | [`flex-box-wrap.html`](https://wpt.fyi/results/css/css-flexbox/flex-box-wrap.html) | Pass | 1 / 1 |  |  |
 | [`flex-child-percent-basis-resize-1.html`](https://wpt.fyi/results/css/css-flexbox/flex-child-percent-basis-resize-1.html) | Pass | 1 / 1 |  |  |
 | [`flex-column-reverse-multiline-item-position.html`](https://wpt.fyi/results/css/css-flexbox/flex-column-reverse-multiline-item-position.html) | Pass | 1 / 1 |  |  |
-| [`flex-container-line-if-empty-vertical-writing-mode.html`](https://wpt.fyi/results/css/css-flexbox/flex-container-line-if-empty-vertical-writing-mode.html) | Fail | 0 / 1 | NOT IMPLEMENTED | an editable flex container without item "has a line if empty": it does not reserve the block size of one line (only Chrome passes this test) |
+| [`flex-container-line-if-empty-vertical-writing-mode.html`](https://wpt.fyi/results/css/css-flexbox/flex-container-line-if-empty-vertical-writing-mode.html) | Pass | 1 / 1 |  |  |
 | [`flex-container-margin.html`](https://wpt.fyi/results/css/css-flexbox/flex-container-margin.html) | Pass | 1 / 1 |  |  |
 | [`flex-container-max-content-001.html`](https://wpt.fyi/results/css/css-flexbox/flex-container-max-content-001.html) | Fail | 0 / 1 | BUG | a matrix of the intrinsic sizes of the containers of one item (flexible, no-grow, no-shrink; with a preferred size smaller or larger than its contents; with a flex basis smaller or larger than them) that no browser passes: the row containers are rendered as expected but for 3 to 5 cases of an item that cannot grow or shrink whose flex basis and preferred size disagree (the reference sizes the container with the flex base size where the contribution of https://drafts.csswg.org/css-flexbox-1/#intrinsic-item-contributions is larger); the block size of the column containers is the sum of the hypothetical main sizes of the items, where the reference expects the contributions of the items in the block axis too |
 | [`flex-container-min-content-001.html`](https://wpt.fyi/results/css/css-flexbox/flex-container-min-content-001.html) | Fail | 0 / 1 | BUG | a matrix of the intrinsic sizes of the containers of one item (flexible, no-grow, no-shrink; with a preferred size smaller or larger than its contents; with a flex basis smaller or larger than them) that no browser passes: the row containers are rendered as expected but for 3 to 5 cases of an item that cannot grow or shrink whose flex basis and preferred size disagree (the reference sizes the container with the flex base size where the contribution of https://drafts.csswg.org/css-flexbox-1/#intrinsic-item-contributions is larger); the block size of the column containers is the sum of the hypothetical main sizes of the items, where the reference expects the contributions of the items in the block axis too |

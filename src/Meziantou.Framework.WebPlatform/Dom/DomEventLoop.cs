@@ -264,7 +264,21 @@ public sealed partial class DomEventLoop
     private readonly List<WeakReference<Window>> _windowsWithResizeListeners = [];
 
     /// <summary>Registers a window that has resize event listeners, whose viewport changes are reported when the rendering is updated.</summary>
-    internal void AddWindowWithResizeListeners(Window window) => _windowsWithResizeListeners.Add(new WeakReference<Window>(window));
+    internal void AddWindowWithResizeListeners(Window window)
+    {
+        _windowsWithResizeListeners.Add(new WeakReference<Window>(window));
+        if (window.Document.BrowsingContext is { Parent: not null })
+        {
+            HasNestedWindowsWithResizeListeners = true;
+        }
+    }
+
+    /// <summary>
+    /// Whether the window of a nested browsing context registered resize event listeners (see <see cref="AddWindowWithResizeListeners"/>):
+    /// the changes of the documents that contain nested browsing contexts then schedule a rendering update, which fires the resize
+    /// events when the size of a viewport changed (e.g. its iframe element is no longer in a <c>display: none</c> subtree).
+    /// </summary>
+    internal bool HasNestedWindowsWithResizeListeners { get; private set; }
 
     private readonly List<WeakReference<Css.Om.ContainerQueryList>> _containerQueryLists = [];
 

@@ -635,6 +635,25 @@ public sealed class FocusTests : IDisposable
     }
 
     [Fact]
+    public void MouseDown_FocusesTheClickedFocusableAreaOfAShadowTree()
+    {
+        var document = Load("<div id=host></div>");
+        var host = Get<HtmlElement>(document, "#host");
+        var shadowRoot = host.AttachShadow(new ShadowRootInit { Mode = ShadowRootMode.Open });
+        var button = document.CreateElement("button");
+        shadowRoot.AppendChild(button);
+        var clicks = 0;
+        button.AddEventListener("click", _ => clicks++);
+        Dispatch(button, new MouseEvent("mousedown", new MouseEventInit { Bubbles = true, Cancelable = true, Composed = true }));
+        Assert.Same(host, document.ActiveElement);
+        Assert.Same(button, shadowRoot.ActiveElement);
+
+        // The keyboard activation of the focused button in the shadow tree
+        Dispatch(button, new KeyboardEvent("keydown", new KeyboardEventInit { Key = "Enter", Bubbles = true, Cancelable = true, Composed = true }));
+        Assert.Equal(1, clicks);
+    }
+
+    [Fact]
     public void MouseEvents_StopAtTheDisabledFormControls()
     {
         var document = Load("<div id=parent><button disabled><span>text</span></button><fieldset disabled><p>text</p></fieldset></div>");
@@ -663,6 +682,46 @@ public sealed class FocusTests : IDisposable
         Get<HtmlElement>(document, "button").Click();
         Get<HtmlElement>(document, "fieldset").Click();
         Assert.Equal(["fieldset", "div"], events);
+    }
+
+    [Fact]
+    public void Details_WithoutSummary_TheSummaryOfTheUserAgentIsFocusableAndTogglesTheDetails()
+    {
+        var document = Load("<input id=start><details id=details>content</details><input id=end>");
+        var details = Get<HtmlDetailsElement>(document, "#details");
+        var targets = new List<string>();
+        document.AddEventListener("click", e => targets.Add(((Element)e.Target!).Id));
+
+        // The summary is focused sequentially, and the scripts see the details element
+        Get<HtmlElement>(document, "#start").Focus();
+        Assert.Equal(["details", "end"], PressTab(document, 2));
+        Assert.Equal(["details"], PressTab(document, 1, shift: true));
+        Assert.Same(details, document.ActiveElement);
+        Assert.True(details.Matches(":focus"));
+        Assert.True(details.Matches(":focus-within"));
+
+        // The keyboard activation of the summary toggles the details element
+        var summary = FocusModel.GetFocusedElement(document)!;
+        Assert.Equal("summary", summary.LocalName);
+        Assert.Equal("Details", summary.TextContent);
+        Dispatch(summary, new KeyboardEvent("keydown", new KeyboardEventInit { Key = "Enter", Bubbles = true, Cancelable = true }));
+        Assert.True(details.Open);
+        Dispatch(summary, new PointerEvent("click", new PointerEventInit { Bubbles = true, Cancelable = true, Composed = true }));
+        Assert.False(details.Open);
+        Assert.Equal(["details", "details"], targets);
+
+        // The details element itself has no activation behavior
+        details.Click();
+        Assert.False(details.Open);
+
+        // A summary child replaces the summary of the user agent, which loses the focus
+        var summaryChild = document.CreateElement("summary");
+        details.InsertBefore(summaryChild, details.FirstChild);
+        RunRenderingOpportunity();
+        Assert.Same(document.Body, document.ActiveElement);
+        Get<HtmlElement>(document, "#start").Focus();
+        PressKey(document, "Tab");
+        Assert.Same(summaryChild, document.ActiveElement);
     }
 
     [Fact]

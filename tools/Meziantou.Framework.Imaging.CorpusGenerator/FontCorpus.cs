@@ -722,6 +722,13 @@ internal static partial class FontCorpus
     private const string AotsCommit = "c7a7457b7385f33178e8cf87615ca077a810bbe7";
     private const string AotsSha256 = "934e916b1b32a88c673b0307865aff1ad22052f6d74619c5e2ca14ea545e92c3";
 
+    // The AFM files of the 14 standard fonts of PDF, as Adobe published them in Core14_AFMs.zip (SHA-256 of the archive:
+    // Core14ArchiveSha256), with the notice the license requires next to them. The directory 'core14-afm' of the fonts
+    // directory is the content of the archive, unchanged (the files have CRLF line endings).
+    private const string Core14ArchiveUrl = "https://web.archive.org/web/20091223044748id_/http://partners.adobe.com/public/developer/en/pdf/Core14_AFMs.zip";
+    private const string Core14ArchiveSha256 = "8c892c3c49553cfd2d2a27c4495b4bb12e2875115be7fd127ed3876df19d8654";
+    private const string Core14Sha256 = "48c99ab0e07f5d53183ebcd48beba11747ea2d89120d9ac11982d63622acf372";
+
     // The texts shaped with each font by the reference shaper, as (text, features). The texts are chosen for what
     // shaping does to them: kerning, ligatures, marks that compose or are attached, characters without visible form,
     // spaces and hyphens the font does not have, fractions, features turned on and off.
@@ -1842,7 +1849,7 @@ internal static partial class FontCorpus
             if (duplicate is not null)
                 throw new FatalException($"Two fonts of the corpus are written to {duplicate.Key}.");
 
-            manifest[CorpusDriver.FontSuitesKey] = new List<object?> { CopyAots(outDir, fontsDirectory / "aots") };
+            manifest[CorpusDriver.FontSuitesKey] = new List<object?> { CopyAots(outDir, fontsDirectory / "aots"), CopyCore14Afm(outDir, fontsDirectory / "core14-afm") };
             manifest["schemaVersion"] = CorpusDriver.SchemaVersion;
             manifest[CorpusDriver.FontsKey] = entries.OrderBy(entry => (string)entry["id"]!, StringComparer.Ordinal).Cast<object?>().ToList();
             CorpusDriver.WriteManifest(outDir, manifest);
@@ -1887,6 +1894,43 @@ internal static partial class FontCorpus
             ["fileCount"] = fileCount,
             ["sha256"] = hash,
             ["description"] = "Fonts that each exercise one format of the cmap, class definition, coverage, GSUB or GPOS tables, and tests: a font, the options of hb-shape, characters, and the expected glyphs and positions.",
+        };
+    }
+
+    /// <summary>Copies the AFM files of the 14 standard fonts and their notice, and describes them.</summary>
+    private static Obj CopyCore14Afm(FullPath outDir, FullPath source)
+    {
+        const string Directory = "font-suites/adobe-core14-afm";
+        if (!File.Exists(source / "MustRead.html"))
+            throw new FatalException($"The directory {source} is not the content of {Core14ArchiveUrl} (SHA-256 {Core14ArchiveSha256}).");
+
+        // The license forbids distributing the AFM files without MustRead.html.
+        var target = outDir / Directory;
+        foreach (var file in System.IO.Directory.EnumerateFiles(source, "*.afm").Append(source / "MustRead.html"))
+        {
+            var destination = target / FullPath.FromPath(file).MakePathRelativeTo(source);
+            destination.CreateParentDirectory();
+            File.Copy(file, destination);
+        }
+
+        var hash = ComputeDirectoryHash(target, out var fileCount);
+        if (hash != Core14Sha256)
+            throw new FatalException($"The Core 14 AFM files have the hash {hash} ({fileCount} files) but {Core14Sha256} is pinned for {Core14ArchiveUrl}.");
+
+        return new Obj
+        {
+            ["id"] = Directory,
+            ["directory"] = Directory,
+            ["provenance"] = new Obj
+            {
+                ["origin"] = "external",
+                ["license"] = "APAFML",
+                ["author"] = "Adobe Systems Incorporated",
+                ["source"] = $"{Core14ArchiveUrl} (SHA-256 {Core14ArchiveSha256})",
+            },
+            ["fileCount"] = fileCount,
+            ["sha256"] = hash,
+            ["description"] = "The Adobe Font Metrics files of the 14 standard fonts of PDF (Courier, Helvetica and Times in four styles, Symbol, ZapfDingbats), with the notice their license requires.",
         };
     }
 

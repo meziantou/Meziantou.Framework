@@ -160,7 +160,8 @@ public sealed class BlockFormattingContextTests : IDisposable
     [InlineData("min-height: 20px", 20, 20)]
     [InlineData("min-height: 5px", 10, 30)]
     [InlineData("min-height: 5px; max-height: 40px", 10, 30)]
-    [InlineData("max-height: 5px", 5, 25)]
+    [InlineData("max-height: 5px", 5, 5)]
+    [InlineData("min-height: 2px; max-height: 5px", 5, 5)]
     [InlineData("min-height: 0", 10, 30)]
     [InlineData("padding-bottom: 1px", 31, 31)]
     [InlineData("border-bottom: 2px solid", 32, 32)]
@@ -169,7 +170,8 @@ public sealed class BlockFormattingContextTests : IDisposable
     {
         // "The bottom margin of an in-flow block box with a 'height' of 'auto' collapses with its last in-flow block-level child's
         // bottom margin, if the box has no bottom padding, and the box has no bottom border". As in the browsers, the margin of
-        // the child is discarded when the minimum height makes the box taller than its contents
+        // the child is discarded when the minimum height makes the box taller than its contents, and, as in Blink and Gecko,
+        // when the maximum height makes it shorter (https://github.com/w3c/csswg-drafts/issues/12218)
         var document = Parse($"""
             <div id=parent style='{style}'><div style='height: 10px; margin-bottom: 20px'></div></div>
             <div id=next style='height: 5px'></div>

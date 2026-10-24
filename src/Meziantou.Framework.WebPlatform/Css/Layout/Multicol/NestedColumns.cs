@@ -83,6 +83,13 @@ internal sealed class NestedColumns
     /// <summary>The block size of the content box of the container when it is definite, else null.</summary>
     public double? BlockSize { get; init; }
 
+    /// <summary>
+    /// The maximum block size of the content box of the container when its block size is not definite (<c>max-height</c>), else
+    /// null: the content that does not fit in the columns of the row where the content box reaches it overflows in the inline
+    /// direction, as in a container with a definite block size.
+    /// </summary>
+    public double? MaxBlockSize { get; init; }
+
     /// <summary>The offset of the content box in the border box of the container (its inline-start and block-start edges).</summary>
     public LogicalOffset ContentOffset { get; init; }
 

@@ -26,6 +26,8 @@ namespace Meziantou.Framework.WebPlatform.Css.Layout;
 /// <item>A block container whose contents are aligned by <c>align-content</c> and that is broken (<see cref="IsUnaligned"/>):
 /// the alignment of fragmented contents is undefined (https://drafts.csswg.org/css-align-3/#distribution-block), the contents
 /// are not aligned (one of the two behaviors that the WPT tests accept).</item>
+/// <item>A float kept in the page before a forced page break that its margin box crosses (<see cref="GetFloatExclusionEnd"/>):
+/// its exclusion ends at the break.</item>
 /// </list>
 /// </remarks>
 internal sealed class StripRelayout
@@ -55,6 +57,52 @@ internal sealed class StripRelayout
 
     /// <summary>The fragments of the boxes laid out in another area for their next fragments (see <see cref="InlineVariant"/>).</summary>
     private Dictionary<BoxFragment, InlineVariant[]>? _inlineVariants;
+
+    /// <summary>The block-end edges of the exclusions of the floats kept before a forced page break, in their block formatting context (see <see cref="GetFloatExclusionEnd"/>).</summary>
+    private Dictionary<ContainerBox, double>? _floatExclusionEnds;
+
+    /// <summary>
+    /// Returns the block offset where the exclusion of a float ends in its block formatting context (+∞ for its block-end margin
+    /// edge): a float kept in the page before a forced page break that its margin box crosses (see
+    /// <see cref="FragmentationFlow.KeepFloat"/>) does not affect the content after the break, as in Blink.
+    /// </summary>
+    public double GetFloatExclusionEnd(ContainerBox box) => _floatExclusionEnds is { } ends && ends.TryGetValue(box, out var end) ? end : double.PositiveInfinity;
+
+    /// <summary>
+    /// Updates the ends of the exclusions of the floats kept before the forced page breaks (see <see cref="GetFloatExclusionEnd"/>)
+    /// from the fragmentation of the strip. Returns whether the strip must be laid out again.
+    /// </summary>
+    public bool UpdateFloatExclusionEnds(LayoutContext context, FragmentationFlow flow)
+    {
+        Dictionary<ContainerBox, double>? ends = null;
+        if (flow.KeptFloats is { } kept)
+        {
+            foreach (var keptFloat in kept)
+            {
+                if (context.FloatPlacements.TryGetValue(keptFloat.Fragment.Box, out var placed))
+                {
+                    (ends ??= [])[keptFloat.Fragment.Box] = placed + (keptFloat.BreakPosition - keptFloat.Start);
+                }
+            }
+        }
+
+        if (ends is null)
+            return false;
+
+        // (the ends found before are kept: the content after the breaks was laid out without the floats)
+        _floatExclusionEnds ??= [];
+        var changed = false;
+        foreach (var (box, end) in ends)
+        {
+            if (!_floatExclusionEnds.TryGetValue(box, out var previous) || Math.Abs(previous - end) > Epsilon)
+            {
+                _floatExclusionEnds[box] = end;
+                changed = true;
+            }
+        }
+
+        return changed;
+    }
 
     /// <summary>Starts a layout of the strip: the records of the previous layout are cleared (the inputs are kept).</summary>
     public void BeginLayout()

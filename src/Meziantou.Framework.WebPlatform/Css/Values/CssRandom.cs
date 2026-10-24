@@ -44,6 +44,13 @@ internal sealed record CssRandomSharing(string? DashedIdent, bool ElementScoped,
 internal static class CssRandom
 {
     /// <summary>
+    /// The highest random base value (https://drafts.csswg.org/css-values-5/#valdef-random-fixed): a fixed base value is
+    /// clamped to the highest value less than 1 of a single-precision float, as in the browsers, so that the result of a
+    /// random() function whose base value is clamped is not its maximum once serialized (with 6 decimals).
+    /// </summary>
+    public const double MaxBaseValue = 1 - (1d / (1 << 24));
+
+    /// <summary>
     /// Parses a &lt;random-value-sharing&gt; other than fixed: [ auto | [ &lt;dashed-ident&gt; || element-scoped ||
     /// [ property-scoped | property-index-scoped | &lt;random-ua-ident&gt; ] ] ]. Returns null when it is invalid.
     /// </summary>
@@ -103,9 +110,12 @@ internal static class CssRandom
         return new CssRandomSharing(dashedIdent, elementScoped, uaIdent, scopeKeyword);
     }
 
-    /// <summary>Returns whether the first argument of random() is a &lt;random-value-sharing&gt; (it starts with a keyword that is not a &lt;calc-keyword&gt;).</summary>
+    /// <summary>
+    /// Returns whether the first argument of random() is a &lt;random-value-sharing&gt;: fixed, or a valid sharing. Another
+    /// keyword starts a calculation (e.g. a channel keyword of a relative color, as in <c>rgb(from blue random(g, 10) 0 0)</c>).
+    /// </summary>
     public static bool IsSharingArgument(List<CssComponentValue> significant) =>
-        significant is [CssPreservedToken { Type: CssTokenType.Ident } first, ..] && InfraAscii.ToAsciiLowercase(first.Token.Value) is not ("e" or "pi" or "infinity" or "-infinity" or "nan");
+        significant is [CssPreservedToken { Type: CssTokenType.Ident } first, ..] && (first.Token.IsIdent("fixed") || ParseSharing(significant) is not null);
 
     /// <summary>
     /// Replaces the auto, property-scoped and property-index-scoped sharing of the random() functions of the value of a property by
@@ -130,14 +140,14 @@ internal static class CssRandom
     }
 
     /// <summary>
-    /// Assigns the caching keys of the random() functions of the conditions of the if() functions of a declared value (they are
-    /// evaluated in the property, https://github.com/w3c/csswg-drafts/issues/13662), whose index is their position among all the
-    /// random() functions of the value. The other random() functions are left as they are: they are evaluated where they are
-    /// substituted. Returns the text unchanged when there is no such random() function.
+    /// Assigns the caching keys of the random() functions of the conditions of the if() functions and of the arguments of the
+    /// ident() functions of a declared value (they are evaluated in the property, https://github.com/w3c/csswg-drafts/issues/13662),
+    /// whose index is their position among all the random() functions of the value. The other random() functions are left as
+    /// they are: they are evaluated where they are substituted. Returns the text unchanged when there is no such random() function.
     /// </summary>
     public static string AssignIfConditionCachingKeys(string property, string text)
     {
-        if (!text.Contains("random(", StringComparison.OrdinalIgnoreCase) || !text.Contains("if(", StringComparison.OrdinalIgnoreCase))
+        if (!text.Contains("random(", StringComparison.OrdinalIgnoreCase) || !(text.Contains("if(", StringComparison.OrdinalIgnoreCase) || text.Contains("ident(", StringComparison.OrdinalIgnoreCase)))
             return text;
 
         var values = CssParser.ParseListOfComponentValues(text, out var source);
@@ -289,6 +299,12 @@ internal static class CssRandom
                     result.Add(function);
                     break;
                 }
+
+                case CssFunction function when mode == AssignMode.Count && InfraAscii.EqualsIgnoreAsciiCase(function.Name, "ident"):
+                    // ident( <ident-arg>+ ): the random() functions of the arguments are spliced
+                    Assign(property, function.Value, invocation, ref index, AssignMode.Splice, splices);
+                    result.Add(function);
+                    break;
 
                 case CssFunction function when ContainsRandom(function.Value):
                 {

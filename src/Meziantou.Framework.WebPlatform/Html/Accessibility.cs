@@ -66,7 +66,35 @@ internal static class Accessibility
             return defaultRole;
         }
 
-        return GetImplicitRole(element);
+        // https://w3c.github.io/html-aam/#att-popover: "If specified on an element with a generic or no implicit role, then the
+        // element's role instead maps to group" (the minimum role of a popover)
+        var implicitRole = GetImplicitRole(element);
+        if (implicitRole is "generic" or "" && element.IsHtmlNamespace && element.HasAttribute("popover"))
+            return "group";
+
+        return implicitRole;
+    }
+
+    /// <summary>
+    /// The computed role of the WebDriver "Get Computed Role" command (<see cref="Element.ComputedRole"/>): the role of the
+    /// element, or <c>none</c> when the element is not rendered because of <c>display: none</c> (on it or on an ancestor of
+    /// the flat tree), as in the browsers, which do not include such an element in the accessibility tree (e.g. a popover
+    /// that is not showing, https://w3c.github.io/html-aam/#att-popover). The element is not hidden by
+    /// <c>visibility: hidden</c> nor <c>aria-hidden</c>, and without a computed style (no browsing context, or a disconnected
+    /// element), the role is the role of the element.
+    /// </summary>
+    public static string GetComputedRole(Element element)
+    {
+        if (HasStyle(element) && !(element.IsHtmlNamespace && element.TagId is TagId.Area or TagId.Map))
+        {
+            for (var style = element.NodeDocument.GetStyleEngine().GetStyle(element); style is not null; style = style.Parent)
+            {
+                if (style.GetComputedValue("display") == "none")
+                    return "none";
+            }
+        }
+
+        return GetRole(element);
     }
 
     /// <summary>The first valid role of the role attribute (https://w3c.github.io/aria/#document-handling_author-errors_roles), normalized (img is image, presentation is none, directory is list).</summary>

@@ -8,8 +8,8 @@
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 37 | 37 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 149 | 171 | 0 | 87% |
-| **All** | **186** | **208** | **0** | **89%** |
+| [Reftests](#reftests) | 152 | 171 | 0 | 89% |
+| **All** | **189** | **208** | **0** | **91%** |
 
 ## Stable tests
 
@@ -135,8 +135,8 @@
 | [`foo-counter-reversed-009a.html`](https://wpt.fyi/results/css/css-lists/foo-counter-reversed-009a.html) | Fail | 0 / 1 | TEST BUG | the list items that follow a nested `ol` (a sibling that resets `list-item`) inherit the counter of the nested list (the inheritance of css-lists-3), so they do not count in the reversed counter of their parent, whose initial value is then 0; the reference numbers them in the list of their parent (fails in every browser) |
 | [`foo-counter-reversed-009b.html`](https://wpt.fyi/results/css/css-lists/foo-counter-reversed-009b.html) | Fail | 0 / 1 | TEST BUG | the list items that follow a nested `ol` (a sibling that resets `list-item`) inherit the counter of the nested list (the inheritance of css-lists-3), so they do not count in the reversed counter of their parent, whose initial value is then 0; the reference numbers them in the list of their parent (fails in every browser) |
 | [`implicit-and-explicit-list-item-counters.html`](https://wpt.fyi/results/css/css-lists/implicit-and-explicit-list-item-counters.html) | Pass | 1 / 1 |  |  |
-| [`inline-block-list-marker.html`](https://wpt.fyi/results/css/css-lists/inline-block-list-marker.html) | Fail | 0 / 1 | BUG | only the antialiased edges of the glyphs of the markers of the `inline-block` list items differ (23 and 51 pixels; the positions of the boxes are the same, the cause of the subpixel difference is not identified); fails in Safari |
-| [`inline-block-list.html`](https://wpt.fyi/results/css/css-lists/inline-block-list.html) | Fail | 0 / 1 | BUG | only the antialiased edges of the glyphs of the markers of the `inline-block` list items differ (23 and 51 pixels; the positions of the boxes are the same, the cause of the subpixel difference is not identified); fails in Safari |
+| [`inline-block-list-marker.html`](https://wpt.fyi/results/css/css-lists/inline-block-list-marker.html) | Pass | 1 / 1 |  |  |
+| [`inline-block-list.html`](https://wpt.fyi/results/css/css-lists/inline-block-list.html) | Pass | 1 / 1 |  |  |
 | [`inline-list-marker.html`](https://wpt.fyi/results/css/css-lists/inline-list-marker.html) | Pass | 1 / 1 |  |  |
 | [`inline-list-with-table-child.html`](https://wpt.fyi/results/css/css-lists/inline-list-with-table-child.html) | Pass | 1 / 1 |  |  |
 | [`inline-list.html`](https://wpt.fyi/results/css/css-lists/inline-list.html) | Pass | 1 / 1 |  |  |
@@ -224,7 +224,7 @@
 | [`nested-marker-styling.html`](https://wpt.fyi/results/css/css-lists/nested-marker-styling.html) | Pass | 1 / 1 |  |  |
 | [`nested-marker.html`](https://wpt.fyi/results/css/css-lists/nested-marker.html) | Pass | 1 / 1 |  |  |
 | [`ol-change-display-type.html`](https://wpt.fyi/results/css/css-lists/ol-change-display-type.html) | Pass | 1 / 1 |  |  |
-| [`outside-marker-covered-by-relpos-block-link.html`](https://wpt.fyi/results/css/css-lists/outside-marker-covered-by-relpos-block-link.html) | Fail | 0 / 1 | BUG | the outside marker of a list item is painted over the background of a relatively positioned block of the list item that covers it: the marker, which the line box of the positioned block places, is a child fragment of that block and is painted with its content instead of with the content of the list item, under the positioned block (fails in Safari) |
+| [`outside-marker-covered-by-relpos-block-link.html`](https://wpt.fyi/results/css/css-lists/outside-marker-covered-by-relpos-block-link.html) | Pass | 1 / 1 |  |  |
 | [`outside-marker-in-multicol-relpos-content.html`](https://wpt.fyi/results/css/css-lists/outside-marker-in-multicol-relpos-content.html) | Pass | 1 / 1 |  |  |
 | [`outside-marker-with-relpos-block-content.html`](https://wpt.fyi/results/css/css-lists/outside-marker-with-relpos-block-content.html) | Pass | 1 / 1 |  |  |
 | [`pseudo-element-remove-update.html`](https://wpt.fyi/results/css/css-lists/pseudo-element-remove-update.html) | Pass | 1 / 1 |  |  |

@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 689 | 727 | 2 | 95% |
+| [Stable](#stable-tests) | 690 | 727 | 2 | 95% |
 | [Tentative](#tentative-tests) | 45 | 46 | 0 | 98% |
 | [Reftests](#reftests) | 523 | 590 | 2 | 89% |
-| **All** | **1,257** | **1,363** | **4** | **92%** |
+| **All** | **1,258** | **1,363** | **4** | **93%** |
 
 ## Stable tests
 
@@ -415,7 +415,7 @@
 | [`linking/scripted/href-mpath-element.html`](https://wpt.fyi/results/svg/linking/scripted/href-mpath-element.html) | Pass | 3 / 3 |  |  |
 | [`linking/scripted/href-script-element-markup.html`](https://wpt.fyi/results/svg/linking/scripted/href-script-element-markup.html) | Pass | 1 / 1 |  |  |
 | [`linking/scripted/href-script-element.html`](https://wpt.fyi/results/svg/linking/scripted/href-script-element.html) | Pass | 3 / 3 |  |  |
-| [`linking/scripted/rellist-feature-detection.svg`](https://wpt.fyi/results/svg/linking/scripted/rellist-feature-detection.svg) | Fail | 0 / 1 | BUG | `relList` of SVG `<a>` does not define supported tokens (`supports()` throws) |
+| [`linking/scripted/rellist-feature-detection.svg`](https://wpt.fyi/results/svg/linking/scripted/rellist-feature-detection.svg) | Pass | 1 / 1 |  |  |
 | [`linking/scripted/xlink-href-compat.html`](https://wpt.fyi/results/svg/linking/scripted/xlink-href-compat.html) | Pass | 12 / 12 |  |  |
 | [`painting/animations/stroke-dasharray-composition.html`](https://wpt.fyi/results/svg/painting/animations/stroke-dasharray-composition.html) | Pass | 136 / 136 |  |  |
 | [`painting/animations/stroke-dashoffset-composition.html`](https://wpt.fyi/results/svg/painting/animations/stroke-dashoffset-composition.html) | Pass | 30 / 30 |  |  |

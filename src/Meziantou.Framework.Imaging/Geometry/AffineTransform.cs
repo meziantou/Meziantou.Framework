@@ -206,6 +206,29 @@ public readonly struct AffineTransform : IEquatable<AffineTransform>
     /// <returns>The transformed vector.</returns>
     public PointD TransformVector(PointD vector) => new((M11 * vector.X) + (M21 * vector.Y), (M12 * vector.X) + (M22 * vector.Y));
 
+    /// <summary>Gets the smallest rectangle, aligned with the axes, that contains a transformed rectangle.</summary>
+    /// <remarks>
+    /// The result contains the four transformed corners: it is where a rotated, skewed or flipped rectangle lands, such
+    /// as the box of a text or an image drawn in <see cref="Drawing.DrawingCanvas.Transform(AffineTransform, Drawing.DrawingAction)"/>.
+    /// A rotation that is not a multiple of a quarter of a turn makes it larger than the rectangle. A rectangle without
+    /// width or height is a segment or a point, and gives the bounds of that.
+    /// </remarks>
+    /// <param name="rectangle">The rectangle.</param>
+    /// <returns>The bounds of the transformed rectangle.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The size of the result is not a finite number.</exception>
+    public RectangleD TransformBounds(RectangleD rectangle)
+    {
+        var topLeft = Transform(rectangle.Location);
+        var topRight = Transform(new PointD(rectangle.Right, rectangle.Top));
+        var bottomLeft = Transform(new PointD(rectangle.Left, rectangle.Bottom));
+        var bottomRight = Transform(new PointD(rectangle.Right, rectangle.Bottom));
+        var left = Math.Min(Math.Min(topLeft.X, topRight.X), Math.Min(bottomLeft.X, bottomRight.X));
+        var top = Math.Min(Math.Min(topLeft.Y, topRight.Y), Math.Min(bottomLeft.Y, bottomRight.Y));
+        var right = Math.Max(Math.Max(topLeft.X, topRight.X), Math.Max(bottomLeft.X, bottomRight.X));
+        var bottom = Math.Max(Math.Max(topLeft.Y, topRight.Y), Math.Max(bottomLeft.Y, bottomRight.Y));
+        return new RectangleD(left, top, right - left, bottom - top);
+    }
+
     /// <inheritdoc />
     public bool Equals(AffineTransform other)
         => M11.Equals(other.M11) && M12.Equals(other.M12) && M21.Equals(other.M21) && M22.Equals(other.M22) && OffsetX.Equals(other.OffsetX) && OffsetY.Equals(other.OffsetY);

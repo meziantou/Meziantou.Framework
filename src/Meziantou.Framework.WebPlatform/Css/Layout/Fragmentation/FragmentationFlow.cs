@@ -84,7 +84,7 @@ internal sealed class FragmentationFlow
     private List<(double Start, double End, RepeatedSections Sections)>? _repeatedTables;
 
     /// <summary>The boxes of the flow with <c>break-inside: avoid</c>.</summary>
-    private List<(double Start, double End, BoxFragment? Float)>? _avoidedBoxes;
+    private List<(double Start, double End, BoxFragment? Float, bool IsFloat)>? _avoidedBoxes;
     private Dictionary<BoxFragment, ParallelGroup>? _groupsByContainer;
 
     /// <summary>The parallel flows of the nested multi-column containers (see <see cref="NestedColumns"/>).</summary>
@@ -162,6 +162,40 @@ internal sealed class FragmentationFlow
 
     /// <summary>Records the breaks of a pushed float that is fragmented apart.</summary>
     public void SetFloatMap(BoxFragment box, FlowMap map) => (_root._floatMaps ??= [])[box] = map;
+
+    private List<KeptFloat>? _keptFloats;
+
+    /// <summary>The floats kept in the page before a forced break that their margin box crosses (see <see cref="KeepFloat"/>).</summary>
+    public List<KeptFloat>? KeptFloats => _root._keptFloats;
+
+    /// <summary>
+    /// Keeps in a page a float that starts before a forced page break and whose margin box ends after it, in the rest of the page:
+    /// as in Blink, the float is in the page of its position in the content (the breaks of the content after the break do not
+    /// move it), and its exclusion ends at the break (see <see cref="StripRelayout.UpdateFloatExclusionEnds"/>): the content
+    /// after the break, in the next pages, is not laid out beside it.
+    /// </summary>
+    /// <param name="extent">The float.</param>
+    /// <param name="map">The page of the float.</param>
+    /// <param name="breakPosition">The position of the break in the strip.</param>
+    public void KeepFloat(in FloatExtent extent, FlowMap map, double breakPosition)
+    {
+        SetFloatMap(extent.Fragment, map);
+        (_root._keptFloats ??= []).Add(new KeptFloat(extent.Fragment, extent.Start, breakPosition));
+    }
+
+    /// <summary>Forgets the floats kept before the forced breaks (the breaks are found again, see <see cref="KeepFloat"/>).</summary>
+    public void ClearKeptFloats()
+    {
+        if (_root._keptFloats is not { } kept)
+            return;
+
+        foreach (var keptFloat in kept)
+        {
+            _root._floatMaps?.Remove(keptFloat.Fragment);
+        }
+
+        kept.Clear();
+    }
 
     /// <summary>
     /// Returns the box of the flow that avoids the floats, was laid out before a pushed float (which it does not see) and
@@ -485,7 +519,7 @@ internal sealed class FragmentationFlow
                 tallest = Math.Max(tallest, item.Flow.GetTallestUnbreakable(double.NegativeInfinity, double.PositiveInfinity));
                 if (item.Flow._avoidedBoxes is { } avoided)
                 {
-                    foreach (var (avoidedStart, avoidedEnd, _) in avoided)
+                    foreach (var (avoidedStart, avoidedEnd, _, _) in avoided)
                     {
                         tallest = Math.Max(tallest, avoidedEnd - avoidedStart);
                     }
@@ -625,14 +659,18 @@ internal sealed class FragmentationFlow
     }
 
     /// <summary>Returns whether a position is inside a box of the flow with <c>break-inside: avoid</c>.</summary>
-    public bool IsInsideAvoidedBox(double position)
+    /// <param name="position">The position.</param>
+    /// <param name="fragmentainerStart">The position of the flow at the block-start edge of the fragmentainer of the break.</param>
+    public bool IsInsideAvoidedBox(double position, double fragmentainerStart)
     {
         if (_avoidedBoxes is not null)
         {
-            foreach (var (start, end, floatBox) in _avoidedBoxes)
+            foreach (var (start, end, floatBox, isFloat) in _avoidedBoxes)
             {
-                // (not beside a float that is fragmented apart, see GetFloatAvoider: it is broken by the block size of the fragmentainers)
-                if (position > start + Epsilon && position < end - Epsilon && (floatBox is null || GetFloatMap(floatBox) is null))
+                // (not beside a float that is fragmented apart, see GetFloatAvoider: it is broken by the block size of the fragmentainers;
+                // in the pages, not beside a float that starts after the start of the fragmentainer: as in Gecko, it is pushed to the
+                // next page, see FloatPusher, WPT css/CSS2/pagination/float-page-break-inside-avoid-8-print.html)
+                if (position > start + Epsilon && position < end - Epsilon && (floatBox is null || GetFloatMap(floatBox) is null) && !(isFloat && _root._isPaged && start > fragmentainerStart + Epsilon))
                     return true;
             }
         }
@@ -1102,6 +1140,12 @@ internal sealed class FragmentationFlow
         /// <summary>The block-start borders and paddings between <see cref="LeadingStart"/> and the contents.</summary>
         public double LeadingEdges { get; init; }
 
+        /// <summary>
+        /// The position of the strip from which only the block-start borders and paddings of the ancestors precede the contents
+        /// that are visited, whether they are repeated at the breaks or not (see <see cref="BreakCandidate.EdgesOnlyFrom"/>).
+        /// </summary>
+        public double EdgesOnlyFrom { get; init; }
+
         /// <summary>The box that establishes the block formatting context of the contents that are visited, or null for the one of the strip.</summary>
         public BoxFragment? FormattingContext { get; init; }
 
@@ -1203,6 +1247,16 @@ internal sealed class FragmentationFlow
                 continue;
             }
 
+            // (also a box of the strip, whose containing block is an inline box of the strip, when its static position is in the
+            // contents of an absolutely positioned box that is fragmented apart: it is placed from that position with their breaks)
+            if (parent is null && _separatesOutOfFlow && child is BoxFragment { Box.IsOutOfFlow: true } carriedBox && PositionedLayout.IsAbsolutelyPositioned(carriedBox.Box)
+                && top < context.ClipEnd && carriedBox.Box.Style.Layout.Insets.Inset is var carriedInsets && carriedInsets.Get(_writingDirection.BlockStart).IsAuto
+                && carriedInsets.Get(_writingDirection.BlockEnd).IsAuto && GetStaticPositionCarrier(carriedBox.Box) is { } carrier)
+            {
+                carrier.Flow.AddOutOfFlow(carriedBox, top, bottom, context, carriedBox, top, _root.Spanners.Count, isStripChild: true);
+                continue;
+            }
+
             // (the absolutely positioned boxes whose containing block is the initial containing block of the pages)
             if (parent is null && PageBreakRules.Current?.InitialContainingBlock is { } initialContainingBlock && child is BoxFragment { Box.IsOutOfFlow: true } pageBox
                 && PositionedLayout.IsAbsolutelyPositioned(pageBox.Box) && top < context.ClipEnd)
@@ -1217,7 +1271,7 @@ internal sealed class FragmentationFlow
                 continue;
 
             // The contents of the child follow content of the box, or only the block-start edges of the ancestors
-            var childContext = hasContentBefore ? context with { LeadingStart = top, LeadingEdges = 0 } : context;
+            var childContext = hasContentBefore ? context with { LeadingStart = top, LeadingEdges = 0, EdgesOnlyFrom = top } : context;
             var breakContext = context;
             var isAfterRepeatedHeader = false;
             if (repeated is not null)
@@ -1300,7 +1354,7 @@ internal sealed class FragmentationFlow
                     }
                     else
                     {
-                        AddBreakBetween(previous, child, top, previousBottom, breakContext);
+                        AddBreakBetween(previous, child, top, previousBottom, breakContext, endsWithContent: parent?.Box.Kind == ContainerBoxKind.TableWrapper);
                     }
                 }
 
@@ -1427,6 +1481,32 @@ internal sealed class FragmentationFlow
             if (!(_root._groupAncestors ??= []).Add(ancestorBox))
                 break;
         }
+    }
+
+    /// <summary>
+    /// Returns the flow of the nearest absolutely positioned ancestor of a box when it is fragmented apart (see
+    /// <see cref="OutOfFlowItems"/>), or null: the static position of the box is in its contents.
+    /// </summary>
+    private ParallelItem? GetStaticPositionCarrier(ContainerBox box)
+    {
+        if (_root._outOfFlowItems is not { } items)
+            return null;
+
+        for (var ancestor = box.Parent; ancestor is not null; ancestor = ancestor.Parent)
+        {
+            if (!ancestor.IsOutOfFlow || !PositionedLayout.IsAbsolutelyPositioned(ancestor))
+                continue;
+
+            foreach (var item in items)
+            {
+                if (ReferenceEquals(item?.Box?.Box, ancestor))
+                    return item;
+            }
+
+            return null;
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -1620,7 +1700,7 @@ internal sealed class FragmentationFlow
     /// <param name="siblingBefore">The in-flow sibling before the container when the flow has a possible break between them, else null.</param>
     private bool TryAddNestedColumns(BoxFragment box, double top, double bottom, VisitContext context, Fragment? siblingBefore)
     {
-        if (TakeNestedColumns(box, context) is not { } nested)
+        if (TakeNestedColumns(box, bottom, context) is not { } nested)
             return false;
 
         // (the breaker places the block-end edge of a container with a definite block size after its content box)
@@ -1706,15 +1786,17 @@ internal sealed class FragmentationFlow
 
     /// <summary>
     /// Returns the content of a multi-column container of the flow that the breaker fragments (see <see cref="NestedColumns"/>), or
-    /// null when the container is monolithic (it was not laid out in a strip, or it is monolithic for another reason).
+    /// null when the container is monolithic (it was not laid out in a strip, it overflows an ancestor that clips it, or it is
+    /// monolithic for another reason).
     /// </summary>
-    private NestedColumns? TakeNestedColumns(BoxFragment box, VisitContext context)
+    /// <param name="bottom">The block-end edge of the border box of the container in the strip.</param>
+    private NestedColumns? TakeNestedColumns(BoxFragment box, double bottom, VisitContext context)
     {
         var container = box.Box;
         var layout = container.Style.Layout;
         if (container.Kind != ContainerBoxKind.Normal || !layout.IsMultiColumnContainer || container.LayoutState is not MultiColumnState state
             || box.IsScrollContainer || container.IsAtomicInline || layout.WritingMode != _writingDirection.WritingMode
-            || !double.IsPositiveInfinity(context.ClipEnd) || (_writingDirection.IsHorizontal ? box.ClipsOverflowY : box.ClipsOverflowX)
+            || bottom > context.ClipEnd + Epsilon || (_writingDirection.IsHorizontal ? box.ClipsOverflowY : box.ClipsOverflowX)
             || (IntrinsicSizing.HasSizeContainment(container, inlineAxis: false) && UsedContainment.CanApplySizeContainment(container)))
         {
             return null;
@@ -1781,7 +1863,7 @@ internal sealed class FragmentationFlow
             childContext = childContext with { Avoid = true, AvoidDepth = context.AvoidDepth + (box.Box.Kind == ContainerBoxKind.TableGrid && box.Parent is BoxFragment { Box.Kind: ContainerBoxKind.TableWrapper } ? 0 : 1) };
             if (!context.Avoid && bottom - top > Epsilon)
             {
-                (_avoidedBoxes ??= []).Add((top, bottom, !isInFlow && _root._pushedFloats is { } pushedFloats && pushedFloats.TryGetValue(box.Box, out var floatPush) && !floatPush.IsDeferred ? box : null));
+                (_avoidedBoxes ??= []).Add((top, bottom, !isInFlow && _root._pushedFloats is { } pushedFloats && pushedFloats.TryGetValue(box.Box, out var floatPush) && !floatPush.IsDeferred ? box : null, !isInFlow && layout.IsFloating));
             }
         }
 
@@ -1907,6 +1989,18 @@ internal sealed class FragmentationFlow
             lastInFlowEnd = Math.Max(lastInFlowEnd, childBottom);
         }
 
+        // As in Blink, the line of the caret of an editing host without content (see BlockFormattingContext.HasCaretLineIfEmpty)
+        // is monolithic, as a line box, and it is the content of the box: its block-end edges may be pushed to the next
+        // fragmentainer when it overflows
+        var hasCaretLine = false;
+        if (lastInFlowEnd <= contentStart + Epsilon && GetFirstInFlowChild(box) is null && BlockFormattingContext.HasCaretLineIfEmpty(box.Box)
+            && Math.Min(contentStart + box.Box.Style.Layout.UsedLineHeight, contentEnd) is var caretLineEnd && caretLineEnd > contentStart + Epsilon)
+        {
+            AddUnbreakable(contentStart, caretLineEnd);
+            lastInFlowEnd = caretLineEnd;
+            hasCaretLine = true;
+        }
+
         // The last-resort breaks after the block-start border and padding of the box and before its block-end border and padding (as
         // in the browsers: https://drafts.csswg.org/css-break-3/#possible-breaks, class C break points)
         if (GetFirstInFlowChild(box) is { } first)
@@ -1918,7 +2012,7 @@ internal sealed class FragmentationFlow
             {
                 // (after edges that the box repeats and nothing else: see BreakCandidate.OnlyEdgesFrom)
                 var onlyEdgesFrom = fragmentation.BoxDecorationBreak == BoxDecorationBreak.Clone && firstTop - childContext.LeadingStart <= childContext.LeadingEdges + Epsilon ? childContext.LeadingStart : double.NaN;
-                AddCandidate(new BreakCandidate(firstTop, contentStart, BreakAppeal.Avoid) { Sequence = startSequence, OnlyEdgesFrom = onlyEdgesFrom }, childContext);
+                AddCandidate(new BreakCandidate(firstTop, contentStart, BreakAppeal.Avoid) { Sequence = startSequence, OnlyEdgesFrom = onlyEdgesFrom, EdgesOnlyFrom = childContext.EdgesOnlyFrom }, childContext);
             }
 
             // "Between the content edge of a block container box and the outer edges of its child content [...], if there is a
@@ -1937,7 +2031,7 @@ internal sealed class FragmentationFlow
 
         if (edges.BlockEnd > Epsilon && bottom - edges.BlockEnd > top + edges.BlockStart + Epsilon && bottom - edges.BlockEnd < context.ClipEnd)
         {
-            AddCandidate(new BreakCandidate(bottom - edges.BlockEnd, Math.Max(lastInFlowEnd, contentStart), BreakAppeal.Avoid) { IsBeforeEndEdges = true }, childContext);
+            AddCandidate(new BreakCandidate(bottom - edges.BlockEnd, Math.Max(lastInFlowEnd, contentStart), BreakAppeal.Avoid) { IsBeforeEndEdges = !hasCaretLine }, childContext);
         }
 
         if (contentEnd - lastInFlowEnd > Epsilon && !HasDefiniteBlockSize(box) && GetLastInFlowChild(box) is BoxFragment lastChild
@@ -2026,7 +2120,7 @@ internal sealed class FragmentationFlow
             }
 
             var (childTop, childBottom, _) = GetBlockRange(child, box.Size, box.WritingDirection, top);
-            var nested = TakeNestedColumns(child, context);
+            var nested = TakeNestedColumns(child, childBottom, context);
             var flow = nested is null ? new FragmentationFlow(_writingDirection, _spannerBoxes, _root) : CreateNestedColumnsFlow(nested, childTop, childBottom);
             var item = new ParallelItem(flow)
             {
@@ -2080,7 +2174,7 @@ internal sealed class FragmentationFlow
                 var layout = child.Box.Style.Layout;
                 var childEdges = _writingDirection.ToLogical(child.Border.Add(child.Padding).Add(child.Scrollbars));
                 var clones = layout.Fragmentation.BoxDecorationBreak == BoxDecorationBreak.Clone && (childEdges.BlockStart != 0 || childEdges.BlockEnd != 0);
-                flow.VisitBox(child, childTop, childBottom, context with { LeadingStart = childTop, LeadingEdges = 0 }, isInFlow: true, isFlowRoot: !clones);
+                flow.VisitBox(child, childTop, childBottom, context with { LeadingStart = childTop, LeadingEdges = 0, EdgesOnlyFrom = childTop }, isInFlow: true, isFlowRoot: !clones);
                 item.Avoid = context.Avoid || layout.Fragmentation.BreakInside is BreakInside.Avoid or BreakInside.AvoidColumn;
                 if (clones)
                 {
@@ -2260,7 +2354,14 @@ internal sealed class FragmentationFlow
             var appeal = IsForcedBreak(after) || IsForcedBreak(before) ? BreakAppeal.Forced
                 : context.Avoid || IsAvoidBreak(after) || IsAvoidBreak(before) ? BreakAppeal.Avoid
                 : BreakAppeal.Perfect;
-            AddCandidate(new BreakCandidate(position, previousEnd, appeal), context);
+            var sequence = 0;
+            if (appeal == BreakAppeal.Forced)
+            {
+                sequence = ++_root._sequence;
+                (group.ForcedBreakSequences ??= new int[tracks.Length])[track] = sequence;
+            }
+
+            AddCandidate(new BreakCandidate(position, previousEnd, appeal) { Sequence = sequence }, context);
         }
 
         (Groups ??= []).Add(group);
@@ -2275,7 +2376,8 @@ internal sealed class FragmentationFlow
     }
 
     /// <summary>Adds the class A break opportunity between two in-flow sibling boxes (https://drafts.csswg.org/css-break-3/#possible-breaks).</summary>
-    private void AddBreakBetween(Fragment previous, Fragment next, double nextTop, double previousBottom, VisitContext context)
+    /// <param name="endsWithContent">Whether the boxes broken there end with the content before the break (see <see cref="BreakCandidate.EndsWithContent"/>).</param>
+    private void AddBreakBetween(Fragment previous, Fragment next, double nextTop, double previousBottom, VisitContext context, bool endsWithContent = false)
     {
         var after = GetBreakAfter(previous);
         var before = GetBreakBefore(next);
@@ -2284,7 +2386,7 @@ internal sealed class FragmentationFlow
             // https://drafts.csswg.org/css-break-3/#break-margins: "When a forced break occurs there, adjoining margins before the break
             // are truncated, but margins after the break are preserved"
             var marginStart = next is BoxFragment nextBox ? GetCollapsedBlockStartMargin(nextBox) : 0;
-            AddCandidate(new BreakCandidate(Math.Max(previousBottom, nextTop - marginStart), previousBottom, BreakAppeal.Forced), context);
+            AddCandidate(new BreakCandidate(Math.Max(previousBottom, nextTop - marginStart), previousBottom, BreakAppeal.Forced) { EndsWithContent = endsWithContent }, context);
             return;
         }
 
@@ -2292,7 +2394,7 @@ internal sealed class FragmentationFlow
         var margins = (previous is BoxFragment previousBox ? Math.Max(0, previousBox.Margin.Get(_writingDirection.BlockEnd)) : 0)
             + (next is BoxFragment followingBox ? Math.Max(0, followingBox.Margin.Get(_writingDirection.BlockStart)) : 0);
         var avoid = context.Avoid || IsAvoidBreak(after) || IsAvoidBreak(before);
-        AddCandidate(new BreakCandidate(nextTop, previousBottom, avoid ? BreakAppeal.Avoid : BreakAppeal.Perfect) { IsBetweenMargins = nextTop - previousBottom <= margins + Epsilon }, context);
+        AddCandidate(new BreakCandidate(nextTop, previousBottom, avoid ? BreakAppeal.Avoid : BreakAppeal.Perfect) { IsBetweenMargins = nextTop - previousBottom <= margins + Epsilon, EndsWithContent = endsWithContent }, context);
     }
 
     /// <summary>
@@ -2687,6 +2789,12 @@ internal sealed class FragmentationFlow
     internal static bool IsAvoidBreak(BreakBetween value) => PageBreakRules.Current is not null ? PageBreakRules.IsAvoid(value) : value is BreakBetween.Avoid or BreakBetween.AvoidColumn;
 }
 
+/// <summary>A float kept in the page before a forced break (see <see cref="FragmentationFlow.KeepFloat"/>).</summary>
+/// <param name="Fragment">The fragment of the float in the strip.</param>
+/// <param name="Start">The block-start edge of its margin box in the strip.</param>
+/// <param name="BreakPosition">The position of the forced break in the strip.</param>
+internal readonly record struct KeptFloat(BoxFragment Fragment, double Start, double BreakPosition);
+
 /// <summary>A float of the strip of a fragmentation context (see <c>FragmentationFlow.AddFloat</c>).</summary>
 /// <param name="Fragment">The fragment of the float in the strip.</param>
 /// <param name="Start">The block-start edge of its margin box in the strip.</param>
@@ -3022,6 +3130,13 @@ internal sealed class ParallelGroup(BoxFragment container, double[] trackStarts,
 
     public double Start => TrackStarts[0];
 
+    /// <summary>
+    /// The sequence (<see cref="BreakCandidate.Sequence"/>) of the forced break before each track (0 when there is none), or
+    /// null: the breaker does not place a track after a forced break that it has not taken (the tracks without block size at
+    /// the same position are separated by their forced breaks).
+    /// </summary>
+    public int[]? ForcedBreakSequences { get; set; }
+
     public List<ParallelItem> Items { get; } = [];
 
     /// <summary>The parallel flow of each fragment of the items.</summary>
@@ -3211,6 +3326,19 @@ internal sealed class ParallelItem(FragmentationFlow flow)
 
     /// <summary>Whether the contents of the box, up to its automatic block size, are placed.</summary>
     public bool IsContentPlaced { get; set; }
+
+    /// <summary>The generation of the breaker and the fragmentainer where the item was pushed alone to the next fragmentainer (see <c>FlowCursor.StartBreakAppeal</c>).</summary>
+    public int PushedGeneration { get; set; }
+
+    /// <inheritdoc cref="PushedGeneration"/>
+    public int PushedIndex { get; set; }
+
+    /// <summary>
+    /// The distance between the position of the flow of the container where the box of the item starts and its position in the
+    /// strip, when the item starts a fragmentainer after its position (it was pushed alone, or its offset was truncated): its
+    /// block-end edge follows it. 0 otherwise.
+    /// </summary>
+    public double PushShift { get; set; }
 
     /// <summary>The appeal of the break of the flow in the current fragmentainer.</summary>
     public BreakAppeal Appeal { get; set; }

@@ -75,16 +75,16 @@
     "reftest": "PASS"
   },
   "css/css-page/fixedpos-010-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/fixedpos-011-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/fixedpos-with-abspos-with-link-print.html": {
     "reftest": "PASS"
   },
   "css/css-page/fixedpos-with-iframe-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/fixedpos-with-link-with-inline-child-print.html": {
     "reftest": "PASS"
@@ -99,7 +99,7 @@
     "reftest": "PASS"
   },
   "css/css-page/layers-003-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/layers-004-print.html": {
     "reftest": "PASS"
@@ -273,7 +273,7 @@
     "reftest": "PASS"
   },
   "css/css-page/monolithic-overflow-016-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/monolithic-overflow-017-print.html": {
     "reftest": "FAIL"
@@ -282,7 +282,7 @@
     "reftest": "PASS"
   },
   "css/css-page/monolithic-overflow-019-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/monolithic-overflow-020-print.html": {
     "reftest": "PASS"
@@ -294,7 +294,7 @@
     "reftest": "PASS"
   },
   "css/css-page/monolithic-overflow-023-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/monolithic-overflow-024-print.html": {
     "reftest": "PASS"
@@ -507,7 +507,7 @@
     "reftest": "PASS"
   },
   "css/css-page/page-name-margin-001-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/page-name-margin-002-print.html": {
     "reftest": "PASS"
@@ -573,7 +573,7 @@
     "reftest": "PASS"
   },
   "css/css-page/page-name-zero-height-001-print.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-page/page-orientation-on-landscape-001-print.html": {
     "reftest": "PASS"

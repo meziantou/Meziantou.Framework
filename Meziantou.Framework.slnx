@@ -312,6 +312,7 @@
     <Project Path="tests/Meziantou.Framework.Imaging.WebP.Tests/Meziantou.Framework.Imaging.WebP.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.InlineSnapshotTesting.Tests/Meziantou.Framework.InlineSnapshotTesting.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.JavaScriptEngine.AotTests/Meziantou.Framework.JavaScriptEngine.AotTests.csproj" />
+    <Project Path="tests/Meziantou.Framework.JavaScriptEngine.NpmPackages/Meziantou.Framework.JavaScriptEngine.NpmPackages.csproj" />
     <Project Path="tests/Meziantou.Framework.JavaScriptEngine.Test262/Meziantou.Framework.JavaScriptEngine.Test262.csproj" />
     <Project Path="tests/Meziantou.Framework.JavaScriptEngine.Tests/Meziantou.Framework.JavaScriptEngine.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark.csproj" />

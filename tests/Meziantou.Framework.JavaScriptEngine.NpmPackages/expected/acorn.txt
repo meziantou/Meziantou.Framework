@@ -1,0 +1,63 @@
+{"ArrayExpression":2,"ArrayPattern":1,"AssignmentExpression":3,"AssignmentPattern":2,"AwaitExpression":1,"BinaryExpression":4,"BlockStatement":9,"BreakStatement":1,"CallExpression":5,"CatchClause":1,"ChainExpression":1,"ClassBody":1,"ClassDeclaration":1,"ContinueStatement":1,"ExportDefaultDeclaration":1,"ExportNamedDeclaration":1,"ExpressionStatement":9,"ForOfStatement":1,"ForStatement":1,"FunctionExpression":5,"Identifier":34,"IfStatement":1,"ImportDeclaration":1,"ImportExpression":1,"ImportSpecifier":2,"LabeledStatement":1,"Literal":14,"LogicalExpression":2,"MemberExpression":11,"MethodDefinition":5,"ObjectExpression":1,"ObjectPattern":1,"PrivateIdentifier":1,"Program":1,"PropertyDefinition":2,"RestElement":2,"ReturnStatement":2,"SpreadElement":1,"StaticBlock":1,"Super":1,"TaggedTemplateExpression":1,"TemplateElement":2,"TemplateLiteral":1,"ThisExpression":6,"TryStatement":1,"UpdateExpression":2,"VariableDeclaration":6,"VariableDeclarator":9,"YieldExpression":2}
+----
+Base@4:35 Queue@7:11 values@8:56 Symbol@10:4 item@11:56 #items value@12:61 input@14:51 i@15:23 i@15:31 i@15:42 tag@16:17 b@16:24 a@16:90 c@16:97 d@16:102 getResource@19:17
+----
+Program>ExportDefaultDeclaration>ClassDeclaration>ClassBody>MethodDefinition>FunctionExpression>BlockStatement>ReturnStatement
+Program>ExportDefaultDeclaration>ClassDeclaration>ClassBody>MethodDefinition>FunctionExpression>BlockStatement>ReturnStatement
+----
+[["Line"," A module"]]
+----
+Queue
+----
+import {a as b, default as c} from "./module.js";
+export const answer = 12 * 14;
+export default class Queue extends Base {
+  #items = [];
+  static #count = 0n;
+  static {
+    Queue.#count++;
+  }
+  constructor(...values) {
+    super();
+    this.#items.push(...values);
+  }
+  get size() {
+    return this.#items.length;
+  }
+  *[Symbol.iterator]() {
+    yield* this.#items;
+  }
+  async *drain() {
+    for await (const item of this) yield item;
+  }
+  has(value) {
+    return (#items in this) && this.#items.includes(value);
+  }
+}
+const {x = 2, y: [z, ...rest] = [], ...others} = input ?? ({});
+label: for (let i = 0; i < 20; i++) {
+  if (i % 4) continue label; else break;
+}
+const template = tag`a${renamed}c`, regexp = /(?<year>\d{4})-\d{2}/v, big = 1_000_000n, maybe = a?.b?.[c]?.(d);
+try {
+  await import("./lazy.js");
+} catch {} finally {}
+x ||= 2;
+y &&= 4;
+z ??= 6;
+using resource = getResource();
+
+----
+name:a =:= name:b +/-:+ num:1 ?:? ` template:t ${ name:d } template: ` : regexp:[object Object]
+----
+SyntaxError: The keyword 'let' is reserved (1:4)
+----
+SyntaxError: Unexpected token (1:6)
+----
+SyntaxError: Unexpected token (1:5)
+----
+SyntaxError: 'with' in strict mode (1:29)
+----
+SyntaxError: Unexpected token (1:7)
+----
+SyntaxError: Unexpected token (1:0)

@@ -1182,15 +1182,7 @@
     "reftest": "PASS"
   },
   "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-009.html": {
-    "total": 7,
-    "failures": {
-      ".test 2": "FAIL",
-      ".test 3": "FAIL",
-      ".test 4": "FAIL",
-      ".test 5": "FAIL",
-      ".test 6": "FAIL",
-      ".test 7": "FAIL"
-    }
+    "total": 7
   },
   "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-010.html": {
     "reftest": "PASS"

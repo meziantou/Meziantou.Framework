@@ -332,11 +332,15 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
         }
 
         // The scope of the function is the element, the form and the document (the object environments of the with
-        // statements); the parameters (e.g. event) shadow their properties
-        var code = "(function (__element, __form, __document) { " + scopes + "return function " + source.Name + "(" + string.Join(", ", source.Parameters) + ") {\n" + source.Body + "\n}; })";
+        // statements); the parameters (e.g. event) shadow their properties. The function is created by OrdinaryFunctionCreate:
+        // its source text has the name of the attribute, but the name is not bound in its scope (e.g. onload() in the
+        // handler calls the onload function of the global object), so the function expression is parsed as an anonymous
+        // function, named by the key of the property definition
+        var prefix = "(function (__element, __form, __document) { " + scopes + "return { " + source.Name + ": ";
+        var code = prefix + "function " + source.Name + "(" + string.Join(", ", source.Parameters) + ") {\n" + source.Body + "\n} }." + source.Name + "; })";
         var function = realm.Run(() =>
         {
-            if (!JsPreparedScript.TryParse(code, source.Url, 0, 0, out var prepared, out var error))
+            if (!JsPreparedScript.TryParse(code, source.Url, 0, 0, unboundNameFunctionStart: prefix.Length, out var prepared, out var error))
                 throw CreateSyntaxError(realm, error);
 
             var engineRealm = (JsRealm)realm.EngineRealm;

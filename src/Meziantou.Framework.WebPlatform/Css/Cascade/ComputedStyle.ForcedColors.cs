@@ -410,7 +410,7 @@ internal sealed partial class ComputedStyle
     /// </summary>
     private string ForceHighlightColors(string property, ForcedColorsKind kind, string value)
     {
-        var name = PseudoElement is { } pseudoElement && pseudoElement.IndexOf('(', StringComparison.Ordinal) is >= 0 and var index ? pseudoElement[..index] : PseudoElement;
+        var name = StyleEngine.GetHighlightName(PseudoElement);
         switch (kind)
         {
             case ForcedColorsKind.Color:
@@ -448,7 +448,7 @@ internal sealed partial class ComputedStyle
         if (HasSystemColor("color", computedValue))
             return computedValue;
 
-        var name = PseudoElement is { } pseudoElement && pseudoElement.IndexOf('(', StringComparison.Ordinal) is >= 0 and var index ? pseudoElement[..index] : PseudoElement;
+        var name = StyleEngine.GetHighlightName(PseudoElement);
         if (name is "spelling-error" or "grammar-error")
             return originating.GetUsedColor();
 

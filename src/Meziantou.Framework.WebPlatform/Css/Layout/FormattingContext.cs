@@ -122,6 +122,14 @@ internal readonly record struct ContentArea(WritingDirection WritingDirection, L
     public double? MaxBlockSize { get; init; }
 
     /// <summary>
+    /// When <see cref="BlockSize"/> is indefinite and the preferred block size is a <c>calc-size()</c> of the contents (e.g.
+    /// <c>calc-size(auto, min(size, 100px))</c>): resolves the content-box block size from the content-box automatic block size,
+    /// or returns null when it behaves as <c>auto</c> (see <see cref="MinBlockSize"/>: the main size of a column flex container,
+    /// in which its items are flexed, https://drafts.csswg.org/css-flexbox-1/#algo-main-container).
+    /// </summary>
+    public Func<double, double?>? ResolveContentBasedBlockSize { get; init; }
+
+    /// <summary>
     /// Whether <see cref="BlockSize"/> is the size of the content box but is indefinite for the percentages of the children (see
     /// <see cref="ConstraintSpace.IsFixedBlockSizeIndefinite"/>).
     /// </summary>
@@ -883,6 +891,9 @@ internal abstract class FormattingContext
                 || space.StretchUsesQuirksPercentageBlockSize && !isOrthogonal && box is { Kind: ContainerBoxKind.Anonymous, IsInlineBox: false, Display.Internal: DisplayInternal.None }),
             MinBlockSize = contentBlockSize is null ? ToContentBlockSize(blockSizing.Resolve(boxModel.GetMinSize(blockIsHorizontal), SizingProperty.Minimum)) : null,
             MaxBlockSize = contentBlockSize is null ? ToContentBlockSize(blockSizing.Resolve(boxModel.GetMaxSize(blockIsHorizontal), SizingProperty.Maximum)) : null,
+            ResolveContentBasedBlockSize = contentBlockSize is null && preferredBlockSize.Kind == SizeKind.CalcSize && box.Kind != ContainerBoxKind.Replaced && !(space.MeasuresIntrinsicBlockSize && !isOrthogonal)
+                ? CreateContentBasedBlockSizeResolver(blockSizing, preferredBlockSize, edges.BlockSum())
+                : null,
         };
 
         // https://drafts.csswg.org/css-contain-2/#containment-size: the automatic block size of a box with size containment is
@@ -1005,8 +1016,10 @@ internal abstract class FormattingContext
         // bottom border"; otherwise the margins of the last children are inside the box. As in the browsers, when the minimum
         // size makes the box taller than its contents, the margins of the last children neither collapse with the margin of
         // the box nor make it taller: they are discarded (WPT css/CSS2/normal-flow/margin-collapse-min-height-001.html,
-        // min-height-separates-margin.html). A maximum size does not change the collapsing (Blink and Gecko discard the
-        // margins then too, WebKit does not: WPT css/CSS2/margin-padding-clear/margin-collapse-038.xht)
+        // min-height-separates-margin.html). As in Blink, Gecko and Servo, they are discarded too when the maximum size makes
+        // the box shorter than its contents (WPT css/CSS2/normal-flow/max-height-separates-margin.html,
+        // css/css-overflow/line-clamp/line-clamp-auto-063.html; WebKit collapses them, as CSS 2 that only checks 'height':
+        // https://github.com/w3c/csswg-drafts/issues/12218, css/CSS2/margin-padding-clear/margin-collapse-038.xht)
         var endMarginCollapsesWithChildren = blockFormattingContext is not null && paddingAndBorder.BlockEnd == 0 && specifiedBlockSize is null && quirksFillBlockSize is null;
 
         // (as in Blink, the margins of the last children that overflow a box whose block size is limited into a later
@@ -1032,7 +1045,7 @@ internal abstract class FormattingContext
         if (endMarginCollapsesWithChildren && containedBlockSize is null && !IsZeroMinimumSize(layout, blockIsHorizontal, blockBasis))
         {
             finalBlockSize = ComputeBlockSize(contentsBlockSize);
-            if (finalBlockSize - Math.Max(GetAutomaticBlockSize(context, box, contentsBlockSize, contentInlineSize) + edges.BlockSum(), paddingAndBorder.BlockSum()) > 0.01)
+            if (Math.Abs(finalBlockSize - Math.Max(GetAutomaticBlockSize(context, box, contentsBlockSize, contentInlineSize) + edges.BlockSum(), paddingAndBorder.BlockSum())) > 0.01)
             {
                 endMarginCollapsesWithChildren = false;
                 discardsEndMargin = true;
@@ -1047,6 +1060,14 @@ internal abstract class FormattingContext
             }
 
             finalBlockSize = containedBlockSize ?? ComputeBlockSize(contentsBlockSize);
+
+            // (a maximum size that makes the box shorter than its contents discards the margins of its last children too)
+            if (endMarginCollapsesWithChildren && containedBlockSize is null
+                && Math.Max(GetAutomaticBlockSize(context, box, contentsBlockSize, contentInlineSize) + edges.BlockSum(), paddingAndBorder.BlockSum()) - finalBlockSize > 0.01)
+            {
+                endMarginCollapsesWithChildren = false;
+                discardsEndMargin = true;
+            }
         }
 
         if (endMarginCollapsesWithChildren && result.EndMargin.Sum != 0 && context.StripRelayout is { } stripRelayout && contentsBlockSize > finalBlockSize - edges.BlockSum() + 0.01)
@@ -1624,6 +1645,10 @@ internal abstract class FormattingContext
             ? (min is { } a ? ratio.ToInline(a) : null, max is { } b ? ratio.ToInline(b) : null)
             : (min is { } c ? ratio.ToBlock(c) : null, max is { } d ? ratio.ToBlock(d) : null);
     }
+
+    /// <summary>Returns <see cref="ContentArea.ResolveContentBasedBlockSize"/>: the <c>calc-size()</c> resolved with the automatic block size as its basis, as <c>ComputeBlockSize</c> resolves the used block size.</summary>
+    private static Func<double, double?> CreateContentBasedBlockSizeResolver(AxisSizing blockSizing, Size preferredBlockSize, double edges)
+        => contentsBlockSize => (blockSizing with { ContentSize = contentsBlockSize + edges }).Resolve(preferredBlockSize, SizingProperty.Preferred) is { } size ? Math.Max(0, size - edges) : null;
 
     /// <summary>
     /// Returns whether the automatic minimum size of a box in the ratio-dependent axis is its min-content size

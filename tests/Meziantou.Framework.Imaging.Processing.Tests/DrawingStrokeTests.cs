@@ -1116,6 +1116,72 @@ public sealed class DrawingStrokeTests
         Assert.Equal(expected, DrawingTestSupport.ReadSamples(right.Frames[0]));
     }
 
+    [Fact]
+    public void GetBoundsContainsWhatAPenPaints()
+    {
+        // A right triangle with its corners at (10, 10), (30, 10) and (10, 30), and a horizontal line
+        var triangle = new VectorPathBuilder().AddPolygon([new PointD(10, 10), new PointD(30, 10), new PointD(10, 30)]).Build();
+        var line = new VectorPathBuilder().MoveTo(10, 20).LineTo(30, 20).Build();
+
+        // Half the width around the path with round joins; with miters, as far as their limit (4 by default) allows
+        Assert.Equal(RectangleD.FromLTRB(8, 8, 32, 32), triangle.GetBounds(new Pen(White, 4) { LineJoin = LineJoin.Round }));
+        Assert.Equal(RectangleD.FromLTRB(2, 2, 38, 38), triangle.GetBounds(new Pen(White, 4)));
+        Assert.Equal(RectangleD.FromLTRB(6, 6, 34, 34), triangle.GetBounds(new Pen(White, 4) { MiterLimit = 2 }));
+
+        // A stroke inside the path stays in what it fills; one outside reaches a whole width beyond it
+        Assert.Equal(triangle.GetTightBounds(), triangle.GetBounds(new Pen(White, 4) { Alignment = PenAlignment.Inside }));
+        Assert.Equal(RectangleD.FromLTRB(6, 6, 34, 34), triangle.GetBounds(new Pen(White, 4) { Alignment = PenAlignment.Outside, LineJoin = LineJoin.Round }));
+
+        // Square caps reach as far as their corners
+        var capped = line.GetBounds(new Pen(White, 4) { LineCap = LineCap.Square, LineJoin = LineJoin.Round });
+        Assert.Equal(10 - (2 * Math.Sqrt(2)), capped.Left, 1e-12);
+        Assert.Equal(20 - (2 * Math.Sqrt(2)), capped.Top, 1e-12);
+        Assert.Equal(30 + (2 * Math.Sqrt(2)), capped.Right, 1e-12);
+
+        // A pen with markers is widened: the bounds are exact
+        var arrow = new Pen(White, 2) { EndMarker = LineMarker.Arrow };
+        Assert.Equal(line.Widen(arrow).GetTightBounds(), line.GetBounds(arrow));
+        Assert.Equal(RectangleD.Empty, new VectorPathBuilder().Build().GetBounds(new Pen(White, 4)));
+        Assert.Throws<ArgumentNullException>("pen", () => line.GetBounds(null!));
+
+        // The pixels each stroke changes, and the exact bounds of the stroke, are inside the bounds
+        Pen[] pens =
+        [
+            new(White, 4),
+            new(White, 4) { LineJoin = LineJoin.Round },
+            new(White, 4) { LineJoin = LineJoin.Bevel, LineCap = LineCap.Square, DashPattern = new double[] { 3, 2 } },
+            new(White, 3) { Alignment = PenAlignment.Inside },
+            new(White, 3) { Alignment = PenAlignment.Outside },
+            new(White, 0),
+        ];
+        foreach (var pen in pens)
+        {
+            foreach (var path in new[] { triangle, line })
+            {
+                var bounds = path.GetBounds(pen);
+                var widened = path.Widen(pen);
+                if (!widened.IsEmpty)
+                {
+                    // A square cap of a dash that ends at a corner reaches the bounds exactly, give or take a rounding
+                    Assert.True(bounds.Inflate(1e-9).Contains(widened.GetTightBounds()), $"{bounds} does not contain the widened path {widened.GetTightBounds()}");
+                }
+
+                using var image = NewBlack(48, 48);
+                image.Frames[0].Draw(canvas => canvas.Stroke(pen, path), Ct);
+                for (var y = 0; y < 48; y++)
+                {
+                    for (var x = 0; x < 48; x++)
+                    {
+                        if (image.Frames[0][x, y].Value != 0)
+                        {
+                            Assert.True(x + 1 > bounds.Left && x < bounds.Right && y + 1 > bounds.Top && y < bounds.Bottom, $"The pixel ({x}, {y}) is outside {bounds}");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private static Image<Gray8> NewBlack(int width, int height) => new(width, height, new Gray8(0));
 
     private static void AssertGray8(Image<Gray8> image, int[][] expected)

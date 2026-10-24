@@ -8,8 +8,8 @@
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 18 | 20 | 0 | 90% |
 | [Tentative](#tentative-tests) | 2 | 3 | 0 | 67% |
-| [Reftests](#reftests) | 211 | 224 | 0 | 94% |
-| **All** | **231** | **247** | **0** | **94%** |
+| [Reftests](#reftests) | 220 | 224 | 0 | 98% |
+| **All** | **240** | **247** | **0** | **97%** |
 
 ## Stable tests
 
@@ -57,7 +57,7 @@
 | [`body-background-slr-print.html`](https://wpt.fyi/results/css/css-page/body-background-slr-print.html) | Pass | 1 / 1 |  |  |
 | [`body-background-srl-print.html`](https://wpt.fyi/results/css/css-page/body-background-srl-print.html) | Fail | 0 / 1 | TEST BUG | the canvas background of a `sideways-rl` root element stitched across two pages: the first page shows the right half of the gradient (lightgray), as the text of the test says, but the reference shows a white first page (Chrome and Firefox fail the test) |
 | [`body-background-vlr-print.html`](https://wpt.fyi/results/css/css-page/body-background-vlr-print.html) | Pass | 1 / 1 |  |  |
-| [`body-background-vrl-print.html`](https://wpt.fyi/results/css/css-page/body-background-vrl-print.html) | Fail | 0 / 1 | BUG | the background of the body stitched across the pages in `vertical-rl`: the fragments of the body are stitched in the block flow direction (the first page is the block-start, right, part of the stitched box), so the first page shows the white half of the gradient (`90deg`: lightgray on the left), where the reference expects the lightgray half on the first page (the absolutely positioned paragraph is placed as expected; no browser passes this test) |
+| [`body-background-vrl-print.html`](https://wpt.fyi/results/css/css-page/body-background-vrl-print.html) | Fail | 0 / 1 | TEST BUG | the background of the body (propagated to the canvas) is positioned in the root element stitched across the pages (`box-decoration-break: slice`, "as though the element were rendered with no breaks present, and then sliced by the breaks afterward", https://drafts.csswg.org/css-break-3/#valdef-box-decoration-break-slice): in `vertical-rl` the block-start side, which the first page contains, is the right side of the stitched box, the white half of the gradient (`90deg`: lightgray on the left, white on the right), but the reference expects the lightgray half on the first page and the white half on the second one (the layout of the boxes and of the absolutely positioned paragraph is as expected; the `vertical-lr` variant passes); fails in Chrome and Firefox (as the `sideways-*` variants) |
 | [`cssom/dynamic-001-print.html`](https://wpt.fyi/results/css/css-page/cssom/dynamic-001-print.html) | Pass | 1 / 1 |  |  |
 | [`fixedpos-001-print.html`](https://wpt.fyi/results/css/css-page/fixedpos-001-print.html) | Pass | 1 / 1 |  |  |
 | [`fixedpos-002-print.html`](https://wpt.fyi/results/css/css-page/fixedpos-002-print.html) | Pass | 1 / 1 |  |  |
@@ -68,14 +68,14 @@
 | [`fixedpos-007-print.html`](https://wpt.fyi/results/css/css-page/fixedpos-007-print.html) | Pass | 1 / 1 |  |  |
 | [`fixedpos-008-print.html`](https://wpt.fyi/results/css/css-page/fixedpos-008-print.html) | Pass | 1 / 1 |  |  |
 | [`fixedpos-009-print.html`](https://wpt.fyi/results/css/css-page/fixedpos-009-print.html) | Pass | 1 / 1 |  |  |
-| [`fixedpos-010-print.html`](https://wpt.fyi/results/css/css-page/fixedpos-010-print.html) | Fail | 0 / 1 | BUG | the fixed positioned box is placed as expected (laid out in the page area of the first page and repeated on the larger named pages), but the reference fails: its float (`float: right; margin-top: 300px`) overflows its container, which a forced page break (the change of page name) follows; the break is at the end of the container, so the float, after it in the strip, is placed in the next page instead of the page of its container (Blink breaks after the floats of the container) |
-| [`fixedpos-011-print.html`](https://wpt.fyi/results/css/css-page/fixedpos-011-print.html) | Fail | 0 / 1 | BUG | a fixed positioned multi-column container repeated on every page: its columns are laid out as a nested multi-column container (the printing is the outer fragmentation context), and its clones on the next pages are not filled as in the first one |
+| [`fixedpos-010-print.html`](https://wpt.fyi/results/css/css-page/fixedpos-010-print.html) | Pass | 1 / 1 |  |  |
+| [`fixedpos-011-print.html`](https://wpt.fyi/results/css/css-page/fixedpos-011-print.html) | Pass | 1 / 1 |  |  |
 | [`fixedpos-with-abspos-with-link-print.html`](https://wpt.fyi/results/css/css-page/fixedpos-with-abspos-with-link-print.html) | Pass | 1 / 1 |  |  |
-| [`fixedpos-with-iframe-print.html`](https://wpt.fyi/results/css/css-page/fixedpos-with-iframe-print.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the nested documents of the `iframe` elements are painted as on the screen (not printed): the content of the frame is not the one of the print styles |
+| [`fixedpos-with-iframe-print.html`](https://wpt.fyi/results/css/css-page/fixedpos-with-iframe-print.html) | Pass | 1 / 1 |  |  |
 | [`fixedpos-with-link-with-inline-child-print.html`](https://wpt.fyi/results/css/css-page/fixedpos-with-link-with-inline-child-print.html) | Pass | 1 / 1 |  |  |
 | [`layers-001-print.html`](https://wpt.fyi/results/css/css-page/layers-001-print.html) | Pass | 1 / 1 |  |  |
 | [`layers-002-print.html`](https://wpt.fyi/results/css/css-page/layers-002-print.html) | Pass | 1 / 1 |  |  |
-| [`layers-003-print.html`](https://wpt.fyi/results/css/css-page/layers-003-print.html) | Fail | 0 / 1 | BUG | the layers of a stacking context split by the pages (`z-index`) are painted with the fragment of the stacking context of the same page; a few edge pixels of the text differ from the reference (subpixel positions of the text after the page area origin is snapped) |
+| [`layers-003-print.html`](https://wpt.fyi/results/css/css-page/layers-003-print.html) | Pass | 1 / 1 |  |  |
 | [`layers-004-print.html`](https://wpt.fyi/results/css/css-page/layers-004-print.html) | Pass | 1 / 1 |  |  |
 | [`margin-boxes/alignment-001-print.html`](https://wpt.fyi/results/css/css-page/margin-boxes/alignment-001-print.html) | Pass | 1 / 1 |  |  |
 | [`margin-boxes/auto-margins-001-print.html`](https://wpt.fyi/results/css/css-page/margin-boxes/auto-margins-001-print.html) | Pass | 1 / 1 |  |  |
@@ -133,14 +133,14 @@
 | [`monolithic-overflow-013-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-013-print.html) | Pass | 1 / 1 |  |  |
 | [`monolithic-overflow-014-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-014-print.html) | Pass | 1 / 1 |  |  |
 | [`monolithic-overflow-015-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-015-print.html) | Pass | 1 / 1 |  |  |
-| [`monolithic-overflow-016-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-016-print.html) | Fail | 0 / 1 | BUG | the monolithic content that does not fit in an empty page is sliced, but the box after a monolithic box that overflows into the next pages starts after the end of the monolithic box in the strip, and one more page is created, where Blink places it at the end of the sliced content (4 pages expected) |
-| [`monolithic-overflow-017-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-017-print.html) | Fail | 0 / 1 | BUG | the monolithic content that does not fit in an empty page is sliced, but a float beside the monolithic content is not fragmented with it: it is placed in the first page and its part after the end of the page is clipped |
+| [`monolithic-overflow-016-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-016-print.html) | Pass | 1 / 1 |  |  |
+| [`monolithic-overflow-017-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-017-print.html) | Fail | 0 / 1 | TEST BUG | the pagination is as expected (the monolithic content overflows the first three pages, a repeated footer at the bottom of each page, `PASS` on the fourth page above the last footer), but the reference expects the hotpink background of the repeated footer (and its text) painted over the black monolithic content that overflows the row of the body of the table: that is the painting order of Blink (each table section paints its backgrounds in its own turn, in tree order), whereas CSS 2 paints all the backgrounds of the table, its row groups included, before the in-flow content of its cells (https://drafts.csswg.org/css2/#painting-order, E.2 step 4: "Otherwise, for table: [...] row group backgrounds [...]", then the block-level descendants in tree order), so the black box covers the footer; Firefox fails it too |
 | [`monolithic-overflow-018-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-018-print.html) | Pass | 1 / 1 |  |  |
-| [`monolithic-overflow-019-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-019-print.html) | Fail | 0 / 1 | BUG | the monolithic content that does not fit in an empty page is sliced, but a monolithic box in a parallel flow (a table cell) that overflows the page: the row is not broken in the strip, so its next pages are not created (2 pages instead of 4) |
+| [`monolithic-overflow-019-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-019-print.html) | Pass | 1 / 1 |  |  |
 | [`monolithic-overflow-020-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-020-print.html) | Pass | 1 / 1 |  |  |
 | [`monolithic-overflow-021-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-021-print.html) | Pass | 1 / 1 |  |  |
 | [`monolithic-overflow-022-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-022-print.html) | Pass | 1 / 1 |  |  |
-| [`monolithic-overflow-023-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-023-print.html) | Fail | 0 / 1 | BUG | the monolithic content that does not fit in an empty page is sliced, but the content after a monolithic box that is sliced is placed in the page where the monolithic box ends, but not at its block-end edge (the second page differs) |
+| [`monolithic-overflow-023-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-023-print.html) | Pass | 1 / 1 |  |  |
 | [`monolithic-overflow-024-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-024-print.html) | Pass | 1 / 1 |  |  |
 | [`monolithic-overflow-025-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-025-print.html) | Pass | 1 / 1 |  |  |
 | [`monolithic-overflow-026-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-026-print.html) | Pass | 1 / 1 |  |  |
@@ -149,7 +149,7 @@
 | [`monolithic-overflow-029-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-029-print.html) | Pass | 1 / 1 |  |  |
 | [`monolithic-overflow-030-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-030-print.html) | Pass | 1 / 1 |  |  |
 | [`monolithic-overflow-031-print.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-031-print.html) | Pass | 1 / 1 |  |  |
-| [`monolithic-overflow-032-print.tentative.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-032-print.tentative.html) | Fail | 0 / 1 | BUG | the monolithic content that does not fit in an empty page is sliced, and a box with `box-decoration-break: clone` does not repeat its edges at the slices, but Blink also ends the fragment of the box right after the monolithic content (with its block-end edges) and starts a new fragment of the box after it in the same page (with its block-start edges): the content after the monolithic content is placed after the end of the monolithic content without these edges (the third and next pages differ) |
+| [`monolithic-overflow-032-print.tentative.html`](https://wpt.fyi/results/css/css-page/monolithic-overflow-032-print.tentative.html) | Fail | 0 / 1 | BUG | the monolithic content that does not fit in an empty page is sliced, and a box with `box-decoration-break: clone` does not repeat its edges at the slices, but Blink and Gecko (as the comment of the test says; Gecko passes, Blink fails) also end the fragment of the box right after the monolithic content (with its block-end edges) and start a new fragment of the box after it in the same page (with its block-start edges): the content after the monolithic content is placed after the end of the monolithic content without these edges (the third and next pages differ). The fragmentation places one fragment of a box per page (FragmentSlicer): two fragments of the same box in a page is not supported |
 | [`page-background-001-print.html`](https://wpt.fyi/results/css/css-page/page-background-001-print.html) | Pass | 1 / 1 |  |  |
 | [`page-background-002-print.html`](https://wpt.fyi/results/css/css-page/page-background-002-print.html) | Pass | 1 / 1 |  |  |
 | [`page-background-003-print.html`](https://wpt.fyi/results/css/css-page/page-background-003-print.html) | Pass | 1 / 1 |  |  |
@@ -211,7 +211,7 @@
 | [`page-name-inline-block-001-print.html`](https://wpt.fyi/results/css/css-page/page-name-inline-block-001-print.html) | Pass | 1 / 1 |  |  |
 | [`page-name-inline-block-002-print.html`](https://wpt.fyi/results/css/css-page/page-name-inline-block-002-print.html) | Pass | 1 / 1 |  |  |
 | [`page-name-inline-block-003-print.html`](https://wpt.fyi/results/css/css-page/page-name-inline-block-003-print.html) | Pass | 1 / 1 |  |  |
-| [`page-name-margin-001-print.html`](https://wpt.fyi/results/css/css-page/page-name-margin-001-print.html) | Fail | 0 / 1 | BUG | the third page, whose page margin is 2cm (75.59px): the origin of its page area is snapped to the device pixels, which moves the content by 0.41px and rounds the block-end border of the box one pixel lower than in the reference, where the box is at the fractional position 2cm in an unsnapped page area (a few pixels of the edges differ) |
+| [`page-name-margin-001-print.html`](https://wpt.fyi/results/css/css-page/page-name-margin-001-print.html) | Pass | 1 / 1 |  |  |
 | [`page-name-margin-002-print.html`](https://wpt.fyi/results/css/css-page/page-name-margin-002-print.html) | Pass | 1 / 1 |  |  |
 | [`page-name-orthogonal-writing-001-print.html`](https://wpt.fyi/results/css/css-page/page-name-orthogonal-writing-001-print.html) | Pass | 1 / 1 |  |  |
 | [`page-name-orthogonal-writing-002-print.html`](https://wpt.fyi/results/css/css-page/page-name-orthogonal-writing-002-print.html) | Pass | 1 / 1 |  |  |
@@ -233,7 +233,7 @@
 | [`page-name-siblings-005-print.html`](https://wpt.fyi/results/css/css-page/page-name-siblings-005-print.html) | Pass | 1 / 1 |  |  |
 | [`page-name-table-001-print.html`](https://wpt.fyi/results/css/css-page/page-name-table-001-print.html) | Pass | 1 / 1 |  |  |
 | [`page-name-unnamed-trailing-001-print.html`](https://wpt.fyi/results/css/css-page/page-name-unnamed-trailing-001-print.html) | Pass | 1 / 1 |  |  |
-| [`page-name-zero-height-001-print.html`](https://wpt.fyi/results/css/css-page/page-name-zero-height-001-print.html) | Fail | 0 / 1 | BUG | the boxes without block size that have a page name: each change of page name between them forces a page break (6 pages), where Blink does not start a page for a box without block size between two forced breaks (3 pages) |
+| [`page-name-zero-height-001-print.html`](https://wpt.fyi/results/css/css-page/page-name-zero-height-001-print.html) | Pass | 1 / 1 |  |  |
 | [`page-orientation-on-landscape-001-print.html`](https://wpt.fyi/results/css/css-page/page-orientation-on-landscape-001-print.html) | Pass | 1 / 1 |  |  |
 | [`page-orientation-on-portrait-001-print.html`](https://wpt.fyi/results/css/css-page/page-orientation-on-portrait-001-print.html) | Pass | 1 / 1 |  |  |
 | [`page-orientation-on-portrait-002-print.html`](https://wpt.fyi/results/css/css-page/page-orientation-on-portrait-002-print.html) | Pass | 1 / 1 |  |  |

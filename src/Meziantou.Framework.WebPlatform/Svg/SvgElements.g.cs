@@ -60,7 +60,7 @@ public sealed partial class SvgAElement : SvgGraphicsElement
     [IdlMember("relList", "https://w3c.github.io/svgwg/svg2-draft/linking.html#dom-svgaelement-rellist")]
     public DomTokenList RelList
     {
-        get => Reflection.GetTokenList(this, "rel");
+        get => Reflection.GetTokenList(this, "rel", SupportedTokens.HyperlinkRel);
     }
 
     /// <summary>Gets the <c>href</c> attribute as a <c>SVGAnimatedString</c> object.</summary>

@@ -106,6 +106,15 @@
         "tests/Meziantou.Framework.SyntaxHighlighting.Tests/DockerfileHighlighterTests.cs"
       ],
       "enabled": false
+    },
+    {
+      // The expected results of the workloads come from Chromium: a new version of a package or of Playwright needs them
+      // regenerated (see the readme of the project), which Renovate cannot do
+      "matchFileNames": [
+        "tests/Meziantou.Framework.JavaScriptEngine.NpmPackages/package.json",
+        "tests/Meziantou.Framework.JavaScriptEngine.NpmPackages/generator/package.json"
+      ],
+      "enabled": false
     }
   ]
 }

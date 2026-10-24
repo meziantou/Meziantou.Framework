@@ -8,8 +8,8 @@
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 63 | 63 | 0 | 100% |
 | [Tentative](#tentative-tests) | 2 | 2 | 0 | 100% |
-| [Reftests](#reftests) | 6,202 | 6,267 | 0 | 99% |
-| **All** | **6,267** | **6,332** | **0** | **99%** |
+| [Reftests](#reftests) | 6,206 | 6,267 | 0 | 99% |
+| **All** | **6,271** | **6,332** | **0** | **99%** |
 
 ## Stable tests
 
@@ -1714,7 +1714,7 @@
 | [`floats/floats-wrap-bfc-003-right-table.xht`](https://wpt.fyi/results/css/CSS2/floats/floats-wrap-bfc-003-right-table.xht) | Pass | 1 / 1 |  |  |
 | [`floats/floats-wrap-bfc-004.xht`](https://wpt.fyi/results/css/CSS2/floats/floats-wrap-bfc-004.xht) | Pass | 1 / 1 |  |  |
 | [`floats/floats-wrap-bfc-005.xht`](https://wpt.fyi/results/css/CSS2/floats/floats-wrap-bfc-005.xht) | Pass | 1 / 1 |  |  |
-| [`floats/floats-wrap-bfc-006.xht`](https://wpt.fyi/results/css/CSS2/floats/floats-wrap-bfc-006.xht) | Fail | 0 / 1 | BUG | a table with a caption narrower than its grid beside floats of different widths: the table wrapper box is placed as one box whose width is the one of the grid; Firefox (the only browser that passes) places the caption and the grid of the table in the space beside the floats separately |
+| [`floats/floats-wrap-bfc-006.xht`](https://wpt.fyi/results/css/CSS2/floats/floats-wrap-bfc-006.xht) | Fail | 0 / 1 | TEST BUG | the placement beside the floats is the expected one; the difference is the width of the table grid in the second and fourth tables, whose caption (190px and 192px) is wider than their cell (100px): the reference expects a grid of 100px (CSS 2.1, Firefox), but the used min-width of a table is the greater of its min-width, CAPMIN (the largest min-content contribution of its captions) and GRIDMIN (https://drafts.csswg.org/css-tables-3/#computing-the-table-width), so the grid is as wide as the caption. Chrome and Safari fail the same way |
 | [`floats/floats-wrap-bfc-007.xht`](https://wpt.fyi/results/css/CSS2/floats/floats-wrap-bfc-007.xht) | Pass | 1 / 1 |  |  |
 | [`floats/floats-wrap-bfc-008.html`](https://wpt.fyi/results/css/CSS2/floats/floats-wrap-bfc-008.html) | Pass | 1 / 1 |  |  |
 | [`floats/floats-wrap-bfc-outside-001.xht`](https://wpt.fyi/results/css/CSS2/floats/floats-wrap-bfc-outside-001.xht) | Pass | 1 / 1 |  |  |
@@ -2098,7 +2098,7 @@
 | [`generated-content/content-173.xht`](https://wpt.fyi/results/css/CSS2/generated-content/content-173.xht) | Pass | 1 / 1 |  |  |
 | [`generated-content/content-174.xht`](https://wpt.fyi/results/css/CSS2/generated-content/content-174.xht) | Pass | 1 / 1 |  |  |
 | [`generated-content/content-175.xht`](https://wpt.fyi/results/css/CSS2/generated-content/content-175.xht) | Pass | 1 / 1 |  |  |
-| [`generated-content/content-177.xht`](https://wpt.fyi/results/css/CSS2/generated-content/content-177.xht) | Fail | 0 / 1 | BUG | the test paints green glyphs over the same red glyphs: their antialiased edges keep some red (the glyphs of the default font are antialiased; Firefox and Safari fail too) |
+| [`generated-content/content-177.xht`](https://wpt.fyi/results/css/CSS2/generated-content/content-177.xht) | Fail | 0 / 1 | TEST BUG | the test paints green glyphs exactly over the same red glyphs of the default font: with antialiased text, the partially covered pixels of the edges of a green glyph blend it with the red one under it, so some red remains whatever the positions (the rendering is the expected one: the glyphs are at the same positions, the differences are only these edges, at most 64 = 255/4). Firefox and Safari fail for the same reason; Chrome passes only because wptrunner runs it with `--enable-blink-features=NoFontAntialiasing` (tools/wptrunner/wptrunner/browsers/chrome.py). No specification requires aliased text |
 | [`generated-content/content-attr-001.xht`](https://wpt.fyi/results/css/CSS2/generated-content/content-attr-001.xht) | Pass | 1 / 1 |  |  |
 | [`generated-content/content-attr-case-001.html`](https://wpt.fyi/results/css/CSS2/generated-content/content-attr-case-001.html) | Pass | 1 / 1 |  |  |
 | [`generated-content/content-attr-case-002.xht`](https://wpt.fyi/results/css/CSS2/generated-content/content-attr-case-002.xht) | Pass | 1 / 1 |  |  |
@@ -2137,7 +2137,7 @@
 | [`generated-content/other-attribute-001.xht`](https://wpt.fyi/results/css/CSS2/generated-content/other-attribute-001.xht) | Pass | 1 / 1 |  |  |
 | [`generated-content/quotes-035.xht`](https://wpt.fyi/results/css/CSS2/generated-content/quotes-035.xht) | Pass | 1 / 1 |  |  |
 | [`generated-content/quotes-035a.xht`](https://wpt.fyi/results/css/CSS2/generated-content/quotes-035a.xht) | Pass | 1 / 1 |  |  |
-| [`generated-content/quotes-036.xht`](https://wpt.fyi/results/css/CSS2/generated-content/quotes-036.xht) | Fail | 0 / 1 | BUG | the text with `quotes` and `white-space` of the test wraps on three lines in a narrow box instead of one line: the line breaking around the generated quotes differs from the reference (left to the text lane; fails in every browser of wpt.fyi) |
+| [`generated-content/quotes-036.xht`](https://wpt.fyi/results/css/CSS2/generated-content/quotes-036.xht) | Fail | 0 / 1 | TEST BUG | the "evil" version of quotes-035.xht (which passes; flag `may`) replaces three of its `div` elements with `br` and `hr` elements styled `display: inline` whose `::before` and `::after` hold the quotes, and expects them not to break the line: a `br` is a forced line break whatever its `display` (https://html.spec.whatwg.org/multipage/rendering.html#phrasing-content-3: `br { display-outside: newline; }`), so the text wraps after the `br` elements. Chrome, Firefox and Safari fail too |
 | [`generated-content/quotes-applies-to-001.xht`](https://wpt.fyi/results/css/CSS2/generated-content/quotes-applies-to-001.xht) | Pass | 1 / 1 |  |  |
 | [`generated-content/quotes-applies-to-002.xht`](https://wpt.fyi/results/css/CSS2/generated-content/quotes-applies-to-002.xht) | Pass | 1 / 1 |  |  |
 | [`generated-content/quotes-applies-to-003.xht`](https://wpt.fyi/results/css/CSS2/generated-content/quotes-applies-to-003.xht) | Pass | 1 / 1 |  |  |
@@ -2341,8 +2341,8 @@
 | [`linebox/vertical-align-baseline-010.xht`](https://wpt.fyi/results/css/CSS2/linebox/vertical-align-baseline-010.xht) | Pass | 1 / 1 |  |  |
 | [`linebox/vertical-align-negative-leading-001.html`](https://wpt.fyi/results/css/CSS2/linebox/vertical-align-negative-leading-001.html) | Pass | 1 / 1 |  |  |
 | [`linebox/vertical-align-nested-top-001.html`](https://wpt.fyi/results/css/CSS2/linebox/vertical-align-nested-top-001.html) | Pass | 1 / 1 |  |  |
-| [`linebox/vertical-align-sub-001.xht`](https://wpt.fyi/results/css/CSS2/linebox/vertical-align-sub-001.xht) | Fail | 0 / 1 | BUG | the test paints green glyphs over the same red glyphs: their antialiased edges keep some red (the glyphs of the default font are antialiased; Firefox and Safari fail too) |
-| [`linebox/vertical-align-super-001.xht`](https://wpt.fyi/results/css/CSS2/linebox/vertical-align-super-001.xht) | Fail | 0 / 1 | BUG | the test paints green glyphs over the same red glyphs: their antialiased edges keep some red (the glyphs of the default font are antialiased; Firefox and Safari fail too) |
+| [`linebox/vertical-align-sub-001.xht`](https://wpt.fyi/results/css/CSS2/linebox/vertical-align-sub-001.xht) | Fail | 0 / 1 | TEST BUG | the test paints green glyphs exactly over the same red glyphs of the default font: with antialiased text, the partially covered pixels of the edges of a green glyph blend it with the red one under it, so some red remains whatever the positions (the rendering is the expected one: the glyphs are at the same positions, the differences are only these edges, at most 64 = 255/4). Firefox and Safari fail for the same reason; Chrome passes only because wptrunner runs it with `--enable-blink-features=NoFontAntialiasing` (tools/wptrunner/wptrunner/browsers/chrome.py). No specification requires aliased text |
+| [`linebox/vertical-align-super-001.xht`](https://wpt.fyi/results/css/CSS2/linebox/vertical-align-super-001.xht) | Fail | 0 / 1 | TEST BUG | the test paints green glyphs exactly over the same red glyphs of the default font: with antialiased text, the partially covered pixels of the edges of a green glyph blend it with the red one under it, so some red remains whatever the positions (the rendering is the expected one: the glyphs are at the same positions, the differences are only these edges, at most 64 = 255/4). Firefox and Safari fail for the same reason; Chrome passes only because wptrunner runs it with `--enable-blink-features=NoFontAntialiasing` (tools/wptrunner/wptrunner/browsers/chrome.py). No specification requires aliased text |
 | [`linebox/vertical-align-top-bottom-padding.html`](https://wpt.fyi/results/css/CSS2/linebox/vertical-align-top-bottom-padding.html) | Pass | 1 / 1 |  |  |
 | [`lists/counter-increment-005.xht`](https://wpt.fyi/results/css/CSS2/lists/counter-increment-005.xht) | Pass | 1 / 1 |  |  |
 | [`lists/counter-increment-006.xht`](https://wpt.fyi/results/css/CSS2/lists/counter-increment-006.xht) | Pass | 1 / 1 |  |  |
@@ -2614,7 +2614,7 @@
 | [`margin-padding-clear/margin-collapse-026.xht`](https://wpt.fyi/results/css/CSS2/margin-padding-clear/margin-collapse-026.xht) | Pass | 1 / 1 |  |  |
 | [`margin-padding-clear/margin-collapse-028.xht`](https://wpt.fyi/results/css/CSS2/margin-padding-clear/margin-collapse-028.xht) | Pass | 1 / 1 |  |  |
 | [`margin-padding-clear/margin-collapse-037.xht`](https://wpt.fyi/results/css/CSS2/margin-padding-clear/margin-collapse-037.xht) | Pass | 1 / 1 |  |  |
-| [`margin-padding-clear/margin-collapse-038.xht`](https://wpt.fyi/results/css/CSS2/margin-padding-clear/margin-collapse-038.xht) | Pass | 1 / 1 |  |  |
+| [`margin-padding-clear/margin-collapse-038.xht`](https://wpt.fyi/results/css/CSS2/margin-padding-clear/margin-collapse-038.xht) | Fail | 0 / 1 | TEST BUG | expects the bottom margin of the last child to collapse with the bottom margin of its parent whose `max-height` makes it shorter than its contents, as CSS 2 (https://drafts.csswg.org/css2/#collapsing-margins only checks an `auto` `height`) and WebKit; Blink, Gecko and Servo, and the library, discard the margin then (https://github.com/w3c/csswg-drafts/issues/12218, without resolution; WPT css/CSS2/normal-flow/max-height-separates-margin.html, css/css-overflow/line-clamp/line-clamp-auto-063.html): fails in Chrome, Edge and Firefox (wpt.fyi) |
 | [`margin-padding-clear/margin-collapse-039.xht`](https://wpt.fyi/results/css/CSS2/margin-padding-clear/margin-collapse-039.xht) | Pass | 1 / 1 |  |  |
 | [`margin-padding-clear/margin-collapse-040.xht`](https://wpt.fyi/results/css/CSS2/margin-padding-clear/margin-collapse-040.xht) | Pass | 1 / 1 |  |  |
 | [`margin-padding-clear/margin-collapse-041.xht`](https://wpt.fyi/results/css/CSS2/margin-padding-clear/margin-collapse-041.xht) | Pass | 1 / 1 |  |  |
@@ -3632,7 +3632,7 @@
 | [`normal-flow/max-height-percentage-001.xht`](https://wpt.fyi/results/css/CSS2/normal-flow/max-height-percentage-001.xht) | Pass | 1 / 1 |  |  |
 | [`normal-flow/max-height-percentage-002.xht`](https://wpt.fyi/results/css/CSS2/normal-flow/max-height-percentage-002.xht) | Pass | 1 / 1 |  |  |
 | [`normal-flow/max-height-percentage-003.xht`](https://wpt.fyi/results/css/CSS2/normal-flow/max-height-percentage-003.xht) | Pass | 1 / 1 |  |  |
-| [`normal-flow/max-height-separates-margin.html`](https://wpt.fyi/results/css/CSS2/normal-flow/max-height-separates-margin.html) | Fail | 0 / 1 | TEST BUG | expects the margin of the last child to be discarded when `max-height` makes its parent shorter than its contents (Blink and Gecko); CSS 2 does not make the maximum height stop the collapsing of the margins of the last child with the ones of its parent, as css/CSS2/margin-padding-clear/margin-collapse-038.xht expects (WebKit, and the library, pass that test and fail this one) |
+| [`normal-flow/max-height-separates-margin.html`](https://wpt.fyi/results/css/CSS2/normal-flow/max-height-separates-margin.html) | Pass | 1 / 1 |  |  |
 | [`normal-flow/max-width-001.xht`](https://wpt.fyi/results/css/CSS2/normal-flow/max-width-001.xht) | Pass | 1 / 1 |  |  |
 | [`normal-flow/max-width-002.xht`](https://wpt.fyi/results/css/CSS2/normal-flow/max-width-002.xht) | Pass | 1 / 1 |  |  |
 | [`normal-flow/max-width-003.xht`](https://wpt.fyi/results/css/CSS2/normal-flow/max-width-003.xht) | Pass | 1 / 1 |  |  |
@@ -4011,7 +4011,7 @@
 | [`pagination/float-page-break-inside-avoid-5-print.html`](https://wpt.fyi/results/css/CSS2/pagination/float-page-break-inside-avoid-5-print.html) | Pass | 1 / 1 |  |  |
 | [`pagination/float-page-break-inside-avoid-6-print.html`](https://wpt.fyi/results/css/CSS2/pagination/float-page-break-inside-avoid-6-print.html) | Pass | 1 / 1 |  |  |
 | [`pagination/float-page-break-inside-avoid-7-print.html`](https://wpt.fyi/results/css/CSS2/pagination/float-page-break-inside-avoid-7-print.html) | Pass | 1 / 1 |  |  |
-| [`pagination/float-page-break-inside-avoid-8-print.html`](https://wpt.fyi/results/css/CSS2/pagination/float-page-break-inside-avoid-8-print.html) | Fail | 0 / 1 | BUG | a float with `page-break-inside: avoid` that does not fit at the start of a block with a definite block size (the block crosses the end of the first page): the float is pushed, but the flow breaks before the block, which starts the second page with the float and the lines `X` and `Y` beside it, where the reference keeps the lines at the start of the block in the first page (laid out without the float) and only pushes the float to the second page |
+| [`pagination/float-page-break-inside-avoid-8-print.html`](https://wpt.fyi/results/css/CSS2/pagination/float-page-break-inside-avoid-8-print.html) | Pass | 1 / 1 |  |  |
 | [`pagination/float-page-break-inside-avoid-9-print.html`](https://wpt.fyi/results/css/CSS2/pagination/float-page-break-inside-avoid-9-print.html) | Pass | 1 / 1 |  |  |
 | [`pagination/inline-page-break-inside-avoid-1-print.html`](https://wpt.fyi/results/css/CSS2/pagination/inline-page-break-inside-avoid-1-print.html) | Pass | 1 / 1 |  |  |
 | [`pagination/row-page-break-inside-avoid-1-print.html`](https://wpt.fyi/results/css/CSS2/pagination/row-page-break-inside-avoid-1-print.html) | Pass | 1 / 1 |  |  |
@@ -5007,11 +5007,11 @@
 | [`selectors/first-line-inherit-003.xht`](https://wpt.fyi/results/css/CSS2/selectors/first-line-inherit-003.xht) | Pass | 1 / 1 |  |  |
 | [`selectors/first-line-pseudo-007.xht`](https://wpt.fyi/results/css/CSS2/selectors/first-line-pseudo-007.xht) | Pass | 1 / 1 |  |  |
 | [`selectors/first-line-pseudo-008.xht`](https://wpt.fyi/results/css/CSS2/selectors/first-line-pseudo-008.xht) | Pass | 1 / 1 |  |  |
-| [`selectors/first-line-pseudo-012.xht`](https://wpt.fyi/results/css/CSS2/selectors/first-line-pseudo-012.xht) | Fail | 0 / 1 | NOT IMPLEMENTED | `vertical-align` and `background` on `::first-line` (the pseudo-element has no box: its style is only applied to the texts of the first line; the specification does not require `vertical-align`); Chrome and Safari fail too |
-| [`selectors/first-line-pseudo-013.xht`](https://wpt.fyi/results/css/CSS2/selectors/first-line-pseudo-013.xht) | Fail | 0 / 1 | NOT IMPLEMENTED | `vertical-align` and `background` on `::first-line` (the pseudo-element has no box: its style is only applied to the texts of the first line; the specification does not require `vertical-align`); Chrome and Safari fail too |
+| [`selectors/first-line-pseudo-012.xht`](https://wpt.fyi/results/css/CSS2/selectors/first-line-pseudo-012.xht) | Pass | 1 / 1 |  |  |
+| [`selectors/first-line-pseudo-013.xht`](https://wpt.fyi/results/css/CSS2/selectors/first-line-pseudo-013.xht) | Pass | 1 / 1 |  |  |
 | [`selectors/first-line-pseudo-014.xht`](https://wpt.fyi/results/css/CSS2/selectors/first-line-pseudo-014.xht) | Pass | 1 / 1 |  |  |
 | [`selectors/first-line-pseudo-015.xht`](https://wpt.fyi/results/css/CSS2/selectors/first-line-pseudo-015.xht) | Pass | 1 / 1 |  |  |
-| [`selectors/first-line-pseudo-016.xht`](https://wpt.fyi/results/css/CSS2/selectors/first-line-pseudo-016.xht) | Fail | 0 / 1 | NOT IMPLEMENTED | `vertical-align` and `background` on `::first-line` (the pseudo-element has no box: its style is only applied to the texts of the first line; the specification does not require `vertical-align`); Chrome and Safari fail too |
+| [`selectors/first-line-pseudo-016.xht`](https://wpt.fyi/results/css/CSS2/selectors/first-line-pseudo-016.xht) | Pass | 1 / 1 |  |  |
 | [`selectors/first-line-pseudo-018.xht`](https://wpt.fyi/results/css/CSS2/selectors/first-line-pseudo-018.xht) | Pass | 1 / 1 |  |  |
 | [`selectors/first-line-pseudo-019.xht`](https://wpt.fyi/results/css/CSS2/selectors/first-line-pseudo-019.xht) | Pass | 1 / 1 |  |  |
 | [`selectors/first-line-pseudo-020.xht`](https://wpt.fyi/results/css/CSS2/selectors/first-line-pseudo-020.xht) | Pass | 1 / 1 |  |  |
@@ -6221,7 +6221,7 @@
 | [`visudet/line-height-201.html`](https://wpt.fyi/results/css/CSS2/visudet/line-height-201.html) | Pass | 1 / 1 |  |  |
 | [`visudet/line-height-202.html`](https://wpt.fyi/results/css/CSS2/visudet/line-height-202.html) | Pass | 1 / 1 |  |  |
 | [`visudet/line-height-203.html`](https://wpt.fyi/results/css/CSS2/visudet/line-height-203.html) | Pass | 1 / 1 |  |  |
-| [`visudet/line-height-204.html`](https://wpt.fyi/results/css/CSS2/visudet/line-height-204.html) | Fail | 0 / 1 | BUG | the Revalia font has a negative descent (`hhea.descender` is +382 for 2048 units per em): the baseline of the inline box whose line height is `normal` is 14px away from the one of the box whose `line-height` is set to the same used height (Chrome fails too) |
+| [`visudet/line-height-204.html`](https://wpt.fyi/results/css/CSS2/visudet/line-height-204.html) | Fail | 0 / 1 | BUG | the test measures the height of a box with `line-height: normal` in its load event handler and sets it as the `line-height` of the other box: the web font (Revalia) is not loaded yet at the load event (the font faces used by the text are loaded once the document is loaded: `FontFaceSet.OnRenderingUpdate` waits while the set is pending on the environment, and the font loads do not delay the load event), so the measured height is the one of the fallback font (115px instead of 124px) and the baselines are 5px apart. The browsers load the fonts during the layout before the load event, which they delay (Blink: the font resources block the load event). The negative descent of the font (`hhea.descender` +382) is inverted, as in Gecko and WebKit (Chrome, which keeps it negative, fails) |
 | [`visudet/line-height-205.html`](https://wpt.fyi/results/css/CSS2/visudet/line-height-205.html) | Pass | 1 / 1 |  |  |
 | [`visudet/line-height-206.html`](https://wpt.fyi/results/css/CSS2/visudet/line-height-206.html) | Pass | 1 / 1 |  |  |
 | [`visudet/replaced-elements-all-auto.html`](https://wpt.fyi/results/css/CSS2/visudet/replaced-elements-all-auto.html) | Pass | 1 / 1 |  |  |

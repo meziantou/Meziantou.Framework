@@ -645,7 +645,8 @@ the box of `box-sizing` (`<ratio>`), so the paddings and borders outside of that
 - [Automatic minimum](https://drafts.csswg.org/css-sizing-4/#aspect-ratio-minimum): a non-replaced box that is not a scroll
   container in the ratio-dependent axis, with `min-*: auto`, grows to its contents (block axis: the block size of its
   contents; inline axis: its min-content size, `BlockFormattingContext.ComputeIntrinsicInlineSizes`), capped by its
-  maximum size. The rows of a grid container whose block size comes from its aspect ratio are aligned (`align-content`) in the
+  maximum size; with `min-*: calc-size(auto, …)`, the `size` of the calculation is that automatic minimum, in the layout
+  and in the intrinsic size contributions of the box. The rows of a grid container whose block size comes from its aspect ratio are aligned (`align-content`) in the
   grown size (`ContentArea.BlockSizeGrowsToContents`). The intrinsic size keywords of the minimum and maximum block sizes of
   such a box are the size given by the ratio, not the block size of its contents (`min-height: min-content` does not make it
   grow, [csswg-drafts#5032](https://github.com/w3c/csswg-drafts/issues/5032)).
@@ -757,8 +758,8 @@ browsers ship): the intrinsic sizes of the boxes, their contributions, and the r
   `interpolate-size: allow-keywords` a sizing keyword is `calc-size(keyword, size)`. The result is a `calc-size()` whose
   calculation combines the two calculations (the like `size` terms are not merged by the simplification); the resolved
   values of `width`/`height` are the used sizes in pixels (see [Resolved values](#resolved-values-csslayoutlayoutresolvedvaluescs)).
-  Not done: the interpolation of the deeply nested `calc-size()` whose expansion is too large is not refused
-  ([csswg-drafts#10369](https://github.com/w3c/csswg-drafts/issues/10369)); the computed value simplifies them.
+  A value whose expansion is too large (more than 10,000 characters,
+  [csswg-drafts#10369](https://github.com/w3c/csswg-drafts/issues/10369)) fails to be prepared: the interpolation is discrete.
 - **Automatic minimum size**: the automatic minimum of the boxes with an aspect ratio (min-content, CSS Sizing 4) for every
   non-replaced box; the content-based minimum sizes of the flex items (see [Flex layout](#flex-layout-csslayoutflex)) and of
   the grid items (see [Grid layout](#grid-layout-csslayoutgrid)).
@@ -848,7 +849,7 @@ the fragment. The contents of the box (the `foreignObject` boxes of an `svg`) ar
   `textarea` are the ones laid out in its inline size, where they wrap: `ReplacedFormattingContext.GetAutomaticBlockSize`;
   a list box has as many rows as displayed options, none when it has none). A drop-down box with size containment is
   sized as an empty drop-down box (its arrow and one line) in the axes where `contain-intrinsic-size` is `none`, as in the
-  browsers (it is a widget, not a replaced element). The labels are measured after `text-transform`. As in the browsers, a drop-down `select` with
+  browsers (it is a widget, not a replaced element), and a list box as an empty list box (its rows and its scrollbar). The labels are measured after `text-transform`. As in the browsers, a drop-down `select` with
   its native appearance ignores `line-height` (it is laid out with `normal`; the computed value is not changed), and `size=0` is a drop-down box whose first option
   is selected (the specification only says so for a display size of 1). The sizes are logical (swapped in vertical writing modes); the buttons have the paddings and
   borders of Chrome in the UA style sheet (`padding-block: 1px`, `padding-inline: 6px`, `2px outset`), a drop-down `select`
@@ -1129,8 +1130,9 @@ not implemented yet (the grid lanes): their children are stacked without collaps
   (`ContentArea.StartMarginCollapsesWithChildren`), the block-end margin with the ones of the last children when the box
   has no block-end border or padding and an `auto` block size. As in the browsers, when the minimum block size makes the box
   taller than its contents, the margins of the last children neither collapse with its margin nor make it taller: they are
-  discarded (`BlockFormattingContextState.DiscardMargins`); a maximum block size does not change the collapsing (Blink and
-  Gecko discard the margins then too, WebKit does not, CSS 2 does not either). The result is in
+  discarded (`BlockFormattingContextState.DiscardMargins`), and so are they when the maximum block size makes the box shorter
+  than its contents (as Blink, Gecko and Servo; WebKit collapses them, as CSS 2 that only checks `height`:
+  https://github.com/w3c/csswg-drafts/issues/12218). The result is in
   `BoxFragment.CollapsedMargins` (`CollapsedBlockMargins`: the `Start` and `End` sets of adjoining margins
   (`MarginStrut`: the largest positive and the most negative margins), `CollapsedThrough`, `Clearance`); the other boxes
   have `CollapsedBlockMargins.None` (their parent uses their `Margin`). The content layouts return the margins of their
@@ -1533,7 +1535,8 @@ an atomic inline laid out while its parent collects its items rents another inst
   are rounded: six inline-blocks of 16.66666667% fit in their container); the flex items are collected into flex lines
   with the same tolerance. When nothing fits, the line breaks at the first opportunity (the content overflows), or at
   the last emergency opportunity that fits with `overflow-wrap: anywhere | break-word`. The starts of the inline boxes at a
-  break go to the next line (with the out-of-flow boxes after them), the other out-of-flow boxes at a break and the ends of
+  break go to the next line (with the out-of-flow boxes after them), and so do the out-of-flow boxes after collapsible spaces
+  (the opportunity is after the spaces), unless a collapsed space follows them; the other out-of-flow boxes at a break and the ends of
   the inline boxes (also after a forced break) stay on the line, as in the browsers; an empty inline box (its content collapsed
   away, no inline margin, border nor padding) after collapsible spaces stays on the line with them. At the boundary of two
   inline boxes, the `overflow-wrap` of either character allows an emergency opportunity (which properties control the
@@ -1848,7 +1851,8 @@ an atomic inline laid out while its parent collects its items rents another inst
   The factor of a line (`MeasureLineFit`) makes its scalable parts fill the line box: the content of the line is measured
   with two font sizes (`CollectLineContent`, with the spacing at the edges of the line and without the white space at its
   end), which separates the parts that follow the font size from the other ones (the atomic inlines, the edges of the
-  inline boxes, the spacing that is a length, `text-indent`); a line without scalable part is not scaled. `grow` does not
+  inline boxes, the spacing that is a length, `text-indent`); a line without scalable part is not scaled. The content is
+  then measured with the factor, which is reduced when the scaled advances exceed the line box by a floating-point excess. `grow` does not
   scale down and `shrink` does not scale up; the percentage limits the factor (a maximum of 100% or more for `grow`, a
   minimum from 0% to 100% for `shrink`). `per-line` and `per-line-all` scale each line by its factor (`per-line`: not the
   last line nor the lines that end with a forced break); `consistent` scales all the lines by the smallest factor of the
@@ -1861,8 +1865,11 @@ an atomic inline laid out while its parent collects its items rents another inst
   an [editing host](https://html.spec.whatwg.org/multipage/interaction.html#editing-host) that is a block container always
   has the line of its caret, so that an empty editing host can be seen and pressed: without line box (no content, or only
   collapsed white space), its contents are as tall as a line (`line-height`), which separates its margins; with block-level
-  children, its contents are at least as tall as a line (`BlockFormattingContext.HasCaretLineIfEmpty`). The caret is
-  painted there (see [rendering.md](rendering.md#caret)).
+  children, its contents are at least as tall as a line (`BlockFormattingContext.HasCaretLineIfEmpty`). As in Blink, a flex,
+  grid or grid lanes container that is an editing host has the line too when it has no items (its contents are at least as
+  tall as a line). In a fragmentation context, the line is monolithic, as a line box, and the block-end border and padding
+  of the box may be pushed to the next fragmentainer when it overflows. The caret is painted there (see
+  [rendering.md](rendering.md#caret)).
 - **`::first-line`** ([CSS Pseudo §3.4](https://drafts.csswg.org/css-pseudo-4/#first-line-styling)): on the first line, the
   root inline box has the `::first-line` style of the block container (or of the ancestor whose first formatted line it is,
   through the first in-flow block children; not into the floats, the absolutely positioned boxes and the outside markers),
@@ -1873,7 +1880,11 @@ an atomic inline laid out while its parent collects its items rents another inst
   the block container of the line, not from its originating element, and the styles of several ancestors are nested, the
   outermost first (`GetRootFirstLineStyle`). The background of `::first-line` (its color and its images) is painted behind
   the content of the line (`Painter.PaintFirstLineBackground`: the content area of the root inline box along the in-flow
-  content of a horizontal line, which is also the positioning area of the images). The backgrounds, the shadows and the
+  content of a horizontal line, which is also the positioning area of the images). The `vertical-align` of `::first-line`
+  ("any inline layout properties that apply to inline elements") aligns its fictional inline box, which wraps the content of
+  the line, relative to the root inline box (`AlignVertically`): the root inline box then has the strut of the block
+  container, the fictional box has the layout bounds of the `::first-line` style, and the background is painted on its content
+  area (`LineBoxFragment.FirstLineBoxBaseline`), as in Gecko (Blink and WebKit ignore it). The backgrounds, the shadows and the
   colors of the borders and of the outline of the inline boxes of the first line are painted with their style inheriting
   from `::first-line` (`Painter.GetDecorationStyle`: e.g. a `currentcolor` background or border; the widths and the styles
   of the borders are the ones of the box, and a `filter` applies to the box as a whole with the colors of its style). Only the
@@ -1936,12 +1947,16 @@ an atomic inline laid out while its parent collects its items rents another inst
   inline box. An outside marker (`PendingOutsideMarker`) is placed next to the first line box of its list item that is not
   empty, also in a descendant block container (the list item passes it to its first in-flow block container child in
   `ConstraintSpace.OutsideMarker`): the inline-end edge of its margin box is at the inline-start edge of the content box, its
-  baseline on the baseline of the line. A line box shortened by a float on its start side moves the marker beside the float
+  baseline on the baseline of the line. A line of an anonymous block box of the list item (e.g. the one of a block-in-inline
+  split) places it as a line of the list item: outside of the border box of the list item, as in Blink and Gecko
+  (`PendingOutsideMarker.ListItemContentInlineOffset`). A line box shortened by a float on its start side moves the marker beside the float
   (also the marker of a list item without content, which is where its line box would be). As in the browsers, the marker of a list item with inline content is part of its
   first line: its margin box makes the line taller (a marker image, a marker with a larger font; `AlignVertically`), also
   the line of a list item without content (`PlaceWithoutLine`); the marker placed next to a line of a descendant block
   container does not change this line. The outside marker is painted before the content of its list item (it precedes it
-  in the tree), which may overlap it. The bullets of the predefined counter styles (`disc`, `circle`, `square`, the
+  in the tree), which may overlap it. A marker placed next to a line of a positioned descendant block that does not
+  establish a stacking context belongs to the inline content of the list item: it is painted under the positioned block
+  (`PaintOrder.GetListItemPaintingMarker`), as in Blink and Gecko. The bullets of the predefined counter styles (`disc`, `circle`, `square`, the
   disclosure triangles) are symbols: `letter-spacing` and `word-spacing` do not space them. The marker is not passed to a child that clips
   its overflow, which would clip it. When no line box placed the marker, it is aligned with the first baseline of the
   in-flow children of the list item, if any (the baseline of a flex or grid container, of a table, of a block that
@@ -2050,7 +2065,8 @@ blockifies the items and wraps their text in anonymous items (`BoxTreeBuilder.Fi
   its minimum main size (`min-width: 50px`, `min-height: 0`).
 - **Lines and flexible lengths** (§9.3, §9.7): the items are collected into lines with their outer hypothetical main sizes
   and the main gap (a column container with an indefinite block size breaks at its `max-height`, its main size is its largest
-  line clamped by its min/max block sizes); `ResolveFlexibleLengths` is the freezing loop of §9.7 (the shrink factor scaled by
+  line, through its `calc-size()` block size when it has one (`ContentArea.ResolveContentBasedBlockSize`), clamped by its
+  min/max block sizes: the items are flexed in it); `ResolveFlexibleLengths` is the freezing loop of §9.7 (the shrink factor scaled by
   the inner flex base size, the sum of the factors below 1; a share of the free space that is not representable, e.g. next
   to `flex-grow: calc(infinity)`, is zero).
 - **Balanced lines** (`flex-wrap: balance`, [CSS Flexbox 2](https://drafts.csswg.org/css-flexbox-2/#algo-line-break),
@@ -2655,7 +2671,9 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
   content before them fits). A break at the end of the empty block size of an in-flow box is
   the break after the box: it is not possible when the flow has a class A or C break there (which has its own rules, e.g.
   `break-before: avoid` on the next sibling); a break that violates no rule but is beside a box with `break-inside: avoid`
-  (overflowing content, a float) violates that rule. As in Blink:
+  (overflowing content, a float) violates that rule. A break between two children of a table wrapper box (the captions
+  and the table grid box) does not stretch the boxes broken there: as in Blink, they end with the content before the
+  break (`BreakCandidate.EndsWithContent`). As in Blink:
   - When only breaks that violate a rule fit, the ones inside fewer boxes with `break-inside: avoid` are preferred
     (`BreakCandidate.AvoidDepth`; as in the browsers, a break outside of the innermost avoided box).
   - Several breaks may be at the same position (before and after a box without block size): the candidates and such boxes are
@@ -2664,7 +2682,11 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     the content of a flow whose parallel flows continue is after the boxes without block size at its position: the contents
     that overflow them (a box with `height: 0`) start in that fragmentainer and are broken there.
   - A forced break at the start of a fragmentainer is taken when it is at a class A break point (after a box without block
-    size), not before the first content of a box.
+    size), not before the first content of a box. In the pages, as in Gecko, it is not taken: the forced breaks (of
+    `break-before`, `break-after` and of the page names) after boxes without block size at the start of a page do not start
+    another page. The forced breaks between tracks without block size at the same position (the lines of items with negative
+    margins) are taken one after the other: a track after a forced break that is not taken yet is not placed in the
+    fragmentainer (`ParallelGroup.ForcedBreakSequences`).
   - The block-end margin of the last child of a box (in a block formatting context root, before a block-end padding) is
     truncated when a break is in it or after it ([§5.2](https://drafts.csswg.org/css-break-3/#break-margins)): the box ends at
     the end of the fragmentainer (`FlowMap.AddTruncation`) and the content after it starts the next one.
@@ -2708,7 +2730,9 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     in its track (`align-self: end`, a margin) and does not fit is pushed alone; in a grid, only when it has no possible
     break (as in Blink, a break before the first content of a row is not a possible break: the item is rather broken
     between line boxes that violate `orphans` and `widows`, `ParallelItem.BreaksBeforeAsLastResort`). An item that starts
-    before its track (a negative margin) starts with the track, at a negative offset when the track starts a fragmentainer.
+    after the end of the fragmentainer where its track started is placed in a next one (the flow continues for it); as in
+    Blink, it starts that fragmentainer when its position is before its start (the track grew with monolithic content that
+    overflowed the previous one: its offset is truncated). An item that starts before its track (a negative margin) starts with the track, at a negative offset when the track starts a fragmentainer.
     A monolithic item that overflows the fragmentainer ends its track after it (the flow does not break beside it; the items
     whose block size follows the track end with it), unless another item of the track continues in the next fragmentainer
     (its contents, or its definite block size, which is broken at the end of the fragmentainer): the track is then broken
@@ -2761,7 +2785,8 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     spanner has all its columns for them): from the offset of the box from the block-start edge of its containing block in
     that sequence (the fragmentainer where the containing block starts, a next one when the offset is larger than what
     remains of it, a previous one when it is negative: the box is then a child of an empty fragment of its containing block,
-    which does not clip), or from the block-end edge of the fragments of the containing block stitched together (`bottom`
+    which does not clip, except the scrollable overflow as in Blink, and is at the start of the overflow in that
+    fragmentainer, the origin of its transform, [§5.5](https://drafts.csswg.org/css-break-3/#transforms)), or from the block-end edge of the fragments of the containing block stitched together (`bottom`
     without `top`, an aligned static position in a flex or grid container: `OutOfFlowPlacement.EndRatio`), or from a
     position of the content (the static position, a grid area: it follows the breaks of the content). The breaks are the
     ones of the flow that contains the contents of the containing block (`OutOfFlowPlacement.OwnerFlow`: the strip, or the
@@ -2778,7 +2803,9 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     add columns to the last row. The block-start margin of a box at its static position in a block container is applied in
     the fragmentainer of the static position (a negative margin does not move the box to the previous one). The static
     position of a box whose containing block is outside of the strip is mapped with
-    the flow that contains it (`OutOfFlowCandidate.StaticPositionContainer`). As in Blink, the boxes are not placed
+    the flow that contains it (`OutOfFlowCandidate.StaticPositionContainer`), as is the static position of a box whose
+    containing block is an inline box of the strip when it is in the contents of an absolutely positioned box that is
+    fragmented apart (`FragmentationFlow.GetStaticPositionCarrier`). As in Blink, the boxes are not placed
     between the edges that the boxes around them repeat (`box-decoration-break: clone`: a box starts at the padding edge
     of its containing block and its fragments start at the start of the next fragmentainers). A box whose containing
     block is a relatively positioned inline box is placed from its position before the relative positioning (the offset
@@ -2833,11 +2860,14 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
   balanced with them. There is no break between the header and the section after it. The slicer adds a copy of the
   fragments of the header (`Fragment.CloneSubtree`) at the start of the fragments after the first one that have other
   sections, and a copy of the footer in the fragments before the one of the footer: at the end of the fragmentainer when
-  a row is broken there, after the last row when the break is between two rows. The copies are fragments of the same
+  a row is broken there (also by a forced break in its cells), after the last row when the break is between two rows. The copies are fragments of the same
   boxes (they are painted and hit tested; `getClientRects()` returns the rectangles of the original ones).
 - **Collapsed borders of a fragmented table**: each fragment of the table grid box paints the collapsed borders of the
   fragments of its cells; the borders along a cell that is broken run to the edge of its fragment, no border is painted
-  across a broken cell, and a border on a grid line that is at a break is half in each fragment.
+  across a broken cell, and a border on a grid line that is at a break is half in each fragment. As in Blink, the joints
+  of a row line at a break are the ones of the column lines of the fragment's rows only (the segments are extended by
+  half of their borders, not of the ones of the other fragment), and at the block-start edge of a fragment the border of
+  the column line at the inline-end joint of a segment covers the joint.
 - **Balancing** (`ColumnBreaker.Balance`, [column-fill](https://drafts.csswg.org/css-multicol-1/#cf)), as in Blink: the initial column
   height distributes the content runs between the forced breaks into the columns (at least the tallest unbreakable interval),
   then the columns are stretched by the minimal space shortage until the content fits in the column count without violating a
@@ -2890,14 +2920,18 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     size of the inner container when it is definite): its content is balanced in it when it ends there (or the columns are
     filled, with `column-fill: auto`), else the row has `column-count` columns of that block size and the content continues in
     a row of the next outer fragmentainer. The last row of a container whose definite block size ends in the outer
-    fragmentainer has overflow columns. A row of a fixed block size (`column-height`) is broken by the end of the outer
+    fragmentainer has overflow columns (also the row where the content box of a container whose block size is not definite
+    reaches its `max-height`). A row of a fixed block size (`column-height`) is broken by the end of the outer
     fragmentainer; when it follows other content of the container in the outer fragmentainer, it starts there only if it fits.
     These rows overflow a container with a definite block size (its block-end edge is placed before the end of its content).
   - A column that would break where a rule is violated (`orphans`/`widows`, `avoid`, content that overflows) ends the row
     before it and is placed in the next outer fragmentainer, unless a break that is as bad was already taken in the columns
     of the row before it; the first column of the first row is compared with the break before the container (an `avoid`
     there accepts the violations of `orphans`/`widows` and `avoid`). When no content fits after the start of the container,
-    the outer flow breaks before the container if it can.
+    the outer flow breaks before the container if it can. As in Blink (`MinBreakAppeal`), in a column after the first one of
+    a row whose breaks violate no rule, a break before the first content of a box that resumes there is a possible break
+    (`FlowCursor.StartBreakAppeal`): an item at the start of a track that starts the column is pushed alone to the next
+    column when it has `break-inside: avoid` and does not fit (an item offset in its track is pushed the same way).
   - The spanners of the inner container are fragmented by the outer fragmentainers (each one has its own
     `FragmentationFlow`, `FragmentationFlow.CollectBox`): a spanner whose content does not fit starts in the next outer
     fragmentainer, its forced breaks (`break-before`, `break-after`) break the outer columns (they are propagated to the
@@ -2929,7 +2963,9 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     and whose static position is in its strip is moved to that static position in the inner columns that the breaker placed
     (`ColumnBreaker.TryGetNestedStaticPosition`, `OutOfFlowPlacement.InlineShift`), also when its containing block is an
     inline box of the outer strip or is outside of the outer container.
-  - The floats, the absolutely positioned boxes and the inline-blocks that are multi-column containers are monolithic.
+  - The floats, the absolutely positioned boxes and the inline-blocks that are multi-column containers are monolithic, as
+    are the containers that extend past the block-end edge of an ancestor that clips its overflow (`overflow: clip`; a
+    container inside such an ancestor is fragmented).
 - **Fragments** (`FragmentSlicer`, [§5](https://drafts.csswg.org/css-break-3/#box-splitting)): a fragment whose subtree is in one column
   (and contains no column spanner, which the multi-column container places itself) is moved to it; a box that spans several columns gets one `BoxFragment` per column (`BoxFragment.CreateSlice`:
   `IsFirstFragment`/`IsLastFragment`, `UnfragmentedFragment` is the fragment before the split), whose children are distributed
@@ -2992,10 +3028,7 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
   column spanner interrupts, the block size of a table row when the monolithic contents of a cell overflow a
   fragmentainer (the row is as tall as in the strip, where the overflow counts: the percentages of the other cells resolve
   against it), the gap of a row flex container after a forced break (it disappears, where Blink keeps a part of it), the
-  forced breaks between the tracks without block size at the start of a fragmentainer (the lines of items with negative
-  margins), an item that is offset in its line and starts after the end of a fragmentainer without block size (it is
-  placed when the flow reaches its offset, column after column), the margin of a table caption that follows a caption
-  without block size after a break (it is not truncated), the items that follow, before the position of the break, an
+  items that follow, before the position of the break, an
   item placed after a forced break although it overlaps the previous one, a column flex item that is as tall as its
   contents once fragmented in a multi-line container, the stitched scrollable
   overflow of a fragmented box (`scrollWidth`/`scrollHeight` use its first fragment), `column-span: <integer>`.
@@ -3054,7 +3087,11 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   block-level children; `auto` is the used value of the parent). `orphans`, `widows`, `break-inside: avoid`,
   `box-decoration-break`, the floats, the parallel flows (flex, grid, tables), the repeated table headers and the nested
   multi-column containers (laid out as nested containers: the pages fragment their columns) are fragmented as in the
-  columns. `ColumnBreaker.FindBreaks` fills the pages: the block size of a page depends on its page style, which depends on
+  columns. A float that starts before a forced break and whose margin box ends after it stays in the page of its position
+  in the content when it fits in the rest of the page (`FragmentationFlow.KeepFloat`), and its exclusion ends at the break
+  (`StripRelayout.UpdateFloatExclusionEnds`, the strip is laid out again): as in Blink, the content after the break is not
+  laid out beside it. A break beside a float with `break-inside: avoid` that does not start the page does not violate
+  that rule: as in Gecko, the float is pushed to the next page. `ColumnBreaker.FindBreaks` fills the pages: the block size of a page depends on its page style, which depends on
   the breaks (the page name of the content that starts the page, its side), so the breaks are found again with the block
   sizes of the pages until they are stable (5 times at most). The floats that do not fit are pushed to the next page by new
   layouts of the strip, as in the columns, and the items of the grid lanes containers fragmented in their stacking axis are
@@ -3073,11 +3110,15 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   pages have the inline size of the first one.
 - **Monolithic content**: as in the browsers, the scroll containers are not monolithic in the pages (their contents are
   printed). The monolithic content (a replaced element, a box with size containment, a line box) that does not fit in an
-  empty page is sliced: the next page starts at the end of the page
+  empty page is sliced (also when only the block-start borders and paddings of its ancestors precede it in the page: as
+  in Blink, the break after these edges is not a possible break there, `BreakCandidate.EdgesOnlyFrom`, and the first
+  monolithic content of a box with a definite block size does not make the page taller): the next page starts at the end of the page
   (`FragmentationFlow.SlicesMonolithicContent`) and shows the rest of it (`FragmentSlicer` places a copy of its fragment in
   each next page, at a negative offset; the page area clips it), and the content after it follows it. As in Blink, whose
   page grows over the monolithic content, the boxes with `box-decoration-break: clone` do not repeat their edges at these
-  slices (`FragmentationFlow.StartsInMonolithicSlice`; a box with a definite block size consumes the whole page). The content that
+  slices (`FragmentationFlow.StartsInMonolithicSlice`; a box with a definite block size consumes the whole page), and the
+  repeated table headers are placed over the rest of the monolithic content of a row (the rows after it follow the header
+  or the end of the monolithic content, and the row ends with the content of its cells, which follows the slices). The content that
   overflows a monolithic box (that does not clip it) adds pages, as in the browsers: the flow continues until its end
   (`FragmentationFlow.GetOverflowEnd`, also for an absolutely positioned monolithic box), and the copies of the box are
   placed in these pages.
@@ -3092,7 +3133,9 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   first one; the pages added by the absolutely positioned boxes alternate between left and right pages, with the block
   sizes of their page areas); the absolutely positioned boxes whose containing block is the initial containing block are on the page of
   their position (in the content for a box at its static position in the block axis or anchored, else in the initial
-  containing block, whose pages follow each other by the block sizes of their page areas), unbroken, when they fit in the rest of it with their descendants and their contents
+  containing block, whose pages follow each other by the block sizes of their page areas; a box whose static position is
+  before the box after a break, in its block-start margin preserved after a forced break, is in the page before the break,
+  as in Blink), unbroken, when they fit in the rest of it with their descendants and their contents
   have no forced page break, else they are fragmented apart from their position in the initial containing block
   (`PageBreakRules.InitialContainingBlock`; the pages they reach are added; as in Blink, the page names of their contents
   break the pages only when the box is at its static position in the block axis); the absolutely positioned boxes
@@ -3730,8 +3773,12 @@ that are 0, the default alignment of `position-area`, the center of the default 
   fallback origin (`ComputedStyle.WithPositionOption`: they win over the cascaded values but the important ones, the resolved values
   replace their declaration; the logical properties are mapped first). The box is laid out with that style (`box.Style`, whose
   `PositionBaseStyle` is its computed style, restored before each layout). `getComputedStyle()` and the computed style map read the
-  accepted @position-try properties from it (`ComputedStyle.TryGetAnchorPositionedStyle`): the insets, sizes and margins in px. The
-  children still inherit from the computed style (`inherit` of an anchor function is not resolved). `revert` in a position option
+  accepted @position-try properties from it (`ComputedStyle.TryGetAnchorPositionedStyle`): the insets, sizes and margins in px. A
+  child whose accepted @position-try property is `inherit` (`ComputedStyle.IsExplicitlyInherited`) inherits from that style: the
+  layout replaces the style of its box by a style with the same cascaded values whose parent is that style
+  (`AnchorPositioning.UpdateInheritedStyles`, also for its children that inherit from it explicitly) when the inherited values
+  change, and drops the layout results of the box; `getComputedStyle()` of the child still returns the values inherited from the
+  computed style. `revert` in a position option
   is `unset` (the position fallback origin is not a separate origin of the cascade), `revert-layer` and `revert-rule` are ignored.
 - **Anchor functions** (`AnchorFunctionEvaluator`): `anchor()` gives the inset that aligns the edge of the inset-modified containing
   block with the edge of the anchor box (`inside`/`outside` from the property, `start`/`end` in the writing mode of the containing
@@ -3741,11 +3788,15 @@ that are 0, the default alignment of `position-area`, the center of the default 
 - **position-area**: the area of the position-area grid (the lines of the containing block and of the default anchor box, the outer
   ones extended to the anchor box) replaces the containing block; `auto` insets and margins are 0; `normal` aligns toward the anchor,
   `center` for the center track, `anchor-center` for the three tracks, toward the non-`auto` inset (unsafe) when only one inset is
-  `auto`; the default overflow alignment keeps the box in the original containing block (the overflow limit rect extends to
+  `auto`; the default overflow alignment keeps the box in the original containing block (the padding box of a grid container, not
+  the grid area of the grid-placement properties; the overflow limit rect extends to
   infinity in the reachable scrollable directions of a scroll container, the viewport included for the initial containing block,
   and to the scrolling area of the viewport for a fixed positioned box whose default anchor scrolls with the document). The scrollable containing block (the padding
   box extended to the in-flow contents, without their relative offsets and transforms, csswg-drafts#12552) replaces the local
-  containing block of a scroll container when the box has a default anchor.
+  containing block of a scroll container when the box has a default anchor; the initial containing block of an absolutely
+  positioned box with a default anchor is replaced by the union of the initial containing block and of the margin box of the root
+  element for the position-area grid (https://drafts.csswg.org/css-position-4/#scrollable-containing-block: the scrollable containing
+  block of the document; as in Chrome, the insets of the boxes without `position-area` refer to the initial containing block).
 - **anchor-center**: the margin box is centered on the default anchor box, clamped to the inset-modified containing block (whose
   `auto` insets are 0), and kept in the containing block by the default overflow alignment when it is larger (as in the browsers).
 - **Position options**: the base styles then the entries of `position-try-fallbacks` (a `@position-try` rule with try tactics, or a
@@ -4076,9 +4127,10 @@ laid out but hidden (`continue: collapse`, as Blink), and the container is sized
   are removed. The ellipsis is shaped in the style of the block container (not its `::first-line` style), isolated in the direction
   of the bidi paragraph of the line, placed after the content in that direction (on the line-left side of a right-to-left line) and
   aligned with it (`text-align`, after the justification); as the anonymous inline of `line-height: 0`, its fonts do not extend
-  the line. With `-webkit-line-clamp`, as in the browsers (WPT `webkit-line-clamp-035`, the `*-align-baseline-line-clamp-*`
-  tests), a line whose content does not fit with the ellipsis keeps its content, which is truncated by the ellipsis when it is
-  painted (`LineBoxFragment.IsTruncatedByBlockEllipsis`, `LineTruncator.GetTruncation`, as `text-overflow`). `text-overflow` still
+  the line. With `-webkit-line-clamp`, as in Blink (the `*-align-baseline-line-clamp-*` tests), a line whose content does not fit
+  with the ellipsis but fits without it keeps its content, which is truncated by the ellipsis when it is painted
+  (`LineBoxFragment.IsTruncatedByBlockEllipsis`, `LineTruncator.GetTruncation`, as `text-overflow`); the content that does not
+  fit without the ellipsis either is displaced (WPT `webkit-line-clamp-035`, `webkit-line-clamp-036`). `text-overflow` still
   truncates the lines of a clamped container.
 - **`text-wrap-style: balance`**: "the clamping effect is applied first, then the remaining lines are balanced": the layouts that
   look for the clamp point do not balance (`LineClamp.Balances`); the lines before the clamp point are balanced in the clamped
@@ -4100,8 +4152,7 @@ laid out but hidden (`continue: collapse`, as Blink), and the container is sized
   break (`CreateEllipsisClamp`), and fragmented again. Not done: a container nested in another fragmentation context (its
   columns are fragmented by the outer one) and the rows of `column-wrap: wrap` (not region breaks).
 - Not done: the hanging of the block overflow ellipsis (`hanging-punctuation`), the clipped parts of the floats in the scrollable
-  overflow, the intrinsic sizes of a clamped container (all its content counts), and a box whose block size is clamped by
-  `max-height` still collapses its block-end margin with its last children (WPT `line-clamp-auto-063`).
+  overflow, and the intrinsic sizes of a clamped container (all its content counts).
 
 ### Viewports (`LayoutEngine.Viewport.cs`)
 
@@ -4117,7 +4168,10 @@ The [viewports](https://drafts.csswg.org/cssom-view/#viewport) of a document fro
   the size of its last layout is used; without box (e.g. in skipped contents), the computed `width`/`height` (or the
   attributes, 300x150 by default). The environment of the nested document is pulled at each style update of the nested
   document: a change of the layout of the parent document restyles and relayouts the nested one, and its resize steps fire
-  the `resize` events.
+  the `resize` events. Once the window of a nested document has a `resize` listener
+  (`DomEventLoop.HasNestedWindowsWithResizeListeners`), each change of a document that contains nested browsing contexts
+  schedules a rendering update (`Document.RequestCssResourcesUpdate`), whose resize steps fire the events (the rendering is
+  otherwise updated only when something requests it).
 - **Viewport-percentage lengths** ([css-values-4](https://drafts.csswg.org/css-values-4/#viewport-relative-lengths)): they are
   computed values (`CssValueComputer`), relative to `StyleEngine.GetViewportUnitSize(environment)`: the viewport minus the
   scrollbar gutters that do not depend on the contents (`ScrollContainers.GetViewportUnitGutters`: the forced scrollbars of
@@ -4125,7 +4179,9 @@ The [viewports](https://drafts.csswg.org/cssom-view/#viewport) of a document fro
   the root or the body element and the `scrollbar-gutter`, `scrollbar-width` and `writing-mode` of the root element, read one
   property at a time so that the other properties of the root element can use the units). The gutters are computed once per
   generation of styles; a viewport unit used while they are computed (a cycle through `if()`, csswg-drafts#13189) uses the
-  whole viewport. The small, large and dynamic viewports are the same (no dynamic browser interface). The container query
+  whole viewport, and the `if()` whose style query meets the cycle (a viewport unit, or a property being computed, used while
+  the gutters are computed: `StyleEngine.ViewportUnitCycleCount`) is invalid at computed-value time, as the custom properties
+  of the cycle. The small, large and dynamic viewports are the same (no dynamic browser interface). The container query
   units fall back to the same size, and the SVG lengths use it. The media queries use the whole viewport.
 - **Visual viewport** (`VisualViewport`, [CSSOM View](https://drafts.csswg.org/cssom-view/#the-visualviewport-interface)):
   there is no pinch zoom (the `scale` is 1 and the offsets from the layout viewport are 0): its size is the initial
@@ -5803,9 +5859,16 @@ gives the untailored algorithm, which passes `LineBreakTest.txt`. The CSS tailor
   the iteration marks are ID, breaks before U+2010/U+2013 after an ID; in Chinese or Japanese, the centered punctuation marks
   and the PO/PR characters whose East_Asian_Width is A, F or W are ID. With `normal` or `loose` in Chinese or Japanese, U+301C
   and U+30A0 are ID. `anywhere`: an opportunity at every grapheme cluster boundary, except before a forced break.
+- The [deviations from UAX #14](https://drafts.csswg.org/css-text-3/#line-break-details) "for maximum interoperability with
+  existing implementations": no opportunity between `!` or `/` and an alphabetic letter (AL, HL), as in Blink and WebKit
+  (`!important`, `23/Jan`). The one of `|` is not applied: WPT `css3-text-line-break-baspglwj-026` expects the
+  opportunity of UAX #14 after it.
 - `word-break: break-all`: the letters and numbers, and the AL, HL, NU and SA characters are ID (except the Hangul jamo and the
   Brahmic aksaras, which keep their syllables); `keep-all`: no opportunity between two letters/numbers or NU, AL, AI, ID
-  characters, except the explicit ones (U+200B) and the word boundaries of the lexical word breaking; `manual`: SA is AL;
+  characters, except the explicit ones (U+200B) and the word boundaries of the lexical word breaking; with
+  `overflow-wrap: normal`, the opportunities that `keep-all` removes are emergency opportunities, used when no other one fits
+  ("the restrictions introduced by word-break: keep-all may be relaxed to match word-break: normal if there are no
+  otherwise-acceptable break points in the line"; no browser does it); `manual`: SA is AL;
   `auto-phrase`: see below.
 - The [lexical word breaking](https://drafts.csswg.org/css-text-4/#lexical-breaking) of the Southeast Asian scripts (SA,
   `LineBreaker.GetWordBreakEngine`): the runs of the SA characters of Thai, Lao, Myanmar and Khmer are segmented into words with the
@@ -5931,7 +5994,7 @@ also used by the HTML directionality (`dir=auto`). `BidiTest.txt` and `BidiChara
   (Bidi_Class B: U+2029, LF, CR, U+001C-U+001E, U+0085; P1); `Paragraphs` gives their ranges and levels.
 - `BidiParagraphDirection`: `LeftToRight`/`RightToLeft` set the paragraph level (clause HL1, the CSS `direction` of the block
   container); `AutoLeftToRight`/`AutoRightToLeft` apply rules P2 and P3 to each paragraph, with the level used when it has no
-  strong character (`unicode-bidi: plaintext`).
+  strong character (`unicode-bidi: plaintext`; `BidiParagraph.IsDefaultLevel`).
 - The explicit levels (X1 to X8) use the directional status stack (max_depth 125); the characters removed by X9 (embedding and
   override initiators, PDF, BN) are kept as described in UAX #9 §5.2: they are skipped by the isolating run sequences and get the
   level of the preceding character. The isolating run sequences (BD13) are resolved with W1 to W7, N0 (bracket pairs, BD16 with
@@ -5957,7 +6020,11 @@ boundary or a forced paragraph break. `BidiControls` gives the control codes tha
 `GetInlineStart(unicodeBidi, isRtl)` before the content of an inline box and `GetInlineEnd(unicodeBidi)` after it
 (`embed`: LRE/RLE…PDF, `isolate`: LRI/RLI…PDI, `bidi-override`: LRO/RLO…PDF, `isolate-override`: FSI LRO/RLO…PDF PDI, `plaintext`:
 FSI…PDI), and `GetBlockContainerStart`/`GetBlockContainerEnd` around the content of a block container with `bidi-override` or
-`isolate-override`. The paragraph level is `GetParagraphDirection(unicodeBidi, isRtl)` of the block container. When an inline
+`isolate-override`. The paragraph level is `GetParagraphDirection(unicodeBidi, isRtl)` of the block container. With `plaintext`, the
+[inline base direction of a line box](https://drafts.csswg.org/css-text-3/#bidi-linebox) (its alignment) is the direction
+of its paragraph, or for a paragraph without strong character, the direction of the line box before it (of the last
+paragraph before it that has one), or of the block container for the first line box; its content keeps the level of rule P3
+(`InlineLayoutAlgorithm.IsLineRightToLeft`). When an inline
 box is split by a forced paragraph break, its end codes are inserted before the break and its start codes after it
 ([§2.4.4](https://drafts.csswg.org/css-writing-modes-4/#bidi-paragraph-breaks)). An atomic inline (U+FFFC) is neutral, except
 a replaced element with `unicode-bidi: embed | bidi-override` (`GetAtomicInlineClass`, passed to `Resolve` with the classes).

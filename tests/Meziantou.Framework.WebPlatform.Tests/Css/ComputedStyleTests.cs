@@ -504,6 +504,27 @@ public sealed class ComputedStyleTests : IDisposable
     }
 
     [Fact]
+    public void Shadow_Part_TreeCountingFunctions()
+    {
+        var document = Parse("<style>#host::part(p) { z-index: sibling-index(); order: calc(sibling-count() + 1) } span { z-index: sibling-index() }</style><div id=host><span></span><span id=slotted></span></div>");
+        var host = document.GetElementById("host")!;
+        var shadow = host.AttachShadow(new ShadowRootInit { Mode = ShadowRootMode.Open });
+        shadow.SetHtmlUnsafe("<style>:host { order: sibling-count() } ::slotted(span) { order: sibling-index() }</style><div></div><div></div><div part=p></div><slot></slot>");
+        var window = document.DefaultView!;
+
+        // A ::part() rule of the outer tree does not see the position of the part in the shadow tree: the functions are 0
+        var part = window.GetComputedStyle(shadow.QuerySelector("[part]")!);
+        Assert.Equal("0", part.ZIndex);
+        Assert.Equal("1", part.Order);
+
+        // The rules of the shadow tree see the elements of the outer trees
+        Assert.Equal("1", window.GetComputedStyle(host).Order);
+        var slotted = window.GetComputedStyle(document.GetElementById("slotted")!);
+        Assert.Equal("2", slotted.Order);
+        Assert.Equal("2", slotted.ZIndex);
+    }
+
+    [Fact]
     public void Shadow_Part_Exportparts()
     {
         var document = Parse("<style>#outer::part(fwd) { color: green } #outer::part(inner) { background-color: red } #outer::part(same) { background-color: green }</style><div id=outer></div>");
@@ -828,6 +849,24 @@ public sealed class ComputedStyleTests : IDisposable
     [InlineData("<!doctype html><div id=target style='--x: if(supports(width: 30): yes; else: no)'></div>", "no")]
     [InlineData("<div id=target style='--x: if(supports(color: ff0000): yes; else: no)'></div>", "yes")]
     public void IfConditions(string html, string expected) => Assert.Equal(expected, Get(html, "--x"));
+
+    [Theory]
+    [InlineData("ident(\"a\" random(1, 1000000000))", false)] // The random() functions of an ident() are keyed by element, property and index
+    [InlineData("ident(\"a\" random(property-index-scoped, 1, 1000000000))", true)]
+    public void Ident_Random(string value, bool shared)
+    {
+        var document = Parse("<style>div { view-transition-name: " + value + " }</style><div id=a></div><div id=b></div>");
+        var a = GetStyle(document, "#a").GetPropertyValue("view-transition-name");
+        var b = GetStyle(document, "#b").GetPropertyValue("view-transition-name");
+        Assert.StartsWith("a", a, StringComparison.Ordinal);
+        Assert.Equal(shared, a == b);
+    }
+
+    [Theory]
+    [InlineData("random(1, 30)", "")] // The random base value depends on the element: the initial value is not computationally independent
+    [InlineData("random(fixed 0.5, 0, 30)", "15")]
+    public void RegisteredProperty_RandomInitialValue(string initialValue, string expected)
+        => Assert.Equal(expected, Get("<style>@property --x { syntax: '<number>'; inherits: false; initial-value: " + initialValue + " }</style><div id=target></div>", "--x"));
 
     [Fact]
     public void Supports_QuirkyLengthsAreNotValid() => Assert.False(Meziantou.Framework.WebPlatform.Css.Om.Css.Supports("width: 30"));
@@ -1705,6 +1744,10 @@ public sealed class ComputedStyleTests : IDisposable
     [InlineData("height: calc-size(min-content, size * 2)", "height", "calc-size(min-content, 2 * size)", "0px")]
     [InlineData("max-width: calc-size(auto, size)", "max-width", "", "none")]
     [InlineData("width: random(fixed 0.5, 0px, 100px, 3px)", "width", "calc(51px)", "51px")]
+    [InlineData("width: random(fixed random(1, 2), 10px, 100px)", "width", "random(fixed random(element-scoped ua-width-2, 1, 2), 10px, 100px)", "99.99999px")] // The base value is clamped below 1
+    [InlineData("translate: random(fixed random(-2, -1), 10%, 100%)", "translate", "random(fixed random(element-scoped ua-translate-2, -2, -1), 10%, 100%)", "random(fixed 0, 10%, 100%)")]
+    [InlineData("color: rgb(from blue random(g + 51, g) random(b, b) 0)", "color", "rgb(from blue random(element-scoped ua-color-1, 51 + g, g) random(element-scoped ua-color-2, b, b) 0)", "color(srgb 0.2 1 0)")] // The channel keywords are not caching keys
+    [InlineData("width: calc(4em + 2.6458333cm)", "width", "calc(4em + 99.999999px)", "164px")] // The lengths have the precision of the browsers (single-precision floats)
     [InlineData("opacity: progress(50px, 0px, 200px)", "opacity", "calc(0.25)", "0.25")]
     [InlineData("margin-left: clamp(none, 2px, 3em)", "margin-left", "min(2px, 3em)", "2px")]
     [InlineData("scale: calc-mix(1 25%, 3 25%, 5, 7)", "scale", "calc(4)", "4")]

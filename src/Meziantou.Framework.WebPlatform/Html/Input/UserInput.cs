@@ -490,6 +490,9 @@ public sealed class PointerInput
     /// <summary>The press of the primary button on a scrollbar, until the release (see <see cref="UserInput.ScrollbarPress"/>).</summary>
     internal UserInput.ScrollbarPress? ScrollbarPress { get; set; }
 
+    /// <summary>The press of the primary button on a resizer, until the release (see <see cref="UserInput.ResizerPress"/>).</summary>
+    internal UserInput.ResizerPress? ResizerPress { get; set; }
+
     // The drag-and-drop operation of the mouse
     internal Node? DragNode { get; set; }
 

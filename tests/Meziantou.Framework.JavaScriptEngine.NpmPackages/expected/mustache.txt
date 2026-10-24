@@ -1,0 +1,12 @@
+Hello, Chris &lt;&amp;&gt;! <b>bold</b> <b>bold</b>
+  - Apple: 1 (sale)
+  - Pear: 2
+No empty items.
+<em>Chris &lt;&amp;&gt; is awesome.</em>
+-- Chris &lt;&amp;&gt;Chris &lt;&amp;&gt; with custom delimiters
+Paris .
+
+----
+[["name","a",0,5],["text"," ",5,6],["#","b",6,12,[["name","c",12,17]],17]]
+----
+1

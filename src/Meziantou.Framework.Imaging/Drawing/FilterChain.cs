@@ -31,6 +31,18 @@ public sealed class FilterChain : Filter
         }
     }
 
+    internal override bool TryGetBoundsCore(RectangleD bounds, out RectangleD result)
+    {
+        result = bounds;
+        foreach (var filter in _filters)
+        {
+            if (!filter.TryGetBoundsCore(result, out result))
+                return false;
+        }
+
+        return true;
+    }
+
     internal override (double X, double Y) GetReach()
     {
         double x = 0, y = 0;

@@ -105,6 +105,13 @@ public sealed class FilterGraph : Filter
         FilterProcessor.Clear(storage, bounds, context.Bounds);
     }
 
+    // A primitive can fill the whole region (a flood, a turbulence): the region is the only bound
+    internal override bool TryGetBoundsCore(RectangleD bounds, out RectangleD result)
+    {
+        result = Region.GetValueOrDefault();
+        return Region.HasValue;
+    }
+
     internal override (double X, double Y) GetReach()
     {
         // Each primitive may read what the ones before it moved

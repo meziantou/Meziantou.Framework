@@ -249,10 +249,10 @@
     "total": 10
   },
   "css/css-lists/inline-block-list-marker.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/inline-block-list.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/inline-list-marker.html": {
     "reftest": "PASS"
@@ -543,7 +543,7 @@
     "reftest": "PASS"
   },
   "css/css-lists/outside-marker-covered-by-relpos-block-link.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/outside-marker-in-multicol-relpos-content.html": {
     "reftest": "PASS"

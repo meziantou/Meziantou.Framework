@@ -666,7 +666,7 @@
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-auto-063.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-auto-with-ruby-001.html": {
     "reftest": "PASS"
@@ -837,7 +837,7 @@
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-with-abspos-024.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-with-abspos-025.html": {
     "reftest": "PASS"
@@ -1071,10 +1071,10 @@
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/webkit-line-clamp-035.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/webkit-line-clamp-036.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/webkit-line-clamp-037.html": {
     "reftest": "PASS"
@@ -1591,10 +1591,7 @@
     "total": 1
   },
   "css/css-overflow/resizer-transform.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Resizer should account for transforms to decide resize direction": "FAIL"
-    }
+    "total": 1
   },
   "css/css-overflow/rounded-overflow-clip-visible.html": {
     "reftest": "PASS"

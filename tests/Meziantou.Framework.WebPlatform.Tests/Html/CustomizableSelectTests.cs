@@ -70,6 +70,30 @@ public sealed class CustomizableSelectTests : IDisposable
     }
 
     [Fact]
+    public void HighlightPseudoElements_OfTheOptionsInheritFromTheOnesOfThePicker()
+    {
+        var document = Load("<select><button>b</button><option id=one>one</select>", Style + """
+            <style>
+              select::selection { color: rgb(0, 0, 255); background-color: rgb(255, 0, 0) }
+              select::picker(select)::selection { background-color: rgb(0, 128, 0) }
+              select::picker(select)::highlight(foo) { text-decoration-line: underline }
+            </style>
+            """);
+        var window = document.DefaultView!;
+        var option = document.GetElementById("one")!;
+
+        // The highlight pseudo-elements of the picker inherit from the ones of the select element, and the ones of its contents
+        // from the ones of the picker
+        Assert.Equal("rgb(0, 128, 0)", window.GetComputedStyle(option, "::selection").GetPropertyValue("background-color"));
+        Assert.Equal("rgb(0, 0, 255)", window.GetComputedStyle(option, "::selection").GetPropertyValue("color"));
+        Assert.Equal("underline", window.GetComputedStyle(option, "::highlight(foo)").GetPropertyValue("text-decoration-line"));
+        Assert.Equal("none", window.GetComputedStyle(option, "::highlight(bar)").GetPropertyValue("text-decoration-line"));
+
+        // The button is not in the picker
+        Assert.Equal("rgb(255, 0, 0)", window.GetComputedStyle(document.QuerySelector("button")!, "::selection").GetPropertyValue("background-color"));
+    }
+
+    [Fact]
     public void Click_OpensThePickerBelowTheSelectAndFocusesTheSelectedOption()
     {
         var document = Load("<select>" + Options + "</select>");

@@ -290,6 +290,13 @@ internal sealed partial class GridLayoutAlgorithm
         return result;
     }
 
+    /// <summary>
+    /// Returns the block size of the contents of the container: as in the browsers, an editing host without items is at least
+    /// as tall as the line of its caret (see <see cref="BlockFormattingContext.HasCaretLineIfEmpty"/>).
+    /// </summary>
+    private double GetContentBlockSizeWithCaretLine(double contentBlockSize)
+        => _items.Count == 0 && BlockFormattingContext.HasCaretLineIfEmpty(_box) ? Math.Max(contentBlockSize, _box.Style.Layout.UsedLineHeight) : contentBlockSize;
+
     /// <summary>Lays out the grid items, adds their fragments to <paramref name="builder"/> and returns the block size of the contents and their baselines.</summary>
     public ContentLayoutResult Layout(FragmentBuilder builder)
     {
@@ -300,8 +307,8 @@ internal sealed partial class GridLayoutAlgorithm
         RunGridSizingAlgorithm();
 
         // The block size of the contents: the size of the rows (with their percentages treated as auto when the block size of the
-        // container is indefinite)
-        var gridBlockSize = _contentBlockSize;
+        // container is indefinite), at least the line of the caret of an editing host without items
+        var gridBlockSize = GetContentBlockSizeWithCaretLine(_contentBlockSize);
 
         // The measure of the intrinsic block size only needs the sizes of the rows: the items are measured, not laid out
         if (_content.MeasuresIntrinsicBlockSize)

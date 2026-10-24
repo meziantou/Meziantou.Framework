@@ -239,6 +239,45 @@ public sealed class Pen
     /// <summary>Gets a value indicating whether a shape is drawn at an end of the open contours.</summary>
     internal bool HasMarkers => StartMarker is not null || EndMarker is not null;
 
+    /// <summary>
+    /// Gets the distance from its path a stroke can reach: half its width, its miters (only those of a pen that miters
+    /// its corners), the corners of its square caps, or anywhere with markers.
+    /// </summary>
+    /// <param name="widthFactor">What the width is multiplied by: 2 for a stroke of which one side is kept.</param>
+    internal double GetStrokeReach(double widthFactor)
+    {
+        if (HasMarkers)
+            return DrawingGuard.MaxCoordinate;
+
+        var factor = Math.Max(LineJoin == LineJoin.Miter ? MiterLimit : 1, LineCap == LineCap.Square ? Math.Sqrt(2) : 1);
+        return StrokeWidth * widthFactor * factor / 2;
+    }
+
+    /// <summary>
+    /// Gets the distance from the inside of a curve a stroke can reach: half its width, or the corners of the square caps
+    /// of its dashes. Its vertices there are smooth: they have round joins, never a miter.
+    /// </summary>
+    /// <param name="widthFactor">What the width is multiplied by: 2 for a stroke of which one side is kept.</param>
+    internal double GetCurveReach(double widthFactor)
+    {
+        if (HasMarkers)
+            return DrawingGuard.MaxCoordinate;
+
+        var factor = LineCap == LineCap.Square ? Math.Sqrt(2) : 1;
+        return StrokeWidth * widthFactor * factor / 2;
+    }
+
+    /// <summary>
+    /// Gets a rectangle that contains what the pen paints when it strokes a path that a rectangle contains, without
+    /// markers: the rectangle spread by the reach of the stroke on the side of the path it is on.
+    /// </summary>
+    internal RectangleD GetStrokeBounds(RectangleD pathBounds) => Alignment switch
+    {
+        PenAlignment.Inside => pathBounds,
+        PenAlignment.Outside => pathBounds.Inflate(GetStrokeReach(2)),
+        _ => pathBounds.Inflate(GetStrokeReach(1)),
+    };
+
     /// <summary>Gets the pattern as a whole number of dashes and gaps; empty for a continuous stroke.</summary>
     internal double[] Dashes { get; private init; } = [];
 

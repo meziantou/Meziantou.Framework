@@ -520,6 +520,20 @@ internal sealed partial class ComputedStyle
         return _cascaded.TryGetValue(property, out value);
     }
 
+    /// <summary>
+    /// Returns whether the cascaded value of a property that is not a logical property is the <c>inherit</c> keyword (or the one of
+    /// <c>all</c> when the property has no declaration): its computed value is the computed value of the property of <see cref="Parent"/>.
+    /// </summary>
+    internal bool IsExplicitlyInherited(string property)
+    {
+        if (!TryGetCascadedValue(property, out var cascaded) && !_cascaded.TryGetValue("all", out cascaded))
+            return false;
+
+        var declared = cascaded.Value;
+        var text = declared.ComputationValue ?? declared.Value;
+        return declared.ShorthandName is null && text is not null && text.AsSpan().Trim().Equals("inherit", StringComparison.OrdinalIgnoreCase);
+    }
+
     // ----------------------------------------------------------------------------------------------------------------
     // Resolved values (https://drafts.csswg.org/cssom/#resolved-values)
     // ----------------------------------------------------------------------------------------------------------------
@@ -900,6 +914,7 @@ internal sealed partial class ComputedStyle
         if (!computing.Add(this, property))
         {
             // A cyclic dependency between properties (e.g. font-size: 1lh): the initial value is used
+            Engine.OnPropertyCycle();
             return CssValueComputer.Compute(this, definition, CssValueComputer.GetInitialValue(definition), baseUrl: null);
         }
 
@@ -1096,6 +1111,7 @@ internal sealed partial class ComputedStyle
         if (text is null)
             return Default(property, inherit: inherited);
 
+        text = ResolveTreeCountingFunctionsOfOuterTree(text, cascaded.TreeScope);
         switch (InfraAscii.ToAsciiLowercase(text))
         {
             case "initial":
@@ -1122,6 +1138,65 @@ internal sealed partial class ComputedStyle
         }
 
         return CssValueComputer.Compute(this, property, text, cascaded.BaseUrl);
+    }
+
+    /// <summary>
+    /// Replaces the tree-counting functions of a value with 0 when the style sheet of its declaration is in an outer tree of the
+    /// element (e.g. a ::part() rule): the functions are tree-scoped references that fail to match, so that the outer trees do
+    /// not see the structure of the shadow trees (https://drafts.csswg.org/css-values-5/#tree-counting).
+    /// </summary>
+    private string ResolveTreeCountingFunctionsOfOuterTree(string text, Node? treeScope)
+    {
+        if (treeScope is null || !text.Contains("sibling-", StringComparison.OrdinalIgnoreCase) || !IsInShadowTreeOf(Element, treeScope))
+            return text;
+
+        var values = CssParser.ParseListOfComponentValues(text, out var source);
+        var splices = new List<(int Start, int End)>();
+        AddTreeCountingFunctions(values, splices);
+        if (splices.Count == 0)
+            return text;
+
+        var builder = new System.Text.StringBuilder(source.Length);
+        var position = 0;
+        foreach (var (start, end) in splices)
+        {
+            builder.Append(source, position, start - position).Append('0');
+            position = end;
+        }
+
+        return builder.Append(source, position, source.Length - position).ToString();
+
+        static bool IsInShadowTreeOf(Element element, Node treeScope)
+        {
+            var root = element.GetRootNode();
+            while (root is ShadowRoot shadowRoot)
+            {
+                root = shadowRoot.Host.GetRootNode();
+                if (ReferenceEquals(root, treeScope))
+                    return true;
+            }
+
+            return false;
+        }
+
+        static void AddTreeCountingFunctions(List<CssComponentValue> values, List<(int Start, int End)> splices)
+        {
+            foreach (var value in values)
+            {
+                switch (value)
+                {
+                    case CssFunction function when ValueMatcher.IsTreeCountingFunction(function):
+                        splices.Add((function.Start, function.End));
+                        break;
+                    case CssFunction function:
+                        AddTreeCountingFunctions(function.Value, splices);
+                        break;
+                    case CssSimpleBlock block:
+                        AddTreeCountingFunctions(block.Value, splices);
+                        break;
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -1331,6 +1406,7 @@ internal sealed partial class ComputedStyle
                 customPropertyCycles.Add(customPropertyStack[i]);
             }
 
+            Engine.OnPropertyCycle();
             return null;
         }
 

@@ -585,6 +585,7 @@ internal static class PositionedLayout
             return AnchorPositioning.Layout(context, candidate, hostFragment, laidOut, containingBlockRect, containingBlock);
 
         AnchorPositioning.UpdateTransitionsOfFormerAnchoredBox(context, candidate.Box);
+        AnchorPositioning.UpdateInheritedStyles(candidate.Box);
         return LayoutInContainingBlock(context, candidate, containingBlockRect, containingBlock, anchor: null).Fragment;
     }
 

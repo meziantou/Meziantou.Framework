@@ -111,6 +111,13 @@ internal static class CssStyleValueReifier
             {
                 result[i] = typed[i];
             }
+            else if (!isRepresentation && result[i] is CssKeywordValue && typed[i].GetType() == typeof(CssStyleValue))
+            {
+                // A list of keywords serialized in its shortest form (e.g. paint-order: fill stroke is serialized as fill) is
+                // not a single keyword, which is reified as an identifier: it is a CSSStyleValue, which keeps the value as
+                // specified so that it is still a CSSStyleValue when it is set to another declaration
+                result[i] = typed[i];
+            }
             else if (representations is not null && representations.Count == result.Count && representations[i] is { } representation && typed[i] is not CssUnparsedValue)
             {
                 result[i] = representation;

@@ -29,6 +29,7 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.AffineTransform Then(Meziantou.Framework.Imaging.AffineTransform next) => throw null;
         public override string ToString() => throw null;
         public Meziantou.Framework.Imaging.PointD Transform(Meziantou.Framework.Imaging.PointD point) => throw null;
+        public Meziantou.Framework.Imaging.RectangleD TransformBounds(Meziantou.Framework.Imaging.RectangleD rectangle) => throw null;
         public Meziantou.Framework.Imaging.PointD TransformVector(Meziantou.Framework.Imaging.PointD vector) => throw null;
         public bool TryInvert(out Meziantou.Framework.Imaging.AffineTransform inverse) => throw null;
         public static bool operator ==(Meziantou.Framework.Imaging.AffineTransform left, Meziantou.Framework.Imaging.AffineTransform right) => throw null;
@@ -1493,6 +1494,7 @@ namespace Meziantou.Framework.Imaging.Drawing
 
     public abstract class Filter
     {
+        public bool TryGetBounds(Meziantou.Framework.Imaging.RectangleD bounds, out Meziantou.Framework.Imaging.RectangleD result) => throw null;
     }
 
     public sealed class FilterChain : Meziantou.Framework.Imaging.Drawing.Filter
@@ -1964,6 +1966,7 @@ namespace Meziantou.Framework.Imaging.Drawing
         public Meziantou.Framework.Imaging.Drawing.VectorPath Combine(Meziantou.Framework.Imaging.Drawing.VectorPath other, Meziantou.Framework.Imaging.Drawing.PathCombineMode mode, Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public bool Contains(Meziantou.Framework.Imaging.PointD point, Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero) => throw null;
         public Meziantou.Framework.Imaging.Drawing.PathSegmentEnumerator EnumerateSegments() => throw null;
+        public Meziantou.Framework.Imaging.RectangleD GetBounds(Meziantou.Framework.Imaging.Drawing.Pen pen) => throw null;
         public double GetLength() => throw null;
         public Meziantou.Framework.Imaging.RectangleD GetTightBounds() => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPath Offset(double distance, Meziantou.Framework.Imaging.Drawing.LineJoin join = Meziantou.Framework.Imaging.Drawing.LineJoin.Miter, double miterLimit = 4d, Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero, System.Threading.CancellationToken cancellationToken = default) => throw null;
@@ -2771,6 +2774,12 @@ namespace Meziantou.Framework.Imaging.Typography
         Justify = 3,
     }
 
+    public enum TextBounds
+    {
+        Layout = 0,
+        Ink = 1,
+    }
+
     [System.Flags]
     public enum TextDecorations
     {
@@ -2803,6 +2812,13 @@ namespace Meziantou.Framework.Imaging.Typography
         public static bool operator !=(Meziantou.Framework.Imaging.Typography.TextHit left, Meziantou.Framework.Imaging.Typography.TextHit right) => throw null;
     }
 
+    public enum TextHorizontalAnchor
+    {
+        Left = 0,
+        Center = 1,
+        Right = 2,
+    }
+
     public enum TextHyphenation
     {
         Manual = 0,
@@ -2828,6 +2844,9 @@ namespace Meziantou.Framework.Imaging.Typography
         public static Meziantou.Framework.Imaging.Typography.TextLayout CreateToFit(Meziantou.Framework.Imaging.Typography.RichText text, double width, double height, Meziantou.Framework.Imaging.Typography.TextLayoutOptions? options = null, double minimumScale = 0.1d) => throw null;
         public static Meziantou.Framework.Imaging.Typography.TextLayout CreateToFit(string text, Meziantou.Framework.Imaging.Typography.TextStyle style, double width, double height, Meziantou.Framework.Imaging.Typography.TextLayoutOptions? options = null, double minimumScale = 0.1d) => throw null;
         public Meziantou.Framework.Imaging.RectangleD GetCaretRectangle(int textIndex) => throw null;
+        public Meziantou.Framework.Imaging.RectangleD GetInkBounds(Meziantou.Framework.Imaging.Drawing.Pen pen) => throw null;
+        public Meziantou.Framework.Imaging.PointD GetOrigin(Meziantou.Framework.Imaging.PointD anchor, Meziantou.Framework.Imaging.Typography.TextHorizontalAnchor horizontal, Meziantou.Framework.Imaging.Typography.TextVerticalAnchor vertical, Meziantou.Framework.Imaging.Typography.TextBounds bounds = Meziantou.Framework.Imaging.Typography.TextBounds.Layout) => throw null;
+        public Meziantou.Framework.Imaging.PointD GetOrigin(Meziantou.Framework.Imaging.RectangleD box, Meziantou.Framework.Imaging.Typography.TextHorizontalAnchor horizontal, Meziantou.Framework.Imaging.Typography.TextVerticalAnchor vertical, Meziantou.Framework.Imaging.Typography.TextBounds bounds = Meziantou.Framework.Imaging.Typography.TextBounds.Layout) => throw null;
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.RectangleD> GetSelectionRectangles(int start, int length) => throw null;
         public Meziantou.Framework.Imaging.Typography.TextHit HitTest(Meziantou.Framework.Imaging.PointD point) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPath ToPath(Meziantou.Framework.Imaging.PointD origin) => throw null;
@@ -2933,6 +2952,14 @@ namespace Meziantou.Framework.Imaging.Typography
         None = 0,
         Character = 1,
         Word = 2,
+    }
+
+    public enum TextVerticalAnchor
+    {
+        Top = 0,
+        Center = 1,
+        Baseline = 2,
+        Bottom = 3,
     }
 
     public enum TextWordBreak

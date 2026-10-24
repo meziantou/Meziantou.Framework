@@ -207,6 +207,32 @@ public sealed class UserInputTests : IDisposable
     }
 
     [Fact]
+    public void Mouse_ClickOnTheSummaryOfTheUserAgentTogglesTheDetails()
+    {
+        var document = Load("<details id=d>content</details>");
+        var details = (HtmlDetailsElement)document.GetElementById("d")!;
+        var events = Log(document, "pointerdown", "mousedown", "focusin", "click");
+        Assert.Same(details, document.ElementFromPoint(5, 5));
+        var mouse = document.BrowsingContext!.Input.Mouse;
+        mouse.Move(5, 5);
+        mouse.Down();
+        mouse.Up();
+
+        // The press focuses the summary, and the click toggles the details element (the events are retargeted to it)
+        Assert.Equal(["pointerdown@d", "mousedown@d", "focusin@d", "click@d"], events);
+        Assert.True(details.Open);
+        Assert.Same(details, document.ActiveElement);
+
+        // A press on the contents of the details element does not toggle it
+        _contexts.EventLoop.RunUntilIdle();
+        mouse.Move(5, details.GetBoundingClientRect().Bottom - 5);
+        mouse.Down();
+        mouse.Up();
+        Assert.True(details.Open);
+        Assert.Same(document.Body, document.ActiveElement);
+    }
+
+    [Fact]
     public void Slider_DragSetsTheValue()
     {
         var document = Load("<input id=range type=range min=0 max=10 value=5 style='width: 116px; margin: 0; padding: 0; border: 0'>");
@@ -220,6 +246,101 @@ public sealed class UserInputTests : IDisposable
         mouse.Up();
 
         Assert.Equal(["input@range", "change@range"], events);
+    }
+
+    [Theory]
+    [InlineData("date")]
+    [InlineData("datetime-local")]
+    [InlineData("month")]
+    [InlineData("week")]
+    [InlineData("time")]
+    [InlineData("color")]
+    public void InputPicker_ClickOpensItAndAClickOutsideClosesIt(string type)
+    {
+        var document = Load($"<input id=input type={type} style='display: block; width: 100px; height: 20px; margin: 0'><div id=a></div>");
+        var input = (HtmlInputElement)document.GetElementById("input")!;
+        var mouse = document.BrowsingContext!.Input.Mouse;
+        Assert.False(input.Matches(":open"));
+
+        mouse.Move(50, 10);
+        mouse.Down();
+        mouse.Up();
+        Assert.True(input.Matches(":open"));
+        Assert.False(document.DefaultView!.HasTransientActivation);
+
+        // A press on the input element keeps the picker open
+        mouse.Down();
+        Assert.True(input.Matches(":open"));
+        mouse.Up();
+
+        mouse.Move(50, 70);
+        mouse.Down();
+        Assert.False(input.Matches(":open"));
+        mouse.Up();
+    }
+
+    [Fact]
+    public void InputPicker_ShowPickerOpensItUntilEscapeOrAnotherPicker()
+    {
+        var document = Load("<div id=a></div><input id=date type=date><input id=time type=time><input id=text list=list><datalist id=list><option>x</option></datalist><input id=plain>");
+        var date = (HtmlInputElement)document.GetElementById("date")!;
+        var time = (HtmlInputElement)document.GetElementById("time")!;
+        var text = (HtmlInputElement)document.GetElementById("text")!;
+        var plain = (HtmlInputElement)document.GetElementById("plain")!;
+        var mouse = document.BrowsingContext!.Input.Mouse;
+        void Activate()
+        {
+            mouse.Move(50, 50);
+            mouse.Down();
+            mouse.Up();
+        }
+
+        var error = Assert.Throws<DomException>(date.ShowPicker);
+        Assert.Equal("NotAllowedError", error.Name);
+        Assert.False(date.Matches(":open"));
+
+        Activate();
+        date.ShowPicker();
+        Assert.True(date.Matches(":open"));
+        Assert.False(document.DefaultView!.HasTransientActivation);
+        Assert.False(date.Matches(":focus"));
+
+        Activate();
+        Assert.False(date.Matches(":open"));
+        time.ShowPicker();
+        Assert.True(time.Matches(":open"));
+
+        EventDispatcher.Dispatch(new KeyboardEvent("keydown", new KeyboardEventInit { Key = "Escape", Bubbles = true, Cancelable = true, Composed = true }) { IsTrusted = true }, document.Body!);
+        Assert.False(time.Matches(":open"));
+
+        // The suggestions of the datalist are the picker of a text input; an input without picker only consumes the activation
+        Activate();
+        text.ShowPicker();
+        Assert.True(text.Matches(":open"));
+        text.RemoveAttribute("list");
+        Assert.False(text.Matches(":open"));
+
+        Activate();
+        plain.ShowPicker();
+        Assert.False(plain.Matches(":open"));
+        Assert.False(document.DefaultView.HasTransientActivation);
+
+        // The picker closes when the element changes its type, is no longer mutable or is removed
+        Activate();
+        date.ShowPicker();
+        date.Type = "text";
+        Assert.False(date.Matches(":open"));
+
+        Activate();
+        time.ShowPicker();
+        time.SetAttribute("readonly", "");
+        Assert.False(time.Matches(":open"));
+        time.RemoveAttribute("readonly");
+
+        Activate();
+        time.ShowPicker();
+        time.Remove();
+        Assert.False(time.Matches(":open"));
     }
 
     [Fact]

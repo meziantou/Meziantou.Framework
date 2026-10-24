@@ -1,0 +1,82 @@
+pi !doctype !DOCTYPE html
+open html {}
+open head {}
+open title {}
+text "Tes"
+text "t "
+text "&"
+text " check"
+close title
+open script {}
+text "if (a < "
+text "b && c > d) { x = \"</p>\"; }"
+close script
+close head
+open body {}
+open div {"id":"main","class":"a b"}
+open p {}
+text "Para "
+open b {}
+text "bold"
+open i {}
+text "nested"
+close i (implied)
+close b
+text " text"
+open br {}
+close br (implied)
+open img {"src":"x.png","alt":"a \"quoted\" alt"}
+close img (implied)
+close p (implied)
+open ul {}
+open li {}
+text "One"
+close li (implied)
+open li {}
+text "Two"
+close li (implied)
+close ul
+comment  comment 
+open table {}
+open tr {}
+open td {}
+text "1"
+close td (implied)
+open td {}
+text "2"
+close td (implied)
+close tr (implied)
+close table
+open a {"href":"/link?a=1&b=2"}
+text "link "
+text "©"
+text "☺"
+text " &unknown;"
+close a
+close div
+open svg {"viewbox":"0 0 1 1"}
+open circle {"cx":"1"}
+close circle (implied)
+close svg
+close body
+close html
+----
+One,Two,1,2
+----
+a b
+----
+/link?a=1&b=2
+----
+<!DOCTYPE html><html><head><title>Test &amp; check</title><script>if (a < b && c > d) { x = "</p>"; }</script></head>
+<body><div id="main" class="a b"><p>Para <b>bold<i>nested</i></b> text<br><img src="x.png" alt="a &quot;quoted&quot; alt">
+</p><ul><li>One</li><li>Two</li></ul><!-- comment --><table><tr><td>1</td><td>2</td></tr></table>
+<a href="/link?a=1&amp;b=2">link &#xa9; &#x263a; &amp;unknown;</a></div><svg viewBox="0 0 1 1"><circle cx="1"/></svg></body></html>
+----
+<!DOCTYPE html><html><head><title>Test & check</title><script>if (a < b && c > d) { x = "</p>"; }</script></head>
+<body><div id="main" class="a b"><p>Para <b>bold<i>nested</i></b> text<br/><img src="x.png" alt="a &quot;quoted&quot; alt"/>
+</p><ul><li>One</li><li>Two</li></ul><!-- comment --><table><tr><td>1</td><td>2</td></tr></table>
+<a href="/link?a=1&b=2">link © ☺ &unknown;</a></div><svg viewbox="0 0 1 1"><circle cx="1"/></svg></body></html>
+----
+<root xmlns:a="urn:a"><a:item id="1">x<![CDATA[<y>]]></a:item><Item/></root>
+----
+<a:item id="1">x<![CDATA[<y>]]></a:item>

@@ -351,11 +351,16 @@ internal sealed partial class Painter
             }
         }
 
+        var firstRow = int.MaxValue;
+        var lastRowEnd = -1;
         foreach (var cell in model.Cells)
         {
             // (a cell of collapsed tracks only is not rendered: its box does not end at the grid lines of the visible tracks)
             if (GetCellFragment(cell.Box) is not { } fragment || IsInCollapsedTracks(cell))
                 continue;
+
+            firstRow = Math.Min(firstRow, cell.Row);
+            lastRowEnd = Math.Max(lastRowEnd, Math.Min(rows, cell.EndRow + 1));
 
             // The border box of a cell ends at the middle of the grid lines (its borders are half of the collapsed borders)
             var rect = fragment.BorderBoxRect.Translate(fragment.GetOffsetInRoot() - _group.Origin);
@@ -477,6 +482,12 @@ internal sealed partial class Painter
             }
         }
 
+        // As in Blink, a row line at a break between two fragments of the table (its border is half in each fragment) meets
+        // the column lines of the rows of the fragment only: its segments are extended by half of their borders (not of the
+        // borders of the rows of the other fragment); at the block-start edge of a fragment, the border of the column line at
+        // the inline-end joint of a segment covers the joint (it is painted after the segment)
+        var fragmentStartLine = isFragmented && !grid.IsFirstFragment ? firstRow : -1;
+        var fragmentEndLine = isFragmented && !grid.IsLastFragment ? lastRowEnd : -1;
         for (var line = 0; line <= rows; line++)
         {
             for (var column = 0; column < columns; column++)
@@ -486,8 +497,12 @@ internal sealed partial class Painter
                     continue;
 
                 var (first, last) = start <= end ? (start, end) : (end, start);
-                var before = MaxInlineWidth(line, start <= end ? column : column + 1);
-                var after = MaxInlineWidth(line, start <= end ? column + 1 : column);
+                var above = line != fragmentStartLine;
+                var below = line != fragmentEndLine;
+                var startJoint = MaxInlineWidth(line, column, above, below);
+                var endJoint = line == fragmentStartLine ? -MaxInlineWidth(line, column + 1, above, below) : MaxInlineWidth(line, column + 1, above, below);
+                var before = start <= end ? startJoint : endJoint;
+                var after = start <= end ? endJoint : startJoint;
                 segments.Add((edge, GetSegmentRect(position, edge.Width, first - (before / 2), last + (after / 2), alongBlockAxis: false), !horizontal, (line * (columns + 1)) + column));
             }
         }
@@ -579,7 +594,8 @@ internal sealed partial class Painter
             return width;
         }
 
-        double MaxInlineWidth(int rowLine, int columnLine)
+        // (the segments of the column line before the row line and the ones after it, as requested)
+        double MaxInlineWidth(int rowLine, int columnLine, bool includeAbove, bool includeBelow)
         {
             var width = 0d;
             var before = rowLine - 1;
@@ -588,7 +604,7 @@ internal sealed partial class Painter
                 before--;
             }
 
-            if (before >= 0 && borders.GetInlineSegment(before, columnLine) is { IsVisible: true } above)
+            if (includeAbove && before >= 0 && borders.GetInlineSegment(before, columnLine) is { IsVisible: true } above)
             {
                 width = above.Width;
             }
@@ -599,7 +615,7 @@ internal sealed partial class Painter
                 after++;
             }
 
-            if (after < rows && borders.GetInlineSegment(after, columnLine) is { IsVisible: true } below)
+            if (includeBelow && after < rows && borders.GetInlineSegment(after, columnLine) is { IsVisible: true } below)
             {
                 width = Math.Max(width, below.Width);
             }

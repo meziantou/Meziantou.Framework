@@ -674,7 +674,8 @@ internal sealed partial class StyleEngine
 
             if ((scope & (InvalidationScope.Ancestors | InvalidationScope.AncestorSiblings)) != InvalidationScope.None)
             {
-                for (var ancestor = element; ancestor is not null; ancestor = ancestor.ParentElement)
+                // (the ancestors of the summary of the user agent shadow tree of a details element are the details element and its ancestors)
+                for (var ancestor = element; ancestor is not null; ancestor = ancestor.ParentElement ?? (ancestor.ParentNode as ShadowRoot)?.Host)
                 {
                     _checks.Add(ancestor);
                     if ((scope & InvalidationScope.AncestorSiblings) != InvalidationScope.None && ancestor.ParentNode is { } ancestorParent)
@@ -917,6 +918,12 @@ internal sealed partial class StyleEngine
                     if (ReferenceEquals(element, engine._document.DocumentElement) || ReferenceEquals(element, engine._document.Body))
                     {
                         _rootChanged |= element.IsConnected;
+                    }
+
+                    // The summary of the user agent shadow tree of a details element inherits from it (see HtmlDetailsElement.ImplicitSummary)
+                    if (element is HtmlDetailsElement { CreatedImplicitSummary: { } implicitSummary })
+                    {
+                        Discard(implicitSummary, keepBeforeChange);
                     }
 
                     if (element.FirstChild is { } firstChild)

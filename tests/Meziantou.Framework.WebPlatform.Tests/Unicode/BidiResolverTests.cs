@@ -116,6 +116,24 @@ public sealed class BidiResolverTests
     }
 
     [Fact]
+    public void Paragraphs_IsDefaultLevel()
+    {
+        // The level of a paragraph without strong character (outside of its isolates) is the default of rule P3
+        var resolver = new BidiResolver();
+        resolver.Resolve("!\n" + Text("ABC") + "\n1.\n" + BidiControls.LeftToRightIsolate + "abc" + BidiControls.PopDirectionalIsolate, BidiParagraphDirection.AutoRightToLeft);
+        Assert.Equal([true, false, true, true], resolver.Paragraphs.Select(paragraph => paragraph.IsDefaultLevel));
+        Assert.Equal([1, 1, 1, 1], resolver.Paragraphs.Select(paragraph => (int)paragraph.Level));
+
+        // Without right-to-left character
+        resolver.Resolve("!\nabc", BidiParagraphDirection.AutoLeftToRight);
+        Assert.Equal([true, false], resolver.Paragraphs.Select(paragraph => paragraph.IsDefaultLevel));
+
+        // The level is set by the higher-level protocol
+        resolver.Resolve("!\n" + Text("ABC"), BidiParagraphDirection.LeftToRight);
+        Assert.Equal([false, false], resolver.Paragraphs.Select(paragraph => paragraph.IsDefaultLevel));
+    }
+
+    [Fact]
     public void CssIsolateAndOverride()
     {
         // <p dir=ltr>abc <span dir=rtl>DEF ghi</span> jkl</p>: the span is an isolate (unicode-bidi: isolate)

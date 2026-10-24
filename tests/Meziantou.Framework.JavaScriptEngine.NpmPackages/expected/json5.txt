@@ -1,0 +1,82 @@
+{
+  "unquoted": "and you can quote me on that",
+  "singleQuotes": "I can use \"double quotes\" here",
+  "lineBreaks": "Look, Mom! No \\n's!",
+  "hexadecimal": 912559,
+  "leadingDecimalPoint": 0.8675309,
+  "andTrailing": 8675309,
+  "positiveSign": 1,
+  "trailingComma": "in objects",
+  "andIn": [
+    "arrays"
+  ],
+  "backwardsCompatible": "with JSON",
+  "infinity": [
+    "Infinity",
+    "-Infinity",
+    "NaN"
+  ],
+  "unicode": "éA",
+  "$ident_ü": 1,
+  "nested": {
+    "a": [
+      1,
+      2,
+      {
+        "b": null
+      }
+    ]
+  }
+}
+----
+{
+  unquoted: 'and you can quote me on that',
+  singleQuotes: 'I can use "double quotes" here',
+  lineBreaks: "Look, Mom! No \\n's!",
+  hexadecimal: 912559,
+  leadingDecimalPoint: 0.8675309,
+  andTrailing: 8675309,
+  positiveSign: 1,
+  trailingComma: 'in objects',
+  andIn: [
+    'arrays',
+  ],
+  backwardsCompatible: 'with JSON',
+  infinity: [
+    Infinity,
+    -Infinity,
+    NaN,
+  ],
+  unicode: 'éA',
+  $ident_ü: 1,
+  nested: {
+    a: [
+      1,
+      2,
+      {
+        b: null,
+      },
+    ],
+  },
+}
+----
+{a:"it's",b:[1,Infinity,NaN],f:"custom"}
+----
+{
+	a: [
+		1,
+		{
+			b: 2,
+		},
+	],
+}
+----
+SyntaxError: JSON5: invalid character ',' at 1:7
+----
+SyntaxError: JSON5: invalid character 'b' at 1:4
+----
+SyntaxError: JSON5: invalid end of input at 1:6
+----
+SyntaxError: JSON5: invalid end of input at 1:14
+----
+SyntaxError: JSON5: invalid character '1' at 1:6

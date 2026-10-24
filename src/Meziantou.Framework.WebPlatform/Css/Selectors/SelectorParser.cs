@@ -718,9 +718,10 @@ internal sealed class SelectorParser
             return element.Name is "first-line" or "first-letter" || (element.Name != "details-content" && SubPseudoElements.Contains(element.Name));
 
         // ::picker(select) is element-backed (https://drafts.csswg.org/css-forms-1/#picker-pseudo): it can be followed by the
-        // tree-abiding pseudo-elements, by the pseudo-elements of the formatted text and by ::backdrop (it is a popover)
+        // tree-abiding pseudo-elements, by the pseudo-elements of the formatted text, by the highlight pseudo-elements
+        // (https://drafts.csswg.org/css-pseudo-4/#element-backed) and by ::backdrop (it is a popover)
         if (previous.Name == "picker")
-            return element.Name is "first-line" or "first-letter" or "backdrop" || SubPseudoElements.Contains(element.Name);
+            return element.Name is "first-line" or "first-letter" or "backdrop" || IsHighlightPseudoElement(element) || SubPseudoElements.Contains(element.Name);
 
         if (previous.Name == "slotted")
             return SubPseudoElements.Contains(element.Name);
@@ -732,6 +733,10 @@ internal sealed class SelectorParser
 
         return false;
     }
+
+    /// <summary>Whether a pseudo-element is a highlight pseudo-element (https://drafts.csswg.org/css-pseudo-4/#highlight-pseudo-element).</summary>
+    private static bool IsHighlightPseudoElement(PseudoElementSelector pseudoElement)
+        => pseudoElement.Name is "selection" or "target-text" or "spelling-error" or "grammar-error" or "highlight" or "search-text";
 
     /// <summary>Whether a pseudo-class is <c>:not(:only-child)</c>.</summary>
     internal static bool IsNegatedOnlyChild(PseudoClassSelector pseudoClass)
@@ -775,7 +780,7 @@ internal sealed class SelectorParser
 
         // https://drafts.csswg.org/css-pseudo-4/#highlight-selectors: no pseudo-class can follow the highlight pseudo-elements,
         // except :current after ::search-text (also in :not(), https://drafts.csswg.org/css-pseudo-4/#selectordef-search-text)
-        if (pseudoElement.Name is "selection" or "target-text" or "spelling-error" or "grammar-error" or "highlight" or "search-text")
+        if (IsHighlightPseudoElement(pseudoElement))
             return pseudoElement.Name == "search-text" && pseudoClass.Kind is PseudoClass.Current or PseudoClass.Not;
 
         // User action pseudo-classes can follow the other pseudo-elements

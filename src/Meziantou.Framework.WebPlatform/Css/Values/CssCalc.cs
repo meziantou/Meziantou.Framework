@@ -543,7 +543,14 @@ internal static class CssCalc
                 if (IsResolvable(fixedValue))
                 {
                     var value = ((CssCalcNumericNode)fixedValue).Value;
-                    baseValue = double.IsNaN(value) ? 0 : Math.Clamp(value, 0, Math.BitDecrement(1d));
+                    baseValue = double.IsNaN(value) ? 0 : Math.Clamp(value, 0, CssRandom.MaxBaseValue);
+
+                    // A computed value has the base value, clamped (e.g. random(fixed random(-2, -1), 10%, 20%) is random(fixed 0, 10%, 20%))
+                    if (fixedIsMathFunction && _resolveRandomBaseValue is not null)
+                    {
+                        fixedValue = new CssCalcNumericNode(baseValue.Value, "");
+                        fixedIsMathFunction = false;
+                    }
                 }
             }
             else if (_resolveRandomBaseValue is not null)

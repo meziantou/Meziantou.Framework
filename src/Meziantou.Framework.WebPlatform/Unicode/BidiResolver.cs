@@ -27,6 +27,12 @@ internal enum BidiParagraphDirection : byte
 internal readonly record struct BidiParagraph(int Start, int End, byte Level)
 {
     public bool IsRightToLeft => (Level & 1) != 0;
+
+    /// <summary>
+    /// Whether the level is the default of rule P3 (or of clause HL1, <see cref="BidiParagraphDirection.AutoRightToLeft"/>): the
+    /// level is determined by rules P2 and P3 and the paragraph has no strong character (outside of its isolates).
+    /// </summary>
+    public bool IsDefaultLevel { get; init; }
 }
 
 /// <summary>A level run of a line (see <see cref="BidiResolver.GetVisualRuns"/>): a range of the line whose items are displayed in reverse order when the level is odd.</summary>
@@ -151,7 +157,7 @@ internal sealed class BidiResolver
         EnsureCapacity(text.Length);
         if (IsLeftToRightOnly(text, direction))
         {
-            ResolveLeftToRightOnly(text);
+            ResolveLeftToRightOnly(text, direction);
             return;
         }
 
@@ -204,8 +210,9 @@ internal sealed class BidiResolver
             or (>= (char)0xD800 and <= (char)0xDFFF) or (>= (char)0xFB1D and <= (char)0xFDFF) or (>= (char)0xFE70 and <= (char)0xFEFF);
 
     // P1 without the classes of the characters: the paragraph separators (B) are LF, CR, U+001C to U+001E, U+0085 and U+2029
-    private void ResolveLeftToRightOnly(ReadOnlySpan<char> text)
+    private void ResolveLeftToRightOnly(ReadOnlySpan<char> text, BidiParagraphDirection direction)
     {
+        var isAuto = direction == BidiParagraphDirection.AutoLeftToRight;
         _length = text.Length;
         _hasText = !text.IsEmpty;
         _isLeftToRightOnly = true;
@@ -219,13 +226,34 @@ internal sealed class BidiResolver
                 break;
 
             var end = start + separator + 1;
-            _paragraphs.Add(new BidiParagraph(start, end, 0));
+            _paragraphs.Add(new BidiParagraph(start, end, 0) { IsDefaultLevel = isAuto && !HasLeftToRightCharacter(text[start..end]) });
             start = end;
         }
 
         if (start < text.Length || text.IsEmpty)
         {
-            _paragraphs.Add(new BidiParagraph(start, text.Length, 0));
+            _paragraphs.Add(new BidiParagraph(start, text.Length, 0) { IsDefaultLevel = isAuto && !HasLeftToRightCharacter(text[start..]) });
+        }
+
+        // P2 in a text that has no right-to-left character nor isolate: the first strong character can only be L
+        static bool HasLeftToRightCharacter(ReadOnlySpan<char> text)
+        {
+            for (var i = 0; i < text.Length; i++)
+            {
+                if (char.IsHighSurrogate(text[i]) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]))
+                {
+                    if (CharacterProperties.GetBidiClass(char.ConvertToUtf32(text[i], text[i + 1])) == L)
+                        return true;
+
+                    i++;
+                }
+                else if (CharacterProperties.GetBidiClass(text[i]) == L)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 
@@ -486,6 +514,7 @@ internal sealed class BidiResolver
 
         // P2, P3 (or HL1)
         byte paragraphLevel;
+        var isDefaultLevel = false;
         if (direction is BidiParagraphDirection.LeftToRight or BidiParagraphDirection.RightToLeft)
         {
             paragraphLevel = direction == BidiParagraphDirection.RightToLeft ? (byte)1 : (byte)0;
@@ -493,10 +522,11 @@ internal sealed class BidiResolver
         else
         {
             var level = FindFirstStrongLevel(start, end);
+            isDefaultLevel = level < 0;
             paragraphLevel = (byte)(level >= 0 ? level : direction == BidiParagraphDirection.AutoRightToLeft ? 1 : 0);
         }
 
-        _paragraphs.Add(new BidiParagraph(start, end, paragraphLevel));
+        _paragraphs.Add(new BidiParagraph(start, end, paragraphLevel) { IsDefaultLevel = isDefaultLevel });
         if (start == end)
             return;
 

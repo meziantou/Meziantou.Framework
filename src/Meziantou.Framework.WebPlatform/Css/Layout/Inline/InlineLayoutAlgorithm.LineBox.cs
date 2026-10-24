@@ -368,7 +368,7 @@ internal sealed partial class InlineLayoutAlgorithm
         {
             var lineStart = start.Position;
             var lineEnd = Math.Max(lineStart, Math.Min(end.Position, _length));
-            isRightToLeft = (GetParagraphLevel(Math.Min(lineStart, _length - 1)) & 1) != 0;
+            isRightToLeft = IsLineRightToLeft(Math.Min(lineStart, _length - 1));
             reordered = ResolveLineLevels(lineStart, lineEnd);
         }
 
@@ -486,6 +486,10 @@ internal sealed partial class InlineLayoutAlgorithm
             // For the ellipsis of text-overflow, which is painted in the style of the root inline box and isolated in the direction of the paragraph
             fragment.Style = GetLineStyle(_block, isFirstLine);
             fragment.IsRightToLeft = isRightToLeft;
+            if (_firstLineBoxBaseline is { } firstLineBoxBaseline)
+            {
+                fragment.FirstLineBoxBaseline = _writingDirection.IsLineOverBlockEnd ? blockSize - firstLineBoxBaseline : firstLineBoxBaseline;
+            }
 
             // https://drafts.csswg.org/css-text-4/#hanging: "An overflowing hanging glyph should typically be considered ink
             // overflow so as to avoid creating unnecessary scrollbars, but the UA may treat it as scrollable overflow": the white

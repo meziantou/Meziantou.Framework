@@ -3174,7 +3174,7 @@
     "reftest": "PASS"
   },
   "css/css-break/table/table-collapsed-borders-paint-at-boundary.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/table/table-collapsed-borders-paint-htb-ltr.html": {
     "reftest": "PASS"

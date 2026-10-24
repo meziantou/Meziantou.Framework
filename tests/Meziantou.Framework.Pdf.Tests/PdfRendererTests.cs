@@ -2,8 +2,9 @@ using System.Text;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Pdf.Objects;
 using Meziantou.Framework.Pdf.TestHarness;
+using Meziantou.Framework.Pdf.Rendering;
 
-namespace Meziantou.Framework.Pdf.Rendering.Tests;
+namespace Meziantou.Framework.Pdf.Tests;
 
 public sealed class PdfRendererTests
 {

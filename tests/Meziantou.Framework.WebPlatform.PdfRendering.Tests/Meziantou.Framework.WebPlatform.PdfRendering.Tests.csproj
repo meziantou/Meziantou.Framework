@@ -1,6 +1,6 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
   <!--
-    The tests of the PDF printing: the pages are rendered back by Meziantou.Framework.Pdf.Rendering and compared to the
+    The tests of the PDF printing: the pages are rendered back by the renderer of Meziantou.Framework.Pdf and compared to the
     pages rasterized by Meziantou.Framework.WebPlatform.Imaging, and the structure, the text, the links and the outline are
     read back by Meziantou.Framework.Pdf. The interop tests check the files with qpdf, Poppler and veraPDF (downloaded by
     the Pdf test harness).
@@ -16,7 +16,7 @@
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.10.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf.Rendering\Meziantou.Framework.Pdf.Rendering.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf\Meziantou.Framework.Pdf.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.Imaging\Meziantou.Framework.WebPlatform.Imaging.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.PdfRendering\Meziantou.Framework.WebPlatform.PdfRendering.csproj" />

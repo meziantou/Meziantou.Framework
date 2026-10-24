@@ -43,13 +43,13 @@ internal sealed class Type1CharstringInterpreter(Type1FontProgram program, Outli
     private void Execute(byte[] code, int depth)
     {
         if (depth > MaxCallDepth)
-            throw new InvalidFontException("The subroutines of a Type 1 charstring are nested too deeply.");
+            throw new InvalidPdfContentException("The subroutines of a Type 1 charstring are nested too deeply.");
 
         var position = 0;
         while (position < code.Length && !_ended)
         {
             if (++_operations > MaxOperations)
-                throw new InvalidFontException("A Type 1 charstring runs too many operators.");
+                throw new InvalidPdfContentException("A Type 1 charstring runs too many operators.");
 
             int value = code[position++];
             if (value >= 32)

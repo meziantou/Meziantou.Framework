@@ -2885,6 +2885,84 @@ public sealed class FontTests
     }
 
     [Fact]
+    public void CffFontReadsTheCffTableOfAFont()
+    {
+        var face = Font.Load(FixtureRoot.GetDirectory() / "fonts/noto-sans-cff/NotoSans-Regular.subset.otf").Face;
+        Assert.True(face.TryGetTable(FontTags.Cff, out var table));
+
+        var cff = CffFont.Load(table.Span);
+
+        Assert.Equal(face.GlyphCount, cff.GlyphCount);
+        Assert.False(cff.IsCidKeyed);
+        Assert.Equal([0.001, 0, 0, 0.001, 0, 0], cff.FontMatrix);
+        var a = face.MapCodePoint('A');
+        Assert.Equal("A", cff.GetGlyphName(a));
+        Assert.Equal(a, cff.GetGlyphByName("A"));
+        Assert.Equal(0, cff.GetGlyphByName("no-such-glyph"));
+        Assert.Equal(a, cff.GetGlyphByCid(a));
+        Assert.Null(cff.GetGlyphName(cff.GlyphCount));
+        Assert.Equal("", GetOutline(cff, cff.GlyphCount));
+
+        // The outlines are the ones of the font
+        for (var glyph = 0; glyph < face.GlyphCount; glyph++)
+        {
+            Assert.Equal(GetFaceOutline(face, glyph), GetOutline(cff, glyph));
+        }
+
+        Assert.Throws<InvalidFontException>(() => CffFont.Load([1, 0]));
+
+        static string GetOutline(CffFont font, int glyph)
+        {
+            var sink = new FontTestSupport.SvgPathSink();
+            var budget = new GlyphBudget(FontResourceLimits.Default);
+            font.DecodeOutline(glyph, sink, ref budget);
+            return sink.ToString();
+        }
+    }
+
+    [Fact]
+    public void TrueTypeGlyphOutlinesReadTheGlyfTable()
+    {
+        var face = Font.Load(FixtureRoot.GetDirectory() / "fonts/noto-sans/NotoSans-Regular.subset.ttf").Face;
+        Assert.True(face.TryGetTable(FontTags.Glyf, out var glyf));
+        Assert.True(face.TryGetTable(FontTags.Loca, out var loca));
+        Assert.True(face.TryGetTable(FontTags.Head, out var head));
+        Assert.True(face.TryGetTable(FontTags.Hhea, out var hhea));
+        Assert.True(face.TryGetTable(FontTags.Hmtx, out var hmtx));
+        var hasLongLocations = BinaryPrimitives.ReadInt16BigEndian(head.Span[50..]) != 0;
+        var metricCount = BinaryPrimitives.ReadUInt16BigEndian(hhea.Span[34..]);
+
+        var outlines = new TrueTypeGlyphOutlines(glyf, loca, hasLongLocations, face.GlyphCount, hmtx, metricCount);
+
+        Assert.Equal(face.GlyphCount, outlines.GlyphCount);
+        Assert.Equal("", GetOutline(outlines, face.GlyphCount));
+        for (var glyph = 0; glyph < face.GlyphCount; glyph++)
+        {
+            Assert.Equal(GetFaceOutline(face, glyph), GetOutline(outlines, glyph));
+        }
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TrueTypeGlyphOutlines(glyf, loca, hasLongLocations, -1));
+
+        static string GetOutline(TrueTypeGlyphOutlines outlines, int glyph)
+        {
+            var sink = new FontTestSupport.SvgPathSink();
+            using var scratch = new GlyphScratch(AllocationScope.Create(configuration: null, "FontTests"));
+            var budget = new GlyphBudget(FontResourceLimits.Default);
+            outlines.DecodeOutline(glyph, sink, scratch, ref budget);
+            return sink.ToString();
+        }
+    }
+
+    private static string GetFaceOutline(FontFace face, int glyph)
+    {
+        var sink = new FontTestSupport.SvgPathSink();
+        using var scratch = new GlyphScratch(AllocationScope.Create(configuration: null, "FontTests"));
+        var budget = new GlyphBudget(FontResourceLimits.Default);
+        face.DecodeOutline(glyph, sink, scratch, ref budget);
+        return sink.ToString();
+    }
+
+    [Fact]
     public void TheAfmFilesOfTheStandardFontsAreRead()
     {
         // The embedded files are the files of Core14_AFMs.zip, unmodified, with the notice their license requires

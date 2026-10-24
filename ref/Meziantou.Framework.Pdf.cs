@@ -940,3 +940,86 @@ namespace Meziantou.Framework.Pdf.Objects
         public string ToText() => throw null;
     }
 }
+namespace Meziantou.Framework.Pdf.Rendering
+{
+    public sealed class PdfFontRequest
+    {
+        public bool IsBold { get => throw null; }
+        public bool IsFixedPitch { get => throw null; }
+        public bool IsItalic { get => throw null; }
+        public bool IsSerif { get => throw null; }
+        public bool IsSymbolic { get => throw null; }
+        public string Name { get => throw null; }
+        public string? StandardName { get => throw null; }
+    }
+
+    public sealed class PdfRenderOptions
+    {
+        public Meziantou.Framework.Imaging.Rgba32? Background { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.ImageConfiguration? Configuration { get => throw null; init { } }
+        public static Meziantou.Framework.Pdf.Rendering.PdfRenderOptions Default { get => throw null; }
+        public double Dpi { get => throw null; init { } }
+        public System.Func<Meziantou.Framework.Pdf.Rendering.PdfFontRequest, Meziantou.Framework.Fonts.FontFace?>? FontResolver { get => throw null; init { } }
+        public long MaxOperations { get => throw null; init { } }
+        public bool RenderAnnotations { get => throw null; init { } }
+        public bool UseSystemFonts { get => throw null; init { } }
+    }
+
+    public static class PdfRenderer
+    {
+        public static Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> Render(this Meziantou.Framework.Pdf.PdfPage page, Meziantou.Framework.Pdf.Rendering.PdfRenderOptions? options = null) => throw null;
+        public static Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> RenderPage(Meziantou.Framework.Pdf.PdfPage page, Meziantou.Framework.Pdf.Rendering.PdfRenderOptions? options = null) => throw null;
+    }
+}
+namespace Meziantou.Framework.Pdf.Signing
+{
+    public sealed class PdfSignatureInfo
+    {
+        public System.Collections.Generic.IReadOnlyList<(long Offset, long Length)> ByteRanges { get => throw null; }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2? Certificate { get => throw null; }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2Collection Certificates { get => throw null; }
+        public string? ContactInfo { get => throw null; }
+        public bool CoversWholeDocument { get => throw null; }
+        public string? Error { get => throw null; }
+        public string FieldName { get => throw null; }
+        public bool IsDocumentIntact { get => throw null; }
+        public bool IsDocumentTimestamp { get => throw null; }
+        public bool IsSignatureValid { get => throw null; }
+        public bool? IsTimestampValid { get => throw null; }
+        public bool IsValid { get => throw null; }
+        public string? Location { get => throw null; }
+        public string? Reason { get => throw null; }
+        public string? SignerName { get => throw null; }
+        public System.DateTimeOffset? SigningTime { get => throw null; }
+        public string? SubFilter { get => throw null; }
+        public System.DateTimeOffset? TimestampTime { get => throw null; }
+    }
+
+    public sealed class PdfSignatureOptions
+    {
+        public System.Security.Cryptography.X509Certificates.X509Certificate2 Certificate { get => throw null; }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2Collection Certificates { get => throw null; }
+        public string? ContactInfo { get => throw null; init { } }
+        public string? FieldName { get => throw null; init { } }
+        public System.Security.Cryptography.HashAlgorithmName HashAlgorithm { get => throw null; init { } }
+        public System.Net.Http.HttpClient? HttpClient { get => throw null; init { } }
+        public string? Location { get => throw null; init { } }
+        public string? Reason { get => throw null; init { } }
+        public int ReservedSize { get => throw null; init { } }
+        public string? SignerName { get => throw null; init { } }
+        public System.DateTimeOffset? SigningTime { get => throw null; init { } }
+        public System.Uri? TimestampAuthority { get => throw null; init { } }
+        public PdfSignatureOptions(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { }
+    }
+
+    public static class PdfSignatureVerifier
+    {
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.Signing.PdfSignatureInfo> Verify(byte[] file, Meziantou.Framework.Pdf.PdfReadOptions? options = null) => throw null;
+    }
+
+    public static class PdfSigner
+    {
+        public static byte[] Sign(Meziantou.Framework.Pdf.PdfDocument document, Meziantou.Framework.Pdf.Signing.PdfSignatureOptions options) => throw null;
+        public static System.Threading.Tasks.Task<byte[]> SignAsync(Meziantou.Framework.Pdf.PdfDocument document, Meziantou.Framework.Pdf.Signing.PdfSignatureOptions options, System.Threading.CancellationToken cancellationToken = default) => throw null;
+    }
+}

@@ -64,8 +64,6 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.NtpClient\Meziantou.Framework.NtpClient.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.NtpServer\Meziantou.Framework.NtpServer.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf\Meziantou.Framework.Pdf.csproj" />
-    <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf.Rendering\Meziantou.Framework.Pdf.Rendering.csproj" />
-    <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf.Signing\Meziantou.Framework.Pdf.Signing.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.PooledMemoryStream\Meziantou.Framework.PooledMemoryStream.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ProcessWrapper\Meziantou.Framework.ProcessWrapper.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.QRCode\Meziantou.Framework.QRCode.csproj" />
@@ -148,8 +146,6 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.NtpClient" />
     <TrimmerRootAssembly Include="Meziantou.Framework.NtpServer" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Pdf" />
-    <TrimmerRootAssembly Include="Meziantou.Framework.Pdf.Rendering" />
-    <TrimmerRootAssembly Include="Meziantou.Framework.Pdf.Signing" />
     <TrimmerRootAssembly Include="Meziantou.Framework.PooledMemoryStream" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ProcessWrapper" />
     <TrimmerRootAssembly Include="Meziantou.Framework.QRCode" />

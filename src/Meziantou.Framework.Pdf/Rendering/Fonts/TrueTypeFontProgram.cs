@@ -25,15 +25,16 @@ internal sealed class TrueTypeFontProgram
     private readonly Dictionary<string, int> _postNames = new(StringComparer.Ordinal);
     private readonly RenderCache _cache;
     private readonly GlyphScratch _scratch;
+    private readonly TrueTypeGlyphOutlines _outlines;
 
     private TrueTypeFontProgram(Dictionary<uint, byte[]> tables, RenderCache cache)
     {
         _cache = cache;
-        var head = tables.GetValueOrDefault(Tag("head")) ?? throw new InvalidFontException("The TrueType font program has no 'head' table.");
-        _loca = tables.GetValueOrDefault(Tag("loca")) ?? throw new InvalidFontException("The TrueType font program has no 'loca' table.");
-        _glyf = tables.GetValueOrDefault(Tag("glyf")) ?? throw new InvalidFontException("The TrueType font program has no 'glyf' table.");
+        var head = tables.GetValueOrDefault(Tag("head")) ?? throw new InvalidPdfContentException("The TrueType font program has no 'head' table.");
+        _loca = tables.GetValueOrDefault(Tag("loca")) ?? throw new InvalidPdfContentException("The TrueType font program has no 'loca' table.");
+        _glyf = tables.GetValueOrDefault(Tag("glyf")) ?? throw new InvalidPdfContentException("The TrueType font program has no 'glyf' table.");
         if (head.Length < 54)
-            throw new InvalidFontException("The 'head' table of the TrueType font program is too short.");
+            throw new InvalidPdfContentException("The 'head' table of the TrueType font program is too short.");
 
         UnitsPerEm = BinaryPrimitives.ReadUInt16BigEndian(head.AsSpan(18));
         if (UnitsPerEm is < 16 or > 16384)
@@ -70,6 +71,7 @@ internal sealed class TrueTypeFontProgram
         }
 
         _scratch = cache.CreateGlyphScratch(cache.FontEnvironment, "PDF TrueType font");
+        _outlines = new TrueTypeGlyphOutlines(_glyf, _loca, _longLocations, GlyphCount, _hmtx, GlyphCount);
     }
 
     public int GlyphCount { get; }
@@ -82,7 +84,7 @@ internal sealed class TrueTypeFontProgram
     public static TrueTypeFontProgram Read(byte[] data, RenderCache cache)
     {
         if (data.Length < 12)
-            throw new InvalidFontException("The TrueType font program is too short.");
+            throw new InvalidPdfContentException("The TrueType font program is too short.");
 
         var offset = 0;
         var version = BinaryPrimitives.ReadUInt32BigEndian(data);
@@ -90,13 +92,13 @@ internal sealed class TrueTypeFontProgram
         {
             // A collection: its first font
             if (data.Length < 16)
-                throw new InvalidFontException("The TrueType collection is too short.");
+                throw new InvalidPdfContentException("The TrueType collection is too short.");
 
             offset = (int)Math.Min(BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(12)), int.MaxValue);
         }
 
         if (offset + 12 > data.Length)
-            throw new InvalidFontException("The TrueType font program is truncated.");
+            throw new InvalidPdfContentException("The TrueType font program is truncated.");
 
         var tableCount = BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(offset + 4));
         var tables = new Dictionary<uint, byte[]>();
@@ -132,18 +134,9 @@ internal sealed class TrueTypeFontProgram
         if ((uint)glyph >= (uint)GlyphCount)
             return null;
 
-        var context = new GlyfContext
-        {
-            Loca = _loca,
-            Glyf = _glyf,
-            Hmtx = _hmtx,
-            HasLongLocations = _longLocations,
-            GlyphCount = GlyphCount,
-            MetricCount = GlyphCount,
-        };
         var sink = new GlyphPathSink();
         var budget = new GlyphBudget(_cache.FontEnvironment.Limits);
-        GlyfOutlineReader.Decode(context, glyph, sink, _scratch, ref budget);
+        _outlines.DecodeOutline(glyph, sink, _scratch, ref budget);
         return sink.ToPath();
     }
 

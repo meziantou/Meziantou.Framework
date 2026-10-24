@@ -4,8 +4,8 @@
     <IsTrimmable>true</IsTrimmable>
     <RootNamespace>Meziantou.Framework.Pdf</RootNamespace>
     <Version>1.0.0</Version>
-    <Description>Fully managed PDF library for .NET, written from ISO 32000-2: an object model, a reader that recovers broken files (cross-reference tables and streams, object streams, incremental updates), the standard filters (CCITT and JBIG2 included), full and incremental writers, and a document API (pages, content builder, standard 14 fonts and embedded font subsets, shadings, patterns, forms and transparency, images, metadata, outlines, links, text extraction).</Description>
-    <PackageTags>pdf;pdf-reader;pdf-writer;document;iso-32000;font-embedding</PackageTags>
+    <Description>Fully managed PDF library for .NET, written from ISO 32000-2: an object model, a reader that recovers broken files (cross-reference tables and streams, object streams, incremental updates), the standard filters (CCITT and JBIG2 included), full and incremental writers, a document API (pages, content builder, standard 14 fonts and embedded font subsets, shadings, patterns, forms and transparency, images, metadata, outlines, links, text extraction), a renderer of the pages to images, and PAdES digital signatures and their verification.</Description>
+    <PackageTags>pdf;pdf-reader;pdf-writer;pdf-renderer;document;iso-32000;font-embedding;rasterizer;signature;pades</PackageTags>
 
     <!-- Every public member must be documented -->
     <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
@@ -15,10 +15,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- The image codecs (DCTDecode, JPXDecode, the images of the documents) and the ICC profiles -->
+    <!-- The image codecs (DCTDecode, JPXDecode, the images of the documents), the ICC profiles, and the canvas the renderer draws the pages on -->
     <ProjectReference Include="..\Meziantou.Framework.Imaging\Meziantou.Framework.Imaging.csproj" />
-    <!-- The embedded fonts: their tables, the shaping of the text and the subsetter (internal) -->
+    <!-- The fonts: their tables, the shaping of the text, the subsetter, the AFM metrics of the standard fonts, the outlines the renderer draws and the system fonts -->
     <ProjectReference Include="..\Meziantou.Framework.Fonts\Meziantou.Framework.Fonts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The CMS signed data of the signatures and the RFC 3161 time stamps (Signing) -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
   </ItemGroup>
 
   <ItemGroup>
@@ -38,16 +43,13 @@
   <ItemGroup>
     <!-- The Adobe Glyph List and the list of ITC Zapf Dingbats (BSD-3-Clause, see Fonts/GlyphList/LICENSE.md) -->
     <EmbeddedResource Include="Fonts\GlyphList\*.txt" LogicalName="Meziantou.Framework.Pdf.GlyphList.%(Filename).txt" />
+    <!-- The fonts that replace the standard fonts in the renderer: Liberation, subset by eng/pdf/update-substitution-fonts.cs -->
+    <EmbeddedResource Include="Rendering\Fonts\Substitution\*.woff2" LogicalName="Meziantou.Framework.Pdf.Rendering.Fonts.%(Filename).woff2" />
   </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.Pdf.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Pdf.FuzzTests" />
-    <!-- The renderer reads the content streams, the fonts and the images with the internal types -->
-    <InternalsVisibleTo Include="Meziantou.Framework.Pdf.Rendering" />
-    <InternalsVisibleTo Include="Meziantou.Framework.Pdf.Rendering.Tests" />
-    <InternalsVisibleTo Include="Meziantou.Framework.Pdf.Signing" />
-    <InternalsVisibleTo Include="Meziantou.Framework.Pdf.Signing.Tests" />
   </ItemGroup>
 
 </Project>

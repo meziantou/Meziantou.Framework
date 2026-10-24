@@ -1,8 +1,10 @@
 # Meziantou.Framework.Pdf
 
 A fully managed PDF library: an object model, a reader that repairs broken files, the standard filters, full and
-incremental writers, and a document API (pages, content builder, standard 14 fonts and embedded font subsets, images,
-metadata, outline, links, text extraction).
+incremental writers, a document API (pages, content builder, standard 14 fonts and embedded font subsets, images,
+metadata, outline, links, text extraction), the renderer of the pages (`Rendering/`) and the signatures (`Signing/`).
+The renderer and the signatures were separate packages: they are part of this one so that no package depends on the
+internals of another (see the sections below).
 
 These instructions complete the repository-level `AGENTS.md`. The user guide is [readme.md](readme.md): keep the code,
 the XML documentation and `readme.md` consistent in the same change.
@@ -85,6 +87,49 @@ the XML documentation and `readme.md` consistent in the same change.
 - A full save writes the objects reachable from `/Root` and `/Info`, with the `/Length` of the streams written direct
   (the indirect length objects of a file become unreachable). An incremental save keeps the kind of cross-reference of
   the original file and refuses a repaired file.
+
+## Renderer (`Rendering/`, namespace `Meziantou.Framework.Pdf.Rendering`)
+
+The renderer of the pages: a content stream interpreter that draws on the `DrawingCanvas` of
+`Meziantou.Framework.Imaging`. It reads the embedded font programs with the public `CffFont` and `TrueTypeGlyphOutlines`
+of `Meziantou.Framework.Fonts`; the errors of the font programs it parses itself are `InvalidPdfContentException`.
+
+- **Clean room**: write the code from ISO 32000-2, the Adobe technical notes (Type 1, CFF, Type 2 charstrings) and the
+  specifications they reference. PDFium, pdf.js, Poppler and MuPDF are test oracles only.
+- `DrawingCanvas` is a `ref struct`: the canvas is a parameter of the methods that draw, never a field; the callbacks
+  of `Clip`, `Layer`, `Mask` and `Filter` receive the canvas they draw on.
+- **Bounded work.** Every operator, glyph, image and shading is charged to `PdfRenderOptions.MaxOperations`
+  (`RenderCache.Charge`); the nesting of forms, patterns, Type 3 glyphs and soft masks is limited (`MaxDepth`), as are
+  the pixels of images and shadings, the meshes and the clips. The errors of the content are skipped where they occur
+  (`RenderCache.IsContentError`): a damaged object does not stop the page.
+- **Bundled fonts** (`Rendering/Fonts/Substitution/`): the Liberation fonts (SIL Open Font License 1.1) are generated
+  by `dotnet run eng/pdf/update-substitution-fonts.cs` from the pinned release; never edit them by hand. Keep
+  `THIRD-PARTY-NOTICES.md` in sync with them.
+- **Bounded layers.** A drawing is clipped to the pixels it can change before the clip, the soft mask and the blend
+  mode of the graphics state are applied (`PaintWithState` with bounds): the layers of the canvas are as large as the
+  clip they are created in.
+- Tests: `PdfRendererTests` (the pixels of small documents built with the content builder), and
+  `tests/Meziantou.Framework.Pdf.Corpus` (`PdfJsRenderedPages`): the pages of the reference tests of pdf.js are
+  rendered at 36 dpi and compared with PDFium (`pdfium_test` of the Meziantou.Prebuilt release). The pages that differ
+  by more than 5% of their pixels are recorded in `expectations/rendering.txt`; run the test on Windows with
+  `PDF_UPDATE_EXPECTATIONS=1` (one target framework) to record them.
+
+## Signatures (`Signing/`, namespace `Meziantou.Framework.Pdf.Signing`)
+
+Signs and verifies the signatures of documents, with `System.Security.Cryptography.Pkcs`.
+
+- **Clean room**: write the code from ISO 32000-2, ETSI EN 319 142-1 (PAdES), RFC 5652 (CMS), RFC 5035 (ESS) and
+  RFC 3161. Apache PDFBox and Poppler are test oracles only.
+- The signature is appended as an incremental update: the bytes of the file it is added to never change, so that the
+  earlier signatures stay valid. The byte ranges and the signature are written in place of placeholders of fixed
+  widths; the writer does not encrypt the `/Contents` of a signature dictionary.
+- PAdES baseline: the signed attributes are content-type, message-digest and ESS signing-certificate-v2; the
+  signing-time attribute is not written (the time is `/M`).
+- Tests: `PdfSignerTests` (certificates created by the tests and a time stamp authority of the tests, an
+  `HttpMessageHandler`, no network); `tests/Meziantou.Framework.Pdf.InteropTests` (`SignatureInteropTests`): Poppler's
+  pdfsig checks the signatures (the pinned release has no pdfsig for Windows, so they run on Linux and macOS);
+  `tests/Meziantou.Framework.Pdf.Corpus`: the signed files of the corpora are verified (`expectations/signatures.txt`),
+  and the documents of the signature tests of Apache PDFBox are signed with their keystore.
 
 ## Tests
 

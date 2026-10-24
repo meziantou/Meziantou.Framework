@@ -40,7 +40,7 @@ internal sealed class Type1FontProgram
         // The clear text ends with "eexec", whatever /Length1 says
         var eexec = data.AsSpan().IndexOf("eexec"u8);
         if (eexec < 0)
-            throw new InvalidFontException("The Type 1 font program has no encrypted part.");
+            throw new InvalidPdfContentException("The Type 1 font program has no encrypted part.");
 
         var clearText = Encoding.Latin1.GetString(data, 0, eexec);
         program.ReadClearText(clearText);

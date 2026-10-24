@@ -1,6 +1,6 @@
 # Meziantou.Framework.Pdf
 
-A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, write and modify PDF documents.
+A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, write, modify, render and sign PDF documents.
 
 - **Object model**: `PdfDictionary`, `PdfArray`, `PdfStream`, `PdfName`, `PdfString`, numbers, references
   (`Meziantou.Framework.Pdf.Objects`), with the indirect objects of a document in `PdfDocument.Objects`
@@ -24,6 +24,12 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   transparency (`PdfExtGState`: alpha, blend modes, soft masks; transparency groups), the standard 14 fonts and embedded TrueType and OpenType fonts, images (`PdfImage`: JPEG files as they are, other images
   of `Meziantou.Framework.Imaging` with their alpha channel and ICC profile), the document information and the XMP
   metadata, the outline (bookmarks), links and annotations, text extraction (`PdfPage.ExtractText`)
+- **Rendering** (`Meziantou.Framework.Pdf.Rendering`): the pages drawn to images on the canvas of
+  `Meziantou.Framework.Imaging`: paths, clipping, optional content and annotation appearances; embedded TrueType, CFF,
+  Type 1 and Type 3 fonts and substituted fonts; every color space and image filter; functions, the seven shading types
+  and tiling patterns; transparency groups, soft masks and blend modes
+- **Signatures** (`Meziantou.Framework.Pdf.Signing`): PAdES baseline B-B and B-T signatures (CAdES detached signatures,
+  RFC 3161 time stamps), appended as incremental updates, and the verification of the signatures of a document
 
 ## Create a document
 
@@ -253,6 +259,108 @@ document.Catalog[PdfName.Create("ViewerPreferences")] = document.Objects.Add(vie
 ```
 <!-- endref -->
 
+## Render a page
+
+<!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfRendererTests.cs;region=PdfRendering_RenderPage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var page = document.Pages[0];
+
+// 144 dpi: two pixels per point
+using var image = PdfRenderer.RenderPage(page, new PdfRenderOptions { Dpi = 144 });
+using var png = new MemoryStream();
+image.Save(png, new Imaging.Formats.PngEncoder());
+```
+<!-- endref -->
+
+The image is the crop box of the page, rotated as the page is shown, on a white background (`PdfRenderOptions.Background`,
+`null` for a transparent one). `PdfRenderOptions.RenderAnnotations` draws the appearances of the annotations.
+
+- **Graphics**: paths, line styles and dashes, clipping (paths and text), the page boxes and rotation, optional content
+  (layers), the appearance streams of the annotations
+- **Text**: embedded TrueType, CFF (`Type1C`, `CIDFontType0C`, OpenType) and Type 1 fonts, Type 3 fonts, the fonts that
+  are not embedded replaced by a font of the system or of the application, the text rendering modes
+- **Colors**: the device color spaces, `ICCBased` (through the ICC profiles of Imaging), `CalRGB`, `CalGray`, `Lab`,
+  `Indexed`, `Separation` and `DeviceN`; `DeviceCMYK` is converted with a CMYK profile
+- **Images**: every filter (`DCTDecode` and `JPXDecode` through the codecs of Imaging, CMYK JPEG images included,
+  `CCITTFaxDecode`, `JBIG2Decode`), 1 to 16 bits per component, `/Decode`, stencil masks, explicit masks, color key
+  masks and soft masks, inline images
+- **Shadings and patterns**: functions (sampled, exponential, stitching, PostScript calculator), the seven shading
+  types, shading patterns and colored and uncolored tiling patterns
+- **Transparency**: constant alpha, the blend modes, transparency groups (drawn as isolated, non-knockout groups), soft
+  masks (alpha and luminosity, with their backdrop and transfer function), the transfer functions of the graphics state
+
+### Fonts that are not embedded
+
+A font that the document does not embed is replaced, in this order, by:
+
+1. the font `PdfRenderOptions.FontResolver` returns for it (`PdfFontRequest`: its name, weight, style and kind);
+2. for a standard font (Helvetica, Times, Courier and their aliases, such as Arial), the bundled Liberation font of its
+   kind and style, whose glyphs have the same widths;
+3. a font of the system that matches its name, weight and style, then one of its kind (serif, sans serif, fixed
+   pitch), unless `PdfRenderOptions.UseSystemFonts` is `false`;
+4. the bundled Liberation font of its kind.
+
+The bundled fonts (SIL Open Font License 1.1, see `THIRD-PARTY-NOTICES.md`) have the characters of the Latin encodings
+of PDF. With `UseSystemFonts` set to `false`, the rendering does not depend on the fonts of the machine. Symbol and
+ZapfDingbats are only replaced by the resolver or the fonts of the system.
+
+### Limits of the rendering
+
+The rendering of a page is bounded: `PdfRenderOptions.MaxOperations` limits the operators, glyphs and pixels it
+processes, and the images, shadings and nested forms have limits of their own. A page beyond a limit throws a
+`PdfResourceLimitException`. The errors of the content (an unknown operator, a damaged image or font) skip what they
+affect, as viewers do.
+
+## Sign a document
+
+Digital signatures (ISO 32000-2, 12.8): PAdES baseline signatures (ETSI EN 319 142-1) and the verification of the
+signatures of a document.
+
+- **Signing**: B-B, a CAdES detached signature (`ETSI.CAdES.detached`) with the ESS signing certificate, and B-T, its
+  RFC 3161 time stamp; RSA and ECDSA keys, SHA-256, SHA-384 and SHA-512; the signature is appended as an incremental
+  update, so that the signatures of the document stay valid; encrypted documents are signed with their keys
+- **Verification**: the integrity of the bytes each signature covers, the CMS signature, the time stamps, and whether
+  the signature covers the whole file (`adbe.pkcs7.detached`, `ETSI.CAdES.detached`, `adbe.pkcs7.sha1`, document time
+  stamps `ETSI.RFC3161`)
+
+<!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfSignerTests.cs;region=PdfSigning_Sign;format=md-fenced-code-block;dedent=true -->
+```csharp
+var document = new PdfDocument();
+document.Pages.Add(PdfSize.A4).CreateContentBuilder()
+    .DrawText("Contract", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 24, 60, 700);
+
+// The certificate has its private key: X509CertificateLoader.LoadPkcs12FromFile loads one from a .pfx file
+var signed = PdfSigner.Sign(document, new PdfSignatureOptions(certificate) { Reason = "I approve this contract" });
+
+var signature = PdfSignatureVerifier.Verify(signed).Single();
+var isValid = signature.IsValid && signature.CoversWholeDocument;
+```
+<!-- endref -->
+
+The signature field is invisible, on the first page. `PdfSignatureOptions` sets the information of the signature
+dictionary (reason, location, contact, name, time) and the other certificates of the chain to embed.
+
+### Time stamp a signature (PAdES B-T)
+
+<!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfSignerTests.cs;region=PdfSigning_Timestamp;format=md-fenced-code-block;dedent=true -->
+```csharp
+// PAdES B-T: the signature is stamped by an RFC 3161 time stamp authority
+var options = new PdfSignatureOptions(certificate)
+{
+    TimestampAuthority = new Uri("http://timestamp.example.com/"),
+    HttpClient = httpClient,
+};
+var signed = await PdfSigner.SignAsync(document, options, XunitCancellationToken);
+```
+<!-- endref -->
+
+### Trust
+
+`PdfSignatureVerifier` checks that the document was not modified and that the signature matches the certificate it
+embeds; it does not decide whether the signer is trusted. Build the chain of `PdfSignatureInfo.Certificate` with
+`X509Chain`, with the trust anchors and the revocation policy of the application, and check `CoversWholeDocument`:
+a signature that does not cover the whole file was followed by incremental updates.
+
 ## Errors and limits
 
 | Situation | Exception |
@@ -273,6 +381,5 @@ specification says; a content stream that cannot be decoded throws when its data
   font shows any text it has the glyphs of. The fonts with CFF2 outlines, and the instances of variable fonts, are not
   embedded. PDF/A-1, PDF/A-4e and PDF/A-4f, and PDF/UA-2 are not supported; the embedded files of PDF/A-3 cannot be
   added with the document API.
-- Pages are rendered by `Meziantou.Framework.Pdf.Rendering`.
 - The text extraction follows the order of the content and joins the glyphs into lines by their positions; it does
   not detect columns.

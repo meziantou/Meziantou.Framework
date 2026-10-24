@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.Pdf.Rendering.Fonts;
+namespace Meziantou.Framework.Fonts;
 
 /// <summary>The 391 standard strings of the Compact Font Format (Adobe Technical Note #5176, Appendix A): the names of the string identifiers below 391.</summary>
 internal static class CffStandardStrings

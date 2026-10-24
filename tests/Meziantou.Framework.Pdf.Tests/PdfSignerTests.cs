@@ -4,8 +4,9 @@ using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Meziantou.Framework.Pdf.Objects;
+using Meziantou.Framework.Pdf.Signing;
 
-namespace Meziantou.Framework.Pdf.Signing.Tests;
+namespace Meziantou.Framework.Pdf.Tests;
 
 public sealed class PdfSignerTests
 {

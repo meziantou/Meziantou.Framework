@@ -1,7 +1,7 @@
 #!/usr/bin/env dotnet
 #:sdk Meziantou.NET.Sdk
 #:package Meziantou.Prebuilt@3.11.0
-// Writes the fonts Meziantou.Framework.Pdf.Rendering bundles to replace the standard fonts that a document does not
+// Writes the fonts the renderer of Meziantou.Framework.Pdf bundles to replace the standard fonts that a document does not
 // embed: the Liberation fonts (SIL Open Font License 1.1), whose metrics are those of Arial, Times New Roman and Courier
 // New, subset to the characters of the Latin encodings of PDF (hb-subset), without hinting, as WOFF2 files.
 // The release is pinned by its digest: the output only changes with this script.
@@ -18,7 +18,7 @@ const string Sha256 = "7191c669bf38899f73a2094ed00f7b800553364f90e2637010a69c0e2
 const string Unicodes = "20-7E,A0-17F,192,1FA-1FF,218-21B,2C6-2C7,2C9,2D8-2DD,2013-2015,2017-201E,2020-2022,2026,2030,2032-2033,2039-203A,2044,20AC,2122,2212,2215,FB01-FB02";
 
 var root = FindRoot(Environment.CurrentDirectory) ?? FindRoot(AppContext.BaseDirectory) ?? throw new InvalidOperationException("Cannot find the root of the repository (Meziantou.Framework.slnx)");
-var output = Path.Combine(root, "src", "Meziantou.Framework.Pdf.Rendering", "Fonts", "Substitution");
+var output = Path.Combine(root, "src", "Meziantou.Framework.Pdf", "Rendering", "Fonts", "Substitution");
 var work = Path.Combine(Path.GetTempPath(), "pdf-substitution-fonts-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(work);
 try

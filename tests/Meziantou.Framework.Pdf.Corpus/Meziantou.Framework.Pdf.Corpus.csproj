@@ -2,8 +2,8 @@
   <!--
     No-crash tests of Meziantou.Framework.Pdf over the external corpora pinned in corpus.json (pdf.js, PDFium, qpdf, the
     PDF Association, Apache PDFBox, the veraPDF corpus), and the pages of the reference tests of pdf.js rendered by
-    Meziantou.Framework.Pdf.Rendering and compared with PDFium, and the signatures of the signed files checked by
-    Meziantou.Framework.Pdf.Signing. They are fetched by 'dotnet run eng/pdf/fetch-tests.cs' into
+    the renderer of Meziantou.Framework.Pdf and compared with PDFium, and the signatures of the signed files checked by
+    its verifier. They are fetched by 'dotnet run eng/pdf/fetch-tests.cs' into
     tests/Meziantou.Framework.Pdf.External; without them, the tests are skipped. The documented exceptions a file throws
     are recorded in expectations/<suite>.txt.
   -->
@@ -18,8 +18,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf\Meziantou.Framework.Pdf.csproj" />
-    <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf.Rendering\Meziantou.Framework.Pdf.Rendering.csproj" />
-    <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf.Signing\Meziantou.Framework.Pdf.Signing.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Pdf.TestHarness\Meziantou.Framework.Pdf.TestHarness.csproj" />
   </ItemGroup>
 </Project>

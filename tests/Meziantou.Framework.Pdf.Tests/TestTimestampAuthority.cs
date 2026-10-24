@@ -3,8 +3,9 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
+using Meziantou.Framework.Pdf.Signing;
 
-namespace Meziantou.Framework.Pdf.Signing.Tests;
+namespace Meziantou.Framework.Pdf.Tests;
 
 /// <summary>An RFC 3161 time stamp authority that answers the requests of an <see cref="HttpClient"/> in memory, with a certificate of the tests.</summary>
 internal sealed class TestTimestampAuthority : HttpMessageHandler

@@ -915,8 +915,9 @@ internal sealed partial class StyleEngine
             return style;
 
         // The ancestors are computed first (iteratively, the trees can be deep); the highlight pseudo-elements inherit from the
-        // highlight pseudo-elements of the ancestors
-        if (pseudoElement is null || IsHighlightPseudoElement(pseudoElement))
+        // highlight pseudo-elements of the ancestors (the ones of the select popover inherit from the ones of its select element,
+        // whose computation computes the ancestors)
+        if (pseudoElement is null || (IsHighlightPseudoElement(pseudoElement) && !pseudoElement.StartsWith(SelectPickerPrefix, StringComparison.Ordinal)))
         {
             ComputeMissingAncestorStyles(element, pseudoElement);
         }
@@ -1029,11 +1030,22 @@ internal sealed partial class StyleEngine
             parent = GetStyle(pseudoElement is null ? element.ParentElement! : element, DetailsContent);
         }
 
-        // https://drafts.csswg.org/css-pseudo-4/#highlight-cascade: the highlight pseudo-element of the parent element in the flat tree
+        // https://drafts.csswg.org/css-pseudo-4/#highlight-cascade: the highlight pseudo-element of the parent element in the flat
+        // tree. The select popover is backed by an element of the shadow tree of its select element
+        // (https://drafts.csswg.org/css-pseudo-4/#element-backed): the highlight pseudo-elements of ::picker(select) inherit from
+        // the ones of the select element, and the ones of the elements slotted in the popover from the ones of ::picker(select)
         ComputedStyle? highlightParent = null;
-        if (IsHighlightPseudoElement(pseudoElement) && GetInheritanceParent(element) is { } highlightParentElement)
+        if (IsHighlightPseudoElement(pseudoElement))
         {
-            highlightParent = _styles.GetValueOrDefault((highlightParentElement, pseudoElement)) ?? GetStyle(highlightParentElement, pseudoElement);
+            if (pseudoElement!.StartsWith(SelectPickerPrefix, StringComparison.Ordinal))
+            {
+                highlightParent = GetStyle(element, pseudoElement[SelectPickerPrefix.Length..]);
+            }
+            else if (GetInheritanceParent(element) is { } highlightParentElement)
+            {
+                var parentPseudoElement = IsInSelectPicker(element) ? SelectPickerPrefix + pseudoElement : pseudoElement;
+                highlightParent = _styles.GetValueOrDefault((highlightParentElement, parentPseudoElement)) ?? GetStyle(highlightParentElement, parentPseudoElement);
+            }
         }
 
         // The children of a select element rendered as a drop-down box other than its button are slotted in its select
@@ -1325,7 +1337,40 @@ internal sealed partial class StyleEngine
     /// Returns whether the pseudo-element is a highlight pseudo-element (https://drafts.csswg.org/css-pseudo-4/#highlight-pseudo-element):
     /// <c>::selection</c>, <c>::search-text</c>, <c>::target-text</c>, <c>::spelling-error</c>, <c>::grammar-error</c> and <c>::highlight()</c>.
     /// </summary>
-    internal static bool IsHighlightPseudoElement(string? pseudoElement) => GetPseudoElementName(pseudoElement) is "selection" or "search-text" or "target-text" or "spelling-error" or "grammar-error" or "highlight";
+    /// <remarks>The highlight pseudo-elements of <c>::picker(select)</c> are highlight pseudo-elements too (e.g. "picker(select)::selection").</remarks>
+    internal static bool IsHighlightPseudoElement(string? pseudoElement) => GetHighlightName(pseudoElement) is not null;
+
+    /// <summary>
+    /// Returns the name of a highlight pseudo-element without its argument nor its originating pseudo-element (e.g. "highlight" for
+    /// "highlight(name)" and "picker(select)::highlight(name)"), or null when the pseudo-element is not a highlight pseudo-element.
+    /// </summary>
+    internal static string? GetHighlightName(string? pseudoElement)
+    {
+        if (pseudoElement is null)
+            return null;
+
+        var name = pseudoElement.AsSpan();
+        if (name.StartsWith(SelectPickerPrefix, StringComparison.Ordinal))
+        {
+            name = name[SelectPickerPrefix.Length..];
+        }
+
+        if (name.IndexOf('(') is >= 0 and var index)
+        {
+            name = name[..index];
+        }
+
+        return name switch
+        {
+            "selection" => "selection",
+            "search-text" => "search-text",
+            "target-text" => "target-text",
+            "spelling-error" => "spelling-error",
+            "grammar-error" => "grammar-error",
+            "highlight" => "highlight",
+            _ => null,
+        };
+    }
 
     /// <summary>
     /// Returns the element the element inherits from: its parent in the flat tree
@@ -2734,12 +2779,16 @@ internal sealed partial class StyleEngine
     /// specificity of the rule of the hidden attribute, "[hidden]:not([hidden=until-found i]):not(embed) { display: none }",
     /// which otherwise wins against the rules of the specification that are meant to override it. The boxes of the parts of
     /// the form controls (see <see cref="Layout.FormControlContents"/>) are blocks, and the button of a file upload control an
-    /// inline-block that does not wrap.
+    /// inline-block that does not wrap. The summary that the user agent provides for a details element without summary child,
+    /// in its user agent shadow tree (see <see cref="HtmlDetailsElement.ImplicitSummary"/>), has the style of the summary of a
+    /// details element ("details &gt; summary:first-of-type").
     /// </summary>
     private const string SupplementalStyleSheet = """
         textarea { display: inline-block; overflow-wrap: break-word; }
         details::details-content { display: block; }
         details:not([open])::details-content { content-visibility: hidden; }
+        :host(details) > summary { display: list-item; counter-increment: list-item 0; list-style: disclosure-closed inside; }
+        :host(details[open]) > summary { list-style-type: disclosure-open; }
         img, video, canvas { overflow: clip; }
         iframe, embed, object { overflow: clip !important; overflow-clip-margin: content-box !important; }
         ::backdrop { position: fixed; inset: 0; }
@@ -3610,7 +3659,7 @@ internal sealed partial class StyleEngine
         if (name is not null && name.StartsWith("view-transition-", StringComparison.Ordinal))
             return MatchesViewTransitionPseudoElement(rule, element, pseudoElement!);
 
-        return string.Equals(rule.PseudoElementArgument, GetPseudoElementArgument(pseudoElement), StringComparison.Ordinal) || (name == "highlight" && rule.PseudoElementArgument == "*");
+        return string.Equals(rule.PseudoElementArgument, GetPseudoElementArgument(pseudoElement), StringComparison.Ordinal) || (name is "highlight" or "picker::highlight" && rule.PseudoElementArgument == "*");
     }
 
     /// <summary>
@@ -3684,8 +3733,20 @@ internal sealed partial class StyleEngine
         if (index < 0)
             return pseudoElement;
 
-        // A pseudo-element of the select popover: "picker(select)::before" → "picker::before"
-        return pseudoElement.StartsWith(SelectPickerPrefix, StringComparison.Ordinal) ? string.Concat(pseudoElement.AsSpan(0, index), pseudoElement.AsSpan(SelectPicker.Length)) : pseudoElement[..index];
+        // A pseudo-element of the select popover: "picker(select)::before" → "picker::before", "picker(select)::highlight(name)"
+        // → "picker::highlight"
+        if (pseudoElement.StartsWith(SelectPickerPrefix, StringComparison.Ordinal))
+        {
+            var subPseudoElement = pseudoElement.AsSpan(SelectPickerPrefix.Length);
+            if (subPseudoElement.IndexOf('(') is >= 0 and var subIndex)
+            {
+                subPseudoElement = subPseudoElement[..subIndex];
+            }
+
+            return string.Concat(pseudoElement.AsSpan(0, index), pseudoElement.AsSpan(SelectPicker.Length, 2), subPseudoElement);
+        }
+
+        return pseudoElement[..index];
     }
 
     private static string? GetPseudoElementArgument(string? pseudoElement)
@@ -3697,7 +3758,15 @@ internal sealed partial class StyleEngine
         if (index < 0)
             return null;
 
-        return pseudoElement.StartsWith(SelectPickerPrefix, StringComparison.Ordinal) ? "select" : pseudoElement[(index + 1)..^1];
+        // A pseudo-element of the select popover has the argument of the picker, but a functional one (e.g.
+        // "picker(select)::highlight(name)"), which has its own argument
+        if (pseudoElement.StartsWith(SelectPickerPrefix, StringComparison.Ordinal))
+        {
+            var subIndex = pseudoElement.IndexOf('(', SelectPickerPrefix.Length, StringComparison.Ordinal);
+            return subIndex < 0 ? "select" : pseudoElement[(subIndex + 1)..^1];
+        }
+
+        return pseudoElement[(index + 1)..^1];
     }
 
     /// <summary>

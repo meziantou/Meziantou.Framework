@@ -126,6 +126,21 @@ public sealed class TextDirectiveTests : IDisposable
     }
 
     [Fact]
+    public void SelectPopover_IsSearchedWhileItIsShowing()
+    {
+        var document = Load("https://example.com/", "<!DOCTYPE html><style>select, select::picker(select) { appearance: base-select }</style><select>Hello<option>one</select>");
+        var window = document.DefaultView!;
+
+        // The contents of a select element are in its picker: they are not rendered while it is closed
+        window.Location.Hash = ":~:text=Hello";
+        Assert.Null(document.TargetTextRanges);
+
+        ((HtmlSelectElement)document.QuerySelector("select")!).OpenPicker(focusVisible: null);
+        window.Location.Hash = ":~:text=one";
+        Assert.Equal("one", Assert.Single(document.TargetTextRanges!).ToString());
+    }
+
+    [Fact]
     public void FragmentNavigation_KeepsTheHighlightWithoutDirective()
     {
         var document = Load("https://example.com/page");

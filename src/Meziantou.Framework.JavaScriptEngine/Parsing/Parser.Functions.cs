@@ -309,24 +309,28 @@ internal sealed partial class Parser
 
     // Classes
 
-    private ClassDeclaration ParseClassDeclaration(int start, bool allowAnonymous)
+    private ClassDeclaration ParseClassDeclaration(int start, bool allowAnonymous, List<Node>? decorators = null)
     {
-        var node = ParseClass(start, isStatement: true, allowAnonymous);
+        var node = ParseClass(start, isStatement: true, allowAnonymous, decorators);
         return FinishAt(new ClassDeclaration { Class = node }, start, node.End);
     }
 
-    private ClassExpression ParseClassExpression(int start)
+    private ClassExpression ParseClassExpression(int start, List<Node>? decorators = null)
     {
-        var node = ParseClass(start, isStatement: false, allowAnonymous: true);
+        var node = ParseClass(start, isStatement: false, allowAnonymous: true, decorators);
         return FinishAt(new ClassExpression { Class = node }, start, node.End);
     }
 
-    private ClassNode ParseClass(int start, bool isStatement, bool allowAnonymous)
+    /// <summary>Parses a class; the current token is 'class' (the decorators before it are already parsed: they are not strict code).</summary>
+    private ClassNode ParseClass(int start, bool isStatement, bool allowAnonymous, List<Node>? decorators)
     {
+        if (_token.Kind != TokenKind.Class)
+            Unexpected();
+
         Next();
         var oldStrict = Strict;
         Strict = true;
-        var node = new ClassNode { Start = start };
+        var node = new ClassNode { Start = start, Decorators = decorators };
         if (_token.Kind == TokenKind.Identifier)
         {
             node.Id = ParseBindingIdentifier();
@@ -388,6 +392,7 @@ internal sealed partial class Parser
             return null;
 
         var start = _token.Start;
+        var decorators = ParseDecorators();
         string? keyName = null;
         var keyStart = 0;
         var keyEnd = 0;
@@ -402,7 +407,12 @@ internal sealed partial class Parser
             keyEnd = _token.End;
             Next();
             if (_token.Kind == TokenKind.LeftBrace)
+            {
+                if (decorators is not null)
+                    Raise(start, "Decorators are not valid here");
+
                 return ParseClassStaticBlock(start);
+            }
 
             if (IsClassElementNameStart() || _token.Kind == TokenKind.Star)
             {
@@ -415,7 +425,24 @@ internal sealed partial class Parser
             }
         }
 
-        if (keyName is null && IsContextual("async"))
+        // accessor [no LineTerminator here] ClassElementName: an auto-accessor
+        var isAccessor = false;
+        if (keyName is null && IsContextual("accessor"))
+        {
+            keyStart = _token.Start;
+            keyEnd = _token.End;
+            Next();
+            if (IsClassElementNameStart() && !_token.NewLineBefore)
+            {
+                isAccessor = true;
+            }
+            else
+            {
+                keyName = "accessor";
+            }
+        }
+
+        if (keyName is null && !isAccessor && IsContextual("async"))
         {
             keyStart = _token.Start;
             keyEnd = _token.End;
@@ -430,12 +457,12 @@ internal sealed partial class Parser
             }
         }
 
-        if (keyName is null && Eat(TokenKind.Star))
+        if (keyName is null && !isAccessor && Eat(TokenKind.Star))
         {
             isGenerator = true;
         }
 
-        if (keyName is null && !isAsync && !isGenerator && (IsContextual("get") || IsContextual("set")))
+        if (keyName is null && !isAccessor && !isAsync && !isGenerator && (IsContextual("get") || IsContextual("set")))
         {
             var name = _token.Value!;
             keyStart = _token.Start;
@@ -476,9 +503,15 @@ internal sealed partial class Parser
 
         if (_token.Kind == TokenKind.LeftParen || kind != MethodKind.Method || isGenerator || isAsync)
         {
+            if (isAccessor)
+                Unexpected();
+
             var isConstructor = !isStatic && !computed && IsKeyName(key, "constructor");
             if (isConstructor)
             {
+                if (decorators is not null)
+                    Raise(start, "Decorators are not valid here");
+
                 if (kind != MethodKind.Method)
                     Raise(key.Start, "Class constructor may not be an accessor");
 
@@ -502,7 +535,7 @@ internal sealed partial class Parser
 
             var function = ParseMethod(methodStart, isGenerator, isAsync, functionKind, allowDirectSuper: isConstructor && hasSuperClass);
             function.IsDerivedConstructor = isConstructor && hasSuperClass;
-            var method = Finish(new MethodDefinition { Key = key, Value = function, Kind = isConstructor ? MethodKind.Constructor : kind, Static = isStatic, Computed = computed }, start);
+            var method = Finish(new MethodDefinition { Key = key, Value = function, Kind = isConstructor ? MethodKind.Constructor : kind, Static = isStatic, Computed = computed, Decorators = decorators }, start);
             if (key is PrivateIdentifier privateKey)
             {
                 DeclarePrivateName(privateNames, privateKey, kind switch
@@ -545,7 +578,59 @@ internal sealed partial class Parser
         }
 
         Semicolon();
-        return Finish(new PropertyDefinition { Key = key, Value = value, Static = isStatic, Computed = computed }, start);
+        return Finish(new PropertyDefinition { Key = key, Value = value, Static = isStatic, Computed = computed, IsAccessor = isAccessor, Decorators = decorators }, start);
+    }
+
+    // Decorators
+
+    /// <summary>Parses the decorators of a class or of a class element, if any (DecoratorList).</summary>
+    private List<Node>? ParseDecorators()
+    {
+        if (_token.Kind != TokenKind.At)
+            return null;
+
+        var decorators = new List<Node>();
+        while (_token.Kind == TokenKind.At)
+        {
+            decorators.Add(ParseDecorator());
+        }
+
+        return decorators;
+    }
+
+    /// <summary>
+    /// Decorator: <c>@</c> followed by an identifier reference with property accesses (<c>.name</c> or <c>.#name</c>),
+    /// optionally called (<c>@a.b(args)</c>), or by any parenthesized expression (<c>@(expr)</c>).
+    /// </summary>
+    private Node ParseDecorator()
+    {
+        Next();
+        var start = _token.Start;
+        if (Eat(TokenKind.LeftParen))
+        {
+            var expression = ParseExpression();
+            Expect(TokenKind.RightParen);
+            return expression;
+        }
+
+        Node node = ParseIdentifierReference();
+        while (Eat(TokenKind.Dot))
+        {
+            var property = _token.Kind == TokenKind.PrivateName ? (Node)ParsePrivateIdentifierUse() : ParseIdentifierName();
+            node = Finish(new MemberExpression { Object = node, Property = property }, start);
+        }
+
+        if (_token.Kind == TokenKind.LeftParen)
+        {
+            Next();
+            var errors = RentErrors();
+            var arguments = ParseArguments(errors);
+            CheckExpressionErrors(errors);
+            ReturnErrors(errors);
+            node = Finish(new CallExpression { Callee = node, Arguments = arguments }, start);
+        }
+
+        return node;
     }
 
     private StaticBlock ParseClassStaticBlock(int start)

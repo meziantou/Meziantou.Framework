@@ -26,6 +26,7 @@ public static partial class FixtureManifestValidator
         "Zlib",
         "Apache-2.0",
         "Unicode-3.0",
+        "APAFML",
         FontLicense,
     };
 

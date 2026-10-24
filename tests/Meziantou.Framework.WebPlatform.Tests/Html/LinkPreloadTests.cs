@@ -295,4 +295,38 @@ public sealed class LinkPreloadTests : IDisposable
         Assert.Equal(["Empty NoCors a.txt", "Empty NoCors missing.txt"], Requests);
         Assert.All(_requests, request => Assert.Equal("prefetch", HeaderList.Get(request.Headers, "Sec-Purpose")));
     }
+
+    [Fact]
+    public void Prerender_IsPrefetched()
+    {
+        var document = Load("""<!doctype html><link rel=PRERENDER href=a.txt onload="document.title += 'load'">""");
+
+        Assert.Equal("load", document.Title);
+        Assert.Equal(["Empty NoCors a.txt"], Requests);
+        Assert.Equal("prefetch", HeaderList.Get(_requests[0].Headers, "Sec-Purpose"));
+    }
+
+    [Fact]
+    public void ResourceHints_FetchNothing()
+    {
+        var document = Load("""
+            <!doctype html>
+            <link rel=preconnect href=https://other.example/ onload="document.title += 'load'" onerror="document.title += 'error'">
+            <link rel=preconnect href=unknown-scheme:x onload="document.title += 'load'" onerror="document.title += 'error'">
+            <link rel=dns-prefetch href=https://other.example/ onload="document.title += 'load'" onerror="document.title += 'error'">
+            <link rel=next href=next.html onload="document.title += 'load'" onerror="document.title += 'error'">
+            <link rel=canonical href=canonical.html>
+            <link rel=apple-touch-icon href=icon.png>
+            <link rel=apple-touch-icon-precomposed href=icon.png>
+            """,
+            headers: [new("Link", "<https://other.example/>; rel=preconnect")]);
+
+        Assert.Equal("", document.Title);
+        Assert.Empty(Requests);
+        var link = (HtmlLinkElement)document.QuerySelector("link")!;
+        foreach (var linkType in new[] { "preconnect", "DNS-PREFETCH", "next", "prerender", "canonical", "apple-touch-icon", "apple-touch-icon-precomposed" })
+        {
+            Assert.True(link.RelList.Supports(linkType), linkType);
+        }
+    }
 }

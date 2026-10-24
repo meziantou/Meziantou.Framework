@@ -327,9 +327,12 @@ internal static class HtmlElementStates
     }
 
     /// <summary>:open (https://html.spec.whatwg.org/multipage/semantics-other.html#selector-open).</summary>
-    public static bool IsOpen(Element element) => element is HtmlSelectElement select
-        ? select.IsPickerOpen
-        : (IsHtml(element, "details") || IsHtml(element, "dialog")) && element.HasAttributeWithLocalName("open");
+    public static bool IsOpen(Element element) => element switch
+    {
+        HtmlSelectElement select => select.IsPickerOpen,
+        HtmlInputElement input => input.IsPickerOpen,
+        _ => (IsHtml(element, "details") || IsHtml(element, "dialog")) && element.HasAttributeWithLocalName("open"),
+    };
 
     public static bool IsMediaElement(Element element) => IsHtml(element, "audio") || IsHtml(element, "video");
 

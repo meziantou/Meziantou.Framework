@@ -32,6 +32,7 @@ internal static class SymbolBuiltins
         constructor.DefineBuiltIn("iterator", WellKnownSymbols.Iterator, PropertyFlags.None);
         constructor.DefineBuiltIn("match", WellKnownSymbols.Match, PropertyFlags.None);
         constructor.DefineBuiltIn("matchAll", WellKnownSymbols.MatchAll, PropertyFlags.None);
+        constructor.DefineBuiltIn("metadata", WellKnownSymbols.Metadata, PropertyFlags.None);
         constructor.DefineBuiltIn("replace", WellKnownSymbols.Replace, PropertyFlags.None);
         constructor.DefineBuiltIn("search", WellKnownSymbols.Search, PropertyFlags.None);
         constructor.DefineBuiltIn("species", WellKnownSymbols.Species, PropertyFlags.None);

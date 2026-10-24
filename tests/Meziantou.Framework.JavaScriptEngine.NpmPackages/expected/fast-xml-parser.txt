@@ -1,0 +1,91 @@
+{
+  "?xml": {
+    "@version": 1,
+    "@encoding": "UTF-8"
+  },
+  "catalog": {
+    "#comment": " a comment ",
+    "book": [
+      {
+        "dc:author": "Gambardella, Matthew",
+        "title": {
+          "#text": "XML Developer's Guide",
+          "@lang": "en"
+        },
+        "genre": "Computer",
+        "publish_date": "2000-10-01",
+        "description": {
+          "#cdata": "An in-depth look at <XML> & more."
+        },
+        "tags": {
+          "tag": [
+            "a",
+            "b"
+          ]
+        },
+        "note": "Writer: Donald Duck. & <escaped> © ☺",
+        "@id": "bk101",
+        "@available": true,
+        "@price": 44.95
+      },
+      {
+        "dc:author": "Ralls, Kim",
+        "title": {
+          "#text": "Midnight Rain",
+          "@lang": "fr"
+        },
+        "empty": "",
+        "mixed": {
+          "b": "bold",
+          "#text": "texttail"
+        },
+        "@id": "bk102",
+        "@available": false,
+        "@price": 5
+      }
+    ],
+    "@xmlns:dc": "http://purl.org/dc/elements/1.1/"
+  }
+}
+----
+[{"a":[{"b":[{"#text":1}]},{"c":[]},{"b":[{"#text":2}]}],":@":{"@_x":"1"}}]
+----
+{"a":" 0012 "}
+----
+<?xml version="1" encoding="UTF-8"?>
+<catalog xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <!-- a comment -->
+  <book id="bk101" available price="44.95">
+    <dc:author>Gambardella, Matthew</dc:author>
+    <title lang="en">XML Developer&apos;s Guide</title>
+    <genre>Computer</genre>
+    <publish_date>2000-10-01</publish_date>
+    <description>
+      <![CDATA[An in-depth look at <XML> & more.]]>
+    </description>
+    <tags>
+      <tag>a</tag>
+      <tag>b</tag>
+    </tags>
+    <note>Writer: Donald Duck. &amp; &lt;escaped&gt; © ☺</note>
+  </book>
+  <book id="bk102" available="false" price="5">
+    <dc:author>Ralls, Kim</dc:author>
+    <title lang="fr">Midnight Rain</title>
+    <empty/>
+    <mixed>
+      <b>bold</b>
+texttail    </mixed>
+  </book>
+</catalog>
+
+----
+valid
+----
+{"code":"InvalidTag","msg":"Expected closing tag 'b' (opened in line 1, col 4) instead of closing tag 'a'.","line":1,"col":7}
+----
+{"code":"InvalidAttr","msg":"Attribute 'x' is repeated.","line":1,"col":10}
+----
+{"code":"InvalidTag","msg":"Unclosed tag 'a'.","line":1,"col":1}
+----
+valid

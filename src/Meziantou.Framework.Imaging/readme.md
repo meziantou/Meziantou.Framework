@@ -916,7 +916,8 @@ public static void DrawChart(string outputPath)
 applied first), and `VectorPath.Transform` returns the path it gives. The result is exact: curves are transformed as
 curves and an ellipse stays an ellipse, so a path that is enlarged stays smooth. Angles are in degrees, and a positive
 angle turns clockwise on the image (Y grows downward); sines and cosines do not come from the platform, and a rotation
-by a multiple of 90 degrees is exact.
+by a multiple of 90 degrees is exact. `TransformBounds(rectangle)` gives the box a transformed rectangle lands in: where
+a turned label or image ends up, to size the image that holds it.
 
 `canvas.Transform(transform, callback)` transforms everything a callback draws: shapes, strokes (the pen is
 transformed with the path it strokes, so a scaling makes it wider, unless `Pen.ScalesWithTransform` is off: see Pens
@@ -989,8 +990,8 @@ public static void DrawWatermark(string fontPath, string inputPath, string outpu
         {
             for (var row = -1; row <= 1; row++)
             {
-                var origin = new PointD(center.X - (layout.Width / 2), center.Y - (layout.Height / 2) + (row * layout.Height * 1.5));
-                turned.FillText(ink, layout, origin);
+                var middle = new PointD(center.X, center.Y + (row * layout.Height * 1.5));
+                turned.FillText(ink, layout, layout.GetOrigin(middle, TextHorizontalAnchor.Center, TextVerticalAnchor.Center));
             }
         });
     });
@@ -1011,8 +1012,10 @@ point is inside (what a fill paints, with either fill rule), `GetLength` gives i
 the point at a distance along it with the direction of the path there (to place a marker, an arrow head or a label),
 `TryGetClosestPoint` gives the point of the path that is the nearest to a position, with its distance along the path
 (what a pointer snaps to, or where a click falls on a line), `Bounds` is the box of its points and control points, and
-`GetTightBounds` the box it really reaches. `Widen` returns
-the path a pen draws when it strokes the path, so that all of these also answer for a stroke: the bounds of a stroke
+`GetTightBounds` the box it really reaches. `GetBounds(pen)` is a box that contains what a pen paints, without
+computing the stroke: the tight bounds spread by half the width of the pen, its miters and its square caps (on the
+side of the path its `Alignment` puts it), so it is larger than the stroke at a corner that is not mitered. `Widen` returns
+the path a pen draws when it strokes the path, so that all of these also answer for a stroke: the exact bounds of a stroke
 are the tight bounds of the widened path, and a click is on a line when the widened path contains it. A widened path
 is the pieces the library fills (one per segment, join and cap, overlapping): fill it with the non-zero rule; it is
 not a single outline (see `Simplify` below). Lengths and containment are those of the path as it is drawn, with its curves replaced by their
@@ -1389,7 +1392,11 @@ blur, not on the length of the offset: a shape 1000 pixels beyond an edge of a s
 callback)` starts a layer with what is already drawn behind a rectangle, filtered (its pixels mirrored beyond its edges,
 so that a blurred backdrop does not fade there): the callback draws on it, then it is drawn with its opacity, and the
 clip around it gives it its shape. The lengths of a filter are lengths of the drawing: a transformation of the canvas
-that enlarges the drawing enlarges its blurs and its offsets.
+that enlarges the drawing enlarges its blurs and its offsets. `filter.TryGetBounds(bounds, out result)` gives the
+rectangle a filter paints in when what it filters stays in a rectangle (a blur spreads by three deviations, a shadow
+moves by its offset), to size an image or a layer that keeps the whole shadow; it returns `false` for a filter that can
+paint anywhere (a color matrix that adds to the alpha, a blur that reads the edges of the canvas, a `FilterGraph`
+without a region).
 
 A `FilterGraph` is the `filter` element of SVG: primitives computed in order, each one reading the drawing
 (`FilterInput.SourceGraphic`), its alpha (`FilterInput.SourceAlpha`), the result of the primitive before it (the
@@ -2080,6 +2087,40 @@ public static void DrawLabel(string fontPath, string outputPath)
 ```
 <!-- endref -->
 
+`GetOrigin` turns those measures into the origin to draw a layout at: the one that puts a point of its box (a corner,
+the middle of a side, its center, or a point of its first baseline) on an anchor, or that aligns its box in a
+rectangle. The box is the one of the layout by default, so that texts line up whatever their letters, or what is drawn
+(`TextBounds.Ink`), to center a text by its visible shape:
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_PlaceText;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void DrawPayButton(string fontPath, string outputPath)
+{
+    var font = Font.Load(fontPath);
+    var label = TextLayout.Create("Pay now", font, size: 20);
+    var caption = TextLayout.Create("Total", font, size: 16);
+    var amount = TextLayout.Create("42.00", font, size: 24);
+
+    using var image = new Image<Rgba32>(240, 120, new Rgba32(255, 255, 255));
+    image.Draw(canvas =>
+    {
+        // GetOrigin gives the top-left corner to draw a layout at so that a point of its box lands on an anchor.
+        // The ink box centers what is drawn, the tail of the y included; the layout box would center the line
+        var button = new RectangleD(20, 64, 200, 40);
+        canvas.FillRoundedRectangle(new Rgba32(30, 60, 160), button, radius: 8);
+        canvas.FillText(new Rgba32(255, 255, 255), label, label.GetOrigin(button, TextHorizontalAnchor.Center, TextVerticalAnchor.Center, TextBounds.Ink));
+
+        // Two sizes on one baseline: the caption from the left, the amount aligned to the right
+        var baseline = 44;
+        canvas.FillText(new Rgba32(90, 90, 90), caption, caption.GetOrigin(new PointD(20, baseline), TextHorizontalAnchor.Left, TextVerticalAnchor.Baseline));
+        canvas.FillText(new Rgba32(0, 0, 0), amount, amount.GetOrigin(new PointD(220, baseline), TextHorizontalAnchor.Right, TextVerticalAnchor.Baseline));
+    });
+
+    image.Save(outputPath);
+}
+```
+<!-- endref -->
+
 A text of one font is `TextLayout.Create(text, font, size)`. A `TextStyle` holds everything else about how a text is
 set, a `RichText` gives each part of a text its own style, and `TextLayoutOptions` say how the text is wrapped and
 aligned:
@@ -2485,7 +2526,11 @@ of their characters and were not compared with a font.
   goes to the right it is that text turned a quarter of a turn. The lines that follow are on the right of the
   direction of the path, whatever side the lines of the layout go to.
 - **Measuring.** `Width` and `Height` are the size of the text, `Lines` gives each line (its part of the text, its
-  position, its width, its baseline), and `InkBounds` contains everything that is drawn. The line of a vertical
+  position, its width, its baseline), and `InkBounds` contains everything that is drawn; `GetInkBounds(pen)` adds the
+  reach of a pen that strokes the text. `GetOrigin(anchor, horizontal, vertical)` gives the origin that puts a point
+  of the box of the layout, or of its ink, on an anchor, and `GetOrigin(rectangle, horizontal, vertical)` the one that
+  aligns it in a rectangle. The anchors are the sides of the image, whatever the direction of the text; a vertical
+  layout has no baseline along y. The line of a vertical
   layout is a column: its rectangle is the one it has on the image, its `Baseline` is the distance from its left to
   its central baseline, and the `Baseline` of the layout is the one of its first column, from the left of the layout.
 - **Positions of the text.** `HitTest(point)` gives the character at a point of the layout (the point of the canvas

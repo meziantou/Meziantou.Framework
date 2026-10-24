@@ -13,7 +13,9 @@ These instructions complete the repository-level `AGENTS.md`.
   `internal` (the tests, the fuzzing and the benchmarks see it through `InternalsVisibleTo`; the libraries do not).
   These packages still depend on the exact version of this package (`UseExactProjectReferenceVersions` in their project
   file) and are released together with it. Every public member is documented (`DisableDocumentationWarnings` is
-  `false`), and the public API is recorded in `ref/` by the build.
+  `false`), and the public API is recorded in `ref/` by the build. The one exception is the AFM reader
+  (`AfmFontMetrics` and the `Afm*` types it returns): it is a standalone reader of font metrics that no package of
+  the repository uses, public so that applications (PDF writers, text measurement) can read AFM files.
 - `Adler32`, `DeterministicAngle` (`Infrastructure/`) and `FontTags` are compiled into `Meziantou.Framework.Imaging`
   too, in its namespace (`MEZIANTOU_FRAMEWORK_IMAGING`): they are helpers, not font API, and stay internal to both
   assemblies. WebPlatform has its own tag constants (`OpenTypeTag`).
@@ -31,8 +33,8 @@ These instructions complete the repository-level `AGENTS.md`.
   (`UnicodeScript`, `UnicodeProperties`, `UnicodeBidi`, `Hyphenator`, in the `Meziantou.Framework` namespace) would hide
   the types of the same names of WebPlatform. A change of behavior of the reader is checked with the tests of both
   libraries, and with the web-platform-tests of WebPlatform (`css/WOFF2`, `css/css-fonts`).
-- Write the code from the specifications (OpenType, WOFF 1.0 and 2.0, Adobe Technical Notes #5176 and #5177, the
-  script development specifications of Microsoft, Unicode). Never copy or port code from font libraries (FreeType,
+- Write the code from the specifications (OpenType, WOFF 1.0 and 2.0, Adobe Technical Notes #5176 and #5177, Adobe
+  Technical Note #5004 for AFM files, the script development specifications of Microsoft, Unicode). Never copy or port code from font libraries (FreeType,
   HarfBuzz, the woff2 reference code, fontTools, ...): they are test oracles only, their source is never read to write
   ours.
 - Fully managed, trimmable and NativeAOT-compatible: no reflection.
@@ -109,6 +111,29 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
   metrics, the whole character map, every advance and outline; a container must give the tables of its original font),
   and mutation fuzzing (`FontFuzzTests`). The test-side writers are not oracles: a file they write is a fixture only
   after the corpus generator has read it back with the reference decoders.
+
+## AFM reader
+
+`AfmFontMetrics` (`Afm/`) reads AFM files (Adobe Font Metrics, Adobe Technical Note #5004, version 4.1); `AfmParser`
+reads the text, `AfmFontMetrics` indexes the characters and the kerning pairs.
+
+- Written from TN #5004; cite its section in the code. fontTools (`afmLib`) is an oracle only: the widths, boxes,
+  codes and kerning pairs of the Core 14 files compare equal with it.
+- **Text.** The file is ASCII; the bytes are read as ISO-8859-1 because the notices of some files have such
+  characters. A line ends with CR, LF or CRLF; spaces and tabs separate the values. What follows `EndFontMetrics` is
+  ignored.
+- **Lenient where files are, strict on values.** The keys the reader does not know are ignored (section 3 requires
+  it), and so are the lines of a section that have none of its keys. The counts after the `Start...` keys are not
+  checked and nothing is sized from them. A key it knows with a malformed value, a delimiter outside its section, and
+  a missing `EndFontMetrics` are an `InvalidFontException` with the line (`FontErrors.InvalidAfm`). Numbers are
+  bounded by `FontErrors.MaxCoordinate`; no value that is not a number leaves the reader.
+- A name or a code that two characters have is the one of the first character, and the first of two identical
+  kerning pairs applies. `KPH` pairs give codes: the reader fills the names from the characters, and the codes of the
+  other pairs.
+- AMFM (`StartMasterFontMetrics`) and ACFM (`StartCompFontMetrics`) files are `UnsupportedFontFeatureException`.
+  `FontLoader` recognizes the three signatures and says to use `AfmFontMetrics`.
+- Tests: `FontTests` (literals of the specification, and the Core 14 files of `font-suites/adobe-core14-afm`), and
+  `FontFuzzTests.MutatedAfmFilesFailOnlyWithDocumentedErrors` (mutations of bytes and of lines).
 
 ## System fonts
 

@@ -380,19 +380,29 @@ internal static partial class Reflection
         return -1;
     }
 
-    /// <summary>https://html.spec.whatwg.org/multipage/interactive-elements.html#summary-for-its-parent-details</summary>
-    public static bool IsSummaryForItsParentDetails(Element summary)
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/interactive-elements.html#summary-for-its-parent-details. As in the browsers, the
+    /// summary that the user agent provides for a details element without summary child (see <see cref="HtmlDetailsElement.ImplicitSummary"/>)
+    /// is the summary of that details element.
+    /// </summary>
+    public static bool IsSummaryForItsParentDetails(Element summary) => GetDetailsOfSummary(summary) is not null;
+
+    /// <summary>The details element whose summary is the element (see <see cref="IsSummaryForItsParentDetails"/>), or null.</summary>
+    public static Element? GetDetailsOfSummary(Element summary)
     {
+        if (summary.ParentNode is ShadowRoot { Host: HtmlDetailsElement host })
+            return host.IsImplicitSummary(summary) ? host : null;
+
         if (summary.ParentNode is not Element parent || !parent.IsHtml(TagId.Details))
-            return false;
+            return null;
 
         for (var child = parent.FirstElementChild; child is not null; child = child.NextElementSibling)
         {
             if (child.IsHtml(TagId.Summary))
-                return ReferenceEquals(child, summary);
+                return ReferenceEquals(child, summary) ? parent : null;
         }
 
-        return false;
+        return null;
     }
 
     /// <summary>

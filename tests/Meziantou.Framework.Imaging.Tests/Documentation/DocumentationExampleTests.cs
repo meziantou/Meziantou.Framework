@@ -1521,6 +1521,58 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void DrawPayButtonPlacesTheTextsByAPointOfTheirBox()
+    {
+        var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
+        var output = GetPath("pay-button.png");
+        Examples.DrawPayButton(fontPath, output);
+
+        var font = Font.Load(fontPath);
+        Assert.False(TextLayout.Create("Pay now", font, 20).HasMissingGlyphs);
+        Assert.False(TextLayout.Create("Total", font, 16).HasMissingGlyphs);
+        Assert.False(TextLayout.Create("42.00", font, 24).HasMissingGlyphs);
+
+        // The label is the light ink in the blue button, the caption the gray ink on its left, the amount the black ink on its right
+        using var image = Image.Load<Rgba32>(output);
+        var frame = image.Frames[0];
+        var label = GetInk(frame, new Rectangle(20, 64, 200, 40), pixel => pixel.R > 128);
+        var caption = GetInk(frame, new Rectangle(0, 0, 120, 60), pixel => pixel.R < 200);
+        var amount = GetInk(frame, new Rectangle(120, 0, 120, 60), pixel => pixel.R < 200);
+
+        // The label is centered in the button, within a pixel
+        Assert.InRange(label.Left + label.Right, 239, 241);
+        Assert.InRange(label.Top + label.Bottom, 167, 169);
+
+        // The caption starts at 20 and the amount ends at 220, within their side bearings; both sit on the baseline at 44
+        Assert.InRange(caption.Left, 20, 22);
+        Assert.InRange(amount.Right, 216, 220);
+        Assert.InRange(caption.Bottom, 44, 45);
+        Assert.InRange(amount.Bottom, 44, 45);
+        Assert.True(amount.Top < caption.Top, "The amount is taller than the caption");
+
+        static Rectangle GetInk(ImageFrame<Rgba32> frame, Rectangle area, Func<Rgba32, bool> isInk)
+        {
+            int left = int.MaxValue, top = int.MaxValue, right = int.MinValue, bottom = int.MinValue;
+            for (var y = area.Top; y < area.Bottom; y++)
+            {
+                for (var x = area.Left; x < area.Right; x++)
+                {
+                    if (isInk(frame[x, y]))
+                    {
+                        left = Math.Min(left, x);
+                        top = Math.Min(top, y);
+                        right = Math.Max(right, x + 1);
+                        bottom = Math.Max(bottom, y + 1);
+                    }
+                }
+            }
+
+            Assert.True(left <= right, $"No ink in {area}");
+            return Rectangle.FromLTRB(left, top, right, bottom);
+        }
+    }
+
+    [Fact]
     public void DrawParagraphWrapsAndPaintsTheSpans()
     {
         var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";

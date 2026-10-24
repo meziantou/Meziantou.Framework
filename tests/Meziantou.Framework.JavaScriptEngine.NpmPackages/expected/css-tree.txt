@@ -1,0 +1,39 @@
+{
+  "selectors": [
+    ":root",
+    ".grid",
+    "a[href^=\"https\"]:not(.internal)::after",
+    ".grid",
+    ".x",
+    ".bad"
+  ],
+  "declarations": [
+    "--gap:  4px -> Lexer matching doesn't applicable for custom properties @3:9",
+    "display: grid -> valid @4:9",
+    "grid-template-columns: repeat(auto-fill,minmax(120px,1fr)) -> valid @4:24",
+    "gap: var(--gap) -> Matching for a tree with var() is not supported @4:86",
+    "content: \"↗\" -> valid @5:42",
+    "color: hsl(210 50% 40%/.8) -> valid @5:56",
+    "gap: calc(var(--gap)*2) -> Matching for a tree with var() is not supported @6:70",
+    "width: clamp(1rem,2.5vw,2rem) -> valid @7:34",
+    "color: 12px -> Mismatch @8:8",
+    "width: red -> Mismatch @8:21"
+  ],
+  "doubled": "@import url(theme.css)screen;:root{--gap: 4px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:var(--gap)}a[href^=\"https\"]:not(.internal)::after{content:\"↗\";color:hsl(210 50% 40%/.8)}@media (min-width:1280px) and (prefers-color-scheme:dark){.grid{gap:calc(var(--gap)*2)}}@supports (display:grid){.x{width:clamp(1rem,2.5vw,2rem)}}.bad{color:24px;width:red}",
+  "list": 2,
+  "property": {
+    "basename": "border-radius",
+    "name": "-webkit-border-radius",
+    "hack": "",
+    "vendor": "-webkit-",
+    "prefix": "-webkit-",
+    "custom": false
+  },
+  "keyword": {
+    "basename": "max-content",
+    "name": "-moz-max-content",
+    "prefix": "-moz-",
+    "vendor": "-moz-",
+    "custom": false
+  }
+}

@@ -1247,7 +1247,8 @@ internal sealed partial class BoxTreeBuilder
 
     /// <summary>
     /// The children of a details element (https://html.spec.whatwg.org/multipage/rendering.html#the-details-and-summary-elements):
-    /// its summary, then the other children in the box of its second slot, the <c>::details-content</c> pseudo-element
+    /// its summary (or, without summary child, the summary that the user agent provides, see <see cref="HtmlDetailsElement.ImplicitSummary"/>),
+    /// then the other children in the box of its second slot, the <c>::details-content</c> pseudo-element
     /// (https://drafts.csswg.org/css-pseudo-4/#details-content-pseudo). The box has the computed <c>display</c> of the
     /// pseudo-element (a block in the user agent style sheet; <c>contents</c>: the children are children of the box of the details
     /// element; <c>none</c>: they have no box) and skips its contents with <c>content-visibility: hidden</c> (the user agent style
@@ -1265,6 +1266,12 @@ internal sealed partial class BoxTreeBuilder
                 BuildElement(child, parent);
                 break;
             }
+        }
+
+        // A details element without summary child renders the summary that the user agent provides
+        if (summary is null && details is HtmlDetailsElement { ImplicitSummary: { } implicitSummary })
+        {
+            BuildElement(implicitSummary, parent);
         }
 
         var contentStyle = _engine.GetStyle(details, StyleEngine.DetailsContent);

@@ -661,6 +661,33 @@ public partial class Document
 
     internal int OpenSelectPickerCount => _openSelectPickers?.Count ?? 0;
 
+    /// <summary>The input elements of the document whose picker is open (see <see cref="HtmlInputElement.IsPickerOpen"/>).</summary>
+    internal List<HtmlInputElement> OpenInputPickers => _openInputPickers ??= [];
+
+    private List<HtmlInputElement>? _openInputPickers;
+
+    /// <summary>
+    /// Closes the pickers of the input elements of the document, except the picker of <paramref name="except"/>. Returns
+    /// whether a picker was closed.
+    /// </summary>
+    internal bool CloseInputPickers(HtmlInputElement? except = null)
+    {
+        if (_openInputPickers is not { Count: > 0 } pickers)
+            return false;
+
+        var closed = false;
+        foreach (var input in pickers.ToArray())
+        {
+            if (!ReferenceEquals(input, except))
+            {
+                input.ClosePicker();
+                closed = true;
+            }
+        }
+
+        return closed;
+    }
+
     /// <summary>Closes the pickers of the select elements whose appearance changed since they were opened (see <see cref="HtmlSelectElement.ClosePickerIfAppearanceChanged"/>).</summary>
     internal void CheckOpenSelectPickers()
     {

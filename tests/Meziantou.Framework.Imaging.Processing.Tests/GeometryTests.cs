@@ -531,4 +531,33 @@ public sealed class GeometryTests
             Assert.Equal(expected.M44, actual.M44, 1e-15);
         }
     }
+
+    [Fact]
+    public void TransformBoundsContainsTheTransformedCorners()
+    {
+        var rectangle = new RectangleD(1, 2, 4, 2);
+        Assert.Equal(rectangle, AffineTransform.Identity.TransformBounds(rectangle));
+        Assert.Equal(new RectangleD(11, 22, 4, 2), AffineTransform.CreateTranslation(10, 20).TransformBounds(rectangle));
+        Assert.Equal(new RectangleD(2, 6, 8, 6), AffineTransform.CreateScale(2, 3).TransformBounds(rectangle));
+
+        // A flip swaps the sides: the bounds are the same rectangle on the other side of the axes
+        Assert.Equal(new RectangleD(-5, -4, 4, 2), AffineTransform.CreateScale(-1, -1).TransformBounds(rectangle));
+
+        // A quarter turn clockwise takes (x, y) to (-y, x): the rectangle is as tall as it was wide
+        Assert.Equal(RectangleD.FromLTRB(-4, 1, -2, 5), AffineTransform.CreateRotation(90).TransformBounds(rectangle));
+
+        // An eighth of a turn makes a square of side 2 a diamond, whose bounds are its diagonal wide and tall
+        var square = AffineTransform.CreateRotation(45).TransformBounds(new RectangleD(-1, -1, 2, 2));
+        Assert.Equal(-Math.Sqrt(2), square.Left, 1e-12);
+        Assert.Equal(-Math.Sqrt(2), square.Top, 1e-12);
+        Assert.Equal(2 * Math.Sqrt(2), square.Width, 1e-12);
+        Assert.Equal(2 * Math.Sqrt(2), square.Height, 1e-12);
+
+        // A skew that takes (x, y) to (x + y, y) moves the bottom side further right than the top one
+        Assert.Equal(RectangleD.FromLTRB(3, 2, 9, 4), new AffineTransform(1, 0, 1, 1, 0, 0).TransformBounds(rectangle));
+
+        // A rectangle without area is a segment or a point
+        Assert.Equal(new RectangleD(13, 24, 0, 0), AffineTransform.CreateTranslation(10, 20).TransformBounds(new RectangleD(3, 4, 0, 0)));
+        Assert.Equal(RectangleD.FromLTRB(-4, 1, -4, 5), AffineTransform.CreateRotation(90).TransformBounds(new RectangleD(1, 4, 4, 0)));
+    }
 }

@@ -1316,7 +1316,7 @@ internal sealed partial class Painter
 
                 // The characters of a highlight are highlighted once, also where its ranges overlap: the union of its ranges.
                 // The name of the pseudo-element is serialized as the selectors are (an identifier, with its escapes)
-                var style = engine.GetStyle(element, "highlight(" + CssSerializer.SerializeIdentifier(name) + ")");
+                var style = engine.GetStyle(element, StyleEngine.GetTextHighlightPseudoElement(node, "highlight(" + CssSerializer.SerializeIdentifier(name) + ")"));
                 ranges.Sort(static (a, b) => a.Start.CompareTo(b.Start));
                 var (start, end) = ranges[0];
                 for (var i = 1; i < ranges.Count; i++)
@@ -1341,7 +1341,7 @@ internal sealed partial class Painter
             {
                 if (GetIntersection(range, node, fragment) is var (start, end))
                 {
-                    (layers ??= []).Add((engine.GetStyle(element, "target-text"), start, end, "mark", "marktext"));
+                    (layers ??= []).Add((engine.GetStyle(element, StyleEngine.GetTextHighlightPseudoElement(node, "target-text")), start, end, "mark", "marktext"));
                 }
             }
         }
@@ -1353,9 +1353,9 @@ internal sealed partial class Painter
         // selected
         if (_document.GetSelection()?.GetRenderedBoundaryPoints() is var (selectionStartNode, selectionStartOffset, selectionEndNode, selectionEndOffset)
             && GetIntersection(selectionStartNode, selectionStartOffset, selectionEndNode, selectionEndOffset, node, fragment) is var (selectionStart, selectionEnd) && !FocusModel.IsInert(node)
-            && !IsUserSelectNone(engine, element))
+            && !IsUserSelectNone(engine, element, StyleEngine.IsTextInSelectPicker(node)))
         {
-            (layers ??= []).Add((engine.GetStyle(element, "selection"), selectionStart, selectionEnd, "highlight", null));
+            (layers ??= []).Add((engine.GetStyle(element, StyleEngine.GetTextHighlightPseudoElement(node, "selection")), selectionStart, selectionEnd, "highlight", null));
         }
 
         return layers is null ? null : GetHighlights(fragment, offset, layers);
@@ -1474,15 +1474,24 @@ internal sealed partial class Painter
 
     /// <summary>
     /// Whether the used value of <c>user-select</c> of an element is <c>none</c> (https://drafts.csswg.org/css-ui-4/#content-selection):
-    /// its computed value, or for <c>auto</c> the used value of its parent when it is <c>none</c>.
+    /// its computed value, or for <c>auto</c> the used value of its parent when it is <c>none</c>. The contents of the select
+    /// popover (<paramref name="inSelectPicker"/>: the text is a child of a select element, slotted in its popover) can be
+    /// selected unless <c>::picker(select)</c> is styled otherwise: its <c>auto</c> value does not take the <c>none</c> of the
+    /// select element with base appearance, which is for the button of the control (the tests of the highlights of the select
+    /// popover select its text).
     /// </summary>
-    private static bool IsUserSelectNone(StyleEngine engine, Element element)
+    private static bool IsUserSelectNone(StyleEngine engine, Element element, bool inSelectPicker = false)
     {
         for (var current = element; current is not null; current = StyleEngine.GetInheritanceParent(current))
         {
+            if (inSelectPicker)
+                return engine.GetStyle(current, StyleEngine.SelectPicker).GetComputedValue("user-select") == "none";
+
             var value = engine.GetStyle(current).GetComputedValue("user-select");
             if (value is not ("auto" or ""))
                 return value == "none";
+
+            inSelectPicker = StyleEngine.IsInSelectPicker(current);
         }
 
         return false;

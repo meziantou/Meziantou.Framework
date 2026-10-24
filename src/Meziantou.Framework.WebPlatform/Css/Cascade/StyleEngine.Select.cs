@@ -16,8 +16,9 @@ internal sealed partial class StyleEngine
     /// <summary>
     /// The prefix of the names of the pseudo-elements of <c>::picker(select)</c>, an element-backed pseudo-element
     /// (https://drafts.csswg.org/css-forms-1/#picker-pseudo): "picker(select)::before", "picker(select)::after",
-    /// "picker(select)::backdrop", "picker(select)::first-line" and "picker(select)::first-letter" (the other
-    /// sub-pseudo-elements are not supported).
+    /// "picker(select)::backdrop", "picker(select)::first-line", "picker(select)::first-letter" and the highlight
+    /// pseudo-elements (e.g. "picker(select)::selection", "picker(select)::highlight(name)"; the other sub-pseudo-elements
+    /// are not supported).
     /// </summary>
     internal const string SelectPickerPrefix = SelectPicker + "::";
 
@@ -245,4 +246,14 @@ internal sealed partial class StyleEngine
     /// </summary>
     internal static bool IsInSelectPicker(Element element)
         => element.ParentNode is HtmlSelectElement select && IsDropDownBox(select) && element.Slottable?.AssignedSlot is null && !IsSelectButton(element);
+
+    /// <summary>
+    /// Returns the name of a highlight pseudo-element (e.g. "selection") of the text of an element: the text that is a child of a
+    /// select element rendered as a drop-down box is slotted in its select popover, whose highlight pseudo-elements are the ones
+    /// of <c>::picker(select)</c> (e.g. "picker(select)::selection").
+    /// </summary>
+    internal static string GetTextHighlightPseudoElement(Text text, string highlight) => IsTextInSelectPicker(text) ? SelectPickerPrefix + highlight : highlight;
+
+    /// <summary>Whether the text is a child of a select element rendered as a drop-down box that is slotted in its select popover (see <see cref="IsInSelectPicker"/>).</summary>
+    internal static bool IsTextInSelectPicker(Text text) => text.ParentNode is HtmlSelectElement select && IsDropDownBox(select) && text.Slottable?.AssignedSlot is null;
 }

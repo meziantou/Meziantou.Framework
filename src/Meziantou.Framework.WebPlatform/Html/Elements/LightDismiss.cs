@@ -20,8 +20,21 @@ public partial class Document
     /// </summary>
     internal void RunLightDismissActivities(PointerEvent @event, Node target)
     {
+        LightDismissOpenInputPickers(@event, target);
         LightDismissOpenPopovers(@event, target);
         LightDismissOpenDialogs(@event, target);
+    }
+
+    /// <summary>
+    /// The pickers of the input elements (see <see cref="HtmlInputElement.IsPickerOpen"/>) are closed by a pointerdown event
+    /// whose target is not the input element, as the pickers of the browsers are when the user clicks outside of them.
+    /// </summary>
+    private void LightDismissOpenInputPickers(PointerEvent @event, Node target)
+    {
+        if (@event.Type == "pointerdown")
+        {
+            CloseInputPickers(except: target as HtmlInputElement);
+        }
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/popover.html#light-dismiss-open-popovers</summary>

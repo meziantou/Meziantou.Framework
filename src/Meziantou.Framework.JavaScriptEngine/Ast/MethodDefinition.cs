@@ -14,5 +14,8 @@ internal sealed class MethodDefinition : Node
 
     public bool Computed { get; set; }
 
+    /// <summary>The decorators (<c>@expr</c>), in source order: identifiers, member expressions, calls and any parenthesized expression.</summary>
+    public List<Node>? Decorators { get; set; }
+
     public override NodeType Type => NodeType.MethodDefinition;
 }

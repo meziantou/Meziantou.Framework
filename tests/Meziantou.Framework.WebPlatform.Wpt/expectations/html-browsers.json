@@ -227,10 +227,7 @@
     "total": 3
   },
   "html/browsers/browsing-the-web/history-traversal/iframe-history-restore-on-container-traversal.tentative.html": {
-    "total": 2,
-    "failures": {
-      "iframe is restored to JS-navigated URL when container traverses back": "FAIL"
-    }
+    "total": 2
   },
   "html/browsers/browsing-the-web/history-traversal/iframe-navigated-during-container-load.html": {
     "total": 2
@@ -342,16 +339,10 @@
     "total": 1
   },
   "html/browsers/browsing-the-web/history-traversal/srcdoc/consecutive-srcdoc.html": {
-    "total": 2,
-    "failures": {
-      "changing srcdoc to about:srcdoc#yo then another srcdoc does two push navigations and we can navigate back": "FAIL"
-    }
+    "total": 2
   },
   "html/browsers/browsing-the-web/history-traversal/srcdoc/srcdoc-history-entries.html": {
-    "total": 2,
-    "failures": {
-      "srcdoc history entries: the container window navigates": "FAIL"
-    }
+    "total": 2
   },
   "html/browsers/browsing-the-web/history-traversal/unset_context_name.html": {
     "harness": "TIMEOUT",

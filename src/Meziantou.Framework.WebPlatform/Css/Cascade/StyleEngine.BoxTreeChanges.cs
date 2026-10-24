@@ -30,6 +30,12 @@ internal sealed partial class StyleEngine
         if (_boxTreeChanges is not { IsFull: false } changes)
             return;
 
+        // The boxes of the summary of the user agent shadow tree of a details element are built with the boxes of the details element
+        if (element.ParentNode is ShadowRoot { Host: HtmlDetailsElement details } && ReferenceEquals(details.CreatedImplicitSummary, element))
+        {
+            element = details;
+        }
+
         changes.Elements.Add(element);
         if (changes.Elements.Count > MaxBoxTreeChanges)
         {

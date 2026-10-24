@@ -4207,14 +4207,7 @@
     "total": 1
   },
   "html/semantics/forms/the-input-element/click-user-gesture.html": {
-    "total": 14,
-    "failures": {
-      "input[type=date] click() consumes user activation": "FAIL",
-      "input[type=datetime-local] click() consumes user activation": "FAIL",
-      "input[type=month] click() consumes user activation": "FAIL",
-      "input[type=time] click() consumes user activation": "FAIL",
-      "input[type=week] click() consumes user activation": "FAIL"
-    }
+    "total": 14
   },
   "html/semantics/forms/the-input-element/clone.html": {
     "total": 19
@@ -4616,11 +4609,7 @@
     "reftest": "PASS"
   },
   "html/semantics/forms/the-input-element/range-restore-oninput-onchange-event.https.html": {
-    "total": 2,
-    "failures": {
-      "Verifies that form restoration does not fire input or change events for <input type=range>.": "FAIL",
-      "Verifies that form restoration does not fire input or change events for <input type=text>.": "FAIL"
-    }
+    "total": 2
   },
   "html/semantics/forms/the-input-element/range-setattribute-value.html": {
     "reftest": "PASS"
@@ -5317,13 +5306,13 @@
     "reftest": "PASS"
   },
   "html/semantics/forms/the-select-element/customizable-select/select-picker-pseudo-highlight.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/semantics/forms/the-select-element/customizable-select/select-picker-pseudo-selection.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/semantics/forms/the-select-element/customizable-select/select-picker-pseudo-target-text.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/semantics/forms/the-select-element/customizable-select/select-picker-starting-style.html": {
     "total": 1
@@ -5419,11 +5408,7 @@
     "total": 8
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.optional.html": {
-    "total": 2,
-    "failures": {
-      "<input> inside <selectedcontent> should be restored after form submission.": "FAIL",
-      "<selectedcontent> should be up to date after form restoration.": "FAIL"
-    }
+    "total": 2
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-subtree-mutations.html": {
     "total": 3
@@ -5894,10 +5879,7 @@
     }
   },
   "html/semantics/interactive-elements/the-details-element/details-toggle-source.html": {
-    "total": 3,
-    "failures": {
-      "ToggleEvent.source on <details> elements: click details.": "FAIL"
-    }
+    "total": 3
   },
   "html/semantics/interactive-elements/the-details-element/details.html": {
     "total": 5
@@ -7245,28 +7227,16 @@
     "total": 3
   },
   "html/semantics/popovers/popover-focus-5.html?commandfor": {
-    "total": 6,
-    "failures": {
-      "Focusing elements inside a popover with a details element inside, and the after button adjacent to invoker, using commandfor": "FAIL"
-    }
+    "total": 6
   },
   "html/semantics/popovers/popover-focus-5.html?commandforelement": {
-    "total": 6,
-    "failures": {
-      "Focusing elements inside a popover with a details element inside, and the after button adjacent to invoker, using commandforelement": "FAIL"
-    }
+    "total": 6
   },
   "html/semantics/popovers/popover-focus-5.html?imperative": {
-    "total": 6,
-    "failures": {
-      "Focusing elements inside a popover with a details element inside, and the after button adjacent to invoker, using imperative": "FAIL"
-    }
+    "total": 6
   },
   "html/semantics/popovers/popover-focus-5.html?popovertargetelement": {
-    "total": 6,
-    "failures": {
-      "Focusing elements inside a popover with a details element inside, and the after button adjacent to invoker, using popovertargetelement": "FAIL"
-    }
+    "total": 6
   },
   "html/semantics/popovers/popover-focus-across-slot.html": {
     "total": 1
@@ -7398,11 +7368,7 @@
     "total": 2
   },
   "html/semantics/popovers/popover-minimum-role.html": {
-    "total": 2,
-    "failures": {
-      "Dynamic changes to popover attribute should change the role.": "FAIL",
-      "The popover attribute, on an element with no implicit role, then the element's role instead maps to group.": "FAIL"
-    }
+    "total": 2
   },
   "html/semantics/popovers/popover-move-documents-during-hide.html": {
     "total": 3
@@ -7510,10 +7476,7 @@
     "total": 40
   },
   "html/semantics/rellist-feature-detection.html": {
-    "total": 4,
-    "failures": {
-      "Make sure that relList based feature detection is working for <link>": "FAIL"
-    }
+    "total": 4
   },
   "html/semantics/scripting-1/the-noscript-element/non-html-noscript.html": {
     "total": 1

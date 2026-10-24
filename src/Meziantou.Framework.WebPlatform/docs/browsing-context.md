@@ -1067,8 +1067,15 @@ response blocked by a check included; a `404` response is not a network error, a
   the `Accept` header of a navigation. There is no HTTP cache, so the response is not used by the next request of the
   URL. A content security policy that has a `default-src` directive blocks the prefetch unless one of its fetch
   directives allows the URL (https://w3c.github.io/webappsec-csp/#does-resource-hint-violate-policy).
-- `preconnect` and `dns-prefetch` are ignored: the loader has no connection to open in advance
-  (`relList.supports()` is false for them).
+- **`<link rel=prerender>`** (removed from the HTML Standard) is processed as a prefetch, as in the browsers (Chromium's
+  NoState Prefetch).
+- **`<link rel=preconnect>`** and **`<link rel=dns-prefetch>`** fetch nothing and fire no event: the loader has
+  neither a connection pool nor a DNS cache to fill in advance, so the hints are satisfied by doing nothing (the
+  specification makes them recommendations). `<link rel=next>` is processed as a preconnect (the specification lets
+  the user agent choose between a DNS prefetch, a preconnect and a prefetch). The `preconnect` links of the `Link`
+  headers are ignored for the same reason.
+- `apple-touch-icon` and `apple-touch-icon-precomposed` are icons, and `canonical` has no processing model:
+  `relList.supports()` is true for them, as in the browsers.
 - As in the browsers, the request of a preload whose element was created by the parser is "parser-inserted" for the
   content security policies: a script preload without nonce is blocked by `'strict-dynamic'`.
 
@@ -2836,6 +2843,20 @@ choose them ("the user agent should allow the user to..."): they are the ones of
 - As in the browsers, a click of the user on a `label` focuses its labeled control (a select element is not opened).
 - Not done: the selection of
   a range of options (Shift, a drag); the multi-select drop-down box; the restoration of the state on history traversal.
+
+## Input pickers
+
+Whether an `input` element supports a picker is implementation-defined, except for the File Upload state
+(https://html.spec.whatwg.org/multipage/input.html#input-support-picker). As in the browsers, the Color, Date, Month,
+Week, Time and Local Date and Time states support one, and so does an input with a suggestions source (a `datalist`).
+`showPicker()` and the activation of the color, file, date and time inputs (a click) *show the picker, if applicable*:
+it consumes the transient activation of the window, then opens the picker of a mutable element (the HTML Standard gives
+the date and time states no activation behavior, but all the browsers show their picker when they are clicked). There is
+no picker user interface: the user does not choose a value, and the file chooser closes at once. The other pickers are
+open until a press of a pointing device outside of the element, `Escape` (it is not a close request then), or until the
+element is removed, changes its type or is no longer mutable; opening a picker closes the other ones of the document.
+The element matches `:open` while its picker is open (https://html.spec.whatwg.org/multipage/semantics-other.html#selector-open).
+`showPicker()` does not focus the element, and clicking a text input does not show the suggestions of its `datalist`.
 
 ## User input
 

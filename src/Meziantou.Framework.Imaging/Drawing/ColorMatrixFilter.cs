@@ -29,4 +29,11 @@ public sealed class ColorMatrixFilter : Filter
     // A transparent pixel stays transparent when the matrix adds no alpha. The straight color of a value left by the
     // running sums of a blur is anything: the matrix could make it visible
     internal override int GetLocalSteps(bool isAfterReach) => !isAfterReach && !(Matrix.Values[19] > 0) ? 1 : -1;
+
+    // A transparent pixel stays transparent unless the matrix adds to the alpha
+    internal override bool TryGetBoundsCore(RectangleD bounds, out RectangleD result)
+    {
+        result = bounds;
+        return !(Matrix.Values[19] > 0);
+    }
 }

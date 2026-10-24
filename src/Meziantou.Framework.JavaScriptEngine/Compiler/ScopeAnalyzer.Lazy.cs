@@ -390,6 +390,9 @@ internal sealed partial class ScopeAnalyzer
 
         private void ScanClass(ClassNode node, bool inThisScope)
         {
+            // The decorators of the class are evaluated outside of its scope
+            ScanDecorators(node.Decorators, inThisScope);
+
             // The inner binding of the name and the private names are in the scope of the class
             var scope = PushScope();
             if (node.Id is not null)
@@ -418,10 +421,12 @@ internal sealed partial class ScopeAnalyzer
                 switch (element)
                 {
                     case MethodDefinition method:
+                        ScanDecorators(method.Decorators, inThisScope);
                         ScanKey(method.Key, method.Computed, inThisScope);
                         ScanFunction(method.Value, inThisScope: false, ownName: null);
                         break;
                     case PropertyDefinition property:
+                        ScanDecorators(property.Decorators, inThisScope);
                         ScanKey(property.Key, property.Computed, inThisScope);
                         Scan(property.Value, inThisScope: false);
                         break;
@@ -437,6 +442,14 @@ internal sealed partial class ScopeAnalyzer
             }
 
             PopScope();
+        }
+
+        private void ScanDecorators(List<Node>? decorators, bool inThisScope)
+        {
+            if (decorators is not null)
+            {
+                ScanList(decorators, inThisScope);
+            }
         }
 
         private void ScanKey(Node key, bool computed, bool inThisScope)

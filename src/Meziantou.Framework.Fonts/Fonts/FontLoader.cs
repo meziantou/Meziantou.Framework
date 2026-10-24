@@ -10,8 +10,6 @@ namespace Meziantou.Framework.Fonts;
 /// </remarks>
 public static class FontLoader
 {
-    private const int ChunkLength = 64 * 1024;
-
     /// <param name="data">The bytes of the font file.</param>
     /// <param name="environment">The limits and the storage of the font code.</param>
     /// <param name="useEmbeddedBitmaps">Whether the bitmaps without colors of the font replace its outlines at the sizes they are made for.</param>
@@ -36,35 +34,7 @@ public static class FontLoader
     /// <param name="useEmbeddedBitmaps">Whether the bitmaps without colors of the font replace its outlines at the sizes they are made for.</param>
     /// <returns>The faces of the file: one for a font, one per font of a collection.</returns>
     public static FontFace[] Load(Stream stream, FontEnvironment environment, bool useEmbeddedBitmaps = false)
-    {
-        var limits = environment.Limits;
-        var buffer = new byte[GetInitialLength(stream, limits)];
-        var length = 0;
-        Span<byte> next = stackalloc byte[1];
-        while (true)
-        {
-            if (length == buffer.Length)
-            {
-                // The buffer is full, which is the end of a seekable stream: one more byte says whether to grow it.
-                if (stream.Read(next) == 0)
-                    break;
-
-                buffer = Grow(buffer, limits);
-                buffer[length++] = next[0];
-                EnsureEncodedBytes(limits, length);
-                continue;
-            }
-
-            var read = stream.Read(buffer.AsSpan(length));
-            if (read == 0)
-                break;
-
-            length += read;
-            EnsureEncodedBytes(limits, length);
-        }
-
-        return Parse(Trim(buffer, length), environment, useEmbeddedBitmaps);
-    }
+        => Parse(FontStreamReader.ReadAll(stream, environment.Limits), environment, useEmbeddedBitmaps);
 
     /// <summary>Reads the faces of a font file from a stream, asynchronously.</summary>
     /// <param name="stream">The stream of the font file, read to its end.</param>
@@ -74,71 +44,8 @@ public static class FontLoader
     /// <returns>The faces of the file: one for a font, one per font of a collection.</returns>
     public static async Task<FontFace[]> LoadAsync(Stream stream, FontEnvironment environment, bool useEmbeddedBitmaps, CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        var limits = environment.Limits;
-        var buffer = new byte[GetInitialLength(stream, limits)];
-        var length = 0;
-        byte[]? next = null;
-        while (true)
-        {
-            if (length == buffer.Length)
-            {
-                // The buffer is full, which is the end of a seekable stream: one more byte says whether to grow it.
-                next ??= new byte[1];
-                if (await stream.ReadAsync(next, cancellationToken).ConfigureAwait(false) == 0)
-                    break;
-
-                buffer = Grow(buffer, limits);
-                buffer[length++] = next[0];
-                EnsureEncodedBytes(limits, length);
-                continue;
-            }
-
-            var read = await stream.ReadAsync(buffer.AsMemory(length), cancellationToken).ConfigureAwait(false);
-            if (read == 0)
-                break;
-
-            length += read;
-            EnsureEncodedBytes(limits, length);
-        }
-
-        return Parse(Trim(buffer, length), environment, useEmbeddedBitmaps);
-    }
-
-    private static int GetInitialLength(Stream stream, FontResourceLimits limits)
-    {
-        // The remaining length of a seekable stream avoids the copies of a growing buffer. It is only a hint: the
-        // limits are enforced on the bytes actually read.
-        if (stream.CanSeek)
-        {
-            var remaining = stream.Length - stream.Position;
-            if (remaining > limits.MaxEncodedBytes)
-                throw new FontResourceLimitException(FontResourceLimitKind.EncodedBytes, limits.MaxEncodedBytes, remaining);
-
-            if (remaining is > 0 and < int.MaxValue)
-                return (int)remaining;
-        }
-
-        return ChunkLength;
-    }
-
-    private static byte[] Grow(byte[] buffer, FontResourceLimits limits)
-    {
-        var length = Math.Min((long)buffer.Length * 2, Math.Min(limits.MaxEncodedBytes + 1, Array.MaxLength));
-        if (length <= buffer.Length)
-            throw new FontResourceLimitException(FontResourceLimitKind.EncodedBytes, limits.MaxEncodedBytes, (long)buffer.Length + 1);
-
-        var result = new byte[length];
-        buffer.CopyTo(result, 0);
-        return result;
-    }
-
-    private static byte[] Trim(byte[] buffer, int length) => length == buffer.Length ? buffer : buffer.AsSpan(0, length).ToArray();
-
-    private static void EnsureEncodedBytes(FontResourceLimits limits, long length)
-    {
-        if (length > limits.MaxEncodedBytes)
-            throw new FontResourceLimitException(FontResourceLimitKind.EncodedBytes, limits.MaxEncodedBytes, length);
+        var bytes = await FontStreamReader.ReadAllAsync(stream, environment.Limits, cancellationToken).ConfigureAwait(false);
+        return Parse(bytes, environment, useEmbeddedBitmaps);
     }
 
     private static void EnsureFontBytes(FontResourceLimits limits, long length)
@@ -185,6 +92,9 @@ public static class FontLoader
                 throw FontErrors.Invalid("a WOFF file contains another WOFF file.");
 
             default:
+                if (AfmParser.HasAfmSignature(bytes))
+                    throw new UnknownFontFormatException($"The data is not a font: it is an AFM file (Adobe Font Metrics), which has metrics but no glyphs. Read it with {nameof(AfmFontMetrics)}.");
+
                 throw new UnknownFontFormatException("The data is not a font: it does not start with the signature of a TrueType, OpenType, WOFF or WOFF2 font or of a font collection.");
         }
     }

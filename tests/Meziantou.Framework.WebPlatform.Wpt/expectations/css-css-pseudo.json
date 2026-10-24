@@ -585,26 +585,11 @@
   "css/css-pseudo/input-element-pseudo-open-click.optional.html": {
     "total": 7,
     "failures": {
-      "CSS :open for <input type=color>": "FAIL",
-      "CSS :open for <input type=date>": "FAIL",
-      "CSS :open for <input type=datetime-local>": "FAIL",
-      "CSS :open for <input type=month>": "FAIL",
-      "CSS :open for <input type=text list=datalist>": "FAIL",
-      "CSS :open for <input type=time>": "FAIL",
-      "CSS :open for <input type=week>": "FAIL"
+      "CSS :open for <input type=text list=datalist>": "FAIL"
     }
   },
   "css/css-pseudo/input-element-pseudo-open.optional.html": {
-    "total": 7,
-    "failures": {
-      "CSS :open for <input type=color>": "FAIL",
-      "CSS :open for <input type=date>": "FAIL",
-      "CSS :open for <input type=datetime-local>": "FAIL",
-      "CSS :open for <input type=month>": "FAIL",
-      "CSS :open for <input type=text list=datalist>": "FAIL",
-      "CSS :open for <input type=time>": "FAIL",
-      "CSS :open for <input type=week>": "FAIL"
-    }
+    "total": 7
   },
   "css/css-pseudo/marker-and-other-pseudo-elements.html": {
     "reftest": "PASS"

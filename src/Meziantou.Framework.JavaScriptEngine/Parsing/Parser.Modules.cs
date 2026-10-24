@@ -245,9 +245,16 @@ internal sealed partial class Parser
             Raise(position, "Duplicate export of '" + name + "'");
     }
 
-    private Node ParseExportDeclaration(int start)
+    /// <summary>Parses an export declaration; <paramref name="decorators"/> are the decorators before 'export' (only a class can follow).</summary>
+    private Node ParseExportDeclaration(int start, List<Node>? decorators = null)
     {
         Next();
+        if (decorators is not null && _token.Kind == TokenKind.At)
+            Raise(_token.Start, "Decorators may not appear both before and after 'export'");
+
+        if (decorators is not null && _token.Kind is not TokenKind.Class and not TokenKind.Default)
+            Unexpected();
+
         if (_token.Kind == TokenKind.Star)
         {
             Next();
@@ -271,7 +278,14 @@ internal sealed partial class Parser
             Next();
             Node declaration;
             var declarationStart = _token.Start;
-            if (_token.Kind == TokenKind.Function)
+            if (decorators is not null || _token.Kind == TokenKind.At)
+            {
+                if (decorators is not null && _token.Kind == TokenKind.At)
+                    Raise(_token.Start, "Decorators may not appear both before and after 'export'");
+
+                declaration = ParseClassDeclaration(declarationStart, allowAnonymous: true, decorators ?? ParseDecorators());
+            }
+            else if (_token.Kind == TokenKind.Function)
             {
                 declaration = ParseFunctionStatement(declarationStart, isAsync: false, isHanging: false, isAnnexB: false, allowAnonymous: true);
             }
@@ -293,9 +307,9 @@ internal sealed partial class Parser
             return Finish(new ExportDefaultDeclaration { Declaration = declaration }, start);
         }
 
-        if (_token.Kind is TokenKind.Var or TokenKind.Const or TokenKind.Function or TokenKind.Class || IsContextual("let") || (IsContextual("async") && PeekToken() is { Kind: TokenKind.Function, NewLineBefore: false }))
+        if (decorators is not null || _token.Kind is TokenKind.Var or TokenKind.Const or TokenKind.Function or TokenKind.Class or TokenKind.At || IsContextual("let") || (IsContextual("async") && PeekToken() is { Kind: TokenKind.Function, NewLineBefore: false }))
         {
-            var declaration = ParseStatementListItem();
+            var declaration = decorators is not null ? ParseClassDeclaration(_token.Start, allowAnonymous: false, decorators) : ParseStatementListItem();
             switch (declaration)
             {
                 case VariableDeclaration variable:

@@ -23,8 +23,21 @@ internal enum LinkResourceKind
     /// <summary>https://html.spec.whatwg.org/multipage/links.html#link-type-prefetch</summary>
     Prefetch,
 
-    /// <summary>https://html.spec.whatwg.org/multipage/links.html#rel-icon: only checked against the content security policies of the document (the library does not render the icons).</summary>
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/links.html#rel-icon, and its <c>apple-touch-icon</c> and
+    /// <c>apple-touch-icon-precomposed</c> variants of the browsers: only checked against the content security policies of the
+    /// document (the library does not render the icons).
+    /// </summary>
     Icon,
+
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/links.html#link-type-preconnect, and the hint of
+    /// https://html.spec.whatwg.org/multipage/links.html#link-type-next: nothing is fetched (the loader has no connection pool).
+    /// </summary>
+    Preconnect,
+
+    /// <summary>https://html.spec.whatwg.org/multipage/links.html#link-type-dns-prefetch: nothing is fetched (the loader has no DNS cache).</summary>
+    DnsPrefetch,
 }
 
 /// <summary>
@@ -36,7 +49,8 @@ internal enum LinkResourceKind
 internal readonly record struct LinkResource(LinkResourceKind Kind, UrlRecord Url, RequestDestination Destination, bool Cors, bool Alternate = false, ModuleType? ModuleType = null);
 
 // The external resource links of the link elements (https://html.spec.whatwg.org/multipage/semantics.html#the-link-element):
-// the style sheets, the preloads, the module preloads and the prefetches are fetched.
+// the style sheets, the preloads, the module preloads and the prefetches are fetched; the preconnects and the DNS prefetches
+// are processed without fetching anything.
 public partial class HtmlLinkElement
 {
     private string? _resourceKey;
@@ -204,7 +218,8 @@ public partial class HtmlLinkElement
     /// (<c>rel</c> contains <c>stylesheet</c>, no <c>disabled</c> attribute, a <c>type</c> that is missing or <c>text/css</c>,
     /// and a <c>title</c> for an alternative style sheet), a preload whose <c>as</c> attribute is a preload destination
     /// (<c>fetch</c>, <c>font</c>, <c>image</c>, <c>script</c>, <c>style</c> or <c>track</c>) that its <c>type</c> attribute
-    /// matches, a module preload, or a prefetch. <paramref name="mediaMatches"/> is whether the <c>media</c> attribute matches the
+    /// matches, a module preload, a prefetch (or a prerender, which the browsers process as a prefetch), the icon of a document
+    /// with content security policies, a preconnect (or a <c>next</c> link), or a DNS prefetch. <paramref name="mediaMatches"/> is whether the <c>media</c> attribute matches the
     /// environment of <paramref name="environmentDocument"/>: only a style sheet is fetched when its media does not match (as in
     /// browsers, it applies when the environment changes), but it does not block the scripts and the speculative parser
     /// does not fetch it.
@@ -219,14 +234,25 @@ public partial class HtmlLinkElement
         var isModulePreload = false;
         var isPrefetch = false;
         var isIcon = false;
+        var isPreconnect = false;
+        var isDnsPrefetch = false;
         foreach (var token in (GetAttributeValue("rel") ?? "").Split([' ', '\t', '\n', '\f', '\r'], StringSplitOptions.RemoveEmptyEntries))
         {
             isStyleSheet |= InfraAscii.EqualsIgnoreAsciiCase(token, "stylesheet");
             isAlternate |= InfraAscii.EqualsIgnoreAsciiCase(token, "alternate");
             isPreload |= InfraAscii.EqualsIgnoreAsciiCase(token, "preload");
             isModulePreload |= InfraAscii.EqualsIgnoreAsciiCase(token, "modulepreload");
-            isPrefetch |= InfraAscii.EqualsIgnoreAsciiCase(token, "prefetch");
-            isIcon |= InfraAscii.EqualsIgnoreAsciiCase(token, "icon");
+
+            // The browsers process the prerender links (removed from the HTML Standard) as prefetches: Chromium's NoState
+            // Prefetch fetches the resource without rendering it
+            isPrefetch |= InfraAscii.EqualsIgnoreAsciiCase(token, "prefetch") || InfraAscii.EqualsIgnoreAsciiCase(token, "prerender");
+            isIcon |= InfraAscii.EqualsIgnoreAsciiCase(token, "icon") || InfraAscii.EqualsIgnoreAsciiCase(token, "apple-touch-icon") || InfraAscii.EqualsIgnoreAsciiCase(token, "apple-touch-icon-precomposed");
+
+            // https://html.spec.whatwg.org/multipage/links.html#link-type-next: "user agents should process such links as if
+            // they were using one of the dns-prefetch, preconnect, or prefetch keywords", which one being implementation-
+            // dependent: the library preconnects (it does not fetch the next document of the series)
+            isPreconnect |= InfraAscii.EqualsIgnoreAsciiCase(token, "preconnect") || InfraAscii.EqualsIgnoreAsciiCase(token, "next");
+            isDnsPrefetch |= InfraAscii.EqualsIgnoreAsciiCase(token, "dns-prefetch");
         }
 
         LinkResourceKind kind;
@@ -281,6 +307,14 @@ public partial class HtmlLinkElement
             // the icon is not fetched when it is allowed)
             kind = LinkResourceKind.Icon;
             destination = RequestDestination.Image;
+        }
+        else if (isPreconnect)
+        {
+            kind = LinkResourceKind.Preconnect;
+        }
+        else if (isDnsPrefetch)
+        {
+            kind = LinkResourceKind.DnsPrefetch;
         }
         else
         {
@@ -496,6 +530,15 @@ public partial class HtmlLinkElement
             ContentSecurityPolicy.ShouldBlockRequest(document, linkResource.Url, RequestDestination.Image);
             return;
         }
+
+        // https://html.spec.whatwg.org/multipage/links.html#link-type-preconnect: "The user agent should obtain a connection
+        // given partitionKey, url's origin, and useCredentials" (for an HTTP(S) URL), and
+        // https://html.spec.whatwg.org/multipage/links.html#link-type-dns-prefetch: "The user agent should resolve an origin
+        // given partitionKey and url's origin". The loader of the library has no connection pool nor DNS cache that it could
+        // fill in advance (each request opens its own connections), so the hints are satisfied by doing nothing (they are
+        // recommendations: a preconnect can be partial or skipped). They fire neither load nor error events.
+        if (linkResource.Kind is LinkResourceKind.Preconnect or LinkResourceKind.DnsPrefetch)
+            return;
 
         if (linkResource.Kind == LinkResourceKind.ModulePreload)
         {

@@ -129758,6 +129758,19 @@
       "fileCount": 334,
       "sha256": "934e916b1b32a88c673b0307865aff1ad22052f6d74619c5e2ca14ea545e92c3",
       "description": "Fonts that each exercise one format of the cmap, class definition, coverage, GSUB or GPOS tables, and tests: a font, the options of hb-shape, characters, and the expected glyphs and positions."
+    },
+    {
+      "id": "font-suites/adobe-core14-afm",
+      "directory": "font-suites/adobe-core14-afm",
+      "provenance": {
+        "origin": "external",
+        "license": "APAFML",
+        "author": "Adobe Systems Incorporated",
+        "source": "https://web.archive.org/web/20091223044748id_/http://partners.adobe.com/public/developer/en/pdf/Core14_AFMs.zip (SHA-256 8c892c3c49553cfd2d2a27c4495b4bb12e2875115be7fd127ed3876df19d8654)"
+      },
+      "fileCount": 15,
+      "sha256": "48c99ab0e07f5d53183ebcd48beba11747ea2d89120d9ac11982d63622acf372",
+      "description": "The Adobe Font Metrics files of the 14 standard fonts of PDF (Courier, Helvetica and Times in four styles, Symbol, ZapfDingbats), with the notice their license requires."
     }
   ],
   "hevcVectors": {

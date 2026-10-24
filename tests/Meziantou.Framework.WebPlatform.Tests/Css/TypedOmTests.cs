@@ -250,6 +250,22 @@ public sealed class TypedOmTests : IDisposable
         Assert.Throws<TypeErrorException>(() => map.Get("lemon"));
     }
 
+    [Theory]
+    [InlineData("paint-order", "fill stroke")]
+    [InlineData("scroll-snap-type", "inline proximity")]
+    public void AttributeStyleMap_Get_ListOfKeywordsSerializedAsOneKeyword(string property, string value)
+    {
+        // The value is serialized in its shortest form (a single keyword), but it is not a single keyword
+        var element = CreateElement(property + ": " + value);
+        var reified = element.AttributeStyleMap.Get(property)!;
+        Assert.Equal(typeof(CssStyleValue), reified.GetType());
+
+        var other = CreateElement();
+        other.AttributeStyleMap.Set(property, reified);
+        Assert.Equal(element.Style.GetPropertyValue(property), other.Style.GetPropertyValue(property));
+        Assert.Equal(typeof(CssStyleValue), other.AttributeStyleMap.Get(property)!.GetType());
+    }
+
     [Fact]
     public void AttributeStyleMap_Set_UpdatesTheStyleAttribute()
     {

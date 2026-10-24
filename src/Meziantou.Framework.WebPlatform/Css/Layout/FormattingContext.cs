@@ -122,6 +122,14 @@ internal readonly record struct ContentArea(WritingDirection WritingDirection, L
     public double? MaxBlockSize { get; init; }
 
     /// <summary>
+    /// When <see cref="BlockSize"/> is indefinite and the preferred block size is a <c>calc-size()</c> of the contents (e.g.
+    /// <c>calc-size(auto, min(size, 100px))</c>): resolves the content-box block size from the content-box automatic block size,
+    /// or returns null when it behaves as <c>auto</c> (see <see cref="MinBlockSize"/>: the main size of a column flex container,
+    /// in which its items are flexed, https://drafts.csswg.org/css-flexbox-1/#algo-main-container).
+    /// </summary>
+    public Func<double, double?>? ResolveContentBasedBlockSize { get; init; }
+
+    /// <summary>
     /// Whether <see cref="BlockSize"/> is the size of the content box but is indefinite for the percentages of the children (see
     /// <see cref="ConstraintSpace.IsFixedBlockSizeIndefinite"/>).
     /// </summary>
@@ -883,6 +891,9 @@ internal abstract class FormattingContext
                 || space.StretchUsesQuirksPercentageBlockSize && !isOrthogonal && box is { Kind: ContainerBoxKind.Anonymous, IsInlineBox: false, Display.Internal: DisplayInternal.None }),
             MinBlockSize = contentBlockSize is null ? ToContentBlockSize(blockSizing.Resolve(boxModel.GetMinSize(blockIsHorizontal), SizingProperty.Minimum)) : null,
             MaxBlockSize = contentBlockSize is null ? ToContentBlockSize(blockSizing.Resolve(boxModel.GetMaxSize(blockIsHorizontal), SizingProperty.Maximum)) : null,
+            ResolveContentBasedBlockSize = contentBlockSize is null && preferredBlockSize.Kind == SizeKind.CalcSize && box.Kind != ContainerBoxKind.Replaced && !(space.MeasuresIntrinsicBlockSize && !isOrthogonal)
+                ? CreateContentBasedBlockSizeResolver(blockSizing, preferredBlockSize, edges.BlockSum())
+                : null,
         };
 
         // https://drafts.csswg.org/css-contain-2/#containment-size: the automatic block size of a box with size containment is
@@ -1624,6 +1635,10 @@ internal abstract class FormattingContext
             ? (min is { } a ? ratio.ToInline(a) : null, max is { } b ? ratio.ToInline(b) : null)
             : (min is { } c ? ratio.ToBlock(c) : null, max is { } d ? ratio.ToBlock(d) : null);
     }
+
+    /// <summary>Returns <see cref="ContentArea.ResolveContentBasedBlockSize"/>: the <c>calc-size()</c> resolved with the automatic block size as its basis, as <c>ComputeBlockSize</c> resolves the used block size.</summary>
+    private static Func<double, double?> CreateContentBasedBlockSizeResolver(AxisSizing blockSizing, Size preferredBlockSize, double edges)
+        => contentsBlockSize => (blockSizing with { ContentSize = contentsBlockSize + edges }).Resolve(preferredBlockSize, SizingProperty.Preferred) is { } size ? Math.Max(0, size - edges) : null;
 
     /// <summary>
     /// Returns whether the automatic minimum size of a box in the ratio-dependent axis is its min-content size

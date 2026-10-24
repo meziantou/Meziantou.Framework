@@ -980,7 +980,8 @@ internal sealed partial class FlexLayoutAlgorithm
         }
 
         // https://drafts.csswg.org/css-flexbox-1/#algo-main-container: an indefinite main size is the max-content main size of
-        // the container (its largest line), clamped by its min and max main sizes
+        // the container (its largest line), clamped by its min and max main sizes; a calc-size() of the contents is resolved with
+        // it (https://drafts.csswg.org/css-values-5/#calc-size): the items are flexed in the used main size
         if (_definiteMainSize is { } definiteMainSize)
         {
             _mainSize = definiteMainSize;
@@ -991,6 +992,11 @@ internal sealed partial class FlexLayoutAlgorithm
             foreach (var line in _lines)
             {
                 largest = Math.Max(largest, line.HypotheticalMainSize);
+            }
+
+            if (!_isRow && _content.ResolveContentBasedBlockSize?.Invoke(largest) is { } resolved)
+            {
+                largest = resolved;
             }
 
             _mainSize = Clamp(largest, _content.MinBlockSize, _content.MaxBlockSize);

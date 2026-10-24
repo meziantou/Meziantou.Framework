@@ -337,10 +337,21 @@ internal static class IntrinsicSizing
 
             // https://drafts.csswg.org/css-sizing-4/#aspect-ratio-minimum: the automatic minimum size in the ratio-dependent axis is
             // the min-content size (when the box is not a scroll container)
-            if (isRatioDependent && boxModel.GetMinSize(horizontal).IsAuto && !ScrollContainers.IsScrollable(horizontal ? layout.OverflowX : layout.OverflowY))
+            var minSize = boxModel.GetMinSize(horizontal);
+            if (isRatioDependent && minSize.IsAuto && !ScrollContainers.IsScrollable(horizontal ? layout.OverflowX : layout.OverflowY))
             {
                 var minContent = sizing.GetContentIntrinsicSizes().MinContent;
                 min = IntrinsicSizes.FromSize(Math.Min(minContent, max?.MaxContent ?? double.PositiveInfinity));
+            }
+            else if (isRatioDependent && minSize is { Kind: SizeKind.CalcSize, BehavesAs: SizeKind.Auto } && !ScrollContainers.IsScrollable(horizontal ? layout.OverflowX : layout.OverflowY))
+            {
+                // https://drafts.csswg.org/css-values-5/#calc-size: the size keyword of min-width: calc-size(auto, …) is that
+                // automatic minimum size (as in the layout of the box)
+                var minContent = sizing.GetContentIntrinsicSizes().MinContent;
+                if ((sizing with { AutomaticSize = minContent, ContentSize = minContent }).Resolve(minSize, SizingProperty.Minimum) is { } minimum)
+                {
+                    min = IntrinsicSizes.FromSize(Math.Min(minimum, max?.MaxContent ?? double.PositiveInfinity));
+                }
             }
         }
 

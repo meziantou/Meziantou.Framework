@@ -488,8 +488,16 @@ like the imported style sheets (`DocumentRequest.Initiator` is null), when the d
   function with a return type, the typed parameters and their local variables) are evaluated in the function: the property
   of their key is the name of the function followed by `result` or the name of the parameter (e.g. `ua---f-result-1`), and
   the element of `element-scoped` is the "hypothetical element" of the invocation (each invocation gets its own value); a `random()` whose arguments are percentages that cannot be resolved computes to
-  `random(fixed <base value>, ...)`. `sibling-index()` and `sibling-count()` are integers, and are kept in the specified
-  values; they, `random()` and `random-item()` are invalid in the descriptors of the at-rules and in `@page`.
+  `random(fixed <base value>, ...)`. The `random()` functions of the arguments of `ident()` get their key at parse time
+  too (they are evaluated by the substitution of `ident()`). A fixed base value is clamped to the highest single-precision
+  value less than 1 (`random(fixed random(1, 2), 10px, 100px)` is `99.99999px`), and is a number in a computed value
+  (`random(fixed random(-2, -1), 10%, 20%)` computes to `random(fixed 0, 10%, 20%)`). The first argument of `random()` is
+  a `<random-key>` only when it is `fixed` or a valid sharing, so that a channel keyword of a relative color starts a
+  calculation (`rgb(from blue random(g, 10) 0 0)`). A `random()` or `random-item()` without a `fixed` base value is not
+  computationally independent: it is not a valid `initial-value` of `@property`. `sibling-index()` and `sibling-count()`
+  are integers, and are kept in the specified values; they are tree-scoped references: in a declaration of a style sheet of
+  an outer tree of the element (a `::part()` rule), they are 0. They, `random()` and `random-item()` are invalid in the
+  descriptors of the at-rules and in `@page`.
 - The descriptors of the at-rules are parsed with their grammar, and with the constraints defined in prose: in
   `@counter-style`, a `<counter-style-name>` is not `none`, the lower bound of a `range` is not higher than its upper
   bound, the weights of `additive-symbols` are strictly decreasing, and the weight of `pad` and `additive-symbols` is
@@ -1134,6 +1142,9 @@ property does not apply to its box, the computed value is returned:
   serialization of the specified value (`calc(100dpi - 20dpi * sign(1em))` is `0.833333dppx`), and are clamped to the
   range of the type, also in the track sizes and in `stroke-dasharray` (`calc(-5%)` is `0%`). The numbers of
   `stroke-width` and `stroke-dashoffset` (and the math functions that resolve to a number) are lengths in pixels.
+- The lengths in pixels of the computed and resolved values have the precision of the single-precision floats of the
+  browsers (`CssValueComputer.FormatPixels`): the error of the conversions of the absolute units does not show
+  (`calc(4em + 2.6458333cm)` is `164px`, not `163.999999px`).
 
 `computedStyleMap()` returns the computed values (it only computes the layout for the elements in a size container, whose
 styles depend on the sizes of the containers, see [Container queries](#container-queries), and for the accepted @position-try

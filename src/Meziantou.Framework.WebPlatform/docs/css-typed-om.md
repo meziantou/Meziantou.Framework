@@ -90,6 +90,8 @@ derived from the grammar of the properties, and are close to the behavior of the
   `background-image`) have one value per iteration: `Get()` returns the first one and `GetAll()` all of them.
 - The shorthands are direct `CssStyleValue` objects (`text-align`, which is a longhand for the Typed OM, reifies its
   keywords as keywords), as is `font-family`.
+- A specified list of keywords serialized in its shortest form, a single keyword (`paint-order: fill stroke` is `fill`,
+  `scroll-snap-type: inline proximity` is `inline`), is a direct `CssStyleValue` of the value as specified, not a keyword.
 
 ## Setting values
 

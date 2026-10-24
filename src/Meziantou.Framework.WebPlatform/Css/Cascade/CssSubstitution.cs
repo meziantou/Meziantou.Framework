@@ -674,7 +674,7 @@ internal static class CssSubstitution
             if (double.IsNaN(number))
                 return null;
 
-            baseValue = Math.Clamp(number, 0, Math.BitDecrement(1d));
+            baseValue = Math.Clamp(number, 0, CssRandom.MaxBaseValue);
         }
         else if (CssRandom.ParseSharing(significantKey) is { } sharing)
         {

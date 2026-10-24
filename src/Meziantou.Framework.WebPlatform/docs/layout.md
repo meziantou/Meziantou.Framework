@@ -645,7 +645,8 @@ the box of `box-sizing` (`<ratio>`), so the paddings and borders outside of that
 - [Automatic minimum](https://drafts.csswg.org/css-sizing-4/#aspect-ratio-minimum): a non-replaced box that is not a scroll
   container in the ratio-dependent axis, with `min-*: auto`, grows to its contents (block axis: the block size of its
   contents; inline axis: its min-content size, `BlockFormattingContext.ComputeIntrinsicInlineSizes`), capped by its
-  maximum size. The rows of a grid container whose block size comes from its aspect ratio are aligned (`align-content`) in the
+  maximum size; with `min-*: calc-size(auto, …)`, the `size` of the calculation is that automatic minimum, in the layout
+  and in the intrinsic size contributions of the box. The rows of a grid container whose block size comes from its aspect ratio are aligned (`align-content`) in the
   grown size (`ContentArea.BlockSizeGrowsToContents`). The intrinsic size keywords of the minimum and maximum block sizes of
   such a box are the size given by the ratio, not the block size of its contents (`min-height: min-content` does not make it
   grow, [csswg-drafts#5032](https://github.com/w3c/csswg-drafts/issues/5032)).
@@ -757,8 +758,8 @@ browsers ship): the intrinsic sizes of the boxes, their contributions, and the r
   `interpolate-size: allow-keywords` a sizing keyword is `calc-size(keyword, size)`. The result is a `calc-size()` whose
   calculation combines the two calculations (the like `size` terms are not merged by the simplification); the resolved
   values of `width`/`height` are the used sizes in pixels (see [Resolved values](#resolved-values-csslayoutlayoutresolvedvaluescs)).
-  Not done: the interpolation of the deeply nested `calc-size()` whose expansion is too large is not refused
-  ([csswg-drafts#10369](https://github.com/w3c/csswg-drafts/issues/10369)); the computed value simplifies them.
+  A value whose expansion is too large (more than 10,000 characters,
+  [csswg-drafts#10369](https://github.com/w3c/csswg-drafts/issues/10369)) fails to be prepared: the interpolation is discrete.
 - **Automatic minimum size**: the automatic minimum of the boxes with an aspect ratio (min-content, CSS Sizing 4) for every
   non-replaced box; the content-based minimum sizes of the flex items (see [Flex layout](#flex-layout-csslayoutflex)) and of
   the grid items (see [Grid layout](#grid-layout-csslayoutgrid)).
@@ -2052,7 +2053,8 @@ blockifies the items and wraps their text in anonymous items (`BoxTreeBuilder.Fi
   its minimum main size (`min-width: 50px`, `min-height: 0`).
 - **Lines and flexible lengths** (§9.3, §9.7): the items are collected into lines with their outer hypothetical main sizes
   and the main gap (a column container with an indefinite block size breaks at its `max-height`, its main size is its largest
-  line clamped by its min/max block sizes); `ResolveFlexibleLengths` is the freezing loop of §9.7 (the shrink factor scaled by
+  line, through its `calc-size()` block size when it has one (`ContentArea.ResolveContentBasedBlockSize`), clamped by its
+  min/max block sizes: the items are flexed in it); `ResolveFlexibleLengths` is the freezing loop of §9.7 (the shrink factor scaled by
   the inner flex base size, the sum of the factors below 1; a share of the free space that is not representable, e.g. next
   to `flex-grow: calc(infinity)`, is zero).
 - **Balanced lines** (`flex-wrap: balance`, [CSS Flexbox 2](https://drafts.csswg.org/css-flexbox-2/#algo-line-break),

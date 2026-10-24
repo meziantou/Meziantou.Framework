@@ -1110,6 +1110,7 @@ internal sealed partial class ComputedStyle
         if (text is null)
             return Default(property, inherit: inherited);
 
+        text = ResolveTreeCountingFunctionsOfOuterTree(text, cascaded.TreeScope);
         switch (InfraAscii.ToAsciiLowercase(text))
         {
             case "initial":
@@ -1136,6 +1137,65 @@ internal sealed partial class ComputedStyle
         }
 
         return CssValueComputer.Compute(this, property, text, cascaded.BaseUrl);
+    }
+
+    /// <summary>
+    /// Replaces the tree-counting functions of a value with 0 when the style sheet of its declaration is in an outer tree of the
+    /// element (e.g. a ::part() rule): the functions are tree-scoped references that fail to match, so that the outer trees do
+    /// not see the structure of the shadow trees (https://drafts.csswg.org/css-values-5/#tree-counting).
+    /// </summary>
+    private string ResolveTreeCountingFunctionsOfOuterTree(string text, Node? treeScope)
+    {
+        if (treeScope is null || !text.Contains("sibling-", StringComparison.OrdinalIgnoreCase) || !IsInShadowTreeOf(Element, treeScope))
+            return text;
+
+        var values = CssParser.ParseListOfComponentValues(text, out var source);
+        var splices = new List<(int Start, int End)>();
+        AddTreeCountingFunctions(values, splices);
+        if (splices.Count == 0)
+            return text;
+
+        var builder = new System.Text.StringBuilder(source.Length);
+        var position = 0;
+        foreach (var (start, end) in splices)
+        {
+            builder.Append(source, position, start - position).Append('0');
+            position = end;
+        }
+
+        return builder.Append(source, position, source.Length - position).ToString();
+
+        static bool IsInShadowTreeOf(Element element, Node treeScope)
+        {
+            var root = element.GetRootNode();
+            while (root is ShadowRoot shadowRoot)
+            {
+                root = shadowRoot.Host.GetRootNode();
+                if (ReferenceEquals(root, treeScope))
+                    return true;
+            }
+
+            return false;
+        }
+
+        static void AddTreeCountingFunctions(List<CssComponentValue> values, List<(int Start, int End)> splices)
+        {
+            foreach (var value in values)
+            {
+                switch (value)
+                {
+                    case CssFunction function when ValueMatcher.IsTreeCountingFunction(function):
+                        splices.Add((function.Start, function.End));
+                        break;
+                    case CssFunction function:
+                        AddTreeCountingFunctions(function.Value, splices);
+                        break;
+                    case CssSimpleBlock block:
+                        AddTreeCountingFunctions(block.Value, splices);
+                        break;
+                }
+            }
+        }
     }
 
     /// <summary>

@@ -2639,7 +2639,22 @@ internal static partial class CssValueComputer
         return string.Join(", ", items);
     }
 
-    public static string FormatPixels(double value) => CssSerializer.SerializeNumber(value) + "px";
+    /// <summary>
+    /// Serializes a length in px. As in the browsers, which store the lengths as single-precision floats (or in fixed-point
+    /// layout units), the length has the precision of a single-precision float: the error of the conversions of the absolute
+    /// units does not show in the serialization (e.g. <c>calc(4em + 2.6458333cm)</c> is <c>164px</c>, not <c>163.999999px</c>).
+    /// </summary>
+    public static string FormatPixels(double value) => CssSerializer.SerializeNumber(RoundToSinglePrecision(value)) + "px";
+
+    /// <summary>Returns the shortest decimal number that has the same single-precision float representation as a value.</summary>
+    private static double RoundToSinglePrecision(double value)
+    {
+        var single = (float)value;
+        if (!float.IsFinite(single))
+            return value;
+
+        return double.Parse(single.ToString("R", CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
+    }
 
     /// <summary>Parses a computed length in px (e.g. "16px").</summary>
     public static double? ParsePixels(string value)

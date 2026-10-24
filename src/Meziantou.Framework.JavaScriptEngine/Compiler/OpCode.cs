@@ -469,6 +469,22 @@ internal enum OpCode
     /// <summary>(flags) function thisValue argumentsArray -> result</summary>
     CallEvalSpread,
 
+    /// <summary>
+    /// (argc) function thisValue arg1..N -> result: a call in tail position (PrepareForTailCall), always followed by
+    /// <see cref="Return"/>. The frame of the callee replaces the frame of the caller when it can (see
+    /// JsInterpreter.CanReplaceFrame); otherwise it is a <see cref="Call"/>.
+    /// </summary>
+    TailCall,
+
+    /// <summary>function thisValue argumentsArray -> result: <see cref="CallSpread"/> in tail position (see <see cref="TailCall"/>)</summary>
+    TailCallSpread,
+
+    /// <summary>(argc, flags) function thisValue arg1..N -> result: <see cref="CallEval"/> in tail position, a tail call when the function is not %eval%</summary>
+    TailCallEval,
+
+    /// <summary>(flags) function thisValue argumentsArray -> result: <see cref="CallEvalSpread"/> in tail position, a tail call when the function is not %eval%</summary>
+    TailCallEvalSpread,
+
     /// <summary>(argc) constructor arg1..N -> object</summary>
     New,
 

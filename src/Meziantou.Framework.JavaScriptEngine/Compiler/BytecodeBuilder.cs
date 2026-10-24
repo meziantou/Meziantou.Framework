@@ -205,6 +205,25 @@ internal sealed class BytecodeBuilder
     private static bool IsSimpleStore(OpCode op) => op is OpCode.StoreLocal or OpCode.StoreLocalChecked or OpCode.StoreContext or OpCode.StoreContextChecked;
 
     /// <summary>
+    /// Turns the last instruction, a call whose result is returned, into its tail call version (the caller emits the
+    /// <see cref="OpCode.Return"/> that follows it).
+    /// </summary>
+    public void MakeLastCallTailCall()
+    {
+        Debug.Assert(_instruction1 >= 0, "No instruction");
+        var tailCall = (OpCode)_code[_instruction1] switch
+        {
+            OpCode.Call => OpCode.TailCall,
+            OpCode.CallSpread => OpCode.TailCallSpread,
+            OpCode.CallEval => OpCode.TailCallEval,
+            OpCode.CallEvalSpread => OpCode.TailCallEvalSpread,
+            _ => throw new InvalidOperationException("The last instruction is not a call"),
+        };
+
+        _code[_instruction1] = (int)tailCall;
+    }
+
+    /// <summary>
     /// A conditional jump after a comparison or a logical not (no jump targets the instruction between them): the
     /// instruction is removed, and the jump does the comparison (one dispatch, no boolean on the stack).
     /// </summary>
@@ -475,14 +494,14 @@ internal sealed class BytecodeBuilder
                 or OpCode.DeleteElement
                 or OpCode.CopyDataPropertiesExcluding
                 or OpCode.GetSuperProperty or OpCode.SetSuperProperty
-                or OpCode.Call or OpCode.New or OpCode.SuperCall
+                or OpCode.Call or OpCode.TailCall or OpCode.New or OpCode.SuperCall
                 or OpCode.CreateClosure or OpCode.CreateClass or OpCode.CreatePrivateName
                 or OpCode.DefineClassField or OpCode.SetFunctionNameComputed
                 or OpCode.GetTemplateObject
                 or OpCode.IteratorNext or OpCode.ForInNext or OpCode.IteratorDelegateStep or OpCode.CreateIterResultDone or OpCode.IteratorStepFinish
                 or OpCode.GlobalDeclarationInstantiation or OpCode.EvalDeclarationInstantiation
                 or OpCode.InitializeGlobalLexical or OpCode.InitializeGlobalFunction or OpCode.SetGlobalVar
-                or OpCode.CallEvalSpread
+                or OpCode.CallEvalSpread or OpCode.TailCallEvalSpread
                 or OpCode.SaveEnvironment or OpCode.RestoreEnvironment
                 or OpCode.JumpIfUndefinedPop or OpCode.AddDisposableResource
                 or OpCode.ResolveName or OpCode.LoadResolved or OpCode.SetVarBinding or OpCode.AsyncDisposeNext
@@ -495,7 +514,7 @@ internal sealed class BytecodeBuilder
                 or OpCode.DeleteProperty
                 or OpCode.DefineMethod
                 or OpCode.GetPrivate or OpCode.SetPrivate or OpCode.PrivateIn
-                or OpCode.CallEval
+                or OpCode.CallEval or OpCode.TailCallEval
                 or OpCode.DefinePrivateMethod
                 or OpCode.ThrowError
                 or OpCode.CreateRegExp
@@ -566,8 +585,8 @@ internal sealed class BytecodeBuilder
             OpCode.SetSuperElement => -3,
             OpCode.GetPrivate => 0,
             OpCode.SetPrivate => -1,
-            OpCode.Call or OpCode.CallEval => -(firstOperand + 1),
-            OpCode.CallSpread or OpCode.CallEvalSpread => -2,
+            OpCode.Call or OpCode.CallEval or OpCode.TailCall or OpCode.TailCallEval => -(firstOperand + 1),
+            OpCode.CallSpread or OpCode.CallEvalSpread or OpCode.TailCallSpread or OpCode.TailCallEvalSpread => -2,
             OpCode.New => -firstOperand,
             OpCode.NewSpread => -1,
             OpCode.SuperCall => 1 - firstOperand,

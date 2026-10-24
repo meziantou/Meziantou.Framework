@@ -5,11 +5,6 @@
 # listed: Intl.Era-monthcode, Intl.Locale-info, Intl.NumberFormat-v3, legacy-regexp, error-stack-accessor (used by
 # Meziantou.Framework.WebPlatform), Iterator.prototype.join, import-defer, immutable-arraybuffer, source-phase-imports,
 # source-phase-imports-module-source (the host gives the module source of '<module source>'), ShadowRealm,
-# await-dictionary and nonextensible-applies-to-private.
+# await-dictionary, nonextensible-applies-to-private, import-text and import-bytes.
 decorators
 export-defer
-import-text
-import-bytes
-
-# Proper tail calls are in the specification, but no shipping engine except JavaScriptCore implements them
-tail-call-optimization

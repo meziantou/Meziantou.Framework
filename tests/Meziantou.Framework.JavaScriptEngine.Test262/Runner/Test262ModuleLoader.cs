@@ -30,7 +30,7 @@ internal sealed class Test262ModuleLoader(string baseDirectory) : JsModuleLoader
             return;
         }
 
-        if (type is not null and not "json")
+        if (type is not null and not ("json" or "text" or "bytes"))
         {
             request.Fail("Unsupported module type '" + type + "'");
             return;
@@ -45,8 +45,13 @@ internal sealed class Test262ModuleLoader(string baseDirectory) : JsModuleLoader
         JsModule module;
         try
         {
-            var text = File.ReadAllText(path);
-            module = type == "json" ? request.Realm.CreateJsonModule(text, path) : request.Realm.ParseModule(text, path);
+            module = type switch
+            {
+                "json" => request.Realm.CreateJsonModule(File.ReadAllText(path), path),
+                "text" => request.Realm.CreateTextModule(File.ReadAllText(path), path),
+                "bytes" => request.Realm.CreateBytesModule(File.ReadAllBytes(path), path),
+                _ => request.Realm.ParseModule(File.ReadAllText(path), path),
+            };
         }
         catch (JsException ex)
         {

@@ -5,11 +5,13 @@ An ECMAScript engine written in .NET: a hand-written parser, a bytecode compiler
 [the test262 results](../../tests/Meziantou.Framework.JavaScriptEngine.Test262/summary.md), and by the
 [Web Tooling Benchmark](../../tests/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark/readme.md) (babel,
 TypeScript, prettier, terser... give the same results as in Node.js). It implements ECMAScript
-2025, ECMA-402 (`Intl`) and `Temporal`, the stage 3 proposals `import defer`, source phase imports (the module
-sources are given by the host), [immutable `ArrayBuffer`](https://github.com/tc39/proposal-immutable-arraybuffer)
-(`transferToImmutable`, `sliceToImmutable`), Await Dictionary (`Promise.allKeyed` and `Promise.allSettledKeyed`) and
-Non-extensible Applies to Private (a private field or method cannot be added to a non-extensible object), and the
-`ShadowRealm` proposal. It uses no reflection: it is trimming- and Native AOT-compatible, and its results do not depend
+2025 (including the proper tail calls of strict code), ECMA-402 (`Intl`) and `Temporal`, the stage 3 proposals
+`import defer`, source phase imports (the module sources are given by the host),
+[immutable `ArrayBuffer`](https://github.com/tc39/proposal-immutable-arraybuffer) (`transferToImmutable`,
+`sliceToImmutable`), Await Dictionary (`Promise.allKeyed` and `Promise.allSettledKeyed`) and Non-extensible Applies to
+Private (a private field or method cannot be added to a non-extensible object), and the `ShadowRealm`,
+[Import Text](https://github.com/tc39/proposal-import-text) and [Import Bytes](https://github.com/tc39/proposal-import-bytes)
+proposals. It uses no reflection: it is trimming- and Native AOT-compatible, and its results do not depend
 on the globalization settings of the process (the Unicode, time zone and CLDR data are part of the library, and the word
 lists of ICU that `Intl.Segmenter` uses for Chinese, Japanese, Thai, Lao, Khmer and Burmese come from
 [Meziantou.Framework.Unicode.Dictionaries](../Meziantou.Framework.Unicode.Dictionaries/readme.md)).
@@ -66,7 +68,8 @@ it themselves.
 ## Modules
 
 The modules are loaded by a `JsModuleLoader`: derive from it and override `LoadImportedModule` to resolve a specifier
-and complete the request with a module (`JsRealm.ParseModule` or `JsRealm.CreateJsonModule`), or fail it. A module is
+and complete the request with a module (`JsRealm.ParseModule`, or for the `json`, `text` and `bytes` values of the `type`
+import attribute `JsRealm.CreateJsonModule`, `CreateTextModule` and `CreateBytesModule`), or fail it. A module is
 loaded, linked, then evaluated, as in the specification:
 
 <!-- ref:../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineTests.cs;region=JavaScriptEngine_Modules;format=md-fenced-code-block;dedent=true -->

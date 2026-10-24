@@ -20,7 +20,6 @@ namespace Meziantou.Framework.Pdf
         PdfA3U = 5,
         PdfA3A = 6,
         PdfA4 = 7,
-        PdfA4F = 8,
     }
 
     public class PdfAnnotation
@@ -164,6 +163,7 @@ namespace Meziantou.Framework.Pdf
         public Meziantou.Framework.Pdf.PdfContentBuilder SetTextRenderingMode(Meziantou.Framework.Pdf.PdfTextRenderingMode mode) => throw null;
         public Meziantou.Framework.Pdf.PdfContentBuilder SetTextRise(double rise) => throw null;
         public Meziantou.Framework.Pdf.PdfContentBuilder SetWordSpacing(double spacing) => throw null;
+        public Meziantou.Framework.Pdf.PdfContentBuilder ShowGlyphs(System.ReadOnlySpan<Meziantou.Framework.Pdf.PdfGlyph> glyphs, string? text = null) => throw null;
         public Meziantou.Framework.Pdf.PdfContentBuilder ShowText(params System.ReadOnlySpan<Meziantou.Framework.Pdf.PdfTextSegment> segments) => throw null;
         public Meziantou.Framework.Pdf.PdfContentBuilder ShowText(string text) => throw null;
         public Meziantou.Framework.Pdf.PdfContentBuilder ShowTextOnNextLine(string text) => throw null;
@@ -344,6 +344,25 @@ namespace Meziantou.Framework.Pdf
         public static Meziantou.Framework.Pdf.PdfFunction PostScript(string program, System.ReadOnlySpan<double> domain, System.ReadOnlySpan<double> range) => throw null;
         public static Meziantou.Framework.Pdf.PdfFunction Sampled(System.ReadOnlySpan<int> size, int bitsPerSample, System.ReadOnlySpan<double> domain, System.ReadOnlySpan<double> range, System.ReadOnlySpan<byte> samples) => throw null;
         public static Meziantou.Framework.Pdf.PdfFunction Stitching(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfFunction> functions, System.ReadOnlySpan<double> bounds, System.ReadOnlySpan<double> encode = default, double domainStart = 0d, double domainEnd = 1d) => throw null;
+    }
+
+    public readonly struct PdfGlyph : System.IEquatable<Meziantou.Framework.Pdf.PdfGlyph>
+    {
+        public int GlyphId { get => throw null; init { } }
+        public double X { get => throw null; init { } }
+        public double Y { get => throw null; init { } }
+        public PdfGlyph(int GlyphId, double X, double Y) { }
+        public void Deconstruct(out int GlyphId, out double X, out double Y) => throw null;
+        public bool Equals(Meziantou.Framework.Pdf.PdfGlyph other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.Pdf.PdfGlyph left, Meziantou.Framework.Pdf.PdfGlyph right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Pdf.PdfGlyph left, Meziantou.Framework.Pdf.PdfGlyph right) => throw null;
     }
 
     public sealed class PdfImage

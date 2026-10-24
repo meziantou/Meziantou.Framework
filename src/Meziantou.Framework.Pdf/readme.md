@@ -55,6 +55,8 @@ font whose codes are the glyph identifiers, with a `ToUnicode` CMap so that the 
 The text is shaped with the OpenType layout tables of the font (ligatures, kerning, marks, complex scripts such as
 Arabic or Devanagari) and ordered by the Unicode Bidirectional Algorithm; a text whose glyphs cannot give it back
 (several glyphs for a character, right-to-left text) is marked with its replacement text (`/ActualText`).
+A text already shaped and laid out elsewhere is shown with `ShowGlyphs`: the glyph identifiers at their positions, and
+the text they show so that it can still be extracted.
 
 <!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_EmbeddedFont;format=md-fenced-code-block;dedent=true -->
 ```csharp

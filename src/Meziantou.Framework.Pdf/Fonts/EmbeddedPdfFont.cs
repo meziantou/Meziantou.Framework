@@ -216,7 +216,101 @@ internal sealed class EmbeddedPdfFont : PdfFont
         return width;
     }
 
-    private static double Round(double value)
+    /// <summary>
+    /// Finds the text of each glyph of a run shaped elsewhere, from the characters of its text: a glyph shows the character
+    /// the font maps to it, or the characters until the one of the next glyph (a ligature, a contextual form).
+    /// </summary>
+    /// <param name="glyphs">The glyphs, in the order they are painted.</param>
+    /// <param name="text">The text, in logical order.</param>
+    /// <param name="inOrder"><see langword="true"/> when the glyphs show the characters of the text in its order, so that the text can be extracted without a replacement text.</param>
+    /// <returns>The text of the glyphs that show one cluster on their own; empty when the glyphs do not match the text.</returns>
+    internal (int Glyph, string Text)[] MapGlyphs(ReadOnlySpan<int> glyphs, string text, out bool inOrder)
+    {
+        var runes = new List<string>(text.Length);
+        foreach (var rune in text.EnumerateRunes())
+        {
+            if (!IsInvisible(rune))
+            {
+                runes.Add(rune.ToString());
+            }
+        }
+
+        if (TryMapGlyphs(glyphs, runes, reversed: false, out var mappings))
+        {
+            // A glyph whose text is too long for the ToUnicode CMap needs the replacement text
+            inOrder = mappings.Length == glyphs.Length;
+            return mappings;
+        }
+
+        // A right-to-left run: the glyphs are painted from the end of the text
+        inOrder = false;
+        runes.Reverse();
+        return TryMapGlyphs(glyphs, runes, reversed: true, out mappings) ? mappings : [];
+    }
+
+    private bool TryMapGlyphs(ReadOnlySpan<int> glyphs, List<string> runes, bool reversed, out (int Glyph, string Text)[] mappings)
+    {
+        var result = new List<(int Glyph, string Text)>(glyphs.Length);
+        var position = 0;
+        for (var i = 0; i < glyphs.Length; i++)
+        {
+            if (position >= runes.Count)
+            {
+                mappings = [];
+                return false;
+            }
+
+            int length;
+            if (Face.MapCodePoint(char.ConvertToUtf32(runes[position], 0)) == glyphs[i])
+            {
+                length = 1;
+            }
+            else if (i == glyphs.Length - 1)
+            {
+                length = runes.Count - position;
+            }
+            else
+            {
+                // The characters until the first one the next glyph shows
+                length = 1;
+                while (position + length < runes.Count && Face.MapCodePoint(char.ConvertToUtf32(runes[position + length], 0)) != glyphs[i + 1])
+                {
+                    length++;
+                }
+
+                if (position + length == runes.Count)
+                {
+                    mappings = [];
+                    return false;
+                }
+            }
+
+            var range = runes.GetRange(position, length);
+            if (reversed)
+            {
+                range.Reverse();
+            }
+
+            var value = string.Concat(range);
+            if (value.Length <= MaxMappedTextLength)
+            {
+                result.Add((glyphs[i], value));
+            }
+
+            position += length;
+        }
+
+        if (position != runes.Count)
+        {
+            mappings = [];
+            return false;
+        }
+
+        mappings = [.. result];
+        return true;
+    }
+
+    internal static double Round(double value)
     {
         var rounded = Math.Round(value, 3, MidpointRounding.AwayFromZero);
         return Math.Abs(rounded) < Epsilon ? 0 : rounded;

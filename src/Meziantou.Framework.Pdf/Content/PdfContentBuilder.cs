@@ -535,6 +535,71 @@ public sealed class PdfContentBuilder
         return Operator("TJ");
     }
 
+    /// <summary>
+    /// Shows glyphs at given positions with the current font (<c>TJ</c>), for a text that is already shaped and laid out:
+    /// the glyphs are not shaped again. The font must be loaded from a font file (<see cref="PdfFont.Load(ReadOnlySpan{byte}, int)"/>).
+    /// </summary>
+    /// <param name="glyphs">The glyphs, in the order they are painted, with the positions of their origins from the current text position.</param>
+    /// <param name="text">
+    /// The text the glyphs show, in logical order, or <see langword="null"/> when it is not known (the glyphs then cannot
+    /// be extracted as text). When the glyphs do not show the characters of the text one after the other (a right-to-left
+    /// run, a cluster of several glyphs), the text is their replacement text (<c>/ActualText</c>, ISO 32000-2, 14.9.4).
+    /// </param>
+    /// <returns>The builder.</returns>
+    /// <remarks>
+    /// The positions assume a character spacing of 0 and a horizontal scaling of 100: change the text matrix to scale the
+    /// glyphs. After the call, the text position is after the advance of the last glyph.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">A glyph identifier is not a glyph of the font.</exception>
+    /// <exception cref="ArgumentException">A position is not a finite number.</exception>
+    /// <exception cref="InvalidOperationException">No text object is open, no font is set, the font is a standard font, or the font size is 0.</exception>
+    public PdfContentBuilder ShowGlyphs(ReadOnlySpan<PdfGlyph> glyphs, string? text = null)
+    {
+        EnsureFont();
+        if (_font is not EmbeddedPdfFont font)
+            throw new InvalidOperationException("Glyphs can only be shown with a font loaded from a font file: the standard fonts have no glyph identifiers");
+
+        if (_fontSize == 0)
+            throw new InvalidOperationException("The font size is 0: the glyphs cannot be moved to their positions");
+
+        // Check first: an invalid glyph leaves the content unchanged
+        var glyphCount = font.Face.GlyphCount;
+        var shaped = new List<ShapedGlyph>(glyphs.Length);
+        var identifiers = new int[glyphs.Length];
+        var scale = 1000 / _fontSize;
+        var pen = 0d;
+        for (var i = 0; i < glyphs.Length; i++)
+        {
+            var glyph = glyphs[i];
+            if ((uint)glyph.GlyphId >= (uint)glyphCount)
+                throw new ArgumentOutOfRangeException(nameof(glyphs), glyph.GlyphId, $"The font has {glyphCount} glyphs");
+
+            if (!double.IsFinite(glyph.X) || !double.IsFinite(glyph.Y))
+                throw new ArgumentException("The position of a glyph is not a finite number", nameof(glyphs));
+
+            // TJ moves the next glyph by minus the adjustment, in thousandths of the font size (9.4.3)
+            var target = glyph.X * scale;
+            shaped.Add(new ShapedGlyph(glyph.GlyphId, EmbeddedPdfFont.Round(pen - target), EmbeddedPdfFont.Round(glyph.Y * scale)));
+            identifiers[i] = glyph.GlyphId;
+            pen = target + font.GetWidth(glyph.GlyphId);
+        }
+
+        if (glyphs.IsEmpty)
+            return this;
+
+        var needsActualText = false;
+        (int Glyph, string Text)[] mappings = [];
+        if (text is not null)
+        {
+            mappings = font.MapGlyphs(identifiers, text, out var inOrder);
+            needsActualText = !inOrder;
+        }
+
+        var consistent = font.GetUsage(_document).Record(new ShapedText([.. shaped], 0, mappings, needsActualText));
+        needsActualText |= text is not null && !consistent;
+        return WriteGlyphs(shaped, 0, needsActualText ? text : null, nextLine: false);
+    }
+
     /// <summary>Shows a line of text at a position, in its own text object: <c>BT</c>, <c>Tf</c>, <c>Td</c>, <c>Tj</c>, <c>ET</c>.</summary>
     /// <param name="text">The text.</param>
     /// <param name="font">The font.</param>
@@ -833,10 +898,20 @@ public sealed class PdfContentBuilder
             needsActualText |= !usage.Record(shaped);
         }
 
+        return WriteGlyphs(glyphs, pendingAdjustment, needsActualText ? text.ToString() : null, nextLine);
+    }
+
+    /// <summary>
+    /// Writes glyphs from left to right: <c>TJ</c> arrays whose numbers move each glyph to its position, a text rise
+    /// (<c>Ts</c>) for the glyphs above or below the baseline, and the replacement text of the glyphs when there is one.
+    /// </summary>
+    private PdfContentBuilder WriteGlyphs(List<ShapedGlyph> glyphs, double pendingAdjustment, string? actualText, bool nextLine)
+    {
+        var needsActualText = actualText is not null;
         if (needsActualText)
         {
             WriteName("Span");
-            PdfObjectSerializer.Write(_buffer, new PdfDictionary { [PdfNames.ActualText] = PdfString.FromText(text.ToString()) }, ReferenceWriter.Identity);
+            PdfObjectSerializer.Write(_buffer, new PdfDictionary { [PdfNames.ActualText] = PdfString.FromText(actualText!) }, ReferenceWriter.Identity);
             _buffer.WriteSpace();
             Operator("BDC");
         }

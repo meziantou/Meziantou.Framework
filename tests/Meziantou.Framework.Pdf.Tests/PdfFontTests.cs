@@ -337,5 +337,113 @@ public sealed class PdfFontTests
         Assert.DoesNotContain(face.GlyphCount, closure);
     }
 
+    [Fact]
+    public void ShowGlyphsAtTheirPositions()
+    {
+        var font = (EmbeddedPdfFont)PdfFont.Load(RepositoryPaths.Fonts / "noto-sans/NotoSans-Regular.subset.ttf");
+        var a = font.Face.MapCodePoint('A');
+        var b = font.Face.MapCodePoint('B');
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder()
+            .BeginText()
+            .SetFont(font, 10)
+            .ShowGlyphs([new PdfGlyph(a, 0, 0), new PdfGlyph(b, 20, 0), new PdfGlyph(a, 30, 5)], "ABA")
+            .EndText();
+
+        var page = PdfDocument.Open(document.ToByteArray()).Pages[0];
+        var content = System.Text.Encoding.Latin1.GetString(page.GetContentData());
+        var widthA = font.GetWidth(a);
+        var widthB = font.GetWidth(b);
+
+        // The second glyph is 20 units from the origin, 2000 thousandths of the font size; the third one is raised by 5
+        var expected = FormattableString.Invariant($"BT\n/F1 10 Tf\n[<{a:X4}>{widthA - 2000}<{b:X4}>] TJ\n5 Ts\n[{widthB + 2000 - 3000}<{a:X4}>] TJ\n0 Ts\nET\n");
+        Assert.Equal(expected, content);
+
+        // The gaps between the glyphs are wider than a space
+        Assert.Equal("A B A", page.ExtractText());
+    }
+
+    [Fact]
+    public void ShowGlyphsOfALigature()
+    {
+        var font = (EmbeddedPdfFont)PdfFont.Load(RepositoryPaths.Fonts / "noto-sans/NotoSans-Regular.subset.ttf");
+        var shaped = font.Shape("office");
+        var glyphs = new List<PdfGlyph>();
+        var x = 0d;
+        foreach (var glyph in shaped.Glyphs)
+        {
+            x -= glyph.Adjustment / 100;
+            glyphs.Add(new PdfGlyph(glyph.Glyph, x, 0));
+            x += font.GetWidth(glyph.Glyph) / 100;
+        }
+
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder().BeginText().SetFont(font, 10).ShowGlyphs([.. glyphs], "office").EndText();
+
+        var page = PdfDocument.Open(document.ToByteArray()).Pages[0];
+
+        // The ffi ligature maps to its three characters in the ToUnicode CMap: no replacement text
+        Assert.HasCountLessThan(6, glyphs);
+        Assert.DoesNotContain("ActualText", System.Text.Encoding.Latin1.GetString(page.GetContentData()), StringComparison.Ordinal);
+        Assert.Equal("office", page.ExtractText());
+    }
+
+    [Fact]
+    public void ShowGlyphsOfARightToLeftRun()
+    {
+        const string Text = "مرحبا";
+        var font = (EmbeddedPdfFont)PdfFont.Load(RepositoryPaths.Fonts / "noto-naskh-arabic/NotoNaskhArabic-Regular.subset.ttf");
+        var shaped = font.Shape(Text);
+        var glyphs = new List<PdfGlyph>();
+        var x = 0d;
+        foreach (var glyph in shaped.Glyphs)
+        {
+            x -= glyph.Adjustment / 100;
+            glyphs.Add(new PdfGlyph(glyph.Glyph, x, glyph.Rise / 100));
+            x += font.GetWidth(glyph.Glyph) / 100;
+        }
+
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder().BeginText().SetFont(font, 10).ShowGlyphs([.. glyphs], Text).EndText();
+
+        var page = PdfDocument.Open(document.ToByteArray()).Pages[0];
+
+        Assert.Contains("ActualText", System.Text.Encoding.Latin1.GetString(page.GetContentData()), StringComparison.Ordinal);
+        Assert.Equal(Text, page.ExtractText());
+    }
+
+    [Fact]
+    public void ShowGlyphsWithoutText()
+    {
+        var font = (EmbeddedPdfFont)PdfFont.Load(RepositoryPaths.Fonts / "noto-sans/NotoSans-Regular.subset.ttf");
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder().BeginText().SetFont(font, 10).ShowGlyphs([new PdfGlyph(font.Face.MapCodePoint('A'), 0, 0)]).EndText();
+
+        var page = PdfDocument.Open(document.ToByteArray()).Pages[0];
+
+        Assert.Single(page.Resources!.Get<PdfDictionary>(PdfNames.Font)!);
+        Assert.Equal("", page.ExtractText().Trim('�'));
+    }
+
+    [Fact]
+    public void ShowGlyphsChecksTheGlyphsAndTheFont()
+    {
+        var font = (EmbeddedPdfFont)PdfFont.Load(RepositoryPaths.Fonts / "noto-sans/NotoSans-Regular.subset.ttf");
+        var document = new PdfDocument();
+        var page = document.Pages.Add(PdfSize.A4);
+        var builder = page.CreateContentBuilder();
+
+        Assert.Throws<InvalidOperationException>(() => builder.ShowGlyphs([new PdfGlyph(1, 0, 0)]));
+        builder.BeginText().SetFont(PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 10);
+        Assert.Throws<InvalidOperationException>(() => builder.ShowGlyphs([new PdfGlyph(1, 0, 0)]));
+        builder.SetFont(font, 0);
+        Assert.Throws<InvalidOperationException>(() => builder.ShowGlyphs([new PdfGlyph(1, 0, 0)]));
+        builder.SetFont(font, 10);
+        var length = page.GetContentData().Length;
+        Assert.Throws<ArgumentOutOfRangeException>(() => builder.ShowGlyphs([new PdfGlyph(1, 0, 0), new PdfGlyph(font.Face.GlyphCount, 0, 0)]));
+        Assert.Throws<ArgumentException>(() => builder.ShowGlyphs([new PdfGlyph(1, double.NaN, 0)]));
+        Assert.HasCount(length, page.GetContentData());
+    }
+
     private static FontFace LoadFace(string path) => FontLoader.Load(File.ReadAllBytes(RepositoryPaths.Fonts / path), new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024))[0];
 }

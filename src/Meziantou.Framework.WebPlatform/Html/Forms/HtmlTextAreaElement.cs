@@ -110,6 +110,12 @@ public partial class HtmlTextAreaElement : IEditableTextControl
     [IdlMember("textLength", "https://html.spec.whatwg.org/multipage/form-elements.html#dom-textarea-textlength")]
     public uint TextLength => (uint)ApiValue.Length;
 
+    /// <summary>The state of the control that a traversal restores (see <see cref="FormControlState"/>): the raw value changed since the last reset, or null.</summary>
+    internal string? SaveFormControlState() => _rawValue;
+
+    /// <summary>Restores the state saved by <see cref="SaveFormControlState"/> (no input or change event is fired).</summary>
+    internal void RestoreFormControlState(string rawValue) => Value = rawValue;
+
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#the-textarea-element:concept-form-reset-control</summary>
     internal override void ResetAlgorithm()
     {

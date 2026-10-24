@@ -49,6 +49,13 @@ internal sealed class SessionHistoryEntry(UrlRecord url, DocumentState documentS
     /// when the entry stopped being the active entry (the scroll positions of the other scrollable regions are not saved), or null.
     /// </summary>
     internal Css.Layout.PhysicalOffset? ScrollPositionData { get; set; }
+
+    /// <summary>
+    /// The form control state of the persisted user state (https://html.spec.whatwg.org/multipage/browsing-the-web.html#she-other):
+    /// the state of the form controls of the document saved when the document was destroyed, which a traversal that loads the
+    /// document again restores, or null.
+    /// </summary>
+    internal FormControlState? PersistedFormControlState { get; set; }
 }
 
 /// <summary>
@@ -111,13 +118,23 @@ internal sealed class DocumentState(Document? document)
 
     /// <summary>https://html.spec.whatwg.org/multipage/browsing-the-web.html#document-state-nested-histories</summary>
     public List<NestedHistory> NestedHistories { get; } = [];
+
+    /// <summary>
+    /// The nested histories of the child navigables of the previous document of the document state, when a traversal or a
+    /// reload loads the document again: the child navigables created while the new document is loading take them over in
+    /// order (see <see cref="BrowsingContext.TryTakeOverNestedHistory"/>), or null.
+    /// </summary>
+    public List<NestedHistory>? NestedHistoriesToTakeOver { get; set; }
+
+    /// <summary>Whether the child navigables that take over a nested history restore its entry (a traversal), instead of loading the URL of their container (a reload).</summary>
+    public bool RestoresNestedHistories { get; set; }
 }
 
 /// <summary>The session history of a child navigable (https://html.spec.whatwg.org/multipage/browsing-the-web.html#nested-history).</summary>
 internal sealed class NestedHistory(BrowsingContext navigable)
 {
-    /// <summary>The child navigable (its id).</summary>
-    public BrowsingContext Navigable { get; } = navigable;
+    /// <summary>The child navigable (its id): a child navigable created when the document is loaded again takes it over.</summary>
+    public BrowsingContext Navigable { get; set; } = navigable;
 
     public List<SessionHistoryEntry> Entries { get; } = [];
 }
@@ -504,6 +521,88 @@ public sealed partial class BrowsingContext
         var nestedHistory = new NestedHistory(this);
         nestedHistory.Entries.Add(ActiveEntry);
         parentDocumentState.NestedHistories.Add(nestedHistory);
+    }
+
+    /// <summary>
+    /// The nested histories of a document loaded again by a traversal (https://github.com/whatwg/html/issues/12872, as in the
+    /// browsers): a child navigable created while the document is loading takes over the nested history of the child navigable
+    /// of the previous document that was created at the same place (the first one not taken over, whose container has the same
+    /// type), so that the session history keeps a single nested history per container. For a traversal, the child navigable
+    /// then restores the entry of the nested history at the current step (<see cref="RestoreNestedHistoryEntry"/>) instead of
+    /// loading the URL of its container, unless it is an about:blank entry. For a reload (or an about:blank entry), it loads
+    /// the URL of its container, and its initial entry takes the place of the entry at the current step.
+    /// </summary>
+    /// <returns>Whether the navigable took over a nested history (else a new nested history must be added).</returns>
+    internal bool TryTakeOverNestedHistory()
+    {
+        if (Parent is not { } parent || Container is not (HtmlIFrameElement or HtmlFrameElement) || Container.NodeDocument is not { ReadyState: not DocumentReadyState.Complete } containerDocument)
+            return false;
+
+        var documentState = parent.ActiveEntry.DocumentState;
+        if (documentState.NestedHistoriesToTakeOver is not { } candidates || !ReferenceEquals(documentState.Document, containerDocument))
+            return false;
+
+        var localName = Container.LocalName;
+        var index = candidates.FindIndex(nestedHistory => nestedHistory.Navigable is { IsDestroyed: true, Container: { } previousContainer } && previousContainer.LocalName == localName && documentState.NestedHistories.Contains(nestedHistory));
+        if (index < 0)
+            return false;
+
+        var nestedHistory = candidates[index];
+        candidates.RemoveAt(index);
+        if (candidates.Count == 0)
+        {
+            documentState.NestedHistoriesToTakeOver = null;
+        }
+
+        var traversable = Traversable;
+        SessionHistoryEntry? target = null;
+        foreach (var entry in nestedHistory.Entries)
+        {
+            if (entry.Step <= traversable.CurrentStep && (target is null || entry.Step >= target.Step))
+            {
+                target = entry;
+            }
+        }
+
+        if (target is null)
+            return false;
+
+        nestedHistory.Navigable = this;
+        // As in the browsers, an about:blank entry is not loaded again: the child navigable keeps its initial about:blank
+        // document, which is created synchronously (WPT iframe-history-restore-about-blank.tentative.html)
+        if (documentState.RestoresNestedHistories && !target.DocumentState.IsInitialAboutBlank && !MatchesAboutBlank(target.Url))
+        {
+            CurrentEntry = target;
+            _nestedHistoryEntryToRestore = target;
+        }
+        else
+        {
+            ActiveEntry.Step = target.Step;
+            nestedHistory.Entries[nestedHistory.Entries.IndexOf(target)] = ActiveEntry;
+        }
+
+        return true;
+    }
+
+    /// <summary>The entry of the nested history that the navigable took over, which its container restores instead of loading its URL, or null.</summary>
+    private SessionHistoryEntry? _nestedHistoryEntryToRestore;
+
+    /// <summary>
+    /// Loads the document of the entry of the nested history that the navigable took over (<see cref="TryTakeOverNestedHistory"/>),
+    /// when its container is inserted: the load delays the load event of the container document.
+    /// </summary>
+    /// <returns>Whether the entry is restored (the container does not load its URL).</returns>
+    internal bool RestoreNestedHistoryEntry()
+    {
+        if (_nestedHistoryEntryToRestore is not { } entry)
+            return false;
+
+        _nestedHistoryEntryToRestore = null;
+        if (!ReferenceEquals(CurrentEntry, entry))
+            return false;
+
+        Navigate(entry.Url, Document, NavigationHistoryBehavior.Replace, entry.DocumentState.SrcdocResource, initialInsertion: true, traversalEntry: entry);
+        return true;
     }
 
     /// <summary>

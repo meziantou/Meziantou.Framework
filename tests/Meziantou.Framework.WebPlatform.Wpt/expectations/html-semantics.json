@@ -4616,11 +4616,7 @@
     "reftest": "PASS"
   },
   "html/semantics/forms/the-input-element/range-restore-oninput-onchange-event.https.html": {
-    "total": 2,
-    "failures": {
-      "Verifies that form restoration does not fire input or change events for <input type=range>.": "FAIL",
-      "Verifies that form restoration does not fire input or change events for <input type=text>.": "FAIL"
-    }
+    "total": 2
   },
   "html/semantics/forms/the-input-element/range-setattribute-value.html": {
     "reftest": "PASS"
@@ -5419,11 +5415,7 @@
     "total": 8
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.optional.html": {
-    "total": 2,
-    "failures": {
-      "<input> inside <selectedcontent> should be restored after form submission.": "FAIL",
-      "<selectedcontent> should be up to date after form restoration.": "FAIL"
-    }
+    "total": 2
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-subtree-mutations.html": {
     "total": 3

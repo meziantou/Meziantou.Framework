@@ -80,6 +80,9 @@ public partial class Document
     /// <summary>https://html.spec.whatwg.org/multipage/browsing-the-web.html#latest-entry</summary>
     internal SessionHistoryEntry? LatestEntry { get; set; }
 
+    /// <summary>The state of the form controls that a traversal restores once the document is parsed (the persisted user state of its entry), or null.</summary>
+    internal FormControlState? FormControlStateToRestore { get; set; }
+
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#doc-history (created on first use by <see cref="Window.History"/>).</summary>
     internal History? HistoryObject { get; set; }
 
@@ -497,6 +500,15 @@ public partial class Document
     {
         if (ReadyState == readiness)
             return;
+
+        // https://html.spec.whatwg.org/multipage/browsing-the-web.html#persisted-user-state-restoration: the form controls of
+        // a document loaded again by a traversal get their persisted state back once they are all parsed (when the parser
+        // stops, before the document becomes interactive)
+        if (readiness == DocumentReadyState.Interactive && FormControlStateToRestore is { } formControlState)
+        {
+            FormControlStateToRestore = null;
+            formControlState.Restore(this);
+        }
 
         ReadyState = readiness;
         if (readiness == DocumentReadyState.Interactive)

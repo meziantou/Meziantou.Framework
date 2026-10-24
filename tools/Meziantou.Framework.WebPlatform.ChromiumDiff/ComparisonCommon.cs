@@ -79,12 +79,15 @@ internal static class ComparisonCommon
         var document = context.Document;
         InjectStyleSheet(document, styleSheet);
 
-        // The fonts and the images that the new styles use are fetched when the document is laid out
+        // The fonts and the images that the new styles use are fetched when the document is laid out. As in Chromium
+        // (document.fonts.ready), the ready promise loads the font faces used by the text that the layout does not shape
+        // (e.g. the text of the SVG text elements, laid out when it is painted) before it resolves
         for (var i = 0; i < 5; i++)
         {
             document.DocumentElement?.GetBoundingClientRect();
+            var ready = document.Fonts.Ready;
             await RunUntilIdleAsync(context.EventLoop, stopwatch, timeout);
-            if (document.Fonts.Status == FontFaceSetLoadStatus.Loaded)
+            if (ready.IsCompleted && document.Fonts.Status == FontFaceSetLoadStatus.Loaded)
                 break;
         }
     }

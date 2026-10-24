@@ -2649,11 +2649,16 @@ internal static partial class CssValueComputer
     /// <summary>Returns the shortest decimal number that has the same single-precision float representation as a value.</summary>
     private static double RoundToSinglePrecision(double value)
     {
+        // The integers of the range of the single-precision floats are exact (most lengths, e.g. 16px)
+        if (Math.Abs(value) < (1 << 24) && value == Math.Floor(value))
+            return value;
+
         var single = (float)value;
         if (!float.IsFinite(single))
             return value;
 
-        return double.Parse(single.ToString("R", CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
+        Span<char> buffer = stackalloc char[32];
+        return single.TryFormat(buffer, out var written, "R", CultureInfo.InvariantCulture) ? double.Parse(buffer[..written], CultureInfo.InvariantCulture) : value;
     }
 
     /// <summary>Parses a computed length in px (e.g. "16px").</summary>

@@ -488,7 +488,7 @@ like the imported style sheets (`DocumentRequest.Initiator` is null), when the d
   function with a return type, the typed parameters and their local variables) are evaluated in the function: the property
   of their key is the name of the function followed by `result` or the name of the parameter (e.g. `ua---f-result-1`), and
   the element of `element-scoped` is the "hypothetical element" of the invocation (each invocation gets its own value); a `random()` whose arguments are percentages that cannot be resolved computes to
-  `random(fixed <base value>, ...)`. The `random()` functions of the arguments of `ident()` get their key at parse time
+  `random(fixed <base value>, ...)`. The `random()` functions of the arguments of `ident()` get their key
   too (they are evaluated by the substitution of `ident()`). A fixed base value is clamped to the highest single-precision
   value less than 1 (`random(fixed random(1, 2), 10px, 100px)` is `99.99999px`), and is a number in a computed value
   (`random(fixed random(-2, -1), 10%, 20%)` computes to `random(fixed 0, 10%, 20%)`). The first argument of `random()` is

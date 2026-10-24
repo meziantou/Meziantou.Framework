@@ -186,6 +186,75 @@ public sealed class InterpreterTests
         Assert.Equal(expected, Run(code));
     }
 
+    // The calls in tail position of strict code reuse the frame of the caller: 10,000 calls run with a recursion limit of 1,000
+    [Theory]
+    [InlineData("'use strict'; function f(n) { if (n === 0) return 'done'; return f(n - 1); } f(10000)", "done")]
+    [InlineData("'use strict'; var f = n => n === 0 ? 'done' : f(n - 1); f(10000)", "done")]
+    [InlineData("'use strict'; function f(n) { return n === 0 || f(n - 1); } f(10000)", "true")]
+    [InlineData("'use strict'; function f(n) { return n !== 0 && f(n - 1); } f(10000)", "false")]
+    [InlineData("'use strict'; function f(n) { return n === 0 ? 'done' : (n--, (f(n))); } f(10000)", "done")]
+    [InlineData("'use strict'; function f(n) { return n === 0 ? 'done' : undefined ?? f(n - 1); } f(10000)", "done")]
+    [InlineData("'use strict'; function f(...a) { return a[0] === 0 ? 'done' : f(...[a[0] - 1]); } f(10000)", "done")]
+    [InlineData("'use strict'; function f(s, n) { return n === 0 ? 'done' : f`${n - 1}`; } f(null, 10000)", "done")]
+    [InlineData("'use strict'; var o = { f(n) { return n === 0 ? 'done' : this.f(n - 1); } }; o.f(10000)", "done")]
+    [InlineData("'use strict'; class C { f(n) { return n === 0 ? 'done' : this.f(n - 1); } } new C().f(10000)", "done")]
+    [InlineData("'use strict'; function even(n) { return n === 0 ? true : odd(n - 1); } function odd(n) { return n === 0 ? false : even(n - 1); } even(10001)", "false")]
+    [InlineData("'use strict'; function f(n) { if (n === 0) return 'done'; try { } finally { return f(n - 1); } } f(10000)", "done")]
+    [InlineData("'use strict'; function f(n) { if (n === 0) return 'done'; try { throw null; } catch { return f(n - 1); } } f(10000)", "done")]
+    [InlineData("'use strict'; function f(n) { if (n === 0) return 'done'; for (var k in { a: 1 }) return f(n - 1); } f(10000)", "done")]
+    [InlineData("'use strict'; function f(n) { return n === 0 ? 'done' : f(n - 1); } [10000].map(f)[0]", "done")]
+    [InlineData("var eval = function (n) { 'use strict'; return n === 0 ? 'done' : eval(n - 1); }; eval(10000)", "done")]
+    [InlineData("'use strict'; function f(n) { return n === 0 ? 'done' : eval(n - 1); } globalThis.eval = f; f(10000)", "done")]
+    public void Evaluate_TailCalls(string code, string expected)
+    {
+        Assert.Equal(expected, RunWithRecursionLimit(code));
+    }
+
+    // The calls that are not in tail position keep the frame of the caller
+    [Theory]
+    [InlineData("function f(n) { if (n === 0) return 'done'; return f(n - 1); } f(10000)")]
+    [InlineData("'use strict'; function f(n) { if (n === 0) return 'done'; try { return f(n - 1); } catch (e) { throw e; } } f(10000)")]
+    [InlineData("'use strict'; function f(n) { if (n === 0) return 'done'; try { return f(n - 1); } finally { } } f(10000)")]
+    [InlineData("'use strict'; function f(n) { if (n === 0) return 'done'; try { throw null; } catch { return f(n - 1); } finally { } } f(10000)")]
+    [InlineData("'use strict'; function f(n) { if (n === 0) return 'done'; for (var x of [1]) return f(n - 1); } f(10000)")]
+    [InlineData("'use strict'; function f(n) { if (n === 0) return 'done'; { using r = null; return f(n - 1); } } f(10000)")]
+    [InlineData("'use strict'; function f(n) { return n === 0 ? 'done' : f?.(n - 1); } f(10000)")]
+    [InlineData("'use strict'; function f(n) { var r = n === 0 ? 'done' : f(n - 1); return r; } f(10000)")]
+    [InlineData("'use strict'; function F(n) { if (n === 0) return {}; return new F(n - 1); } new F(10000)")]
+    public void Evaluate_CallsThatAreNotTailCalls(string code)
+    {
+        var exception = Assert.Throws<JsException>(() => RunWithRecursionLimit(code));
+        Assert.StartsWith("RangeError", exception.Message, StringComparison.Ordinal);
+    }
+
+    // A tail call has the semantics of a call followed by a return
+    [Theory]
+    [InlineData("'use strict'; function g() { throw new Error('g'); } function f() { try { return g(); } catch (e) { return 'caught ' + e.message; } } f()", "caught g")]
+    [InlineData("'use strict'; var log = []; function g() { log.push('g'); } function f() { try { return g(); } finally { log.push('finally'); } } f(); log.join()", "g,finally")]
+    [InlineData("'use strict'; var log = []; var it = { [Symbol.iterator]() { return this; }, next() { return { done: false }; }, return() { log.push('return'); return {}; } }; function g() { log.push('g'); } function f() { for (var x of it) return g(); } f(); log.join()", "g,return")]
+    [InlineData("'use strict'; function make() { return { a: 1 }; } function C() { return make(); } new C().a", "1")]
+    [InlineData("'use strict'; function id(v) { return v; } function C() { this.a = 2; return id(5); } new C().a", "2")]
+    [InlineData("'use strict'; class B { constructor() { this.b = 3; } } function id(v) { return v; } class C extends B { constructor() { super(); return id(undefined); } } new C().b", "3")]
+    [InlineData("'use strict'; function f() { return Math.max(1, 2); } f()", "2")]
+    [InlineData("'use strict'; function f() { return eval('1 + 1'); } f()", "2")]
+    [InlineData("'use strict'; function* g() { yield 1; } function f() { return g(); } f().next().value", "1")]
+    [InlineData("'use strict'; function g() { return this; } var o = { g }; function f() { return o.g(); } f() === o", "true")]
+    [InlineData("'use strict'; function g() { return typeof this; } function f() { return g(); } f()", "undefined")]
+    [InlineData("'use strict'; function f(n) { return n === 0 ? new Error('x').stack.split('\\n').length : f(n - 1); } f(10) < 5", "true")]
+    public void Evaluate_TailCallSemantics(string code, string expected)
+    {
+        Assert.Equal(expected, RunWithRecursionLimit(code));
+    }
+
+    private static string RunWithRecursionLimit(string code)
+    {
+        using var engine = new JsEngine(new JsEngineOptions { RecursionLimit = 1_000 });
+        var realm = engine.CreateRealm();
+        var result = realm.Execute(code);
+        using var scope = engine.Enter();
+        return result.IsString ? result.AsString() : result.ToString();
+    }
+
     // An assignment to an undeclared identifier in strict code: the reference is resolved before the value is evaluated
     [Theory]
     [InlineData("'use strict'; var r; try { undeclared = (this.undeclared = 5); } catch (e) { r = e.constructor.name; } [r, undeclared].join()", "ReferenceError,5")]
@@ -477,7 +546,8 @@ public sealed class InterpreterTests
 
         protected internal override void LoadImportedModule(JsModuleLoadRequest request)
         {
-            if (!_modules.TryGetValue(request.Specifier, out var module))
+            var key = request.Type is null ? request.Specifier : request.Specifier + "|" + request.Type;
+            if (!_modules.TryGetValue(key, out var module))
             {
                 if (request.Specifier == "module-source")
                 {
@@ -496,8 +566,14 @@ public sealed class InterpreterTests
                     return;
                 }
 
-                module = request.Type == "json" ? request.Realm.CreateJsonModule(code, request.Specifier) : request.Realm.ParseModule(code, request.Specifier);
-                _modules[request.Specifier] = module;
+                module = request.Type switch
+                {
+                    "json" => request.Realm.CreateJsonModule(code, request.Specifier),
+                    "text" => request.Realm.CreateTextModule(code, request.Specifier),
+                    "bytes" => request.Realm.CreateBytesModule(Encoding.UTF8.GetBytes(code), request.Specifier),
+                    _ => request.Realm.ParseModule(code, request.Specifier),
+                };
+                _modules[key] = module;
             }
 
             request.Complete(module);
@@ -615,6 +691,24 @@ public sealed class InterpreterTests
         });
 
         Assert.Equal("42", result);
+    }
+
+    [Fact]
+    public void Module_TextAndBytes()
+    {
+        var result = RunModule(new()
+        {
+            ["main"] = """
+                import text from 'data' with { type: 'text' };
+                import bytes from 'data' with { type: 'bytes' };
+                import * as namespace from 'data' with { type: 'text' };
+                const dynamic = await import('data', { with: { type: 'bytes' } });
+                globalThis.result = [text, typeof bytes, bytes.constructor.name, bytes.join(' '), bytes.buffer.immutable, Object.keys(namespace).join(), dynamic.default === bytes].join();
+                """,
+            ["data"] = "é!",
+        });
+
+        Assert.Equal("é!,object,Uint8Array,195 169 33,true,default,true", result);
     }
 
     [Fact]

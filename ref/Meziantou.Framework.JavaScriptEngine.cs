@@ -390,6 +390,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public Meziantou.Framework.JavaScriptEngine.JsObject CreateArrayBuffer(System.ReadOnlySpan<byte> bytes) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsObject CreateArrayBuffer(System.Memory<byte> memory, Meziantou.Framework.JavaScriptEngine.JsValue detachKey) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsObject CreateBufferView(Meziantou.Framework.JavaScriptEngine.JsBufferKind kind, Meziantou.Framework.JavaScriptEngine.JsObject buffer, int byteOffset, int length) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsSyntheticModule CreateBytesModule(System.ReadOnlySpan<byte> bytes, string? url = null, object? hostDefined = null) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsFunction CreateConstructor(string name, int length, Meziantou.Framework.JavaScriptEngine.JsNativeConstructor constructor) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsObject CreateDate(double timeValue) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsObject CreateError(Meziantou.Framework.JavaScriptEngine.JsErrorType type, string message) => throw null;
@@ -401,6 +402,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public Meziantou.Framework.JavaScriptEngine.JsObject CreateObject(Meziantou.Framework.JavaScriptEngine.JsObject? prototype) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsObject CreateSharedArrayBuffer(Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock block) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsSyntheticModule CreateSyntheticModule(System.Collections.Generic.IEnumerable<string> exportNames, System.Action<Meziantou.Framework.JavaScriptEngine.JsSyntheticModule> evaluate, string? url = null, object? hostDefined = null) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsSyntheticModule CreateTextModule(string text, string? url = null, object? hostDefined = null) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsValue Evaluate(string code) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsValue Execute(string code, string? url = null) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsValue Execute(Meziantou.Framework.JavaScriptEngine.JsPreparedScript script, object? hostDefined = null, bool mutedErrors = false) => throw null;

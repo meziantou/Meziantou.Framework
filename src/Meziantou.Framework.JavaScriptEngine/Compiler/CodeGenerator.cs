@@ -269,7 +269,11 @@ internal sealed partial class CodeGenerator
             _builder.Emit(OpCode.GeneratorStart);
         }
 
-        if (node.IsExpressionBody)
+        if (node.IsExpressionBody && CanEmitTailCalls())
+        {
+            EmitTailExpressionAndReturn(node.Body, node.Body.Start);
+        }
+        else if (node.IsExpressionBody)
         {
             EmitExpression(node.Body);
             _builder.Emit(OpCode.Return);

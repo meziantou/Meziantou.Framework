@@ -768,15 +768,26 @@ internal static partial class JsInterpreter
 
                 // ---- Calls ----------------------------------------------------------------------------------------
                 case OpCode.Call:
+                case OpCode.TailCall:
+                case OpCode.TailCallEval:
                     {
                         var argumentCount = code[pc++];
                         var functionIndex = sp - argumentCount - 2;
+                        if (op == OpCode.TailCallEval)
+                        {
+                            // A closure is never %eval%: the call is an ordinary call
+                            if (values[functionIndex].Cell is not JsClosure)
+                                goto default;
+
+                            pc++;
+                        }
+
                         sp = functionIndex;
                         if (values[functionIndex].Cell is JsClosure closure && CanRunInline(closure))
                         {
                             frame.Pc = pc;
                             frame.Sp = sp;
-                            frame = PushInlineFrame(frame, CreateCallFrame(closure, values[functionIndex + 1], values.AsSpan(functionIndex + 2, argumentCount), newTarget: null), engine);
+                            frame = EnterInlineFrame(frame, CreateCallFrame(closure, values[functionIndex + 1], values.AsSpan(functionIndex + 2, argumentCount), newTarget: null), entry, engine, isTailCall: op != OpCode.Call);
                             current = frame;
                             code = frame.Code.Code;
                             values = frame.Values;
@@ -792,14 +803,25 @@ internal static partial class JsInterpreter
                     }
 
                 case OpCode.CallSpread:
+                case OpCode.TailCallSpread:
+                case OpCode.TailCallEvalSpread:
                     {
+                        if (op == OpCode.TailCallEvalSpread)
+                        {
+                            // A closure is never %eval%: the call is an ordinary call
+                            if (values[sp - 3].Cell is not JsClosure)
+                                goto default;
+
+                            pc++;
+                        }
+
                         var arguments = GetSpreadArguments(values[--sp]);
                         sp -= 2;
                         if (values[sp].Cell is JsClosure closure && CanRunInline(closure))
                         {
                             frame.Pc = pc;
                             frame.Sp = sp;
-                            frame = PushInlineFrame(frame, CreateCallFrame(closure, values[sp + 1], arguments, newTarget: null), engine);
+                            frame = EnterInlineFrame(frame, CreateCallFrame(closure, values[sp + 1], arguments, newTarget: null), entry, engine, isTailCall: op != OpCode.CallSpread);
                             current = frame;
                             code = frame.Code.Code;
                             values = frame.Values;
@@ -1016,6 +1038,8 @@ internal static partial class JsInterpreter
             OpCode.SetPrivate => ExecuteSetPrivate(frame, sp),
             OpCode.CallEval => ExecuteCallEval(frame, sp, op),
             OpCode.CallEvalSpread => ExecuteCallEval(frame, sp, op),
+            OpCode.TailCallEval => ExecuteCallEval(frame, sp, OpCode.CallEval),
+            OpCode.TailCallEvalSpread => ExecuteCallEval(frame, sp, OpCode.CallEvalSpread),
             OpCode.SuperCall => ExecuteSuperCall(frame, sp, op),
             OpCode.SuperCallSpread => ExecuteSuperCall(frame, sp, op),
             OpCode.ImportCall => ExecuteImportCall(frame, sp),

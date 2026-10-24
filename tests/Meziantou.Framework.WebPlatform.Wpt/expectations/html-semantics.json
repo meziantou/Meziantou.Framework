@@ -5894,10 +5894,7 @@
     }
   },
   "html/semantics/interactive-elements/the-details-element/details-toggle-source.html": {
-    "total": 3,
-    "failures": {
-      "ToggleEvent.source on <details> elements: click details.": "FAIL"
-    }
+    "total": 3
   },
   "html/semantics/interactive-elements/the-details-element/details.html": {
     "total": 5
@@ -7245,28 +7242,16 @@
     "total": 3
   },
   "html/semantics/popovers/popover-focus-5.html?commandfor": {
-    "total": 6,
-    "failures": {
-      "Focusing elements inside a popover with a details element inside, and the after button adjacent to invoker, using commandfor": "FAIL"
-    }
+    "total": 6
   },
   "html/semantics/popovers/popover-focus-5.html?commandforelement": {
-    "total": 6,
-    "failures": {
-      "Focusing elements inside a popover with a details element inside, and the after button adjacent to invoker, using commandforelement": "FAIL"
-    }
+    "total": 6
   },
   "html/semantics/popovers/popover-focus-5.html?imperative": {
-    "total": 6,
-    "failures": {
-      "Focusing elements inside a popover with a details element inside, and the after button adjacent to invoker, using imperative": "FAIL"
-    }
+    "total": 6
   },
   "html/semantics/popovers/popover-focus-5.html?popovertargetelement": {
-    "total": 6,
-    "failures": {
-      "Focusing elements inside a popover with a details element inside, and the after button adjacent to invoker, using popovertargetelement": "FAIL"
-    }
+    "total": 6
   },
   "html/semantics/popovers/popover-focus-across-slot.html": {
     "total": 1

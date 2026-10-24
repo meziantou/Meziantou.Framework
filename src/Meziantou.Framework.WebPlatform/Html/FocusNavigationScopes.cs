@@ -324,6 +324,12 @@ internal sealed class FocusNavigationScopes
                 {
                     stack.Push((child, node, childLayoutParent, false));
                 }
+
+                // The summary that the user agent provides for a details element without summary child precedes its children
+                if (node is HtmlDetailsElement { ImplicitSummary: { } implicitSummary })
+                {
+                    stack.Push((implicitSummary, node, childLayoutParent, false));
+                }
             }
         }
     }
@@ -351,8 +357,9 @@ internal sealed class FocusNavigationScopes
             return slot;
         }
 
-        // "If element's parent is a shadow root, then return the parent's host"
-        if (element.ParentNode is ShadowRoot shadowRoot)
+        // "If element's parent is a shadow root, then return the parent's host". The summary that the user agent provides for a
+        // details element is in the scope of the details element, as its children (the details element is not a scope owner).
+        if (element.ParentNode is ShadowRoot shadowRoot && !(shadowRoot.Host is HtmlDetailsElement details && details.IsImplicitSummary(element)))
             return shadowRoot.Host;
 
         // The children of the owner of a scope of a reading flow, except the showing popovers, which are in the top layer. As

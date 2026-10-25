@@ -8,11 +8,11 @@ namespace Meziantou.Framework;
 static partial class PublicSuffixList
 {
     // Public Suffix List source: https://publicsuffix.org/list/public_suffix_list.dat
-    // Version: 2026-10-17T18:52:06.0000000+00:00
-    // Commit: https://github.com/publicsuffix/list/commit/52b71b3c4576ff77450cc7ebcfc7f34a916af3f9
-    private const int EntryCount = 10398;
-    private const int RuleCountValue = 10398;
-    private const long LastUpdatedTicks = 639278599260000000L;
+    // Version: 2026-10-22T08:36:41.0000000+00:00
+    // Commit: https://github.com/publicsuffix/list/commit/8437e5262f13305f94087abe699b4fe2be1d1de8
+    private const int EntryCount = 10397;
+    private const int RuleCountValue = 10397;
+    private const long LastUpdatedTicks = 639282550010000000L;
 
     private static FrozenDictionary<string, PublicSuffixRuleFlags> LoadRules()
     {
@@ -7046,7 +7046,6 @@ static partial class PublicSuffixList
         "aktyubinsk.su",
         "al.eu.org",
         "al.leg.br",
-        "aliases121.com",
         "alibabacloudcs.com",
         "alp1.ae.flow.ch",
         "altervista.org",
@@ -8965,7 +8964,6 @@ static partial class PublicSuffixList
         "ox.rs",
         "oxa.cloud",
         "oy.lc",
-        "oya.to",
         "p.tawk.email",
         "p.tawkto.email",
         "pa.leg.br",
@@ -10429,6 +10427,7 @@ static partial class PublicSuffixList
         "xmit.co",
         "zerops.app",
         "zerops.zone",
+        "ztna-dingtalk.com",
     ];
 
     private static string[] GetIcannExceptions() =>

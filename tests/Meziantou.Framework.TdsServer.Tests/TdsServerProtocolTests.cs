@@ -888,6 +888,47 @@ public sealed class TdsServerProtocolTests
         Assert.Empty(context.Parameters);
     }
 
+    [Theory]
+    // The TYPE_INFO announces a length the value does not have: the type must describe the decoded value, as the
+    // serializer and the parameter accessors rely on it
+    [InlineData(new byte[] { 0x26, 0x01, 0x08, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, TdsColumnType.Int64, 72057594037927937L)]
+    [InlineData(new byte[] { 0x26, 0x08, 0x02, 0x34, 0x12 }, TdsColumnType.SmallInt, (short)0x1234)]
+    [InlineData(new byte[] { 0x26, 0x01, 0x03, 0x01, 0x02, 0x03 }, TdsColumnType.Variant, null)]
+    [InlineData(new byte[] { 0x6D, 0x04, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF8, 0x3F }, TdsColumnType.Double, 1.5d)]
+    [InlineData(new byte[] { 0x6E, 0x04, 0x08, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, TdsColumnType.Money, null)]
+    [InlineData(new byte[] { 0x6E, 0x08, 0x04, 0x10, 0x27, 0x00, 0x00 }, TdsColumnType.SmallMoney, null)]
+    public async Task RawClient_RpcRequest_ValueLengthDiffersFromTypeInfo_TypeDescribesTheValue(byte[] typeAndValue, TdsColumnType expectedType, object? expectedValue)
+    {
+        var payload = new List<byte> { 0x01, 0x00 };
+        payload.AddRange(Encoding.Unicode.GetBytes("p"));
+        payload.AddRange([0x00, 0x00]); // option flags
+        payload.Add(0x02); // parameter name length, in characters
+        payload.AddRange(Encoding.Unicode.GetBytes("@v"));
+        payload.Add(0x00); // status
+        payload.AddRange(typeAndValue);
+
+        var context = await RawTdsClient.SendRpcRequestAsync([.. payload]);
+
+        Assert.True(context.HasCompleteParameters);
+        var parameter = Assert.Single(context.Parameters);
+        Assert.Equal(expectedType, parameter.Type);
+        switch (expectedType)
+        {
+            case TdsColumnType.Variant:
+                Assert.Equal(typeAndValue[3..], Assert.IsType<byte[]>(parameter.Value));
+                break;
+            case TdsColumnType.Money:
+                Assert.Equal(429496.7296m, parameter.Value);
+                break;
+            case TdsColumnType.SmallMoney:
+                Assert.Equal(1m, parameter.Value);
+                break;
+            default:
+                Assert.Equal(expectedValue, parameter.Value);
+                break;
+        }
+    }
+
     private static object? GetParameterValue(TdsQueryContext context, string name, TdsColumnType expectedType)
     {
         var parameter = Assert.Single(context.Parameters, candidate => candidate.Name == name);

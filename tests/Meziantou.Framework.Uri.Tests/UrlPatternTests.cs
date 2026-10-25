@@ -1759,6 +1759,17 @@ public sealed class UrlPatternTests
         Assert.Equal("text/plain;a b", pattern.Pathname);
     }
 
+    [Fact]
+    public void Create_PathnameOfANonSpecialScheme_FixedTextStartingWithAHashIsEmpty()
+    {
+        // A '#' ends an opaque path, so the fixed text "#/" canonicalizes to nothing. The spec then writes the wildcard
+        // that follows as "*", which is read back as the modifier of the named group
+        var pattern = UrlPattern.Create(new UrlPatternInit { Protocol = "d", Pathname = ":nu#/*?)" });
+
+        Assert.Equal(":nu*?\\)", pattern.Pathname);
+        Assert.Throws<UrlPatternException>(() => UrlPattern.Create(new UrlPatternInit { Protocol = "d", Pathname = pattern.Pathname }));
+    }
+
     [Theory]
     // The special-query percent-encode set, because the URL record the spec canonicalizes against is https
     [InlineData("a=b c", "a=b%20c")]

@@ -1,19 +1,48 @@
+using System.Text.Json.Nodes;
 using Meziantou.Framework.Fuzzing;
+using Meziantou.Framework.Json;
 using Meziantou.Framework.Language.Json;
+using JsonPathQuery = Meziantou.Framework.Json.JsonPath;
 
 namespace Meziantou.Framework.Language.Fuzz;
 
 /// <summary>
 /// JSON documents: the shared invariants, the values of the nodes, the agreement with System.Text.Json about which
 /// documents are valid, and the incremental reparse, which reuses the nodes of the old tree and must give the tree a full
-/// parse of the new text gives.
+/// parse of the new text gives. JSONPath queries over the syntax tree never throw (Strict mode only throws
+/// <see cref="JsonPathEvaluationException"/>), whatever the tree holds, and give the matches of a query over the
+/// <see cref="JsonNode"/> of a valid document.
 /// </summary>
 internal static class JsonFuzzTargets
 {
     /// <summary>Separates the document from the text the edit inserts (an invalid UTF-8 byte, so it never ends a character).</summary>
     private const byte InsertedTextSeparator = 0xFF;
 
+    /// <summary>Separates the JSONPath expression from the document: neither JSON nor JSONPath accepts a raw NUL.</summary>
+    private const byte JsonPathSeparator = 0;
+
     private const int GetMemberSampleCount = 64;
+
+    /// <summary>Only the first matches go through the normalized-path check, which evaluates one query per match.</summary>
+    private const int MaxCheckedNormalizedPaths = 16;
+
+    /// <summary>
+    /// The options System.Text.Json reads a document of the JSONPath target with: those of the syntax tree, and no
+    /// duplicate names, which a <see cref="JsonObject"/> cannot hold (the syntax tree only warns about them).
+    /// </summary>
+    private static readonly System.Text.Json.JsonDocumentOptions JsonPathDocumentOptions = new()
+    {
+        AllowTrailingCommas = true,
+        CommentHandling = System.Text.Json.JsonCommentHandling.Skip,
+        MaxDepth = 256,
+        AllowDuplicateProperties = false,
+    };
+
+    private static readonly string[] JsonPathSelectors =
+    [
+        "$", "$.*", "$..*", "$[*]", "$..[0]", "$[-1]", "$[::-1]", "$.a", "$['a','b']", "$..a", "$.items[1:]", "$[?@.x]", "$..[?@ == 1]", "$[?@ > 1]",
+        "$..[?length(@) > 1]", "$..[?match(@, '[a-z]+')]", "$..[?@ == @]", "$..[?search(@, 'x')]", "$..[?count(@.*) == 2]", "$..[?value(@..x) == 1]",
+    ];
 
     private static readonly System.Text.Json.JsonDocumentOptions SystemTextJsonOptions = new()
     {
@@ -27,6 +56,12 @@ internal static class JsonFuzzTargets
         "{", "}", "[", "]", ":", ",", "\"", "\"\"", "'", "\\", "\\\"", "\\\\", "\\/", "\\b", "\\f", "\\n", "\\r", "\\t", "\\u0041", "\\uD83D\\uDE00", "\\uD800", "\\u",
         "true", "false", "null", "NaN", "Infinity", "-Infinity", "0", "-0", "1.5", "1e10", "1E-5", "-1.25e+3", "0x1F", "01", "1.", ".5", "+1",
         "//", "/*", "*/", "\n", "\r\n", "\r", "\t", " ", "\f", "\u00A0", "\uFEFF", "\u2028", "{\"a\":", "[[[[", "]]]]", "\"name\": ",
+    ];
+
+    private static readonly string[] JsonPathTokens =
+    [
+        "$", "@", "..", "*", "[*]", "[0]", "[-1]", "[1:3]", "[::-1]", "?", "[?", "==", "!=", "<", "<=", ">", ">=", "&&", "||", "!",
+        "length(", "count(", "match(", "search(", "value(", "\0",
     ];
 
     private static readonly string[] Documents =
@@ -61,6 +96,7 @@ internal static class JsonFuzzTargets
     [
         new("language-json", Parse) { Seeds = GetDocumentSeeds, Dictionary = Tokens },
         new("language-json-incremental", Incremental) { Seeds = GetIncrementalSeeds, Dictionary = Tokens },
+        new("language-json-jsonpath", JsonPathEvaluate) { Seeds = GetJsonPathSeeds, Dictionary = [.. Tokens, .. JsonPathTokens] },
     ];
 
     private static void Parse(ReadOnlySpan<byte> data)
@@ -236,6 +272,189 @@ internal static class JsonFuzzTargets
         return false;
     }
 
+    /// <summary>The JSONPath expression, then 0x00 and the document.</summary>
+    private static void JsonPathEvaluate(ReadOnlySpan<byte> data)
+    {
+        var expression = FuzzText.Decode(FuzzInput.ReadUntil(ref data, JsonPathSeparator));
+        var text = FuzzText.Decode(data);
+        if (!JsonPathQuery.TryParse(expression, out var path))
+            return;
+
+        var tree = JsonSyntaxTree.ParseText(text);
+        var root = tree.GetRoot();
+        var query = $"{FuzzAssert.Format(expression)} over {FuzzAssert.Format(text)}";
+
+        // Lax mode never throws, whatever the tree holds: a missing value reads as null
+        var matches = path.Evaluate(tree);
+        CheckSameMatches(matches, path.Evaluate(root), $"Evaluate(JsonDocumentSyntax) and Evaluate(JsonSyntaxTree) disagree for {query}");
+        CheckSameMatches(matches, path.Evaluate((JsonSyntaxNode?)root.Value), $"Evaluate(root value) and Evaluate(JsonSyntaxTree) disagree for {query}");
+        CheckSameMatches(matches, tree.Evaluate(path, JsonPathEvaluationMode.Lax), $"JsonSyntaxTree.Evaluate(path, Lax) and Evaluate(JsonSyntaxTree) disagree for {query}");
+        var first = matches.Count > 0 ? matches[0].Value : null;
+        FuzzAssert.True(ReferenceEquals(first, path.EvaluateValue(tree)), $"EvaluateValue(JsonSyntaxTree) is not the first match of {query}");
+        FuzzAssert.True(ReferenceEquals(first, root.EvaluateValue(path)), $"EvaluateValue(JsonDocumentSyntax) is not the first match of {query}");
+
+        JsonPathResult<JsonSyntaxNode>? strictMatches;
+        try
+        {
+            strictMatches = path.Evaluate(tree, JsonPathEvaluationMode.Strict);
+        }
+        catch (JsonPathEvaluationException)
+        {
+            strictMatches = null;
+        }
+
+        if (strictMatches is not null)
+        {
+            CheckSameMatches(matches, strictMatches, $"Strict mode gives other matches than Lax mode without reporting an error for {query}");
+        }
+
+        // A tree without diagnostics, not even a duplicate name, is one System.Text.Json reads as a JsonNode
+        if (tree.GetDiagnostics().Count > 0)
+            return;
+
+        // Normalized paths are only defined for strings of Unicode scalar values, which System.Text.Json requires too: a
+        // name holding an unpaired surrogate has a normalized path that is not a valid query
+        if (ParseJsonNode(text) is not { } document)
+            return;
+
+        CheckNormalizedPaths(tree, matches, query);
+        var nodeMatches = path.Evaluate(document.Node);
+        FuzzAssert.Equal(nodeMatches.Count, matches.Count, $"The syntax tree and JsonNode give a different number of matches for {query}");
+        for (var i = 0; i < matches.Count; i++)
+        {
+            FuzzAssert.Equal(nodeMatches[i].Path, matches[i].Path, $"The syntax tree and JsonNode give different paths for the match {i} of {query}");
+            var value = matches[i].Value;
+            FuzzAssert.True(value is not null, $"The match {i} of {query} has no syntax node");
+            FuzzAssert.True(AreEqual(nodeMatches[i].Value, JsonNode.Parse(value.ToString(), documentOptions: JsonPathDocumentOptions)), $"The syntax tree and JsonNode give different values at {matches[i].Path} for {query}");
+        }
+
+        bool nodeStrictThrows;
+        try
+        {
+            _ = path.Evaluate(document.Node, JsonPathEvaluationMode.Strict);
+            nodeStrictThrows = false;
+        }
+        catch (JsonPathEvaluationException)
+        {
+            nodeStrictThrows = true;
+        }
+
+        FuzzAssert.Equal(nodeStrictThrows, strictMatches is null, $"Strict mode over the syntax tree and over JsonNode disagree about reporting an error for {query}");
+    }
+
+    private static bool AreEqual(JsonNode? left, JsonNode? right)
+    {
+        try
+        {
+            return JsonNode.DeepEquals(left, right);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            // JsonNode.DeepEquals throws for a number whose exponent does not fit in an int (0.1e01234567890123456789).
+            // Both values are read from the same text, so their compact JSON is the same when they are.
+            return string.Equals(left?.ToJsonString(), right?.ToJsonString(), StringComparison.Ordinal);
+        }
+    }
+
+    private static void CheckSameMatches(JsonPathResult<JsonSyntaxNode> expected, JsonPathResult<JsonSyntaxNode> actual, string message)
+    {
+        FuzzAssert.Equal(expected.Count, actual.Count, message + ": the number of matches");
+        for (var i = 0; i < expected.Count; i++)
+        {
+            FuzzAssert.Equal(expected[i].Path, actual[i].Path, $"{message}: the path of the match {i}");
+            FuzzAssert.True(ReferenceEquals(expected[i].Value, actual[i].Value), $"{message}: the node of the match {i} at {expected[i].Path}");
+        }
+    }
+
+    /// <summary>The normalized path of every match selects exactly that node (RFC 9535 section 2.7).</summary>
+    private static void CheckNormalizedPaths(JsonSyntaxTree tree, JsonPathResult<JsonSyntaxNode> matches, string query)
+    {
+        var count = Math.Min(matches.Count, MaxCheckedNormalizedPaths);
+        for (var i = 0; i < count; i++)
+        {
+            var match = matches[i];
+            FuzzAssert.True(JsonPathQuery.TryParse(match.Path, out var normalizedPath), $"The normalized path {FuzzAssert.Format(match.Path)} of {query} is not a valid query");
+
+            var result = normalizedPath.Evaluate(tree);
+            FuzzAssert.Equal(1, result.Count, $"The normalized path {FuzzAssert.Format(match.Path)} of {query} does not select exactly one node");
+            FuzzAssert.Equal(match.Path, result[0].Path, $"The normalized path of the normalized path {FuzzAssert.Format(match.Path)} differs");
+            FuzzAssert.True(ReferenceEquals(match.Value, result[0].Value), $"The normalized path {FuzzAssert.Format(match.Path)} of {query} selects another node");
+        }
+    }
+
+    /// <summary>Parses a document as System.Text.Json does, or returns <see langword="null"/> for one it cannot represent.</summary>
+    private static ParsedJsonNode? ParseJsonNode(string text)
+    {
+        // System.Text.Json reads UTF-8, which cannot hold an unpaired surrogate, and does not skip a byte order mark
+        if (HasUnpairedSurrogate(text))
+            return null;
+
+        var json = text.StartsWith('\uFEFF', StringComparison.Ordinal) ? text[1..] : text;
+        try
+        {
+            using (var document = System.Text.Json.JsonDocument.Parse(json, JsonPathDocumentOptions))
+            {
+                // An escaped unpaired surrogate ("\uD800") is read, and throws once the string is
+                if (!HasValidStrings(document.RootElement))
+                    return null;
+            }
+
+            return new ParsedJsonNode(JsonNode.Parse(json, documentOptions: JsonPathDocumentOptions));
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            // Deeper than System.Text.Json reads, or a comment holding U+2028 or U+2029
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            // The duplicate name check reads the names, and an escaped unpaired surrogate in one throws
+            return null;
+        }
+
+        static bool HasValidStrings(System.Text.Json.JsonElement element)
+        {
+            try
+            {
+                return element.ValueKind switch
+                {
+                    System.Text.Json.JsonValueKind.String => element.GetString() is not null,
+                    System.Text.Json.JsonValueKind.Array => element.EnumerateArray().All(HasValidStrings),
+                    System.Text.Json.JsonValueKind.Object => element.EnumerateObject().All(property => property.Name is not null && HasValidStrings(property.Value)),
+                    _ => true,
+                };
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetJsonPathSeeds()
+    {
+        using var document = FuzzResources.ReadJson(typeof(JsonFuzzTargets).Assembly, "jsonpath.cts.json");
+        foreach (var test in document.RootElement.GetProperty("tests").EnumerateArray())
+        {
+            // The invalid selectors have no document: they stop at the parse
+            var json = test.TryGetProperty("document", out var value) ? value.GetRawText() : Documents[1];
+            yield return JsonPathSeed("cts-" + test.GetProperty("name").GetString(), test.GetProperty("selector").GetString()!, json);
+        }
+
+        for (var i = 0; i < Documents.Length; i++)
+        {
+            yield return JsonPathSeed(FormattableString.Invariant($"document-{i}"), JsonPathSelectors[i % JsonPathSelectors.Length], Documents[i]);
+        }
+
+        // Numbers out of the range of a double compare as infinities over both trees
+        yield return JsonPathSeed("numbers", "$[?@ > 1]", "[1e400, -1e400, 1.0, 1, 0.1e1, 123456789012345678901234567890, 1e-400, -0, 1E+2]");
+        yield return JsonPathSeed("duplicates", "$..*", "{\"a\": 1, \"a\": [2, {\"a\": 3}], \"b\": {\"a\": 4}}");
+        yield return JsonPathSeed("strict", "$[?@.a == 1]", "[{\"a\": 1}, 2, \"x\", null]");
+
+        static FuzzSeed JsonPathSeed(string name, string selector, string json)
+            => new(name, (byte[])[.. FuzzText.Encode(selector), JsonPathSeparator, .. FuzzText.Encode(json)]);
+    }
+
     private static IEnumerable<FuzzSeed> GetDocumentSeeds()
     {
         for (var i = 0; i < Documents.Length; i++)
@@ -256,6 +475,9 @@ internal static class JsonFuzzTargets
             yield return new FuzzSeed(FormattableString.Invariant($"edit-{i}"), (byte[])[(byte)start, (byte)(start >> 8), (byte)removed, .. FuzzText.Encode(document), InsertedTextSeparator, .. FuzzText.Encode(inserted)]);
         }
     }
+
+    /// <summary>A document System.Text.Json read, whose root is <see langword="null"/> for the JSON <c>null</c>.</summary>
+    private sealed record ParsedJsonNode(JsonNode? Node);
 
     private sealed class CountingWalker() : JsonSyntaxWalker(SyntaxWalkerDepth.Trivia)
     {

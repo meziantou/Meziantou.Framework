@@ -54,6 +54,14 @@ public sealed class FuzzTargetTests
     }
 
     [Fact]
+    public void DictionaryTokensAreNotEmpty()
+    {
+        // libFuzzer refuses a dictionary with an empty token ("ParseDictionaryFile: error in line N") and fuzzes nothing
+        var targets = FuzzProjects.All.SelectMany(project => project.Targets).Where(target => target.Dictionary.Any(string.IsNullOrEmpty)).Select(target => target.Name).ToList();
+        Assert.Empty(targets);
+    }
+
+    [Fact]
     public void EveryFuzzProjectIsTestedAndFuzzedWeekly()
     {
         var projects = Directory.EnumerateDirectories(RepositoryRoot / "fuzz", "*.Fuzz").Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();

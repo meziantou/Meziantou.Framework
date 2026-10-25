@@ -50,6 +50,7 @@ public static partial class UnicodeFuzzTargets
         new("unicode-confusables", Confusables) { Seeds = GetConfusableSeeds, Dictionary = [.. TextTokens, "\u0440", "\u0435", "\u043E", "\u0455", "\u217C", "\u0131", "rn", "m", "vv", "w", "paypal", "p\u0430\u0443\u0440\u0430l"] },
         new("unicode-hyphenator", Hyphenation) { Seeds = GetHyphenatorSeeds, Dictionary = HyphenatorTokens },
         new("unicode-line-break-dictionary", LineBreakDictionaryTarget) { Seeds = GetLineBreakDictionarySeeds, Dictionary = [.. TextTokens, .. ThaiWords, "#", "\t1"] },
+        new("unicode-case-mapping", CaseMapping) { Seeds = GetCaseMappingSeeds, Dictionary = [.. TextTokens, "I", "i", "J", "j", "\u0130", "\u0131", "\u0307", "\u0300", "\u0316", "\u012E", "\u00CC", "\u03A3", "\u03C3", "\u03C2", "\u02B0", "\u2071", "\u00DF", "\u1E9E", "\uFB03", "\u0390"] },
         new("unicode-idna", Idna) { Seeds = GetIdnaSeeds, Dictionary = [.. TextTokens, "xn--", "\u3002", "\uFF0E", "\u00DF", "\u03C2", "\u1E9E", "\u2163", "_", "example", "com"] },
     ];
 

@@ -21,6 +21,7 @@ public static class LanguageFuzzTargets
         JsonFuzzTargets.Targets,
         RegexFuzzTargets.Targets,
         ShellFuzzTargets.Targets,
+        SyntaxFactoryFuzzTargets.Targets,
         TomlFuzzTargets.Targets,
         XmlFuzzTargets.Targets,
     }.SelectMany(targets => targets).Select(KnownIssueSeeds.ExcludeKnownIssues)];

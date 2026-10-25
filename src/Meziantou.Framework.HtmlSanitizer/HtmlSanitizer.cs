@@ -12,7 +12,7 @@ namespace Meziantou.Framework.Sanitizers;
 /// Assert.Equal("&lt;p&gt;Hello World&lt;/p&gt;", safeHtml);
 /// </code>
 /// </example>
-public sealed class HtmlSanitizer
+public sealed partial class HtmlSanitizer
 {
     // Inspiration: https://github.com/angular/angular/blob/4d36b2f6e9a1a7673b3f233752895c96ca7dba1e/packages/core/src/sanitization/html_sanitizer.ts
     // https://wicg.github.io/sanitizer-api/#default-configuration-dictionary
@@ -102,7 +102,8 @@ public sealed class HtmlSanitizer
             return null;
 
         // The fragment is parsed as the content of a body element, the way a browser parses the markup inserted in a page
-        var document = HtmlDocumentParser.ParseDocument("");
+        // that is not in quirks mode (where a table start tag does not close a p element)
+        var document = HtmlDocumentParser.ParseDocument("<!DOCTYPE html>");
         var body = document.Body!;
         var fragment = new HtmlDocumentParser().ParseFragment(html, body);
         Sanitize(fragment);
@@ -114,13 +115,13 @@ public sealed class HtmlSanitizer
     // and a recursive walk would overflow the stack.
     private void Sanitize(Node root)
     {
-        var pendingNodes = new Stack<(Node Parent, bool IsInLink)>();
-        pendingNodes.Push((root, false));
+        var pendingNodes = new Stack<(Node Parent, OpenElements State)>();
+        pendingNodes.Push((root, OpenElements.None));
         List<Element>? leadingNewLineElements = null;
 
         while (pendingNodes.TryPop(out var item))
         {
-            var (parent, isInLink) = item;
+            var (parent, state) = item;
             var node = parent.FirstChild;
             while (node is not null)
             {
@@ -139,9 +140,9 @@ public sealed class HtmlSanitizer
                     // The element is not allowed but its content is, so only the tag is dropped. The promoted children
                     // take the place of the element, so they are sanitized next.
                     // Unwrapping an element can move its content where the parser never puts it, which a browser
-                    // would read back differently: the parser allows a link in a link, or a heading in a heading, only
-                    // when an element such as template or object separates them. Such an element is unwrapped too.
-                    case Element element when !IsValidElement(element) || (isInLink && IsLink(element)) || (IsHeading(element) && parent is Element parentElement && IsHeading(parentElement)):
+                    // would read back differently (a link in a link, a button in a button, a div in a p, ...), so such
+                    // an element is unwrapped too (see IsMisnested).
+                    case Element element when !IsValidElement(element) || IsMisnested(element, parent, state):
                         next = Unwrap(element) ?? next;
                         break;
 
@@ -158,7 +159,7 @@ public sealed class HtmlSanitizer
 
                         // The content of a template element is not made of its children but of a separate fragment
                         Node content = element is HtmlTemplateElement template ? template.Content : element;
-                        pendingNodes.Push((content, IsLink(element) || (isInLink && !IsFormattingScope(element))));
+                        pendingNodes.Push((content, GetChildrenState(element, state)));
                         break;
 
                     case Text text when text.Data.Contains('\r', StringComparison.Ordinal):
@@ -197,10 +198,6 @@ public sealed class HtmlSanitizer
     }
 
     private static bool IgnoresLeadingNewLine(Element element) => element.NamespaceUri == HtmlNamespace && element.LocalName is "pre" or "listing";
-
-    private static bool IsLink(Element element) => element.NamespaceUri == HtmlNamespace && element.LocalName == "a";
-
-    private static bool IsHeading(Element element) => element.NamespaceUri == HtmlNamespace && element.LocalName is "h1" or "h2" or "h3" or "h4" or "h5" or "h6";
 
     // The elements that insert a marker in the list of active formatting elements, so a link they contain does not
     // close a link that contains them (https://html.spec.whatwg.org/multipage/parsing.html#concept-parser-marker)
@@ -242,19 +239,12 @@ public sealed class HtmlSanitizer
                 attribute.Value = NormalizeNewLines(attribute.Value);
             }
 
-            if (UriAttributes.Contains(attribute.Name))
+            // An attribute can be in both sets: a value that is a safe URL can still be an unsafe srcset value
+            // ("https://a 1x, javascript:alert(1) 2x"), so it must pass both validations
+            if ((UriAttributes.Contains(attribute.Name) && !UrlSanitizer.IsSafeUrl(attribute.Value)) ||
+                (SrcsetAttributes.Contains(attribute.Name) && !UrlSanitizer.IsSafeSrcset(attribute.Value)))
             {
-                if (!UrlSanitizer.IsSafeUrl(attribute.Value))
-                {
-                    attribute.Value = "";
-                }
-            }
-            else if (SrcsetAttributes.Contains(attribute.Name))
-            {
-                if (!UrlSanitizer.IsSafeSrcset(attribute.Value))
-                {
-                    attribute.Value = "";
-                }
+                attribute.Value = "";
             }
         }
 

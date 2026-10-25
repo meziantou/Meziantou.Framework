@@ -542,9 +542,10 @@ public partial class Emitter : IEmitter
         // A tag can be given as a shorthand whose handle has a global prefix, such as "!!str" for
         // "tag:yaml.org,2002:str". It is expanded, then shortened like a resolved tag. A handle whose prefix is a local
         // tag is not expanded: the parser resolves "!m!b" with "%TAG !m! !m!!a-" to "!m!!a-b", which still starts with
-        // the handle, and expanding it again would not load back. A shorthand needs a non-empty suffix: "!!" alone is
-        // invalid.
-        if (tag is ['!', ..])
+        // the handle, and expanding it again would not load back. Nor is a tag that a local prefix resolves to: with
+        // "%TAG ! !!a-", the parser resolves "!b" to "!!a-b", which is not the shorthand "!!a-b". A shorthand needs a
+        // non-empty suffix: "!!" alone is invalid.
+        if (tag is ['!', ..] && !IsResolvedFromLocalPrefix(tag))
         {
             foreach (var directive in _tagDirectives)
             {
@@ -571,6 +572,18 @@ public partial class Emitter : IEmitter
                 break;
             }
         }
+    }
+
+    /// <summary>Gets a value indicating whether a %TAG directive whose prefix is a local tag, other than the default "!", produces the tag.</summary>
+    private bool IsResolvedFromLocalPrefix(string tag)
+    {
+        foreach (var directive in _tagDirectives)
+        {
+            if (directive.Prefix is ['!', _, ..] && tag.Length > directive.Prefix.Length && tag.StartsWith(directive.Prefix, StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>State dispatcher.</summary>

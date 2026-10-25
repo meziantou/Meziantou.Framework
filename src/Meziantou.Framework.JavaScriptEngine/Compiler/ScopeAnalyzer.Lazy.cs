@@ -209,14 +209,11 @@ internal sealed partial class ScopeAnalyzer
                     break;
             }
 
-            foreach (var variableSnapshot in current.Variables)
+            // The other bindings are created when the compilation of the function looks them up
+            foreach (var index in current.SpecialVariables)
             {
-                var variable = scope.Declare(variableSnapshot.Name, variableSnapshot.Kind);
-                variable.Location = variableSnapshot.Location;
-                variable.Index = variableSnapshot.Index;
-                variable.IsParameterWithTdz = variableSnapshot.IsParameterWithTdz;
-                variable.IsCaptured = variableSnapshot.Location == VariableLocation.Context;
-                switch (variableSnapshot.Kind)
+                var variable = scope.GetSnapshotVariable(index);
+                switch (variable.Kind)
                 {
                     case VariableKind.This:
                         function.ThisVariable = variable;

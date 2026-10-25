@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace Meziantou.Framework.CodeOwners;
 
 /// <summary>
@@ -15,11 +17,14 @@ namespace Meziantou.Framework.CodeOwners;
 /// <remarks>Entries are returned in the order they appear in the file. CODEOWNERS resolution is last-match-wins, so the last entry whose <see cref="Pattern"/> matches a path owns it.</remarks>
 public sealed class CodeOwnersEntry : IEquatable<CodeOwnersEntry>
 {
-    internal CodeOwnersEntry(string pattern, IReadOnlyList<CodeOwner> owners, CodeOwnersSection? section)
+    private readonly CodeOwnersDialect _dialect;
+
+    internal CodeOwnersEntry(string pattern, IReadOnlyList<CodeOwner> owners, CodeOwnersSection? section, CodeOwnersDialect dialect)
     {
         Pattern = pattern;
         Owners = owners;
         Section = section;
+        _dialect = dialect;
     }
 
     /// <summary>Gets the file pattern (e.g., "*.js", "/docs/*", or "*") that this entry applies to.</summary>
@@ -34,17 +39,44 @@ public sealed class CodeOwnersEntry : IEquatable<CodeOwnersEntry>
     /// <summary>Gets a value indicating whether this entry belongs to an optional section.</summary>
     public bool IsOptional => Section?.IsOptional ?? false;
 
-    /// <summary>Returns the entry as written in a CODEOWNERS file.</summary>
+    /// <summary>Returns the entry as written in a CODEOWNERS file of the dialect it was parsed with: the escaped pattern followed by the owners.</summary>
+    /// <remarks>The section header is not part of the entry: parse the line after <see cref="CodeOwnersSection.ToString"/> to read the entry back.</remarks>
     public override string ToString()
     {
-        var result = Owners.Count is 0 ? Pattern : Pattern + " " + string.Join(' ', Owners);
-        if (IsOptional)
+        var sb = new StringBuilder(Pattern.Length + (Owners.Count * 16));
+        for (var i = 0; i < Pattern.Length; i++)
         {
-            result += " (optional)";
+            var c = Pattern[i];
+            if (MustEscape(c, i))
+            {
+                sb.Append('\\');
+            }
+
+            sb.Append(c);
         }
 
-        return result;
+        foreach (var owner in Owners)
+        {
+            sb.Append(' ').Append(owner.ToString());
+        }
+
+        return sb.ToString();
     }
+
+    /// <summary>Gets a value indicating whether the character of the pattern at the index is read as something else than text of the pattern when written as is.</summary>
+    private bool MustEscape(char c, int index) => c switch
+    {
+        // A backslash escapes the next character, and spaces separate the pattern from the owners
+        '\\' or ' ' or '\t' => true,
+
+        // A line starting with '#' is a comment
+        '#' => index is 0,
+
+        // In the GitLab syntax, a line starting with '[' or '^[' is a section header
+        '[' => index is 0 && _dialect is CodeOwnersDialect.GitLab,
+        '^' => index is 0 && _dialect is CodeOwnersDialect.GitLab && Pattern.Length > 1 && Pattern[1] is '[',
+        _ => false,
+    };
 
     public override bool Equals([NotNullWhen(true)] object? obj) => Equals(obj as CodeOwnersEntry);
 

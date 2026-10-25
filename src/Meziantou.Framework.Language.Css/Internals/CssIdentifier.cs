@@ -76,8 +76,14 @@ internal static class CssIdentifier
         {
             if (index < text.Length && IsIdentChar(text[index]))
             {
-                AppendNormalized(builder, text[index]);
-                index++;
+                // The run is normalized as a whole: a lone surrogate is only told apart from half of a pair by its neighbor
+                var runStart = index;
+                while (index < text.Length && IsIdentChar(text[index]))
+                {
+                    index++;
+                }
+
+                AppendNormalized(builder, text.AsSpan(runStart, index - runStart));
             }
             else if (IsValidEscape(text, index))
             {
@@ -174,8 +180,6 @@ internal static class CssIdentifier
             builder.Append(c is '\0' || char.IsSurrogate(c) ? ReplacementCharacter : c);
         }
     }
-
-    public static void AppendNormalized(StringBuilder builder, char c) => builder.Append(c);
 
     private static bool NeedsNormalization(string value)
     {

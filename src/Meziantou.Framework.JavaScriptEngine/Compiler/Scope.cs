@@ -29,8 +29,21 @@ internal sealed class Scope
     private const int IndexThreshold = 8;
     private Dictionary<string, Variable>? _index;
 
+    private readonly List<Variable> _orderedVariables = [];
+
+    // The bindings of the snapshot, created on first use: the scopes of a large script have many bindings, and the
+    // compilation of a lazily compiled function only uses a few of them (null once they are all created)
+    private Variable?[]? _snapshotVariables;
+
     /// <summary>Gets the declared bindings, in declaration order (a redeclared name hides the previous binding).</summary>
-    public List<Variable> OrderedVariables { get; } = [];
+    public List<Variable> OrderedVariables
+    {
+        get
+        {
+            CreateSnapshotVariables();
+            return _orderedVariables;
+        }
+    }
 
     /// <summary>Gets whether this scope is the variable environment of its function (var declarations, sloppy eval vars).</summary>
     public bool IsVarScope => Kind is ScopeKind.Script or ScopeKind.Module or ScopeKind.Eval or ScopeKind.FunctionBody || (Kind == ScopeKind.Function && Function.BodyVarScope is null);
@@ -56,36 +69,91 @@ internal sealed class Scope
 
     public int ContextSlotCount { get; set; }
 
-    /// <summary>Gets or sets the snapshot this scope was created from (a scope that encloses a lazily compiled function): its bindings are allocated.</summary>
-    public ScopeSnapshot? Snapshot { get; set; }
+    /// <summary>Gets the snapshot this scope was created from (a scope that encloses a lazily compiled function): its bindings are allocated.</summary>
+    public ScopeSnapshot? Snapshot
+    {
+        get;
+        init
+        {
+            field = value;
+            if (value is not null && value.Variables.Length > 0)
+            {
+                _snapshotVariables = new Variable?[value.Variables.Length];
+            }
+        }
+    }
 
     public Variable Declare(string name, VariableKind kind)
     {
+        CreateSnapshotVariables();
         var variable = new Variable(name, kind, this);
-        OrderedVariables.Add(variable);
+        Add(variable);
+        return variable;
+    }
+
+    /// <summary>Gets the binding of the snapshot at the specified index of <see cref="ScopeSnapshot.Variables"/>.</summary>
+    public Variable GetSnapshotVariable(int index)
+    {
+        if (_snapshotVariables is null)
+            return _orderedVariables[index];
+
+        return _snapshotVariables[index] ??= CreateSnapshotVariable(Snapshot!.Variables[index]);
+    }
+
+    private Variable CreateSnapshotVariable(VariableSnapshot snapshot)
+    {
+        return new Variable(snapshot.Name, snapshot.Kind, this)
+        {
+            Location = snapshot.Location,
+            Index = snapshot.Index,
+            IsParameterWithTdz = snapshot.IsParameterWithTdz,
+            IsCaptured = snapshot.Location == VariableLocation.Context,
+        };
+    }
+
+    private void CreateSnapshotVariables()
+    {
+        if (_snapshotVariables is null)
+            return;
+
+        for (var i = 0; i < _snapshotVariables.Length; i++)
+        {
+            Add(GetSnapshotVariable(i));
+        }
+
+        _snapshotVariables = null;
+    }
+
+    private void Add(Variable variable)
+    {
+        _orderedVariables.Add(variable);
         if (_index is not null)
         {
-            _index[name] = variable;
+            _index[variable.Name] = variable;
         }
-        else if (OrderedVariables.Count > IndexThreshold)
+        else if (_orderedVariables.Count > IndexThreshold)
         {
-            _index = new Dictionary<string, Variable>(OrderedVariables.Count * 2, StringComparer.Ordinal);
-            foreach (var declared in OrderedVariables)
+            _index = new Dictionary<string, Variable>(_orderedVariables.Count * 2, StringComparer.Ordinal);
+            foreach (var declared in _orderedVariables)
             {
                 _index[declared.Name] = declared;
             }
         }
-
-        return variable;
     }
 
     /// <summary>Gets the binding of a name (the last declared one), or null.</summary>
     public Variable? Find(string name)
     {
+        if (_snapshotVariables is not null)
+        {
+            var index = Snapshot!.FindVariable(name);
+            return index < 0 ? null : GetSnapshotVariable(index);
+        }
+
         if (_index is not null)
             return _index.GetValueOrDefault(name);
 
-        var variables = OrderedVariables;
+        var variables = _orderedVariables;
         for (var i = variables.Count - 1; i >= 0; i--)
         {
             if (string.Equals(variables[i].Name, name, StringComparison.Ordinal))

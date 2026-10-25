@@ -23,5 +23,5 @@ public sealed class PdfFuzzRegressionTests
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(Regressions))]
-    public void Replay(string name) => PdfFuzzOracle.Run(File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "FuzzRegressions", name)), name);
+    public Task Replay(string name) => PdfFuzzOracle.RunAsync(File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "FuzzRegressions", name)), name);
 }

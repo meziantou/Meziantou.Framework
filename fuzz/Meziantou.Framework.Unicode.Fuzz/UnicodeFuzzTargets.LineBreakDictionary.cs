@@ -16,7 +16,8 @@ public static partial class UnicodeFuzzTargets
     /// the segmentation that the remarks of <see cref="LineBreakDictionary"/> specify, computed directly (dynamic
     /// programming over each piece). For the tailoring of the input, the breaks of <c>EnumerateLineBreaks</c> with the dictionary
     /// are those without it plus the breaks of <c>FindBreaks</c> in each run of Complex_Context characters, except with
-    /// BreakAll and Anywhere, where the dictionary changes nothing.
+    /// BreakAll and Anywhere, where the dictionary changes nothing. <c>Load</c> and <c>LoadAsync</c>, from a stream that returns a
+    /// few bytes per read, agree with <c>Parse</c>.
     /// </summary>
     private static void LineBreakDictionaryTarget(ReadOnlySpan<byte> data)
     {
@@ -31,6 +32,8 @@ public static partial class UnicodeFuzzTargets
         {
             isValid = false;
         }
+
+        CheckLineBreakDictionaryLoaders(listBytes.ToArray(), text, maxReadLength: (flags & 0x20) != 0 ? 3 : int.MaxValue);
 
         LineBreakDictionary dictionary;
         try
@@ -89,6 +92,43 @@ public static partial class UnicodeFuzzTargets
 
         var actual = GetLineBreaks(text, dictionary, strictness, wordBreak);
         FuzzAssert.Equal(FormatLineBreaks(expected.Select(item => (item.Key, item.Value))), FormatLineBreaks(actual.Select(item => (item.Index, item.IsMandatory))), $"The line breaks with the dictionary, {strictness} and {wordBreak}, are not those without it plus those of each run");
+    }
+
+    /// <summary>Load and LoadAsync read the stream to its end and give the dictionary Parse gives for the bytes, or throw the same FormatException.</summary>
+    private static void CheckLineBreakDictionaryLoaders(byte[] list, string text, int maxReadLength)
+    {
+        var expected = DescribeLineBreakDictionary(() => LineBreakDictionary.Parse(list), text);
+        FuzzAssert.Equal(expected, DescribeLineBreakDictionary(() => LoadLineBreakDictionary(list, maxReadLength), text), "Load(Stream) and Parse(bytes) differ");
+        FuzzAssert.Equal(expected, DescribeLineBreakDictionary(() => LoadLineBreakDictionaryAsync(list, maxReadLength).GetAwaiter().GetResult(), text), "LoadAsync(Stream) and Parse(bytes) differ");
+    }
+
+    private static LineBreakDictionary LoadLineBreakDictionary(byte[] list, int maxReadLength)
+    {
+        using var stream = new ShortReadStream(list, maxReadLength);
+        return LineBreakDictionary.Load(stream);
+    }
+
+    private static async Task<LineBreakDictionary> LoadLineBreakDictionaryAsync(byte[] list, int maxReadLength)
+    {
+        await using var stream = new ShortReadStream(list, maxReadLength);
+        return await LineBreakDictionary.LoadAsync(stream).ConfigureAwait(false);
+    }
+
+    private static string DescribeLineBreakDictionary(Func<LineBreakDictionary> create, string text)
+    {
+        LineBreakDictionary dictionary;
+        try
+        {
+            dictionary = create();
+        }
+        catch (FormatException)
+        {
+            return nameof(FormatException);
+        }
+
+        var positions = new int[text.Length];
+        var count = dictionary.FindBreaks(text, positions);
+        return $"words: {dictionary.WordCount.ToString(CultureInfo.InvariantCulture)}, breaks: {FormatPositions(positions[..count])}";
     }
 
     private static string FormatLineBreaks(IEnumerable<(int Index, bool IsMandatory)> breaks) => string.Join(' ', breaks.Select(item => item.Index.ToString(CultureInfo.InvariantCulture) + (item.IsMandatory ? "!" : "")));
@@ -315,6 +355,7 @@ public static partial class UnicodeFuzzTargets
             ("marks", 0x08, words, "a\u0E31\u0E20\u0E32\u0E29\u0E32\u0E44\u0E17\u0E22 \u0E31\u0E20\u0E32\u0E29\u0E32\u0301\u0E44\u0E17\u0E22"),
             ("zwsp", 0x04, words, "\u0E20\u0E32\u0E29\u0E32\u0E44\u0E17\u0E22\u200B\u0E2A\u0E27\u0E31\u0E2A\u0E14\u0E35\u2060\u0E44\u0E17\u0E22\u00A0\u0E20\u0E32\u0E29\u0E32"),
             ("lao-khmer-myanmar", 0x13, words, "\u0EAA\u0EB0\u0E9A\u0EB2\u0E8D\u0E94\u0EB5 \u1797\u17B6\u179F\u17B6\u1781\u17D2\u1798\u17C2\u179A\u17D4 \u1019\u103C\u1014\u103A\u1019\u102C\u1005\u102C"),
+            ("short-reads", 0x21, words, "\u0E44\u0E17\u0E22\u0E20\u0E32\u0E29\u0E32"),
             ("comments", 1, "# words\n\uFEFF\u0E20\u0E32\u0E29\u0E32\t120\n  \u0E44\u0E17\u0E22  \r\n\r\n\u0E20\u0E32\u0E29\u0E32\n", "\u0E20\u0E32\u0E29\u0E32\u0E44\u0E17\u0E22\u0E20\u0E32\u0E29\u0E32"),
             ("long", 0, words, string.Concat(Enumerable.Repeat("\u0E2A\u0E27\u0E31\u0E2A\u0E14\u0E35\u0E04\u0E23\u0E31\u0E1A\u0E20\u0E32\u0E29\u0E32\u0E44\u0E17\u0E22", 60))),
             ("invalid-surrogate", 0, "a\uD800\n", "a"),

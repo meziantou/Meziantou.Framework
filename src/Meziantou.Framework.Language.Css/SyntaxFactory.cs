@@ -71,12 +71,17 @@ public static partial class SyntaxFactory
     public static SyntaxToken MissingToken(SyntaxKind kind) => new(parent: null, Green.SyntaxFactory.MissingToken(kind), position: 0, index: 0);
 
     /// <summary>Creates an identifier whose value is <paramref name="value"/>, escaping the characters an identifier cannot hold as they are.</summary>
+    /// <remarks>
+    /// CSS reads U+0000 and lone surrogates as U+FFFD, so the value of the token, like the value of the identifier a parser
+    /// reads from its text, has U+FFFD in their place. The same goes for the tokens of <see cref="StringToken"/>,
+    /// <see cref="Hash"/>, <see cref="AtKeyword"/>, and <see cref="FunctionToken"/>.
+    /// </remarks>
     /// <exception cref="ArgumentException"><paramref name="value"/> is <see langword="null"/> or empty.</exception>
     public static SyntaxToken Identifier(string value)
     {
         ArgumentException.ThrowIfNullOrEmpty(value);
 
-        return Token(SyntaxKind.IdentToken, CssIdentifier.SerializeIdentifier(value), value);
+        return Token(SyntaxKind.IdentToken, CssIdentifier.SerializeIdentifier(value), CssIdentifier.Normalize(value));
     }
 
     /// <summary>Creates a string whose value is <paramref name="value"/>, between <paramref name="quote"/> characters.</summary>
@@ -88,7 +93,7 @@ public static partial class SyntaxFactory
         if (quote is not ('"' or '\''))
             throw new ArgumentOutOfRangeException(nameof(quote), quote, "A CSS string is between double or single quotes.");
 
-        return Token(SyntaxKind.StringToken, CssIdentifier.SerializeString(value, quote), value);
+        return Token(SyntaxKind.StringToken, CssIdentifier.SerializeString(value, quote), CssIdentifier.Normalize(value));
     }
 
     /// <summary>Creates a number token.</summary>
@@ -123,7 +128,7 @@ public static partial class SyntaxFactory
     {
         ArgumentException.ThrowIfNullOrEmpty(name);
 
-        return Token(SyntaxKind.HashToken, "#" + SerializeName(name), name);
+        return Token(SyntaxKind.HashToken, "#" + SerializeName(name), CssIdentifier.Normalize(name));
     }
 
     /// <summary>Creates an at-keyword token, such as <c>@media</c>.</summary>
@@ -132,7 +137,7 @@ public static partial class SyntaxFactory
     {
         ArgumentException.ThrowIfNullOrEmpty(name);
 
-        return Token(SyntaxKind.AtKeywordToken, "@" + CssIdentifier.SerializeIdentifier(name), name);
+        return Token(SyntaxKind.AtKeywordToken, "@" + CssIdentifier.SerializeIdentifier(name), CssIdentifier.Normalize(name));
     }
 
     /// <summary>Creates a function token, such as <c>rgb(</c>.</summary>
@@ -141,7 +146,7 @@ public static partial class SyntaxFactory
     {
         ArgumentException.ThrowIfNullOrEmpty(name);
 
-        return Token(SyntaxKind.FunctionToken, CssIdentifier.SerializeIdentifier(name) + "(", name);
+        return Token(SyntaxKind.FunctionToken, CssIdentifier.SerializeIdentifier(name) + "(", CssIdentifier.Normalize(name));
     }
 
     /// <summary>Creates a declaration such as <c>color: red;</c>, with a space before each value and a semicolon after the last one.</summary>

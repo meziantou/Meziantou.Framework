@@ -229,7 +229,7 @@ exposes the default instance.
 | `MappingOrder` | `Declaration` | `Declaration` or `Sorted`. |
 | `BlockSequenceMappingStyle` | `Compact` | How a mapping inside a block sequence is emitted. |
 | `BlockSequenceSequenceStyle` | `Expanded` | How a nested sequence inside a block sequence is emitted. |
-| `ScalarStylePreferences` | `PreferPlainStyle = true`, `PreferQuotedForAmbiguousScalars = true`, `StringStyle = Any` | Quotes scalars that would otherwise resolve to a boolean, a number, or null, and selects the style used for string values. `PreferPlainStyle = false` double-quotes every string value and mapping key the writer would otherwise write plain, unless `StringStyle` requests another style. |
+| `ScalarStylePreferences` | `PreferPlainStyle = true`, `PreferQuotedForAmbiguousScalars = true`, `StringStyle = Any` | Quotes scalars that would otherwise resolve to a boolean, a number, or null, and selects the style used for string values. `PreferPlainStyle = false` double-quotes every string value and mapping key the writer would otherwise write plain, unless `StringStyle` requests another style; a dictionary key that is not a string and reads as a number or a boolean stays plain, so that it keeps its type. |
 
 `BlockSequenceMappingStyle` controls whether the first key of a mapping shares the line of its sequence dash:
 

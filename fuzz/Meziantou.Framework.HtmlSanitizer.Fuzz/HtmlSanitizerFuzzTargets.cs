@@ -11,14 +11,36 @@ namespace Meziantou.Framework.Sanitizers.Fuzz;
 /// the allowed ones, no attribute outside the allowed ones, no URL attribute and no srcset candidate whose decoded URL
 /// has a script scheme (javascript:, vbscript:, a data: URL that is not an image, a video or an audio), no comment
 /// unless they are allowed, nothing left open at the end of the output (a tag, a quoted value, a comment, a lone
-/// <c>&lt;</c>) and no <c>&lt;</c> in text. The output is also stable: sanitizing it again changes nothing, except with
-/// the elements whose end tag is optional (a known limitation, see the tests of the sanitizer).
+/// <c>&lt;</c>) and no <c>&lt;</c> in text. The output is also stable: sanitizing it again changes nothing, so a browser
+/// reads it back as the same elements.
 /// </summary>
 public static class HtmlSanitizerFuzzTargets
 {
-    // Sanitizing an output that contains one of these elements can change it: unwrapping an element can leave them where
-    // the parser never puts them (see HtmlSanitizerTests.Sanitize_IsIdempotent_Fuzz), so the stability is not checked.
-    private static readonly HashSet<string> UnstableElements = new(["colgroup", "dd", "dt", "li", "p", "tbody", "td", "tfoot", "th", "thead", "tr", "rp", "rt", "table", "caption", "col"], StringComparer.Ordinal);
+    // The elements the configuration of html-sanitizer-config can add to ValidElements (5 bytes of mask): the ones the
+    // parser handles in a special way (raw text, foreign content, template, form, select, table, the document elements)
+    private static readonly string[] ConfigurableElements =
+    [
+        "style", "script", "svg", "math", "mi", "mtext", "textarea", "title",
+        "noscript", "template", "iframe", "xmp", "noembed", "noframes", "plaintext", "select",
+        "option", "optgroup", "form", "input", "button", "object", "embed", "base",
+        "meta", "link", "image", "listing", "frameset", "body", "html", "head",
+        "details", "summary", "dialog", "marquee", "slot", "custom-element", "foreignobject", "desc",
+    ];
+
+    // The attributes the configuration of html-sanitizer-config can add to ValidAttributes, UriAttributes and
+    // SrcsetAttributes (2 bytes of mask each): event handlers, style, URL attributes that are not in the defaults, ...
+    private static readonly string[] ConfigurableAttributes =
+    [
+        "onclick", "onerror", "style", "id", "name", "data-url", "data-srcset", "formaction",
+        "action", "poster", "is", "srcdoc", "xmlns", "imagesrcset", "href", "srcset",
+    ];
+
+    private const int ConfigurationLength = 12;
+
+    // The library removes these elements with their content, or unwraps them, whatever the configuration, so a start tag
+    // of one of them in the output is a failure: the tokenizer reads their content with other rules (raw text, foreign
+    // content), which the checks of the output do not follow.
+    private static readonly HashSet<string> NeverKeptElements = new(["iframe", "noembed", "noframes", "noscript", "plaintext", "script", "style", "textarea", "title", "xmp", "svg", "math"], StringComparer.Ordinal);
 
     // The HTML5 named character references that decode to ASCII, which WebUtility.HtmlDecode (HTML 4 names) does not know
     private static readonly Dictionary<string, string> AsciiCharacterReferences = new(StringComparer.Ordinal)
@@ -41,6 +63,12 @@ public static class HtmlSanitizerFuzzTargets
         "<base>", "<meta>", "<link>", "<input>", "<button>", "<!DOCTYPE html>", "<?xml version='1.0'?>", "<!--[if IE]>", "<![endif]-->", "</0", "<1", "<%", "<//",
     ];
 
+    private static readonly string[] ConfiguredTokens =
+    [
+        .. ConfigurableElements.Select(name => $"<{name}>"), .. ConfigurableElements.Select(name => $"</{name}>"), .. ConfigurableAttributes.Select(name => $" {name}="),
+        "<frame>", "<param>", " data-x=", " ARIA-x=", " shadowrootmode=open", "<template shadowrootmode=open>",
+    ];
+
     private static readonly string[] UrlTokens =
     [
         "javascript:", "vbscript:", "data:", "data:text/html;base64,", "data:image/png;base64,", "data:image/svg+xml;base64,", "data:video/mp4;base64,", "data:audio/mp3;base64,", "http:", "https://", "mailto:", "ftp:", "tel:", "file:",
@@ -50,6 +78,7 @@ public static class HtmlSanitizerFuzzTargets
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("html-sanitizer", Sanitize) { Seeds = GetHtmlSeeds, Dictionary = HtmlTokens },
+        new("html-sanitizer-config", SanitizeWithConfiguration) { Seeds = GetConfiguredHtmlSeeds, Dictionary = [.. HtmlTokens, .. ConfiguredTokens] },
         new("url-sanitizer", SanitizeUrl) { Seeds = GetUrlSeeds, Dictionary = UrlTokens },
     ];
 
@@ -59,23 +88,107 @@ public static class HtmlSanitizerFuzzTargets
         var flags = FuzzInput.ReadByte(ref data);
         var html = FuzzText.Decode(data);
         var sanitizer = new HtmlSanitizer { AllowComments = (flags & 1) != 0 };
+        SanitizeAndCheck(sanitizer, html);
+    }
 
+    /// <summary>
+    /// The input is <see cref="ConfigurationLength"/> bytes that change the configuration (<see cref="Configure"/>),
+    /// then the HTML fragment. The checks are the ones of the default configuration, against the sets of the
+    /// configuration: an element, an attribute or a URL attribute that the configuration allows is allowed.
+    /// </summary>
+    private static void SanitizeWithConfiguration(ReadOnlySpan<byte> data)
+    {
+        var sanitizer = new HtmlSanitizer();
+        Configure(sanitizer, ref data);
+        var html = FuzzText.Decode(data);
+        SanitizeAndCheck(sanitizer, html);
+    }
+
+    /// <summary>
+    /// Byte 0: bit 0 allows the comments, bit 1 clears <c>BlockedElements</c>, bit 2 adds the <c>data-</c> prefix,
+    /// bit 3 clears <c>ValidAttributePrefixes</c>, bit 4 adds <c>srcset</c> to <c>UriAttributes</c>, bit 5 adds
+    /// <c>href</c> and <c>src</c> to <c>SrcsetAttributes</c>, bit 6 blocks some default elements, bit 7 removes some
+    /// default elements. Bytes 1-5: a mask of <see cref="ConfigurableElements"/> to add to <c>ValidElements</c>.
+    /// Bytes 6-7, 8-9 and 10-11: masks of <see cref="ConfigurableAttributes"/> to add to <c>ValidAttributes</c>,
+    /// <c>UriAttributes</c> and <c>SrcsetAttributes</c>.
+    /// </summary>
+    private static void Configure(HtmlSanitizer sanitizer, ref ReadOnlySpan<byte> data)
+    {
+        var options = FuzzInput.ReadByte(ref data);
+        sanitizer.AllowComments = (options & 1) != 0;
+        if ((options & 2) != 0)
+        {
+            sanitizer.BlockedElements.Clear();
+        }
+
+        if ((options & 4) != 0)
+        {
+            sanitizer.ValidAttributePrefixes.Add("data-");
+        }
+
+        if ((options & 8) != 0)
+        {
+            sanitizer.ValidAttributePrefixes.Clear();
+        }
+
+        if ((options & 16) != 0)
+        {
+            sanitizer.UriAttributes.Add("srcset");
+        }
+
+        if ((options & 32) != 0)
+        {
+            sanitizer.SrcsetAttributes.Add("href");
+            sanitizer.SrcsetAttributes.Add("src");
+        }
+
+        if ((options & 64) != 0)
+        {
+            sanitizer.BlockedElements.UnionWith(["p", "b", "a", "td"]);
+        }
+
+        if ((options & 128) != 0)
+        {
+            sanitizer.ValidElements.ExceptWith(["img", "a", "table", "li"]);
+        }
+
+        for (var i = 0; i < ConfigurableElements.Length; i += 8)
+        {
+            AddMasked(sanitizer.ValidElements, ConfigurableElements, i, FuzzInput.ReadByte(ref data));
+        }
+
+        foreach (var set in (ISet<string>[])[sanitizer.ValidAttributes, sanitizer.UriAttributes, sanitizer.SrcsetAttributes])
+        {
+            AddMasked(set, ConfigurableAttributes, 0, FuzzInput.ReadByte(ref data));
+            AddMasked(set, ConfigurableAttributes, 8, FuzzInput.ReadByte(ref data));
+        }
+
+        static void AddMasked(ISet<string> set, string[] names, int start, byte mask)
+        {
+            for (var bit = 0; bit < 8 && start + bit < names.Length; bit++)
+            {
+                if ((mask & (1 << bit)) != 0)
+                {
+                    set.Add(names[start + bit]);
+                }
+            }
+        }
+    }
+
+    private static void SanitizeAndCheck(HtmlSanitizer sanitizer, string html)
+    {
         var sanitized = sanitizer.SanitizeHtmlFragment(html);
-        HashSet<string> elements;
         try
         {
-            elements = CheckOutput(sanitizer, sanitized);
+            CheckOutput(sanitizer, sanitized);
         }
         catch (FuzzAssertionException ex)
         {
             throw new FuzzAssertionException($"{ex.Message}{Environment.NewLine}Output: {FuzzAssert.Format(sanitized)}", ex);
         }
 
-        if (!elements.Overlaps(UnstableElements))
-        {
-            var twice = sanitizer.SanitizeHtmlFragment(sanitized);
-            FuzzAssert.Equal(sanitized, twice, "Sanitizing the output again changes it");
-        }
+        var twice = sanitizer.SanitizeHtmlFragment(sanitized);
+        FuzzAssert.Equal(sanitized, twice, "Sanitizing the output again changes it");
     }
 
     /// <summary>
@@ -109,10 +222,9 @@ public static class HtmlSanitizerFuzzTargets
         }
     }
 
-    /// <summary>Tokenizes the output as a browser does, checks every tag, and returns the names of the elements.</summary>
-    private static HashSet<string> CheckOutput(HtmlSanitizer sanitizer, string html)
+    /// <summary>Tokenizes the output as a browser does and checks every tag.</summary>
+    private static void CheckOutput(HtmlSanitizer sanitizer, string html)
     {
-        var elements = new HashSet<string>(StringComparer.Ordinal);
         var index = 0;
         while (index < html.Length)
         {
@@ -128,7 +240,7 @@ public static class HtmlSanitizerFuzzTargets
             var next = html[index + 1];
             if (char.IsAsciiLetter(next))
             {
-                index = ReadTag(sanitizer, html, index + 1, isEndTag: false, elements);
+                index = ReadTag(sanitizer, html, index + 1, isEndTag: false);
                 continue;
             }
 
@@ -140,7 +252,7 @@ public static class HtmlSanitizerFuzzTargets
                 var afterSlash = html[index + 2];
                 if (char.IsAsciiLetter(afterSlash))
                 {
-                    index = ReadTag(sanitizer, html, index + 2, isEndTag: true, elements);
+                    index = ReadTag(sanitizer, html, index + 2, isEndTag: true);
                     continue;
                 }
 
@@ -167,11 +279,10 @@ public static class HtmlSanitizerFuzzTargets
             FuzzAssert.Fail($"The output has a '<' in text at {index}: {FuzzAssert.Format(Excerpt(html, index))}");
         }
 
-        return elements;
     }
 
     /// <summary>Reads a tag from its name to its '&gt;' (WHATWG tag name, attribute name and attribute value states) and checks the element and its attributes.</summary>
-    private static int ReadTag(HtmlSanitizer sanitizer, string html, int index, bool isEndTag, HashSet<string> elements)
+    private static int ReadTag(HtmlSanitizer sanitizer, string html, int index, bool isEndTag)
     {
         var nameStart = index;
         while (index < html.Length && !IsTagWhiteSpace(html[index]) && html[index] is not '/' and not '>')
@@ -183,10 +294,10 @@ public static class HtmlSanitizerFuzzTargets
             FuzzAssert.Fail("The output ends inside a tag name: the markup that follows the fragment in the page would be part of the tag");
 
         var name = ToAsciiLowercase(html[nameStart..index]);
-        elements.Add(name);
         if (!isEndTag)
         {
             FuzzAssert.True(sanitizer.ValidElements.Contains(name) && !sanitizer.BlockedElements.Contains(name), $"The output has the element <{name}>, which is not allowed");
+            FuzzAssert.False(NeverKeptElements.Contains(name), $"The output has the element <{name}>, whose content the tokenizer does not read as HTML markup");
         }
 
         while (true)
@@ -511,6 +622,98 @@ public static class HtmlSanitizerFuzzTargets
 
     private static IEnumerable<FuzzSeed> GetHtmlSeeds()
     {
+        var fragments = GetHtmlFragments();
+        for (var i = 0; i < fragments.Length; i++)
+        {
+            // The comments are allowed in one seed out of two
+            yield return FuzzSeed.FromText(i.ToString("D3", CultureInfo.InvariantCulture), [(byte)(i % 2)], fragments[i]);
+        }
+    }
+
+    /// <summary>The fragments of html-sanitizer and fragments that need a configuration, each with every configuration of <see cref="GetConfigurations"/>.</summary>
+    private static IEnumerable<FuzzSeed> GetConfiguredHtmlSeeds()
+    {
+        string[] configuredFragments =
+        [
+            "<form><template><form>x</form></template></form>", "<form><object><form>x</form></object></form>", "<select><option>a<template><option>b</option></template></select>",
+            "<select><b>x</b><img src=x onerror=alert(1)><option>y</select>", "<template><style><img src=x onerror=alert(1)></style></template>", "<template><template><p>x</p></template></template>",
+            "<table><template><tr><td>x</td></tr></template></table>", "<a href='https://a 1x, javascript:alert(1) 2x'>x</a>", "<img src='https://a 1x, javascript:alert(1) 2x'>",
+            "<img srcset='https://example.com/a.png 1x, javascript:alert(1) 2x'>", "<img srcset='https://example.com/a.png'>",
+            "<p data-srcset='a 1x, javascript:alert(1) 2x' data-url='javascript:alert(1)' formaction='javascript:alert(1)' action='java&#115;cript:alert(1)' poster='data:text/html,x'>x</p>",
+            "<p imagesrcset='javascript:alert(1) 1x' srcdoc='<script>alert(1)</script>' xmlns='http://www.w3.org/2000/svg'>x</p>",
+            "<p is='x-foo' onclick='alert(1)' onerror='alert(1)' style='background:url(javascript:alert(1))' id='a' name='b'>x</p>", "<button formaction='javascript:alert(1)'>x</button>",
+            "<form action='javascript:alert(1)'><input name='a' formaction='javascript:alert(1)'></form>", "<object data='javascript:alert(1)'><embed src='javascript:alert(1)'></object>",
+            "<html><head><base href='javascript:alert(1)'><meta name='a'><link href='x'></head><body><p>x</p></body></html>", "<frameset><frame src='javascript:alert(1)'></frameset>",
+            "<image src='javascript:alert(1)'>", "<listing>\n\nx</listing>", "<details open><summary>s</summary>d</details><dialog open>x</dialog><marquee>m</marquee>",
+            "<svg><foreignObject><p>x</p></foreignObject><desc><b>y</b></desc><style><img src=x onerror=alert(1)></style></svg>", "<math><mtext><mi>x</mi><table><mglyph><style><img src=x onerror=alert(1)>",
+            "<custom-element><slot name='a'></slot></custom-element>", "<noscript><p title=\"</noscript><img src=x onerror=alert(1)>\">", "<p><xmp></p><img src=x onerror=alert(1)></xmp>",
+            "<textarea></textarea><img src=x onerror=alert(1)>", "<title><!--</title><img src=x onerror=alert(1)>-->", "<iframe srcdoc='<script>alert(1)</script>'></iframe>",
+            "<button>a<template><b><button>b</button></b></template></button>", "<nobr>a<template><nobr>b</nobr></template></nobr>", "<p>a<template><div>b</div><hr><table><tr><td>c</td></tr></table></template></p>",
+            "<li>a<template><b><li>b</li></b></template></li>", "<dl><dd>a<template><dt>b</dt></template></dd></dl>", "<select><template><select>a</select><input></template></select>",
+            "<select><option>a<template><option>b</option><optgroup>c</optgroup><hr></template></option></select>", "<ruby>a<p><template><rt>b</rt><rp>c</rp></template></p></ruby>",
+            "<table><template><tr><td>a</td></tr></template></table>", "<table><tbody><tr><td>a</td><template><b>b</b></template></tr></tbody></table>", "<div><template><tr><td>a</td></tr><col></template></div>",
+            "<template><caption><button>a</button></caption><tbody><tr><td>b</td></tr></tbody></template>", "<template><tr><td>a</td></tr></template><template><td>b</td><col></template>",
+            "<form><div></form><form>a</form>", "<p>a<table><tr><td>b</td></tr></table></p>",
+        ];
+
+        var configurations = GetConfigurations();
+        string[] fragments = [.. GetHtmlFragments(), .. configuredFragments];
+        for (var i = 0; i < fragments.Length; i++)
+        {
+            for (var j = 0; j < configurations.Length; j++)
+            {
+                yield return FuzzSeed.FromText(string.Create(CultureInfo.InvariantCulture, $"{i:D3}-{j:D2}"), configurations[j], fragments[i]);
+            }
+        }
+    }
+
+    /// <summary>The configurations of the tests of the sanitizer, and configurations that allow the elements and the attributes the parser or the browser handle in a special way.</summary>
+    private static byte[][] GetConfigurations()
+    {
+        string[] uriAttributes = ["data-url", "formaction", "action", "poster", "srcdoc", "href"];
+        string[] srcsetAttributes = ["data-srcset", "imagesrcset", "srcset"];
+        return
+        [
+            Configuration(0),
+            Configuration(1, elements: ["template"]),
+            Configuration(0, elements: ["svg", "math", "mi"]),
+            Configuration(2, elements: ["script", "style", "iframe", "title", "textarea", "noscript", "noembed", "noframes", "xmp", "plaintext"]),
+            Configuration(4, uri: ["data-url"]),
+            Configuration(0, valid: ["data-url", "is"], uri: ["data-url"]),
+            Configuration(0b0001_0000),
+            Configuration(0b0010_0000),
+            Configuration(0b1100_1000, elements: ["custom-element", "slot"]),
+            Configuration(1, elements: ["form", "select", "option", "optgroup", "template", "object", "input", "button"], valid: ["name", "id", "formaction", "action"], uri: ["formaction", "action"]),
+            Configuration(0b0011_0111, elements: ConfigurableElements, valid: ConfigurableAttributes, uri: uriAttributes, srcset: srcsetAttributes),
+            Configuration(0b0000_0011, elements: ConfigurableElements, valid: [.. uriAttributes, .. srcsetAttributes], uri: [.. uriAttributes, .. srcsetAttributes], srcset: [.. uriAttributes, .. srcsetAttributes]),
+        ];
+
+        static byte[] Configuration(byte options, string[]? elements = null, string[]? valid = null, string[]? uri = null, string[]? srcset = null)
+        {
+            var result = new byte[ConfigurationLength];
+            result[0] = options;
+            SetMask(result.AsSpan(1, 5), ConfigurableElements, elements);
+            SetMask(result.AsSpan(6, 2), ConfigurableAttributes, valid);
+            SetMask(result.AsSpan(8, 2), ConfigurableAttributes, uri);
+            SetMask(result.AsSpan(10, 2), ConfigurableAttributes, srcset);
+            return result;
+        }
+
+        static void SetMask(Span<byte> mask, string[] names, string[]? selected)
+        {
+            foreach (var name in selected ?? [])
+            {
+                var index = Array.IndexOf(names, name);
+                if (index < 0)
+                    throw new ArgumentException($"'{name}' cannot be configured", nameof(selected));
+
+                mask[index / 8] |= (byte)(1 << (index % 8));
+            }
+        }
+    }
+
+    private static string[] GetHtmlFragments()
+    {
         string[] fragments =
         [
             "", "test", "<p>test</p>", "<strong>test</strong>", "<p id='test' id='test2'>test</p>", "<p style='color:red'>test</p>", "<div><script></script>test</div>",
@@ -542,11 +745,7 @@ public static class HtmlSanitizerFuzzTargets
             "<div>\u00E9\u4E2D\U0001F600 \uD800 <b title='\uDC00'>x</b></div>",
         ];
 
-        for (var i = 0; i < fragments.Length; i++)
-        {
-            // The comments are allowed in one seed out of two
-            yield return FuzzSeed.FromText(i.ToString("D3", CultureInfo.InvariantCulture), [(byte)(i % 2)], fragments[i]);
-        }
+        return fragments;
     }
 
     private static IEnumerable<FuzzSeed> GetUrlSeeds()

@@ -38,7 +38,16 @@ internal readonly struct CacheEntrySecondaryKey : IEquatable<CacheEntrySecondary
         if (headers is null || headers.Count is 0)
             return MatchAll;
 
-        return new CacheEntrySecondaryKey(new Dictionary<string, string>(headers, StringComparer.OrdinalIgnoreCase));
+        // The headers come from a store, whose dictionary can be case-sensitive and hold several names that only differ
+        // by case. A request has a single value for a header, so names with different values match no request.
+        var result = new Dictionary<string, string>(headers.Count, StringComparer.OrdinalIgnoreCase);
+        foreach (var (name, value) in headers)
+        {
+            if (!result.TryAdd(name, value) && !string.Equals(result[name], value, StringComparison.Ordinal))
+                return MatchNone;
+        }
+
+        return new CacheEntrySecondaryKey(result);
     }
 
     /// <summary>Records that a header nominated by <c>Vary</c> was absent from the request.</summary>

@@ -98,9 +98,18 @@ public static class DnsEndpointRouteBuilderExtensions
             return Results.StatusCode(StatusCodes.Status413PayloadTooLarge);
         }
 
-        // Base64url decoding (RFC 8484)
+        // Base64url decoding (RFC 8484). TryDecodeFromChars only returns false when the destination is too small: it
+        // throws for an invalid input, which Base64Url.IsValid does not reliably detect ("AAAAAAAAAA=" is valid for it).
         var queryBytes = new byte[Base64Url.GetMaxDecodedLength(encodedQuery.Length)];
-        if (!Base64Url.TryDecodeFromChars(encodedQuery, queryBytes, out var decodedLength))
+        int decodedLength;
+        try
+        {
+            if (!Base64Url.TryDecodeFromChars(encodedQuery, queryBytes, out decodedLength))
+            {
+                return Results.BadRequest("Invalid base64url encoding in 'dns' query parameter.");
+            }
+        }
+        catch (FormatException)
         {
             return Results.BadRequest("Invalid base64url encoding in 'dns' query parameter.");
         }

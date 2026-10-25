@@ -22,6 +22,7 @@ public static partial class UriFuzzTargets
         FuzzAssert.Equal(isValid ? info.PublicSuffix : null, PublicSuffixList.GetPublicSuffix(domain, sources), "GetPublicSuffix disagrees with TryGetDomainInfo");
         FuzzAssert.Equal(isValid ? info.RegistrableDomain : null, PublicSuffixList.GetRegistrableDomain(domain, sources), "GetRegistrableDomain disagrees with TryGetDomainInfo");
         FuzzAssert.Equal(isValid && info.IsKnownPublicSuffix && info.RegistrableDomain is null, PublicSuffixList.IsPublicSuffix(domain, sources), "IsPublicSuffix disagrees with TryGetDomainInfo");
+        CheckUriDomainInfo(domain, sources);
         if (!isValid)
         {
             FuzzAssert.Equal(default, info, "An invalid domain has a decomposition");
@@ -62,6 +63,50 @@ public static partial class UriFuzzTargets
         });
         FuzzAssert.True(PublicSuffixList.TryGetDomainInfo(upper, out var upperInfo, sources), "The upper-case domain is not valid");
         FuzzAssert.Equal(info, upperInfo, "The upper-case domain has another decomposition");
+    }
+
+    /// <summary>
+    /// The Uri overload decomposes the host of the URI when it is a domain name, and nothing else. The Unicode host and
+    /// its ASCII form (<see cref="System.Uri.IdnHost"/>) have the same public suffix rule, which covers the same labels.
+    /// </summary>
+    private static void CheckUriDomainInfo(string domain, PublicSuffixRuleSources sources)
+    {
+        if (!System.Uri.TryCreate("http://" + domain + "/", UriKind.Absolute, out var uri))
+            return;
+
+        var isValid = PublicSuffixList.TryGetDomainInfo(uri, out var info, sources);
+        if (uri.HostNameType is not UriHostNameType.Dns)
+        {
+            FuzzAssert.False(isValid, $"The host {FuzzAssert.Format(uri.Host)} of type {uri.HostNameType} has a decomposition");
+            FuzzAssert.Equal(default, info, "An invalid host has a decomposition");
+            return;
+        }
+
+        FuzzAssert.Equal(isValid, PublicSuffixList.TryGetDomainInfo(uri.Host, out var hostInfo, sources), $"The Uri overload and the string overload disagree on the validity of the host {FuzzAssert.Format(uri.Host)}");
+        FuzzAssert.Equal(hostInfo, info, $"The Uri overload and the string overload give different decompositions of the host {FuzzAssert.Format(uri.Host)}");
+        // Uri.IdnHost and PublicSuffixList both convert with IdnMapping, so they map the host the same way in both globalization modes
+        string idnHost;
+        try
+        {
+#pragma warning disable MFGS0001
+            idnHost = uri.IdnHost;
+#pragma warning restore MFGS0001
+        }
+        catch (UriFormatException)
+        {
+            // Uri accepts some hosts that its IDNA conversion rejects
+            return;
+        }
+
+        if (isValid && PublicSuffixList.TryGetDomainInfo(idnHost, out var idnInfo, sources))
+        {
+            FuzzAssert.Equal(info.Source, idnInfo.Source, $"The host {FuzzAssert.Format(uri.Host)} and its ASCII form {FuzzAssert.Format(idnHost)} do not have the same rule source");
+            FuzzAssert.Equal(info.IsKnownPublicSuffix, idnInfo.IsKnownPublicSuffix, $"The host {FuzzAssert.Format(uri.Host)} and its ASCII form {FuzzAssert.Format(idnHost)} disagree on IsKnownPublicSuffix");
+            FuzzAssert.Equal(CountLabels(info.PublicSuffix), CountLabels(idnInfo.PublicSuffix), $"The public suffixes of the host {FuzzAssert.Format(uri.Host)} and of its ASCII form {FuzzAssert.Format(idnHost)} do not have the same number of labels");
+            FuzzAssert.Equal(info.RegistrableDomain is null, idnInfo.RegistrableDomain is null, $"The host {FuzzAssert.Format(uri.Host)} and its ASCII form {FuzzAssert.Format(idnHost)} disagree on having a registrable domain");
+        }
+
+        static int CountLabels(string value) => value.Count(c => c is '.') + 1;
     }
 
     private static bool IsLabelSuffix(string domain, string suffix)

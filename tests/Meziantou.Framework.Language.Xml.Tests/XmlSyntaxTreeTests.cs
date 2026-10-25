@@ -544,6 +544,21 @@ public sealed class XmlSyntaxTreeTests
         Assert.Equal(formatted, FormatText(formatted, XmlFormattingOptions.Default));
     }
 
+    [Theory]
+    [InlineData("<a>A&#13;</a>", "<a>A&#xD;</a>", "A\r")]
+    [InlineData("<a>l1&#13;&#10;l2</a>", "<a>l1&#xD;\nl2</a>", "l1\r\nl2")]
+    [InlineData("<a>l1\r\nl2&#xD;\rl3</a>", "<a>l1\nl2&#xD;\nl3</a>", "l1\nl2\r\nl3")]
+    [InlineData("<root><b/>&#13;x</root>", "<root><b />&#xD;x</root>", "\rx")]
+    public void Formatter_KeepsTheCarriageReturnsOfText(string text, string expected, string expectedValue)
+    {
+        var formatted = FormatText(text, XmlFormattingOptions.Default);
+
+        Assert.Equal(expected, formatted);
+        Assert.Equal(expectedValue, XDocument.Parse(formatted, LoadOptions.PreserveWhitespace).Root!.Value);
+        Assert.Equal(formatted, FormatText(formatted, XmlFormattingOptions.Default));
+        Assert.Equal(formatted, FormatText(formatted, new XmlFormattingOptions { NewLine = "\r\n" }));
+    }
+
     [Fact]
     public void Formatter_KeepsTheLineBreaksOfAttributeValuesWithTheOtherOptions()
     {

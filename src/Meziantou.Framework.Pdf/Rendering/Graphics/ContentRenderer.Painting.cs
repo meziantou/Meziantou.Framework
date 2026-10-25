@@ -395,8 +395,11 @@ internal sealed partial class ContentRenderer
         if (rectangle.Right <= rectangle.Left || rectangle.Top <= rectangle.Bottom || !TryGetDeviceTransform(_state.Ctm, out var transform))
             return;
 
-        var path = new VectorPathBuilder().MoveTo(rectangle.Left, rectangle.Bottom).LineTo(rectangle.Right, rectangle.Bottom).LineTo(rectangle.Right, rectangle.Top).LineTo(rectangle.Left, rectangle.Top).Close().Build();
-        AddClip(path.Transform(transform), FillRule.NonZero);
+        // A rectangle beyond the coordinates of the canvas does not clip
+        if (CreateRectanglePath(rectangle) is { } path && TransformPath(path, transform) is { } devicePath)
+        {
+            AddClip(devicePath, FillRule.NonZero);
+        }
     }
 
     private RectangleD ClampToDevice(RectangleD bounds)

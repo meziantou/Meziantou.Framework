@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Unicode;
 using Meziantou.Framework.Fuzzing;
@@ -13,7 +14,7 @@ public static partial class UnicodeFuzzTargets
     /// exceptions and the words, separated by <see cref="PartSeparator"/> (one word per line). Malformed patterns only
     /// throw <see cref="FormatException"/>. The breaks are increasing, inside the word, at grapheme cluster boundaries,
     /// and leave the minimum number of clusters on each side; a buffer of the length of the word is enough, and a buffer
-    /// one element too short throws <see cref="ArgumentException"/>. When there is no exception and no TeX group, the
+    /// one element too short throws <see cref="ArgumentException"/>. <c>Load</c> and <c>LoadAsync</c>, from streams that return a few bytes per read, agree with <c>Parse</c>. When there is no exception and no TeX group, the
     /// breaks are compared with a direct application of every pattern at every position of the word (Liang's algorithm
     /// without the trie).
     /// </summary>
@@ -31,6 +32,8 @@ public static partial class UnicodeFuzzTargets
         var patterns = FuzzText.Decode(patternBytes);
         var exceptions = FuzzText.Decode(exceptionBytes);
         var useUtf8 = (flags & 0x10) != 0;
+        var words = FuzzText.Decode(data).Split('\n').Take(MaxHyphenatedWords).ToArray();
+        CheckHyphenatorLoaders(patternBytes.ToArray(), exceptionBytes.ToArray(), options, words, nullExceptions: (flags & 0x40) != 0, maxReadLength: (flags & 0x80) != 0 ? 3 : int.MaxValue);
 
         Hyphenator hyphenator;
         try
@@ -53,12 +56,8 @@ public static partial class UnicodeFuzzTargets
             FuzzAssert.Equal(referencePatterns.Count, hyphenator.PatternCount, "PatternCount is not the number of distinct patterns");
         }
 
-        var wordCount = 0;
-        foreach (var word in FuzzText.Decode(data).Split('\n'))
+        foreach (var word in words)
         {
-            if (++wordCount > MaxHyphenatedWords)
-                break;
-
             var breaks = CheckHyphenation(hyphenator, word, options);
             if (referencePatterns is not null)
             {
@@ -66,6 +65,53 @@ public static partial class UnicodeFuzzTargets
                 FuzzAssert.Equal(FormatPositions(expected), FormatPositions(breaks), $"The breaks of {FuzzAssert.Format(word)} differ from a direct application of the patterns");
             }
         }
+    }
+
+    /// <summary>Load and LoadAsync read the streams to their end and give the hyphenator Parse gives for the bytes, or throw the same FormatException.</summary>
+    private static void CheckHyphenatorLoaders(byte[] patterns, byte[] exceptions, HyphenatorOptions options, string[] words, bool nullExceptions, int maxReadLength)
+    {
+        var expected = DescribeHyphenator(() => Hyphenator.Parse(patterns, exceptions, options), words);
+        var exceptionStreamContent = nullExceptions && exceptions.Length == 0 ? null : exceptions;
+        FuzzAssert.Equal(expected, DescribeHyphenator(() => LoadHyphenator(patterns, exceptionStreamContent, options, maxReadLength), words), "Load(Stream) and Parse(bytes) differ");
+        FuzzAssert.Equal(expected, DescribeHyphenator(() => LoadHyphenatorAsync(patterns, exceptionStreamContent, options, maxReadLength).GetAwaiter().GetResult(), words), "LoadAsync(Stream) and Parse(bytes) differ");
+    }
+
+    private static Hyphenator LoadHyphenator(byte[] patterns, byte[]? exceptions, HyphenatorOptions options, int maxReadLength)
+    {
+        using var patternStream = new ShortReadStream(patterns, maxReadLength);
+        using var exceptionStream = exceptions is null ? null : new ShortReadStream(exceptions, maxReadLength);
+        return Hyphenator.Load(patternStream, exceptionStream, options);
+    }
+
+    private static async Task<Hyphenator> LoadHyphenatorAsync(byte[] patterns, byte[]? exceptions, HyphenatorOptions options, int maxReadLength)
+    {
+        await using var patternStream = new ShortReadStream(patterns, maxReadLength);
+        await using var exceptionStream = exceptions is null ? null : new ShortReadStream(exceptions, maxReadLength);
+        return await Hyphenator.LoadAsync(patternStream, exceptionStream, options).ConfigureAwait(false);
+    }
+
+    private static string DescribeHyphenator(Func<Hyphenator> create, string[] words)
+    {
+        Hyphenator hyphenator;
+        try
+        {
+            hyphenator = create();
+        }
+        catch (FormatException)
+        {
+            return nameof(FormatException);
+        }
+
+        var result = new StringBuilder();
+        result.Append(CultureInfo.InvariantCulture, $"patterns: {hyphenator.PatternCount}, exceptions: {hyphenator.ExceptionCount}, minimums: {hyphenator.LeftHyphenMin} {hyphenator.RightHyphenMin}");
+        var positions = new int[words.Length == 0 ? 0 : words.Max(word => word.Length)];
+        foreach (var word in words)
+        {
+            var count = hyphenator.Hyphenate(word, positions);
+            result.Append(' ').Append(FormatPositions(positions[..count]));
+        }
+
+        return result.ToString();
     }
 
     private static int[] CheckHyphenation(Hyphenator hyphenator, string word, HyphenatorOptions options)
@@ -225,6 +271,8 @@ public static partial class UnicodeFuzzTargets
         (string Name, byte Flags, string Patterns, string Exceptions, string Words)[] seeds =
         [
             ("liang", 0x01, "hy3ph he2n hena4 hen5at 1na n2at 1tio 2io", "", "hyphenation\nHYPHENATION\nHyphenation\nxyz\na\n"),
+            ("liang-streams", 0xC1, "hy3ph he2n hena4 hen5at 1na n2at 1tio 2io", "", "hyphenation\nconcatenation"),
+            ("exceptions-streams", 0x80, "1b", "ta-ble", "table\ncable"),
             ("liang-utf8", 0x10, "hy3ph he2n hena4 hen5at 1na n2at 1tio 2io", "", "hyphenation\nconcatenation"),
             ("dots", 0x00, ".un1 1ly. 1b a2b 3b a1b a2b .a1 ..", "", "undo\nsundo\nbadly\nlyric\ncabx\nxaby\nx.ab\nab"),
             ("tex-groups", 0x05, "% comment\n\\patterns{ hy3ph he2n hena4 hen5at 1na n2at 1tio 2io }\n\\hyphenation{ ta-ble as-so-ciate }", "", "table\nassociate\nhyphenation"),

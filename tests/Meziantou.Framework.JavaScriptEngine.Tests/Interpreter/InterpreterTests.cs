@@ -386,6 +386,11 @@ public sealed class InterpreterTests
     [InlineData("function f() { var h = 'outer'; return function () { { function h() { } } return typeof h; }(); } f()", "function")]
     [InlineData("function f(a) { return () => function () { return arguments.length; }; } f(1)()(1, 2, 3)", "3")]
     [InlineData("function f() { return () => arguments.length; } f(1, 2)()", "2")]
+    // The bindings of the enclosing scopes are looked up by name (indexed when there are many of them), the last declared one wins
+    [InlineData("function f(p0, p1) { var a = 1, b = 2, c = 3, d = 4, e = 5, g = 6, h = 7, i = 8, j = 9, k = 10; return () => [a, k, p1, this.v].join(); } f.call({ v: 't' }, 0, 'p')()", "1,10,p,t")]
+    [InlineData("function f(a, a) { return function () { return a; }; } f(1, 2)()", "2")]
+    [InlineData("function f(a, b, c, d, e, g, h, i, j, a) { return () => a; } f(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)()", "10")]
+    [InlineData("function f() { var a = 1, b = 2, c = 3, d = 4, e = 5, g = 6, h = 7, i = 8, j = 9; return function () { var x = 10; return () => a + j + x + typeof b; }; } f()()()", "20number")]
     public void Evaluate_LazyCompilation(string code, string expected)
     {
         Assert.Equal(expected, Run(code));

@@ -1022,8 +1022,9 @@ public partial class HtmlInputElement : IEditableTextControl
     /// <summary>
     /// https://html.spec.whatwg.org/multipage/input.html#show-the-picker,-if-applicable: the user activation is consumed, then
     /// the picker of an element that supports one is shown. There is no picker user interface (the user does not choose a
-    /// value): the picker of the File Upload state (the file chooser) closes at once, and the other pickers are open (they
-    /// match <c>:open</c>) until they are closed (see <see cref="IsPickerOpen"/>).
+    /// value): the picker of the File Upload state (the file chooser) is shown by <see cref="BrowsingContextOptions.ShowFilePicker"/>
+    /// (else it closes at once), and the other pickers are open (they match <c>:open</c>) until they are closed (see
+    /// <see cref="IsPickerOpen"/>).
     /// </summary>
     private void ShowPickerIfApplicable()
     {
@@ -1031,7 +1032,13 @@ public partial class HtmlInputElement : IEditableTextControl
             return;
 
         window.ConsumeUserActivation();
-        if (!SupportsPicker || _type == InputType.File)
+        if (_type == InputType.File)
+        {
+            window.Options.ShowFilePicker?.Invoke(this);
+            return;
+        }
+
+        if (!SupportsPicker)
             return;
 
         OpenPicker();

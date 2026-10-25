@@ -79,6 +79,13 @@ public sealed partial class BrowsingContext : IDisposable
     /// </summary>
     internal int OngoingNavigationId => _ongoingNavigation;
 
+    /// <summary>
+    /// Gets whether a navigation of the browsing context is ongoing: it started (e.g. <c>location.href</c> was set, or a link
+    /// was followed), and its document is not active yet. It becomes false when the new document is active, and when the
+    /// navigation ends without a new document (e.g. a 204 response, or a navigation canceled by another one).
+    /// </summary>
+    public bool IsNavigating => _ongoingNavigation != 0;
+
     /// <summary>The identifier that the next navigation will exceed (see <see cref="OngoingNavigationId"/>).</summary>
     internal static int LastNavigationId => Volatile.Read(ref s_nextNavigationId);
 #pragma warning disable CA2213 // The cancellation of an aborted navigation is not disposed, as the loader may still use its token
@@ -402,6 +409,82 @@ public sealed partial class BrowsingContext : IDisposable
         SetFullscreenViewportSize(null);
     }
 
+    private ViewportOptions? _viewport;
+
+    /// <summary>
+    /// Gets or sets the virtual viewport of the top-level browsing context and the preferences of the user: the size of the
+    /// viewport, the device pixel ratio, the media type and the user preference media features (e.g.
+    /// <c>prefers-color-scheme</c>). It is <see cref="BrowsingContextOptions.Viewport"/> until it is set (e.g. as
+    /// <c>page.setViewportSize()</c> and <c>page.emulateMedia()</c> of Playwright). A new value applies to the documents of the
+    /// browsing context and of its nested browsing contexts: the media queries are evaluated again, the documents are laid
+    /// out again, and the <c>resize</c> event is fired at the next rendering opportunity.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The browsing context is a nested browsing context: its viewport is the content box of its container.</exception>
+    public ViewportOptions Viewport
+    {
+        get
+        {
+            var top = Top;
+            return top._viewport ?? top.Options.Viewport ?? ViewportOptions.Default;
+        }
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            if (Parent is not null)
+                throw new InvalidOperationException("The viewport of a nested browsing context is the content box of its container");
+
+            if (value == Viewport)
+                return;
+
+            // The environment of the documents is evaluated again (see StyleEngine.CreateEnvironment), and the resize steps of the
+            // next rendering update fire the resize event
+            _viewport = value;
+            if (!IsDestroyed)
+            {
+                foreach (var navigable in GetInclusiveDescendantNavigables())
+                {
+                    navigable.Document.InvalidateLayout();
+                }
+
+                EventLoop.RequestRenderingOpportunity(Document);
+            }
+        }
+    }
+
+    private bool _isOffline;
+
+    /// <summary>
+    /// Gets or sets whether the user agent is offline (as the <c>offline</c> option of Playwright): <c>navigator.onLine</c>
+    /// returns false, and the <c>offline</c> event (or <c>online</c> when it changes back) is fired at the windows of the
+    /// browsing context and of its nested browsing contexts. The requests are not blocked: a <see cref="DocumentLoader"/> fails
+    /// them (returns null). The value is the one of the top-level browsing context.
+    /// </summary>
+    public bool IsOffline
+    {
+        get => Top._isOffline;
+        set
+        {
+            var top = Top;
+            if (top._isOffline == value)
+                return;
+
+            top._isOffline = value;
+            if (top.IsDestroyed)
+                return;
+
+            // https://html.spec.whatwg.org/multipage/system-state.html#navigator.online: "the user agent must queue a global task on
+            // the networking task source given the global object to fire an event named online or offline"
+            var type = value ? "offline" : "online";
+            foreach (var navigable in top.GetInclusiveDescendantNavigables())
+            {
+                if (navigable.Document.RelevantWindow is { } window)
+                {
+                    navigable.Document.QueueGlobalTask(() => window.FireEvent(new Event(type)));
+                }
+            }
+        }
+    }
+
     private void SetFullscreenViewportSize(FullscreenViewportSize? size)
     {
         if (FullscreenViewportSize == size)
@@ -422,6 +505,13 @@ public sealed partial class BrowsingContext : IDisposable
 
     /// <summary>Gets the opener browsing context of an auxiliary browsing context (https://html.spec.whatwg.org/multipage/document-sequences.html#opener-browsing-context), or null.</summary>
     public BrowsingContext? Opener { get; internal set; }
+
+    /// <summary>
+    /// Gets the browsing context whose document created this auxiliary browsing context (<c>window.open()</c>, a link or a form
+    /// with a <c>_blank</c> target), even when it has no opener (<c>noopener</c>, the default of the <c>_blank</c> links): the
+    /// tab that opened the popup, as the browsers show it. It is null for the browsing contexts created by the application.
+    /// </summary>
+    public BrowsingContext? CreatorBrowsingContext { get; private set; }
 
     /// <summary>The descendant navigables of the navigable, in tree order (https://html.spec.whatwg.org/multipage/document-sequences.html#descendant-navigables).</summary>
     internal IEnumerable<BrowsingContext> GetDescendantNavigables()
@@ -465,12 +555,13 @@ public sealed partial class BrowsingContext : IDisposable
     /// (https://html.spec.whatwg.org/multipage/document-sequences.html#creating-a-new-auxiliary-browsing-context): its
     /// initial about:blank document has the origin of the opener, or an opaque origin without opener.
     /// </summary>
-    internal BrowsingContext CreateAuxiliaryBrowsingContext(string name, Document? opener, SandboxingFlags popupSandboxingFlags = SandboxingFlags.None)
+    internal BrowsingContext CreateAuxiliaryBrowsingContext(string name, Document? opener, SandboxingFlags popupSandboxingFlags = SandboxingFlags.None, BrowsingContext? creator = null)
     {
         var owner = GroupOwner;
         var context = new BrowsingContext(Options, parent: null, container: null, owner, opener, name, popupSandboxingFlags)
         {
             Opener = opener?.BrowsingContext,
+            CreatorBrowsingContext = creator ?? opener?.BrowsingContext,
 
             // https://html.spec.whatwg.org/multipage/document-sequences.html#creating-a-new-auxiliary-browsing-context: the
             // group of the opener (a browsing context without opener is in a new group)
@@ -485,6 +576,7 @@ public sealed partial class BrowsingContext : IDisposable
             openerNavigable.Top.SessionStorageShed.CopyTo(context.SessionStorageShed);
         }
 
+        Options.BrowsingContextCreated?.Invoke(context);
         return context;
     }
 
@@ -934,7 +1026,7 @@ public sealed partial class BrowsingContext : IDisposable
         // https://html.spec.whatwg.org/multipage/document-sequences.html#creating-a-new-auxiliary-browsing-context: the sandboxing
         // flags of the document propagate to the popup, unless it uses allow-popups-to-escape-sandbox
         var popupSandboxingFlags = (currentDocument.ActiveSandboxingFlags & SandboxingFlags.PropagatesToAuxiliaryBrowsingContexts) != SandboxingFlags.None ? currentDocument.ActiveSandboxingFlags : SandboxingFlags.None;
-        var popup = CreateAuxiliaryBrowsingContext(targetName, noopener ? null : Document, popupSandboxingFlags);
+        var popup = CreateAuxiliaryBrowsingContext(targetName, noopener ? null : Document, popupSandboxingFlags, creator: this);
         popup._isNewTopLevelTraversable = true;
 
         // The window of the new top-level browsing context is the active window of the user: it takes the system focus from
@@ -1205,11 +1297,16 @@ public sealed partial class BrowsingContext : IDisposable
         }
 
         // https://html.spec.whatwg.org/multipage/browsing-the-web.html#checking-if-unloading-is-canceled: the beforeunload
-        // event is fired at the documents that would be unloaded (synchronously, as the browsers do). There is no user to
-        // confirm an unload prompt: the navigation continues.
-        if (traversalEntry is null || !ReferenceEquals(_beforeUnloadFiredForEntry, traversalEntry))
+        // event is fired at the documents that would be unloaded (synchronously, as the browsers do). The navigation is
+        // canceled when the user does not confirm the unload prompt.
+        if ((traversalEntry is null || !ReferenceEquals(_beforeUnloadFiredForEntry, traversalEntry)) && FireBeforeUnload())
         {
-            FireBeforeUnload();
+            if (_ongoingNavigation == navigationId)
+            {
+                EndNavigationWithoutDocument();
+            }
+
+            return;
         }
 
         if (IsDestroyed || _ongoingNavigation != navigationId)
@@ -1269,10 +1366,14 @@ public sealed partial class BrowsingContext : IDisposable
     /// <summary>
     /// https://html.spec.whatwg.org/multipage/browsing-the-web.html#checking-if-unloading-is-canceled: fires beforeunload at
     /// the active documents of the navigable and of its descendant navigables
-    /// (https://html.spec.whatwg.org/multipage/browsing-the-web.html#fire-beforeunload).
+    /// (https://html.spec.whatwg.org/multipage/browsing-the-web.html#fire-beforeunload). When a document that has sticky
+    /// activation cancels the event, the user is asked to confirm the unloading, once, with
+    /// <see cref="BrowsingContextOptions.UserPromptHandler"/> (without handler, the unloading is never canceled).
     /// </summary>
-    private void FireBeforeUnload()
+    /// <returns>Whether the user canceled the unloading.</returns>
+    private bool FireBeforeUnload()
     {
+        var unloadPromptShown = false;
         foreach (var navigable in GetDescendantNavigables().Prepend(this).ToList())
         {
             // A document whose beforeunload, pagehide or unload event handlers are running does not get the event again
@@ -1287,6 +1388,18 @@ public sealed partial class BrowsingContext : IDisposable
                 var beforeUnloadEvent = BeforeUnloadEvent.CreateUninitializedBeforeUnloadEvent();
                 beforeUnloadEvent.InitEvent("beforeunload", bubbles: false, cancelable: true);
                 window.FireEvent(beforeUnloadEvent);
+
+                // "If unloadPromptShown is false, document's active sandboxing flag set does not have its sandboxed modals flag
+                // set, document's relevant global object has sticky activation, and beforeunloadEvent's canceled flag is set or
+                // its returnValue attribute is not the empty string, then [...] ask the user to confirm that they wish to unload
+                // the document, and pause while waiting for the user's response"
+                if (!unloadPromptShown && window.HasStickyActivation && (beforeUnloadEvent.DefaultPrevented || beforeUnloadEvent.ReturnValue.Length > 0)
+                    && window.ShowUserPrompt(UserPromptType.BeforeUnload, message: "", defaultValue: "") is { } result)
+                {
+                    unloadPromptShown = true;
+                    if (!result.Accepted)
+                        return true;
+                }
             }
             finally
             {
@@ -1294,6 +1407,8 @@ public sealed partial class BrowsingContext : IDisposable
                 document.UnloadCounter--;
             }
         }
+
+        return false;
     }
 
     // Incremented to cancel the pending javascript: URL navigations
@@ -2739,6 +2854,10 @@ public sealed partial class BrowsingContext : IDisposable
         }
 
         DocumentActivated?.Invoke(document);
+        if (!document.IsInitialAboutBlank)
+        {
+            Options.DocumentActivated?.Invoke(this, document);
+        }
 
         // https://html.spec.whatwg.org/multipage/dom.html#reveal: the document of a navigation with a view transition is revealed
         // at its first rendering opportunity (the other documents are revealed when the pagereveal event is observed)
@@ -3009,6 +3128,8 @@ public sealed partial class BrowsingContext : IDisposable
         {
             Options.ScriptEngine?.DestroyRealm(window);
         }
+
+        Options.BrowsingContextDestroyed?.Invoke(this);
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/document-sequences.html#create-a-new-child-navigable</summary>
@@ -3025,6 +3146,7 @@ public sealed partial class BrowsingContext : IDisposable
         NavigableContainers.SetContentNavigable(element, navigable);
         (parentDocument.ChildNavigables ??= []).Add(navigable);
         parent.Options.ScriptEngine?.OnChildNavigablesChanged(parent.Window);
+        parent.Options.BrowsingContextCreated?.Invoke(navigable);
     }
 
     /// <summary>
@@ -3122,8 +3244,37 @@ public sealed partial class BrowsingContext : IDisposable
         if (IsDestroyed)
             return;
 
-        FireBeforeUnload();
+        if (FireBeforeUnload())
+            return;
+
         Destroy();
+    }
+
+    /// <summary>
+    /// Closes a top-level browsing context as the user closes the tab of a browser
+    /// (https://html.spec.whatwg.org/multipage/document-sequences.html#close-a-top-level-traversable): the <c>beforeunload</c> event
+    /// is fired (when <paramref name="runBeforeUnload"/> is true; the user can cancel the closing, see
+    /// <see cref="BrowsingContextOptions.UserPromptHandler"/>), then the documents are unloaded (<c>pagehide</c> and <c>unload</c>)
+    /// and destroyed (<see cref="BrowsingContextOptions.BrowsingContextDestroyed"/> is invoked). Unlike <see cref="Dispose"/>, the
+    /// event loop of the browsing context group is not disposed: the other top-level browsing contexts of the group (the
+    /// auxiliary browsing contexts) keep running.
+    /// </summary>
+    /// <param name="runBeforeUnload">Whether the <c>beforeunload</c> event is fired first.</param>
+    /// <returns>False when the user canceled the closing, else true.</returns>
+    /// <exception cref="InvalidOperationException">The browsing context is a nested browsing context.</exception>
+    public bool TryClose(bool runBeforeUnload = false)
+    {
+        if (Parent is not null)
+            throw new InvalidOperationException("A nested browsing context is destroyed when its container element is removed from the document");
+
+        if (IsDestroyed)
+            return true;
+
+        if (runBeforeUnload && FireBeforeUnload())
+            return false;
+
+        Destroy();
+        return true;
     }
 
     /// <summary>Destroys a top-level browsing context (https://html.spec.whatwg.org/multipage/document-sequences.html#destroy-a-top-level-traversable).</summary>
@@ -3151,6 +3302,8 @@ public sealed partial class BrowsingContext : IDisposable
         {
             Options.ScriptEngine?.DestroyRealm(window);
         }
+
+        Options.BrowsingContextDestroyed?.Invoke(this);
     }
 
     /// <summary>The number of times the loading was stopped (window.stop()): a planned navigation of a form is canceled by a stop (https://github.com/whatwg/html/issues/3730).</summary>
@@ -3169,11 +3322,19 @@ public sealed partial class BrowsingContext : IDisposable
         }
     }
 
+    /// <summary>
+    /// Reloads the active document, as the reload button of a browser
+    /// (https://html.spec.whatwg.org/multipage/browsing-the-web.html#reload, with the "browser UI" user navigation involvement:
+    /// the <c>navigate</c> event of the navigation API cannot cancel it). The document is loaded again by
+    /// <see cref="BrowsingContextOptions.DocumentLoader"/>, from a task of the event loop.
+    /// </summary>
+    public void Reload() => ReloadNavigable(userInvolvement: UserNavigationInvolvement.BrowserUI);
+
     /// <summary>https://html.spec.whatwg.org/multipage/browsing-the-web.html#reload</summary>
     /// <param name="navigationApiState">The navigation API state of the entry (<c>navigation.reload()</c>), or null.</param>
     /// <param name="apiMethodTracker">The navigation API method tracker of <c>navigation.reload()</c>, or null.</param>
     /// <param name="userInvolvement">The user navigation involvement.</param>
-    internal void Reload(NavigationApiStateValue? navigationApiState = null, NavigationApiMethodTracker? apiMethodTracker = null, UserNavigationInvolvement userInvolvement = UserNavigationInvolvement.None)
+    internal void ReloadNavigable(NavigationApiStateValue? navigationApiState = null, NavigationApiMethodTracker? apiMethodTracker = null, UserNavigationInvolvement userInvolvement = UserNavigationInvolvement.None)
     {
         if (Document.UnloadCounter > 0)
             return;
@@ -3359,6 +3520,8 @@ public sealed partial class BrowsingContext : IDisposable
             var newUrlString = entry.Url.Serialize();
             document.QueueGlobalTask(() => window.FireEvent(new HashChangeEvent("hashchange", new HashChangeEventInit { OldUrl = oldUrlString, NewUrl = newUrlString })));
         }
+
+        Options.SameDocumentNavigated?.Invoke(this);
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/browsing-the-web.html#url-and-history-update-steps</summary>
@@ -3386,6 +3549,7 @@ public sealed partial class BrowsingContext : IDisposable
         document.SetUrl(newUrl, keepTargetElement: true);
         document.LatestEntry = newEntry;
         document.RelevantWindow?.Navigation.UpdateEntriesForSameDocumentNavigation(newEntry, historyHandling == NavigationHistoryBehavior.Push ? NavigationType.Push : NavigationType.Replace);
+        Options.SameDocumentNavigated?.Invoke(this);
     }
 
     /// <summary>The parameters of the document being created by a navigation.</summary>

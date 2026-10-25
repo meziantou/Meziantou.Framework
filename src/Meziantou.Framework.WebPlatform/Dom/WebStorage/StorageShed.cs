@@ -89,6 +89,42 @@ public sealed class StorageShed
         return area?.GetItems() ?? [];
     }
 
+    /// <summary>
+    /// Returns the origins whose storage area has items in memory (the areas loaded from <see cref="Persistence"/> and the
+    /// ones the documents used), e.g. to save the storage state of a session.
+    /// </summary>
+    public IReadOnlyList<string> GetOrigins()
+    {
+        lock (_lock)
+        {
+            return [.. _areas.Where(entry => entry.Key.PartitionNonce is null && entry.Value.Count > 0).Select(entry => entry.Key.Origin)];
+        }
+    }
+
+    /// <summary>
+    /// Sets an item of the storage area of an origin (e.g. to restore the storage state of a session, as the
+    /// <c>storageState</c> option of Playwright). No <c>storage</c> event is fired.
+    /// </summary>
+    /// <param name="origin">The serialization of the origin (e.g. <c>https://example.com</c>, or <c>http://example.com:8080</c>).</param>
+    /// <param name="key">The key of the item.</param>
+    /// <param name="value">The value of the item.</param>
+    /// <returns>True when the item is set, false when it exceeds the quota of the storage area (see <see cref="Quota"/>).</returns>
+    public bool SetItem(string origin, string key, string value)
+    {
+        ArgumentNullException.ThrowIfNull(origin);
+        ArgumentNullException.ThrowIfNull(key);
+        ArgumentNullException.ThrowIfNull(value);
+        try
+        {
+            _ = ObtainArea(new StorageKey(origin, PartitionNonce: null)).Set(key, value, out _);
+            return true;
+        }
+        catch (QuotaExceededError)
+        {
+            return false;
+        }
+    }
+
     /// <summary>Removes the items of all the origins, and the persisted items of <see cref="Persistence"/>. No <c>storage</c> event is fired.</summary>
     public void Clear()
     {

@@ -19,8 +19,6 @@ public sealed partial class Navigator
     [NotInIdl]
     public const string DefaultUserAgent = "Mozilla/5.0 (Meziantou.Framework.WebPlatform)";
 
-    private static readonly string[] DefaultLanguages = ["en-US", "en"];
-
     private readonly Window _window;
     private UserActivation? _userActivation;
     private PluginArray? _plugins;
@@ -41,7 +39,7 @@ public sealed partial class Navigator
     /// </summary>
     /// <seealso href="https://w3c.github.io/pointerevents/#dom-navigator-maxtouchpoints"/>
     [IdlMember("maxTouchPoints", "https://w3c.github.io/pointerevents/#dom-navigator-maxtouchpoints")]
-    public int MaxTouchPoints => _window.BrowsingContext?.Top.Options.Viewport is { HasTouch: true } ? 1 : 0;
+    public int MaxTouchPoints => _window.BrowsingContext?.Top.Viewport is { HasTouch: true } ? 1 : 0;
 
     /// <summary>https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-appcodename</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-appcodename"/>
@@ -103,19 +101,19 @@ public sealed partial class Navigator
     /// <summary>https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-language</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-language"/>
     [IdlMember("language", "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-language")]
-    public string Language => DefaultLanguages[0];
+    public string Language => _window.Options.EffectiveLanguages[0];
 
     /// <summary>The same list is returned until the languages change (https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-languages).</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-languages"/>
     [IdlMember("languages", "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-languages")]
-    public IReadOnlyList<string> Languages => DefaultLanguages;
+    public IReadOnlyList<string> Languages => _window.Options.EffectiveLanguages;
 
     // NavigatorOnLine (https://html.spec.whatwg.org/multipage/system-state.html#navigatoronline)
 
-    /// <summary>https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-online</summary>
+    /// <summary>https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-online: false while the browsing context is offline (<see cref="BrowsingContext.IsOffline"/>).</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-online"/>
     [IdlMember("onLine", "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-online")]
-    public bool OnLine => true;
+    public bool OnLine => _window.BrowsingContext is not { IsOffline: true };
 
     // NavigatorContentUtils (https://html.spec.whatwg.org/multipage/system-state.html#navigatorcontentutils)
 

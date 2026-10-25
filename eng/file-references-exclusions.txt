@@ -8,6 +8,7 @@ src/Meziantou.Framework.Pdf/Fonts/GlyphList/
 src/Meziantou.Framework.Pdf/Rendering/Fonts/Substitution/
 src/Meziantou.Framework.Unicode.Dictionaries/Data/*.dict
 src/Meziantou.Framework.WebPlatform/Unicode/Hyphenation/*.hyph
+src/Meziantou.Framework.WebPlatform.Playwright/Scripts/*.js
 tests/Meziantou.Framework.AtlassianDataFormat.Tests/TestData/third-party/
 tests/Meziantou.Framework.HtmlToMarkdown.Tests/TestData/Specs/
 tests/Meziantou.Framework.Imaging.Fixtures/font-suites/

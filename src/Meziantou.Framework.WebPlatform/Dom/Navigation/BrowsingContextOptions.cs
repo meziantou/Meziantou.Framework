@@ -1,4 +1,6 @@
+using System.Globalization;
 using System.Net.Http;
+using System.Text;
 
 namespace Meziantou.Framework.WebPlatform.Dom;
 
@@ -237,6 +239,67 @@ public sealed partial class BrowsingContextOptions
     public Action<GlobalScope, ContentSecurityPolicyViolationReport>? ContentSecurityPolicyViolation { get; init; }
 
     /// <summary>
+    /// Gets or sets the callback invoked when the library creates a browsing context that uses these options: a nested
+    /// browsing context (the content navigable of an <c>iframe</c>, <c>frame</c>, <c>object</c> or <c>embed</c> element, see
+    /// <see cref="BrowsingContext.Parent"/>) or an auxiliary browsing context (<c>window.open()</c>, a <c>_blank</c> target, see
+    /// <see cref="BrowsingContext.IsAuxiliary"/>). It is invoked once the browsing context is attached to its parent or to its
+    /// opener, with its initial <c>about:blank</c> document. It is not invoked for the browsing contexts created by the
+    /// application. The callback is invoked on the thread of the event loop.
+    /// </summary>
+    public Action<BrowsingContext>? BrowsingContextCreated { get; init; }
+
+    /// <summary>
+    /// Gets or sets the callback invoked when a browsing context that uses these options is destroyed: a nested browsing
+    /// context whose container is removed, a top-level browsing context closed by <c>window.close()</c> or disposed by the
+    /// application (<see cref="BrowsingContext.Dispose"/>). Its documents are unloaded. The callback is invoked on the thread
+    /// of the event loop.
+    /// </summary>
+    public Action<BrowsingContext>? BrowsingContextDestroyed { get; init; }
+
+    /// <summary>
+    /// Gets or sets the callback invoked when a document becomes the active document of a browsing context that uses these
+    /// options: the end of a navigation (a document is created, including the error document of a navigation whose response
+    /// is a network error, see <see cref="Document.IsNetworkErrorDocument"/>), or a traversal of the session history that loads
+    /// a document. It is not invoked for the initial <c>about:blank</c> document of a new browsing context. The callback is
+    /// invoked on the thread of the event loop, before the document is parsed.
+    /// </summary>
+    public Action<BrowsingContext, Document>? DocumentActivated { get; init; }
+
+    /// <summary>
+    /// Gets or sets the callback invoked when the URL of the active document of a browsing context that uses these options
+    /// changes without a new document (https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate-to-a-fragment): a
+    /// navigation to a fragment, <c>history.pushState()</c> or <c>history.replaceState()</c>, a traversal of the session history
+    /// within the document. The callback is invoked on the thread of the event loop.
+    /// </summary>
+    public Action<BrowsingContext>? SameDocumentNavigated { get; init; }
+
+    /// <summary>
+    /// Gets or sets the callback that shows the simple dialogs of the windows
+    /// (https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#simple-dialogs): <c>alert()</c>, <c>confirm()</c>,
+    /// <c>prompt()</c>, and the prompt of a <c>beforeunload</c> event that is canceled by a document that has sticky activation
+    /// (the user is asked to confirm that the document is unloaded). The script waits for the result: the callback blocks the
+    /// event loop until the user answers. The default is null: no dialog is shown, <c>confirm()</c> returns false,
+    /// <c>prompt()</c> returns null and the documents are unloaded.
+    /// </summary>
+    public Func<Window, UserPrompt, UserPromptResult>? UserPromptHandler { get; init; }
+
+    /// <summary>
+    /// Gets or sets the callback invoked when the file picker of an <c>input</c> element of type <c>file</c> is shown (the
+    /// activation of the element, or <c>showPicker()</c>). The host lets the user choose files, and sets them with
+    /// <see cref="HtmlInputElement.Files"/> (then fires the <c>input</c> and <c>change</c> events). The callback is invoked on
+    /// the thread of the event loop. The default is null: the file picker closes at once, without file.
+    /// </summary>
+    public Action<HtmlInputElement>? ShowFilePicker { get; init; }
+
+    /// <summary>
+    /// Gets or sets the preferred languages of the user, as BCP 47 language tags, in order of preference: <c>navigator.language</c>
+    /// and <c>navigator.languages</c> of the windows and of the workers, and the <c>Accept-Language</c> header of the requests
+    /// that do not set one. The default is null: <c>en-US</c> and <c>en</c>, and the requests have no <c>Accept-Language</c>
+    /// header (the <see cref="DocumentLoader"/> may add one).
+    /// </summary>
+    public IReadOnlyList<string>? Languages { get; init; }
+
+    /// <summary>
     /// Gets or sets the clock of the timers of the windows (<c>setTimeout()</c>, <c>requestAnimationFrame()</c>...) and of
     /// <c>performance.now()</c>: it is set as the <see cref="DomEventLoop.TimeProvider"/> of the event loop of the thread
     /// when the browsing context is created. Use a fake clock (e.g. <c>FakeTimeProvider</c>) to run the timers without
@@ -261,6 +324,36 @@ public sealed partial class BrowsingContextOptions
 
     /// <summary>The user agent string of the browsing contexts: <see cref="UserAgent"/>, or <see cref="Navigator.DefaultUserAgent"/>.</summary>
     internal string EffectiveUserAgent => UserAgent ?? Navigator.DefaultUserAgent;
+
+    private static readonly string[] DefaultLanguages = ["en-US", "en"];
+
+    /// <summary>The preferred languages of the user: <see cref="Languages"/>, or <c>en-US</c> and <c>en</c>.</summary>
+    internal IReadOnlyList<string> EffectiveLanguages => Languages is { Count: > 0 } languages ? languages : DefaultLanguages;
+
+    /// <summary>
+    /// The value of the <c>Accept-Language</c> header of the languages, as Chromium serializes it: the first language, then the
+    /// next ones with a quality that decreases by 0.1 (e.g. <c>fr-FR,fr;q=0.9,en;q=0.8</c>).
+    /// </summary>
+    internal static string GetAcceptLanguage(IReadOnlyList<string> languages)
+    {
+        var builder = new StringBuilder();
+        for (var i = 0; i < languages.Count; i++)
+        {
+            if (i > 0)
+            {
+                builder.Append(',');
+            }
+
+            builder.Append(languages[i]);
+            if (i > 0)
+            {
+                var quality = Math.Max(1, 10 - i);
+                builder.Append(";q=0.").Append(quality.ToString(CultureInfo.InvariantCulture));
+            }
+        }
+
+        return builder.ToString();
+    }
 
     /// <summary>
     /// Gets or sets the callback called when the documents of a top-level browsing context are about to be displayed
@@ -557,6 +650,14 @@ public sealed class DocumentRequest
     /// sheet that contains the <c>@import</c> rule), or null (e.g. a navigation).
     /// </summary>
     public Element? Initiator { get; init; }
+
+    /// <summary>
+    /// Gets the browsing context of the request: the browsing context that is navigated for a navigation request
+    /// (<see cref="Mode"/> is <see cref="RequestMode.Navigate"/>), or the browsing context of the document that makes the
+    /// request (its subresources, <c>fetch()</c>...). It is null for a request made by a worker, or by a document that has no
+    /// browsing context. A loader can use it to attribute the requests to the frames of a page.
+    /// </summary>
+    public BrowsingContext? BrowsingContext { get; init; }
 
     /// <summary>
     /// Gets the serialized origin of the document that initiated the request (https://fetch.spec.whatwg.org/#concept-request-origin),

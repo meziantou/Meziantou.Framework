@@ -32,6 +32,9 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
     private readonly ConditionalWeakTable<JsRealm, DomEventLoop> _eventLoops = [];
     private int _executionDepth;
 
+    // The depth of the calls of the host (Evaluate, Call): the strings they compile are not checked by the content security policies
+    private int _hostCodeDepth;
+
     /// <summary>Creates a script engine.</summary>
     /// <param name="options">The options, or null for the default options.</param>
     public JavaScriptScriptEngine(JavaScriptScriptEngineOptions? options = null)
@@ -114,7 +117,9 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
 
     /// <summary>
     /// Evaluates code in the realm of a window, as an indirect <c>eval</c>. The microtasks are not run: call
-    /// <see cref="DomEventLoop.PerformMicrotaskCheckpoint"/> afterwards.
+    /// <see cref="DomEventLoop.PerformMicrotaskCheckpoint"/> afterwards. As the code evaluated by the developer tools of a
+    /// browser, the code and the strings it compiles while it runs (<c>eval()</c>, <c>Function()</c>) are not restricted by
+    /// the content security policy of the document.
     /// </summary>
     /// <param name="window">The window.</param>
     /// <param name="code">The code.</param>
@@ -125,7 +130,103 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
         ArgumentNullException.ThrowIfNull(code);
         var realm = Agent.GetRealm(window);
         using var scope = EnterJavaScript();
-        return ToJs(realm.Run(() => realm.Evaluate(code)));
+        _hostCodeDepth++;
+        try
+        {
+            return ToJs(realm.Run(() => realm.Evaluate(code)));
+        }
+        finally
+        {
+            _hostCodeDepth--;
+        }
+    }
+
+    /// <summary>
+    /// Runs a script in the realm of a window: a script parsed once with <see cref="JsPreparedScript.Parse(string, string?, int, int)"/>
+    /// runs in several realms without being parsed again (e.g. a large library injected in each document). The microtasks are
+    /// not run: call <see cref="DomEventLoop.PerformMicrotaskCheckpoint"/> afterwards.
+    /// </summary>
+    /// <param name="window">The window.</param>
+    /// <param name="script">The parsed script.</param>
+    /// <returns>The completion value of the script.</returns>
+    public JsValue Evaluate(Window window, JsPreparedScript script)
+    {
+        ArgumentNullException.ThrowIfNull(window);
+        ArgumentNullException.ThrowIfNull(script);
+        var realm = Agent.GetRealm(window);
+        using var scope = EnterJavaScript();
+        _hostCodeDepth++;
+        try
+        {
+            return ToJs(realm.Run(() => ToObject(((JsRealm)realm.EngineRealm).Execute(script))));
+        }
+        finally
+        {
+            _hostCodeDepth--;
+        }
+    }
+
+    /// <summary>
+    /// Calls a function in the realm of a window, as a callback of the host (e.g. a function returned by <see cref="Evaluate(Window, string)"/>).
+    /// The microtasks are not run: call <see cref="DomEventLoop.PerformMicrotaskCheckpoint"/> afterwards. The strings the
+    /// function compiles while it runs (<c>eval()</c>, <c>Function()</c>) are not restricted by the content security policy of
+    /// the document.
+    /// </summary>
+    /// <param name="window">The window.</param>
+    /// <param name="function">The function.</param>
+    /// <param name="thisValue">The <c>this</c> value of the call.</param>
+    /// <param name="arguments">The arguments.</param>
+    /// <returns>The value returned by the function.</returns>
+    /// <exception cref="JsException">The function threw an exception.</exception>
+    public JsValue Call(Window window, JsValue function, JsValue thisValue, params ReadOnlySpan<JsValue> arguments)
+    {
+        ArgumentNullException.ThrowIfNull(window);
+        var realm = Agent.GetRealm(window);
+        using var scope = EnterJavaScript();
+        var argumentArray = arguments.ToArray();
+        _hostCodeDepth++;
+        try
+        {
+            return ToJs(realm.Run(() => ToObject(Engine.Call(function, thisValue, argumentArray))));
+        }
+        finally
+        {
+            _hostCodeDepth--;
+        }
+    }
+
+    /// <summary>
+    /// Converts a .NET value to a value of the realm of a window, as the IDL type <c>any</c>: a platform object (e.g. a
+    /// <see cref="Node"/>, an <see cref="Event"/>) is its wrapper object, as the scripts of the window see it; a string, a number
+    /// and a boolean are the primitive values; null is <c>null</c>.
+    /// </summary>
+    /// <param name="window">The window.</param>
+    /// <param name="value">The .NET value.</param>
+    /// <returns>The value of the realm.</returns>
+    public JsValue ToJsValue(Window window, object? value)
+    {
+        ArgumentNullException.ThrowIfNull(window);
+        var realm = Agent.GetRealm(window);
+        return ToJs(realm.ToJs(value));
+    }
+
+    /// <summary>
+    /// Converts a value of the realm of a window to a .NET value, as the IDL type <c>any</c>: the wrapper object of a platform
+    /// object is the .NET object (e.g. a <see cref="Node"/>), a string, a number and a boolean are the .NET values,
+    /// <c>undefined</c> and <c>null</c> are null, and the other values (e.g. a plain object) are returned as they are.
+    /// </summary>
+    /// <param name="window">The window.</param>
+    /// <param name="value">The value of the realm.</param>
+    /// <returns>The .NET value.</returns>
+    public object? FromJsValue(Window window, JsValue value)
+    {
+        ArgumentNullException.ThrowIfNull(window);
+        var realm = Agent.GetRealm(window);
+        return realm.ToAny(ToObject(value)) switch
+        {
+            UndefinedValue or NullValue => null,
+            var any => any,
+        };
     }
 
     /// <summary>Releases the engine.</summary>

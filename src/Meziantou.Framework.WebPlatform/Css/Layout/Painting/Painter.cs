@@ -103,7 +103,7 @@ internal sealed partial class Painter
         var ratio = _document.GetStyleEngine().Environment.DevicePixelRatio;
         _devicePixelRatio = ratio > 0 && double.IsFinite(ratio) ? ratio : 1;
         _hasFrozenViewTransitionScopes = document.HasFrozenViewTransitionScopes;
-        _paintsScrollbars = document.BrowsingContext is { } browsingContext && (browsingContext.Top.Options.Viewport ?? ViewportOptions.Default).ScrollbarsVisible;
+        _paintsScrollbars = document.BrowsingContext is { } browsingContext && browsingContext.Top.Viewport.ScrollbarsVisible;
     }
 
     /// <summary>

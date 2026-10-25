@@ -15,6 +15,11 @@ public partial class JavaScriptScriptEngine
     /// </summary>
     internal void EnsureCanCompileStrings(JsRealm engineRealm, IReadOnlyList<string> parameterStrings, string bodyString, string codeString, JsCompilationType compilationType, IReadOnlyList<JsValue> parameterArgs, JsValue bodyArg)
     {
+        // The code of the host (Evaluate, Call) is not restricted by the policies of the documents, as the code evaluated by
+        // the developer tools of a browser
+        if (_hostCodeDepth > 0)
+            return;
+
         // A realm without global object of the library (e.g. a ShadowRealm) has no policy
         if (Agent.GetRealm(engineRealm) is not { } realm)
             return;

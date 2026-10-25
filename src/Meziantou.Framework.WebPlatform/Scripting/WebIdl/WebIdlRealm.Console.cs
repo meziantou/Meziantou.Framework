@@ -453,6 +453,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             Arguments = arguments,
             GroupDepth = _consoleGroupDepth,
             StackTrace = stackTrace,
+            Location = GlobalScope.ScriptEngine?.GetCurrentScriptLocation(),
         });
     }
 

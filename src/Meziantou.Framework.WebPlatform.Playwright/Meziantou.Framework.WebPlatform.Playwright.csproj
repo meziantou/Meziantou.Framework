@@ -1,0 +1,25 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.WebPlatform.Playwright</RootNamespace>
+    <Version>1.0.0</Version>
+    <IsAotCompatible>true</IsAotCompatible>
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+    <Description>A Playwright server for Meziantou.Framework.WebPlatform: the Playwright clients (.NET, Node.js, Python, Java) connect to it with BrowserType.ConnectAsync and automate the managed browser engine (navigation, locators, actions, assertions, screenshots, network interception).</Description>
+    <PackageTags>playwright;browser;automation;testing;headless;html;dom;web-platform</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.WebPlatform.JavaScript\Meziantou.Framework.WebPlatform.JavaScript.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.WebPlatform.Imaging\Meziantou.Framework.WebPlatform.Imaging.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.WebPlatform.PdfRendering\Meziantou.Framework.WebPlatform.PdfRendering.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Playwright.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The scripts that Playwright injects in the pages (see Scripts/README.md); their license is distributed with the package -->
+    <EmbeddedResource Include="Scripts\*.js" LogicalName="Meziantou.Framework.WebPlatform.Playwright.Scripts.%(Filename)%(Extension)" />
+    <None Include="Scripts\LICENSE.txt;Scripts\NOTICE.txt" Pack="true" PackagePath="licenses/playwright-%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

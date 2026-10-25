@@ -358,4 +358,194 @@ public sealed class UserInputTests : IDisposable
         Assert.True(received.MetaKey);
         Assert.False(received.CtrlKey);
     }
+
+    [Fact]
+    public void Keyboard_Type_InsertsTheTextInTheFocusedInputWithTrustedEvents()
+    {
+        var document = Load("<input id=a>");
+        var input = (HtmlInputElement)document.GetElementById("a")!;
+        input.Focus();
+        var events = new List<string>();
+        foreach (var type in (string[])["keydown", "keypress", "beforeinput", "input", "keyup"])
+        {
+            document.AddEventListener(type, e => events.Add(e is KeyboardEvent key ? $"{e.Type}:{key.Key}:{key.Code}:{key.KeyCode}:{key.CharCode}:{e.IsTrusted}" : $"{e.Type}:{e.IsTrusted}"));
+        }
+
+        document.BrowsingContext!.Input.Keyboard.Type("a!");
+
+        Assert.Equal("a!", input.Value);
+        Assert.Equal(
+            [
+                "keydown:a:KeyA:65:0:True", "keypress:a:KeyA:97:97:True", "beforeinput:True", "input:True", "keyup:a:KeyA:65:0:True",
+                "keydown:!:Digit1:49:0:True", "keypress:!:Digit1:33:33:True", "beforeinput:True", "input:True", "keyup:!:Digit1:49:0:True",
+            ],
+            events);
+    }
+
+    [Fact]
+    public void Keyboard_Shift_UppercasesTheLettersAndSetsTheModifiers()
+    {
+        var document = Load("<input id=a>");
+        var input = (HtmlInputElement)document.GetElementById("a")!;
+        input.Focus();
+        var keyboard = document.BrowsingContext!.Input.Keyboard;
+        var shiftKeys = new List<bool>();
+        document.AddEventListener("keydown", e => shiftKeys.Add(((KeyboardEvent)e).ShiftKey));
+
+        keyboard.Down("Shift");
+        Assert.Equal(InputModifiers.Shift, document.BrowsingContext.Input.Modifiers);
+        Assert.Equal(["Shift"], keyboard.PressedKeys);
+        keyboard.Press("b");
+        keyboard.Up("Shift");
+        keyboard.Press("c");
+
+        Assert.Equal("Bc", input.Value);
+        Assert.Equal([true, true, false], shiftKeys);
+        Assert.Equal(InputModifiers.None, document.BrowsingContext.Input.Modifiers);
+        Assert.Empty(keyboard.PressedKeys);
+    }
+
+    [Fact]
+    public void Keyboard_Down_RepeatsAKeyThatIsPressed()
+    {
+        var document = Load("<input id=a>");
+        ((HtmlElement)document.GetElementById("a")!).Focus();
+        var repeats = new List<bool>();
+        document.AddEventListener("keydown", e => repeats.Add(((KeyboardEvent)e).Repeat));
+        var keyboard = document.BrowsingContext!.Input.Keyboard;
+
+        keyboard.Down("x");
+        keyboard.Down("x");
+        keyboard.Up("x");
+
+        Assert.Equal([false, true], repeats);
+        Assert.Equal("xx", ((HtmlInputElement)document.GetElementById("a")!).Value);
+    }
+
+    [Fact]
+    public void Keyboard_CanceledKeyDown_InsertsNoText()
+    {
+        var document = Load("<input id=a>");
+        var input = (HtmlInputElement)document.GetElementById("a")!;
+        input.Focus();
+        document.AddEventListener("keydown", e => e.PreventDefault());
+
+        document.BrowsingContext!.Input.Keyboard.Press("a");
+
+        Assert.Equal("", input.Value);
+    }
+
+    [Fact]
+    public void Keyboard_BackspaceAndDelete_DeleteTheText()
+    {
+        var document = Load("<textarea id=a>abcd</textarea>");
+        var textArea = (HtmlTextAreaElement)document.GetElementById("a")!;
+        textArea.Focus();
+        textArea.SetSelectionRange(2, 2);
+        var keyboard = document.BrowsingContext!.Input.Keyboard;
+
+        keyboard.Press("Backspace");
+        keyboard.Press("Delete");
+        keyboard.Press("Enter");
+
+        Assert.Equal("a\nd", textArea.Value);
+    }
+
+    [Fact]
+    public void Keyboard_Tab_MovesTheFocus()
+    {
+        var document = Load("<input id=a><input id=b>");
+        ((HtmlElement)document.GetElementById("a")!).Focus();
+
+        document.BrowsingContext!.Input.Keyboard.Press("Tab");
+
+        Assert.Same(document.GetElementById("b"), document.ActiveElement);
+    }
+
+    [Fact]
+    public void Keyboard_Enter_SubmitsTheFormOfTheFocusedInput()
+    {
+        var document = Load("<form id=f><input id=a><button>Send</button></form>");
+        var submitted = 0;
+        document.GetElementById("f")!.AddEventListener("submit", e =>
+        {
+            submitted++;
+            e.PreventDefault();
+        });
+        ((HtmlElement)document.GetElementById("a")!).Focus();
+
+        document.BrowsingContext!.Input.Keyboard.Press("Enter");
+
+        Assert.Equal(1, submitted);
+    }
+
+    [Fact]
+    public void Keyboard_InsertText_FiresInputEventsWithoutKeyboardEvents()
+    {
+        var document = Load("<div id=a contenteditable></div>");
+        var editable = (HtmlElement)document.GetElementById("a")!;
+        editable.Focus();
+        var events = new List<string>();
+        foreach (var type in (string[])["keydown", "keyup", "beforeinput", "input"])
+        {
+            document.AddEventListener(type, e => events.Add(e is InputEvent inputEvent ? $"{e.Type}:{inputEvent.InputType}:{inputEvent.Data}" : e.Type));
+        }
+
+        document.BrowsingContext!.Input.Keyboard.InsertText("héllo");
+
+        Assert.Equal("héllo", editable.TextContent);
+        Assert.Equal(["beforeinput:insertText:héllo", "input:insertText:héllo"], events);
+    }
+
+    [Fact]
+    public void Keyboard_KeyboardKey_UsesTheGivenValues()
+    {
+        var document = Load("<input id=a>");
+        ((HtmlElement)document.GetElementById("a")!).Focus();
+        KeyboardEvent? received = null;
+        document.AddEventListener("keydown", e => received = (KeyboardEvent)e);
+
+        document.BrowsingContext!.Input.Keyboard.Down(new KeyboardKey("Enter") { Code = "NumpadEnter", Location = 3 });
+
+        Assert.NotNull(received);
+        Assert.Equal("Enter", received.Key);
+        Assert.Equal("NumpadEnter", received.Code);
+        Assert.Equal(3u, received.Location);
+        Assert.Equal(13u, received.KeyCode);
+    }
+
+    [Fact]
+    public void ShowFilePicker_IsInvokedWhenTheUserActivatesAFileInput()
+    {
+        var shown = new List<HtmlInputElement>();
+        var document = _contexts.Create(new BrowsingContextOptions { ShowFilePicker = shown.Add }).Navigate("https://example.com/", _ => "<!DOCTYPE html>" + Style + "<input id=a type=file multiple style='display: block; width: 100px; height: 30px'>");
+        _contexts.EventLoop.RunUntilIdle();
+        var mouse = document.BrowsingContext!.Input.Mouse;
+
+        mouse.Move(10, 10);
+        mouse.Down();
+        mouse.Up();
+
+        var input = Assert.Single(shown);
+        Assert.Same(document.GetElementById("a"), input);
+        Assert.True(input.Multiple);
+    }
+
+    [Fact]
+    public void HitTest_ReturnsTheElementInTheDocumentOfAnIframe()
+    {
+        var document = Load("<div id=a></div><iframe id=frame srcdoc='<style>body { margin: 0 }</style><p id=inner style=\"margin: 0; height: 50px\">x</p>' style='border: 0; width: 200px; height: 100px'></iframe>");
+        var input = document.BrowsingContext!.Input;
+        var frame = (HtmlIFrameElement)document.GetElementById("frame")!;
+        var innerDocument = frame.ContentDocument!;
+
+        var hit = input.HitTest(10, 110);
+        var (x, y) = UserInput.MapToTopLevel(innerDocument, 10, 10);
+        var (frameX, frameY) = input.MapToDocument(innerDocument, 10, 110);
+
+        Assert.Same(innerDocument.GetElementById("inner"), hit);
+        Assert.Same(document.GetElementById("a"), input.HitTest(10, 10));
+        Assert.Equal((10d, 110d), (x, y));
+        Assert.Equal((10d, 10d), (frameX, frameY));
+    }
 }

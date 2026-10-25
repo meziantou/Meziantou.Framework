@@ -43,7 +43,7 @@ internal sealed partial class LayoutEngine
     internal static readonly TimeSpan WheelGestureEndDelay = TimeSpan.FromMilliseconds(100);
 
     /// <summary>Whether the scrolls of the user are animated (<see cref="ViewportOptions.SmoothUserScrolling"/>).</summary>
-    private bool SmoothUserScrolling => _document.EventLoop is not null && (_document.BrowsingContext?.Top.Options.Viewport ?? ViewportOptions.Default).SmoothUserScrolling;
+    private bool SmoothUserScrolling => _document.EventLoop is not null && (_document.BrowsingContext?.Top.Viewport ?? ViewportOptions.Default).SmoothUserScrolling;
 
     /// <summary>
     /// Scrolls a scrolling box by a delta of a scroll of the user (in the coordinates of the fragment tree, clamped to its

@@ -260,7 +260,7 @@ public sealed class Location
         if (RelevantDocument is null)
             return;
 
-        _window.BrowsingContext?.Reload();
+        _window.BrowsingContext?.ReloadNavigable();
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-location-ancestororigins: the ancestor origins list of the relevant document.</summary>

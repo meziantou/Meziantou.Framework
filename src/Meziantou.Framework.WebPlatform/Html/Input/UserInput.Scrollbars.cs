@@ -28,7 +28,7 @@ public sealed partial class UserInput
     }
 
     /// <summary>Whether the classic scrollbars are painted and interactive (<see cref="ViewportOptions.ScrollbarsVisible"/>).</summary>
-    private bool AreScrollbarsVisible => (_browsingContext.Top.Options.Viewport ?? ViewportOptions.Default).ScrollbarsVisible;
+    private bool AreScrollbarsVisible => _browsingContext.Top.Viewport.ScrollbarsVisible;
 
     /// <summary>
     /// Returns the scrollbar at a point of the viewport of the top-level browsing context, with the position of the point in its

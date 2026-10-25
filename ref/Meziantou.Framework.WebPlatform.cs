@@ -3068,12 +3068,15 @@ namespace Meziantou.Framework.WebPlatform.Dom
     {
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.BrowsingContext> Children { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Element? Container { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.BrowsingContext? CreatorBrowsingContext { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Document Document { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.DomEventLoop EventLoop { get => throw null; }
         public bool HasSystemFocus { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.UserInput Input { get => throw null; }
         public bool IsAuxiliary { get => throw null; }
         public bool IsDestroyed { get => throw null; }
+        public bool IsNavigating { get => throw null; }
+        public bool IsOffline { get => throw null; set { } }
         public bool IsPopup { get => throw null; }
         public bool IsVisible { get => throw null; set { } }
         public string Name { get => throw null; set { } }
@@ -3081,6 +3084,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions Options { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.BrowsingContext? Parent { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.BrowsingContext Top { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.ViewportOptions Viewport { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.Window Window { get => throw null; }
         public BrowsingContext(Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions? options = null) { }
         public void Dispose() { }
@@ -3094,11 +3098,15 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.Document> NavigateAsync(System.Func<Meziantou.Framework.WebPlatform.Dom.Url, string> html, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.Document> NavigateAsync(string url, System.Func<Meziantou.Framework.WebPlatform.Dom.Url, Meziantou.Framework.WebPlatform.Dom.DocumentResource?> resource, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.Document> NavigateAsync(string url, System.Func<Meziantou.Framework.WebPlatform.Dom.Url, string> html, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public void Reload() { }
+        public bool TryClose(bool runBeforeUnload = false) => throw null;
     }
 
     public sealed class BrowsingContextOptions
     {
         public Meziantou.Framework.WebPlatform.Dom.AcceptCHCache? AcceptCHCache { get => throw null; init { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.BrowsingContext>? BrowsingContextCreated { get => throw null; init { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.BrowsingContext>? BrowsingContextDestroyed { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.CacheStorageBackend? CacheStorage { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ClientHintsOptions? ClientHints { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.SystemClipboard? Clipboard { get => throw null; init { } }
@@ -3107,6 +3115,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Action<Meziantou.Framework.WebPlatform.Dom.GlobalScope, Meziantou.Framework.WebPlatform.Dom.ContentSecurityPolicyViolationReport>? ContentSecurityPolicyViolation { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.CookieJar? CookieJar { get => throw null; init { } }
         public bool DeclarativeRefreshEnabled { get => throw null; init { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.BrowsingContext, Meziantou.Framework.WebPlatform.Dom.Document>? DocumentActivated { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.DocumentLoader? DocumentLoader { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.EncodingDetector? EncodingDetector { get => throw null; init { } }
         public System.Func<Meziantou.Framework.WebPlatform.Dom.BrowsingContext, Meziantou.Framework.WebPlatform.Dom.FullscreenOptions, Meziantou.Framework.WebPlatform.Dom.FullscreenViewportSize?>? EnterFullscreen { get => throw null; init { } }
@@ -3115,14 +3124,17 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.WebPlatformFeatures? Features { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.FileSystemBackend? FileSystem { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.IndexedDBBackend? IndexedDB { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string>? Languages { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.StorageShed? LocalStorage { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Media.MediaAutoplayPolicy MediaAutoplayPolicy { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Media.MediaBackend? MediaBackend { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Rendering.RenderingBackend? RenderingBackend { get => throw null; init { } }
         public System.Func<Meziantou.Framework.WebPlatform.Dom.BrowsingContext, Meziantou.Framework.WebPlatform.Dom.PointerLockOptions, bool>? RequestPointerLock { get => throw null; init { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.BrowsingContext>? SameDocumentNavigated { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Scripting.ScriptEngine? ScriptEngine { get => throw null; init { } }
         public bool ScriptingEnabled { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorkerBackend? ServiceWorkers { get => throw null; init { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>? ShowFilePicker { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.SpeculativeLoadingOptions SpeculativeLoading { get => throw null; init { } }
         public bool SpeculativeParsing { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.StorageOptions? Storage { get => throw null; init { } }
@@ -3130,6 +3142,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Action<Meziantou.Framework.WebPlatform.Dom.GlobalScope, Meziantou.Framework.WebPlatform.Scripting.ScriptError>? UnhandledScriptError { get => throw null; init { } }
         public bool UseSystemFonts { get => throw null; init { } }
         public string? UserAgent { get => throw null; init { } }
+        public System.Func<Meziantou.Framework.WebPlatform.Dom.Window, Meziantou.Framework.WebPlatform.Dom.UserPrompt, Meziantou.Framework.WebPlatform.Dom.UserPromptResult>? UserPromptHandler { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ViewportOptions? Viewport { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.VisitedLinkStore? VisitedLinks { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.WebAssembly.WebAssemblyRuntime? WebAssemblyRuntime { get => throw null; init { } }
@@ -3989,6 +4002,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.HtmlCollection Images { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.DomImplementation Implementation { get => throw null; }
         public string InputEncoding { get => throw null; }
+        public bool IsNetworkErrorDocument { get => throw null; }
         public object? this[string name] { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Element? LastElementChild { get => throw null; }
         public string LastModified { get => throw null; }
@@ -4241,6 +4255,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
     {
         public System.ReadOnlyMemory<byte>? Body { get => throw null; init { } }
         public string? BodyContentType { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.BrowsingContext? BrowsingContext { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.CookieJar? CookieJar { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.RequestDestination Destination { get => throw null; init { } }
         public bool FollowRedirects { get => throw null; init { } }
@@ -4305,6 +4320,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.TimeProvider TimeProvider { get => throw null; set { } }
         [System.Obsolete("Use BrowsingContextOptions.TimeProvider or DomEventLoop.TimeProvider: the timers of the windows are implemented by the library.")]
         public System.Action<System.TimeSpan, System.Action>? TimerQueueOverride { get => throw null; set { } }
+        public System.Action? WorkSignal { get => throw null; set { } }
         public long WorkerActivity { get => throw null; }
         public void PerformMicrotaskCheckpoint() { }
         public System.TimeSpan? PromoteDueTimers() => throw null;
@@ -7459,6 +7475,34 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool Repeat { get => throw null; init { } }
     }
 
+    public sealed class KeyboardInput
+    {
+        public System.Collections.Generic.IReadOnlyList<string> PressedKeys { get => throw null; }
+        public void Down(Meziantou.Framework.WebPlatform.Dom.KeyboardKey key) { }
+        public void Down(string key) { }
+        public void InsertText(string text) { }
+        public void Press(string key) { }
+        public void Type(string text) { }
+        public void Up(Meziantou.Framework.WebPlatform.Dom.KeyboardKey key) { }
+        public void Up(string key) { }
+    }
+
+    public sealed class KeyboardKey : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.KeyboardKey>
+    {
+        public string Code { get => throw null; init { } }
+        public string Key { get => throw null; init { } }
+        public uint KeyCode { get => throw null; init { } }
+        public uint Location { get => throw null; init { } }
+        public string Text { get => throw null; init { } }
+        public KeyboardKey(string key) { }
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.KeyboardKey? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.KeyboardKey? left, Meziantou.Framework.WebPlatform.Dom.KeyboardKey? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.KeyboardKey? left, Meziantou.Framework.WebPlatform.Dom.KeyboardKey? right) => throw null;
+    }
+
     public sealed class KeyframeAnimationOptions : Meziantou.Framework.WebPlatform.Animations.KeyframeEffectOptions
     {
         public string Id { get => throw null; init { } }
@@ -9769,6 +9813,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public StorageShed(Meziantou.Framework.WebPlatform.Dom.WebStoragePersistence? persistence, long quota) { }
         public void Clear() { }
         public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, string>> GetItems(string origin) => throw null;
+        public System.Collections.Generic.IReadOnlyList<string> GetOrigins() => throw null;
+        public bool SetItem(string origin, string key, string value) => throw null;
     }
 
     public sealed class StoredCookie
@@ -11577,10 +11623,37 @@ namespace Meziantou.Framework.WebPlatform.Dom
 
     public sealed class UserInput
     {
+        public Meziantou.Framework.WebPlatform.Dom.KeyboardInput Keyboard { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.InputModifiers Modifiers { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.PointerInput Mouse { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.PointerInput CreatePointer(string pointerType) => throw null;
+        public Meziantou.Framework.WebPlatform.Dom.Element? HitTest(double x, double y) => throw null;
+        public (double X, double Y) MapToDocument(Meziantou.Framework.WebPlatform.Dom.Document document, double x, double y) => throw null;
+        public static (double X, double Y) MapToTopLevel(Meziantou.Framework.WebPlatform.Dom.Document document, double x, double y) => throw null;
         public bool Wheel(double x, double y, double deltaX, double deltaY) => throw null;
+    }
+
+    public sealed class UserPrompt
+    {
+        public string DefaultValue { get => throw null; }
+        public string Message { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.UserPromptType Type { get => throw null; }
+    }
+
+    public sealed class UserPromptResult
+    {
+        public bool Accepted { get => throw null; }
+        public static Meziantou.Framework.WebPlatform.Dom.UserPromptResult Dismiss { get => throw null; }
+        public string? Text { get => throw null; }
+        public static Meziantou.Framework.WebPlatform.Dom.UserPromptResult Accept(string? text = null) => throw null;
+    }
+
+    public enum UserPromptType
+    {
+        Alert = 0,
+        Confirm = 1,
+        Prompt = 2,
+        BeforeUnload = 3,
     }
 
     public sealed class ValidityState
@@ -12787,6 +12860,7 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         public System.Collections.Generic.IReadOnlyList<object?> Arguments { get => throw null; init { } }
         public int GroupDepth { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Scripting.ConsoleMessageLevel Level { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Scripting.ScriptLocation? Location { get => throw null; init { } }
         public string Method { get => throw null; }
         public string? StackTrace { get => throw null; init { } }
         public string Text { get => throw null; }

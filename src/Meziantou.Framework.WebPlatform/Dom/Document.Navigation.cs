@@ -53,8 +53,13 @@ public partial class Document
     /// <summary>Whether the origin of the document is a new opaque origin (e.g. an error document).</summary>
     internal bool OpaqueOrigin { get; set; }
 
-    /// <summary>Whether the document is the error document of a navigation whose response is a network error (e.g. a blocked request).</summary>
-    internal bool IsNetworkErrorDocument { get; set; }
+    /// <summary>
+    /// Gets whether the document is the error document of a navigation whose response is a network error (e.g. the
+    /// <see cref="BrowsingContextOptions.DocumentLoader"/> returned null, or the request was blocked by a policy): an empty
+    /// document whose origin is opaque.
+    /// </summary>
+    [NotInIdl]
+    public bool IsNetworkErrorDocument { get; internal set; }
 
     /// <summary>https://html.spec.whatwg.org/multipage/browsers.html#active-sandboxing-flag-set (only the flags that change the origin are modeled).</summary>
     internal SandboxingFlags ActiveSandboxingFlags { get; set; }

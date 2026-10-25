@@ -727,9 +727,17 @@ internal static class Fetching
 
         // Step 8.15: the default User-Agent value, when the browsing contexts have one (BrowsingContextOptions.UserAgent; the
         // loader may add its own otherwise)
-        if ((request.Navigable?.Options ?? request.Client?.EnvironmentOptions ?? request.KeepaliveBrowsingContext?.Options)?.UserAgent is { } userAgent && !FetchHeaders.Contains(headers, "User-Agent"))
+        var environmentOptions = request.Navigable?.Options ?? request.Client?.EnvironmentOptions ?? request.KeepaliveBrowsingContext?.Options;
+        if (environmentOptions?.UserAgent is { } userAgent && !FetchHeaders.Contains(headers, "User-Agent"))
         {
             headers.Add(new("User-Agent", userAgent));
+        }
+
+        // The Accept-Language header of the preferred languages of the user, when the browsing contexts have some
+        // (BrowsingContextOptions.Languages; the loader may add its own otherwise)
+        if (environmentOptions?.Languages is { Count: > 0 } languages && !FetchHeaders.Contains(headers, "Accept-Language"))
+        {
+            headers.Add(new("Accept-Language", BrowsingContextOptions.GetAcceptLanguage(languages)));
         }
 
         // Steps 8.16 to 8.18: the cache mode (there is no HTTP cache)
@@ -881,6 +889,7 @@ internal static class Fetching
             NavigationDestination = request.NavigationDestination,
             Mode = request.Mode,
             Initiator = request.Initiator,
+            BrowsingContext = request.Navigable ?? request.Client?.BrowsingContext ?? request.KeepaliveBrowsingContext,
             Origin = origin is not null && request.TaintedOrigin ? "null" : origin,
             Referrer = request.Referrer is "no-referrer" or "client" ? null : request.Referrer,
             ReferrerPolicy = request.ReferrerPolicy,

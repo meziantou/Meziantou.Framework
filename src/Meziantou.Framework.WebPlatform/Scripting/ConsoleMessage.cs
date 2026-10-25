@@ -50,6 +50,12 @@ public sealed class ConsoleMessage
     /// <summary>Gets the call stack of a <c>console.trace()</c> message, or null.</summary>
     public string? StackTrace { get; init; }
 
+    /// <summary>
+    /// Gets the location of the code that printed the message (the source file, line and column of the innermost running
+    /// script), or null when the script engine cannot extract it.
+    /// </summary>
+    public ScriptLocation? Location { get; init; }
+
     /// <inheritdoc />
     public override string ToString() => Text;
 }

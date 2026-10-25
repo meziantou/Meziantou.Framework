@@ -87,7 +87,7 @@ internal sealed class PaintedCaret
     /// <summary>Returns the caret of a document, or null when no caret is displayed. The layout of the document must be up to date.</summary>
     public static PaintedCaret? Compute(LayoutEngine engine, Document document)
     {
-        if (document.BrowsingContext is not { } browsingContext || !(browsingContext.Top.Options.Viewport ?? ViewportOptions.Default).CaretVisible)
+        if (document.BrowsingContext is not { } browsingContext || !browsingContext.Top.Viewport.CaretVisible)
             return null;
 
         // The caret is in the document of the focused area of the top-level traversable, when it has the system focus

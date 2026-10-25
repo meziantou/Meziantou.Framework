@@ -102,7 +102,7 @@ public partial class Document
                 // type of its navigate event is "reload"); the specification navigates with "replace"
                 if (Dom.BrowsingContext.UrlEquals(urlRecord, UrlRecord, excludeFragments: false))
                 {
-                    navigable.Reload();
+                    navigable.ReloadNavigable();
                 }
                 else
                 {

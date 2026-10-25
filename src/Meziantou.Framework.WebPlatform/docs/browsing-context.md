@@ -92,6 +92,12 @@ frames): an infinite running animation keeps requesting frames, so `WaitForNextT
 it runs. A trusted event of the user input also requests a frame, which sets the duration of its
 [Event Timing](#performance-timeline) entry. With a fake `TimeProvider`, advancing the clock runs the frames that are due.
 
+A host that runs an event loop on its own thread (instead of calling `RunUntilIdleAsync()`) sets `DomEventLoop.WorkSignal`:
+the callback is invoked, from any thread, when a task or a timer is queued (e.g. by a document loaded by the
+`DocumentLoader` on another thread) or when an asynchronous operation ends, so that the thread wakes up and calls
+`RunTask()` and `PromoteDueTimers()`. The callback must not run the event loop itself. The Playwright server
+(Meziantou.Framework.WebPlatform.Playwright) runs the pages of each browser context this way.
+
 ### Render blocking
 
 The [render-blocking mechanism](https://html.spec.whatwg.org/multipage/dom.html#render-blocking-mechanism) is
@@ -146,6 +152,11 @@ tasks, microtasks, timers and animation frames are discarded, the ones queued af
 (`DomEventLoop.IsDisposed`), and a pending `RunUntilIdleAsync()` returns. No event is fired: to run the `pagehide` and
 `unload` event handlers first, call `Window.Close()` and run the event loop before disposing. The nested browsing
 contexts are destroyed with their `iframe` element: `Dispose()` throws for them.
+
+`BrowsingContext.TryClose(runBeforeUnload)` closes a top-level browsing context as the user closes a tab: with
+`runBeforeUnload`, the `beforeunload` event is fired first, and the user can cancel the closing (see
+[Dialogs](#dialogs)); then the documents are unloaded (`pagehide`, `unload`) and destroyed. It does not dispose the event loop:
+the other top-level browsing contexts of the group (its popups, or the page that opened it) keep running.
 
 ## Nested browsing contexts
 
@@ -203,7 +214,10 @@ for `_blank` and the unknown names: a new top-level browsing context of the brow
 an initial `about:blank` document that has the origin of the opener (an `about:blank` URL with a query or a fragment
 only changes the URL of that document). It shares the options and the `DomEventLoop` of the
 browsing context created by the application that owns the group, and it is discarded when that browsing context is
-disposed. `BrowsingContext.IsAuxiliary` and `BrowsingContext.Opener` expose it from .NET.
+disposed. `BrowsingContext.IsAuxiliary` and `BrowsingContext.Opener` expose it from .NET, and
+`BrowsingContext.CreatorBrowsingContext` is the browsing context that opened it, even without opener (`noopener`, the default of
+the `_blank` links). `BrowsingContextOptions.BrowsingContextCreated` is invoked when it is created (see
+[Host callbacks](#host-callbacks)).
 
 - The `noopener` and `noreferrer` features create a browsing context without opener, and `window.open()` returns null.
 - The other features of a new browsing context tell whether a popup is requested
@@ -230,7 +244,7 @@ disposed. `BrowsingContext.IsAuxiliary` and `BrowsingContext.Opener` expose it f
   navigable makes the calling navigable its opener, except when the target is an inclusive ancestor of the caller
   (`_self`, `_parent`, `_top`...), as in the browsers.
 - `window.close()` closes an auxiliary browsing context (they are script-closable): `window.closed` is true at once,
-  and a task fires `beforeunload` (there is no prompt: the unloading is never canceled), then unloads the documents
+  and a task fires `beforeunload` (the user can cancel the closing with the unload prompt, see [Dialogs](#dialogs)), then unloads the documents
   (`pagehide`, `visibilitychange`, `unload`) and destroys the browsing context. As in the browsers, `pagehide` and `unload`
   are also fired at a popup that still has its initial `about:blank` document (the specification fires no `pagehide` at
   a document that was never shown).
@@ -2852,7 +2866,9 @@ Week, Time and Local Date and Time states support one, and so does an input with
 `showPicker()` and the activation of the color, file, date and time inputs (a click) *show the picker, if applicable*:
 it consumes the transient activation of the window, then opens the picker of a mutable element (the HTML Standard gives
 the date and time states no activation behavior, but all the browsers show their picker when they are clicked). There is
-no picker user interface: the user does not choose a value, and the file chooser closes at once. The other pickers are
+no picker user interface: the user does not choose a value, and the file chooser closes at once, unless
+`BrowsingContextOptions.ShowFilePicker` is set: the host shows its own file picker, sets the chosen files with
+`HtmlInputElement.Files` and fires the `input` and `change` events. The other pickers are
 open until a press of a pointing device outside of the element, `Escape` (it is not a close request then), or until the
 element is removed, changes its type or is no longer mutable; opening a picker closes the other ones of the document.
 The element matches `:open` while its picker is open (https://html.spec.whatwg.org/multipage/semantics-other.html#selector-open).
@@ -2978,8 +2994,93 @@ input.Wheel(120, 80, deltaX: 0, deltaY: 100);
   touch does not pan along the track of a slider.
 - The [pointer lock](#pointer-lock) locks the mouse to an element: its events then carry movements instead of positions.
 - Not done: the pinch zoom, the resize handles, the repetition of a held press on a scrollbar, `contextmenu` for a long
-  press, the coalescing of the moves, the fling of the gestures (their inertia). The keyboard has no input device: the host
-  dispatches trusted `KeyboardEvent` objects.
+  press, the coalescing of the moves, the fling of the gestures (their inertia).
+
+`UserInput.Keyboard` (`KeyboardInput`) is the keyboard: `Down(key)`, `Up(key)`, `Press(key)` and `Type(text)` take the key
+values of [UI Events](https://w3c.github.io/uievents-key/) (a character, or the name of a key such as `Enter`, `Shift`,
+`ArrowLeft`, `F1`), whose code, legacy key code, location and text are the ones of a US keyboard; a `KeyboardKey` gives
+them explicitly. The keys are dispatched as trusted `keydown`, `keypress` and `keyup` events to the focused element of the
+top-level browsing context (the body of the focused document when the viewport is focused), and the library runs their
+default actions: the insertion of the text of the key in a text control or in editable content (`beforeinput` and `input`),
+Backspace and Delete, the sequential focus navigation of Tab, the activation of the focused element by Enter and Space
+(and the implicit submission of the forms), the caret movements of the arrow keys, Home and End, the close requests of
+Escape, and the clipboard shortcuts (Control or Meta with C, X and V; the other keys pressed with Control or Meta type no
+text). A key that is already pressed repeats (`repeat`), a letter typed while Shift is pressed is an uppercase letter, and
+the pressed modifier keys are the modifiers of the keyboard and pointer events (`UserInput.Modifiers`). `InsertText(text)`
+inserts a text as an input method commits it: an `insertText` edit without keyboard events.
+
+```csharp
+var keyboard = browsingContext.Input.Keyboard;
+keyboard.Type("Hello");                 // keydown, keypress, beforeinput, input, keyup for each character
+keyboard.Down("Shift");
+keyboard.Press("a");                    // types "A"
+keyboard.Up("Shift");
+keyboard.Press("Enter");                // submits the form of the focused input
+```
+
+`UserInput.HitTest(x, y)` returns the element at a point of the top-level viewport (in the document of an `iframe` when the
+point is in its content box), and `UserInput.MapToTopLevel(document, x, y)` and `MapToDocument(document, x, y)` convert
+the coordinates between the viewport of a document and the top-level viewport (e.g. to click the center of the
+`getBoundingClientRect()` of an element of an `iframe`).
+
+## Host callbacks
+
+The callbacks of `BrowsingContextOptions` let a host follow the browsing contexts that use the options (the nested browsing
+contexts and the popups share the options of their top-level browsing context). They are invoked on the thread of the event
+loop:
+
+- `BrowsingContextCreated`: the library created a nested browsing context (an `iframe`, `frame`, `object` or `embed`
+  element is inserted) or an auxiliary browsing context (a popup, see [Auxiliary browsing contexts](#auxiliary-browsing-contexts)),
+  with its initial `about:blank` document. It is not invoked for the browsing contexts created by the application.
+- `BrowsingContextDestroyed`: a browsing context was destroyed (its container was removed, `window.close()`,
+  `BrowsingContext.TryClose()` or `Dispose()`).
+- `DocumentActivated`: a navigation made a document the active document of a browsing context (also the error document of
+  a navigation whose response is a network error, see `Document.IsNetworkErrorDocument`), before it is parsed. It is not
+  invoked for the initial `about:blank` documents.
+- `SameDocumentNavigated`: the URL of the active document changed without a new document (a fragment navigation,
+  `history.pushState()`, `history.replaceState()`, a traversal within the document).
+
+`DocumentRequest.BrowsingContext` attributes the requests of the `DocumentLoader` to their browsing context (the browsing
+context that is navigated for a navigation request, else the one of the document that makes the request), and
+`BrowsingContext.Reload()` reloads the active document, as the reload button of a browser. `BrowsingContext.IsNavigating` is
+true from the start of a navigation until its document is active, or until it ends without a document (e.g. a 204 response):
+`window.open(url)` creates the popup (`BrowsingContextCreated`), then navigates it.
+
+## Dialogs
+
+`BrowsingContextOptions.UserPromptHandler` shows the simple dialogs of the windows (`UserPrompt`): `alert()`, `confirm()`,
+`prompt()`, and the confirmation of the unloading of a document that cancels its `beforeunload` event while it has sticky
+activation (as in the browsers, a document that the user never interacted with cannot prevent its unloading). The handler
+returns `UserPromptResult.Accept(text)` or `UserPromptResult.Dismiss`; the script waits for it (it blocks the event loop).
+A dismissed unload confirmation cancels the navigation, the traversal or the closing. Without handler, no dialog is shown:
+`confirm()` returns false, `prompt()` returns null and the documents are always unloaded.
+
+```csharp
+using var context = new BrowsingContext(new BrowsingContextOptions
+{
+    ScriptEngine = engine,
+    UserPromptHandler = (window, prompt) => prompt.Type switch
+    {
+        UserPromptType.Confirm => UserPromptResult.Accept(),
+        UserPromptType.Prompt => UserPromptResult.Accept("answer"),
+        _ => UserPromptResult.Dismiss,
+    },
+});
+```
+
+## Emulation
+
+The options of a browsing context are immutable, but a host can change the emulated environment of a top-level browsing
+context while its documents are loaded (as `page.setViewportSize()`, `page.emulateMedia()` and `context.setOffline()` of
+Playwright):
+
+- `BrowsingContext.Viewport` (initially `BrowsingContextOptions.Viewport`): the size of the viewport, the device pixel ratio,
+  the media type and the user preference media features. A new value re-evaluates the media queries, lays the documents out
+  again and fires `resize` at the next rendering opportunity.
+- `BrowsingContext.IsOffline`: `navigator.onLine`, and the `online` and `offline` events of the windows. The requests are not
+  blocked: the `DocumentLoader` fails them.
+- `BrowsingContextOptions.Languages`: `navigator.language` and `navigator.languages`, and the `Accept-Language` header of the
+  requests (`fr-FR,fr;q=0.9`...). It is set when the browsing context is created.
 
 ## Drag and drop
 

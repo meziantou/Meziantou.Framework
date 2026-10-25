@@ -1299,7 +1299,7 @@ public sealed class VisualViewport : EventTarget, IRealmBoundPlatformObject
     /// <summary>The size of the visual viewport in CSS pixels: the viewport of a mobile device divided by the page scale, else the layout viewport without its scrollbars.</summary>
     private PhysicalSize GetVisualSize()
     {
-        if (_document.BrowsingContext is { Container: null } browsingContext && browsingContext.Top.Options.Viewport is { IsMobile: true } viewport)
+        if (_document.BrowsingContext is { Container: null } browsingContext && browsingContext.Top.Viewport is { IsMobile: true } viewport)
         {
             var scale = _document.GetPageScale();
             return new PhysicalSize(viewport.Width / scale, viewport.Height / scale);

@@ -30,6 +30,13 @@ static async Task<Dictionary<string, string>> LoadGitHubMappings()
     using var request = new HttpRequestMessage(HttpMethod.Get, GitHubEmojisUrl);
     request.Headers.UserAgent.Add(new ProductInfoHeaderValue("Meziantou.Framework.HtmlToMarkdown.Emoji.Generator", "1.0"));
 
+    // Anonymous calls share the rate limit of the runner's IP address, which other jobs often exhaust
+    var token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
+    if (!string.IsNullOrEmpty(token))
+    {
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+    }
+
     using var response = await SharedHttpClient.Instance.SendAsync(request);
     response.EnsureSuccessStatusCode();
 

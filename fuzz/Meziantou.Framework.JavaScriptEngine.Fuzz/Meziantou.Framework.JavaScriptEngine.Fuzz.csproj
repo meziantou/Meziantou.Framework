@@ -9,6 +9,8 @@
   <ItemGroup>
     <!-- The patterns and inputs of the V8 regular expression corpus are the seeds of the RegExp target -->
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.JavaScriptEngine.Tests\Corpus\RegExpV8.jsonl" LogicalName="RegExpV8.jsonl" Link="Seeds\RegExpV8.jsonl" />
+    <!-- The test_parsing files of JSONTestSuite are the seeds of the JSON module target; the two structures of 100 KB and more are too large to start from -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.JavaScriptEngine.Tests\JSONTestSuite\test_parsing\*.json" Exclude="..\..\tests\Meziantou.Framework.JavaScriptEngine.Tests\JSONTestSuite\test_parsing\n_structure_100000_opening_arrays.json;..\..\tests\Meziantou.Framework.JavaScriptEngine.Tests\JSONTestSuite\test_parsing\n_structure_open_array_object.json" LogicalName="JSONTestSuite.%(Filename)%(Extension)" Link="Seeds\JSONTestSuite\%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

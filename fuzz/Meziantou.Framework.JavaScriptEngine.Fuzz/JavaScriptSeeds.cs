@@ -55,4 +55,39 @@ internal static class JavaScriptSeeds
         ("duplicate-export", "export const a = 1; export { a };"),
         ("defer", "import defer * as ns from './a.js'; ns.x;"),
     ];
+
+    public static IReadOnlyList<(string Name, string Json)> Json { get; } =
+    [
+        ("json-module", "{\"a\":[1,2,3]}"),
+        ("json-proto", "{\"__proto__\":{\"x\":1},\"constructor\":null,\"length\":0}"),
+        ("json-numbers", "[-0,0,1e309,-1e309,5e-324,9007199254740993,1.7976931348623157e308,0.1,123456789012345678901234567890]"),
+        ("json-index-keys", "{\"2\":0,\"1\":1,\"a\":2,\"0\":3,\"4294967295\":4,\"4294967294\":5,\"-0\":6,\"01\":7}"),
+        ("json-duplicate-keys", "{\"a\":1,\"b\":2,\"a\":{\"c\":[]}}"),
+        ("json-escapes", "\"\\u0000\\uD800\\uDC00\\uDBFF\\uDFFF\\b\\f\\n\\r\\t\\/\\\\\\\"\u2028\u2029\""),
+        ("json-whitespace", " \t\r\n[ \t\r\n1 \t\r\n, \t\r\n{ \"a\" : null } ] \n"),
+        ("json-bom", "\uFEFF{}"),
+        ("json-deep", new string('[', 1500) + new string(']', 1500)),
+        ("json-trailing-comma", "[1,]"),
+        ("json-lone-surrogate", "\"\uD800\""),
+    ];
+
+    public static IReadOnlyList<(string Name, string TimeZone, string Locale)> EngineOptions { get; } =
+    [
+        ("options-default", "UTC", "en-US"),
+        ("options-paris", "Europe/Paris", "fr-FR"),
+        ("options-new-york", "America/New_York", "de"),
+        ("options-extensions", "Asia/Kolkata", "ja-JP-u-ca-japanese-nu-latn"),
+        ("options-script", "Pacific/Chatham", "zh-Hant-TW"),
+        ("options-offset", "+05:30", "ar-EG-u-nu-arab"),
+        ("options-etc", "Etc/GMT+5", "sr-Cyrl-RS"),
+        ("options-link", "Asia/Calcutta", "en-GB-oed"),
+        ("options-case", "europe/paris", "EN-us"),
+        ("options-windows", "Romance Standard Time", "en_US"),
+        ("options-empty", "", ""),
+        ("options-invalid", "Invalid/Zone", "xx-invalid-!!"),
+        ("options-grandfathered", "EST5EDT", "i-klingon"),
+        ("options-private", "GMT", "x-private"),
+        ("options-undetermined", "Australia/Lord_Howe", "und"),
+        ("options-transform", "Z", "en-t-ja"),
+    ];
 }

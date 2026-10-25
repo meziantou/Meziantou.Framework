@@ -37,7 +37,8 @@ public sealed class JsEngineOptions
     /// Gets or sets the identifier of the IANA time zone of the local time of the scripts (e.g. "Europe/Paris"), or null to
     /// use the local time zone of <see cref="TimeProvider"/> (a Windows identifier is mapped to its IANA identifier, and an
     /// unknown time zone is UTC). The engine uses its own copy of the IANA time zone database, so the local times do not
-    /// depend on the operating system.
+    /// depend on the operating system. An identifier that is not a time zone of the database (such as an offset) throws an
+    /// <see cref="InvalidOperationException"/> when the scripts first use the local time zone.
     /// </summary>
     public string? TimeZone { get; set; }
 

@@ -30,6 +30,14 @@ internal static class Id3v1Writer
         else
         {
             WriteFixedString(buffer.AsSpan(97, 30), tags.Comment);
+
+            // A zero byte followed by a non-zero one at the end of the comment is how ID3v1.1 stores a track
+            // number, so a comment whose 29th character is a null would read back with a track number. The text
+            // after that null is not part of the comment for any reader, so it is dropped.
+            if (buffer[125] == 0)
+            {
+                buffer[126] = 0;
+            }
         }
 
         // Genre

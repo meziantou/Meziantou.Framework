@@ -75,4 +75,17 @@ public sealed class Mp3Id3v1Tests
         var tags = new MediaTagInfo();
         Assert.False(Id3v1Reader.TryParseTag(new byte[10], tags));
     }
+
+    [Fact]
+    public void BuildTag_CommentWithNullBeforeItsLastCharacter_HasNoTrackNumber()
+    {
+        // Without a track number the comment takes 30 bytes, and a zero byte followed by a non-zero one at its end is
+        // how ID3v1.1 stores a track number.
+        var tags = new MediaTagInfo { Comment = new string('a', 28) + "\0b" };
+
+        var read = new MediaTagInfo();
+        Assert.True(Id3v1Reader.TryParseTag(Id3v1Writer.BuildTag(tags), read));
+        Assert.Null(read.TrackNumber);
+        Assert.Equal(new string('a', 28), read.Comment);
+    }
 }

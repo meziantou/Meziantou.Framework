@@ -11,6 +11,9 @@ internal sealed class FlacWriter : IMediaTagWriter
         {
             inputStream.Position = 0;
 
+            if (!VorbisComment.VorbisCommentWriter.TryValidate(tags, out var validationError))
+                return MediaTagResult.Failure(MediaTagError.InvalidTagData, validationError);
+
             // The FLAC signature is not always at the start of the file: some taggers prepend an ID3v2
             // tag, and FlacReader reads those files. Writing from offset 0 regardless would copy the tag
             // header in place of the signature and parse the tag as metadata blocks, destroying the audio.

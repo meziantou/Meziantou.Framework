@@ -29,6 +29,9 @@ internal sealed class OggVorbisWriter : IMediaTagWriter
             if (OggPacketUtilities.GetSingleStreamSerialNumber(pages) is null)
                 return MediaTagResult.Failure(MediaTagError.UnsupportedFormat, "Multiplexed or chained OGG streams are not supported.");
 
+            if (!VorbisComment.VorbisCommentWriter.TryValidate(tags, out var validationError))
+                return MediaTagResult.Failure(MediaTagError.InvalidTagData, validationError);
+
             // Build new comment data
             var commentData = VorbisComment.VorbisCommentWriter.Build(tags);
 

@@ -19,6 +19,9 @@ internal sealed class OggOpusWriter : IMediaTagWriter
             if (OggPacketUtilities.GetSingleStreamSerialNumber(pages) is null)
                 return MediaTagResult.Failure(MediaTagError.UnsupportedFormat, "Multiplexed or chained OGG streams are not supported.");
 
+            if (!VorbisComment.VorbisCommentWriter.TryValidate(tags, out var validationError))
+                return MediaTagResult.Failure(MediaTagError.InvalidTagData, validationError);
+
             // Build new comment data. An OpusTags packet has no framing bit, unlike a Vorbis comment header.
             var commentData = VorbisComment.VorbisCommentWriter.Build(tags);
 

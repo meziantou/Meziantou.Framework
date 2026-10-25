@@ -72,7 +72,16 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         reader.InitializeSecurity();
         if (reader.Trailer.GetResolved(PdfNames.Root) is not PdfDictionary && !reader.IsRepaired)
         {
+            var trailer = reader.Trailer;
             reader.Repair();
+            if (reader.Security is not null)
+            {
+                // The objects are decrypted with the /Encrypt and the /ID of the trailer of the cross-reference sections,
+                // which the trailer the repair finds may not have: the document is written with the same keys
+                reader.Trailer[PdfNames.Encrypt] = trailer[PdfNames.Encrypt];
+                reader.Trailer[PdfNames.ID] = trailer[PdfNames.ID];
+            }
+
             reader.InitializeSecurity();
         }
 

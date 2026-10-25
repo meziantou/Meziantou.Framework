@@ -553,6 +553,9 @@ internal sealed class StandardSecurityHandler
                     }
 
                     return array;
+                case PdfStream:
+                    // A stream is an indirect object (7.3.8): it cannot be written in the dictionary
+                    return PdfNull.Instance;
                 default:
                     return value;
             }

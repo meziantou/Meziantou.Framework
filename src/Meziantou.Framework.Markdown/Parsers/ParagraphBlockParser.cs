@@ -108,6 +108,12 @@ public class ParagraphBlockParser : BlockParser
                 {
                     lastSlice.End--;
                 }
+
+                // A line of other ASCII whitespace, such as a vertical tab, is not blank, but leaves no content once trimmed
+                if (lineCount == 1 && lastSlice.IsEmpty)
+                {
+                    return false;
+                }
             }
         }
 
@@ -174,7 +180,8 @@ public class ParagraphBlockParser : BlockParser
                 }
                 else
                 {
-                    heading.Lines.Trim();
+                    // As for a paragraph, a no-break space, or another Unicode space, is part of the content
+                    heading.Lines.TrimAsciiWhitespace();
                 }
 
                 // Remove the paragraph as a pending block

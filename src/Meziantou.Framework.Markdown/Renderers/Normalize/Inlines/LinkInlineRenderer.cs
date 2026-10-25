@@ -21,8 +21,7 @@ public class LinkInlineRenderer : NormalizeObjectRenderer<LinkInline>
     {
         if (link.IsAutoLink && !renderer.Options.ExpandAutoLinks)
         {
-            // The URL of a www. link starts with the scheme that the parser adds, which would be written as the text of the link
-            renderer.Write(GetLiteralText(link) is { } literalText && literalText.StartsWith("www.", StringComparison.Ordinal) && link.Url is not null && link.Url.EndsWith(literalText, StringComparison.Ordinal) ? literalText : link.Url);
+            renderer.Write(GetAutoLinkSource(link, GetLiteralText(link)));
             return;
         }
 
@@ -31,7 +30,8 @@ public class LinkInlineRenderer : NormalizeObjectRenderer<LinkInline>
             if (!IsExpandedAutoLink(link))
             {
                 // The brackets of an expanded link would change whether the delimiters next to it open or close emphasis
-                renderer.Write(renderer.EscapeTablePipes ? text.Replace("|", "\\|", StringComparison.Ordinal) : text);
+                var source = GetAutoLinkSource(link, text);
+                renderer.Write(renderer.EscapeTablePipes ? source.Replace("|", "\\|", StringComparison.Ordinal) : source);
                 return;
             }
 
@@ -52,7 +52,7 @@ public class LinkInlineRenderer : NormalizeObjectRenderer<LinkInline>
 
         if (link.Label != null)
         {
-            if (link.FirstChild is LiteralInline literal && literal.Content.Length == link.Label.Length && literal.Content.Match(link.Label))
+            if (link.FirstChild is LiteralInline { NextSibling: null } literal && literal.Content.Length == link.Label.Length && literal.Content.Match(link.Label))
             {
                 // collapsed reference and shortcut links
                 if (!link.IsShortcut)
@@ -80,6 +80,19 @@ public class LinkInlineRenderer : NormalizeObjectRenderer<LinkInline>
 
             renderer.Write(')');
         }
+    }
+
+    // Gets the text that is parsed back as the autolink: its text, which is its URL without the scheme of a mailto: or tel:
+    // link, or without the scheme that the parser adds to a www. link
+    private static string GetAutoLinkSource(LinkInline link, string? text)
+    {
+        if (text is null || link.Url is null)
+        {
+            return link.Url ?? text ?? string.Empty;
+        }
+
+        var isWwwLink = text.StartsWith("www.", StringComparison.Ordinal) && (link.Url == "http://" + text || link.Url == "https://" + text);
+        return isWwwLink || !link.Url.EndsWith(text, StringComparison.Ordinal) ? text : link.Url;
     }
 
     // Gets a value indicating whether the autolink is written as a link, whose text escapes the backticks
@@ -116,9 +129,10 @@ public class LinkInlineRenderer : NormalizeObjectRenderer<LinkInline>
     }
 
     /// <summary>
-    /// Escapes a link label, which is stored without its backslash escapes.
+    /// Escapes a link label, which is stored without its backslash escapes. A backslash of a label is always escaped in the
+    /// source, as the parser only accepts a backslash before a bracket or another backslash.
     /// </summary>
-    internal static string EscapeLabel(string label) => Escape(label, "[]", decodedEntities: false);
+    internal static string EscapeLabel(string label) => Escape(label, "[]\\", decodedEntities: false);
 
     /// <summary>
     /// Writes a link destination, escaped so that it is parsed back to the same URL.
@@ -136,26 +150,61 @@ public class LinkInlineRenderer : NormalizeObjectRenderer<LinkInline>
     {
         url ??= string.Empty;
 
-        // A destination with spaces or unbalanced parentheses, or an empty one, needs angle brackets
+        // A destination with spaces or ASCII control characters, or an empty one, needs angle brackets. The unbalanced
+        // parentheses of another one are escaped: in angle brackets, they would be balanced for a link around this one, such as
+        // the text before [](<)>).
         var depth = 0;
-        var needsBrackets = url.Length == 0 || url[0] == '<';
+        var needsBrackets = url.Length == 0;
+        var unbalanced = url.Length > 0 && url[0] == '<';
         foreach (var c in url)
         {
-            if (c <= ' ' || (c == ')' && --depth < 0))
+            // The parser takes the other Unicode spaces, such as a no-break space, for the end of a destination
+            if (c <= ' ' || char.IsControl(c) || (c > (char)0x7F && c.IsWhitespace()))
             {
                 needsBrackets = true;
                 break;
             }
 
-            if (c == '(')
+            if (c == ')' && --depth < 0)
+            {
+                unbalanced = true;
+            }
+            else if (c == '(')
             {
                 depth++;
             }
         }
 
-        needsBrackets |= depth != 0;
-        var escaped = Escape(url, needsBrackets ? "<>" : "", decodedEntities);
-        return needsBrackets ? "<" + escaped + ">" : escaped;
+        unbalanced |= depth != 0;
+        var escaped = needsBrackets ? "<" + Escape(url, "<>", decodedEntities) + ">" : Escape(url, unbalanced ? "()<" : "", decodedEntities);
+
+        // A destination cannot contain a line ending, or another control character, so they are written as entities, which the
+        // parser decodes
+        if (decodedEntities && (url.AsSpan().ContainsAnyInRange('\0', (char)0x1F) || url.AsSpan().ContainsAnyInRange((char)0x7F, (char)0x9F)))
+        {
+            var builder = new StringBuilder(escaped.Length + 8);
+            foreach (var c in escaped)
+            {
+                if (char.IsControl(c) && c is not '\t')
+                {
+                    // A backslash before the line ending is text, which would escape the ampersand of the entity
+                    if (builder.Length > 0 && builder[^1] == '\\')
+                    {
+                        builder.Append('\\');
+                    }
+
+                    builder.Append("&#x").Append(((int)c).ToString("X", System.Globalization.CultureInfo.InvariantCulture)).Append(';');
+                }
+                else
+                {
+                    builder.Append(c);
+                }
+            }
+
+            escaped = builder.ToString();
+        }
+
+        return escaped;
     }
 
     /// <summary>
@@ -166,8 +215,41 @@ public class LinkInlineRenderer : NormalizeObjectRenderer<LinkInline>
     /// <param name="decodedEntities">Whether the parser decoded the entities of the title, so that ampersands must be encoded.</param>
     internal static void WriteTitle(NormalizeRenderer renderer, string title, bool decodedEntities = true)
     {
-        var escaped = "\"" + Escape(title, "\"", decodedEntities) + "\"";
+        var inner = Escape(title, "\"", decodedEntities);
+
+        // A blank line would end the paragraph, so the line endings of a title with one are written as entities
+        if (decodedEntities && HasBlankLine(inner))
+        {
+            var builder = new StringBuilder(inner.Length + 16);
+            foreach (var c in inner)
+            {
+                if (c is '\n' or '\r')
+                {
+                    // A backslash before the line ending is text, which would escape the ampersand of the entity
+                    if (builder.Length > 0 && builder[^1] == '\\')
+                    {
+                        builder.Append('\\');
+                    }
+
+                    builder.Append(c == '\n' ? "&#10;" : "&#13;");
+                }
+                else
+                {
+                    builder.Append(c);
+                }
+            }
+
+            inner = builder.ToString();
+        }
+
+        var escaped = "\"" + inner + "\"";
         renderer.Write(renderer.EscapeTablePipes ? escaped.Replace("|", "\\|", StringComparison.Ordinal) : escaped);
+    }
+
+    private static bool HasBlankLine(string text)
+    {
+        var lines = text.ReplaceLineEndings("\n").Split('\n');
+        return lines.Length > 1 && lines.Any(line => line.AsSpan().Trim(" \t").IsEmpty);
     }
 
     // Escapes the specified characters, the backslashes that would escape the next character, and the ampersands that would start an entity

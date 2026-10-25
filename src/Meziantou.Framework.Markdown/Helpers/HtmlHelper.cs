@@ -528,6 +528,9 @@ public static class HtmlHelper
                 {
                     sb.Append(text.AsSpan(lastPos, searchPos - lastPos - 1));
                     lastPos = searchPos;
+
+                    // The escaped character is text, even a backslash or an ampersand
+                    searchPos++;
                 }
             }
             else if (c == '&')
@@ -561,7 +564,8 @@ public static class HtmlHelper
             }
         }
 
-        if (c == 0)
+        // Nothing was unescaped (the text can contain a null character, so the last character examined does not tell)
+        if (lastPos == 0)
         {
             sb.Dispose();
             return text;

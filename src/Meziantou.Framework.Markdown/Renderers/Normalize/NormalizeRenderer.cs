@@ -57,7 +57,9 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
                 _childIndexes.Clear();
                 BulletCharacters.Clear();
                 LiteralDelimiterCache = null;
-                DefinitionsWritten = false;
+                WrittenDefinitions.Clear();
+                ContinuesParagraph = false;
+                FencedCodeBlocks.Clear();
             }
         };
     }
@@ -88,11 +90,54 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
     // the same block, the one before it, or a block after it: searching forward from there is linear over the container.
     private readonly Dictionary<ContainerBlock, int> _childIndexes = new(ReferenceEqualityComparer.Instance);
 
+    // The indented code blocks written fenced, as the list before them cannot be indented further
+    internal HashSet<CodeBlock> FencedCodeBlocks { get; } = new(ReferenceEqualityComparer.Instance);
+
     // The bullet, or the delimiter, written for each list of the document
     internal Dictionary<ListBlock, char> BulletCharacters { get; } = new(ReferenceEqualityComparer.Instance);
 
-    // Whether the link reference definitions of the document are written before a paragraph that must continue them
-    internal bool DefinitionsWritten { get; set; }
+    // The link reference definitions already written, before a paragraph that must continue them
+    internal HashSet<LinkReferenceDefinition> WrittenDefinitions { get; } = new(ReferenceEqualityComparer.Instance);
+
+    /// <summary>
+    /// Writes the link reference definitions that the parser took from the block, whose source is in it, and that are not
+    /// written yet.
+    /// </summary>
+    internal bool WriteDefinitionsOf(Block block)
+    {
+        var written = false;
+        if (Definitions is not null)
+        {
+            foreach (var child in Definitions)
+            {
+                if (child is LinkReferenceDefinition definition && definition.Span.Start >= block.Span.Start && definition.Span.End <= block.Span.End && WrittenDefinitions.Add(definition))
+                {
+                    Write(definition);
+                    EnsureLine();
+                    written = true;
+                }
+            }
+        }
+
+        return written;
+    }
+
+    // Whether the group has definitions that are not written yet
+    internal bool HasDefinitionsToWrite(LinkReferenceDefinitionGroup group)
+    {
+        foreach (var child in group)
+        {
+            if (child is LinkReferenceDefinition definition && !WrittenDefinitions.Contains(definition))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Whether the next paragraph is written right after link reference definitions or a pipe table, the paragraph it continues
+    internal bool ContinuesParagraph { get; set; }
 
     // The link reference definitions of the document being written
     internal LinkReferenceDefinitionGroup? Definitions { get; private set; }
@@ -188,14 +233,41 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
     {
         var remaining = text.AsSpan();
         var isFirstLine = true;
+        var previousLine = ReadOnlySpan<char>.Empty;
+        var newLine = NewLine.LineFeed;
         while (true)
         {
-            var end = remaining.IndexOf('\n');
+            // The text of a setext heading keeps the carriage returns of the source, which end its lines too
+            var end = remaining.IndexOfAny('\r', '\n');
             var line = end < 0 ? remaining : remaining[..end];
-            if (isFirstLine)
+            var contentLine = line;
+            if (isFirstLine && ContinuesParagraph)
             {
+                // The line continues the paragraph of the link reference definitions or the pipe table written before it, so it
+                // must not interrupt it
+                ContinuesParagraph = false;
+                if (CanInterruptParagraph(line))
+                {
+                    Write("    ");
+                }
+            }
+            else if (isFirstLine)
+            {
+                // A character that the literal already writes escaped, such as a '<', needs no other backslash
                 var escapeIndex = GetFirstLineEscapeIndex(leafBlock, line);
-                if (escapeIndex >= 0)
+                if (escapeIndex >= 0 && line[escapeIndex] == '`')
+                {
+                    // A run of backticks is written with entities: the rest of an escaped run would still open a code span, and
+                    // a backslash does not escape the backtick that closes a code span
+                    Write(line[..escapeIndex]);
+                    line = line[escapeIndex..];
+                    while (line is ['`', ..])
+                    {
+                        Write("&#96;");
+                        line = line[1..];
+                    }
+                }
+                else if (escapeIndex >= 0 && line[escapeIndex] != '\\')
                 {
                     Write(line[..escapeIndex]);
                     Write('\\');
@@ -204,8 +276,16 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
             }
             else
             {
-                WriteLine();
-                if (CanInterruptParagraph(line))
+                if (newLine == NewLine.LineFeed)
+                {
+                    WriteLine();
+                }
+                else
+                {
+                    WriteLine(newLine);
+                }
+
+                if (CanInterruptParagraph(previousLine, line))
                 {
                     Write("    ");
                 }
@@ -226,8 +306,10 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
                 break;
             }
 
-            remaining = remaining[(end + 1)..];
+            newLine = remaining[end] == '\n' ? NewLine.LineFeed : end + 1 < remaining.Length && remaining[end + 1] == '\n' ? NewLine.CarriageReturnLineFeed : NewLine.CarriageReturn;
+            remaining = remaining[(end + (newLine == NewLine.CarriageReturnLineFeed ? 2 : 1))..];
             isFirstLine = false;
+            previousLine = contentLine;
         }
     }
 
@@ -331,6 +413,20 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
         return ParseBlocks(string.Concat("a\n", line)) is not [ParagraphBlock { Lines.Count: 2 }];
     }
 
+    // Whether the line would interrupt the paragraph after the previous line. A line can depend on the line before it, such as
+    // the delimiter row of a GFM table, whose number of cells must be the one of the header row before it.
+    private bool CanInterruptParagraph(ReadOnlySpan<char> previousLine, ReadOnlySpan<char> line)
+    {
+        var content = line.TrimStart(' ');
+        if (previousLine.IsEmpty || content.IsEmpty || line.Length - content.Length >= 4 || !CanOpenBlock(content[0]))
+        {
+            return CanInterruptParagraph(line);
+        }
+
+        // The previous line is a continuation line, as when it is written
+        return ParseBlocks(string.Concat("a\n    ", previousLine, "\n", line)) is not [ParagraphBlock { Lines.Count: 3 }];
+    }
+
     // Returns the index before which the first line must be escaped, or -1
     private int GetFirstLineEscapeIndex(LeafBlock leafBlock, ReadOnlySpan<char> line)
     {
@@ -339,8 +435,14 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
             return -1;
         }
 
-        // Only a literal can be escaped
-        if (leafBlock.Inline?.FirstChild is not LiteralInline { IsFirstCharacterEscaped: false } literal || !line.StartsWith(literal.Content.AsSpan()[..Math.Min(literal.Content.Length, line.Length)]))
+        // The "[" of a link that is not closed is written as is, and can start a link reference definition
+        if (leafBlock.Inline?.FirstChild is LinkDelimiterInline { IsImage: false } && line is ['[', ..])
+        {
+            return 0;
+        }
+
+        // Only a literal can be escaped. It is compared to the line before the characters that are written escaped.
+        if (leafBlock.Inline?.FirstChild is not LiteralInline { IsFirstCharacterEscaped: false } literal || !line.StartsWith(GetWrittenAsIs(literal.Content.AsSpan(), line.Length)))
         {
             return -1;
         }
@@ -361,6 +463,13 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
         }
 
         return index;
+    }
+
+    private static ReadOnlySpan<char> GetWrittenAsIs(ReadOnlySpan<char> content, int maxLength)
+    {
+        var index = content.IndexOfAny('\\', '|', '<');
+        var text = index < 0 ? content : content[..index];
+        return text[..Math.Min(text.Length, maxLength)];
     }
 
     /// <summary>
@@ -454,14 +563,25 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
     // Whether the first line of the paragraph, after the list item markers written on the same line, starts a paragraph
     private bool StartsParagraph(LeafBlock leafBlock, ReadOnlySpan<char> line)
     {
-        if (line.IsEmpty || !CanOpenBlock(line[0]))
+        // A link reference definition is parsed from a paragraph, so no block parser opens on its "["
+        if (line.IsEmpty || (!CanOpenBlock(line[0]) && line[0] != '['))
         {
             return true;
         }
 
         var markers = leafBlock.Parent is ListItemBlock ? GetListMarkersBefore(leafBlock) : string.Empty;
         Block? block = ParseBlocks(string.Concat(markers, line)) is [var first] ? first : null;
-        for (var depth = markers.AsSpan().Count(' '); depth > 0; depth--)
+        // A marker can be followed by several spaces, so the levels are the lists the block starts on the line of
+        var depth = 0;
+        if (markers.Length > 0)
+        {
+            for (Block current = leafBlock; current.Parent is ListItemBlock { Count: > 0 } parentItem && parentItem[0] == current && parentItem.Parent is ListBlock parentList; current = parentList)
+            {
+                depth++;
+            }
+        }
+
+        for (; depth > 0; depth--)
         {
             // Each marker opens a list containing a single item
             block = block is ListBlock { Count: 1 } list && list[0] is ListItemBlock { Count: > 0 } item ? item[0] : null;
@@ -474,12 +594,20 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
     /// Gets a value indicating whether the first line of the paragraph starts another block, and cannot be escaped, such as
     /// an HTML tag alone on its line. Such a paragraph can only continue the lines before it.
     /// </summary>
-    internal bool IsParagraphContinuationOnly(ParagraphBlock paragraph)
+    internal bool IsParagraphContinuationOnly(LeafBlock paragraph)
     {
         var text = RenderLeafInline(paragraph).AsSpan();
-        var end = text.IndexOf('\n');
+        var end = text.IndexOfAny('\r', '\n');
         var line = end < 0 ? text : text[..end];
         return GetFirstLineEscapeIndex(paragraph, line) < 0 && !StartsParagraph(paragraph, line);
+    }
+
+    // Whether the block is a paragraph, or a setext heading, whose first line can only continue the lines before it
+    internal bool IsParagraphContinuationOnly(Block? block)
+    {
+        // A heading on a single line is written as an ATX heading
+        return (block is ParagraphBlock || (block is HeadingBlock { IsSetext: true, Level: 1 or 2 } heading && RenderLeafInline(heading).AsSpan().ContainsAny('\r', '\n')))
+            && IsParagraphContinuationOnly((LeafBlock)block);
     }
 
     private bool CanOpenBlock(char c)

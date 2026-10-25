@@ -35,7 +35,7 @@ public class JiraLinkInlineParser : InlineParser
     public override bool Match(InlineProcessor processor, ref StringSlice slice)
     {
         // Allow preceding whitespace or `(`
-        var pc = slice.PeekCharExtra(-1);
+        var pc = processor.PeekPreviousChar(slice);
         if (!pc.IsWhiteSpaceOrZero() && pc != '(')
         {
             return false;

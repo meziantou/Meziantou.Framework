@@ -181,7 +181,8 @@ public class ListBlockParser : BlockParser
         {
             // An item that starts with a blank line has content now, so a blank line no longer ends it
             listItem.ColumnWidth = columnWidth;
-            if (state.Indent > columnWidth && state.IsCodeIndent)
+            // The spaces after the content column are the indentation of the content, such as the spaces before an HTML block
+            if (state.Indent > columnWidth)
             {
                 state.GoToColumn(state.ColumnBeforeIndent + columnWidth);
             }

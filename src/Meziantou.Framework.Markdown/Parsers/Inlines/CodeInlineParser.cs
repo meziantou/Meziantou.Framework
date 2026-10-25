@@ -112,15 +112,17 @@ public class CodeInlineParser : InlineParser
 
         ReadOnlySpan<char> rawContent = slice.AsSpan().Slice(0, slice.Length - span.Length - openSticks);
 
-        var content = containsNewLines
-            ? new LazySubstring(ReplaceNewLines(rawContent)) // Should be the rare path.
+        var replacedContent = containsNewLines ? ReplaceNewLines(rawContent) : null; // Should be the rare path.
+        var content = replacedContent is not null
+            ? new LazySubstring(replacedContent)
             : new LazySubstring(slice.Text, slice.Start, rawContent.Length);
 
-        // Remove one space from front and back if the string is not all spaces
-        if (rawContent.Length > 2 &&
-            rawContent[0] is ' ' or '\n' &&
-            rawContent[rawContent.Length - 1] is ' ' or '\n' &&
-            rawContent.ContainsAnyExcept(' ', '\r', '\n'))
+        // Remove one space from front and back if the string is not all spaces, once the line endings are spaces
+        var spacedContent = replacedContent is not null ? replacedContent.AsSpan() : rawContent;
+        if (spacedContent.Length > 2 &&
+            spacedContent[0] == ' ' &&
+            spacedContent[^1] == ' ' &&
+            spacedContent.ContainsAnyExcept(' '))
         {
             content.Offset++;
             content.Length -= 2;
@@ -210,9 +212,9 @@ public class CodeInlineParser : InlineParser
 
             builder.Append(content.Slice(0, i));
 
-            if (content[i] == '\n')
+            // Transform a line ending ('\n', '\r\n' or '\r') into a single space
+            if (content[i] == '\n' || i + 1 >= content.Length || content[i + 1] != '\n')
             {
-                // Transform '\n' into a single space
                 builder.Append(' ');
             }
 

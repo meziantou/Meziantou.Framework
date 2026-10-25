@@ -50,7 +50,7 @@ public class AutoLinkParser : InlineParser
     public override bool Match(InlineProcessor processor, ref StringSlice slice)
     {
         // Previous char must be a whitespace or a punctuation
-        var previousChar = slice.PeekCharExtra(-1);
+        var previousChar = processor.PeekPreviousChar(slice);
         if (!previousChar.IsWhiteSpaceOrZero() && !_validPreviousCharacters.Contains(previousChar))
         {
             return false;
@@ -137,7 +137,8 @@ public class AutoLinkParser : InlineParser
                 break;
 
             case 't':
-                if (link.SequenceEqual("tel"))
+                // tel: without a number
+                if (link.Length <= "tel:".Length)
                 {
                     return false;
                 }

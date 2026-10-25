@@ -23,14 +23,20 @@ public class HtmlBlockRenderer : NormalizeObjectRenderer<HtmlBlock>
         {
             renderer.WriteLine();
         }
+        else if (!renderer.IsLastInContainer && NormalizeRenderer.IsInLooseListItem(obj))
+        {
+            // The other HTML blocks end at their end condition, and the blank line after them can make the list loose
+            renderer.WriteLine();
+        }
     }
 
     // Whether the last block of the container is an HTML block that has not met its end condition, and would continue
     // on the following lines, even blank ones
     internal static bool EndsWithOpenHtmlBlock(ContainerBlock container)
     {
+        // A blank line ends a quote, and the HTML block in it
         var block = container.LastChild;
-        while (block is ContainerBlock child)
+        while (block is ContainerBlock child and not QuoteBlock)
         {
             block = child.LastChild;
         }

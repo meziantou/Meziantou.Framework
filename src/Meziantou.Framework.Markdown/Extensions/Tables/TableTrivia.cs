@@ -55,8 +55,9 @@ internal static class TableTrivia
                 continue;
             }
 
-            var start = cell.SourceStart < 0 ? line.Start : line.Start + cell.SourceStart - sourcePosition;
-            var end = cell.SourceEnd < 0 ? line.End : line.Start + cell.SourceEnd - sourcePosition;
+            // An inline that spans rows, such as a code span, can put the source of the cell on another line
+            var start = Math.Clamp(cell.SourceStart < 0 ? line.Start : line.Start + cell.SourceStart - sourcePosition, Math.Max(line.Start, previousEnd + 1), line.End + 1);
+            var end = Math.Clamp(cell.SourceEnd < 0 ? line.End : line.Start + cell.SourceEnd - sourcePosition, start - 1, line.End);
             while (start <= end && text[start].IsSpaceOrTab())
             {
                 start++;

@@ -176,7 +176,7 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
         var endOfTable = tableState.EndOfTable!;
         var delimiters = tableState.ColumnAndLineDelimiters;
         var columnDefinitions = FindHeaderRow(delimiters, delimiters.LastIndexOf(endOfTable) + 1);
-        if (columnDefinitions is null || !IsOutsideOfInlines(endOfTable, processor.Root!) || processor.Block!.Parent is null)
+        if (columnDefinitions is null || IsHeaderWithoutCell(delimiters) || !IsOutsideOfInlines(endOfTable, processor.Root!) || processor.Block!.Parent is null)
         {
             tableState.IsInvalidTable = true;
             return false;
@@ -465,6 +465,13 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
             (lastTableLineBreak is not null && (!IsOutsideOfInlines(lastTableLineBreak, container) || state.Block!.Parent is null))))
         {
             // No valid header separator found - convert all pipe delimiters to literals
+            ReplacePipesByLiterals(delimiters, 0);
+            return true;
+        }
+
+        // A header row made of a single pipe has no cell, so a table would have no header (`|` followed by `-|--|`)
+        if (!tableState.IsParsingStopped && aligns is not null && IsHeaderWithoutCell(delimiters))
+        {
             ReplacePipesByLiterals(delimiters, 0);
             return true;
         }
@@ -790,12 +797,46 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
         }
 
         // The inlines moved to the cells can leave an empty container at the end of the paragraph, such as the one of an
-        // unclosed link
+        // unclosed link, or the whitespace after the last pipe of a row
         if (state.Block is ParagraphBlock { Inline: { } leadingInline })
         {
-            while (leadingInline.LastChild is { } last && last.GetType() == typeof(ContainerInline) && IsEmptyInline(last))
+            while (leadingInline.LastChild is { } last && (last.GetType() == typeof(ContainerInline) || last is LiteralInline)
+                && (IsEmptyInline(last) || (IsEmptyOrWhitespaceInline(last) && (last is ContainerInline || last.Span.Start >= table.Span.Start))))
             {
                 last.Remove();
+            }
+
+            // A paragraph left with line breaks only, such as the one before a link whose text spans the first row, is empty
+            if (leadingInline.FirstChild is not null && IsOnlyLineBreaks(leadingInline))
+            {
+                while (leadingInline.FirstChild is { } first)
+                {
+                    first.Remove();
+                }
+            }
+
+            // The paragraph ends with the line break of its last line, without the whitespace before it, and without the line
+            // breaks of the lines that the table took
+            while (leadingInline.LastChild is LineBreakInline { PreviousSibling: LineBreakInline } extraLineBreak)
+            {
+                extraLineBreak.Remove();
+            }
+
+            if (leadingInline.LastChild is LineBreakInline lineBreak)
+            {
+                var before = lineBreak.PreviousSibling;
+                while (before is ContainerInline { LastChild: { } beforeChild } and not LinkInline)
+                {
+                    before = beforeChild;
+                }
+
+                if (before is LiteralInline lastLiteral)
+                {
+                    while (lastLiteral.Content.Length > 0 && lastLiteral.Content[lastLiteral.Content.End].IsSpaceOrTab())
+                    {
+                        lastLiteral.Content.End--;
+                    }
+                }
             }
         }
 
@@ -1051,6 +1092,37 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
             }
 
             inline = inline.NextSibling;
+        }
+
+        return true;
+    }
+
+    private static bool IsOnlyLineBreaks(ContainerInline container)
+    {
+        for (var inline = container.FirstChild; inline is not null; inline = inline.NextSibling)
+        {
+            if (inline is not LineBreakInline && !IsEmptyOrWhitespaceInline(inline))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool IsHeaderWithoutCell(List<Inline> delimiters)
+    {
+        if (delimiters is not [PipeTableDelimiterInline pipe, LineBreakInline lineBreak, ..] || SkipPreviousEmptyInlines(pipe.PreviousSibling) is not null and not LineBreakInline)
+        {
+            return false;
+        }
+
+        for (var inline = pipe.NextSibling; inline is not null && !ReferenceEquals(inline, lineBreak); inline = inline.NextSibling)
+        {
+            if (!IsEmptyOrWhitespaceInline(inline))
+            {
+                return false;
+            }
         }
 
         return true;

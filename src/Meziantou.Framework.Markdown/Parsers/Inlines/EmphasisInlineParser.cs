@@ -189,8 +189,8 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
         }
         if (pc.Value == 0)
         {
-            pc = slice.PeekRuneExtra(-1);
-            if (CjkFriendlyEmphasis)
+            pc = processor.PeekPreviousRune(slice);
+            if (CjkFriendlyEmphasis && pc.Value != 0)
             {
                 // This cannot be a delegate (Func<Rune>?) because slice is a reference
                 twoPreviousChar = slice.PeekRuneExtra(-1 - pc.Utf16SequenceLength);

@@ -37,4 +37,13 @@ public class TestCodeInline
         Assert.StartsWith(expectedStart, html);
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Rendering took {stopwatch.Elapsed}");
     }
+
+    [Theory]
+    [InlineData("`\r`", "<p><code> </code></p>\n")]
+    [InlineData("` a\rb `", "<p><code>a b</code></p>\n")]
+    public void CarriageReturnIsASpace(string markdown, string expectedHtml)
+    {
+        // A carriage return line ending was removed instead of being converted to a space
+        Assert.Equal(expectedHtml, MarkdownConverter.ToHtml(markdown));
+    }
 }

@@ -829,7 +829,7 @@ Text following the table.");
 
     [Theory]
     [InlineData("[a](<b c>)", "[a](<b c>)")]
-    [InlineData("[a](<b)c>)", "[a](<b)c>)")]
+    [InlineData("[a](<b)c>)", "[a](b\\)c)")]
     [InlineData("[a](b \"c\\\\\")", "[a](b \"c\\\\\")")]
     [InlineData("[a](&amp;lt;)", "[a](&amp;lt;)")]
     [InlineData("[a]\n\n[a]: <>", "[a]\n\n[a]: <>")]
@@ -1141,6 +1141,31 @@ Text following the table.");
         // A line whose no-break space was trimmed was written as a blank line, which split the paragraph
         Assert.Equal(expectedHtml, MarkdownConverter.ToHtml(markdown));
         AssertNormalizePreservesHtml(markdown, markdown);
+    }
+
+    [Theory]
+    [InlineData("[]([](\\))", "[]([](\\))")]
+    [InlineData("[\\\\a]: x\n\n[\\\\a]", "[\\\\a]: x\n\n[\\\\a]")]
+    [InlineData("[o]: z \"\n    - \"\n\n[o]", "[o]: z \"\n    - \"\n\n[o]")]
+    [InlineData("-\n      --", "- \n      --")]
+    [InlineData("[foo\n-][foo]\n\n[foo]: /u", "[foo\n-][foo]\n\n[foo]: /u")]
+    [InlineData("<tps:[](<l>)>", "\\<tps:[](l)>")]
+    [InlineData("[a](<b)\n\n[a]: /u", "[a]\\(<b)\n\n[a]: /u")]
+    [InlineData("[foo]: <o()\n\n[foo]: /u", "[foo]\\: <o()\n\n[foo]: /u")]
+    [InlineData(" 1. h\n   *  e\n\n     .", "1. h\n\n* e\n\n```\n .\n```")]
+    public void InlinesAreNotChangedByTheInlinesAroundThem(string markdown, string expected)
+    {
+        // An unbalanced parenthesis in angle brackets, an unescaped backslash of a label, a title line, a code block made of
+        // dashes, a collapsed reference to a text on several lines, a '<' before a link, the text after a shortcut reference
+        // link, and an indented code block after a list that cannot be indented further changed what the source was
+        AssertNormalizePreservesHtml(markdown, expected);
+    }
+
+    [Fact]
+    public void GfmTableHeaderThatLooksLikeADelimiterRow()
+    {
+        var pipeline = new MarkdownPipelineBuilder().Configure("gfm-pipetables").Build();
+        AssertNormalizePreservesHtml("- b\n--|--\n\t-|-", "- b\n  | \\-- | -- |\n  | --- | --- |", pipeline);
     }
 
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null, NormalizeOptions? options = null)

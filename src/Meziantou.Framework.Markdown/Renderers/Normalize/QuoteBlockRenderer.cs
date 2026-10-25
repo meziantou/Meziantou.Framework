@@ -54,7 +54,8 @@ public class QuoteBlockRenderer : NormalizeObjectRenderer<QuoteBlock>
         }
 
         var next = renderer.GetNextSibling(obj);
-        if (renderer.CompactParagraph && next is ParagraphBlock && IsLastBlockParagraph(obj))
+        // The blocks that cannot interrupt a paragraph would be lazy continuation lines
+        if (renderer.CompactParagraph && next is ParagraphBlock or (CodeBlock and not FencedCodeBlock) or HtmlBlock { Type: HtmlBlockType.NonInterruptingBlock } && IsLastBlockParagraph(obj))
         {
             // Without a blank line, which would make the list loose, an empty quote line ends the paragraph
             renderer.WriteLine();
